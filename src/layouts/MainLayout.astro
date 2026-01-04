@@ -1,0 +1,50 @@
+---
+/**
+ * Main Layout
+ *
+ * Primary application layout with sidebar navigation, header, and main content area.
+ * Responsive: Sidebar is visible on desktop, collapsible drawer on mobile.
+ */
+
+import BaseLayout from './BaseLayout.astro';
+import Navigation from '../components/layouts/Navigation.astro';
+import Header from '../components/layouts/Header.astro';
+import Footer from '../components/layouts/Footer.astro';
+import ToastContainer from '../components/molecules/ToastContainer.astro';
+
+interface Props {
+  title?: string;
+  currentPath?: string;
+}
+
+const { title = 'Finance Manager', currentPath = '/' } = Astro.props;
+---
+
+<BaseLayout title={title}>
+  <div class="drawer lg:drawer-open">
+    <input id="drawer-toggle" type="checkbox" class="drawer-toggle" />
+
+    <!-- Page content -->
+    <div class="drawer-content flex flex-col">
+      <!-- Header -->
+      <Header currentPath={currentPath} />
+
+      <!-- Main content -->
+      <main class="flex-1 p-4 lg:p-6 bg-base-200 min-h-screen">
+        <slot />
+      </main>
+
+      <!-- Footer -->
+      <Footer />
+    </div>
+
+    <!-- Sidebar navigation -->
+    <div class="drawer-side">
+      <label for="drawer-toggle" aria-label="close sidebar" class="drawer-overlay"></label>
+      <Navigation currentPath={currentPath} />
+    </div>
+  </div>
+
+  <!-- Toast notifications container -->
+  <ToastContainer />
+</BaseLayout>

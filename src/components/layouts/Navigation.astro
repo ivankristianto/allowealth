@@ -1,0 +1,86 @@
+---
+/**
+ * Navigation Component
+ *
+ * Sidebar navigation with menu items for all main sections.
+ * Active route is highlighted. Mobile-friendly with drawer toggle.
+ */
+
+import Icon from '../atoms/Icon.astro';
+
+interface Props {
+  currentPath?: string;
+}
+
+const { currentPath = '/' } = Astro.props;
+
+interface NavItem {
+  href: string;
+  label: string;
+  icon: string;
+  badge?: string;
+}
+
+const navItems: NavItem[] = [
+  { href: '/dashboard', label: 'Dashboard', icon: 'home' },
+  { href: '/transactions', label: 'Transactions', icon: 'search' },
+  { href: '/budget', label: 'Budget', icon: 'calendar' },
+  { href: '/assets', label: 'Assets', icon: 'currency-dollar' },
+  { href: '/reports', label: 'Reports', icon: 'information' },
+  { href: '/forecast', label: 'Forecast', icon: 'warning' },
+  { href: '/calculators', label: 'Calculators', icon: 'plus' },
+  { href: '/settings', label: 'Settings', icon: 'pencil' },
+];
+
+const isActive = (href: string) => {
+  if (href === '/dashboard' && currentPath === '/') return true;
+  return currentPath.startsWith(href);
+};
+---
+
+<aside class="bg-base-100 w-64 min-h-screen border-r border-base-300">
+  <!-- Close button for mobile -->
+  <div class="lg:hidden p-4 border-b border-base-300 flex justify-between items-center">
+    <span class="font-bold text-lg">Menu</span>
+    <label for="drawer-toggle" class="btn btn-sm btn-circle btn-ghost" aria-label="Close menu">
+      <Icon name="x" size="sm" />
+    </label>
+  </div>
+
+  <!-- Navigation -->
+  <ul class="menu p-4 w-full">
+    {navItems.map((item) => (
+      <li>
+        <a
+          href={item.href}
+          class:list={[
+            isActive(item.href) && 'active',
+            'gap-3'
+          ]}
+          aria-current={isActive(item.href) ? 'page' : undefined}
+        >
+          <Icon name={item.icon} size="sm" />
+          <span>{item.label}</span>
+          {item.badge && (
+            <span class="badge badge-sm badge-primary">{item.badge}</span>
+          )}
+        </a>
+      </li>
+    ))}
+  </ul>
+
+  <!-- Bottom section - User info -->
+  <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-base-300 bg-base-100">
+    <div class="flex items-center gap-3">
+      <div class="avatar placeholder">
+        <div class="bg-neutral text-neutral-content rounded-full w-10">
+          <span class="text-xs">UK</span>
+        </div>
+      </div>
+      <div class="flex-1 min-w-0">
+        <p class="text-sm font-medium truncate">User Name</p>
+        <p class="text-xs text-neutral-500 truncate">user@example.com</p>
+      </div>
+    </div>
+  </div>
+</aside>

@@ -1,0 +1,28 @@
+---
+/**
+ * Page Container Component
+ *
+ * Wrapper component for page content with consistent spacing and max-width.
+ */
+
+interface Props {
+  size?: 'sm' | 'md' | 'lg' | 'xl' | 'full';
+  className?: string;
+}
+
+const { size = 'lg', className = '' } = Astro.props;
+
+const sizeClasses: Record<string, string> = {
+  sm: 'max-w-2xl',
+  md: 'max-w-4xl',
+  lg: 'max-w-6xl',
+  xl: 'max-w-7xl',
+  full: 'max-w-full',
+};
+
+const containerClass = `${sizeClasses[size]} mx-auto w-full ${className}`;
+---
+
+<div class={containerClass}>
+  <slot />
+</div>
