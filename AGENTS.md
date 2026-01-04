@@ -2,6 +2,9 @@
 
 This project uses **bd** (beads) for issue tracking. Run `bd prime` to refresh context after compaction.
 
+ALWAYS read the specs/\*.md to understand the context and requiremetns.
+if requirement changes always update the spec.
+
 ## Quick Reference
 
 ```bash

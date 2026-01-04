@@ -10,7 +10,8 @@
       "Bash(bd ready)",
       "Bash(bd show:*)",
       "Bash(bd update:*)",
-      "Bash(bun add:*)"
+      "Bash(bun add:*)",
+      "Bash(bun run format:fix)"
     ]
   }
 }

@@ -6,6 +6,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Personal and family financial application for expense tracking, budgeting, asset management, and financial forecasting.
 
+ALWAYS read the specs/\*.md to understand the context and requiremetns.
+if requirement changes always update the spec.
+
 ## Tech Stack
 
 | Component  | Technology                                |
