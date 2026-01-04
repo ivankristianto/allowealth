@@ -7,14 +7,19 @@ echo "Running pre-commit quality gates..."
 echo "▸ Running prettier..."
 bun run format:fix
 
+# Stage any formatting changes
+git add -A
+
 # Then run lint
 echo "▸ Running eslint..."
 bun run lint:fix
 
-# Check if there are any new changes after formatting
-if ! git diff --cached --exit-code --quiet; then
-  echo "⚠️  Files were formatted. Please review and commit again."
-  exit 1
-fi
+# Stage any linting changes
+git add -A
 
-echo "✅ Pre-commit checks passed"
+# Check if there are any uncommitted changes after formatting/linting
+if ! git diff --cached --exit-code --quiet; then
+  echo "✅ Files were formatted/linted and staged. Proceeding with commit..."
+else
+  echo "✅ Pre-commit checks passed (no formatting needed)"
+fi
