@@ -53,9 +53,11 @@ const {
     aria-invalid={error}
     aria-describedby={error ? `${id}-error` : undefined}
   />
-  {error && errorMessage && (
-    <span id={`${id}-error`} class="text-error text-sm mt-1" role="alert">
-      {errorMessage}
-    </span>
-  )}
+  {
+    error && errorMessage && (
+      <span id={`${id}-error`} class="text-error text-sm mt-1" role="alert">
+        {errorMessage}
+      </span>
+    )
+  }
 </div>

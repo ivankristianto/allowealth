@@ -34,7 +34,13 @@ const createButton = (args: {
   loading?: boolean;
   text?: string;
 }): HTMLElement => {
-  const { variant = 'primary', size = 'md', disabled = false, loading = false, text = 'Button' } = args;
+  const {
+    variant = 'primary',
+    size = 'md',
+    disabled = false,
+    loading = false,
+    text = 'Button',
+  } = args;
 
   const button = document.createElement('button');
   button.type = 'button';
@@ -42,13 +48,15 @@ const createButton = (args: {
   button.disabled = disabled;
 
   // Base classes
-  const baseClasses = 'btn inline-flex items-center justify-center gap-2 font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2';
+  const baseClasses =
+    'btn inline-flex items-center justify-center gap-2 font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2';
 
   // Variant classes
   const variantClasses: Record<string, string> = {
     primary: 'btn-primary text-white hover:bg-emerald-600 focus:ring-emerald-500',
     secondary: 'bg-neutral-200 text-neutral-800 hover:bg-neutral-300 focus:ring-neutral-500',
-    outline: 'btn-outline border-2 border-emerald-500 text-emerald-600 hover:bg-emerald-50 focus:ring-emerald-500',
+    outline:
+      'btn-outline border-2 border-emerald-500 text-emerald-600 hover:bg-emerald-50 focus:ring-emerald-500',
     ghost: 'text-emerald-600 hover:bg-emerald-50 focus:ring-emerald-500',
     danger: 'bg-error text-white hover:bg-error-hover focus:ring-error',
     warning: 'bg-warning text-white hover:bg-warning-hover focus:ring-warning',
@@ -201,10 +209,21 @@ export const AllVariants: StoryObj = {
     const container = document.createElement('div');
     container.className = 'flex flex-wrap gap-4';
 
-    const variants = ['primary', 'secondary', 'outline', 'ghost', 'danger', 'warning', 'success'] as const;
+    const variants = [
+      'primary',
+      'secondary',
+      'outline',
+      'ghost',
+      'danger',
+      'warning',
+      'success',
+    ] as const;
 
     variants.forEach((variant) => {
-      const button = createButton({ variant, text: variant.charAt(0).toUpperCase() + variant.slice(1) });
+      const button = createButton({
+        variant,
+        text: variant.charAt(0).toUpperCase() + variant.slice(1),
+      });
       container.appendChild(button);
     });
 

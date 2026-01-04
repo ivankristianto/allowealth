@@ -19,19 +19,19 @@ export interface Props {
   id?: string;
 }
 
-const {
-  htmlFor = '',
-  required = false,
-  helpText = '',
-  className = '',
-  id = '',
-} = Astro.props;
+const { htmlFor = '', required = false, helpText = '', className = '', id = '' } = Astro.props;
 ---
 
-<label id={id} for={htmlFor} class={["label", className].filter(Boolean).join(' ')}>
+<label id={id} for={htmlFor} class={['label', className].filter(Boolean).join(' ')}>
   <span class="label-text">
     <slot />
-    {required && <span class="text-error ml-1" aria-label="required">*</span>}
+    {
+      required && (
+        <span class="text-error ml-1" aria-label="required">
+          *
+        </span>
+      )
+    }
   </span>
   {helpText && <span class="label-text-alt text-neutral-500">{helpText}</span>}
 </label>

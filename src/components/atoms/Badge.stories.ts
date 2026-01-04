@@ -100,10 +100,21 @@ export const AllVariants: StoryObj = {
     const container = document.createElement('div');
     container.className = 'flex flex-wrap gap-2';
 
-    const variants = ['neutral', 'primary', 'secondary', 'success', 'warning', 'error', 'info'] as const;
+    const variants = [
+      'neutral',
+      'primary',
+      'secondary',
+      'success',
+      'warning',
+      'error',
+      'info',
+    ] as const;
 
     variants.forEach((variant) => {
-      const badge = createBadge({ variant, text: variant.charAt(0).toUpperCase() + variant.slice(1) });
+      const badge = createBadge({
+        variant,
+        text: variant.charAt(0).toUpperCase() + variant.slice(1),
+      });
       container.appendChild(badge);
     });
 

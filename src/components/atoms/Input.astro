@@ -53,42 +53,53 @@ const inputClasses = [
   error && 'input-error',
   disabled && 'opacity-50 cursor-not-allowed',
   className,
-].filter(Boolean).join(' ');
+]
+  .filter(Boolean)
+  .join(' ');
 
 const selectOptions = type === 'select' ? options : [];
 ---
 
-{type === 'select' ? (
-  <select
-    id={id}
-    name={name}
-    class={inputClasses}
-    disabled={disabled}
-    class:list={{ 'input-error': error }}
-  >
-    <option value="">{placeholder || 'Select...'}</option>
-    {selectOptions.map((opt) => (
-      <option value={opt.value}>{opt.label}</option>
-    ))}
-  </select>
-) : (
-  <input
-    id={id}
-    name={name}
-    type={type}
-    placeholder={placeholder}
-    value={value}
-    disabled={disabled}
-    class:list={['input input-bordered w-full', error && 'input-error', disabled && 'opacity-50 cursor-not-allowed', className]}
-    min={type === 'number' ? min : undefined}
-    max={type === 'number' ? max : undefined}
-    step={type === 'number' ? step : undefined}
-    aria-invalid={error}
-    aria-describedby={error ? `${id}-error` : undefined}
-  />
-)}
-{error && errorMessage && (
-  <span id={`${id}-error`} class="text-error text-sm mt-1" role="alert">
-    {errorMessage}
-  </span>
-)}
+{
+  type === 'select' ? (
+    <select
+      id={id}
+      name={name}
+      class={inputClasses}
+      disabled={disabled}
+      class:list={{ 'input-error': error }}
+    >
+      <option value="">{placeholder || 'Select...'}</option>
+      {selectOptions.map((opt) => (
+        <option value={opt.value}>{opt.label}</option>
+      ))}
+    </select>
+  ) : (
+    <input
+      id={id}
+      name={name}
+      type={type}
+      placeholder={placeholder}
+      value={value}
+      disabled={disabled}
+      class:list={[
+        'input input-bordered w-full',
+        error && 'input-error',
+        disabled && 'opacity-50 cursor-not-allowed',
+        className,
+      ]}
+      min={type === 'number' ? min : undefined}
+      max={type === 'number' ? max : undefined}
+      step={type === 'number' ? step : undefined}
+      aria-invalid={error}
+      aria-describedby={error ? `${id}-error` : undefined}
+    />
+  )
+}
+{
+  error && errorMessage && (
+    <span id={`${id}-error`} class="text-error text-sm mt-1" role="alert">
+      {errorMessage}
+    </span>
+  )
+}

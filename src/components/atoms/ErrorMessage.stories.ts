@@ -45,7 +45,8 @@ const createErrorMessage = (args: {
   svg.setAttribute('class', 'stroke-current shrink-0 h-6 w-6');
   svg.setAttribute('fill', 'none');
   svg.setAttribute('viewBox', '0 0 24 24');
-  svg.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />';
+  svg.innerHTML =
+    '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />';
   div.appendChild(svg);
 
   // Content
@@ -68,7 +69,8 @@ const createErrorMessage = (args: {
     btn.className = 'btn btn-sm btn-ghost';
     btn.type = 'button';
     btn.setAttribute('aria-label', 'Dismiss');
-    btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>';
+    btn.innerHTML =
+      '<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>';
     div.appendChild(btn);
   }
 

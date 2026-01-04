@@ -69,18 +69,23 @@ const percentageClass = [
   sizeClasses[size],
   variantClasses[colorVariant],
   className,
-].filter(Boolean).join(' ');
+]
+  .filter(Boolean)
+  .join(' ');
 
-const progressColor = colorVariant === 'error' ? 'progress-error' : colorVariant === 'warning' ? 'progress-warning' : 'progress-success';
+const progressColor =
+  colorVariant === 'error'
+    ? 'progress-error'
+    : colorVariant === 'warning'
+      ? 'progress-warning'
+      : 'progress-success';
 ---
 
 <div class="flex flex-col gap-2">
   <span class={percentageClass}>{formattedValue}</span>
-  {showBar && (
-    <progress
-      class={`progress ${progressColor} w-full`}
-      value={Math.min(value, 100)}
-      max="100"
-    ></progress>
-  )}
+  {
+    showBar && (
+      <progress class={`progress ${progressColor} w-full`} value={Math.min(value, 100)} max="100" />
+    )
+  }
 </div>

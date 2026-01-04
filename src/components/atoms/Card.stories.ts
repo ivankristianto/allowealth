@@ -19,7 +19,13 @@ const createCard = (args: {
   title?: string;
   content?: string;
 }): HTMLElement => {
-  const { bordered = true, compact = false, hoverable = false, title = 'Card Title', content = 'Card content goes here. This is a versatile container component.' } = args;
+  const {
+    bordered = true,
+    compact = false,
+    hoverable = false,
+    title = 'Card Title',
+    content = 'Card content goes here. This is a versatile container component.',
+  } = args;
 
   const card = document.createElement('div');
   const classes = ['card', 'bg-base-100'];

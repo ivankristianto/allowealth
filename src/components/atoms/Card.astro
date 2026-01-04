@@ -17,12 +17,7 @@ export interface Props {
   className?: string;
 }
 
-const {
-  bordered = true,
-  compact = false,
-  hoverable = false,
-  className = '',
-} = Astro.props;
+const { bordered = true, compact = false, hoverable = false, className = '' } = Astro.props;
 
 const cardClasses = [
   'card bg-base-100',
@@ -30,7 +25,9 @@ const cardClasses = [
   compact ? 'card-compact p-4' : 'p-6',
   hoverable && 'shadow-xl hover:shadow-2xl transition-shadow duration-200',
   className,
-].filter(Boolean).join(' ');
+]
+  .filter(Boolean)
+  .join(' ');
 ---
 
 <div class={cardClasses}>

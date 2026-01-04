@@ -1,0 +1,20 @@
+#!/usr/bin/env sh
+. "$(dirname "$0")/_/husky.sh"
+
+echo "Running pre-commit quality gates..."
+
+# Run format:fix first
+echo "▸ Running prettier..."
+bun run format:fix
+
+# Then run lint
+echo "▸ Running eslint..."
+bun run lint:fix
+
+# Check if there are any new changes after formatting
+if ! git diff --cached --exit-code --quiet; then
+  echo "⚠️  Files were formatted. Please review and commit again."
+  exit 1
+fi
+
+echo "✅ Pre-commit checks passed"

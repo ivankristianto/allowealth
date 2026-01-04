@@ -15,19 +15,11 @@ export interface Props {
   className?: string;
 }
 
-const {
-  size = 'md',
-  color = 'primary',
-  className = '',
-} = Astro.props;
+const { size = 'md', color = 'primary', className = '' } = Astro.props;
 
-const spinnerClasses = [
-  'loading',
-  'loading-spinner',
-  `loading-${size}`,
-  `text-${color}`,
-  className,
-].filter(Boolean).join(' ');
+const spinnerClasses = ['loading', 'loading-spinner', `loading-${size}`, `text-${color}`, className]
+  .filter(Boolean)
+  .join(' ');
 ---
 
 <span class={spinnerClasses} aria-label="Loading" aria-busy="true"></span>

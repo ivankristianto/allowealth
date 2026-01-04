@@ -79,7 +79,12 @@ const createPercentage = (args: {
   container.appendChild(span);
 
   if (showBar) {
-    const progressColor = colorVariant === 'error' ? 'progress-error' : colorVariant === 'warning' ? 'progress-warning' : 'progress-success';
+    const progressColor =
+      colorVariant === 'error'
+        ? 'progress-error'
+        : colorVariant === 'warning'
+          ? 'progress-warning'
+          : 'progress-success';
     const progress = document.createElement('progress');
     progress.className = `progress ${progressColor} w-full`;
     progress.value = Math.min(value, 100);

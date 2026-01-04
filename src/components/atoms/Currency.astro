@@ -62,7 +62,9 @@ const currencyClass = [
   sizeClasses[size],
   variantClasses[variant],
   className,
-].filter(Boolean).join(' ');
+]
+  .filter(Boolean)
+  .join(' ');
 ---
 
 <span class={currencyClass}>{formattedAmount}</span>

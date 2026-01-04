@@ -49,24 +49,21 @@ const isActive = (href: string) => {
 
   <!-- Navigation -->
   <ul class="menu p-4 w-full">
-    {navItems.map((item) => (
-      <li>
-        <a
-          href={item.href}
-          class:list={[
-            isActive(item.href) && 'active',
-            'gap-3'
-          ]}
-          aria-current={isActive(item.href) ? 'page' : undefined}
-        >
-          <Icon name={item.icon} size="sm" />
-          <span>{item.label}</span>
-          {item.badge && (
-            <span class="badge badge-sm badge-primary">{item.badge}</span>
-          )}
-        </a>
-      </li>
-    ))}
+    {
+      navItems.map((item) => (
+        <li>
+          <a
+            href={item.href}
+            class:list={[isActive(item.href) && 'active', 'gap-3']}
+            aria-current={isActive(item.href) ? 'page' : undefined}
+          >
+            <Icon name={item.icon} size="sm" />
+            <span>{item.label}</span>
+            {item.badge && <span class="badge badge-sm badge-primary">{item.badge}</span>}
+          </a>
+        </li>
+      ))
+    }
   </ul>
 
   <!-- Bottom section - User info -->

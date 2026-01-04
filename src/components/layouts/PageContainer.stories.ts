@@ -73,10 +73,14 @@ export const Comparison: StoryObj = {
       const section = document.createElement('div');
       section.className = `${{ sm: 'max-w-2xl', md: 'max-w-4xl', lg: 'max-w-6xl', xl: 'max-w-7xl' }[size]} mx-auto`;
 
+      const sizeClass = { sm: 'max-w-2xl', md: 'max-w-4xl', lg: 'max-w-6xl', xl: 'max-w-7xl' }[
+        size
+      ];
+
       section.innerHTML = `
         <div class="card bg-base-100 card-bordered p-4">
           <h3 class="font-bold mb-2">${size.toUpperCase()} Container</h3>
-          <p class="text-sm text-neutral-500">Max-width: ${{{ sm: 'max-w-2xl', md: 'max-w-4xl', lg: 'max-w-6xl', xl: 'max-w-7xl' }[size]}</p>
+          <p class="text-sm text-neutral-500">Max-width: ${sizeClass}</p>
         </div>
       `;
 

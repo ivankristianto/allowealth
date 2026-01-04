@@ -19,13 +19,7 @@ export interface Props {
   className?: string;
 }
 
-const {
-  title = '',
-  message,
-  variant = 'alert',
-  dismissible = false,
-  className = '',
-} = Astro.props;
+const { title = '', message, variant = 'alert', dismissible = false, className = '' } = Astro.props;
 
 const variantClasses: Record<string, string> = {
   alert: 'alert alert-error',
@@ -36,46 +30,48 @@ const variantClasses: Record<string, string> = {
 const hasTitle = title && variant !== 'inline';
 ---
 
-{variant === 'inline' ? (
-  <span class={variantClasses[variant] + ' ' + className} role="alert">
-    {message}
-  </span>
-) : (
-  <div class={variantClasses[variant] + ' ' + className} role="alert">
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      class="stroke-current shrink-0 h-6 w-6"
-      fill="none"
-      viewBox="0 0 24 24"
-    >
-      <path
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        stroke-width="2"
-        d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
-      />
-    </svg>
-    <div>
-      {hasTitle && <h3 class="font-bold">{title}</h3>}
-      <div class="text-xs">{message}</div>
+{
+  variant === 'inline' ? (
+    <span class={variantClasses[variant] + ' ' + className} role="alert">
+      {message}
+    </span>
+  ) : (
+    <div class={variantClasses[variant] + ' ' + className} role="alert">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        class="stroke-current shrink-0 h-6 w-6"
+        fill="none"
+        viewBox="0 0 24 24"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+        />
+      </svg>
+      <div>
+        {hasTitle && <h3 class="font-bold">{title}</h3>}
+        <div class="text-xs">{message}</div>
+      </div>
+      {dismissible && (
+        <button class="btn btn-sm btn-ghost" type="button" aria-label="Dismiss">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-4 w-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M6 18L18 6M6 6l12 12"
+            />
+          </svg>
+        </button>
+      )}
     </div>
-    {dismissible && (
-      <button class="btn btn-sm btn-ghost" type="button" aria-label="Dismiss">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          class="h-4 w-4"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M6 18L18 6M6 6l12 12"
-          />
-        </svg>
-      </button>
-    )}
-  </div>
-)}
+  )
+}

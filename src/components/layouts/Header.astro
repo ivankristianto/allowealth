@@ -13,11 +13,7 @@ interface Props {
   showMenuToggle?: boolean;
 }
 
-const {
-  title = 'Finance Manager',
-  currentPath = '/',
-  showMenuToggle = true,
-} = Astro.props;
+const { title = 'Finance Manager', currentPath = '/', showMenuToggle = true } = Astro.props;
 
 // Get page title based on current path
 const getPageTitle = (path: string) => {
@@ -45,18 +41,22 @@ const getPageTitle = (path: string) => {
 };
 ---
 
-<header class="bg-base-100 border-b border-base-300 px-4 py-3 flex items-center justify-between gap-4">
+<header
+  class="bg-base-100 border-b border-base-300 px-4 py-3 flex items-center justify-between gap-4"
+>
   <!-- Left side: Menu toggle + Page title -->
   <div class="flex items-center gap-3">
-    {showMenuToggle && (
-      <label
-        for="drawer-toggle"
-        class="btn btn-square btn-ghost lg:hidden"
-        aria-label="Toggle menu"
-      >
-        <Icon name="search" size="md" />
-      </label>
-    )}
+    {
+      showMenuToggle && (
+        <label
+          for="drawer-toggle"
+          class="btn btn-square btn-ghost lg:hidden"
+          aria-label="Toggle menu"
+        >
+          <Icon name="search" size="md" />
+        </label>
+      )
+    }
     <h1 class="text-xl font-semibold">{getPageTitle(currentPath)}</h1>
   </div>
 
@@ -70,11 +70,7 @@ const getPageTitle = (path: string) => {
 
     <!-- Notifications -->
     <div class="dropdown dropdown-end">
-      <button
-        tabindex={0}
-        class="btn btn-square btn-ghost btn-sm"
-        aria-label="Notifications"
-      >
+      <button tabindex={0} class="btn btn-square btn-ghost btn-sm" aria-label="Notifications">
         <Icon name="warning" size="md" />
         <span class="badge badge-xs badge-error absolute top-1 right-1">3</span>
       </button>

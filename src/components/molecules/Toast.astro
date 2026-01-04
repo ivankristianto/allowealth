@@ -19,13 +19,7 @@ interface Props {
   position?: 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left';
 }
 
-const {
-  id,
-  message,
-  type = 'info',
-  duration = 5000,
-  position = 'top-right',
-} = Astro.props;
+const { id, message, type = 'info', duration = 5000, position = 'top-right' } = Astro.props;
 
 const typeClasses: Record<string, string> = {
   success: 'alert-success',
@@ -46,11 +40,7 @@ const positionClasses: Record<string, string> = {
   id={id}
   data-type={type}
   data-duration={duration}
-  class:list={[
-    'alert shadow-lg',
-    typeClasses[type],
-    positionClasses[position]
-  ]}
+  class:list={['alert shadow-lg', typeClasses[type], positionClasses[position]]}
 >
   <span>{message}</span>
   <button
@@ -58,8 +48,15 @@ const positionClasses: Record<string, string> = {
     aria-label="Dismiss notification"
     onclick="this.parentElement.remove()"
   >
-    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      class="h-4 w-4"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+    >
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"
+      ></path>
     </svg>
   </button>
 </toast-message>

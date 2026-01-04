@@ -22,7 +22,7 @@ const createEmptyState = (args: {
 }): HTMLElement => {
   const {
     title = 'No Data',
-    message = 'There\'s nothing to show here yet.',
+    message = "There's nothing to show here yet.",
     icon = '',
     actionLabel = 'Add Item',
     variant = 'centered',
@@ -99,7 +99,8 @@ export const NoBudgets: StoryObj = {
 
     const emptyState = createEmptyState({
       title: 'No Budgets Set',
-      message: 'Setting budgets helps you track and control your spending across different categories.',
+      message:
+        'Setting budgets helps you track and control your spending across different categories.',
       icon: '',
       actionLabel: 'Create Budget',
       variant: 'centered',
@@ -161,7 +162,8 @@ export const SearchNoResults: StoryObj = {
 
     const emptyState = createEmptyState({
       title: 'No Results Found',
-      message: 'We couldn\'t find any expenses matching "coffee shop". Try a different search term.',
+      message:
+        'We couldn\'t find any expenses matching "coffee shop". Try a different search term.',
       actionLabel: 'Clear Search',
       variant: 'centered',
     });

@@ -83,7 +83,7 @@ export const WithInput: StoryObj = {
     const label = createLabel({
       text: 'Email Address',
       required: true,
-      helpText: 'We\'ll never share your email',
+      helpText: "We'll never share your email",
       inputId: 'email-input',
     });
 

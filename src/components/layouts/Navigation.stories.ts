@@ -6,7 +6,17 @@ const meta: Meta = {
   argTypes: {
     currentPath: {
       control: 'select',
-      options: ['/', '/dashboard', '/transactions', '/budget', '/assets', '/reports', '/forecast', '/calculators', '/settings'],
+      options: [
+        '/',
+        '/dashboard',
+        '/transactions',
+        '/budget',
+        '/assets',
+        '/reports',
+        '/forecast',
+        '/calculators',
+        '/settings',
+      ],
     },
   },
 };
@@ -21,7 +31,8 @@ const createNavigation = (args: { currentPath?: string }): HTMLElement => {
 
   // Mobile close button
   const mobileHeader = document.createElement('div');
-  mobileHeader.className = 'lg:hidden p-4 border-b border-base-300 flex justify-between items-center';
+  mobileHeader.className =
+    'lg:hidden p-4 border-b border-base-300 flex justify-between items-center';
   mobileHeader.innerHTML = `
     <span class="font-bold text-lg">Menu</span>
     <label for="nav-drawer-toggle" class="btn btn-sm btn-circle btn-ghost">

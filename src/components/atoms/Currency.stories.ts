@@ -24,7 +24,11 @@ const meta: Meta = {
 
 export default meta;
 
-const formatCurrency = (amount: number, currency: 'IDR' | 'USD' = 'IDR', compact: boolean = false): string => {
+const formatCurrency = (
+  amount: number,
+  currency: 'IDR' | 'USD' = 'IDR',
+  compact: boolean = false
+): string => {
   const configs = {
     IDR: { code: 'IDR', symbol: 'Rp', decimals: 0, locale: 'id-ID' },
     USD: { code: 'USD', symbol: '$', decimals: 2, locale: 'en-US' },
@@ -138,7 +142,12 @@ export const Comparison: StoryObj = {
 
     const items = [
       { amount: 5000000, currency: 'IDR' as const, label: 'Income', variant: 'positive' as const },
-      { amount: -3200000, currency: 'IDR' as const, label: 'Expenses', variant: 'negative' as const },
+      {
+        amount: -3200000,
+        currency: 'IDR' as const,
+        label: 'Expenses',
+        variant: 'negative' as const,
+      },
       { amount: 1800000, currency: 'IDR' as const, label: 'Balance', variant: 'default' as const },
     ];
 

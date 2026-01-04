@@ -17,12 +17,7 @@ export interface Props {
   className?: string;
 }
 
-const {
-  variant = 'neutral',
-  size = 'md',
-  outline = false,
-  className = '',
-} = Astro.props;
+const { variant = 'neutral', size = 'md', outline = false, className = '' } = Astro.props;
 
 const variantClasses: Record<string, string> = {
   neutral: outline ? 'badge-outline' : 'badge-neutral',
@@ -40,12 +35,9 @@ const sizeClasses: Record<string, string> = {
   lg: 'badge-lg',
 };
 
-const badgeClasses = [
-  'badge',
-  variantClasses[variant],
-  sizeClasses[size],
-  className,
-].filter(Boolean).join(' ');
+const badgeClasses = ['badge', variantClasses[variant], sizeClasses[size], className]
+  .filter(Boolean)
+  .join(' ');
 ---
 
 <span class={badgeClasses}>
