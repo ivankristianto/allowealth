@@ -1,0 +1,31 @@
+---
+import MainLayout from '../../layouts/MainLayout.astro';
+
+const currentPath = '/assets';
+---
+
+<MainLayout title="Assets - Finance Manager" currentPath={currentPath}>
+  <div class="space-y-6">
+    <div class="flex justify-between items-center">
+      <h2 class="text-2xl font-bold">Assets</h2>
+      <a href="/assets/add" class="btn btn-primary">Add Asset</a>
+    </div>
+
+    <div class="tabs">
+      <a class="tab tab-active" href="/assets">List</a>
+      <a class="tab" href="/assets/add">Add New</a>
+      <a class="tab" href="/assets/history">History</a>
+    </div>
+
+    <div class="card bg-base-100 shadow border border-base-300">
+      <div class="card-body">
+        <div class="flex items-center justify-center py-12">
+          <div class="text-center">
+            <p class="text-neutral-500">No assets tracked yet</p>
+            <a href="/assets/add" class="btn btn-primary mt-4">Add Your First Asset</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</MainLayout>

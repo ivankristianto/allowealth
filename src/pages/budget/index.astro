@@ -1,0 +1,30 @@
+---
+import MainLayout from '../../layouts/MainLayout.astro';
+
+const currentPath = '/budget';
+---
+
+<MainLayout title="Budget - Finance Manager" currentPath={currentPath}>
+  <div class="space-y-6">
+    <div class="flex justify-between items-center">
+      <h2 class="text-2xl font-bold">Budget</h2>
+      <button class="btn btn-primary">Create Budget</button>
+    </div>
+
+    <div class="tabs">
+      <a class="tab tab-active" href="/budget">Overview</a>
+      <a class="tab" href="/budget/history">History</a>
+    </div>
+
+    <div class="card bg-base-100 shadow border border-base-300">
+      <div class="card-body">
+        <div class="flex items-center justify-center py-12">
+          <div class="text-center">
+            <p class="text-neutral-500">No budgets set up yet</p>
+            <button class="btn btn-primary mt-4">Create Your First Budget</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</MainLayout>

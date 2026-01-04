@@ -1,0 +1,37 @@
+---
+import MainLayout from '../../layouts/MainLayout.astro';
+
+const currentPath = '/calculators';
+---
+
+<MainLayout title="Calculators - Finance Manager" currentPath={currentPath}>
+  <div class="space-y-6">
+    <h2 class="text-2xl font-bold">Calculators</h2>
+
+    <div class="card bg-base-100 shadow border border-base-300">
+      <div class="card-body">
+        <h3 class="card-title">Compound Interest Calculator</h3>
+        <p class="text-neutral-500">Calculate how your investments grow over time.</p>
+
+        <form class="space-y-4 mt-4">
+          <div class="form-control">
+            <label class="label"><span class="label-text">Principal Amount</span></label>
+            <input type="number" placeholder="Enter amount" class="input input-bordered" />
+          </div>
+
+          <div class="form-control">
+            <label class="label"><span class="label-text">Annual Interest Rate (%)</span></label>
+            <input type="number" placeholder="Enter rate" class="input input-bordered" />
+          </div>
+
+          <div class="form-control">
+            <label class="label"><span class="label-text">Time Period (years)</span></label>
+            <input type="number" placeholder="Enter years" class="input input-bordered" />
+          </div>
+
+          <button type="submit" class="btn btn-primary">Calculate</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</MainLayout>

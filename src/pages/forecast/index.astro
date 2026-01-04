@@ -1,0 +1,22 @@
+---
+import MainLayout from '../../layouts/MainLayout.astro';
+
+const currentPath = '/forecast';
+---
+
+<MainLayout title="Forecast - Finance Manager" currentPath={currentPath}>
+  <div class="space-y-6">
+    <h2 class="text-2xl font-bold">Forecast</h2>
+
+    <div class="tabs">
+      <a class="tab tab-active" href="/forecast">Calculator</a>
+      <a class="tab" href="/forecast/comparison">Comparison</a>
+    </div>
+
+    <div class="card bg-base-100 shadow border border-base-300">
+      <div class="card-body">
+        <p class="text-neutral-500">Forecast your financial future based on current trends.</p>
+      </div>
+    </div>
+  </div>
+</MainLayout>
