@@ -5,7 +5,12 @@
       "Bash(bd create:*)",
       "Bash(bd dep add:*)",
       "Bash(source:*)",
-      "Bash(bun run lint)"
+      "Bash(bun run lint)",
+      "Bash(bd prime:*)",
+      "Bash(bd ready)",
+      "Bash(bd show:*)",
+      "Bash(bd update:*)",
+      "Bash(bun add:*)"
     ]
   }
 }

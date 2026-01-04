@@ -1,0 +1,62 @@
+---
+/**
+ * Toast Container Component
+ *
+ * Container for toast notifications. Place once in your main layout.
+ *
+ * Usage: Call `showToast(message, type)` from client-side scripts
+ */
+---
+
+<div id="toast-container" class="toast toast-end toast-top z-50"></div>
+
+<script is:inline>
+  // Global toast function
+  function showToast(message: string, type: 'success' | 'error' | 'warning' | 'info' = 'info', duration: number = 5000) {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+
+    const toast = document.createElement('div');
+    toast.className = `alert shadow-lg alert-${type}`;
+    toast.innerHTML = `
+      <span>${message}</span>
+      <button class="btn btn-sm btn-ghost" onclick="this.parentElement.remove()">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    `;
+    toast.style.animation = 'slideIn 0.3s ease-out';
+    container.appendChild(toast);
+
+    // Auto-dismiss
+    if (duration > 0) {
+      setTimeout(() => {
+        toast.remove();
+      }, duration);
+    }
+
+    return toast;
+  }
+
+  // Make available globally
+  (window as any).showToast = showToast;
+</script>
+
+<style>
+  .toast-container > div {
+    animation: slideIn 0.3s ease-out;
+    margin-bottom: 0.5rem;
+  }
+
+  @keyframes slideIn {
+    from {
+      opacity: 0;
+      transform: translateX(100%);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+</style>
