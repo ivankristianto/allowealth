@@ -1,0 +1,43 @@
+---
+import MainLayout from '../../layouts/MainLayout.astro';
+
+const currentPath = '/settings';
+---
+
+<MainLayout title="Settings - Finance Manager" currentPath={currentPath}>
+  <div class="space-y-6">
+    <h2 class="text-2xl font-bold">Settings</h2>
+
+    <div class="tabs">
+      <a class="tab tab-active" href="/settings">Profile</a>
+      <a class="tab" href="/settings/categories">Categories</a>
+      <a class="tab" href="/settings/payment-methods">Payment Methods</a>
+    </div>
+
+    <div class="card bg-base-100 shadow border border-base-300">
+      <div class="card-body">
+        <form class="space-y-4">
+          <div class="form-control">
+            <label class="label"><span class="label-text">Display Name</span></label>
+            <input type="text" placeholder="Your name" class="input input-bordered" />
+          </div>
+
+          <div class="form-control">
+            <label class="label"><span class="label-text">Email</span></label>
+            <input type="email" placeholder="your@email.com" class="input input-bordered" />
+          </div>
+
+          <div class="form-control">
+            <label class="label"><span class="label-text">Default Currency</span></label>
+            <select class="select select-bordered">
+              <option value="IDR">IDR - Indonesian Rupiah</option>
+              <option value="USD">USD - US Dollar</option>
+            </select>
+          </div>
+
+          <button type="submit" class="btn btn-primary">Save Changes</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</MainLayout>
