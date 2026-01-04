@@ -1,0 +1,61 @@
+---
+/**
+ * Date Picker Component
+ *
+ * Date input with native browser date picker.
+ *
+ * @param {string} name - Input name
+ * @param {string} value - Initial date value (YYYY-MM-DD)
+ * @param {string} min - Minimum date
+ * @param {string} max - Maximum date
+ * @param {boolean} required - Whether the field is required
+ * @param {boolean} error - Show error state
+ * @param {string} errorMessage - Error message to display
+ * @param {string} className - Additional CSS classes
+ * @param {string} id - Element ID
+ */
+
+export interface Props {
+  name?: string;
+  value?: string;
+  min?: string;
+  max?: string;
+  required?: boolean;
+  error?: boolean;
+  errorMessage?: string;
+  className?: string;
+  id?: string;
+}
+
+const {
+  name = '',
+  value = '',
+  min = '',
+  max = '',
+  required = false,
+  error = false,
+  errorMessage = '',
+  className = '',
+  id = '',
+} = Astro.props;
+---
+
+<div class="form-control">
+  <input
+    type="date"
+    name={name}
+    value={value}
+    min={min}
+    max={max}
+    required={required}
+    id={id}
+    class:list={['input input-bordered w-full', error && 'input-error', className]}
+    aria-invalid={error}
+    aria-describedby={error ? `${id}-error` : undefined}
+  />
+  {error && errorMessage && (
+    <span id={`${id}-error`} class="text-error text-sm mt-1" role="alert">
+      {errorMessage}
+    </span>
+  )}
+</div>

@@ -1,0 +1,86 @@
+---
+/**
+ * Percentage Display Component
+ *
+ * Formatted percentage display with optional color coding based on value.
+ *
+ * @param {number} value - Percentage value (0-100)
+ * @param {number} decimals - Number of decimal places
+ * @param {boolean} showSign - Show +/- sign
+ * @param {string} size - Text size: sm, md, lg, xl
+ * @param {string} variant - Color variant: auto, success, warning, error, neutral
+ * @param {boolean} showBar - Show progress bar
+ * @param {string} className - Additional CSS classes
+ */
+
+import { formatPercentage, getBudgetStatusClass } from '@/lib/tokens';
+
+export interface Props {
+  value: number;
+  decimals?: number;
+  showSign?: boolean;
+  size?: 'sm' | 'md' | 'lg' | 'xl';
+  variant?: 'auto' | 'success' | 'warning' | 'error' | 'neutral';
+  showBar?: boolean;
+  className?: string;
+}
+
+const {
+  value,
+  decimals = 1,
+  showSign = false,
+  size = 'md',
+  variant = 'auto',
+  showBar = false,
+  className = '',
+} = Astro.props;
+
+const sizeClasses: Record<string, string> = {
+  sm: 'text-sm',
+  md: 'text-base',
+  lg: 'text-lg',
+  xl: 'text-xl',
+};
+
+// Determine color based on variant
+let colorVariant = variant;
+if (variant === 'auto') {
+  if (value >= 100) colorVariant = 'error';
+  else if (value >= 80) colorVariant = 'warning';
+  else colorVariant = 'success';
+}
+
+const variantClasses: Record<string, string> = {
+  success: 'text-success',
+  warning: 'text-warning',
+  error: 'text-error',
+  neutral: 'text-neutral-500',
+};
+
+let formattedValue = formatPercentage(value, decimals);
+
+if (showSign && value !== 0) {
+  const sign = value > 0 ? '+' : '';
+  formattedValue = sign + formattedValue;
+}
+
+const percentageClass = [
+  'font-mono font-medium',
+  sizeClasses[size],
+  variantClasses[colorVariant],
+  className,
+].filter(Boolean).join(' ');
+
+const progressColor = colorVariant === 'error' ? 'progress-error' : colorVariant === 'warning' ? 'progress-warning' : 'progress-success';
+---
+
+<div class="flex flex-col gap-2">
+  <span class={percentageClass}>{formattedValue}</span>
+  {showBar && (
+    <progress
+      class={`progress ${progressColor} w-full`}
+      value={Math.min(value, 100)}
+      max="100"
+    ></progress>
+  )}
+</div>

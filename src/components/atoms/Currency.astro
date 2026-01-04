@@ -1,0 +1,68 @@
+---
+/**
+ * Currency Display Component
+ *
+ * Formatted currency display with optional color coding.
+ *
+ * @param {number} amount - The amount to display
+ * @param {string} currency - Currency code: IDR, USD
+ * @param {boolean} compact - Use compact notation (e.g., 2.5M)
+ * @param {boolean} showSign - Show +/- sign for positive/negative
+ * @param {string} size - Text size: sm, md, lg, xl
+ * @param {string} variant - Color variant: default, positive, negative, neutral
+ * @param {string} className - Additional CSS classes
+ */
+
+import { formatCurrency } from '@/lib/tokens';
+
+export interface Props {
+  amount: number;
+  currency?: 'IDR' | 'USD';
+  compact?: boolean;
+  showSign?: boolean;
+  size?: 'sm' | 'md' | 'lg' | 'xl';
+  variant?: 'default' | 'positive' | 'negative' | 'neutral';
+  className?: string;
+}
+
+const {
+  amount,
+  currency = 'IDR',
+  compact = false,
+  showSign = false,
+  size = 'md',
+  variant = 'default',
+  className = '',
+} = Astro.props;
+
+const sizeClasses: Record<string, string> = {
+  sm: 'text-sm',
+  md: 'text-base',
+  lg: 'text-lg',
+  xl: 'text-xl',
+};
+
+const variantClasses: Record<string, string> = {
+  default: '',
+  positive: 'text-success',
+  negative: 'text-error',
+  neutral: 'text-neutral-500',
+};
+
+let formattedAmount = formatCurrency(amount, currency, compact);
+
+// Add sign if requested and amount is not zero
+if (showSign && amount !== 0) {
+  const sign = amount > 0 ? '+' : '';
+  formattedAmount = sign + formattedAmount;
+}
+
+const currencyClass = [
+  'font-mono font-medium',
+  sizeClasses[size],
+  variantClasses[variant],
+  className,
+].filter(Boolean).join(' ');
+---
+
+<span class={currencyClass}>{formattedAmount}</span>

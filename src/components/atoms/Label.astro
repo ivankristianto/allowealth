@@ -1,0 +1,37 @@
+---
+/**
+ * Label Component
+ *
+ * Form label with optional required indicator and help text.
+ *
+ * @param {string} htmlFor - ID of the form element this label is for
+ * @param {boolean} required - Show required asterisk
+ * @param {string} helpText - Additional help text displayed below the label
+ * @param {string} className - Additional CSS classes
+ * @param {string} id - Element ID
+ */
+
+export interface Props {
+  htmlFor?: string;
+  required?: boolean;
+  helpText?: string;
+  className?: string;
+  id?: string;
+}
+
+const {
+  htmlFor = '',
+  required = false,
+  helpText = '',
+  className = '',
+  id = '',
+} = Astro.props;
+---
+
+<label id={id} for={htmlFor} class={["label", className].filter(Boolean).join(' ')}>
+  <span class="label-text">
+    <slot />
+    {required && <span class="text-error ml-1" aria-label="required">*</span>}
+  </span>
+  {helpText && <span class="label-text-alt text-neutral-500">{helpText}</span>}
+</label>

@@ -1,0 +1,94 @@
+---
+/**
+ * Input Component
+ *
+ * Form input component with support for text, number, date, and select types.
+ *
+ * @param {string} type - Input type: text, number, email, date, select
+ * @param {string} placeholder - Placeholder text
+ * @param {string} value - Input value
+ * @param {boolean} disabled - Whether the input is disabled
+ * @param {boolean} error - Show error state
+ * @param {string} errorMessage - Error message to display
+ * @param {Array} options - Options for select type
+ * @param {string} className - Additional CSS classes
+ * @param {string} id - Element ID
+ * @param {string} name - Input name
+ */
+
+export interface Props {
+  type?: 'text' | 'number' | 'email' | 'date' | 'select';
+  placeholder?: string;
+  value?: string | number;
+  disabled?: boolean;
+  error?: boolean;
+  errorMessage?: string;
+  options?: Array<{ value: string; label: string }>;
+  className?: string;
+  id?: string;
+  name?: string;
+  min?: string | number;
+  max?: string | number;
+  step?: string | number;
+}
+
+const {
+  type = 'text',
+  placeholder = '',
+  value = '',
+  disabled = false,
+  error = false,
+  errorMessage = '',
+  options = [],
+  className = '',
+  id = '',
+  name = '',
+  min = '',
+  max = '',
+  step = '',
+} = Astro.props;
+
+const inputClasses = [
+  'input input-bordered w-full',
+  error && 'input-error',
+  disabled && 'opacity-50 cursor-not-allowed',
+  className,
+].filter(Boolean).join(' ');
+
+const selectOptions = type === 'select' ? options : [];
+---
+
+{type === 'select' ? (
+  <select
+    id={id}
+    name={name}
+    class={inputClasses}
+    disabled={disabled}
+    class:list={{ 'input-error': error }}
+  >
+    <option value="">{placeholder || 'Select...'}</option>
+    {selectOptions.map((opt) => (
+      <option value={opt.value}>{opt.label}</option>
+    ))}
+  </select>
+) : (
+  <input
+    id={id}
+    name={name}
+    type={type}
+    placeholder={placeholder}
+    value={value}
+    disabled={disabled}
+    class:list={['input input-bordered w-full', error && 'input-error', disabled && 'opacity-50 cursor-not-allowed', className]}
+    min={type === 'number' ? min : undefined}
+    max={type === 'number' ? max : undefined}
+    step={type === 'number' ? step : undefined}
+    aria-invalid={error}
+    aria-describedby={error ? `${id}-error` : undefined}
+  />
+)}
+{error && errorMessage && (
+  <span id={`${id}-error`} class="text-error text-sm mt-1" role="alert">
+    {errorMessage}
+  </span>
+)}

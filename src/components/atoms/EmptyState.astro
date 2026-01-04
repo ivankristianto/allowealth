@@ -1,0 +1,70 @@
+---
+/**
+ * Empty State Component
+ *
+ * Display a message when there's no content to show.
+ *
+ * @param {string} title - Heading text
+ * @param {string} message - Descriptive message
+ * @param {string} icon - Icon name from Icon component
+ * @param {string} actionLabel - Button label
+ * @param {string} actionHref - Link destination (if using link)
+ * @param {string} variant - Visual style: default, compact, centered
+ * @param {string} className - Additional CSS classes
+ */
+
+import Icon from './Icon.astro';
+
+export interface Props {
+  title: string;
+  message: string;
+  icon?: string;
+  actionLabel?: string;
+  actionHref?: string;
+  variant?: 'default' | 'compact' | 'centered';
+  className?: string;
+}
+
+const {
+  title,
+  message,
+  icon = '',
+  actionLabel = '',
+  actionHref = '',
+  variant = 'default',
+  className = '',
+} = Astro.props;
+
+const variantClasses: Record<string, string> = {
+  default: 'text-left',
+  compact: 'text-left py-4',
+  centered: 'text-center',
+};
+
+const containerClasses = [
+  'flex flex-col items-center justify-center',
+  variant === 'centered' ? 'text-center py-12' : 'text-left py-8',
+  className,
+].filter(Boolean).join(' ');
+---
+
+<div class={containerClasses}>
+  {icon && (
+    <div class="mb-4">
+      <Icon name={icon} size="xl" className="text-neutral-400" />
+    </div>
+  )}
+  <h3 class="text-lg font-semibold mb-2">{title}</h3>
+  <p class="text-neutral-500 mb-4 max-w-md">{message}</p>
+  {actionLabel && (
+    <div>
+      {actionHref ? (
+        <a href={actionHref} class="btn btn-primary btn-sm">
+          {actionLabel}
+        </a>
+      ) : (
+        <button class="btn btn-primary btn-sm">{actionLabel}</button>
+      )}
+    </div>
+  )}
+</div>

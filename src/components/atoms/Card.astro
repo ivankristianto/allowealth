@@ -1,0 +1,38 @@
+---
+/**
+ * Card Component
+ *
+ * Container component for grouping related content.
+ *
+ * @param {boolean} bordered - Show border around card
+ * @param {boolean} compact - Use compact padding
+ * @param {boolean} hoverable - Add hover effect
+ * @param {string} className - Additional CSS classes
+ */
+
+export interface Props {
+  bordered?: boolean;
+  compact?: boolean;
+  hoverable?: boolean;
+  className?: string;
+}
+
+const {
+  bordered = true,
+  compact = false,
+  hoverable = false,
+  className = '',
+} = Astro.props;
+
+const cardClasses = [
+  'card bg-base-100',
+  bordered && 'card-bordered',
+  compact ? 'card-compact p-4' : 'p-6',
+  hoverable && 'shadow-xl hover:shadow-2xl transition-shadow duration-200',
+  className,
+].filter(Boolean).join(' ');
+---
+
+<div class={cardClasses}>
+  <slot />
+</div>

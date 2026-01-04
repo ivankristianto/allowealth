@@ -1,0 +1,53 @@
+---
+/**
+ * Badge Component
+ *
+ * Small status indicator badge for alerts and categories.
+ *
+ * @param {string} variant - Badge style: neutral, primary, secondary, success, warning, error, info
+ * @param {string} size - Badge size: sm, md, lg
+ * @param {boolean} outline - Show outline style
+ * @param {string} className - Additional CSS classes
+ */
+
+export interface Props {
+  variant?: 'neutral' | 'primary' | 'secondary' | 'success' | 'warning' | 'error' | 'info';
+  size?: 'sm' | 'md' | 'lg';
+  outline?: boolean;
+  className?: string;
+}
+
+const {
+  variant = 'neutral',
+  size = 'md',
+  outline = false,
+  className = '',
+} = Astro.props;
+
+const variantClasses: Record<string, string> = {
+  neutral: outline ? 'badge-outline' : 'badge-neutral',
+  primary: outline ? 'badge-outline text-primary' : 'badge-primary',
+  secondary: outline ? 'badge-outline text-secondary' : 'badge-secondary',
+  success: outline ? 'badge-outline text-success' : 'badge-success',
+  warning: outline ? 'badge-outline text-warning' : 'badge-warning',
+  error: outline ? 'badge-outline text-error' : 'badge-error',
+  info: outline ? 'badge-outline text-info' : 'badge-info',
+};
+
+const sizeClasses: Record<string, string> = {
+  sm: 'badge-sm text-xs',
+  md: '',
+  lg: 'badge-lg',
+};
+
+const badgeClasses = [
+  'badge',
+  variantClasses[variant],
+  sizeClasses[size],
+  className,
+].filter(Boolean).join(' ');
+---
+
+<span class={badgeClasses}>
+  <slot />
+</span>
