@@ -35,6 +35,9 @@ const { action = '/api/auth/login', method = 'POST', errorMessage = '', email = 
     {errorMessage && <ErrorMessage message={errorMessage} />}
 
     <form action={action} method={method} class="space-y-4">
+      <!-- TODO: Add CSRF token when backend auth is implemented -->
+      <!-- <input type="hidden" name="csrf_token" value={csrfToken} /> -->
+
       <!-- Email Field -->
       <div class="form-control">
         <Label htmlFor="email" required>Email</Label>
@@ -73,3 +76,36 @@ const { action = '/api/auth/login', method = 'POST', errorMessage = '', email = 
     </form>
   </div>
 </div>
+
+<!-- Client-side validation and security enhancements -->
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const form = document.querySelector('form');
+    const emailInput = document.getElementById('email') as HTMLInputElement;
+    const passwordInput = document.querySelector(
+      '[data-password-input][name="password"]'
+    ) as HTMLInputElement;
+    const submitButton = document.querySelector('button[type="submit"]') as HTMLButtonElement;
+
+    if (!form || !emailInput || !passwordInput || !submitButton) return;
+
+    // Add autocomplete attributes for security and UX
+    emailInput.setAttribute('autocomplete', 'email');
+    passwordInput.setAttribute('autocomplete', 'current-password');
+
+    // Add required attributes
+    emailInput.required = true;
+    passwordInput.required = true;
+
+    // Email validation pattern
+    emailInput.pattern = '[a-z0-9._%+-]+@[a-z0-9.-]+\\.[a-z]{2,}$';
+    emailInput.title = 'Please enter a valid email address';
+
+    // Form submission with loading state
+    form.addEventListener('submit', () => {
+      submitButton.disabled = true;
+      submitButton.setAttribute('aria-busy', 'true');
+      submitButton.textContent = 'Signing In...';
+    });
+  });
+</script>

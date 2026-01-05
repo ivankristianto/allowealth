@@ -21,7 +21,8 @@ const errorMessages: Record<string, string> = {
   invalid_email: 'Please enter a valid email address.',
 };
 
-const errorMessage = error ? errorMessages[error] || 'An error occurred. Please try again.' : '';
+// Only use whitelisted error codes to prevent XSS
+const errorMessage = error && errorMessages[error] ? errorMessages[error] : '';
 ---
 
 <AuthLayout title="Finance Manager - Sign Up">
@@ -51,6 +52,9 @@ const errorMessage = error ? errorMessages[error] || 'An error occurred. Please 
       }
 
       <form action="/api/auth/signup" method="POST" class="space-y-4">
+        <!-- TODO: Add CSRF token when backend auth is implemented -->
+        <!-- <input type="hidden" name="csrf_token" value={csrfToken} /> -->
+
         <!-- Name Field -->
         <div class="form-control">
           <Label htmlFor="name" required>Full Name</Label>
@@ -74,7 +78,7 @@ const errorMessage = error ? errorMessages[error] || 'An error occurred. Please 
           <Label htmlFor="password" required>Password</Label>
           <PasswordField id="password" name="password" placeholder="At least 12 characters" />
           <span class="label-text-alt text-base-content/70 mt-1">
-            Must be at least 12 characters long
+            Must be at least 12 characters with uppercase, lowercase, number, and special character
           </span>
         </div>
 
@@ -99,4 +103,74 @@ const errorMessage = error ? errorMessages[error] || 'An error occurred. Please 
       </form>
     </div>
   </div>
+
+  <!-- Client-side validation script -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const form = document.querySelector('form');
+      const nameInput = document.getElementById('name') as HTMLInputElement;
+      const emailInput = document.getElementById('email') as HTMLInputElement;
+      const passwordInput = document.querySelector(
+        '[data-password-input][name="password"]'
+      ) as HTMLInputElement;
+      const confirmPasswordInput = document.querySelector(
+        '[data-password-input][name="confirm_password"]'
+      ) as HTMLInputElement;
+      const submitButton = document.querySelector('button[type="submit"]') as HTMLButtonElement;
+
+      if (!form || !passwordInput || !confirmPasswordInput || !emailInput || !nameInput) return;
+
+      // Add autocomplete attributes
+      nameInput.setAttribute('autocomplete', 'name');
+      emailInput.setAttribute('autocomplete', 'email');
+      passwordInput.setAttribute('autocomplete', 'new-password');
+      confirmPasswordInput.setAttribute('autocomplete', 'new-password');
+
+      // Add required attributes
+      nameInput.required = true;
+      emailInput.required = true;
+      passwordInput.required = true;
+      confirmPasswordInput.required = true;
+
+      // Email validation pattern
+      emailInput.pattern = '[a-z0-9._%+-]+@[a-z0-9.-]+\\.[a-z]{2,}$';
+      emailInput.title = 'Please enter a valid email address';
+
+      // Password validation pattern - at least 12 chars with uppercase, lowercase, number, special char
+      const passwordPattern =
+        '^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{12,}$';
+      passwordInput.pattern = passwordPattern;
+      passwordInput.minLength = 12;
+      passwordInput.title =
+        'Password must be at least 12 characters with uppercase, lowercase, number, and special character';
+
+      // Password confirmation validation
+      const validatePasswordMatch = () => {
+        if (confirmPasswordInput.value && passwordInput.value !== confirmPasswordInput.value) {
+          confirmPasswordInput.setCustomValidity('Passwords do not match');
+        } else {
+          confirmPasswordInput.setCustomValidity('');
+        }
+      };
+
+      confirmPasswordInput.addEventListener('input', validatePasswordMatch);
+      passwordInput.addEventListener('input', validatePasswordMatch);
+
+      // Form submission with loading state
+      form.addEventListener('submit', (e) => {
+        // Validate password match before submission
+        if (passwordInput.value !== confirmPasswordInput.value) {
+          e.preventDefault();
+          confirmPasswordInput.setCustomValidity('Passwords do not match');
+          confirmPasswordInput.reportValidity();
+          return;
+        }
+
+        // Add loading state
+        submitButton.disabled = true;
+        submitButton.setAttribute('aria-busy', 'true');
+        submitButton.textContent = 'Creating Account...';
+      });
+    });
+  </script>
 </AuthLayout>

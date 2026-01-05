@@ -18,7 +18,8 @@ const errorMessages: Record<string, string> = {
   unauthorized: 'You must be logged in to access this page.',
 };
 
-const errorMessage = error ? errorMessages[error] || 'An error occurred. Please try again.' : '';
+// Only use whitelisted error codes to prevent XSS
+const errorMessage = error && errorMessages[error] ? errorMessages[error] : '';
 ---
 
 <AuthLayout title="Finance Manager - Sign In">
