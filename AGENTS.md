@@ -204,3 +204,79 @@ Provide summary to user:
 8. **PR:** Create PR with detailed description
 9. **PR Review**: Invoke subagent code review specialist to review the PR, no code changes, and comment only on the PR.
 10. **Complete:** After merge, run `bd close <id>` and `bd sync`
+
+### Group Task Workflow
+
+**When working on multiple related tasks** (e.g., a feature with multiple components), follow this workflow:
+
+#### 1. Task Organization
+
+- Group tasks by domain or per user instruction
+- Example: "Login screen" might include: form component, validation, API endpoint, auth flow
+
+#### 2. Branch Creation
+
+```bash
+git checkout -b feature/<descriptive-name>
+```
+
+#### 3. Implementation Loop
+
+For each task in the group:
+
+- Implement the task
+- After completion, run quality gates:
+  ```bash
+  bun run typecheck
+  bun run lint
+  bun run format:fix
+  ```
+- Once all checks pass, stage and commit:
+  ```bash
+  git add <files>
+  git commit -m "feat: descriptive message"
+  ```
+- Push to remote:
+  ```bash
+  git push
+  ```
+
+#### 4. Continue Until Session Complete
+
+- Repeat step 3 for all tasks in the group
+- Keep commits atomic and focused
+- Push after each completed task
+
+#### 5. Pull Request Creation
+
+Once all tasks are done:
+
+```bash
+gh pr create --title "feat: <descriptive title>" --body "$(cat <<'EOF'
+## Summary
+- Bullet points of what was implemented
+- Key changes and features
+
+## Test Plan
+- [ ] Quality gates passed (typecheck, lint, format)
+- [ ] Manual testing completed
+- [ ] All tasks in group completed
+EOF
+)"
+```
+
+#### 6. Code Review
+
+- Invoke the **code-review-specialist** agent to review the PR
+- Agent will analyze code quality, security, and maintainability
+- Agent will comment on the PR with findings
+- Agent performs review only (no code changes)
+
+#### 7. Completion Report
+
+Provide summary to user:
+
+- PR link
+- Tasks completed
+- Code review status
+- Any issues or recommendations
