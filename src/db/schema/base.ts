@@ -1,19 +1,7 @@
-import { mysqlTable, sqliteTable } from 'drizzle-orm/mysql-core';
-import { getTableColumns } from 'drizzle-orm';
+import { sqliteTable } from 'drizzle-orm/sqlite-core';
 
 // Re-export common schema utilities
-export { mysqlTable, sqliteTable, getTableColumns } from 'drizzle-orm/mysql-core';
-export {
-  varchar,
-  text,
-  integer,
-  bigint,
-  boolean,
-  date,
-  timestamp,
-  decimal,
-  mysqlEnum,
-  index,
-  unique,
-} from 'drizzle-orm/mysql-core';
+export { sqliteTable } from 'drizzle-orm/sqlite-core';
+export { getTableColumns } from 'drizzle-orm';
+export { text, integer, real, blob, numeric, index, unique } from 'drizzle-orm/sqlite-core';
 export { relations } from 'drizzle-orm';

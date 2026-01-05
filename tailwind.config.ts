@@ -1,5 +1,12 @@
 import type { Config } from 'tailwindcss';
 
+type DaisyUIConfig = Config & {
+  daisyui?: {
+    themes?: unknown[];
+    logs?: boolean;
+  };
+};
+
 export default {
   content: ['./src/**/*.{astro,html,js,jsx,md,mdx,svelte,ts,tsx,vue}'],
   plugins: [require('daisyui'), require('@tailwindcss/typography')],
@@ -21,4 +28,4 @@ export default {
     ],
     logs: false,
   },
-} satisfies Config;
+} satisfies DaisyUIConfig;
