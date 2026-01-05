@@ -132,13 +132,91 @@ import { formatCurrency, colors, fontSizes } from '@/lib/tokens';
 - Database schema and migrations
 - API endpoints for CRUD operations
 
+## Group Task Workflow
+
+**When working on multiple related tasks** (e.g., a feature with multiple components), follow this workflow:
+
+### 1. Task Organization
+
+- Group tasks by domain or per user instruction
+- Example: "Login screen" might include: form component, validation, API endpoint, auth flow
+
+### 2. Branch Creation
+
+```bash
+git checkout -b feature/<descriptive-name>
+```
+
+### 3. Implementation Loop
+
+For each task in the group:
+
+- Implement the task
+- After completion, run quality gates:
+  ```bash
+  bun run typecheck
+  bun run lint
+  bun run format:fix
+  ```
+- Once all checks pass, stage and commit:
+  ```bash
+  git add <files>
+  git commit -m "feat: descriptive message"
+  ```
+- Push to remote:
+  ```bash
+  git push
+  ```
+
+### 4. Continue Until Session Complete
+
+- Repeat step 3 for all tasks in the group
+- Keep commits atomic and focused
+- Push after each completed task
+
+### 5. Pull Request Creation
+
+Once all tasks are done:
+
+```bash
+gh pr create --title "feat: <descriptive title>" --body "$(cat <<'EOF'
+## Summary
+- Bullet points of what was implemented
+- Key changes and features
+
+## Test Plan
+- [ ] Quality gates passed (typecheck, lint, format)
+- [ ] Manual testing completed
+- [ ] All tasks in group completed
+EOF
+)"
+```
+
+### 6. Code Review
+
+- Invoke the **code-review-specialist** agent to review the PR
+- Agent will analyze code quality, security, and maintainability
+- Agent will comment on the PR with findings
+- Agent performs review only (no code changes)
+
+### 7. Completion Report
+
+Provide summary to user:
+
+- PR link
+- Tasks completed
+- Code review status
+- Any issues or recommendations
+
 ## Working on This Project
+
+### Single Task Workflow
 
 1. **Start:** Run `bd ready` to find unblocked work
 2. **Claim:** Run `bd update <id> --status in_progress`
 3. **Branch:** Create feature branch `git checkout -b feature/<name>`
 4. **Code:** Follow component guidelines and use design tokens
-5. **Quality:** Run `bun run lint && bun run format:fix`
+5. **Quality:** Run `bun run typecheck && bun run lint && bun run format:fix`
 6. **Commit:** Commit with clear messages
 7. **Push:** `git push` to feature branch
 8. **PR:** Create PR with detailed description

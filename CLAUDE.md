@@ -47,13 +47,32 @@ bun run format:fix    # Prettier
 
 ## Development Workflow
 
+### Single Task Workflow
+
 1. Run `bd ready` to find available work
 2. Create feature branch: `git checkout -b feature/<name>`
 3. Make changes
 4. Run quality gates: `bun run typecheck && bun run lint && bun run format:fix`
 5. Commit and push
 6. Create PR for review
-7. After merge, close the issue with `bd close <id>`
+7. Run code-review-specialist agent for PR review, Agent comments on PR (review only, no changes)
+8. After merge, close the issue with `bd close <id>`
+
+### Group Task Workflow
+
+For multiple related tasks (see AGENTS.md for full details):
+
+1. Group tasks by domain or per user instruction
+2. Create feature branch: `git checkout -b feature/<name>`
+3. For each task:
+   - Implement
+   - Run quality gates (typecheck, lint, format): `bun run typecheck && bun run lint && bun run format:fix`
+   - Commit and push
+4. Continue until all tasks complete
+5. Create PR with descriptive title and summary
+6. Run code-review-specialist agent for PR review, Agent comments on PR (review only, no changes)
+7. Report completion summary to user.
+8. After merge, close the issue with `bd close <id>`
 
 ## Session Completion Protocol
 
