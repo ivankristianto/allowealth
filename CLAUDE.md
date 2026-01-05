@@ -47,6 +47,8 @@ bun run format:fix    # Prettier
 
 ## Development Workflow
 
+**ALWAYS FOLLOW THIS WORKFLOW**
+
 ### Single Task Workflow
 
 1. Run `bd ready` to find available work
@@ -54,7 +56,7 @@ bun run format:fix    # Prettier
 3. Make changes
 4. Run quality gates: `bun run typecheck && bun run lint && bun run format:fix`
 5. Commit and push
-6. Create PR for review
+6. Create PR for review follow the GitHub Pull Request Template
 7. Run code-review-specialist agent for PR review, Agent comments on PR (review only, no changes)
 8. After merge, close the issue with `bd close <id>`
 
@@ -69,7 +71,7 @@ For multiple related tasks (see AGENTS.md for full details):
    - Run quality gates (typecheck, lint, format): `bun run typecheck && bun run lint && bun run format:fix`
    - Commit and push
 4. Continue until all tasks complete
-5. Create PR with descriptive title and summary
+5. Create PR with descriptive title and summary, follow the GitHub Pull Request Template
 6. Run code-review-specialist agent for PR review, Agent comments on PR (review only, no changes)
 7. Report completion summary to user.
 8. After merge, close the issue with `bd close <id>`
