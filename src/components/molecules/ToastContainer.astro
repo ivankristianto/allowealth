@@ -22,14 +22,24 @@
 
     const toast = document.createElement('div');
     toast.className = `alert shadow-lg alert-${type}`;
-    toast.innerHTML = `
-      <span>${message}</span>
-      <button class="btn btn-sm btn-ghost" onclick="this.parentElement.remove()">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-        </svg>
-      </button>
+
+    // Use textContent instead of innerHTML for message to prevent XSS
+    const messageSpan = document.createElement('span');
+    messageSpan.textContent = message; // Automatically escapes HTML
+
+    const closeButton = document.createElement('button');
+    closeButton.className = 'btn btn-sm btn-ghost';
+    closeButton.setAttribute('aria-label', 'Close toast');
+    closeButton.innerHTML = `
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+      </svg>
     `;
+    closeButton.onclick = () => toast.remove();
+
+    toast.appendChild(messageSpan);
+    toast.appendChild(closeButton);
+
     toast.style.animation = 'slideIn 0.3s ease-out';
     container.appendChild(toast);
 
