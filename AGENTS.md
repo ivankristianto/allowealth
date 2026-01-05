@@ -114,24 +114,6 @@ Always import and use design tokens from `@/lib/tokens`:
 import { formatCurrency, colors, fontSizes } from '@/lib/tokens';
 ```
 
-## Current Progress (Phase 0)
-
-### ✅ Completed
-
-- Project initialization (Bun + Astro + Tailwind v4 + DaisyUI)
-- Design tokens system
-- 12 Atomic components with Storybook
-- Layout components (MainLayout, Navigation, Header, Footer)
-- Modal and Toast molecules
-- Routing structure with 16 page stubs
-
-### 🚧 In Progress / Next
-
-- Code quality tools integration
-- Login screen and authentication
-- Database schema and migrations
-- API endpoints for CRUD operations
-
 ## Group Task Workflow
 
 **When working on multiple related tasks** (e.g., a feature with multiple components), follow this workflow:
