@@ -16,43 +16,6 @@ bd sync               # Sync with git remote
 bd stats              # Project health overview
 ```
 
-## Pre-Commit Quality Gates
-
-**Before committing ANY code**, you MUST run:
-
-```bash
-bun run typecheck     # TypeScript type checking
-bun run lint          # ESLint check
-bun run format:fix    # Prettier auto-format
-```
-
-## Landing the Plane (Session Completion)
-
-**When ending a work session**, you MUST complete ALL steps below. Work is NOT complete until `git push` succeeds.
-
-**MANDATORY WORKFLOW:**
-
-1. **File issues for remaining work** - Create issues for anything that needs follow-up
-2. **Run quality gates** - `bun run typecheck && bun run lint && bun run format:fix`
-3. **Update issue status** - Close finished work, update in-progress items
-4. **PUSH TO REMOTE** - This is MANDATORY:
-   ```bash
-   git pull --rebase
-   bd sync
-   git push
-   git status  # MUST show "up to date with origin"
-   ```
-5. **Clean up** - Clear stashes, prune remote branches
-6. **Verify** - All changes committed AND pushed
-7. **Hand off** - Provide context for next session
-
-**CRITICAL RULES:**
-
-- Work is NOT complete until `git push` succeeds
-- NEVER stop before pushing - that leaves work stranded locally
-- NEVER say "ready to push when you are" - YOU must push
-- If push fails, resolve and retry until it succeeds
-
 ## Tech Stack
 
 - **Runtime:** Bun 1.x
@@ -113,6 +76,43 @@ Always import and use design tokens from `@/lib/tokens`:
 ```typescript
 import { formatCurrency, colors, fontSizes } from '@/lib/tokens';
 ```
+
+## Pre-Commit Quality Gates
+
+**Before committing ANY code**, you MUST run:
+
+```bash
+bun run typecheck     # TypeScript type checking
+bun run lint          # ESLint check
+bun run format:fix    # Prettier auto-format
+```
+
+## Landing the Plane (Session Completion)
+
+**When ending a work session**, you MUST complete ALL steps below. Work is NOT complete until `git push` succeeds.
+
+**MANDATORY WORKFLOW:**
+
+1. **File issues for remaining work** - Create issues for anything that needs follow-up
+2. **Run quality gates** - `bun run typecheck && bun run lint && bun run format:fix`
+3. **Update issue status** - Close finished work, update in-progress items
+4. **PUSH TO REMOTE** - This is MANDATORY:
+   ```bash
+   git pull --rebase
+   bd sync
+   git push
+   git status  # MUST show "up to date with origin"
+   ```
+5. **Clean up** - Clear stashes, prune remote branches
+6. **Verify** - All changes committed AND pushed
+7. **Hand off** - Provide context for next session
+
+**CRITICAL RULES:**
+
+- Work is NOT complete until `git push` succeeds
+- NEVER stop before pushing - that leaves work stranded locally
+- NEVER say "ready to push when you are" - YOU must push
+- If push fails, resolve and retry until it succeeds
 
 ## Group Task Workflow
 
@@ -202,4 +202,5 @@ Provide summary to user:
 6. **Commit:** Commit with clear messages
 7. **Push:** `git push` to feature branch
 8. **PR:** Create PR with detailed description
-9. **Complete:** After merge, run `bd close <id>` and `bd sync`
+9. **PR Review**: Invoke subagent code review specialist to review the PR, no code changes, and comment only on the PR.
+10. **Complete:** After merge, run `bd close <id>` and `bd sync`
