@@ -40,6 +40,7 @@ bd sync               # Sync with git remote
 **Before committing ANY code**, always run:
 
 ```bash
+bun run typecheck     # TypeScript type checking
 bun run lint          # ESLint
 bun run format:fix    # Prettier
 ```
@@ -49,7 +50,7 @@ bun run format:fix    # Prettier
 1. Run `bd ready` to find available work
 2. Create feature branch: `git checkout -b feature/<name>`
 3. Make changes
-4. Run quality gates: `bun run lint && bun run format:fix`
+4. Run quality gates: `bun run typecheck && bun run lint && bun run format:fix`
 5. Commit and push
 6. Create PR for review
 7. After merge, close the issue with `bd close <id>`
@@ -61,6 +62,7 @@ When ending a work session, complete ALL steps - work is NOT done until pushed:
 1. File issues for remaining work (`bd create`)
 2. Run quality gates if code changed:
    ```bash
+   bun run typecheck
    bun run lint
    bun run format:fix
    ```

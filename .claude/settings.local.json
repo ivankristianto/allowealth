@@ -11,7 +11,8 @@
       "Bash(bd show:*)",
       "Bash(bd update:*)",
       "Bash(bun add:*)",
-      "Bash(bun run format:fix)"
+      "Bash(bun run format:fix)",
+      "Bash(bd stats:*)"
     ]
   }
 }
