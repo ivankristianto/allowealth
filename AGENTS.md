@@ -34,7 +34,7 @@ Type checking is handled automatically by Astro.
 **MANDATORY WORKFLOW:**
 
 1. **File issues for remaining work** - Create issues for anything that needs follow-up
-2. **Run quality gates** - `bun run lint && bun run format:fix`
+2. **Run quality gates** - `bun run lint && bun run stylelint && bun run format:fix`
 3. **Update issue status** - Close finished work, update in-progress items
 4. **PUSH TO REMOTE** - This is MANDATORY:
    ```bash
