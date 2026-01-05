@@ -153,13 +153,18 @@ import { formatCurrency, formatPercentage, colors, getBudgetStatusClass } from '
 
 ## Current Status
 
-**Phase 0: Design System & Setup** (in progress)
+**Phase 0: Design System & Setup** ✅ Complete
 
 - ✅ Project initialization
 - ✅ Design tokens system
 - ✅ 12 Atomic components with Storybook
 - ✅ Layout components (MainLayout, Navigation, Header, Footer, Modal, Toast)
 - ✅ Routing with 16 page stubs
-- 🚧 Login screen (next)
-- 📋 Database schema (pending)
-- 📋 API endpoints (pending)
+- ✅ Login screen UI (LoginForm, PasswordField, Checkbox, AuthLayout)
+- ✅ Database schema (Drizzle ORM)
+
+**Phase 1: Authentication & API** (in progress)
+
+- 🚧 Authentication backend (Lucia Auth, API endpoints, session middleware)
+- 📋 API endpoints implementation
+- 📋 OpenAPI specification
