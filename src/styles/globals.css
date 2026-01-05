@@ -1,6 +1,14 @@
 @import 'tailwindcss';
 @import './tokens.css';
 
+@plugin "daisyui" {
+  themes:
+    light --default,
+    dark --prefersdark;
+}
+
+@plugin "@tailwindcss/typography";
+
 /* ========================================
    GLOBAL STYLES AND RESETS
    ======================================== */
