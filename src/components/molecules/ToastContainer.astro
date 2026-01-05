@@ -10,13 +10,13 @@
 
 <div id="toast-container" class="toast toast-end toast-top z-50"></div>
 
-<script is:inline>
+<script>
   // Global toast function
   function showToast(
     message: string,
     type: 'success' | 'error' | 'warning' | 'info' = 'info',
     duration: number = 5000
-  ) {
+  ): HTMLDivElement | undefined {
     const container = document.getElementById('toast-container');
     if (!container) return;
 
@@ -44,7 +44,12 @@
   }
 
   // Make available globally
-  (window as any).showToast = showToast;
+  declare global {
+    interface Window {
+      showToast: typeof showToast;
+    }
+  }
+  window.showToast = showToast;
 </script>
 
 <style>
