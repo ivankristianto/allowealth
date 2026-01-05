@@ -24,9 +24,12 @@
   },
   "dependencies": {
     "@astrojs/node": "^9.5.1",
+    "@lucia-auth/adapter-drizzle": "^1.1.0",
     "astro": "^5.16.6",
     "daisyui": "^5.5.14",
     "drizzle-orm": "^0.45.1",
+    "lucia": "^3.2.2",
+    "oslo": "^1.2.1",
     "tailwindcss": "^4.1.18"
   },
   "devDependencies": {

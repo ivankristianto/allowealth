@@ -1,0 +1,51 @@
+---
+/**
+ * Checkbox Component
+ *
+ * Styled checkbox input with label.
+ *
+ * @param {string} id - Element ID
+ * @param {string} name - Input name
+ * @param {boolean} checked - Whether the checkbox is checked
+ * @param {boolean} disabled - Whether the checkbox is disabled
+ * @param {string} className - Additional CSS classes
+ * @param {string} value - Checkbox value
+ */
+
+export interface Props {
+  id?: string;
+  name?: string;
+  checked?: boolean;
+  disabled?: boolean;
+  className?: string;
+  value?: string;
+}
+
+const {
+  id = '',
+  name = '',
+  checked = false,
+  disabled = false,
+  className = '',
+  value = '',
+} = Astro.props;
+
+const uniqueId = id || `checkbox-${Math.random().toString(36).substring(2, 9)}`;
+---
+
+<div class={['form-control', className].filter(Boolean).join(' ')}>
+  <label class="label cursor-pointer justify-start gap-2">
+    <input
+      type="checkbox"
+      id={uniqueId}
+      name={name}
+      value={value}
+      checked={checked}
+      disabled={disabled}
+      class="checkbox checkbox-primary"
+    />
+    <span class="label-text">
+      <slot />
+    </span>
+  </label>
+</div>

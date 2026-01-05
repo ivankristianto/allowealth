@@ -1,0 +1,26 @@
+---
+/**
+ * Login Page
+ *
+ * User authentication page for signing in to the Finance Manager application.
+ */
+
+import AuthLayout from '../layouts/AuthLayout.astro';
+import LoginForm from '../components/molecules/LoginForm.astro';
+
+// Get error message from query params (if any)
+const url = new URL(Astro.request.url);
+const error = url.searchParams.get('error');
+
+const errorMessages: Record<string, string> = {
+  invalid_credentials: 'Invalid email or password. Please try again.',
+  session_expired: 'Your session has expired. Please sign in again.',
+  unauthorized: 'You must be logged in to access this page.',
+};
+
+const errorMessage = error ? errorMessages[error] || 'An error occurred. Please try again.' : '';
+---
+
+<AuthLayout title="Finance Manager - Sign In">
+  <LoginForm errorMessage={errorMessage} />
+</AuthLayout>

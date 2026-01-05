@@ -83,7 +83,7 @@ const createCurrency = (args: {
     neutral: 'text-neutral-500',
   };
 
-  let formatted = formatCurrency(amount as 'IDR' | 'USD', currency as 'IDR' | 'USD', compact);
+  let formatted = formatCurrency(amount, currency as 'IDR' | 'USD', compact);
 
   if (showSign && amount !== 0) {
     formatted = (amount > 0 ? '+' : '') + formatted;
