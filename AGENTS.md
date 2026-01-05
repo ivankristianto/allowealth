@@ -87,34 +87,9 @@ bun run lint          # ESLint check
 bun run format:fix    # Prettier auto-format
 ```
 
-## Landing the Plane (Session Completion)
-
-**When ending a work session**, you MUST complete ALL steps below. Work is NOT complete until `git push` succeeds.
-
-**MANDATORY WORKFLOW:**
-
-1. **File issues for remaining work** - Create issues for anything that needs follow-up
-2. **Run quality gates** - `bun run typecheck && bun run lint && bun run format:fix`
-3. **Update issue status** - Close finished work, update in-progress items
-4. **PUSH TO REMOTE** - This is MANDATORY:
-   ```bash
-   git pull --rebase
-   bd sync
-   git push
-   git status  # MUST show "up to date with origin"
-   ```
-5. **Clean up** - Clear stashes, prune remote branches
-6. **Verify** - All changes committed AND pushed
-7. **Hand off** - Provide context for next session
-
-**CRITICAL RULES:**
-
-- Work is NOT complete until `git push` succeeds
-- NEVER stop before pushing - that leaves work stranded locally
-- NEVER say "ready to push when you are" - YOU must push
-- If push fails, resolve and retry until it succeeds
-
 ## Working on This Project
+
+**ALWAYS FOLLOW THIS WORKFLOW**
 
 ### Single Task Workflow
 
@@ -173,21 +148,7 @@ For each task in the group:
 
 #### 5. Pull Request Creation
 
-Once all tasks are done:
-
-```bash
-gh pr create --title "feat: <descriptive title>" --body "$(cat <<'EOF'
-## Summary
-- Bullet points of what was implemented
-- Key changes and features
-
-## Test Plan
-- [ ] Quality gates passed (typecheck, lint, format)
-- [ ] Manual testing completed
-- [ ] All tasks in group completed
-EOF
-)"
-```
+Create GitHub Pull Request, follow the GitHub Pull Request template.
 
 #### 6. Code Review
 
@@ -195,6 +156,7 @@ EOF
 - Agent will analyze code quality, security, and maintainability
 - Agent will comment on the PR with findings
 - Agent performs review only (no code changes)
+- Check Pull Request checklist once done
 
 #### 7. Completion Report
 
@@ -204,3 +166,30 @@ Provide summary to user:
 - Tasks completed
 - Code review status
 - Any issues or recommendations
+
+## Landing the Plane (Session Completion)
+
+**When ending a work session**, you MUST complete ALL steps below. Work is NOT complete until `git push` succeeds.
+
+**MANDATORY WORKFLOW:**
+
+1. **File issues for remaining work** - Create issues for anything that needs follow-up
+2. **Run quality gates** - `bun run typecheck && bun run lint && bun run format:fix`
+3. **Update issue status** - Close finished work, update in-progress items
+4. **PUSH TO REMOTE** - This is MANDATORY:
+   ```bash
+   git pull --rebase
+   bd sync
+   git push
+   git status  # MUST show "up to date with origin"
+   ```
+5. **Clean up** - Clear stashes, prune remote branches
+6. **Verify** - All changes committed AND pushed
+7. **Hand off** - Provide context for next session
+
+**CRITICAL RULES:**
+
+- Work is NOT complete until `git push` succeeds
+- NEVER stop before pushing - that leaves work stranded locally
+- NEVER say "ready to push when you are" - YOU must push
+- If push fails, resolve and retry until it succeeds
