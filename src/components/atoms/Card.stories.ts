@@ -168,8 +168,8 @@ export const BudgetCard: StoryObj = {
 
     const progress = document.createElement('progress');
     progress.className = 'progress progress-primary w-full mt-4';
-    progress.value = '50';
-    progress.max = '100';
+    progress.value = 50;
+    progress.max = 100;
 
     card.appendChild(header);
     card.appendChild(stats);

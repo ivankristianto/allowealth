@@ -1,0 +1,176 @@
+---
+/**
+ * Signup Page
+ *
+ * User registration page for creating a new account in the Finance Manager application.
+ */
+
+import AuthLayout from '../layouts/AuthLayout.astro';
+import Input from '../components/atoms/Input.astro';
+import PasswordField from '../components/atoms/PasswordField.astro';
+import Label from '../components/atoms/Label.astro';
+import Button from '../components/atoms/Button.astro';
+
+// Get error message from query params (if any)
+const url = new URL(Astro.request.url);
+const error = url.searchParams.get('error');
+
+const errorMessages: Record<string, string> = {
+  email_exists: 'An account with this email already exists.',
+  weak_password: 'Password must be at least 12 characters long.',
+  invalid_email: 'Please enter a valid email address.',
+};
+
+// Only use whitelisted error codes to prevent XSS
+const errorMessage = error && errorMessages[error] ? errorMessages[error] : '';
+---
+
+<AuthLayout title="Finance Manager - Sign Up">
+  <div class="card bg-base-100 shadow-xl">
+    <div class="card-body">
+      <h2 class="card-title text-2xl font-bold mb-4">Create Account</h2>
+
+      {
+        errorMessage && (
+          <div class="alert alert-error mb-4">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="stroke-current shrink-0 h-6 w-6"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <span>{errorMessage}</span>
+          </div>
+        )
+      }
+
+      <form action="/api/auth/signup" method="POST" class="space-y-4">
+        <!-- TODO: Add CSRF token when backend auth is implemented -->
+        <!-- <input type="hidden" name="csrf_token" value={csrfToken} /> -->
+
+        <!-- Name Field -->
+        <div class="form-control">
+          <Label htmlFor="name" required>Full Name</Label>
+          <Input type="text" id="name" name="name" placeholder="John Doe" className="w-full" />
+        </div>
+
+        <!-- Email Field -->
+        <div class="form-control">
+          <Label htmlFor="email" required>Email</Label>
+          <Input
+            type="email"
+            id="email"
+            name="email"
+            placeholder="you@example.com"
+            className="w-full"
+          />
+        </div>
+
+        <!-- Password Field -->
+        <div class="form-control">
+          <Label htmlFor="password" required>Password</Label>
+          <PasswordField id="password" name="password" placeholder="At least 12 characters" />
+          <span class="label-text-alt text-base-content/70 mt-1">
+            Must be at least 12 characters with uppercase, lowercase, number, and special character
+          </span>
+        </div>
+
+        <!-- Confirm Password Field -->
+        <div class="form-control">
+          <Label htmlFor="confirm-password" required>Confirm Password</Label>
+          <PasswordField
+            id="confirm-password"
+            name="confirm_password"
+            placeholder="Re-enter your password"
+          />
+        </div>
+
+        <!-- Submit Button -->
+        <Button type="submit" variant="primary" className="w-full">Create Account</Button>
+
+        <!-- Sign In Link -->
+        <div class="text-center text-sm">
+          Already have an account?
+          <a href="/login" class="text-primary hover:underline font-medium ml-1">Sign in</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Client-side validation script -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const form = document.querySelector('form');
+      const nameInput = document.getElementById('name') as HTMLInputElement;
+      const emailInput = document.getElementById('email') as HTMLInputElement;
+      const passwordInput = document.querySelector(
+        '[data-password-input][name="password"]'
+      ) as HTMLInputElement;
+      const confirmPasswordInput = document.querySelector(
+        '[data-password-input][name="confirm_password"]'
+      ) as HTMLInputElement;
+      const submitButton = document.querySelector('button[type="submit"]') as HTMLButtonElement;
+
+      if (!form || !passwordInput || !confirmPasswordInput || !emailInput || !nameInput) return;
+
+      // Add autocomplete attributes
+      nameInput.setAttribute('autocomplete', 'name');
+      emailInput.setAttribute('autocomplete', 'email');
+      passwordInput.setAttribute('autocomplete', 'new-password');
+      confirmPasswordInput.setAttribute('autocomplete', 'new-password');
+
+      // Add required attributes
+      nameInput.required = true;
+      emailInput.required = true;
+      passwordInput.required = true;
+      confirmPasswordInput.required = true;
+
+      // Email validation pattern
+      emailInput.pattern = '[a-z0-9._%+-]+@[a-z0-9.-]+\\.[a-z]{2,}$';
+      emailInput.title = 'Please enter a valid email address';
+
+      // Password validation pattern - at least 12 chars with uppercase, lowercase, number, special char
+      const passwordPattern =
+        '^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{12,}$';
+      passwordInput.pattern = passwordPattern;
+      passwordInput.minLength = 12;
+      passwordInput.title =
+        'Password must be at least 12 characters with uppercase, lowercase, number, and special character';
+
+      // Password confirmation validation
+      const validatePasswordMatch = () => {
+        if (confirmPasswordInput.value && passwordInput.value !== confirmPasswordInput.value) {
+          confirmPasswordInput.setCustomValidity('Passwords do not match');
+        } else {
+          confirmPasswordInput.setCustomValidity('');
+        }
+      };
+
+      confirmPasswordInput.addEventListener('input', validatePasswordMatch);
+      passwordInput.addEventListener('input', validatePasswordMatch);
+
+      // Form submission with loading state
+      form.addEventListener('submit', (e) => {
+        // Validate password match before submission
+        if (passwordInput.value !== confirmPasswordInput.value) {
+          e.preventDefault();
+          confirmPasswordInput.setCustomValidity('Passwords do not match');
+          confirmPasswordInput.reportValidity();
+          return;
+        }
+
+        // Add loading state
+        submitButton.disabled = true;
+        submitButton.setAttribute('aria-busy', 'true');
+        submitButton.textContent = 'Creating Account...';
+      });
+    });
+  </script>
+</AuthLayout>

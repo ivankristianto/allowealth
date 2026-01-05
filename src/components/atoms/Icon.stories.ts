@@ -34,7 +34,7 @@ const meta: Meta = {
 
 export default meta;
 
-const createIcon = (args: { name?: string; size?: string }): HTMLElement => {
+const createIcon = (args: { name?: string; size?: string }): SVGSVGElement => {
   const { name = 'check', size = 'md' } = args;
 
   const sizeClasses: Record<string, string> = {
@@ -112,10 +112,11 @@ const createIcon = (args: { name?: string; size?: string }): HTMLElement => {
     },
   };
 
-  const icon = icons[name] || icons['information'];
+  const icon = icons[name] || icons['information']!;
+  const sizeClass = sizeClasses[size] || sizeClasses['md']!;
 
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  svg.setAttribute('class', sizeClasses[size]);
+  svg.setAttribute('class', sizeClass);
   svg.setAttribute('viewBox', icon.viewBox);
   svg.setAttribute('fill', 'currentColor');
   svg.setAttribute('aria-hidden', 'true');
