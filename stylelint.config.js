@@ -5,7 +5,7 @@ export default {
     'at-rule-no-unknown': [
       true,
       {
-        ignoreAtRules: ['tailwind', 'apply', 'layer', 'import', 'theme', 'source'],
+        ignoreAtRules: ['tailwind', 'apply', 'layer', 'import', 'theme', 'source', 'plugin'],
       },
     ],
     // Allow custom class names
