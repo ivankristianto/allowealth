@@ -68,7 +68,18 @@ src/
 └── styles/
     ├── globals.css       # Global styles
     └── tokens.css        # CSS custom properties
+
+openapi.yml               # OpenAPI specification for all API endpoints
 ```
+
+## API Documentation
+
+The project uses **OpenAPI 3.1.0** for API documentation.
+
+- **Specification file:** `openapi.yml`
+- **Purpose:** Document all API endpoints, request/response schemas, and authentication
+
+**IMPORTANT:** Whenever you modify or add API endpoints, you MUST update `openapi.yml` to reflect the changes. This ensures the API documentation stays in sync with the implementation.
 
 ## Component Guidelines
 

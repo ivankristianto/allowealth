@@ -1,0 +1,1473 @@
+openapi: 3.1.0
+info:
+  title: Expenses API
+  description: |
+    Personal and family financial application API for expense tracking, budgeting,
+    asset management, and financial forecasting.
+
+    **Authentication:**
+    All endpoints require session-based authentication. The session token should be
+    included in HTTP-only cookies.
+
+    **Response Format:**
+    All responses follow a standard format:
+    ```json
+    {
+      "success": true|false,
+      "data": { ... },    // On success
+      "error": {          // On error
+        "message": "Error description",
+        "code": "ERROR_CODE",
+        "details": { ... }
+      }
+    }
+    ```
+
+    **Note:** This OpenAPI specification must be updated whenever API changes are made.
+    See AGENTS.md for workflow guidelines.
+  version: 1.0.0
+  contact:
+    name: Ivan
+    email: ivan@example.com
+
+servers:
+  - url: http://localhost:4321
+    description: Local development server
+  - url: https://expenses.example.com
+    description: Production server
+
+tags:
+  - name: Transactions
+    description: Transaction management (income and expenses)
+  - name: Categories
+    description: Category management for budgeting
+  - name: Payment Methods
+    description: Payment method management
+  - name: Assets
+    description: Asset tracking and management
+  - name: Budget
+    description: Budget overview and alerts
+
+paths:
+  /api/transactions:
+    get:
+      tags: [Transactions]
+      summary: List all transactions
+      description: Retrieve paginated list of transactions with optional filters
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: type
+          in: query
+          description: Filter by transaction type
+          schema:
+            type: string
+            enum: [expense, income]
+        - name: category_id
+          in: query
+          description: Filter by category ID
+          schema:
+            type: string
+        - name: payment_method_id
+          in: query
+          description: Filter by payment method ID
+          schema:
+            type: string
+        - name: currency
+          in: query
+          description: Filter by currency
+          schema:
+            type: string
+            enum: [IDR, USD]
+        - name: start_date
+          in: query
+          description: Filter by start date (ISO 8601)
+          schema:
+            type: string
+            format: date
+        - name: end_date
+          in: query
+          description: Filter by end date (ISO 8601)
+          schema:
+            type: string
+            format: date
+        - name: limit
+          in: query
+          description: Number of results per page (1-100)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+        - name: offset
+          in: query
+          description: Number of results to skip
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionsListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      tags: [Transactions]
+      summary: Create a new transaction
+      description: Create a new income or expense transaction
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTransactionRequest'
+      responses:
+        '201':
+          description: Transaction created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/transactions/{id}:
+    get:
+      tags: [Transactions]
+      summary: Get a transaction by ID
+      description: Retrieve a single transaction by its ID
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdParameter'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    put:
+      tags: [Transactions]
+      summary: Update a transaction
+      description: Update an existing transaction (all fields optional)
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdParameter'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTransactionRequest'
+      responses:
+        '200':
+          description: Transaction updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      tags: [Transactions]
+      summary: Delete a transaction
+      description: Soft delete a transaction (marks as deleted, doesn't remove record)
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdParameter'
+      responses:
+        '200':
+          description: Transaction deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        example: Transaction deleted successfully
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/categories:
+    get:
+      tags: [Categories]
+      summary: List all categories
+      description: Retrieve all categories for the authenticated user
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: type
+          in: query
+          description: Filter by category type
+          schema:
+            type: string
+            enum: [expense, income]
+        - name: is_active
+          in: query
+          description: Filter by active status
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoriesListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      tags: [Categories]
+      summary: Create a new category
+      description: Create a new expense or income category
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCategoryRequest'
+      responses:
+        '201':
+          description: Category created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          description: Category with this name already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/categories/{id}:
+    get:
+      tags: [Categories]
+      summary: Get a category by ID
+      description: Retrieve a single category by its ID
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdParameter'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    put:
+      tags: [Categories]
+      summary: Update a category
+      description: Update an existing category
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdParameter'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCategoryRequest'
+      responses:
+        '200':
+          description: Category updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Category with this name already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      tags: [Categories]
+      summary: Delete a category
+      description: Soft delete a category (marks as inactive)
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdParameter'
+      responses:
+        '200':
+          description: Category deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        example: Category deleted successfully
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/payment-methods:
+    get:
+      tags: [Payment Methods]
+      summary: List all payment methods
+      description: Retrieve all payment methods for the authenticated user
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: is_active
+          in: query
+          description: Filter by active status
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentMethodsListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      tags: [Payment Methods]
+      summary: Create a new payment method
+      description: Create a new payment method
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePaymentMethodRequest'
+      responses:
+        '201':
+          description: Payment method created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentMethodResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/payment-methods/{id}:
+    get:
+      tags: [Payment Methods]
+      summary: Get a payment method by ID
+      description: Retrieve a single payment method by its ID
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdParameter'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentMethodResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    put:
+      tags: [Payment Methods]
+      summary: Update a payment method
+      description: Update an existing payment method
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdParameter'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePaymentMethodRequest'
+      responses:
+        '200':
+          description: Payment method updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentMethodResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      tags: [Payment Methods]
+      summary: Delete a payment method
+      description: Soft delete a payment method (marks as inactive)
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdParameter'
+      responses:
+        '200':
+          description: Payment method deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        example: Payment method deleted successfully
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/assets:
+    get:
+      tags: [Assets]
+      summary: List all assets
+      description: Retrieve all assets for the authenticated user
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: type
+          in: query
+          description: Filter by asset type
+          schema:
+            type: string
+            enum: [bank_account, mutual_fund, bond, crypto, stock, other]
+        - name: currency
+          in: query
+          description: Filter by currency
+          schema:
+            type: string
+            enum: [IDR, USD]
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssetsListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      tags: [Assets]
+      summary: Create a new asset
+      description: Create a new asset
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAssetRequest'
+      responses:
+        '201':
+          description: Asset created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssetResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/assets/{id}:
+    get:
+      tags: [Assets]
+      summary: Get an asset by ID
+      description: Retrieve a single asset by its ID
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdParameter'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssetResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    put:
+      tags: [Assets]
+      summary: Update an asset
+      description: Update an existing asset (name, type, or currency)
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdParameter'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAssetRequest'
+      responses:
+        '200':
+          description: Asset updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssetResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      tags: [Assets]
+      summary: Delete an asset
+      description: Soft delete an asset
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdParameter'
+      responses:
+        '200':
+          description: Asset deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        example: Asset deleted successfully
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/assets/{id}/balance:
+    post:
+      tags: [Assets]
+      summary: Update asset balance
+      description: Update an asset's balance (creates history entry)
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdParameter'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAssetBalanceRequest'
+      responses:
+        '200':
+          description: Asset balance updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssetResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/assets/{id}/history:
+    get:
+      tags: [Assets]
+      summary: Get asset balance history
+      description: Retrieve balance history for an asset
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdParameter'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssetHistoryListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Asset not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/assets/summary:
+    get:
+      tags: [Assets]
+      summary: Get asset summary
+      description: Retrieve totals by currency and by type
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssetSummaryResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/budget/overview:
+    get:
+      tags: [Budget]
+      summary: Get budget overview
+      description: Retrieve budget overview for a specific month
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: year
+          in: query
+          description: Year (defaults to current year)
+          schema:
+            type: integer
+            minimum: 2000
+            maximum: 2100
+        - name: month
+          in: query
+          description: Month (1-12, defaults to current month)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 12
+        - name: currency
+          in: query
+          description: Currency (defaults to IDR)
+          schema:
+            type: string
+            enum: [IDR, USD]
+            default: IDR
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BudgetOverviewResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/budget/alerts:
+    get:
+      tags: [Budget]
+      summary: Get budget alerts
+      description: Retrieve budget alerts for the current month
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: currency
+          in: query
+          description: Currency (defaults to IDR)
+          schema:
+            type: string
+            enum: [IDR, USD]
+            default: IDR
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BudgetAlertsResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/budget/category/{id}/remaining:
+    get:
+      tags: [Budget]
+      summary: Get category remaining budget
+      description: Retrieve remaining budget for a specific category in current month
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdParameter'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryRemainingResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Category not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  securitySchemes:
+    sessionAuth:
+      type: apiKey
+      in: cookie
+      name: sid
+      description: Session-based authentication using HTTP-only cookies
+
+  parameters:
+    IdParameter:
+      name: id
+      in: path
+      required: true
+      description: Resource ID (UUID)
+      schema:
+        type: string
+        format: uuid
+
+  responses:
+    BadRequest:
+      description: Bad request - validation error or invalid input
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthorized:
+      description: Unauthorized - authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+  schemas:
+    ApiResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          description: Response data (present on success)
+        error:
+          type: object
+          description: Error details (present on failure)
+          properties:
+            message:
+              type: string
+            code:
+              type: string
+            details:
+              type: object
+
+    ErrorResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          required: [success, error]
+          properties:
+            success:
+              type: boolean
+              example: false
+            error:
+              type: object
+              required: [message]
+              properties:
+                message:
+                  type: string
+                code:
+                  type: string
+                details:
+                  type: object
+
+    # Transaction Schemas
+    Transaction:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [expense, income]
+        amount:
+          type: string
+          pattern: '^\d+(\.\d{1,2})?$'
+          description: Amount as string (decimal with up to 2 decimal places)
+        currency:
+          type: string
+          enum: [IDR, USD]
+        category_id:
+          type: string
+          format: uuid
+        payment_method_id:
+          type: string
+          format: uuid
+        transaction_date:
+          type: string
+          format: date-time
+        description:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    CreateTransactionRequest:
+      type: object
+      required: [type, amount, currency, category_id, payment_method_id, transaction_date]
+      properties:
+        type:
+          type: string
+          enum: [expense, income]
+        amount:
+          type: string
+          pattern: '^\d+(\.\d{1,2})?$'
+          description: Amount as string (decimal with up to 2 decimal places)
+        currency:
+          type: string
+          enum: [IDR, USD]
+        category_id:
+          type: string
+          format: uuid
+        payment_method_id:
+          type: string
+          format: uuid
+        transaction_date:
+          type: string
+          format: date-time
+        description:
+          type: string
+
+    UpdateTransactionRequest:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [expense, income]
+        amount:
+          type: string
+          pattern: '^\d+(\.\d{1,2})?$'
+        currency:
+          type: string
+          enum: [IDR, USD]
+        category_id:
+          type: string
+          format: uuid
+        payment_method_id:
+          type: string
+          format: uuid
+        transaction_date:
+          type: string
+          format: date-time
+        description:
+          type: string
+
+    TransactionResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          required: [success, data]
+          properties:
+            data:
+              $ref: '#/components/schemas/Transaction'
+
+    TransactionsListResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          required: [success, data]
+          properties:
+            data:
+              type: object
+              required: [transactions, pagination]
+              properties:
+                transactions:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Transaction'
+                pagination:
+                  type: object
+                  required: [limit, offset, total]
+                  properties:
+                    limit:
+                      type: integer
+                    offset:
+                      type: integer
+                    total:
+                      type: integer
+
+    # Category Schemas
+    Category:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        type:
+          type: string
+          enum: [expense, income]
+        percentage:
+          type: string
+          pattern: '^\d+(\.\d{1,2})?$'
+          nullable: true
+        budget_amount:
+          type: string
+          pattern: '^\d+(\.\d{1,2})?$'
+          nullable: true
+        currency:
+          type: string
+          enum: [IDR, USD]
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    CreateCategoryRequest:
+      type: object
+      required: [name, type, currency]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        type:
+          type: string
+          enum: [expense, income]
+        currency:
+          type: string
+          enum: [IDR, USD]
+        percentage:
+          type: string
+          pattern: '^\d+(\.\d{1,2})?$'
+        budget_amount:
+          type: string
+          pattern: '^\d+(\.\d{1,2})?$'
+
+    UpdateCategoryRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        type:
+          type: string
+          enum: [expense, income]
+        currency:
+          type: string
+          enum: [IDR, USD]
+        percentage:
+          type: string
+          pattern: '^\d+(\.\d{1,2})?$'
+        budget_amount:
+          type: string
+          pattern: '^\d+(\.\d{1,2})?$'
+        is_active:
+          type: boolean
+
+    CategoryResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          required: [success, data]
+          properties:
+            data:
+              $ref: '#/components/schemas/Category'
+
+    CategoriesListResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          required: [success, data]
+          properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/Category'
+
+    # Payment Method Schemas
+    PaymentMethod:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        type:
+          type: string
+          enum: [cash, credit_card, debit_card, bank_transfer, e_wallet]
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    CreatePaymentMethodRequest:
+      type: object
+      required: [name, type]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        type:
+          type: string
+          enum: [cash, credit_card, debit_card, bank_transfer, e_wallet]
+
+    UpdatePaymentMethodRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        type:
+          type: string
+          enum: [cash, credit_card, debit_card, bank_transfer, e_wallet]
+        is_active:
+          type: boolean
+
+    PaymentMethodResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          required: [success, data]
+          properties:
+            data:
+              $ref: '#/components/schemas/PaymentMethod'
+
+    PaymentMethodsListResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          required: [success, data]
+          properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/PaymentMethod'
+
+    # Asset Schemas
+    Asset:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        type:
+          type: string
+          enum: [bank_account, mutual_fund, bond, crypto, stock, other]
+        balance:
+          type: string
+          pattern: '^\d+(\.\d{1,2})?$'
+        currency:
+          type: string
+          enum: [IDR, USD]
+        last_updated:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    CreateAssetRequest:
+      type: object
+      required: [name, type, balance, currency]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        type:
+          type: string
+          enum: [bank_account, mutual_fund, bond, crypto, stock, other]
+        balance:
+          type: string
+          pattern: '^\d+(\.\d{1,2})?$'
+        currency:
+          type: string
+          enum: [IDR, USD]
+
+    UpdateAssetRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        type:
+          type: string
+          enum: [bank_account, mutual_fund, bond, crypto, stock, other]
+        currency:
+          type: string
+          enum: [IDR, USD]
+
+    UpdateAssetBalanceRequest:
+      type: object
+      required: [balance]
+      properties:
+        balance:
+          type: string
+          pattern: '^\d+(\.\d{1,2})?$'
+        notes:
+          type: string
+
+    AssetResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          required: [success, data]
+          properties:
+            data:
+              $ref: '#/components/schemas/Asset'
+
+    AssetsListResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          required: [success, data]
+          properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/Asset'
+
+    AssetHistoryItem:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        balance:
+          type: string
+          pattern: '^\d+(\.\d{1,2})?$'
+        notes:
+          type: string
+          nullable: true
+        recorded_at:
+          type: string
+          format: date-time
+
+    AssetHistoryListResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          required: [success, data]
+          properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/AssetHistoryItem'
+
+    AssetSummaryResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          required: [success, data]
+          properties:
+            data:
+              type: object
+              required: [by_currency, by_type]
+              properties:
+                by_currency:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      currency:
+                        type: string
+                        enum: [IDR, USD]
+                      total:
+                        type: string
+                        pattern: '^\d+(\.\d{1,2})?$'
+                by_type:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                        enum: [bank_account, mutual_fund, bond, crypto, stock, other]
+                      total:
+                        type: string
+                        pattern: '^\d+(\.\d{1,2})?$'
+
+    # Budget Schemas
+    BudgetOverviewResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          required: [success, data]
+          properties:
+            data:
+              type: object
+              required: [categories, totals]
+              properties:
+                categories:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      category_id:
+                        type: string
+                        format: uuid
+                      category_name:
+                        type: string
+                      budget_amount:
+                        type: string
+                        pattern: '^\d+(\.\d{1,2})?$'
+                      expense_amount:
+                        type: string
+                        pattern: '^\d+(\.\d{1,2})?$'
+                      balance:
+                        type: string
+                        pattern: '^\d+(\.\d{1,2})?$'
+                      percentage:
+                        type: number
+                        format: float
+                      status:
+                        type: string
+                        enum: [ok, warning, exceeded]
+                totals:
+                  type: object
+                  properties:
+                    total_budget:
+                      type: string
+                      pattern: '^\d+(\.\d{1,2})?$'
+                    total_expense:
+                      type: string
+                      pattern: '^\d+(\.\d{1,2})?$'
+                    total_balance:
+                      type: string
+                      pattern: '^\d+(\.\d{1,2})?$'
+                    budget_percentage:
+                      type: number
+                      format: float
+
+    BudgetAlertsResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          required: [success, data]
+          properties:
+            data:
+              type: object
+              required: [alerts, count]
+              properties:
+                alerts:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      category_id:
+                        type: string
+                        format: uuid
+                      category_name:
+                        type: string
+                      level:
+                        type: string
+                        enum: [warning, exceeded]
+                      message:
+                        type: string
+                      budget_amount:
+                        type: string
+                        pattern: '^\d+(\.\d{1,2})?$'
+                      expense_amount:
+                        type: string
+                        pattern: '^\d+(\.\d{1,2})?$'
+                      percentage:
+                        type: number
+                        format: float
+                count:
+                  type: integer
+
+    CategoryRemainingResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          required: [success, data]
+          properties:
+            data:
+              type: object
+              required: [category_id, remaining, budget_amount, expense_amount]
+              properties:
+                category_id:
+                  type: string
+                  format: uuid
+                budget_amount:
+                  type: string
+                  pattern: '^\d+(\.\d{1,2})?$'
+                expense_amount:
+                  type: string
+                  pattern: '^\d+(\.\d{1,2})?$'
+                remaining:
+                  type: string
+                  pattern: '^\d+(\.\d{1,2})?$'
+                percentage:
+                  type: number
+                  format: float
