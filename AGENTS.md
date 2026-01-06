@@ -5,6 +5,22 @@ This project uses **bd** (beads) for issue tracking. Run `bd prime` to refresh c
 ALWAYS read the specs/\*.md to understand the context and requiremetns.
 if requirement changes always update the spec.
 
+**Before any task, read the constitution.**
+
+```
+1. Read `specs/constitution.md` — understand principles and fences
+2. Read task context (spec, plan, or issue)
+3. Then execute
+```
+
+Agents must internalize:
+
+- **Implementation order**: UI → Service → API → CLI → Seeder
+- **Quality gates**: Which block, which don't
+- **Refactor checklist**: Apply each loop, not at the end
+
+**If constitution conflicts with task instructions, constitution wins.**
+
 ## Quick Reference
 
 ```bash
