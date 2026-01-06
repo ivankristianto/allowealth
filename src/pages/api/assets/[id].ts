@@ -10,11 +10,6 @@ const updateAssetSchema = z.object({
   currency: z.enum(['IDR', 'USD']).optional(),
 });
 
-const updateBalanceSchema = z.object({
-  balance: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Balance must be a valid number'),
-  notes: z.string().optional(),
-});
-
 /**
  * GET /api/assets/:id
  * Get a single asset by ID
@@ -101,40 +96,5 @@ export const DELETE: APIRoute = async ({ params, request, url }) => {
     }
     console.error('Error deleting asset:', error);
     return errorResponse('Failed to delete asset', 500);
-  }
-};
-
-/**
- * POST /api/assets/:id/balance
- * Update asset balance (creates history entry)
- */
-export const POST: APIRoute = async ({ params, request, url }) => {
-  try {
-    const userId = requireAuth({ request, url } as any);
-    const { id } = params;
-
-    if (!id) {
-      return errorResponse('Asset ID is required', 400);
-    }
-
-    const validation = await validateBody(request, updateBalanceSchema);
-
-    if (!validation.success) {
-      return errorResponse('Validation failed', 400, 'VALIDATION_ERROR', validation.error.issues);
-    }
-
-    const asset = await assetService.updateBalance(id, userId, validation.data);
-
-    if (!asset) {
-      return errorResponse('Asset not found', 404);
-    }
-
-    return successResponse(asset);
-  } catch (error) {
-    if (error instanceof Error && error.message === 'Unauthorized') {
-      return errorResponse('Unauthorized', 401);
-    }
-    console.error('Error updating asset balance:', error);
-    return errorResponse('Failed to update asset balance', 500);
   }
 };
