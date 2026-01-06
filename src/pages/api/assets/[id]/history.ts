@@ -1,0 +1,31 @@
+import type { APIRoute } from 'astro';
+import { assetService } from '@/services';
+import { successResponse, errorResponse, requireAuth } from '@/lib/api-utils';
+
+/**
+ * GET /api/assets/:id/history
+ * Get asset balance history
+ */
+export const GET: APIRoute = async ({ params, request, url }) => {
+  try {
+    const userId = requireAuth({ request, url } as any);
+    const { id } = params;
+
+    if (!id) {
+      return errorResponse('Asset ID is required', 400);
+    }
+
+    const history = await assetService.getHistory(id, userId);
+
+    return successResponse(history);
+  } catch (error) {
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return errorResponse('Unauthorized', 401);
+    }
+    if (error instanceof Error && error.message === 'Asset not found') {
+      return errorResponse('Asset not found', 404);
+    }
+    console.error('Error fetching asset history:', error);
+    return errorResponse('Failed to fetch asset history', 500);
+  }
+};
