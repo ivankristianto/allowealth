@@ -1,6 +1,8 @@
 import { db, transactions, categories, paymentMethods } from '@/db';
 import { eq, and, gte, lte, desc, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
+import { categoryService } from './category.service';
+import { paymentMethodService } from './payment-method.service';
 
 export interface CreateTransactionInput {
   user_id: string;
@@ -40,6 +42,21 @@ export class TransactionService {
    * Create a new transaction
    */
   async create(input: CreateTransactionInput) {
+    // Verify category exists and belongs to user
+    const category = await categoryService.findById(input.category_id, input.user_id);
+    if (!category || !category.is_active) {
+      throw new Error('Category not found or inactive');
+    }
+
+    // Verify payment method exists and belongs to user
+    const paymentMethod = await paymentMethodService.findById(
+      input.payment_method_id,
+      input.user_id
+    );
+    if (!paymentMethod || !paymentMethod.is_active) {
+      throw new Error('Payment method not found or inactive');
+    }
+
     const id = nanoid();
 
     const [transaction] = await db
@@ -128,6 +145,22 @@ export class TransactionService {
    * Update transaction
    */
   async update(id: string, user_id: string, input: UpdateTransactionInput) {
+    // Verify category if being updated
+    if (input.category_id !== undefined) {
+      const category = await categoryService.findById(input.category_id, user_id);
+      if (!category || !category.is_active) {
+        throw new Error('Category not found or inactive');
+      }
+    }
+
+    // Verify payment method if being updated
+    if (input.payment_method_id !== undefined) {
+      const paymentMethod = await paymentMethodService.findById(input.payment_method_id, user_id);
+      if (!paymentMethod || !paymentMethod.is_active) {
+        throw new Error('Payment method not found or inactive');
+      }
+    }
+
     const updateData: Record<string, any> = {
       updated_at: new Date(),
     };

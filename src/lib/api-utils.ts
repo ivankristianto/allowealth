@@ -74,7 +74,33 @@ export async function validateBody<T>(
     if (error instanceof z.ZodError) {
       return { success: false, error: { issues: error.issues } };
     }
-    throw error;
+    if (error instanceof SyntaxError) {
+      return {
+        success: false,
+        error: {
+          issues: [
+            {
+              code: 'invalid_json',
+              message: 'Invalid JSON in request body',
+              path: [],
+            },
+          ],
+        },
+      };
+    }
+    // Handle other JSON parsing errors
+    return {
+      success: false,
+      error: {
+        issues: [
+          {
+            code: 'parse_error',
+            message: 'Failed to parse request body',
+            path: [],
+          },
+        ],
+      },
+    };
   }
 }
 
@@ -121,4 +147,11 @@ export function getPaginationParams(url: URL): { limit: number; offset: number }
     limit: Math.min(Math.max(limit, 1), 100), // Limit between 1-100
     offset: Math.max(offset, 0),
   };
+}
+
+/**
+ * Validate that a date is valid (not Invalid Date)
+ */
+export function isValidDate(date: Date): boolean {
+  return date instanceof Date && !isNaN(date.getTime());
 }

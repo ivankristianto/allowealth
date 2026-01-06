@@ -30,30 +30,32 @@ export class AssetService {
     const id = nanoid();
     const now = new Date();
 
-    const [asset] = await db
-      .insert(assets)
-      .values({
-        id,
-        user_id: input.user_id,
-        name: input.name,
-        type: input.type,
+    return await db.transaction(async (tx) => {
+      const [asset] = await tx
+        .insert(assets)
+        .values({
+          id,
+          user_id: input.user_id,
+          name: input.name,
+          type: input.type,
+          balance: input.balance,
+          currency: input.currency,
+          last_updated: now,
+          created_at: now,
+          updated_at: now,
+        })
+        .returning();
+
+      // Create initial history entry
+      await tx.insert(assetHistory).values({
+        id: nanoid(),
+        asset_id: id,
         balance: input.balance,
-        currency: input.currency,
-        last_updated: now,
-        created_at: now,
-        updated_at: now,
-      })
-      .returning();
+        recorded_at: now,
+      });
 
-    // Create initial history entry
-    await db.insert(assetHistory).values({
-      id: nanoid(),
-      asset_id: id,
-      balance: input.balance,
-      recorded_at: now,
+      return asset;
     });
-
-    return asset;
   }
 
   /**
@@ -127,23 +129,25 @@ export class AssetService {
   async updateBalance(id: string, user_id: string, input: UpdateAssetBalanceInput) {
     const now = new Date();
 
-    // Update asset
-    await db
-      .update(assets)
-      .set({
-        balance: input.balance,
-        last_updated: now,
-        updated_at: now,
-      })
-      .where(and(eq(assets.id, id), eq(assets.user_id, user_id)));
+    await db.transaction(async (tx) => {
+      // Update asset
+      await tx
+        .update(assets)
+        .set({
+          balance: input.balance,
+          last_updated: now,
+          updated_at: now,
+        })
+        .where(and(eq(assets.id, id), eq(assets.user_id, user_id)));
 
-    // Create history entry
-    await db.insert(assetHistory).values({
-      id: nanoid(),
-      asset_id: id,
-      balance: input.balance,
-      notes: input.notes,
-      recorded_at: now,
+      // Create history entry
+      await tx.insert(assetHistory).values({
+        id: nanoid(),
+        asset_id: id,
+        balance: input.balance,
+        notes: input.notes,
+        recorded_at: now,
+      });
     });
 
     return this.findById(id, user_id);

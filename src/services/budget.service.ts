@@ -32,6 +32,14 @@ export class BudgetService {
     month: number,
     currency: 'IDR' | 'USD'
   ): Promise<BudgetSummary> {
+    // Validate inputs
+    if (!Number.isInteger(year) || year < 2000 || year > 2100) {
+      throw new Error('Invalid year parameter');
+    }
+    if (!Number.isInteger(month) || month < 1 || month > 12) {
+      throw new Error('Invalid month parameter');
+    }
+
     // Get start and end of month
     const startDate = new Date(year, month - 1, 1);
     const endDate = new Date(year, month, 0, 23, 59, 59);

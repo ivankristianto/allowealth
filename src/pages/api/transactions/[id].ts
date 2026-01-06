@@ -1,7 +1,13 @@
 import type { APIRoute } from 'astro';
 import { z } from 'zod';
 import { transactionService } from '@/services';
-import { successResponse, errorResponse, validateBody, requireAuth } from '@/lib/api-utils';
+import {
+  successResponse,
+  errorResponse,
+  validateBody,
+  requireAuth,
+  isValidDate,
+} from '@/lib/api-utils';
 
 // Validation schema
 const updateTransactionSchema = z.object({
@@ -73,8 +79,13 @@ export const PUT: APIRoute = async ({ params, request, url }) => {
       updateData.category_id = validation.data.category_id;
     if (validation.data.payment_method_id !== undefined)
       updateData.payment_method_id = validation.data.payment_method_id;
-    if (validation.data.transaction_date !== undefined)
-      updateData.transaction_date = new Date(validation.data.transaction_date);
+    if (validation.data.transaction_date !== undefined) {
+      const transactionDate = new Date(validation.data.transaction_date);
+      if (!isValidDate(transactionDate)) {
+        return errorResponse('Invalid transaction_date', 400);
+      }
+      updateData.transaction_date = transactionDate;
+    }
     if (validation.data.description !== undefined)
       updateData.description = validation.data.description;
 

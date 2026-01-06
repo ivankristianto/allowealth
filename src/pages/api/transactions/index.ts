@@ -7,6 +7,7 @@ import {
   validateBody,
   requireAuth,
   getPaginationParams,
+  isValidDate,
 } from '@/lib/api-utils';
 
 // Validation schemas
@@ -61,12 +62,20 @@ export const GET: APIRoute = async ({ request, url }) => {
 
     const startDate = url.searchParams.get('start_date');
     if (startDate) {
-      filters.start_date = new Date(startDate);
+      const parsedStartDate = new Date(startDate);
+      if (!isValidDate(parsedStartDate)) {
+        return errorResponse('Invalid start_date format', 400);
+      }
+      filters.start_date = parsedStartDate;
     }
 
     const endDate = url.searchParams.get('end_date');
     if (endDate) {
-      filters.end_date = new Date(endDate);
+      const parsedEndDate = new Date(endDate);
+      if (!isValidDate(parsedEndDate)) {
+        return errorResponse('Invalid end_date format', 400);
+      }
+      filters.end_date = parsedEndDate;
     }
 
     const transactions = await transactionService.findAll(filters);
@@ -103,6 +112,11 @@ export const POST: APIRoute = async ({ request, url }) => {
       return errorResponse('Validation failed', 400, 'VALIDATION_ERROR', validation.error.issues);
     }
 
+    const transactionDate = new Date(validation.data.transaction_date);
+    if (!isValidDate(transactionDate)) {
+      return errorResponse('Invalid transaction_date', 400);
+    }
+
     const transaction = await transactionService.create({
       user_id: userId,
       type: validation.data.type,
@@ -110,7 +124,7 @@ export const POST: APIRoute = async ({ request, url }) => {
       currency: validation.data.currency,
       category_id: validation.data.category_id,
       payment_method_id: validation.data.payment_method_id,
-      transaction_date: new Date(validation.data.transaction_date),
+      transaction_date: transactionDate,
       description: validation.data.description,
     });
 
