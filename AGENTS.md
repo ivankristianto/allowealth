@@ -118,81 +118,20 @@ bun run format:fix    # Prettier auto-format
 
 **ALWAYS FOLLOW THIS WORKFLOW**
 
-### Single Task Workflow
-
-1. **Start:** Run `bd ready` to find unblocked work
-2. **Claim:** Run `bd update <id> --status in_progress`
-3. **Branch:** Create feature branch `git checkout -b feature/<name>`
-4. **Code:** Follow component guidelines and use design tokens
-5. **Quality:** Run `bun run typecheck && bun run lint && bun run format:fix`
-6. **Commit:** Commit with clear messages
-7. **Push:** `git push` to feature branch
-8. **PR:** Create PR with detailed description
-9. **PR Review**: Invoke subagent code review specialist to review the PR, no code changes, and comment only on the PR.
-10. **Complete:** After merge, run `bd close <id>` and `bd sync`
-
-### Group Task Workflow
-
-**When working on multiple related tasks** (e.g., a feature with multiple components), follow this workflow:
-
-#### 1. Task Organization
-
-- Group tasks by domain or per user instruction
-- Example: "Login screen" might include: form component, validation, API endpoint, auth flow
-
-#### 2. Branch Creation
-
-```bash
-git checkout -b feature/<descriptive-name>
-```
-
-#### 3. Implementation Loop
-
-For each task in the group:
-
-- Implement the task
-- After completion, run quality gates:
-  ```bash
-  bun run typecheck
-  bun run lint
-  bun run format:fix
-  ```
-- Once all checks pass, stage and commit:
-  ```bash
-  git add <files>
-  git commit -m "feat: descriptive message"
-  ```
-- Push to remote:
-  ```bash
-  git push
-  ```
-
-#### 4. Continue Until Session Complete
-
-- Repeat step 3 for all tasks in the group
-- Keep commits atomic and focused
-- Push after each completed task
-
-#### 5. Pull Request Creation
-
-Create GitHub Pull Request, follow the GitHub Pull Request template.
-
-#### 6. Code Review
-
-- Invoke the **code-review-specialist** agent to review the PR
-- Agent will analyze code quality, security, and maintainability
-- Agent will comment on the PR with findings
-- Agent performs review only (no code changes)
-- Check Pull Request checklist once done
-
-#### 7. Completion Report
-
-Provide summary to user:
-
-- PR link
-- Tasks completed
-- Code review status
-- Any issues or recommendations
+1. **Find work:** Run `bd ready` to find unblocked tasks
+2. **Claim:** Run `bd update <id> --status in_progress` for each task
+3. **Branch:** `git checkout -b feature/<descriptive-name>`
+4. **Implement:** For each task:
+   - Write code following component guidelines and design tokens
+   - Run `bun run typecheck && bun run lint && bun run format:fix`
+   - Commit with clear message: `git commit -m "feat: descriptive message"`
+   - Push: `git push`
+5. **PR:** Create Pull Request following the GitHub PR template
+6. **Review:** Invoke **code-review-specialist** agent to review (comments only, no code changes)
+7. **Complete:** After merge:
+   - Run `bd close <id>` for each completed task
+   - Run `bd sync`
+8. **Report:** Provide summary with PR link, tasks completed, review status, and any recommendations
 
 ## Landing the Plane (Session Completion)
 
