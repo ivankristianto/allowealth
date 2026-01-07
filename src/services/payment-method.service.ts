@@ -1,33 +1,32 @@
 import { db, paymentMethods } from '@/db';
 import { eq, and } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
+import {
+  createPaymentMethodSchema,
+  updatePaymentMethodSchema,
+  type CreatePaymentMethodInput,
+  type UpdatePaymentMethodInput,
+} from '@/lib/validation/payment-methods';
 
-export interface CreatePaymentMethodInput {
-  user_id: string;
-  name: string;
-  type: 'cash' | 'credit_card' | 'debit_card' | 'bank_transfer' | 'e_wallet';
-}
-
-export interface UpdatePaymentMethodInput {
-  name?: string;
-  type?: 'cash' | 'credit_card' | 'debit_card' | 'bank_transfer' | 'e_wallet';
-  is_active?: boolean;
-}
+export { type CreatePaymentMethodInput, type UpdatePaymentMethodInput };
 
 export class PaymentMethodService {
   /**
    * Create a new payment method
    */
   async create(input: CreatePaymentMethodInput) {
+    // Validate input using Zod schema
+    const validated = createPaymentMethodSchema.parse(input);
+
     const id = nanoid();
 
     const [paymentMethod] = await db
       .insert(paymentMethods)
       .values({
         id,
-        user_id: input.user_id,
-        name: input.name,
-        type: input.type,
+        user_id: validated.user_id,
+        name: validated.name,
+        type: validated.type,
         is_active: true,
         created_at: new Date(),
         updated_at: new Date(),
@@ -70,13 +69,16 @@ export class PaymentMethodService {
    * Update payment method
    */
   async update(id: string, user_id: string, input: UpdatePaymentMethodInput) {
+    // Validate input using Zod schema
+    const validated = updatePaymentMethodSchema.parse(input);
+
     const updateData: Record<string, any> = {
       updated_at: new Date(),
     };
 
-    if (input.name !== undefined) updateData.name = input.name;
-    if (input.type !== undefined) updateData.type = input.type;
-    if (input.is_active !== undefined) updateData.is_active = input.is_active;
+    if (validated.name !== undefined) updateData.name = validated.name;
+    if (validated.type !== undefined) updateData.type = validated.type;
+    if (validated.is_active !== undefined) updateData.is_active = validated.is_active;
 
     await db
       .update(paymentMethods)

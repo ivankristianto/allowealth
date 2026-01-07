@@ -3,27 +3,14 @@ import { eq, and, gte, lte, desc, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { categoryService } from './category.service';
 import { paymentMethodService } from './payment-method.service';
+import {
+  createTransactionSchema,
+  updateTransactionSchema,
+  type CreateTransactionInput,
+  type UpdateTransactionInput,
+} from '@/lib/validation/transactions';
 
-export interface CreateTransactionInput {
-  user_id: string;
-  type: 'expense' | 'income';
-  amount: string;
-  currency: 'IDR' | 'USD';
-  category_id: string;
-  payment_method_id: string;
-  transaction_date: Date;
-  description?: string;
-}
-
-export interface UpdateTransactionInput {
-  type?: 'expense' | 'income';
-  amount?: string;
-  currency?: 'IDR' | 'USD';
-  category_id?: string;
-  payment_method_id?: string;
-  transaction_date?: Date;
-  description?: string;
-}
+export { type CreateTransactionInput, type UpdateTransactionInput };
 
 export interface TransactionFilters {
   user_id: string;
@@ -42,16 +29,19 @@ export class TransactionService {
    * Create a new transaction
    */
   async create(input: CreateTransactionInput) {
+    // Validate input using Zod schema
+    const validated = createTransactionSchema.parse(input);
+
     // Verify category exists and belongs to user
-    const category = await categoryService.findById(input.category_id, input.user_id);
+    const category = await categoryService.findById(validated.category_id, validated.user_id);
     if (!category || !category.is_active) {
       throw new Error('Category not found or inactive');
     }
 
     // Verify payment method exists and belongs to user
     const paymentMethod = await paymentMethodService.findById(
-      input.payment_method_id,
-      input.user_id
+      validated.payment_method_id,
+      validated.user_id
     );
     if (!paymentMethod || !paymentMethod.is_active) {
       throw new Error('Payment method not found or inactive');
@@ -63,20 +53,20 @@ export class TransactionService {
       .insert(transactions)
       .values({
         id,
-        user_id: input.user_id,
-        type: input.type,
-        amount: input.amount,
-        currency: input.currency,
-        category_id: input.category_id,
-        payment_method_id: input.payment_method_id,
-        transaction_date: input.transaction_date,
-        description: input.description,
+        user_id: validated.user_id,
+        type: validated.type,
+        amount: validated.amount,
+        currency: validated.currency,
+        category_id: validated.category_id,
+        payment_method_id: validated.payment_method_id,
+        transaction_date: validated.transaction_date,
+        description: validated.description,
         created_at: new Date(),
         updated_at: new Date(),
       })
       .returning();
 
-    return this.findById(id, input.user_id);
+    return this.findById(id, validated.user_id);
   }
 
   /**
@@ -145,17 +135,23 @@ export class TransactionService {
    * Update transaction
    */
   async update(id: string, user_id: string, input: UpdateTransactionInput) {
+    // Validate input using Zod schema
+    const validated = updateTransactionSchema.parse(input);
+
     // Verify category if being updated
-    if (input.category_id !== undefined) {
-      const category = await categoryService.findById(input.category_id, user_id);
+    if (validated.category_id !== undefined) {
+      const category = await categoryService.findById(validated.category_id, user_id);
       if (!category || !category.is_active) {
         throw new Error('Category not found or inactive');
       }
     }
 
     // Verify payment method if being updated
-    if (input.payment_method_id !== undefined) {
-      const paymentMethod = await paymentMethodService.findById(input.payment_method_id, user_id);
+    if (validated.payment_method_id !== undefined) {
+      const paymentMethod = await paymentMethodService.findById(
+        validated.payment_method_id,
+        user_id
+      );
       if (!paymentMethod || !paymentMethod.is_active) {
         throw new Error('Payment method not found or inactive');
       }
@@ -165,14 +161,15 @@ export class TransactionService {
       updated_at: new Date(),
     };
 
-    if (input.type !== undefined) updateData.type = input.type;
-    if (input.amount !== undefined) updateData.amount = input.amount;
-    if (input.currency !== undefined) updateData.currency = input.currency;
-    if (input.category_id !== undefined) updateData.category_id = input.category_id;
-    if (input.payment_method_id !== undefined)
-      updateData.payment_method_id = input.payment_method_id;
-    if (input.transaction_date !== undefined) updateData.transaction_date = input.transaction_date;
-    if (input.description !== undefined) updateData.description = input.description;
+    if (validated.type !== undefined) updateData.type = validated.type;
+    if (validated.amount !== undefined) updateData.amount = validated.amount;
+    if (validated.currency !== undefined) updateData.currency = validated.currency;
+    if (validated.category_id !== undefined) updateData.category_id = validated.category_id;
+    if (validated.payment_method_id !== undefined)
+      updateData.payment_method_id = validated.payment_method_id;
+    if (validated.transaction_date !== undefined)
+      updateData.transaction_date = validated.transaction_date;
+    if (validated.description !== undefined) updateData.description = validated.description;
 
     await db
       .update(transactions)

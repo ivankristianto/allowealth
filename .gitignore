@@ -37,3 +37,6 @@ debug-storybook.log
 
 # Astro auto-generated types
 .astro/types.d.ts
+
+# bv (beads viewer) local config and caches
+.bv/
