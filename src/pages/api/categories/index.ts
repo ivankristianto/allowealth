@@ -11,11 +11,15 @@ const createCategorySchema = z.object({
   percentage: z
     .string()
     .regex(/^\d+(\.\d{1,2})?$/)
-    .optional(),
+    .optional()
+    .default('0')
+    .transform((val) => val ?? '0'),
   budget_amount: z
     .string()
     .regex(/^\d+(\.\d{1,2})?$/)
-    .optional(),
+    .optional()
+    .default('0')
+    .transform((val) => val ?? '0'),
 });
 
 /**
@@ -71,11 +75,7 @@ export const POST: APIRoute = async ({ request, url }) => {
 
     const category = await categoryService.create({
       user_id: userId,
-      name: validation.data.name,
-      type: validation.data.type,
-      currency: validation.data.currency,
-      percentage: validation.data.percentage,
-      budget_amount: validation.data.budget_amount,
+      ...validation.data,
     });
 
     return successResponse(category, 201);

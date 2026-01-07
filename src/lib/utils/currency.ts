@@ -66,22 +66,45 @@ export function parseCurrencyInput(input: string): string {
     return '0';
   }
 
+  // Trim and validate length to prevent abuse
+  const trimmed = input.trim();
+  if (trimmed.length > 50) {
+    return '0';
+  }
+
   // Remove all non-numeric characters except dots and minus
-  let cleaned = input.replace(/[^\d.,-]/g, '');
+  let cleaned = trimmed.replace(/[^\d.,-]/g, '');
+
+  // Validate we have something reasonable left
+  if (!cleaned || cleaned === '' || cleaned === '-' || cleaned === '.' || cleaned === ',') {
+    return '0';
+  }
+
+  // Check for invalid patterns (multiple dots/commas in wrong places)
+  const dotCount = (cleaned.match(/\./g) || []).length;
+  const commaCount = (cleaned.match(/,/g) || []).length;
+  if (dotCount > 1 || commaCount > 1) {
+    return '0';
+  }
 
   // Handle multipliers
-  const multiplierMatch = cleaned.match(/([\d.,]+)([mkMK])/i);
+  const multiplierMatch = cleaned.match(/^([\d.,]+)([mkMK])$/i);
   if (multiplierMatch) {
     const numStr = multiplierMatch[1];
     const multiplier = multiplierMatch[2]?.toLowerCase();
     if (!numStr || !multiplier) return '0';
 
-    let num = parseFloat(numStr.replace(/,/g, ''));
+    const baseNum = parseFloat(numStr.replace(/,/g, ''));
+    if (isNaN(baseNum)) return '0';
 
+    let num = baseNum;
     if (multiplier === 'k') num *= 1000;
     if (multiplier === 'm') num *= 1000000;
 
-    return (num ?? 0).toString();
+    // Sanity check for reasonable range
+    if (num < 0 || num > 1e15) return '0';
+
+    return num.toString();
   }
 
   // Handle comma as decimal separator (Indonesian format)
@@ -94,7 +117,12 @@ export function parseCurrencyInput(input: string): string {
   }
 
   const parsed = parseFloat(cleaned);
-  return isNaN(parsed) ? '0' : parsed.toString();
+  if (isNaN(parsed)) return '0';
+
+  // Sanity check for reasonable range
+  if (parsed < 0 || parsed > 1e15) return '0';
+
+  return parsed.toString();
 }
 
 /**

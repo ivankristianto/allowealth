@@ -28,7 +28,9 @@ export const createTransactionSchema = z
     payment_method_id: z.string().min(1, 'Payment method ID is required'),
     transaction_date: z
       .date()
-      .max(new Date(), { message: 'Transaction date cannot be in the future' })
+      .refine((date) => date <= new Date(), {
+        message: 'Transaction date cannot be in the future',
+      })
       .default(() => new Date()),
     description: z.string().max(500, 'Description must not exceed 500 characters').optional(),
   })
@@ -56,7 +58,9 @@ export const updateTransactionSchema = z
     payment_method_id: z.string().min(1, 'Payment method ID is required').optional(),
     transaction_date: z
       .date()
-      .max(new Date(), { message: 'Transaction date cannot be in the future' })
+      .refine((date) => date <= new Date(), {
+        message: 'Transaction date cannot be in the future',
+      })
       .optional(),
     description: z.string().max(500, 'Description must not exceed 500 characters').optional(),
   })

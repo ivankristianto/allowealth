@@ -1,42 +1,35 @@
 import { db, categories } from '@/db';
 import { eq, and, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
+import {
+  createCategorySchema,
+  updateCategorySchema,
+  type CreateCategoryInput,
+  type UpdateCategoryInput,
+} from '@/lib/validation/categories';
 
-export interface CreateCategoryInput {
-  user_id: string;
-  name: string;
-  type: 'expense' | 'income';
-  currency: 'IDR' | 'USD';
-  percentage?: string;
-  budget_amount?: string;
-}
-
-export interface UpdateCategoryInput {
-  name?: string;
-  type?: 'expense' | 'income';
-  currency?: 'IDR' | 'USD';
-  percentage?: string;
-  budget_amount?: string;
-  is_active?: boolean;
-}
+export { type CreateCategoryInput, type UpdateCategoryInput };
 
 export class CategoryService {
   /**
    * Create a new category
    */
   async create(input: CreateCategoryInput) {
+    // Validate input using Zod schema
+    const validated = createCategorySchema.parse(input);
+
     const id = nanoid();
 
     const [category] = await db
       .insert(categories)
       .values({
         id,
-        user_id: input.user_id,
-        name: input.name,
-        type: input.type,
-        currency: input.currency,
-        percentage: input.percentage || '0',
-        budget_amount: input.budget_amount || '0',
+        user_id: validated.user_id,
+        name: validated.name,
+        type: validated.type,
+        currency: validated.currency,
+        percentage: validated.percentage,
+        budget_amount: validated.budget_amount,
         is_active: true,
         created_at: new Date(),
         updated_at: new Date(),
@@ -83,16 +76,19 @@ export class CategoryService {
    * Update category
    */
   async update(id: string, user_id: string, input: UpdateCategoryInput) {
+    // Validate input using Zod schema
+    const validated = updateCategorySchema.parse(input);
+
     const updateData: Record<string, any> = {
       updated_at: new Date(),
     };
 
-    if (input.name !== undefined) updateData.name = input.name;
-    if (input.type !== undefined) updateData.type = input.type;
-    if (input.currency !== undefined) updateData.currency = input.currency;
-    if (input.percentage !== undefined) updateData.percentage = input.percentage;
-    if (input.budget_amount !== undefined) updateData.budget_amount = input.budget_amount;
-    if (input.is_active !== undefined) updateData.is_active = input.is_active;
+    if (validated.name !== undefined) updateData.name = validated.name;
+    if (validated.type !== undefined) updateData.type = validated.type;
+    if (validated.currency !== undefined) updateData.currency = validated.currency;
+    if (validated.percentage !== undefined) updateData.percentage = validated.percentage;
+    if (validated.budget_amount !== undefined) updateData.budget_amount = validated.budget_amount;
+    if (validated.is_active !== undefined) updateData.is_active = validated.is_active;
 
     await db
       .update(categories)
@@ -128,6 +124,10 @@ export class CategoryService {
     ];
 
     if (excludeId) {
+      // Validate excludeId format to prevent SQL injection
+      if (!/^[a-zA-Z0-9_-]+$/.test(excludeId)) {
+        throw new Error('Invalid category ID format');
+      }
       conditions.push(sql`${categories.id} != ${excludeId}`);
     }
 

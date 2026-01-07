@@ -66,13 +66,13 @@ describe('CategoryService', () => {
         name: 'Salary',
         type: 'income' as const,
         currency: 'IDR' as const,
+        percentage: '0',
+        budget_amount: '0',
       };
 
       const mockCategory: Category = {
         id: 'cat-2',
         ...input,
-        percentage: '0',
-        budget_amount: '0',
         is_active: true,
         created_at: new Date(),
         updated_at: new Date(),

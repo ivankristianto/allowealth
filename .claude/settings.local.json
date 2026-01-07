@@ -16,7 +16,9 @@
       "Bash(bun run typecheck:*)",
       "Bash(git checkout:*)",
       "Bash(ls:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(gh pr view:*)",
+      "Bash(gh pr diff:*)"
     ]
   }
 }
