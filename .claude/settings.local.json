@@ -15,7 +15,8 @@
       "Bash(bd stats:*)",
       "Bash(bun run typecheck:*)",
       "Bash(git checkout:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(cat:*)"
     ]
   }
 }
