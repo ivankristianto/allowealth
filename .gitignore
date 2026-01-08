@@ -40,4 +40,5 @@ debug-storybook.log
 
 # bv (beads viewer) local config and caches
 .bv/
+.beads/.bv.lock
 fix-currency-precision/
