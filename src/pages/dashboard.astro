@@ -1,0 +1,54 @@
+---
+import MainLayout from '../layouts/MainLayout.astro';
+
+const currentPath = '/dashboard';
+---
+
+<MainLayout title="Dashboard - Finance Manager" currentPath={currentPath}>
+  <div class="space-y-6">
+    <!-- Welcome Section -->
+    <div class="card bg-base-100 shadow-lg border border-base-300">
+      <div class="card-body">
+        <h2 class="card-title text-2xl">Welcome to Finance Manager</h2>
+        <p class="text-neutral-600">
+          Track your expenses, manage budgets, and monitor your assets.
+        </p>
+      </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="grid gap-6 md:grid-cols-3">
+      <div class="card bg-base-100 shadow border border-base-300">
+        <div class="card-body">
+          <h3 class="card-title text-primary">Total Assets</h3>
+          <p class="text-2xl font-bold">IDR 100M</p>
+          <p class="text-sm text-neutral-500">~USD 6,622</p>
+        </div>
+      </div>
+
+      <div class="card bg-base-100 shadow border border-base-300">
+        <div class="card-body">
+          <h3 class="card-title text-warning">This Month</h3>
+          <p class="text-2xl font-bold">40.6M / 101M</p>
+          <p class="text-sm text-neutral-500">40% of budget</p>
+        </div>
+      </div>
+
+      <div class="card bg-base-100 shadow border border-base-300">
+        <div class="card-body">
+          <h3 class="card-title text-error">Alerts</h3>
+          <p class="text-2xl font-bold">3</p>
+          <p class="text-sm text-neutral-500">Budget warnings</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Activity Placeholder -->
+    <div class="card bg-base-100 shadow border border-base-300">
+      <div class="card-body">
+        <h3 class="card-title">Recent Activity</h3>
+        <p class="text-neutral-500">No recent transactions to display.</p>
+      </div>
+    </div>
+  </div>
+</MainLayout>
