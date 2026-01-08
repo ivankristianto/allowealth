@@ -22,7 +22,11 @@
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "Bash(bd sync:*)",
-      "Bash(bd worktree list)"
+      "Bash(bd worktree list)",
+      "Bash(bun run:*)",
+      "Bash(bun install)",
+      "Bash(gh pr checks:*)",
+      "Bash(gh pr create:*)"
     ]
   }
 }
