@@ -1,3 +1,4 @@
+import Decimal from 'decimal.js';
 import type { Currency } from '@/lib/types';
 
 /**
@@ -27,11 +28,11 @@ const formatters = {
  * @returns Formatted currency string (e.g., "Rp 1.000.000" or "$1,000.00")
  */
 export function formatCurrency(amount: string, currency: Currency): string {
-  const num = parseFloat(amount);
-  if (isNaN(num)) {
+  const decimal = new Decimal(amount || '0');
+  if (!decimal.isFinite()) {
     return `${currency === 'IDR' ? 'Rp' : '$'} 0`;
   }
-  return formatters[currency].format(num);
+  return formatters[currency].format(decimal.toNumber());
 }
 
 /**
@@ -41,8 +42,8 @@ export function formatCurrency(amount: string, currency: Currency): string {
  * @returns Formatted number string (e.g., "1.000.000" or "1,000.00")
  */
 export function formatCurrencyNumber(amount: string, currency: Currency): string {
-  const num = parseFloat(amount);
-  if (isNaN(num)) {
+  const decimal = new Decimal(amount || '0');
+  if (!decimal.isFinite()) {
     return '0';
   }
 
@@ -52,7 +53,7 @@ export function formatCurrencyNumber(amount: string, currency: Currency): string
   };
 
   const locale = currency === 'IDR' ? 'id-ID' : 'en-US';
-  return new Intl.NumberFormat(locale, options).format(num);
+  return new Intl.NumberFormat(locale, options).format(decimal.toNumber());
 }
 
 /**
@@ -94,15 +95,15 @@ export function parseCurrencyInput(input: string): string {
     const multiplier = multiplierMatch[2]?.toLowerCase();
     if (!numStr || !multiplier) return '0';
 
-    const baseNum = parseFloat(numStr.replace(/,/g, ''));
-    if (isNaN(baseNum)) return '0';
+    const baseNum = new Decimal(numStr.replace(/,/g, '') || '0');
+    if (!baseNum.isFinite()) return '0';
 
     let num = baseNum;
-    if (multiplier === 'k') num *= 1000;
-    if (multiplier === 'm') num *= 1000000;
+    if (multiplier === 'k') num = num.times(1000);
+    if (multiplier === 'm') num = num.times(1000000);
 
     // Sanity check for reasonable range
-    if (num < 0 || num > 1e15) return '0';
+    if (num.isNegative() || num.gt(1e15)) return '0';
 
     return num.toString();
   }
@@ -116,11 +117,11 @@ export function parseCurrencyInput(input: string): string {
     cleaned = cleaned.replace(/,/g, '');
   }
 
-  const parsed = parseFloat(cleaned);
-  if (isNaN(parsed)) return '0';
+  const parsed = new Decimal(cleaned || '0');
+  if (!parsed.isFinite()) return '0';
 
   // Sanity check for reasonable range
-  if (parsed < 0 || parsed > 1e15) return '0';
+  if (parsed.isNegative() || parsed.gt(1e15)) return '0';
 
   return parsed.toString();
 }
@@ -143,15 +144,14 @@ export function convertCurrency(
     return amount;
   }
 
-  const num = parseFloat(amount);
-  const rateNum = parseFloat(rate);
+  const num = new Decimal(amount || '0');
+  const rateNum = new Decimal(rate || '0');
 
-  if (isNaN(num) || isNaN(rateNum) || rateNum === 0) {
+  if (rateNum.isZero()) {
     return '0';
   }
 
-  const converted = num * rateNum;
-  return converted.toString();
+  return num.times(rateNum).toString();
 }
 
 /**
@@ -161,9 +161,9 @@ export function convertCurrency(
  * @returns Sum as string
  */
 export function addCurrency(a: string, b: string): string {
-  const numA = parseFloat(a) || 0;
-  const numB = parseFloat(b) || 0;
-  return (numA + numB).toString();
+  const numA = new Decimal(a || '0');
+  const numB = new Decimal(b || '0');
+  return numA.plus(numB).toString();
 }
 
 /**
@@ -173,9 +173,9 @@ export function addCurrency(a: string, b: string): string {
  * @returns Difference as string
  */
 export function subtractCurrency(a: string, b: string): string {
-  const numA = parseFloat(a) || 0;
-  const numB = parseFloat(b) || 0;
-  return (numA - numB).toString();
+  const numA = new Decimal(a || '0');
+  const numB = new Decimal(b || '0');
+  return numA.minus(numB).toString();
 }
 
 /**
@@ -185,8 +185,8 @@ export function subtractCurrency(a: string, b: string): string {
  * @returns Product as string
  */
 export function multiplyCurrency(amount: string, factor: number): string {
-  const num = parseFloat(amount) || 0;
-  return (num * factor).toString();
+  const num = new Decimal(amount || '0');
+  return num.times(factor).toString();
 }
 
 /**
@@ -196,7 +196,7 @@ export function multiplyCurrency(amount: string, factor: number): string {
  * @returns Quotient as string
  */
 export function divideCurrency(amount: string, divisor: number): string {
-  const num = parseFloat(amount) || 0;
+  const num = new Decimal(amount || '0');
   if (divisor === 0) return '0';
-  return (num / divisor).toString();
+  return num.dividedBy(divisor).toString();
 }
