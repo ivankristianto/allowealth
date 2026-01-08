@@ -33,7 +33,10 @@ const navItems: NavItem[] = [
 ];
 
 const isActive = (href: string) => {
-  return currentPath.startsWith(href);
+  // Exact match for index routes
+  if (currentPath === href) return true;
+  // For nested routes (e.g., /assets/add), parent is active if path starts with href + '/'
+  return currentPath.startsWith(href + '/');
 };
 ---
 
