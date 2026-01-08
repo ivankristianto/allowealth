@@ -7,6 +7,8 @@
  * Usage: bun run src/db/seed.ts
  */
 
+/* eslint-disable no-console -- Console output is intentional for seeder progress feedback */
+
 import { db } from './index';
 import { nanoid } from 'nanoid';
 import { Scrypt } from 'oslo/password';
@@ -34,6 +36,18 @@ const DEMO_USER = {
   name: 'Demo User',
 };
 
+// Scrypt parameters (matches Lucia Auth defaults)
+const SCRYPT_PARAMS = {
+  N: 16384,
+  r: 16,
+  p: 1,
+  dkLen: 32,
+};
+
+// Seeding configuration constants
+const SEED_TIME_HOUR = 10; // 10 AM to avoid timezone boundary issues
+const SNAPSHOT_GROWTH_RATE = 0.05; // 5% growth per month for snapshots
+
 // ============================================================================
 // HELPERS
 // ============================================================================
@@ -42,12 +56,7 @@ const DEMO_USER = {
  * Hash password using scrypt (same as Lucia Auth)
  */
 async function hashPassword(password: string): Promise<string> {
-  const scrypt = new Scrypt({
-    N: 16384,
-    r: 16,
-    p: 1,
-    dkLen: 32,
-  });
+  const scrypt = new Scrypt(SCRYPT_PARAMS);
   return await scrypt.hash(password);
 }
 
@@ -57,7 +66,7 @@ async function hashPassword(password: string): Promise<string> {
 function daysAgo(days: number): Date {
   const date = new Date();
   date.setDate(date.getDate() - days);
-  date.setHours(10, 0, 0, 0); // Set to 10 AM for consistency
+  date.setHours(SEED_TIME_HOUR, 0, 0, 0); // Set to 10 AM for consistency
   return date;
 }
 
@@ -196,20 +205,29 @@ const EXPENSE_PATTERNS: Array<{
 async function clearAllTables() {
   console.log('⚠️  Clearing existing data...');
 
-  // Delete in reverse dependency order
-  await db.delete(assetSnapshotItems);
-  await db.delete(assetSnapshots);
-  await db.delete(assetUpdateReminders);
-  await db.delete(assetHistory);
-  await db.delete(assets);
-  await db.delete(transactions);
-  await db.delete(paymentMethods);
-  await db.delete(categories);
-  await db.delete(userSettings);
-  await db.delete(users);
-  await db.delete(exchangeRates);
+  try {
+    // Delete in reverse dependency order
+    await db.delete(assetSnapshotItems);
+    await db.delete(assetSnapshots);
+    await db.delete(assetUpdateReminders);
+    await db.delete(assetHistory);
+    await db.delete(assets);
+    await db.delete(transactions);
+    await db.delete(paymentMethods);
+    await db.delete(categories);
+    await db.delete(userSettings);
+    await db.delete(users);
+    await db.delete(exchangeRates);
 
-  console.log('✓ All tables cleared');
+    console.log('✓ All tables cleared');
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('no such table')) {
+      console.error('❌ Database tables not found.');
+      console.error('💡 Run `bun run db:reset` to create tables first.');
+      process.exit(1);
+    }
+    throw error;
+  }
 }
 
 /**
@@ -559,7 +577,7 @@ async function seedAssetSnapshots(userId: string, assetMap: Map<string, string>)
 
       // Add some historical variation
       const variation = (Math.random() - 0.5) * baseBalance * 0.15; // ±7.5% variation
-      const balance = amt(baseBalance + variation + month * baseBalance * 0.05); // Growing trend
+      const balance = amt(baseBalance + variation + month * baseBalance * SNAPSHOT_GROWTH_RATE); // Growing trend
 
       await db.insert(assetSnapshotItems).values({
         id: nanoid(),
