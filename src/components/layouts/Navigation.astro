@@ -33,7 +33,6 @@ const navItems: NavItem[] = [
 ];
 
 const isActive = (href: string) => {
-  if (href === '/dashboard' && currentPath === '/') return true;
   return currentPath.startsWith(href);
 };
 ---
