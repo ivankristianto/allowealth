@@ -5,6 +5,26 @@ import type { Currency } from '@/lib/types';
  * Currency formatting and parsing utilities
  */
 
+// Configure Decimal.js for financial applications
+Decimal.set({
+  precision: 28, // Standard financial precision
+  rounding: Decimal.ROUND_HALF_UP, // Commercial rounding
+});
+
+/**
+ * Helper to safely create a Decimal instance
+ * @returns Decimal instance or null if invalid
+ */
+function safeDecimal(value: unknown): Decimal | null {
+  try {
+    const strValue = (value ?? '0') as string | number;
+    const decimal = new Decimal(strValue);
+    return decimal.isFinite() ? decimal : null;
+  } catch {
+    return null;
+  }
+}
+
 // Number formatters for each currency (cached)
 const formatters = {
   IDR: new Intl.NumberFormat('id-ID', {
@@ -28,10 +48,12 @@ const formatters = {
  * @returns Formatted currency string (e.g., "Rp 1.000.000" or "$1,000.00")
  */
 export function formatCurrency(amount: string, currency: Currency): string {
-  const decimal = new Decimal(amount || '0');
-  if (!decimal.isFinite()) {
+  const decimal = safeDecimal(amount);
+  if (decimal === null) {
     return `${currency === 'IDR' ? 'Rp' : '$'} 0`;
   }
+  // Intl.NumberFormat requires a number; for typical currency amounts this is safe
+  // Note: Very large amounts (> Number.MAX_SAFE_INTEGER) may lose display precision
   return formatters[currency].format(decimal.toNumber());
 }
 
@@ -42,8 +64,8 @@ export function formatCurrency(amount: string, currency: Currency): string {
  * @returns Formatted number string (e.g., "1.000.000" or "1,000.00")
  */
 export function formatCurrencyNumber(amount: string, currency: Currency): string {
-  const decimal = new Decimal(amount || '0');
-  if (!decimal.isFinite()) {
+  const decimal = safeDecimal(amount);
+  if (decimal === null) {
     return '0';
   }
 
@@ -53,6 +75,8 @@ export function formatCurrencyNumber(amount: string, currency: Currency): string
   };
 
   const locale = currency === 'IDR' ? 'id-ID' : 'en-US';
+  // Intl.NumberFormat requires a number; for typical currency amounts this is safe
+  // Note: Very large amounts (> Number.MAX_SAFE_INTEGER) may lose display precision
   return new Intl.NumberFormat(locale, options).format(decimal.toNumber());
 }
 
@@ -95,15 +119,15 @@ export function parseCurrencyInput(input: string): string {
     const multiplier = multiplierMatch[2]?.toLowerCase();
     if (!numStr || !multiplier) return '0';
 
-    const baseNum = new Decimal(numStr.replace(/,/g, '') || '0');
-    if (!baseNum.isFinite()) return '0';
+    const baseNum = safeDecimal(numStr.replace(/,/g, ''));
+    if (baseNum === null || baseNum.isNegative()) return '0';
 
     let num = baseNum;
     if (multiplier === 'k') num = num.times(1000);
     if (multiplier === 'm') num = num.times(1000000);
 
     // Sanity check for reasonable range
-    if (num.isNegative() || num.gt(1e15)) return '0';
+    if (num.gt(1e15)) return '0';
 
     return num.toString();
   }
@@ -117,8 +141,8 @@ export function parseCurrencyInput(input: string): string {
     cleaned = cleaned.replace(/,/g, '');
   }
 
-  const parsed = new Decimal(cleaned || '0');
-  if (!parsed.isFinite()) return '0';
+  const parsed = safeDecimal(cleaned);
+  if (parsed === null) return '0';
 
   // Sanity check for reasonable range
   if (parsed.isNegative() || parsed.gt(1e15)) return '0';
@@ -144,10 +168,10 @@ export function convertCurrency(
     return amount;
   }
 
-  const num = new Decimal(amount || '0');
-  const rateNum = new Decimal(rate || '0');
+  const num = safeDecimal(amount);
+  const rateNum = safeDecimal(rate);
 
-  if (rateNum.isZero()) {
+  if (num === null || rateNum === null || rateNum.isZero()) {
     return '0';
   }
 
@@ -161,8 +185,9 @@ export function convertCurrency(
  * @returns Sum as string
  */
 export function addCurrency(a: string, b: string): string {
-  const numA = new Decimal(a || '0');
-  const numB = new Decimal(b || '0');
+  const numA = safeDecimal(a);
+  const numB = safeDecimal(b);
+  if (numA === null || numB === null) return '0';
   return numA.plus(numB).toString();
 }
 
@@ -173,8 +198,9 @@ export function addCurrency(a: string, b: string): string {
  * @returns Difference as string
  */
 export function subtractCurrency(a: string, b: string): string {
-  const numA = new Decimal(a || '0');
-  const numB = new Decimal(b || '0');
+  const numA = safeDecimal(a);
+  const numB = safeDecimal(b);
+  if (numA === null || numB === null) return '0';
   return numA.minus(numB).toString();
 }
 
@@ -185,7 +211,8 @@ export function subtractCurrency(a: string, b: string): string {
  * @returns Product as string
  */
 export function multiplyCurrency(amount: string, factor: number): string {
-  const num = new Decimal(amount || '0');
+  const num = safeDecimal(amount);
+  if (num === null) return '0';
   return num.times(factor).toString();
 }
 
@@ -196,7 +223,7 @@ export function multiplyCurrency(amount: string, factor: number): string {
  * @returns Quotient as string
  */
 export function divideCurrency(amount: string, divisor: number): string {
-  const num = new Decimal(amount || '0');
-  if (divisor === 0) return '0';
+  const num = safeDecimal(amount);
+  if (num === null || divisor === 0) return '0';
   return num.dividedBy(divisor).toString();
 }

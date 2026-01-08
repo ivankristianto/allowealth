@@ -7,6 +7,26 @@
 
 import Decimal from 'decimal.js';
 
+// Configure Decimal.js for financial applications (idempotent - safe to call multiple times)
+Decimal.set({
+  precision: 28, // Standard financial precision
+  rounding: Decimal.ROUND_HALF_UP, // Commercial rounding
+});
+
+/**
+ * Helper to safely create a Decimal instance
+ * @returns Decimal instance or null if invalid
+ */
+function safeDecimal(value: unknown): Decimal | null {
+  try {
+    const strValue = (value ?? '0') as string | number;
+    const decimal = new Decimal(strValue);
+    return decimal.isFinite() ? decimal : null;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Multiply two decimal numbers (stored as strings) safely
  * @param a - First number as string
@@ -14,8 +34,9 @@ import Decimal from 'decimal.js';
  * @returns Product as string
  */
 export function decimalMultiply(a: string, b: string | number): string {
-  const numA = new Decimal(a || '0');
-  const numB = typeof b === 'string' ? new Decimal(b || '0') : new Decimal(b);
+  const numA = safeDecimal(a);
+  const numB = typeof b === 'string' ? safeDecimal(b) : safeDecimal(b);
+  if (numA === null || numB === null) return '0';
   return numA.times(numB).toString();
 }
 
@@ -27,10 +48,10 @@ export function decimalMultiply(a: string, b: string | number): string {
  * @returns Quotient as string
  */
 export function decimalDivide(a: string, b: string | number, precision: number = 2): string {
-  const numA = new Decimal(a || '0');
-  const numB = typeof b === 'string' ? new Decimal(b || '0') : new Decimal(b);
+  const numA = safeDecimal(a);
+  const numB = typeof b === 'string' ? safeDecimal(b) : safeDecimal(b);
 
-  if (numB.isZero()) {
+  if (numA === null || numB === null || numB.isZero()) {
     throw new Error('Division by zero');
   }
 
@@ -44,8 +65,9 @@ export function decimalDivide(a: string, b: string | number, precision: number =
  * @returns Sum as string
  */
 export function decimalAdd(a: string, b: string): string {
-  const numA = new Decimal(a || '0');
-  const numB = new Decimal(b || '0');
+  const numA = safeDecimal(a);
+  const numB = safeDecimal(b);
+  if (numA === null || numB === null) return '0';
   return numA.plus(numB).toString();
 }
 
@@ -56,8 +78,9 @@ export function decimalAdd(a: string, b: string): string {
  * @returns Difference as string
  */
 export function decimalSubtract(a: string, b: string): string {
-  const numA = new Decimal(a || '0');
-  const numB = new Decimal(b || '0');
+  const numA = safeDecimal(a);
+  const numB = safeDecimal(b);
+  if (numA === null || numB === null) return '0';
   return numA.minus(numB).toString();
 }
 
@@ -68,7 +91,8 @@ export function decimalSubtract(a: string, b: string): string {
  * @returns Rounded number as string
  */
 export function decimalRound(num: string, precision: number = 2): string {
-  const value = new Decimal(num || '0');
+  const value = safeDecimal(num);
+  if (value === null) return '0';
   return value.toFixed(precision);
 }
 
@@ -79,8 +103,9 @@ export function decimalRound(num: string, precision: number = 2): string {
  * @returns Comparison result (-1, 0, 1)
  */
 export function decimalCompare(a: string, b: string): number {
-  const numA = new Decimal(a || '0');
-  const numB = new Decimal(b || '0');
+  const numA = safeDecimal(a);
+  const numB = safeDecimal(b);
+  if (numA === null || numB === null) return 0;
   return numA.comparedTo(numB);
 }
 
@@ -92,10 +117,10 @@ export function decimalCompare(a: string, b: string): number {
  * @returns Percentage as string
  */
 export function decimalPercentage(part: string, total: string, precision: number = 2): string {
-  const numPart = new Decimal(part || '0');
-  const numTotal = new Decimal(total || '0');
+  const numPart = safeDecimal(part);
+  const numTotal = safeDecimal(total);
 
-  if (numTotal.isZero()) {
+  if (numPart === null || numTotal === null || numTotal.isZero()) {
     return '0';
   }
 
@@ -132,8 +157,8 @@ export function decimalAverage(numbers: string[], precision: number = 2): string
  * @returns True if number is zero
  */
 export function decimalIsZero(num: string): boolean {
-  const value = new Decimal(num || '0');
-  return value.isZero();
+  const value = safeDecimal(num);
+  return value === null || value.isZero();
 }
 
 /**
@@ -142,8 +167,8 @@ export function decimalIsZero(num: string): boolean {
  * @returns True if number is greater than zero
  */
 export function decimalIsPositive(num: string): boolean {
-  const value = new Decimal(num || '0');
-  return value.isPositive();
+  const value = safeDecimal(num);
+  return value !== null && value.isPositive();
 }
 
 /**
@@ -152,8 +177,8 @@ export function decimalIsPositive(num: string): boolean {
  * @returns True if number is less than zero
  */
 export function decimalIsNegative(num: string): boolean {
-  const value = new Decimal(num || '0');
-  return value.isNegative();
+  const value = safeDecimal(num);
+  return value !== null && value.isNegative();
 }
 
 /**
@@ -162,7 +187,8 @@ export function decimalIsNegative(num: string): boolean {
  * @returns Absolute value as string
  */
 export function decimalAbs(num: string): string {
-  const value = new Decimal(num || '0');
+  const value = safeDecimal(num);
+  if (value === null) return '0';
   return value.abs().toString();
 }
 
@@ -174,10 +200,11 @@ export function decimalAbs(num: string): string {
  * @returns Clamped value as string
  */
 export function decimalClamp(num: string, min: string, max: string): string {
-  const value = new Decimal(num || '0');
-  const minVal = new Decimal(min || '0');
-  const maxVal = new Decimal(max || '0');
+  const value = safeDecimal(num);
+  const minVal = safeDecimal(min);
+  const maxVal = safeDecimal(max);
 
+  if (value === null || minVal === null || maxVal === null) return '0';
   if (value.lt(minVal)) return minVal.toString();
   if (value.gt(maxVal)) return maxVal.toString();
   return value.toString();
