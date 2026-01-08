@@ -18,7 +18,11 @@
       "Bash(ls:*)",
       "Bash(cat:*)",
       "Bash(gh pr view:*)",
-      "Bash(gh pr diff:*)"
+      "Bash(gh pr diff:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(bd sync:*)",
+      "Bash(bd worktree list)"
     ]
   }
 }
