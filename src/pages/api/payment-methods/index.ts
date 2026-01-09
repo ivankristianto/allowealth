@@ -1,13 +1,7 @@
 import type { APIRoute } from 'astro';
-import { z } from 'zod';
 import { paymentMethodService } from '@/services';
 import { successResponse, errorResponse, validateBody, requireAuth } from '@/lib/api-utils';
-
-// Validation schemas
-const createPaymentMethodSchema = z.object({
-  name: z.string().min(1).max(255),
-  type: z.enum(['cash', 'credit_card', 'debit_card', 'bank_transfer', 'e_wallet']),
-});
+import { createPaymentMethodAPISchema } from '@/lib/validation';
 
 /**
  * GET /api/payment-methods
@@ -44,7 +38,7 @@ export const POST: APIRoute = async ({ request, url }) => {
   try {
     const userId = requireAuth({ request, url } as any);
 
-    const validation = await validateBody(request, createPaymentMethodSchema);
+    const validation = await validateBody(request, createPaymentMethodAPISchema);
 
     if (!validation.success) {
       return errorResponse('Validation failed', 400, 'VALIDATION_ERROR', validation.error.issues);

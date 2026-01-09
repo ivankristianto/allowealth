@@ -1,14 +1,17 @@
 /**
  * Shared TypeScript types for Payment Method entities
+ *
+ * NOTE: Input types (CreatePaymentMethodInput, UpdatePaymentMethodInput) are now
+ * exported from @/lib/validation to maintain a single source of truth.
+ * Filter types are also exported from validation to avoid duplication.
+ *
+ * Import Input types from: @/lib/validation
  */
 
-// Enums
-export type PaymentMethodType =
-  | 'cash'
-  | 'credit_card'
-  | 'debit_card'
-  | 'bank_transfer'
-  | 'e_wallet';
+import type { PaymentMethodType } from '@/lib/enums';
+
+// Re-export enum from validation for convenience
+export type { PaymentMethodType };
 
 // Database model (from schema)
 export interface PaymentMethod {
@@ -19,24 +22,6 @@ export interface PaymentMethod {
   is_active: boolean;
   created_at: Date;
   updated_at: Date;
-}
-
-// Input types (for forms/API)
-export interface PaymentMethodCreateInput {
-  user_id: string;
-  name: string;
-  type: PaymentMethodType;
-}
-
-export interface PaymentMethodUpdateInput {
-  name?: string;
-  type?: PaymentMethodType;
-  is_active?: boolean;
-}
-
-// Filter types (for queries)
-export interface PaymentMethodFilter {
-  is_active?: boolean;
 }
 
 // Output types (with computed fields for API responses)

@@ -1,10 +1,17 @@
 /**
  * Shared TypeScript types for Transaction entities
+ *
+ * NOTE: Input types (CreateTransactionInput, UpdateTransactionInput) are now
+ * exported from @/lib/validation to maintain a single source of truth.
+ * Filter types are also exported from validation to avoid duplication.
+ *
+ * Import Input types from: @/lib/validation
  */
 
-// Enums
-export type TransactionType = 'expense' | 'income';
-export type Currency = 'IDR' | 'USD';
+import type { TransactionType, Currency } from '@/lib/enums';
+
+// Re-export enums from validation for convenience
+export type { TransactionType, Currency };
 
 // Database model (from schema)
 export interface Transaction {
@@ -20,40 +27,6 @@ export interface Transaction {
   deleted_at: Date | null;
   created_at: Date;
   updated_at: Date;
-}
-
-// Input types (for forms/API)
-export interface TransactionCreateInput {
-  user_id: string;
-  type: TransactionType;
-  amount: string;
-  currency: Currency;
-  category_id: string;
-  payment_method_id: string;
-  transaction_date: Date;
-  description?: string;
-}
-
-export interface TransactionUpdateInput {
-  type?: TransactionType;
-  amount?: string;
-  currency?: Currency;
-  category_id?: string;
-  payment_method_id?: string;
-  transaction_date?: Date;
-  description?: string;
-}
-
-// Filter types (for queries)
-export interface TransactionFilter {
-  type?: TransactionType;
-  category_id?: string;
-  payment_method_id?: string;
-  currency?: Currency;
-  start_date?: Date;
-  end_date?: Date;
-  limit?: number;
-  offset?: number;
 }
 
 // Output types (with relations for API responses)

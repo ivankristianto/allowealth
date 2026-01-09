@@ -7,53 +7,56 @@
  */
 
 interface Props {
-	type?: 'email-format' | 'password-mismatch' | 'password-requirements' | 'email-exists' | 'invalid-credentials' | 'network-error' | 'success';
-	message?: string;
-	dismissible?: boolean;
+  type?:
+    | 'email-format'
+    | 'password-mismatch'
+    | 'password-requirements'
+    | 'email-exists'
+    | 'invalid-credentials'
+    | 'network-error'
+    | 'success';
+  message?: string;
+  dismissible?: boolean;
 }
 
-const {
-	type = 'success',
-	message,
-	dismissible = false
-} = Astro.props;
+const { type = 'success', message, dismissible = false } = Astro.props;
 
 const alertConfig = {
-	'email-format': {
-		alertClass: 'alert-warning',
-		icon: 'svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>',
-		defaultMessage: 'Please enter a valid email address'
-	},
-	'password-mismatch': {
-		alertClass: 'alert-error',
-		icon: 'svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>',
-		defaultMessage: 'Passwords do not match'
-	},
-	'password-requirements': {
-		alertClass: 'alert-warning',
-		icon: 'svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>',
-		defaultMessage: 'Password does not meet requirements'
-	},
-	'email-exists': {
-		alertClass: 'alert-error',
-		icon: 'svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>',
-		defaultMessage: 'An account with this email already exists'
-	},
-	'invalid-credentials': {
-		alertClass: 'alert-error',
-		icon: 'svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>',
-		defaultMessage: 'Invalid email or password'
-	},
-	'network-error': {
-		alertClass: 'alert-error',
-		icon: 'svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>',
-		defaultMessage: 'Network error. Please check your connection and try again'
-	},
-	success: {
-		alertClass: 'alert-success',
-		icon: 'svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>',
-		defaultMessage: 'Success!'
-	}
+  'email-format': {
+    alertClass: 'alert-warning',
+    icon: 'svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>',
+    defaultMessage: 'Please enter a valid email address',
+  },
+  'password-mismatch': {
+    alertClass: 'alert-error',
+    icon: 'svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>',
+    defaultMessage: 'Passwords do not match',
+  },
+  'password-requirements': {
+    alertClass: 'alert-warning',
+    icon: 'svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>',
+    defaultMessage: 'Password does not meet requirements',
+  },
+  'email-exists': {
+    alertClass: 'alert-error',
+    icon: 'svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>',
+    defaultMessage: 'An account with this email already exists',
+  },
+  'invalid-credentials': {
+    alertClass: 'alert-error',
+    icon: 'svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>',
+    defaultMessage: 'Invalid email or password',
+  },
+  'network-error': {
+    alertClass: 'alert-error',
+    icon: 'svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>',
+    defaultMessage: 'Network error. Please check your connection and try again',
+  },
+  success: {
+    alertClass: 'alert-success',
+    icon: 'svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>',
+    defaultMessage: 'Success!',
+  },
 };
 
 const config = alertConfig[type];
@@ -61,26 +64,39 @@ const displayMessage = message || config.defaultMessage;
 ---
 
 <div role="alert" class:list={['alert', config.alertClass]}>
-	<set:html={config.icon} />
-	<span>{displayMessage}</span>
-	{dismissible && (
-		<button class="btn btn-sm btn-circle btn-ghost" aria-label="Dismiss message">
-			<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-			</svg>
-		</button>
-	)}
+  <set:html={config.icon} />
+  <span>{displayMessage}</span>
+  {
+    dismissible && (
+      <button class="btn btn-sm btn-circle btn-ghost" aria-label="Dismiss message">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="h-4 w-4"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M6 18L18 6M6 6l12 12"
+          />
+        </svg>
+      </button>
+    )
+  }
 </div>
 
 <style>
-	/* Ensure alert is accessible and properly styled */
-	[role="alert"] {
-		min-height: 3rem;
-	}
+  /* Ensure alert is accessible and properly styled */
+  [role='alert'] {
+    min-height: 3rem;
+  }
 
-	/* Focus styles for dismiss button */
-	button:focus-visible {
-		outline: 2px solid currentColor;
-		outline-offset: 2px;
-	}
+  /* Focus styles for dismiss button */
+  button:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 2px;
+  }
 </style>

@@ -4,13 +4,25 @@
  * Export all Zod schemas for use in services and API endpoints
  */
 
+// Shared enums (export once from central location)
+export {
+  currencyEnum,
+  transactionTypeEnum,
+  categoryTypeEnum,
+  paymentMethodTypeEnum,
+  type Currency,
+  type TransactionType,
+  type CategoryType,
+  type PaymentMethodType,
+} from '@/lib/enums';
+
 // Categories
 export {
   createCategorySchema,
   updateCategorySchema,
+  createCategoryAPISchema,
+  updateCategoryAPISchema,
   categoryFilterSchema,
-  categoryTypeEnum,
-  currencyEnum,
   type CreateCategoryInput,
   type UpdateCategoryInput,
   type CategoryFilter,
@@ -20,8 +32,9 @@ export {
 export {
   createPaymentMethodSchema,
   updatePaymentMethodSchema,
+  createPaymentMethodAPISchema,
+  updatePaymentMethodAPISchema,
   paymentMethodFilterSchema,
-  paymentMethodTypeEnum,
   type CreatePaymentMethodInput,
   type UpdatePaymentMethodInput,
   type PaymentMethodFilter,
@@ -31,8 +44,9 @@ export {
 export {
   createTransactionSchema,
   updateTransactionSchema,
+  createTransactionAPISchema,
+  updateTransactionAPISchema,
   transactionFilterSchema,
-  transactionTypeEnum,
   type CreateTransactionInput,
   type UpdateTransactionInput,
   type TransactionFilter,
