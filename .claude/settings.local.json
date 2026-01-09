@@ -26,7 +26,9 @@
       "Bash(bun run:*)",
       "Bash(bun install)",
       "Bash(gh pr checks:*)",
-      "Bash(gh pr create:*)"
+      "Bash(gh pr create:*)",
+      "Bash(bd worktree:*)",
+      "Skill(k2-dev:pr-creation)"
     ]
   }
 }
