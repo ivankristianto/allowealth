@@ -1,10 +1,17 @@
 /**
  * Shared TypeScript types for Category entities
+ *
+ * NOTE: Input types (CreateCategoryInput, UpdateCategoryInput) are now
+ * exported from @/lib/validation to maintain a single source of truth.
+ * Filter types are also exported from validation to avoid duplication.
+ *
+ * Import Input types from: @/lib/validation
  */
 
-// Enums
-export type CategoryType = 'expense' | 'income';
-export type Currency = 'IDR' | 'USD';
+import type { CategoryType, Currency } from '@/lib/enums';
+
+// Re-export enums from validation for convenience
+export type { CategoryType, Currency };
 
 // Database model (from schema)
 export interface Category {
@@ -18,31 +25,6 @@ export interface Category {
   is_active: boolean;
   created_at: Date;
   updated_at: Date;
-}
-
-// Input types (for forms/API)
-export interface CategoryCreateInput {
-  user_id: string;
-  name: string;
-  type: CategoryType;
-  currency: Currency;
-  percentage?: string;
-  budget_amount?: string;
-}
-
-export interface CategoryUpdateInput {
-  name?: string;
-  type?: CategoryType;
-  currency?: Currency;
-  percentage?: string;
-  budget_amount?: string;
-  is_active?: boolean;
-}
-
-// Filter types (for queries)
-export interface CategoryFilter {
-  type?: CategoryType;
-  is_active?: boolean;
 }
 
 // Output types (with computed fields for API responses)

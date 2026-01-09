@@ -1,72 +1,85 @@
 import { z } from 'zod';
-import { currencyEnum } from './categories';
+import { currencyEnum, transactionTypeEnum } from '@/lib/enums';
 
 /**
  * Validation schemas for Transaction operations
  */
 
-// Common enums
-export const transactionTypeEnum = z.enum(['expense', 'income']);
+// Re-export enums from shared location for convenience
+export { currencyEnum, transactionTypeEnum };
 
-// Schema for creating a transaction
+// Common validation for amount
+const amountValidation = z
+  .string()
+  .min(1, 'Amount is required')
+  .refine(
+    (val) => {
+      const num = parseFloat(val);
+      return !isNaN(num) && num > 0;
+    },
+    { message: 'Amount must be greater than 0' }
+  );
+
+// Common validation for transaction date (from Date object)
+const transactionDateValidation = z.date().refine((date) => date <= new Date(), {
+  message: 'Transaction date cannot be in the future',
+});
+
+// Schema for creating a transaction (for service layer)
 export const createTransactionSchema = z
   .object({
     user_id: z.string().min(1, 'User ID is required'),
     type: transactionTypeEnum,
-    amount: z
-      .string()
-      .min(1, 'Amount is required')
-      .refine(
-        (val) => {
-          const num = parseFloat(val);
-          return !isNaN(num) && num > 0;
-        },
-        { message: 'Amount must be greater than 0' }
-      ),
+    amount: amountValidation,
     currency: currencyEnum,
     category_id: z.string().min(1, 'Category ID is required'),
     payment_method_id: z.string().min(1, 'Payment method ID is required'),
-    transaction_date: z
-      .date()
-      .refine((date) => date <= new Date(), {
-        message: 'Transaction date cannot be in the future',
-      })
-      .default(() => new Date()),
+    transaction_date: transactionDateValidation.default(() => new Date()),
     description: z.string().max(500, 'Description must not exceed 500 characters').optional(),
   })
   .strict();
 
 export type CreateTransactionInput = z.infer<typeof createTransactionSchema>;
 
-// Schema for updating a transaction (all fields optional)
+// Schema for updating a transaction (for service layer)
 export const updateTransactionSchema = z
   .object({
     type: transactionTypeEnum.optional(),
-    amount: z
-      .string()
-      .min(1, 'Amount is required')
-      .refine(
-        (val) => {
-          const num = parseFloat(val);
-          return !isNaN(num) && num > 0;
-        },
-        { message: 'Amount must be greater than 0' }
-      )
-      .optional(),
+    amount: amountValidation.optional(),
     currency: currencyEnum.optional(),
     category_id: z.string().min(1, 'Category ID is required').optional(),
     payment_method_id: z.string().min(1, 'Payment method ID is required').optional(),
-    transaction_date: z
-      .date()
-      .refine((date) => date <= new Date(), {
-        message: 'Transaction date cannot be in the future',
-      })
-      .optional(),
+    transaction_date: transactionDateValidation.optional(),
     description: z.string().max(500, 'Description must not exceed 500 characters').optional(),
   })
   .strict();
 
 export type UpdateTransactionInput = z.infer<typeof updateTransactionSchema>;
+
+// API-specific schemas that accept ISO datetime strings
+export const createTransactionAPISchema = z
+  .object({
+    type: transactionTypeEnum,
+    amount: amountValidation,
+    currency: currencyEnum,
+    category_id: z.string().min(1, 'Category ID is required'),
+    payment_method_id: z.string().min(1, 'Payment method ID is required'),
+    transaction_date: z.string().datetime(),
+    description: z.string().max(500, 'Description must not exceed 500 characters').optional(),
+  })
+  .strict();
+
+export const updateTransactionAPISchema = z
+  .object({
+    type: transactionTypeEnum.optional(),
+    amount: amountValidation.optional(),
+    currency: currencyEnum.optional(),
+    category_id: z.string().min(1, 'Category ID is required').optional(),
+    payment_method_id: z.string().min(1, 'Payment method ID is required').optional(),
+    transaction_date: z.string().datetime().optional(),
+    description: z.string().max(500, 'Description must not exceed 500 characters').optional(),
+  })
+  .strict();
 
 // Schema for transaction filters
 export const transactionFilterSchema = z

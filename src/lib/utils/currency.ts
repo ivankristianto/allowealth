@@ -1,5 +1,5 @@
 import Decimal from 'decimal.js';
-import type { Currency } from '@/lib/types';
+import type { Currency } from '@/lib/enums';
 
 /**
  * Currency formatting and parsing utilities

@@ -1,23 +1,7 @@
 import type { APIRoute } from 'astro';
-import { z } from 'zod';
 import { categoryService } from '@/services';
 import { successResponse, errorResponse, validateBody, requireAuth } from '@/lib/api-utils';
-
-// Validation schema
-const updateCategorySchema = z.object({
-  name: z.string().min(1).max(255).optional(),
-  type: z.enum(['expense', 'income']).optional(),
-  currency: z.enum(['IDR', 'USD']).optional(),
-  percentage: z
-    .string()
-    .regex(/^\d+(\.\d{1,2})?$/)
-    .optional(),
-  budget_amount: z
-    .string()
-    .regex(/^\d+(\.\d{1,2})?$/)
-    .optional(),
-  is_active: z.boolean().optional(),
-});
+import { updateCategoryAPISchema } from '@/lib/validation';
 
 /**
  * GET /api/categories/:id
@@ -61,7 +45,7 @@ export const PUT: APIRoute = async ({ params, request, url }) => {
       return errorResponse('Category ID is required', 400);
     }
 
-    const validation = await validateBody(request, updateCategorySchema);
+    const validation = await validateBody(request, updateCategoryAPISchema);
 
     if (!validation.success) {
       return errorResponse('Validation failed', 400, 'VALIDATION_ERROR', validation.error.issues);

@@ -1,5 +1,4 @@
 import type { APIRoute } from 'astro';
-import { z } from 'zod';
 import { transactionService } from '@/services';
 import {
   successResponse,
@@ -9,19 +8,7 @@ import {
   getPaginationParams,
   isValidDate,
 } from '@/lib/api-utils';
-
-// Validation schemas
-const createTransactionSchema = z.object({
-  type: z.enum(['expense', 'income']),
-  amount: z
-    .string()
-    .regex(/^\d+(\.\d{1,2})?$/, 'Amount must be a valid number with up to 2 decimal places'),
-  currency: z.enum(['IDR', 'USD']),
-  category_id: z.string().min(1),
-  payment_method_id: z.string().min(1),
-  transaction_date: z.string().datetime(),
-  description: z.string().optional(),
-});
+import { createTransactionAPISchema } from '@/lib/validation';
 
 /**
  * GET /api/transactions
@@ -106,7 +93,7 @@ export const POST: APIRoute = async ({ request, url }) => {
   try {
     const userId = requireAuth({ request, url } as any);
 
-    const validation = await validateBody(request, createTransactionSchema);
+    const validation = await validateBody(request, createTransactionAPISchema);
 
     if (!validation.success) {
       return errorResponse('Validation failed', 400, 'VALIDATION_ERROR', validation.error.issues);

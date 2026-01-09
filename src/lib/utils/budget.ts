@@ -1,4 +1,4 @@
-import type { Currency } from '@/lib/types';
+import type { Currency } from '@/lib/enums';
 import { subtractCurrency, divideCurrency, multiplyCurrency, addCurrency } from './currency';
 
 /**
