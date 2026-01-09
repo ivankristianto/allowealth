@@ -1,0 +1,296 @@
+---
+/**
+ * RegistrationForm Component (Molecule)
+ *
+ * User registration form with validation and loading states
+ * Includes email, name, password, and confirm password fields
+ */
+
+import Input from '../atoms/Input.astro';
+import PasswordField from '../atoms/PasswordField.astro';
+import Button from '../atoms/Button.astro';
+import Label from '../atoms/Label.astro';
+
+interface Props {
+	action?: string;
+	method?: 'POST' | 'GET';
+	submitText?: string;
+	loginLink?: string;
+}
+
+const {
+	action = '/api/auth/register',
+	method = 'POST',
+	submitText = 'Create Account',
+	loginLink = '/login',
+} = Astro.props;
+---
+
+<form
+	id="registration-form"
+	class="space-y-6"
+	action={action}
+	method={method}
+	data-registration-form
+	novalidate
+>
+	<div id="form-messages" class="space-y-2" aria-live="polite" aria-atomic="true"></div>
+
+	<div class="form-control">
+		<Label for="name" required>Full Name</Label>
+		<Input
+			type="text"
+			id="name"
+			name="name"
+			placeholder="Enter your full name"
+			required
+			autocomplete="name"
+		/>
+	</div>
+
+	<div class="form-control">
+		<Label for="email" required>Email Address</Label>
+		<Input
+			type="email"
+			id="email"
+			name="email"
+			placeholder="your.email@example.com"
+			required
+			autocomplete="email"
+		/>
+	</div>
+
+	<PasswordField
+		id="password"
+		name="password"
+		label="Password"
+		placeholder="Create a strong password"
+		required={true}
+		showStrength={true}
+		showRequirements={true}
+	/>
+
+	<div class="form-control">
+		<Label for="confirm-password" required>Confirm Password</Label>
+		<div class="relative">
+			<Input
+				type="password"
+				id="confirm-password"
+				name="confirm-password"
+				placeholder="Re-enter your password"
+				required
+				autocomplete="new-password"
+				class="pr-12"
+			/>
+			<button
+				type="button"
+				class="absolute right-3 top-1/2 -translate-y-1/2 btn btn-ghost btn-circle btn-sm"
+				aria-label="Toggle password visibility"
+				data-toggle-password="confirm-password"
+				tabindex="-1"
+			>
+				<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" data-eye-icon>
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+				</svg>
+				<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" data-eye-off-icon>
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+				</svg>
+			</button>
+		</div>
+	</div>
+
+	<Button type="submit" variant="primary" class="w-full" data-submit-button>
+		<span data-button-text>{submitText}</span>
+		<span data-loading-spinner class="hidden">
+			<span class="loading loading-spinner"></span>
+			Creating account...
+		</span>
+	</Button>
+
+	<div class="text-center text-sm">
+		<span class="text-base-content/60">Already have an account?</span>
+		<a href={loginLink} class="link link-primary ml-1">Sign in</a>
+	</div>
+</form>
+
+<style>
+	/* Form styles */
+	[data-registration-form] {
+		max-width: 400px;
+		margin: 0 auto;
+	}
+
+	/* Disabled state during submission */
+	[data-registration-form].submitting input,
+	[data-registration-form].submitting button {
+		pointer-events: none;
+		opacity: 0.7;
+	}
+
+	/* Focus styles for accessibility */
+	input:focus-visible,
+	button:focus-visible {
+		outline: 2px solid currentColor;
+		outline-offset: 2px;
+	}
+</style>
+
+<script>
+	const form = document.querySelector('[data-registration-form]') as HTMLFormElement;
+	const messagesContainer = document.getElementById('form-messages');
+	const submitButton = form?.querySelector('[data-submit-button]') as HTMLButtonElement;
+	const buttonText = submitButton?.querySelector('[data-button-text]');
+	const loadingSpinner = submitButton?.querySelector('[data-loading-spinner]');
+
+	if (form) {
+		// Handle password toggle for confirm password field
+		const toggleButtons = form.querySelectorAll('[data-toggle-password]');
+		toggleButtons.forEach(button => {
+			button.addEventListener('click', () => {
+				const targetId = button.getAttribute('data-toggle-password');
+				const input = document.getElementById(targetId) as HTMLInputElement;
+				const eyeIcon = button.querySelector('[data-eye-icon]');
+				const eyeOffIcon = button.querySelector('[data-eye-off-icon]');
+
+				if (input && eyeIcon && eyeOffIcon) {
+					const isPassword = input.type === 'password';
+					input.type = isPassword ? 'text' : 'password';
+					eyeIcon.classList.toggle('hidden', !isPassword);
+					eyeOffIcon.classList.toggle('hidden', isPassword);
+					button.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
+				}
+			});
+		});
+
+		// Clear messages on input
+		const inputs = form.querySelectorAll('input');
+		inputs.forEach(input => {
+			input.addEventListener('input', () => {
+				if (messagesContainer) {
+					messagesContainer.innerHTML = '';
+				}
+			});
+		});
+
+		// Form submission
+		form.addEventListener('submit', async (e) => {
+			e.preventDefault();
+			if (messagesContainer) {
+				messagesContainer.innerHTML = '';
+			}
+
+			const formData = new FormData(form);
+			const data = Object.fromEntries(formData.entries());
+
+			// Client-side validation
+			const errors: string[] = [];
+
+			// Validate name
+			if (!data.name || (data.name as string).trim().length < 2) {
+				errors.push('Name must be at least 2 characters');
+			}
+
+			// Validate email format
+			const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+			if (!data.email || !emailRegex.test(data.email as string)) {
+				errors.push('Please enter a valid email address');
+			}
+
+			// Validate password requirements
+			const password = data.password as string;
+			const passwordErrors = [];
+			if (password.length < 12) passwordErrors.push('at least 12 characters');
+			if (!/[A-Z]/.test(password)) passwordErrors.push('one uppercase letter');
+			if (!/[a-z]/.test(password)) passwordErrors.push('one lowercase letter');
+			if (!/[0-9]/.test(password)) passwordErrors.push('one number');
+			if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) passwordErrors.push('one special character');
+
+			if (passwordErrors.length > 0) {
+				errors.push(`Password must include ${passwordErrors.join(', ')}`);
+			}
+
+			// Validate password match
+			if (password !== (data['confirm-password'] as string)) {
+				errors.push('Passwords do not match');
+			}
+
+			// Display validation errors
+			if (errors.length > 0) {
+				if (messagesContainer) {
+					messagesContainer.innerHTML = `
+						<div role="alert" class="alert alert-error">
+							<svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+							</svg>
+							<div>
+								<h3 class="font-bold">Please fix the following errors:</h3>
+								<ul class="text-xs mt-1 list-disc list-inside">
+									${errors.map(err => `<li>${err}</li>`).join('')}
+								</ul>
+							</div>
+						</div>
+					`;
+				}
+				return;
+			}
+
+			// Show loading state
+			form.classList.add('submitting');
+			if (buttonText) buttonText.classList.add('hidden');
+			if (loadingSpinner) loadingSpinner.classList.remove('hidden');
+			if (submitButton) submitButton.disabled = true;
+
+			try {
+				// TODO: Replace with actual API call when backend is ready
+				// const response = await fetch(form.action, {
+				// 	method: form.method,
+				// 	headers: { 'Content-Type': 'application/json' },
+				// 	body: JSON.stringify(data)
+				// });
+
+				// Simulate API call
+				await new Promise(resolve => setTimeout(resolve, 2000));
+
+				// Show success message
+				if (messagesContainer) {
+					messagesContainer.innerHTML = `
+						<div role="alert" class="alert alert-success">
+							<svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+							</svg>
+							<span>Account created successfully! Redirecting to login...</span>
+						</div>
+					`;
+				}
+
+				// Reset form
+				form.reset();
+
+				// Redirect to login after delay
+				setTimeout(() => {
+					window.location.href = loginLink;
+				}, 2000);
+
+			} catch (error) {
+				// Show error message
+				if (messagesContainer) {
+					messagesContainer.innerHTML = `
+						<div role="alert" class="alert alert-error">
+							<svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+							</svg>
+							<span>An error occurred. Please try again.</span>
+						</div>
+					`;
+				}
+			} finally {
+				// Reset loading state
+				form.classList.remove('submitting');
+				if (buttonText) buttonText.classList.remove('hidden');
+				if (loadingSpinner) loadingSpinner.classList.add('hidden');
+				if (submitButton) submitButton.disabled = false;
+			}
+		});
+	}
+</script>
