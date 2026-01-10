@@ -1,0 +1,94 @@
+---
+/**
+ * Quick Actions Component (Molecule)
+ *
+ * Quick action buttons for common tasks:
+ * - Add Expense
+ * - Add Income
+ * - View Reports
+ *
+ * Responsive: vertical on mobile, horizontal on desktop.
+ *
+ * @param {string} addExpenseUrl - URL for add expense action
+ * @param {string} addIncomeUrl - URL for add income action
+ * @param {string} reportsUrl - URL for reports action
+ * @param {string} className - Additional CSS classes
+ */
+
+import Button from '../atoms/Button.astro';
+import Icon from '../atoms/Icon.astro';
+
+export interface QuickAction {
+  label: string;
+  url: string;
+  icon: string;
+  variant: 'primary' | 'secondary' | 'outline';
+  ariaLabel: string;
+}
+
+export interface Props {
+  actions?: QuickAction[];
+  className?: string;
+}
+
+// Default quick actions
+const defaultActions: QuickAction[] = [
+  {
+    label: 'Add Expense',
+    url: '/transactions/add?type=expense',
+    icon: 'minus',
+    variant: 'primary',
+    ariaLabel: 'Add new expense transaction',
+  },
+  {
+    label: 'Add Income',
+    url: '/transactions/add?type=income',
+    icon: 'plus',
+    variant: 'secondary',
+    ariaLabel: 'Add new income transaction',
+  },
+  {
+    label: 'View Reports',
+    url: '/reports',
+    icon: 'search',
+    variant: 'outline',
+    ariaLabel: 'View financial reports',
+  },
+];
+
+const { actions = defaultActions, className = '' } = Astro.props;
+---
+
+<div
+  class={`flex flex-col sm:flex-row gap-3 ${className}`}
+  data-quick-actions
+  role="group"
+  aria-label="Quick actions"
+>
+  {
+    actions.map((action) => (
+      <a
+        href={action.url}
+        class={`btn btn-${action.variant} gap-2 flex-1 justify-center ${
+          action.variant === 'primary'
+            ? 'btn-primary'
+            : action.variant === 'secondary'
+              ? 'bg-neutral-200 text-neutral-800 hover:bg-neutral-300'
+              : 'btn-outline'
+        }`}
+        aria-label={action.ariaLabel}
+      >
+        <Icon name={action.icon} size="sm" />
+        <span>{action.label}</span>
+      </a>
+    ))
+  }
+</div>
+
+<style>
+  /* Ensure proper focus states for accessibility */
+  [data-quick-actions] a:focus {
+    outline: 2px solid currentColor;
+    outline-offset: 2px;
+  }
+</style>

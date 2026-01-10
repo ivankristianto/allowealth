@@ -40,7 +40,11 @@ const isActive = (href: string) => {
 };
 ---
 
-<aside class="bg-base-100 w-64 min-h-screen border-r border-base-300">
+<aside
+  class="bg-base-100 w-64 min-w-64 min-h-screen border-r border-base-300 hidden lg:block"
+  role="navigation"
+  aria-label="Main navigation"
+>
   <!-- Close button for mobile -->
   <div class="lg:hidden p-4 border-b border-base-300 flex justify-between items-center">
     <span class="font-bold text-lg">Menu</span>
