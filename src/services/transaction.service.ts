@@ -1,5 +1,5 @@
 import { db, transactions, categories, paymentMethods } from '@/db';
-import { eq, and, gte, lte, desc, sql } from 'drizzle-orm';
+import { eq, and, gte, lte, desc, sql, or, like } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { categoryService } from './category.service';
 import { paymentMethodService } from './payment-method.service';
@@ -12,6 +12,22 @@ import {
 
 export { type CreateTransactionInput, type UpdateTransactionInput };
 
+export interface CSVImportResult {
+  success: number;
+  skipped: number;
+  errors: Array<{ row: number; message: string }>;
+}
+
+export interface CSVRow {
+  date: string;
+  type: string;
+  amount: string;
+  currency: string;
+  category: string;
+  payment_method: string;
+  description?: string;
+}
+
 export interface TransactionFilters {
   user_id: string;
   type?: 'expense' | 'income';
@@ -20,6 +36,7 @@ export interface TransactionFilters {
   currency?: 'IDR' | 'USD';
   start_date?: Date;
   end_date?: Date;
+  search?: string;
   limit?: number;
   offset?: number;
 }
@@ -115,6 +132,10 @@ export class TransactionService {
 
     if (filters.end_date) {
       conditions.push(lte(transactions.transaction_date, filters.end_date));
+    }
+
+    if (filters.search) {
+      conditions.push(or(like(transactions.description, `%${filters.search}%`)));
     }
 
     const result = await db.query.transactions.findMany({
@@ -227,12 +248,182 @@ export class TransactionService {
       conditions.push(lte(transactions.transaction_date, filters.end_date));
     }
 
+    if (filters.search) {
+      conditions.push(or(like(transactions.description, `%${filters.search}%`)));
+    }
+
     const result = await db
       .select({ count: sql<number>`count(*)` })
       .from(transactions)
       .where(and(...conditions));
 
     return result[0]?.count || 0;
+  }
+
+  /**
+   * Import transactions from CSV data
+   */
+  async importFromCSV(
+    user_id: string,
+    rows: CSVRow[],
+    columnMapping: Record<string, string>
+  ): Promise<CSVImportResult> {
+    const result: CSVImportResult = {
+      success: 0,
+      skipped: 0,
+      errors: [],
+    };
+
+    // Get user's categories and payment methods for lookup
+    const userCategories = await categoryService.findAll(user_id);
+    const userPaymentMethods = await paymentMethodService.findAll(user_id);
+
+    const categoryMap = new Map(userCategories.map((c) => [c.name.toLowerCase(), c.id]));
+    const paymentMethodMap = new Map(userPaymentMethods.map((p) => [p.name.toLowerCase(), p.id]));
+
+    // Get existing transactions for duplicate detection
+    const existingTransactions = await this.findAll({ user_id, limit: 10000 });
+    const existingKeys = new Set(
+      existingTransactions.map(
+        (t) =>
+          `${t.transaction_date.toISOString().split('T')[0]}-${t.type}-${
+            t.amount
+          }-${t.category_id}-${t.payment_method_id}`
+      )
+    );
+
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      try {
+        // Map columns based on user's mapping
+        const dateStr = row[columnMapping.date] || row.date;
+        const typeStr = row[columnMapping.type] || row.type;
+        const amountStr = row[columnMapping.amount] || row.amount;
+        const currencyStr = row[columnMapping.currency] || row.currency;
+        const categoryStr = row[columnMapping.category] || row.category;
+        const paymentMethodStr = row[columnMapping.payment_method] || row.payment_method;
+        const descriptionStr = row[columnMapping.description] || row.description;
+
+        // Validate and parse data
+        const transactionDate = new Date(dateStr);
+        if (isNaN(transactionDate.getTime())) {
+          result.errors.push({ row: i + 1, message: 'Invalid date format' });
+          continue;
+        }
+
+        if (typeStr !== 'expense' && typeStr !== 'income') {
+          result.errors.push({ row: i + 1, message: 'Invalid type (must be expense or income)' });
+          continue;
+        }
+
+        const amount = parseFloat(amountStr);
+        if (isNaN(amount) || amount <= 0) {
+          result.errors.push({ row: i + 1, message: 'Invalid amount (must be > 0)' });
+          continue;
+        }
+
+        if (currencyStr !== 'IDR' && currencyStr !== 'USD') {
+          result.errors.push({ row: i + 1, message: 'Invalid currency (must be IDR or USD)' });
+          continue;
+        }
+
+        // Look up category and payment method
+        const categoryId = categoryMap.get(categoryStr.toLowerCase().trim());
+        if (!categoryId) {
+          result.errors.push({ row: i + 1, message: `Category not found: ${categoryStr}` });
+          continue;
+        }
+
+        const paymentMethodId = paymentMethodMap.get(paymentMethodStr.toLowerCase().trim());
+        if (!paymentMethodId) {
+          result.errors.push({
+            row: i + 1,
+            message: `Payment method not found: ${paymentMethodStr}`,
+          });
+          continue;
+        }
+
+        // Check for duplicates
+        const duplicateKey = `${dateStr}-${typeStr}-${amountStr}-${categoryId}-${paymentMethodId}`;
+        if (existingKeys.has(duplicateKey)) {
+          result.skipped++;
+          continue;
+        }
+
+        // Create transaction
+        await this.create({
+          user_id,
+          type: typeStr as 'expense' | 'income',
+          amount: amountStr,
+          currency: currencyStr as 'IDR' | 'USD',
+          category_id: categoryId,
+          payment_method_id: paymentMethodId,
+          transaction_date: transactionDate,
+          description: descriptionStr,
+        });
+
+        result.success++;
+        existingKeys.add(duplicateKey); // Add to set to avoid duplicates within same import
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        result.errors.push({ row: i + 1, message });
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * Export transactions to CSV format
+   */
+  async exportToCSV(filters: TransactionFilters): Promise<string> {
+    // Fetch all matching transactions (no limit for export)
+    const allTransactions = await this.findAll({
+      ...filters,
+      limit: undefined,
+      offset: undefined,
+    });
+
+    // CSV header
+    const headers = [
+      'date',
+      'type',
+      'amount',
+      'currency',
+      'category',
+      'payment_method',
+      'description',
+    ];
+
+    // Build CSV rows
+    const csvRows = allTransactions.map((t) => [
+      t.transaction_date.toISOString().split('T')[0], // YYYY-MM-DD
+      t.type,
+      t.amount,
+      t.currency,
+      t.category.name,
+      t.payment_method.name,
+      t.description || '',
+    ]);
+
+    // Combine header and rows
+    const allRows = [headers, ...csvRows];
+
+    // Convert to CSV string
+    return allRows
+      .map((row) =>
+        row
+          .map((cell) => {
+            // Escape quotes and wrap in quotes if contains comma or quote
+            const cellStr = String(cell);
+            if (cellStr.includes(',') || cellStr.includes('"') || cellStr.includes('\n')) {
+              return `"${cellStr.replace(/"/g, '""')}"`;
+            }
+            return cellStr;
+          })
+          .join(',')
+      )
+      .join('\n');
   }
 }
 
