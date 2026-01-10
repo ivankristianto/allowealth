@@ -1,0 +1,230 @@
+---
+/**
+ * Transaction Form Component
+ *
+ * Form for adding/editing transactions with validation.
+ *
+ * @param {string} action - Form action URL
+ * @param {string} method - Form method (POST or PUT)
+ * @param {Object} values - Default form values
+ * @param {Array} categories - Available categories
+ * @param {Array} paymentMethods - Available payment methods
+ * @param {string} transactionType - Pre-selected type (expense/income)
+ * @param {Array} errors - Form errors {field: message}
+ * @param {string} submitLabel - Submit button label
+ * @param {string} cancelUrl - URL to cancel and go back
+ * @param {boolean} showBudgetWarning - Show budget warning
+ * @param {string} budgetRemaining - Budget remaining amount
+ */
+
+import Label from '../atoms/Label.astro';
+import CurrencyInput from '../atoms/CurrencyInput.astro';
+import CategorySelect from '../atoms/CategorySelect.astro';
+import PaymentMethodSelect from '../atoms/PaymentMethodSelect.astro';
+import DatePicker from '../atoms/DatePicker.astro';
+import Input from '../atoms/Input.astro';
+import Button from '../atoms/Button.astro';
+import ErrorMessage from '../atoms/ErrorMessage.astro';
+import Currency from '../atoms/Currency.astro';
+import Icon from '../atoms/Icon.astro';
+import { formatCurrency } from '@/lib/tokens';
+
+export interface Props {
+  action: string;
+  method?: 'POST' | 'PUT';
+  values?: {
+    type?: 'expense' | 'income';
+    amount?: string;
+    currency?: 'IDR' | 'USD';
+    category_id?: string;
+    payment_method_id?: string;
+    transaction_date?: string;
+    description?: string;
+  };
+  categories: Array<{ id: string; name: string; type: string; currency?: string }>;
+  paymentMethods: Array<{ id: string; name: string; type: string }>;
+  transactionType?: 'expense' | 'income';
+  errors?: Record<string, string>;
+  submitLabel?: string;
+  cancelUrl?: string;
+  showBudgetWarning?: boolean;
+  budgetRemaining?: string;
+  budgetRemainingCurrency?: 'IDR' | 'USD';
+}
+
+const {
+  action,
+  method = 'POST',
+  values = {},
+  categories = [],
+  paymentMethods = [],
+  transactionType,
+  errors = {},
+  submitLabel = 'Save Transaction',
+  cancelUrl = '/transactions',
+  showBudgetWarning = false,
+  budgetRemaining = '0',
+  budgetRemainingCurrency = 'IDR',
+} = Astro.props;
+
+const formType = values.type || transactionType || 'expense';
+const today = new Date().toISOString().split('T')[0];
+
+// Filter categories by transaction type
+const filteredCategories = categories.filter((cat) => cat.type === formType);
+---
+
+<form action={action} method={method} class="space-y-4">
+  <!-- Transaction Type -->
+  <div class="form-control">
+    <Label required htmlFor="type" id="type-label">Type</Label>
+    <div class="join w-full">
+      <input
+        type="radio"
+        name="type"
+        value="expense"
+        id="type-expense"
+        aria-labelledby="type-label"
+        class="join-item btn btn-sm flex-1"
+        checked={formType === 'expense'}
+      />
+      <label for="type-expense" class="join-item btn btn-sm flex-1"> Expense </label>
+
+      <input
+        type="radio"
+        name="type"
+        value="income"
+        id="type-income"
+        aria-labelledby="type-label"
+        class="join-item btn btn-sm flex-1"
+        checked={formType === 'income'}
+      />
+      <label for="type-income" class="join-item btn btn-sm flex-1"> Income </label>
+    </div>
+  </div>
+
+  <!-- Date -->
+  <div class="form-control">
+    <Label required htmlFor="transaction_date" id="date-label" helpText="Default: Today">
+      Date
+    </Label>
+    <DatePicker
+      id="transaction_date"
+      name="transaction_date"
+      value={values.transaction_date || today}
+      max={today}
+      required={true}
+      error={!!errors.transaction_date}
+      errorMessage={errors.transaction_date}
+    />
+  </div>
+
+  <!-- Amount -->
+  <div class="form-control">
+    <Label required htmlFor="amount-input" id="amount-label">Amount</Label>
+    <CurrencyInput
+      id="amount"
+      name="amount"
+      value={values.amount || ''}
+      currency={values.currency || 'IDR'}
+      required={true}
+      error={!!errors.amount}
+      errorMessage={errors.amount}
+    />
+  </div>
+
+  <!-- Category -->
+  <div class="form-control">
+    <Label required htmlFor="category_id-select" id="category-label">Category</Label>
+    <CategorySelect
+      id="category_id"
+      categories={categories}
+      value={values.category_id || ''}
+      type={formType}
+      required={true}
+      error={!!errors.category_id}
+      errorMessage={errors.category_id}
+    />
+  </div>
+
+  <!-- Payment Method -->
+  <div class="form-control">
+    <Label required htmlFor="payment_method_id-select" id="payment-label">Payment Method</Label>
+    <PaymentMethodSelect
+      id="payment_method_id"
+      paymentMethods={paymentMethods}
+      value={values.payment_method_id || ''}
+      required={true}
+      error={!!errors.payment_method_id}
+      errorMessage={errors.payment_method_id}
+    />
+  </div>
+
+  <!-- Description -->
+  <div class="form-control">
+    <Label htmlFor="description" id="description-label">Description</Label>
+    <textarea
+      id="description"
+      name="description"
+      class="textarea textarea-bordered"
+      placeholder="Optional notes..."
+      rows="3"
+    >
+      {values.description || ''}
+    </textarea>
+  </div>
+
+  <!-- Budget Warning (for expenses) -->
+  {
+    showBudgetWarning && formType === 'expense' && (
+      <div role="alert" class="alert alert-warning">
+        <Icon name="warning" size="sm" />
+        <span>
+          Budget remaining:{' '}
+          <Currency amount={parseFloat(budgetRemaining) || 0} currency={budgetRemainingCurrency} />
+        </span>
+      </div>
+    )
+  }
+
+  <!-- Actions -->
+  <div class="card-actions justify-end gap-2 mt-6">
+    <a href={cancelUrl} class="btn btn-ghost">Cancel</a>
+    <Button type="submit" variant="primary">
+      {submitLabel}
+    </Button>
+  </div>
+</form>
+
+<script>
+  // Update category options when transaction type changes
+  const typeRadios = document.querySelectorAll('input[name="type"]');
+  const categorySelect = document.querySelector('select[name="category_id"]') as HTMLSelectElement;
+
+  typeRadios.forEach((radio) => {
+    radio?.addEventListener('change', (e) => {
+      const target = e.target as HTMLInputElement;
+      const newType = target.value as 'expense' | 'income';
+
+      // Get all categories from the select options
+      const allOptions = Array.from(categorySelect?.options || []).slice(1); // Skip first option
+
+      // Filter and update options based on type
+      allOptions.forEach((option) => {
+        const categoryType = option.getAttribute('data-type');
+        if (categoryType === newType) {
+          option.removeAttribute('disabled');
+          option.hidden = false;
+        } else {
+          option.setAttribute('disabled', 'true');
+          option.hidden = true;
+        }
+      });
+
+      // Reset category selection
+      if (categorySelect) {
+        categorySelect.value = '';
+      }
+    });
+  });
+</script>

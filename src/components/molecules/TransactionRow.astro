@@ -1,0 +1,105 @@
+---
+/**
+ * Transaction Row Component
+ *
+ * Single transaction display for list/table view.
+ *
+ * @param {Object} transaction - Transaction data
+ * @param {string} editUrl - URL to edit transaction
+ * @param {boolean} showActions - Show edit/delete actions
+ */
+
+import Currency from '../atoms/Currency.astro';
+import Badge from '../atoms/Badge.astro';
+import Button from '../atoms/Button.astro';
+import Icon from '../atoms/Icon.astro';
+import { formatCurrency } from '@/lib/tokens';
+import type { TransactionOutput } from '@/lib/types/transaction';
+
+export interface Props {
+  transaction: TransactionOutput;
+  editUrl?: string;
+  deleteUrl?: string;
+  showActions?: boolean;
+}
+
+const { transaction, editUrl = '', deleteUrl = '', showActions = true } = Astro.props;
+
+const amount = parseFloat(transaction.amount) || 0;
+const isExpense = transaction.type === 'expense';
+const date = new Date(transaction.transaction_date);
+
+// Format date nicely
+const formattedDate = date.toLocaleDateString('en-US', {
+  month: 'short',
+  day: 'numeric',
+  year: 'numeric',
+});
+
+// Payment method icon mapping
+const paymentIcons: Record<string, string> = {
+  cash: 'currency-dollar',
+  credit_card: 'credit-card',
+  debit_card: 'credit-card',
+  bank_transfer: 'arrow-left',
+  e_wallet: 'calendar',
+};
+---
+
+<div class="flex items-center gap-4 p-4 hover:bg-base-200 rounded-lg transition-colors">
+  <!-- Date -->
+  <div class="flex-shrink-0 w-24 text-sm">
+    <div class="font-medium">{formattedDate}</div>
+  </div>
+
+  <!-- Category & Description -->
+  <div class="flex-1 min-w-0">
+    <div class="font-medium truncate">{transaction.category.name}</div>
+    {
+      transaction.description && (
+        <div class="text-sm text-neutral-500 truncate">{transaction.description}</div>
+      )
+    }
+  </div>
+
+  <!-- Payment Method -->
+  <div class="flex-shrink-0 hidden sm:block">
+    <Badge variant="neutral" size="sm">
+      {transaction.payment_method.name}
+    </Badge>
+  </div>
+
+  <!-- Amount -->
+  <div class="flex-shrink-0 text-right">
+    <Currency
+      amount={amount}
+      currency={transaction.currency}
+      showSign={true}
+      variant={isExpense ? 'negative' : 'positive'}
+      size="md"
+    />
+  </div>
+
+  <!-- Actions -->
+  {
+    showActions && (editUrl || deleteUrl) && (
+      <div class="flex-shrink-0 flex gap-1">
+        {editUrl && (
+          <a href={editUrl} class="btn btn-ghost btn-sm" aria-label="Edit transaction">
+            <Icon name="pencil" size="sm" />
+          </a>
+        )}
+        {deleteUrl && (
+          <button
+            type="button"
+            class="btn btn-ghost btn-sm text-error"
+            aria-label="Delete transaction"
+            data-delete-url={deleteUrl}
+          >
+            <Icon name="trash" size="sm" />
+          </button>
+        )}
+      </div>
+    )
+  }
+</div>

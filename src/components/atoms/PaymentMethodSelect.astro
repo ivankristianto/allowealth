@@ -1,0 +1,89 @@
+---
+/**
+ * Payment Method Select Component
+ *
+ * Dropdown for selecting payment methods.
+ *
+ * @param {Array} paymentMethods - Array of payment method objects {id, name, type}
+ * @param {string} name - Input name
+ * @param {string} value - Selected payment method ID
+ * @param {boolean} required - Whether the field is required
+ * @param {boolean} error - Show error state
+ * @param {string} errorMessage - Error message to display
+ * @param {string} className - Additional CSS classes
+ * @param {string} id - Element ID
+ * @param {boolean} disabled - Whether the select is disabled
+ */
+
+export interface Props {
+  paymentMethods: Array<{ id: string; name: string; type: string }>;
+  name?: string;
+  value?: string;
+  required?: boolean;
+  error?: boolean;
+  errorMessage?: string;
+  className?: string;
+  id?: string;
+  disabled?: boolean;
+}
+
+const {
+  paymentMethods = [],
+  name = 'payment_method_id',
+  value = '',
+  required = false,
+  error = false,
+  errorMessage = '',
+  className = '',
+  id = '',
+  disabled = false,
+} = Astro.props;
+
+const inputId = id || `${name}-select`;
+const errorId = `${name}-error`;
+
+// Payment method type labels
+const typeLabels: Record<string, string> = {
+  cash: 'Cash',
+  credit_card: 'Credit Card',
+  debit_card: 'Debit Card',
+  bank_transfer: 'Bank Transfer',
+  e_wallet: 'E-Wallet',
+};
+---
+
+<div class="form-control">
+  <select
+    id={inputId}
+    name={name}
+    value={value}
+    required={required}
+    disabled={disabled}
+    class:list={[
+      'select select-bordered w-full',
+      error && 'select-error',
+      disabled && 'opacity-50 cursor-not-allowed',
+      className,
+    ]}
+    aria-invalid={error}
+    aria-describedby={error ? errorId : undefined}
+    aria-required={required}
+  >
+    <option value="">Select payment method...</option>
+    {
+      paymentMethods.map((method) => (
+        <option value={method.id} selected={method.id === value}>
+          {method.name}
+        </option>
+      ))
+    }
+  </select>
+
+  {
+    error && errorMessage && (
+      <span id={errorId} class="text-error text-sm mt-1" role="alert">
+        {errorMessage}
+      </span>
+    )
+  }
+</div>

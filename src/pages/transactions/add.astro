@@ -1,6 +1,13 @@
 ---
+/**
+ * Add Transaction Page
+ *
+ * Page for adding a new transaction.
+ */
+
 import MainLayout from '../../layouts/MainLayout.astro';
 import { requireAuth } from '@/lib/auth/requireAuth';
+import TransactionForm from '../../components/molecules/TransactionForm.astro';
 
 // Check authentication - redirect to login if not authenticated
 const redirectResponse = requireAuth(Astro);
@@ -10,46 +17,65 @@ if (redirectResponse) {
 
 const user = Astro.locals.user;
 const currentPath = '/transactions/add';
+
+// Mock categories and payment methods
+const mockCategories = [
+  { id: 'c1', name: 'Food & Groceries', type: 'expense', currency: 'IDR' },
+  { id: 'c2', name: 'Ivan Expenses', type: 'expense', currency: 'IDR' },
+  { id: 'c3', name: 'Transportation', type: 'expense', currency: 'IDR' },
+  { id: 'c4', name: 'Dine Out', type: 'expense', currency: 'IDR' },
+  { id: 'c5', name: 'Utilities', type: 'expense', currency: 'IDR' },
+  { id: 'c6', name: 'Entertainment', type: 'expense', currency: 'IDR' },
+  { id: 'c7', name: 'Salary', type: 'income', currency: 'IDR' },
+  { id: 'c8', name: 'Freelance Income', type: 'income', currency: 'USD' },
+];
+
+const mockPaymentMethods = [
+  { id: 'p1', name: 'Cash', type: 'cash' },
+  { id: 'p2', name: 'BCA Transfer', type: 'bank_transfer' },
+  { id: 'p3', name: 'GoPay', type: 'e_wallet' },
+  { id: 'p4', name: 'Mandiri Debit', type: 'debit_card' },
+  { id: 'p5', name: 'Credit Card', type: 'credit_card' },
+];
+
+// Get transaction type from query param (default: expense)
+const url = new URL(Astro.url);
+const transactionType = (url.searchParams.get('type') || 'expense') as 'expense' | 'income';
+
+// Get form values from URL params for pre-filling
+const formValues = {
+  type: transactionType,
+  currency: (url.searchParams.get('currency') || 'IDR') as 'IDR' | 'USD',
+  amount: url.searchParams.get('amount') || '',
+  category_id: url.searchParams.get('category_id') || '',
+  payment_method_id: url.searchParams.get('payment_method_id') || '',
+  transaction_date: url.searchParams.get('transaction_date') || '',
+  description: url.searchParams.get('description') || '',
+};
 ---
 
 <MainLayout title="Add Transaction - Finance Manager" currentPath={currentPath} user={user}>
-  <div class="space-y-6">
-    <h2 class="text-2xl font-bold">Add Transaction</h2>
+  <div class="max-w-2xl">
+    <div class="mb-6">
+      <h2 class="text-2xl font-bold">Add Transaction</h2>
+      <p class="text-neutral-500">Record a new expense or income</p>
+    </div>
 
     <div class="card bg-base-100 shadow border border-base-300">
       <div class="card-body">
-        <form class="space-y-4">
-          <div class="form-control">
-            <label class="label"><span class="label-text">Amount</span></label>
-            <input type="number" placeholder="Enter amount" class="input input-bordered" />
-          </div>
-
-          <div class="form-control">
-            <label class="label"><span class="label-text">Category</span></label>
-            <select class="select select-bordered">
-              <option value="">Select category...</option>
-              <option>Food & Dining</option>
-              <option>Transportation</option>
-              <option>Utilities</option>
-              <option>Entertainment</option>
-            </select>
-          </div>
-
-          <div class="form-control">
-            <label class="label"><span class="label-text">Date</span></label>
-            <input type="date" class="input input-bordered" />
-          </div>
-
-          <div class="form-control">
-            <label class="label"><span class="label-text">Description</span></label>
-            <textarea class="textarea textarea-bordered" placeholder="Add notes..."></textarea>
-          </div>
-
-          <div class="card-actions justify-end mt-4">
-            <a href="/transactions" class="btn btn-ghost">Cancel</a>
-            <button type="submit" class="btn btn-primary">Save Transaction</button>
-          </div>
-        </form>
+        <TransactionForm
+          action="/transactions"
+          method="POST"
+          values={formValues}
+          categories={mockCategories}
+          paymentMethods={mockPaymentMethods}
+          transactionType={transactionType}
+          submitLabel="Save Transaction"
+          cancelUrl="/transactions"
+          showBudgetWarning={transactionType === 'expense'}
+          budgetRemaining="5750000"
+          budgetRemainingCurrency="IDR"
+        />
       </div>
     </div>
   </div>

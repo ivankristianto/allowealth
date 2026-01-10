@@ -1,0 +1,204 @@
+---
+/**
+ * Transaction List Component
+ *
+ * Full transaction list with pagination and filtering.
+ *
+ * @param {Array} transactions - Array of transactions
+ * @param {number} total - Total number of transactions
+ * @param {number} page - Current page number
+ * @param {number} pageSize - Number of transactions per page
+ * @param {string} baseUrl - Base URL for pagination
+ * @param {Array} categories - Available categories for filters
+ * @param {Array} paymentMethods - Available payment methods for filters
+ * @param {Object} filters - Current filter values
+ * @param {boolean} showFilters - Show filter panel
+ */
+
+import TransactionRow from '../molecules/TransactionRow.astro';
+import TransactionFilters from '../molecules/TransactionFilters.astro';
+import EmptyState from '../atoms/EmptyState.astro';
+import Icon from '../atoms/Icon.astro';
+import Button from '../atoms/Button.astro';
+import Badge from '../atoms/Badge.astro';
+import type { TransactionOutput } from '@/lib/types/transaction';
+
+export interface Props {
+  transactions: TransactionOutput[];
+  total: number;
+  page: number;
+  pageSize: number;
+  baseUrl: string;
+  categories?: Array<{ id: string; name: string; type: string }>;
+  paymentMethods?: Array<{ id: string; name: string; type: string }>;
+  filters?: Record<string, string>;
+  showFilters?: boolean;
+}
+
+const {
+  transactions = [],
+  total = 0,
+  page = 1,
+  pageSize = 50,
+  baseUrl,
+  categories = [],
+  paymentMethods = [],
+  filters = {},
+  showFilters = true,
+} = Astro.props;
+
+const totalPages = Math.ceil(total / pageSize);
+const hasPrev = page > 1;
+const hasNext = page < totalPages;
+
+// Build URL for filters
+const buildUrl = (newPage: number) => {
+  const params = new URLSearchParams();
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value) params.set(key, value);
+  });
+  params.set('page', newPage.toString());
+  return `${baseUrl}?${params.toString()}`;
+};
+---
+
+<div class="space-y-6">
+  <div class="flex justify-between items-center">
+    <h2 class="text-2xl font-bold">Transactions</h2>
+    <div class="flex gap-2">
+      <a href="/transactions/import" class="btn btn-outline btn-sm gap-2">
+        <Icon name="arrow-left" size="sm" />
+        Import CSV
+      </a>
+      <a href="/transactions/export" class="btn btn-outline btn-sm gap-2">
+        <Icon name="arrow-right" size="sm" />
+        Export CSV
+      </a>
+      <a href="/transactions/add" class="btn btn-primary gap-2">
+        <Icon name="plus" size="sm" />
+        Add Transaction
+      </a>
+    </div>
+  </div>
+
+  {
+    showFilters && (
+      <details class="collapse collapse-arrow bg-base-200" open={Object.keys(filters).length > 0}>
+        <summary class="collapse-title font-medium">
+          Filters
+          {Object.keys(filters).length > 0 && (
+            <Badge variant="primary" size="sm" className="ml-2">
+              {Object.keys(filters).length} active
+            </Badge>
+          )}
+        </summary>
+        <div class="collapse-content">
+          <TransactionFilters
+            action={baseUrl}
+            categories={categories}
+            paymentMethods={paymentMethods}
+            values={filters}
+            count={total}
+          />
+        </div>
+      </details>
+    )
+  }
+
+  <div class="card bg-base-100 shadow border border-base-300">
+    <div class="card-body p-0">
+      {
+        transactions.length > 0 ? (
+          <>
+            <div class="hidden md:flex items-center gap-4 px-4 py-3 bg-base-200 text-sm font-medium text-neutral-500">
+              <div class="w-24">Date</div>
+              <div class="flex-1">Description</div>
+              <div class="hidden sm:block">Payment</div>
+              <div class="text-right">Amount</div>
+              <div class="w-20" />
+            </div>
+
+            <div class="divide-y divide-base-200">
+              {transactions.map((transaction) => (
+                <TransactionRow
+                  transaction={transaction}
+                  editUrl={`/transactions/edit/${transaction.id}`}
+                  deleteUrl={`/transactions/delete/${transaction.id}`}
+                  showActions={true}
+                />
+              ))}
+            </div>
+
+            {totalPages > 1 && (
+              <div class="flex items-center justify-between px-4 py-3 border-t border-base-200">
+                <div class="text-sm text-neutral-500">
+                  Showing {(page - 1) * pageSize + 1} to {Math.min(page * pageSize, total)} of{' '}
+                  {total} transactions
+                </div>
+                <div class="flex gap-2">
+                  {hasPrev ? (
+                    <a href={buildUrl(page - 1)} class="btn btn-sm btn-outline">
+                      <Icon name="chevron-up" size="sm" className="rotate-180" />
+                      Previous
+                    </a>
+                  ) : (
+                    <button class="btn btn-sm btn-outline" disabled>
+                      <Icon name="chevron-up" size="sm" className="rotate-180" />
+                      Previous
+                    </button>
+                  )}
+
+                  <span class="btn btn-sm btn-ghost">
+                    Page {page} of {totalPages}
+                  </span>
+
+                  {hasNext ? (
+                    <a href={buildUrl(page + 1)} class="btn btn-sm btn-outline">
+                      Next
+                      <Icon name="chevron-up" size="sm" className="rotate-180" />
+                    </a>
+                  ) : (
+                    <button class="btn btn-sm btn-outline" disabled>
+                      Next
+                      <Icon name="chevron-up" size="sm" className="rotate-180" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+          </>
+        ) : (
+          <div class="py-12">
+            <EmptyState
+              title="No transactions found"
+              description={
+                Object.keys(filters).length > 0
+                  ? 'Try adjusting your filters or add a new transaction.'
+                  : 'Start tracking by adding your first transaction.'
+              }
+              actionLabel="Add Transaction"
+              actionUrl="/transactions/add"
+            />
+          </div>
+        )
+      }
+    </div>
+  </div>
+</div>
+
+<script>
+  // Add delete confirmation to delete buttons
+  document.querySelectorAll('[data-delete-url]').forEach((button) => {
+    button.addEventListener('click', (e) => {
+      const target = e.currentTarget as HTMLButtonElement;
+      const url = target.getAttribute('data-delete-url');
+      if (url) {
+        if (
+          confirm('Are you sure you want to delete this transaction? This action cannot be undone.')
+        ) {
+          window.location.href = url;
+        }
+      }
+    });
+  });
+</script>

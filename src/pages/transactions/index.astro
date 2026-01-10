@@ -1,6 +1,14 @@
 ---
+/**
+ * Transactions List Page
+ *
+ * Main page for viewing and managing transactions with filtering.
+ */
+
 import MainLayout from '../../layouts/MainLayout.astro';
 import { requireAuth } from '@/lib/auth/requireAuth';
+import TransactionList from '../../components/organisms/TransactionList.astro';
+import type { TransactionOutput } from '@/lib/types/transaction';
 
 // Check authentication - redirect to login if not authenticated
 const redirectResponse = requireAuth(Astro);
@@ -10,24 +18,166 @@ if (redirectResponse) {
 
 const user = Astro.locals.user;
 const currentPath = '/transactions';
+
+// Get query parameters for filtering
+const url = new URL(Astro.url);
+const searchParams = Object.fromEntries(url.searchParams.entries());
+
+// Mock data for UI development (will be replaced with service layer)
+const mockTransactions: TransactionOutput[] = [
+  {
+    id: '1',
+    type: 'expense',
+    amount: '250000',
+    currency: 'IDR',
+    description: 'Weekly groceries shopping',
+    transaction_date: new Date('2026-01-03'),
+    category: { id: 'c1', name: 'Food & Groceries', type: 'expense' },
+    payment_method: { id: 'p1', name: 'Cash', type: 'cash' },
+    deleted_at: null,
+    created_at: new Date(),
+    updated_at: new Date(),
+  },
+  {
+    id: '2',
+    type: 'expense',
+    amount: '2800000',
+    currency: 'IDR',
+    description: 'Reina monthly expenses',
+    transaction_date: new Date('2026-01-02'),
+    category: { id: 'c2', name: 'Ivan Expenses', type: 'expense' },
+    payment_method: { id: 'p2', name: 'BCA Transfer', type: 'bank_transfer' },
+    deleted_at: null,
+    created_at: new Date(),
+    updated_at: new Date(),
+  },
+  {
+    id: '3',
+    type: 'income',
+    amount: '15000000',
+    currency: 'IDR',
+    description: 'Monthly salary',
+    transaction_date: new Date('2026-01-01'),
+    category: { id: 'c3', name: 'Salary', type: 'income' },
+    payment_method: { id: 'p2', name: 'BCA Transfer', type: 'bank_transfer' },
+    deleted_at: null,
+    created_at: new Date(),
+    updated_at: new Date(),
+  },
+  {
+    id: '4',
+    type: 'expense',
+    amount: '50000',
+    currency: 'IDR',
+    description: 'Ojek ride',
+    transaction_date: new Date('2026-01-04'),
+    category: { id: 'c4', name: 'Transportation', type: 'expense' },
+    payment_method: { id: 'p3', name: 'GoPay', type: 'e_wallet' },
+    deleted_at: null,
+    created_at: new Date(),
+    updated_at: new Date(),
+  },
+  {
+    id: '5',
+    type: 'expense',
+    amount: '150000',
+    currency: 'IDR',
+    description: 'Lunch at Padang restaurant',
+    transaction_date: new Date('2026-01-05'),
+    category: { id: 'c5', name: 'Dine Out', type: 'expense' },
+    payment_method: { id: 'p1', name: 'Cash', type: 'cash' },
+    deleted_at: null,
+    created_at: new Date(),
+    updated_at: new Date(),
+  },
+];
+
+// Mock categories and payment methods for filters
+const mockCategories = [
+  { id: 'c1', name: 'Food & Groceries', type: 'expense' },
+  { id: 'c2', name: 'Ivan Expenses', type: 'expense' },
+  { id: 'c3', name: 'Salary', type: 'income' },
+  { id: 'c4', name: 'Transportation', type: 'expense' },
+  { id: 'c5', name: 'Dine Out', type: 'expense' },
+  { id: 'c6', name: 'Utilities', type: 'expense' },
+  { id: 'c7', name: 'Entertainment', type: 'expense' },
+];
+
+const mockPaymentMethods = [
+  { id: 'p1', name: 'Cash', type: 'cash' },
+  { id: 'p2', name: 'BCA Transfer', type: 'bank_transfer' },
+  { id: 'p3', name: 'GoPay', type: 'e_wallet' },
+  { id: 'p4', name: 'Mandiri Debit', type: 'debit_card' },
+];
+
+// Pagination
+const page = parseInt(searchParams.page || '1');
+const pageSize = 50;
+const total = mockTransactions.length;
+
+// Filter mock data (simple client-side filtering for UI development)
+let filteredTransactions = [...mockTransactions];
+
+if (searchParams.search) {
+  const searchLower = searchParams.search.toLowerCase();
+  filteredTransactions = filteredTransactions.filter((t) =>
+    t.description?.toLowerCase().includes(searchLower)
+  );
+}
+
+if (searchParams.type) {
+  filteredTransactions = filteredTransactions.filter((t) => t.type === searchParams.type);
+}
+
+if (searchParams.currency) {
+  filteredTransactions = filteredTransactions.filter((t) => t.currency === searchParams.currency);
+}
+
+if (searchParams.category_id) {
+  filteredTransactions = filteredTransactions.filter(
+    (t) => t.category.id === searchParams.category_id
+  );
+}
+
+if (searchParams.payment_method_id) {
+  filteredTransactions = filteredTransactions.filter(
+    (t) => t.payment_method.id === searchParams.payment_method_id
+  );
+}
+
+if (searchParams.start_date) {
+  const startDate = new Date(searchParams.start_date);
+  filteredTransactions = filteredTransactions.filter(
+    (t) => new Date(t.transaction_date) >= startDate
+  );
+}
+
+if (searchParams.end_date) {
+  const endDate = new Date(searchParams.end_date);
+  filteredTransactions = filteredTransactions.filter(
+    (t) => new Date(t.transaction_date) <= endDate
+  );
+}
+
+// Sort by date descending
+filteredTransactions.sort(
+  (a, b) => new Date(b.transaction_date).getTime() - new Date(a.transaction_date).getTime()
+);
+
+// Apply pagination (mock - actual pagination will be done at DB level)
+const paginatedTransactions = filteredTransactions.slice((page - 1) * pageSize, page * pageSize);
 ---
 
 <MainLayout title="Transactions - Finance Manager" currentPath={currentPath} user={user}>
-  <div class="space-y-6">
-    <div class="flex justify-between items-center">
-      <h2 class="text-2xl font-bold">Transactions</h2>
-      <a href="/transactions/add" class="btn btn-primary">Add Transaction</a>
-    </div>
-
-    <div class="card bg-base-100 shadow border border-base-300">
-      <div class="card-body">
-        <div class="flex items-center justify-center py-12">
-          <div class="text-center">
-            <p class="text-neutral-500">No transactions yet</p>
-            <a href="/transactions/add" class="btn btn-primary mt-4">Add Your First Transaction</a>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+  <TransactionList
+    transactions={paginatedTransactions}
+    total={filteredTransactions.length}
+    page={page}
+    pageSize={pageSize}
+    baseUrl="/transactions"
+    categories={mockCategories}
+    paymentMethods={mockPaymentMethods}
+    filters={searchParams}
+    showFilters={true}
+  />
 </MainLayout>
