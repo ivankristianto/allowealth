@@ -4,6 +4,7 @@
  *
  * Primary application layout with sidebar navigation, header, and main content area.
  * Responsive: Sidebar is visible on desktop, collapsible drawer on mobile.
+ * Passes user authentication context to Header and child components.
  */
 
 import BaseLayout from './BaseLayout.astro';
@@ -15,9 +16,10 @@ import ToastContainer from '../components/molecules/ToastContainer.astro';
 interface Props {
   title?: string;
   currentPath?: string;
+  user?: any | null;
 }
 
-const { title = 'Finance Manager', currentPath = '/' } = Astro.props;
+const { title = 'Finance Manager', currentPath = '/', user } = Astro.props;
 ---
 
 <BaseLayout title={title}>
@@ -27,7 +29,7 @@ const { title = 'Finance Manager', currentPath = '/' } = Astro.props;
     <!-- Page content -->
     <div class="drawer-content flex flex-col">
       <!-- Header -->
-      <Header currentPath={currentPath} />
+      <Header currentPath={currentPath} user={user} />
 
       <!-- Main content -->
       <main class="flex-1 p-4 lg:p-6 bg-base-200 min-h-screen">
