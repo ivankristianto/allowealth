@@ -9,6 +9,7 @@ import {
   type CreateTransactionInput,
   type UpdateTransactionInput,
 } from '@/lib/validation/transactions';
+import { TransactionServiceError, ServiceErrorCode } from './service-errors';
 
 export { type CreateTransactionInput, type UpdateTransactionInput };
 
@@ -25,7 +26,8 @@ export interface CSVRow {
   currency: string;
   category: string;
   payment_method: string;
-  description?: string;
+  description: string;
+  [key: string]: string; // Allow dynamic column access
 }
 
 export interface TransactionFilters {
@@ -51,8 +53,19 @@ export class TransactionService {
 
     // Verify category exists and belongs to user
     const category = await categoryService.findById(validated.category_id, validated.user_id);
-    if (!category || !category.is_active) {
-      throw new Error('Category not found or inactive');
+    if (!category) {
+      throw new TransactionServiceError(
+        ServiceErrorCode.CATEGORY_NOT_FOUND,
+        'Category not found',
+        404
+      );
+    }
+    if (!category.is_active) {
+      throw new TransactionServiceError(
+        ServiceErrorCode.CATEGORY_INACTIVE,
+        'Category is inactive',
+        400
+      );
     }
 
     // Verify payment method exists and belongs to user
@@ -60,8 +73,19 @@ export class TransactionService {
       validated.payment_method_id,
       validated.user_id
     );
-    if (!paymentMethod || !paymentMethod.is_active) {
-      throw new Error('Payment method not found or inactive');
+    if (!paymentMethod) {
+      throw new TransactionServiceError(
+        ServiceErrorCode.PAYMENT_METHOD_NOT_FOUND,
+        'Payment method not found',
+        404
+      );
+    }
+    if (!paymentMethod.is_active) {
+      throw new TransactionServiceError(
+        ServiceErrorCode.PAYMENT_METHOD_INACTIVE,
+        'Payment method is inactive',
+        400
+      );
     }
 
     const id = nanoid();
@@ -135,7 +159,9 @@ export class TransactionService {
     }
 
     if (filters.search) {
-      conditions.push(or(like(transactions.description, `%${filters.search}%`)));
+      const searchCondition = like(transactions.description, `%${filters.search}%`);
+      // The or() function needs at least one condition, so we use it directly
+      conditions.push(searchCondition);
     }
 
     const result = await db.query.transactions.findMany({
@@ -162,8 +188,19 @@ export class TransactionService {
     // Verify category if being updated
     if (validated.category_id !== undefined) {
       const category = await categoryService.findById(validated.category_id, user_id);
-      if (!category || !category.is_active) {
-        throw new Error('Category not found or inactive');
+      if (!category) {
+        throw new TransactionServiceError(
+          ServiceErrorCode.CATEGORY_NOT_FOUND,
+          'Category not found',
+          404
+        );
+      }
+      if (!category.is_active) {
+        throw new TransactionServiceError(
+          ServiceErrorCode.CATEGORY_INACTIVE,
+          'Category is inactive',
+          400
+        );
       }
     }
 
@@ -173,8 +210,19 @@ export class TransactionService {
         validated.payment_method_id,
         user_id
       );
-      if (!paymentMethod || !paymentMethod.is_active) {
-        throw new Error('Payment method not found or inactive');
+      if (!paymentMethod) {
+        throw new TransactionServiceError(
+          ServiceErrorCode.PAYMENT_METHOD_NOT_FOUND,
+          'Payment method not found',
+          404
+        );
+      }
+      if (!paymentMethod.is_active) {
+        throw new TransactionServiceError(
+          ServiceErrorCode.PAYMENT_METHOD_INACTIVE,
+          'Payment method is inactive',
+          400
+        );
       }
     }
 
@@ -249,7 +297,9 @@ export class TransactionService {
     }
 
     if (filters.search) {
-      conditions.push(or(like(transactions.description, `%${filters.search}%`)));
+      const searchCondition = like(transactions.description, `%${filters.search}%`);
+      // The or() function needs at least one condition, so we use it directly
+      conditions.push(searchCondition);
     }
 
     const result = await db
@@ -294,18 +344,33 @@ export class TransactionService {
 
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
+      if (!row) {
+        result.errors.push({ row: i + 1, message: 'Empty row' });
+        continue;
+      }
+
       try {
         // Map columns based on user's mapping
-        const dateStr = row[columnMapping.date] || row.date;
-        const typeStr = row[columnMapping.type] || row.type;
-        const amountStr = row[columnMapping.amount] || row.amount;
-        const currencyStr = row[columnMapping.currency] || row.currency;
-        const categoryStr = row[columnMapping.category] || row.category;
-        const paymentMethodStr = row[columnMapping.payment_method] || row.payment_method;
-        const descriptionStr = row[columnMapping.description] || row.description;
+        const mappedDate = columnMapping.date;
+        const mappedType = columnMapping.type;
+        const mappedAmount = columnMapping.amount;
+        const mappedCurrency = columnMapping.currency;
+        const mappedCategory = columnMapping.category;
+        const mappedPaymentMethod = columnMapping.payment_method;
+        const mappedDescription = columnMapping.description;
+
+        const dateStr = mappedDate ? row[mappedDate] : row.date;
+        const typeStr = mappedType ? row[mappedType] : row.type;
+        const amountStr = mappedAmount ? row[mappedAmount] : row.amount;
+        const currencyStr = mappedCurrency ? row[mappedCurrency] : row.currency;
+        const categoryStr = mappedCategory ? row[mappedCategory] : row.category;
+        const paymentMethodStr = mappedPaymentMethod
+          ? row[mappedPaymentMethod]
+          : row.payment_method;
+        const descriptionStr = mappedDescription ? row[mappedDescription] : row.description;
 
         // Validate and parse data
-        const transactionDate = new Date(dateStr);
+        const transactionDate = new Date(dateStr ?? '');
         if (isNaN(transactionDate.getTime())) {
           result.errors.push({ row: i + 1, message: 'Invalid date format' });
           continue;
@@ -316,7 +381,7 @@ export class TransactionService {
           continue;
         }
 
-        const amount = parseFloat(amountStr);
+        const amount = parseFloat(amountStr ?? '0');
         if (isNaN(amount) || amount <= 0) {
           result.errors.push({ row: i + 1, message: 'Invalid amount (must be > 0)' });
           continue;
@@ -328,13 +393,13 @@ export class TransactionService {
         }
 
         // Look up category and payment method
-        const categoryId = categoryMap.get(categoryStr.toLowerCase().trim());
+        const categoryId = categoryMap.get((categoryStr ?? '').toLowerCase().trim());
         if (!categoryId) {
           result.errors.push({ row: i + 1, message: `Category not found: ${categoryStr}` });
           continue;
         }
 
-        const paymentMethodId = paymentMethodMap.get(paymentMethodStr.toLowerCase().trim());
+        const paymentMethodId = paymentMethodMap.get((paymentMethodStr ?? '').toLowerCase().trim());
         if (!paymentMethodId) {
           result.errors.push({
             row: i + 1,
@@ -344,7 +409,7 @@ export class TransactionService {
         }
 
         // Check for duplicates
-        const duplicateKey = `${dateStr}-${typeStr}-${amountStr}-${categoryId}-${paymentMethodId}`;
+        const duplicateKey = `${dateStr ?? ''}-${typeStr}-${amountStr ?? ''}-${categoryId}-${paymentMethodId}`;
         if (existingKeys.has(duplicateKey)) {
           result.skipped++;
           continue;
@@ -354,12 +419,12 @@ export class TransactionService {
         await this.create({
           user_id,
           type: typeStr as 'expense' | 'income',
-          amount: amountStr,
+          amount: amountStr ?? '0',
           currency: currencyStr as 'IDR' | 'USD',
           category_id: categoryId,
           payment_method_id: paymentMethodId,
           transaction_date: transactionDate,
-          description: descriptionStr,
+          description: descriptionStr ?? '',
         });
 
         result.success++;
@@ -402,7 +467,7 @@ export class TransactionService {
       t.amount,
       t.currency,
       t.category.name,
-      t.payment_method.name,
+      t.paymentMethod.name,
       t.description || '',
     ]);
 

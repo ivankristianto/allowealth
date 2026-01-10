@@ -98,6 +98,12 @@ export const POST: APIRoute = async ({ request, url }) => {
   try {
     const userId = requireAuth({ request, url } as any);
 
+    // Validate Content-Type header
+    const contentType = request.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      return errorResponse('Content-Type must be application/json', 415, 'UNSUPPORTED_MEDIA_TYPE');
+    }
+
     const validation = await validateBody(request, createTransactionAPISchema);
 
     if (!validation.success) {

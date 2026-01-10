@@ -7,7 +7,7 @@ import {
   requireAuth,
   isValidDate,
 } from '@/lib/api-utils';
-import { updateTransactionAPISchema } from '@/lib/validation';
+import { updateTransactionAPISchema, transactionIdSchema } from '@/lib/validation/transactions';
 
 /**
  * GET /api/transactions/:id
@@ -18,11 +18,14 @@ export const GET: APIRoute = async ({ params, request, url }) => {
     const userId = requireAuth({ request, url } as any);
     const { id } = params;
 
-    if (!id) {
-      return errorResponse('Transaction ID is required', 400);
+    // Validate transaction ID format
+    const idValidation = transactionIdSchema.safeParse(id);
+    if (!idValidation.success) {
+      return errorResponse('Invalid transaction ID format', 400);
     }
 
-    const transaction = await transactionService.findById(id, userId);
+    // Now we know id is a valid string
+    const transaction = await transactionService.findById(idValidation.data, userId);
 
     if (!transaction) {
       return errorResponse('Transaction not found', 404);
@@ -47,8 +50,16 @@ export const PUT: APIRoute = async ({ params, request, url }) => {
     const userId = requireAuth({ request, url } as any);
     const { id } = params;
 
-    if (!id) {
-      return errorResponse('Transaction ID is required', 400);
+    // Validate transaction ID format
+    const idValidation = transactionIdSchema.safeParse(id);
+    if (!idValidation.success) {
+      return errorResponse('Invalid transaction ID format', 400);
+    }
+
+    // Validate Content-Type header
+    const contentType = request.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      return errorResponse('Content-Type must be application/json', 415, 'UNSUPPORTED_MEDIA_TYPE');
     }
 
     const validation = await validateBody(request, updateTransactionAPISchema);
@@ -75,7 +86,7 @@ export const PUT: APIRoute = async ({ params, request, url }) => {
     if (validation.data.description !== undefined)
       updateData.description = validation.data.description;
 
-    const transaction = await transactionService.update(id, userId, updateData);
+    const transaction = await transactionService.update(idValidation.data, userId, updateData);
 
     if (!transaction) {
       return errorResponse('Transaction not found', 404);
@@ -100,11 +111,13 @@ export const DELETE: APIRoute = async ({ params, request, url }) => {
     const userId = requireAuth({ request, url } as any);
     const { id } = params;
 
-    if (!id) {
-      return errorResponse('Transaction ID is required', 400);
+    // Validate transaction ID format
+    const idValidation = transactionIdSchema.safeParse(id);
+    if (!idValidation.success) {
+      return errorResponse('Invalid transaction ID format', 400);
     }
 
-    await transactionService.delete(id, userId);
+    await transactionService.delete(idValidation.data, userId);
 
     return successResponse({ message: 'Transaction deleted successfully' });
   } catch (error) {
