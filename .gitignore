@@ -42,3 +42,4 @@ debug-storybook.log
 .bv/
 .beads/.bv.lock
 fix-currency-precision/
+.claude/ralph-loop.local.md
