@@ -33,10 +33,7 @@ try {
   throw new Error(`Failed to connect to database at ${dbUrl}: ${error}`);
 }
 
-const db = drizzle({
-  client: sqlite,
-  schema,
-});
+const db = drizzle(sqlite as any, { schema });
 
 // Graceful shutdown handler
 process.on('beforeExit', () => {
