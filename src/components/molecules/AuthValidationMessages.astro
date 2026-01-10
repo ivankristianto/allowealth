@@ -63,7 +63,7 @@ const config = alertConfig[type];
 const displayMessage = message || config.defaultMessage;
 ---
 
-<div role="alert" class={`alert ${config.alertClass}`}>
+<div role="alert" class:list={['alert', config.alertClass]}>
   <span set:html={config.icon} />
   <span>{displayMessage}</span>
   {
