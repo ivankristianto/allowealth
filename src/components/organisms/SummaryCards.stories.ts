@@ -5,6 +5,7 @@ import {
   mockSummaryCardsExceeded,
   mockSummaryCardsEmpty,
 } from '@/services/__tests__/mocks/dashboard-mocks';
+import { formatCurrency, formatPercentage } from '@/lib/tokens';
 
 const meta: Meta = {
   title: 'Organisms/SummaryCards',
@@ -105,17 +106,17 @@ const createSummaryCards = (args: {
       <div class="space-y-2 mb-4">
         <div class="flex justify-between items-baseline">
           <span class="text-sm text-neutral-500">IDR:</span>
-          <span class="font-semibold text-lg text-emerald-600">${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(summaryData.totalAssets.idr)}</span>
+          <span class="font-semibold text-lg text-emerald-600">${formatCurrency(summaryData.totalAssets.idr, 'IDR')}</span>
         </div>
         <div class="flex justify-between items-baseline">
           <span class="text-sm text-neutral-500">USD:</span>
-          <span class="font-semibold text-lg text-blue-600">${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(summaryData.totalAssets.usd)}</span>
+          <span class="font-semibold text-lg text-blue-600">${formatCurrency(summaryData.totalAssets.usd, 'USD')}</span>
         </div>
       </div>
       <div class="pt-3 border-t border-neutral-200">
         <div class="flex justify-between items-baseline">
           <span class="text-sm text-neutral-600">Total:</span>
-          <span class="font-bold text-xl text-emerald-600">${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(summaryData.totalAssets.converted)}</span>
+          <span class="font-bold text-xl text-emerald-600">${formatCurrency(summaryData.totalAssets.converted, summaryData.totalAssets.convertedCurrency)}</span>
         </div>
       </div>
     `;
@@ -148,11 +149,11 @@ const createSummaryCards = (args: {
       </div>
       <div class="mb-4">
         <div class="flex justify-between items-baseline mb-2">
-          <span class="text-2xl font-bold">${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(summaryData.monthlySpent.spent)}</span>
-          <span class="text-sm text-neutral-500">of ${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(summaryData.monthlySpent.budget)}</span>
+          <span class="text-2xl font-bold">${formatCurrency(summaryData.monthlySpent.spent, summaryData.monthlySpent.currency)}</span>
+          <span class="text-sm text-neutral-500">of ${formatCurrency(summaryData.monthlySpent.budget, summaryData.monthlySpent.currency)}</span>
         </div>
         <div class="text-right">
-          <span class="text-lg font-semibold ${spentColor}">${summaryData.monthlySpent.percentage.toFixed(1)}%</span>
+          <span class="text-lg font-semibold ${spentColor}">${formatPercentage(summaryData.monthlySpent.percentage)}</span>
         </div>
       </div>
       <div class="space-y-2">
@@ -162,8 +163,8 @@ const createSummaryCards = (args: {
         <p class="text-xs text-neutral-500 text-center">
           ${
             summaryData.monthlySpent.percentage >= 100
-              ? `Over budget by ${(summaryData.monthlySpent.percentage - 100).toFixed(1)}%`
-              : `${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(summaryData.monthlySpent.budget - summaryData.monthlySpent.spent)} remaining`
+              ? `Over budget by ${formatPercentage(summaryData.monthlySpent.percentage - 100)}`
+              : `${formatCurrency(summaryData.monthlySpent.budget - summaryData.monthlySpent.spent, summaryData.monthlySpent.currency)} remaining`
           }
         </p>
       </div>

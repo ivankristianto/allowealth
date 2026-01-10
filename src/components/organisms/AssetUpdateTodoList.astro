@@ -105,13 +105,13 @@ const sortedAssets = [...assets].sort((a, b) => {
   {
     loading ? (
       // Loading skeleton
-      <div class="space-y-3">
+      <div class="space-y-3" role="status" aria-live="polite" aria-label="Loading asset updates">
         {[1, 2, 3].map((i) => (
           <div key={i} class="flex items-center gap-4 p-3 bg-base-200 rounded-lg animate-pulse">
-            <div class="w-8 h-8 bg-neutral-300 rounded-full" />
+            <div class="w-8 h-8 bg-neutral-300 rounded-full" aria-hidden="true" />
             <div class="flex-1 space-y-2">
-              <div class="h-4 bg-neutral-300 rounded w-3/4" />
-              <div class="h-3 bg-neutral-300 rounded w-1/2" />
+              <div class="h-4 bg-neutral-300 rounded w-3/4" aria-hidden="true" />
+              <div class="h-3 bg-neutral-300 rounded w-1/2" aria-hidden="true" />
             </div>
           </div>
         ))}
@@ -126,9 +126,9 @@ const sortedAssets = [...assets].sort((a, b) => {
       />
     ) : (
       // Asset list
-      <div class="space-y-2">
+      <ul class="space-y-2" role="list" aria-label="Assets needing updates">
         {sortedAssets.map((asset) => (
-          <div
+          <li
             class={`flex items-center gap-4 p-3 rounded-lg border transition-all ${
               asset.priority === 'high'
                 ? 'bg-error/10 border-error/20 hover:bg-error/20'
@@ -141,7 +141,11 @@ const sortedAssets = [...assets].sort((a, b) => {
             key={asset.id}
           >
             {/* Priority indicator */}
-            <div class="flex-shrink-0 text-2xl" aria-label={`Priority: ${asset.priority}`}>
+            <div
+              class="flex-shrink-0 text-2xl"
+              role="img"
+              aria-label={`Priority: ${asset.priority}`}
+            >
               {getPriorityIcon(asset.priority)}
             </div>
 
@@ -157,7 +161,7 @@ const sortedAssets = [...assets].sort((a, b) => {
                 <span class="font-mono font-medium">
                   {formatCurrency(asset.balance, asset.currency)}
                 </span>
-                <span>•</span>
+                <span aria-hidden="true">•</span>
                 <span class={asset.priority === 'high' ? 'text-error font-medium' : ''}>
                   {getPriorityLabel(asset.daysSinceUpdate)}
                 </span>
@@ -170,6 +174,7 @@ const sortedAssets = [...assets].sort((a, b) => {
               aria-label={`Update ${asset.name}`}
               data-asset-id={asset.id}
               data-update-asset
+              type="button"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -177,6 +182,7 @@ const sortedAssets = [...assets].sort((a, b) => {
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
+                aria-hidden="true"
               >
                 <path
                   stroke-linecap="round"
@@ -193,6 +199,7 @@ const sortedAssets = [...assets].sort((a, b) => {
               aria-label={`Dismiss ${asset.name} reminder`}
               data-asset-id={asset.id}
               data-dismiss-reminder
+              type="button"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -200,6 +207,7 @@ const sortedAssets = [...assets].sort((a, b) => {
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
+                aria-hidden="true"
               >
                 <path
                   stroke-linecap="round"
@@ -209,9 +217,9 @@ const sortedAssets = [...assets].sort((a, b) => {
                 />
               </svg>
             </button>
-          </div>
+          </li>
         ))}
-      </div>
+      </ul>
     )
   }
 
