@@ -8,6 +8,12 @@ import { currencyEnum, transactionTypeEnum } from '@/lib/enums';
 // Re-export enums from shared location for convenience
 export { currencyEnum, transactionTypeEnum };
 
+// Validation for transaction ID (nanoid format)
+export const transactionIdSchema = z
+  .string()
+  .min(1, 'Transaction ID is required')
+  .regex(/^[a-zA-Z0-9_-]+$/, 'Invalid transaction ID format');
+
 // Common validation for amount
 const amountValidation = z
   .string()

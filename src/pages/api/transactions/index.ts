@@ -65,6 +65,11 @@ export const GET: APIRoute = async ({ request, url }) => {
       filters.end_date = parsedEndDate;
     }
 
+    const search = url.searchParams.get('search');
+    if (search) {
+      filters.search = search;
+    }
+
     const transactions = await transactionService.findAll(filters);
     const total = await transactionService.count(filters);
 
@@ -92,6 +97,12 @@ export const GET: APIRoute = async ({ request, url }) => {
 export const POST: APIRoute = async ({ request, url }) => {
   try {
     const userId = requireAuth({ request, url } as any);
+
+    // Validate Content-Type header
+    const contentType = request.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      return errorResponse('Content-Type must be application/json', 415, 'UNSUPPORTED_MEDIA_TYPE');
+    }
 
     const validation = await validateBody(request, createTransactionAPISchema);
 

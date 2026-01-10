@@ -1,0 +1,168 @@
+---
+/**
+ * CSV Import Form Component
+ *
+ * Form for uploading and mapping CSV columns.
+ *
+ * @param {string} action - Form action URL
+ * @param {Array} availableColumns - Available columns in CSV
+ * @param {Array} previewData - Preview rows from CSV
+ * @param {Object} columnMapping - Current column mapping
+ * @param {number} totalRows - Total number of rows in CSV
+ * @param {Array} errors - Import errors
+ */
+
+import Label from '../atoms/Label.astro';
+import Input from '../atoms/Input.astro';
+import Button from '../atoms/Button.astro';
+import Icon from '../atoms/Icon.astro';
+import Badge from '../atoms/Badge.astro';
+
+export interface Props {
+  action: string;
+  availableColumns?: string[];
+  previewData?: string[][];
+  columnMapping?: Record<string, string>;
+  totalRows?: number;
+  errors?: string[];
+}
+
+const {
+  action,
+  availableColumns = [],
+  previewData = [],
+  columnMapping = {},
+  totalRows = 0,
+  errors = [],
+} = Astro.props;
+
+// Required and optional fields for mapping
+const fieldMap = [
+  { key: 'date', label: 'Date', required: true },
+  { key: 'type', label: 'Type', required: true },
+  { key: 'amount', label: 'Amount', required: true },
+  { key: 'currency', label: 'Currency', required: true },
+  { key: 'category', label: 'Category', required: true },
+  { key: 'payment_method', label: 'Payment Method', required: true },
+  { key: 'description', label: 'Description', required: false },
+];
+---
+
+<form action={action} method="POST" enctype="multipart/form-data" class="space-y-6">
+  <div class="form-control">
+    <Label required htmlFor="csv_file" id="file-label" helpText="CSV file with transaction data">
+      Upload CSV File
+    </Label>
+    <Input
+      id="csv_file"
+      name="csv_file"
+      type="file"
+      accept=".csv"
+      required={true}
+      className="file-input file-input-bordered w-full"
+    />
+    <div class="text-sm text-neutral-500 mt-1">
+      Expected columns: date, type, amount, currency, category, payment_method, description
+      (optional)
+    </div>
+  </div>
+
+  {
+    availableColumns.length > 0 && (
+      <>
+        <div class="space-y-4">
+          <h3 class="font-semibold">Map Columns</h3>
+          <p class="text-sm text-neutral-500">Match your CSV columns to the transaction fields</p>
+
+          <div class="overflow-x-auto">
+            <table class="table table-sm">
+              <thead>
+                <tr>
+                  <th>Field</th>
+                  <th>CSV Column</th>
+                </tr>
+              </thead>
+              <tbody>
+                {fieldMap.map((field) => (
+                  <tr>
+                    <td>
+                      {field.label}
+                      {field.required && (
+                        <Badge variant="danger" size="sm" className="ml-2">
+                          Required
+                        </Badge>
+                      )}
+                    </td>
+                    <td>
+                      <select
+                        name={`map_${field.key}`}
+                        class="select select-bordered select-sm w-full max-w-xs"
+                      >
+                        <option value="">-- Select Column --</option>
+                        {availableColumns.map((col) => (
+                          <option value={col} selected={columnMapping[field.key] === col}>
+                            {col}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {previewData.length > 0 && (
+          <div class="space-y-4">
+            <h3 class="font-semibold">
+              Preview (First {previewData.length} rows of {totalRows} total)
+            </h3>
+
+            <div class="overflow-x-auto border rounded-lg">
+              <table class="table table-sm table-zebra">
+                <thead>
+                  <tr>
+                    {availableColumns.map((col) => (
+                      <th>{col}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {previewData.map((row, rowIndex) => (
+                    <tr>
+                      {row.map((cell, cellIndex) => (
+                        <td key={`${rowIndex}-${cellIndex}`}>{cell || '(empty)'}</td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {errors.length > 0 && (
+          <div role="alert" class="alert alert-error">
+            <Icon name="warning" size="sm" />
+            <div>
+              <h4 class="font-bold">Import Errors</h4>
+              <ul class="text-sm mt-1 list-disc list-inside">
+                {errors.map((error) => (
+                  <li>{error}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        )}
+      </>
+    )
+  }
+
+  <div class="card-actions justify-end gap-2">
+    <a href="/transactions" class="btn btn-ghost">Cancel</a>
+    <Button type="submit" variant="primary">
+      {availableColumns.length > 0 ? `Import ${totalRows} Transactions` : 'Upload File'}
+    </Button>
+  </div>
+</form>

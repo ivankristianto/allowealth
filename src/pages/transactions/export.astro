@@ -1,0 +1,100 @@
+---
+/**
+ * CSV Export Page
+ *
+ * Page for exporting transactions to CSV files.
+ */
+
+import MainLayout from '../../layouts/MainLayout.astro';
+import { requireAuth } from '@/lib/auth/requireAuth';
+import TransactionFilters from '../../components/molecules/TransactionFilters.astro';
+import Icon from '../../components/atoms/Icon.astro';
+
+// Check authentication - redirect to login if not authenticated
+const redirectResponse = requireAuth(Astro);
+if (redirectResponse) {
+  return redirectResponse;
+}
+
+const user = Astro.locals.user;
+const currentPath = '/transactions/export';
+
+// Mock categories and payment methods for filters
+const mockCategories = [
+  { id: 'c1', name: 'Food & Groceries', type: 'expense' },
+  { id: 'c2', name: 'Ivan Expenses', type: 'expense' },
+  { id: 'c3', name: 'Salary', type: 'income' },
+  { id: 'c4', name: 'Transportation', type: 'expense' },
+  { id: 'c5', name: 'Dine Out', type: 'expense' },
+];
+
+const mockPaymentMethods = [
+  { id: 'p1', name: 'Cash', type: 'cash' },
+  { id: 'p2', name: 'BCA Transfer', type: 'bank_transfer' },
+  { id: 'p3', name: 'GoPay', type: 'e_wallet' },
+];
+
+// Get current filters from referer or default
+const url = new URL(Astro.url);
+const currentFilters = {
+  search: url.searchParams.get('search') || '',
+  type: (url.searchParams.get('type') || '') as 'expense' | 'income' | '',
+  currency: (url.searchParams.get('currency') || '') as 'IDR' | 'USD' | '',
+  category_id: url.searchParams.get('category_id') || '',
+  payment_method_id: url.searchParams.get('payment_method_id') || '',
+  start_date: url.searchParams.get('start_date') || '',
+  end_date: url.searchParams.get('end_date') || '',
+};
+---
+
+<MainLayout title="Export Transactions - Finance Manager" currentPath={currentPath} user={user}>
+  <div class="max-w-4xl">
+    <div class="mb-6">
+      <h2 class="text-2xl font-bold">Export Transactions to CSV</h2>
+      <p class="text-neutral-500">Download your transactions as a CSV file</p>
+    </div>
+
+    <div class="card bg-base-100 shadow border border-base-300">
+      <div class="card-body">
+        <!-- Instructions -->
+        <div class="alert alert-info mb-6">
+          <Icon name="information" size="sm" />
+          <div>
+            <h3 class="font-bold">Export Options</h3>
+            <div class="text-sm mt-2">
+              <p>
+                Use filters below to select which transactions to export. All matching transactions
+                will be included in the CSV file.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="mb-6">
+          <h3 class="font-semibold mb-4">Filter Transactions</h3>
+          <TransactionFilters
+            action="/transactions/export"
+            categories={mockCategories}
+            paymentMethods={mockPaymentMethods}
+            values={currentFilters}
+            count={0}
+          />
+        </div>
+
+        <!-- Export Info -->
+        <div class="border-t border-base-300 pt-6">
+          <h3 class="font-semibold mb-2">Export Details</h3>
+          <ul class="text-sm text-neutral-500 space-y-1">
+            <li>Filename format: <code>transactions_YYYY-MM-DD.csv</code></li>
+            <li>
+              Includes all transaction fields: date, type, amount, currency, category, payment
+              method, description
+            </li>
+            <li>Uses current filters to select transactions</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</MainLayout>

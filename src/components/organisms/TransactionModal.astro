@@ -1,0 +1,78 @@
+---
+/**
+ * Transaction Modal Component
+ *
+ * Modal wrapper for transaction add/edit form.
+ *
+ * @param {string} id - Modal ID
+ * @param {string} title - Modal title
+ * @param {boolean} open - Whether modal is open
+ * @param {string} action - Form action URL
+ * @param {string} method - Form method
+ * @param {Object} values - Default form values
+ * @param {Array} categories - Available categories
+ * @param {Array} paymentMethods - Available payment methods
+ * @param {Array} errors - Form errors
+ */
+
+import Modal from '../molecules/Modal.astro';
+import TransactionForm from '../molecules/TransactionForm.astro';
+
+export interface Props {
+  id: string;
+  title?: string;
+  open?: boolean;
+  action: string;
+  method?: 'POST' | 'PUT';
+  values?: {
+    type?: 'expense' | 'income';
+    amount?: string;
+    currency?: 'IDR' | 'USD';
+    category_id?: string;
+    payment_method_id?: string;
+    transaction_date?: string;
+    description?: string;
+  };
+  categories?: Array<{ id: string; name: string; type: string; currency?: string }>;
+  paymentMethods?: Array<{ id: string; name: string; type: string }>;
+  errors?: Record<string, string>;
+  submitLabel?: string;
+}
+
+const {
+  id,
+  title = 'Add Transaction',
+  open = false,
+  action,
+  method = 'POST',
+  values = {},
+  categories = [],
+  paymentMethods = [],
+  errors = {},
+  submitLabel = 'Save Transaction',
+} = Astro.props;
+---
+
+<Modal id={id} title={title} open={open} size="lg">
+  <TransactionForm
+    action={action}
+    method={method}
+    values={values}
+    categories={categories}
+    paymentMethods={paymentMethods}
+    errors={errors}
+    submitLabel={submitLabel}
+    cancelUrl="#"
+  />
+</Modal>
+
+<script>
+  // Override cancel button to close modal instead of navigating
+  const modal = document.getElementById(Astro.props.id) as HTMLDialogElement;
+  const cancelButton = modal?.querySelector('a[href="#"]');
+
+  cancelButton?.addEventListener('click', (e) => {
+    e.preventDefault();
+    modal?.close();
+  });
+</script>

@@ -1,0 +1,101 @@
+---
+/**
+ * Currency Input Component
+ *
+ * Amount input field with currency selector.
+ *
+ * @param {string} name - Input name
+ * @param {string} value - Initial amount value
+ * @param {string} currency - Initial currency (IDR or USD)
+ * @param {boolean} required - Whether the field is required
+ * @param {boolean} error - Show error state
+ * @param {string} errorMessage - Error message to display
+ * @param {string} className - Additional CSS classes
+ * @param {string} id - Element ID
+ * @param {string} amountName - Name attribute for amount input
+ * @param {string} currencyName - Name attribute for currency select
+ */
+
+import { currencyFormats } from '@/lib/tokens';
+
+export interface Props {
+  name?: string;
+  value?: string;
+  currency?: 'IDR' | 'USD';
+  required?: boolean;
+  error?: boolean;
+  errorMessage?: string;
+  className?: string;
+  id?: string;
+  amountName?: string;
+  currencyName?: string;
+  disabled?: boolean;
+}
+
+const {
+  name = 'amount',
+  value = '',
+  currency = 'IDR',
+  required = false,
+  error = false,
+  errorMessage = '',
+  className = '',
+  id = '',
+  amountName = 'amount',
+  currencyName = 'currency',
+  disabled = false,
+} = Astro.props;
+
+const inputId = id || `${name}-input`;
+const currencyId = `${name}-currency`;
+const errorId = `${name}-error`;
+---
+
+<div class="join w-full">
+  <!-- Currency Selector -->
+  <select
+    id={currencyId}
+    name={currencyName}
+    class="select select-bordered join-item"
+    disabled={disabled}
+    aria-label="Currency"
+  >
+    {
+      Object.entries(currencyFormats).map(([code, config]) => (
+        <option value={code} selected={code === currency}>
+          {code}
+        </option>
+      ))
+    }
+  </select>
+
+  <!-- Amount Input -->
+  <input
+    type="number"
+    id={inputId}
+    name={amountName}
+    value={value}
+    step="0.01"
+    min="0.01"
+    required={required}
+    disabled={disabled}
+    placeholder="0.00"
+    class:list={[
+      'input input-bordered join-item w-full',
+      error && 'input-error',
+      disabled && 'opacity-50 cursor-not-allowed',
+      className,
+    ]}
+    aria-invalid={error}
+    aria-describedby={error ? errorId : undefined}
+    aria-required={required}
+  />
+</div>
+
+{
+  error && errorMessage && (
+    <span id={errorId} class="text-error text-sm mt-1" role="alert">
+      {errorMessage}
+    </span>
+  )
+}
