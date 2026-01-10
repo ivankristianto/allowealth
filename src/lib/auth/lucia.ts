@@ -36,15 +36,33 @@ const adapter = new DrizzleSQLiteAdapter(db, schema.sessions as any, schema.user
 
 export const auth = new Lucia(adapter, {
   sessionCookie: {
+    // HTTP-only: prevents JavaScript access to the cookie (XSS protection)
+    // Lucia automatically sets httpOnly=true for all session cookies - this cannot be disabled
+    // See: https://lucia-auth.com/reference/main/lucia/#sessioncookie
+    // This is a critical security feature that protects against XSS attacks by preventing
+    // JavaScript from accessing the session cookie via document.cookie
     attributes: {
-      // HTTP-only: prevents JavaScript access to the cookie (XSS protection)
-      // Note: httpOnly is handled by Lucia internally
-
-      // Secure: only send cookie over HTTPS (disabled in development)
+      // Secure: only send cookie over HTTPS (disabled in development for local testing)
+      // In production, this prevents cookies from being sent over unencrypted HTTP connections
       secure: process.env.NODE_ENV === 'production',
 
       // SameSite: helps prevent CSRF attacks
+      // - 'lax': allows cookies to be sent with top-level navigations (safe for most use cases)
+      // - 'strict': would block cookies on all cross-site requests (too restrictive for redirects)
+      // - 'none': allows cookies on all requests (requires secure=true, not recommended)
+      // We use 'lax' as it provides good CSRF protection while allowing legitimate navigation
       sameSite: 'lax',
+
+      // Path: restrict cookie to specific path (default: '/')
+      // We use default to make session available app-wide
+      // path: '/',
+
+      // Domain: restrict cookie to specific domain (default: current domain)
+      // We use default to allow subdomain sharing if needed
+      // domain: undefined,
+
+      // MaxAge: cookie expiration in seconds (handled by sessionExpiresIn)
+      // Priority: priority of the cookie (not set, uses browser default)
     },
   },
 

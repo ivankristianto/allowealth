@@ -20,7 +20,10 @@ import { auth } from '@/lib/auth/lucia';
 import { AUTH_ERRORS, type AuthError } from '@/services/auth.service';
 import {
   createErrorResponse,
+  createErrorResponseResponse,
   createSuccessResponse,
+  createSuccessResponseResponse,
+  STANDARD_RESPONSE_HEADERS,
   type ApiSuccessResponse,
   type ApiError,
 } from '@/types/api';
@@ -42,7 +45,7 @@ export const POST: APIRoute = async ({ request }) => {
     // Create session cookie
     const sessionCookie = auth.createSessionCookie(session.id);
 
-    // Return success response with session cookie
+    // Return success response with session cookie using standardized response
     const responseData: ApiSuccessResponse<{
       user: {
         id: string;
@@ -60,7 +63,7 @@ export const POST: APIRoute = async ({ request }) => {
     return new Response(JSON.stringify(responseData), {
       status: 200,
       headers: {
-        'Content-Type': 'application/json',
+        ...STANDARD_RESPONSE_HEADERS,
         'Set-Cookie': sessionCookie.serialize(),
       },
     });
@@ -71,28 +74,14 @@ export const POST: APIRoute = async ({ request }) => {
 
       switch (authError.code) {
         case AUTH_ERRORS.INVALID_CREDENTIALS:
-          return new Response(
-            JSON.stringify(
-              createErrorResponse(AUTH_ERRORS.INVALID_CREDENTIALS, 'Invalid email or password')
-            ),
-            {
-              status: 401,
-              headers: {
-                'Content-Type': 'application/json',
-              },
-            }
+          return createErrorResponseResponse(
+            AUTH_ERRORS.INVALID_CREDENTIALS,
+            'Invalid email or password',
+            401
           );
 
         case AUTH_ERRORS.INVALID_INPUT:
-          return new Response(
-            JSON.stringify(createErrorResponse(AUTH_ERRORS.INVALID_INPUT, authError.message)),
-            {
-              status: 400,
-              headers: {
-                'Content-Type': 'application/json',
-              },
-            }
-          );
+          return createErrorResponseResponse(AUTH_ERRORS.INVALID_INPUT, authError.message, 400);
 
         default:
           break;
@@ -101,14 +90,10 @@ export const POST: APIRoute = async ({ request }) => {
 
     // Handle unexpected errors
     console.error('Login error:', error);
-    return new Response(
-      JSON.stringify(createErrorResponse('INTERNAL_SERVER_ERROR', 'An unexpected error occurred')),
-      {
-        status: 500,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      }
+    return createErrorResponseResponse(
+      'INTERNAL_SERVER_ERROR',
+      'An unexpected error occurred',
+      500
     );
   }
 };

@@ -17,7 +17,9 @@ import { auth } from '@/lib/auth/lucia';
 import { AUTH_ERRORS, type AuthError } from '@/services/auth.service';
 import {
   createErrorResponse,
+  createErrorResponseResponse,
   createSuccessResponse,
+  STANDARD_RESPONSE_HEADERS,
   type ApiSuccessResponse,
   type ApiError,
 } from '@/types/api';
@@ -31,15 +33,7 @@ export const POST: APIRoute = async ({ request }) => {
     const sessionMatch = cookies.match(/sid=([^;]+)/);
 
     if (!sessionMatch || !sessionMatch[1]) {
-      return new Response(
-        JSON.stringify(createErrorResponse(AUTH_ERRORS.NOT_AUTHENTICATED, 'Not authenticated')),
-        {
-          status: 401,
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        }
-      );
+      return createErrorResponseResponse(AUTH_ERRORS.NOT_AUTHENTICATED, 'Not authenticated', 401);
     }
 
     const sessionId = sessionMatch[1] as string;
@@ -50,7 +44,7 @@ export const POST: APIRoute = async ({ request }) => {
     // Create blank session cookie to clear the existing one
     const blankSessionCookie = auth.createBlankSessionCookie();
 
-    // Return success response
+    // Return success response with standardized headers
     const responseData: ApiSuccessResponse<{ message: string }> = createSuccessResponse({
       message: 'Logged out successfully',
     });
@@ -58,7 +52,7 @@ export const POST: APIRoute = async ({ request }) => {
     return new Response(JSON.stringify(responseData), {
       status: 200,
       headers: {
-        'Content-Type': 'application/json',
+        ...STANDARD_RESPONSE_HEADERS,
         'Set-Cookie': blankSessionCookie.serialize(),
       },
     });
@@ -68,28 +62,16 @@ export const POST: APIRoute = async ({ request }) => {
       const authError = error as AuthError;
 
       if (authError.code === AUTH_ERRORS.NOT_AUTHENTICATED) {
-        return new Response(
-          JSON.stringify(createErrorResponse(AUTH_ERRORS.NOT_AUTHENTICATED, 'Not authenticated')),
-          {
-            status: 401,
-            headers: {
-              'Content-Type': 'application/json',
-            },
-          }
-        );
+        return createErrorResponseResponse(AUTH_ERRORS.NOT_AUTHENTICATED, 'Not authenticated', 401);
       }
     }
 
     // Handle unexpected errors
     console.error('Logout error:', error);
-    return new Response(
-      JSON.stringify(createErrorResponse('INTERNAL_SERVER_ERROR', 'An unexpected error occurred')),
-      {
-        status: 500,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      }
+    return createErrorResponseResponse(
+      'INTERNAL_SERVER_ERROR',
+      'An unexpected error occurred',
+      500
     );
   }
 };
