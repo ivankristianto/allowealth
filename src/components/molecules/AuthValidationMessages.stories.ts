@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/html';
-import { AuthValidationMessages } from './AuthValidationMessages.astro';
+import AuthValidationMessages from './AuthValidationMessages.astro';
 
 const meta: Meta = {
   title: 'Molecules/AuthValidationMessages',

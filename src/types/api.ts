@@ -76,6 +76,18 @@ export const API_ERROR_CODES = {
 export type ApiErrorCode = (typeof API_ERROR_CODES)[keyof typeof API_ERROR_CODES];
 
 /**
+ * Standard HTTP headers for all API responses
+ *
+ * These headers ensure:
+ * - Content type is properly set
+ * - CORS is controlled (if needed in future)
+ * - Security headers are applied
+ */
+export const STANDARD_RESPONSE_HEADERS = {
+  'Content-Type': 'application/json',
+} as const;
+
+/**
  * Helper function to create an error response
  */
 export function createErrorResponse(code: string, message: string): ApiError {
@@ -86,6 +98,28 @@ export function createErrorResponse(code: string, message: string): ApiError {
 }
 
 /**
+ * Helper function to create a standardized error HTTP response
+ *
+ * This function ensures consistent error responses across all API endpoints
+ * with proper headers and status codes.
+ *
+ * @param code - Error code (e.g., 'INVALID_INPUT', 'UNAUTHORIZED')
+ * @param message - Human-readable error message
+ * @param status - HTTP status code (default: 500)
+ * @returns Response object with standardized format and headers
+ */
+export function createErrorResponseResponse(
+  code: string,
+  message: string,
+  status: number = 500
+): Response {
+  return new Response(JSON.stringify(createErrorResponse(code, message)), {
+    status,
+    headers: STANDARD_RESPONSE_HEADERS,
+  });
+}
+
+/**
  * Helper function to create a success response
  */
 export function createSuccessResponse<T>(data: T): ApiSuccessResponse<T> {
@@ -93,6 +127,23 @@ export function createSuccessResponse<T>(data: T): ApiSuccessResponse<T> {
     success: true,
     data,
   };
+}
+
+/**
+ * Helper function to create a standardized success HTTP response
+ *
+ * This function ensures consistent success responses across all API endpoints
+ * with proper headers and status codes.
+ *
+ * @param data - Data to include in response body
+ * @param status - HTTP status code (default: 200)
+ * @returns Response object with standardized format and headers
+ */
+export function createSuccessResponseResponse<T>(data: T, status: number = 200): Response {
+  return new Response(JSON.stringify(createSuccessResponse(data)), {
+    status,
+    headers: STANDARD_RESPONSE_HEADERS,
+  });
 }
 
 /**

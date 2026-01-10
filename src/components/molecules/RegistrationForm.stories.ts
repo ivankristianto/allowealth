@@ -160,7 +160,7 @@ function createFormField(
     input.name = id;
     input.placeholder = placeholder;
     input.required = required;
-    input.autocomplete = autocomplete;
+    input.autocomplete = autocomplete as any;
     input.className = 'input input-bordered w-full pr-12';
 
     const button = document.createElement('button');
@@ -198,7 +198,7 @@ function createFormField(
     input.name = id;
     input.placeholder = placeholder;
     input.required = required;
-    input.autocomplete = autocomplete;
+    input.autocomplete = autocomplete as any;
     input.className = 'input input-bordered w-full';
     container.appendChild(input);
   }

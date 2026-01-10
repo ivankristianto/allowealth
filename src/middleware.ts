@@ -28,6 +28,56 @@ declare module 'astro' {
  */
 const SESSION_COOKIE_NAME = 'sid';
 
+/**
+ * Content Security Policy headers for XSS prevention
+ *
+ * CSP restricts the sources of various types of content, preventing XSS attacks.
+ * Learn more: https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP
+ */
+const CSP_HEADERS = {
+  // Default policy for all content types
+  'default-src': "'self'",
+
+  // Script sources - only allow scripts from same origin
+  'script-src': "'self'",
+
+  // Style sources - allow same origin and inline styles (for Tailwind CSS)
+  'style-src': "'self' 'unsafe-inline'",
+
+  // Image sources - allow same origin, data URIs, and https images
+  'img-src': "'self' data: https:",
+
+  // Font sources - allow same origin and data URIs
+  'font-src': "'self' data:",
+
+  // Connect sources - allow same origin API calls
+  'connect-src': "'self'",
+
+  // Frame sources - deny all framing (clickjacking prevention)
+  'frame-ancestors': "'none'",
+
+  // Base URI - restrict base tag to same origin
+  'base-uri': "'self'",
+
+  // Form action - restrict form submissions to same origin
+  'form-action': "'self'",
+
+  // Object sources - block plugins (Flash, etc.)
+  'object-src': "'none'",
+
+  // Report violations to endpoint (optional, for monitoring)
+  'report-to': "'csp-endpoint'",
+} as const;
+
+/**
+ * Convert CSP headers object to CSP header string
+ */
+function buildCSPHeader(): string {
+  return Object.entries(CSP_HEADERS)
+    .map(([directive, source]) => `${directive} ${source}`)
+    .join('; ');
+}
+
 export const onRequest: MiddlewareHandler = async (context, next) => {
   const sessionId = context.cookies.get(SESSION_COOKIE_NAME)?.value;
 
@@ -53,7 +103,19 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
       // For now, we'll just continue
     }
 
-    return next();
+    // Apply security headers to response
+    const response = await next();
+
+    // Add Content Security Policy headers for XSS prevention
+    response.headers.set('Content-Security-Policy', buildCSPHeader());
+
+    // Add additional security headers
+    response.headers.set('X-Content-Type-Options', 'nosniff'); // Prevent MIME type sniffing
+    response.headers.set('X-Frame-Options', 'DENY'); // Prevent clickjacking
+    response.headers.set('X-XSS-Protection', '1; mode=block'); // Legacy XSS protection
+    response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin'); // Control referrer information
+
+    return response;
   } catch (error) {
     // Session validation failed - clear user data
     console.error('Session validation error:', error);
