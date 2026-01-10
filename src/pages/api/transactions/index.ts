@@ -65,6 +65,11 @@ export const GET: APIRoute = async ({ request, url }) => {
       filters.end_date = parsedEndDate;
     }
 
+    const search = url.searchParams.get('search');
+    if (search) {
+      filters.search = search;
+    }
+
     const transactions = await transactionService.findAll(filters);
     const total = await transactionService.count(filters);
 
