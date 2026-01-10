@@ -3,10 +3,8 @@
  * LoginForm Component
  *
  * Reusable login form component with email/password inputs, remember me checkbox,
- * forgot password link, and sign up link.
+ * forgot password link, and sign up link. Uses JSON API for login.
  *
- * @param {string} action - Form action URL
- * @param {string} method - Form method (default: POST)
  * @param {string} errorMessage - Error message to display
  * @param {string} email - Pre-filled email value
  */
@@ -19,25 +17,23 @@ import Button from '../atoms/Button.astro';
 import ErrorMessage from '../atoms/ErrorMessage.astro';
 
 export interface Props {
-  action?: string;
-  method?: string;
   errorMessage?: string;
   email?: string;
+  redirectTo?: string;
 }
 
-const { action = '/api/auth/login', method = 'POST', errorMessage = '', email = '' } = Astro.props;
+const { errorMessage = '', email = '', redirectTo = '' } = Astro.props;
 ---
 
 <div class="card bg-base-100 shadow-xl">
   <div class="card-body">
     <h2 class="card-title text-2xl font-bold mb-4">Sign In</h2>
 
-    {errorMessage && <ErrorMessage message={errorMessage} />}
+    <div id="login-messages" aria-live="polite" aria-atomic="true">
+      {errorMessage && <ErrorMessage message={errorMessage} />}
+    </div>
 
-    <form action={action} method={method} class="space-y-4">
-      <!-- TODO: Add CSRF token when backend auth is implemented -->
-      <!-- <input type="hidden" name="csrf_token" value={csrfToken} /> -->
-
+    <form id="login-form" class="space-y-4" novalidate>
       <!-- Email Field -->
       <div class="form-control">
         <Label htmlFor="email" required>Email</Label>
@@ -66,29 +62,44 @@ const { action = '/api/auth/login', method = 'POST', errorMessage = '', email = 
       </div>
 
       <!-- Submit Button -->
-      <Button type="submit" variant="primary" className="w-full">Sign In</Button>
+      <Button type="submit" variant="primary" className="w-full" data-login-submit-button>
+        <span data-button-text>Sign In</span>
+        <span data-loading-spinner class="hidden">
+          <span class="loading loading-spinner"></span>
+          Signing In...
+        </span>
+      </Button>
 
       <!-- Sign Up Link -->
       <div class="text-center text-sm">
         Don't have an account?
-        <a href="/signup" class="text-primary hover:underline font-medium ml-1">Sign up</a>
+        <a href="/register" class="text-primary hover:underline font-medium ml-1">Sign up</a>
       </div>
     </form>
   </div>
 </div>
 
-<!-- Client-side validation and security enhancements -->
-<script>
-  document.addEventListener('DOMContentLoaded', () => {
-    const form = document.querySelector('form');
-    const emailInput = document.getElementById('email') as HTMLInputElement;
-    const passwordInput = document.querySelector(
-      '[data-password-input][name="password"]'
-    ) as HTMLInputElement;
-    const submitButton = document.querySelector('button[type="submit"]') as HTMLButtonElement;
+<script define:vars={{ redirectTo, apiLoginUrl: '/api/auth/login' }}>
+  // HTML escaping utility to prevent XSS
+  const escapeHtml = (text: string): string => {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  };
 
-    if (!form || !emailInput || !passwordInput || !submitButton) return;
+  const form = document.getElementById('login-form') as HTMLFormElement;
+  const messagesContainer = document.getElementById('login-messages');
+  const emailInput = document.getElementById('email') as HTMLInputElement;
+  const passwordInput = document.querySelector(
+    '[data-password-input][name="password"]'
+  ) as HTMLInputElement;
+  const submitButton = document.querySelector('[data-login-submit-button]') as HTMLButtonElement;
+  const buttonText = submitButton?.querySelector('[data-button-text]');
+  const loadingSpinner = submitButton?.querySelector('[data-loading-spinner]');
 
+  if (!form || !emailInput || !passwordInput || !submitButton) {
+    console.error('Login form elements not found');
+  } else {
     // Add autocomplete attributes for security and UX
     emailInput.setAttribute('autocomplete', 'email');
     passwordInput.setAttribute('autocomplete', 'current-password');
@@ -101,11 +112,113 @@ const { action = '/api/auth/login', method = 'POST', errorMessage = '', email = 
     emailInput.pattern = '[a-z0-9._%+-]+@[a-z0-9.-]+\\.[a-z]{2,}$';
     emailInput.title = 'Please enter a valid email address';
 
-    // Form submission with loading state
-    form.addEventListener('submit', () => {
-      submitButton.disabled = true;
-      submitButton.setAttribute('aria-busy', 'true');
-      submitButton.textContent = 'Signing In...';
+    // Clear messages on input
+    const inputs = form.querySelectorAll('input');
+    inputs.forEach((input) => {
+      input.addEventListener('input', () => {
+        if (messagesContainer) {
+          const existingError = messagesContainer.querySelector('[role="alert"]');
+          if (existingError) {
+            existingError.remove();
+          }
+        }
+      });
     });
-  });
+
+    // Form submission with fetch API
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      // Clear previous messages
+      if (messagesContainer) {
+        messagesContainer.innerHTML = '';
+      }
+
+      // Client-side validation
+      const errors: string[] = [];
+
+      if (!emailInput.value || !emailInput.checkValidity()) {
+        errors.push('Please enter a valid email address');
+      }
+
+      if (!passwordInput.value) {
+        errors.push('Please enter your password');
+      }
+
+      // Display validation errors
+      if (errors.length > 0) {
+        if (messagesContainer) {
+          messagesContainer.innerHTML = `
+            <div role="alert" class="alert alert-error">
+              <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>${escapeHtml(errors.join(', '))}</span>
+            </div>
+          `;
+        }
+        return;
+      }
+
+      // Show loading state
+      if (buttonText) buttonText.classList.add('hidden');
+      if (loadingSpinner) loadingSpinner.classList.remove('hidden');
+      if (submitButton) submitButton.disabled = true;
+
+      try {
+        const formData = new FormData(form);
+        const data = {
+          email: formData.get('email'),
+          password: formData.get('password'),
+        };
+
+        const response = await fetch(apiLoginUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify(data),
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+          // Login successful - redirect to dashboard or return URL
+          const returnUrl = redirectTo || '/dashboard';
+          window.location.href = returnUrl;
+        } else {
+          // Login failed - show error message
+          if (messagesContainer) {
+            messagesContainer.innerHTML = `
+              <div role="alert" class="alert alert-error">
+                <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>${escapeHtml(result.error?.message || 'Login failed. Please try again.')}</span>
+              </div>
+            `;
+          }
+        }
+      } catch (error) {
+        console.error('Login error:', error);
+        // Show error message
+        if (messagesContainer) {
+          messagesContainer.innerHTML = `
+            <div role="alert" class="alert alert-error">
+              <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>An error occurred. Please try again.</span>
+            </div>
+          `;
+        }
+      } finally {
+        // Reset loading state
+        if (buttonText) buttonText.classList.remove('hidden');
+        if (loadingSpinner) loadingSpinner.classList.add('hidden');
+        if (submitButton) submitButton.disabled = false;
+      }
+    });
+  }
 </script>

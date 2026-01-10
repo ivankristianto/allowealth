@@ -1,0 +1,150 @@
+---
+/**
+ * UserContext Component (Organism)
+ *
+ * Displays user information and authentication controls in the header.
+ * Shows user name and logout button when logged in, or login/register links when logged out.
+ *
+ * @param {user?: User | null} user - User object from session (null if not authenticated)
+ */
+
+import type { User } from 'lucia';
+
+interface Props {
+  user?: User | null;
+}
+
+const { user = null } = Astro.props;
+
+// User type with attributes
+type UserWithAttributes = User & {
+  attributes: {
+    id: string;
+    email: string;
+    name: string;
+  };
+};
+---
+
+<div class="dropdown dropdown-end" data-user-context>
+  {
+    user ? (
+      // Logged in: Show user name and logout
+      <>
+        <button tabindex={0} class="btn btn-ghost btn-sm gap-2" aria-label="User menu">
+          <div class="avatar placeholder">
+            <div class="bg-primary text-primary-content rounded-full w-8">
+              <span class="text-xs">
+                {((user as UserWithAttributes)?.attributes?.name || 'U').charAt(0).toUpperCase()}
+              </span>
+            </div>
+          </div>
+          <span class="hidden sm:inline text-sm font-medium">
+            {(user as UserWithAttributes)?.attributes?.name || 'User'}
+          </span>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-4 w-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M19 9l-7 7-7-7"
+            />
+          </svg>
+        </button>
+
+        <ul
+          tabindex={0}
+          class="dropdown-content z-[1] menu p-2 shadow-lg bg-base-100 rounded-box w-52"
+        >
+          <li class="menu-title">
+            <span class="text-sm font-semibold">My Account</span>
+          </li>
+          <li>
+            <a href="/settings" class="flex items-center gap-2">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                />
+              </svg>
+              <span>Profile Settings</span>
+            </a>
+          </li>
+          <li>
+            <button class="flex items-center gap-2 text-error" data-logout-button type="button">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                />
+              </svg>
+              <span>Sign Out</span>
+            </button>
+          </li>
+        </ul>
+      </>
+    ) : (
+      // Logged out: Show login/register links
+      <div class="flex items-center gap-2">
+        <a href="/login" class="btn btn-ghost btn-sm">
+          Sign In
+        </a>
+        <a href="/register" class="btn btn-primary btn-sm">
+          Sign Up
+        </a>
+      </div>
+    )
+  }
+</div>
+
+<script>
+  // Handle logout functionality
+  const logoutButton = document.querySelector('[data-logout-button]') as HTMLButtonElement;
+
+  if (logoutButton) {
+    logoutButton.addEventListener('click', async () => {
+      try {
+        // Call logout API
+        const response = await fetch('/api/auth/logout', {
+          method: 'POST',
+          credentials: 'include',
+        });
+
+        if (response.ok) {
+          // Redirect to login page
+          window.location.href = '/login';
+        } else {
+          console.error('Logout failed');
+          // Show error toast or message
+          const errorData = await response.json().catch(() => ({ message: 'Logout failed' }));
+          // Could show a toast notification here
+        }
+      } catch (error) {
+        console.error('Logout error:', error);
+        // Show error toast or message
+      }
+    });
+  }
+</script>

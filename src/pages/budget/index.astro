@@ -1,10 +1,18 @@
 ---
 import MainLayout from '../../layouts/MainLayout.astro';
+import { requireAuth } from '@/lib/auth/requireAuth';
 
+// Check authentication - redirect to login if not authenticated
+const redirectResponse = requireAuth(Astro);
+if (redirectResponse) {
+  return redirectResponse;
+}
+
+const user = Astro.locals.user;
 const currentPath = '/budget';
 ---
 
-<MainLayout title="Budget - Finance Manager" currentPath={currentPath}>
+<MainLayout title="Budget - Finance Manager" currentPath={currentPath} user={user}>
   <div class="space-y-6">
     <div class="flex justify-between items-center">
       <h2 class="text-2xl font-bold">Budget</h2>

@@ -1,0 +1,201 @@
+---
+/**
+ * Registration Page
+ *
+ * User registration page for creating a new account in the Finance Manager application.
+ * Uses RegistrationForm component with AuthLayout.
+ */
+
+import AuthLayout from '../layouts/AuthLayout.astro';
+import RegistrationForm from '../components/molecules/RegistrationForm.astro';
+
+// Get error message from query params (if any)
+const url = new URL(Astro.request.url);
+const error = url.searchParams.get('error');
+
+const errorMessages: Record<string, string> = {
+  email_exists: 'An account with this email already exists.',
+  weak_password: 'Password must be at least 12 characters long.',
+  invalid_email: 'Please enter a valid email address.',
+  invalid_input: 'Please check your input and try again.',
+};
+
+// Only use whitelisted error codes to prevent XSS
+const errorMessage = error && errorMessages[error] ? errorMessages[error] : '';
+---
+
+<AuthLayout title="Finance Manager - Sign Up">
+  <div id="registration-messages" aria-live="polite" aria-atomic="true">
+    {
+      errorMessage && (
+        <div role="alert" class="alert alert-error mb-4">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="stroke-current shrink-0 h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+          <span>{errorMessage}</span>
+        </div>
+      )
+    }
+  </div>
+  <RegistrationForm />
+</AuthLayout>
+
+<script define:vars={{ apiSignupUrl: '/api/auth/signup' }}>
+  // This script enhances the RegistrationForm with actual API calls
+  document.addEventListener('DOMContentLoaded', () => {
+    const form = document.querySelector('[data-registration-form]') as HTMLFormElement;
+    const messagesContainer = document.getElementById('registration-messages');
+    const submitButton = form?.querySelector('[data-submit-button]') as HTMLButtonElement;
+    const buttonText = submitButton?.querySelector('[data-button-text]');
+    const loadingSpinner = submitButton?.querySelector('[data-loading-spinner]');
+
+    if (!form || !messagesContainer) return;
+
+    // Override form submission to use real API
+    form.addEventListener('submit', async (e) => {
+      // Prevent the default handler
+      e.stopImmediatePropagation();
+
+      // Clear previous messages
+      messagesContainer.innerHTML = '';
+
+      const formData = new FormData(form);
+      const data = {
+        name: formData.get('name'),
+        email: formData.get('email'),
+        password: formData.get('password'),
+        'confirm-password': formData.get('confirm-password'),
+      };
+
+      // Client-side validation (keep existing validation)
+      const errors: string[] = [];
+
+      // Validate name
+      if (!data.name || (data.name as string).trim().length < 2) {
+        errors.push('Name must be at least 2 characters');
+      }
+
+      // Validate email format
+      const emailInput = document.getElementById('email') as HTMLInputElement;
+      if (!data.email || !emailInput.checkValidity()) {
+        errors.push('Please enter a valid email address');
+      }
+
+      // Validate password requirements
+      const password = data.password as string;
+      const passwordErrors = [];
+      if (password.length < 12) passwordErrors.push('at least 12 characters');
+      if (!/[A-Z]/.test(password)) passwordErrors.push('one uppercase letter');
+      if (!/[a-z]/.test(password)) passwordErrors.push('one lowercase letter');
+      if (!/[0-9]/.test(password)) passwordErrors.push('one number');
+      if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password))
+        passwordErrors.push('one special character');
+
+      if (passwordErrors.length > 0) {
+        errors.push(`Password must include ${passwordErrors.join(', ')}`);
+      }
+
+      // Validate password match
+      if (password !== (data['confirm-password'] as string)) {
+        errors.push('Passwords do not match');
+      }
+
+      // Display validation errors
+      if (errors.length > 0) {
+        messagesContainer.innerHTML = `
+          <div role="alert" class="alert alert-error">
+            <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div>
+              <h3 class="font-bold">Please fix the following errors:</h3>
+              <ul class="text-xs mt-1 list-disc list-inside">
+                ${errors.map((err) => `<li>${err.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</li>`).join('')}
+              </ul>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      // Show loading state
+      form.classList.add('submitting');
+      if (buttonText) buttonText.classList.add('hidden');
+      if (loadingSpinner) loadingSpinner.classList.remove('hidden');
+      if (submitButton) submitButton.disabled = true;
+
+      try {
+        const response = await fetch(apiSignupUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({
+            name: data.name,
+            email: data.email,
+            password: data.password,
+          }),
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+          // Registration successful
+          messagesContainer.innerHTML = `
+            <div role="alert" class="alert alert-success">
+              <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>Account created successfully! Redirecting to login...</span>
+            </div>
+          `;
+
+          // Reset form
+          form.reset();
+
+          // Redirect to login after delay
+          setTimeout(() => {
+            window.location.href = '/login';
+          }, 2000);
+        } else {
+          // Registration failed
+          messagesContainer.innerHTML = `
+            <div role="alert" class="alert alert-error">
+              <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>${result.error?.message || 'Registration failed. Please try again.'}</span>
+            </div>
+          `;
+        }
+      } catch (error) {
+        console.error('Registration error:', error);
+        messagesContainer.innerHTML = `
+          <div role="alert" class="alert alert-error">
+            <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>An error occurred. Please try again.</span>
+          </div>
+        `;
+      } finally {
+        // Reset loading state
+        form.classList.remove('submitting');
+        if (buttonText) buttonText.classList.remove('hidden');
+        if (loadingSpinner) loadingSpinner.classList.add('hidden');
+        if (submitButton) submitButton.disabled = false;
+      }
+    });
+  });
+</script>

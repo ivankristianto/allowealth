@@ -2,18 +2,21 @@
 /**
  * Header Component
  *
- * Application header with mobile menu toggle, page title, and quick actions.
+ * Application header with mobile menu toggle, page title, and user context.
+ * Displays user menu when authenticated, or login/register links when not.
  */
 
 import Icon from '../atoms/Icon.astro';
+import UserContext from '../organisms/UserContext.astro';
 
 interface Props {
   title?: string;
   currentPath?: string;
   showMenuToggle?: boolean;
+  user?: any | null;
 }
 
-const { title = 'Finance Manager', currentPath = '/', showMenuToggle = true } = Astro.props;
+const { title = 'Finance Manager', currentPath = '/', showMenuToggle = true, user } = Astro.props;
 
 // Get page title based on current path
 const getPageTitle = (path: string) => {
@@ -53,15 +56,18 @@ const getPageTitle = (path: string) => {
           class="btn btn-square btn-ghost lg:hidden"
           aria-label="Toggle menu"
         >
-          <Icon name="search" size="md" />
+          <Icon name="menu" size="md" />
         </label>
       )
     }
     <h1 class="text-xl font-semibold">{getPageTitle(currentPath)}</h1>
   </div>
 
-  <!-- Right side: Quick actions -->
+  <!-- Right side: User context + Quick actions -->
   <div class="flex items-center gap-2">
+    <!-- User Context (login/register or user menu) -->
+    <UserContext user={user} />
+
     <!-- Add new button -->
     <button class="btn btn-primary btn-sm gap-2">
       <Icon name="plus" size="sm" />
