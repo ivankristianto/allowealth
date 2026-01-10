@@ -1,0 +1,274 @@
+---
+/**
+ * Asset Update Todo List Component (Organism)
+ *
+ * Displays a list of assets that need updating, sorted by priority.
+ * Shows priority indicators (red/yellow/green) based on days since last update.
+ *
+ * @param {Array} assets - Array of asset items needing update
+ * @param {boolean} loading - Show loading skeleton
+ * @param {string} className - Additional CSS classes
+ */
+
+import Card from '../atoms/Card.astro';
+import Badge from '../atoms/Badge.astro';
+import Spinner from '../atoms/Spinner.astro';
+import EmptyState from '../atoms/EmptyState.astro';
+import Icon from '../atoms/Icon.astro';
+import { formatCurrency } from '@/lib/tokens';
+
+export interface AssetUpdateTodoItem {
+  id: string;
+  name: string;
+  type: 'bank_account' | 'mutual_fund' | 'bond' | 'crypto' | 'stock' | 'other';
+  balance: number;
+  currency: 'IDR' | 'USD';
+  daysSinceUpdate: number;
+  lastUpdated: Date;
+  priority: 'high' | 'medium' | 'low' | 'none';
+}
+
+export interface Props {
+  assets?: AssetUpdateTodoItem[];
+  loading?: boolean;
+  className?: string;
+}
+
+const { assets = [], loading = false, className = '' } = Astro.props;
+
+// Priority indicators
+const getPriorityIcon = (priority: string): string => {
+  switch (priority) {
+    case 'high':
+      return '🔴';
+    case 'medium':
+      return '🟡';
+    case 'low':
+      return '🟢';
+    default:
+      return '✅';
+  }
+};
+
+const getPriorityLabel = (days: number): string => {
+  if (days === 1) return '1 day ago';
+  return `${days} days ago`;
+};
+
+const getPriorityBadge = (priority: string): 'error' | 'warning' | 'success' | 'neutral' => {
+  switch (priority) {
+    case 'high':
+      return 'error';
+    case 'medium':
+      return 'warning';
+    case 'low':
+      return 'success';
+    default:
+      return 'neutral';
+  }
+};
+
+const getAssetTypeLabel = (type: string): string => {
+  const labels: Record<string, string> = {
+    bank_account: 'Bank Account',
+    mutual_fund: 'Mutual Fund',
+    bond: 'Bond',
+    crypto: 'Crypto',
+    stock: 'Stock',
+    other: 'Other',
+  };
+  return labels[type] || type;
+};
+
+// Sort assets by priority (high -> medium -> low -> none)
+const sortedAssets = [...assets].sort((a, b) => {
+  const priorityOrder = { high: 0, medium: 1, low: 2, none: 3 };
+  return priorityOrder[a.priority] - priorityOrder[b.priority];
+});
+---
+
+<Card className={className} data-asset-update-todo-list>
+  <div class="flex items-center justify-between mb-4">
+    <h2 class="text-lg font-semibold flex items-center gap-2">
+      <Icon name="calendar" size="md" className="text-warning" />
+      Asset Updates Needed
+    </h2>
+    {
+      !loading && assets.length > 0 && (
+        <Badge variant="warning" size="sm">
+          {assets.length}
+        </Badge>
+      )
+    }
+  </div>
+
+  {
+    loading ? (
+      // Loading skeleton
+      <div class="space-y-3">
+        {[1, 2, 3].map((i) => (
+          <div key={i} class="flex items-center gap-4 p-3 bg-base-200 rounded-lg animate-pulse">
+            <div class="w-8 h-8 bg-neutral-300 rounded-full" />
+            <div class="flex-1 space-y-2">
+              <div class="h-4 bg-neutral-300 rounded w-3/4" />
+              <div class="h-3 bg-neutral-300 rounded w-1/2" />
+            </div>
+          </div>
+        ))}
+      </div>
+    ) : sortedAssets.length === 0 ? (
+      // Empty state - all assets up to date
+      <EmptyState
+        title="All assets up to date!"
+        message="You don't have any assets that need updating right now. Great job staying on top of your finances!"
+        icon="check"
+        variant="compact"
+      />
+    ) : (
+      // Asset list
+      <div class="space-y-2">
+        {sortedAssets.map((asset) => (
+          <div
+            class={`flex items-center gap-4 p-3 rounded-lg border transition-all ${
+              asset.priority === 'high'
+                ? 'bg-error/10 border-error/20 hover:bg-error/20'
+                : asset.priority === 'medium'
+                  ? 'bg-warning/10 border-warning/20 hover:bg-warning/20'
+                  : asset.priority === 'low'
+                    ? 'bg-success/10 border-success/20 hover:bg-success/20'
+                    : 'bg-base-200 border-base-300 hover:bg-base-300'
+            }`}
+            key={asset.id}
+          >
+            {/* Priority indicator */}
+            <div class="flex-shrink-0 text-2xl" aria-label={`Priority: ${asset.priority}`}>
+              {getPriorityIcon(asset.priority)}
+            </div>
+
+            {/* Asset info */}
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 mb-1">
+                <span class="font-medium truncate">{asset.name}</span>
+                <Badge variant="neutral" size="sm" outline>
+                  {getAssetTypeLabel(asset.type)}
+                </Badge>
+              </div>
+              <div class="flex items-center gap-3 text-sm text-neutral-600">
+                <span class="font-mono font-medium">
+                  {formatCurrency(asset.balance, asset.currency)}
+                </span>
+                <span>•</span>
+                <span class={asset.priority === 'high' ? 'text-error font-medium' : ''}>
+                  {getPriorityLabel(asset.daysSinceUpdate)}
+                </span>
+              </div>
+            </div>
+
+            {/* Quick update button */}
+            <button
+              class="flex-shrink-0 btn btn-ghost btn-sm"
+              aria-label={`Update ${asset.name}`}
+              data-asset-id={asset.id}
+              data-update-asset
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                />
+              </svg>
+            </button>
+
+            {/* Dismiss button */}
+            <button
+              class="flex-shrink-0 btn btn-ghost btn-sm text-neutral-400 hover:text-neutral-600"
+              aria-label={`Dismiss ${asset.name} reminder`}
+              data-asset-id={asset.id}
+              data-dismiss-reminder
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          </div>
+        ))}
+      </div>
+    )
+  }
+
+  {/* Update all button */}
+  {
+    !loading && sortedAssets.length > 0 && (
+      <div class="mt-4 pt-4 border-t border-base-300">
+        <button
+          class="btn btn-primary btn-sm w-full"
+          aria-label="Update all assets"
+          data-update-all-assets
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-4 w-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+            />
+          </svg>
+          Update All Assets
+        </button>
+      </div>
+    )
+  }
+</Card>
+
+<script>
+  // Handle update button clicks
+  document.querySelectorAll('[data-update-asset]').forEach((button) => {
+    button.addEventListener('click', (event) => {
+      const target = event.currentTarget as HTMLButtonElement;
+      const assetId = target.getAttribute('data-asset-id');
+      // TODO: Open modal to update asset
+    });
+  });
+
+  // Handle dismiss button clicks
+  document.querySelectorAll('[data-dismiss-reminder]').forEach((button) => {
+    button.addEventListener('click', (event) => {
+      const target = event.currentTarget as HTMLButtonElement;
+      const assetId = target.getAttribute('data-asset-id');
+      // TODO: Dismiss/snooze reminder
+    });
+  });
+
+  // Handle update all button
+  const updateAllButton = document.querySelector('[data-update-all-assets]');
+  if (updateAllButton) {
+    updateAllButton.addEventListener('click', () => {
+      // TODO: Open bulk update modal
+    });
+  }
+</script>
