@@ -7,10 +7,16 @@
  * @see https://lucia-auth.com/
  */
 
-import { Lucia } from 'lucia';
+import { Lucia, TimeSpan } from 'lucia';
 import { DrizzleSQLiteAdapter } from '@lucia-auth/adapter-drizzle';
 import { db } from '@/db/index';
 import * as schema from '@/db/schema';
+
+/**
+ * Session expiration time
+ * 30 days - sessions expire after 30 days of inactivity
+ */
+const SESSION_EXPIRATION = new TimeSpan(30, 'd');
 
 /**
  * Lucia auth instance
@@ -23,7 +29,8 @@ import * as schema from '@/db/schema';
  * - 30-day session expiration
  *
  * Note: DrizzleSQLiteAdapter expects (db, sessionsTable, usersTable)
- * The db instance must be created with drizzle() from drizzle-orm/bun-sqlite
+ * The sessions table must use camelCase property names (userId, expiresAt)
+ * for proper adapter compatibility.
  */
 const adapter = new DrizzleSQLiteAdapter(db, schema.sessions as any, schema.users);
 
@@ -40,6 +47,9 @@ export const auth = new Lucia(adapter, {
       sameSite: 'lax',
     },
   },
+
+  // Session expiration time (30 days)
+  sessionExpiresIn: SESSION_EXPIRATION,
 
   getSessionAttributes: () => ({}),
   getUserAttributes: (databaseUser: any) => {

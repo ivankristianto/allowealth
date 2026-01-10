@@ -18,8 +18,17 @@ import type { APIRoute } from 'astro';
 import { login } from '@/services/auth.service';
 import { auth } from '@/lib/auth/lucia';
 import { AUTH_ERRORS, type AuthError } from '@/services/auth.service';
+import {
+  createErrorResponse,
+  createSuccessResponse,
+  type ApiSuccessResponse,
+  type ApiError,
+} from '@/types/api';
 
 export const prerender = false;
+
+// TODO: Add rate limiting to prevent brute force attacks
+// Consider implementing IP-based rate limiting for login endpoint
 
 export const POST: APIRoute = async ({ request }) => {
   try {
@@ -34,25 +43,27 @@ export const POST: APIRoute = async ({ request }) => {
     const sessionCookie = auth.createSessionCookie(session.id);
 
     // Return success response with session cookie
-    return new Response(
-      JSON.stringify({
-        success: true,
-        data: {
-          user: {
-            id: user.id,
-            email: (user as any).email,
-            name: (user as any).name,
-          },
-        },
-      }),
-      {
-        status: 200,
-        headers: {
-          'Content-Type': 'application/json',
-          'Set-Cookie': sessionCookie.serialize(),
-        },
-      }
-    );
+    const responseData: ApiSuccessResponse<{
+      user: {
+        id: string;
+        email: string;
+        name: string;
+      };
+    }> = createSuccessResponse({
+      user: {
+        id: user.id,
+        email: (user as any).email,
+        name: (user as any).name,
+      },
+    });
+
+    return new Response(JSON.stringify(responseData), {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Set-Cookie': sessionCookie.serialize(),
+      },
+    });
   } catch (error) {
     // Handle auth errors
     if (error instanceof Error && 'code' in error) {
@@ -61,13 +72,9 @@ export const POST: APIRoute = async ({ request }) => {
       switch (authError.code) {
         case AUTH_ERRORS.INVALID_CREDENTIALS:
           return new Response(
-            JSON.stringify({
-              success: false,
-              error: {
-                code: AUTH_ERRORS.INVALID_CREDENTIALS,
-                message: 'Invalid email or password',
-              },
-            }),
+            JSON.stringify(
+              createErrorResponse(AUTH_ERRORS.INVALID_CREDENTIALS, 'Invalid email or password')
+            ),
             {
               status: 401,
               headers: {
@@ -78,13 +85,7 @@ export const POST: APIRoute = async ({ request }) => {
 
         case AUTH_ERRORS.INVALID_INPUT:
           return new Response(
-            JSON.stringify({
-              success: false,
-              error: {
-                code: AUTH_ERRORS.INVALID_INPUT,
-                message: authError.message,
-              },
-            }),
+            JSON.stringify(createErrorResponse(AUTH_ERRORS.INVALID_INPUT, authError.message)),
             {
               status: 400,
               headers: {
@@ -101,13 +102,7 @@ export const POST: APIRoute = async ({ request }) => {
     // Handle unexpected errors
     console.error('Login error:', error);
     return new Response(
-      JSON.stringify({
-        success: false,
-        error: {
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'An unexpected error occurred',
-        },
-      }),
+      JSON.stringify(createErrorResponse('INTERNAL_SERVER_ERROR', 'An unexpected error occurred')),
       {
         status: 500,
         headers: {
