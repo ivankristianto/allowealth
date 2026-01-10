@@ -39,3 +39,6 @@ Thumbs.db
 .git
 coverage
 .nyc_output
+
+# OpenAPI specification (custom YAML formatting)
+openapi.yml
