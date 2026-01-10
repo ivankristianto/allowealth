@@ -8,7 +8,8 @@
       "Bash(source:*)",
       "Bash(git:*)",
       "Bash(gh:*)",
-      "Skill(k2-dev:*)"
+      "Skill(k2-dev:*)",
+      "Bash(bd comments:*)"
     ]
   }
 }
