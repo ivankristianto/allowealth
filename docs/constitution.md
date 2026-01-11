@@ -9,6 +9,30 @@ Clarity over cleverness.
 - **Commits**: Document _what_ and _why_ in commit messages
 - **Tech debt**: Track explicitly in backlog, don't hide it
 
+### Bun-Specific Imports (Runtime Compatibility)
+
+**CRITICAL:** Astro middleware runs in Node.js, not Bun. Any code imported by middleware MUST be Node.js compatible.
+
+**Forbidden in middleware-imported code:**
+
+- `bun:sqlite` → Use `better-sqlite3` or abstract database access
+- `bun:` protocol imports → Only use in API routes, CLI, or non-middleware contexts
+
+**Detection pattern:**
+
+```bash
+# Before committing code that touches src/middleware.ts or its imports:
+grep -r "bun:" src/ --exclude-dir=node_modules
+# If this returns results in files imported by middleware, REFACTOR.
+```
+
+**Correct pattern:**
+
+- Middleware: Node.js compatible imports only
+- API routes: Can use Bun-specific APIs (run in Bun context)
+- CLI scripts: Can use Bun-specific APIs
+- Database: Use abstraction layer with environment-specific implementations
+
 ## II. User-First Development
 
 Build what users see and touch first.

@@ -1,14 +1,21 @@
 /**
  * Database connection configuration
  *
- * Uses Bun's native SQLite driver (bun:sqlite) for optimal performance.
- * In development: creates .dev.db file locally
- * In production: uses DATABASE_URL environment variable
+ * Provides a database abstraction layer that works across different
+ * JavaScript runtimes (Bun and Node.js).
+ *
+ * - In Bun runtime (API routes, server context): Uses bun:sqlite for optimal performance
+ * - In Node.js runtime (Astro middleware): Uses better-sqlite3 for compatibility
+ *
+ * The driver is selected automatically based on the detected runtime.
  *
  * @see https://bun.sh/docs/api/sqlite
+ * @see https://github.com/WiseLibs/better-sqlite3
  */
 import { drizzle } from 'drizzle-orm/bun-sqlite';
-import Database from 'bun:sqlite';
+import { detectRuntime } from './driver';
+import { createBunDriver } from './drivers/bun';
+import { createNodeDriver } from './drivers/node';
 import * as schema from './schema';
 
 // Database connection (SQLite)
@@ -19,25 +26,40 @@ if (process.env.NODE_ENV === 'production' && !process.env.DATABASE_URL) {
   throw new Error('DATABASE_URL environment variable must be set in production');
 }
 
-let sqlite: Database;
+/**
+ * Create the appropriate database driver based on runtime
+ */
+const runtime = detectRuntime();
 
-try {
-  sqlite = new Database(dbUrl);
+let driver: ReturnType<typeof createBunDriver> | ReturnType<typeof createNodeDriver>;
 
-  // Performance optimizations for SQLite
-  sqlite.exec('PRAGMA journal_mode = WAL;');
-  sqlite.exec('PRAGMA synchronous = NORMAL;');
-  sqlite.exec('PRAGMA cache_size = -64000;'); // 64MB cache
-  sqlite.exec('PRAGMA foreign_keys = ON;');
-} catch (error) {
-  throw new Error(`Failed to connect to database at ${dbUrl}: ${error}`);
+if (runtime === 'bun') {
+  // Use bun:sqlite in Bun runtime for optimal performance
+  driver = createBunDriver(dbUrl);
+} else {
+  // Use better-sqlite3 in Node.js runtime for compatibility
+  // This is necessary for Astro middleware which runs in Node.js
+  driver = createNodeDriver(dbUrl);
 }
 
-const db = drizzle(sqlite as any, { schema });
+// Apply performance optimizations for SQLite
+driver.exec('PRAGMA journal_mode = WAL;');
+driver.exec('PRAGMA synchronous = NORMAL;');
+driver.exec('PRAGMA cache_size = -64000;'); // 64MB cache
+driver.exec('PRAGMA foreign_keys = ON;');
+
+/**
+ * Drizzle ORM instance
+ *
+ * We cast the driver to 'any' because drizzle-orm/bun-sqlite expects
+ * a bun:sqlite Database object, but our driver interface is compatible.
+ * Both bun:sqlite and better-sqlite3 expose the same core methods we need.
+ */
+const db = drizzle(driver as any, { schema });
 
 // Graceful shutdown handler
 process.on('beforeExit', () => {
-  sqlite.close();
+  driver.close();
 });
 
 export * from './schema';
