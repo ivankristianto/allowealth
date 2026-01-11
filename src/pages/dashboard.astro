@@ -4,10 +4,27 @@
  *
  * Main dashboard showing financial overview, quick stats, and recent activity.
  * Protected by authentication.
+ *
+ * Displays:
+ * - Total assets (IDR + USD)
+ * - Monthly spending vs budget
+ * - Budget health alerts
+ * - Assets needing updates
+ * - Recent transactions
+ * - Quick actions
  */
 
-import MainLayout from '../layouts/MainLayout.astro';
+import MainLayout from '@/layouts/MainLayout.astro';
 import { requireAuth } from '@/lib/auth/requireAuth';
+import { dashboardService } from '@/services/dashboard.service';
+import SummaryCards from '@/components/organisms/SummaryCards.astro';
+import AssetUpdateTodoList from '@/components/organisms/AssetUpdateTodoList.astro';
+import RecentTransactionsList from '@/components/organisms/RecentTransactionsList.astro';
+import QuickActions from '@/components/molecules/QuickActions.astro';
+import DashboardSkeleton from '@/components/organisms/DashboardSkeleton.astro';
+import DashboardError from '@/components/organisms/DashboardError.astro';
+import type { AssetUpdateTodoItem } from '@/components/organisms/AssetUpdateTodoList.astro';
+import type { TransactionOutput } from '@/lib/types/transaction';
 
 // Check authentication - redirect to login if not authenticated
 const redirectResponse = requireAuth(Astro);
@@ -18,6 +35,87 @@ if (redirectResponse) {
 // User is authenticated - get user data
 const user = Astro.locals.user;
 const currentPath = '/dashboard';
+
+// Get current month and year
+const now = new Date();
+const currentMonth = now.getMonth() + 1;
+const currentYear = now.getFullYear();
+
+// Fetch dashboard data using parallel promises
+let dashboardData;
+let error: Error | null = null;
+
+try {
+  dashboardData = await dashboardService.getDashboardData(
+    user.id,
+    currentMonth,
+    currentYear,
+    'IDR' // Primary currency
+  );
+} catch (err) {
+  console.error('Error loading dashboard data:', err);
+  error = err instanceof Error ? err : new Error('Unknown error occurred');
+  dashboardData = null;
+}
+
+// Transform service data to component formats
+const summaryCardsData = dashboardData
+  ? {
+      totalAssets: {
+        idr: dashboardData.totalAssets.idr,
+        usd: dashboardData.totalAssets.usd,
+        converted: dashboardData.totalAssets.converted,
+        convertedCurrency: dashboardData.totalAssets.convertedCurrency,
+      },
+      monthlySpent: {
+        spent: dashboardData.monthlySpent.total,
+        budget: dashboardData.monthlySpent.budget,
+        currency: 'IDR' as const,
+        percentage: dashboardData.monthlySpent.percentage,
+      },
+      budgetHealth: {
+        alertCount: dashboardData.budgetHealth.alertCount,
+        status: dashboardData.budgetHealth.status,
+      },
+    }
+  : undefined;
+
+// Transform asset reminders to todo list format
+const assetTodos: AssetUpdateTodoItem[] =
+  dashboardData?.assetReminders.map((reminder) => ({
+    id: reminder.assetId,
+    name: reminder.assetName,
+    type: reminder.assetType as AssetUpdateTodoItem['type'],
+    balance: reminder.currentBalance,
+    currency: reminder.currency,
+    daysSinceUpdate: reminder.daysSinceUpdate,
+    lastUpdated: reminder.lastUpdated,
+    priority: reminder.priority,
+  })) || [];
+
+// Transform recent transactions to match component format
+const recentTransactions: TransactionOutput[] =
+  dashboardData?.recentTransactions.map((tx) => ({
+    id: tx.id,
+    type: tx.type,
+    amount: tx.amount,
+    currency: tx.currency,
+    description: tx.description,
+    transaction_date: tx.transactionDate,
+    deleted_at: null,
+    created_at: new Date(),
+    updated_at: new Date(),
+    category: {
+      id: tx.category.id,
+      name: tx.category.name,
+      type: tx.category.type,
+    },
+    payment_method: {
+      id: tx.paymentMethod.id,
+      name: tx.paymentMethod.name,
+      type: 'other', // Default type for now
+    },
+  })) || [];
 ---
 
 <MainLayout title="Dashboard - Finance Manager" currentPath={currentPath} user={user}>
@@ -26,7 +124,7 @@ const currentPath = '/dashboard';
     <div class="card bg-base-100 shadow-lg border border-base-300">
       <div class="card-body">
         <h2 class="card-title text-2xl">
-          Welcome back, {user?.attributes?.name || 'User'}!
+          Welcome back, {user?.attributes?.name || user?.email || 'User'}!
         </h2>
         <p class="text-neutral-600">
           Track your expenses, manage budgets, and monitor your assets.
@@ -34,39 +132,58 @@ const currentPath = '/dashboard';
       </div>
     </div>
 
-    <!-- Quick Stats -->
-    <div class="grid gap-6 md:grid-cols-3">
-      <div class="card bg-base-100 shadow border border-base-300">
-        <div class="card-body">
-          <h3 class="card-title text-primary">Total Assets</h3>
-          <p class="text-2xl font-bold">IDR 100M</p>
-          <p class="text-sm text-neutral-500">~USD 6,622</p>
-        </div>
-      </div>
+    <!-- Error State -->
+    {
+      error && (
+        <DashboardError
+          message="Unable to load dashboard data. Please try again."
+          details={import.meta.env.DEV ? error.message : undefined}
+        />
+      )
+    }
 
-      <div class="card bg-base-100 shadow border border-base-300">
-        <div class="card-body">
-          <h3 class="card-title text-warning">This Month</h3>
-          <p class="text-2xl font-bold">40.6M / 101M</p>
-          <p class="text-sm text-neutral-500">40% of budget</p>
-        </div>
-      </div>
+    <!-- Dashboard Content -->
+    {
+      !error && (
+        <>
+          {/* Summary Cards */}
+          <SummaryCards data={summaryCardsData} loading={!dashboardData} error={false} />
 
-      <div class="card bg-base-100 shadow border border-base-300">
-        <div class="card-body">
-          <h3 class="card-title text-error">Alerts</h3>
-          <p class="text-2xl font-bold">3</p>
-          <p class="text-sm text-neutral-500">Budget warnings</p>
-        </div>
-      </div>
-    </div>
+          {/* Main Content Grid */}
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Asset Updates (2 columns wide) */}
+            <div class="lg:col-span-2">
+              <AssetUpdateTodoList assets={assetTodos} loading={!dashboardData} />
+            </div>
 
-    <!-- Recent Activity Placeholder -->
-    <div class="card bg-base-100 shadow border border-base-300">
-      <div class="card-body">
-        <h3 class="card-title">Recent Activity</h3>
-        <p class="text-neutral-500">No recent transactions to display.</p>
-      </div>
-    </div>
+            {/* Quick Actions (1 column wide) */}
+            <div>
+              <div class="card bg-base-100 shadow border border-base-300 h-full">
+                <div class="card-body">
+                  <h2 class="card-title text-lg mb-4">Quick Actions</h2>
+                  <QuickActions />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Recent Transactions */}
+          <RecentTransactionsList
+            transactions={recentTransactions}
+            loading={!dashboardData}
+            viewAllUrl="/transactions"
+          />
+        </>
+      )
+    }
   </div>
 </MainLayout>
+
+<style>
+  /* Ensure smooth loading transitions */
+  [data-summary-cards],
+  [data-asset-update-todo-list],
+  [data-recent-transactions-list] {
+    transition: opacity 0.2s ease-in-out;
+  }
+</style>
