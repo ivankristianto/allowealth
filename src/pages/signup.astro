@@ -26,32 +26,34 @@ const errorMessage = error && errorMessages[error] ? errorMessages[error] : '';
 ---
 
 <AuthLayout title="Finance Manager - Sign Up">
+  <div id="signup-messages" aria-live="polite" aria-atomic="true">
+    {
+      errorMessage && (
+        <div role="alert" class="alert alert-error mb-4">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="stroke-current shrink-0 h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+          <span>{errorMessage}</span>
+        </div>
+      )
+    }
+  </div>
+
   <div class="card bg-base-100 shadow-xl">
     <div class="card-body">
       <h2 class="card-title text-2xl font-bold mb-4">Create Account</h2>
 
-      {
-        errorMessage && (
-          <div class="alert alert-error mb-4">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="stroke-current shrink-0 h-6 w-6"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-            <span>{errorMessage}</span>
-          </div>
-        )
-      }
-
-      <form action="/api/auth/signup" method="POST" class="space-y-4">
+      <form id="signup-form" class="space-y-4">
         <!-- TODO: Add CSRF token when backend auth is implemented -->
         <!-- <input type="hidden" name="csrf_token" value={csrfToken} /> -->
 
@@ -87,13 +89,16 @@ const errorMessage = error && errorMessages[error] ? errorMessages[error] : '';
           <Label htmlFor="confirm-password" required>Confirm Password</Label>
           <PasswordField
             id="confirm-password"
-            name="confirm_password"
+            name="confirm-password"
             placeholder="Re-enter your password"
           />
         </div>
 
         <!-- Submit Button -->
-        <Button type="submit" variant="primary" className="w-full">Create Account</Button>
+        <Button type="submit" variant="primary" className="w-full" data-submit-button>
+          <span data-button-text>Create Account</span>
+          <span data-loading-spinner class="hidden loading loading-spinner loading-sm"></span>
+        </Button>
 
         <!-- Sign In Link -->
         <div class="text-center text-sm">
@@ -103,72 +108,159 @@ const errorMessage = error && errorMessages[error] ? errorMessages[error] : '';
       </form>
     </div>
   </div>
+</AuthLayout>
 
-  <!-- Client-side validation script -->
-  <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      const form = document.querySelector('form');
-      const nameInput = document.getElementById('name');
-      const emailInput = document.getElementById('email');
-      const passwordInput = document.querySelector('[data-password-input][name="password"]');
-      const confirmPasswordInput = document.querySelector(
-        '[data-password-input][name="confirm_password"]'
-      );
-      const submitButton = document.querySelector('button[type="submit"]');
+<script define:vars={{ apiSignupUrl: '/api/auth/signup' }}>
+  document.addEventListener('DOMContentLoaded', () => {
+    const form = document.getElementById('signup-form');
+    const messagesContainer = document.getElementById('signup-messages');
+    const submitButton = form?.querySelector('[data-submit-button]');
+    const buttonText = submitButton?.querySelector('[data-button-text]');
+    const loadingSpinner = submitButton?.querySelector('[data-loading-spinner]');
 
-      if (!form || !passwordInput || !confirmPasswordInput || !emailInput || !nameInput) return;
+    if (!form || !messagesContainer) return;
 
-      // Add autocomplete attributes
-      nameInput.setAttribute('autocomplete', 'name');
-      emailInput.setAttribute('autocomplete', 'email');
-      passwordInput.setAttribute('autocomplete', 'new-password');
-      confirmPasswordInput.setAttribute('autocomplete', 'new-password');
+    // Helper function to escape HTML and prevent XSS
+    const escapeHtml = (text) => {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    };
 
-      // Add required attributes
-      nameInput.required = true;
-      emailInput.required = true;
-      passwordInput.required = true;
-      confirmPasswordInput.required = true;
+    // Override form submission to use fetch API
+    form.addEventListener('submit', async (e) => {
+      e.stopImmediatePropagation();
 
-      // Email validation pattern
-      emailInput.pattern = '[a-z0-9._%+-]+@[a-z0-9.-]+\\.[a-z]{2,}$';
-      emailInput.title = 'Please enter a valid email address';
+      // Clear previous messages
+      messagesContainer.innerHTML = '';
 
-      // Password validation pattern - at least 12 chars with uppercase, lowercase, number, special char
-      const passwordPattern =
-        '^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{12,}$';
-      passwordInput.pattern = passwordPattern;
-      passwordInput.minLength = 12;
-      passwordInput.title =
-        'Password must be at least 12 characters with uppercase, lowercase, number, and special character';
-
-      // Password confirmation validation
-      const validatePasswordMatch = () => {
-        if (confirmPasswordInput.value && passwordInput.value !== confirmPasswordInput.value) {
-          confirmPasswordInput.setCustomValidity('Passwords do not match');
-        } else {
-          confirmPasswordInput.setCustomValidity('');
-        }
+      const formData = new FormData(form);
+      const data = {
+        name: formData.get('name'),
+        email: formData.get('email'),
+        password: formData.get('password'),
+        'confirm-password': formData.get('confirm-password'),
       };
 
-      confirmPasswordInput.addEventListener('input', validatePasswordMatch);
-      passwordInput.addEventListener('input', validatePasswordMatch);
+      // Client-side validation
+      const errors = [];
 
-      // Form submission with loading state
-      form.addEventListener('submit', (e) => {
-        // Validate password match before submission
-        if (passwordInput.value !== confirmPasswordInput.value) {
-          e.preventDefault();
-          confirmPasswordInput.setCustomValidity('Passwords do not match');
-          confirmPasswordInput.reportValidity();
-          return;
+      // Validate name
+      if (!data.name || data.name.trim().length < 2) {
+        errors.push('Name must be at least 2 characters');
+      }
+
+      // Validate email format
+      const emailInput = document.getElementById('email');
+      if (!data.email || !emailInput.checkValidity()) {
+        errors.push('Please enter a valid email address');
+      }
+
+      // Validate password requirements
+      const password = data.password;
+      const passwordErrors = [];
+      if (password.length < 12) passwordErrors.push('at least 12 characters');
+      if (!/[A-Z]/.test(password)) passwordErrors.push('one uppercase letter');
+      if (!/[a-z]/.test(password)) passwordErrors.push('one lowercase letter');
+      if (!/[0-9]/.test(password)) passwordErrors.push('one number');
+      if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password))
+        passwordErrors.push('one special character');
+
+      if (passwordErrors.length > 0) {
+        errors.push(`Password must include ${passwordErrors.join(', ')}`);
+      }
+
+      // Validate password match
+      if (password !== data['confirm-password']) {
+        errors.push('Passwords do not match');
+      }
+
+      // Display validation errors
+      if (errors.length > 0) {
+        messagesContainer.innerHTML = `
+          <div role="alert" class="alert alert-error">
+            <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div>
+              <h3 class="font-bold">Please fix the following errors:</h3>
+              <ul class="text-xs mt-1 list-disc list-inside">
+                ${errors.map((err) => `<li>${escapeHtml(err)}</li>`).join('')}
+              </ul>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      // Show loading state
+      form.classList.add('submitting');
+      if (buttonText) buttonText.classList.add('hidden');
+      if (loadingSpinner) loadingSpinner.classList.remove('hidden');
+      if (submitButton) submitButton.disabled = true;
+
+      try {
+        const response = await fetch(apiSignupUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({
+            name: data.name,
+            email: data.email,
+            password: data.password,
+          }),
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+          // Registration successful
+          messagesContainer.innerHTML = `
+            <div role="alert" class="alert alert-success">
+              <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>Account created successfully! Redirecting to login...</span>
+            </div>
+          `;
+
+          // Reset form
+          form.reset();
+
+          // Redirect to login after delay
+          setTimeout(() => {
+            window.location.href = '/login';
+          }, 2000);
+        } else {
+          // Registration failed - use escapeHtml for all user-facing error messages
+          messagesContainer.innerHTML = `
+            <div role="alert" class="alert alert-error">
+              <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>${escapeHtml(result.error?.message || 'Registration failed. Please try again.')}</span>
+            </div>
+          `;
         }
-
-        // Add loading state
-        submitButton.disabled = true;
-        submitButton.setAttribute('aria-busy', 'true');
-        submitButton.textContent = 'Creating Account...';
-      });
+      } catch (error) {
+        console.error('Registration error:', error);
+        messagesContainer.innerHTML = `
+          <div role="alert" class="alert alert-error">
+            <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>An error occurred. Please try again.</span>
+          </div>
+        `;
+      } finally {
+        // Reset loading state
+        form.classList.remove('submitting');
+        if (buttonText) buttonText.classList.remove('hidden');
+        if (loadingSpinner) loadingSpinner.classList.add('hidden');
+        if (submitButton) submitButton.disabled = false;
+      }
     });
-  </script>
-</AuthLayout>
+  });
+</script>
