@@ -189,7 +189,7 @@ export class DashboardService {
           )
         );
 
-      // @ts-ignore - SQL result has total property
+      // @ts-expect-error - Drizzle ORM SQL aggregate results are not fully typed
       const totalBudget = budgetResult?.total || '0';
 
       // Get total spent for the month
@@ -209,7 +209,7 @@ export class DashboardService {
           )
         );
 
-      // @ts-ignore - SQL result has total property
+      // @ts-expect-error - Drizzle ORM SQL aggregate results are not fully typed
       const totalSpent = spentResult?.total || '0';
 
       // Calculate percentage and remaining using decimal arithmetic
@@ -296,7 +296,7 @@ export class DashboardService {
       // Create map of spending by category
       const spendingByCategory = new Map<string, string>();
       for (const spending of categorySpending) {
-        // @ts-ignore - SQL result has total property
+        // @ts-expect-error - Drizzle ORM SQL aggregate results are not fully typed
         spendingByCategory.set(spending.category_id, spending.total);
       }
 

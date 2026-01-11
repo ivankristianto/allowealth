@@ -98,7 +98,7 @@ export class BudgetService {
     // Create a map of spent amounts by category
     const spentByCategory = new Map<string, string>();
     for (const tx of monthTransactions) {
-      // @ts-ignore - SQL result has total property
+      // @ts-expect-error - Drizzle ORM SQL aggregate results are not fully typed
       spentByCategory.set(tx.category_id, tx.total || '0');
     }
 
@@ -279,7 +279,7 @@ export class BudgetService {
       );
 
     const budgetAmount = category.budget_amount;
-    // @ts-ignore - SQL result has total property
+    // @ts-expect-error - Drizzle ORM SQL aggregate results are not fully typed
     const spentAmount = result?.total || '0';
     const remaining = decimalSubtract(budgetAmount, spentAmount);
     const percentageUsed = !decimalIsZero(budgetAmount)

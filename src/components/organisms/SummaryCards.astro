@@ -17,17 +17,18 @@ import Card from '../atoms/Card.astro';
 import Badge from '../atoms/Badge.astro';
 import Spinner from '../atoms/Spinner.astro';
 import { formatCurrency, formatPercentage, colors } from '@/lib/tokens';
+import { decimalSubtract } from '@/lib/utils/decimal';
 
 export interface SummaryCardsData {
   totalAssets: {
-    idr: number;
-    usd: number;
-    converted: number;
+    idr: string;
+    usd: string;
+    converted: string;
     convertedCurrency: 'IDR' | 'USD';
   };
   monthlySpent: {
-    spent: number;
-    budget: number;
+    spent: string;
+    budget: string;
     currency: 'IDR' | 'USD';
     percentage: number;
   };
@@ -46,9 +47,14 @@ export interface Props {
 
 const { data, loading = false, error = false, className = '' } = Astro.props;
 
+// Calculate remaining budget using decimal arithmetic
+const monthlySpentRemaining = data
+  ? decimalSubtract(data.monthlySpent.budget, data.monthlySpent.spent)
+  : '0';
+
 // Determine if we should show empty state
 const isEmpty =
-  !loading && !error && (!data || (data.totalAssets.idr === 0 && data.totalAssets.usd === 0));
+  !loading && !error && (!data || (data.totalAssets.idr === '0' && data.totalAssets.usd === '0'));
 
 // Budget status colors
 const getBudgetStatusColor = (status: string): string => {
@@ -298,7 +304,7 @@ const getProgressClass = (percentage: number): string => {
             <p class="text-xs text-neutral-500 text-center">
               {data!.monthlySpent.percentage >= 100
                 ? `Over budget by ${formatPercentage(data!.monthlySpent.percentage - 100)}`
-                : `${formatCurrency(data!.monthlySpent.budget - data!.monthlySpent.spent, data!.monthlySpent.currency)} remaining`}
+                : `${formatCurrency(monthlySpentRemaining, data!.monthlySpent.currency)} remaining`}
             </p>
           </div>
         </Card>
