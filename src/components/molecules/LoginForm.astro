@@ -90,7 +90,7 @@ const { errorMessage = '', email = '', redirectTo = '' } = Astro.props;
   const form = document.getElementById('login-form');
   const messagesContainer = document.getElementById('login-messages');
   const emailInput = document.getElementById('email');
-  const passwordInput = document.querySelector('[data-password-input][name="password"]');
+  const passwordInput = document.getElementById('password');
   const submitButton = document.querySelector('[data-login-submit-button]');
   const buttonText = submitButton?.querySelector('[data-button-text]');
   const loadingSpinner = submitButton?.querySelector('[data-loading-spinner]');
