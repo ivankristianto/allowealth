@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { categoryService } from '@/services';
 import { successResponse, errorResponse, validateBody, requireAuth } from '@/lib/api-utils';
 import { updateCategoryAPISchema } from '@/lib/validation';
+import { logError } from '@/lib/utils';
 
 /**
  * GET /api/categories/:id
@@ -27,7 +28,7 @@ export const GET: APIRoute = async ({ params, request, url }) => {
     if (error instanceof Error && error.message === 'Unauthorized') {
       return errorResponse('Unauthorized', 401);
     }
-    console.error('Error fetching category:', error);
+    logError('Error fetching category', error);
     return errorResponse('Failed to fetch category', 500);
   }
 };
@@ -70,7 +71,7 @@ export const PUT: APIRoute = async ({ params, request, url }) => {
     if (error instanceof Error && error.message === 'Unauthorized') {
       return errorResponse('Unauthorized', 401);
     }
-    console.error('Error updating category:', error);
+    logError('Error updating category', error);
     return errorResponse('Failed to update category', 500);
   }
 };
@@ -95,7 +96,7 @@ export const DELETE: APIRoute = async ({ params, request, url }) => {
     if (error instanceof Error && error.message === 'Unauthorized') {
       return errorResponse('Unauthorized', 401);
     }
-    console.error('Error deleting category:', error);
+    logError('Error deleting category', error);
     return errorResponse('Failed to delete category', 500);
   }
 };

@@ -65,3 +65,6 @@ export {
   decimalAbs,
   decimalClamp,
 } from './decimal';
+
+// Error logging utilities
+export { logError, sanitizeError, getSafeErrorMessage, type SanitizedError } from './error-logger';

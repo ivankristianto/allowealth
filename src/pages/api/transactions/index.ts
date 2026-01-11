@@ -9,6 +9,7 @@ import {
   isValidDate,
 } from '@/lib/api-utils';
 import { createTransactionAPISchema } from '@/lib/validation';
+import { logError } from '@/lib/utils';
 
 /**
  * GET /api/transactions
@@ -85,7 +86,7 @@ export const GET: APIRoute = async ({ request, url }) => {
     if (error instanceof Error && error.message === 'Unauthorized') {
       return errorResponse('Unauthorized', 401);
     }
-    console.error('Error fetching transactions:', error);
+    logError('Error fetching transactions', error);
     return errorResponse('Failed to fetch transactions', 500);
   }
 };
@@ -131,7 +132,7 @@ export const POST: APIRoute = async ({ request, url }) => {
     if (error instanceof Error && error.message === 'Unauthorized') {
       return errorResponse('Unauthorized', 401);
     }
-    console.error('Error creating transaction:', error);
+    logError('Error creating transaction', error);
     return errorResponse('Failed to create transaction', 500);
   }
 };

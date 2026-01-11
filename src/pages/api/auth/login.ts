@@ -27,6 +27,7 @@ import {
   type ApiSuccessResponse,
   type ApiError,
 } from '@/types/api';
+import { logError } from '@/lib/utils';
 
 export const prerender = false;
 
@@ -89,7 +90,7 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     // Handle unexpected errors
-    console.error('Login error:', error);
+    logError('Login error', error);
     return createErrorResponseResponse(
       'INTERNAL_SERVER_ERROR',
       'An unexpected error occurred',

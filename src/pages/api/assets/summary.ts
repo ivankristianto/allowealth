@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { assetService } from '@/services';
 import { successResponse, errorResponse, requireAuth } from '@/lib/api-utils';
+import { logError } from '@/lib/utils';
 
 /**
  * GET /api/assets/summary
@@ -23,7 +24,7 @@ export const GET: APIRoute = async ({ request, url }) => {
     if (error instanceof Error && error.message === 'Unauthorized') {
       return errorResponse('Unauthorized', 401);
     }
-    console.error('Error fetching asset summary:', error);
+    logError('Error fetching asset summary', error);
     return errorResponse('Failed to fetch asset summary', 500);
   }
 };

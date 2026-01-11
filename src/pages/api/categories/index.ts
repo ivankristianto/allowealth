@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { categoryService } from '@/services';
 import { successResponse, errorResponse, validateBody, requireAuth } from '@/lib/api-utils';
 import { createCategoryAPISchema } from '@/lib/validation';
+import { logError } from '@/lib/utils';
 
 /**
  * GET /api/categories
@@ -29,7 +30,7 @@ export const GET: APIRoute = async ({ request, url }) => {
     if (error instanceof Error && error.message === 'Unauthorized') {
       return errorResponse('Unauthorized', 401);
     }
-    console.error('Error fetching categories:', error);
+    logError('Error fetching categories', error);
     return errorResponse('Failed to fetch categories', 500);
   }
 };
@@ -64,7 +65,7 @@ export const POST: APIRoute = async ({ request, url }) => {
     if (error instanceof Error && error.message === 'Unauthorized') {
       return errorResponse('Unauthorized', 401);
     }
-    console.error('Error creating category:', error);
+    logError('Error creating category', error);
     return errorResponse('Failed to create category', 500);
   }
 };

@@ -8,6 +8,7 @@ import {
   isValidDate,
 } from '@/lib/api-utils';
 import { updateTransactionAPISchema, transactionIdSchema } from '@/lib/validation/transactions';
+import { logError } from '@/lib/utils';
 
 /**
  * GET /api/transactions/:id
@@ -36,7 +37,7 @@ export const GET: APIRoute = async ({ params, request, url }) => {
     if (error instanceof Error && error.message === 'Unauthorized') {
       return errorResponse('Unauthorized', 401);
     }
-    console.error('Error fetching transaction:', error);
+    logError('Error fetching transaction', error);
     return errorResponse('Failed to fetch transaction', 500);
   }
 };
@@ -97,7 +98,7 @@ export const PUT: APIRoute = async ({ params, request, url }) => {
     if (error instanceof Error && error.message === 'Unauthorized') {
       return errorResponse('Unauthorized', 401);
     }
-    console.error('Error updating transaction:', error);
+    logError('Error updating transaction', error);
     return errorResponse('Failed to update transaction', 500);
   }
 };
@@ -124,7 +125,7 @@ export const DELETE: APIRoute = async ({ params, request, url }) => {
     if (error instanceof Error && error.message === 'Unauthorized') {
       return errorResponse('Unauthorized', 401);
     }
-    console.error('Error deleting transaction:', error);
+    logError('Error deleting transaction', error);
     return errorResponse('Failed to delete transaction', 500);
   }
 };
