@@ -31,6 +31,9 @@ export enum ServiceErrorCode {
   BUDGET_NOT_FOUND = 'BUDGET_NOT_FOUND',
   BUDGET_EXCEEDED = 'BUDGET_EXCEEDED',
 
+  // Asset-specific errors
+  ASSET_NOT_FOUND = 'ASSET_NOT_FOUND',
+
   // Auth-specific errors
   INVALID_CREDENTIALS = 'INVALID_CREDENTIALS',
   USER_EXISTS = 'USER_EXISTS',
@@ -81,5 +84,12 @@ export class AuthServiceError extends ServiceError {
   constructor(code: ServiceErrorCode, message: string, statusCode: number = 401) {
     super(code, message, statusCode);
     this.name = 'AuthServiceError';
+  }
+}
+
+export class AssetServiceError extends ServiceError {
+  constructor(code: ServiceErrorCode, message: string, statusCode: number = 400) {
+    super(code, message, statusCode);
+    this.name = 'AssetServiceError';
   }
 }
