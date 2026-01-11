@@ -62,7 +62,7 @@ const { errorMessage = '', email = '', redirectTo = '' } = Astro.props;
       </div>
 
       <!-- Submit Button -->
-      <Button type="submit" variant="primary" className="w-full" data-login-submit-button>
+      <Button id="login-submit-button" type="submit" variant="primary" className="w-full">
         <span data-button-text>Sign In</span>
         <span data-loading-spinner class="hidden">
           <span class="loading loading-spinner"></span>
@@ -91,7 +91,7 @@ const { errorMessage = '', email = '', redirectTo = '' } = Astro.props;
   const messagesContainer = document.getElementById('login-messages');
   const emailInput = document.getElementById('email');
   const passwordInput = document.getElementById('password');
-  const submitButton = document.querySelector('[data-login-submit-button]');
+  const submitButton = document.getElementById('login-submit-button');
   const buttonText = submitButton?.querySelector('[data-button-text]');
   const loadingSpinner = submitButton?.querySelector('[data-loading-spinner]');
 

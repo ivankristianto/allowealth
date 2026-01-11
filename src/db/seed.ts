@@ -11,7 +11,7 @@
 
 import { db } from './index';
 import { nanoid } from 'nanoid';
-import { Scrypt } from 'oslo/password';
+import { hashPassword } from '@/lib/auth/password';
 import {
   users,
   userSettings,
@@ -32,16 +32,8 @@ import {
 
 const DEMO_USER = {
   email: 'demo@example.com',
-  password: 'demo123',
+  password: 'demo123456789', // Must be at least 12 chars for Argon2id
   name: 'Demo User',
-};
-
-// Scrypt parameters (matches Lucia Auth defaults)
-const SCRYPT_PARAMS = {
-  N: 16384,
-  r: 16,
-  p: 1,
-  dkLen: 32,
 };
 
 // Seeding configuration constants
@@ -51,14 +43,6 @@ const SNAPSHOT_GROWTH_RATE = 0.05; // 5% growth per month for snapshots
 // ============================================================================
 // HELPERS
 // ============================================================================
-
-/**
- * Hash password using scrypt (same as Lucia Auth)
- */
-async function hashPassword(password: string): Promise<string> {
-  const scrypt = new Scrypt(SCRYPT_PARAMS);
-  return await scrypt.hash(password);
-}
 
 /**
  * Generate a date N days ago
