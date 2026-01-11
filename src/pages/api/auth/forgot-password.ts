@@ -16,7 +16,11 @@
  */
 
 import type { APIRoute } from 'astro';
-import { requestPasswordReset, PASSWORD_RESET_ERRORS } from '@/services/password-reset.service';
+import {
+  requestPasswordReset,
+  PASSWORD_RESET_ERRORS,
+  PasswordResetError,
+} from '@/services/password-reset.service';
 import {
   createErrorResponseResponse,
   createSuccessResponseResponse,
@@ -50,15 +54,9 @@ export const POST: APIRoute = async ({ request }) => {
     });
   } catch (error) {
     // Handle validation errors
-    if (error instanceof Error && 'code' in error) {
-      const resetError = error as { code: string; message: string };
-
-      if (resetError.code === PASSWORD_RESET_ERRORS.INVALID_INPUT) {
-        return createErrorResponseResponse(
-          PASSWORD_RESET_ERRORS.INVALID_INPUT,
-          resetError.message,
-          400
-        );
+    if (error instanceof PasswordResetError) {
+      if (error.code === PASSWORD_RESET_ERRORS.INVALID_INPUT) {
+        return createErrorResponseResponse(PASSWORD_RESET_ERRORS.INVALID_INPUT, error.message, 400);
       }
     }
 
