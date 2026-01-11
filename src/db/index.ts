@@ -4,63 +4,151 @@
  * Provides a database abstraction layer that works across different
  * JavaScript runtimes (Bun and Node.js).
  *
- * - In Bun runtime (API routes, server context): Uses bun:sqlite for optimal performance
- * - In Node.js runtime (Astro middleware): Uses better-sqlite3 for compatibility
+ * - In Bun runtime: Uses bun:sqlite with drizzle-orm/bun-sqlite
+ * - In Node.js runtime: Uses better-sqlite3 with drizzle-orm/better-sqlite3
  *
  * The driver is selected automatically based on the detected runtime.
+ * Dynamic imports are used to avoid loading runtime-specific modules
+ * in the wrong environment.
  *
  * @see https://bun.sh/docs/api/sqlite
  * @see https://github.com/WiseLibs/better-sqlite3
  */
-import { drizzle } from 'drizzle-orm/bun-sqlite';
-import { detectRuntime } from './driver';
-import { createBunDriver } from './drivers/bun';
-import { createNodeDriver } from './drivers/node';
+import { createRequire } from 'node:module';
+import { detectRuntime, type Runtime } from './driver';
 import * as schema from './schema';
+import type { BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
+import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
+
+// Re-export schema
+export * from './schema';
 
 // Database connection (SQLite)
+// In production, DATABASE_URL should be set but we fall back to .dev.db for local preview
 const dbUrl = process.env.DATABASE_URL || '.dev.db';
 
-// In production, DATABASE_URL should be set
+// Warn in production if DATABASE_URL is not set (but don't throw)
 if (process.env.NODE_ENV === 'production' && !process.env.DATABASE_URL) {
-  throw new Error('DATABASE_URL environment variable must be set in production');
+  console.warn('Warning: DATABASE_URL not set in production, using default .dev.db');
 }
 
 /**
- * Create the appropriate database driver based on runtime
+ * Database type that works across both runtimes
  */
-const runtime = detectRuntime();
+type Database = BunSQLiteDatabase<typeof schema> | BetterSQLite3Database<typeof schema>;
 
-let driver: ReturnType<typeof createBunDriver> | ReturnType<typeof createNodeDriver>;
+/**
+ * Create the Drizzle database instance based on runtime
+ */
+async function createDatabase(): Promise<Database> {
+  const runtime = detectRuntime();
+
+  if (runtime === 'bun') {
+    // Dynamic import for Bun runtime
+    const { drizzle } = await import('drizzle-orm/bun-sqlite');
+    const { Database } = await import('bun:sqlite');
+    const sqlite = new Database(dbUrl);
+
+    // Apply performance optimizations
+    sqlite.exec('PRAGMA journal_mode = WAL;');
+    sqlite.exec('PRAGMA synchronous = NORMAL;');
+    sqlite.exec('PRAGMA cache_size = -64000;'); // 64MB cache
+    sqlite.exec('PRAGMA foreign_keys = ON;');
+
+    return drizzle(sqlite, { schema });
+  } else {
+    // Dynamic import for Node.js runtime
+    const { drizzle } = await import('drizzle-orm/better-sqlite3');
+    const BetterSqlite3 = (await import('better-sqlite3')).default;
+    const sqlite = new BetterSqlite3(dbUrl);
+
+    // Apply performance optimizations
+    sqlite.exec('PRAGMA journal_mode = WAL;');
+    sqlite.exec('PRAGMA synchronous = NORMAL;');
+    sqlite.exec('PRAGMA cache_size = -64000;'); // 64MB cache
+    sqlite.exec('PRAGMA foreign_keys = ON;');
+
+    // Graceful shutdown handler for Node.js
+    process.on('beforeExit', () => {
+      sqlite.close();
+    });
+
+    return drizzle(sqlite, { schema });
+  }
+}
+
+// Singleton promise for database instance
+let dbPromise: Promise<Database> | null = null;
+
+/**
+ * Get the database instance (lazy initialization)
+ */
+export async function getDb(): Promise<Database> {
+  if (!dbPromise) {
+    dbPromise = createDatabase();
+  }
+  return dbPromise;
+}
+
+/**
+ * Drizzle ORM instance (synchronous access)
+ *
+ * For backwards compatibility with existing code that expects
+ * synchronous database access. This creates the database instance
+ * synchronously at module load time.
+ *
+ * Uses createRequire for Node.js ESM compatibility and native require for Bun.
+ */
+let _db: Database;
+
+/**
+ * Get a require function that works in both CommonJS and ESM
+ * - In Bun: Uses native require (always available)
+ * - In Node.js ESM: Uses createRequire from node:module
+ */
+function getRequire(): NodeRequire {
+  const runtime = detectRuntime();
+  if (runtime === 'bun') {
+    // Bun has require available globally
+    // @ts-ignore - Bun provides require
+    return require;
+  } else {
+    // Node.js ESM - use createRequire (imported at top level)
+    return createRequire(import.meta.url);
+  }
+}
+
+const runtime = detectRuntime();
+const dynamicRequire = getRequire();
 
 if (runtime === 'bun') {
-  // Use bun:sqlite in Bun runtime for optimal performance
-  driver = createBunDriver(dbUrl);
+  // Bun runtime - use bun:sqlite synchronously
+  const Database = dynamicRequire('bun:sqlite').Database;
+  const sqlite = new Database(dbUrl);
+
+  sqlite.exec('PRAGMA journal_mode = WAL;');
+  sqlite.exec('PRAGMA synchronous = NORMAL;');
+  sqlite.exec('PRAGMA cache_size = -64000;');
+  sqlite.exec('PRAGMA foreign_keys = ON;');
+
+  const { drizzle } = dynamicRequire('drizzle-orm/bun-sqlite');
+  _db = drizzle(sqlite, { schema });
 } else {
-  // Use better-sqlite3 in Node.js runtime for compatibility
-  // This is necessary for Astro middleware which runs in Node.js
-  driver = createNodeDriver(dbUrl);
+  // Node.js runtime - use better-sqlite3 synchronously
+  const BetterSqlite3 = dynamicRequire('better-sqlite3');
+  const sqlite = new BetterSqlite3(dbUrl);
+
+  sqlite.exec('PRAGMA journal_mode = WAL;');
+  sqlite.exec('PRAGMA synchronous = NORMAL;');
+  sqlite.exec('PRAGMA cache_size = -64000;');
+  sqlite.exec('PRAGMA foreign_keys = ON;');
+
+  process.on('beforeExit', () => {
+    sqlite.close();
+  });
+
+  const { drizzle } = dynamicRequire('drizzle-orm/better-sqlite3');
+  _db = drizzle(sqlite, { schema });
 }
 
-// Apply performance optimizations for SQLite
-driver.exec('PRAGMA journal_mode = WAL;');
-driver.exec('PRAGMA synchronous = NORMAL;');
-driver.exec('PRAGMA cache_size = -64000;'); // 64MB cache
-driver.exec('PRAGMA foreign_keys = ON;');
-
-/**
- * Drizzle ORM instance
- *
- * We cast the driver to 'any' because drizzle-orm/bun-sqlite expects
- * a bun:sqlite Database object, but our driver interface is compatible.
- * Both bun:sqlite and better-sqlite3 expose the same core methods we need.
- */
-const db = drizzle(driver as any, { schema });
-
-// Graceful shutdown handler
-process.on('beforeExit', () => {
-  driver.close();
-});
-
-export * from './schema';
-export { db };
+export const db = _db;
