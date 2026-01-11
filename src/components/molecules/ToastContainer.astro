@@ -11,12 +11,14 @@
 <div id="toast-container" class="toast toast-end toast-top z-50"></div>
 
 <script>
-  // Global toast function
-  function showToast(
-    message: string,
-    type: 'success' | 'error' | 'warning' | 'info' = 'info',
-    duration: number = 5000
-  ): HTMLDivElement | undefined {
+  /**
+   * Show a toast notification
+   * @param {string} message - The message to display
+   * @param {string} [type='info'] - Type of toast: success, error, warning, info
+   * @param {number} [duration=5000] - Duration in milliseconds (0 to disable auto-dismiss)
+   * @returns {HTMLDivElement|undefined} The toast element or undefined if container not found
+   */
+  function showToast(message, type = 'info', duration = 5000) {
     const container = document.getElementById('toast-container');
     if (!container) return;
 
@@ -53,12 +55,6 @@
     return toast;
   }
 
-  // Make available globally
-  declare global {
-    interface Window {
-      showToast: typeof showToast;
-    }
-  }
   window.showToast = showToast;
 </script>
 
