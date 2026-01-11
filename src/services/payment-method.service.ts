@@ -7,6 +7,7 @@ import {
   type CreatePaymentMethodInput,
   type UpdatePaymentMethodInput,
 } from '@/lib/validation/payment-methods';
+import { PaymentMethodServiceError, ServiceErrorCode } from './service-errors';
 
 export { type CreatePaymentMethodInput, type UpdatePaymentMethodInput };
 
@@ -92,6 +93,16 @@ export class PaymentMethodService {
    * Delete payment method (soft delete by marking inactive)
    */
   async delete(id: string, user_id: string) {
+    // Check if payment method exists
+    const paymentMethod = await this.findById(id, user_id);
+    if (!paymentMethod) {
+      throw new PaymentMethodServiceError(
+        ServiceErrorCode.PAYMENT_METHOD_NOT_FOUND,
+        'Payment method not found',
+        404
+      );
+    }
+
     await db
       .update(paymentMethods)
       .set({

@@ -7,6 +7,7 @@ import {
   type CreateCategoryInput,
   type UpdateCategoryInput,
 } from '@/lib/validation/categories';
+import { CategoryServiceError, ServiceErrorCode } from './service-errors';
 
 export { type CreateCategoryInput, type UpdateCategoryInput };
 
@@ -102,6 +103,16 @@ export class CategoryService {
    * Delete category (soft delete by marking inactive)
    */
   async delete(id: string, user_id: string) {
+    // Check if category exists
+    const category = await this.findById(id, user_id);
+    if (!category) {
+      throw new CategoryServiceError(
+        ServiceErrorCode.CATEGORY_NOT_FOUND,
+        'Category not found',
+        404
+      );
+    }
+
     await db
       .update(categories)
       .set({

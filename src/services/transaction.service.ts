@@ -252,6 +252,16 @@ export class TransactionService {
    * Soft delete transaction
    */
   async delete(id: string, user_id: string) {
+    // Check if transaction exists
+    const transaction = await this.findById(id, user_id);
+    if (!transaction) {
+      throw new TransactionServiceError(
+        ServiceErrorCode.TRANSACTION_NOT_FOUND,
+        'Transaction not found',
+        404
+      );
+    }
+
     await db
       .update(transactions)
       .set({

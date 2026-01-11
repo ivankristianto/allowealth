@@ -1,6 +1,7 @@
 import { db, assets, assetHistory } from '@/db';
 import { eq, and, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
+import { AssetServiceError, ServiceErrorCode } from './service-errors';
 
 export interface CreateAssetInput {
   user_id: string;
@@ -157,6 +158,12 @@ export class AssetService {
    * Delete asset (soft delete)
    */
   async delete(id: string, user_id: string) {
+    // Check if asset exists
+    const asset = await this.findById(id, user_id);
+    if (!asset) {
+      throw new AssetServiceError(ServiceErrorCode.ASSET_NOT_FOUND, 'Asset not found', 404);
+    }
+
     await db
       .update(assets)
       .set({
