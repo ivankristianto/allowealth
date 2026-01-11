@@ -18,14 +18,23 @@ import {
 } from '@/lib/currency/conversion';
 import { calculateBudgetAlert, calculateBudgetStatus } from '@/lib/budget/alerts';
 import { calculateAssetPriority } from '@/lib/assets/priority';
+import {
+  decimalAdd,
+  decimalSubtract,
+  decimalDivide,
+  decimalMultiply,
+  decimalCompare,
+  decimalSum,
+  decimalIsZero,
+} from '@/lib/utils/decimal';
 
 /**
  * Total assets by currency
  */
 export interface TotalAssets {
-  idr: number;
-  usd: number;
-  converted: number; // Total in primary currency (IDR)
+  idr: string;
+  usd: string;
+  converted: string; // Total in primary currency (IDR)
   convertedCurrency: 'IDR' | 'USD';
 }
 
@@ -33,10 +42,10 @@ export interface TotalAssets {
  * Monthly spending summary
  */
 export interface MonthlySpent {
-  total: number;
-  budget: number;
+  total: string;
+  budget: string;
   percentage: number;
-  remaining: number;
+  remaining: string;
 }
 
 /**
@@ -44,12 +53,12 @@ export interface MonthlySpent {
  */
 export interface BudgetAlert {
   category: string;
-  budget: number;
-  spent: number;
+  budget: string;
+  spent: string;
   percentage: number;
   status: 'warning' | 'exceeded';
-  remaining: number;
-  overage: number;
+  remaining: string;
+  overage: string;
 }
 
 /**
@@ -71,7 +80,7 @@ export interface AssetReminder {
   lastUpdated: Date;
   daysSinceUpdate: number;
   priority: 'high' | 'medium' | 'low';
-  currentBalance: number;
+  currentBalance: string;
   currency: string;
 }
 
@@ -96,45 +105,42 @@ export class DashboardService {
         where: and(eq(assets.user_id, userId), sql`${assets.deleted_at} IS NULL`),
       });
 
-      // Sum by currency
-      let idrTotal = 0;
-      let usdTotal = 0;
+      // Sum by currency using decimal arithmetic
+      const idrBalances = userAssets.filter((a) => a.currency === 'IDR').map((a) => a.balance);
+      const usdBalances = userAssets.filter((a) => a.currency === 'USD').map((a) => a.balance);
 
-      for (const asset of userAssets) {
-        const balance = parseFloat(asset.balance);
-        if (asset.currency === 'IDR') {
-          idrTotal += balance;
-        } else if (asset.currency === 'USD') {
-          usdTotal += balance;
-        }
-      }
+      const idrTotal = decimalSum(idrBalances);
+      const usdTotal = decimalSum(usdBalances);
 
       // Get exchange rate for conversion
       const rate = await getLatestExchangeRate();
+      const rateString = rate.toString();
 
       // Convert to primary currency
-      let convertedTotal: number;
+      let convertedTotal: string;
       if (primaryCurrency === 'IDR') {
         // Convert USD to IDR and add to IDR total
-        convertedTotal = idrTotal + usdTotal * rate;
+        const usdConverted = decimalMultiply(usdTotal, rateString);
+        convertedTotal = decimalAdd(idrTotal, usdConverted);
       } else {
         // Convert IDR to USD and add to USD total
-        convertedTotal = usdTotal + idrTotal / rate;
+        const idrConverted = decimalDivide(idrTotal, rateString);
+        convertedTotal = decimalAdd(usdTotal, idrConverted);
       }
 
       return {
-        idr: Math.round(idrTotal),
-        usd: Math.round(usdTotal * 100) / 100,
-        converted: Math.round(convertedTotal),
+        idr: idrTotal,
+        usd: usdTotal,
+        converted: convertedTotal,
         convertedCurrency: primaryCurrency,
       };
     } catch (error) {
       console.error('Error getting total assets:', error);
       // Return zeroed values on error
       return {
-        idr: 0,
-        usd: 0,
-        converted: 0,
+        idr: '0',
+        usd: '0',
+        converted: '0',
         convertedCurrency: primaryCurrency,
       };
     }
@@ -183,7 +189,8 @@ export class DashboardService {
           )
         );
 
-      const totalBudget = parseFloat(budgetResult?.total || '0');
+      // @ts-expect-error - Drizzle ORM SQL aggregate results are not fully typed
+      const totalBudget = budgetResult?.total || '0';
 
       // Get total spent for the month
       const [spentResult] = await db
@@ -202,26 +209,29 @@ export class DashboardService {
           )
         );
 
-      const totalSpent = parseFloat(spentResult?.total || '0');
+      // @ts-expect-error - Drizzle ORM SQL aggregate results are not fully typed
+      const totalSpent = spentResult?.total || '0';
 
-      // Calculate percentage and remaining
-      const percentage = totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0;
-      const remaining = totalBudget - totalSpent;
+      // Calculate percentage and remaining using decimal arithmetic
+      const percentage = !decimalIsZero(totalBudget)
+        ? parseFloat(decimalDivide(decimalMultiply(totalSpent, 100), totalBudget))
+        : 0;
+      const remaining = decimalSubtract(totalBudget, totalSpent);
 
       return {
-        total: Math.round(totalSpent),
-        budget: Math.round(totalBudget),
+        total: totalSpent,
+        budget: totalBudget,
         percentage: Math.round(percentage * 10) / 10, // Round to 1 decimal
-        remaining: Math.round(remaining),
+        remaining,
       };
     } catch (error) {
       console.error('Error getting monthly spent:', error);
       // Return zeroed values on error
       return {
-        total: 0,
-        budget: 0,
+        total: '0',
+        budget: '0',
         percentage: 0,
-        remaining: 0,
+        remaining: '0',
       };
     }
   }
@@ -267,7 +277,7 @@ export class DashboardService {
       // Get total spent per category for the month
       const categorySpending = await db
         .select({
-          categoryId: transactions.category_id,
+          category_id: transactions.category_id,
           total: sql<string>`COALESCE(SUM(CAST(${transactions.amount} AS REAL)), 0)`,
         })
         .from(transactions)
@@ -284,17 +294,18 @@ export class DashboardService {
         .groupBy(transactions.category_id);
 
       // Create map of spending by category
-      const spendingByCategory = new Map<string, number>();
+      const spendingByCategory = new Map<string, string>();
       for (const spending of categorySpending) {
-        spendingByCategory.set(spending.categoryId, parseFloat(spending.total));
+        // @ts-expect-error - Drizzle ORM SQL aggregate results are not fully typed
+        spendingByCategory.set(spending.category_id, spending.total);
       }
 
       // Calculate alerts for each category
       const alerts: BudgetAlert[] = [];
 
       for (const category of userCategories) {
-        const budget = parseFloat(category.budget_amount);
-        const spent = spendingByCategory.get(category.id) || 0;
+        const budget = category.budget_amount;
+        const spent = spendingByCategory.get(category.id) || '0';
 
         const alert = calculateBudgetAlert(category.name, budget, spent);
         if (alert) {
@@ -354,7 +365,7 @@ export class DashboardService {
             lastUpdated: asset.last_updated,
             daysSinceUpdate: priorityResult.daysSinceUpdate,
             priority: priorityResult.priority as 'high' | 'medium' | 'low',
-            currentBalance: parseFloat(asset.balance),
+            currentBalance: asset.balance,
             currency: asset.currency,
           });
         }

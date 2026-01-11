@@ -4,6 +4,15 @@
  * Provides utilities for calculating budget alerts and status.
  */
 
+import {
+  decimalAdd,
+  decimalSubtract,
+  decimalDivide,
+  decimalMultiply,
+  decimalCompare,
+  decimalIsZero,
+} from '@/lib/utils/decimal';
+
 /**
  * Budget alert status
  */
@@ -14,12 +23,12 @@ export type BudgetStatus = 'healthy' | 'warning' | 'exceeded';
  */
 export interface BudgetAlert {
   category: string;
-  budget: number;
-  spent: number;
+  budget: string;
+  spent: string;
   percentage: number;
   status: 'warning' | 'exceeded';
-  remaining: number;
-  overage: number;
+  remaining: string;
+  overage: string;
 }
 
 /**
@@ -43,23 +52,23 @@ export const ALERT_THRESHOLDS = {
 /**
  * Calculate budget status based on percentage used
  *
- * @param budget - Budget amount
- * @param spent - Amount spent
+ * @param budget - Budget amount as string
+ * @param spent - Amount spent as string
  * @returns Budget status ('healthy', 'warning', or 'exceeded')
  *
  * @example
- * calculateBudgetStatus(100, 50) // Returns 'healthy'
- * calculateBudgetStatus(100, 85) // Returns 'warning'
- * calculateBudgetStatus(100, 100) // Returns 'exceeded'
- * calculateBudgetStatus(100, 120) // Returns 'exceeded'
+ * calculateBudgetStatus('100', '50') // Returns 'healthy'
+ * calculateBudgetStatus('100', '85') // Returns 'warning'
+ * calculateBudgetStatus('100', '100') // Returns 'exceeded'
+ * calculateBudgetStatus('100', '120') // Returns 'exceeded'
  */
-export function calculateBudgetStatus(budget: number, spent: number): BudgetStatus {
+export function calculateBudgetStatus(budget: string, spent: string): BudgetStatus {
   // Handle zero or negative budget
-  if (budget <= 0) {
+  if (decimalIsZero(budget) || decimalCompare(budget, '0') <= 0) {
     return 'healthy';
   }
 
-  const percentage = (spent / budget) * 100;
+  const percentage = parseFloat(decimalDivide(decimalMultiply(spent, '100'), budget));
 
   if (percentage >= ALERT_THRESHOLDS.EXCEEDED) {
     return 'exceeded';
@@ -74,28 +83,28 @@ export function calculateBudgetStatus(budget: number, spent: number): BudgetStat
  * Calculate budget alert details
  *
  * @param category - Category name
- * @param budget - Budget amount
- * @param spent - Amount spent
+ * @param budget - Budget amount as string
+ * @param spent - Amount spent as string
  * @returns Budget alert object or null if no alert
  *
  * @example
- * calculateBudgetAlert('Food', 100, 85) // Returns warning alert
- * calculateBudgetAlert('Food', 100, 100) // Returns exceeded alert
- * calculateBudgetAlert('Food', 100, 50) // Returns null (no alert)
+ * calculateBudgetAlert('Food', '100', '85') // Returns warning alert
+ * calculateBudgetAlert('Food', '100', '100') // Returns exceeded alert
+ * calculateBudgetAlert('Food', '100', '50') // Returns null (no alert)
  */
 export function calculateBudgetAlert(
   category: string,
-  budget: number,
-  spent: number
+  budget: string,
+  spent: string
 ): BudgetAlert | null {
   // Handle zero or negative budget
-  if (budget <= 0) {
+  if (decimalIsZero(budget) || decimalCompare(budget, '0') <= 0) {
     return null;
   }
 
-  const percentage = (spent / budget) * 100;
-  const remaining = budget - spent;
-  const overage = spent > budget ? spent - budget : 0;
+  const percentage = parseFloat(decimalDivide(decimalMultiply(spent, '100'), budget));
+  const remaining = decimalSubtract(budget, spent);
+  const overage = decimalCompare(spent, budget) > 0 ? decimalSubtract(spent, budget) : '0';
 
   // Determine status
   let status: 'warning' | 'exceeded' | null = null;
@@ -129,13 +138,13 @@ export function calculateBudgetAlert(
  *
  * @example
  * calculateBudgetAlerts([
- *   { category: 'Food', budget: 100, spent: 85 },
- *   { category: 'Transport', budget: 50, spent: 60 }
+ *   { category: 'Food', budget: '100', spent: '85' },
+ *   { category: 'Transport', budget: '50', spent: '60' }
  * ])
  * // Returns alerts for both categories
  */
 export function calculateBudgetAlerts(
-  budgets: Array<{ category: string; budget: number; spent: number }>
+  budgets: Array<{ category: string; budget: string; spent: string }>
 ): BudgetAlert[] {
   const alerts: BudgetAlert[] = [];
 
@@ -158,19 +167,19 @@ export function calculateBudgetAlerts(
  *
  * @example
  * calculateBudgetHealthSummary([
- *   { category: 'Food', budget: 100, spent: 85 },
- *   { category: 'Transport', budget: 50, spent: 60 }
+ *   { category: 'Food', budget: '100', spent: '85' },
+ *   { category: 'Transport', budget: '50', spent: '60' }
  * ])
  * // Returns { status: 'exceeded', alertCount: 2, warningCount: 1, exceededCount: 1 }
  */
 export function calculateBudgetHealthSummary(
-  budgets: Array<{ category: string; budget: number; spent: number }>
+  budgets: Array<{ category: string; budget: string; spent: string }>
 ): BudgetHealthSummary {
   let warningCount = 0;
   let exceededCount = 0;
 
   for (const { budget, spent } of budgets) {
-    if (budget <= 0) continue;
+    if (decimalIsZero(budget) || decimalCompare(budget, '0') <= 0) continue;
 
     const status = calculateBudgetStatus(budget, spent);
     if (status === 'exceeded') {
@@ -201,67 +210,67 @@ export function calculateBudgetHealthSummary(
 /**
  * Calculate budget remaining amount
  *
- * @param budget - Budget amount
- * @param spent - Amount spent
- * @returns Remaining amount (can be negative if over budget)
+ * @param budget - Budget amount as string
+ * @param spent - Amount spent as string
+ * @returns Remaining amount as string (can be negative if over budget)
  *
  * @example
- * calculateBudgetRemaining(100, 50) // Returns 50
- * calculateBudgetRemaining(100, 100) // Returns 0
- * calculateBudgetRemaining(100, 120) // Returns -20
+ * calculateBudgetRemaining('100', '50') // Returns '50'
+ * calculateBudgetRemaining('100', '100') // Returns '0'
+ * calculateBudgetRemaining('100', '120') // Returns '-20'
  */
-export function calculateBudgetRemaining(budget: number, spent: number): number {
-  return budget - spent;
+export function calculateBudgetRemaining(budget: string, spent: string): string {
+  return decimalSubtract(budget, spent);
 }
 
 /**
  * Calculate budget percentage used
  *
- * @param budget - Budget amount
- * @param spent - Amount spent
+ * @param budget - Budget amount as string
+ * @param spent - Amount spent as string
  * @returns Percentage used (can be over 100)
  *
  * @example
- * calculateBudgetPercentage(100, 50) // Returns 50
- * calculateBudgetPercentage(100, 100) // Returns 100
- * calculateBudgetPercentage(100, 120) // Returns 120
+ * calculateBudgetPercentage('100', '50') // Returns 50
+ * calculateBudgetPercentage('100', '100') // Returns 100
+ * calculateBudgetPercentage('100', '120') // Returns 120
  */
-export function calculateBudgetPercentage(budget: number, spent: number): number {
-  if (budget <= 0) {
+export function calculateBudgetPercentage(budget: string, spent: string): number {
+  if (decimalIsZero(budget) || decimalCompare(budget, '0') <= 0) {
     return 0;
   }
-  return Math.round((spent / budget) * 1000) / 10; // Round to 1 decimal
+  return Math.round(parseFloat(decimalDivide(decimalMultiply(spent, '100'), budget)) * 10) / 10; // Round to 1 decimal
 }
 
 /**
  * Check if budget is healthy (no alerts)
  *
- * @param budget - Budget amount
- * @param spent - Amount spent
+ * @param budget - Budget amount as string
+ * @param spent - Amount spent as string
  * @returns True if healthy, false otherwise
  */
-export function isBudgetHealthy(budget: number, spent: number): boolean {
+export function isBudgetHealthy(budget: string, spent: string): boolean {
   return calculateBudgetStatus(budget, spent) === 'healthy';
 }
 
 /**
  * Check if budget has warning
  *
- * @param budget - Budget amount
- * @param spent - Amount spent
+ * @param budget - Budget amount as string
+ * @param spent - Amount spent as string
  * @returns True if warning, false otherwise
  */
-export function isBudgetWarning(budget: number, spent: number): boolean {
+export function isBudgetWarning(budget: string, spent: string): boolean {
   return calculateBudgetStatus(budget, spent) === 'warning';
 }
 
 /**
  * Check if budget is exceeded
  *
- * @param budget - Budget amount
- * @param spent - Amount spent
+ * @param budget - Budget amount as string
+ * @param spent - Amount spent as string
  * @returns True if exceeded, false otherwise
  */
-export function isBudgetExceeded(budget: number, spent: number): boolean {
+export function isBudgetExceeded(budget: string, spent: string): boolean {
   return calculateBudgetStatus(budget, spent) === 'exceeded';
 }

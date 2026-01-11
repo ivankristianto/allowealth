@@ -118,9 +118,12 @@ export const currencyFormats = {
 
 /**
  * Format currency amount
+ * @param amount - Amount as string or number (string preferred for decimal precision)
+ * @param currency - Currency code (IDR or USD)
+ * @param compact - Use compact notation for large numbers
  */
 export function formatCurrency(
-  amount: number,
+  amount: string | number,
   currency: keyof typeof currencyFormats = 'IDR',
   compact: boolean = false
 ): string {
@@ -132,12 +135,15 @@ export function formatCurrency(
     maximumFractionDigits: compact ? 0 : config.decimals,
   };
 
-  if (compact && amount >= 1_000_000) {
-    const millions = amount / 1_000_000;
+  // Convert string to number for Intl.NumberFormat
+  const numericAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
+
+  if (compact && numericAmount >= 1_000_000) {
+    const millions = numericAmount / 1_000_000;
     return `${config.symbol}${millions.toFixed(1)}M`;
   }
 
-  return new Intl.NumberFormat(config.locale, options).format(amount);
+  return new Intl.NumberFormat(config.locale, options).format(numericAmount);
 }
 
 /**
