@@ -2,6 +2,7 @@
 export * from './users';
 export * from './user-settings';
 export * from './sessions';
+export * from './password-reset-tokens';
 export * from './categories';
 export * from './payment-methods';
 export * from './transactions';
