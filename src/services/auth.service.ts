@@ -228,9 +228,7 @@ export async function login(
     // Create session using Lucia
     // Note: Lucia's createSession expects (userId, attributes)
     // The adapter should handle inserting the session into the database
-    console.log('[DEBUG] Creating session for user:', user.id);
     const session = await auth.createSession(user.id, {});
-    console.log('[DEBUG] Session created:', session.id);
 
     // Return user in Lucia format
     const luciaUser: User & { attributes: any } = {
