@@ -1,0 +1,338 @@
+---
+/**
+ * Budget Overview Table Component (Organism)
+ *
+ * Displays monthly budget table with:
+ * - Category name, percentage, budget amount, expenses, balance
+ * - Totals row with summary
+ * - Color-coded status indicators
+ * - Click category to view transactions
+ *
+ * @param {Array} categories - Array of budget category data
+ * @param {Object} summary - Budget summary totals
+ * @param {string} currency - Currency code (IDR or USD)
+ * @param {string} className - Additional CSS classes
+ */
+
+import { formatCurrency, formatPercentage, getBudgetStatusClass } from '@/lib/tokens';
+import Badge from '../atoms/Badge.astro';
+import Icon from '../atoms/Icon.astro';
+import EmptyState from '../atoms/EmptyState.astro';
+
+export interface BudgetCategory {
+  category_id: string;
+  category_name: string;
+  category_type: 'expense' | 'income';
+  percentage: string;
+  budget_amount: string;
+  spent_amount: string;
+  balance: string;
+  status: 'ok' | 'warning' | 'exceeded';
+  percentage_used: number;
+}
+
+export interface BudgetSummary {
+  total_budget: string;
+  total_spent: string;
+  total_balance: string;
+  categories_warning: number;
+  categories_exceeded: number;
+  categories: BudgetCategory[];
+}
+
+export interface Props {
+  summary: BudgetSummary;
+  currency?: 'IDR' | 'USD';
+  className?: string;
+}
+
+const { summary, currency = 'IDR', className = '' } = Astro.props;
+
+const {
+  categories,
+  total_budget,
+  total_spent,
+  total_balance,
+  categories_warning,
+  categories_exceeded,
+} = summary;
+
+// Calculate total percentage (may exceed 100%)
+const totalPercentage = categories.reduce((sum, cat) => sum + parseFloat(cat.percentage || '0'), 0);
+
+// Status helpers
+const getStatusColor = (status: string): string => {
+  switch (status) {
+    case 'ok':
+      return 'text-success';
+    case 'warning':
+      return 'text-warning';
+    case 'exceeded':
+      return 'text-error';
+    default:
+      return 'text-neutral';
+  }
+};
+
+const getStatusBadge = (status: string): 'success' | 'warning' | 'error' | 'neutral' => {
+  switch (status) {
+    case 'ok':
+      return 'success';
+    case 'warning':
+      return 'warning';
+    case 'exceeded':
+      return 'error';
+    default:
+      return 'neutral';
+  }
+};
+
+const getRowBackgroundClass = (status: string): string => {
+  switch (status) {
+    case 'exceeded':
+      return 'bg-error/5';
+    case 'warning':
+      return 'bg-warning/5';
+    default:
+      return '';
+  }
+};
+
+const getProgressClass = (percentage: number): string => {
+  if (percentage >= 100) return 'progress-error';
+  if (percentage >= 80) return 'progress-warning';
+  return 'progress-success';
+};
+---
+
+<div class={`space-y-6 ${className}`} data-budget-overview-table>
+  {/* Budget Overview Header */}
+  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div>
+      <h2 class="text-2xl font-bold">Budget Overview</h2>
+      <p class="text-neutral-600">Monthly budget breakdown and spending status</p>
+    </div>
+
+    {/* Budget Alert Summary */}
+    {
+      (categories_warning > 0 || categories_exceeded > 0) && (
+        <div class="flex items-center gap-2">
+          {categories_exceeded > 0 && (
+            <Badge variant="error" size="lg" className="gap-1">
+              <Icon name="warning" size="sm" />
+              {categories_exceeded} exceeded
+            </Badge>
+          )}
+          {categories_warning > 0 && (
+            <Badge variant="warning" size="lg" className="gap-1">
+              <Icon name="alert" size="sm" />
+              {categories_warning} warning
+            </Badge>
+          )}
+        </div>
+      )
+    }
+  </div>
+
+  {/* Budget Table - Desktop View */}
+  {
+    categories.length > 0 ? (
+      <div class="card bg-base-100 shadow border border-base-300 overflow-hidden">
+        <div class="card-body p-0">
+          {/* Table Header */}
+          <div class="hidden lg:grid grid-cols-12 gap-4 px-6 py-4 bg-base-200 text-sm font-semibold text-neutral-600">
+            <div class="col-span-1 text-center">#</div>
+            <div class="col-span-3">Category</div>
+            <div class="col-span-1 text-center">%</div>
+            <div class="col-span-2 text-right">Budget</div>
+            <div class="col-span-2 text-right">Expense</div>
+            <div class="col-span-2 text-right">Balance</div>
+            <div class="col-span-1" />
+          </div>
+
+          {/* Table Body */}
+          <div class="divide-y divide-base-200">
+            {categories.map((category, index) => {
+              const budgetAmount = parseFloat(category.budget_amount);
+              const spentAmount = parseFloat(category.spent_amount);
+              const balance = parseFloat(category.balance);
+              const percentageUsed = category.percentage_used;
+
+              return (
+                <div
+                  key={category.category_id}
+                  class={`grid grid-cols-1 lg:grid-cols-12 gap-2 lg:gap-4 px-4 lg:px-6 py-4 hover:bg-base-100/50 transition-colors ${getRowBackgroundClass(
+                    category.status
+                  )}`}
+                >
+                  {/* Mobile View - Card Layout */}
+                  <div class="lg:hidden col-span-full space-y-2">
+                    <div class="flex items-center justify-between">
+                      <div class="flex items-center gap-2">
+                        <span class="text-sm font-medium text-neutral-500">{index + 1}.</span>
+                        <span class="font-semibold">{category.category_name}</span>
+                      </div>
+                      <Badge variant={getStatusBadge(category.status)} size="sm">
+                        {formatPercentage(percentageUsed)}
+                      </Badge>
+                    </div>
+
+                    <div class="flex items-center justify-between text-sm">
+                      <span class="text-neutral-500">Budget:</span>
+                      <span class="font-medium">{formatCurrency(budgetAmount, currency)}</span>
+                    </div>
+
+                    <div class="flex items-center justify-between text-sm">
+                      <span class="text-neutral-500">Spent:</span>
+                      <span class="font-medium">{formatCurrency(spentAmount, currency)}</span>
+                    </div>
+
+                    <div class="flex items-center justify-between text-sm">
+                      <span class="text-neutral-500">Balance:</span>
+                      <span class={`font-medium ${getStatusColor(category.status)}`}>
+                        {balance >= 0 ? '+' : '-'}
+                        {formatCurrency(Math.abs(balance), currency)}
+                      </span>
+                    </div>
+
+                    {/* Progress Bar - Mobile */}
+                    <div class="pt-2">
+                      <div class="w-full bg-base-300 rounded-full h-2 overflow-hidden">
+                        <div
+                          class={`h-full ${getProgressClass(percentageUsed)} transition-all duration-300`}
+                          style={`width: ${Math.min(percentageUsed, 100)}%`}
+                          role="progressbar"
+                          aria-valuenow={percentageUsed}
+                          aria-valuemin={0}
+                          aria-valuemax={100}
+                          aria-label={`${category.category_name}: ${formatPercentage(percentageUsed)} used`}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Desktop View - Table Row */}
+                  <div class="hidden lg:block col-span-1 text-center text-neutral-500">
+                    {index + 1}
+                  </div>
+                  <div class="hidden lg:block col-span-3">
+                    <div class="flex items-center gap-2">
+                      <span class="font-medium">{category.category_name}</span>
+                      {category.status !== 'ok' && (
+                        <Badge variant={getStatusBadge(category.status)} size="sm">
+                          {formatPercentage(percentageUsed)}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                  <div class="hidden lg:block col-span-1 text-center">
+                    {formatPercentage(parseFloat(category.percentage || '0'))}
+                  </div>
+                  <div class="hidden lg:block col-span-2 text-right font-medium">
+                    {formatCurrency(budgetAmount, currency)}
+                  </div>
+                  <div class="hidden lg:block col-span-2 text-right">
+                    {formatCurrency(spentAmount, currency)}
+                  </div>
+                  <div class="hidden lg:block col-span-2 text-right">
+                    <span class={`font-semibold ${getStatusColor(category.status)}`}>
+                      {balance >= 0 ? '+' : '-'}
+                      {formatCurrency(Math.abs(balance), currency)}
+                    </span>
+                  </div>
+                  <div class="hidden lg:block col-span-1">
+                    <a
+                      href={`/transactions?category=${category.category_id}`}
+                      class="btn btn-ghost btn-xs btn-circle"
+                      title={`View ${category.category_name} transactions`}
+                    >
+                      <Icon name="chevron-up" size="sm" className="rotate-90" />
+                    </a>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Totals Row */}
+          <div class="mt-4 px-4 lg:px-6 py-4 bg-base-200 border-t-2 border-base-300">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-2 lg:gap-4 items-center">
+              {/* Mobile Totals */}
+              <div class="lg:hidden space-y-2">
+                <div class="flex items-center justify-between">
+                  <span class="font-bold">Total Allocation</span>
+                  <span
+                    class={`font-bold ${totalPercentage > 100 ? 'text-error' : 'text-success'}`}
+                  >
+                    {formatPercentage(totalPercentage)}
+                  </span>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span class="text-neutral-600">Total Budget:</span>
+                  <span class="font-semibold">
+                    {formatCurrency(parseFloat(total_budget), currency)}
+                  </span>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span class="text-neutral-600">Total Spent:</span>
+                  <span class="font-semibold">
+                    {formatCurrency(parseFloat(total_spent), currency)}
+                  </span>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span class="text-neutral-600">Total Balance:</span>
+                  <span
+                    class={`font-semibold ${parseFloat(total_balance) >= 0 ? 'text-success' : 'text-error'}`}
+                  >
+                    {parseFloat(total_balance) >= 0 ? '+' : '-'}
+                    {formatCurrency(Math.abs(parseFloat(total_balance)), currency)}
+                  </span>
+                </div>
+              </div>
+
+              {/* Desktop Totals */}
+              <div class="hidden lg:block col-span-1 text-center font-bold">Total</div>
+              <div class="hidden lg:block col-span-3">
+                <span class={`font-bold ${totalPercentage > 100 ? 'text-error' : 'text-success'}`}>
+                  {totalPercentage > 100 && (
+                    <Icon name="warning" size="sm" className="text-error inline mr-1" />
+                  )}
+                  {formatPercentage(totalPercentage)}
+                </span>
+                {totalPercentage > 100 && (
+                  <span class="text-xs text-error block">Over-allocated budget</span>
+                )}
+              </div>
+              <div class="hidden lg:block col-span-1 text-center font-bold">100%</div>
+              <div class="hidden lg:block col-span-2 text-right font-bold">
+                {formatCurrency(parseFloat(total_budget), currency)}
+              </div>
+              <div class="hidden lg:block col-span-2 text-right font-bold">
+                {formatCurrency(parseFloat(total_spent), currency)}
+              </div>
+              <div
+                class={`hidden lg:block col-span-2 text-right font-bold ${parseFloat(total_balance) >= 0 ? 'text-success' : 'text-error'}`}
+              >
+                {parseFloat(total_balance) >= 0 ? '+' : '-'}
+                {formatCurrency(Math.abs(parseFloat(total_balance)), currency)}
+              </div>
+              <div class="hidden lg:block col-span-1" />
+            </div>
+          </div>
+        </div>
+      </div>
+    ) : (
+      // Empty state
+      <div class="card bg-base-100 shadow border border-base-300">
+        <div class="card-body">
+          <EmptyState
+            title="No budget categories found"
+            description="Create categories and set budget amounts to track your spending."
+            actionLabel="Manage Categories"
+            actionUrl="/settings/categories"
+          />
+        </div>
+      </div>
+    )
+  }
+</div>

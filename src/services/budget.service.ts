@@ -1,5 +1,5 @@
 import { db, transactions, categories } from '@/db';
-import { eq, and, gte, lte, sql } from 'drizzle-orm';
+import { eq, and, gte, lte, sql, desc } from 'drizzle-orm';
 
 export interface BudgetOverview {
   category_id: string;
@@ -20,6 +20,19 @@ export interface BudgetSummary {
   categories_warning: number;
   categories_exceeded: number;
   categories: BudgetOverview[];
+}
+
+export interface MonthlyBudgetHistory {
+  month: number;
+  year: number;
+  month_name: string;
+  total_budget: string;
+  total_spent: string;
+  total_balance: string;
+  categories_count: number;
+  categories_exceeded: number;
+  categories_warning: number;
+  percentage_used: number;
 }
 
 export class BudgetService {
@@ -128,6 +141,70 @@ export class BudgetService {
       categories_exceeded: categoriesExceeded,
       categories: categoryOverviews,
     };
+  }
+
+  /**
+   * Get budget history for multiple months
+   */
+  async getBudgetHistory(
+    user_id: string,
+    currency: 'IDR' | 'USD',
+    months: number = 12
+  ): Promise<MonthlyBudgetHistory[]> {
+    // Validate months parameter
+    if (!Number.isInteger(months) || months < 1 || months > 24) {
+      throw new Error('Invalid months parameter (must be 1-24)');
+    }
+
+    const monthNames = [
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
+    ];
+
+    const now = new Date();
+    const history: MonthlyBudgetHistory[] = [];
+
+    // Get data for each of the last N months
+    for (let i = 0; i < months; i++) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const year = date.getFullYear();
+      const month = date.getMonth() + 1;
+
+      const overview = await this.getMonthlyOverview(user_id, year, month, currency);
+
+      const totalBudget = parseFloat(overview.total_budget);
+      const totalSpent = parseFloat(overview.total_spent);
+      const totalBalance = parseFloat(overview.total_balance);
+      const percentageUsed = totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0;
+
+      // Safely get month name with fallback
+      const monthName = monthNames[month - 1] ?? `Month ${month}`;
+
+      history.push({
+        month,
+        year,
+        month_name: monthName,
+        total_budget: overview.total_budget,
+        total_spent: overview.total_spent,
+        total_balance: overview.total_balance,
+        categories_count: overview.categories.length,
+        categories_exceeded: overview.categories_exceeded,
+        categories_warning: overview.categories_warning,
+        percentage_used: parseFloat(percentageUsed.toFixed(2)),
+      });
+    }
+
+    return history;
   }
 
   /**
