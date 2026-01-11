@@ -199,12 +199,12 @@ const filteredCategories = categories.filter((cat) => cat.type === formType);
 <script>
   // Update category options when transaction type changes
   const typeRadios = document.querySelectorAll('input[name="type"]');
-  const categorySelect = document.querySelector('select[name="category_id"]') as HTMLSelectElement;
+  const categorySelect = document.querySelector('select[name="category_id"]');
 
   typeRadios.forEach((radio) => {
     radio?.addEventListener('change', (e) => {
-      const target = e.target as HTMLInputElement;
-      const newType = target.value as 'expense' | 'income';
+      const target = e.target;
+      const newType = target.value;
 
       // Get all categories from the select options
       const allOptions = Array.from(categorySelect?.options || []).slice(1); // Skip first option

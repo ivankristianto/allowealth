@@ -108,15 +108,13 @@ const errorMessage = error && errorMessages[error] ? errorMessages[error] : '';
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       const form = document.querySelector('form');
-      const nameInput = document.getElementById('name') as HTMLInputElement;
-      const emailInput = document.getElementById('email') as HTMLInputElement;
-      const passwordInput = document.querySelector(
-        '[data-password-input][name="password"]'
-      ) as HTMLInputElement;
+      const nameInput = document.getElementById('name');
+      const emailInput = document.getElementById('email');
+      const passwordInput = document.querySelector('[data-password-input][name="password"]');
       const confirmPasswordInput = document.querySelector(
         '[data-password-input][name="confirm_password"]'
-      ) as HTMLInputElement;
-      const submitButton = document.querySelector('button[type="submit"]') as HTMLButtonElement;
+      );
+      const submitButton = document.querySelector('button[type="submit"]');
 
       if (!form || !passwordInput || !confirmPasswordInput || !emailInput || !nameInput) return;
 

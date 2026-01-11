@@ -121,7 +121,7 @@ type UserWithAttributes = User & {
 
 <script>
   // Handle logout functionality
-  const logoutButton = document.querySelector('[data-logout-button]') as HTMLButtonElement;
+  const logoutButton = document.querySelector('[data-logout-button]');
 
   if (logoutButton) {
     logoutButton.addEventListener('click', async () => {

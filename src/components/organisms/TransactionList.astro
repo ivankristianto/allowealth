@@ -190,7 +190,7 @@ const buildUrl = (newPage: number) => {
   // Add delete confirmation to delete buttons
   document.querySelectorAll('[data-delete-url]').forEach((button) => {
     button.addEventListener('click', (e) => {
-      const target = e.currentTarget as HTMLButtonElement;
+      const target = e.currentTarget;
       const url = target.getAttribute('data-delete-url');
       if (url) {
         if (

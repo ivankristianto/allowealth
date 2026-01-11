@@ -81,19 +81,17 @@ const { errorMessage = '', email = '', redirectTo = '' } = Astro.props;
 
 <script define:vars={{ redirectTo, apiLoginUrl: '/api/auth/login' }}>
   // HTML escaping utility to prevent XSS
-  const escapeHtml = (text: string): string => {
+  const escapeHtml = (text) => {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
   };
 
-  const form = document.getElementById('login-form') as HTMLFormElement;
+  const form = document.getElementById('login-form');
   const messagesContainer = document.getElementById('login-messages');
-  const emailInput = document.getElementById('email') as HTMLInputElement;
-  const passwordInput = document.querySelector(
-    '[data-password-input][name="password"]'
-  ) as HTMLInputElement;
-  const submitButton = document.querySelector('[data-login-submit-button]') as HTMLButtonElement;
+  const emailInput = document.getElementById('email');
+  const passwordInput = document.querySelector('[data-password-input][name="password"]');
+  const submitButton = document.querySelector('[data-login-submit-button]');
   const buttonText = submitButton?.querySelector('[data-button-text]');
   const loadingSpinner = submitButton?.querySelector('[data-loading-spinner]');
 
@@ -135,7 +133,7 @@ const { errorMessage = '', email = '', redirectTo = '' } = Astro.props;
       }
 
       // Client-side validation
-      const errors: string[] = [];
+      const errors = [];
 
       if (!emailInput.value || !emailInput.checkValidity()) {
         errors.push('Please enter a valid email address');

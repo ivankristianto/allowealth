@@ -257,7 +257,7 @@ const sortedAssets = [...assets].sort((a, b) => {
   // Handle update button clicks
   document.querySelectorAll('[data-update-asset]').forEach((button) => {
     button.addEventListener('click', (event) => {
-      const target = event.currentTarget as HTMLButtonElement;
+      const target = event.currentTarget;
       const assetId = target.getAttribute('data-asset-id');
       // TODO: Open modal to update asset
     });
@@ -266,7 +266,7 @@ const sortedAssets = [...assets].sort((a, b) => {
   // Handle dismiss button clicks
   document.querySelectorAll('[data-dismiss-reminder]').forEach((button) => {
     button.addEventListener('click', (event) => {
-      const target = event.currentTarget as HTMLButtonElement;
+      const target = event.currentTarget;
       const assetId = target.getAttribute('data-asset-id');
       // TODO: Dismiss/snooze reminder
     });
