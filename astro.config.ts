@@ -12,9 +12,10 @@ export default defineConfig({
     plugins: [tailwindcss()],
     resolve: {
       alias: {
+        '@': fileURLToPath(new URL('./src', import.meta.url)),
         '@lib': fileURLToPath(new URL('./src/lib', import.meta.url)),
         '@components': fileURLToPath(new URL('./src/components', import.meta.url)),
-        '@db': fileURLToPath(new URL('./db', import.meta.url)),
+        '@db': fileURLToPath(new URL('./src/db', import.meta.url)),
         '@styles': fileURLToPath(new URL('./src/styles', import.meta.url)),
         '@layouts': fileURLToPath(new URL('./src/layouts', import.meta.url)),
       },
