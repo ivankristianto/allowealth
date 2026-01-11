@@ -36,6 +36,11 @@ const adapter = new DrizzleSQLiteAdapter(db, schema.sessions as any, schema.user
 
 export const auth = new Lucia(adapter, {
   sessionCookie: {
+    // Explicitly set cookie name to match middleware's SESSION_COOKIE_NAME
+    // This ensures the cookie created during login is found by the middleware
+    // See: src/middleware.ts line 29
+    name: 'sid',
+
     // HTTP-only: prevents JavaScript access to the cookie (XSS protection)
     // Lucia automatically sets httpOnly=true for all session cookies - this cannot be disabled
     // See: https://lucia-auth.com/reference/main/lucia/#sessioncookie
