@@ -228,7 +228,9 @@ export async function login(
     // Create session using Lucia
     // Note: Lucia's createSession expects (userId, attributes)
     // The adapter should handle inserting the session into the database
+    console.log('[DEBUG] Creating session for user:', user.id);
     const session = await auth.createSession(user.id, {});
+    console.log('[DEBUG] Session created:', session.id);
 
     // Return user in Lucia format
     const luciaUser: User & { attributes: any } = {
@@ -250,7 +252,16 @@ export async function login(
     if (error instanceof AuthError) {
       throw error;
     }
-    throw new AuthError(AUTH_ERRORS.DATABASE_ERROR, 'Database operation failed');
+    console.error('[ERROR] Login database error:', error);
+    if (error instanceof Error) {
+      console.error('[ERROR] Message:', error.message);
+      console.error('[ERROR] Stack:', error.stack);
+      console.error('[ERROR] Cause:', (error as any).cause);
+    }
+    throw new AuthError(
+      AUTH_ERRORS.DATABASE_ERROR,
+      `Database operation failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+    );
   }
 }
 
