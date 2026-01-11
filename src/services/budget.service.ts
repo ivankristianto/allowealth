@@ -1,5 +1,14 @@
 import { db, transactions, categories } from '@/db';
 import { eq, and, gte, lte, sql, desc } from 'drizzle-orm';
+import {
+  decimalAdd,
+  decimalSubtract,
+  decimalDivide,
+  decimalMultiply,
+  decimalCompare,
+  decimalSum,
+  decimalIsZero,
+} from '@/lib/utils/decimal';
 
 export interface BudgetOverview {
   category_id: string;
@@ -89,15 +98,18 @@ export class BudgetService {
     // Create a map of spent amounts by category
     const spentByCategory = new Map<string, string>();
     for (const tx of monthTransactions) {
+      // @ts-ignore - SQL result has total property
       spentByCategory.set(tx.category_id, tx.total || '0');
     }
 
     // Calculate budget overview for each category
     const categoryOverviews: BudgetOverview[] = userCategories.map((category) => {
-      const budgetAmount = parseFloat(category.budget_amount);
-      const spentAmount = parseFloat(spentByCategory.get(category.id) || '0');
-      const balance = budgetAmount - spentAmount;
-      const percentageUsed = budgetAmount > 0 ? (spentAmount / budgetAmount) * 100 : 0;
+      const budgetAmount = category.budget_amount;
+      const spentAmount = spentByCategory.get(category.id) || '0';
+      const balance = decimalSubtract(budgetAmount, spentAmount);
+      const percentageUsed = !decimalIsZero(budgetAmount)
+        ? parseFloat(decimalDivide(decimalMultiply(spentAmount, 100), budgetAmount))
+        : 0;
 
       let status: 'ok' | 'warning' | 'exceeded' = 'ok';
       if (percentageUsed >= 100) {
@@ -111,32 +123,29 @@ export class BudgetService {
         category_name: category.name,
         category_type: category.type,
         percentage: category.percentage,
-        budget_amount: category.budget_amount,
-        spent_amount: spentAmount.toFixed(2),
-        balance: balance.toFixed(2),
+        budget_amount: budgetAmount,
+        spent_amount: spentAmount,
+        balance,
         status,
-        percentage_used: parseFloat(percentageUsed.toFixed(2)),
+        percentage_used: Math.round(percentageUsed * 100) / 100,
       };
     });
 
-    // Calculate totals
-    const totalBudget = categoryOverviews.reduce(
-      (sum, cat) => sum + parseFloat(cat.budget_amount),
-      0
-    );
-    const totalSpent = categoryOverviews.reduce(
-      (sum, cat) => sum + parseFloat(cat.spent_amount),
-      0
-    );
-    const totalBalance = totalBudget - totalSpent;
+    // Calculate totals using decimal arithmetic
+    const budgetAmounts = categoryOverviews.map((cat) => cat.budget_amount);
+    const spentAmounts = categoryOverviews.map((cat) => cat.spent_amount);
+
+    const totalBudget = decimalSum(budgetAmounts);
+    const totalSpent = decimalSum(spentAmounts);
+    const totalBalance = decimalSubtract(totalBudget, totalSpent);
 
     const categoriesWarning = categoryOverviews.filter((c) => c.status === 'warning').length;
     const categoriesExceeded = categoryOverviews.filter((c) => c.status === 'exceeded').length;
 
     return {
-      total_budget: totalBudget.toFixed(2),
-      total_spent: totalSpent.toFixed(2),
-      total_balance: totalBalance.toFixed(2),
+      total_budget: totalBudget,
+      total_spent: totalSpent,
+      total_balance: totalBalance,
       categories_warning: categoriesWarning,
       categories_exceeded: categoriesExceeded,
       categories: categoryOverviews,
@@ -182,10 +191,11 @@ export class BudgetService {
 
       const overview = await this.getMonthlyOverview(user_id, year, month, currency);
 
-      const totalBudget = parseFloat(overview.total_budget);
-      const totalSpent = parseFloat(overview.total_spent);
-      const totalBalance = parseFloat(overview.total_balance);
-      const percentageUsed = totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0;
+      const totalBudget = overview.total_budget;
+      const totalSpent = overview.total_spent;
+      const percentageUsed = !decimalIsZero(totalBudget)
+        ? parseFloat(decimalDivide(decimalMultiply(totalSpent, 100), totalBudget))
+        : 0;
 
       // Safely get month name with fallback
       const monthName = monthNames[month - 1] ?? `Month ${month}`;
@@ -194,13 +204,13 @@ export class BudgetService {
         month,
         year,
         month_name: monthName,
-        total_budget: overview.total_budget,
-        total_spent: overview.total_spent,
+        total_budget: totalBudget,
+        total_spent: totalSpent,
         total_balance: overview.total_balance,
         categories_count: overview.categories.length,
         categories_exceeded: overview.categories_exceeded,
         categories_warning: overview.categories_warning,
-        percentage_used: parseFloat(percentageUsed.toFixed(2)),
+        percentage_used: Math.round(percentageUsed * 100) / 100,
       });
     }
 
@@ -227,7 +237,10 @@ export class BudgetService {
         status: cat.status,
         budget_amount: cat.budget_amount,
         spent_amount: cat.spent_amount,
-        overage: cat.status === 'exceeded' ? Math.abs(parseFloat(cat.balance)).toFixed(2) : '0',
+        overage:
+          cat.status === 'exceeded' && decimalCompare(cat.balance, '0') < 0
+            ? decimalSubtract('0', cat.balance) // Get absolute value using decimal
+            : '0',
       }));
 
     return alerts;
@@ -265,17 +278,21 @@ export class BudgetService {
         )
       );
 
-    const budgetAmount = parseFloat(category.budget_amount);
-    const spentAmount = parseFloat(result?.total || '0');
-    const remaining = budgetAmount - spentAmount;
+    const budgetAmount = category.budget_amount;
+    // @ts-ignore - SQL result has total property
+    const spentAmount = result?.total || '0';
+    const remaining = decimalSubtract(budgetAmount, spentAmount);
+    const percentageUsed = !decimalIsZero(budgetAmount)
+      ? decimalDivide(decimalMultiply(spentAmount, 100), budgetAmount)
+      : '0';
 
     return {
       category_id: category.id,
       category_name: category.name,
-      budget_amount: category.budget_amount,
-      spent_amount: spentAmount.toFixed(2),
-      remaining: remaining.toFixed(2),
-      percentage_used: budgetAmount > 0 ? ((spentAmount / budgetAmount) * 100).toFixed(2) : '0',
+      budget_amount: budgetAmount,
+      spent_amount: spentAmount,
+      remaining,
+      percentage_used: percentageUsed,
     };
   }
 }

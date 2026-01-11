@@ -1,5 +1,6 @@
 import type { Currency } from '@/lib/enums';
-import { subtractCurrency, divideCurrency, multiplyCurrency, addCurrency } from './currency';
+import { subtractCurrency, multiplyCurrency, addCurrency } from './currency';
+import { decimalCompare, decimalIsZero, decimalDivide } from './decimal';
 
 /**
  * Budget status and calculation utilities
@@ -26,17 +27,13 @@ export function calculateBudgetStatus(
   budgetAmount: string,
   spentAmount: string
 ): BudgetStatusResult {
-  const budgetNum = parseFloat(budgetAmount) || 0;
-  const spentNum = parseFloat(spentAmount) || 0;
-
   const remaining = subtractCurrency(budgetAmount, spentAmount);
-  const remainingNum = parseFloat(remaining);
-
-  const percentageUsed =
-    budgetNum > 0 ? parseFloat(divideCurrency(multiplyCurrency(spentAmount, 100), budgetNum)) : 0;
+  const percentageUsed = !decimalIsZero(budgetAmount)
+    ? parseFloat(decimalDivide(multiplyCurrency(spentAmount, 100), budgetAmount))
+    : 0;
 
   let status: BudgetStatus;
-  if (remainingNum < 0) {
+  if (decimalCompare(remaining, '0') < 0) {
     status = 'exceeded';
   } else if (percentageUsed >= 80) {
     status = 'warning';
@@ -44,7 +41,11 @@ export function calculateBudgetStatus(
     status = 'ok';
   }
 
-  const overage = remainingNum < 0 ? Math.abs(remainingNum).toString() : '0';
+  // Calculate overage using decimal arithmetic if exceeded
+  const overage =
+    decimalCompare(remaining, '0') < 0
+      ? subtractCurrency('0', remaining) // Get absolute value
+      : '0';
 
   return {
     budget_amount: budgetAmount,
@@ -107,17 +108,19 @@ export function calculateTotalBudget(
   categories: Array<{ budget_amount: string; percentage: string }>
 ): BudgetTotal {
   let totalBudget = '0';
-  let totalPercentage = 0;
+  let totalPercentage = '0';
 
   for (const category of categories) {
     totalBudget = addCurrency(totalBudget, category.budget_amount);
-    totalPercentage += parseFloat(category.percentage) || 0;
+    totalPercentage = addCurrency(totalPercentage, category.percentage);
   }
+
+  const totalPercentageNum = parseFloat(totalPercentage);
 
   return {
     total_budget: totalBudget,
-    total_percentage: Math.round(totalPercentage),
-    is_over_allocated: totalPercentage > 100,
+    total_percentage: Math.round(totalPercentageNum),
+    is_over_allocated: totalPercentageNum > 100,
   };
 }
 
