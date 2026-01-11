@@ -53,9 +53,9 @@ const errorMessage = error && errorMessages[error] ? errorMessages[error] : '';
 <script define:vars={{ apiSignupUrl: '/api/auth/signup' }}>
   // This script enhances the RegistrationForm with actual API calls
   document.addEventListener('DOMContentLoaded', () => {
-    const form = document.querySelector('[data-registration-form]') as HTMLFormElement;
+    const form = document.querySelector('[data-registration-form]');
     const messagesContainer = document.getElementById('registration-messages');
-    const submitButton = form?.querySelector('[data-submit-button]') as HTMLButtonElement;
+    const submitButton = form?.querySelector('[data-submit-button]');
     const buttonText = submitButton?.querySelector('[data-button-text]');
     const loadingSpinner = submitButton?.querySelector('[data-loading-spinner]');
 
@@ -78,21 +78,21 @@ const errorMessage = error && errorMessages[error] ? errorMessages[error] : '';
       };
 
       // Client-side validation (keep existing validation)
-      const errors: string[] = [];
+      const errors = [];
 
       // Validate name
-      if (!data.name || (data.name as string).trim().length < 2) {
+      if (!data.name || data.name.trim().length < 2) {
         errors.push('Name must be at least 2 characters');
       }
 
       // Validate email format
-      const emailInput = document.getElementById('email') as HTMLInputElement;
+      const emailInput = document.getElementById('email');
       if (!data.email || !emailInput.checkValidity()) {
         errors.push('Please enter a valid email address');
       }
 
       // Validate password requirements
-      const password = data.password as string;
+      const password = data.password;
       const passwordErrors = [];
       if (password.length < 12) passwordErrors.push('at least 12 characters');
       if (!/[A-Z]/.test(password)) passwordErrors.push('one uppercase letter');
@@ -106,7 +106,7 @@ const errorMessage = error && errorMessages[error] ? errorMessages[error] : '';
       }
 
       // Validate password match
-      if (password !== (data['confirm-password'] as string)) {
+      if (password !== data['confirm-password']) {
         errors.push('Passwords do not match');
       }
 

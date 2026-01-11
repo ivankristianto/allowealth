@@ -68,7 +68,7 @@ const {
 
 <script>
   // Override cancel button to close modal instead of navigating
-  const modal = document.getElementById(Astro.props.id) as HTMLDialogElement;
+  const modal = document.getElementById(Astro.props.id);
   const cancelButton = modal?.querySelector('a[href="#"]');
 
   cancelButton?.addEventListener('click', (e) => {

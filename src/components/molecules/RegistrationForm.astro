@@ -166,15 +166,15 @@ const {
 
 <script>
   // HTML escaping utility to prevent XSS
-  const escapeHtml = (text: string): string => {
+  const escapeHtml = (text) => {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
   };
 
-  const form = document.querySelector('[data-registration-form]') as HTMLFormElement;
+  const form = document.querySelector('[data-registration-form]');
   const messagesContainer = document.getElementById('form-messages');
-  const submitButton = form?.querySelector('[data-submit-button]') as HTMLButtonElement;
+  const submitButton = form?.querySelector('[data-submit-button]');
   const buttonText = submitButton?.querySelector('[data-button-text]');
   const loadingSpinner = submitButton?.querySelector('[data-loading-spinner]');
 
@@ -184,7 +184,7 @@ const {
     toggleButtons.forEach((button) => {
       button.addEventListener('click', () => {
         const targetId = button.getAttribute('data-toggle-password');
-        const input = document.getElementById(targetId) as HTMLInputElement;
+        const input = document.getElementById(targetId);
         const eyeIcon = button.querySelector('[data-eye-icon]');
         const eyeOffIcon = button.querySelector('[data-eye-off-icon]');
 
@@ -219,21 +219,21 @@ const {
       const data = Object.fromEntries(formData.entries());
 
       // Client-side validation
-      const errors: string[] = [];
+      const errors = [];
 
       // Validate name
-      if (!data.name || (data.name as string).trim().length < 2) {
+      if (!data.name || data.name.trim().length < 2) {
         errors.push('Name must be at least 2 characters');
       }
 
       // Validate email format using HTML5 validation
-      const emailInput = document.getElementById('email') as HTMLInputElement;
+      const emailInput = document.getElementById('email');
       if (!data.email || !emailInput.checkValidity()) {
         errors.push('Please enter a valid email address');
       }
 
       // Validate password requirements
-      const password = data.password as string;
+      const password = data.password;
       const passwordErrors = [];
       if (password.length < 12) passwordErrors.push('at least 12 characters');
       if (!/[A-Z]/.test(password)) passwordErrors.push('one uppercase letter');
@@ -247,7 +247,7 @@ const {
       }
 
       // Validate password match
-      if (password !== (data['confirm-password'] as string)) {
+      if (password !== data['confirm-password']) {
         errors.push('Passwords do not match');
       }
 
