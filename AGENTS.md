@@ -109,10 +109,13 @@ import { formatCurrency, colors, fontSizes } from '@/lib/tokens';
 **Before committing ANY code**, you MUST run:
 
 ```bash
+grep -r "bun:" src/ --exclude-dir=node_modules || echo "No bun: imports found"
 bun run typecheck     # TypeScript type checking
 bun run lint          # ESLint check
 bun run format:fix    # Prettier auto-format
 ```
+
+**CRITICAL:** If `bun:` imports are found in files that are imported by middleware (src/middleware.ts), the code MUST be refactored. Astro middleware runs in Node.js and cannot load Bun-specific APIs.
 
 ## Working on This Project
 
