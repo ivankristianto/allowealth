@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { paymentMethodService } from '@/services';
 import { successResponse, errorResponse, validateBody, requireAuth } from '@/lib/api-utils';
 import { updatePaymentMethodAPISchema } from '@/lib/validation';
+import { logError } from '@/lib/utils';
 
 /**
  * GET /api/payment-methods/:id
@@ -27,7 +28,7 @@ export const GET: APIRoute = async ({ params, request, url }) => {
     if (error instanceof Error && error.message === 'Unauthorized') {
       return errorResponse('Unauthorized', 401);
     }
-    console.error('Error fetching payment method:', error);
+    logError('Error fetching payment method', error);
     return errorResponse('Failed to fetch payment method', 500);
   }
 };
@@ -62,7 +63,7 @@ export const PUT: APIRoute = async ({ params, request, url }) => {
     if (error instanceof Error && error.message === 'Unauthorized') {
       return errorResponse('Unauthorized', 401);
     }
-    console.error('Error updating payment method:', error);
+    logError('Error updating payment method', error);
     return errorResponse('Failed to update payment method', 500);
   }
 };
@@ -87,7 +88,7 @@ export const DELETE: APIRoute = async ({ params, request, url }) => {
     if (error instanceof Error && error.message === 'Unauthorized') {
       return errorResponse('Unauthorized', 401);
     }
-    console.error('Error deleting payment method:', error);
+    logError('Error deleting payment method', error);
     return errorResponse('Failed to delete payment method', 500);
   }
 };

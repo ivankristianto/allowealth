@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { transactionService } from '@/services';
 import type { CSVRow } from '@/services/transaction.service';
 import { successResponse, errorResponse, requireAuth } from '@/lib/api-utils';
+import { logError } from '@/lib/utils';
 
 /**
  * POST /api/transactions/import
@@ -71,7 +72,7 @@ export const POST: APIRoute = async ({ request, url }) => {
     if (error instanceof Error && error.message === 'Unauthorized') {
       return errorResponse('Unauthorized', 401);
     }
-    console.error('Error importing transactions:', error);
+    logError('Error importing transactions', error);
     return errorResponse('Failed to import transactions', 500);
   }
 };

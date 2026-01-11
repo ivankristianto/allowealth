@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { z } from 'zod';
 import { assetService } from '@/services';
 import { successResponse, errorResponse, validateBody, requireAuth } from '@/lib/api-utils';
+import { logError } from '@/lib/utils';
 
 // Validation schema
 const updateBalanceSchema = z.object({
@@ -39,7 +40,7 @@ export const POST: APIRoute = async ({ params, request, url }) => {
     if (error instanceof Error && error.message === 'Unauthorized') {
       return errorResponse('Unauthorized', 401);
     }
-    console.error('Error updating asset balance:', error);
+    logError('Error updating asset balance', error);
     return errorResponse('Failed to update asset balance', 500);
   }
 };

@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { z } from 'zod';
 import { assetService } from '@/services';
 import { successResponse, errorResponse, validateBody, requireAuth } from '@/lib/api-utils';
+import { logError } from '@/lib/utils';
 
 // Validation schemas
 const createAssetSchema = z.object({
@@ -40,7 +41,7 @@ export const GET: APIRoute = async ({ request, url }) => {
     if (error instanceof Error && error.message === 'Unauthorized') {
       return errorResponse('Unauthorized', 401);
     }
-    console.error('Error fetching assets:', error);
+    logError('Error fetching assets', error);
     return errorResponse('Failed to fetch assets', 500);
   }
 };
@@ -72,7 +73,7 @@ export const POST: APIRoute = async ({ request, url }) => {
     if (error instanceof Error && error.message === 'Unauthorized') {
       return errorResponse('Unauthorized', 401);
     }
-    console.error('Error creating asset:', error);
+    logError('Error creating asset', error);
     return errorResponse('Failed to create asset', 500);
   }
 };

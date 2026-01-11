@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { budgetService } from '@/services';
 import { successResponse, errorResponse, requireAuth } from '@/lib/api-utils';
+import { logError } from '@/lib/utils';
 
 /**
  * GET /api/budget/category/:id/remaining
@@ -25,7 +26,7 @@ export const GET: APIRoute = async ({ params, request, url }) => {
     if (error instanceof Error && error.message === 'Category not found') {
       return errorResponse('Category not found', 404);
     }
-    console.error('Error fetching category remaining budget:', error);
+    logError('Error fetching category remaining budget', error);
     return errorResponse('Failed to fetch category remaining budget', 500);
   }
 };

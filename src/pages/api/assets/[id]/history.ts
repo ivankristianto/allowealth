@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { assetService } from '@/services';
 import { successResponse, errorResponse, requireAuth } from '@/lib/api-utils';
+import { logError } from '@/lib/utils';
 
 /**
  * GET /api/assets/:id/history
@@ -25,7 +26,7 @@ export const GET: APIRoute = async ({ params, request, url }) => {
     if (error instanceof Error && error.message === 'Asset not found') {
       return errorResponse('Asset not found', 404);
     }
-    console.error('Error fetching asset history:', error);
+    logError('Error fetching asset history', error);
     return errorResponse('Failed to fetch asset history', 500);
   }
 };

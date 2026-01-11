@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { transactionService } from '@/services';
 import { successResponse, errorResponse, requireAuth, isValidDate } from '@/lib/api-utils';
+import { logError } from '@/lib/utils';
 
 /**
  * GET /api/transactions/export
@@ -77,7 +78,7 @@ export const GET: APIRoute = async ({ request, url }) => {
     if (error instanceof Error && error.message === 'Unauthorized') {
       return errorResponse('Unauthorized', 401);
     }
-    console.error('Error exporting transactions:', error);
+    logError('Error exporting transactions', error);
     return errorResponse('Failed to export transactions', 500);
   }
 };

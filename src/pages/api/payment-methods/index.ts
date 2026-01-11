@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { paymentMethodService } from '@/services';
 import { successResponse, errorResponse, validateBody, requireAuth } from '@/lib/api-utils';
 import { createPaymentMethodAPISchema } from '@/lib/validation';
+import { logError } from '@/lib/utils';
 
 /**
  * GET /api/payment-methods
@@ -25,7 +26,7 @@ export const GET: APIRoute = async ({ request, url }) => {
     if (error instanceof Error && error.message === 'Unauthorized') {
       return errorResponse('Unauthorized', 401);
     }
-    console.error('Error fetching payment methods:', error);
+    logError('Error fetching payment methods', error);
     return errorResponse('Failed to fetch payment methods', 500);
   }
 };
@@ -55,7 +56,7 @@ export const POST: APIRoute = async ({ request, url }) => {
     if (error instanceof Error && error.message === 'Unauthorized') {
       return errorResponse('Unauthorized', 401);
     }
-    console.error('Error creating payment method:', error);
+    logError('Error creating payment method', error);
     return errorResponse('Failed to create payment method', 500);
   }
 };

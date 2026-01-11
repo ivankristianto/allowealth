@@ -10,6 +10,7 @@
 import type { MiddlewareHandler } from 'astro';
 import { auth } from './lib/auth/lucia';
 import type { User, Session } from 'lucia';
+import { logError } from './lib/utils/error-logger';
 
 /**
  * Extend Astro.locals to include user and session
@@ -118,7 +119,7 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
     return response;
   } catch (error) {
     // Session validation failed - clear user data
-    console.error('Session validation error:', error);
+    logError('Session validation error', error);
     (context.locals as any).user = null;
     (context.locals as any).session = null;
     return next();

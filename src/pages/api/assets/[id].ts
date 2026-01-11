@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { z } from 'zod';
 import { assetService } from '@/services';
 import { successResponse, errorResponse, validateBody, requireAuth } from '@/lib/api-utils';
+import { logError } from '@/lib/utils';
 
 // Validation schemas
 const updateAssetSchema = z.object({
@@ -34,7 +35,7 @@ export const GET: APIRoute = async ({ params, request, url }) => {
     if (error instanceof Error && error.message === 'Unauthorized') {
       return errorResponse('Unauthorized', 401);
     }
-    console.error('Error fetching asset:', error);
+    logError('Error fetching asset', error);
     return errorResponse('Failed to fetch asset', 500);
   }
 };
@@ -69,7 +70,7 @@ export const PUT: APIRoute = async ({ params, request, url }) => {
     if (error instanceof Error && error.message === 'Unauthorized') {
       return errorResponse('Unauthorized', 401);
     }
-    console.error('Error updating asset:', error);
+    logError('Error updating asset', error);
     return errorResponse('Failed to update asset', 500);
   }
 };
@@ -94,7 +95,7 @@ export const DELETE: APIRoute = async ({ params, request, url }) => {
     if (error instanceof Error && error.message === 'Unauthorized') {
       return errorResponse('Unauthorized', 401);
     }
-    console.error('Error deleting asset:', error);
+    logError('Error deleting asset', error);
     return errorResponse('Failed to delete asset', 500);
   }
 };
