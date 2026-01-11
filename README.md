@@ -41,12 +41,34 @@ The seeder creates realistic sample data for testing:
 ### Seed Commands
 
 ```bash
-# Seed database (keeps existing data)
+# Seed database with full demo data (keeps existing data)
 bun run db:seed
 
-# Reset database (deletes .dev.db, migrates, and seeds)
+# Seed database with dashboard test data (lightweight, focused on dashboard)
+bun run db:seed:dashboard
+
+# Reset database with full demo data
 bun run db:reset
+
+# Reset database with dashboard test data
+bun run db:reset:dashboard
 ```
+
+### Dashboard Test User
+
+For dashboard testing, you can use the dashboard seeder which creates:
+
+- **Email:** `test@example.com`
+- **Password:** `Test12345678!`
+
+The dashboard seeder creates focused test data:
+
+- **1 User** with default settings
+- **11 Categories** (3 income, 8 expense types)
+- **3 Payment Methods** (Cash, Bank Transfer, Credit Card)
+- **200+ Transactions** spanning 90 days
+- **6 Assets** with varied update dates (to test priority logic)
+- **90 Exchange Rate entries** (IDR/USD)
 
 ### Troubleshooting
 
