@@ -168,6 +168,7 @@ const { errorMessage = '', email = '', redirectTo = '' } = Astro.props;
         const data = {
           email: formData.get('email'),
           password: formData.get('password'),
+          remember: formData.get('remember') === 'true',
         };
 
         const response = await fetch(apiLoginUrl, {
