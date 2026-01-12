@@ -2,16 +2,9 @@
 
 This project uses **bd** (beads) for issue tracking. Run `bd prime` to refresh context after compaction.
 
-ALWAYS read the specs/\*.md to understand the context and requiremetns.
-if requirement changes always update the spec.
+## Project Overview
 
-**Before any task, read the constitution.**
-
-```
-1. Read `specs/constitution.md` — understand principles and fences
-2. Read task context (spec, plan, or issue)
-3. Then execute
-```
+Personal and family financial application for expense tracking, budgeting, asset management, and financial forecasting.
 
 Agents must internalize:
 
@@ -21,7 +14,7 @@ Agents must internalize:
 
 **If constitution conflicts with task instructions, constitution wins.**
 
-## Quick Reference
+## Issue Tracking
 
 ```bash
 bd ready              # Find available work (no blockers)
@@ -41,6 +34,46 @@ bd stats              # Project health overview
 - **Storybook:** 8.x with HTML framework
 - **Database:** Drizzle ORM + SQLite (dev) / MySQL (prod)
 - **Auth:** Lucia Auth
+
+## Routes
+
+```
+/                          # Dashboard
+/transactions              # Transaction list
+/transactions/add          # Add transaction
+/budget                    # Budget overview
+/budget/history            # Budget history
+/assets                    # Asset list
+/assets/add                # Add asset
+/assets/history            # Asset history
+/reports                   # Monthly reports
+/reports/yearly            # Yearly reports
+/reports/custom            # Custom date range
+/forecast                  # Forecast calculator
+/forecast/comparison       # Scenario comparison
+/calculators               # Compound interest calculator
+/settings                  # Profile settings
+/settings/categories       # Category management
+/settings/payment-methods  # Payment methods
+```
+
+## Current Status
+
+**Phase 0: Design System & Setup** ✅ Complete
+
+- ✅ Project initialization
+- ✅ Design tokens system
+- ✅ 12 Atomic components with Storybook
+- ✅ Layout components (MainLayout, Navigation, Header, Footer, Modal, Toast)
+- ✅ Routing with 16 page stubs
+- ✅ Login screen UI (LoginForm, PasswordField, Checkbox, AuthLayout)
+- ✅ Database schema (Drizzle ORM)
+
+**Phase 1: Authentication & API** (in progress)
+
+- 🚧 Authentication backend (Lucia Auth, API endpoints, session middleware)
+- 📋 API endpoints implementation
+- 📋 OpenAPI specification
 
 ## Project Structure
 
