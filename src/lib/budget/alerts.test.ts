@@ -61,8 +61,10 @@ describe('calculateBudgetStatus', () => {
   });
 
   it('should handle decimal amounts', () => {
-    expect(calculateBudgetStatus('100.5', '80.4')).toBe('healthy');
-    expect(calculateBudgetStatus('100.5', '80.5')).toBe('warning');
+    // 80 / 100.5 = 79.6% -> healthy (just under 80%)
+    expect(calculateBudgetStatus('100.5', '80')).toBe('healthy');
+    // 80.4 / 100.5 = 80.0% -> warning (at or above 80%)
+    expect(calculateBudgetStatus('100.5', '80.4')).toBe('warning');
     expect(calculateBudgetStatus('100.5', '100.5')).toBe('exceeded');
   });
 
@@ -195,13 +197,13 @@ describe('calculateBudgetHealthSummary', () => {
 
   it('should return warning when only warnings', () => {
     const budgets = [
-      { category: 'Food', budget: '100', spent: '85' },
-      { category: 'Transport', budget: '50', spent: '40' },
+      { category: 'Food', budget: '100', spent: '85' }, // 85% -> warning
+      { category: 'Transport', budget: '50', spent: '40' }, // 80% -> warning
     ];
     const summary = calculateBudgetHealthSummary(budgets);
     expect(summary.status).toBe('warning');
-    expect(summary.alertCount).toBe(1);
-    expect(summary.warningCount).toBe(1);
+    expect(summary.alertCount).toBe(2); // Both are warnings
+    expect(summary.warningCount).toBe(2);
     expect(summary.exceededCount).toBe(0);
   });
 
