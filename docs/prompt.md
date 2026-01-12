@@ -18,11 +18,12 @@ Parse the json to get the <ticket-id>.
 }
 ```
 
-Do this step by step:
+Follow these steps:
 
-- Get the ticket description: `bd show <ticket-id>`, summarize it.
-- Run `/k2:planner <ticket-id>` to add the technical implementation
+1. Run `/k2:start <ticket-id> --skip-worktree`
+2. Send the summary with this bash command `tt -m "<summary>"`, ensure the summary is properly escaped.
 
 IMPORTANT:
 
 - Measure the total time of execution and amount of token. Output it.
+- Display the Summary and send the notif with tt command.
