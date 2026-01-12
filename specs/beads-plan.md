@@ -1,13 +1,14 @@
 # Personal Finance Manager - Beads Issue Tracking Plan
 
-**Created:** January 3, 2026
+**Updated:** January 12, 2026
 **Based on:** requirements-specification.md & execution-plan.md
+**Current Phase:** Phase 1 (Authentication & Dashboard) - 80% Complete
 
 ---
 
 ## Overview
 
-This plan organizes all work into beads issues with proper dependencies and priorities. The structure follows the execution plan's 5 phases over 12 weeks.
+This plan organizes all remaining work into beads issues with proper dependencies and priorities. The structure reflects actual progress made and what remains to complete the MVP.
 
 ### Priority Levels (Beads Format)
 
@@ -26,376 +27,515 @@ This plan organizes all work into beads issues with proper dependencies and prio
 
 ---
 
-## Phase 0: Design System & Setup (Week 1-2)
+## Current Status Summary
 
-### Epic: Foundation Setup
-
-**Type:** epic | **Priority:** P0 | **ID:** EPH-001
-
-#### Tasks (in order):
-
-1. **Design Tokens & Color System**
-   - Define color palette (DaisyUI theme)
-   - Typography scale, spacing, shadows
-   - Design tokens file
-
-2. **Core Atomic Components (Storybook)**
-   - Button, Input, Label, Badge, Card
-   - Loading spinner, Icons
-   - Currency, Percentage, Date display components
-
-3. **Project Initialization**
-   - Bun + Astro project setup
-   - Tailwind v4 + DaisyUI configuration
-   - Storybook 8 setup
-   - ESLint + Prettier + TypeScript
-
-4. **Layout Components**
-   - Main layout, Navigation (sidebar + mobile)
-   - Header, Footer, Modal, Toast notifications
-
-5. **Routing & Navigation**
-   - Astro routing setup
-   - Page stubs for all routes
-   - Navigation state management
+| Phase | Status | Completion |
+|-------|--------|------------|
+| **Phase 0: Design System & Setup** | ✅ Complete | 100% |
+| **Phase 1: Authentication & Dashboard** | 🚧 In Progress | 80% |
+| **Phase 2: Transactions & Budget** | 🚧 Started | 20% |
+| **Phase 3: Assets & Multi-Currency** | 🚧 Started | 20% |
+| **Phase 4: Analytics & Reports** | ❌ Not Started | 5% |
+| **Phase 5: Calculators & Polish** | ❌ Not Started | 0% |
 
 ---
 
-## Phase 1: Authentication & Dashboard (Week 3-4)
+## Phase 1: Authentication & Dashboard (IN PROGRESS)
 
-### Epic: Authentication System
+### ✅ Completed (No Action Needed)
+- Database schema (users, sessions, password-reset-tokens)
+- Authentication UI (LoginForm, RegistrationForm, ForgotPasswordForm)
+- Auth service (register, login, logout, forgot-password)
+- Lucia Auth integration with Argon2id
+- Session middleware and protected routes
+- Dashboard UI components (SummaryCards, AssetUpdateTodoList, RecentTransactionsList)
+- Dashboard page with auth protection
 
-**Type:** epic | **Priority:** P0 | **ID:** EPH-002
+### 🚧 Remaining Work
 
-#### Features:
+#### 1. Dashboard Service Implementation → [P0] **BLOCKING**
 
-1. **Auth UI Components** → [depends on: EPH-001]
-   - Login form (Storybook)
-   - Registration form (Storybook)
-   - Password input with show/hide
-   - Form validation messages
+**ID:** expenses-dash-service
+**Type:** task | **Priority:** P0
 
-2. **Database & Auth Setup** → [depends on: Auth UI Components]
-   - Drizzle ORM setup
-   - Users/Sessions schema
-   - SQLite dev environment
-   - Lucia Auth integration
-   - Argon2id password hashing
+**Tasks:**
+- Implement `dashboardService.getDashboardData(userId)` with:
+  - Total assets calculation (by currency + converted)
+  - This month's total spending
+  - Budget health alerts count
+  - Recent transactions (last 5)
+  - Asset update todo list
+- Write unit tests for calculations
+- Add mock data generator for development
 
-3. **Authentication Service** → [depends on: Database & Auth Setup]
-   - Register, Login, Logout services
-   - Session management
-   - Auth middleware
-
-### Epic: Dashboard Homepage
-
-**Type:** epic | **Priority:** P1 | **ID:** EPH-003
-
-#### Features:
-
-1. **Dashboard UI Components** → [depends on: EPH-001]
-   - Summary cards (total assets, monthly spent)
-   - Asset update todo list
-   - Recent transactions list
-   - Quick action buttons
-   - Budget health widget
-
-2. **Dashboard Data Layer** → [depends on: Dashboard UI Components]
-   - Dashboard service
-   - Aggregate queries
-   - Mock data generators
-
-3. **Dashboard Integration** → [depends on: Dashboard Data Layer, EPH-002]
-   - Connect to real data
-   - Loading/error states
-   - User testing
+**Dependencies:** None
 
 ---
 
-## Phase 2: Transactions & Budget (Week 5-6)
+#### 2. Quality Gates Setup → [P1] **IN PROGRESS**
 
-### Epic: Transaction Management
+**ID:** expenses-quality-gates
+**Type:** task | **Priority:** P1
 
-**Type:** epic | **Priority:** P0 | **ID:** EPH-004
+**Current Beads:**
+- expenses-d1e (P1) - Implement Astro type checking
+- expenses-57u (P0) - Fix test infrastructure - dependency injection
+- expenses-7n5 (P1) - ESLint 100% pass
+- expenses-c5t (P1) - Prettier 100% pass
+- expenses-3zz (P1) - Test suite 100% pass
+- expenses-786 (P1) - GitHub Actions for quality gates
 
-#### Features:
-
-1. **Transaction UI Components** → [depends on: EPH-001]
-   - Transaction form (Storybook)
-   - Transaction list item
-   - Filter & pagination components
-   - CSV upload component
-
-2. **Transaction Data Layer** → [depends on: EPH-002]
-   - Categories schema
-   - Payment methods schema
-   - Transactions schema
-   - CRUD service methods
-
-3. **Transaction Features** → [depends on: Transaction Data Layer]
-   - Category management page
-   - Payment method management page
-   - Add transaction page/modal
-   - Transaction list with filters
-   - Edit/delete functionality
-   - CSV import
-
-### Epic: Budget Management
-
-**Type:** epic | **Priority:** P0 | **ID:** EPH-005
-
-#### Features:
-
-1. **Budget Table UI** → [depends on: EPH-001]
-   - Budget overview table (replicate screenshot)
-   - Color-coded rows (green/yellow/red)
-   - Alert badges
-   - Responsive design
-
-2. **Budget Logic** → [depends on: EPH-004]
-   - Budget calculation service
-   - Alert detection (80%, 100% thresholds)
-   - Aggregation queries
-
-3. **Budget Pages** → [depends on: Budget Logic]
-   - Budget overview page
-   - Edit category budgets
-   - Budget alert notifications
-   - Historical budget view
+**Tasks:**
+- Fix TypeScript errors in test files
+- Implement dependency injection for tests
+- Configure CI pipeline
+- Ensure all quality gates pass before commits
 
 ---
 
-## Phase 3: Assets & Multi-Currency (Week 7-8)
+## Phase 2: Transactions & Budget (20% Complete)
 
-### Epic: Asset Management
+### ✅ Completed
+- Database schema (categories, payment-methods, transactions)
+- Transaction form UI component (TransactionForm)
+- Transaction list item component
+- API endpoint stubs
 
-**Type:** epic | **Priority:** P1 | **ID:** EPH-006
+### 🚧 Remaining Work
 
-#### Features:
+#### 3. Transaction Service Implementation → [P0] **BLOCKING**
 
-1. **Asset UI Components** → [depends on: EPH-001]
-   - Asset card component
-   - Asset form & update modal
-   - Asset list with grouping (type, currency)
-   - Priority indicators (red/yellow/green)
+**ID:** expenses-txn-service
+**Type:** feature | **Priority:** P0
+**Depends on:** expenses-quality-gates
 
-2. **Asset Data Layer** → [depends on: EPH-002]
-   - Assets schema
-   - Asset history schema
-   - Update reminders schema
-   - CRUD service methods
-
-3. **Asset Features** → [depends on: Asset Data Layer]
-   - Asset list page (grouped views)
-   - Add/edit asset functionality
-   - Update balance with history
-   - Asset history view (chart + table)
-   - Update todo list widget
-
-### Epic: Multi-Currency Support
-
-**Type:** epic | **Priority:** P1 | **ID:** EPH-007
-
-#### Features:
-
-1. **Currency UI Components** → [depends on: EPH-001]
-   - Multi-currency display
-   - Exchange rate form
-   - Currency conversion widget
-   - Currency selector
-
-2. **Currency Data Layer** → [depends on: EPH-002]
-   - Exchange rates schema
-   - User settings schema
-   - Currency conversion service
-
-3. **Currency Features** → [depends on: Currency Data Layer, EPH-006]
-   - Exchange rate management page
-   - Primary currency setting
-   - Dashboard multi-currency totals
-   - Currency display preferences
+**Tasks:**
+- Implement transaction CRUD operations:
+  - `createTransaction(userId, data)` - with validation
+  - `getTransactions(userId, filters)` - with pagination
+  - `getTransactionById(id, userId)`
+  - `updateTransaction(id, userId, data)`
+  - `deleteTransaction(id, userId)` - soft delete
+- Budget recalculation after transaction
+- CSV import validation and processing
+- Unit tests for all operations
 
 ---
 
-## Phase 4: Analytics & Reports (Week 9-10)
+#### 4. Transaction List Page → [P0]
 
-### Epic: Charts & Visualizations
+**ID:** expenses-txn-list
+**Type:** feature | **Priority:** P0
+**Depends on:** expenses-txn-service
 
-**Type:** epic | **Priority:** P2 | **ID:** EPH-008
-
-#### Features:
-
-1. **Chart Components** → [depends on: EPH-001]
-   - Pie chart (expenses by category)
-   - Bar chart (monthly comparison)
-   - Line chart (trends)
-   - Chart legend & tooltip
-   - Responsive chart wrapper
-
-2. **Reporting Service** → [depends on: EPH-004, EPH-005]
-   - Monthly overview queries
-   - Yearly overview queries
-   - Category breakdown
-   - Asset distribution
-   - Date range filtering
-
-3. **Reports Pages** → [depends on: Chart Components, Reporting Service]
-   - Monthly overview page
-   - Yearly overview page
-   - Custom date range report
-   - Category drill-down
-
-### Epic: Financial Forecast
-
-**Type:** epic | **Priority:** P2 | **ID:** EPH-009
-
-#### Features:
-
-1. **Forecast UI Components** → [depends on: EPH-001]
-   - Forecast calculator form
-   - Forecast table component
-   - Projected vs actual comparison
-   - Variance visualization
-
-2. **Forecast Data Layer** → [depends on: EPH-006]
-   - Asset snapshots schema
-   - Snapshot items schema
-   - Forecast calculation service
-
-3. **Forecast Features** → [depends on: Forecast Data Layer]
-   - Savings forecast calculator page
-   - Monthly snapshot entry
-   - Projected vs actual comparison
-   - Variance analysis
+**Tasks:**
+- Implement transaction list with filters:
+  - Date range picker
+  - Category filter
+  - Payment method filter
+  - Type filter (income/expense)
+  - Search by description
+- Pagination (50 per page)
+- Click to edit/delete
+- Export to CSV
 
 ---
 
-## Phase 5: Calculators & Polish (Week 11-12)
+#### 5. Category & Payment Method Management → [P1]
 
-### Epic: Calculators
+**ID:** expenses-categories
+**Type:** feature | **Priority:** P1
+**Depends on:** expenses-quality-gates
 
-**Type:** epic | **Priority:** P3 | **ID:** EPH-010
-
-#### Features:
-
-1. **Compound Interest Calculator** → [depends on: EPH-001]
-   - Calculator UI component
-   - Calculation service & tests
-   - Year-by-year breakdown
-   - Calculator page
-
-### Epic: Polish & Testing
-
-**Type:** epic | **Priority:** P0 | **ID:** EPH-011
-
-#### Features:
-
-1. **UI/UX Refinement** → [depends on: All previous epics]
-   - Consistency review
-   - Loading states & skeleton screens
-   - Error messages improvement
-   - WCAG 2.1 accessibility audit
-   - Mobile responsive testing
-
-2. **Performance Optimization** → [depends on: All previous epics]
-   - Database query optimization
-   - Component lazy loading
-   - Image optimization
-   - Code splitting
-
-3. **Testing & Documentation** → [depends on: All previous epics]
-   - Unit test coverage (80%+)
-   - Integration testing
-   - User documentation
-   - Admin documentation
-
-4. **Deployment** → [depends on: All previous epics]
-   - Production environment setup
-   - MySQL database setup
-   - SSL configuration
-   - Backup procedures
-   - Monitoring setup
+**Tasks:**
+- Category management page:
+  - List all categories
+  - Add/edit/delete categories
+  - Set budget percentage or amount
+  - Mark as active/inactive
+- Payment method management page:
+  - List all payment methods
+  - Add/edit/delete payment methods
+  - Set as default
+  - Mark as active/inactive
 
 ---
 
-## Issue Creation Commands
+#### 6. Budget Overview Table → [P0] **HIGH PRIORITY**
 
-### Epics (Phase Level)
+**ID:** expenses-budget-table
+**Type:** feature | **Priority:** P0
+**Depends on:** expenses-categories
 
-```bash
-bd create --title="Phase 0: Design System & Setup" --type=epic --priority=0
-bd create --title="Phase 1: Authentication & Dashboard" --type=epic --priority=0
-bd create --title="Phase 2: Transactions & Budget" --type=epic --priority=0
-bd create --title="Phase 3: Assets & Multi-Currency" --type=epic --priority=1
-bd create --title="Phase 4: Analytics & Reports" --type=epic --priority=2
-bd create --title="Phase 5: Calculators & Polish" --type=epic --priority=0
-```
+**Tasks:**
+- Budget calculation service:
+  - Budget vs actual spending per category
+  - Balance calculation
+  - Alert detection (80% warning, 100% exceeded)
+- Budget overview page (replicate screenshot):
+  - Table with No, Category, %, Budget, Expense, Balance
+  - Color-coded rows (green/yellow/red)
+  - Alert badges
+  - Responsive design (cards on mobile)
+- Historical budget view
 
-### Features (Key Examples)
+---
 
-```bash
-# Phase 0
-bd create --title="Design Tokens & Color System" --type=task --priority=0
-bd create --title="Core Atomic Components in Storybook" --type=task --priority=0
-bd create --title="Project Initialization (Bun + Astro)" --type=task --priority=0
-bd create --title="Layout Components" --type=task --priority=0
+## Phase 3: Assets & Multi-Currency (20% Complete)
 
-# Phase 1
-bd create --title="Authentication UI Components" --type=feature --priority=0
-bd create --title="Database & Auth Setup" --type=feature --priority=0
-bd create --title="Dashboard UI Components" --type=feature --priority=1
-bd create --title="Dashboard Integration" --type=feature --priority=1
+### ✅ Completed
+- Database schema (assets, asset-history, asset-update-reminders, exchange-rates, user-settings)
+- Asset update todo list UI component (for dashboard)
+- API endpoint stubs
 
-# Phase 2
-bd create --title="Transaction Management System" --type=feature --priority=0
-bd create --title="Budget Overview Table" --type=feature --priority=0
-bd create --title="Budget Alert System" --type=feature --priority=0
+### 🚧 Remaining Work
 
-# Phase 3
-bd create --title="Asset Management System" --type=feature --priority=1
-bd create --title="Multi-Currency Support" --type=feature --priority=1
-bd create --title="Exchange Rate Management" --type=feature --priority=1
+#### 7. Asset Service Implementation → [P0]
 
-# Phase 4
-bd create --title="Charts & Visualizations" --type=feature --priority=2
-bd create --title="Financial Forecast Calculator" --type=feature --priority=2
+**ID:** expenses-asset-service
+**Type:** feature | **Priority:** P0
+**Depends on:** expenses-quality-gates
 
-# Phase 5
-bd create --title="Compound Interest Calculator" --type=feature --priority=3
-bd create --title="UI/UX Refinement & Polish" --type=feature --priority=0
-bd create --title="Performance Optimization" --type=feature --priority=1
-bd create --title="Testing & Documentation" --type=feature --priority=0
-bd create --title="Production Deployment" --type=feature --priority=0
-```
+**Tasks:**
+- Implement asset CRUD operations:
+  - `createAsset(userId, data)`
+  - `getAssets(userId)` - grouped by type/currency
+  - `getAssetById(id, userId)`
+  - `updateAsset(id, userId, data)`
+  - `deleteAsset(id, userId)`
+- Asset balance update with history tracking
+- Asset update reminder calculation
+- Unit tests
+
+---
+
+#### 8. Asset Management Pages → [P1]
+
+**ID:** expenses-asset-pages
+**Type:** feature | **Priority:** P1
+**Depends on:** expenses-asset-service
+
+**Tasks:**
+- Asset list page:
+  - Group by currency view
+  - Group by type view
+  - Total calculations (IDR, USD, converted)
+  - Click to add/edit asset
+- Add/edit asset modal:
+  - Name, type, balance, currency
+  - Notes
+  - Reminder frequency
+- Asset history page:
+  - Balance over time chart
+  - History table
+
+---
+
+#### 9. Exchange Rate & Currency Service → [P1]
+
+**ID:** expenses-currency-service
+**Type:** feature | **Priority:** P1
+**Depends on:** expenses-quality-gates
+
+**Tasks:**
+- Exchange rate service:
+  - `addExchangeRate(from, to, rate, effectiveDate)`
+  - `getExchangeRate(from, to, date)` - get latest before date
+  - `convertAmount(amount, from, to, date)`
+  - Exchange rate history
+- User settings service:
+  - Set primary currency
+  - Display preferences
+- Exchange rate management page
+- Update dashboard with multi-currency totals
+
+---
+
+## Phase 4: Analytics & Reports (5% Complete)
+
+### ✅ Completed
+- Database schema (asset-snapshots, asset-snapshot-items)
+
+### 🚧 Remaining Work
+
+#### 10. Chart Components → [P2]
+
+**ID:** expenses-chart-components
+**Type:** feature | **Priority:** P2
+**Depends on:** EPH-001 (Phase 0 Complete)
+
+**Tasks:**
+- Pie chart component (expenses by category)
+- Bar chart component (monthly comparison)
+- Line chart component (trends over time)
+- Chart legend and tooltip
+- Responsive chart wrapper
+- All components in Storybook
+
+---
+
+#### 11. Reporting Service → [P2]
+
+**ID:** expenses-reports-service
+**Type:** feature | **Priority:** P2
+**Depends on:** expenses-txn-service, expenses-budget-table
+
+**Tasks:**
+- Monthly overview query:
+  - Total income by category
+  - Total expenses by category
+  - Net savings
+  - Budget adherence
+- Yearly overview query:
+  - 12-month trend
+  - Category totals
+  - Asset position start/end
+- Category breakdown query
+- Date range filtering
+
+---
+
+#### 12. Reports Pages → [P2]
+
+**ID:** expenses-reports-pages
+**Type:** feature | **Priority:** P2
+**Depends on:** expenses-reports-service, expenses-chart-components
+
+**Tasks:**
+- Monthly overview page with charts
+- Yearly overview page with trends
+- Custom date range report
+- Category drill-down (click to view transactions)
+
+---
+
+#### 13. Financial Forecast → [P2]
+
+**ID:** expenses-forecast
+**Type:** feature | **Priority:** P2
+**Depends on:** expenses-asset-service
+
+**Tasks:**
+- Forecast calculation service:
+  - Compound interest with monthly contributions
+  - Month-by-month projection
+- Snapshot service:
+  - Create monthly snapshot
+  - Get snapshots for user
+  - Projected vs actual comparison
+- Savings forecast calculator page
+- Monthly snapshot entry form
+- Projected vs actual comparison page
+
+---
+
+## Phase 5: Calculators & Polish (Not Started)
+
+### 🚧 Remaining Work
+
+#### 14. Compound Interest Calculator → [P3]
+
+**ID:** expenses-calculator
+**Type:** feature | **Priority:** P3
+**Depends on:** EPH-001 (Phase 0 Complete)
+
+**Tasks:**
+- Calculator UI component (Storybook)
+- Calculation service & tests
+- Year-by-year breakdown table
+- Calculator page
+
+---
+
+#### 15. User Settings & Profile → [P1]
+
+**ID:** expenses-user-settings
+**Type:** feature | **Priority:** P1
+**Depends on:** expenses-quality-gates
+
+**Tasks:**
+- User profile page:
+  - Update name, email
+  - Change password
+- Settings page:
+  - Primary currency
+  - Display preferences (show converted, show individual)
+  - Category management
+  - Payment method management
+
+---
+
+#### 16. UI/UX Refinement → [P0]
+
+**ID:** expenses-ui-polish
+**Type:** feature | **Priority:** P0
+**Depends on:** All features complete
+
+**Tasks:**
+- Consistency review across all pages
+- Loading states & skeleton screens
+- Error messages improvement
+- WCAG 2.1 accessibility audit
+- Mobile responsive testing
+- Empty states for all lists/pages
+
+---
+
+#### 17. Performance Optimization → [P1]
+
+**ID:** expenses-performance
+**Type:** feature | **Priority:** P1
+**Depends on:** expenses-ui-polish
+
+**Tasks:**
+- Database query optimization
+- Add missing database indexes
+- Component lazy loading
+- Image optimization
+- Code splitting
+- Performance testing
+
+---
+
+#### 18. Testing & Documentation → [P0]
+
+**ID:** expenses-testing-docs
+**Type:** feature | **Priority:** P0
+**Depends on:** All features complete
+
+**Tasks:**
+- Write missing unit tests (80%+ coverage)
+- Integration testing for key flows
+- User documentation
+- Admin documentation
+- API documentation (OpenAPI spec)
+
+---
+
+#### 19. Production Deployment → [P0]
+
+**ID:** expenses-deployment
+**Type:** feature | **Priority:** P0
+**Depends on:** expenses-testing-docs
+
+**Tasks:**
+- Production environment setup
+- MySQL database configuration
+- Environment variable setup
+- SSL certificate (Let's Encrypt)
+- Deployment scripts
+- Backup procedures
+- Monitoring setup
 
 ---
 
 ## Dependency Graph
 
 ```
-EPH-001 (Phase 0: Setup)
-    ├─→ EPH-002 (Phase 1: Auth)
-    │       ├─→ EPH-003 (Phase 1: Dashboard)
-    │       └─→ EPH-004 (Phase 2: Transactions)
-    │               ├─→ EPH-005 (Phase 2: Budget)
-    │               └─→ EPH-006 (Phase 3: Assets)
-    │                       └─→ EPH-007 (Phase 3: Currency)
-    │                               ├─→ EPH-008 (Phase 4: Charts)
-    │                               │       └─→ EPH-009 (Phase 4: Forecast)
-    │                               │               └─→ EPH-010 (Phase 5: Calculators)
-    │                               └─→ EPH-011 (Phase 5: Polish)
+expenses-quality-gates (CI/CD + Type fixes)
+    ├─→ expenses-dash-service (Dashboard data)
+    │       └─→ (Dashboard complete)
+    ├─→ expenses-txn-service (Transaction CRUD)
+    │       ├─→ expenses-txn-list (Transaction list page)
+    │       └─→ expenses-categories (Category/Payment mgmt)
+    │               └─→ expenses-budget-table (Budget overview)
+    │                       └─→ expenses-reports-service (Reports)
+    ├─→ expenses-asset-service (Asset CRUD)
+    │       ├─→ expenses-asset-pages (Asset pages)
+    │       ├─→ expenses-currency-service (Currency)
+    │       └─→ expenses-forecast (Forecast)
+    └─→ expenses-user-settings (Settings)
+
+expenses-chart-components
+    └─→ expenses-reports-service
+            └─→ expenses-reports-pages
+
+expenses-calculator (Standalone)
+
+expenses-ui-polish (All features → Polish)
+    └─→ expenses-performance
+            └─→ expenses-testing-docs
+                    └─→ expenses-deployment
 ```
 
 ---
 
-## Next Steps
+## Immediate Next Steps (Priority Order)
 
-1. Run issue creation commands (can parallelize with subagents)
-2. Set up dependencies between issues
-3. Start with Phase 0 issues (EPH-001 tasks)
-4. Use `bd ready` to find workable tasks each day
-5. Run `bd sync` after session work
+1. **expenses-quality-gates** - Fix CI/CD and type checking (IN PROGRESS)
+2. **expenses-dash-service** - Complete dashboard for first "real" data view
+3. **expenses-txn-service** - Enable daily transaction entry (CORE FEATURE)
+4. **expenses-budget-table** - Budget tracking (CORE FEATURE)
+5. **expenses-categories** - Category/payment management for transactions
 
 ---
 
-**End of Beads Plan**
+## Beads Commands to Run
+
+### Create New Issues
+
+```bash
+# Dashboard completion
+bd create --title="Implement dashboard service with real data" --type=task --priority=0
+
+# Transaction management
+bd create --title="Implement transaction service CRUD operations" --type=feature --priority=0
+bd create --title="Build transaction list page with filters" --type=feature --priority=0
+bd create --title="Create category and payment method management pages" --type=feature --priority=1
+
+# Budget management
+bd create --title="Build budget overview table (replicate screenshot)" --type=feature --priority=0
+bd create --title="Implement budget calculation and alert service" --type=feature --priority=0
+
+# Asset management
+bd create --title="Implement asset service CRUD operations" --type=feature --priority=0
+bd create --title="Build asset management pages" --type=feature --priority=1
+bd create --title="Implement exchange rate and currency service" --type=feature --priority=1
+
+# Reports & analytics
+bd create --title="Create chart components (pie, bar, line)" --type=feature --priority=2
+bd create --title="Implement reporting service" --type=feature --priority=2
+bd create --title="Build reports pages" --type=feature --priority=2
+bd create --title="Implement financial forecast calculator" --type=feature --priority=2
+
+# Final polish
+bd create --title="UI/UX refinement and polish" --type=feature --priority=0
+bd create --title="Performance optimization" --type=feature --priority=1
+bd create --title="Testing and documentation" --type=feature --priority=0
+bd create --title="Production deployment" --type=feature --priority=0
+```
+
+### Set Up Dependencies
+
+```bash
+# After creating issues, set up dependencies
+# Example: transactions depend on quality gates
+bd dep add expenses-txn-service expenses-quality-gates
+
+# Budget depends on categories and transactions
+bd dep add expenses-budget-table expenses-categories
+bd dep add expenses-budget-table expenses-txn-service
+
+# Reports depend on transactions and budget
+bd dep add expenses-reports-service expenses-txn-service
+bd dep add expenses-reports-service expenses-budget-table
+
+# Polish depends on all features
+bd dep add expenses-ui-polish expenses-reports-pages
+bd dep add expenses-ui-polish expenses-forecast
+```
+
+---
+
+## Current Open Beads (Actionable Now)
+
+Check current status with:
+```bash
+bd ready          # Show unblocked tasks
+bd show <id>      # View details
+bd update <id> --status in_progress  # Claim work
+```
+
+---
+
+**End of Updated Beads Plan**

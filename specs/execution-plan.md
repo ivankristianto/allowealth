@@ -114,181 +114,197 @@ We do:
 
 ## Project Phases
 
-### Phase 0: Design System & Project Setup (Week 1-2)
+### Phase 0: Design System & Project Setup (Week 1-2) ✅ **COMPLETE**
 
 **Goal:** Establish design foundation and development environment
 
-#### Week 1: Design System
+**Status:** All deliverables complete (20+ atomic components, full layout system, routing)
 
-**Day 1-2: Design Tokens & Color System**
+#### Week 1: Design System ✅
 
-- [ ] Define color palette (DaisyUI theme customization)
-- [ ] Typography scale (font sizes, weights, line heights)
-- [ ] Spacing system (using Tailwind scale)
-- [ ] Border radius values
-- [ ] Shadow system
-- [ ] Create design tokens file
+**Day 1-2: Design Tokens & Color System** ✅
 
-**Day 3-4: Core Atoms in Storybook**
+- [x] Define color palette (DaisyUI theme customization)
+- [x] Typography scale (font sizes, weights, line heights)
+- [x] Spacing system (using Tailwind scale)
+- [x] Border radius values
+- [x] Shadow system
+- [x] Create design tokens file
 
-- [ ] Button component (all variants, states)
-- [ ] Input component (text, number, date, select)
-- [ ] Label component
-- [ ] Badge component (for alerts)
-- [ ] Card component
-- [ ] Loading spinner
-- [ ] Icon system setup
+**Day 3-4: Core Atoms in Storybook** ✅
 
-**Day 5: Atomic Components**
+- [x] Button component (all variants, states)
+- [x] Input component (text, number, date, select)
+- [x] Label component
+- [x] Badge component (for alerts)
+- [x] Card component
+- [x] Loading spinner
+- [x] Icon system setup
 
-- [ ] Currency display component
-- [ ] Percentage display component
-- [ ] Date picker component
-- [ ] Error message component
-- [ ] Empty state component
+**Day 5: Atomic Components** ✅
 
-#### Week 2: Project Setup & Layout
+- [x] Currency display component
+- [x] Percentage display component
+- [x] Date picker component
+- [x] Error message component
+- [x] Empty state component
 
-**Day 1-2: Development Environment**
+#### Week 2: Project Setup & Layout ✅
 
-- [ ] Initialize Bun + Astro project
-- [ ] Configure Tailwind v4 + DaisyUI
-- [ ] Set up Storybook 8
-- [ ] Configure TypeScript
-- [ ] Set up ESLint + Prettier
-- [ ] Create folder structure
-- [ ] Set up Git repository
+**Day 1-2: Development Environment** ✅
 
-**Day 3-4: Layout Components**
+- [x] Initialize Bun + Astro project
+- [x] Configure Tailwind v4 + DaisyUI
+- [x] Set up Storybook 8
+- [x] Configure TypeScript
+- [x] Set up ESLint + Prettier
+- [x] Create folder structure
+- [x] Set up Git repository
 
-- [ ] Main layout template
-- [ ] Navigation component (sidebar + mobile)
-- [ ] Header component
-- [ ] Footer component
-- [ ] Page container component
-- [ ] Modal component
-- [ ] Toast notification component
+**Day 3-4: Layout Components** ✅
 
-**Day 5: Navigation & Routing**
+- [x] Main layout template
+- [x] Navigation component (sidebar + mobile)
+- [x] Header component
+- [x] Footer component
+- [x] Page container component
+- [x] Modal component
+- [x] Toast notification component
 
-- [ ] Set up Astro routing
-- [ ] Create all page stubs (empty pages)
-- [ ] Implement navigation state
-- [ ] Mobile menu functionality
-- [ ] Breadcrumb component
+**Day 5: Navigation & Routing** ✅
 
-**Deliverables:**
+- [x] Set up Astro routing
+- [x] Create all page stubs (empty pages)
+- [x] Implement navigation state
+- [x] Mobile menu functionality
+- [x] Breadcrumb component
 
-- Complete Storybook with all atoms documented
-- Working layout with navigation
-- Design system documentation
-- Component usage guidelines
+**Deliverables:** ✅
+
+- ✅ Complete Storybook with all atoms documented
+- ✅ Working layout with navigation
+- ✅ Design system documentation
+- ✅ Component usage guidelines
 
 ---
 
-### Phase 1: Authentication & Dashboard (Week 3-4)
+### Phase 1: Authentication & Dashboard (Week 3-4) 🚧 **80% COMPLETE**
 
 **Goal:** Create functional authentication and dashboard homepage
 
-#### Week 3: Authentication UI & Logic
+**Status:**
+- ✅ Authentication system fully functional (login, register, password reset)
+- ✅ Database schema complete (users, sessions, password-reset-tokens)
+- ✅ Auth UI components complete with validation
+- 🚧 Dashboard UI components complete, needs data integration
+- ❌ Dashboard service needs real data implementation
 
-**Day 1-2: Auth Forms in Storybook**
+#### Week 3: Authentication UI & Logic ✅ **COMPLETE**
 
-- [ ] Login form component
-- [ ] Registration form component
-- [ ] Password input with show/hide
-- [ ] Form validation messages
-- [ ] Loading states for forms
-- [ ] Success/error feedback
+**Day 1-2: Auth Forms in Storybook** ✅
 
-**Day 3: Database Setup**
+- [x] Login form component
+- [x] Registration form component
+- [x] Password input with show/hide
+- [x] Form validation messages
+- [x] Loading states for forms
+- [x] Success/error feedback
 
-- [ ] Install Drizzle ORM
-- [ ] Create database schema (users, sessions)
-- [ ] Set up SQLite for development
-- [ ] Create migration scripts
-- [ ] Database connection module
+**Day 3: Database Setup** ✅
 
-**Day 4-5: Authentication Implementation**
+- [x] Install Drizzle ORM
+- [x] Create database schema (users, sessions, password-reset-tokens)
+- [x] Set up SQLite for development
+- [x] Create migration scripts
+- [x] Database connection module
 
-- [ ] Set up Lucia Auth
-- [ ] Implement password hashing (Argon2id)
-- [ ] Create auth service (register, login, logout)
-- [ ] Create auth middleware
-- [ ] Session management
+**Day 4-5: Authentication Implementation** ✅
+
+- [x] Set up Lucia Auth
+- [x] Implement password hashing (Argon2id)
+- [x] Create auth service (register, login, logout, forgot-password)
+- [x] Create auth middleware
+- [x] Session management
 - [ ] Write unit tests for auth
 
-#### Week 4: Dashboard Design & Implementation
+#### Week 4: Dashboard Design & Implementation 🚧 **IN PROGRESS**
 
-**Day 1-2: Dashboard UI Components**
+**Day 1-2: Dashboard UI Components** ✅
 
-- [ ] Summary card component (total assets, monthly spent)
-- [ ] Asset update todo list component
-- [ ] Recent transactions list component
-- [ ] Quick action buttons
-- [ ] Budget health widget
-- [ ] All components in Storybook with mock data
+- [x] Summary card component (total assets, monthly spent)
+- [x] Asset update todo list component
+- [x] Recent transactions list component
+- [x] Quick action buttons
+- [x] Budget health widget
+- [x] All components in Storybook with mock data
 
-**Day 3: Dashboard Data Layer**
+**Day 3: Dashboard Data Layer** 🚧
 
-- [ ] Create dashboard service
-- [ ] Aggregate queries for summaries
+- [x] Create dashboard service
+- [ ] Implement aggregate queries for summaries (total assets, monthly spent)
 - [ ] Mock data generators for testing
 - [ ] Unit tests for calculations
 
-**Day 4-5: Dashboard Integration**
+**Day 4-5: Dashboard Integration** 🚧
 
 - [ ] Connect components to real data
-- [ ] Implement dashboard page
-- [ ] Add loading states
-- [ ] Error handling
+- [x] Implement dashboard page (with auth protection)
+- [x] Add loading states
+- [x] Error handling
 - [ ] User testing & refinement
 
 **Deliverables:**
 
-- Working authentication system
-- Functional dashboard with real data
-- All components documented in Storybook
-- Passing unit tests
+- ✅ Working authentication system
+- 🚧 Dashboard UI complete, needs real data integration
+- ✅ All components documented in Storybook
+- ❌ Unit tests pending
 
 ---
 
-### Phase 2: Transactions & Budget (Week 5-6)
+### Phase 2: Transactions & Budget (Week 5-6) 🚧 **20% COMPLETE**
 
 **Goal:** Enable daily transaction entry and budget tracking
 
-#### Week 5: Transaction Management
+**Status:**
+- ✅ Database schema complete (categories, payment-methods, transactions)
+- ✅ Transaction UI components exist (form, list items)
+- ✅ API endpoints stubbed
+- ❌ Transaction service CRUD needs implementation
+- ❌ Budget management not started
 
-**Day 1-2: Transaction UI Components**
+#### Week 5: Transaction Management 🚧 **STARTED**
 
-- [ ] Transaction form component (Storybook)
+**Day 1-2: Transaction UI Components** ✅
+
+- [x] Transaction form component (Storybook)
   - All input fields
   - Validation states
   - Success/error feedback
-- [ ] Transaction list item component
+- [x] Transaction list item component
 - [ ] Transaction filter component
 - [ ] Pagination component
 - [ ] CSV upload component
 
-**Day 3: Transaction Data Layer**
+**Day 3: Transaction Data Layer** ✅
 
-- [ ] Categories table schema
-- [ ] Payment methods table schema
-- [ ] Transactions table schema
-- [ ] Run migrations
+- [x] Categories table schema
+- [x] Payment methods table schema
+- [x] Transactions table schema
+- [x] Run migrations
 - [ ] Create service methods (CRUD)
 - [ ] Unit tests
 
-**Day 4-5: Transaction Features**
+**Day 4-5: Transaction Features** 🚧
 
 - [ ] Category management page
 - [ ] Payment method management page
-- [ ] Add transaction page/modal
+- [x] Add transaction page/modal (UI only)
 - [ ] Transaction list page with filters
 - [ ] Edit/delete transaction
 - [ ] CSV import functionality
 
-#### Week 6: Budget Management
+#### Week 6: Budget Management ❌ **NOT STARTED**
 
 **Day 1-2: Budget Table UI**
 
@@ -317,48 +333,55 @@ We do:
 
 **Deliverables:**
 
-- Complete transaction management system
-- Budget overview matching screenshot design
-- CSV import working
-- All features tested and polished
+- 🚧 Transaction UI components complete
+- ❌ Transaction CRUD service incomplete
+- ❌ Budget overview not started
+- ❌ CSV import not working
 
 ---
 
-### Phase 3: Assets & Multi-Currency (Week 7-8)
+### Phase 3: Assets & Multi-Currency (Week 7-8) 🚧 **20% COMPLETE**
 
 **Goal:** Track assets across currencies with update reminders
 
-#### Week 7: Asset Management
+**Status:**
+- ✅ Database schema complete (assets, asset-history, asset-update-reminders, exchange-rates, user-settings)
+- ✅ Asset update todo list UI component exists (for dashboard)
+- ✅ API endpoints stubbed
+- ❌ Asset service CRUD needs implementation
+- ❌ Multi-currency features not implemented
 
-**Day 1-2: Asset UI Components**
+#### Week 7: Asset Management 🚧 **SCHEMA COMPLETE**
+
+**Day 1-2: Asset UI Components** 🚧
 
 - [ ] Asset card component (Storybook)
 - [ ] Asset form component
 - [ ] Asset update modal
 - [ ] Asset list with grouping (by type, currency)
-- [ ] Update todo list component
-- [ ] Priority indicators (red/yellow/green)
+- [x] Update todo list component (for dashboard)
+- [x] Priority indicators (red/yellow/green)
 
-**Day 3: Asset Data Layer**
+**Day 3: Asset Data Layer** ✅
 
-- [ ] Assets table schema
-- [ ] Asset history table schema
-- [ ] Asset update reminders table schema
-- [ ] Run migrations
+- [x] Assets table schema
+- [x] Asset history table schema
+- [x] Asset update reminders table schema
+- [x] Run migrations
 - [ ] Asset service methods
 - [ ] Reminder calculation logic
 - [ ] Unit tests
 
-**Day 4-5: Asset Features**
+**Day 4-5: Asset Features** ❌
 
 - [ ] Asset list page (grouped views)
 - [ ] Add/edit asset functionality
 - [ ] Update asset balance (creates history)
 - [ ] Asset history view (chart + table)
-- [ ] Update todo list widget
+- [ ] Update todo list widget (functional)
 - [ ] Reminder frequency settings
 
-#### Week 8: Multi-Currency & Exchange Rates
+#### Week 8: Multi-Currency & Exchange Rates 🚧 **SCHEMA COMPLETE**
 
 **Day 1-2: Currency UI Components**
 
@@ -367,16 +390,16 @@ We do:
 - [ ] Currency conversion widget
 - [ ] Currency selector component
 
-**Day 3: Currency Data Layer**
+**Day 3: Currency Data Layer** ✅
 
-- [ ] Exchange rates table schema
-- [ ] User settings table schema
-- [ ] Run migrations
+- [x] Exchange rates table schema
+- [x] User settings table schema
+- [x] Run migrations
 - [ ] Exchange rate service
 - [ ] Currency conversion logic
 - [ ] Unit tests
 
-**Day 4-5: Currency Features**
+**Day 4-5: Currency Features** ❌
 
 - [ ] Exchange rate management page
 - [ ] Primary currency setting
@@ -387,18 +410,24 @@ We do:
 
 **Deliverables:**
 
-- Complete asset management system
-- Multi-currency support working
-- Update reminders functional
-- Asset history tracking
+- ❌ Complete asset management system
+- ❌ Multi-currency support working
+- ❌ Update reminders functional
+- ❌ Asset history tracking
 
 ---
 
-### Phase 4: Analytics & Reports (Week 9-10)
+### Phase 4: Analytics & Reports (Week 9-10) 🚧 **5% COMPLETE**
 
 **Goal:** Visualize financial data with charts and reports
 
-#### Week 9: Charts & Visualizations
+**Status:**
+- ✅ Asset snapshots database schema complete
+- ❌ No chart components implemented
+- ❌ No reporting service
+- ❌ No forecast functionality
+
+#### Week 9: Charts & Visualizations ❌ **NOT STARTED**
 
 **Day 1-2: Chart Components (Storybook)**
 
@@ -432,7 +461,7 @@ We do:
   - Year-over-year comparison
 - [ ] Custom date range report
 
-#### Week 10: Financial Forecast
+#### Week 10: Financial Forecast 🚧 **SCHEMA COMPLETE**
 
 **Day 1-2: Forecast UI Components**
 
@@ -442,16 +471,16 @@ We do:
 - [ ] Variance visualization
 - [ ] Month snapshot entry form
 
-**Day 3: Forecast Data Layer**
+**Day 3: Forecast Data Layer** ✅
 
-- [ ] Asset snapshots table schema
-- [ ] Asset snapshot items table schema
-- [ ] Run migrations
+- [x] Asset snapshots table schema
+- [x] Asset snapshot items table schema
+- [x] Run migrations
 - [ ] Forecast calculation service
 - [ ] Snapshot service
 - [ ] Unit tests
 
-**Day 4-5: Forecast Features**
+**Day 4-5: Forecast Features** ❌
 
 - [ ] Savings forecast calculator page
 - [ ] Monthly snapshot entry
@@ -461,18 +490,20 @@ We do:
 
 **Deliverables:**
 
-- Complete reporting system
-- All charts working and responsive
-- Financial forecast functionality
-- Snapshot tracking
+- ❌ Complete reporting system
+- ❌ All charts working and responsive
+- ❌ Financial forecast functionality
+- ❌ Snapshot tracking
 
 ---
 
-### Phase 5: Calculators & Polish (Week 11-12)
+### Phase 5: Calculators & Polish (Week 11-12) ❌ **NOT STARTED**
 
 **Goal:** Add calculators and polish entire application
 
-#### Week 11: Calculators & Additional Features
+**Status:** No work started on this phase
+
+#### Week 11: Calculators & Additional Features ❌
 
 **Day 1-2: Calculator UI**
 
@@ -497,7 +528,7 @@ We do:
 - [ ] Password change
 - [ ] Data export/backup
 
-#### Week 12: Polish & Testing
+#### Week 12: Polish & Testing ❌
 
 **Day 1-2: UI/UX Refinement**
 
@@ -538,11 +569,11 @@ We do:
 
 **Deliverables:**
 
-- Complete, polished application
-- All features working end-to-end
-- Comprehensive test coverage
-- Production-ready deployment
-- Documentation complete
+- ❌ Complete, polished application
+- ❌ All features working end-to-end
+- ❌ Comprehensive test coverage
+- ❌ Production-ready deployment
+- ❌ Documentation complete
 
 ---
 
