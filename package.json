@@ -27,7 +27,8 @@
     "db:reset:dashboard": "rm -f .dev.db && bun run db:push --force && bun run db:seed:dashboard",
     "test": "bun test",
     "test:watch": "bun test --watch",
-    "test:coverage": "bun test --coverage"
+    "test:coverage": "bun test --coverage",
+    "test:dashboard": "bun test src/services/dashboard.service.test.ts"
   },
   "dependencies": {
     "@astrojs/node": "^9.5.1",
