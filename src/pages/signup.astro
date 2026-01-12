@@ -23,6 +23,9 @@ const errorMessages: Record<string, string> = {
 
 // Only use whitelisted error codes to prevent XSS
 const errorMessage = error && errorMessages[error] ? errorMessages[error] : '';
+
+// Get CSP nonce from middleware
+const cspNonce = Astro.locals.cspNonce || '';
 ---
 
 <AuthLayout title="Finance Manager - Sign Up">
@@ -110,7 +113,7 @@ const errorMessage = error && errorMessages[error] ? errorMessages[error] : '';
   </div>
 </AuthLayout>
 
-<script define:vars={{ apiSignupUrl: '/api/auth/signup' }}>
+<script define:vars={{ apiSignupUrl: '/api/auth/signup' }} nonce={cspNonce}>
   document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('signup-form');
     const messagesContainer = document.getElementById('signup-messages');
