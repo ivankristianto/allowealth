@@ -1,5 +1,6 @@
 import type { APIContext } from 'astro';
 import { z } from 'zod';
+import { auth } from '@/lib/auth/lucia';
 
 /**
  * Standard API response format
@@ -105,23 +106,91 @@ export async function validateBody<T>(
 }
 
 /**
- * Get user ID from session (placeholder for now - will be implemented with auth)
- * TODO: Replace with actual auth implementation
+ * Session cookie name used by Lucia Auth
+ * Must match the cookie name configured in src/lib/auth/lucia.ts
  */
-export function getUserId(context: APIContext): string | null {
-  // Placeholder: In production, this will extract user_id from session/JWT
-  // For now, return a test user ID
-  return 'test-user-id';
+const SESSION_COOKIE_NAME = 'sid';
+
+/**
+ * Get user ID from Lucia session cookie
+ *
+ * Extracts the session ID from the request cookies and validates it
+ * using Lucia's validateSession method. Returns the user ID if the
+ * session is valid, null otherwise.
+ *
+ * @param context - Astro API context containing request cookies
+ * @returns User ID string if session is valid, null otherwise
+ *
+ * @example
+ * ```typescript
+ * export const GET: APIRoute = async (context) => {
+ *   const userId = await getUserId(context);
+ *   if (!userId) {
+ *     return errorResponse('Unauthorized', 401);
+ *   }
+ *   // User is authenticated, proceed...
+ * }
+ * ```
+ */
+export async function getUserId(context: APIContext): Promise<string | null> {
+  // Extract session ID from cookies
+  const sessionId = context.cookies.get(SESSION_COOKIE_NAME)?.value;
+
+  // No session cookie found
+  if (!sessionId) {
+    return null;
+  }
+
+  try {
+    // Validate session using Lucia
+    const { session, user } = await auth.validateSession(sessionId);
+
+    // Session is invalid or expired
+    if (!session || !user) {
+      return null;
+    }
+
+    // Return user ID from valid session
+    return user.id;
+  } catch {
+    // Session validation failed (invalid token, database error, etc.)
+    return null;
+  }
 }
 
 /**
- * Require authentication middleware
+ * Require authentication for API routes
+ *
+ * Validates the session and returns the user ID. Throws an error
+ * if the user is not authenticated. This error should be caught
+ * by the route handler and returned as a 401 response.
+ *
+ * @param context - Astro API context containing request cookies
+ * @returns User ID string (never null for authenticated requests)
+ * @throws Error with message 'Unauthorized' if not authenticated
+ *
+ * @example
+ * ```typescript
+ * export const GET: APIRoute = async (context) => {
+ *   try {
+ *     const userId = await requireAuth(context);
+ *     // User is authenticated, proceed...
+ *   } catch (error) {
+ *     if (error instanceof Error && error.message === 'Unauthorized') {
+ *       return errorResponse('Unauthorized', 401);
+ *     }
+ *     throw error;
+ *   }
+ * }
+ * ```
  */
-export function requireAuth(context: APIContext): string {
-  const userId = getUserId(context);
+export async function requireAuth(context: APIContext): Promise<string> {
+  const userId = await getUserId(context);
+
   if (!userId) {
     throw new Error('Unauthorized');
   }
+
   return userId;
 }
 

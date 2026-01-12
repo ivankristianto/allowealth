@@ -16,7 +16,7 @@ import { logError } from '@/lib/utils';
  */
 export const GET: APIRoute = async ({ params, request, url }) => {
   try {
-    const userId = requireAuth({ request, url } as any);
+    const userId = await requireAuth({ request, url } as any);
     const { id } = params;
 
     // Validate transaction ID format
@@ -48,7 +48,7 @@ export const GET: APIRoute = async ({ params, request, url }) => {
  */
 export const PUT: APIRoute = async ({ params, request, url }) => {
   try {
-    const userId = requireAuth({ request, url } as any);
+    const userId = await requireAuth({ request, url } as any);
     const { id } = params;
 
     // Validate transaction ID format
@@ -109,7 +109,7 @@ export const PUT: APIRoute = async ({ params, request, url }) => {
  */
 export const DELETE: APIRoute = async ({ params, request, url }) => {
   try {
-    const userId = requireAuth({ request, url } as any);
+    const userId = await requireAuth({ request, url } as any);
     const { id } = params;
 
     // Validate transaction ID format

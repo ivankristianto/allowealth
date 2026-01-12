@@ -9,7 +9,7 @@ import { logError } from '@/lib/utils';
  */
 export const GET: APIRoute = async ({ request, url }) => {
   try {
-    const userId = requireAuth({ request, url } as any);
+    const userId = await requireAuth({ request, url } as any);
 
     const [totalByCurrency, totalByType] = await Promise.all([
       assetService.getTotalByCurrency(userId),

@@ -17,7 +17,7 @@ import { logError } from '@/lib/utils';
  */
 export const GET: APIRoute = async ({ request, url }) => {
   try {
-    const userId = requireAuth({ request, url } as any);
+    const userId = await requireAuth({ request, url } as any);
 
     const { limit, offset } = getPaginationParams(url);
 
@@ -97,7 +97,7 @@ export const GET: APIRoute = async ({ request, url }) => {
  */
 export const POST: APIRoute = async ({ request, url }) => {
   try {
-    const userId = requireAuth({ request, url } as any);
+    const userId = await requireAuth({ request, url } as any);
 
     // Validate Content-Type header
     const contentType = request.headers.get('content-type');

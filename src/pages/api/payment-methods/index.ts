@@ -10,7 +10,7 @@ import { logError } from '@/lib/utils';
  */
 export const GET: APIRoute = async ({ request, url }) => {
   try {
-    const userId = requireAuth({ request, url } as any);
+    const userId = await requireAuth({ request, url } as any);
 
     const isActiveParam = url.searchParams.get('is_active');
 
@@ -37,7 +37,7 @@ export const GET: APIRoute = async ({ request, url }) => {
  */
 export const POST: APIRoute = async ({ request, url }) => {
   try {
-    const userId = requireAuth({ request, url } as any);
+    const userId = await requireAuth({ request, url } as any);
 
     const validation = await validateBody(request, createPaymentMethodAPISchema);
 

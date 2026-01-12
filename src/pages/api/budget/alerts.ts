@@ -10,7 +10,7 @@ import { logError } from '@/lib/utils';
  */
 export const GET: APIRoute = async ({ request, url }) => {
   try {
-    const userId = requireAuth({ request, url } as any);
+    const userId = await requireAuth({ request, url } as any);
 
     const currency = (url.searchParams.get('currency') as 'IDR' | 'USD') || 'IDR';
 
