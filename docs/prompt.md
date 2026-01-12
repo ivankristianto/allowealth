@@ -1,4 +1,4 @@
-Run `bv --robot-next` to get the next ticket to work on.
+Run `bd ready` to get the next ticket to work on.
 Parse the json to get the <ticket-id>.
 
 ```
