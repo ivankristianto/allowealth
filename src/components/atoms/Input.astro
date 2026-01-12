@@ -17,7 +17,7 @@
  */
 
 export interface Props {
-  type?: 'text' | 'number' | 'email' | 'date' | 'select';
+  type?: 'text' | 'number' | 'email' | 'date' | 'select' | 'password';
   placeholder?: string;
   value?: string | number;
   disabled?: boolean;
@@ -30,6 +30,7 @@ export interface Props {
   min?: string | number;
   max?: string | number;
   step?: string | number;
+  required?: boolean;
 }
 
 const {

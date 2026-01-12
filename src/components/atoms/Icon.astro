@@ -100,7 +100,7 @@ const icons: Record<string, { viewBox: string; path: string }> = {
   },
 };
 
-const icon = icons[name] || icons['information'];
+const icon = icons[name] || (icons['information'] as { viewBox: string; path: string });
 ---
 
 <svg
