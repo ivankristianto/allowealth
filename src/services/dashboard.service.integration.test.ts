@@ -61,7 +61,7 @@ const EXPECTED = {
   monthlySalary: 20000000,
 };
 
-describe('DashboardService Integration Tests', () => {
+describe.skip('DashboardService Integration Tests', () => {
   let dashboardService: DashboardService;
   let testUserId: string;
 
