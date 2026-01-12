@@ -26,6 +26,8 @@ import {
   transactions,
   assets,
   exchangeRates,
+  sessions,
+  passwordResetTokens,
 } from '../schema';
 
 // ============================================================================
@@ -189,6 +191,9 @@ async function clearData() {
   console.log('⚠️  Clearing existing data...');
 
   try {
+    // Delete in reverse dependency order to respect foreign key constraints
+    await db.delete(passwordResetTokens);
+    await db.delete(sessions);
     await db.delete(transactions);
     await db.delete(assets);
     await db.delete(paymentMethods);

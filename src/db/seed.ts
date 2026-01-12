@@ -24,6 +24,8 @@ import {
   assetSnapshots,
   assetSnapshotItems,
   exchangeRates,
+  sessions,
+  passwordResetTokens,
 } from './schema';
 
 // ============================================================================
@@ -191,6 +193,8 @@ async function clearAllTables() {
 
   try {
     // Delete in reverse dependency order
+    await db.delete(passwordResetTokens);
+    await db.delete(sessions);
     await db.delete(assetSnapshotItems);
     await db.delete(assetSnapshots);
     await db.delete(assetUpdateReminders);
