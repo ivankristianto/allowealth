@@ -193,6 +193,7 @@ We do:
 **Goal:** Create functional authentication and dashboard homepage
 
 **Status:**
+
 - ✅ Authentication system fully functional (login, register, password reset)
 - ✅ Database schema complete (users, sessions, password-reset-tokens)
 - ✅ Auth UI components complete with validation
@@ -267,6 +268,7 @@ We do:
 **Goal:** Enable daily transaction entry and budget tracking
 
 **Status:**
+
 - ✅ Database schema complete (categories, payment-methods, transactions)
 - ✅ Transaction UI components exist (form, list items)
 - ✅ API endpoints stubbed
@@ -345,6 +347,7 @@ We do:
 **Goal:** Track assets across currencies with update reminders
 
 **Status:**
+
 - ✅ Database schema complete (assets, asset-history, asset-update-reminders, exchange-rates, user-settings)
 - ✅ Asset update todo list UI component exists (for dashboard)
 - ✅ API endpoints stubbed
@@ -422,6 +425,7 @@ We do:
 **Goal:** Visualize financial data with charts and reports
 
 **Status:**
+
 - ✅ Asset snapshots database schema complete
 - ❌ No chart components implemented
 - ❌ No reporting service

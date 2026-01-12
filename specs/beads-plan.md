@@ -29,20 +29,21 @@ This plan organizes all remaining work into beads issues with proper dependencie
 
 ## Current Status Summary
 
-| Phase | Status | Completion |
-|-------|--------|------------|
-| **Phase 0: Design System & Setup** | ✅ Complete | 100% |
-| **Phase 1: Authentication & Dashboard** | 🚧 In Progress | 80% |
-| **Phase 2: Transactions & Budget** | 🚧 Started | 20% |
-| **Phase 3: Assets & Multi-Currency** | 🚧 Started | 20% |
-| **Phase 4: Analytics & Reports** | ❌ Not Started | 5% |
-| **Phase 5: Calculators & Polish** | ❌ Not Started | 0% |
+| Phase                                   | Status         | Completion |
+| --------------------------------------- | -------------- | ---------- |
+| **Phase 0: Design System & Setup**      | ✅ Complete    | 100%       |
+| **Phase 1: Authentication & Dashboard** | 🚧 In Progress | 80%        |
+| **Phase 2: Transactions & Budget**      | 🚧 Started     | 20%        |
+| **Phase 3: Assets & Multi-Currency**    | 🚧 Started     | 20%        |
+| **Phase 4: Analytics & Reports**        | ❌ Not Started | 5%         |
+| **Phase 5: Calculators & Polish**       | ❌ Not Started | 0%         |
 
 ---
 
 ## Phase 1: Authentication & Dashboard (IN PROGRESS)
 
 ### ✅ Completed (No Action Needed)
+
 - Database schema (users, sessions, password-reset-tokens)
 - Authentication UI (LoginForm, RegistrationForm, ForgotPasswordForm)
 - Auth service (register, login, logout, forgot-password)
@@ -59,6 +60,7 @@ This plan organizes all remaining work into beads issues with proper dependencie
 **Type:** task | **Priority:** P0
 
 **Tasks:**
+
 - Implement `dashboardService.getDashboardData(userId)` with:
   - Total assets calculation (by currency + converted)
   - This month's total spending
@@ -78,6 +80,7 @@ This plan organizes all remaining work into beads issues with proper dependencie
 **Type:** task | **Priority:** P1
 
 **Current Beads:**
+
 - expenses-d1e (P1) - Implement Astro type checking
 - expenses-57u (P0) - Fix test infrastructure - dependency injection
 - expenses-7n5 (P1) - ESLint 100% pass
@@ -86,6 +89,7 @@ This plan organizes all remaining work into beads issues with proper dependencie
 - expenses-786 (P1) - GitHub Actions for quality gates
 
 **Tasks:**
+
 - Fix TypeScript errors in test files
 - Implement dependency injection for tests
 - Configure CI pipeline
@@ -96,6 +100,7 @@ This plan organizes all remaining work into beads issues with proper dependencie
 ## Phase 2: Transactions & Budget (20% Complete)
 
 ### ✅ Completed
+
 - Database schema (categories, payment-methods, transactions)
 - Transaction form UI component (TransactionForm)
 - Transaction list item component
@@ -110,6 +115,7 @@ This plan organizes all remaining work into beads issues with proper dependencie
 **Depends on:** expenses-quality-gates
 
 **Tasks:**
+
 - Implement transaction CRUD operations:
   - `createTransaction(userId, data)` - with validation
   - `getTransactions(userId, filters)` - with pagination
@@ -129,6 +135,7 @@ This plan organizes all remaining work into beads issues with proper dependencie
 **Depends on:** expenses-txn-service
 
 **Tasks:**
+
 - Implement transaction list with filters:
   - Date range picker
   - Category filter
@@ -148,6 +155,7 @@ This plan organizes all remaining work into beads issues with proper dependencie
 **Depends on:** expenses-quality-gates
 
 **Tasks:**
+
 - Category management page:
   - List all categories
   - Add/edit/delete categories
@@ -168,6 +176,7 @@ This plan organizes all remaining work into beads issues with proper dependencie
 **Depends on:** expenses-categories
 
 **Tasks:**
+
 - Budget calculation service:
   - Budget vs actual spending per category
   - Balance calculation
@@ -184,6 +193,7 @@ This plan organizes all remaining work into beads issues with proper dependencie
 ## Phase 3: Assets & Multi-Currency (20% Complete)
 
 ### ✅ Completed
+
 - Database schema (assets, asset-history, asset-update-reminders, exchange-rates, user-settings)
 - Asset update todo list UI component (for dashboard)
 - API endpoint stubs
@@ -197,6 +207,7 @@ This plan organizes all remaining work into beads issues with proper dependencie
 **Depends on:** expenses-quality-gates
 
 **Tasks:**
+
 - Implement asset CRUD operations:
   - `createAsset(userId, data)`
   - `getAssets(userId)` - grouped by type/currency
@@ -216,6 +227,7 @@ This plan organizes all remaining work into beads issues with proper dependencie
 **Depends on:** expenses-asset-service
 
 **Tasks:**
+
 - Asset list page:
   - Group by currency view
   - Group by type view
@@ -238,6 +250,7 @@ This plan organizes all remaining work into beads issues with proper dependencie
 **Depends on:** expenses-quality-gates
 
 **Tasks:**
+
 - Exchange rate service:
   - `addExchangeRate(from, to, rate, effectiveDate)`
   - `getExchangeRate(from, to, date)` - get latest before date
@@ -254,6 +267,7 @@ This plan organizes all remaining work into beads issues with proper dependencie
 ## Phase 4: Analytics & Reports (5% Complete)
 
 ### ✅ Completed
+
 - Database schema (asset-snapshots, asset-snapshot-items)
 
 ### 🚧 Remaining Work
@@ -265,6 +279,7 @@ This plan organizes all remaining work into beads issues with proper dependencie
 **Depends on:** EPH-001 (Phase 0 Complete)
 
 **Tasks:**
+
 - Pie chart component (expenses by category)
 - Bar chart component (monthly comparison)
 - Line chart component (trends over time)
@@ -281,6 +296,7 @@ This plan organizes all remaining work into beads issues with proper dependencie
 **Depends on:** expenses-txn-service, expenses-budget-table
 
 **Tasks:**
+
 - Monthly overview query:
   - Total income by category
   - Total expenses by category
@@ -302,6 +318,7 @@ This plan organizes all remaining work into beads issues with proper dependencie
 **Depends on:** expenses-reports-service, expenses-chart-components
 
 **Tasks:**
+
 - Monthly overview page with charts
 - Yearly overview page with trends
 - Custom date range report
@@ -316,6 +333,7 @@ This plan organizes all remaining work into beads issues with proper dependencie
 **Depends on:** expenses-asset-service
 
 **Tasks:**
+
 - Forecast calculation service:
   - Compound interest with monthly contributions
   - Month-by-month projection
@@ -340,6 +358,7 @@ This plan organizes all remaining work into beads issues with proper dependencie
 **Depends on:** EPH-001 (Phase 0 Complete)
 
 **Tasks:**
+
 - Calculator UI component (Storybook)
 - Calculation service & tests
 - Year-by-year breakdown table
@@ -354,6 +373,7 @@ This plan organizes all remaining work into beads issues with proper dependencie
 **Depends on:** expenses-quality-gates
 
 **Tasks:**
+
 - User profile page:
   - Update name, email
   - Change password
@@ -372,6 +392,7 @@ This plan organizes all remaining work into beads issues with proper dependencie
 **Depends on:** All features complete
 
 **Tasks:**
+
 - Consistency review across all pages
 - Loading states & skeleton screens
 - Error messages improvement
@@ -388,6 +409,7 @@ This plan organizes all remaining work into beads issues with proper dependencie
 **Depends on:** expenses-ui-polish
 
 **Tasks:**
+
 - Database query optimization
 - Add missing database indexes
 - Component lazy loading
@@ -404,6 +426,7 @@ This plan organizes all remaining work into beads issues with proper dependencie
 **Depends on:** All features complete
 
 **Tasks:**
+
 - Write missing unit tests (80%+ coverage)
 - Integration testing for key flows
 - User documentation
@@ -419,6 +442,7 @@ This plan organizes all remaining work into beads issues with proper dependencie
 **Depends on:** expenses-testing-docs
 
 **Tasks:**
+
 - Production environment setup
 - MySQL database configuration
 - Environment variable setup
@@ -530,6 +554,7 @@ bd dep add expenses-ui-polish expenses-forecast
 ## Current Open Beads (Actionable Now)
 
 Check current status with:
+
 ```bash
 bd ready          # Show unblocked tasks
 bd show <id>      # View details
