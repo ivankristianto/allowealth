@@ -123,7 +123,7 @@ export function convertCurrencySync(
 export async function getLatestExchangeRate(): Promise<number> {
   try {
     // Query for USD to IDR rate, ordered by effective_date descending
-    const [latestRate] = await db
+    const [latestRate] = await (db as any)
       .select({
         rate: exchangeRates.rate,
       })

@@ -175,7 +175,7 @@ export class DashboardService {
       const endDate = new Date(year, month, 0, 23, 59, 59);
 
       // Get total budget for the month (sum of all expense category budgets)
-      const [budgetResult] = await db
+      const [budgetResult] = await (db as any)
         .select({
           total: sql<string>`COALESCE(SUM(CAST(${categories.budget_amount} AS REAL)), 0)`,
         })
@@ -189,11 +189,10 @@ export class DashboardService {
           )
         );
 
-      // @ts-expect-error - Drizzle ORM SQL aggregate results are not fully typed
       const totalBudget = budgetResult?.total || '0';
 
       // Get total spent for the month
-      const [spentResult] = await db
+      const [spentResult] = await (db as any)
         .select({
           total: sql<string>`COALESCE(SUM(CAST(${transactions.amount} AS REAL)), 0)`,
         })
@@ -209,7 +208,6 @@ export class DashboardService {
           )
         );
 
-      // @ts-expect-error - Drizzle ORM SQL aggregate results are not fully typed
       const totalSpent = spentResult?.total || '0';
 
       // Calculate percentage and remaining using decimal arithmetic
@@ -275,7 +273,7 @@ export class DashboardService {
       });
 
       // Get total spent per category for the month
-      const categorySpending = await db
+      const categorySpending = await (db as any)
         .select({
           category_id: transactions.category_id,
           total: sql<string>`COALESCE(SUM(CAST(${transactions.amount} AS REAL)), 0)`,
@@ -296,7 +294,6 @@ export class DashboardService {
       // Create map of spending by category
       const spendingByCategory = new Map<string, string>();
       for (const spending of categorySpending) {
-        // @ts-expect-error - Drizzle ORM SQL aggregate results are not fully typed
         spendingByCategory.set(spending.category_id, spending.total);
       }
 
