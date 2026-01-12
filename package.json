@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "astro dev",
-    "build": "astro build",
+    "build": "astro check && astro build",
     "preview": "astro preview",
     "astro": "astro",
     "storybook": "storybook dev -p 6006",
@@ -15,7 +15,7 @@
     "format:fix": "prettier --write .",
     "stylelint": "stylelint \"**/*.css\"",
     "stylelint:fix": "stylelint \"**/*.css\" --fix",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "astro check",
     "prepare": "husky install",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
@@ -45,6 +45,7 @@
     "zod": "^4.3.5"
   },
   "devDependencies": {
+    "@astrojs/check": "^0.9.6",
     "@storybook/addon-essentials": "^8.0.0",
     "@storybook/addon-interactions": "^8.0.0",
     "@storybook/addon-links": "^8.0.0",
@@ -71,6 +72,7 @@
     "storybook": "^8.0.0",
     "stylelint": "^16.26.1",
     "stylelint-config-recommended": "^17.0.0",
-    "stylelint-config-standard": "^39.0.1"
+    "stylelint-config-standard": "^39.0.1",
+    "typescript": "^5.9.3"
   }
 }
