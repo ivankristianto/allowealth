@@ -9,6 +9,9 @@ import MainLayout from '../../layouts/MainLayout.astro';
 import { requireAuth } from '@/lib/auth/requireAuth';
 import TransactionList from '../../components/organisms/TransactionList.astro';
 import type { TransactionOutput } from '@/lib/types/transaction';
+import { transactionService } from '@/services/transaction.service';
+import { categoryService } from '@/services/category.service';
+import { paymentMethodService } from '@/services/payment-method.service';
 
 // Check authentication - redirect to login if not authenticated
 const redirectResponse = requireAuth(Astro);
@@ -23,160 +26,69 @@ const currentPath = '/transactions';
 const url = new URL(Astro.url);
 const searchParams = Object.fromEntries(url.searchParams.entries());
 
-// Mock data for UI development (will be replaced with service layer)
-const mockTransactions: TransactionOutput[] = [
-  {
-    id: '1',
-    type: 'expense',
-    amount: '250000',
-    currency: 'IDR',
-    description: 'Weekly groceries shopping',
-    transaction_date: new Date('2026-01-03'),
-    category: { id: 'c1', name: 'Food & Groceries', type: 'expense' },
-    payment_method: { id: 'p1', name: 'Cash', type: 'cash' },
-    deleted_at: null,
-    created_at: new Date(),
-    updated_at: new Date(),
-  },
-  {
-    id: '2',
-    type: 'expense',
-    amount: '2800000',
-    currency: 'IDR',
-    description: 'Reina monthly expenses',
-    transaction_date: new Date('2026-01-02'),
-    category: { id: 'c2', name: 'Ivan Expenses', type: 'expense' },
-    payment_method: { id: 'p2', name: 'BCA Transfer', type: 'bank_transfer' },
-    deleted_at: null,
-    created_at: new Date(),
-    updated_at: new Date(),
-  },
-  {
-    id: '3',
-    type: 'income',
-    amount: '15000000',
-    currency: 'IDR',
-    description: 'Monthly salary',
-    transaction_date: new Date('2026-01-01'),
-    category: { id: 'c3', name: 'Salary', type: 'income' },
-    payment_method: { id: 'p2', name: 'BCA Transfer', type: 'bank_transfer' },
-    deleted_at: null,
-    created_at: new Date(),
-    updated_at: new Date(),
-  },
-  {
-    id: '4',
-    type: 'expense',
-    amount: '50000',
-    currency: 'IDR',
-    description: 'Ojek ride',
-    transaction_date: new Date('2026-01-04'),
-    category: { id: 'c4', name: 'Transportation', type: 'expense' },
-    payment_method: { id: 'p3', name: 'GoPay', type: 'e_wallet' },
-    deleted_at: null,
-    created_at: new Date(),
-    updated_at: new Date(),
-  },
-  {
-    id: '5',
-    type: 'expense',
-    amount: '150000',
-    currency: 'IDR',
-    description: 'Lunch at Padang restaurant',
-    transaction_date: new Date('2026-01-05'),
-    category: { id: 'c5', name: 'Dine Out', type: 'expense' },
-    payment_method: { id: 'p1', name: 'Cash', type: 'cash' },
-    deleted_at: null,
-    created_at: new Date(),
-    updated_at: new Date(),
-  },
-];
-
-// Mock categories and payment methods for filters
-const mockCategories = [
-  { id: 'c1', name: 'Food & Groceries', type: 'expense' },
-  { id: 'c2', name: 'Ivan Expenses', type: 'expense' },
-  { id: 'c3', name: 'Salary', type: 'income' },
-  { id: 'c4', name: 'Transportation', type: 'expense' },
-  { id: 'c5', name: 'Dine Out', type: 'expense' },
-  { id: 'c6', name: 'Utilities', type: 'expense' },
-  { id: 'c7', name: 'Entertainment', type: 'expense' },
-];
-
-const mockPaymentMethods = [
-  { id: 'p1', name: 'Cash', type: 'cash' },
-  { id: 'p2', name: 'BCA Transfer', type: 'bank_transfer' },
-  { id: 'p3', name: 'GoPay', type: 'e_wallet' },
-  { id: 'p4', name: 'Mandiri Debit', type: 'debit_card' },
-];
-
 // Pagination
 const page = parseInt(searchParams.page || '1');
 const pageSize = 50;
-const total = mockTransactions.length;
+const offset = (page - 1) * pageSize;
 
-// Filter mock data (simple client-side filtering for UI development)
-let filteredTransactions = [...mockTransactions];
+// Build filters for service
+const filters = {
+  user_id: user.id,
+  type: searchParams.type as 'expense' | 'income' | undefined,
+  category_id: searchParams.category_id,
+  payment_method_id: searchParams.payment_method_id,
+  currency: searchParams.currency as 'IDR' | 'USD' | undefined,
+  start_date: searchParams.start_date ? new Date(searchParams.start_date) : undefined,
+  end_date: searchParams.end_date ? new Date(searchParams.end_date) : undefined,
+  search: searchParams.search,
+  limit: pageSize,
+  offset,
+};
 
-if (searchParams.search) {
-  const searchLower = searchParams.search.toLowerCase();
-  filteredTransactions = filteredTransactions.filter((t) =>
-    t.description?.toLowerCase().includes(searchLower)
-  );
-}
+// Fetch transactions from database
+const rawTransactions = await transactionService.findAll(filters);
 
-if (searchParams.type) {
-  filteredTransactions = filteredTransactions.filter((t) => t.type === searchParams.type);
-}
+// Transform Drizzle result (camelCase relations) to TransactionOutput format (snake_case)
+const transactions: TransactionOutput[] = rawTransactions.map((t) => ({
+  id: t.id,
+  type: t.type,
+  amount: t.amount,
+  currency: t.currency,
+  description: t.description,
+  transaction_date: t.transaction_date,
+  deleted_at: t.deleted_at,
+  created_at: t.created_at,
+  updated_at: t.updated_at,
+  category: {
+    id: t.category.id,
+    name: t.category.name,
+    type: t.category.type,
+  },
+  payment_method: {
+    id: t.paymentMethod.id,
+    name: t.paymentMethod.name,
+    type: t.paymentMethod.type,
+  },
+}));
 
-if (searchParams.currency) {
-  filteredTransactions = filteredTransactions.filter((t) => t.currency === searchParams.currency);
-}
+// Get total count for pagination (without limit/offset)
+const { limit, offset: _, ...countFilters } = filters;
+const total = await transactionService.count(countFilters);
 
-if (searchParams.category_id) {
-  filteredTransactions = filteredTransactions.filter(
-    (t) => t.category.id === searchParams.category_id
-  );
-}
-
-if (searchParams.payment_method_id) {
-  filteredTransactions = filteredTransactions.filter(
-    (t) => t.payment_method.id === searchParams.payment_method_id
-  );
-}
-
-if (searchParams.start_date) {
-  const startDate = new Date(searchParams.start_date);
-  filteredTransactions = filteredTransactions.filter(
-    (t) => new Date(t.transaction_date) >= startDate
-  );
-}
-
-if (searchParams.end_date) {
-  const endDate = new Date(searchParams.end_date);
-  filteredTransactions = filteredTransactions.filter(
-    (t) => new Date(t.transaction_date) <= endDate
-  );
-}
-
-// Sort by date descending
-filteredTransactions.sort(
-  (a, b) => new Date(b.transaction_date).getTime() - new Date(a.transaction_date).getTime()
-);
-
-// Apply pagination (mock - actual pagination will be done at DB level)
-const paginatedTransactions = filteredTransactions.slice((page - 1) * pageSize, page * pageSize);
+// Fetch categories and payment methods for filter dropdowns
+const categories = await categoryService.findAll(user.id, { is_active: true });
+const paymentMethods = await paymentMethodService.findAll(user.id, { is_active: true });
 ---
 
 <MainLayout title="Transactions - Finance Manager" currentPath={currentPath} user={user}>
   <TransactionList
-    transactions={paginatedTransactions}
-    total={filteredTransactions.length}
+    transactions={transactions}
+    total={total}
     page={page}
     pageSize={pageSize}
     baseUrl="/transactions"
-    categories={mockCategories}
-    paymentMethods={mockPaymentMethods}
+    categories={categories}
+    paymentMethods={paymentMethods}
     filters={searchParams}
     showFilters={true}
   />
