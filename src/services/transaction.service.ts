@@ -312,7 +312,7 @@ export class TransactionService {
       conditions.push(searchCondition);
     }
 
-    const result = await db
+    const result = await (db as any)
       .select({ count: sql<number>`count(*)` })
       .from(transactions)
       .where(and(...conditions));

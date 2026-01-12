@@ -9,6 +9,7 @@ import type {
   TotalAssets,
   MonthlySpent,
   BudgetHealth,
+  BudgetAlert,
   AssetReminder,
 } from '../../dashboard.service';
 
@@ -132,9 +133,9 @@ function generateMockTotalAssets(userId: string, rng: SeededRandom): MockTotalAs
 
   return {
     userId,
-    idr: Math.round(idr),
-    usd: Math.round(usd * 100) / 100,
-    converted: Math.round(converted),
+    idr: String(Math.round(idr)),
+    usd: String(Math.round(usd * 100) / 100),
+    converted: String(Math.round(converted)),
     convertedCurrency,
   };
 }
@@ -157,10 +158,10 @@ function generateMockMonthlySpent(
     userId,
     month,
     year,
-    total: Math.round(total),
-    budget: Math.round(budget),
+    total: String(Math.round(total)),
+    budget: String(Math.round(budget)),
     percentage: Math.round(percentage * 100 * 10) / 10, // Round to 1 decimal
-    remaining: Math.round(remaining),
+    remaining: String(Math.round(remaining)),
   };
 }
 
@@ -183,7 +184,7 @@ function generateMockBudgetHealth(
   ];
 
   const numAlerts = rng.nextInt(0, 4);
-  const alerts = [];
+  const alerts: BudgetAlert[] = [];
 
   for (let i = 0; i < numAlerts; i++) {
     const budget = rng.nextFloat(500_000, 3_000_000);
@@ -194,12 +195,12 @@ function generateMockBudgetHealth(
     if (category) {
       alerts.push({
         category,
-        budget: Math.round(budget),
-        spent: Math.round(spent),
+        budget: String(Math.round(budget)),
+        spent: String(Math.round(spent)),
         percentage: Math.round(percentage * 100 * 10) / 10,
         status: (percentage >= 1 ? 'exceeded' : 'warning') as 'warning' | 'exceeded',
-        remaining: Math.round(budget - spent),
-        overage: Math.round(Math.max(0, spent - budget)),
+        remaining: String(Math.round(budget - spent)),
+        overage: String(Math.round(Math.max(0, spent - budget))),
       });
     }
   }
@@ -271,7 +272,7 @@ function generateMockAssetReminders(userId: string, rng: SeededRandom): MockAsse
         lastUpdated,
         daysSinceUpdate,
         priority,
-        currentBalance: rng.nextFloat(1_000_000, 50_000_000),
+        currentBalance: String(rng.nextFloat(1_000_000, 50_000_000)),
         currency: 'IDR',
       });
     }

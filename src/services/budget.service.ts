@@ -77,7 +77,7 @@ export class BudgetService {
     });
 
     // Get transactions for the month grouped by category
-    const monthTransactions = await db
+    const monthTransactions = await (db as any)
       .select({
         category_id: transactions.category_id,
         total: sql<string>`sum(CAST(${transactions.amount} AS REAL))`,
@@ -98,7 +98,6 @@ export class BudgetService {
     // Create a map of spent amounts by category
     const spentByCategory = new Map<string, string>();
     for (const tx of monthTransactions) {
-      // @ts-expect-error - Drizzle ORM SQL aggregate results are not fully typed
       spentByCategory.set(tx.category_id, tx.total || '0');
     }
 
@@ -262,7 +261,7 @@ export class BudgetService {
     const startDate = new Date(now.getFullYear(), now.getMonth(), 1);
     const endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
 
-    const [result] = await db
+    const [result] = await (db as any)
       .select({
         total: sql<string>`COALESCE(sum(CAST(${transactions.amount} AS REAL)), 0)`,
       })
@@ -279,7 +278,6 @@ export class BudgetService {
       );
 
     const budgetAmount = category.budget_amount;
-    // @ts-expect-error - Drizzle ORM SQL aggregate results are not fully typed
     const spentAmount = result?.total || '0';
     const remaining = decimalSubtract(budgetAmount, spentAmount);
     const percentageUsed = !decimalIsZero(budgetAmount)

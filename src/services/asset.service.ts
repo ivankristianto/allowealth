@@ -197,7 +197,7 @@ export class AssetService {
    * Get total assets by currency
    */
   async getTotalByCurrency(user_id: string) {
-    const result = await db
+    const result = await (db as any)
       .select({
         currency: assets.currency,
         total: sql<string>`sum(CAST(${assets.balance} AS REAL))`,
@@ -213,7 +213,7 @@ export class AssetService {
    * Get total assets by type
    */
   async getTotalByType(user_id: string) {
-    const result = await db
+    const result = await (db as any)
       .select({
         type: assets.type,
         currency: assets.currency,
