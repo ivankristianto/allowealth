@@ -9,7 +9,7 @@ import { logError } from '@/lib/utils';
  */
 export const GET: APIRoute = async ({ params, request, url }) => {
   try {
-    const userId = requireAuth({ request, url } as any);
+    const userId = await requireAuth({ request, url } as any);
     const { id } = params;
 
     if (!id) {

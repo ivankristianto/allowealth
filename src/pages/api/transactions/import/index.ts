@@ -10,7 +10,7 @@ import { logError } from '@/lib/utils';
  */
 export const POST: APIRoute = async ({ request, url }) => {
   try {
-    const userId = requireAuth({ request, url } as any);
+    const userId = await requireAuth({ request, url } as any);
 
     // Parse form data with file
     const formData = await request.formData();

@@ -10,7 +10,7 @@ import { logError } from '@/lib/utils';
  */
 export const GET: APIRoute = async ({ request, url }) => {
   try {
-    const userId = requireAuth({ request, url } as any);
+    const userId = await requireAuth({ request, url } as any);
 
     const yearParam = url.searchParams.get('year');
     const monthParam = url.searchParams.get('month');

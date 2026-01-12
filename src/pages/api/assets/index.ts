@@ -18,7 +18,7 @@ const createAssetSchema = z.object({
  */
 export const GET: APIRoute = async ({ request, url }) => {
   try {
-    const userId = requireAuth({ request, url } as any);
+    const userId = await requireAuth({ request, url } as any);
 
     const type = url.searchParams.get('type');
     const currency = url.searchParams.get('currency');
@@ -52,7 +52,7 @@ export const GET: APIRoute = async ({ request, url }) => {
  */
 export const POST: APIRoute = async ({ request, url }) => {
   try {
-    const userId = requireAuth({ request, url } as any);
+    const userId = await requireAuth({ request, url } as any);
 
     const validation = await validateBody(request, createAssetSchema);
 

@@ -16,7 +16,7 @@ const updateBalanceSchema = z.object({
  */
 export const POST: APIRoute = async ({ params, request, url }) => {
   try {
-    const userId = requireAuth({ request, url } as any);
+    const userId = await requireAuth({ request, url } as any);
     const { id } = params;
 
     if (!id) {
