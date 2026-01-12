@@ -4,7 +4,7 @@
  *
  * Form for adding/editing transactions with validation.
  *
- * @param {string} action - Form action URL
+ * @param {string} action - Form action URL (API endpoint)
  * @param {string} method - Form method (POST or PUT)
  * @param {Object} values - Default form values
  * @param {Array} categories - Available categories
@@ -15,6 +15,7 @@
  * @param {string} cancelUrl - URL to cancel and go back
  * @param {boolean} showBudgetWarning - Show budget warning
  * @param {string} budgetRemaining - Budget remaining amount
+ * @param {Object} budgetInfo - Budget info with percentage used
  */
 
 import Label from '../atoms/Label.astro';
@@ -22,12 +23,9 @@ import CurrencyInput from '../atoms/CurrencyInput.astro';
 import CategorySelect from '../atoms/CategorySelect.astro';
 import PaymentMethodSelect from '../atoms/PaymentMethodSelect.astro';
 import DatePicker from '../atoms/DatePicker.astro';
-import Input from '../atoms/Input.astro';
 import Button from '../atoms/Button.astro';
-import ErrorMessage from '../atoms/ErrorMessage.astro';
 import Currency from '../atoms/Currency.astro';
 import Icon from '../atoms/Icon.astro';
-import { formatCurrency } from '@/lib/tokens';
 
 export interface Props {
   action: string;
@@ -50,6 +48,12 @@ export interface Props {
   showBudgetWarning?: boolean;
   budgetRemaining?: string;
   budgetRemainingCurrency?: 'IDR' | 'USD';
+  budgetInfo?: {
+    category_id: string;
+    remaining: string;
+    percentage_used: string;
+    budget_amount: string;
+  } | null;
 }
 
 const {
@@ -65,16 +69,39 @@ const {
   showBudgetWarning = false,
   budgetRemaining = '0',
   budgetRemainingCurrency = 'IDR',
+  budgetInfo = null,
 } = Astro.props;
 
 const formType = values.type || transactionType || 'expense';
 const today = new Date().toISOString().split('T')[0];
 
-// Filter categories by transaction type
-const filteredCategories = categories.filter((cat) => cat.type === formType);
+// Serialize budget info for client-side JavaScript
+const budgetInfoJson = budgetInfo
+  ? JSON.stringify({
+      category_id: budgetInfo.category_id,
+      remaining: budgetInfo.remaining,
+      percentage_used: budgetInfo.percentage_used,
+      budget_amount: budgetInfo.budget_amount,
+    })
+  : 'null';
+
+// Serialize categories and payment methods for client-side JavaScript
+const categoriesJson = JSON.stringify(
+  categories.map((c) => ({ id: c.id, name: c.name, type: c.type, currency: c.currency || 'IDR' }))
+);
 ---
 
-<form action={action} method={method} class="space-y-4">
+<form
+  id="transaction-form"
+  data-action={action}
+  data-method={method}
+  data-categories-json={categoriesJson}
+  data-budget-info-json={budgetInfoJson}
+  class="space-y-4"
+  novalidate
+>
+  <!-- Global error message container -->
+  <div id="form-error" class="hidden alert alert-error" role="alert"></div>
   <!-- Transaction Type -->
   <div class="form-control">
     <Label required htmlFor="type" id="type-label">Type</Label>
@@ -196,7 +223,44 @@ const filteredCategories = categories.filter((cat) => cat.type === formType);
   </div>
 </form>
 
-<script>
+<script is:inline>
+  // Get data from form data attributes
+  const form = document.getElementById('transaction-form');
+  const formError = document.getElementById('form-error');
+  const submitButton = form?.querySelector('button[type="submit"]');
+
+  // Parse categories and budget info from data attributes (server-serialized JSON)
+  const categories = JSON.parse(form?.dataset.categoriesJson || '[]');
+  const budgetInfo = JSON.parse(form?.dataset.budgetInfoJson || 'null');
+  const action = form?.dataset.action || '/api/transactions';
+  const method = form?.dataset.method || 'POST';
+
+  // Format currency for display
+  function formatCurrency(amount, currency) {
+    return new Intl.NumberFormat('id-ID', {
+      style: 'currency',
+      currency: currency,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  }
+
+  // Update currency based on selected category
+  function updateCurrencyForCategory() {
+    const categorySelect = document.querySelector('select[name="category_id"]');
+    const currencyInput = document.querySelector('input[name="currency"]');
+    if (!categorySelect || !currencyInput) return;
+
+    const selectedCategoryId = categorySelect.value;
+    const selectedCategory = categories.find((c) => c.id === selectedCategoryId);
+
+    if (selectedCategory && selectedCategory.currency) {
+      currencyInput.value = selectedCategory.currency;
+      // Trigger currency change event to update the formatted display
+      currencyInput.dispatchEvent(new Event('change'));
+    }
+  }
+
   // Update category options when transaction type changes
   const typeRadios = document.querySelectorAll('input[name="type"]');
   const categorySelect = document.querySelector('select[name="category_id"]');
@@ -225,6 +289,125 @@ const filteredCategories = categories.filter((cat) => cat.type === formType);
       if (categorySelect) {
         categorySelect.value = '';
       }
+
+      // Update currency when category changes
+      updateCurrencyForCategory();
     });
   });
+
+  // Update currency when category changes
+  categorySelect?.addEventListener('change', updateCurrencyForCategory);
+
+  // Display field-specific errors
+  function setFieldError(fieldName, message) {
+    const fieldContainer = document
+      .querySelector(`[name="${fieldName}"]`)
+      ?.closest('.form-control');
+
+    if (fieldContainer) {
+      // Remove existing error if any
+      const existingError = fieldContainer.querySelector('.field-error');
+      if (existingError) {
+        existingError.remove();
+      }
+
+      // Add error styling to input
+      const input = fieldContainer.querySelector('input, select, textarea');
+      if (input) {
+        input.classList.add('input-error', 'border-error');
+      }
+
+      // Add error message
+      const errorDiv = document.createElement('div');
+      errorDiv.className = 'field-error text-error text-sm mt-1';
+      errorDiv.textContent = message;
+      fieldContainer.appendChild(errorDiv);
+    }
+  }
+
+  // Clear all field errors
+  function clearFieldErrors() {
+    document.querySelectorAll('.field-error').forEach((el) => el.remove());
+    document.querySelectorAll('.input-error, .border-error').forEach((el) => {
+      el.classList.remove('input-error', 'border-error');
+    });
+    if (formError) {
+      formError.classList.add('hidden');
+      formError.textContent = '';
+    }
+  }
+
+  // Handle form submission
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    clearFieldErrors();
+
+    if (submitButton) {
+      submitButton.disabled = true;
+      submitButton.textContent = 'Saving...';
+    }
+
+    try {
+      const formData = new FormData(form);
+      const data = {
+        type: formData.get('type') || 'expense',
+        amount: formData.get('amount') || '0',
+        currency: formData.get('currency') || 'IDR',
+        category_id: formData.get('category_id') || '',
+        payment_method_id: formData.get('payment_method_id') || '',
+        transaction_date:
+          formData.get('transaction_date') || new Date().toISOString().split('T')[0],
+        description: formData.get('description') || '',
+      };
+
+      // Clean amount value (remove formatting)
+      const rawAmount = String(data.amount).replace(/[^\d.-]/g, '');
+      data.amount = rawAmount;
+
+      const response = await fetch(action, {
+        method: method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        // Handle validation errors
+        if (result.error?.details) {
+          // Field-specific errors from Zod validation
+          result.error.details.forEach((issue) => {
+            const fieldPath = issue.path.join('.');
+            const fieldName = fieldPath || 'general';
+            setFieldError(fieldName, issue.message);
+          });
+        } else {
+          // Global error
+          if (formError) {
+            formError.textContent = result.error?.message || 'Failed to save transaction';
+            formError.classList.remove('hidden');
+          }
+        }
+      } else {
+        // Success - redirect to transactions list
+        window.location.href = '/transactions';
+      }
+    } catch (err) {
+      // Network or other error
+      if (formError) {
+        formError.textContent = 'Network error. Please try again.';
+        formError.classList.remove('hidden');
+      }
+    } finally {
+      if (submitButton) {
+        submitButton.disabled = false;
+        submitButton.textContent = 'Save Transaction';
+      }
+    }
+  });
+
+  // Initialize currency based on pre-selected category
+  updateCurrencyForCategory();
 </script>
