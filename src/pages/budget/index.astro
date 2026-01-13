@@ -30,12 +30,23 @@ const url = new URL(Astro.request.url);
 const yearParam = url.searchParams.get('year');
 const monthParam = url.searchParams.get('month');
 const currencyParam = url.searchParams.get('currency') as 'IDR' | 'USD' | null;
+const sortByParam = url.searchParams.get('sort') as
+  | 'category'
+  | 'percentage'
+  | 'budget'
+  | 'spent'
+  | 'balance'
+  | 'status'
+  | null;
+const sortOrderParam = url.searchParams.get('order') as 'asc' | 'desc' | null;
 
 // Default to current month if not specified
 const now = new Date();
 const selectedYear = yearParam ? parseInt(yearParam, 10) : now.getFullYear();
 const selectedMonth = monthParam ? parseInt(monthParam, 10) : now.getMonth() + 1;
 const selectedCurrency = currencyParam || 'IDR';
+const sortBy = sortByParam || 'category';
+const sortOrder = sortOrderParam || 'asc';
 
 // Get budget data from service
 let budgetData: BudgetSummary | null = null;
@@ -77,8 +88,22 @@ const buildMonthUrl = (year: number, month: number) => {
   params.set('year', year.toString());
   params.set('month', month.toString());
   params.set('currency', selectedCurrency);
+  params.set('sort', sortBy);
+  params.set('order', sortOrder);
   return `/budget?${params.toString()}`;
 };
+
+// Build base URL for sorting (preserves current month and currency)
+const buildSortBaseUrl = () => {
+  const params = new URLSearchParams();
+  params.set('year', selectedYear.toString());
+  params.set('month', selectedMonth.toString());
+  params.set('currency', selectedCurrency);
+  // Keep the path as /budget?params so the component can replace with /api/budget/export?
+  return `/budget?${params.toString()}`;
+};
+
+const sortBaseUrl = buildSortBaseUrl();
 
 // Previous and next month
 const prevMonthDate = new Date(selectedYear, selectedMonth - 2, 1);
@@ -239,72 +264,79 @@ const alerts = budgetData
       ) : (
         <>
           {/* Budget Alerts Section */}
-          {
-            alerts.length > 0 && (
-              <div class="card bg-base-100 shadow border border-base-300">
-                <div class="card-body">
-                  <h3 class="card-title flex items-center gap-2">
-                    <Icon name="alert" size="md" className="text-warning" />
-                    Budget Alerts
-                  </h3>
-                  <div class="overflow-x-auto">
-                    <table class="table table-sm">
-                      <thead>
-                        <tr>
-                          <th>Category</th>
-                          <th>Status</th>
-                          <th class="text-right">Budget</th>
-                          <th class="text-right">Spent</th>
-                          <th class="text-right">Overage</th>
-                          <th></th>
+          {alerts.length > 0 && (
+            <div class="card bg-base-100 shadow border border-base-300">
+              <div class="card-body">
+                <h3 class="card-title flex items-center gap-2">
+                  <Icon name="alert" size="md" className="text-warning" />
+                  Budget Alerts
+                </h3>
+                <div class="overflow-x-auto">
+                  <table class="table table-sm">
+                    <thead>
+                      <tr>
+                        <th>Category</th>
+                        <th>Status</th>
+                        <th class="text-right">Budget</th>
+                        <th class="text-right">Spent</th>
+                        <th class="text-right">Overage</th>
+                        <th />
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {alerts.map((alert) => (
+                        <tr key={alert.category_id}>
+                          <td>
+                            <span class="font-medium">{alert.category_name}</span>
+                          </td>
+                          <td>
+                            <Badge
+                              variant={alert.status === 'exceeded' ? 'error' : 'warning'}
+                              size="sm"
+                            >
+                              {alert.status === 'exceeded' ? 'Exceeded' : 'Warning'}
+                            </Badge>
+                          </td>
+                          <td class="text-right">
+                            {formatCurrency(parseFloat(alert.budget_amount), selectedCurrency)}
+                          </td>
+                          <td class="text-right">
+                            {formatCurrency(parseFloat(alert.spent_amount), selectedCurrency)}
+                          </td>
+                          <td class="text-right">
+                            {alert.overage > 0 && (
+                              <span class="text-error font-semibold">
+                                +{formatCurrency(alert.overage, selectedCurrency)}
+                              </span>
+                            )}
+                          </td>
+                          <td>
+                            <a
+                              href={`/transactions?category_id=${alert.category_id}`}
+                              class="btn btn-ghost btn-xs"
+                            >
+                              View
+                            </a>
+                          </td>
                         </tr>
-                      </thead>
-                      <tbody>
-                        {alerts.map((alert) => (
-                          <tr key={alert.category_id}>
-                            <td>
-                              <span class="font-medium">{alert.category_name}</span>
-                            </td>
-                            <td>
-                              <Badge variant={alert.status === 'exceeded' ? 'error' : 'warning'} size="sm">
-                                {alert.status === 'exceeded' ? 'Exceeded' : 'Warning'}
-                              </Badge>
-                            </td>
-                            <td class="text-right">
-                              {formatCurrency(parseFloat(alert.budget_amount), selectedCurrency)}
-                            </td>
-                            <td class="text-right">
-                              {formatCurrency(parseFloat(alert.spent_amount), selectedCurrency)}
-                            </td>
-                            <td class="text-right">
-                              {
-                                alert.overage > 0 && (
-                                  <span class="text-error font-semibold">
-                                    +{formatCurrency(alert.overage, selectedCurrency)}
-                                  </span>
-                                )
-                              }
-                            </td>
-                            <td>
-                              <a
-                                href={`/transactions?category_id=${alert.category_id}`}
-                                class="btn btn-ghost btn-xs"
-                              >
-                                View
-                              </a>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
-            )
-          }
+            </div>
+          )}
 
           {/* Budget Overview Table */}
-          {budgetData && <BudgetOverviewTable summary={budgetData} currency={selectedCurrency} />}
+          {budgetData && (
+            <BudgetOverviewTable
+              summary={budgetData}
+              currency={selectedCurrency}
+              sortBy={sortBy}
+              sortOrder={sortOrder}
+              baseUrl={sortBaseUrl}
+            />
+          )}
         </>
       )
     }
