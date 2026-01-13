@@ -7,7 +7,7 @@ Find the most important ticket to work assigned it as <ticket-id>.
 
 Follow these steps:
 
-1. Run `/k2:start <ticket-id>`
+1. Run `/k2:start <ticket-id> --skip-worktree`
 2. Send the summary with this bash command `tt -m "<summary>"`, ensure the summary is properly escaped.
 
 Summary Format:
