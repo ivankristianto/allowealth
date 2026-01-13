@@ -1,0 +1,116 @@
+---
+/**
+ * Edit Transaction Page
+ *
+ * Page for editing an existing transaction.
+ */
+
+import MainLayout from '../../../layouts/MainLayout.astro';
+import { requireAuth } from '@/lib/auth/requireAuth';
+import TransactionForm from '../../../components/molecules/TransactionForm.astro';
+import { transactionService } from '@/services/transaction.service';
+import { categoryService } from '@/services/category.service';
+import { paymentMethodService } from '@/services/payment-method.service';
+import { budgetService } from '@/services/budget.service';
+
+// Check authentication - redirect to login if not authenticated
+const redirectResponse = requireAuth(Astro);
+if (redirectResponse) {
+  return redirectResponse;
+}
+
+const user = Astro.locals.user;
+const currentPath = '/transactions/edit';
+
+// Get transaction ID from URL params
+const { id } = Astro.params;
+
+if (!id) {
+  return Astro.redirect('/404');
+}
+
+// Load existing transaction
+const transaction = await transactionService.findById(id, user.id);
+
+if (!transaction) {
+  // Transaction not found or doesn't belong to user
+  return Astro.redirect('/404');
+}
+
+// Fetch categories and payment methods from database (only active ones)
+const categories = await categoryService.findAll(user.id, { is_active: true });
+const paymentMethods = await paymentMethodService.findAll(user.id, { is_active: true });
+
+// Format transaction date to YYYY-MM-DD for input
+const formatDateForInput = (date: Date) => {
+  return date.toISOString().split('T')[0];
+};
+
+// Pre-fill form with existing transaction data
+const formValues = {
+  type: transaction.type,
+  currency: transaction.currency,
+  amount: transaction.amount,
+  category_id: transaction.category_id,
+  payment_method_id: transaction.payment_method_id,
+  transaction_date: formatDateForInput(transaction.transaction_date),
+  description: transaction.description || '',
+};
+
+// Get budget remaining for the selected category (for expense type only)
+let budgetRemaining = '0';
+let budgetRemainingCurrency: 'IDR' | 'USD' = 'IDR';
+let budgetInfo: {
+  category_id: string;
+  remaining: string;
+  percentage_used: string;
+  budget_amount: string;
+} | null = null;
+
+if (transaction.type === 'expense' && transaction.category_id) {
+  try {
+    const budgetData = await budgetService.getCategoryRemaining(transaction.category_id, user.id);
+    budgetRemaining = budgetData.remaining;
+    const categoryCurrency = categories.find((c) => c.id === transaction.category_id)?.currency;
+    budgetRemainingCurrency =
+      categoryCurrency === 'IDR' || categoryCurrency === 'USD' ? categoryCurrency : 'IDR';
+    budgetInfo = {
+      category_id: budgetData.category_id,
+      remaining: budgetData.remaining,
+      percentage_used: budgetData.percentage_used,
+      budget_amount: budgetData.budget_amount,
+    };
+  } catch {
+    // Category might not have a budget or budget calculation failed
+    budgetRemaining = '0';
+  }
+}
+---
+
+<MainLayout title="Edit Transaction - Finance Manager" currentPath={currentPath} user={user}>
+  <div class="max-w-2xl">
+    <div class="mb-6">
+      <h2 class="text-2xl font-bold">Edit Transaction</h2>
+      <p class="text-neutral-500">Update transaction details</p>
+    </div>
+
+    <div class="card bg-base-100 shadow border border-base-300">
+      <div class="card-body">
+        <TransactionForm
+          action={`/api/transactions/${id}`}
+          method="PUT"
+          values={formValues}
+          categories={categories}
+          paymentMethods={paymentMethods}
+          transactionType={transaction.type}
+          submitLabel="Update Transaction"
+          cancelUrl="/transactions"
+          showBudgetWarning={transaction.type === 'expense'}
+          budgetRemaining={budgetRemaining}
+          budgetRemainingCurrency={budgetRemainingCurrency}
+          budgetInfo={budgetInfo}
+        />
+      </div>
+    </div>
+  </div>
+</MainLayout>
