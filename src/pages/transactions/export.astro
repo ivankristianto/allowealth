@@ -2,15 +2,18 @@
 /**
  * CSV Export Page
  *
- * Page for exporting transactions to CSV files.
+ * Page for exporting transactions to CSV files with filter support.
+ * Wires to real API endpoint for export.
  */
 
 import MainLayout from '../../layouts/MainLayout.astro';
 import { requireAuth } from '@/lib/auth/requireAuth';
 import TransactionFilters from '../../components/molecules/TransactionFilters.astro';
 import Icon from '../../components/atoms/Icon.astro';
+import { categoryService } from '@/services/category.service';
+import { paymentMethodService } from '@/services/payment-method.service';
 
-// Check authentication - redirect to login if not authenticated
+// Check authentication
 const redirectResponse = requireAuth(Astro);
 if (redirectResponse) {
   return redirectResponse;
@@ -19,22 +22,11 @@ if (redirectResponse) {
 const user = Astro.locals.user;
 const currentPath = '/transactions/export';
 
-// Mock categories and payment methods for filters
-const mockCategories = [
-  { id: 'c1', name: 'Food & Groceries', type: 'expense' },
-  { id: 'c2', name: 'Ivan Expenses', type: 'expense' },
-  { id: 'c3', name: 'Salary', type: 'income' },
-  { id: 'c4', name: 'Transportation', type: 'expense' },
-  { id: 'c5', name: 'Dine Out', type: 'expense' },
-];
+// Fetch categories and payment methods for filters
+const categories = await categoryService.findAll(user.id, { is_active: true });
+const paymentMethods = await paymentMethodService.findAll(user.id, { is_active: true });
 
-const mockPaymentMethods = [
-  { id: 'p1', name: 'Cash', type: 'cash' },
-  { id: 'p2', name: 'BCA Transfer', type: 'bank_transfer' },
-  { id: 'p3', name: 'GoPay', type: 'e_wallet' },
-];
-
-// Get current filters from referer or default
+// Get current filters from query params
 const url = new URL(Astro.url);
 const currentFilters = {
   search: url.searchParams.get('search') || '',
@@ -45,6 +37,17 @@ const currentFilters = {
   start_date: url.searchParams.get('start_date') || '',
   end_date: url.searchParams.get('end_date') || '',
 };
+
+// Build export URL with current filters
+const buildExportUrl = () => {
+  const params = new URLSearchParams();
+  Object.entries(currentFilters).forEach(([key, value]) => {
+    if (value) params.set(key, value);
+  });
+  return `/api/transactions/export?${params.toString()}`;
+};
+
+const exportUrl = buildExportUrl();
 ---
 
 <MainLayout title="Export Transactions - Finance Manager" currentPath={currentPath} user={user}>
@@ -75,24 +78,30 @@ const currentFilters = {
           <h3 class="font-semibold mb-4">Filter Transactions</h3>
           <TransactionFilters
             action="/transactions/export"
-            categories={mockCategories}
-            paymentMethods={mockPaymentMethods}
+            categories={categories}
+            paymentMethods={paymentMethods}
             values={currentFilters}
             count={0}
           />
         </div>
 
-        <!-- Export Info -->
+        <!-- Export Info & Action -->
         <div class="border-t border-base-300 pt-6">
           <h3 class="font-semibold mb-2">Export Details</h3>
-          <ul class="text-sm text-neutral-500 space-y-1">
+          <ul class="text-sm text-neutral-500 space-y-1 mb-4">
             <li>Filename format: <code>transactions_YYYY-MM-DD.csv</code></li>
             <li>
               Includes all transaction fields: date, type, amount, currency, category, payment
               method, description
             </li>
             <li>Uses current filters to select transactions</li>
-          </ul>
+          </div>
+
+          <!-- Export Button -->
+          <a href={exportUrl} class="btn btn-primary gap-2" download>
+            <Icon name="download" size="sm" />
+            Download CSV Export
+          </a>
         </div>
       </div>
     </div>

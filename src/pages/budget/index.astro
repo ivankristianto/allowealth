@@ -11,6 +11,9 @@ import MainLayout from '../../layouts/MainLayout.astro';
 import { requireAuth } from '@/lib/auth/requireAuth';
 import BudgetOverviewTable from '../../components/organisms/BudgetOverviewTable.astro';
 import { budgetService, type BudgetSummary } from '@/services';
+import Icon from '../../components/atoms/Icon.astro';
+import Badge from '../../components/atoms/Badge.astro';
+import { formatCurrency } from '@/lib/tokens';
 
 // Check authentication - redirect to login if not authenticated
 const redirectResponse = requireAuth(Astro);
@@ -92,6 +95,23 @@ const maxYear = nowDate.getFullYear();
 const maxMonth = nowDate.getMonth() + 1;
 const isNextMonthInFuture =
   nextMonthYear > maxYear || (nextMonthYear === maxYear && nextMonth > maxMonth);
+
+// Get budget alerts for the current month
+const alerts = budgetData
+  ? budgetData.categories
+      .filter((cat) => cat.status === 'warning' || cat.status === 'exceeded')
+      .map((cat) => ({
+        category_id: cat.category_id,
+        category_name: cat.category_name,
+        status: cat.status,
+        budget_amount: cat.budget_amount,
+        spent_amount: cat.spent_amount,
+        overage:
+          cat.status === 'exceeded' && parseFloat(cat.balance) < 0
+            ? Math.abs(parseFloat(cat.balance))
+            : 0,
+      }))
+  : [];
 ---
 
 <MainLayout
@@ -217,8 +237,75 @@ const isNextMonthInFuture =
           <span>{error}</span>
         </div>
       ) : (
-        /* Budget Overview Table */
-        budgetData && <BudgetOverviewTable summary={budgetData} currency={selectedCurrency} />
+        <>
+          {/* Budget Alerts Section */}
+          {
+            alerts.length > 0 && (
+              <div class="card bg-base-100 shadow border border-base-300">
+                <div class="card-body">
+                  <h3 class="card-title flex items-center gap-2">
+                    <Icon name="alert" size="md" className="text-warning" />
+                    Budget Alerts
+                  </h3>
+                  <div class="overflow-x-auto">
+                    <table class="table table-sm">
+                      <thead>
+                        <tr>
+                          <th>Category</th>
+                          <th>Status</th>
+                          <th class="text-right">Budget</th>
+                          <th class="text-right">Spent</th>
+                          <th class="text-right">Overage</th>
+                          <th></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {alerts.map((alert) => (
+                          <tr key={alert.category_id}>
+                            <td>
+                              <span class="font-medium">{alert.category_name}</span>
+                            </td>
+                            <td>
+                              <Badge variant={alert.status === 'exceeded' ? 'error' : 'warning'} size="sm">
+                                {alert.status === 'exceeded' ? 'Exceeded' : 'Warning'}
+                              </Badge>
+                            </td>
+                            <td class="text-right">
+                              {formatCurrency(parseFloat(alert.budget_amount), selectedCurrency)}
+                            </td>
+                            <td class="text-right">
+                              {formatCurrency(parseFloat(alert.spent_amount), selectedCurrency)}
+                            </td>
+                            <td class="text-right">
+                              {
+                                alert.overage > 0 && (
+                                  <span class="text-error font-semibold">
+                                    +{formatCurrency(alert.overage, selectedCurrency)}
+                                  </span>
+                                )
+                              }
+                            </td>
+                            <td>
+                              <a
+                                href={`/transactions?category_id=${alert.category_id}`}
+                                class="btn btn-ghost btn-xs"
+                              >
+                                View
+                              </a>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )
+          }
+
+          {/* Budget Overview Table */}
+          {budgetData && <BudgetOverviewTable summary={budgetData} currency={selectedCurrency} />}
+        </>
       )
     }
 

@@ -89,6 +89,7 @@ const buildUrl = (newPage: number) => {
       <div id="delete-dialog-details" class="bg-base-200 rounded-lg p-3 mb-4 text-sm">
         <!-- Transaction details will be inserted here -->
       </div>
+      <div id="delete-error" class="hidden alert alert-error text-sm mb-4" role="alert"></div>
       <div class="modal-action">
         <form method="dialog">
           <button class="btn">Cancel</button>
@@ -216,6 +217,22 @@ const buildUrl = (newPage: number) => {
   const dialog = document.getElementById('delete-dialog');
   const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
   const detailsDiv = document.getElementById('delete-dialog-details');
+  const errorDiv = document.getElementById('delete-error');
+
+  // Helper function to show inline error
+  function showDialogError(element: HTMLElement | null, message: string) {
+    if (element) {
+      element.textContent = message;
+      element.classList.remove('hidden');
+    }
+  }
+
+  function hideDialogError(element: HTMLElement | null) {
+    if (element) {
+      element.classList.add('hidden');
+      element.textContent = '';
+    }
+  }
 
   // Add click handlers to delete buttons
   document.querySelectorAll('[data-delete-transaction]').forEach((button) => {
@@ -231,6 +248,9 @@ const buildUrl = (newPage: number) => {
 
       transactionToDelete = transactionId;
       rowToDelete = row;
+
+      // Hide any previous errors
+      hideDialogError(errorDiv);
 
       // Populate dialog with transaction details
       const amount = parseFloat(transaction.amount) || 0;
@@ -263,6 +283,9 @@ const buildUrl = (newPage: number) => {
   confirmDeleteBtn.addEventListener('click', async () => {
     if (!transactionToDelete) return;
 
+    // Hide any previous errors
+    hideDialogError(errorDiv);
+
     // Disable button during request
     confirmDeleteBtn.disabled = true;
     confirmDeleteBtn.innerHTML = '<span class="loading loading-spinner"></span> Deleting...';
@@ -277,8 +300,8 @@ const buildUrl = (newPage: number) => {
 
       if (response.ok && data.success) {
         // Show success toast
-        if (window.showToast) {
-          window.showToast('Transaction deleted successfully', 'success');
+        if ((window as any).showToast) {
+          (window as any).showToast('Transaction deleted successfully', 'success');
         }
 
         // Remove row from DOM with animation
@@ -301,16 +324,12 @@ const buildUrl = (newPage: number) => {
         // Close dialog
         dialog.close();
       } else {
-        // Show error toast
-        if (window.showToast) {
-          window.showToast(data.error?.message || 'Failed to delete transaction', 'error');
-        }
+        // Show inline error
+        showDialogError(errorDiv, data.error?.message || 'Failed to delete transaction');
       }
     } catch (error) {
-      // Show error toast
-      if (window.showToast) {
-        window.showToast('Failed to delete transaction. Please try again.', 'error');
-      }
+      // Show inline error
+      showDialogError(errorDiv, 'Failed to delete transaction. Please try again.');
     } finally {
       // Re-enable button
       confirmDeleteBtn.disabled = false;
