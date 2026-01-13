@@ -1,7 +1,6 @@
 import { db, transactions, categories } from '@/db';
-import { eq, and, gte, lte, sql, desc } from 'drizzle-orm';
+import { eq, and, gte, lte, sql } from 'drizzle-orm';
 import {
-  decimalAdd,
   decimalSubtract,
   decimalDivide,
   decimalMultiply,
@@ -292,6 +291,70 @@ export class BudgetService {
       remaining,
       percentage_used: percentageUsed,
     };
+  }
+
+  /**
+   * Export budget overview to CSV format
+   */
+  async exportToCSV(
+    user_id: string,
+    year: number,
+    month: number,
+    currency: 'IDR' | 'USD'
+  ): Promise<string> {
+    const overview = await this.getMonthlyOverview(user_id, year, month, currency);
+
+    // CSV header
+    const headers = [
+      'category',
+      'percentage',
+      'budget_amount',
+      'spent_amount',
+      'balance',
+      'status',
+      'percentage_used',
+    ];
+
+    // Build CSV rows
+    const csvRows = overview.categories.map((cat) => [
+      cat.category_name,
+      cat.percentage,
+      cat.budget_amount,
+      cat.spent_amount,
+      cat.balance,
+      cat.status,
+      cat.percentage_used.toString(),
+    ]);
+
+    // Add totals row
+    csvRows.push([
+      'TOTAL',
+      '100',
+      overview.total_budget,
+      overview.total_spent,
+      overview.total_balance,
+      '',
+      '',
+    ]);
+
+    // Combine header and rows
+    const allRows = [headers, ...csvRows];
+
+    // Convert to CSV string
+    return allRows
+      .map((row) =>
+        row
+          .map((cell) => {
+            // Escape quotes and wrap in quotes if contains comma
+            const cellStr = String(cell);
+            if (cellStr.includes(',') || cellStr.includes('"') || cellStr.includes('\n')) {
+              return `"${cellStr.replace(/"/g, '""')}"`;
+            }
+            return cellStr;
+          })
+          .join(',')
+      )
+      .join('\n');
   }
 }
 

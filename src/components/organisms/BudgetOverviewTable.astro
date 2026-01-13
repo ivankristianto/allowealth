@@ -14,7 +14,7 @@
  * @param {string} className - Additional CSS classes
  */
 
-import { formatCurrency, formatPercentage, getBudgetStatusClass } from '@/lib/tokens';
+import { formatCurrency, formatPercentage } from '@/lib/tokens';
 import Badge from '../atoms/Badge.astro';
 import Icon from '../atoms/Icon.astro';
 import EmptyState from '../atoms/EmptyState.astro';
@@ -44,9 +44,19 @@ export interface Props {
   summary: BudgetSummary;
   currency?: 'IDR' | 'USD';
   className?: string;
+  sortBy?: 'category' | 'percentage' | 'budget' | 'spent' | 'balance' | 'status';
+  sortOrder?: 'asc' | 'desc';
+  baseUrl?: string;
 }
 
-const { summary, currency = 'IDR', className = '' } = Astro.props;
+const {
+  summary,
+  currency = 'IDR',
+  className = '',
+  sortBy = 'category',
+  sortOrder = 'asc',
+  baseUrl = '',
+} = Astro.props;
 
 const {
   categories,
@@ -56,6 +66,37 @@ const {
   categories_warning,
   categories_exceeded,
 } = summary;
+
+// Sort categories based on sortBy and sortOrder
+const sortedCategories = [...categories].sort((a, b) => {
+  let comparison = 0;
+
+  switch (sortBy) {
+    case 'category':
+      comparison = a.category_name.localeCompare(b.category_name);
+      break;
+    case 'percentage':
+      comparison = a.percentage_used - b.percentage_used;
+      break;
+    case 'budget':
+      comparison = parseFloat(a.budget_amount) - parseFloat(b.budget_amount);
+      break;
+    case 'spent':
+      comparison = parseFloat(a.spent_amount) - parseFloat(b.spent_amount);
+      break;
+    case 'balance':
+      comparison = parseFloat(a.balance) - parseFloat(b.balance);
+      break;
+    case 'status':
+      const statusOrder = { exceeded: 0, warning: 1, ok: 2 };
+      comparison = statusOrder[a.status] - statusOrder[b.status];
+      break;
+    default:
+      comparison = 0;
+  }
+
+  return sortOrder === 'asc' ? comparison : -comparison;
+});
 
 // Calculate total percentage (may exceed 100%)
 const totalPercentage = categories.reduce((sum, cat) => sum + parseFloat(cat.percentage || '0'), 0);
@@ -103,6 +144,51 @@ const getProgressClass = (percentage: number): string => {
   if (percentage >= 80) return 'progress-warning';
   return 'progress-success';
 };
+
+// Helper to build sort URL
+const buildSortUrl = (
+  column: string,
+  currentSort: string,
+  currentOrder: string,
+  baseUrl: string
+): string => {
+  const params = new URLSearchParams();
+
+  // If clicking the same column, toggle order
+  if (column === currentSort) {
+    params.set('sort', column);
+    params.set('order', currentOrder === 'asc' ? 'desc' : 'asc');
+  } else {
+    params.set('sort', column);
+    params.set('order', 'asc');
+  }
+
+  return `${baseUrl}?${params.toString()}`;
+};
+
+// Get sort icon
+const getSortIcon = (column: string, currentSort: string, currentOrder: string): string => {
+  if (column !== currentSort) {
+    return `<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" /></svg>`;
+  }
+  if (currentOrder === 'asc') {
+    return `<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h6m4 4l4-4m0 0l4 4m-4-4l-4 4" /></svg>`;
+  }
+  return `<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h9m4-4l4 4m0 0l-4-4m-4 4l4 4" /></svg>`;
+};
+
+// Helper to build export URL from baseUrl
+const buildExportUrl = (): string => {
+  if (!baseUrl) return '';
+
+  // baseUrl is like "/budget?year=2025&month=1&currency=IDR"
+  // We need to extract the params and build export URL
+  const urlParts = baseUrl.split('?');
+  if (urlParts.length < 2) return '/api/budget/export';
+
+  const params = urlParts[1];
+  return `/api/budget/export?${params}`;
+};
 ---
 
 <div class={`space-y-6 ${className}`} data-budget-overview-table>
@@ -113,25 +199,50 @@ const getProgressClass = (percentage: number): string => {
       <p class="text-neutral-600">Monthly budget breakdown and spending status</p>
     </div>
 
-    {/* Budget Alert Summary */}
-    {
-      (categories_warning > 0 || categories_exceeded > 0) && (
-        <div class="flex items-center gap-2">
-          {categories_exceeded > 0 && (
-            <Badge variant="error" size="lg" className="gap-1">
-              <Icon name="warning" size="sm" />
-              {categories_exceeded} exceeded
-            </Badge>
-          )}
-          {categories_warning > 0 && (
-            <Badge variant="warning" size="lg" className="gap-1">
-              <Icon name="alert" size="sm" />
-              {categories_warning} warning
-            </Badge>
-          )}
-        </div>
-      )
-    }
+    <div class="flex items-center gap-2">
+      {/* Export Button */}
+      {
+        baseUrl && (
+          <a href={buildExportUrl()} class="btn btn-outline btn-sm gap-2" download>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+              />
+            </svg>
+            Export CSV
+          </a>
+        )
+      }
+
+      {/* Budget Alert Summary */}
+      {
+        (categories_warning > 0 || categories_exceeded > 0) && (
+          <div class="flex items-center gap-2">
+            {categories_exceeded > 0 && (
+              <Badge variant="error" size="lg" className="gap-1">
+                <Icon name="warning" size="sm" />
+                {categories_exceeded} exceeded
+              </Badge>
+            )}
+            {categories_warning > 0 && (
+              <Badge variant="warning" size="lg" className="gap-1">
+                <Icon name="alert" size="sm" />
+                {categories_warning} warning
+              </Badge>
+            )}
+          </div>
+        )
+      }
+    </div>
   </div>
 
   {/* Budget Table - Desktop View */}
@@ -142,17 +253,57 @@ const getProgressClass = (percentage: number): string => {
           {/* Table Header */}
           <div class="hidden lg:grid grid-cols-12 gap-4 px-6 py-4 bg-base-200 text-sm font-semibold text-neutral-600">
             <div class="col-span-1 text-center">#</div>
-            <div class="col-span-3">Category</div>
-            <div class="col-span-1 text-center">%</div>
-            <div class="col-span-2 text-right">Budget</div>
-            <div class="col-span-2 text-right">Expense</div>
-            <div class="col-span-2 text-right">Balance</div>
+            <div class="col-span-3">
+              <a
+                href={buildSortUrl('category', sortBy, sortOrder, baseUrl)}
+                class="flex items-center gap-1 hover:text-primary transition-colors cursor-pointer"
+              >
+                Category
+                <span set:html={getSortIcon('category', sortBy, sortOrder)} />
+              </a>
+            </div>
+            <div class="col-span-1 text-center">
+              <a
+                href={buildSortUrl('percentage', sortBy, sortOrder, baseUrl)}
+                class="flex items-center justify-center gap-1 hover:text-primary transition-colors cursor-pointer"
+              >
+                %
+                <span set:html={getSortIcon('percentage', sortBy, sortOrder)} />
+              </a>
+            </div>
+            <div class="col-span-2 text-right">
+              <a
+                href={buildSortUrl('budget', sortBy, sortOrder, baseUrl)}
+                class="flex items-center justify-end gap-1 hover:text-primary transition-colors cursor-pointer"
+              >
+                Budget
+                <span set:html={getSortIcon('budget', sortBy, sortOrder)} />
+              </a>
+            </div>
+            <div class="col-span-2 text-right">
+              <a
+                href={buildSortUrl('spent', sortBy, sortOrder, baseUrl)}
+                class="flex items-center justify-end gap-1 hover:text-primary transition-colors cursor-pointer"
+              >
+                Expense
+                <span set:html={getSortIcon('spent', sortBy, sortOrder)} />
+              </a>
+            </div>
+            <div class="col-span-2 text-right">
+              <a
+                href={buildSortUrl('balance', sortBy, sortOrder, baseUrl)}
+                class="flex items-center justify-end gap-1 hover:text-primary transition-colors cursor-pointer"
+              >
+                Balance
+                <span set:html={getSortIcon('balance', sortBy, sortOrder)} />
+              </a>
+            </div>
             <div class="col-span-1" />
           </div>
 
           {/* Table Body */}
           <div class="divide-y divide-base-200">
-            {categories.map((category, index) => {
+            {sortedCategories.map((category, index) => {
               const budgetAmount = parseFloat(category.budget_amount);
               const spentAmount = parseFloat(category.spent_amount);
               const balance = parseFloat(category.balance);
