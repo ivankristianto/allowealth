@@ -2,6 +2,7 @@ Study specs/requirements-specification.md
 Study specs/execution-plan.md
 
 Run `bd ready` to get the list of ticket to work on.
+You can use tool `bv --robot-triage` to get more context which ticket is not in progres and high score.
 Find the most important ticket to work assigned it as <ticket-id>.
 
 Follow these steps:
