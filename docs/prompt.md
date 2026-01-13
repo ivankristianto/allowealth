@@ -1,22 +1,8 @@
-Run `bd ready` to get the next ticket to work on.
-Parse the json to get the <ticket-id>.
+Study specs/requirements-specification.md
+Study specs/execution-plan.md
 
-```
-{
-  "generated_at": "2026-01-12T10:34:08Z",
-  "data_hash": "2af38c06d5ba97a8",
-  "id": "eval-t8d",
-  "title": "Fix Optimization Modal Targeting",
-  "score": 0.14054553399210407,
-  "reasons": [
-    "✅ Currently unclaimed - available for work",
-    "🚨 High priority (P0) - prioritize this work"
-  ],
-  "unblocks": 0,
-  "claim_command": "bd update eval-t8d --status=in_progress",
-  "show_command": "bd show eval-t8d"
-}
-```
+Run `bd ready` to get the list of ticket to work on.
+Find the most important ticket to work assigned it as <ticket-id>.
 
 Follow these steps:
 
