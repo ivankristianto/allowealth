@@ -85,7 +85,9 @@ const buildUrl = (newPage: number) => {
   <dialog id="delete-dialog" class="modal">
     <div class="modal-box">
       <h3 class="font-bold text-lg">Delete Transaction</h3>
-      <p class="py-4">Are you sure you want to delete this transaction? This action cannot be undone.</p>
+      <p class="py-4">
+        Are you sure you want to delete this transaction? This action cannot be undone.
+      </p>
       <div id="delete-dialog-details" class="bg-base-200 rounded-lg p-3 mb-4 text-sm">
         <!-- Transaction details will be inserted here -->
       </div>
@@ -93,9 +95,7 @@ const buildUrl = (newPage: number) => {
         <form method="dialog">
           <button class="btn">Cancel</button>
         </form>
-        <button id="confirm-delete-btn" class="btn btn-error">
-          Delete Transaction
-        </button>
+        <button id="confirm-delete-btn" class="btn btn-error"> Delete Transaction </button>
       </div>
     </div>
     <form method="dialog" class="modal-backdrop">
@@ -247,10 +247,14 @@ const buildUrl = (newPage: number) => {
           <div class="font-medium">${formattedAmount}</div>
           <div class="text-base-content/70">Date:</div>
           <div class="font-medium">${new Date(transaction.transaction_date).toLocaleDateString()}</div>
-          ${transaction.description ? `
+          ${
+            transaction.description
+              ? `
             <div class="text-base-content/70">Description:</div>
             <div class="font-medium">${transaction.description}</div>
-          ` : ''}
+          `
+              : ''
+          }
         </div>
       `;
 

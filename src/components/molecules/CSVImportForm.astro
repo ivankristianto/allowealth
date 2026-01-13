@@ -13,7 +13,6 @@
  */
 
 import Label from '../atoms/Label.astro';
-import Input from '../atoms/Input.astro';
 import Button from '../atoms/Button.astro';
 import Icon from '../atoms/Icon.astro';
 import Badge from '../atoms/Badge.astro';
@@ -53,13 +52,13 @@ const fieldMap = [
     <Label required htmlFor="csv_file" id="file-label" helpText="CSV file with transaction data">
       Upload CSV File
     </Label>
-    <Input
+    <input
       id="csv_file"
       name="csv_file"
       type="file"
       accept=".csv"
-      required={true}
-      className="file-input file-input-bordered w-full"
+      required
+      class="file-input file-input-bordered w-full"
     />
     <div class="text-sm text-neutral-500 mt-1">
       Expected columns: date, type, amount, currency, category, payment_method, description
@@ -88,7 +87,7 @@ const fieldMap = [
                     <td>
                       {field.label}
                       {field.required && (
-                        <Badge variant="danger" size="sm" className="ml-2">
+                        <Badge variant="error" size="sm" className="ml-2">
                           Required
                         </Badge>
                       )}
@@ -132,7 +131,7 @@ const fieldMap = [
                   {previewData.map((row, rowIndex) => (
                     <tr>
                       {row.map((cell, cellIndex) => (
-                        <td key={`${rowIndex}-${cellIndex}`}>{cell || '(empty)'}</td>
+                        <td>{cell || '(empty)'}</td>
                       ))}
                     </tr>
                   ))}
