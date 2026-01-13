@@ -1,14 +1,76 @@
 ---
-import MainLayout from '../../layouts/MainLayout.astro';
+/**
+ * Categories Management Page
+ *
+ * Full CRUD interface for managing expense/income categories.
+ * Supports create, edit, deactivate (soft delete), and list with filtering.
+ */
 
+import MainLayout from '../../layouts/MainLayout.astro';
+import { requireAuth } from '@/lib/auth/requireAuth';
+import { categoryService } from '@/services/category.service';
+import Icon from '../../components/atoms/Icon.astro';
+import Button from '../../components/atoms/Button.astro';
+import Badge from '../../components/atoms/Badge.astro';
+import { formatCurrency } from '@/lib/tokens';
+
+// Check authentication
+const redirectResponse = requireAuth(Astro);
+if (redirectResponse) {
+  return redirectResponse;
+}
+
+const user = Astro.locals.user;
 const currentPath = '/settings/categories';
+
+// Fetch all categories (both active and inactive)
+const activeCategories = await categoryService.findAll(user.id, { is_active: true });
+const inactiveCategories = await categoryService.findAll(user.id, { is_active: false });
+
+// Combine with status indicator
+const allCategories = [
+  ...activeCategories.map((c) => ({ ...c, status: 'active' })),
+  ...inactiveCategories.map((c) => ({ ...c, status: 'inactive' })),
+];
+
+// Get filter from query params
+const url = new URL(Astro.url);
+const showInactive = url.searchParams.get('show') === 'inactive';
+const filteredCategories = showInactive
+  ? allCategories.filter((c) => c.status === 'inactive')
+  : allCategories.filter((c) => c.status === 'active');
+
+// Calculate total budget for expense categories
+const totalBudget = filteredCategories
+  .filter((c) => c.type === 'expense')
+  .reduce((sum, c) => sum + parseFloat(c.budget_amount || '0'), 0);
+
+// Get currency from first expense category
+const currency = filteredCategories.find((c) => c.type === 'expense')?.currency || 'IDR';
+
+// Type badges
+const getTypeBadgeVariant = (type: string): 'error' | 'success' => {
+  return type === 'expense' ? 'error' : 'success';
+};
+
+const getTypeLabel = (type: string) => {
+  return type.charAt(0).toUpperCase() + type.slice(1);
+};
 ---
 
-<MainLayout title="Categories - Settings" currentPath={currentPath}>
+<MainLayout title="Categories - Settings" currentPath={currentPath} user={user}>
   <div class="space-y-6">
     <div class="flex justify-between items-center">
-      <h2 class="text-2xl font-bold">Categories</h2>
-      <button class="btn btn-primary">Add Category</button>
+      <div>
+        <h2 class="text-2xl font-bold">Categories</h2>
+        <p class="text-neutral-500">
+          Manage your expense and income categories for budget tracking
+        </p>
+      </div>
+      <button onclick="categoryModal.showModal()" class="btn btn-primary gap-2" data-type="expense">
+        <Icon name="plus" size="sm" />
+        Add Category
+      </button>
     </div>
 
     <div class="tabs">
@@ -17,10 +79,484 @@ const currentPath = '/settings/categories';
       <a class="tab" href="/settings/payment-methods">Payment Methods</a>
     </div>
 
+    <!-- Status Filter Tabs -->
+    <div class="tabs tabs-boxed bg-base-200 p-1">
+      <a href="/settings/categories" class={'tab '.concat(!showInactive ? 'tab-active' : '')}>
+        Active ({activeCategories.length})
+      </a>
+      <a
+        href="/settings/categories?show=inactive"
+        class={'tab '.concat(showInactive ? 'tab-active' : '')}
+      >
+        Inactive ({inactiveCategories.length})
+      </a>
+    </div>
+
+    <!-- Summary for active categories -->
+    {
+      !showInactive && (
+        <div class="stats stats-horizontal shadow bg-base-100">
+          <div class="stat">
+            <div class="stat-title">Total Budget</div>
+            <div class="stat-value text-primary">
+              {formatCurrency(totalBudget, currency as 'IDR' | 'USD')}
+            </div>
+            <div class="stat-desc">
+              Across {activeCategories.filter((c) => c.type === 'expense').length} expense
+              categories
+            </div>
+          </div>
+          <div class="stat">
+            <div class="stat-title">Categories</div>
+            <div class="stat-value">{activeCategories.length}</div>
+            <div class="stat-desc">
+              {activeCategories.filter((c) => c.type === 'expense').length} expense,{' '}
+              {activeCategories.filter((c) => c.type === 'income').length} income
+            </div>
+          </div>
+        </div>
+      )
+    }
+
+    <!-- Categories List -->
     <div class="card bg-base-100 shadow border border-base-300">
-      <div class="card-body">
-        <p class="text-neutral-500">Manage your expense categories.</p>
+      <div class="card-body p-0">
+        {
+          filteredCategories.length > 0 ? (
+            <div class="overflow-x-auto">
+              <table class="table table-zebra">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Currency</th>
+                    <th>Allocation</th>
+                    <th>Budget</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredCategories.map((category) => (
+                    <tr key={category.id}>
+                      <td>
+                        <div class="font-medium">{category.name}</div>
+                      </td>
+                      <td>
+                        <Badge variant={getTypeBadgeVariant(category.type)} size="sm">
+                          {getTypeLabel(category.type)}
+                        </Badge>
+                      </td>
+                      <td>{category.currency}</td>
+                      <td>{category.percentage}%</td>
+                      <td>
+                        {category.type === 'expense'
+                          ? formatCurrency(
+                              category.budget_amount || '0',
+                              category.currency as 'IDR' | 'USD'
+                            )
+                          : '-'}
+                      </td>
+                      <td>
+                        <div class="flex gap-1">
+                          {category.status === 'active' ? (
+                            <>
+                              <button
+                                class="btn btn-ghost btn-sm"
+                                onclick={'editCategory("' + category.id + '")'}
+                                aria-label="Edit category"
+                              >
+                                <Icon name="pencil" size="sm" />
+                              </button>
+                              <button
+                                class="btn btn-ghost btn-sm text-warning"
+                                onclick={'deactivateCategory("' + category.id + '")'}
+                                aria-label="Deactivate category"
+                              >
+                                <Icon name="ban" size="sm" />
+                              </button>
+                            </>
+                          ) : (
+                            <button
+                              class="btn btn-ghost btn-sm text-success"
+                              onclick={'activateCategory("' + category.id + '")'}
+                              aria-label="Reactivate category"
+                            >
+                              <Icon name="refresh" size="sm" />
+                              Reactivate
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div class="py-12 text-center text-neutral-500">
+              <Icon name="tag" size="lg" className="mx-auto mb-2 opacity-50" />
+              <p>
+                {showInactive
+                  ? 'No inactive categories'
+                  : 'No categories found. Create your first category to get started.'}
+              </p>
+            </div>
+          )
+        }
       </div>
     </div>
   </div>
 </MainLayout>
+
+<!-- Add/Edit Category Modal -->
+<dialog id="category-modal" class="modal">
+  <div class="modal-box max-w-md">
+    <h3 id="modal-title" class="font-bold text-lg">Add Category</h3>
+    <form id="category-form" class="py-4 space-y-4">
+      <input type="hidden" name="id" value="" />
+
+      <div class="form-control">
+        <label class="label" for="name">
+          <span class="label-text">Name</span>
+          <span class="label-text-alt text-error">*</span>
+        </label>
+        <input
+          type="text"
+          name="name"
+          id="name"
+          class="input input-bordered"
+          required
+          placeholder="e.g., Food & Groceries"
+        />
+      </div>
+
+      <div class="form-control">
+        <label class="label" for="type">
+          <span class="label-text">Type</span>
+          <span class="label-text-alt text-error">*</span>
+        </label>
+        <select name="type" id="type" class="select select-bordered" required>
+          <option value="expense">Expense</option>
+          <option value="income">Income</option>
+        </select>
+      </div>
+
+      <div class="form-control">
+        <label class="label" for="currency">
+          <span class="label-text">Currency</span>
+          <span class="label-text-alt text-error">*</span>
+        </label>
+        <select name="currency" id="currency" class="select select-bordered" required>
+          <option value="IDR">IDR</option>
+          <option value="USD">USD</option>
+        </select>
+      </div>
+
+      <div class="form-control">
+        <label class="label" for="percentage">
+          <span class="label-text">Budget Allocation %</span>
+          <span class="label-text-alt text-error">*</span>
+        </label>
+        <input
+          type="number"
+          name="percentage"
+          id="percentage"
+          class="input input-bordered"
+          required
+          min="0"
+          max="100"
+          step="0.1"
+          placeholder="e.g., 15"
+        />
+        <label class="label">
+          <span class="label-text-alt">Percentage of total budget allocation</span>
+        </label>
+      </div>
+
+      <div class="form-control">
+        <label class="label" for="budget_amount">
+          <span class="label-text">Monthly Budget Amount</span>
+          <span class="label-text-alt text-error">*</span>
+        </label>
+        <input
+          type="number"
+          name="budget_amount"
+          id="budget_amount"
+          class="input input-bordered"
+          required
+          min="0"
+          step="0.01"
+          placeholder="e.g., 1000000"
+        />
+        <label class="label">
+          <span class="label-text-alt">For expense categories only</span>
+        </label>
+      </div>
+
+      <div id="form-error" class="hidden alert alert-error text-sm" role="alert"></div>
+
+      <div class="modal-action">
+        <button type="button" onclick="categoryModal.close()" class="btn btn-ghost">
+          Cancel
+        </button>
+        <button type="submit" class="btn btn-primary"> Save Category </button>
+      </div>
+    </form>
+  </div>
+  <form method="dialog" class="modal-backdrop">
+    <button>close</button>
+  </form>
+</dialog>
+
+<!-- Deactivate Confirmation Dialog -->
+<dialog id="deactivate-dialog" class="modal">
+  <div class="modal-box">
+    <h3 class="font-bold text-lg">Deactivate Category</h3>
+    <p class="py-4">
+      Are you sure you want to deactivate this category? It will no longer appear in transaction
+      forms, but existing transactions will remain unchanged.
+    </p>
+    <div id="deactivate-error" class="hidden alert alert-error text-sm mb-4" role="alert"></div>
+    <div class="modal-action">
+      <form method="dialog">
+        <button class="btn btn-ghost">Cancel</button>
+      </form>
+      <button id="confirm-deactivate-btn" class="btn btn-warning"> Deactivate </button>
+    </div>
+  </div>
+  <form method="dialog" class="modal-backdrop">
+    <button>close</button>
+  </form>
+</dialog>
+
+<!-- Reactivate Confirmation Dialog -->
+<dialog id="activate-dialog" class="modal">
+  <div class="modal-box">
+    <h3 class="font-bold text-lg">Reactivate Category</h3>
+    <p class="py-4">
+      Are you sure you want to reactivate this category? It will become available for use in
+      transaction forms again.
+    </p>
+    <div id="activate-error" class="hidden alert alert-error text-sm mb-4" role="alert"></div>
+    <div class="modal-action">
+      <form method="dialog">
+        <button class="btn btn-ghost">Cancel</button>
+      </form>
+      <button id="confirm-activate-btn" class="btn btn-success"> Reactivate </button>
+    </div>
+  </div>
+  <form method="dialog" class="modal-backdrop">
+    <button>close</button>
+  </form>
+</dialog>
+
+<script define:vars={{ allCategories }}>
+  // Serialize categories for client-side access
+  const categories = JSON.parse(
+    JSON.stringify(
+      allCategories.map((c: any) => ({
+        id: c.id,
+        name: c.name,
+        type: c.type,
+        currency: c.currency,
+        percentage: c.percentage,
+        budget_amount: c.budget_amount,
+        status: c.status,
+      }))
+    )
+  );
+
+  const categoryModal = document.getElementById('category-modal') as HTMLDialogElement;
+  const categoryForm = document.getElementById('category-form') as HTMLFormElement;
+  const modalTitle = document.getElementById('modal-title');
+  const formError = document.getElementById('form-error');
+  const deactivateDialog = document.getElementById('deactivate-dialog') as HTMLDialogElement;
+  const deactivateError = document.getElementById('deactivate-error');
+  const activateDialog = document.getElementById('activate-dialog') as HTMLDialogElement;
+  const activateError = document.getElementById('activate-error');
+
+  let currentCategoryId = '';
+
+  // Show form error
+  function showFormError(message: string) {
+    if (formError) {
+      formError.textContent = message;
+      formError.classList.remove('hidden');
+    }
+  }
+
+  // Clear form error
+  function clearFormError() {
+    if (formError) {
+      formError.textContent = '';
+      formError.classList.add('hidden');
+    }
+  }
+
+  // Show dialog error
+  function showDialogError(element: HTMLElement | null, message: string) {
+    if (element) {
+      element.textContent = message;
+      element.classList.remove('hidden');
+    }
+  }
+
+  // Clear dialog error
+  function clearDialogError(element: HTMLElement | null) {
+    if (element) {
+      element.textContent = '';
+      element.classList.add('hidden');
+    }
+  }
+
+  // Reset form
+  function resetForm() {
+    categoryForm?.reset();
+    (categoryForm?.querySelector('[name="id"]') as HTMLInputElement)?.value = '';
+    if (modalTitle) modalTitle.textContent = 'Add Category';
+    clearFormError();
+  }
+
+  // Add category button handler
+  document.querySelectorAll('[onclick="categoryModal.showModal()"]').forEach((btn) => {
+    const button = btn as HTMLButtonElement;
+    button.addEventListener('click', (e) => {
+      e.preventDefault();
+      resetForm();
+      categoryModal?.showModal();
+    });
+  });
+
+  // Edit category
+  (window as any).editCategory = (id: string) => {
+    const category = categories.find((c) => c.id === id);
+    if (!category) return;
+
+    currentCategoryId = id;
+    if (modalTitle) modalTitle.textContent = 'Edit Category';
+
+    const form = categoryForm;
+    (form?.querySelector('[name="id"]') as HTMLInputElement).value = id;
+    (form?.querySelector('[name="name"]') as HTMLInputElement).value = category.name;
+    (form?.querySelector('[name="type"]') as HTMLSelectElement).value = category.type;
+    (form?.querySelector('[name="currency"]') as HTMLSelectElement).value = category.currency;
+    (form?.querySelector('[name="percentage"]') as HTMLInputElement).value = category.percentage;
+    (form?.querySelector('[name="budget_amount"]') as HTMLInputElement).value =
+      category.budget_amount;
+
+    categoryModal?.showModal();
+  };
+
+  // Deactivate category
+  (window as any).deactivateCategory = (id: string) => {
+    currentCategoryId = id;
+    clearDialogError(deactivateError);
+    deactivateDialog?.showModal();
+  };
+
+  // Activate category
+  (window as any).activateCategory = (id: string) => {
+    currentCategoryId = id;
+    clearDialogError(activateError);
+    activateDialog?.showModal();
+  };
+
+  // Confirm deactivate
+  document.getElementById('confirm-deactivate-btn')?.addEventListener('click', async () => {
+    if (!currentCategoryId) return;
+
+    try {
+      const response = await fetch(`/api/categories/${currentCategoryId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_active: false }),
+      });
+
+      if (response.ok) {
+        window.location.href = '/settings/categories';
+      } else {
+        const result = await response.json();
+        showDialogError(deactivateError, result.error?.message || 'Failed to deactivate category');
+      }
+    } catch (err) {
+      showDialogError(deactivateError, 'Network error. Please try again.');
+    }
+  });
+
+  // Confirm activate
+  document.getElementById('confirm-activate-btn')?.addEventListener('click', async () => {
+    if (!currentCategoryId) return;
+
+    try {
+      const response = await fetch(`/api/categories/${currentCategoryId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_active: true }),
+      });
+
+      if (response.ok) {
+        window.location.href = '/settings/categories';
+      } else {
+        const result = await response.json();
+        showDialogError(activateError, result.error?.message || 'Failed to activate category');
+      }
+    } catch (err) {
+      showDialogError(activateError, 'Network error. Please try again.');
+    }
+  });
+
+  // Form submission
+  categoryForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    clearFormError();
+
+    const formData = new FormData(categoryForm);
+    const id = (formData.get('id') as string) || '';
+    const data = {
+      name: formData.get('name'),
+      type: formData.get('type'),
+      currency: formData.get('currency'),
+      percentage: parseFloat(formData.get('percentage') as string),
+      budget_amount: formData.get('budget_amount'),
+    };
+
+    // Validate budget amount is a number
+    if (isNaN(data.budget_amount as number)) {
+      showFormError('Budget amount must be a valid number');
+      return;
+    }
+
+    const url = id ? `/api/categories/${id}` : '/api/categories';
+    const method = id ? 'PUT' : 'POST';
+
+    try {
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        if (result.error?.details) {
+          showFormError(result.error.details.map((d: { message: string }) => d.message).join(', '));
+        } else {
+          showFormError(result.error?.message || 'Failed to save category');
+        }
+      } else {
+        window.location.href = '/settings/categories';
+      }
+    } catch (err) {
+      showFormError('Network error. Please try again.');
+    }
+  });
+
+  // Reset form when modal closes without saving
+  categoryModal?.addEventListener('close', (e) => {
+    // Only reset if the close was triggered by the backdrop or cancel button
+    if ((e.target as HTMLDialogElement).returnValue === '') {
+      resetForm();
+    }
+  });
+</script>

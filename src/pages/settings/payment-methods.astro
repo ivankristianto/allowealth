@@ -1,14 +1,81 @@
 ---
-import MainLayout from '../../layouts/MainLayout.astro';
+/**
+ * Payment Methods Management Page
+ *
+ * Full CRUD interface for managing payment methods.
+ * Supports create, edit, deactivate (soft delete), and list with filtering.
+ */
 
+import MainLayout from '../../layouts/MainLayout.astro';
+import { requireAuth } from '@/lib/auth/requireAuth';
+import { paymentMethodService } from '@/services/payment-method.service';
+import Icon from '../../components/atoms/Icon.astro';
+import Button from '../../components/atoms/Button.astro';
+import Badge from '../../components/atoms/Badge.astro';
+
+// Check authentication
+const redirectResponse = requireAuth(Astro);
+if (redirectResponse) {
+  return redirectResponse;
+}
+
+const user = Astro.locals.user;
 const currentPath = '/settings/payment-methods';
+
+// Fetch all payment methods (both active and inactive)
+const activeMethods = await paymentMethodService.findAll(user.id, { is_active: true });
+const inactiveMethods = await paymentMethodService.findAll(user.id, { is_active: false });
+
+// Combine with status indicator
+const allMethods = [
+  ...activeMethods.map((m) => ({ ...m, status: 'active' })),
+  ...inactiveMethods.map((m) => ({ ...m, status: 'inactive' })),
+];
+
+// Get filter from query params
+const url = new URL(Astro.url);
+const showInactive = url.searchParams.get('show') === 'inactive';
+const filteredMethods = showInactive
+  ? allMethods.filter((m) => m.status === 'inactive')
+  : allMethods.filter((m) => m.status === 'active');
+
+// Type icons and labels
+const getTypeLabel = (type: string) => {
+  const labels: Record<string, string> = {
+    cash: 'Cash',
+    credit_card: 'Credit Card',
+    debit_card: 'Debit Card',
+    bank_transfer: 'Bank Transfer',
+    e_wallet: 'E-Wallet',
+  };
+  return labels[type] || type;
+};
+
+const getTypeIcon = (type: string) => {
+  const icons: Record<string, string> = {
+    cash: 'currency-dollar',
+    credit_card: 'credit-card',
+    debit_card: 'credit-card',
+    bank_transfer: 'arrow-left',
+    e_wallet: 'calendar',
+  };
+  return icons[type] || 'tag';
+};
 ---
 
-<MainLayout title="Payment Methods - Settings" currentPath={currentPath}>
+<MainLayout title="Payment Methods - Settings" currentPath={currentPath} user={user}>
   <div class="space-y-6">
     <div class="flex justify-between items-center">
-      <h2 class="text-2xl font-bold">Payment Methods</h2>
-      <button class="btn btn-primary">Add Method</button>
+      <div>
+        <h2 class="text-2xl font-bold">Payment Methods</h2>
+        <p class="text-neutral-500">
+          Manage your payment methods (cash, cards, bank accounts, e-wallets)
+        </p>
+      </div>
+      <button onclick="methodModal.showModal()" class="btn btn-primary gap-2">
+        <Icon name="plus" size="sm" />
+        Add Method
+      </button>
     </div>
 
     <div class="tabs">
@@ -17,10 +84,401 @@ const currentPath = '/settings/payment-methods';
       <a class="tab tab-active" href="/settings/payment-methods">Payment Methods</a>
     </div>
 
+    <!-- Status Filter Tabs -->
+    <div class="tabs tabs-boxed bg-base-200 p-1">
+      <a href="/settings/payment-methods" class={'tab '.concat(!showInactive ? 'tab-active' : '')}>
+        Active ({activeMethods.length})
+      </a>
+      <a
+        href="/settings/payment-methods?show=inactive"
+        class={'tab '.concat(showInactive ? 'tab-active' : '')}
+      >
+        Inactive ({inactiveMethods.length})
+      </a>
+    </div>
+
+    <!-- Summary for active methods -->
+    {
+      !showInactive && activeMethods.length > 0 && (
+        <div class="stats stats-horizontal shadow bg-base-100">
+          <div class="stat">
+            <div class="stat-title">Payment Methods</div>
+            <div class="stat-value">{activeMethods.length}</div>
+            <div class="stat-desc">Configured for transactions</div>
+          </div>
+        </div>
+      )
+    }
+
+    <!-- Payment Methods List -->
     <div class="card bg-base-100 shadow border border-base-300">
-      <div class="card-body">
-        <p class="text-neutral-500">Manage your payment methods (cash, cards, bank accounts).</p>
+      <div class="card-body p-0">
+        {
+          filteredMethods.length > 0 ? (
+            <div class="overflow-x-auto">
+              <table class="table table-zebra">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredMethods.map((method) => (
+                    <tr key={method.id}>
+                      <td>
+                        <div class="flex items-center gap-2">
+                          <Icon name={getTypeIcon(method.type)} size="sm" className="opacity-50" />
+                          <span class="font-medium">{method.name}</span>
+                        </div>
+                      </td>
+                      <td>
+                        <Badge variant="neutral" size="sm">
+                          {getTypeLabel(method.type)}
+                        </Badge>
+                      </td>
+                      <td>
+                        <div class="flex gap-1">
+                          {method.status === 'active' ? (
+                            <>
+                              <button
+                                class="btn btn-ghost btn-sm"
+                                onclick={'editMethod("' + method.id + '")'}
+                                aria-label="Edit payment method"
+                              >
+                                <Icon name="pencil" size="sm" />
+                              </button>
+                              <button
+                                class="btn btn-ghost btn-sm text-warning"
+                                onclick={'deactivateMethod("' + method.id + '")'}
+                                aria-label="Deactivate payment method"
+                              >
+                                <Icon name="ban" size="sm" />
+                              </button>
+                            </>
+                          ) : (
+                            <button
+                              class="btn btn-ghost btn-sm text-success"
+                              onclick={'activateMethod("' + method.id + '")'}
+                              aria-label="Reactivate payment method"
+                            >
+                              <Icon name="refresh" size="sm" />
+                              Reactivate
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div class="py-12 text-center text-neutral-500">
+              <Icon name="credit-card" size="lg" className="mx-auto mb-2 opacity-50" />
+              <p>
+                {showInactive
+                  ? 'No inactive payment methods'
+                  : 'No payment methods found. Add your first payment method to get started.'}
+              </p>
+            </div>
+          )
+        }
       </div>
     </div>
   </div>
 </MainLayout>
+
+<!-- Add/Edit Payment Method Modal -->
+<dialog id="method-modal" class="modal">
+  <div class="modal-box max-w-md">
+    <h3 id="modal-title" class="font-bold text-lg">Add Payment Method</h3>
+    <form id="method-form" class="py-4 space-y-4">
+      <input type="hidden" name="id" value="" />
+
+      <div class="form-control">
+        <label class="label" for="name">
+          <span class="label-text">Name</span>
+          <span class="label-text-alt text-error">*</span>
+        </label>
+        <input
+          type="text"
+          name="name"
+          id="name"
+          class="input input-bordered"
+          required
+          placeholder="e.g., BCA Account, GoPay, Cash Wallet"
+        />
+      </div>
+
+      <div class="form-control">
+        <label class="label" for="type">
+          <span class="label-text">Type</span>
+          <span class="label-text-alt text-error">*</span>
+        </label>
+        <select name="type" id="type" class="select select-bordered" required>
+          <option value="">Select type...</option>
+          <option value="cash">Cash</option>
+          <option value="credit_card">Credit Card</option>
+          <option value="debit_card">Debit Card</option>
+          <option value="bank_transfer">Bank Transfer</option>
+          <option value="e_wallet">E-Wallet</option>
+        </select>
+      </div>
+
+      <div id="form-error" class="hidden alert alert-error text-sm" role="alert"></div>
+
+      <div class="modal-action">
+        <button type="button" onclick="methodModal.close()" class="btn btn-ghost"> Cancel </button>
+        <button type="submit" class="btn btn-primary"> Save Payment Method </button>
+      </div>
+    </form>
+  </div>
+  <form method="dialog" class="modal-backdrop">
+    <button>close</button>
+  </form>
+</dialog>
+
+<!-- Deactivate Confirmation Dialog -->
+<dialog id="deactivate-dialog" class="modal">
+  <div class="modal-box">
+    <h3 class="font-bold text-lg">Deactivate Payment Method</h3>
+    <p class="py-4">
+      Are you sure you want to deactivate this payment method? It will no longer appear in
+      transaction forms, but existing transactions will remain unchanged.
+    </p>
+    <div id="deactivate-error" class="hidden alert alert-error text-sm mb-4" role="alert"></div>
+    <div class="modal-action">
+      <form method="dialog">
+        <button class="btn btn-ghost">Cancel</button>
+      </form>
+      <button id="confirm-deactivate-btn" class="btn btn-warning"> Deactivate </button>
+    </div>
+  </div>
+  <form method="dialog" class="modal-backdrop">
+    <button>close</button>
+  </form>
+</dialog>
+
+<!-- Reactivate Confirmation Dialog -->
+<dialog id="activate-dialog" class="modal">
+  <div class="modal-box">
+    <h3 class="font-bold text-lg">Reactivate Payment Method</h3>
+    <p class="py-4">
+      Are you sure you want to reactivate this payment method? It will become available for use in
+      transaction forms again.
+    </p>
+    <div id="activate-error" class="hidden alert alert-error text-sm mb-4" role="alert"></div>
+    <div class="modal-action">
+      <form method="dialog">
+        <button class="btn btn-ghost">Cancel</button>
+      </form>
+      <button id="confirm-activate-btn" class="btn btn-success"> Reactivate </button>
+    </div>
+  </div>
+  <form method="dialog" class="modal-backdrop">
+    <button>close</button>
+  </form>
+</dialog>
+
+<script define:vars={{ allMethods }}>
+  // Serialize payment methods for client-side access
+  const methods = JSON.parse(
+    JSON.stringify(
+      allMethods.map((m: any) => ({
+        id: m.id,
+        name: m.name,
+        type: m.type,
+        status: m.status,
+      }))
+    )
+  );
+
+  const methodModal = document.getElementById('method-modal') as HTMLDialogElement;
+  const methodForm = document.getElementById('method-form') as HTMLFormElement;
+  const modalTitle = document.getElementById('modal-title');
+  const formError = document.getElementById('form-error');
+  const deactivateDialog = document.getElementById('deactivate-dialog') as HTMLDialogElement;
+  const deactivateError = document.getElementById('deactivate-error');
+  const activateDialog = document.getElementById('activate-dialog') as HTMLDialogElement;
+  const activateError = document.getElementById('activate-error');
+
+  let currentMethodId = '';
+
+  // Show form error
+  function showFormError(message: string) {
+    if (formError) {
+      formError.textContent = message;
+      formError.classList.remove('hidden');
+    }
+  }
+
+  // Clear form error
+  function clearFormError() {
+    if (formError) {
+      formError.textContent = '';
+      formError.classList.add('hidden');
+    }
+  }
+
+  // Show dialog error
+  function showDialogError(element: HTMLElement | null, message: string) {
+    if (element) {
+      element.textContent = message;
+      element.classList.remove('hidden');
+    }
+  }
+
+  // Clear dialog error
+  function clearDialogError(element: HTMLElement | null) {
+    if (element) {
+      element.textContent = '';
+      element.classList.add('hidden');
+    }
+  }
+
+  // Reset form
+  function resetForm() {
+    methodForm?.reset();
+    (methodForm?.querySelector('[name="id"]') as HTMLInputElement)?.value = '';
+    if (modalTitle) modalTitle.textContent = 'Add Payment Method';
+    clearFormError();
+  }
+
+  // Add method button handler
+  document.querySelectorAll('[onclick="methodModal.showModal()"]').forEach((btn) => {
+    const button = btn as HTMLButtonElement;
+    button.addEventListener('click', (e) => {
+      e.preventDefault();
+      resetForm();
+      methodModal?.showModal();
+    });
+  });
+
+  // Edit method
+  (window as any).editMethod = (id: string) => {
+    const method = methods.find((m) => m.id === id);
+    if (!method) return;
+
+    currentMethodId = id;
+    if (modalTitle) modalTitle.textContent = 'Edit Payment Method';
+
+    const form = methodForm;
+    (form?.querySelector('[name="id"]') as HTMLInputElement).value = id;
+    (form?.querySelector('[name="name"]') as HTMLInputElement).value = method.name;
+    (form?.querySelector('[name="type"]') as HTMLSelectElement).value = method.type;
+
+    methodModal?.showModal();
+  };
+
+  // Deactivate method
+  (window as any).deactivateMethod = (id: string) => {
+    currentMethodId = id;
+    clearDialogError(deactivateError);
+    deactivateDialog?.showModal();
+  };
+
+  // Activate method
+  (window as any).activateMethod = (id: string) => {
+    currentMethodId = id;
+    clearDialogError(activateError);
+    activateDialog?.showModal();
+  };
+
+  // Confirm deactivate
+  document.getElementById('confirm-deactivate-btn')?.addEventListener('click', async () => {
+    if (!currentMethodId) return;
+
+    try {
+      const response = await fetch(`/api/payment-methods/${currentMethodId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_active: false }),
+      });
+
+      if (response.ok) {
+        window.location.href = '/settings/payment-methods';
+      } else {
+        const result = await response.json();
+        showDialogError(
+          deactivateError,
+          result.error?.message || 'Failed to deactivate payment method'
+        );
+      }
+    } catch (err) {
+      showDialogError(deactivateError, 'Network error. Please try again.');
+    }
+  });
+
+  // Confirm activate
+  document.getElementById('confirm-activate-btn')?.addEventListener('click', async () => {
+    if (!currentMethodId) return;
+
+    try {
+      const response = await fetch(`/api/payment-methods/${currentMethodId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_active: true }),
+      });
+
+      if (response.ok) {
+        window.location.href = '/settings/payment-methods';
+      } else {
+        const result = await response.json();
+        showDialogError(
+          activateError,
+          result.error?.message || 'Failed to activate payment method'
+        );
+      }
+    } catch (err) {
+      showDialogError(activateError, 'Network error. Please try again.');
+    }
+  });
+
+  // Form submission
+  methodForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    clearFormError();
+
+    const formData = new FormData(methodForm);
+    const id = (formData.get('id') as string) || '';
+    const data = {
+      name: formData.get('name'),
+      type: formData.get('type'),
+    };
+
+    const url = id ? `/api/payment-methods/${id}` : '/api/payment-methods';
+    const method = id ? 'PUT' : 'POST';
+
+    try {
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        if (result.error?.details) {
+          showFormError(result.error.details.map((d: { message: string }) => d.message).join(', '));
+        } else {
+          showFormError(result.error?.message || 'Failed to save payment method');
+        }
+      } else {
+        window.location.href = '/settings/payment-methods';
+      }
+    } catch (err) {
+      showFormError('Network error. Please try again.');
+    }
+  });
+
+  // Reset form when modal closes without saving
+  methodModal?.addEventListener('close', (e) => {
+    // Only reset if the close was triggered by the backdrop or cancel button
+    if ((e.target as HTMLDialogElement).returnValue === '') {
+      resetForm();
+    }
+  });
+</script>
