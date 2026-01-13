@@ -10,6 +10,24 @@ Follow these steps:
 1. Run `/k2:start <ticket-id>`
 2. Send the summary with this bash command `tt -m "<summary>"`, ensure the summary is properly escaped.
 
+Summary Format:
+
+```
+Ticket ID: The ticket ID
+PR: Link to Pull Request (status of PR)
+Total File Changes: Total file being changed.
+
+Summary:
+- Bullet points of what's being done,
+
+Follow Up tickets
+- New ticket IDs if any new follow up ticket created.
+
+Stats:
+- Total time Execution: in x hours xx minutes
+- Estimated Token used: Total token being used
+```
+
 IMPORTANT:
 
 - Measure the total time of execution and amount of token. Output it.
