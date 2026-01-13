@@ -12,6 +12,7 @@
 import { db } from './index';
 import { nanoid } from 'nanoid';
 import { hashPassword } from '@/lib/auth/password';
+import { sql } from 'drizzle-orm';
 import {
   users,
   userSettings,
@@ -206,6 +207,11 @@ async function clearAllTables() {
     await db.delete(userSettings);
     await db.delete(users);
     await db.delete(exchangeRates);
+
+    // Run VACUUM to clean up the database and reclaim space
+    // This helps prevent I/O errors on subsequent operations
+    console.log('🧹 Vacuuming database...');
+    await db.run(sql`VACUUM`);
 
     console.log('✓ All tables cleared');
   } catch (error) {
