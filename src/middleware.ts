@@ -13,12 +13,13 @@ import type { User, Session } from 'lucia';
 import { logError } from './lib/utils/error-logger';
 
 /**
- * Extend Astro.locals to include user and session
+ * Extend Astro.locals to include user, session, and CSP nonce
  */
 declare module 'astro' {
   interface Locals {
     user?: User | null;
     session?: Session | null;
+    cspNonce?: string;
   }
 }
 
@@ -71,22 +72,53 @@ const CSP_HEADERS = {
 } as const;
 
 /**
- * Convert CSP headers object to CSP header string
+ * Generate a cryptographically random nonce for CSP
+ * A nonce is a random value used only once to allow inline scripts securely
  */
-function buildCSPHeader(): string {
+function generateNonce(): string {
+  // Generate 16 random bytes and convert to base64
+  const array = new Uint8Array(16);
+  crypto.getRandomValues(array);
+  return btoa(String.fromCharCode(...array));
+}
+
+/**
+ * Convert CSP headers object to CSP header string with nonce
+ * @param nonce - The CSP nonce to allow for inline scripts
+ */
+function buildCSPHeader(nonce: string): string {
   return Object.entries(CSP_HEADERS)
-    .map(([directive, source]) => `${directive} ${source}`)
+    .map(([directive, source]) => {
+      // Add nonce to script-src directive
+      if (directive === 'script-src') {
+        return `${directive} ${source} 'nonce-${nonce}'`;
+      }
+      return `${directive} ${source}`;
+    })
     .join('; ');
 }
 
 export const onRequest: MiddlewareHandler = async (context, next) => {
+  // Generate a fresh CSP nonce for each request
+  const nonce = generateNonce();
+  (context.locals as any).cspNonce = nonce;
+
   const sessionId = context.cookies.get(SESSION_COOKIE_NAME)?.value;
 
   // No session cookie - user is not authenticated
   if (!sessionId) {
     (context.locals as any).user = null;
     (context.locals as any).session = null;
-    return next();
+
+    // Still apply CSP headers for unauthenticated requests
+    const response = await next();
+    response.headers.set('Content-Security-Policy', buildCSPHeader(nonce));
+    response.headers.set('X-Content-Type-Options', 'nosniff');
+    response.headers.set('X-Frame-Options', 'DENY');
+    response.headers.set('X-XSS-Protection', '1; mode=block');
+    response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+
+    return response;
   }
 
   try {
@@ -107,8 +139,8 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
     // Apply security headers to response
     const response = await next();
 
-    // Add Content Security Policy headers for XSS prevention
-    response.headers.set('Content-Security-Policy', buildCSPHeader());
+    // Add Content Security Policy headers for XSS prevention with nonce
+    response.headers.set('Content-Security-Policy', buildCSPHeader(nonce));
 
     // Add additional security headers
     response.headers.set('X-Content-Type-Options', 'nosniff'); // Prevent MIME type sniffing
@@ -122,6 +154,15 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
     logError('Session validation error', error);
     (context.locals as any).user = null;
     (context.locals as any).session = null;
-    return next();
+
+    // Still apply CSP headers even when session validation fails
+    const response = await next();
+    response.headers.set('Content-Security-Policy', buildCSPHeader(nonce));
+    response.headers.set('X-Content-Type-Options', 'nosniff');
+    response.headers.set('X-Frame-Options', 'DENY');
+    response.headers.set('X-XSS-Protection', '1; mode=block');
+    response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+
+    return response;
   }
 };

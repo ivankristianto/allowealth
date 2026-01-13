@@ -24,6 +24,9 @@ const {
   submitText = 'Create Account',
   loginLink = '/login',
 } = Astro.props;
+
+// Get CSP nonce from middleware
+const cspNonce = Astro.locals.cspNonce || '';
 ---
 
 <form
@@ -164,7 +167,7 @@ const {
   }
 </style>
 
-<script>
+<script define:vars={{ loginLink }} nonce={cspNonce}>
   // HTML escaping utility to prevent XSS
   const escapeHtml = (text) => {
     const div = document.createElement('div');

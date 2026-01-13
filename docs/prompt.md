@@ -20,7 +20,7 @@ Parse the json to get the <ticket-id>.
 
 Follow these steps:
 
-1. Run `/k2:start <ticket-id> --skip-worktree`
+1. Run `/k2:start <ticket-id>`
 2. Send the summary with this bash command `tt -m "<summary>"`, ensure the summary is properly escaped.
 
 IMPORTANT:
