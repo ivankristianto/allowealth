@@ -24,12 +24,17 @@
     // Path mappings
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"],
-      "@lib/*": ["src/lib/*"],
-      "@components/*": ["src/components/*"],
-      "@db/*": ["src/db/*"],
-      "@styles/*": ["src/styles/*"],
-      "@layouts/*": ["src/layouts/*"]
+      "@/*": ["./src/*"],
+      "@lib": ["./src/lib"],
+      "@lib/*": ["./src/lib/*"],
+      "@components": ["./src/components"],
+      "@components/*": ["./src/components/*"],
+      "@db": ["./src/db"],
+      "@db/*": ["./src/db/*"],
+      "@styles": ["./src/styles"],
+      "@styles/*": ["./src/styles/*"],
+      "@layouts": ["./src/layouts"],
+      "@layouts/*": ["./src/layouts/*"]
     },
     "plugins": [
       {
@@ -37,6 +42,6 @@
       }
     ]
   },
-  "include": [".astro/types.d.ts"],
-  "exclude": ["dist"]
+  "include": ["src/**/*.astro", "src/**/*.d.ts", ".astro/types.d.ts", "env.d.ts"],
+  "exclude": ["node_modules", "dist", "src/**/*.stories.ts"]
 }

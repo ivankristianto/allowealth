@@ -31,6 +31,14 @@ docs/prompt.md
 # IntelliJ based IDEs
 .idea
 
+# Editor directories
+.vscode/
+.codex/
+.cursor/
+.idea/
+*.swp
+*.swo
+
 # Finder (MacOS) folder config
 .DS_Store
 debug-storybook.log
