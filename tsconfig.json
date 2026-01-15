@@ -30,7 +30,12 @@
       "@db/*": ["src/db/*"],
       "@styles/*": ["src/styles/*"],
       "@layouts/*": ["src/layouts/*"]
-    }
+    },
+    "plugins": [
+      {
+        "name": "@astrojs/ts-plugin"
+      }
+    ]
   },
   "include": [".astro/types.d.ts"],
   "exclude": ["dist"]
