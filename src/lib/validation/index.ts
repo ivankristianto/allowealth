@@ -4,6 +4,22 @@
  * Export all Zod schemas for use in services and API endpoints
  */
 
+// HTML validation patterns for form input validation
+export {
+  email,
+  password,
+  url,
+  phone,
+  creditCard,
+  postalCode,
+  numeric,
+  date,
+  username,
+  patterns,
+  type ValidationPattern,
+  type PasswordPattern,
+} from './patterns';
+
 // Shared enums (export once from central location)
 export {
   currencyEnum,
