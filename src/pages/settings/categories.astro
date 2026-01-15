@@ -8,7 +8,7 @@
 
 import MainLayout from '../../layouts/MainLayout.astro';
 import { requireAuth } from '@/lib/auth/requireAuth';
-import { categoryService } from '@/services/category.service';
+import { categoryService } from '@/services';
 import Icon from '../../components/atoms/Icon.astro';
 import Button from '../../components/atoms/Button.astro';
 import Badge from '../../components/atoms/Badge.astro';
@@ -137,7 +137,7 @@ const getTypeLabel = (type: string) => {
                 </thead>
                 <tbody>
                   {filteredCategories.map((category) => (
-                    <tr key={category.id}>
+                    <tr>
                       <td>
                         <div class="font-medium">{category.name}</div>
                       </td>
@@ -350,7 +350,7 @@ const getTypeLabel = (type: string) => {
   </form>
 </dialog>
 
-<script define:vars={{ allCategories }}>
+<script is:inline define:vars={{ allCategories }}>
   // Serialize categories for client-side access
   const categories = JSON.parse(
     JSON.stringify(

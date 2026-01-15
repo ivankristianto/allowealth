@@ -100,7 +100,7 @@ const getPaymentIcon = (type: string): string => {
         aria-label="Loading recent transactions"
       >
         {[1, 2, 3, 4, 5].map((i) => (
-          <div key={i} class="flex items-center gap-4 p-4 bg-base-200 rounded-lg animate-pulse">
+          <div class="flex items-center gap-4 p-4 bg-base-200 rounded-lg animate-pulse">
             <div class="w-20 h-4 bg-neutral-300 rounded" aria-hidden="true" />
             <div class="flex-1 space-y-2">
               <div class="h-4 bg-neutral-300 rounded w-3/4" aria-hidden="true" />
@@ -129,10 +129,7 @@ const getPaymentIcon = (type: string): string => {
           const date = new Date(transaction.transaction_date);
 
           return (
-            <li
-              class="flex items-center gap-4 p-4 hover:bg-base-200 rounded-lg transition-colors group"
-              key={transaction.id}
-            >
+            <li class="flex items-center gap-4 p-4 hover:bg-base-200 rounded-lg transition-colors group">
               {/* Date */}
               <div class="flex-shrink-0 w-20 text-sm">
                 <time class="font-medium" datetime={date.toISOString()}>

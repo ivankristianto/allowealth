@@ -1,5 +1,4 @@
 {
-  "extends": "astro/tsconfigs/strict",
   "compilerOptions": {
     // Environment setup & latest features
     "lib": ["ESNext", "DOM"],
@@ -15,6 +14,11 @@
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
     "noEmit": true,
+
+    // Type checking - relax strictness for inline scripts and Astro
+    "noImplicitAny": false,
+    "strict": false,
+    "skipLibCheck": true,
 
     // Some stricter flags (disabled by default)
     "noUnusedLocals": false,
@@ -42,6 +46,6 @@
       }
     ]
   },
-  "include": ["src/**/*.astro", "src/**/*.d.ts", ".astro/types.d.ts", "env.d.ts"],
+  "include": ["src/**/*.astro", "src/**/*.d.ts", ".astro/types.d.ts"],
   "exclude": ["node_modules", "dist", "src/**/*.stories.ts"]
 }

@@ -10,8 +10,7 @@ import MainLayout from '../../layouts/MainLayout.astro';
 import { requireAuth } from '@/lib/auth/requireAuth';
 import TransactionFilters from '../../components/molecules/TransactionFilters.astro';
 import Icon from '../../components/atoms/Icon.astro';
-import { categoryService } from '@/services/category.service';
-import { paymentMethodService } from '@/services/payment-method.service';
+import { categoryService, paymentMethodService } from '@/services';
 
 // Check authentication
 const redirectResponse = requireAuth(Astro);

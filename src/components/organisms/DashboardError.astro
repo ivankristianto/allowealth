@@ -77,10 +77,10 @@ const {
       <div class="flex gap-3 flex-wrap justify-center">
         {
           showRetry && (
-            <Button
-              variant="primary"
-              onClick="window.location.reload()"
-              className="flex items-center gap-2"
+            <button
+              type="button"
+              onclick="window.location.reload()"
+              class="btn btn-primary flex items-center gap-2"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -98,7 +98,7 @@ const {
                 />
               </svg>
               Try Again
-            </Button>
+            </button>
           )
         }
 

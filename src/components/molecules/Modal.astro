@@ -85,7 +85,7 @@ const sizeClasses: Record<string, string> = {
 
 <script>
   // Handle ESC key to close modal
-  const modal = document.getElementById(Astro.props.id);
+  const modal = document.getElementById(Astro.props.id) as HTMLDialogElement | null;
 
   if (modal && Astro.props.backdropClose) {
     modal.addEventListener('click', (e) => {

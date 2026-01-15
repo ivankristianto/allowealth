@@ -40,27 +40,13 @@ const cspNonce = Astro.locals.cspNonce || '';
   <div id="form-messages" class="space-y-2" aria-live="polite" aria-atomic="true"></div>
 
   <div class="form-control">
-    <Label for="name" required>Full Name</Label>
-    <Input
-      type="text"
-      id="name"
-      name="name"
-      placeholder="Enter your full name"
-      required
-      autocomplete="name"
-    />
+    <Label htmlFor="name" required>Full Name</Label>
+    <Input type="text" id="name" name="name" placeholder="Enter your full name" required />
   </div>
 
   <div class="form-control">
-    <Label for="email" required>Email Address</Label>
-    <Input
-      type="email"
-      id="email"
-      name="email"
-      placeholder="your.email@example.com"
-      required
-      autocomplete="email"
-    />
+    <Label htmlFor="email" required>Email Address</Label>
+    <Input type="email" id="email" name="email" placeholder="your.email@example.com" required />
   </div>
 
   <PasswordField
@@ -74,7 +60,7 @@ const cspNonce = Astro.locals.cspNonce || '';
   />
 
   <div class="form-control">
-    <Label for="confirm-password" required>Confirm Password</Label>
+    <Label htmlFor="confirm-password" required>Confirm Password</Label>
     <div class="relative">
       <Input
         type="password"
@@ -82,8 +68,7 @@ const cspNonce = Astro.locals.cspNonce || '';
         name="confirm-password"
         placeholder="Re-enter your password"
         required
-        autocomplete="new-password"
-        class="pr-12"
+        className="pr-12"
       />
       <button
         type="button"
@@ -131,7 +116,7 @@ const cspNonce = Astro.locals.cspNonce || '';
     </div>
   </div>
 
-  <Button type="submit" variant="primary" class="w-full" data-submit-button>
+  <Button type="submit" variant="primary" className="w-full" data-submit-button>
     <span data-button-text>{submitText}</span>
     <span data-loading-spinner class="hidden">
       <span class="loading loading-spinner"></span>

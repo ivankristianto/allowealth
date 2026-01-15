@@ -194,13 +194,13 @@ const buildUrl = (newPage: number) => {
           <div class="py-12">
             <EmptyState
               title="No transactions found"
-              description={
+              message={
                 Object.keys(filters).length > 0
                   ? 'Try adjusting your filters or add a new transaction.'
                   : 'Start tracking by adding your first transaction.'
               }
               actionLabel="Add Transaction"
-              actionUrl="/transactions/add"
+              actionHref="/transactions/add"
             />
           </div>
         )
@@ -209,7 +209,7 @@ const buildUrl = (newPage: number) => {
   </div>
 </div>
 
-<script define:vars={{ transactions }}>
+<script is:inline define:vars={{ transactions }}>
   // Delete transaction handler using dialog
   let transactionToDelete = null;
   let rowToDelete = null;

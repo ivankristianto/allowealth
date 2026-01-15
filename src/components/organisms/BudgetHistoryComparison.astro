@@ -137,7 +137,6 @@ const sortedHistory = [...history].sort((a, b) => {
 
               return (
                 <div
-                  key={`${monthData.year}-${monthData.month}`}
                   class={`grid grid-cols-1 md:grid-cols-7 gap-2 md:gap-4 px-4 md:px-6 py-4 hover:bg-base-100/50 transition-colors ${isCurrentMonth ? 'bg-primary/5' : ''}`}
                 >
                   {/* Mobile View - Card Layout */}
@@ -272,9 +271,9 @@ const sortedHistory = [...history].sort((a, b) => {
         <div class="card-body">
           <EmptyState
             title="No budget history available"
-            description="Budget history will appear here as you track your spending over time."
+            message="Budget history will appear here as you track your spending over time."
             actionLabel="Start Tracking"
-            actionUrl="/transactions/add"
+            actionHref="/transactions/add"
           />
         </div>
       </div>

@@ -107,7 +107,7 @@ const sortedAssets = [...assets].sort((a, b) => {
       // Loading skeleton
       <div class="space-y-3" role="status" aria-live="polite" aria-label="Loading asset updates">
         {[1, 2, 3].map((i) => (
-          <div key={i} class="flex items-center gap-4 p-3 bg-base-200 rounded-lg animate-pulse">
+          <div class="flex items-center gap-4 p-3 bg-base-200 rounded-lg animate-pulse">
             <div class="w-8 h-8 bg-neutral-300 rounded-full" aria-hidden="true" />
             <div class="flex-1 space-y-2">
               <div class="h-4 bg-neutral-300 rounded w-3/4" aria-hidden="true" />
@@ -138,7 +138,6 @@ const sortedAssets = [...assets].sort((a, b) => {
                     ? 'bg-success/10 border-success/20 hover:bg-success/20'
                     : 'bg-base-200 border-base-300 hover:bg-base-300'
             }`}
-            key={asset.id}
           >
             {/* Priority indicator */}
             <div
@@ -257,7 +256,7 @@ const sortedAssets = [...assets].sort((a, b) => {
   // Handle update button clicks
   document.querySelectorAll('[data-update-asset]').forEach((button) => {
     button.addEventListener('click', (event) => {
-      const target = event.currentTarget;
+      const target = event.currentTarget as HTMLElement;
       const assetId = target.getAttribute('data-asset-id');
       // TODO: Open modal to update asset
     });
@@ -266,7 +265,7 @@ const sortedAssets = [...assets].sort((a, b) => {
   // Handle dismiss button clicks
   document.querySelectorAll('[data-dismiss-reminder]').forEach((button) => {
     button.addEventListener('click', (event) => {
-      const target = event.currentTarget;
+      const target = event.currentTarget as HTMLElement;
       const assetId = target.getAttribute('data-asset-id');
       // TODO: Dismiss/snooze reminder
     });

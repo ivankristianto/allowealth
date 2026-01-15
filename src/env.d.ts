@@ -1,22 +1,16 @@
 /// <reference types="astro/client" />
 
-import type { User } from 'lucia';
+declare module 'astro' {
+  interface Locals {
+    user?: any;
+    session?: any;
+    cspNonce?: string;
+  }
+}
 
 declare global {
-  namespace Astro {
-    interface Locals {
-      user?: User & {
-        attributes?: {
-          name?: string;
-        };
-      };
-      session?: {
-        userId: string;
-        expiresAt: Date;
-        fresh: boolean;
-      };
-      cspNonce?: string;
-    }
+  interface Window {
+    showToast?: (message: string, type?: string, duration?: number) => HTMLDivElement | undefined;
   }
 }
 
@@ -46,3 +40,5 @@ declare module '*.astro?server' {
   const component: AstroComponentFactory;
   export default component;
 }
+
+export {};

@@ -8,9 +8,7 @@
 import MainLayout from '../../layouts/MainLayout.astro';
 import { requireAuth } from '@/lib/auth/requireAuth';
 import TransactionForm from '../../components/molecules/TransactionForm.astro';
-import { categoryService } from '@/services/category.service';
-import { paymentMethodService } from '@/services/payment-method.service';
-import { budgetService } from '@/services/budget.service';
+import { categoryService, paymentMethodService, budgetService } from '@/services';
 
 // Check authentication - redirect to login if not authenticated
 const redirectResponse = requireAuth(Astro);

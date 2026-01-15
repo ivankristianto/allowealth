@@ -8,7 +8,7 @@
 
 import MainLayout from '../../layouts/MainLayout.astro';
 import { requireAuth } from '@/lib/auth/requireAuth';
-import { paymentMethodService } from '@/services/payment-method.service';
+import { paymentMethodService } from '@/services';
 import Icon from '../../components/atoms/Icon.astro';
 import Button from '../../components/atoms/Button.astro';
 import Badge from '../../components/atoms/Badge.astro';
@@ -126,7 +126,7 @@ const getTypeIcon = (type: string) => {
                 </thead>
                 <tbody>
                   {filteredMethods.map((method) => (
-                    <tr key={method.id}>
+                    <tr>
                       <td>
                         <div class="flex items-center gap-2">
                           <Icon name={getTypeIcon(method.type)} size="sm" className="opacity-50" />
@@ -282,7 +282,7 @@ const getTypeIcon = (type: string) => {
   </form>
 </dialog>
 
-<script define:vars={{ allMethods }}>
+<script is:inline define:vars={{ allMethods }}>
   // Serialize payment methods for client-side access
   const methods = JSON.parse(
     JSON.stringify(
