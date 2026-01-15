@@ -177,64 +177,120 @@ export async function getDb(): Promise<Database> {
 }
 
 /**
- * Drizzle ORM instance (synchronous access)
+ * Drizzle ORM instance (synchronous access via lazy getter)
  *
  * For backwards compatibility with existing code that expects
- * synchronous database access. This creates the database instance
- * synchronously at module load time.
+ * synchronous database access. This uses a getter to initialize
+ * the database instance on first access rather than at module load time.
  *
- * Uses createRequire for Node.js ESM compatibility and native require for Bun.
+ * This pattern allows the module to be imported in Node.js without
+ * attempting to load bun:sqlite at import time. The database is
+ * only initialized when db is actually accessed.
  */
-let _db: Database;
+let _dbInstance: Database | null = null;
+let _dbPromise: Promise<Database> | null = null;
 
 /**
- * Get a require function that works in both CommonJS and ESM
- * - In Bun: Uses native require (always available)
- * - In Node.js ESM: Uses createRequire from node:module
+ * Create the database instance synchronously using require()
+ * This is called on first access to the db export.
  */
-function getRequire(): NodeRequire {
-  const runtime = detectRuntime();
-  if (runtime === 'bun') {
-    // Bun has require available globally
-    // @ts-ignore - Bun provides require
-    return require;
-  } else {
-    // Node.js ESM - use createRequire (imported at top level)
-    return createRequire(import.meta.url);
+function createDatabaseSync(): Database {
+  if (_dbInstance) {
+    return _dbInstance;
   }
+
+  const runtime = detectRuntime();
+
+  /**
+   * Get a require function that works in both CommonJS and ESM
+   * - In Bun: Uses native require (always available)
+   * - In Node.js ESM: Uses createRequire from node:module
+   */
+  function getRequire(): NodeRequire {
+    if (runtime === 'bun') {
+      // Bun has require available globally
+      // @ts-ignore - Bun provides require
+      return require;
+    } else {
+      // Node.js ESM - use createRequire (imported at top level)
+      return createRequire(import.meta.url);
+    }
+  }
+
+  const dynamicRequire = getRequire();
+
+  if (runtime === 'bun') {
+    // Bun runtime - use bun:sqlite synchronously
+    const Database = dynamicRequire('bun:sqlite').Database;
+    const sqlite = new Database(dbUrl);
+
+    // Apply performance optimizations
+    sqlite.exec('PRAGMA journal_mode = WAL;');
+    sqlite.exec('PRAGMA synchronous = NORMAL;');
+    sqlite.exec('PRAGMA cache_size = -64000;');
+    sqlite.exec('PRAGMA foreign_keys = ON;');
+
+    const { drizzle } = dynamicRequire('drizzle-orm/bun-sqlite');
+    _dbInstance = drizzle(sqlite, { schema });
+  } else {
+    // Node.js runtime - use better-sqlite3 synchronously
+    const BetterSqlite3 = dynamicRequire('better-sqlite3');
+    const sqlite = new BetterSqlite3(dbUrl);
+
+    // Apply performance optimizations
+    sqlite.exec('PRAGMA journal_mode = WAL;');
+    sqlite.exec('PRAGMA synchronous = NORMAL;');
+    sqlite.exec('PRAGMA cache_size = -64000;');
+    sqlite.exec('PRAGMA foreign_keys = ON;');
+
+    // Graceful shutdown handler for Node.js
+    process.on('beforeExit', () => {
+      sqlite.close();
+    });
+
+    const { drizzle } = dynamicRequire('drizzle-orm/better-sqlite3');
+    _dbInstance = drizzle(sqlite, { schema });
+  }
+
+  return _dbInstance;
 }
 
-const runtime = detectRuntime();
-const dynamicRequire = getRequire();
+/**
+ * Database instance export with lazy initialization
+ *
+ * The getter function is only executed when db is accessed, not when
+ * the module is imported. This allows the module to be safely imported
+ * in Node.js environments without triggering bun:sqlite require.
+ */
+export const db = new Proxy({} as Database, {
+  get(_target, prop) {
+    const instance = createDatabaseSync();
+    return instance[prop as keyof Database];
+  },
 
-if (runtime === 'bun') {
-  // Bun runtime - use bun:sqlite synchronously
-  const Database = dynamicRequire('bun:sqlite').Database;
-  const sqlite = new Database(dbUrl);
+  set(_target, prop, value) {
+    const instance = createDatabaseSync();
+    (instance as any)[prop] = value;
+    return true;
+  },
 
-  sqlite.exec('PRAGMA journal_mode = WAL;');
-  sqlite.exec('PRAGMA synchronous = NORMAL;');
-  sqlite.exec('PRAGMA cache_size = -64000;');
-  sqlite.exec('PRAGMA foreign_keys = ON;');
+  has(_target, prop) {
+    const instance = createDatabaseSync();
+    return prop in instance;
+  },
 
-  const { drizzle } = dynamicRequire('drizzle-orm/bun-sqlite');
-  _db = drizzle(sqlite, { schema });
-} else {
-  // Node.js runtime - use better-sqlite3 synchronously
-  const BetterSqlite3 = dynamicRequire('better-sqlite3');
-  const sqlite = new BetterSqlite3(dbUrl);
+  getPrototypeOf(_target) {
+    const instance = createDatabaseSync();
+    return Object.getPrototypeOf(instance);
+  },
 
-  sqlite.exec('PRAGMA journal_mode = WAL;');
-  sqlite.exec('PRAGMA synchronous = NORMAL;');
-  sqlite.exec('PRAGMA cache_size = -64000;');
-  sqlite.exec('PRAGMA foreign_keys = ON;');
+  ownKeys(_target) {
+    const instance = createDatabaseSync();
+    return Reflect.ownKeys(instance);
+  },
 
-  process.on('beforeExit', () => {
-    sqlite.close();
-  });
-
-  const { drizzle } = dynamicRequire('drizzle-orm/better-sqlite3');
-  _db = drizzle(sqlite, { schema });
-}
-
-export const db = _db;
+  getOwnPropertyDescriptor(_target, prop) {
+    const instance = createDatabaseSync();
+    return Object.getOwnPropertyDescriptor(instance, prop);
+  },
+});
