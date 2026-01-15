@@ -1,12 +1,14 @@
 import eslintConfigPrettier from 'eslint-config-prettier';
 import tsParser from '@typescript-eslint/parser';
 import astroPlugin from 'eslint-plugin-astro';
+import globals from 'globals';
 
 export default [
   {
     ignores: ['dist', '.astro', 'node_modules'],
   },
   ...astroPlugin.configs.recommended,
+  eslintConfigPrettier,
   {
     files: ['**/*.{ts,tsx}'],
     languageOptions: {
@@ -14,6 +16,10 @@ export default [
       parserOptions: {
         ecmaVersion: 'latest',
         sourceType: 'module',
+      },
+      globals: {
+        ...globals.node,
+        ...globals.browser,
       },
     },
     rules: {
@@ -40,5 +46,15 @@ export default [
       ],
     },
   },
-  eslintConfigPrettier,
+  {
+    files: ['**/*.astro'],
+    languageOptions: {
+      parserOptions: {
+        parser: tsParser,
+      },
+      globals: {
+        ...globals.browser,
+      },
+    },
+  },
 ];
