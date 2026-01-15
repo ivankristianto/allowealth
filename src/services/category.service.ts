@@ -1,4 +1,4 @@
-import { db, categories } from '@/db';
+import { categories, type IDatabase } from '@/db';
 import { eq, and, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import {
@@ -13,6 +13,12 @@ export { type CreateCategoryInput, type UpdateCategoryInput };
 
 export class CategoryService {
   /**
+   * Create a new CategoryService with database injection
+   * @param db - Database instance (injected for testability)
+   */
+  constructor(private db: IDatabase) {}
+
+  /**
    * Create a new category
    */
   async create(input: CreateCategoryInput) {
@@ -21,7 +27,7 @@ export class CategoryService {
 
     const id = nanoid();
 
-    const [category] = await db
+    const [category] = await this.db
       .insert(categories)
       .values({
         id,
@@ -44,7 +50,7 @@ export class CategoryService {
    * Find category by ID
    */
   async findById(id: string, user_id: string) {
-    const result = await db.query.categories.findFirst({
+    const result = await this.db.query.categories.findFirst({
       where: and(eq(categories.id, id), eq(categories.user_id, user_id)),
     });
 
@@ -65,7 +71,7 @@ export class CategoryService {
       conditions.push(eq(categories.is_active, filters.is_active));
     }
 
-    const result = await db.query.categories.findMany({
+    const result = await this.db.query.categories.findMany({
       where: and(...conditions),
       orderBy: (categories, { asc }) => [asc(categories.name)],
     });
@@ -91,7 +97,7 @@ export class CategoryService {
     if (validated.budget_amount !== undefined) updateData.budget_amount = validated.budget_amount;
     if (validated.is_active !== undefined) updateData.is_active = validated.is_active;
 
-    await db
+    await this.db
       .update(categories)
       .set(updateData)
       .where(and(eq(categories.id, id), eq(categories.user_id, user_id)));
@@ -113,7 +119,7 @@ export class CategoryService {
       );
     }
 
-    await db
+    await this.db
       .update(categories)
       .set({
         is_active: false,
@@ -142,12 +148,10 @@ export class CategoryService {
       conditions.push(sql`${categories.id} != ${excludeId}`);
     }
 
-    const result = await db.query.categories.findFirst({
+    const result = await this.db.query.categories.findFirst({
       where: and(...conditions),
     });
 
     return !!result;
   }
 }
-
-export const categoryService = new CategoryService();
