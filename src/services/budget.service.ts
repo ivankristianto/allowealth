@@ -1,4 +1,4 @@
-import { db, transactions, categories } from '@/db';
+import { transactions, categories, type IDatabase } from '@/db';
 import { eq, and, gte, lte, sql } from 'drizzle-orm';
 import {
   decimalSubtract,
@@ -45,6 +45,12 @@ export interface MonthlyBudgetHistory {
 
 export class BudgetService {
   /**
+   * Create a new BudgetService with database injection
+   * @param db - Database instance (injected for testability)
+   */
+  constructor(private db: IDatabase) {}
+
+  /**
    * Get budget overview for a specific month
    */
   async getMonthlyOverview(
@@ -66,7 +72,7 @@ export class BudgetService {
     const endDate = new Date(year, month, 0, 23, 59, 59);
 
     // Get all expense categories for user with given currency
-    const userCategories = await db.query.categories.findMany({
+    const userCategories = await this.db.query.categories.findMany({
       where: and(
         eq(categories.user_id, user_id),
         eq(categories.type, 'expense'),
@@ -76,7 +82,7 @@ export class BudgetService {
     });
 
     // Get transactions for the month grouped by category
-    const monthTransactions = await (db as any)
+    const monthTransactions = await (this.db as any)
       .select({
         category_id: transactions.category_id,
         total: sql<string>`sum(CAST(${transactions.amount} AS REAL))`,
@@ -248,7 +254,7 @@ export class BudgetService {
    * Get budget remaining for a category in current month
    */
   async getCategoryRemaining(category_id: string, user_id: string) {
-    const category = await db.query.categories.findFirst({
+    const category = await this.db.query.categories.findFirst({
       where: and(eq(categories.id, category_id), eq(categories.user_id, user_id)),
     });
 
@@ -260,7 +266,7 @@ export class BudgetService {
     const startDate = new Date(now.getFullYear(), now.getMonth(), 1);
     const endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
 
-    const [result] = await (db as any)
+    const [result] = await (this.db as any)
       .select({
         total: sql<string>`COALESCE(sum(CAST(${transactions.amount} AS REAL)), 0)`,
       })
@@ -357,5 +363,3 @@ export class BudgetService {
       .join('\n');
   }
 }
-
-export const budgetService = new BudgetService();

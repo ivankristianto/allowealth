@@ -1,8 +1,8 @@
-import { db, transactions, categories, paymentMethods } from '@/db';
+import { transactions, type IDatabase } from '@/db';
 import { eq, and, gte, lte, desc, sql, or, like } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
-import { categoryService } from './category.service';
-import { paymentMethodService } from './payment-method.service';
+import { CategoryService } from './category.service';
+import { PaymentMethodService } from './payment-method.service';
 import {
   createTransactionSchema,
   updateTransactionSchema,
@@ -44,6 +44,20 @@ export interface TransactionFilters {
 }
 
 export class TransactionService {
+  private categoryService: CategoryService;
+  private paymentMethodService: PaymentMethodService;
+
+  /**
+   * Create a new TransactionService with database injection
+   * @param db - Database instance (injected for testability)
+   */
+  constructor(db: IDatabase) {
+    this.categoryService = new CategoryService(db);
+    this.paymentMethodService = new PaymentMethodService(db);
+    // Store db for direct use in this service
+    (this as any).db = db;
+  }
+
   /**
    * Create a new transaction
    */
@@ -52,7 +66,7 @@ export class TransactionService {
     const validated = createTransactionSchema.parse(input);
 
     // Verify category exists and belongs to user
-    const category = await categoryService.findById(validated.category_id, validated.user_id);
+    const category = await this.categoryService.findById(validated.category_id, validated.user_id);
     if (!category) {
       throw new TransactionServiceError(
         ServiceErrorCode.CATEGORY_NOT_FOUND,
@@ -69,7 +83,7 @@ export class TransactionService {
     }
 
     // Verify payment method exists and belongs to user
-    const paymentMethod = await paymentMethodService.findById(
+    const paymentMethod = await this.paymentMethodService.findById(
       validated.payment_method_id,
       validated.user_id
     );
@@ -90,7 +104,7 @@ export class TransactionService {
 
     const id = nanoid();
 
-    const [transaction] = await db
+    const [transaction] = await (this as any).db
       .insert(transactions)
       .values({
         id,
@@ -114,7 +128,7 @@ export class TransactionService {
    * Find transaction by ID (with relations)
    */
   async findById(id: string, user_id: string) {
-    const result = await db.query.transactions.findFirst({
+    const result = await (this as any).db.query.transactions.findFirst({
       where: and(eq(transactions.id, id), eq(transactions.user_id, user_id)),
       with: {
         category: true,
@@ -164,7 +178,7 @@ export class TransactionService {
       conditions.push(searchCondition);
     }
 
-    const result = await db.query.transactions.findMany({
+    const result = await (this as any).db.query.transactions.findMany({
       where: and(...conditions),
       with: {
         category: true,
@@ -187,7 +201,7 @@ export class TransactionService {
 
     // Verify category if being updated
     if (validated.category_id !== undefined) {
-      const category = await categoryService.findById(validated.category_id, user_id);
+      const category = await this.categoryService.findById(validated.category_id, user_id);
       if (!category) {
         throw new TransactionServiceError(
           ServiceErrorCode.CATEGORY_NOT_FOUND,
@@ -206,7 +220,7 @@ export class TransactionService {
 
     // Verify payment method if being updated
     if (validated.payment_method_id !== undefined) {
-      const paymentMethod = await paymentMethodService.findById(
+      const paymentMethod = await this.paymentMethodService.findById(
         validated.payment_method_id,
         user_id
       );
@@ -240,7 +254,7 @@ export class TransactionService {
       updateData.transaction_date = validated.transaction_date;
     if (validated.description !== undefined) updateData.description = validated.description;
 
-    await db
+    await (this as any).db
       .update(transactions)
       .set(updateData)
       .where(and(eq(transactions.id, id), eq(transactions.user_id, user_id)));
@@ -262,7 +276,7 @@ export class TransactionService {
       );
     }
 
-    await db
+    await (this as any).db
       .update(transactions)
       .set({
         deleted_at: new Date(),
@@ -312,7 +326,7 @@ export class TransactionService {
       conditions.push(searchCondition);
     }
 
-    const result = await (db as any)
+    const result = await ((this as any).db as any)
       .select({ count: sql<number>`count(*)` })
       .from(transactions)
       .where(and(...conditions));
@@ -335,8 +349,8 @@ export class TransactionService {
     };
 
     // Get user's categories and payment methods for lookup
-    const userCategories = await categoryService.findAll(user_id);
-    const userPaymentMethods = await paymentMethodService.findAll(user_id);
+    const userCategories = await this.categoryService.findAll(user_id);
+    const userPaymentMethods = await this.paymentMethodService.findAll(user_id);
 
     const categoryMap = new Map(userCategories.map((c) => [c.name.toLowerCase(), c.id]));
     const paymentMethodMap = new Map(userPaymentMethods.map((p) => [p.name.toLowerCase(), p.id]));
@@ -501,5 +515,3 @@ export class TransactionService {
       .join('\n');
   }
 }
-
-export const transactionService = new TransactionService();

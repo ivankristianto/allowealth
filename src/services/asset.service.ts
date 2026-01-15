@@ -1,4 +1,4 @@
-import { db, assets, assetHistory } from '@/db';
+import { assets, assetHistory, type IDatabase } from '@/db';
 import { eq, and, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { AssetServiceError, ServiceErrorCode } from './service-errors';
@@ -25,13 +25,19 @@ export interface UpdateAssetBalanceInput {
 
 export class AssetService {
   /**
+   * Create a new AssetService with database injection
+   * @param db - Database instance (injected for testability)
+   */
+  constructor(private db: IDatabase) {}
+
+  /**
    * Create a new asset
    */
   async create(input: CreateAssetInput) {
     const id = nanoid();
     const now = new Date();
 
-    return await db.transaction(async (tx) => {
+    return await this.db.transaction(async (tx: any) => {
       const [asset] = await tx
         .insert(assets)
         .values({
@@ -63,7 +69,7 @@ export class AssetService {
    * Find asset by ID
    */
   async findById(id: string, user_id: string) {
-    const result = await db.query.assets.findFirst({
+    const result = await this.db.query.assets.findFirst({
       where: and(eq(assets.id, id), eq(assets.user_id, user_id), sql`${assets.deleted_at} IS NULL`),
     });
 
@@ -90,7 +96,7 @@ export class AssetService {
       conditions.push(eq(assets.currency, filters.currency));
     }
 
-    const result = await db.query.assets.findMany({
+    const result = await this.db.query.assets.findMany({
       where: and(...conditions),
       orderBy: (assets, { asc }) => [asc(assets.name)],
     });
@@ -116,7 +122,7 @@ export class AssetService {
       updateData.last_updated = new Date();
     }
 
-    await db
+    await this.db
       .update(assets)
       .set(updateData)
       .where(and(eq(assets.id, id), eq(assets.user_id, user_id)));
@@ -130,7 +136,7 @@ export class AssetService {
   async updateBalance(id: string, user_id: string, input: UpdateAssetBalanceInput) {
     const now = new Date();
 
-    await db.transaction(async (tx) => {
+    await this.db.transaction(async (tx: any) => {
       // Update asset
       await tx
         .update(assets)
@@ -164,7 +170,7 @@ export class AssetService {
       throw new AssetServiceError(ServiceErrorCode.ASSET_NOT_FOUND, 'Asset not found', 404);
     }
 
-    await db
+    await this.db
       .update(assets)
       .set({
         deleted_at: new Date(),
@@ -185,7 +191,7 @@ export class AssetService {
       throw new Error('Asset not found');
     }
 
-    const history = await db.query.assetHistory.findMany({
+    const history = await this.db.query.assetHistory.findMany({
       where: eq(assetHistory.asset_id, asset_id),
       orderBy: (assetHistory, { desc }) => [desc(assetHistory.recorded_at)],
     });
@@ -197,7 +203,7 @@ export class AssetService {
    * Get total assets by currency
    */
   async getTotalByCurrency(user_id: string) {
-    const result = await (db as any)
+    const result = await (this.db as any)
       .select({
         currency: assets.currency,
         total: sql<string>`sum(CAST(${assets.balance} AS REAL))`,
@@ -213,7 +219,7 @@ export class AssetService {
    * Get total assets by type
    */
   async getTotalByType(user_id: string) {
-    const result = await (db as any)
+    const result = await (this.db as any)
       .select({
         type: assets.type,
         currency: assets.currency,
@@ -227,5 +233,3 @@ export class AssetService {
     return result;
   }
 }
-
-export const assetService = new AssetService();

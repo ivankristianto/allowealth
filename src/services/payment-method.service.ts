@@ -1,4 +1,4 @@
-import { db, paymentMethods } from '@/db';
+import { paymentMethods, type IDatabase } from '@/db';
 import { eq, and } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import {
@@ -13,6 +13,12 @@ export { type CreatePaymentMethodInput, type UpdatePaymentMethodInput };
 
 export class PaymentMethodService {
   /**
+   * Create a new PaymentMethodService with database injection
+   * @param db - Database instance (injected for testability)
+   */
+  constructor(private db: IDatabase) {}
+
+  /**
    * Create a new payment method
    */
   async create(input: CreatePaymentMethodInput) {
@@ -21,7 +27,7 @@ export class PaymentMethodService {
 
     const id = nanoid();
 
-    const [paymentMethod] = await db
+    const [paymentMethod] = await this.db
       .insert(paymentMethods)
       .values({
         id,
@@ -41,7 +47,7 @@ export class PaymentMethodService {
    * Find payment method by ID
    */
   async findById(id: string, user_id: string) {
-    const result = await db.query.paymentMethods.findFirst({
+    const result = await this.db.query.paymentMethods.findFirst({
       where: and(eq(paymentMethods.id, id), eq(paymentMethods.user_id, user_id)),
     });
 
@@ -58,7 +64,7 @@ export class PaymentMethodService {
       conditions.push(eq(paymentMethods.is_active, filters.is_active));
     }
 
-    const result = await db.query.paymentMethods.findMany({
+    const result = await this.db.query.paymentMethods.findMany({
       where: and(...conditions),
       orderBy: (paymentMethods, { asc }) => [asc(paymentMethods.name)],
     });
@@ -81,7 +87,7 @@ export class PaymentMethodService {
     if (validated.type !== undefined) updateData.type = validated.type;
     if (validated.is_active !== undefined) updateData.is_active = validated.is_active;
 
-    await db
+    await this.db
       .update(paymentMethods)
       .set(updateData)
       .where(and(eq(paymentMethods.id, id), eq(paymentMethods.user_id, user_id)));
@@ -103,7 +109,7 @@ export class PaymentMethodService {
       );
     }
 
-    await db
+    await this.db
       .update(paymentMethods)
       .set({
         is_active: false,
@@ -114,5 +120,3 @@ export class PaymentMethodService {
     return { success: true };
   }
 }
-
-export const paymentMethodService = new PaymentMethodService();

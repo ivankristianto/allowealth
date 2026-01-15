@@ -35,7 +35,93 @@ if (process.env.NODE_ENV === 'production' && !process.env.DATABASE_URL) {
 /**
  * Database type that works across both runtimes
  */
-type Database = BunSQLiteDatabase<typeof schema> | BetterSQLite3Database<typeof schema>;
+export type Database = BunSQLiteDatabase<typeof schema> | BetterSQLite3Database<typeof schema>;
+
+/**
+ * Database interface for dependency injection
+ *
+ * This interface abstracts the database implementation, allowing services
+ * to work with either real database connections or mock implementations in tests.
+ *
+ * The interface includes:
+ * - insert: Insert records into tables
+ * - query: Query tables with relations
+ * - update: Update records in tables
+ * - select: Raw select queries
+ * - delete: Delete records from tables
+ * - transaction: Execute transactions
+ *
+ * @example
+ * ```ts
+ * // In production
+ * const service = new CategoryService(db);
+ *
+ * // In tests
+ * const mockDb = createMockDatabase();
+ * const service = new CategoryService(mockDb);
+ * ```
+ */
+export interface IDatabase {
+  /**
+   * Insert records into a table
+   */
+  insert: (table: any) => {
+    values: (values: any) => {
+      returning: (columns?: any) => Promise<any[]>;
+      onConflictDoNothing: () => Promise<any>;
+      onConflictDoUpdate: (config: any) => Promise<any>;
+    };
+  };
+
+  /**
+   * Query builder for table operations
+   */
+  query: {
+    [key: string]: {
+      findFirst: (config?: any) => Promise<any>;
+      findMany: (config?: any) => Promise<any[]>;
+    };
+  };
+
+  /**
+   * Update records in a table
+   */
+  update: (table: any) => {
+    set: (values: any) => {
+      where: (condition: any) => Promise<any>;
+      returning: (columns?: any) => Promise<any[]>;
+    };
+  };
+
+  /**
+   * Raw select queries
+   */
+  select: (columns: any) => {
+    from: (table: any) => {
+      where: (condition: any) => {
+        groupBy: (column: any) => Promise<any[]>;
+        orderBy: (config: any) => Promise<any[]>;
+      };
+      where: (condition: any) => Promise<any[]>;
+      groupBy: (column: any) => {
+        where: (condition: any) => Promise<any[]>;
+      };
+    };
+    from: (table: any) => Promise<any[]>;
+  };
+
+  /**
+   * Delete records from a table
+   */
+  delete: (table: any) => {
+    where: (condition: any) => Promise<any>;
+  };
+
+  /**
+   * Execute a transaction
+   */
+  transaction: <T>(callback: (tx: any) => Promise<T>) => Promise<T>;
+}
 
 /**
  * Create the Drizzle database instance based on runtime

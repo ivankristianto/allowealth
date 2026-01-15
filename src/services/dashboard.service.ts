@@ -9,7 +9,7 @@
  * - Recent transactions
  */
 
-import { db, assets, transactions, categories, exchangeRates } from '@/db';
+import { assets, transactions, categories, type IDatabase } from '@/db';
 import { eq, and, gte, lte, desc, sql, sum } from 'drizzle-orm';
 import {
   convertCurrency,
@@ -89,6 +89,12 @@ export interface AssetReminder {
  */
 export class DashboardService {
   /**
+   * Create a new DashboardService with database injection
+   * @param db - Database instance (injected for testability)
+   */
+  constructor(private db: IDatabase) {}
+
+  /**
    * Get total assets summed by currency
    *
    * @param userId - User ID
@@ -101,7 +107,7 @@ export class DashboardService {
   ): Promise<TotalAssets> {
     try {
       // Get all non-deleted assets for user
-      const userAssets = await db.query.assets.findMany({
+      const userAssets = await this.db.query.assets.findMany({
         where: and(eq(assets.user_id, userId), sql`${assets.deleted_at} IS NULL`),
       });
 
@@ -175,7 +181,7 @@ export class DashboardService {
       const endDate = new Date(year, month, 0, 23, 59, 59);
 
       // Get total budget for the month (sum of all expense category budgets)
-      const [budgetResult] = await (db as any)
+      const [budgetResult] = await (this.db as any)
         .select({
           total: sql<string>`COALESCE(SUM(CAST(${categories.budget_amount} AS REAL)), 0)`,
         })
@@ -192,7 +198,7 @@ export class DashboardService {
       const totalBudget = budgetResult?.total || '0';
 
       // Get total spent for the month
-      const [spentResult] = await (db as any)
+      const [spentResult] = await (this.db as any)
         .select({
           total: sql<string>`COALESCE(SUM(CAST(${transactions.amount} AS REAL)), 0)`,
         })
@@ -263,7 +269,7 @@ export class DashboardService {
       const endDate = new Date(year, month, 0, 23, 59, 59);
 
       // Get all expense categories for user
-      const userCategories = await db.query.categories.findMany({
+      const userCategories = await this.db.query.categories.findMany({
         where: and(
           eq(categories.user_id, userId),
           eq(categories.type, 'expense'),
@@ -273,7 +279,7 @@ export class DashboardService {
       });
 
       // Get total spent per category for the month
-      const categorySpending = await (db as any)
+      const categorySpending = await (this.db as any)
         .select({
           category_id: transactions.category_id,
           total: sql<string>`COALESCE(SUM(CAST(${transactions.amount} AS REAL)), 0)`,
@@ -343,7 +349,7 @@ export class DashboardService {
   async getAssetUpdateReminders(userId: string): Promise<AssetReminder[]> {
     try {
       // Get all non-deleted assets
-      const userAssets = await db.query.assets.findMany({
+      const userAssets = await this.db.query.assets.findMany({
         where: and(eq(assets.user_id, userId), sql`${assets.deleted_at} IS NULL`),
       });
 
@@ -420,7 +426,7 @@ export class DashboardService {
       }
 
       // Get recent transactions
-      const recentTransactions = await db.query.transactions.findMany({
+      const recentTransactions = await this.db.query.transactions.findMany({
         where: and(eq(transactions.user_id, userId), sql`${transactions.deleted_at} IS NULL`),
         with: {
           category: true,
@@ -493,6 +499,3 @@ export class DashboardService {
     };
   }
 }
-
-// Export singleton instance
-export const dashboardService = new DashboardService();
