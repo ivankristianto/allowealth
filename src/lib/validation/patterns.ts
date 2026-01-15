@@ -4,9 +4,6 @@
  * Reusable regex patterns for HTML form validation.
  * All patterns are compatible with both HTML pattern attributes and JavaScript RegExp.
  *
- * IMPORTANT: Email pattern uses ES2024 /v flag for enhanced character class syntax.
- * This provides better Unicode support and more precise validation.
- *
  * Usage in HTML:
  *   <input type="email" pattern={patterns.email.html} title={patterns.email.title} />
  *
@@ -20,8 +17,7 @@
 /**
  * Email validation pattern
  *
- * Uses ES2024 /v flag for enhanced character class syntax.
- * This provides better Unicode support and more precise validation.
+ * Standard email validation regex compatible with ES2021+.
  *
  * Pattern breakdown:
  * - Local part: alphanumeric, dots, underscores, percent, plus, hyphen
@@ -43,13 +39,13 @@ export const email = {
   html: '[a-z0-9._%+-]+@[a-z0-9.-]+\\.[a-z]{2,}$',
 
   /**
-   * RegExp with ES2024 /v flag for enhanced character class syntax
+   * RegExp for email validation
    * Use this in TypeScript/JavaScript for server-side or client-side validation
    *
    * @example
    * if (email.regex.test(userEmail)) { ... }
    */
-  regex: /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/v,
+  regex: /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/,
 
   /**
    * User-friendly error message for validation failures
