@@ -1,12 +1,6 @@
 import type { APIRoute } from 'astro';
 import { transactionService } from '@/services';
-import {
-  successResponse,
-  errorResponse,
-  validateBody,
-  requireAuth,
-  isValidDate,
-} from '@/lib/api-utils';
+import { successResponse, errorResponse, validateBody, requireAuth } from '@/lib/api-utils';
 import { updateTransactionAPISchema, transactionIdSchema } from '@/lib/validation/transactions';
 import { logError } from '@/lib/utils';
 import { ServiceError } from '@/services/service-errors';
@@ -86,11 +80,9 @@ export const PUT: APIRoute = async ({ params, request, url }) => {
     if (validation.data.payment_method_id !== undefined)
       updateData.payment_method_id = validation.data.payment_method_id;
     if (validation.data.transaction_date !== undefined) {
-      const transactionDate = new Date(validation.data.transaction_date);
-      if (!isValidDate(transactionDate)) {
-        return errorResponse('Invalid transaction_date', 400);
-      }
-      updateData.transaction_date = transactionDate;
+      // Convert date string (YYYY-MM-DD) to Date object
+      // The validation ensures the string is in the correct format
+      updateData.transaction_date = new Date(validation.data.transaction_date + 'T00:00:00.000Z');
     }
     if (validation.data.description !== undefined)
       updateData.description = validation.data.description;

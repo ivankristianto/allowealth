@@ -111,10 +111,9 @@ export const POST: APIRoute = async ({ request, url }) => {
       return errorResponse('Validation failed', 400, 'VALIDATION_ERROR', validation.error.issues);
     }
 
-    const transactionDate = new Date(validation.data.transaction_date);
-    if (!isValidDate(transactionDate)) {
-      return errorResponse('Invalid transaction_date', 400);
-    }
+    // Convert date string (YYYY-MM-DD) to Date object
+    // The validation ensures the string is in the correct format
+    const transactionDate = new Date(validation.data.transaction_date + 'T00:00:00.000Z');
 
     const transaction = await transactionService.create({
       user_id: userId,
