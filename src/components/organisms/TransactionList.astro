@@ -220,14 +220,14 @@ const buildUrl = (newPage: number) => {
   const errorDiv = document.getElementById('delete-error');
 
   // Helper function to show inline error
-  function showDialogError(element: HTMLElement | null, message: string) {
+  function showDialogError(element, message) {
     if (element) {
       element.textContent = message;
       element.classList.remove('hidden');
     }
   }
 
-  function hideDialogError(element: HTMLElement | null) {
+  function hideDialogError(element) {
     if (element) {
       element.classList.add('hidden');
       element.textContent = '';
@@ -304,8 +304,8 @@ const buildUrl = (newPage: number) => {
 
       if (response.ok && data.success) {
         // Show success toast
-        if ((window as any).showToast) {
-          (window as any).showToast('Transaction deleted successfully', 'success');
+        if (window.showToast) {
+          window.showToast('Transaction deleted successfully', 'success');
         }
 
         // Remove row from DOM with animation

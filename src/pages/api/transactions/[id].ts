@@ -9,6 +9,7 @@ import {
 } from '@/lib/api-utils';
 import { updateTransactionAPISchema, transactionIdSchema } from '@/lib/validation/transactions';
 import { logError } from '@/lib/utils';
+import { ServiceError } from '@/services/service-errors';
 
 /**
  * GET /api/transactions/:id
@@ -36,6 +37,9 @@ export const GET: APIRoute = async ({ params, request, url }) => {
   } catch (error) {
     if (error instanceof Error && error.message === 'Unauthorized') {
       return errorResponse('Unauthorized', 401);
+    }
+    if (error instanceof ServiceError) {
+      return errorResponse(error.message, error.statusCode, error.code);
     }
     logError('Error fetching transaction', error);
     return errorResponse('Failed to fetch transaction', 500);
@@ -98,6 +102,9 @@ export const PUT: APIRoute = async ({ params, request, url }) => {
     if (error instanceof Error && error.message === 'Unauthorized') {
       return errorResponse('Unauthorized', 401);
     }
+    if (error instanceof ServiceError) {
+      return errorResponse(error.message, error.statusCode, error.code);
+    }
     logError('Error updating transaction', error);
     return errorResponse('Failed to update transaction', 500);
   }
@@ -124,6 +131,9 @@ export const DELETE: APIRoute = async ({ params, request, url }) => {
   } catch (error) {
     if (error instanceof Error && error.message === 'Unauthorized') {
       return errorResponse('Unauthorized', 401);
+    }
+    if (error instanceof ServiceError) {
+      return errorResponse(error.message, error.statusCode, error.code);
     }
     logError('Error deleting transaction', error);
     return errorResponse('Failed to delete transaction', 500);

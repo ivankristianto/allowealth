@@ -126,10 +126,15 @@ export class TransactionService {
 
   /**
    * Find transaction by ID (with relations)
+   * Excludes soft-deleted transactions
    */
   async findById(id: string, user_id: string) {
     const result = await (this as any).db.query.transactions.findFirst({
-      where: and(eq(transactions.id, id), eq(transactions.user_id, user_id)),
+      where: and(
+        eq(transactions.id, id),
+        eq(transactions.user_id, user_id),
+        sql`${transactions.deleted_at} IS NULL`
+      ),
       with: {
         category: true,
         paymentMethod: true,
