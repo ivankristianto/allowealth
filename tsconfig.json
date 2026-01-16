@@ -1,4 +1,5 @@
 {
+  "extends": "astro/tsconfigs/strict",
   "compilerOptions": {
     // Environment setup & latest features
     "lib": ["ESNext", "DOM"],
@@ -28,17 +29,15 @@
     // Path mappings
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"],
-      "@lib": ["./src/lib"],
-      "@lib/*": ["./src/lib/*"],
-      "@components": ["./src/components"],
-      "@components/*": ["./src/components/*"],
-      "@db": ["./src/db"],
-      "@db/*": ["./src/db/*"],
-      "@styles": ["./src/styles"],
-      "@styles/*": ["./src/styles/*"],
-      "@layouts": ["./src/layouts"],
-      "@layouts/*": ["./src/layouts/*"]
+      "@": ["src"],
+      "@/*": ["src/*"],
+      "@lib/*": ["src/lib/*"],
+      "@components/*": ["src/components/*"],
+      "@db/*": ["src/db/*"],
+      "@layouts/*": ["src/layouts/*"],
+      "@services/*": ["src/services/*"],
+      "@styles/*": ["src/styles/*"],
+      "@src-types/*": ["src/types/*"]
     },
     "plugins": [
       {
@@ -46,6 +45,6 @@
       }
     ]
   },
-  "include": ["src/**/*.astro", "src/**/*.d.ts", ".astro/types.d.ts"],
+  "include": ["src/**/*"],
   "exclude": ["node_modules", "dist", "src/**/*.stories.ts"]
 }

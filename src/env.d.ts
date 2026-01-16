@@ -1,14 +1,16 @@
 /// <reference types="astro/client" />
 
-declare module 'astro' {
-  interface Locals {
-    user?: any;
-    session?: any;
-    cspNonce?: string;
-  }
-}
+import type { User, Session } from '@/lib/auth/lucia';
 
 declare global {
+  namespace App {
+    interface Locals {
+      user?: User | null;
+      session?: Session | null;
+      cspNonce?: string;
+    }
+  }
+
   interface Window {
     showToast?: (message: string, type?: string, duration?: number) => HTMLDivElement | undefined;
   }

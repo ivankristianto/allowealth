@@ -140,11 +140,7 @@ const sortedAssets = [...assets].sort((a, b) => {
             }`}
           >
             {/* Priority indicator */}
-            <div
-              class="flex-shrink-0 text-2xl"
-              role="img"
-              aria-label={`Priority: ${asset.priority}`}
-            >
+            <div class="shrink-0 text-2xl" role="img" aria-label={`Priority: ${asset.priority}`}>
               {getPriorityIcon(asset.priority)}
             </div>
 
@@ -169,7 +165,7 @@ const sortedAssets = [...assets].sort((a, b) => {
 
             {/* Quick update button */}
             <button
-              class="flex-shrink-0 btn btn-ghost btn-sm"
+              class="shrink-0 btn btn-ghost btn-sm"
               aria-label={`Update ${asset.name}`}
               data-asset-id={asset.id}
               data-update-asset

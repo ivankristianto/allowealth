@@ -13,17 +13,6 @@ import type { User, Session } from 'lucia';
 import { logError } from './lib/utils/error-logger';
 
 /**
- * Extend Astro.locals to include user, session, and CSP nonce
- */
-declare module 'astro' {
-  interface Locals {
-    user?: User | null;
-    session?: Session | null;
-    cspNonce?: string;
-  }
-}
-
-/**
  * Session cookie name used by Lucia Auth
  * Note: Lucia uses 'sid' as the default session cookie name when using
  * sessionCookie configuration. This is set in the lucia.ts configuration.

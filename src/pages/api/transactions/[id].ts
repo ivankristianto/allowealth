@@ -70,7 +70,11 @@ export const PUT: APIRoute = async ({ params, request, url }) => {
     const validation = await validateBody(request, updateTransactionAPISchema);
 
     if (!validation.success) {
-      return errorResponse('Validation failed', 400, 'VALIDATION_ERROR', validation.error.issues);
+      // The validation result has .error only if success is false,
+      // but validation type doesn't guarantee .error exists on both branches.
+      // To fix types, destructure .error from validation when !success.
+      const issues = 'error' in validation ? validation.error.issues : [];
+      return errorResponse('Validation failed', 400, 'VALIDATION_ERROR', issues);
     }
 
     const updateData: any = {};
