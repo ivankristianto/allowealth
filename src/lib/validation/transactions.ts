@@ -62,7 +62,20 @@ export const updateTransactionSchema = z
 
 export type UpdateTransactionInput = z.infer<typeof updateTransactionSchema>;
 
-// API-specific schemas that accept ISO datetime strings
+// API-specific schemas that accept date strings (YYYY-MM-DD format)
+// The form sends date-only strings, which are then converted to Date objects in the API handler
+const dateStringValidation = z
+  .string()
+  .min(1, 'Transaction date is required')
+  .regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format')
+  .refine(
+    (dateStr) => {
+      const date = new Date(dateStr);
+      return !isNaN(date.getTime()) && date <= new Date();
+    },
+    { message: 'Invalid date or date cannot be in the future' }
+  );
+
 export const createTransactionAPISchema = z
   .object({
     type: transactionTypeEnum,
@@ -70,7 +83,7 @@ export const createTransactionAPISchema = z
     currency: currencyEnum,
     category_id: z.string().min(1, 'Category ID is required'),
     payment_method_id: z.string().min(1, 'Payment method ID is required'),
-    transaction_date: z.string().datetime(),
+    transaction_date: dateStringValidation,
     description: z.string().max(500, 'Description must not exceed 500 characters').optional(),
   })
   .strict();
@@ -82,7 +95,7 @@ export const updateTransactionAPISchema = z
     currency: currencyEnum.optional(),
     category_id: z.string().min(1, 'Category ID is required').optional(),
     payment_method_id: z.string().min(1, 'Payment method ID is required').optional(),
-    transaction_date: z.string().datetime().optional(),
+    transaction_date: dateStringValidation.optional(),
     description: z.string().max(500, 'Description must not exceed 500 characters').optional(),
   })
   .strict();
