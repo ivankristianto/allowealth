@@ -121,22 +121,17 @@ const maxMonth = nowDate.getMonth() + 1;
 const isNextMonthInFuture =
   nextMonthYear > maxYear || (nextMonthYear === maxYear && nextMonth > maxMonth);
 
-// Get budget alerts for the current month
-const alerts = budgetData
-  ? budgetData.categories
-      .filter((cat) => cat.status === 'warning' || cat.status === 'exceeded')
-      .map((cat) => ({
-        category_id: cat.category_id,
-        category_name: cat.category_name,
-        status: cat.status,
-        budget_amount: cat.budget_amount,
-        spent_amount: cat.spent_amount,
-        overage:
-          cat.status === 'exceeded' && parseFloat(cat.balance) < 0
-            ? Math.abs(parseFloat(cat.balance))
-            : 0,
-      }))
-  : [];
+// Get budget alerts for the current month using budgetService.getAlerts()
+let alerts: Awaited<ReturnType<typeof budgetService.getAlerts>> = [];
+if (budgetData) {
+  try {
+    alerts = await budgetService.getAlerts(user!.id, selectedCurrency);
+  } catch (err) {
+    console.error('Error fetching budget alerts:', err);
+    // Fallback to empty array if getAlerts fails
+    alerts = [];
+  }
+}
 ---
 
 <MainLayout
