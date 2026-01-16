@@ -265,6 +265,110 @@ const categoriesJson = JSON.stringify(
   const typeRadios = document.querySelectorAll('input[name="type"]');
   const categorySelect = document.querySelector('select[name="category_id"]');
 
+  // Update budget display based on selected category
+  async function updateBudgetDisplay() {
+    if (!categorySelect) return;
+
+    const selectedCategoryId = categorySelect.value;
+    const formType = document.querySelector('input[name="type"]:checked')?.value;
+
+    // Only update budget for expense categories
+    if (formType !== 'expense' || !selectedCategoryId) {
+      hideBudgetWarning();
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/budget/category/${selectedCategoryId}/remaining`);
+      if (!response.ok) {
+        // Category might not have budget or other error - hide warning
+        hideBudgetWarning();
+        return;
+      }
+
+      const data = await response.json();
+      if (data.success && data.data) {
+        const budgetData = data.data;
+        showBudgetWarning(budgetData);
+      } else {
+        hideBudgetWarning();
+      }
+    } catch (error) {
+      // Network error or category not found - hide warning
+      hideBudgetWarning();
+    }
+  }
+
+  // Show budget warning with data
+  function showBudgetWarning(budgetData) {
+    let budgetWarningEl = document.getElementById('budget-warning');
+    if (!budgetWarningEl) {
+      // Create budget warning element if it doesn't exist
+      const descriptionField = document
+        .querySelector('textarea[name="description"]')
+        ?.closest('.form-control');
+      if (descriptionField) {
+        budgetWarningEl = document.createElement('div');
+        budgetWarningEl.id = 'budget-warning';
+        budgetWarningEl.className = 'alert alert-warning';
+        budgetWarningEl.setAttribute('role', 'alert');
+        budgetWarningEl.innerHTML = `
+          <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          <span id="budget-warning-text"></span>
+        `;
+        descriptionField.parentNode?.insertBefore(budgetWarningEl, descriptionField);
+      }
+    }
+
+    if (budgetWarningEl) {
+      const warningText = budgetWarningEl.querySelector('#budget-warning-text');
+      const percentageUsed = parseFloat(budgetData.percentage_used) || 0;
+      const remaining = parseFloat(budgetData.remaining) || 0;
+      const budgetAmount = parseFloat(budgetData.budget_amount) || 0;
+      const spentAmount = parseFloat(budgetData.spent_amount) || 0;
+
+      // Determine currency from category
+      const selectedCategory = categories.find((c) => c.id === budgetData.category_id);
+      const currency = selectedCategory?.currency || 'IDR';
+
+      // Update alert styling based on budget status
+      budgetWarningEl.classList.remove('alert-warning', 'alert-error', 'alert-success');
+      if (percentageUsed >= 100) {
+        budgetWarningEl.classList.add('alert-error');
+      } else if (percentageUsed >= 80) {
+        budgetWarningEl.classList.add('alert-warning');
+      } else {
+        budgetWarningEl.classList.add('alert-success');
+      }
+
+      // Format message
+      let message = '';
+      if (percentageUsed >= 100) {
+        message = `Budget exceeded by ${formatCurrency(Math.abs(remaining), currency)}!`;
+      } else if (percentageUsed >= 80) {
+        message = `Budget remaining: ${formatCurrency(remaining, currency)} (${Math.round(percentageUsed)}% used)`;
+      } else {
+        message = `Budget: ${formatCurrency(spentAmount, currency)} of ${formatCurrency(budgetAmount, currency)} used (${Math.round(percentageUsed)}%)`;
+      }
+
+      if (warningText) {
+        warningText.textContent = message;
+      }
+
+      budgetWarningEl.classList.remove('hidden');
+    }
+  }
+
+  // Hide budget warning
+  function hideBudgetWarning() {
+    const budgetWarningEl = document.getElementById('budget-warning');
+    if (budgetWarningEl) {
+      budgetWarningEl.classList.add('hidden');
+    }
+  }
+
   typeRadios.forEach((radio) => {
     radio?.addEventListener('change', (e) => {
       const target = e.target;
@@ -292,11 +396,17 @@ const categoriesJson = JSON.stringify(
 
       // Update currency when category changes
       updateCurrencyForCategory();
+
+      // Update budget display
+      updateBudgetDisplay();
     });
   });
 
-  // Update currency when category changes
-  categorySelect?.addEventListener('change', updateCurrencyForCategory);
+  // Update currency and budget when category changes
+  categorySelect?.addEventListener('change', () => {
+    updateCurrencyForCategory();
+    updateBudgetDisplay();
+  });
 
   // Display field-specific errors
   function setFieldError(fieldName, message) {
@@ -408,6 +518,7 @@ const categoriesJson = JSON.stringify(
     }
   });
 
-  // Initialize currency based on pre-selected category
+  // Initialize currency and budget display based on pre-selected category
   updateCurrencyForCategory();
+  updateBudgetDisplay();
 </script>
