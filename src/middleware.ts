@@ -35,12 +35,17 @@ const SESSION_COOKIE_NAME = 'sid';
  *
  * CSP restricts the sources of various types of content, preventing XSS attacks.
  * Learn more: https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP
+ *
+ * Note: In development mode, we use a more lenient policy to support Astro dev toolbar.
+ * In production, we use strict nonce-based CSP.
  */
-const CSP_HEADERS = {
+const isDev = import.meta.env.DEV;
+
+const CSP_HEADERS_PROD = {
   // Default policy for all content types
   'default-src': "'self'",
 
-  // Script sources - only allow scripts from same origin
+  // Script sources - use nonce for inline scripts (strict)
   'script-src': "'self'",
 
   // Style sources - allow same origin and inline styles (for Tailwind CSS)
@@ -71,6 +76,12 @@ const CSP_HEADERS = {
   'report-to': "'csp-endpoint'",
 } as const;
 
+const CSP_HEADERS_DEV = {
+  ...CSP_HEADERS_PROD,
+  // In dev mode, allow unsafe-inline and unsafe-eval for Astro dev toolbar
+  'script-src': "'self' 'unsafe-inline' 'unsafe-eval'",
+} as const;
+
 /**
  * Generate a cryptographically random nonce for CSP
  * A nonce is a random value used only once to allow inline scripts securely
@@ -84,13 +95,15 @@ function generateNonce(): string {
 
 /**
  * Convert CSP headers object to CSP header string with nonce
- * @param nonce - The CSP nonce to allow for inline scripts
+ * @param nonce - The CSP nonce to allow for inline scripts (production only)
  */
 function buildCSPHeader(nonce: string): string {
-  return Object.entries(CSP_HEADERS)
+  const headers = isDev ? CSP_HEADERS_DEV : CSP_HEADERS_PROD;
+
+  return Object.entries(headers)
     .map(([directive, source]) => {
-      // Add nonce to script-src directive
-      if (directive === 'script-src') {
+      // Add nonce to script-src directive in production mode only
+      if (!isDev && directive === 'script-src') {
         return `${directive} ${source} 'nonce-${nonce}'`;
       }
       return `${directive} ${source}`;
