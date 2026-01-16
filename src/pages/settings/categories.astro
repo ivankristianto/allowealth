@@ -36,9 +36,17 @@ const allCategories = [
 // Get filter from query params
 const url = new URL(Astro.url);
 const showInactive = url.searchParams.get('show') === 'inactive';
-const filteredCategories = showInactive
+const searchQuery = url.searchParams.get('search') || '';
+
+let filteredCategories = showInactive
   ? allCategories.filter((c) => c.status === 'inactive')
   : allCategories.filter((c) => c.status === 'active');
+
+// Apply search filter
+if (searchQuery) {
+  const query = searchQuery.toLowerCase();
+  filteredCategories = filteredCategories.filter((c) => c.name.toLowerCase().includes(query));
+}
 
 // Calculate total budget for expense categories
 const totalBudget = filteredCategories
@@ -79,17 +87,39 @@ const getTypeLabel = (type: string) => {
       <a class="tab" href="/settings/payment-methods">Payment Methods</a>
     </div>
 
-    <!-- Status Filter Tabs -->
-    <div class="tabs tabs-boxed bg-base-200 p-1">
-      <a href="/settings/categories" class={'tab '.concat(!showInactive ? 'tab-active' : '')}>
-        Active ({activeCategories.length})
-      </a>
-      <a
-        href="/settings/categories?show=inactive"
-        class={'tab '.concat(showInactive ? 'tab-active' : '')}
-      >
-        Inactive ({inactiveCategories.length})
-      </a>
+    <!-- Status Filter Tabs and Search -->
+    <div class="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
+      <div class="tabs tabs-boxed bg-base-200 p-1">
+        <a href="/settings/categories" class={'tab '.concat(!showInactive ? 'tab-active' : '')}>
+          Active ({activeCategories.length})
+        </a>
+        <a
+          href={'/settings/categories?show=inactive' +
+            (searchQuery ? '&search=' + encodeURIComponent(searchQuery) : '')}
+          class={'tab '.concat(showInactive ? 'tab-active' : '')}
+        >
+          Inactive ({inactiveCategories.length})
+        </a>
+      </div>
+      <form id="search-form" class="join">
+        <input
+          type="search"
+          name="search"
+          placeholder="Search categories..."
+          class="input input-bordered join-item"
+          value={searchQuery}
+        />
+        <button type="submit" class="btn btn-neutral join-item">
+          <Icon name="search" size="sm" />
+        </button>
+        {
+          searchQuery && (
+            <a href="/settings/categories" class="btn btn-ghost join-item">
+              <Icon name="x" size="sm" />
+            </a>
+          )
+        }
+      </form>
     </div>
 
     <!-- Summary for active categories -->
