@@ -17,12 +17,10 @@
 import MainLayout from '@/layouts/MainLayout.astro';
 import { requireAuth } from '@/lib/auth/requireAuth';
 import { dashboardService } from '@/services';
-import { decimalSubtract } from '@/lib/utils/decimal';
 import SummaryCards from '@/components/organisms/SummaryCards.astro';
 import AssetUpdateTodoList from '@/components/organisms/AssetUpdateTodoList.astro';
 import RecentTransactionsList from '@/components/organisms/RecentTransactionsList.astro';
 import QuickActions from '@/components/molecules/QuickActions.astro';
-import DashboardSkeleton from '@/components/organisms/DashboardSkeleton.astro';
 import DashboardError from '@/components/organisms/DashboardError.astro';
 import type { AssetUpdateTodoItem } from '@/components/organisms/AssetUpdateTodoList.astro';
 import type { TransactionOutput } from '@/lib/types/transaction';
