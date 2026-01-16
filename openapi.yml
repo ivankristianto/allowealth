@@ -1168,7 +1168,9 @@ components:
           format: uuid
         transaction_date:
           type: string
-          format: date-time
+          format: date
+          description: Transaction date in YYYY-MM-DD format
+          example: "2024-01-15"
         description:
           type: string
 
@@ -1192,7 +1194,9 @@ components:
           format: uuid
         transaction_date:
           type: string
-          format: date-time
+          format: date
+          description: Transaction date in YYYY-MM-DD format
+          example: "2024-01-15"
         description:
           type: string
 
