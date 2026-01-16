@@ -122,12 +122,47 @@ The project uses **OpenAPI 3.1.0** for API documentation.
 - Pages and layouts
 - Server-rendered content
 
+### Astro Files - DO NOT:
+
+- **DO NOT use TypeScript types in client-side `<script>` tags** - Astro's inline scripts run in the browser and don't support TypeScript type annotations. Use plain JavaScript or move typed code to separate `.ts` files.
+- **DO NOT access `user.attributes.property`** - The User type has properties directly on the object (`user.name`, `user.email`), not nested in `attributes`.
+- **DO NOT declare `Astro.locals` types in multiple files** - Centralize in `src/env.d.ts` only.
+
 ### Storybook Stories:
 
 - All atomic components must have stories
 - Use `.stories.ts` files (TypeScript)
 - Render functions create DOM elements directly
 - Test all variants and states
+
+## TypeScript Guidelines
+
+### Extending Astro.locals
+
+When extending `Astro.locals`, use this pattern in `src/env.d.ts`:
+
+```typescript
+/// <reference types="astro/client" />
+
+import type { User, Session } from '@/lib/auth/lucia';
+
+declare global {
+  namespace App {
+    interface Locals {
+      user?: User | null;
+      session?: Session | null;
+    }
+  }
+}
+
+export {};
+```
+
+**Key points:**
+
+- Use `declare global { namespace App { ... } }` when the file has imports
+- Import custom types from project files (`@/lib/auth/lucia`), not from library packages directly
+- The `export {}` at the end ensures the file is treated as a module
 
 ## Design Tokens
 
