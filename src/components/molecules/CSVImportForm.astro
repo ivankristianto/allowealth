@@ -2,11 +2,17 @@
 /**
  * CSV Import Form Component
  *
- * Form for uploading CSV files with client-side parsing and preview.
+ * Multi-step form for importing CSV files:
+ * 1. File upload and parsing
+ * 2. Preview validation
+ * 3. Column mapping interface
+ * 4. Import execution
+ *
  * Features:
  * - File upload input for CSV files
  * - Client-side CSV parsing
  * - Preview table of parsed data
+ * - Column mapping interface
  * - Error handling for invalid CSV files
  * - Validation feedback
  *
@@ -33,39 +39,59 @@ const { action } = Astro.props;
 const cspNonce = Astro.locals.cspNonce || '';
 ---
 
+<!-- Hidden form for actual submission -->
+<form
+  id="csv-import-form"
+  action={action}
+  method="POST"
+  enctype="multipart/form-data"
+  class="hidden"
+>
+  <input type="file" name="csv_file" id="csv-file-hidden" />
+  <input type="hidden" name="map_date" id="map-date-hidden" />
+  <input type="hidden" name="map_type" id="map-type-hidden" />
+  <input type="hidden" name="map_amount" id="map-amount-hidden" />
+  <input type="hidden" name="map_currency" id="map-currency-hidden" />
+  <input type="hidden" name="map_category" id="map-category-hidden" />
+  <input type="hidden" name="map_payment_method" id="map-payment-method-hidden" />
+  <input type="hidden" name="map_description" id="map-description-hidden" />
+</form>
+
 <div class="csv-import-container space-y-6">
-  <!-- File Upload Section -->
-  <div class="form-control">
-    <Label
-      required
-      htmlFor="csv-file-input"
-      id="file-label"
-      helpText="Select a CSV file to preview"
-    >
-      Upload CSV File
-    </Label>
-    <input
-      id="csv-file-input"
-      name="csv_file"
-      type="file"
-      accept=".csv"
-      class="file-input file-input-bordered w-full"
-      aria-describedby="file-error"
-    />
-    <div class="text-sm text-neutral-500 mt-2">
-      <p class="font-medium mb-1">Expected CSV format:</p>
-      <ul class="list-disc list-inside space-y-0.5 text-xs">
-        <li>date (YYYY-MM-DD format)</li>
-        <li>type (expense or income)</li>
-        <li>amount (numeric value)</li>
-        <li>currency (IDR or USD)</li>
-        <li>category (category name)</li>
-        <li>payment_method (payment method name)</li>
-        <li>description (optional notes)</li>
-      </ul>
+  <!-- Step 1: File Upload Section -->
+  <div id="step-upload" class="space-y-4">
+    <div class="form-control">
+      <Label
+        required
+        htmlFor="csv-file-input"
+        id="file-label"
+        helpText="Select a CSV file to preview"
+      >
+        Upload CSV File
+      </Label>
+      <input
+        id="csv-file-input"
+        name="csv_file"
+        type="file"
+        accept=".csv"
+        class="file-input file-input-bordered w-full"
+        aria-describedby="file-error"
+      />
+      <div class="text-sm text-neutral-500 mt-2">
+        <p class="font-medium mb-1">Expected CSV format:</p>
+        <ul class="list-disc list-inside space-y-0.5 text-xs">
+          <li>date (YYYY-MM-DD format)</li>
+          <li>type (expense or income)</li>
+          <li>amount (numeric value)</li>
+          <li>currency (IDR or USD)</li>
+          <li>category (category name)</li>
+          <li>payment_method (payment method name)</li>
+          <li>description (optional notes)</li>
+        </ul>
+      </div>
+      <!-- Error message container -->
+      <div id="file-error" class="text-error text-sm mt-2 hidden" role="alert"></div>
     </div>
-    <!-- Error message container -->
-    <div id="file-error" class="text-error text-sm mt-2 hidden" role="alert"></div>
   </div>
 
   <!-- Loading State -->
@@ -76,7 +102,7 @@ const cspNonce = Astro.locals.cspNonce || '';
     </div>
   </div>
 
-  <!-- Preview Section (hidden until file is parsed) -->
+  <!-- Step 2: Preview Section (hidden until file is parsed) -->
   <div id="preview-section" class="hidden space-y-4">
     <!-- File Info -->
     <div id="file-info" class="alert alert-success" role="alert" aria-live="polite">
@@ -102,9 +128,9 @@ const cspNonce = Astro.locals.cspNonce || '';
       <p id="row-count" class="text-sm text-neutral-500" aria-live="polite"></p>
     </div>
 
-    <!-- Validation Summary -->
+    <!-- Basic Validation Summary -->
     <div id="validation-section" class="space-y-3">
-      <h3 class="font-semibold text-base">Validation Summary</h3>
+      <h3 class="font-semibold text-base">File Structure Check</h3>
       <div
         id="validation-results"
         role="region"
@@ -127,65 +153,189 @@ const cspNonce = Astro.locals.cspNonce || '';
         Choose Different File
       </button>
       <button
+        id="proceed-to-mapping-button"
+        type="button"
+        class="btn btn-primary"
+        aria-label="Proceed to column mapping"
+      >
+        <Icon name="arrow-right" size="sm" />
+        Map Columns
+      </button>
+    </div>
+  </div>
+
+  <!-- Step 3: Column Mapping Section (hidden initially) -->
+  <div id="mapping-section" class="hidden space-y-4">
+    <div class="alert alert-info">
+      <Icon name="information" size="sm" />
+      <div>
+        <h4 class="font-bold">Step 2: Map CSV Columns to Fields</h4>
+        <p class="text-sm">
+          Select which CSV column corresponds to each required field. We've suggested mappings based
+          on your column names.
+        </p>
+      </div>
+    </div>
+
+    <!-- CSV Preview Reference -->
+    <div class="space-y-2">
+      <h3 class="font-semibold text-base">Your CSV Columns</h3>
+      <div class="overflow-x-auto border rounded-lg">
+        <table class="table table-sm table-zebra" aria-label="CSV column reference">
+          <caption class="hidden">CSV column names from first row</caption>
+          <thead>
+            <tr id="mapping-header"></tr>
+          </thead>
+          <tbody>
+            <tr id="mapping-preview-row"></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Mapping Form -->
+    <div class="space-y-3">
+      <h3 class="font-semibold text-base">Column Mapping</h3>
+
+      <!-- Target Fields Mapping -->
+      <div id="mapping-fields" class="space-y-3">
+        <!-- Field mappings will be generated by JavaScript -->
+      </div>
+    </div>
+
+    <!-- Mapping Actions -->
+    <div class="card-actions justify-end gap-2 pt-4 border-t border-base-300">
+      <button
+        id="back-to-preview-button"
+        type="button"
+        class="btn btn-ghost"
+        aria-label="Back to file preview"
+      >
+        <Icon name="arrow-left" size="sm" />
+        Back to Preview
+      </button>
+      <button
+        id="auto-map-button"
+        type="button"
+        class="btn btn-outline"
+        aria-label="Auto-detect column mappings"
+      >
+        <Icon name="refresh" size="sm" />
+        Auto-Detect
+      </button>
+      <button
         id="confirm-import-button"
         type="button"
         class="btn btn-primary"
-        aria-label="Proceed with CSV import"
+        aria-label="Confirm mapping and start import"
       >
         <Icon name="check" size="sm" />
-        Proceed with Import
+        Import Transactions
       </button>
+    </div>
+
+    <!-- Validation Message -->
+    <div id="mapping-validation" class="hidden" role="alert" aria-live="polite"></div>
+  </div>
+
+  <!-- Step 4: Import Progress (hidden initially) -->
+  <div id="import-progress-section" class="hidden space-y-4">
+    <div class="alert alert-info" role="status" aria-live="polite">
+      <span class="loading loading-spinner loading-primary"></span>
+      <div>
+        <h4 class="font-bold">Importing Transactions...</h4>
+        <p class="text-sm">Please wait while we process your CSV file.</p>
+      </div>
     </div>
   </div>
 </div>
 
-<script define:vars={{ cspNonce: Astro.locals.cspNonce || '' }} nonce={cspNonce}>
+<script define:vars={{ cspNonce }} nonce={cspNonce}>
   (function () {
     'use strict';
 
-    // DOM Elements
+    // DOM Elements - Upload Step
     const fileInput = document.getElementById('csv-file-input');
+    const fileError = document.getElementById('file-error');
+    const stepUpload = document.getElementById('step-upload');
     const loadingState = document.getElementById('loading-state');
     const previewSection = document.getElementById('preview-section');
+    const mappingSection = document.getElementById('mapping-section');
+    const importProgressSection = document.getElementById('import-progress-section');
+
+    // DOM Elements - Preview Step
     const previewHeader = document.getElementById('preview-header');
     const previewBody = document.getElementById('preview-body');
-    const fileInfo = document.getElementById('file-info');
     const fileInfoText = document.getElementById('file-info-text');
     const rowCount = document.getElementById('row-count');
     const validationResults = document.getElementById('validation-results');
     const resetButton = document.getElementById('reset-button');
-    const confirmButton = document.getElementById('confirm-import-button');
-    const fileError = document.getElementById('file-error');
+    const proceedButton = document.getElementById('proceed-to-mapping-button');
 
-    // Required columns for validation
-    const REQUIRED_COLUMNS = ['date', 'type', 'amount', 'currency', 'category', 'payment_method'];
-    const OPTIONAL_COLUMNS = ['description'];
+    // DOM Elements - Mapping Step
+    const mappingHeader = document.getElementById('mapping-header');
+    const mappingPreviewRow = document.getElementById('mapping-preview-row');
+    const mappingFields = document.getElementById('mapping-fields');
+    const backToPreviewButton = document.getElementById('back-to-preview-button');
+    const autoMapButton = document.getElementById('auto-map-button');
+    const confirmImportButton = document.getElementById('confirm-import-button');
+    const mappingValidation = document.getElementById('mapping-validation');
 
-    // HTML escaping utility to prevent XSS attacks
+    // Hidden form for submission
+    const hiddenForm = document.getElementById('csv-import-form');
+    const hiddenFileInput = document.getElementById('csv-file-hidden');
+    const hiddenMappings = {
+      date: document.getElementById('map-date-hidden'),
+      type: document.getElementById('map-type-hidden'),
+      amount: document.getElementById('map-amount-hidden'),
+      currency: document.getElementById('map-currency-hidden'),
+      category: document.getElementById('map-category-hidden'),
+      payment_method: document.getElementById('map-payment-method-hidden'),
+      description: document.getElementById('map-description-hidden'),
+    };
+
+    // CSV Data Storage
+    let csvData = {
+      file: null,
+      headers: [],
+      rows: [],
+    };
+
+    // Target fields that need mapping
+    const TARGET_FIELDS = [
+      { key: 'date', label: 'Date', required: true, helpText: 'Transaction date (YYYY-MM-DD)' },
+      { key: 'type', label: 'Type', required: true, helpText: 'Transaction type (expense/income)' },
+      { key: 'amount', label: 'Amount', required: true, helpText: 'Transaction amount' },
+      { key: 'currency', label: 'Currency', required: true, helpText: 'Currency code (IDR/USD)' },
+      { key: 'category', label: 'Category', required: true, helpText: 'Category name' },
+      {
+        key: 'payment_method',
+        label: 'Payment Method',
+        required: true,
+        helpText: 'Payment method name',
+      },
+      { key: 'description', label: 'Description', required: false, helpText: 'Optional notes' },
+    ];
+
+    // HTML escaping utility
     const escapeHtml = (text) => {
       const div = document.createElement('div');
       div.textContent = text;
       return div.innerHTML;
     };
 
-    // Validate ISO date strictly (no rollover dates like 2025-99-99)
-    function isValidISODate(dateStr) {
-      // First check regex pattern
-      const isoPattern = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
-      if (!isoPattern.test(dateStr)) {
-        return false;
-      }
+    // Show error message
+    function showError(message) {
+      fileError.textContent = message;
+      fileError.classList.remove('hidden');
+      fileInput.classList.add('input-error');
+    }
 
-      // Then verify the date is valid (no rollover)
-      const date = new Date(dateStr);
-      const [year, month, day] = dateStr.split('-').map(Number);
-
-      // Check if the date components match (prevents rollover)
-      return (
-        date.getFullYear() === year &&
-        date.getMonth() === month - 1 && // JS months are 0-indexed
-        date.getDate() === day
-      );
+    // Hide error message
+    function hideError() {
+      fileError.textContent = '';
+      fileError.classList.add('hidden');
+      fileInput.classList.remove('input-error');
     }
 
     // CSV Parser
@@ -202,11 +352,9 @@ const cspNonce = Astro.locals.cspNonce || '';
         if (inQuotes) {
           if (char === '"') {
             if (nextChar === '"') {
-              // Escaped quote
               currentField += '"';
               i++;
             } else {
-              // End of quotes
               inQuotes = false;
             }
           } else {
@@ -243,99 +391,29 @@ const cspNonce = Astro.locals.cspNonce || '';
       return lines;
     }
 
-    // Validate CSV data
-    function validateCSV(headers, rows) {
+    // Validate CSV structure
+    function validateCSVStructure(headers, rows) {
       const issues = {
         errors: [],
         warnings: [],
-        rowErrors: [],
       };
 
-      // Check for required columns
-      const missingColumns = REQUIRED_COLUMNS.filter((col) => !headers.includes(col));
-      if (missingColumns.length > 0) {
-        issues.errors.push(`Missing required columns: ${missingColumns.join(', ')}`);
-      }
-
-      // Check for empty columns
+      // Check for empty CSV
       if (headers.length === 0) {
         issues.errors.push('No columns found in CSV file');
-        return issues;
       }
 
-      // Validate rows
-      rows.forEach((row, rowIndex) => {
-        const rowNum = rowIndex + 2; // +1 for header, +1 for 0-index
-        const rowErrors = [];
+      // Check for minimum rows
+      if (rows.length === 0) {
+        issues.errors.push('No data rows found in CSV file');
+      }
 
-        // Check row length
-        if (row.length !== headers.length) {
-          rowErrors.push(`Row has ${row.length} columns, expected ${headers.length}`);
-        }
-
-        // Validate required fields
-        REQUIRED_COLUMNS.forEach((col) => {
-          const colIndex = headers.indexOf(col);
-          if (colIndex !== -1) {
-            const value = row[colIndex]?.trim();
-
-            if (!value) {
-              rowErrors.push(`${col} is empty`);
-            } else {
-              // Type-specific validation
-              switch (col) {
-                case 'date':
-                  if (!isValidISODate(value)) {
-                    rowErrors.push(`${col}: "${value}" is not a valid date (YYYY-MM-DD)`);
-                  }
-                  break;
-                case 'type':
-                  if (!['expense', 'income'].includes(value.toLowerCase())) {
-                    rowErrors.push(`${col}: "${value}" must be "expense" or "income"`);
-                  }
-                  break;
-                case 'amount':
-                  if (isNaN(parseFloat(value)) || parseFloat(value) < 0) {
-                    rowErrors.push(`${col}: "${value}" must be a positive number`);
-                  }
-                  break;
-                case 'currency':
-                  if (!['IDR', 'USD'].includes(value.toUpperCase())) {
-                    rowErrors.push(`${col}: "${value}" must be "IDR" or "USD"`);
-                  }
-                  break;
-              }
-            }
-          }
-        });
-
-        if (rowErrors.length > 0) {
-          issues.rowErrors.push({ row: rowNum, errors: rowErrors });
-        }
-      });
-
-      // Warnings for unknown columns
-      const knownColumns = [...REQUIRED_COLUMNS, ...OPTIONAL_COLUMNS];
-      const unknownColumns = headers.filter((col) => !knownColumns.includes(col.toLowerCase()));
-      if (unknownColumns.length > 0) {
-        issues.warnings.push(`Unknown columns will be ignored: ${unknownColumns.join(', ')}`);
+      // Warnings for very small CSVs
+      if (rows.length < 3) {
+        issues.warnings.push(`CSV has only ${rows.length} data row(s)`);
       }
 
       return issues;
-    }
-
-    // Show error message
-    function showError(message) {
-      fileError.textContent = message;
-      fileError.classList.remove('hidden');
-      fileInput.classList.add('input-error');
-    }
-
-    // Hide error message
-    function hideError() {
-      fileError.textContent = '';
-      fileError.classList.add('hidden');
-      fileInput.classList.remove('input-error');
     }
 
     // Render preview table
@@ -345,15 +423,6 @@ const cspNonce = Astro.locals.cspNonce || '';
       headers.forEach((header) => {
         const th = document.createElement('th');
         th.textContent = header;
-
-        // Mark required columns
-        if (REQUIRED_COLUMNS.includes(header.toLowerCase())) {
-          const badge = document.createElement('span');
-          badge.className = 'badge badge-error badge-xs ml-1';
-          badge.textContent = '*';
-          th.appendChild(badge);
-        }
-
         previewHeader.appendChild(th);
       });
 
@@ -381,11 +450,7 @@ const cspNonce = Astro.locals.cspNonce || '';
         validationResults.removeChild(validationResults.firstChild);
       }
 
-      if (
-        issues.errors.length === 0 &&
-        issues.warnings.length === 0 &&
-        issues.rowErrors.length === 0
-      ) {
+      if (issues.errors.length === 0 && issues.warnings.length === 0) {
         // Success message
         const successDiv = document.createElement('div');
         successDiv.className = 'alert alert-success';
@@ -402,13 +467,13 @@ const cspNonce = Astro.locals.cspNonce || '';
         svg.appendChild(path);
 
         const span = document.createElement('span');
-        span.textContent = 'All rows validated successfully! Ready to import.';
+        span.textContent = 'CSV structure is valid! Click "Map Columns" to continue.';
 
         successDiv.appendChild(svg);
         successDiv.appendChild(span);
         validationResults.appendChild(successDiv);
 
-        confirmButton.disabled = false;
+        proceedButton.disabled = false;
         return;
       }
 
@@ -450,7 +515,7 @@ const cspNonce = Astro.locals.cspNonce || '';
         errorDiv.appendChild(div);
         validationResults.appendChild(errorDiv);
 
-        confirmButton.disabled = true;
+        proceedButton.disabled = true;
       }
 
       // Warnings
@@ -491,80 +556,210 @@ const cspNonce = Astro.locals.cspNonce || '';
         warningDiv.appendChild(div);
         validationResults.appendChild(warningDiv);
       }
-
-      // Row errors
-      if (issues.rowErrors.length > 0) {
-        const rowErrorDiv = document.createElement('div');
-        rowErrorDiv.className = 'alert alert-warning';
-
-        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-        svg.setAttribute('class', 'stroke-current shrink-0 h-6 w-6');
-        svg.setAttribute('fill', 'none');
-        svg.setAttribute('viewBox', '0 0 24 24');
-        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        path.setAttribute('stroke-linecap', 'round');
-        path.setAttribute('stroke-linejoin', 'round');
-        path.setAttribute('stroke-width', '2');
-        path.setAttribute(
-          'd',
-          'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z'
-        );
-        svg.appendChild(path);
-
-        const div = document.createElement('div');
-        const h4 = document.createElement('h4');
-        h4.className = 'font-bold';
-        h4.textContent = `Row Issues (${issues.rowErrors.length} rows affected)`;
-        const errorListDiv = document.createElement('div');
-        errorListDiv.className = 'text-sm mt-1 space-y-1';
-
-        // Show first 5 row errors
-        const displayErrors = issues.rowErrors.slice(0, 5);
-        const remainingCount = issues.rowErrors.length - 5;
-
-        displayErrors.forEach((re) => {
-          const rowDiv = document.createElement('div');
-          const strong = document.createElement('strong');
-          strong.textContent = `Row ${re.row}: `;
-          rowDiv.appendChild(strong);
-          rowDiv.appendChild(document.createTextNode(re.errors.join(', ')));
-          errorListDiv.appendChild(rowDiv);
-        });
-
-        if (remainingCount > 0) {
-          const moreP = document.createElement('p');
-          moreP.className = 'text-xs mt-2';
-          moreP.textContent = `...and ${remainingCount} more rows with issues`;
-          errorListDiv.appendChild(moreP);
-        }
-
-        div.appendChild(h4);
-        div.appendChild(errorListDiv);
-        rowErrorDiv.appendChild(svg);
-        rowErrorDiv.appendChild(div);
-        validationResults.appendChild(rowErrorDiv);
-
-        if (issues.errors.length === 0) {
-          confirmButton.disabled = false;
-        }
-      }
     }
 
-    // Reset form
-    function resetForm() {
-      fileInput.value = '';
+    // Build mapping interface
+    function buildMappingInterface(headers, firstRow) {
+      // Render header reference
+      mappingHeader.innerHTML = '';
+      headers.forEach((header) => {
+        const th = document.createElement('th');
+        th.textContent = header;
+        th.className = 'text-center';
+        mappingHeader.appendChild(th);
+      });
+
+      // Render preview row reference
+      mappingPreviewRow.innerHTML = '';
+      firstRow.forEach((cell) => {
+        const td = document.createElement('td');
+        td.textContent = cell || '(empty)';
+        td.className = 'text-center';
+        mappingPreviewRow.appendChild(td);
+      });
+
+      // Build field mapping selects
+      mappingFields.innerHTML = '';
+      TARGET_FIELDS.forEach((field) => {
+        const fieldDiv = document.createElement('div');
+        fieldDiv.className = 'form-control';
+
+        // Label
+        const label = document.createElement('label');
+        label.className = 'label';
+        label.htmlFor = `map-${field.key}`;
+
+        const labelSpan = document.createElement('span');
+        labelSpan.className = 'label-text';
+        labelSpan.textContent = field.label;
+        if (field.required) {
+          labelSpan.textContent += ' *';
+        }
+
+        const labelHelp = document.createElement('span');
+        labelHelp.className = 'label-text-alt';
+        labelHelp.textContent = field.helpText;
+
+        label.appendChild(labelSpan);
+        label.appendChild(labelHelp);
+        fieldDiv.appendChild(label);
+
+        // Select
+        const select = document.createElement('select');
+        select.id = `map-${field.key}`;
+        select.name = `map_${field.key}`;
+        select.className = 'select select-bordered w-full';
+        select.required = field.required;
+        select.dataset.field = field.key;
+
+        // Default option
+        const defaultOption = document.createElement('option');
+        defaultOption.value = '';
+        defaultOption.textContent = '-- Select column --';
+        select.appendChild(defaultOption);
+
+        // Add options for each header
+        headers.forEach((header) => {
+          const option = document.createElement('option');
+          option.value = header;
+          option.textContent = header;
+
+          // Auto-suggest based on header name
+          const headerLower = header.toLowerCase().replace(/[_\s]/g, '');
+          const fieldLower = field.key.toLowerCase().replace(/[_\s]/g, '');
+
+          if (headerLower === fieldLower) {
+            option.selected = true;
+          } else if (headerLower.includes(fieldLower) || fieldLower.includes(headerLower)) {
+            option.textContent += ' (suggested)';
+          }
+
+          select.appendChild(option);
+        });
+
+        fieldDiv.appendChild(select);
+        mappingFields.appendChild(fieldDiv);
+      });
+    }
+
+    // Auto-detect mappings
+    function autoDetectMappings() {
+      TARGET_FIELDS.forEach((field) => {
+        const select = document.getElementById(`map-${field.key}`);
+        if (!select) return;
+
+        const headerLower = field.key.toLowerCase().replace(/[_\s]/g, '');
+        let bestMatch = null;
+        let bestScore = 0;
+
+        // Find best matching header
+        csvData.headers.forEach((header) => {
+          const normalized = header.toLowerCase().replace(/[_\s]/g, '');
+
+          // Exact match
+          if (normalized === headerLower) {
+            bestMatch = header;
+            bestScore = 100;
+            return;
+          }
+
+          // Contains match
+          if (normalized.includes(headerLower) || headerLower.includes(normalized)) {
+            if (bestScore < 75) {
+              bestMatch = header;
+              bestScore = 75;
+            }
+          }
+        });
+
+        if (bestMatch) {
+          select.value = bestMatch;
+        }
+      });
+    }
+
+    // Validate mappings
+    function validateMappings() {
+      const errors = [];
+      const mappedColumns = new Set();
+
+      TARGET_FIELDS.forEach((field) => {
+        const select = document.getElementById(`map-${field.key}`);
+        if (!select) return;
+
+        const value = select.value;
+        if (!value && field.required) {
+          errors.push(`${field.label} is required`);
+        } else if (value) {
+          if (mappedColumns.has(value)) {
+            errors.push(`Column "${value}" is mapped to multiple fields`);
+          }
+          mappedColumns.add(value);
+        }
+      });
+
+      return errors;
+    }
+
+    // Show mapping validation message
+    function showMappingValidation(message, isError) {
+      mappingValidation.className = isError ? 'alert alert-error' : 'alert alert-success';
+      mappingValidation.innerHTML = '';
+
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.setAttribute('class', 'stroke-current shrink-0 h-6 w-6');
+      svg.setAttribute('fill', 'none');
+      svg.setAttribute('viewBox', '0 0 24 24');
+
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('stroke-linecap', 'round');
+      path.setAttribute('stroke-linejoin', 'round');
+      path.setAttribute('stroke-width', '2');
+
+      if (isError) {
+        path.setAttribute(
+          'd',
+          'M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z'
+        );
+      } else {
+        path.setAttribute('d', 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z');
+      }
+
+      svg.appendChild(path);
+
+      const span = document.createElement('span');
+      span.textContent = message;
+
+      mappingValidation.appendChild(svg);
+      mappingValidation.appendChild(span);
+      mappingValidation.classList.remove('hidden');
+    }
+
+    // Hide mapping validation
+    function hideMappingValidation() {
+      mappingValidation.classList.add('hidden');
+    }
+
+    // Navigate between steps
+    function showStep(step) {
+      stepUpload.classList.add('hidden');
       previewSection.classList.add('hidden');
-      hideError();
-      // Clear validation results safely
-      while (validationResults.firstChild) {
-        validationResults.removeChild(validationResults.firstChild);
-      }
-      // Clear preview tables safely
-      while (previewHeader.firstChild) {
-        previewHeader.removeChild(previewHeader.firstChild);
-      }
-      while (previewBody.firstChild) {
-        previewBody.removeChild(previewBody.firstChild);
+      mappingSection.classList.add('hidden');
+      importProgressSection.classList.add('hidden');
+
+      switch (step) {
+        case 'upload':
+          stepUpload.classList.remove('hidden');
+          break;
+        case 'preview':
+          previewSection.classList.remove('hidden');
+          break;
+        case 'mapping':
+          mappingSection.classList.remove('hidden');
+          break;
+        case 'import':
+          importProgressSection.classList.remove('hidden');
+          break;
       }
     }
 
@@ -573,7 +768,6 @@ const cspNonce = Astro.locals.cspNonce || '';
       const file = e.target.files[0];
 
       if (!file) {
-        resetForm();
         return;
       }
 
@@ -598,65 +792,91 @@ const cspNonce = Astro.locals.cspNonce || '';
         const headers = lines[0].map((h) => h.trim());
         const rows = lines.slice(1);
 
-        // Validate
-        const issues = validateCSV(headers, rows);
+        // Store CSV data
+        csvData = {
+          file: file,
+          headers: headers,
+          rows: rows,
+        };
+
+        // Validate structure
+        const issues = validateCSVStructure(headers, rows);
 
         // Update UI
         fileInfoText.textContent = `Found ${rows.length} rows with ${headers.length} columns`;
         renderPreview(headers, rows);
         renderValidation(issues);
 
-        // Show preview section
+        // Show preview step
         loadingState.classList.add('hidden');
-        previewSection.classList.remove('hidden');
+        showStep('preview');
       } catch (err) {
         loadingState.classList.add('hidden');
+        showStep('upload');
         showError(err.message || 'Failed to parse CSV file');
       }
     });
 
     // Reset button
-    resetButton.addEventListener('click', resetForm);
+    resetButton.addEventListener('click', function () {
+      fileInput.value = '';
+      csvData = { file: null, headers: [], rows: [] };
+      showStep('upload');
+      hideError();
+    });
 
-    // Confirm import button - navigate to import action (will be implemented in next phase)
-    confirmButton.addEventListener('click', function () {
-      // Replace alert() with inline UI feedback (constitution.md baseline requirement)
-      // Create a temporary info message in the validation results area
-      const infoDiv = document.createElement('div');
-      infoDiv.className = 'alert alert-info';
+    // Proceed to mapping
+    proceedButton.addEventListener('click', function () {
+      buildMappingInterface(csvData.headers, csvData.rows[0] || []);
+      showStep('mapping');
+      hideMappingValidation();
+    });
 
-      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-      svg.setAttribute('class', 'stroke-current shrink-0 h-6 w-6');
-      svg.setAttribute('fill', 'none');
-      svg.setAttribute('viewBox', '0 0 24 24');
-      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      path.setAttribute('stroke-linecap', 'round');
-      path.setAttribute('stroke-linejoin', 'round');
-      path.setAttribute('stroke-width', '2');
-      path.setAttribute('d', 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z');
-      svg.appendChild(path);
+    // Back to preview
+    backToPreviewButton.addEventListener('click', function () {
+      showStep('preview');
+    });
 
-      const div = document.createElement('div');
-      const h4 = document.createElement('h4');
-      h4.className = 'font-bold';
-      h4.textContent = 'Coming Soon';
-      const p = document.createElement('p');
-      p.className = 'text-sm';
-      p.textContent =
-        'Import functionality will be implemented in the next phase. The CSV has been validated and is ready for import.';
+    // Auto-detect mappings
+    autoMapButton.addEventListener('click', function () {
+      autoDetectMappings();
+      showMappingValidation('Mappings auto-detected! Please review and confirm.', false);
 
-      div.appendChild(h4);
-      div.appendChild(p);
-      infoDiv.appendChild(svg);
-      infoDiv.appendChild(div);
+      setTimeout(hideMappingValidation, 3000);
+    });
 
-      // Add to validation results area
-      validationResults.appendChild(infoDiv);
+    // Confirm import
+    confirmImportButton.addEventListener('click', function () {
+      const errors = validateMappings();
 
-      // Auto-remove after 5 seconds
-      setTimeout(() => {
-        infoDiv.remove();
-      }, 5000);
+      if (errors.length > 0) {
+        showMappingValidation('Please fix the following issues:\n' + errors.join('\n'), true);
+        return;
+      }
+
+      hideMappingValidation();
+
+      // Collect mappings
+      const mappings = {};
+      TARGET_FIELDS.forEach((field) => {
+        const select = document.getElementById(`map-${field.key}`);
+        if (select && select.value) {
+          mappings[field.key] = select.value;
+        }
+      });
+
+      // Populate hidden form
+      const dataTransfer = new DataTransfer();
+      dataTransfer.items.add(csvData.file);
+      hiddenFileInput.files = dataTransfer.files;
+
+      Object.entries(mappings).forEach(([key, value]) => {
+        hiddenMappings[key].value = value;
+      });
+
+      // Submit form
+      showStep('import');
+      hiddenForm.submit();
     });
   })();
 </script>
