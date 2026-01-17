@@ -306,9 +306,45 @@ export class BudgetService {
     user_id: string,
     year: number,
     month: number,
-    currency: 'IDR' | 'USD'
+    currency: 'IDR' | 'USD',
+    sortBy?: 'category' | 'percentage' | 'budget' | 'spent' | 'balance' | 'status',
+    sortOrder?: 'asc' | 'desc'
   ): Promise<string> {
     const overview = await this.getMonthlyOverview(user_id, year, month, currency);
+
+    // Sort categories based on sortBy and sortOrder (same logic as BudgetOverviewTable)
+    let sortedCategories = [...overview.categories];
+    if (sortBy && sortOrder) {
+      sortedCategories = sortedCategories.sort((a, b) => {
+        let comparison = 0;
+
+        switch (sortBy) {
+          case 'category':
+            comparison = a.category_name.localeCompare(b.category_name);
+            break;
+          case 'percentage':
+            comparison = a.percentage_used - b.percentage_used;
+            break;
+          case 'budget':
+            comparison = parseFloat(a.budget_amount) - parseFloat(b.budget_amount);
+            break;
+          case 'spent':
+            comparison = parseFloat(a.spent_amount) - parseFloat(b.spent_amount);
+            break;
+          case 'balance':
+            comparison = parseFloat(a.balance) - parseFloat(b.balance);
+            break;
+          case 'status':
+            const statusOrder = { exceeded: 0, warning: 1, ok: 2 };
+            comparison = statusOrder[a.status] - statusOrder[b.status];
+            break;
+          default:
+            comparison = 0;
+        }
+
+        return sortOrder === 'asc' ? comparison : -comparison;
+      });
+    }
 
     // CSV header
     const headers = [
@@ -321,8 +357,8 @@ export class BudgetService {
       'percentage_used',
     ];
 
-    // Build CSV rows
-    const csvRows = overview.categories.map((cat) => [
+    // Build CSV rows from sorted categories
+    const csvRows = sortedCategories.map((cat) => [
       cat.category_name,
       cat.percentage,
       cat.budget_amount,

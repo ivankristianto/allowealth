@@ -82,7 +82,7 @@ const monthNames = [
 
 const currentMonthName = monthNames[selectedMonth - 1];
 
-// Build URLs for month navigation
+// Build URLs for month navigation (preserves sort order)
 const buildMonthUrl = (year: number, month: number) => {
   const params = new URLSearchParams();
   params.set('year', year.toString());
@@ -93,12 +93,14 @@ const buildMonthUrl = (year: number, month: number) => {
   return `/budget?${params.toString()}`;
 };
 
-// Build base URL for sorting (preserves current month and currency)
+// Build base URL for sorting (preserves current month, currency, and sort order)
 const buildSortBaseUrl = () => {
   const params = new URLSearchParams();
   params.set('year', selectedYear.toString());
   params.set('month', selectedMonth.toString());
   params.set('currency', selectedCurrency);
+  params.set('sort', sortBy);
+  params.set('order', sortOrder);
   // Keep the path as /budget?params so the component can replace with /api/budget/export?
   return `/budget?${params.toString()}`;
 };
