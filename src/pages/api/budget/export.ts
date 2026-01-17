@@ -6,7 +6,7 @@ import { logError } from '@/lib/utils';
 /**
  * GET /api/budget/export
  * Export budget overview to CSV
- * Query params: year, month, currency
+ * Query params: year, month, currency, sort, order
  */
 export const GET: APIRoute = async ({ request, url }) => {
   try {
@@ -15,6 +15,15 @@ export const GET: APIRoute = async ({ request, url }) => {
     const yearParam = url.searchParams.get('year');
     const monthParam = url.searchParams.get('month');
     const currency = url.searchParams.get('currency') as 'IDR' | 'USD' | null;
+    const sortBy = url.searchParams.get('sort') as
+      | 'category'
+      | 'percentage'
+      | 'budget'
+      | 'spent'
+      | 'balance'
+      | 'status'
+      | null;
+    const sortOrder = url.searchParams.get('order') as 'asc' | 'desc' | null;
 
     // Default to current month if not specified
     const now = new Date();
@@ -35,26 +44,19 @@ export const GET: APIRoute = async ({ request, url }) => {
       return errorResponse('Invalid currency parameter', 400);
     }
 
-    // Generate CSV
-    const csv = await budgetService.exportToCSV(userId, year, month, selectedCurrency);
+    // Generate CSV with optional sorting
+    const csv = await budgetService.exportToCSV(
+      userId,
+      year,
+      month,
+      selectedCurrency,
+      sortBy || undefined,
+      sortOrder || undefined
+    );
 
-    // Generate filename with date
-    const monthNames = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-    const monthName = monthNames[month - 1];
-    const filename = `budget_${year}_${monthName}.csv`;
+    // Generate filename with date in budget-YYYY-MM.csv format
+    const monthPadded = month.toString().padStart(2, '0');
+    const filename = `budget-${year}-${monthPadded}.csv`;
 
     // Return CSV file
     return new Response(csv, {
