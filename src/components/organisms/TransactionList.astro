@@ -70,6 +70,16 @@ const buildExportUrl = () => {
   const queryString = params.toString();
   return queryString ? `/transactions/export?${queryString}` : '/transactions/export';
 };
+
+// Build direct API export URL with current filters
+const buildDirectExportUrl = () => {
+  const params = new URLSearchParams();
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value) params.set(key, value);
+  });
+  const queryString = params.toString();
+  return queryString ? `/api/transactions/export?${queryString}` : '/api/transactions/export';
+};
 ---
 
 <div class="space-y-6">
@@ -80,9 +90,13 @@ const buildExportUrl = () => {
         <Icon name="arrow-left" size="sm" />
         Import CSV
       </a>
+      <a href={buildDirectExportUrl()} class="btn btn-success btn-sm gap-2" download>
+        <Icon name="download" size="sm" />
+        Download CSV
+      </a>
       <a href={buildExportUrl()} class="btn btn-outline btn-sm gap-2">
         <Icon name="arrow-right" size="sm" />
-        Export CSV
+        Export Options
       </a>
       <a href="/transactions/add" class="btn btn-primary gap-2">
         <Icon name="plus" size="sm" />
