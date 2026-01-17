@@ -1024,6 +1024,63 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  /api/budget/export:
+    get:
+      tags: [Budget]
+      summary: Export budget overview to CSV
+      description: Export budget overview for a specific month to CSV file with category breakdowns.
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: year
+          in: query
+          description: Year (defaults to current year)
+          schema:
+            type: integer
+            minimum: 2000
+            maximum: 2100
+        - name: month
+          in: query
+          description: Month (1-12, defaults to current month)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 12
+        - name: currency
+          in: query
+          description: Currency (defaults to IDR)
+          schema:
+            type: string
+            enum: [IDR, USD]
+            default: IDR
+      responses:
+        '200':
+          description: CSV file generated successfully
+          headers:
+            Content-Type:
+              description: CSV file content type
+              schema:
+                type: string
+                example: text/csv; charset=utf-8
+            Content-Disposition:
+              description: File download attachment with filename
+              schema:
+                type: string
+                example: 'attachment; filename="budget_2024_Jan.csv"'
+          content:
+            text/csv:
+              schema:
+                type: string
+                example: |
+                  category_name,budget_amount,expense_amount,balance,percentage,status
+                  Food,5000000.00,3500000.00,1500000.00,70.0,ok
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
 components:
   securitySchemes:
     sessionAuth:
