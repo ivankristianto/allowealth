@@ -396,6 +396,18 @@ const getTypeLabel = (type: string) => {
     )
   );
 
+  // Handle hash-based deep linking for editing
+  function handleHashChange() {
+    const hash = window.location.hash;
+    if (hash.startsWith('#edit-')) {
+      const categoryId = hash.replace('#edit-', '');
+      const category = categories.find((c) => c.id === categoryId);
+      if (category && (window as any).editCategory) {
+        (window as any).editCategory(categoryId);
+      }
+    }
+  }
+
   const categoryModal = document.getElementById('category-modal') as HTMLDialogElement;
   const categoryForm = document.getElementById('category-form') as HTMLFormElement;
   const modalTitle = document.getElementById('modal-title');
@@ -589,4 +601,8 @@ const getTypeLabel = (type: string) => {
       resetForm();
     }
   });
+
+  // Check for hash on page load for deep linking
+  window.addEventListener('load', handleHashChange);
+  window.addEventListener('hashchange', handleHashChange);
 </script>

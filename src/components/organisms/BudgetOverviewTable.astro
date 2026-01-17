@@ -47,6 +47,7 @@ export interface Props {
   sortBy?: 'category' | 'percentage' | 'budget' | 'spent' | 'balance' | 'status';
   sortOrder?: 'asc' | 'desc';
   baseUrl?: string;
+  enableEdit?: boolean;
 }
 
 const {
@@ -56,6 +57,7 @@ const {
   sortBy = 'category',
   sortOrder = 'asc',
   baseUrl = '',
+  enableEdit = true,
 } = Astro.props;
 
 const {
@@ -298,7 +300,7 @@ const buildExportUrl = (): string => {
                 <span set:html={getSortIcon('balance', sortBy, sortOrder)} />
               </a>
             </div>
-            <div class="col-span-1" />
+            <div class="col-span-1">{enableEdit && <span>Edit</span>}</div>
           </div>
 
           {/* Table Body */}
@@ -364,6 +366,24 @@ const buildExportUrl = (): string => {
                         />
                       </div>
                     </div>
+
+                    {/* Actions - Mobile */}
+                    <div class="pt-2 flex items-center gap-2">
+                      <a
+                        href={`/settings/categories#edit-${category.category_id}`}
+                        class="btn btn-ghost btn-xs gap-1"
+                      >
+                        <Icon name="pencil" size="xs" />
+                        Edit Budget
+                      </a>
+                      <a
+                        href={`/transactions?category_id=${category.category_id}`}
+                        class="btn btn-ghost btn-xs gap-1"
+                      >
+                        <Icon name="eye" size="xs" />
+                        View
+                      </a>
+                    </div>
                   </div>
 
                   {/* Desktop View - Table Row */}
@@ -401,13 +421,24 @@ const buildExportUrl = (): string => {
                     </span>
                   </div>
                   <div class="hidden lg:block col-span-1">
-                    <a
-                      href={`/transactions?category_id=${category.category_id}`}
-                      class="btn btn-ghost btn-xs btn-circle"
-                      title={`View ${category.category_name} transactions`}
-                    >
-                      <Icon name="chevron-up" size="sm" className="rotate-90" />
-                    </a>
+                    <div class="flex items-center gap-1 justify-end">
+                      <a
+                        href={`/settings/categories#edit-${category.category_id}`}
+                        class="btn btn-ghost btn-xs btn-square"
+                        title={`Edit ${category.category_name} budget`}
+                        aria-label={`Edit ${category.category_name} budget`}
+                      >
+                        <Icon name="pencil" size="xs" />
+                      </a>
+                      <a
+                        href={`/transactions?category_id=${category.category_id}`}
+                        class="btn btn-ghost btn-xs btn-square"
+                        title={`View ${category.category_name} transactions`}
+                        aria-label={`View ${category.category_name} transactions`}
+                      >
+                        <Icon name="chevron-up" size="xs" className="rotate-90" />
+                      </a>
+                    </div>
                   </div>
                 </div>
               );
