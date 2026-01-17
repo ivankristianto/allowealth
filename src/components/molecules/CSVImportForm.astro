@@ -2,166 +2,491 @@
 /**
  * CSV Import Form Component
  *
- * Form for uploading and mapping CSV columns.
+ * Form for uploading CSV files with client-side parsing and preview.
+ * Features:
+ * - File upload input for CSV files
+ * - Client-side CSV parsing
+ * - Preview table of parsed data
+ * - Error handling for invalid CSV files
+ * - Validation feedback
  *
  * @param {string} action - Form action URL
- * @param {Array} availableColumns - Available columns in CSV
- * @param {Array} previewData - Preview rows from CSV
- * @param {Object} columnMapping - Current column mapping
- * @param {number} totalRows - Total number of rows in CSV
- * @param {Array} errors - Import errors
  */
 
 import Label from '../atoms/Label.astro';
 import Button from '../atoms/Button.astro';
 import Icon from '../atoms/Icon.astro';
-import Badge from '../atoms/Badge.astro';
 
 export interface Props {
   action: string;
-  availableColumns?: string[];
-  previewData?: string[][];
-  columnMapping?: Record<string, string>;
-  totalRows?: number;
-  errors?: string[];
 }
 
-const {
-  action,
-  availableColumns = [],
-  previewData = [],
-  columnMapping = {},
-  totalRows = 0,
-  errors = [],
-} = Astro.props;
-
-// Required and optional fields for mapping
-const fieldMap = [
-  { key: 'date', label: 'Date', required: true },
-  { key: 'type', label: 'Type', required: true },
-  { key: 'amount', label: 'Amount', required: true },
-  { key: 'currency', label: 'Currency', required: true },
-  { key: 'category', label: 'Category', required: true },
-  { key: 'payment_method', label: 'Payment Method', required: true },
-  { key: 'description', label: 'Description', required: false },
-];
+const { action } = Astro.props;
 ---
 
-<form action={action} method="POST" enctype="multipart/form-data" class="space-y-6">
+<div class="csv-import-container space-y-6">
+  <!-- File Upload Section -->
   <div class="form-control">
-    <Label required htmlFor="csv_file" id="file-label" helpText="CSV file with transaction data">
+    <Label
+      required
+      htmlFor="csv-file-input"
+      id="file-label"
+      helpText="Select a CSV file to preview"
+    >
       Upload CSV File
     </Label>
     <input
-      id="csv_file"
+      id="csv-file-input"
       name="csv_file"
       type="file"
       accept=".csv"
-      required
       class="file-input file-input-bordered w-full"
+      aria-describedby="file-error"
     />
-    <div class="text-sm text-neutral-500 mt-1">
-      Expected columns: date, type, amount, currency, category, payment_method, description
-      (optional)
+    <div class="text-sm text-neutral-500 mt-2">
+      <p class="font-medium mb-1">Expected CSV format:</p>
+      <ul class="list-disc list-inside space-y-0.5 text-xs">
+        <li>date (YYYY-MM-DD format)</li>
+        <li>type (expense or income)</li>
+        <li>amount (numeric value)</li>
+        <li>currency (IDR or USD)</li>
+        <li>category (category name)</li>
+        <li>payment_method (payment method name)</li>
+        <li>description (optional notes)</li>
+      </ul>
+    </div>
+    <!-- Error message container -->
+    <div id="file-error" class="text-error text-sm mt-2 hidden" role="alert"></div>
+  </div>
+
+  <!-- Loading State -->
+  <div id="loading-state" class="hidden">
+    <div class="flex items-center gap-3">
+      <span class="loading loading-spinner loading-primary"></span>
+      <span class="text-neutral-600">Parsing CSV file...</span>
     </div>
   </div>
 
-  {
-    availableColumns.length > 0 && (
-      <>
-        <div class="space-y-4">
-          <h3 class="font-semibold">Map Columns</h3>
-          <p class="text-sm text-neutral-500">Match your CSV columns to the transaction fields</p>
+  <!-- Preview Section (hidden until file is parsed) -->
+  <div id="preview-section" class="hidden space-y-4">
+    <!-- File Info -->
+    <div id="file-info" class="alert alert-success">
+      <Icon name="check" size="sm" />
+      <div>
+        <h4 class="font-bold">File Parsed Successfully</h4>
+        <p id="file-info-text" class="text-sm"></p>
+      </div>
+    </div>
 
-          <div class="overflow-x-auto">
-            <table class="table table-sm">
-              <thead>
-                <tr>
-                  <th>Field</th>
-                  <th>CSV Column</th>
-                </tr>
-              </thead>
-              <tbody>
-                {fieldMap.map((field) => (
-                  <tr>
-                    <td>
-                      {field.label}
-                      {field.required && (
-                        <Badge variant="error" size="sm" className="ml-2">
-                          Required
-                        </Badge>
-                      )}
-                    </td>
-                    <td>
-                      <select
-                        name={`map_${field.key}`}
-                        class="select select-bordered select-sm w-full max-w-xs"
-                      >
-                        <option value="">-- Select Column --</option>
-                        {availableColumns.map((col) => (
-                          <option value={col} selected={columnMapping[field.key] === col}>
-                            {col}
-                          </option>
-                        ))}
-                      </select>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+    <!-- Preview Table -->
+    <div class="space-y-2">
+      <h3 class="font-semibold text-base">Preview (First 10 rows)</h3>
+      <div class="overflow-x-auto border rounded-lg">
+        <table class="table table-sm table-zebra">
+          <thead>
+            <tr id="preview-header"></tr>
+          </thead>
+          <tbody id="preview-body"></tbody>
+        </table>
+      </div>
+      <p id="row-count" class="text-sm text-neutral-500"></p>
+    </div>
 
-        {previewData.length > 0 && (
-          <div class="space-y-4">
-            <h3 class="font-semibold">
-              Preview (First {previewData.length} rows of {totalRows} total)
-            </h3>
+    <!-- Validation Summary -->
+    <div id="validation-section" class="space-y-3">
+      <h3 class="font-semibold text-base">Validation Summary</h3>
+      <div id="validation-results"></div>
+    </div>
 
-            <div class="overflow-x-auto border rounded-lg">
-              <table class="table table-sm table-zebra">
-                <thead>
-                  <tr>
-                    {availableColumns.map((col) => (
-                      <th>{col}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {previewData.map((row, rowIndex) => (
-                    <tr>
-                      {row.map((cell, cellIndex) => (
-                        <td>{cell || '(empty)'}</td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {errors.length > 0 && (
-          <div role="alert" class="alert alert-error">
-            <Icon name="warning" size="sm" />
-            <div>
-              <h4 class="font-bold">Import Errors</h4>
-              <ul class="text-sm mt-1 list-disc list-inside">
-                {errors.map((error) => (
-                  <li>{error}</li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        )}
-      </>
-    )
-  }
-
-  <div class="card-actions justify-end gap-2">
-    <a href="/transactions" class="btn btn-ghost">Cancel</a>
-    <Button type="submit" variant="primary">
-      {availableColumns.length > 0 ? `Import ${totalRows} Transactions` : 'Upload File'}
-    </Button>
+    <!-- Actions -->
+    <div class="card-actions justify-end gap-2 pt-4 border-t border-base-300">
+      <button id="reset-button" type="button" class="btn btn-ghost">
+        <Icon name="refresh" size="sm" />
+        Choose Different File
+      </button>
+      <button id="confirm-import-button" type="button" class="btn btn-primary">
+        <Icon name="check" size="sm" />
+        Proceed with Import
+      </button>
+    </div>
   </div>
-</form>
+</div>
+
+<script is:inline>
+  (function () {
+    'use strict';
+
+    // DOM Elements
+    const fileInput = document.getElementById('csv-file-input');
+    const loadingState = document.getElementById('loading-state');
+    const previewSection = document.getElementById('preview-section');
+    const previewHeader = document.getElementById('preview-header');
+    const previewBody = document.getElementById('preview-body');
+    const fileInfo = document.getElementById('file-info');
+    const fileInfoText = document.getElementById('file-info-text');
+    const rowCount = document.getElementById('row-count');
+    const validationResults = document.getElementById('validation-results');
+    const resetButton = document.getElementById('reset-button');
+    const confirmButton = document.getElementById('confirm-import-button');
+    const fileError = document.getElementById('file-error');
+
+    // Required columns for validation
+    const REQUIRED_COLUMNS = ['date', 'type', 'amount', 'currency', 'category', 'payment_method'];
+    const OPTIONAL_COLUMNS = ['description'];
+
+    // CSV Parser
+    function parseCSV(text) {
+      const lines = [];
+      let currentLine = [];
+      let currentField = '';
+      let inQuotes = false;
+
+      for (let i = 0; i < text.length; i++) {
+        const char = text[i];
+        const nextChar = text[i + 1];
+
+        if (inQuotes) {
+          if (char === '"') {
+            if (nextChar === '"') {
+              // Escaped quote
+              currentField += '"';
+              i++;
+            } else {
+              // End of quotes
+              inQuotes = false;
+            }
+          } else {
+            currentField += char;
+          }
+        } else {
+          if (char === '"') {
+            inQuotes = true;
+          } else if (char === ',') {
+            currentLine.push(currentField);
+            currentField = '';
+          } else if (char === '\n' || (char === '\r' && nextChar === '\n')) {
+            currentLine.push(currentField);
+            if (currentLine.some((field) => field.trim() !== '')) {
+              lines.push(currentLine);
+            }
+            currentLine = [];
+            currentField = '';
+            if (char === '\r') i++;
+          } else if (char !== '\r') {
+            currentField += char;
+          }
+        }
+      }
+
+      // Don't forget the last line/field
+      if (currentField || currentLine.length) {
+        currentLine.push(currentField);
+        if (currentLine.some((field) => field.trim() !== '')) {
+          lines.push(currentLine);
+        }
+      }
+
+      return lines;
+    }
+
+    // Validate CSV data
+    function validateCSV(headers, rows) {
+      const issues = {
+        errors: [],
+        warnings: [],
+        rowErrors: [],
+      };
+
+      // Check for required columns
+      const missingColumns = REQUIRED_COLUMNS.filter((col) => !headers.includes(col));
+      if (missingColumns.length > 0) {
+        issues.errors.push(`Missing required columns: ${missingColumns.join(', ')}`);
+      }
+
+      // Check for empty columns
+      if (headers.length === 0) {
+        issues.errors.push('No columns found in CSV file');
+        return issues;
+      }
+
+      // Validate rows
+      rows.forEach((row, rowIndex) => {
+        const rowNum = rowIndex + 2; // +1 for header, +1 for 0-index
+        const rowErrors = [];
+
+        // Check row length
+        if (row.length !== headers.length) {
+          rowErrors.push(`Row has ${row.length} columns, expected ${headers.length}`);
+        }
+
+        // Validate required fields
+        REQUIRED_COLUMNS.forEach((col) => {
+          const colIndex = headers.indexOf(col);
+          if (colIndex !== -1) {
+            const value = row[colIndex]?.trim();
+
+            if (!value) {
+              rowErrors.push(`${col} is empty`);
+            } else {
+              // Type-specific validation
+              switch (col) {
+                case 'date':
+                  if (!isValidDate(value)) {
+                    rowErrors.push(`${col}: "${value}" is not a valid date (YYYY-MM-DD)`);
+                  }
+                  break;
+                case 'type':
+                  if (!['expense', 'income'].includes(value.toLowerCase())) {
+                    rowErrors.push(`${col}: "${value}" must be "expense" or "income"`);
+                  }
+                  break;
+                case 'amount':
+                  if (isNaN(parseFloat(value)) || parseFloat(value) < 0) {
+                    rowErrors.push(`${col}: "${value}" must be a positive number`);
+                  }
+                  break;
+                case 'currency':
+                  if (!['IDR', 'USD'].includes(value.toUpperCase())) {
+                    rowErrors.push(`${col}: "${value}" must be "IDR" or "USD"`);
+                  }
+                  break;
+              }
+            }
+          }
+        });
+
+        if (rowErrors.length > 0) {
+          issues.rowErrors.push({ row: rowNum, errors: rowErrors });
+        }
+      });
+
+      // Warnings for unknown columns
+      const knownColumns = [...REQUIRED_COLUMNS, ...OPTIONAL_COLUMNS];
+      const unknownColumns = headers.filter((col) => !knownColumns.includes(col.toLowerCase()));
+      if (unknownColumns.length > 0) {
+        issues.warnings.push(`Unknown columns will be ignored: ${unknownColumns.join(', ')}`);
+      }
+
+      return issues;
+    }
+
+    // Date validation
+    function isValidDate(dateStr) {
+      const date = new Date(dateStr);
+      return !isNaN(date.getTime()) && /^\d{4}-\d{2}-\d{2}$/.test(dateStr);
+    }
+
+    // Show error message
+    function showError(message) {
+      fileError.textContent = message;
+      fileError.classList.remove('hidden');
+      fileInput.classList.add('input-error');
+    }
+
+    // Hide error message
+    function hideError() {
+      fileError.textContent = '';
+      fileError.classList.add('hidden');
+      fileInput.classList.remove('input-error');
+    }
+
+    // Render preview table
+    function renderPreview(headers, rows) {
+      // Render header
+      previewHeader.innerHTML = '';
+      headers.forEach((header) => {
+        const th = document.createElement('th');
+        th.textContent = header;
+
+        // Mark required columns
+        if (REQUIRED_COLUMNS.includes(header.toLowerCase())) {
+          const badge = document.createElement('span');
+          badge.className = 'badge badge-error badge-xs ml-1';
+          badge.textContent = '*';
+          th.appendChild(badge);
+        }
+
+        previewHeader.appendChild(th);
+      });
+
+      // Render body (first 10 rows)
+      previewBody.innerHTML = '';
+      const previewRows = rows.slice(0, 10);
+
+      previewRows.forEach((row) => {
+        const tr = document.createElement('tr');
+        row.forEach((cell) => {
+          const td = document.createElement('td');
+          td.textContent = cell || '(empty)';
+          tr.appendChild(td);
+        });
+        previewBody.appendChild(tr);
+      });
+
+      rowCount.textContent = `Showing first ${previewRows.length} of ${rows.length} total rows`;
+    }
+
+    // Render validation results
+    function renderValidation(issues) {
+      validationResults.innerHTML = '';
+
+      if (
+        issues.errors.length === 0 &&
+        issues.warnings.length === 0 &&
+        issues.rowErrors.length === 0
+      ) {
+        validationResults.innerHTML = `
+          <div class="alert alert-success">
+            <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>All rows validated successfully! Ready to import.</span>
+          </div>
+        `;
+        confirmButton.disabled = false;
+        return;
+      }
+
+      // Errors
+      if (issues.errors.length > 0) {
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'alert alert-error';
+        errorDiv.innerHTML = `
+          <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <div>
+            <h4 class="font-bold">Validation Errors</h4>
+            <ul class="text-sm mt-1 list-disc list-inside">
+              ${issues.errors.map((e) => `<li>${e}</li>`).join('')}
+            </ul>
+          </div>
+        `;
+        validationResults.appendChild(errorDiv);
+        confirmButton.disabled = true;
+      }
+
+      // Warnings
+      if (issues.warnings.length > 0) {
+        const warningDiv = document.createElement('div');
+        warningDiv.className = 'alert alert-warning';
+        warningDiv.innerHTML = `
+          <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          <div>
+            <h4 class="font-bold">Warnings</h4>
+            <ul class="text-sm mt-1 list-disc list-inside">
+              ${issues.warnings.map((w) => `<li>${w}</li>`).join('')}
+            </ul>
+          </div>
+        `;
+        validationResults.appendChild(warningDiv);
+      }
+
+      // Row errors
+      if (issues.rowErrors.length > 0) {
+        const rowErrorDiv = document.createElement('div');
+        rowErrorDiv.className = 'alert alert-warning';
+
+        // Show first 5 row errors
+        const displayErrors = issues.rowErrors.slice(0, 5);
+        const remainingCount = issues.rowErrors.length - 5;
+
+        rowErrorDiv.innerHTML = `
+          <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          <div>
+            <h4 class="font-bold">Row Issues (${issues.rowErrors.length} rows affected)</h4>
+            <div class="text-sm mt-1 space-y-1">
+              ${displayErrors
+                .map(
+                  (re) => `
+                <div>
+                  <strong>Row ${re.row}:</strong> ${re.errors.join(', ')}
+                </div>
+              `
+                )
+                .join('')}
+              ${remainingCount > 0 ? `<p class="text-xs mt-2">...and ${remainingCount} more rows with issues</p>` : ''}
+            </div>
+          </div>
+        `;
+        validationResults.appendChild(rowErrorDiv);
+
+        if (issues.errors.length === 0) {
+          confirmButton.disabled = false;
+        }
+      }
+    }
+
+    // Reset form
+    function resetForm() {
+      fileInput.value = '';
+      previewSection.classList.add('hidden');
+      hideError();
+      validationResults.innerHTML = '';
+      previewHeader.innerHTML = '';
+      previewBody.innerHTML = '';
+    }
+
+    // Handle file selection
+    fileInput.addEventListener('change', async function (e) {
+      const file = e.target.files[0];
+
+      if (!file) {
+        resetForm();
+        return;
+      }
+
+      hideError();
+      loadingState.classList.remove('hidden');
+      previewSection.classList.add('hidden');
+
+      try {
+        const text = await file.text();
+
+        if (!text.trim()) {
+          throw new Error('File is empty');
+        }
+
+        // Parse CSV
+        const lines = parseCSV(text);
+
+        if (lines.length < 2) {
+          throw new Error('CSV file must contain at least a header row and one data row');
+        }
+
+        const headers = lines[0].map((h) => h.trim());
+        const rows = lines.slice(1);
+
+        // Validate
+        const issues = validateCSV(headers, rows);
+
+        // Update UI
+        fileInfoText.textContent = `Found ${rows.length} rows with ${headers.length} columns`;
+        renderPreview(headers, rows);
+        renderValidation(issues);
+
+        // Show preview section
+        loadingState.classList.add('hidden');
+        previewSection.classList.remove('hidden');
+      } catch (err) {
+        loadingState.classList.add('hidden');
+        showError(err.message || 'Failed to parse CSV file');
+      }
+    });
+
+    // Reset button
+    resetButton.addEventListener('click', resetForm);
+
+    // Confirm import button - navigate to import action (will be implemented in next phase)
+    confirmButton.addEventListener('click', function () {
+      // For now, just show a message that this will be implemented
+      alert(
+        'Import functionality will be implemented in the next phase. The CSV has been validated and is ready for import.'
+      );
+    });
+  })();
+</script>
