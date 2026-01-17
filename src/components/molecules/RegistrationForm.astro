@@ -2,8 +2,53 @@
 /**
  * RegistrationForm Component (Molecule)
  *
- * User registration form with validation and loading states
- * Includes email, name, password, and confirm password fields
+ * User registration form with validation and loading states.
+ * Includes email, name, password, and confirm password fields.
+ *
+ * @component
+ * @description
+ * This component follows the **Component/Page Enhancement Pattern**:
+ *
+ * 1. **Component Role (This File)**:
+ *    - Provides UI structure, validation logic, and user interactions
+ *    - Includes client-side validation for all fields
+ *    - Displays loading states and error/success messages
+ *    - Implements a SIMULATED submission as a placeholder (lines 269-297)
+ *    - The simulated submission ensures the component works standalone (Storybook, prototypes)
+ *
+ * 2. **Page Role (Enhancement)**:
+ *    - Pages that use this component should enhance it with real API calls
+ *    - Use `e.stopImmediatePropagation()` to prevent the default handler
+ *    - Implement the actual fetch API call to your registration endpoint
+ *    - Keep the same validation and UI state management patterns
+ *
+ * 3. **Example Implementation**:
+ *    See `/src/pages/register.astro` for the proper enhancement pattern:
+ *    - Line 68: `e.stopImmediatePropagation()` prevents default handler
+ *    - Lines 141-152: Real API call using fetch
+ *    - Lines 156-184: Handle success/error responses with same UI patterns
+ *
+ * 4. **Why This Pattern?**:
+ *    - Reusable: Component works in multiple contexts with different endpoints
+ *    - Testable: Component can be tested independently (Storybook)
+ *    - Flexible: Each page can customize API behavior without modifying the component
+ *    - Progressive: Pages can start with simulated behavior, then add real API calls
+ *
+ * @example
+ * ```astro
+ * // In your page component:
+ * <RegistrationForm />
+ *
+ * <script>
+ *   document.addEventListener('DOMContentLoaded', () => {
+ *     const form = document.querySelector('[data-registration-form]');
+ *     form.addEventListener('submit', async (e) => {
+ *       e.stopImmediatePropagation(); // Prevent default handler
+ *       // Your API call logic here...
+ *     });
+ *   });
+ * </script>
+ * ```
  */
 
 import Input from '../atoms/Input.astro';
@@ -266,14 +311,20 @@ const cspNonce = Astro.locals.cspNonce || '';
       if (submitButton) submitButton.disabled = true;
 
       try {
-        // TODO: Replace with actual API call when backend is ready
-        // const response = await fetch(form.action, {
-        // 	method: form.method,
-        // 	headers: { 'Content-Type': 'application/json' },
-        // 	body: JSON.stringify(data)
-        // });
+        // PLACEHOLDER SIMULATION: This component provides a simulated submission
+        // so it works standalone in Storybook, prototypes, or pages that don't
+        // require real registration. Pages that need real API behavior should
+        // enhance this component by overriding the submit handler (see below).
+        //
+        // HOW TO OVERRIDE (page-level enhancement pattern):
+        // 1. In your page's <script> tag, use DOMContentLoaded listener
+        // 2. Get the form: document.querySelector('[data-registration-form]')
+        // 3. Add submit listener with e.stopImmediatePropagation() to block this handler
+        // 4. Implement your fetch() API call
+        // 5. Use the same UI state management (submitting class, loading spinner, etc.)
+        //
+        // EXAMPLE: See /src/pages/register.astro lines 56-204 for full implementation
 
-        // Simulate API call
         await new Promise((resolve) => setTimeout(resolve, 2000));
 
         // Show success message
