@@ -14,7 +14,7 @@ import { TransactionServiceError, ServiceErrorCode } from './service-errors';
 export { type CreateTransactionInput, type UpdateTransactionInput };
 
 export interface CSVImportResult {
-  success: number;
+  imported: number;
   skipped: number;
   errors: Array<{ row: number; message: string }>;
 }
@@ -348,7 +348,7 @@ export class TransactionService {
     columnMapping: Record<string, string>
   ): Promise<CSVImportResult> {
     const result: CSVImportResult = {
-      success: 0,
+      imported: 0,
       skipped: 0,
       errors: [],
     };
@@ -456,7 +456,7 @@ export class TransactionService {
           description: descriptionStr ?? '',
         });
 
-        result.success++;
+        result.imported++;
         existingKeys.add(duplicateKey); // Add to set to avoid duplicates within same import
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Unknown error';
