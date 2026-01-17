@@ -411,6 +411,130 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  /api/transactions/import:
+    post:
+      tags: [Transactions]
+      summary: Import transactions from CSV
+      description: |
+        Import transactions from a CSV file with custom column mapping.
+
+        **CSV Format Requirements:**
+        - Must be a valid CSV file with headers
+        - Must contain at least one data row
+        - Supports quoted fields and escaped quotes
+
+        **Column Mapping:**
+        The endpoint accepts column mapping parameters to map CSV columns to database fields:
+        - `map_date`: Date column (YYYY-MM-DD format)
+        - `map_type`: Type column (expense/income)
+        - `map_amount`: Amount column (numeric value)
+        - `map_currency`: Currency column (IDR/USD)
+        - `map_category`: Category column (category name)
+        - `map_payment_method`: Payment method column (payment method name)
+        - `map_description`: Description column (optional notes)
+
+        **Import Result:**
+        Returns counts of successfully imported transactions, skipped transactions,
+        and validation errors for failed rows.
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - csv_file
+              properties:
+                csv_file:
+                  type: string
+                  format: binary
+                  description: CSV file to import
+                map_date:
+                  type: string
+                  description: CSV column name for date field
+                  example: date
+                map_type:
+                  type: string
+                  description: CSV column name for type field
+                  example: type
+                map_amount:
+                  type: string
+                  description: CSV column name for amount field
+                  example: amount
+                map_currency:
+                  type: string
+                  description: CSV column name for currency field
+                  example: currency
+                map_category:
+                  type: string
+                  description: CSV column name for category field
+                  example: category
+                map_payment_method:
+                  type: string
+                  description: CSV column name for payment method field
+                  example: payment_method
+                map_description:
+                  type: string
+                  description: CSV column name for description field
+                  example: description
+      responses:
+        '200':
+          description: Import completed successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    required: [success, data]
+                    properties:
+                      success:
+                        type: boolean
+                        example: true
+                      data:
+                        type: object
+                        required: [message, result]
+                        properties:
+                          message:
+                            type: string
+                            example: Import completed
+                          result:
+                            $ref: '#/components/schemas/TransactionImportResult'
+        '400':
+          description: Bad request - invalid CSV or mapping
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                missingFile:
+                  summary: CSV file not provided
+                  value:
+                    success: false
+                    error:
+                      message: CSV file is required
+                      code: INVALID_INPUT
+                invalidFormat:
+                  summary: Not a CSV file
+                  value:
+                    success: false
+                    error:
+                      message: File must be a CSV
+                      code: INVALID_INPUT
+                emptyFile:
+                  summary: CSV file has no data
+                  value:
+                    success: false
+                    error:
+                      message: CSV file must contain at least a header row and one data row
+                      code: INVALID_INPUT
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
   /api/categories:
     get:
       tags: [Categories]
@@ -1365,6 +1489,35 @@ components:
                       type: integer
                     total:
                       type: integer
+
+    TransactionImportResult:
+      type: object
+      description: Result of CSV import operation
+      required: [imported, skipped, errors]
+      properties:
+        imported:
+          type: integer
+          description: Number of successfully imported transactions
+          example: 45
+        skipped:
+          type: integer
+          description: Number of skipped transactions (duplicates, invalid data)
+          example: 3
+        errors:
+          type: array
+          description: Validation errors for failed rows
+          items:
+            type: object
+            required: [row, message]
+            properties:
+              row:
+                type: integer
+                description: Row number in CSV (1-based, excluding header)
+                example: 5
+              message:
+                type: string
+                description: Error message explaining why the row was skipped
+                example: Invalid date format: 2024-13-45
 
     # Category Schemas
     Category:
