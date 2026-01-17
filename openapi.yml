@@ -336,6 +336,81 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  /api/transactions/export:
+    get:
+      tags: [Transactions]
+      summary: Export transactions to CSV
+      description: Export transactions to CSV file with optional filters. Returns a downloadable CSV file with all matching transactions.
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: type
+          in: query
+          description: Filter by transaction type
+          schema:
+            type: string
+            enum: [expense, income]
+        - name: category_id
+          in: query
+          description: Filter by category ID
+          schema:
+            type: string
+        - name: payment_method_id
+          in: query
+          description: Filter by payment method ID
+          schema:
+            type: string
+        - name: currency
+          in: query
+          description: Filter by currency
+          schema:
+            type: string
+            enum: [IDR, USD]
+        - name: start_date
+          in: query
+          description: Filter by start date (ISO 8601)
+          schema:
+            type: string
+            format: date
+        - name: end_date
+          in: query
+          description: Filter by end date (ISO 8601)
+          schema:
+            type: string
+            format: date
+        - name: search
+          in: query
+          description: Search in transaction description
+          schema:
+            type: string
+      responses:
+        '200':
+          description: CSV file generated successfully
+          headers:
+            Content-Type:
+              description: CSV file content type
+              schema:
+                type: string
+                example: text/csv; charset=utf-8
+            Content-Disposition:
+              description: File download attachment with filename
+              schema:
+                type: string
+                example: 'attachment; filename="transactions_2024-01-15.csv"'
+          content:
+            text/csv:
+              schema:
+                type: string
+                example: |
+                  date,type,amount,currency,category,payment_method,description
+                  2024-01-15,expense,50.00,IDR,Food,Cash,Lunch
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
   /api/categories:
     get:
       tags: [Categories]

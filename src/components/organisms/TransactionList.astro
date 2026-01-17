@@ -60,6 +60,16 @@ const buildUrl = (newPage: number) => {
   params.set('page', newPage.toString());
   return `${baseUrl}?${params.toString()}`;
 };
+
+// Build URL with current filters for export
+const buildExportUrl = () => {
+  const params = new URLSearchParams();
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value) params.set(key, value);
+  });
+  const queryString = params.toString();
+  return queryString ? `/transactions/export?${queryString}` : '/transactions/export';
+};
 ---
 
 <div class="space-y-6">
@@ -70,7 +80,7 @@ const buildUrl = (newPage: number) => {
         <Icon name="arrow-left" size="sm" />
         Import CSV
       </a>
-      <a href="/transactions/export" class="btn btn-outline btn-sm gap-2">
+      <a href={buildExportUrl()} class="btn btn-outline btn-sm gap-2">
         <Icon name="arrow-right" size="sm" />
         Export CSV
       </a>
