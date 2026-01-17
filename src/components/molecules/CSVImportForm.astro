@@ -10,6 +10,12 @@
  * - Error handling for invalid CSV files
  * - Validation feedback
  *
+ * Security Features:
+ * - All user data rendered via textContent (no innerHTML with user data)
+ * - Strict ISO date validation (prevents rollover dates like 2025-99-99)
+ * - Inline UI feedback (no alert() per constitution.md baseline)
+ * - Full ARIA attributes for accessibility
+ *
  * @param {string} action - Form action URL
  */
 
@@ -22,6 +28,9 @@ export interface Props {
 }
 
 const { action } = Astro.props;
+
+// Get CSP nonce from middleware
+const cspNonce = Astro.locals.cspNonce || '';
 ---
 
 <div class="csv-import-container space-y-6">
@@ -60,7 +69,7 @@ const { action } = Astro.props;
   </div>
 
   <!-- Loading State -->
-  <div id="loading-state" class="hidden">
+  <div id="loading-state" class="hidden" role="status" aria-live="polite">
     <div class="flex items-center gap-3">
       <span class="loading loading-spinner loading-primary"></span>
       <span class="text-neutral-600">Parsing CSV file...</span>
@@ -70,7 +79,7 @@ const { action } = Astro.props;
   <!-- Preview Section (hidden until file is parsed) -->
   <div id="preview-section" class="hidden space-y-4">
     <!-- File Info -->
-    <div id="file-info" class="alert alert-success">
+    <div id="file-info" class="alert alert-success" role="alert" aria-live="polite">
       <Icon name="check" size="sm" />
       <div>
         <h4 class="font-bold">File Parsed Successfully</h4>
@@ -82,29 +91,47 @@ const { action } = Astro.props;
     <div class="space-y-2">
       <h3 class="font-semibold text-base">Preview (First 10 rows)</h3>
       <div class="overflow-x-auto border rounded-lg">
-        <table class="table table-sm table-zebra">
+        <table class="table table-sm table-zebra" aria-label="CSV preview table">
+          <caption class="hidden">First 10 rows of CSV data</caption>
           <thead>
             <tr id="preview-header"></tr>
           </thead>
           <tbody id="preview-body"></tbody>
         </table>
       </div>
-      <p id="row-count" class="text-sm text-neutral-500"></p>
+      <p id="row-count" class="text-sm text-neutral-500" aria-live="polite"></p>
     </div>
 
     <!-- Validation Summary -->
     <div id="validation-section" class="space-y-3">
       <h3 class="font-semibold text-base">Validation Summary</h3>
-      <div id="validation-results"></div>
+      <div
+        id="validation-results"
+        role="region"
+        aria-live="polite"
+        aria-atomic="true"
+        aria-label="Validation results"
+      >
+      </div>
     </div>
 
     <!-- Actions -->
     <div class="card-actions justify-end gap-2 pt-4 border-t border-base-300">
-      <button id="reset-button" type="button" class="btn btn-ghost">
+      <button
+        id="reset-button"
+        type="button"
+        class="btn btn-ghost"
+        aria-label="Choose different file"
+      >
         <Icon name="refresh" size="sm" />
         Choose Different File
       </button>
-      <button id="confirm-import-button" type="button" class="btn btn-primary">
+      <button
+        id="confirm-import-button"
+        type="button"
+        class="btn btn-primary"
+        aria-label="Proceed with CSV import"
+      >
         <Icon name="check" size="sm" />
         Proceed with Import
       </button>
@@ -112,7 +139,7 @@ const { action } = Astro.props;
   </div>
 </div>
 
-<script is:inline>
+<script define:vars={{ cspNonce: Astro.locals.cspNonce || '' }} nonce={cspNonce}>
   (function () {
     'use strict';
 
@@ -133,6 +160,33 @@ const { action } = Astro.props;
     // Required columns for validation
     const REQUIRED_COLUMNS = ['date', 'type', 'amount', 'currency', 'category', 'payment_method'];
     const OPTIONAL_COLUMNS = ['description'];
+
+    // HTML escaping utility to prevent XSS attacks
+    const escapeHtml = (text) => {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    };
+
+    // Validate ISO date strictly (no rollover dates like 2025-99-99)
+    function isValidISODate(dateStr) {
+      // First check regex pattern
+      const isoPattern = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
+      if (!isoPattern.test(dateStr)) {
+        return false;
+      }
+
+      // Then verify the date is valid (no rollover)
+      const date = new Date(dateStr);
+      const [year, month, day] = dateStr.split('-').map(Number);
+
+      // Check if the date components match (prevents rollover)
+      return (
+        date.getFullYear() === year &&
+        date.getMonth() === month - 1 && // JS months are 0-indexed
+        date.getDate() === day
+      );
+    }
 
     // CSV Parser
     function parseCSV(text) {
@@ -231,7 +285,7 @@ const { action } = Astro.props;
               // Type-specific validation
               switch (col) {
                 case 'date':
-                  if (!isValidDate(value)) {
+                  if (!isValidISODate(value)) {
                     rowErrors.push(`${col}: "${value}" is not a valid date (YYYY-MM-DD)`);
                   }
                   break;
@@ -268,12 +322,6 @@ const { action } = Astro.props;
       }
 
       return issues;
-    }
-
-    // Date validation
-    function isValidDate(dateStr) {
-      const date = new Date(dateStr);
-      return !isNaN(date.getTime()) && /^\d{4}-\d{2}-\d{2}$/.test(dateStr);
     }
 
     // Show error message
@@ -328,21 +376,38 @@ const { action } = Astro.props;
 
     // Render validation results
     function renderValidation(issues) {
-      validationResults.innerHTML = '';
+      // Clear previous results
+      while (validationResults.firstChild) {
+        validationResults.removeChild(validationResults.firstChild);
+      }
 
       if (
         issues.errors.length === 0 &&
         issues.warnings.length === 0 &&
         issues.rowErrors.length === 0
       ) {
-        validationResults.innerHTML = `
-          <div class="alert alert-success">
-            <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span>All rows validated successfully! Ready to import.</span>
-          </div>
-        `;
+        // Success message
+        const successDiv = document.createElement('div');
+        successDiv.className = 'alert alert-success';
+
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('class', 'stroke-current shrink-0 h-6 w-6');
+        svg.setAttribute('fill', 'none');
+        svg.setAttribute('viewBox', '0 0 24 24');
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('stroke-linecap', 'round');
+        path.setAttribute('stroke-linejoin', 'round');
+        path.setAttribute('stroke-width', '2');
+        path.setAttribute('d', 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z');
+        svg.appendChild(path);
+
+        const span = document.createElement('span');
+        span.textContent = 'All rows validated successfully! Ready to import.';
+
+        successDiv.appendChild(svg);
+        successDiv.appendChild(span);
+        validationResults.appendChild(successDiv);
+
         confirmButton.disabled = false;
         return;
       }
@@ -351,18 +416,40 @@ const { action } = Astro.props;
       if (issues.errors.length > 0) {
         const errorDiv = document.createElement('div');
         errorDiv.className = 'alert alert-error';
-        errorDiv.innerHTML = `
-          <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <div>
-            <h4 class="font-bold">Validation Errors</h4>
-            <ul class="text-sm mt-1 list-disc list-inside">
-              ${issues.errors.map((e) => `<li>${e}</li>`).join('')}
-            </ul>
-          </div>
-        `;
+
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('class', 'stroke-current shrink-0 h-6 w-6');
+        svg.setAttribute('fill', 'none');
+        svg.setAttribute('viewBox', '0 0 24 24');
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('stroke-linecap', 'round');
+        path.setAttribute('stroke-linejoin', 'round');
+        path.setAttribute('stroke-width', '2');
+        path.setAttribute(
+          'd',
+          'M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z'
+        );
+        svg.appendChild(path);
+
+        const div = document.createElement('div');
+        const h4 = document.createElement('h4');
+        h4.className = 'font-bold';
+        h4.textContent = 'Validation Errors';
+        const ul = document.createElement('ul');
+        ul.className = 'text-sm mt-1 list-disc list-inside';
+
+        issues.errors.forEach((error) => {
+          const li = document.createElement('li');
+          li.textContent = error;
+          ul.appendChild(li);
+        });
+
+        div.appendChild(h4);
+        div.appendChild(ul);
+        errorDiv.appendChild(svg);
+        errorDiv.appendChild(div);
         validationResults.appendChild(errorDiv);
+
         confirmButton.disabled = true;
       }
 
@@ -370,17 +457,38 @@ const { action } = Astro.props;
       if (issues.warnings.length > 0) {
         const warningDiv = document.createElement('div');
         warningDiv.className = 'alert alert-warning';
-        warningDiv.innerHTML = `
-          <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-          </svg>
-          <div>
-            <h4 class="font-bold">Warnings</h4>
-            <ul class="text-sm mt-1 list-disc list-inside">
-              ${issues.warnings.map((w) => `<li>${w}</li>`).join('')}
-            </ul>
-          </div>
-        `;
+
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('class', 'stroke-current shrink-0 h-6 w-6');
+        svg.setAttribute('fill', 'none');
+        svg.setAttribute('viewBox', '0 0 24 24');
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('stroke-linecap', 'round');
+        path.setAttribute('stroke-linejoin', 'round');
+        path.setAttribute('stroke-width', '2');
+        path.setAttribute(
+          'd',
+          'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z'
+        );
+        svg.appendChild(path);
+
+        const div = document.createElement('div');
+        const h4 = document.createElement('h4');
+        h4.className = 'font-bold';
+        h4.textContent = 'Warnings';
+        const ul = document.createElement('ul');
+        ul.className = 'text-sm mt-1 list-disc list-inside';
+
+        issues.warnings.forEach((warning) => {
+          const li = document.createElement('li');
+          li.textContent = warning;
+          ul.appendChild(li);
+        });
+
+        div.appendChild(h4);
+        div.appendChild(ul);
+        warningDiv.appendChild(svg);
+        warningDiv.appendChild(div);
         validationResults.appendChild(warningDiv);
       }
 
@@ -389,30 +497,51 @@ const { action } = Astro.props;
         const rowErrorDiv = document.createElement('div');
         rowErrorDiv.className = 'alert alert-warning';
 
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('class', 'stroke-current shrink-0 h-6 w-6');
+        svg.setAttribute('fill', 'none');
+        svg.setAttribute('viewBox', '0 0 24 24');
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('stroke-linecap', 'round');
+        path.setAttribute('stroke-linejoin', 'round');
+        path.setAttribute('stroke-width', '2');
+        path.setAttribute(
+          'd',
+          'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z'
+        );
+        svg.appendChild(path);
+
+        const div = document.createElement('div');
+        const h4 = document.createElement('h4');
+        h4.className = 'font-bold';
+        h4.textContent = `Row Issues (${issues.rowErrors.length} rows affected)`;
+        const errorListDiv = document.createElement('div');
+        errorListDiv.className = 'text-sm mt-1 space-y-1';
+
         // Show first 5 row errors
         const displayErrors = issues.rowErrors.slice(0, 5);
         const remainingCount = issues.rowErrors.length - 5;
 
-        rowErrorDiv.innerHTML = `
-          <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-          </svg>
-          <div>
-            <h4 class="font-bold">Row Issues (${issues.rowErrors.length} rows affected)</h4>
-            <div class="text-sm mt-1 space-y-1">
-              ${displayErrors
-                .map(
-                  (re) => `
-                <div>
-                  <strong>Row ${re.row}:</strong> ${re.errors.join(', ')}
-                </div>
-              `
-                )
-                .join('')}
-              ${remainingCount > 0 ? `<p class="text-xs mt-2">...and ${remainingCount} more rows with issues</p>` : ''}
-            </div>
-          </div>
-        `;
+        displayErrors.forEach((re) => {
+          const rowDiv = document.createElement('div');
+          const strong = document.createElement('strong');
+          strong.textContent = `Row ${re.row}: `;
+          rowDiv.appendChild(strong);
+          rowDiv.appendChild(document.createTextNode(re.errors.join(', ')));
+          errorListDiv.appendChild(rowDiv);
+        });
+
+        if (remainingCount > 0) {
+          const moreP = document.createElement('p');
+          moreP.className = 'text-xs mt-2';
+          moreP.textContent = `...and ${remainingCount} more rows with issues`;
+          errorListDiv.appendChild(moreP);
+        }
+
+        div.appendChild(h4);
+        div.appendChild(errorListDiv);
+        rowErrorDiv.appendChild(svg);
+        rowErrorDiv.appendChild(div);
         validationResults.appendChild(rowErrorDiv);
 
         if (issues.errors.length === 0) {
@@ -426,9 +555,17 @@ const { action } = Astro.props;
       fileInput.value = '';
       previewSection.classList.add('hidden');
       hideError();
-      validationResults.innerHTML = '';
-      previewHeader.innerHTML = '';
-      previewBody.innerHTML = '';
+      // Clear validation results safely
+      while (validationResults.firstChild) {
+        validationResults.removeChild(validationResults.firstChild);
+      }
+      // Clear preview tables safely
+      while (previewHeader.firstChild) {
+        previewHeader.removeChild(previewHeader.firstChild);
+      }
+      while (previewBody.firstChild) {
+        previewBody.removeChild(previewBody.firstChild);
+      }
     }
 
     // Handle file selection
@@ -483,10 +620,43 @@ const { action } = Astro.props;
 
     // Confirm import button - navigate to import action (will be implemented in next phase)
     confirmButton.addEventListener('click', function () {
-      // For now, just show a message that this will be implemented
-      alert(
-        'Import functionality will be implemented in the next phase. The CSV has been validated and is ready for import.'
-      );
+      // Replace alert() with inline UI feedback (constitution.md baseline requirement)
+      // Create a temporary info message in the validation results area
+      const infoDiv = document.createElement('div');
+      infoDiv.className = 'alert alert-info';
+
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.setAttribute('class', 'stroke-current shrink-0 h-6 w-6');
+      svg.setAttribute('fill', 'none');
+      svg.setAttribute('viewBox', '0 0 24 24');
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('stroke-linecap', 'round');
+      path.setAttribute('stroke-linejoin', 'round');
+      path.setAttribute('stroke-width', '2');
+      path.setAttribute('d', 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z');
+      svg.appendChild(path);
+
+      const div = document.createElement('div');
+      const h4 = document.createElement('h4');
+      h4.className = 'font-bold';
+      h4.textContent = 'Coming Soon';
+      const p = document.createElement('p');
+      p.className = 'text-sm';
+      p.textContent =
+        'Import functionality will be implemented in the next phase. The CSV has been validated and is ready for import.';
+
+      div.appendChild(h4);
+      div.appendChild(p);
+      infoDiv.appendChild(svg);
+      infoDiv.appendChild(div);
+
+      // Add to validation results area
+      validationResults.appendChild(infoDiv);
+
+      // Auto-remove after 5 seconds
+      setTimeout(() => {
+        infoDiv.remove();
+      }, 5000);
     });
   })();
 </script>
