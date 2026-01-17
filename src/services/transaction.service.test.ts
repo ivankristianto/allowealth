@@ -1,77 +1,35 @@
 /**
  * Unit tests for TransactionService
+ *
+ * These tests use dependency injection and mock database to avoid
+ * real database connections, ensuring tests run consistently.
  */
 
-import { describe, it, expect, mock } from 'bun:test';
+import { describe, it, expect, beforeEach, mock } from 'bun:test';
 import { TransactionService } from './transaction.service';
-import type { Transaction } from '@/lib/types';
+import { TransactionServiceError } from './service-errors';
+import {
+  createMockDatabase,
+  createMockCategory,
+  createMockPaymentMethod,
+  createMockTransaction,
+  createMockTransactionWithRelations,
+  resetMockDatabase,
+} from './test-helpers/mocks';
 
-// Mock the database module
-const mockInsert = mock(() => ({ values: mock(() => ({ returning: mock(() => []) })) }));
-const mockQuery = mock(() => ({
-  transactions: {
-    findFirst: mock(() => []),
-    findMany: mock(() => []),
-  },
-  categories: {
-    findFirst: mock(() => []),
-  },
-  paymentMethods: {
-    findFirst: mock(() => []),
-  },
-}));
-const mockUpdate = mock(() => ({ set: mock(() => ({ where: mock(() => ({})) })) }));
-const mockSelect = mock(() => ({ from: mock(() => ({ where: mock(() => []) })) }));
+describe('TransactionService', () => {
+  let mockDb: ReturnType<typeof createMockDatabase>;
+  let transactionService: TransactionService;
+  const mockCategory = createMockCategory();
+  const mockPaymentMethod = createMockPaymentMethod();
+  const mockTransaction = createMockTransaction();
 
-// Mock dependent services
-const mockCategoryService = {
-  findById: mock(() => []),
-};
-const mockPaymentMethodService = {
-  findById: mock(() => []),
-};
-
-// Create service instance
-const transactionService = new TransactionService();
-
-describe.skip('TransactionService', () => {
-  const mockCategory = {
-    id: 'cat-1',
-    user_id: 'user-1',
-    name: 'Food & Groceries',
-    type: 'expense',
-    percentage: '5.00',
-    budget_amount: '6000000',
-    currency: 'IDR',
-    is_active: true,
-    created_at: new Date(),
-    updated_at: new Date(),
-  };
-
-  const mockPaymentMethod = {
-    id: 'pm-1',
-    user_id: 'user-1',
-    name: 'Cash',
-    type: 'cash',
-    is_active: true,
-    created_at: new Date(),
-    updated_at: new Date(),
-  };
-
-  const mockTransaction: Transaction = {
-    id: 'txn-1',
-    user_id: 'user-1',
-    category_id: 'cat-1',
-    payment_method_id: 'pm-1',
-    type: 'expense',
-    amount: '50000',
-    currency: 'IDR',
-    description: 'Lunch',
-    transaction_date: new Date('2026-01-05'),
-    deleted_at: null,
-    created_at: new Date('2026-01-05'),
-    updated_at: new Date('2026-01-05'),
-  };
+  beforeEach(() => {
+    // Create fresh mock database and service for each test
+    mockDb = createMockDatabase();
+    transactionService = new TransactionService(mockDb);
+    resetMockDatabase(mockDb);
+  });
 
   describe('create', () => {
     it('should create a new transaction with valid input', async () => {
@@ -86,37 +44,30 @@ describe.skip('TransactionService', () => {
         description: 'Lunch',
       };
 
-      // Mock category and payment method as existing
-      mockQuery.mockReturnValueOnce({
-        categories: {
-          findFirst: mock(() => mockCategory),
-        },
-        paymentMethods: {
-          findFirst: mock(() => mockPaymentMethod),
-        },
-      } as any);
+      // Mock category and payment method lookup (via CategoryService and PaymentMethodService)
+      (mockDb.query.categories.findFirst as any).mockResolvedValue(mockCategory);
+      (mockDb.query.paymentMethods.findFirst as any).mockResolvedValue(mockPaymentMethod);
 
-      mockInsert.mockReturnValueOnce({
+      // Mock insert returning the created transaction
+      (mockDb.insert as any).mockReturnValueOnce({
         values: mock(() => ({
-          returning: mock(() => [mockTransaction]),
+          returning: mock(() => Promise.resolve([mockTransaction])),
         })),
-      } as any);
+      });
 
-      // Mock findById for the return
-      mockQuery.mockReturnValueOnce({
-        transactions: {
-          findFirst: mock(() => ({
-            ...mockTransaction,
-            category: mockCategory,
-            paymentMethod: mockPaymentMethod,
-          })),
-        },
-      } as any);
+      // Mock findById to return the transaction with relations
+      const transactionWithRelations = createMockTransactionWithRelations(
+        { id: 'txn-1' },
+        mockCategory,
+        mockPaymentMethod
+      );
+      (mockDb.query.transactions.findFirst as any).mockResolvedValue(transactionWithRelations);
 
       const result = await transactionService.create(input);
 
       expect(result).toBeDefined();
       expect(result?.amount).toBe(input.amount);
+      expect(mockDb.insert).toHaveBeenCalled();
     });
 
     it('should throw error if category not found', async () => {
@@ -130,15 +81,11 @@ describe.skip('TransactionService', () => {
         transaction_date: new Date('2026-01-05'),
       };
 
-      mockQuery.mockReturnValueOnce({
-        categories: {
-          findFirst: mock(() => undefined),
-        },
-      } as any);
+      // Mock category as not found
+      (mockDb.query.categories.findFirst as any).mockResolvedValue(undefined);
 
-      await expect(transactionService.create(input)).rejects.toThrow(
-        'Category not found or inactive'
-      );
+      await expect(transactionService.create(input)).rejects.toThrow(TransactionServiceError);
+      await expect(transactionService.create(input)).rejects.toThrow('Category not found');
     });
 
     it('should throw error if payment method not found', async () => {
@@ -152,22 +99,16 @@ describe.skip('TransactionService', () => {
         transaction_date: new Date('2026-01-05'),
       };
 
-      mockQuery.mockReturnValueOnce({
-        categories: {
-          findFirst: mock(() => mockCategory),
-        },
-        paymentMethods: {
-          findFirst: mock(() => undefined),
-        },
-      } as any);
+      // Mock category as found but payment method as not found
+      (mockDb.query.categories.findFirst as any).mockResolvedValue(mockCategory);
+      (mockDb.query.paymentMethods.findFirst as any).mockResolvedValue(undefined);
 
-      await expect(transactionService.create(input)).rejects.toThrow(
-        'Payment method not found or inactive'
-      );
+      await expect(transactionService.create(input)).rejects.toThrow(TransactionServiceError);
+      await expect(transactionService.create(input)).rejects.toThrow('Payment method not found');
     });
 
     it('should throw error if category is inactive', async () => {
-      const inactiveCategory = { ...mockCategory, is_active: false };
+      const inactiveCategory = createMockCategory({ is_active: false });
 
       const input = {
         user_id: 'user-1',
@@ -179,29 +120,44 @@ describe.skip('TransactionService', () => {
         transaction_date: new Date('2026-01-05'),
       };
 
-      mockQuery.mockReturnValueOnce({
-        categories: {
-          findFirst: mock(() => inactiveCategory),
-        },
-      } as any);
+      // Mock inactive category
+      (mockDb.query.categories.findFirst as any).mockResolvedValue(inactiveCategory);
 
-      await expect(transactionService.create(input)).rejects.toThrow(
-        'Category not found or inactive'
-      );
+      await expect(transactionService.create(input)).rejects.toThrow(TransactionServiceError);
+      await expect(transactionService.create(input)).rejects.toThrow('Category is inactive');
+    });
+
+    it('should throw error if payment method is inactive', async () => {
+      const inactivePaymentMethod = createMockPaymentMethod({ is_active: false });
+
+      const input = {
+        user_id: 'user-1',
+        type: 'expense' as const,
+        amount: '50000',
+        currency: 'IDR' as const,
+        category_id: 'cat-1',
+        payment_method_id: 'pm-1',
+        transaction_date: new Date('2026-01-05'),
+      };
+
+      // Mock category as found, payment method as inactive
+      (mockDb.query.categories.findFirst as any).mockResolvedValue(mockCategory);
+      (mockDb.query.paymentMethods.findFirst as any).mockResolvedValue(inactivePaymentMethod);
+
+      await expect(transactionService.create(input)).rejects.toThrow(TransactionServiceError);
+      await expect(transactionService.create(input)).rejects.toThrow('Payment method is inactive');
     });
   });
 
   describe('findById', () => {
     it('should find transaction by id with relations', async () => {
-      mockQuery.mockReturnValueOnce({
-        transactions: {
-          findFirst: mock(() => ({
-            ...mockTransaction,
-            category: mockCategory,
-            paymentMethod: mockPaymentMethod,
-          })),
-        },
-      } as any);
+      const transactionWithRelations = createMockTransactionWithRelations(
+        { id: 'txn-1' },
+        mockCategory,
+        mockPaymentMethod
+      );
+
+      (mockDb.query.transactions.findFirst as any).mockResolvedValueOnce(transactionWithRelations);
 
       const result = await transactionService.findById('txn-1', 'user-1');
 
@@ -209,14 +165,11 @@ describe.skip('TransactionService', () => {
       expect(result?.id).toBe('txn-1');
       expect(result?.category).toBeDefined();
       expect(result?.paymentMethod).toBeDefined();
+      expect(mockDb.query.transactions.findFirst).toHaveBeenCalled();
     });
 
     it('should return undefined for non-existent transaction', async () => {
-      mockQuery.mockReturnValueOnce({
-        transactions: {
-          findFirst: mock(() => undefined),
-        },
-      } as any);
+      (mockDb.query.transactions.findFirst as any).mockResolvedValueOnce(undefined);
 
       const result = await transactionService.findById('non-existent', 'user-1');
 
@@ -226,19 +179,11 @@ describe.skip('TransactionService', () => {
 
   describe('findAll', () => {
     it('should find all transactions with filters', async () => {
-      const mockTransactions: Transaction[] = [
-        {
-          ...mockTransaction,
-          category: mockCategory,
-          paymentMethod: mockPaymentMethod,
-        } as any,
+      const transactionsWithRelations = [
+        createMockTransactionWithRelations({ id: 'txn-1' }, mockCategory, mockPaymentMethod),
       ];
 
-      mockQuery.mockReturnValueOnce({
-        transactions: {
-          findMany: mock(() => mockTransactions),
-        },
-      } as any);
+      (mockDb.query.transactions.findMany as any).mockResolvedValueOnce(transactionsWithRelations);
 
       const result = await transactionService.findAll({
         user_id: 'user-1',
@@ -247,22 +192,15 @@ describe.skip('TransactionService', () => {
       });
 
       expect(result).toHaveLength(1);
+      expect(mockDb.query.transactions.findMany).toHaveBeenCalled();
     });
 
     it('should filter by date range', async () => {
-      const mockTransactions: Transaction[] = [
-        {
-          ...mockTransaction,
-          category: mockCategory,
-          paymentMethod: mockPaymentMethod,
-        } as any,
+      const transactionsWithRelations = [
+        createMockTransactionWithRelations({ id: 'txn-1' }, mockCategory, mockPaymentMethod),
       ];
 
-      mockQuery.mockReturnValueOnce({
-        transactions: {
-          findMany: mock(() => mockTransactions),
-        },
-      } as any);
+      (mockDb.query.transactions.findMany as any).mockResolvedValueOnce(transactionsWithRelations);
 
       const result = await transactionService.findAll({
         user_id: 'user-1',
@@ -271,22 +209,15 @@ describe.skip('TransactionService', () => {
       });
 
       expect(result).toBeDefined();
+      expect(mockDb.query.transactions.findMany).toHaveBeenCalled();
     });
 
     it('should paginate results', async () => {
-      const mockTransactions: Transaction[] = [
-        {
-          ...mockTransaction,
-          category: mockCategory,
-          paymentMethod: mockPaymentMethod,
-        } as any,
+      const transactionsWithRelations = [
+        createMockTransactionWithRelations({ id: 'txn-1' }, mockCategory, mockPaymentMethod),
       ];
 
-      mockQuery.mockReturnValueOnce({
-        transactions: {
-          findMany: mock(() => mockTransactions),
-        },
-      } as any);
+      (mockDb.query.transactions.findMany as any).mockResolvedValueOnce(transactionsWithRelations);
 
       const result = await transactionService.findAll({
         user_id: 'user-1',
@@ -295,113 +226,251 @@ describe.skip('TransactionService', () => {
       });
 
       expect(result).toBeDefined();
+      expect(mockDb.query.transactions.findMany).toHaveBeenCalled();
     });
 
-    it('should exclude soft deleted transactions', async () => {
-      const mockTransactions: Transaction[] = [
-        {
-          ...mockTransaction,
-          deleted_at: null,
-          category: mockCategory,
-          paymentMethod: mockPaymentMethod,
-        } as any,
+    it('should filter by category', async () => {
+      const transactionsWithRelations = [
+        createMockTransactionWithRelations(
+          { id: 'txn-1', category_id: 'cat-food' },
+          mockCategory,
+          mockPaymentMethod
+        ),
       ];
 
-      mockQuery.mockReturnValueOnce({
-        transactions: {
-          findMany: mock(() => mockTransactions),
-        },
-      } as any);
+      (mockDb.query.transactions.findMany as any).mockResolvedValueOnce(transactionsWithRelations);
 
       const result = await transactionService.findAll({
         user_id: 'user-1',
+        category_id: 'cat-food',
       });
 
-      expect(result.every((t) => t.deleted_at === null)).toBe(true);
+      expect(result).toBeDefined();
+      expect(mockDb.query.transactions.findMany).toHaveBeenCalled();
+    });
+
+    it('should filter by payment method', async () => {
+      const transactionsWithRelations = [
+        createMockTransactionWithRelations(
+          { id: 'txn-1', payment_method_id: 'pm-cash' },
+          mockCategory,
+          mockPaymentMethod
+        ),
+      ];
+
+      (mockDb.query.transactions.findMany as any).mockResolvedValueOnce(transactionsWithRelations);
+
+      const result = await transactionService.findAll({
+        user_id: 'user-1',
+        payment_method_id: 'pm-cash',
+      });
+
+      expect(result).toBeDefined();
+      expect(mockDb.query.transactions.findMany).toHaveBeenCalled();
+    });
+
+    it('should filter by currency', async () => {
+      const transactionsWithRelations = [
+        createMockTransactionWithRelations(
+          { id: 'txn-1', currency: 'USD' },
+          mockCategory,
+          mockPaymentMethod
+        ),
+      ];
+
+      (mockDb.query.transactions.findMany as any).mockResolvedValueOnce(transactionsWithRelations);
+
+      const result = await transactionService.findAll({
+        user_id: 'user-1',
+        currency: 'USD',
+      });
+
+      expect(result).toBeDefined();
+      expect(mockDb.query.transactions.findMany).toHaveBeenCalled();
+    });
+
+    it('should filter by search term', async () => {
+      const transactionsWithRelations = [
+        createMockTransactionWithRelations(
+          { id: 'txn-1', description: 'Lunch at restaurant' },
+          mockCategory,
+          mockPaymentMethod
+        ),
+      ];
+
+      (mockDb.query.transactions.findMany as any).mockResolvedValueOnce(transactionsWithRelations);
+
+      const result = await transactionService.findAll({
+        user_id: 'user-1',
+        search: 'lunch',
+      });
+
+      expect(result).toBeDefined();
+      expect(mockDb.query.transactions.findMany).toHaveBeenCalled();
     });
   });
 
   describe('update', () => {
     it('should update transaction fields', async () => {
-      const mockUpdatedTransaction = {
-        ...mockTransaction,
-        amount: '75000',
-        category: mockCategory,
-        paymentMethod: mockPaymentMethod,
-      };
+      const mockUpdatedTransaction = createMockTransactionWithRelations(
+        { amount: '75000' },
+        mockCategory,
+        mockPaymentMethod
+      );
 
-      mockQuery.mockReturnValueOnce({
-        categories: {
-          findFirst: mock(() => mockCategory),
-        },
-      } as any);
-
-      mockQuery.mockReturnValueOnce({
-        transactions: {
-          findFirst: mock(() => mockUpdatedTransaction),
-        },
-      } as any);
+      // Mock findById returning updated transaction (no category/payment method change)
+      (mockDb.query.transactions.findFirst as any).mockResolvedValue(mockUpdatedTransaction);
 
       const result = await transactionService.update('txn-1', 'user-1', {
         amount: '75000',
       });
 
       expect(result?.amount).toBe('75000');
+      expect(mockDb.update).toHaveBeenCalled();
     });
 
     it('should validate category on update', async () => {
-      mockQuery.mockReturnValueOnce({
-        categories: {
-          findFirst: mock(() => undefined),
-        },
-      } as any);
+      // Mock category as not found
+      (mockDb.query.categories.findFirst as any).mockResolvedValue(undefined);
 
       await expect(
         transactionService.update('txn-1', 'user-1', {
           category_id: 'non-existent',
         })
-      ).rejects.toThrow('Category not found or inactive');
+      ).rejects.toThrow(TransactionServiceError);
+      await expect(
+        transactionService.update('txn-1', 'user-1', {
+          category_id: 'non-existent',
+        })
+      ).rejects.toThrow('Category not found');
     });
 
     it('should validate payment method on update', async () => {
-      mockQuery.mockReturnValueOnce({
-        categories: {
-          findFirst: mock(() => mockCategory),
-        },
-        paymentMethods: {
-          findFirst: mock(() => undefined),
-        },
-      } as any);
+      // Mock category as found but payment method as not found
+      (mockDb.query.categories.findFirst as any).mockResolvedValue(mockCategory);
+      (mockDb.query.paymentMethods.findFirst as any).mockResolvedValue(undefined);
 
       await expect(
         transactionService.update('txn-1', 'user-1', {
           payment_method_id: 'non-existent',
         })
-      ).rejects.toThrow('Payment method not found or inactive');
+      ).rejects.toThrow(TransactionServiceError);
+      await expect(
+        transactionService.update('txn-1', 'user-1', {
+          payment_method_id: 'non-existent',
+        })
+      ).rejects.toThrow('Payment method not found');
+    });
+
+    it('should validate inactive category on update', async () => {
+      const inactiveCategory = createMockCategory({ is_active: false });
+
+      // Mock inactive category
+      (mockDb.query.categories.findFirst as any).mockResolvedValue(inactiveCategory);
+
+      await expect(
+        transactionService.update('txn-1', 'user-1', {
+          category_id: 'cat-1',
+        })
+      ).rejects.toThrow(TransactionServiceError);
+      await expect(
+        transactionService.update('txn-1', 'user-1', {
+          category_id: 'cat-1',
+        })
+      ).rejects.toThrow('Category is inactive');
+    });
+
+    it('should validate inactive payment method on update', async () => {
+      const inactivePaymentMethod = createMockPaymentMethod({ is_active: false });
+
+      // Mock category as found, payment method as inactive
+      (mockDb.query.categories.findFirst as any).mockResolvedValue(mockCategory);
+      (mockDb.query.paymentMethods.findFirst as any).mockResolvedValue(inactivePaymentMethod);
+
+      await expect(
+        transactionService.update('txn-1', 'user-1', {
+          payment_method_id: 'pm-1',
+        })
+      ).rejects.toThrow(TransactionServiceError);
+      await expect(
+        transactionService.update('txn-1', 'user-1', {
+          payment_method_id: 'pm-1',
+        })
+      ).rejects.toThrow('Payment method is inactive');
+    });
+
+    it('should support partial updates', async () => {
+      const mockUpdatedTransaction = createMockTransactionWithRelations(
+        { description: 'Updated description' },
+        mockCategory,
+        mockPaymentMethod
+      );
+
+      (mockDb.query.transactions.findFirst as any).mockResolvedValue(mockUpdatedTransaction);
+
+      const result = await transactionService.update('txn-1', 'user-1', {
+        description: 'Updated description',
+      });
+
+      expect(result?.description).toBe('Updated description');
+    });
+
+    it('should update multiple fields at once', async () => {
+      const mockUpdatedTransaction = createMockTransactionWithRelations(
+        { amount: '100000', description: 'Big lunch' },
+        mockCategory,
+        mockPaymentMethod
+      );
+
+      (mockDb.query.transactions.findFirst as any).mockResolvedValue(mockUpdatedTransaction);
+
+      const result = await transactionService.update('txn-1', 'user-1', {
+        amount: '100000',
+        description: 'Big lunch',
+      });
+
+      expect(result?.amount).toBe('100000');
+      expect(result?.description).toBe('Big lunch');
     });
   });
 
   describe('delete', () => {
     it('should soft delete transaction', async () => {
-      mockUpdate.mockReturnValueOnce({
-        set: mock(() => ({
-          where: mock(() => ({})),
-        })),
-      } as any);
+      const transactionWithRelations = createMockTransactionWithRelations(
+        { id: 'txn-1' },
+        mockCategory,
+        mockPaymentMethod
+      );
+
+      // Mock findById returning existing transaction
+      (mockDb.query.transactions.findFirst as any).mockResolvedValueOnce(transactionWithRelations);
 
       const result = await transactionService.delete('txn-1', 'user-1');
 
       expect(result.success).toBe(true);
+      expect(mockDb.update).toHaveBeenCalled();
+    });
+
+    it('should throw error if transaction not found', async () => {
+      // Mock findById returning undefined
+      (mockDb.query.transactions.findFirst as any).mockResolvedValueOnce(undefined);
+
+      await expect(transactionService.delete('non-existent', 'user-1')).rejects.toThrow(
+        TransactionServiceError
+      );
+      await expect(transactionService.delete('non-existent', 'user-1')).rejects.toThrow(
+        'Transaction not found'
+      );
     });
   });
 
   describe('count', () => {
     it('should count transactions with filters', async () => {
-      mockSelect.mockReturnValueOnce({
+      (mockDb.select as any).mockReturnValueOnce({
         from: mock(() => ({
-          where: mock(() => [{ count: 5 }]),
+          where: mock(() => Promise.resolve([{ count: 5 }])),
         })),
-      } as any);
+      });
 
       const result = await transactionService.count({
         user_id: 'user-1',
@@ -409,14 +478,15 @@ describe.skip('TransactionService', () => {
       });
 
       expect(result).toBe(5);
+      expect(mockDb.select).toHaveBeenCalled();
     });
 
     it('should return 0 for no transactions', async () => {
-      mockSelect.mockReturnValueOnce({
+      (mockDb.select as any).mockReturnValueOnce({
         from: mock(() => ({
-          where: mock(() => [{}]),
+          where: mock(() => Promise.resolve([{ count: 0 }])),
         })),
-      } as any);
+      });
 
       const result = await transactionService.count({
         user_id: 'user-1',
@@ -424,6 +494,52 @@ describe.skip('TransactionService', () => {
       });
 
       expect(result).toBe(0);
+    });
+
+    it('should count by category', async () => {
+      (mockDb.select as any).mockReturnValueOnce({
+        from: mock(() => ({
+          where: mock(() => Promise.resolve([{ count: 3 }])),
+        })),
+      });
+
+      const result = await transactionService.count({
+        user_id: 'user-1',
+        category_id: 'cat-food',
+      });
+
+      expect(result).toBe(3);
+    });
+
+    it('should count by payment method', async () => {
+      (mockDb.select as any).mockReturnValueOnce({
+        from: mock(() => ({
+          where: mock(() => Promise.resolve([{ count: 7 }])),
+        })),
+      });
+
+      const result = await transactionService.count({
+        user_id: 'user-1',
+        payment_method_id: 'pm-cash',
+      });
+
+      expect(result).toBe(7);
+    });
+
+    it('should count with date range filter', async () => {
+      (mockDb.select as any).mockReturnValueOnce({
+        from: mock(() => ({
+          where: mock(() => Promise.resolve([{ count: 15 }])),
+        })),
+      });
+
+      const result = await transactionService.count({
+        user_id: 'user-1',
+        start_date: new Date('2026-01-01'),
+        end_date: new Date('2026-01-31'),
+      });
+
+      expect(result).toBe(15);
     });
   });
 });
