@@ -359,7 +359,7 @@ export const username = {
   title: 'Username must be 3-20 characters (letters, numbers, underscores, hyphens only)',
   examples: {
     valid: ['user_name', 'UserName', 'user-123', 'user.name'],
-    invalid: ['ab', 'user@name', 'user name', 'a' * 21],
+    invalid: ['ab', 'user@name', 'user name', 'a'.repeat(21)],
   },
 } as const;
 

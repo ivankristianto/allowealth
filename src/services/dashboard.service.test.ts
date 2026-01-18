@@ -149,12 +149,12 @@ describe('DashboardService', () => {
   let dashboardService: DashboardService;
 
   beforeEach(() => {
-    dashboardService = new DashboardService();
+    dashboardService = new DashboardService({} as any);
   });
 
   describe('getTotalAssets', () => {
     it('should return total assets with string amounts', async () => {
-      const result = await dashboardService.getTotalAssets('user-123');
+      const result = await dashboardService.getTotalAssets('user-123', 'IDR');
 
       expect(result).toHaveProperty('idr');
       expect(result).toHaveProperty('usd');
@@ -179,7 +179,7 @@ describe('DashboardService', () => {
     });
 
     it('should return zeroed string values for user with no assets', async () => {
-      const result = await dashboardService.getTotalAssets('non-existent-user');
+      const result = await dashboardService.getTotalAssets('non-existent-user', 'IDR');
 
       expect(result.idr).toBe('0');
       expect(result.usd).toBe('0');
@@ -188,7 +188,7 @@ describe('DashboardService', () => {
 
     it('should handle database errors gracefully', async () => {
       // Service catches errors and returns safe defaults
-      const result = await dashboardService.getTotalAssets('error-user');
+      const result = await dashboardService.getTotalAssets('error-user', 'IDR');
       expect(result.idr).toBe('0');
       expect(result.usd).toBe('0');
       expect(result.converted).toBe('0');
