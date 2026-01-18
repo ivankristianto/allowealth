@@ -48,6 +48,12 @@ export interface DatabaseDriver {
    * @returns true if table exists, false otherwise
    */
   tableExists?(tableName: string): boolean;
+
+  /**
+   * Raw SQLite connection for passing to drizzle()
+   * @internal
+   */
+  _raw: unknown;
 }
 
 /**

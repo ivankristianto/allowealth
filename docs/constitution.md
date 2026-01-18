@@ -51,12 +51,13 @@ Build what users see and touch first.
 
 Automated checks run on every change. No exceptions.
 
-| Gate   | Tool                 | Blocking |
-| ------ | -------------------- | -------- |
-| Types  | `bun run typecheck`  | Yes      |
-| Lint   | `bun run lint`       | Yes      |
-| Format | `bun run format:fix` | Yes      |
-| Test   | `bun run test`       | No\*     |
+| Gate      | Tool                 | Blocking |
+| --------- | -------------------- | -------- |
+| Types     | `bun run typecheck`  | Yes      |
+| Lint      | `bun run lint`       | Yes      |
+| Stylelint | `bun run stylelint`  | Yes      |
+| Format    | `bun run format:fix` | Yes      |
+| Test      | `bun run test`       | No\*     |
 
 \*Failed tests → create ticket, fix in separate PR. Don't block current work.
 

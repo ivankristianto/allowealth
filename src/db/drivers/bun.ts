@@ -29,16 +29,16 @@ type BunStatement = any;
  * Create a Bun SQLite driver
  *
  * @param dbPath - Path to the SQLite database file
- * @returns DatabaseDriver instance
+ * @returns DatabaseDriver instance with raw SQLite connection
  */
-export function createBunDriver(dbPath: string): DatabaseDriver {
+export function createBunDriver(dbPath: string): DatabaseDriver & { _raw: BunDatabase } {
   // Import bun:sqlite only when creating the driver
   // This ensures the import only happens in Bun runtime
   // @ts-ignore - bun:sqlite is not available in TypeScript types
   const Database = require('bun:sqlite').Database;
   const sqlite: BunDatabase = new Database(dbPath);
 
-  return {
+  const driver: DatabaseDriver & { _raw: BunDatabase } = {
     exec(sql: string): void {
       sqlite.exec(sql);
     },
@@ -77,5 +77,10 @@ export function createBunDriver(dbPath: string): DatabaseDriver {
         .get(tableName);
       return result !== undefined;
     },
+
+    // Expose raw connection for drizzle
+    _raw: sqlite,
   };
+
+  return driver;
 }

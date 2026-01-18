@@ -24,15 +24,15 @@ type BetterSqlite3Statement = any;
  * Create a Node.js SQLite driver using better-sqlite3
  *
  * @param dbPath - Path to the SQLite database file
- * @returns DatabaseDriver instance
+ * @returns DatabaseDriver instance with raw SQLite connection
  */
-export function createNodeDriver(dbPath: string): DatabaseDriver {
+export function createNodeDriver(dbPath: string): DatabaseDriver & { _raw: BetterSqlite3Database } {
   // Import better-sqlite3 dynamically
   // This package is compatible with Node.js and already in devDependencies
   const Database = require('better-sqlite3');
   const sqlite: BetterSqlite3Database = new Database(dbPath);
 
-  return {
+  const driver: DatabaseDriver & { _raw: BetterSqlite3Database } = {
     exec(sql: string): void {
       sqlite.exec(sql);
     },
@@ -75,5 +75,15 @@ export function createNodeDriver(dbPath: string): DatabaseDriver {
         .get(tableName);
       return result !== undefined;
     },
+
+    // Expose raw connection for drizzle
+    _raw: sqlite,
   };
+
+  // Graceful shutdown handler for Node.js
+  process.on('beforeExit', () => {
+    sqlite.close();
+  });
+
+  return driver;
 }

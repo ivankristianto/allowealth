@@ -7,7 +7,7 @@ export default {
   dialect: 'sqlite',
 
   dbCredentials: {
-    url: process.env.DATABASE_URL || '.dev.db',
+    url: process.env.DATABASE_URL || 'db/.dev.db',
   },
 
   verbose: true,

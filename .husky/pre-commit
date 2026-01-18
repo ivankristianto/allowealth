@@ -17,6 +17,13 @@ bun run lint:fix
 # Stage any linting changes
 git add -A
 
+# Run stylelint
+echo "▸ Running stylelint..."
+bun run stylelint:fix
+
+# Stage any stylelint changes
+git add -A
+
 # Run typecheck
 echo "▸ Running astro check... disable tempoarrily due to TS limitations"
 # bun run typecheck

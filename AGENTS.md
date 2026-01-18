@@ -2,6 +2,24 @@
 
 This project uses **bd** (beads) for issue tracking. Run `bd prime` to refresh context after compaction.
 
+## Agent Initialization
+
+**Before any task, read the constitution.**
+
+```
+1. Read `docs/constitution.md` — understand principles and fences
+2. Read task context (spec, plan, or issue)
+3. Then execute
+```
+
+Agents must internalize:
+
+- **Implementation order**: UI → Service → API → CLI → Seeder
+- **Quality gates**: Which block, which don't
+- **Refactor checklist**: Apply each loop, not at the end
+
+**If constitution conflicts with task instructions, constitution wins.**
+
 ## Project Overview
 
 Personal and family financial application for expense tracking, budgeting, asset management, and financial forecasting.
@@ -56,24 +74,6 @@ bd stats              # Project health overview
 /settings/categories       # Category management
 /settings/payment-methods  # Payment methods
 ```
-
-## Current Status
-
-**Phase 0: Design System & Setup** ✅ Complete
-
-- ✅ Project initialization
-- ✅ Design tokens system
-- ✅ 12 Atomic components with Storybook
-- ✅ Layout components (MainLayout, Navigation, Header, Footer, Modal, Toast)
-- ✅ Routing with 16 page stubs
-- ✅ Login screen UI (LoginForm, PasswordField, Checkbox, AuthLayout)
-- ✅ Database schema (Drizzle ORM)
-
-**Phase 1: Authentication & API** (in progress)
-
-- 🚧 Authentication backend (Lucia Auth, API endpoints, session middleware)
-- 📋 API endpoints implementation
-- 📋 OpenAPI specification
 
 ## Project Structure
 
@@ -178,9 +178,10 @@ import { formatCurrency, colors, fontSizes } from '@/lib/tokens';
 
 ```bash
 grep -r "bun:" src/ --exclude-dir=node_modules || echo "No bun: imports found"
-bun run typecheck     # TypeScript type checking
-bun run lint          # ESLint check
+bun run lint:fix          # ESLint check
+bun run stylelint:fix          # ESLint check
 bun run format:fix    # Prettier auto-format
+bun run typecheck     # TypeScript type checking
 ```
 
 **CRITICAL:** If `bun:` imports are found in files that are imported by middleware (src/middleware.ts), the code MUST be refactored. Astro middleware runs in Node.js and cannot load Bun-specific APIs.

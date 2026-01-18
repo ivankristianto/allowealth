@@ -1,4 +1,5 @@
 export default {
+  ignoreFiles: ['dist/**', '**/*.astro'],
   extends: ['stylelint-config-standard', 'stylelint-config-recommended'],
   rules: {
     // Allow Tailwind CSS imports

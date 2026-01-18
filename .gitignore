@@ -44,7 +44,7 @@ docs/prompt.md
 debug-storybook.log
 
 # SQLite databases
-*.db
+db/*.db
 *.db-shm
 *.db-wal
 
@@ -54,5 +54,3 @@ debug-storybook.log
 # bv (beads viewer) local config and caches
 .bv/
 .beads/.bv.lock
-fix-currency-precision/
-.claude/ralph-loop.local.md
