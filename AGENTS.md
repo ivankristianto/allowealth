@@ -195,7 +195,7 @@ bun run typecheck     # TypeScript type checking
 3. **Branch:** `git checkout -b feature/<descriptive-name>`
 4. **Implement:** For each task:
    - Write code following component guidelines and design tokens
-   - Run `bun run typecheck && bun run lint && bun run format:fix`
+   - Run `bun run typecheck && bun run lint && bun run stylelint && bun run format:fix`
    - Commit with clear message: `git commit -m "feat: descriptive message"`
    - Push: `git push`
 5. **PR:** Create Pull Request following the GitHub PR template

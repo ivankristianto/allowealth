@@ -28,7 +28,7 @@
 /* eslint-disable no-console -- Console output is intentional for test progress feedback */
 
 import { describe, it, expect, beforeAll, beforeEach, afterEach } from 'bun:test';
-import { db, getDb, type Database } from '@/db';
+import { db, getDb, resetDb, type Database } from '@/db';
 import { users, categories, assets, transactions, paymentMethods } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { existsSync, unlinkSync } from 'node:fs';
@@ -48,7 +48,8 @@ const originalEnv = { ...process.env };
 function setupTestDatabase() {
   console.log(`[Integration Test] Setting up test database at ${TEST_DB_PATH}...`);
   try {
-    execSync(`DATABASE_URL=${TEST_DB_PATH} bun run db:push`, {
+    // Call drizzle-kit directly with --url flag
+    execSync(`DATABASE_URL="${TEST_DB_PATH}" bunx drizzle-kit push --force`, {
       stdio: 'inherit',
       cwd: process.cwd(),
     });
@@ -199,25 +200,32 @@ async function createTestDatabase() {
 
 /**
  * Cleanup test data
+ * Silently handles cases where tables or data don't exist
  */
 async function cleanupTestData() {
   const testDb = await getDb();
 
-  // Check if tables exist before attempting to delete
-  const driver = (testDb as any).$_driver;
-  if (driver && driver.tableExists && !driver.tableExists('transactions')) {
-    // Tables don't exist yet, skip cleanup
-    return;
-  }
-
   // Delete in correct order due to foreign key constraints
+  // Use try/catch for each deletion to handle missing data gracefully
   try {
     await testDb.delete(transactions).where(eq(transactions.id, 'test-tx-runtime'));
+  } catch {
+    // Table might not exist or data already deleted
+  }
+  try {
     await testDb.delete(assets).where(eq(assets.id, 'test-asset-runtime'));
+  } catch {
+    // Table might not exist or data already deleted
+  }
+  try {
     await testDb.delete(categories).where(eq(categories.id, 'test-category-runtime'));
+  } catch {
+    // Table might not exist or data already deleted
+  }
+  try {
     await testDb.delete(users).where(eq(users.id, 'test-user-runtime'));
   } catch {
-    // Ignore errors if tables don't exist
+    // Table might not exist or data already deleted
   }
 }
 
@@ -233,23 +241,16 @@ describe('Database Runtime-Agnostic Integration Tests', () => {
   });
 
   beforeEach(() => {
-    // Set test database path for isolation
+    // Set test database path for isolation (use relative path for consistency)
     process.env.DATABASE_URL = TEST_DB_PATH;
+
+    // Reset database singleton so it uses the test database
+    resetDb();
   });
 
   afterEach(async () => {
     // Clean up test data
     await cleanupTestData();
-
-    // Clean up test database file
-    const testDbPath = join(process.cwd(), TEST_DB_PATH);
-    if (existsSync(testDbPath)) {
-      unlinkSync(testDbPath);
-    }
-    const walPath = testDbPath + '-wal';
-    const shmPath = testDbPath + '-shm';
-    if (existsSync(walPath)) unlinkSync(walPath);
-    if (existsSync(shmPath)) unlinkSync(shmPath);
 
     // Restore original environment
     process.env.DATABASE_URL = originalEnv.DATABASE_URL;

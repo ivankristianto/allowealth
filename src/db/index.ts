@@ -26,13 +26,20 @@ export * from './schema';
 // Re-export driver types for dependency injection
 export type { DatabaseDriver, PreparedStatement, RunResult } from './driver';
 
-// Database connection (SQLite)
-// In production, DATABASE_URL should be set but we fall back to db/.dev.db for local preview
-const dbUrl = process.env.DATABASE_URL || 'db/.dev.db';
+/**
+ * Get the database URL from environment
+ * Reads from process.env each time to support test database switching
+ */
+function getDbUrl(): string {
+  const url = process.env.DATABASE_URL;
+  if (url) return url;
 
-// Warn in production if DATABASE_URL is not set (but don't throw)
-if (process.env.NODE_ENV === 'production' && !process.env.DATABASE_URL) {
-  console.warn('Warning: DATABASE_URL not set in production, using default db/.dev.db');
+  // In production, DATABASE_URL should be set
+  if (process.env.NODE_ENV === 'production') {
+    console.warn('Warning: DATABASE_URL not set in production, using default db/.dev.db');
+  }
+
+  return 'db/.dev.db';
 }
 
 /**
@@ -161,6 +168,7 @@ function getRequire(): NodeRequire {
 function createDatabase(): Database {
   const runtime = detectRuntime();
   const dynamicRequire = getRequire();
+  const dbUrl = getDbUrl();
 
   // Create the native SQLite driver
   const driver = runtime === 'bun' ? createBunDriver(dbUrl) : createNodeDriver(dbUrl);
