@@ -77,7 +77,7 @@ const {
     const modal = document.getElementById(id) as HTMLDialogElement | null;
     const cancelButton = modal?.querySelector('a[href="#"]');
 
-    cancelButton?.addEventListener('click', (e) => {
+    cancelButton?.addEventListener('click', (e: Event) => {
       e.preventDefault();
       modal?.close();
     });

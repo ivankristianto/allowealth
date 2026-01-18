@@ -21,7 +21,7 @@ export interface AssetUpdateTodoItem {
   name: string;
   type: 'bank_account' | 'mutual_fund' | 'bond' | 'crypto' | 'stock' | 'other';
   balance: number;
-  currency: 'IDR' | 'USD';
+  currency: string;
   daysSinceUpdate: number;
   lastUpdated: Date;
   priority: 'high' | 'medium' | 'low' | 'none';

@@ -87,6 +87,7 @@ const formattedDate = date.toLocaleDateString('en-US', {
             class="btn btn-ghost btn-sm text-error"
             aria-label="Delete transaction"
             data-delete-transaction={transaction.id}
+            data-transaction-details={JSON.stringify(transaction)}
           >
             <Icon name="trash" size="sm" />
           </button>

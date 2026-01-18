@@ -13,10 +13,10 @@
 <script>
   /**
    * Show a toast notification
-   * @param {string} message - The message to display
-   * @param {string} [type='info'] - Type of toast: success, error, warning, info
-   * @param {number} [duration=5000] - Duration in milliseconds (0 to disable auto-dismiss)
-   * @returns {HTMLDivElement|undefined} The toast element or undefined if container not found
+   * @param message - The message to display
+   * @param type - Type of toast: success, error, warning, info
+   * @param duration - Duration in milliseconds (0 to disable auto-dismiss)
+   * @returns The toast element or undefined if container not found
    */
   function showToast(message: string, type: string = 'info', duration: number = 5000) {
     const container = document.getElementById('toast-container');

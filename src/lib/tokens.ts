@@ -124,10 +124,10 @@ export const currencyFormats = {
  */
 export function formatCurrency(
   amount: string | number,
-  currency: keyof typeof currencyFormats = 'IDR',
+  currency: string = 'IDR',
   compact: boolean = false
 ): string {
-  const config = currencyFormats[currency];
+  const config = currencyFormats[currency as keyof typeof currencyFormats] || currencyFormats.IDR;
   const options: Intl.NumberFormatOptions = {
     style: 'currency',
     currency: config.code,

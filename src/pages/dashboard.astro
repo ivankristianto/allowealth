@@ -17,6 +17,7 @@
 import MainLayout from '@/layouts/MainLayout.astro';
 import { requireAuth } from '@/lib/auth/requireAuth';
 import { dashboardService } from '@/services';
+import type { DashboardData } from '@/services/dashboard.service';
 import SummaryCards from '@/components/organisms/SummaryCards.astro';
 import AssetUpdateTodoList from '@/components/organisms/AssetUpdateTodoList.astro';
 import RecentTransactionsList from '@/components/organisms/RecentTransactionsList.astro';
@@ -41,7 +42,7 @@ const currentMonth = now.getMonth() + 1;
 const currentYear = now.getFullYear();
 
 // Fetch dashboard data using parallel promises
-let dashboardData;
+let dashboardData: DashboardData | null = null;
 let error: Error | null = null;
 
 try {
@@ -85,7 +86,7 @@ const assetTodos: AssetUpdateTodoItem[] =
     id: reminder.assetId,
     name: reminder.assetName,
     type: reminder.assetType as AssetUpdateTodoItem['type'],
-    balance: reminder.currentBalance,
+    balance: parseFloat(reminder.currentBalance),
     currency: reminder.currency,
     daysSinceUpdate: reminder.daysSinceUpdate,
     lastUpdated: reminder.lastUpdated,

@@ -10,20 +10,15 @@
  */
 
 import { assets, transactions, categories, type IDatabase } from '@/db';
-import { eq, and, gte, lte, desc, sql, sum } from 'drizzle-orm';
-import {
-  convertCurrency,
-  convertCurrencySync,
-  getLatestExchangeRate,
-} from '@/lib/currency/conversion';
-import { calculateBudgetAlert, calculateBudgetStatus } from '@/lib/budget/alerts';
+import { eq, and, gte, lte, desc, sql } from 'drizzle-orm';
+import { getLatestExchangeRate } from '@/lib/currency/conversion';
+import { calculateBudgetAlert } from '@/lib/budget/alerts';
 import { calculateAssetPriority } from '@/lib/assets/priority';
 import {
   decimalAdd,
   decimalSubtract,
   decimalDivide,
   decimalMultiply,
-  decimalCompare,
   decimalSum,
   decimalIsZero,
 } from '@/lib/utils/decimal';
@@ -82,6 +77,33 @@ export interface AssetReminder {
   priority: 'high' | 'medium' | 'low';
   currentBalance: string;
   currency: string;
+}
+
+/**
+ * Complete dashboard data
+ */
+export interface DashboardData {
+  totalAssets: TotalAssets;
+  monthlySpent: MonthlySpent;
+  budgetHealth: BudgetHealth;
+  assetReminders: AssetReminder[];
+  recentTransactions: Array<{
+    id: string;
+    type: 'expense' | 'income';
+    amount: string;
+    currency: 'IDR' | 'USD';
+    description: string | null;
+    transactionDate: Date;
+    category: {
+      id: string;
+      name: string;
+      type: 'expense' | 'income';
+    };
+    paymentMethod: {
+      id: string;
+      name: string;
+    };
+  }>;
 }
 
 /**
@@ -475,7 +497,7 @@ export class DashboardService {
     month?: number,
     year?: number,
     currency: 'IDR' | 'USD' = 'IDR'
-  ) {
+  ): Promise<DashboardData> {
     const now = new Date();
     const currentMonth = month ?? now.getMonth() + 1;
     const currentYear = year ?? now.getFullYear();
