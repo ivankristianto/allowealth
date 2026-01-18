@@ -316,7 +316,7 @@ const cspNonce = Astro.locals.cspNonce || '';
   </div>
 </div>
 
-<script define:vars={{ cspNonce }} nonce={cspNonce}>
+<script define:vars={{ cspNonce }} nonce={cspNonce} is:inline>
   (function () {
     'use strict';
 

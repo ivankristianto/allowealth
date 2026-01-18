@@ -92,7 +92,7 @@ const sortedAssets = [...assets].sort((a, b) => {
     loading ? (
       // Loading skeleton
       <div class="space-y-3" role="status" aria-live="polite" aria-label="Loading asset updates">
-        {[1, 2, 3].map((i) => (
+        {[1, 2, 3].map(() => (
           <div class="flex items-center gap-4 p-3 bg-base-200 rounded-lg animate-pulse">
             <div class="w-8 h-8 bg-neutral-300 rounded-full" aria-hidden="true" />
             <div class="flex-1 space-y-2">
@@ -237,18 +237,14 @@ const sortedAssets = [...assets].sort((a, b) => {
 <script>
   // Handle update button clicks
   document.querySelectorAll('[data-update-asset]').forEach((button) => {
-    button.addEventListener('click', (event) => {
-      const target = event.currentTarget as HTMLElement;
-      const assetId = target.getAttribute('data-asset-id');
+    button.addEventListener('click', () => {
       // TODO: Open modal to update asset
     });
   });
 
   // Handle dismiss button clicks
   document.querySelectorAll('[data-dismiss-reminder]').forEach((button) => {
-    button.addEventListener('click', (event) => {
-      const target = event.currentTarget as HTMLElement;
-      const assetId = target.getAttribute('data-asset-id');
+    button.addEventListener('click', () => {
       // TODO: Dismiss/snooze reminder
     });
   });

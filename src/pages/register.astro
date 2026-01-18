@@ -53,7 +53,7 @@ const cspNonce = Astro.locals.cspNonce || '';
   <RegistrationForm />
 </AuthLayout>
 
-<script define:vars={{ apiSignupUrl: '/api/auth/signup' }} nonce={cspNonce}>
+<script define:vars={{ apiSignupUrl: '/api/auth/signup' }} nonce={cspNonce} is:inline>
   // This script enhances the RegistrationForm with actual API calls
   document.addEventListener('DOMContentLoaded', () => {
     const form = document.querySelector('[data-registration-form]');

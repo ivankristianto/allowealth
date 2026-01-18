@@ -28,11 +28,9 @@
 /* eslint-disable no-console -- Console output is intentional for test progress feedback */
 
 import { describe, it, expect, beforeAll, beforeEach, afterEach } from 'bun:test';
-import { db, getDb, resetDb, type Database } from '@/db';
-import { users, categories, assets, transactions, paymentMethods } from '@/db/schema';
+import { db, getDb, resetDb } from '@/db';
+import { users, categories, assets, transactions } from '@/db/schema';
 import { eq } from 'drizzle-orm';
-import { existsSync, unlinkSync } from 'node:fs';
-import { join } from 'node:path';
 import { execSync } from 'node:child_process';
 
 // Test database path (use -test postfix for isolation)
@@ -119,7 +117,7 @@ async function simulateMiddlewareImport() {
  * Test helper: Create a test database with sample data
  */
 async function createTestDatabase() {
-  const testDb = await getDb();
+  const testDb = getDb();
 
   // Insert a test user
   const testUser = {
@@ -203,7 +201,7 @@ async function createTestDatabase() {
  * Silently handles cases where tables or data don't exist
  */
 async function cleanupTestData() {
-  const testDb = await getDb();
+  const testDb = getDb();
 
   // Delete in correct order due to foreign key constraints
   // Use try/catch for each deletion to handle missing data gracefully
@@ -356,7 +354,7 @@ describe('Database Runtime-Agnostic Integration Tests', () => {
     it('should initialize database with bun:sqlite in Bun runtime', async () => {
       // In Bun runtime, the database should use bun:sqlite driver
 
-      const databaseInstance = await getDb();
+      const databaseInstance = getDb();
 
       // Verify database instance exists
       expect(databaseInstance).toBeDefined();
@@ -371,9 +369,9 @@ describe('Database Runtime-Agnostic Integration Tests', () => {
     it('should return the same instance when calling getDb() multiple times', async () => {
       // getDb() should cache the database instance
 
-      const instance1 = await getDb();
-      const instance2 = await getDb();
-      const instance3 = await getDb();
+      const instance1 = getDb();
+      const instance2 = getDb();
+      const instance3 = getDb();
 
       // All instances should be the same (cached)
       expect(instance1).toBe(instance2);
@@ -397,7 +395,7 @@ describe('Database Runtime-Agnostic Integration Tests', () => {
       // Both access patterns should work with the same database
 
       const dbExportInstance = db;
-      const getDbInstance = await getDb();
+      const getDbInstance = getDb();
 
       // Both should have query interface
       expect(dbExportInstance.query).toBeDefined();
@@ -487,7 +485,6 @@ describe('Database Runtime-Agnostic Integration Tests', () => {
       const { testUser } = await createTestDatabase();
 
       // Create a category to delete
-      const { paymentMethods } = await import('@/db');
       await db.insert(categories).values({
         id: 'test-category-delete',
         user_id: testUser.id,
@@ -526,7 +523,7 @@ describe('Database Runtime-Agnostic Integration Tests', () => {
       // This test verifies that services can be imported and used
       // without triggering database initialization at module load time
 
-      const databaseInstance = await getDb();
+      const databaseInstance = getDb();
       const service = new DashboardService(databaseInstance);
 
       // Service should be able to use the database
@@ -629,7 +626,7 @@ describe('Database Runtime-Agnostic Integration Tests', () => {
     it('should maintain type safety with Database instance', async () => {
       // TypeScript types are not available at runtime, but we can verify
       // the runtime interface matches expectations
-      const databaseInstance = await getDb();
+      const databaseInstance = getDb();
 
       // Should have query interface
       expect(databaseInstance.query).toBeDefined();

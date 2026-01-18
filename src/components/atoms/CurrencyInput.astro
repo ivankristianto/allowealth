@@ -61,7 +61,7 @@ const errorId = `${name}-error`;
     aria-label="Currency"
   >
     {
-      Object.entries(currencyFormats).map(([code, config]) => (
+      Object.entries(currencyFormats).map(([code]) => (
         <option value={code} selected={code === currency}>
           {code}
         </option>

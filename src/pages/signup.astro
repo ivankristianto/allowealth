@@ -113,7 +113,7 @@ const cspNonce = Astro.locals.cspNonce || '';
   </div>
 </AuthLayout>
 
-<script define:vars={{ apiSignupUrl: '/api/auth/signup' }} nonce={cspNonce}>
+<script define:vars={{ apiSignupUrl: '/api/auth/signup' }} nonce={cspNonce} is:inline>
   document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('signup-form');
     const messagesContainer = document.getElementById('signup-messages');

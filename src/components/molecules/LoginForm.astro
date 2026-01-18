@@ -82,7 +82,7 @@ const cspNonce = Astro.locals.cspNonce || '';
   </div>
 </div>
 
-<script define:vars={{ redirectTo, apiLoginUrl: '/api/auth/login' }} nonce={cspNonce}>
+<script define:vars={{ redirectTo, apiLoginUrl: '/api/auth/login' }} nonce={cspNonce} is:inline>
   // HTML escaping utility to prevent XSS
   const escapeHtml = (text) => {
     const div = document.createElement('div');
