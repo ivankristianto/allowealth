@@ -1119,6 +1119,43 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  /api/budget/history:
+    get:
+      tags: [Budget]
+      summary: Get budget history
+      description: Retrieve budget history for multiple months with category breakdowns
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: currency
+          in: query
+          description: Currency (defaults to IDR)
+          schema:
+            type: string
+            enum: [IDR, USD]
+            default: IDR
+        - name: months
+          in: query
+          description: Number of months to retrieve (1-24, default 12)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 24
+            default: 12
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BudgetHistoryResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
   /api/budget/category/{id}/remaining:
     get:
       tags: [Budget]
@@ -1944,3 +1981,52 @@ components:
                 percentage:
                   type: number
                   format: float
+
+    BudgetHistoryResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          required: [success, data]
+          properties:
+            data:
+              type: array
+              items:
+                type: object
+                required: [month, year, month_name, total_budget, total_spent, total_balance, categories_count, categories_exceeded, categories_warning, percentage_used]
+                properties:
+                  month:
+                    type: integer
+                    minimum: 1
+                    maximum: 12
+                    description: Month number (1-12)
+                  year:
+                    type: integer
+                    description: Year
+                  month_name:
+                    type: string
+                    description: Full month name (e.g., "January")
+                  total_budget:
+                    type: string
+                    pattern: '^\d+(\.\d{1,2})?$'
+                    description: Total budget amount for the month
+                  total_spent:
+                    type: string
+                    pattern: '^\d+(\.\d{1,2})?$'
+                    description: Total spent amount for the month
+                  total_balance:
+                    type: string
+                    pattern: '^\d+(\.\d{1,2})?$'
+                    description: Remaining balance (total_budget - total_spent)
+                  categories_count:
+                    type: integer
+                    description: Number of active categories
+                  categories_exceeded:
+                    type: integer
+                    description: Number of categories that exceeded budget
+                  categories_warning:
+                    type: integer
+                    description: Number of categories approaching budget limit
+                  percentage_used:
+                    type: number
+                    format: float
+                    description: Percentage of total budget used (0-100+)
