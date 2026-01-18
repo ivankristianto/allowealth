@@ -1,5 +1,6 @@
 ---
 import MainLayout from '../../layouts/MainLayout.astro';
+import { patterns } from '@/lib/validation/patterns';
 
 const currentPath = '/settings';
 ---
@@ -24,7 +25,13 @@ const currentPath = '/settings';
 
           <div class="form-control">
             <label class="label"><span class="label-text">Email</span></label>
-            <input type="email" placeholder="your@email.com" class="input input-bordered" />
+            <input
+              type="email"
+              placeholder="your@email.com"
+              pattern={patterns.email.html}
+              title={patterns.email.title}
+              class="input input-bordered"
+            />
           </div>
 
           <div class="form-control">
