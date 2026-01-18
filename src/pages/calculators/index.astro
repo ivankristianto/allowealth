@@ -1,10 +1,10 @@
 ---
-import MainLayout from '../../layouts/MainLayout.astro';
+import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 
 const currentPath = '/calculators';
 ---
 
-<MainLayout title="Calculators - Finance Manager" currentPath={currentPath}>
+<ProtectedLayout title="Calculators - Finance Manager" currentPath={currentPath}>
   <div class="space-y-6">
     <h2 class="text-2xl font-bold">Calculators</h2>
 
@@ -34,4 +34,4 @@ const currentPath = '/calculators';
       </div>
     </div>
   </div>
-</MainLayout>
+</ProtectedLayout>

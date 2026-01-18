@@ -1,10 +1,10 @@
 ---
-import MainLayout from '../../layouts/MainLayout.astro';
+import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 
 const currentPath = '/assets';
 ---
 
-<MainLayout title="Assets - Finance Manager" currentPath={currentPath}>
+<ProtectedLayout title="Assets - Finance Manager" currentPath={currentPath}>
   <div class="space-y-6">
     <div class="flex justify-between items-center">
       <h2 class="text-2xl font-bold">Assets</h2>
@@ -28,4 +28,4 @@ const currentPath = '/assets';
       </div>
     </div>
   </div>
-</MainLayout>
+</ProtectedLayout>

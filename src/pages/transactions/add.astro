@@ -5,18 +5,11 @@
  * Page for adding a new transaction.
  */
 
-import MainLayout from '../../layouts/MainLayout.astro';
-import { requireAuth } from '@/lib/auth/requireAuth';
+import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import TransactionForm from '../../components/molecules/TransactionForm.astro';
 import { categoryService, paymentMethodService, budgetService } from '@/services';
 
-// Check authentication - redirect to login if not authenticated
-const redirectResponse = requireAuth(Astro);
-if (redirectResponse) {
-  return redirectResponse;
-}
-
-const user = Astro.locals.user;
+const user = Astro.locals.user!;
 const currentPath = '/transactions/add';
 
 // Fetch categories and payment methods from database (only active ones)
@@ -68,7 +61,7 @@ if (transactionType === 'expense' && formValues.category_id) {
 }
 ---
 
-<MainLayout title="Add Transaction - Finance Manager" currentPath={currentPath} user={user}>
+<ProtectedLayout title="Add Transaction - Finance Manager" currentPath={currentPath}>
   <div class="max-w-2xl">
     <div class="mb-6">
       <h2 class="text-2xl font-bold">Add Transaction</h2>
@@ -94,4 +87,4 @@ if (transactionType === 'expense' && formValues.category_id) {
       </div>
     </div>
   </div>
-</MainLayout>
+</ProtectedLayout>

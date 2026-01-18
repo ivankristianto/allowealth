@@ -1,11 +1,11 @@
 ---
-import MainLayout from '@layouts/MainLayout.astro';
+import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import { patterns } from '@/lib/validation/patterns';
 
 const currentPath = '/settings';
 ---
 
-<MainLayout title="Settings - Finance Manager" currentPath={currentPath}>
+<ProtectedLayout title="Settings - Finance Manager" currentPath={currentPath}>
   <div class="space-y-6">
     <h2 class="text-2xl font-bold">Settings</h2>
 
@@ -47,4 +47,4 @@ const currentPath = '/settings';
       </div>
     </div>
   </div>
-</MainLayout>
+</ProtectedLayout>

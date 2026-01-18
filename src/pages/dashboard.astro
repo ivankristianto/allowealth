@@ -14,8 +14,7 @@
  * - Quick actions
  */
 
-import MainLayout from '@/layouts/MainLayout.astro';
-import { requireAuth } from '@/lib/auth/requireAuth';
+import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import { dashboardService } from '@/services';
 import type { DashboardData } from '@/services/dashboard.service';
 import SummaryCards from '@/components/organisms/SummaryCards.astro';
@@ -26,15 +25,8 @@ import DashboardError from '@/components/organisms/DashboardError.astro';
 import type { AssetUpdateTodoItem } from '@/components/organisms/AssetUpdateTodoList.astro';
 import type { TransactionOutput } from '@/lib/types/transaction';
 
-// Check authentication - redirect to login if not authenticated
-const redirectResponse = requireAuth(Astro);
-if (redirectResponse) {
-  return redirectResponse;
-}
-
-// User is authenticated - get user data
-const user = Astro.locals.user;
 const currentPath = '/dashboard';
+const user = Astro.locals.user!;
 
 // Get current month and year
 const now = new Date();
@@ -118,7 +110,7 @@ const recentTransactions: TransactionOutput[] =
   })) || [];
 ---
 
-<MainLayout title="Dashboard - Finance Manager" currentPath={currentPath} user={user}>
+<ProtectedLayout title="Dashboard - Finance Manager" currentPath={currentPath}>
   <div class="space-y-6">
     <!-- Welcome Section -->
     <div class="card bg-base-100 shadow-lg border border-base-300">
@@ -177,7 +169,7 @@ const recentTransactions: TransactionOutput[] =
       )
     }
   </div>
-</MainLayout>
+</ProtectedLayout>
 
 <style>
   /* Ensure smooth loading transitions */

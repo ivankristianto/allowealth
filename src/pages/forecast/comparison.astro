@@ -1,10 +1,10 @@
 ---
-import MainLayout from '../../layouts/MainLayout.astro';
+import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 
 const currentPath = '/forecast/comparison';
 ---
 
-<MainLayout title="Forecast Comparison - Finance Manager" currentPath={currentPath}>
+<ProtectedLayout title="Forecast Comparison - Finance Manager" currentPath={currentPath}>
   <div class="space-y-6">
     <h2 class="text-2xl font-bold">Forecast Comparison</h2>
 
@@ -19,4 +19,4 @@ const currentPath = '/forecast/comparison';
       </div>
     </div>
   </div>
-</MainLayout>
+</ProtectedLayout>

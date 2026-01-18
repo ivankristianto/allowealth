@@ -1,0 +1,47 @@
+---
+/**
+ * Protected Layout
+ *
+ * Protected route layout that handles authentication checks before rendering.
+ * Wraps MainLayout with automatic authentication enforcement.
+ *
+ * Usage:
+ * ```astro
+ * ---
+ * import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
+ * ---
+ * <ProtectedLayout title="My Page" currentPath="/my-page">
+ *   <YourContent />
+ * </ProtectedLayout>
+ * ```
+ *
+ * Features:
+ * - Automatically redirects to /login if user is not authenticated
+ * - Preserves return URL in query parameter for post-login redirect
+ * - Passes authenticated user to MainLayout
+ * - No boilerplate needed in individual pages
+ */
+
+import MainLayout from './MainLayout.astro';
+import { requireAuth } from '@/lib/auth/requireAuth';
+
+interface Props {
+  title?: string;
+  currentPath?: string;
+}
+
+const { title = 'Finance Manager', currentPath = '/' } = Astro.props;
+
+// Check authentication - redirect to login if not authenticated
+const redirectResponse = requireAuth(Astro);
+if (redirectResponse) {
+  return redirectResponse;
+}
+
+// User is authenticated - get user data
+const user = Astro.locals.user;
+---
+
+<MainLayout title={title} currentPath={currentPath} user={user}>
+  <slot />
+</MainLayout>

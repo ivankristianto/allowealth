@@ -7,22 +7,14 @@
  * Protected by authentication.
  */
 
-import MainLayout from '../../layouts/MainLayout.astro';
-import { requireAuth } from '@/lib/auth/requireAuth';
+import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import BudgetOverviewTable from '../../components/organisms/BudgetOverviewTable.astro';
 import { budgetService, type BudgetSummary } from '@/services';
 import Icon from '../../components/atoms/Icon.astro';
 import Badge from '../../components/atoms/Badge.astro';
 import { formatCurrency } from '@/lib/tokens';
 
-// Check authentication - redirect to login if not authenticated
-const redirectResponse = requireAuth(Astro);
-if (redirectResponse) {
-  return redirectResponse;
-}
-
-// User is authenticated - get user data
-const user = Astro.locals.user;
+const user = Astro.locals.user!;
 const currentPath = '/budget';
 
 // Get query parameters for month/year selection
@@ -141,11 +133,7 @@ const allCategories = await categoryService.findAll(user!.id, { is_active: true 
 const expenseCategories = allCategories.filter((c) => c.type === 'expense');
 ---
 
-<MainLayout
-  title={`Budget - ${currentMonthName} ${selectedYear}`}
-  currentPath={currentPath}
-  user={user}
->
+<ProtectedLayout title={`Budget - ${currentMonthName} ${selectedYear}`} currentPath={currentPath}>
   <div
     class="space-y-6"
     data-budget-container
@@ -385,7 +373,7 @@ const expenseCategories = allCategories.filter((c) => c.type === 'expense');
       </a>
     </div>
   </div>
-</MainLayout>
+</ProtectedLayout>
 
 <!-- Quick Edit Budget Modal -->
 <dialog id="quick-edit-budget-modal" class="modal">

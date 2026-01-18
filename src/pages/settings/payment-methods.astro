@@ -6,19 +6,12 @@
  * Supports create, edit, deactivate (soft delete), and list with filtering.
  */
 
-import MainLayout from '@layouts/MainLayout.astro';
-import { requireAuth } from '@/lib/auth/requireAuth';
+import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import { paymentMethodService } from '@/services';
 import Icon from '@components/atoms/Icon.astro';
 import Badge from '@components/atoms/Badge.astro';
 
-// Check authentication
-const redirectResponse = requireAuth(Astro);
-if (redirectResponse) {
-  return redirectResponse;
-}
-
-const user = Astro.locals.user;
+const user = Astro.locals.user!;
 const currentPath = '/settings/payment-methods';
 
 // Fetch all payment methods (both active and inactive)
@@ -62,7 +55,7 @@ const getTypeIcon = (type: string) => {
 };
 ---
 
-<MainLayout title="Payment Methods - Settings" currentPath={currentPath} user={user}>
+<ProtectedLayout title="Payment Methods - Settings" currentPath={currentPath}>
   <div class="space-y-6" data-methods-container data-methods={JSON.stringify(allMethods)}>
     <div class="flex justify-between items-center">
       <div>
@@ -187,7 +180,7 @@ const getTypeIcon = (type: string) => {
       </div>
     </div>
   </div>
-</MainLayout>
+</ProtectedLayout>
 
 <!-- Add/Edit Payment Method Modal -->
 <dialog id="method-modal" class="modal">

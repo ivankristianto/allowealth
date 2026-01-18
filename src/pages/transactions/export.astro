@@ -6,19 +6,12 @@
  * Wires to real API endpoint for export.
  */
 
-import MainLayout from '../../layouts/MainLayout.astro';
-import { requireAuth } from '@/lib/auth/requireAuth';
+import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import TransactionFilters from '../../components/molecules/TransactionFilters.astro';
 import Icon from '../../components/atoms/Icon.astro';
 import { categoryService, paymentMethodService } from '@/services';
 
-// Check authentication
-const redirectResponse = requireAuth(Astro);
-if (redirectResponse) {
-  return redirectResponse;
-}
-
-const user = Astro.locals.user;
+const user = Astro.locals.user!;
 const currentPath = '/transactions/export';
 
 // Fetch categories and payment methods for filters
@@ -49,7 +42,7 @@ const buildExportUrl = () => {
 const exportUrl = buildExportUrl();
 ---
 
-<MainLayout title="Export Transactions - Finance Manager" currentPath={currentPath} user={user}>
+<ProtectedLayout title="Export Transactions - Finance Manager" currentPath={currentPath}>
   <div class="max-w-4xl">
     <div class="mb-6">
       <h2 class="text-2xl font-bold">Export Transactions to CSV</h2>
@@ -105,4 +98,4 @@ const exportUrl = buildExportUrl();
       </div>
     </div>
   </div>
-</MainLayout>
+</ProtectedLayout>

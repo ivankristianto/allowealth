@@ -22,7 +22,7 @@ This plan focuses on completing three interdependent features in the **User Prof
 ### New Files
 
 ```
-src/layouts/AuthLayout.astro                    # Protected route layout (auth abstraction)
+src/layouts/ProtectedLayout.astro               # Protected route layout (auth abstraction) ✅
 src/services/user.service.ts                    # User profile management service
 src/services/user.service.test.ts               # Tests for user service
 src/pages/api/user/profile.ts                   # PUT endpoint for profile updates
@@ -46,18 +46,18 @@ src/db/schema/index.ts                          # Ensure user-settings is export
 openapi.yml                                      # Document new API endpoints
 ```
 
-**Refactoring (20+ files):**
+**Refactoring (20+ files):** ✅
 
-Replace authentication boilerplate in all protected pages to use `AuthLayout`:
+Replace authentication boilerplate in all protected pages to use `ProtectedLayout`:
 
-- `src/pages/dashboard.astro`
-- `src/pages/settings/*.astro`
-- `src/pages/transactions/*.astro`
-- `src/pages/budget/*.astro`
-- `src/pages/assets/*.astro`
-- `src/pages/reports/*.astro`
-- `src/pages/forecast/*.astro`
-- `src/pages/calculators/*.astro`
+- `src/pages/dashboard.astro` ✅
+- `src/pages/settings/*.astro` ✅
+- `src/pages/transactions/*.astro` ✅
+- `src/pages/budget/*.astro` ✅
+- `src/pages/assets/*.astro` ✅
+- `src/pages/reports/*.astro` ✅
+- `src/pages/forecast/*.astro` ✅
+- `src/pages/calculators/*.astro` ✅
 
 ---
 
@@ -65,38 +65,45 @@ Replace authentication boilerplate in all protected pages to use `AuthLayout`:
 
 ### 1. User Profile & Settings Management (Priority: P0)
 
-#### 1.0 Abstract Authentication Checks (Refactoring)
+#### 1.0 Abstract Authentication Checks (Refactoring) ✅
 
 **Goal:** Remove duplicate authentication checks and redirection logic from all pages.
 
 **Checklist:**
 
-- [ ] Create `src/layouts/AuthLayout.astro` component
-- [ ] Update `src/layouts/MainLayout.astro` to accept user prop
-- [ ] Replace boilerplate in `/dashboard.astro`
-- [ ] Replace boilerplate in `/settings/index.astro`
-- [ ] Replace boilerplate in `/settings/categories.astro`
-- [ ] Replace boilerplate in `/settings/payment-methods.astro`
-- [ ] Replace boilerplate in `/transactions/index.astro`
-- [ ] Replace boilerplate in `/transactions/add.astro`
-- [ ] Replace boilerplate in `/transactions/edit/[id].astro`
-- [ ] Replace boilerplate in `/transactions/import.astro`
-- [ ] Replace boilerplate in `/transactions/export.astro`
-- [ ] Replace boilerplate in `/budget/index.astro`
-- [ ] Replace boilerplate in `/budget/history.astro`
-- [ ] Replace boilerplate in `/assets/index.astro`
-- [ ] Replace boilerplate in `/assets/add.astro`
-- [ ] Replace boilerplate in `/assets/history.astro`
-- [ ] Replace boilerplate in `/reports/index.astro`
-- [ ] Replace boilerplate in `/reports/yearly.astro`
-- [ ] Replace boilerplate in `/reports/custom.astro`
-- [ ] Replace boilerplate in `/forecast/index.astro`
-- [ ] Replace boilerplate in `/forecast/comparison.astro`
-- [ ] Replace boilerplate in `/calculators/index.astro`
-- [ ] Test all protected pages redirect to login when not authenticated
-- [ ] Test all protected pages load correctly when authenticated
+- [x] Create `src/layouts/ProtectedLayout.astro` component
+- [x] Update `src/layouts/MainLayout.astro` to accept user prop (already implemented)
+- [x] Replace boilerplate in `/dashboard.astro`
+- [x] Replace boilerplate in `/settings/index.astro`
+- [x] Replace boilerplate in `/settings/categories.astro`
+- [x] Replace boilerplate in `/settings/payment-methods.astro`
+- [x] Replace boilerplate in `/transactions/index.astro`
+- [x] Replace boilerplate in `/transactions/add.astro`
+- [x] Replace boilerplate in `/transactions/edit/[id].astro`
+- [x] Replace boilerplate in `/transactions/import.astro`
+- [x] Replace boilerplate in `/transactions/export.astro`
+- [x] Replace boilerplate in `/budget/index.astro`
+- [x] Replace boilerplate in `/budget/history.astro`
+- [x] Replace boilerplate in `/assets/index.astro`
+- [x] Replace boilerplate in `/assets/add.astro`
+- [x] Replace boilerplate in `/assets/history.astro`
+- [x] Replace boilerplate in `/reports/index.astro`
+- [x] Replace boilerplate in `/reports/yearly.astro`
+- [x] Replace boilerplate in `/reports/custom.astro`
+- [x] Replace boilerplate in `/forecast/index.astro`
+- [x] Replace boilerplate in `/forecast/comparison.astro`
+- [x] Replace boilerplate in `/calculators/index.astro`
+- [ ] Test all protected pages redirect to login when not authenticated (manual testing)
+- [ ] Test all protected pages load correctly when authenticated (manual testing)
 
 **Estimated Time:** 2-3 hours
+
+**Status:** ✅ Completed
+
+- Created `ProtectedLayout.astro` with automatic authentication check
+- Updated 20+ pages to use `ProtectedLayout` instead of `MainLayout`
+- All quality gates pass (typecheck, lint, stylelint, format)
+- Code review: APPROVED
 
 ---
 

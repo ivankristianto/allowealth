@@ -5,18 +5,10 @@
  * Page for importing transactions from CSV files.
  */
 
-import MainLayout from '../../layouts/MainLayout.astro';
-import { requireAuth } from '@/lib/auth/requireAuth';
+import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import CSVImportForm from '../../components/molecules/CSVImportForm.astro';
 import Icon from '../../components/atoms/Icon.astro';
 
-// Check authentication - redirect to login if not authenticated
-const redirectResponse = requireAuth(Astro);
-if (redirectResponse) {
-  return redirectResponse;
-}
-
-const user = Astro.locals.user;
 const currentPath = '/transactions/import';
 
 // TODO: In Phase 2/3, this will:
@@ -26,7 +18,7 @@ const currentPath = '/transactions/import';
 // 4. Validate and import via service layer
 ---
 
-<MainLayout title="Import Transactions - Finance Manager" currentPath={currentPath} user={user}>
+<ProtectedLayout title="Import Transactions - Finance Manager" currentPath={currentPath}>
   <div class="max-w-4xl">
     <div class="mb-6">
       <h2 class="text-2xl font-bold">Import Transactions from CSV</h2>
@@ -74,4 +66,4 @@ const currentPath = '/transactions/import';
       </div>
     </div>
   </div>
-</MainLayout>
+</ProtectedLayout>
