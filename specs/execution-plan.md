@@ -45,6 +45,96 @@ This execution plan outlines a **UI/UX-first development approach** for building
 
 ---
 
+## Current Progress Status
+
+**Last Updated:** January 18, 2026
+
+### Overall Progress: ~60% Complete
+
+| Phase                            | Status         | Completion | Notes                                                 |
+| -------------------------------- | -------------- | ---------- | ----------------------------------------------------- |
+| Phase 0: Design System & Setup   | ✅ Complete    | 100%       | All atomic components, layouts, routing done          |
+| Phase 1: Auth & Dashboard        | ✅ Complete    | 95%        | Dashboard fully wired to service, tests pending       |
+| Phase 2: Transactions & Budget   | 🚧 In Progress | 85%        | Core features working, budget edit modal needs wiring |
+| Phase 3: Assets & Multi-Currency | 🚧 In Progress | 60%        | Services done, pages need UI wiring                   |
+| Phase 4: Analytics & Reports     | ❌ Not Started | 10%        | Schema done, no charts/reports implemented            |
+| Phase 5: Calculators & Polish    | ❌ Not Started | 0%         | No work started                                       |
+
+### What's Working ✅
+
+**User Management:**
+
+- User registration, login, logout
+- Password reset flow
+- Session management with Lucia Auth
+
+**Dashboard:**
+
+- Total assets display (IDR + USD with conversion)
+- Monthly spending vs budget
+- Budget health alerts
+- Asset update reminders with priority indicators
+- Recent transactions list
+
+**Transactions:**
+
+- Add/edit/delete transactions
+- Transaction list with filters (type, category, payment method, currency, date range, search)
+- Pagination
+- CSV export
+- Budget remaining display on add form
+
+**Budget:**
+
+- Budget overview table with all categories
+- Month navigation
+- Currency switching (IDR/USD)
+- Budget alerts (warning at 80%, exceeded at 100%)
+- Budget history view
+- CSV export
+- Budget edit modal (UI only, needs API wiring)
+
+**Categories & Payment Methods:**
+
+- Full CRUD operations
+- Management pages at /settings/categories and /settings/payment-methods
+
+### What Needs Work 🔧
+
+**High Priority (P0):**
+
+- User settings page - form exists but not wired to backend
+- User profile update - no service for updating name/email
+- Password change - no endpoint for changing password
+- Budget edit modal - UI exists but not connected to API
+- Primary currency setting - not accessible from UI
+
+**Medium Priority (P1):**
+
+- Asset management pages - service exists but no UI
+- Exchange rate management page - not implemented
+- CSV import - UI exists but not fully wired
+
+**Low Priority (P2):**
+
+- Charts and visualizations
+- Reports pages (monthly/yearly/custom)
+- Forecast calculator
+- Compound interest calculator
+- Unit tests across all services
+
+### Next Steps
+
+Based on the implementation plan in `specs/implementation_plan_tasks.md`:
+
+1. **User Profile & Settings Management** - Wire up settings page, create user service
+2. **Budget Edit Integration** - Connect budget edit modal to API
+3. **Transaction Form UX** - Add "remember last used" feature
+
+See `specs/implementation_plan_tasks.md` for detailed task breakdown.
+
+---
+
 ## Development Approach
 
 ### UI/UX-First Methodology
@@ -188,7 +278,7 @@ We do:
 
 ---
 
-### Phase 1: Authentication & Dashboard (Week 3-4) 🚧 **80% COMPLETE**
+### Phase 1: Authentication & Dashboard (Week 3-4) ✅ **95% COMPLETE**
 
 **Goal:** Create functional authentication and dashboard homepage
 
@@ -197,8 +287,10 @@ We do:
 - ✅ Authentication system fully functional (login, register, password reset)
 - ✅ Database schema complete (users, sessions, password-reset-tokens)
 - ✅ Auth UI components complete with validation
-- 🚧 Dashboard UI components complete, needs data integration
-- ❌ Dashboard service needs real data implementation
+- ✅ Dashboard UI components complete with Storybook stories
+- ✅ Dashboard service fully implemented with aggregate queries
+- ✅ Dashboard page fully wired to service
+- ❌ Unit tests for dashboard service pending
 
 #### Week 3: Authentication UI & Logic ✅ **COMPLETE**
 
@@ -228,7 +320,7 @@ We do:
 - [x] Session management
 - [ ] Write unit tests for auth
 
-#### Week 4: Dashboard Design & Implementation 🚧 **IN PROGRESS**
+#### Week 4: Dashboard Design & Implementation ✅ **COMPLETE**
 
 **Day 1-2: Dashboard UI Components** ✅
 
@@ -239,43 +331,52 @@ We do:
 - [x] Budget health widget
 - [x] All components in Storybook with mock data
 
-**Day 3: Dashboard Data Layer** 🚧
+**Day 3: Dashboard Data Layer** ✅
 
 - [x] Create dashboard service
-- [ ] Implement aggregate queries for summaries (total assets, monthly spent)
-- [ ] Mock data generators for testing
+- [x] Implement aggregate queries for summaries (total assets, monthly spent)
+- [x] Implement budget health queries with alerts
+- [x] Implement asset update reminder calculations
+- [x] Implement recent transactions query
+- [x] Mock data generators for testing
 - [ ] Unit tests for calculations
 
-**Day 4-5: Dashboard Integration** 🚧
+**Day 4-5: Dashboard Integration** ✅
 
-- [ ] Connect components to real data
+- [x] Connect components to real data
 - [x] Implement dashboard page (with auth protection)
 - [x] Add loading states
-- [x] Error handling
+- [x] Error handling with error boundary
+- [x] Transform service data to component formats
+- [x] Add responsive layout
 - [ ] User testing & refinement
 
 **Deliverables:**
 
 - ✅ Working authentication system
-- 🚧 Dashboard UI complete, needs real data integration
+- ✅ Dashboard fully functional with real data
 - ✅ All components documented in Storybook
 - ❌ Unit tests pending
 
 ---
 
-### Phase 2: Transactions & Budget (Week 5-6) 🚧 **20% COMPLETE**
+### Phase 2: Transactions & Budget (Week 5-6) 🚧 **85% COMPLETE**
 
 **Goal:** Enable daily transaction entry and budget tracking
 
 **Status:**
 
 - ✅ Database schema complete (categories, payment-methods, transactions)
-- ✅ Transaction UI components exist (form, list items)
-- ✅ API endpoints stubbed
-- ❌ Transaction service CRUD needs implementation
-- ❌ Budget management not started
+- ✅ TransactionService fully implemented (CRUD + CSV import/export)
+- ✅ Transaction pages fully wired (list, add, edit)
+- ✅ BudgetService fully implemented with all calculations
+- ✅ Budget overview page fully wired with alerts
+- ✅ API endpoints implemented (transactions, budget, categories, payment-methods)
+- ❌ Budget edit modal not wired to API
+- ❌ CSV import page not fully implemented
+- ❌ Unit tests for transaction/budget services pending
 
-#### Week 5: Transaction Management 🚧 **STARTED**
+#### Week 5: Transaction Management ✅ **COMPLETE**
 
 **Day 1-2: Transaction UI Components** ✅
 
@@ -284,9 +385,9 @@ We do:
   - Validation states
   - Success/error feedback
 - [x] Transaction list item component
-- [ ] Transaction filter component
-- [ ] Pagination component
-- [ ] CSV upload component
+- [x] Transaction filter component
+- [x] Pagination component (in TransactionList)
+- [x] TransactionForm molecule component
 
 **Day 3: Transaction Data Layer** ✅
 
@@ -294,67 +395,84 @@ We do:
 - [x] Payment methods table schema
 - [x] Transactions table schema
 - [x] Run migrations
-- [ ] Create service methods (CRUD)
+- [x] TransactionService CRUD methods fully implemented
+- [x] TransactionService.findAll with filters
+- [x] TransactionService.count for pagination
+- [x] TransactionService.importFromCSV
+- [x] TransactionService.exportToCSV
 - [ ] Unit tests
 
-**Day 4-5: Transaction Features** 🚧
+**Day 4-5: Transaction Features** ✅
 
-- [ ] Category management page
-- [ ] Payment method management page
-- [x] Add transaction page/modal (UI only)
-- [ ] Transaction list page with filters
-- [ ] Edit/delete transaction
-- [ ] CSV import functionality
+- [x] Category management page (settings/categories)
+- [x] Payment method management page (settings/payment-methods)
+- [x] Add transaction page with budget display
+- [x] Transaction list page with filters
+- [x] Edit transaction page
+- [x] CSV export page wired to API
+- [ ] CSV import page (UI exists, needs API wiring)
 
-#### Week 6: Budget Management ❌ **NOT STARTED**
+#### Week 6: Budget Management 🚧 **90% COMPLETE**
 
-**Day 1-2: Budget Table UI**
+**Day 1-2: Budget Table UI** ✅
 
-- [ ] Budget overview table component (Storybook)
+- [x] Budget overview table component (BudgetOverviewTable)
   - Replicate screenshot layout
-  - Color-coded rows
+  - Color-coded rows (ok/warning/exceeded)
   - Alert badges
   - Responsive design
-- [ ] Budget alert component
-- [ ] Category edit inline component
+  - Sortable columns
+- [x] Budget alert component (in budget page)
+- [x] Category edit modal (quick-edit-budget-modal)
 
-**Day 3: Budget Logic**
+**Day 3: Budget Logic** ✅
 
-- [ ] Budget calculation service
-- [ ] Alert detection logic (80%, 100%, total > 100%)
-- [ ] Budget aggregation queries
+- [x] BudgetService calculation methods
+- [x] Alert detection logic (80%, 100%, total > 100%)
+- [x] Budget aggregation queries (getMonthlyOverview)
+- [x] Category remaining calculation (getCategoryRemaining)
+- [x] Budget history queries (getBudgetHistory)
+- [x] Budget export to CSV
 - [ ] Unit tests for calculations
 
-**Day 4-5: Budget Pages**
+**Day 4-5: Budget Pages** ✅
 
-- [ ] Budget overview page
-- [ ] Edit category budgets
-- [ ] Budget alert notifications
-- [ ] Historical budget view (previous months)
+- [x] Budget overview page with currency selector
+- [x] Month navigation (previous/next)
+- [x] Budget alerts display section
+- [x] Budget overview table with sorting
+- [x] Historical budget view (budget/history page)
+- [ ] Edit category budgets (modal exists, needs API wiring)
 - [ ] User testing & refinement
 
 **Deliverables:**
 
-- 🚧 Transaction UI components complete
-- ❌ Transaction CRUD service incomplete
-- ❌ Budget overview not started
+- ✅ Transaction pages fully functional
+- ✅ Transaction CRUD service complete
+- ✅ Budget overview page fully functional
+- ✅ Budget calculations working
+- ❌ Budget edit modal needs API wiring
 - ❌ CSV import not working
 
 ---
 
-### Phase 3: Assets & Multi-Currency (Week 7-8) 🚧 **20% COMPLETE**
+### Phase 3: Assets & Multi-Currency (Week 7-8) 🚧 **60% COMPLETE**
 
 **Goal:** Track assets across currencies with update reminders
 
 **Status:**
 
 - ✅ Database schema complete (assets, asset-history, asset-update-reminders, exchange-rates, user-settings)
-- ✅ Asset update todo list UI component exists (for dashboard)
-- ✅ API endpoints stubbed
-- ❌ Asset service CRUD needs implementation
-- ❌ Multi-currency features not implemented
+- ✅ AssetService fully implemented (CRUD, history, update tracking)
+- ✅ Asset API endpoints implemented
+- ✅ Asset update todo list UI component (for dashboard)
+- ✅ Exchange rate conversion utility functions
+- ✅ Multi-currency support in dashboard (IDR/USD)
+- ❌ Asset management pages not implemented
+- ❌ Exchange rate management page not implemented
+- ❌ User settings not accessible from UI
 
-#### Week 7: Asset Management 🚧 **SCHEMA COMPLETE**
+#### Week 7: Asset Management 🚧 **60% COMPLETE**
 
 **Day 1-2: Asset UI Components** 🚧
 
@@ -371,20 +489,21 @@ We do:
 - [x] Asset history table schema
 - [x] Asset update reminders table schema
 - [x] Run migrations
-- [ ] Asset service methods
-- [ ] Reminder calculation logic
+- [x] AssetService CRUD methods
+- [x] Asset history tracking
+- [x] Update reminder calculations
 - [ ] Unit tests
 
-**Day 4-5: Asset Features** ❌
+**Day 4-5: Asset Features** 🚧
 
-- [ ] Asset list page (grouped views)
+- [x] Asset list page (exists, needs data wiring)
 - [ ] Add/edit asset functionality
 - [ ] Update asset balance (creates history)
 - [ ] Asset history view (chart + table)
-- [ ] Update todo list widget (functional)
+- [x] Update todo list widget (functional in dashboard)
 - [ ] Reminder frequency settings
 
-#### Week 8: Multi-Currency & Exchange Rates 🚧 **SCHEMA COMPLETE**
+#### Week 8: Multi-Currency & Exchange Rates 🚧 **50% COMPLETE**
 
 **Day 1-2: Currency UI Components**
 
@@ -398,38 +517,40 @@ We do:
 - [x] Exchange rates table schema
 - [x] User settings table schema
 - [x] Run migrations
-- [ ] Exchange rate service
-- [ ] Currency conversion logic
+- [x] Currency conversion utility functions
+- [x] Exchange rate service methods (getLatestExchangeRate)
 - [ ] Unit tests
 
-**Day 4-5: Currency Features** ❌
+**Day 4-5: Currency Features** 🚧
 
 - [ ] Exchange rate management page
-- [ ] Primary currency setting
-- [ ] Dashboard with multi-currency totals
-- [ ] Converted total calculation
+- [ ] Primary currency setting (user service needed)
+- [x] Dashboard with multi-currency totals (IDR/USD)
+- [x] Converted total calculation
 - [ ] Currency display preferences
 - [ ] User testing & refinement
 
 **Deliverables:**
 
-- ❌ Complete asset management system
-- ❌ Multi-currency support working
-- ❌ Update reminders functional
-- ❌ Asset history tracking
+- 🚧 Asset service complete, pages need wiring
+- ✅ Multi-currency support working in dashboard
+- ✅ Update reminders functional
+- ✅ Asset history tracking service implemented
 
 ---
 
-### Phase 4: Analytics & Reports (Week 9-10) 🚧 **5% COMPLETE**
+### Phase 4: Analytics & Reports (Week 9-10) 🚧 **10% COMPLETE**
 
 **Goal:** Visualize financial data with charts and reports
 
 **Status:**
 
 - ✅ Asset snapshots database schema complete
+- ✅ BudgetService includes CSV export functionality
+- ✅ TransactionService includes CSV export functionality
 - ❌ No chart components implemented
-- ❌ No reporting service
-- ❌ No forecast functionality
+- ❌ No dedicated reporting service
+- ❌ Forecast functionality not started
 
 #### Week 9: Charts & Visualizations ❌ **NOT STARTED**
 
@@ -465,7 +586,7 @@ We do:
   - Year-over-year comparison
 - [ ] Custom date range report
 
-#### Week 10: Financial Forecast 🚧 **SCHEMA COMPLETE**
+#### Week 10: Financial Forecast 🚧 **10% COMPLETE**
 
 **Day 1-2: Forecast UI Components**
 
@@ -494,10 +615,10 @@ We do:
 
 **Deliverables:**
 
-- ❌ Complete reporting system
-- ❌ All charts working and responsive
-- ❌ Financial forecast functionality
-- ❌ Snapshot tracking
+- ✅ Budget and transaction CSV export working
+- ❌ Charts not implemented
+- ❌ Financial forecast functionality not started
+- ❌ Snapshot tracking not implemented
 
 ---
 
@@ -526,10 +647,10 @@ We do:
 **Day 4-5: Final Features**
 
 - [ ] Compound interest calculator page
-- [ ] CSV export functionality
-- [ ] User settings page
-- [ ] Profile management
-- [ ] Password change
+- [x] CSV export functionality (transactions, budgets)
+- [ ] User settings page (needs wiring)
+- [ ] Profile management (needs user service)
+- [ ] Password change (needs user service)
 - [ ] Data export/backup
 
 #### Week 12: Polish & Testing ❌
