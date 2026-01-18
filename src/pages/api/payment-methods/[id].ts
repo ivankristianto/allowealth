@@ -49,7 +49,12 @@ export const PUT: APIRoute = async ({ params, request, url }) => {
     const validation = await validateBody(request, updatePaymentMethodAPISchema);
 
     if (!validation.success) {
-      return errorResponse('Validation failed', 400, 'VALIDATION_ERROR', validation.error.issues);
+      return errorResponse(
+        'Validation failed',
+        400,
+        'VALIDATION_ERROR',
+        (validation as any).error.issues
+      );
     }
 
     const paymentMethod = await paymentMethodService.update(id, userId, validation.data);

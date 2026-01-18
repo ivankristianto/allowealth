@@ -102,12 +102,10 @@ export interface IDatabase {
         groupBy: (column: any) => Promise<any[]>;
         orderBy: (config: any) => Promise<any[]>;
       };
-      where: (condition: any) => Promise<any[]>;
       groupBy: (column: any) => {
         where: (condition: any) => Promise<any[]>;
       };
     };
-    from: (table: any) => Promise<any[]>;
   };
 
   /**

@@ -42,7 +42,12 @@ export const POST: APIRoute = async ({ request, url }) => {
     const validation = await validateBody(request, createPaymentMethodAPISchema);
 
     if (!validation.success) {
-      return errorResponse('Validation failed', 400, 'VALIDATION_ERROR', validation.error.issues);
+      return errorResponse(
+        'Validation failed',
+        400,
+        'VALIDATION_ERROR',
+        (validation as any).error.issues
+      );
     }
 
     const paymentMethod = await paymentMethodService.create({

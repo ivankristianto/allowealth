@@ -49,7 +49,12 @@ export const PUT: APIRoute = async ({ params, request, url }) => {
     const validation = await validateBody(request, updateCategoryAPISchema);
 
     if (!validation.success) {
-      return errorResponse('Validation failed', 400, 'VALIDATION_ERROR', validation.error.issues);
+      return errorResponse(
+        'Validation failed',
+        400,
+        'VALIDATION_ERROR',
+        (validation as any).error.issues
+      );
     }
 
     // Check if name is being updated and if it conflicts

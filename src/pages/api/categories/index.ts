@@ -46,7 +46,12 @@ export const POST: APIRoute = async ({ request, url }) => {
     const validation = await validateBody(request, createCategoryAPISchema);
 
     if (!validation.success) {
-      return errorResponse('Validation failed', 400, 'VALIDATION_ERROR', validation.error.issues);
+      return errorResponse(
+        'Validation failed',
+        400,
+        'VALIDATION_ERROR',
+        (validation as any).error.issues
+      );
     }
 
     // Check if category name already exists

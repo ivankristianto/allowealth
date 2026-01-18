@@ -61,12 +61,12 @@ const EXPECTED = {
   monthlySalary: 20000000,
 };
 
-describe.skip('DashboardService Integration Tests', () => {
+describe('DashboardService Integration Tests', () => {
   let dashboardService: DashboardService;
   let testUserId: string;
 
   beforeAll(async () => {
-    dashboardService = new DashboardService();
+    dashboardService = new DashboardService(db);
 
     // Get the test user from database
     const user = await db.query.users.findFirst({

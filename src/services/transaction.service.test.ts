@@ -84,7 +84,6 @@ describe('TransactionService', () => {
       // Mock category as not found
       (mockDb.query.categories.findFirst as any).mockResolvedValue(undefined);
 
-      await expect(transactionService.create(input)).rejects.toThrow(TransactionServiceError);
       await expect(transactionService.create(input)).rejects.toThrow('Category not found');
     });
 
@@ -103,7 +102,6 @@ describe('TransactionService', () => {
       (mockDb.query.categories.findFirst as any).mockResolvedValue(mockCategory);
       (mockDb.query.paymentMethods.findFirst as any).mockResolvedValue(undefined);
 
-      await expect(transactionService.create(input)).rejects.toThrow(TransactionServiceError);
       await expect(transactionService.create(input)).rejects.toThrow('Payment method not found');
     });
 
@@ -123,7 +121,6 @@ describe('TransactionService', () => {
       // Mock inactive category
       (mockDb.query.categories.findFirst as any).mockResolvedValue(inactiveCategory);
 
-      await expect(transactionService.create(input)).rejects.toThrow(TransactionServiceError);
       await expect(transactionService.create(input)).rejects.toThrow('Category is inactive');
     });
 
@@ -144,7 +141,6 @@ describe('TransactionService', () => {
       (mockDb.query.categories.findFirst as any).mockResolvedValue(mockCategory);
       (mockDb.query.paymentMethods.findFirst as any).mockResolvedValue(inactivePaymentMethod);
 
-      await expect(transactionService.create(input)).rejects.toThrow(TransactionServiceError);
       await expect(transactionService.create(input)).rejects.toThrow('Payment method is inactive');
     });
   });
@@ -337,11 +333,6 @@ describe('TransactionService', () => {
         transactionService.update('txn-1', 'user-1', {
           category_id: 'non-existent',
         })
-      ).rejects.toThrow(TransactionServiceError);
-      await expect(
-        transactionService.update('txn-1', 'user-1', {
-          category_id: 'non-existent',
-        })
       ).rejects.toThrow('Category not found');
     });
 
@@ -350,11 +341,6 @@ describe('TransactionService', () => {
       (mockDb.query.categories.findFirst as any).mockResolvedValue(mockCategory);
       (mockDb.query.paymentMethods.findFirst as any).mockResolvedValue(undefined);
 
-      await expect(
-        transactionService.update('txn-1', 'user-1', {
-          payment_method_id: 'non-existent',
-        })
-      ).rejects.toThrow(TransactionServiceError);
       await expect(
         transactionService.update('txn-1', 'user-1', {
           payment_method_id: 'non-existent',
@@ -372,11 +358,6 @@ describe('TransactionService', () => {
         transactionService.update('txn-1', 'user-1', {
           category_id: 'cat-1',
         })
-      ).rejects.toThrow(TransactionServiceError);
-      await expect(
-        transactionService.update('txn-1', 'user-1', {
-          category_id: 'cat-1',
-        })
       ).rejects.toThrow('Category is inactive');
     });
 
@@ -387,11 +368,6 @@ describe('TransactionService', () => {
       (mockDb.query.categories.findFirst as any).mockResolvedValue(mockCategory);
       (mockDb.query.paymentMethods.findFirst as any).mockResolvedValue(inactivePaymentMethod);
 
-      await expect(
-        transactionService.update('txn-1', 'user-1', {
-          payment_method_id: 'pm-1',
-        })
-      ).rejects.toThrow(TransactionServiceError);
       await expect(
         transactionService.update('txn-1', 'user-1', {
           payment_method_id: 'pm-1',
@@ -455,9 +431,6 @@ describe('TransactionService', () => {
       // Mock findById returning undefined
       (mockDb.query.transactions.findFirst as any).mockResolvedValueOnce(undefined);
 
-      await expect(transactionService.delete('non-existent', 'user-1')).rejects.toThrow(
-        TransactionServiceError
-      );
       await expect(transactionService.delete('non-existent', 'user-1')).rejects.toThrow(
         'Transaction not found'
       );

@@ -108,7 +108,12 @@ export const POST: APIRoute = async ({ request, url }) => {
     const validation = await validateBody(request, createTransactionAPISchema);
 
     if (!validation.success) {
-      return errorResponse('Validation failed', 400, 'VALIDATION_ERROR', validation.error.issues);
+      return errorResponse(
+        'Validation failed',
+        400,
+        'VALIDATION_ERROR',
+        (validation as any).error.issues
+      );
     }
 
     // Convert date string (YYYY-MM-DD) to Date object

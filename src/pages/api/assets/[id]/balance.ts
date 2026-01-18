@@ -26,7 +26,12 @@ export const POST: APIRoute = async ({ params, request, url }) => {
     const validation = await validateBody(request, updateBalanceSchema);
 
     if (!validation.success) {
-      return errorResponse('Validation failed', 400, 'VALIDATION_ERROR', validation.error.issues);
+      return errorResponse(
+        'Validation failed',
+        400,
+        'VALIDATION_ERROR',
+        (validation as any).error.issues
+      );
     }
 
     const asset = await assetService.updateBalance(id, userId, validation.data);

@@ -17,9 +17,9 @@ const mockQuery = mock(() => ({
 const mockUpdate = mock(() => ({ set: mock(() => ({ where: mock(() => ({})) })) }));
 
 // Create service instance
-const paymentMethodService = new PaymentMethodService();
+const paymentMethodService = new PaymentMethodService({} as any);
 
-describe.skip('PaymentMethodService', () => {
+describe('PaymentMethodService', () => {
   describe('create', () => {
     it('should create a new payment method with valid input', async () => {
       const input = {
