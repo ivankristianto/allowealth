@@ -399,7 +399,6 @@ describe('DashboardService', () => {
     });
 
     it('should use current month and year by default', async () => {
-      const now = new Date();
       const result = await dashboardService.getDashboardData('user-123');
 
       expect(result.monthlySpent).toBeDefined();

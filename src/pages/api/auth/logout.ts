@@ -16,12 +16,10 @@ import { logout } from '@/services/auth.service';
 import { auth } from '@/lib/auth/lucia';
 import { AUTH_ERRORS, type AuthError } from '@/services/auth.service';
 import {
-  createErrorResponse,
   createErrorResponseResponse,
   createSuccessResponse,
   STANDARD_RESPONSE_HEADERS,
   type ApiSuccessResponse,
-  type ApiError,
 } from '@/types/api';
 import { logError } from '@/lib/utils';
 

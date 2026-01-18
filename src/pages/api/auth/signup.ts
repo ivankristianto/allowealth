@@ -19,12 +19,10 @@ import type { APIRoute } from 'astro';
 import { register } from '@/services/auth.service';
 import { AUTH_ERRORS, type AuthError } from '@/services/auth.service';
 import {
-  createErrorResponse,
   createErrorResponseResponse,
   createSuccessResponse,
   STANDARD_RESPONSE_HEADERS,
   type ApiSuccessResponse,
-  type ApiError,
 } from '@/types/api';
 import { logError } from '@/lib/utils';
 

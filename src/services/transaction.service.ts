@@ -1,5 +1,5 @@
 import { transactions, type IDatabase } from '@/db';
-import { eq, and, gte, lte, desc, sql, or, like } from 'drizzle-orm';
+import { eq, and, gte, lte, desc, sql, like } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { CategoryService } from './category.service';
 import { PaymentMethodService } from './payment-method.service';
@@ -104,7 +104,7 @@ export class TransactionService {
 
     const id = nanoid();
 
-    const [transaction] = await (this as any).db
+    await (this as any).db
       .insert(transactions)
       .values({
         id,

@@ -5,7 +5,6 @@
  */
 
 import {
-  decimalAdd,
   decimalSubtract,
   decimalDivide,
   decimalMultiply,

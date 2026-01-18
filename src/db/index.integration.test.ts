@@ -409,7 +409,7 @@ describe('Database Runtime-Agnostic Integration Tests', () => {
 
   describe('Database Operations', () => {
     it('should perform CRUD operations correctly', async () => {
-      const { testUser, testCategory } = await createTestDatabase();
+      const { testUser } = await createTestDatabase();
 
       // Test READ operation
       const foundUser = await db.query.users.findFirst({
@@ -435,7 +435,7 @@ describe('Database Runtime-Agnostic Integration Tests', () => {
       const { testUser, testCategory, testPaymentMethod } = await createTestDatabase();
 
       // Test transaction
-      const result = await db.transaction(async (tx) => {
+      const result = await db.transaction(async (tx: any) => {
         // Insert a transaction with valid foreign keys
         const newTx = await tx
           .insert(transactions)

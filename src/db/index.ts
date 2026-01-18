@@ -151,7 +151,7 @@ function applyPragmas(driver: ReturnType<typeof createBunDriver | typeof createN
 /**
  * Get a require function that works in both CommonJS and ESM
  */
-function getRequire(): NodeRequire {
+function getRequire() {
   if (detectRuntime() === 'bun') {
     // Bun has require available globally
     // @ts-ignore - Bun provides require

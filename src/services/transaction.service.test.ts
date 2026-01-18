@@ -7,7 +7,6 @@
 
 import { describe, it, expect, beforeEach, mock } from 'bun:test';
 import { TransactionService } from './transaction.service';
-import { TransactionServiceError } from './service-errors';
 import {
   createMockDatabase,
   createMockCategory,

@@ -125,7 +125,7 @@ export function sanitizeError(error: unknown, context?: string): SanitizedError 
   // Sanitize stack trace if present (but keep the error type)
   if (errorStack) {
     // Remove file paths from stack trace, keeping only the function names
-    const sanitizedStack = errorStack
+    errorStack
       .replace(/\/?[\w\/]+\/(src|lib|services|pages|db)\/[\w\/\-\.]+/g, (match) => {
         // Extract just the filename from the path
         const parts = match.split('/');

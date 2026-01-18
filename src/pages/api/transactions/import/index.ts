@@ -35,7 +35,6 @@ export const POST: APIRoute = async ({ request, url }) => {
 
     // Parse header
     const headers = parseCSVLine(lines[0] ?? '');
-    const availableColumns = headers.map((h) => h.trim().toLowerCase());
 
     // Get column mapping from form data
     const columnMapping: Record<string, string> = {

@@ -270,7 +270,7 @@ async function clearAllTables() {
     // Run VACUUM to clean up the database and reclaim space
     // This helps prevent I/O errors on subsequent operations
     console.log('🧹 Vacuuming database...');
-    await db.run(sql`VACUUM`);
+    db.run(sql`VACUUM`);
 
     console.log('✓ All tables cleared');
   } catch (error) {

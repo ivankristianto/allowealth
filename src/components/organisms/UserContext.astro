@@ -137,8 +137,6 @@ type UserWithAttributes = User & {
           window.location.href = '/login';
         } else {
           console.error('Logout failed');
-          // Show error toast or message
-          const errorData = await response.json().catch(() => ({ message: 'Logout failed' }));
           // Could show a toast notification here
         }
       } catch (error) {
