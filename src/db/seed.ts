@@ -105,12 +105,71 @@ const PAYMENT_METHODS = [
 ];
 
 const ASSET_TYPES = [
-  { name: 'BCA Checking', type: 'bank_account' as const, balance: 15000000 },
-  { name: 'BCA Savings', type: 'bank_account' as const, balance: 50000000 },
-  { name: 'Reksa Dana BCAP', type: 'mutual_fund' as const, balance: 25000000 },
-  { name: 'Stock - BBRI', type: 'stock' as const, balance: 12000000 },
-  { name: 'Stock - BBCA', type: 'stock' as const, balance: 18000000 },
-  { name: 'Bitcoin', type: 'crypto' as const, balance: 45000000 },
+  // Indonesian bank accounts (IDR)
+  {
+    name: 'BCA Checking',
+    type: 'bank_account' as const,
+    balance: 15000000,
+    currency: 'IDR' as const,
+  },
+  {
+    name: 'BCA Savings',
+    type: 'bank_account' as const,
+    balance: 50000000,
+    currency: 'IDR' as const,
+  },
+
+  // USD-denominated bank accounts
+  {
+    name: 'Chase Checking',
+    type: 'bank_account' as const,
+    balance: 5000,
+    currency: 'USD' as const,
+  },
+  { name: 'DBS Savings', type: 'bank_account' as const, balance: 3000, currency: 'USD' as const },
+
+  // Mutual funds (IDR)
+  {
+    name: 'Reksa Dana BCAP',
+    type: 'mutual_fund' as const,
+    balance: 25000000,
+    currency: 'IDR' as const,
+  },
+
+  // Indonesian stocks (IDR)
+  { name: 'Stock - BBRI', type: 'stock' as const, balance: 12000000, currency: 'IDR' as const },
+  { name: 'Stock - BBCA', type: 'stock' as const, balance: 18000000, currency: 'IDR' as const },
+
+  // USD-denominated stocks
+  { name: 'Stock - AAPL', type: 'stock' as const, balance: 15000, currency: 'USD' as const },
+  { name: 'Stock - MSFT', type: 'stock' as const, balance: 12000, currency: 'USD' as const },
+  { name: 'Stock - GOOGL', type: 'stock' as const, balance: 8000, currency: 'USD' as const },
+  { name: 'Stock - AMZN', type: 'stock' as const, balance: 10000, currency: 'USD' as const },
+
+  // Indonesian government bonds
+  { name: 'ORI020', type: 'bond' as const, balance: 10000000, currency: 'IDR' as const },
+  { name: 'SBN032', type: 'bond' as const, balance: 15000000, currency: 'IDR' as const },
+  { name: 'SBR010', type: 'bond' as const, balance: 20000000, currency: 'IDR' as const },
+
+  // Corporate bonds
+  {
+    name: 'Corporate Bond - ABC',
+    type: 'bond' as const,
+    balance: 25000000,
+    currency: 'IDR' as const,
+  },
+  {
+    name: 'Corporate Bond - XYZ',
+    type: 'bond' as const,
+    balance: 30000000,
+    currency: 'IDR' as const,
+  },
+
+  // Cryptocurrency
+  { name: 'Bitcoin', type: 'crypto' as const, balance: 45000000, currency: 'IDR' as const },
+  { name: 'Ethereum', type: 'crypto' as const, balance: 28000000, currency: 'IDR' as const },
+  { name: 'Tether (USDT)', type: 'crypto' as const, balance: 15000000, currency: 'IDR' as const },
+  { name: 'USD Coin (USDC)', type: 'crypto' as const, balance: 10000000, currency: 'IDR' as const },
 ];
 
 // Indonesian expense patterns for realistic transaction data
@@ -454,7 +513,7 @@ async function seedAssets(userId: string): Promise<Map<string, string>> {
       name: asset.name,
       type: asset.type,
       balance: amt(asset.balance),
-      currency: 'IDR',
+      currency: asset.currency,
       last_updated: new Date(),
       created_at: daysAgo(90),
       updated_at: new Date(),
@@ -516,6 +575,8 @@ async function seedAssetUpdateReminders(
 
     if (assetType === 'crypto' || assetType === 'stock') {
       frequency = 'weekly';
+    } else if (assetType === 'bond') {
+      frequency = 'quarterly';
     } else if (assetType === 'mutual_fund') {
       frequency = 'monthly';
     } else {
@@ -565,9 +626,8 @@ async function seedAssetSnapshots(userId: string, assetMap: Map<string, string>)
 
     // Add snapshot items for each asset
     for (const [assetName, assetId] of assetMap.entries()) {
-      const baseBalance = parseFloat(
-        ASSET_TYPES.find((a) => a.name === assetName)!.balance.toString()
-      );
+      const asset = ASSET_TYPES.find((a) => a.name === assetName)!;
+      const baseBalance = parseFloat(asset.balance.toString());
 
       // Add some historical variation
       const variation = (Math.random() - 0.5) * baseBalance * 0.15; // ±7.5% variation
@@ -578,7 +638,7 @@ async function seedAssetSnapshots(userId: string, assetMap: Map<string, string>)
         snapshot_id: snapshotId,
         asset_id: assetId,
         balance,
-        currency: 'IDR',
+        currency: asset.currency,
       });
     }
   }
