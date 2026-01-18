@@ -134,6 +134,11 @@ if (budgetData) {
     alerts = [];
   }
 }
+
+// Fetch all categories for the edit modal
+import { categoryService } from '@/services';
+const allCategories = await categoryService.findAll(user!.id, { is_active: true });
+const expenseCategories = allCategories.filter((c) => c.type === 'expense');
 ---
 
 <MainLayout
@@ -332,6 +337,7 @@ if (budgetData) {
               sortBy={sortBy}
               sortOrder={sortOrder}
               baseUrl={sortBaseUrl}
+              enableEdit={true}
             />
           )}
         </>
@@ -376,3 +382,222 @@ if (budgetData) {
     </div>
   </div>
 </MainLayout>
+
+<!-- Quick Edit Budget Modal -->
+<dialog id="quick-edit-budget-modal" class="modal">
+  <div class="modal-box max-w-md">
+    <h3 class="font-bold text-lg">Edit Budget Allocation</h3>
+    <form id="quick-edit-budget-form" class="py-4 space-y-4">
+      <input type="hidden" name="category_id" value="" />
+
+      <div class="form-control">
+        <label class="label" for="category-name">
+          <span class="label-text">Category</span>
+        </label>
+        <input
+          type="text"
+          name="category-name"
+          id="category-name"
+          class="input input-bordered input-ghost"
+          disabled
+          readonly
+        />
+      </div>
+
+      <div class="form-control">
+        <label class="label" for="edit-percentage">
+          <span class="label-text">Budget Allocation %</span>
+          <span class="label-text-alt text-error">*</span>
+        </label>
+        <input
+          type="number"
+          name="percentage"
+          id="edit-percentage"
+          class="input input-bordered"
+          required
+          min="0"
+          max="100"
+          step="0.1"
+        />
+        <label class="label">
+          <span class="label-text-alt">Percentage of total budget allocation</span>
+        </label>
+      </div>
+
+      <div class="form-control">
+        <label class="label" for="edit-budget-amount">
+          <span class="label-text">Monthly Budget Amount</span>
+          <span class="label-text-alt text-error">*</span>
+        </label>
+        <input
+          type="number"
+          name="budget_amount"
+          id="edit-budget-amount"
+          class="input input-bordered"
+          required
+          min="0"
+          step="0.01"
+        />
+        <label class="label">
+          <span class="label-text-alt">Fixed monthly budget for this category</span>
+        </label>
+      </div>
+
+      <div class="form-control">
+        <label class="label" for="edit-currency">
+          <span class="label-text">Currency</span>
+        </label>
+        <input
+          type="text"
+          name="currency"
+          id="edit-currency"
+          class="input input-bordered input-ghost"
+          disabled
+          readonly
+        />
+      </div>
+
+      <div id="quick-edit-form-error" class="hidden alert alert-error text-sm" role="alert"></div>
+
+      <div class="modal-action">
+        <button type="button" id="quick-edit-cancel-btn" class="btn btn-ghost"> Cancel </button>
+        <button type="submit" class="btn btn-primary"> Save Changes </button>
+      </div>
+    </form>
+  </div>
+  <form method="dialog" class="modal-backdrop">
+    <button>close</button>
+  </form>
+</dialog>
+
+<script is:inline define:vars={{ expenseCategories }}>
+  // Serialize expense categories for client-side access
+  const categories = JSON.parse(
+    JSON.stringify(
+      expenseCategories.map((c: any) => ({
+        id: c.id,
+        name: c.name,
+        type: c.type,
+        currency: c.currency,
+        percentage: c.percentage,
+        budget_amount: c.budget_amount,
+      }))
+    )
+  );
+
+  const quickEditModal = document.getElementById('quick-edit-budget-modal') as HTMLDialogElement;
+  const quickEditForm = document.getElementById('quick-edit-budget-form') as HTMLFormElement;
+  const quickEditFormError = document.getElementById('quick-edit-form-error');
+  const quickEditCancelBtn = document.getElementById('quick-edit-cancel-btn');
+
+  // Show form error
+  function showFormError(message: string) {
+    if (quickEditFormError) {
+      quickEditFormError.textContent = message;
+      quickEditFormError.classList.remove('hidden');
+    }
+  }
+
+  // Clear form error
+  function clearFormError() {
+    if (quickEditFormError) {
+      quickEditFormError.textContent = '';
+      quickEditFormError.classList.add('hidden');
+    }
+  }
+
+  // Reset form
+  function resetForm() {
+    quickEditForm?.reset();
+    (quickEditForm?.querySelector('[name="category_id"]') as HTMLInputElement)?.value = '';
+    clearFormError();
+  }
+
+  // Global function to open quick edit modal
+  (window as any).quickEditBudget = (categoryId: string) => {
+    const category = categories.find((c) => c.id === categoryId);
+    if (!category) {
+      console.error('Category not found:', categoryId);
+      return;
+    }
+
+    const form = quickEditForm;
+    (form?.querySelector('[name="category_id"]') as HTMLInputElement).value = category.id;
+    (form?.querySelector('[name="category-name"]') as HTMLInputElement).value = category.name;
+    (form?.querySelector('[name="percentage"]') as HTMLInputElement).value = category.percentage;
+    (form?.querySelector('[name="budget_amount"]') as HTMLInputElement).value =
+      category.budget_amount;
+    (form?.querySelector('[name="currency"]') as HTMLInputElement).value = category.currency;
+
+    clearFormError();
+    quickEditModal?.showModal();
+  };
+
+  // Form submission
+  quickEditForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    clearFormError();
+
+    const formData = new FormData(quickEditForm);
+    const categoryId = formData.get('category_id') as string;
+
+    if (!categoryId) {
+      showFormError('Category ID is missing');
+      return;
+    }
+
+    const data = {
+      percentage: parseFloat(formData.get('percentage') as string),
+      budget_amount: formData.get('budget_amount'),
+    };
+
+    // Validate percentage
+    if (isNaN(data.percentage) || data.percentage < 0 || data.percentage > 100) {
+      showFormError('Percentage must be between 0 and 100');
+      return;
+    }
+
+    // Validate budget amount
+    if (isNaN(data.budget_amount as number)) {
+      showFormError('Budget amount must be a valid number');
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/categories/${categoryId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        if (result.error?.details) {
+          showFormError(result.error.details.map((d: { message: string }) => d.message).join(', '));
+        } else {
+          showFormError(result.error?.message || 'Failed to update budget');
+        }
+      } else {
+        // Refresh the page to show updated budget
+        window.location.reload();
+      }
+    } catch (err) {
+      showFormError('Network error. Please try again.');
+    }
+  });
+
+  // Cancel button handler
+  quickEditCancelBtn?.addEventListener('click', () => {
+    resetForm();
+    quickEditModal?.close();
+  });
+
+  // Reset form when modal closes without saving
+  quickEditModal?.addEventListener('close', (e) => {
+    // Only reset if the close was triggered by the backdrop or cancel button
+    if ((e.target as HTMLDialogElement).returnValue === '') {
+      resetForm();
+    }
+  });
+</script>

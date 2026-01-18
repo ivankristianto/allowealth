@@ -369,13 +369,13 @@ const buildExportUrl = (): string => {
 
                     {/* Actions - Mobile */}
                     <div class="pt-2 flex items-center gap-2">
-                      <a
-                        href={`/settings/categories#edit-${category.category_id}`}
+                      <button
+                        onclick={`quickEditBudget("${category.category_id}")`}
                         class="btn btn-ghost btn-xs gap-1"
                       >
                         <Icon name="pencil" size="xs" />
                         Edit Budget
-                      </a>
+                      </button>
                       <a
                         href={`/transactions?category_id=${category.category_id}`}
                         class="btn btn-ghost btn-xs gap-1"
@@ -422,14 +422,14 @@ const buildExportUrl = (): string => {
                   </div>
                   <div class="hidden lg:block col-span-1">
                     <div class="flex items-center gap-1 justify-end">
-                      <a
-                        href={`/settings/categories#edit-${category.category_id}`}
+                      <button
+                        onclick={`quickEditBudget("${category.category_id}")`}
                         class="btn btn-ghost btn-xs btn-square"
                         title={`Edit ${category.category_name} budget`}
                         aria-label={`Edit ${category.category_name} budget`}
                       >
                         <Icon name="pencil" size="xs" />
-                      </a>
+                      </button>
                       <a
                         href={`/transactions?category_id=${category.category_id}`}
                         class="btn btn-ghost btn-xs btn-square"
