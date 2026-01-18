@@ -31,6 +31,8 @@ export interface Props {
   max?: string | number;
   step?: string | number;
   required?: boolean;
+  pattern?: string;
+  title?: string;
 }
 
 const {
@@ -47,6 +49,8 @@ const {
   min = '',
   max = '',
   step = '',
+  pattern = '',
+  title = '',
 } = Astro.props;
 
 const inputClasses = [
@@ -92,6 +96,8 @@ const selectOptions = type === 'select' ? options : [];
       min={type === 'number' ? min : undefined}
       max={type === 'number' ? max : undefined}
       step={type === 'number' ? step : undefined}
+      pattern={pattern || undefined}
+      title={title || undefined}
       aria-invalid={error}
       aria-describedby={error ? `${id}-error` : undefined}
     />

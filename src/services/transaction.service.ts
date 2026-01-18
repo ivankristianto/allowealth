@@ -364,7 +364,7 @@ export class TransactionService {
     const existingTransactions = await this.findAll({ user_id, limit: 10000 });
     const existingKeys = new Set(
       existingTransactions.map(
-        (t) =>
+        (t: any) =>
           `${t.transaction_date.toISOString().split('T')[0]}-${t.type}-${
             t.amount
           }-${t.category_id}-${t.payment_method_id}`
@@ -490,7 +490,7 @@ export class TransactionService {
     ];
 
     // Build CSV rows
-    const csvRows = allTransactions.map((t) => [
+    const csvRows = allTransactions.map((t: any) => [
       t.transaction_date.toISOString().split('T')[0], // YYYY-MM-DD
       t.type,
       t.amount,
@@ -505,9 +505,9 @@ export class TransactionService {
 
     // Convert to CSV string
     return allRows
-      .map((row) =>
+      .map((row: any[]) =>
         row
-          .map((cell) => {
+          .map((cell: any) => {
             // Escape quotes and wrap in quotes if contains comma or quote
             const cellStr = String(cell);
             if (cellStr.includes(',') || cellStr.includes('"') || cellStr.includes('\n')) {

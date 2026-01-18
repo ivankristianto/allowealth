@@ -449,8 +449,6 @@ describe('DashboardService Integration Tests', () => {
 
     it('should use current month and year by default', async () => {
       const result = await dashboardService.getDashboardData(testUserId);
-
-      const now = new Date();
       expect(result.monthlySpent).toBeDefined();
       expect(result.budgetHealth).toBeDefined();
     });
@@ -550,7 +548,6 @@ describe('DashboardService Integration Tests', () => {
       // The dashboard service needs exchange rates for currency conversion
       // This test verifies that exchange rates were seeded correctly
 
-      const now = new Date();
       const result = await dashboardService.getTotalAssets(testUserId, 'USD');
 
       // If conversion works, exchange rates must exist

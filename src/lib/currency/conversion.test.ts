@@ -4,11 +4,9 @@
  * Unit tests for currency conversion utilities
  */
 
-import { describe, it, expect, beforeEach, mock } from 'bun:test';
+import { describe, it, expect } from 'bun:test';
 import {
-  convertCurrency,
   convertCurrencySync,
-  getLatestExchangeRate,
   roundToDecimals,
   formatCurrencyAmount,
   calculatePercentageUsed,

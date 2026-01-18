@@ -15,8 +15,7 @@
 
 import Card from '../atoms/Card.astro';
 import Badge from '../atoms/Badge.astro';
-import Spinner from '../atoms/Spinner.astro';
-import { formatCurrency, formatPercentage, colors } from '@/lib/tokens';
+import { formatCurrency, formatPercentage } from '@/lib/tokens';
 import { decimalSubtract } from '@/lib/utils/decimal';
 
 export interface SummaryCardsData {
@@ -81,12 +80,6 @@ const getBudgetStatusBadge = (status: string): 'success' | 'warning' | 'error' |
     default:
       return 'neutral';
   }
-};
-
-const getProgressColor = (percentage: number): string => {
-  if (percentage >= 100) return 'bg-error';
-  if (percentage >= 80) return 'bg-warning';
-  return 'bg-success';
 };
 
 const getProgressClass = (percentage: number): string => {
@@ -192,7 +185,7 @@ const getProgressClass = (percentage: number): string => {
       // Normal state with data
       <>
         {/* Total Assets Card */}
-        <Card hoverable className="group" role="region" aria-labelledby="summary-assets-title">
+        <Card hoverable className="group">
           <div class="flex items-start justify-between mb-4">
             <h3
               id="summary-assets-title"
@@ -244,7 +237,7 @@ const getProgressClass = (percentage: number): string => {
         </Card>
 
         {/* Monthly Spent Card */}
-        <Card hoverable className="group" role="region" aria-labelledby="summary-monthly-title">
+        <Card hoverable className="group">
           <div class="flex items-start justify-between mb-4">
             <h3
               id="summary-monthly-title"
@@ -310,7 +303,7 @@ const getProgressClass = (percentage: number): string => {
         </Card>
 
         {/* Budget Health Card */}
-        <Card hoverable className="group" role="region" aria-labelledby="summary-budget-title">
+        <Card hoverable className="group">
           <div class="flex items-start justify-between mb-4">
             <h3
               id="summary-budget-title"

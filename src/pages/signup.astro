@@ -10,7 +10,6 @@ import Input from '../components/atoms/Input.astro';
 import PasswordField from '../components/atoms/PasswordField.astro';
 import Label from '../components/atoms/Label.astro';
 import Button from '../components/atoms/Button.astro';
-import { patterns } from '@/lib/validation/patterns';
 
 // Get error message from query params (if any)
 const url = new URL(Astro.request.url);
@@ -75,8 +74,6 @@ const cspNonce = Astro.locals.cspNonce || '';
             id="email"
             name="email"
             placeholder="you@example.com"
-            pattern={patterns.email.html}
-            title={patterns.email.title}
             className="w-full"
           />
         </div>

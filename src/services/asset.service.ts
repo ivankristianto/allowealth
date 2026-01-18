@@ -98,7 +98,7 @@ export class AssetService {
 
     const result = await this.db.query.assets.findMany({
       where: and(...conditions),
-      orderBy: (assets, { asc }) => [asc(assets.name)],
+      orderBy: (assets: any, { asc }: any) => [asc(assets.name)],
     });
 
     return result;
@@ -193,7 +193,7 @@ export class AssetService {
 
     const history = await this.db.query.assetHistory.findMany({
       where: eq(assetHistory.asset_id, asset_id),
-      orderBy: (assetHistory, { desc }) => [desc(assetHistory.recorded_at)],
+      orderBy: (assetHistory: any, { desc }: any) => [desc(assetHistory.recorded_at)],
     });
 
     return history;

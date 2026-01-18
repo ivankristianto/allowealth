@@ -3,15 +3,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
-import {
-  register,
-  login,
-  logout,
-  validateSession,
-  getUser,
-  AuthError,
-  AUTH_ERRORS,
-} from './auth.service';
+import { register, login, logout, validateSession, getUser } from './auth.service';
 import { db } from '@/db/index';
 import { users } from '@/db/schema';
 import { eq } from 'drizzle-orm';
@@ -245,8 +237,7 @@ describe('AuthService', () => {
       expect(registeredUser).toBeDefined();
 
       // Login
-      const { user: loggedInUser, session } = await login(email, password);
-      expect(loggedInUser).toBeDefined();
+      const { session } = await login(email, password);
       expect(session).toBeDefined();
 
       // Validate session

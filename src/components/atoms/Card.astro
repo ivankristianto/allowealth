@@ -15,9 +15,18 @@ export interface Props {
   compact?: boolean;
   hoverable?: boolean;
   className?: string;
+  role?: string;
+  'aria-labelledby'?: string;
 }
 
-const { bordered = true, compact = false, hoverable = false, className = '' } = Astro.props;
+const {
+  bordered = true,
+  compact = false,
+  hoverable = false,
+  className = '',
+  role,
+  'aria-labelledby': ariaLabelledby,
+} = Astro.props;
 
 const cardClasses = [
   'card bg-base-100',
@@ -30,6 +39,6 @@ const cardClasses = [
   .join(' ');
 ---
 
-<div class={cardClasses}>
+<div class={cardClasses} role={role as any} aria-labelledby={ariaLabelledby}>
   <slot />
 </div>

@@ -26,7 +26,6 @@
  */
 
 import Label from '../atoms/Label.astro';
-import Button from '../atoms/Button.astro';
 import Icon from '../atoms/Icon.astro';
 
 export interface Props {
@@ -358,19 +357,6 @@ const cspNonce = Astro.locals.cspNonce || '';
     const errorTableBody = document.getElementById('error-table-body');
     const importAnotherButton = document.getElementById('import-another-button');
 
-    // Hidden form for submission (kept for compatibility but not used)
-    const hiddenForm = document.getElementById('csv-import-form');
-    const hiddenFileInput = document.getElementById('csv-file-hidden');
-    const hiddenMappings = {
-      date: document.getElementById('map-date-hidden'),
-      type: document.getElementById('map-type-hidden'),
-      amount: document.getElementById('map-amount-hidden'),
-      currency: document.getElementById('map-currency-hidden'),
-      category: document.getElementById('map-category-hidden'),
-      payment_method: document.getElementById('map-payment-method-hidden'),
-      description: document.getElementById('map-description-hidden'),
-    };
-
     // CSV Data Storage
     let csvData = {
       file: null,
@@ -393,13 +379,6 @@ const cspNonce = Astro.locals.cspNonce || '';
       },
       { key: 'description', label: 'Description', required: false, helpText: 'Optional notes' },
     ];
-
-    // HTML escaping utility
-    const escapeHtml = (text) => {
-      const div = document.createElement('div');
-      div.textContent = text;
-      return div.innerHTML;
-    };
 
     // Show error message
     function showError(message) {

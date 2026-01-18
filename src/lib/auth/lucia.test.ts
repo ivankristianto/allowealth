@@ -2,7 +2,7 @@
  * Unit tests for Lucia Auth configuration
  */
 
-import { describe, it, expect, beforeAll } from 'bun:test';
+import { describe, it, expect } from 'bun:test';
 import { auth } from './lucia';
 
 describe('Lucia Auth Configuration', () => {

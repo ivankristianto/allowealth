@@ -17,7 +17,6 @@ import { formatCurrency, formatPercentage } from '@/lib/tokens';
 import Badge from '../atoms/Badge.astro';
 import Icon from '../atoms/Icon.astro';
 import EmptyState from '../atoms/EmptyState.astro';
-import Card from '../atoms/Card.astro';
 
 export interface MonthlyBudgetData {
   month: number;
@@ -43,12 +42,6 @@ export interface Props {
 const { history, currency = 'IDR', currentMonth, currentYear, className = '' } = Astro.props;
 
 // Status helpers
-const getStatusColor = (percentage: number): string => {
-  if (percentage >= 100) return 'text-error';
-  if (percentage >= 80) return 'text-warning';
-  return 'text-success';
-};
-
 const getStatusBadge = (percentage: number): 'success' | 'warning' | 'error' | 'neutral' => {
   if (percentage >= 100) return 'error';
   if (percentage >= 80) return 'warning';

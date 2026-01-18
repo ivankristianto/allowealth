@@ -73,7 +73,7 @@ export class CategoryService {
 
     const result = await this.db.query.categories.findMany({
       where: and(...conditions),
-      orderBy: (categories, { asc }) => [asc(categories.name)],
+      orderBy: (categories: any, { asc }: any) => [asc(categories.name)],
     });
 
     return result;

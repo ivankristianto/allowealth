@@ -66,7 +66,7 @@ export class PaymentMethodService {
 
     const result = await this.db.query.paymentMethods.findMany({
       where: and(...conditions),
-      orderBy: (paymentMethods, { asc }) => [asc(paymentMethods.name)],
+      orderBy: (paymentMethods: any, { asc }: any) => [asc(paymentMethods.name)],
     });
 
     return result;

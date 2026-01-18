@@ -231,7 +231,6 @@ const categoriesJson = JSON.stringify(
 
   // Parse categories and budget info from data attributes (server-serialized JSON)
   const categories = JSON.parse(form?.dataset.categoriesJson || '[]');
-  const budgetInfo = JSON.parse(form?.dataset.budgetInfoJson || 'null');
   const action = form?.dataset.action || '/api/transactions';
   const method = form?.dataset.method || 'POST';
 

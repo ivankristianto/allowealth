@@ -12,7 +12,6 @@
 
 import Card from '../atoms/Card.astro';
 import Badge from '../atoms/Badge.astro';
-import Spinner from '../atoms/Spinner.astro';
 import EmptyState from '../atoms/EmptyState.astro';
 import Icon from '../atoms/Icon.astro';
 import { formatCurrency } from '@/lib/tokens';
@@ -53,19 +52,6 @@ const getPriorityIcon = (priority: string): string => {
 const getPriorityLabel = (days: number): string => {
   if (days === 1) return '1 day ago';
   return `${days} days ago`;
-};
-
-const getPriorityBadge = (priority: string): 'error' | 'warning' | 'success' | 'neutral' => {
-  switch (priority) {
-    case 'high':
-      return 'error';
-    case 'medium':
-      return 'warning';
-    case 'low':
-      return 'success';
-    default:
-      return 'neutral';
-  }
 };
 
 const getAssetTypeLabel = (type: string): string => {

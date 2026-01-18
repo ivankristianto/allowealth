@@ -11,9 +11,7 @@
 
 import Currency from '../atoms/Currency.astro';
 import Badge from '../atoms/Badge.astro';
-import Button from '../atoms/Button.astro';
 import Icon from '../atoms/Icon.astro';
-import { formatCurrency } from '@/lib/tokens';
 import type { TransactionOutput } from '@/lib/types/transaction';
 
 export interface Props {
@@ -35,15 +33,6 @@ const formattedDate = date.toLocaleDateString('en-US', {
   day: 'numeric',
   year: 'numeric',
 });
-
-// Payment method icon mapping
-const paymentIcons: Record<string, string> = {
-  cash: 'currency-dollar',
-  credit_card: 'credit-card',
-  debit_card: 'credit-card',
-  bank_transfer: 'arrow-left',
-  e_wallet: 'calendar',
-};
 ---
 
 <div

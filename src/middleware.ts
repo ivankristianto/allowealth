@@ -9,7 +9,6 @@
 
 import type { MiddlewareHandler } from 'astro';
 import { auth } from './lib/auth/lucia';
-import type { User, Session } from 'lucia';
 import { logError } from './lib/utils/error-logger';
 
 /**

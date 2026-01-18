@@ -55,7 +55,6 @@ import Input from '../atoms/Input.astro';
 import PasswordField from '../atoms/PasswordField.astro';
 import Button from '../atoms/Button.astro';
 import Label from '../atoms/Label.astro';
-import { patterns } from '@/lib/validation/patterns';
 
 interface Props {
   action?: string;
@@ -92,15 +91,7 @@ const cspNonce = Astro.locals.cspNonce || '';
 
   <div class="form-control">
     <Label htmlFor="email" required>Email Address</Label>
-    <Input
-      type="email"
-      id="email"
-      name="email"
-      placeholder="your.email@example.com"
-      pattern={patterns.email.html}
-      title={patterns.email.title}
-      required
-    />
+    <Input type="email" id="email" name="email" placeholder="your.email@example.com" required />
   </div>
 
   <PasswordField

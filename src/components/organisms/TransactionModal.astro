@@ -53,26 +53,33 @@ const {
 } = Astro.props;
 ---
 
-<Modal id={id} title={title} open={open} size="lg">
-  <TransactionForm
-    action={action}
-    method={method}
-    values={values}
-    categories={categories}
-    paymentMethods={paymentMethods}
-    errors={errors}
-    submitLabel={submitLabel}
-    cancelUrl="#"
-  />
-</Modal>
+<div data-modal-container data-id={id}>
+  <Modal id={id} title={title} open={open} size="lg">
+    <TransactionForm
+      action={action}
+      method={method}
+      values={values}
+      categories={categories}
+      paymentMethods={paymentMethods}
+      errors={errors}
+      submitLabel={submitLabel}
+      cancelUrl="#"
+    />
+  </Modal>
+</div>
 
 <script>
   // Override cancel button to close modal instead of navigating
-  const modal = document.getElementById(Astro.props.id);
-  const cancelButton = modal?.querySelector('a[href="#"]');
+  document.querySelectorAll('[data-modal-container]').forEach((container) => {
+    const id = container.getAttribute('data-id');
+    if (!id) return;
 
-  cancelButton?.addEventListener('click', (e) => {
-    e.preventDefault();
-    modal?.close();
+    const modal = document.getElementById(id) as HTMLDialogElement | null;
+    const cancelButton = modal?.querySelector('a[href="#"]');
+
+    cancelButton?.addEventListener('click', (e) => {
+      e.preventDefault();
+      modal?.close();
+    });
   });
 </script>
