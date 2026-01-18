@@ -39,6 +39,9 @@ export enum ServiceErrorCode {
   USER_EXISTS = 'USER_EXISTS',
   USER_NOT_FOUND = 'USER_NOT_FOUND',
   SESSION_EXPIRED = 'SESSION_EXPIRED',
+  EMAIL_ALREADY_EXISTS = 'EMAIL_ALREADY_EXISTS',
+  INVALID_PASSWORD = 'INVALID_PASSWORD',
+  WEAK_PASSWORD = 'WEAK_PASSWORD',
 }
 
 export class ServiceError extends Error {
@@ -91,5 +94,12 @@ export class AssetServiceError extends ServiceError {
   constructor(code: ServiceErrorCode, message: string, statusCode: number = 400) {
     super(code, message, statusCode);
     this.name = 'AssetServiceError';
+  }
+}
+
+export class UserServiceError extends ServiceError {
+  constructor(code: ServiceErrorCode, message: string, statusCode: number = 400) {
+    super(code, message, statusCode);
+    this.name = 'UserServiceError';
   }
 }

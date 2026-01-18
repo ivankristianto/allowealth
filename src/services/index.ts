@@ -21,6 +21,7 @@ import { TransactionService } from './transaction.service';
 import { AssetService } from './asset.service';
 import { BudgetService } from './budget.service';
 import { DashboardService } from './dashboard.service';
+import { UserService } from './user.service';
 
 // Re-export types and utilities
 export * from './transaction.service';
@@ -30,6 +31,7 @@ export * from './asset.service';
 export * from './budget.service';
 export * from './auth.service';
 export * from './dashboard.service';
+export * from './user.service';
 export * from './service-errors';
 
 // Export singleton instances with real database
@@ -39,3 +41,4 @@ export const transactionService = new TransactionService(db);
 export const assetService = new AssetService(db);
 export const budgetService = new BudgetService(db);
 export const dashboardService = new DashboardService(db);
+export const userService = new UserService(db);
