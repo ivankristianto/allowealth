@@ -29,16 +29,35 @@
 
 import { describe, it, expect, beforeAll, beforeEach, afterEach } from 'bun:test';
 import { db, getDb, type Database } from '@/db';
-import { users, categories, assets, transactions } from '@/db/schema';
+import { users, categories, assets, transactions, paymentMethods } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { existsSync, unlinkSync } from 'node:fs';
 import { join } from 'node:path';
+import { execSync } from 'node:child_process';
 
-// Test database path
-const TEST_DB_PATH = './test-integration.db';
+// Test database path (use -test postfix for isolation)
+const TEST_DB_PATH = 'db/.test-integration.db';
 
 // Store original process.env values
 const originalEnv = { ...process.env };
+
+/**
+ * Setup test database schema
+ * Uses drizzle-kit to push schema to test database
+ */
+function setupTestDatabase() {
+  console.log(`[Integration Test] Setting up test database at ${TEST_DB_PATH}...`);
+  try {
+    execSync(`DATABASE_URL=${TEST_DB_PATH} bun run db:push`, {
+      stdio: 'inherit',
+      cwd: process.cwd(),
+    });
+    console.log('[Integration Test] Test database schema created');
+  } catch (error) {
+    console.error('[Integration Test] Failed to set up test database:', error);
+    throw error;
+  }
+}
 
 /**
  * Test helper: Detect current runtime
@@ -184,11 +203,22 @@ async function createTestDatabase() {
 async function cleanupTestData() {
   const testDb = await getDb();
 
+  // Check if tables exist before attempting to delete
+  const driver = (testDb as any).$_driver;
+  if (driver && driver.tableExists && !driver.tableExists('transactions')) {
+    // Tables don't exist yet, skip cleanup
+    return;
+  }
+
   // Delete in correct order due to foreign key constraints
-  await testDb.delete(transactions).where(eq(transactions.id, 'test-tx-runtime'));
-  await testDb.delete(assets).where(eq(assets.id, 'test-asset-runtime'));
-  await testDb.delete(categories).where(eq(categories.id, 'test-category-runtime'));
-  await testDb.delete(users).where(eq(users.id, 'test-user-runtime'));
+  try {
+    await testDb.delete(transactions).where(eq(transactions.id, 'test-tx-runtime'));
+    await testDb.delete(assets).where(eq(assets.id, 'test-asset-runtime'));
+    await testDb.delete(categories).where(eq(categories.id, 'test-category-runtime'));
+    await testDb.delete(users).where(eq(users.id, 'test-user-runtime'));
+  } catch {
+    // Ignore errors if tables don't exist
+  }
 }
 
 describe('Database Runtime-Agnostic Integration Tests', () => {
@@ -197,6 +227,9 @@ describe('Database Runtime-Agnostic Integration Tests', () => {
   beforeAll(() => {
     runtime = detectRuntime();
     console.log(`[Integration Test] Running in ${runtime.toUpperCase()} runtime`);
+
+    // Set up test database schema
+    setupTestDatabase();
   });
 
   beforeEach(() => {

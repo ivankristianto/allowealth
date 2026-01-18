@@ -193,6 +193,21 @@ export function getDb(): Database {
 }
 
 /**
+ * Reset the database singleton
+ *
+ * This is primarily useful for tests that need to switch between
+ * different database instances (e.g., test vs development database).
+ *
+ * After calling this function, the next call to getDb() or accessing
+ * the `db` export will create a fresh database instance.
+ *
+ * @internal
+ */
+export function resetDb(): void {
+  dbInstance = null;
+}
+
+/**
  * Database instance export with lazy initialization
  *
  * Provides backward compatibility for code that imports db directly.
