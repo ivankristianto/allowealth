@@ -474,7 +474,7 @@ const expenseCategories = allCategories.filter((c) => c.type === 'expense');
   // Serialize expense categories for client-side access
   const categories = JSON.parse(
     JSON.stringify(
-      expenseCategories.map((c: any) => ({
+      expenseCategories.map((c) => ({
         id: c.id,
         name: c.name,
         type: c.type,
@@ -546,22 +546,28 @@ const expenseCategories = allCategories.filter((c) => c.type === 'expense');
       return;
     }
 
-    const data = {
-      percentage: parseFloat(formData.get('percentage') as string),
-      budget_amount: formData.get('budget_amount'),
-    };
+    // Get values as strings (API expects strings for decimal precision)
+    const percentageStr = formData.get('percentage') as string;
+    const budgetAmountStr = formData.get('budget_amount') as string;
 
-    // Validate percentage
-    if (isNaN(data.percentage) || data.percentage < 0 || data.percentage > 100) {
+    // Validate percentage (parse as number for validation, but send as string)
+    const percentageNum = parseFloat(percentageStr);
+    if (isNaN(percentageNum) || percentageNum < 0 || percentageNum > 100) {
       showFormError('Percentage must be between 0 and 100');
       return;
     }
 
-    // Validate budget amount
-    if (isNaN(data.budget_amount as number)) {
-      showFormError('Budget amount must be a valid number');
+    // Validate budget amount (parse as number for validation, but send as string)
+    const budgetAmountNum = parseFloat(budgetAmountStr);
+    if (isNaN(budgetAmountNum) || budgetAmountNum < 0) {
+      showFormError('Budget amount must be a valid positive number');
       return;
     }
+
+    const data = {
+      percentage: percentageStr,
+      budget_amount: budgetAmountStr,
+    };
 
     try {
       const response = await fetch(`/api/categories/${categoryId}`, {
