@@ -21,9 +21,7 @@ export const sessions = sqliteTable(
       .references(() => users.id, { onDelete: 'cascade' }),
     expiresAt: integer('expires_at').notNull(),
   },
-  (table) => ({
-    expiresAtIdx: index('sessions_expires_at_idx').on(table.expiresAt),
-  })
+  (table) => [index('sessions_expires_at_idx').on(table.expiresAt)]
 );
 
 export const sessionsRelations = relations(sessions, ({ one }) => ({

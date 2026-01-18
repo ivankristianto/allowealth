@@ -8,6 +8,7 @@
  * @see https://github.com/WiseLibs/better-sqlite3
  */
 
+import { createRequire } from 'node:module';
 import type { DatabaseDriver, PreparedStatement, RunResult } from '../driver';
 
 /**
@@ -29,6 +30,7 @@ type BetterSqlite3Statement = any;
 export function createNodeDriver(dbPath: string): DatabaseDriver & { _raw: BetterSqlite3Database } {
   // Import better-sqlite3 dynamically
   // This package is compatible with Node.js and already in devDependencies
+  const require = createRequire(import.meta.url);
   const Database = require('better-sqlite3');
   const sqlite: BetterSqlite3Database = new Database(dbPath);
 

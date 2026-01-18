@@ -131,9 +131,9 @@ These require moving TypeScript code out of Astro inline scripts into separate `
 ### Category 8: Very Low - Address Hints (Optional, Non-Blocking)
 
 - [x] **[VERY LOW]** Add `is:inline` directive to suppress Astro warnings in 6 files (or ignore)
-- [ ] **[VERY LOW]** Fix Drizzle ORM deprecation warnings in schema files (upgrade when available)
+- [x] **[VERY LOW]** Fix Drizzle ORM deprecation warnings in schema files (upgrade when available)
 - [x] **[VERY LOW]** Remove unused `await` keywords in test files (getDb is synchronous)
-- [ ] **[VERY LOW]** Fix JSDoc type hint in `src/components/molecules/ToastContainer.astro`
+- [x] **[VERY LOW]** Fix JSDoc type hint in `src/components/molecules/ToastContainer.astro`
 
 ---
 

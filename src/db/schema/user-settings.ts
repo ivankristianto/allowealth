@@ -1,5 +1,6 @@
 import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
 import { relations } from 'drizzle-orm';
+import { sqliteTimestampNow } from './base';
 import { users } from './users';
 
 export const userSettings = sqliteTable('user_settings', {
@@ -15,8 +16,8 @@ export const userSettings = sqliteTable('user_settings', {
   show_individual_currencies: integer('show_individual_currencies', { mode: 'boolean' })
     .default(true)
     .notNull(),
-  created_at: integer('created_at', { mode: 'timestamp' }).defaultNow().notNull(),
-  updated_at: integer('updated_at', { mode: 'timestamp' }).defaultNow().notNull(),
+  created_at: integer('created_at', { mode: 'timestamp' }).default(sqliteTimestampNow).notNull(),
+  updated_at: integer('updated_at', { mode: 'timestamp' }).default(sqliteTimestampNow).notNull(),
 });
 
 export const userSettingsRelations = relations(userSettings, ({ one }) => ({

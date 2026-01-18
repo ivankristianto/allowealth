@@ -1,5 +1,6 @@
 import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
 import { relations } from 'drizzle-orm';
+import { sqliteTimestampNow } from './base';
 import { users } from './users';
 import { transactions } from './transactions';
 
@@ -13,8 +14,8 @@ export const paymentMethods = sqliteTable('payment_methods', {
     enum: ['cash', 'credit_card', 'debit_card', 'bank_transfer', 'e_wallet'],
   }).notNull(),
   is_active: integer('is_active', { mode: 'boolean' }).default(true).notNull(),
-  created_at: integer('created_at', { mode: 'timestamp' }).defaultNow().notNull(),
-  updated_at: integer('updated_at', { mode: 'timestamp' }).defaultNow().notNull(),
+  created_at: integer('created_at', { mode: 'timestamp' }).default(sqliteTimestampNow).notNull(),
+  updated_at: integer('updated_at', { mode: 'timestamp' }).default(sqliteTimestampNow).notNull(),
 });
 
 export const paymentMethodsRelations = relations(paymentMethods, ({ one, many }) => ({

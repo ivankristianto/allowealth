@@ -1,5 +1,6 @@
 import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
 import { relations } from 'drizzle-orm';
+import { sqliteTimestampNow } from './base';
 import { users } from './users';
 import { assets } from './assets';
 
@@ -17,7 +18,7 @@ export const assetUpdateReminders = sqliteTable('asset_update_reminders', {
   last_updated: integer('last_updated', { mode: 'timestamp' }),
   next_reminder: integer('next_reminder', { mode: 'timestamp' }),
   is_dismissed: integer('is_dismissed', { mode: 'boolean' }).default(false).notNull(),
-  created_at: integer('created_at', { mode: 'timestamp' }).defaultNow().notNull(),
+  created_at: integer('created_at', { mode: 'timestamp' }).default(sqliteTimestampNow).notNull(),
 });
 
 export const assetUpdateRemindersRelations = relations(assetUpdateReminders, ({ one }) => ({

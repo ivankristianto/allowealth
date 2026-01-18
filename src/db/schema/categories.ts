@@ -1,5 +1,6 @@
 import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
 import { relations } from 'drizzle-orm';
+import { sqliteTimestampNow } from './base';
 import { users } from './users';
 import { transactions } from './transactions';
 
@@ -14,8 +15,8 @@ export const categories = sqliteTable('categories', {
   budget_amount: text('budget_amount').default('0').notNull(), // Stored as string for decimal precision
   currency: text('currency', { enum: ['IDR', 'USD'] }).notNull(),
   is_active: integer('is_active', { mode: 'boolean' }).default(true).notNull(),
-  created_at: integer('created_at', { mode: 'timestamp' }).defaultNow().notNull(),
-  updated_at: integer('updated_at', { mode: 'timestamp' }).defaultNow().notNull(),
+  created_at: integer('created_at', { mode: 'timestamp' }).default(sqliteTimestampNow).notNull(),
+  updated_at: integer('updated_at', { mode: 'timestamp' }).default(sqliteTimestampNow).notNull(),
 });
 
 export const categoriesRelations = relations(categories, ({ one, many }) => ({
