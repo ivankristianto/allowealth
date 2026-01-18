@@ -6,11 +6,11 @@
  * Supports create, edit, deactivate (soft delete), and list with filtering.
  */
 
-import MainLayout from '../../layouts/MainLayout.astro';
+import MainLayout from '@layouts/MainLayout.astro';
 import { requireAuth } from '@/lib/auth/requireAuth';
 import { categoryService } from '@/services';
-import Icon from '../../components/atoms/Icon.astro';
-import Badge from '../../components/atoms/Badge.astro';
+import Icon from '@components/atoms/Icon.astro';
+import Badge from '@components/atoms/Badge.astro';
 import { formatCurrency } from '@/lib/tokens';
 
 // Check authentication
