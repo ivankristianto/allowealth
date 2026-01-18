@@ -56,77 +56,77 @@ None - all changes are modifications to existing files.
 
 ### Category 1: Easiest - Remove Invalid Props (2-5 min each)
 
-- [ ] **[EASIEST]** Remove `pattern` prop from `src/pages/signup.astro:78` (Input doesn't support `pattern`)
-- [ ] **[EASIEST]** Remove `pattern` prop from `src/components/molecules/RegistrationForm.astro:100`
-- [ ] **[EASY]** Add `role?: string` and `aria-labelledby?: string` to `src/components/atoms/Card.astro` Props interface
-- [ ] **[EASY]** Remove `role` props from 3 Card usages in `src/components/organisms/SummaryCards.astro`
-- [ ] **[EASY]** Remove `role` prop from `src/components/organisms/DashboardError.astro`
-- [ ] **[EASY]** Add `pattern?: string` and `title?: string` to `src/components/atoms/Input.astro` Props interface and pass through to input element
+- [x] **[EASIEST]** Remove `pattern` prop from `src/pages/signup.astro:78` (Input doesn't support `pattern`)
+- [x] **[EASIEST]** Remove `pattern` prop from `src/components/molecules/RegistrationForm.astro:100`
+- [x] **[EASY]** Add `role?: string` and `aria-labelledby?: string` to `src/components/atoms/Card.astro` Props interface
+- [x] **[EASY]** Remove `role` props from 3 Card usages in `src/components/organisms/SummaryCards.astro`
+- [x] **[EASY]** Remove `role` prop from `src/components/organisms/DashboardError.astro`
+- [x] **[EASY]** Add `pattern?: string` and `title?: string` to `src/components/atoms/Input.astro` Props interface and pass through to input element
 
 ### Category 2: Easy - Fix Type Errors (5-10 min each)
 
-- [ ] **[EASY]** Fix `transactions` undefined variable in `src/components/organisms/TransactionList.astro:269` (should be `transaction`)
-- [ ] **[EASY]** Fix `alert.overage > 0` type error in `src/pages/budget/index.astro:309` (cast to number)
-- [ ] **[EASY]** Fix `modal?.close()` error in `src/components/organisms/TransactionModal.astro:76` (cast to HTMLDialogElement)
+- [x] **[EASY]** Fix `transactions` undefined variable in `src/components/organisms/TransactionList.astro:269` (should be `transaction`)
+- [x] **[EASY]** Fix `alert.overage > 0` type error in `src/pages/budget/index.astro:309` (cast to number)
+- [x] **[EASY]** Fix `modal?.close()` error in `src/components/organisms/TransactionModal.astro:76` (cast to HTMLDialogElement)
 
 ### Category 3: Medium - Extract Inline Scripts (15-30 min each)
 
 These require moving TypeScript code out of Astro inline scripts into separate `.ts` files, then importing them.
 
-- [ ] **[MEDIUM]** Extract inline script from `src/pages/budget/index.astro` to `src/pages/budget/budget-client.ts`
+- [x] **[MEDIUM]** Extract inline script from `src/pages/budget/index.astro` to `src/pages/budget/budget-client.ts`
   - Create `src/pages/budget/budget-client.ts`
   - Move all script logic to new file
   - Import in Astro: `<script src="./budget-client.ts">`
 
-- [ ] **[MEDIUM]** Extract inline script from `src/pages/settings/categories.astro` to `src/pages/settings/categories-client.ts`
+- [x] **[MEDIUM]** Extract inline script from `src/pages/settings/categories.astro` to `src/pages/settings/categories-client.ts`
   - Create `src/pages/settings/categories-client.ts`
   - Move all script logic to new file
   - Import in Astro: `<script src="./categories-client.ts">`
 
-- [ ] **[MEDIUM]** Extract inline script from `src/pages/settings/payment-methods.astro` to `src/pages/settings/payment-methods-client.ts`
+- [x] **[MEDIUM]** Extract inline script from `src/pages/settings/payment-methods.astro` to `src/pages/settings/payment-methods-client.ts`
   - Create `src/pages/settings/payment-methods-client.ts`
   - Move all script logic to new file
   - Import in Astro: `<script src="./payment-methods-client.ts">`
 
 ### Category 4: Medium - Add Type Annotations to Services (10-15 min each)
 
-- [ ] **[MEDIUM]** Add types to `src/services/category.service.ts:76` - `orderBy: (categories: Category, { asc }) => ...`
-- [ ] **[MEDIUM]** Add types to `src/services/payment-method.service.ts:69` - `orderBy: (paymentMethods: PaymentMethod, { asc }) => ...`
-- [ ] **[MEDIUM]** Add types to `src/services/asset.service.ts:101` - `orderBy: (assets: Asset, { asc }) => ...`
-- [ ] **[MEDIUM]** Add types to `src/services/asset.service.ts:196` - `orderBy: (assetHistory: AssetHistory, { desc }) => ...`
-- [ ] **[MEDIUM]** Add types to `src/services/transaction.service.ts:367,493,510` - map callback parameters
+- [x] **[MEDIUM]** Add types to `src/services/category.service.ts:76` - `orderBy: (categories: Category, { asc }) => ...`
+- [x] **[MEDIUM]** Add types to `src/services/payment-method.service.ts:69` - `orderBy: (paymentMethods: PaymentMethod, { asc }) => ...`
+- [x] **[MEDIUM]** Add types to `src/services/asset.service.ts:101` - `orderBy: (assets: Asset, { asc }) => ...`
+- [x] **[MEDIUM]** Add types to `src/services/asset.service.ts:196` - `orderBy: (assetHistory: AssetHistory, { desc }) => ...`
+- [x] **[MEDIUM]** Add types to `src/services/transaction.service.ts:367,493,510` - map callback parameters
 
 ### Category 5: Low - Remove Unused Imports (5 min each)
 
-- [ ] **[LOW]** Remove unused import from `src/middleware.ts:12`
-- [ ] **[LOW]** Remove unused imports from `src/components/atoms/Percentage.astro`
-- [ ] **[LOW]** Remove unused imports from `src/components/molecules/QuickActions.astro`
-- [ ] **[LOW]** Remove unused imports from `src/components/molecules/TransactionRow.astro`
-- [ ] **[LOW]** Remove unused imports from `src/components/organisms/AssetUpdateTodoList.astro`
-- [ ] **[LOW]** Remove unused imports from `src/components/organisms/BudgetHistoryComparison.astro`
-- [ ] **[LOW]** Remove unused imports from `src/components/organisms/SummaryCards.astro`
-- [ ] **[LOW]** Remove unused imports from `src/components/organisms/TransactionList.astro`
-- [ ] **[LOW]** Remove unused imports from `src/pages/settings/categories.astro`
-- [ ] **[LOW]** Remove unused imports from `src/pages/settings/payment-methods.astro`
+- [x] **[LOW]** Remove unused import from `src/middleware.ts:12`
+- [x] **[LOW]** Remove unused imports from `src/components/atoms/Percentage.astro`
+- [x] **[LOW]** Remove unused imports from `src/components/molecules/QuickActions.astro`
+- [x] **[LOW]** Remove unused imports from `src/components/molecules/TransactionRow.astro`
+- [x] **[LOW]** Remove unused imports from `src/components/organisms/AssetUpdateTodoList.astro`
+- [x] **[LOW]** Remove unused imports from `src/components/organisms/BudgetHistoryComparison.astro`
+- [x] **[LOW]** Remove unused imports from `src/components/organisms/SummaryCards.astro`
+- [x] **[LOW]** Remove unused imports from `src/components/organisms/TransactionList.astro`
+- [x] **[LOW]** Remove unused imports from `src/pages/settings/categories.astro`
+- [x] **[LOW]** Remove unused imports from `src/pages/settings/payment-methods.astro`
 
 ### Category 6: Low - Clean Up Test Files (5 min each)
 
-- [ ] **[LOW]** Remove unused variables from `src/services/auth.service.test.ts`
-- [ ] **[LOW]** Remove unused variables from `src/lib/currency/conversion.test.ts`
-- [ ] **[LOW]** Remove unused variables from `src/lib/auth/lucia.test.ts`
-- [ ] **[LOW]** Remove unused variables from `src/services/dashboard.service.test.ts`
-- [ ] **[LOW]** Remove unused variables from `src/services/dashboard.service.integration.test.ts`
+- [x] **[LOW]** Remove unused variables from `src/services/auth.service.test.ts`
+- [x] **[LOW]** Remove unused variables from `src/lib/currency/conversion.test.ts`
+- [x] **[LOW]** Remove unused variables from `src/lib/auth/lucia.test.ts`
+- [x] **[LOW]** Remove unused variables from `src/services/dashboard.service.test.ts`
+- [x] **[LOW]** Remove unused variables from `src/services/dashboard.service.integration.test.ts`
 
 ### Category 7: Low - Remove Dead Code (5-15 min each)
 
-- [ ] **[LOW]** Remove unused `variantClasses` from `src/components/atoms/EmptyState.astro:38`
-- [ ] **[LOW]** Remove unused `typeLabels` from `src/components/atoms/PaymentMethodSelect.astro:46`
-- [ ] **[LOW]** Remove unused `getPriorityBadge` from `src/components/organisms/AssetUpdateTodoList.astro:58`
-- [ ] **[LOW]** Remove unused `getStatusColor` from `src/components/organisms/BudgetHistoryComparison.astro:46`
-- [ ] **[LOW]** Remove unused `getProgressColor` from `src/components/organisms/SummaryCards.astro:86`
-- [ ] **[LOW]** Remove unused `paymentIcons` from `src/components/molecules/TransactionRow.astro:40`
-- [ ] **[LOW]** Remove unused variables from `src/components/molecules/CSVImportForm.astro`
-- [ ] **[LOW]** Remove unused variables from `src/components/molecules/TransactionForm.astro`
+- [x] **[LOW]** Remove unused `variantClasses` from `src/components/atoms/EmptyState.astro:38`
+- [x] **[LOW]** Remove unused `typeLabels` from `src/components/atoms/PaymentMethodSelect.astro:46`
+- [x] **[LOW]** Remove unused `getPriorityBadge` from `src/components/organisms/AssetUpdateTodoList.astro:58`
+- [x] **[LOW]** Remove unused `getStatusColor` from `src/components/organisms/BudgetHistoryComparison.astro:46`
+- [x] **[LOW]** Remove unused `getProgressColor` from `src/components/organisms/SummaryCards.astro:86`
+- [x] **[LOW]** Remove unused `paymentIcons` from `src/components/molecules/TransactionRow.astro:40`
+- [x] **[LOW]** Remove unused variables from `src/components/molecules/CSVImportForm.astro`
+- [x] **[LOW]** Remove unused variables from `src/components/molecules/TransactionForm.astro`
 
 ### Category 8: Very Low - Address Hints (Optional, Non-Blocking)
 
