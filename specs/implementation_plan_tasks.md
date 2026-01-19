@@ -1,10 +1,10 @@
 # Toast Notifications & Client Utils Refactor
 
-Implement a centralized Toast notification system using Nano Stores and Framer Motion (within Astro) to replace legacy string-based alert injection and DOM manipulation utilities.
+Implement a centralized Toast notification system using Nano Stores and Motion (within Astro) to replace legacy string-based alert injection and DOM manipulation utilities.
 
 ## Summary
 
-We are replacing the fragile `eval`-based injection of `createSuccessAlert`, `createErrorAlert`, and `setButtonLoading` with a modern, reactive Toast notification system. This involves creating a Nano Store for toast state and an Astro component that uses client-side JavaScript with Framer Motion for smooth animations.
+We are replacing the fragile `eval`-based injection of `createSuccessAlert`, `createErrorAlert`, and `setButtonLoading` with a modern, reactive Toast notification system. This involves creating a Nano Store for toast state and an Astro component that uses client-side JavaScript with Motion for smooth animations.
 
 ### Proposed Changes
 
@@ -33,12 +33,13 @@ We are replacing the fragile `eval`-based injection of `createSuccessAlert`, `cr
 **Checklist:**
 
 - [x] Install `nanostores`
+- [x] Install `motion`
 - [x] ~~Install `framer-motion`~~ (Changed: Using CSS transitions instead for Astro compatibility)
 
 **Command:**
 
 ```bash
-bun add nanostores framer-motion
+bun add nanostores motion
 ```
 
 Estimated Time: 0.2 hours
@@ -154,10 +155,10 @@ Estimated Time: 0.75 hours
 </div>
 ```
 
-**Framer Motion Animation:**
+**Motion Animation:**
 
 ```typescript
-import { animate } from 'framer-motion';
+import { animate } from 'motion';
 
 // Enter animation
 animate(element, { opacity: [0, 1], x: [50, 0] }, { duration: 0.3, easing: 'easeOut' });
@@ -276,7 +277,7 @@ Estimated Time: 0.75 hours
 
 ### 8. Update Design System Documentation (P1)
 
-**Goal:** Document the Toast component and Framer Motion animation patterns in the design system.
+**Goal:** Document the Toast component and Motion animation patterns in the design system.
 
 **Checklist:**
 
@@ -290,8 +291,8 @@ Estimated Time: 0.75 hours
   - When to use toasts vs inline errors vs banners
   - Auto-dismiss behavior (5s for success, persistent for errors)
   - Multi-toast stacking
-  - Animation patterns with Framer Motion
-- [ ] Add Framer Motion animation section to `design-system/01-foundations.md` or create new `08-animations.md`:
+  - Animation patterns with Motion
+- [ ] Add Motion animation section to `design-system/01-foundations.md` or create new `08-animations.md`:
   - Standard animation durations and easings
   - Enter/exit animation patterns
   - Usage with `animate()` function
@@ -340,14 +341,14 @@ addToast('Action required', 'warning', { duration: 0 });
 **Animation Documentation:**
 
 ```markdown
-## Animations (Framer Motion)
+## Animations (Motion)
 
-Standard animation patterns using `framer-motion`.
+Standard animation patterns using `motion`.
 
 ### Enter/Exit
 
 \`\`\`typescript
-import { animate } from 'framer-motion';
+import { animate } from 'motion';
 
 // Fade + slide in
 animate(element, { opacity: [0, 1], x: [50, 0] }, { duration: 0.3, easing: 'easeOut' });
@@ -377,7 +378,7 @@ Estimated Time: 1 hour
 
 **Checklist:**
 
-- [ ] Add `nanostores` and `framer-motion` to Tech Stack section.
+- [ ] Add `nanostores` and `motion` to Tech Stack section.
 - [ ] Add `src/lib/stores/` to Project Structure with `toastStore.ts`.
 - [ ] Add Toast usage guideline to Component Guidelines section.
 - [ ] Document the pattern for using stores in Astro client scripts.
@@ -390,7 +391,7 @@ Estimated Time: 1 hour
 
 ```markdown
 - **State Management:** Nano Stores (client-side reactive state)
-- **Animations:** Framer Motion (client-side animations)
+- **Animations:** Motion (client-side animations)
 ```
 
 **Project Structure Addition:**
@@ -476,7 +477,7 @@ Estimated Time: 0.5 hours
 
 #### Browser Support
 
-- Framer Motion requires browsers with Web Animations API support (all modern browsers)
+- Motion requires browsers with Web Animations API support (all modern browsers)
 
 ## Success Criteria
 
