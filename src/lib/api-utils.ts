@@ -1,6 +1,7 @@
 import type { APIContext } from 'astro';
 import { z } from 'zod';
 import { auth } from '@/lib/auth/lucia';
+import type { ZodIssue } from 'zod';
 
 /**
  * Standard API response format
@@ -13,6 +14,46 @@ export interface ApiResponse<T = any> {
     code?: string;
     details?: any;
   };
+}
+
+/**
+ * Result of validateBody - success case
+ */
+export interface ValidationResultSuccess<T> {
+  success: true;
+  data: T;
+}
+
+/**
+ * Result of validateBody - error case
+ */
+export interface ValidationError {
+  success: false;
+  error: {
+    issues: ZodIssue[];
+  };
+}
+
+/**
+ * Union type for validateBody return value
+ */
+export type ValidationResult<T> = ValidationResultSuccess<T> | ValidationError;
+
+/**
+ * Type guard to check if validation failed
+ * Use this to access error.issues without type assertions
+ *
+ * @example
+ * ```typescript
+ * const validation = await validateBody(request, schema);
+ * if (isValidationError(validation)) {
+ *   // TypeScript knows validation.error.issues exists here
+ *   return errorResponse('Validation failed', 400, 'VALIDATION_ERROR', validation.error.issues);
+ * }
+ * ```
+ */
+export function isValidationError<T>(result: ValidationResult<T>): result is ValidationError {
+  return result.success === false;
 }
 
 /**
@@ -62,11 +103,24 @@ export function errorResponse(
 
 /**
  * Validate request body with Zod schema
+ *
+ * @param request - The HTTP request object
+ * @param schema - Zod schema to validate against
+ * @returns ValidationResult with either data (success) or ZodIssue[] (failure)
+ *
+ * @example
+ * ```typescript
+ * const validation = await validateBody(context.request, mySchema);
+ * if (isValidationError(validation)) {
+ *   return errorResponse('Validation failed', 400, 'VALIDATION_ERROR', validation.error.issues);
+ * }
+ * // validation.data is available here
+ * ```
  */
 export async function validateBody<T>(
   request: Request,
   schema: z.ZodSchema<T>
-): Promise<{ success: true; data: T } | { success: false; error: { issues: any[] } }> {
+): Promise<ValidationResult<T>> {
   try {
     const body = await request.json();
     const data = schema.parse(body);
@@ -81,7 +135,7 @@ export async function validateBody<T>(
         error: {
           issues: [
             {
-              code: 'invalid_json',
+              code: z.ZodIssueCode.custom,
               message: 'Invalid JSON in request body',
               path: [],
             },
@@ -95,7 +149,7 @@ export async function validateBody<T>(
       error: {
         issues: [
           {
-            code: 'parse_error',
+            code: z.ZodIssueCode.custom,
             message: 'Failed to parse request body',
             path: [],
           },

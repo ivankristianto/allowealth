@@ -1,11 +1,16 @@
 import type { APIRoute } from 'astro';
 import { userService } from '@/services';
-import { successResponse, errorResponse, validateBody, requireAuth } from '@/lib/api-utils';
+import {
+  successResponse,
+  errorResponse,
+  validateBody,
+  requireAuth,
+  isValidationError,
+} from '@/lib/api-utils';
 import { updateProfileSchema } from '@/services/user.service';
 import { logError } from '@/lib/utils';
 import { UserServiceError, ServiceErrorCode } from '@/services/service-errors';
 import { db } from '@/db';
-import { users } from '@/db/schema';
 
 /**
  * GET /api/user/profile
@@ -46,13 +51,8 @@ export const PUT: APIRoute = async (context) => {
 
     const validation = await validateBody(context.request, updateProfileSchema);
 
-    if (!validation.success) {
-      return errorResponse(
-        'Validation failed',
-        400,
-        'VALIDATION_ERROR',
-        (validation as any).error.issues
-      );
+    if (isValidationError(validation)) {
+      return errorResponse('Validation failed', 400, 'VALIDATION_ERROR', validation.error.issues);
     }
 
     const user = await userService.updateProfile(userId, validation.data);
