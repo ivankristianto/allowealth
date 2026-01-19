@@ -23,7 +23,7 @@ import { UserServiceError, ServiceErrorCode } from './service-errors';
  */
 export const updateProfileSchema = z.object({
   name: z.string().min(1, 'Name is required').max(255, 'Name must be less than 255 characters'),
-  email: z.string().email('Invalid email format'),
+  email: z.string().regex(/^[^\s@]+@[^\s@]+\.[^\s@]+$/, 'Invalid email format'),
 });
 
 export const updatePasswordSchema = z.object({
@@ -244,7 +244,7 @@ export class UserService {
       await this.db.update(userSettings).set(updateData).where(eq(userSettings.user_id, userId));
     } else {
       // Create new settings
-      await this.db.insert(userSettings).values({
+      this.db.insert(userSettings).values({
         user_id: userId,
         primary_currency: validated.primaryCurrency,
         show_converted_totals:

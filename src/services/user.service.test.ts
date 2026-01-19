@@ -4,7 +4,7 @@
 
 import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
 import { UserService } from './user.service';
-import { UserServiceError, ServiceErrorCode } from './service-errors';
+import { ServiceErrorCode } from './service-errors';
 import { db } from '@/db/index';
 import { users, userSettings } from '@/db/schema';
 import { eq } from 'drizzle-orm';
