@@ -5,7 +5,10 @@ import PasswordChangeForm from '@/components/molecules/PasswordChangeForm.astro'
 import Label from '@/components/atoms/Label.astro';
 import Input from '@/components/atoms/Input.astro';
 import Button from '@/components/atoms/Button.astro';
+import { Loader } from '@lucide/astro';
 import type { User } from '@/lib/auth/lucia';
+import { createSuccessAlert, createErrorAlert, setButtonLoading } from '@/lib/client-utils';
+import { CURRENCY_OPTIONS, DEFAULT_CURRENCY } from '@/lib/constants';
 
 const currentPath = '/settings';
 
@@ -14,6 +17,11 @@ const user = Astro.locals.user! as User;
 
 // Get CSP nonce from middleware
 const cspNonce = Astro.locals.cspNonce || '';
+
+// Client utility functions for inline script use
+const createSuccessAlertFn = createSuccessAlert.toString();
+const createErrorAlertFn = createErrorAlert.toString();
+const setButtonLoadingFn = setButtonLoading.toString();
 ---
 
 <ProtectedLayout title="Settings - Finance Manager" currentPath={currentPath}>
@@ -88,15 +96,25 @@ const cspNonce = Astro.locals.cspNonce || '';
         <form id="settings-form" class="space-y-5" novalidate>
           <div class="form-control">
             <Label htmlFor="currency" required>Default Currency</Label>
-            <select
-              id="currency"
-              name="primaryCurrency"
-              class="select select-bordered w-full"
-              required
-            >
-              <option value="IDR">IDR - Indonesian Rupiah</option>
-              <option value="USD">USD - US Dollar</option>
-            </select>
+            <div class="relative">
+              <select
+                id="currency"
+                name="primaryCurrency"
+                class="select select-bordered w-full"
+                required
+                disabled
+              >
+                <option value="">Loading...</option>
+                {
+                  CURRENCY_OPTIONS.map((option) => (
+                    <option value={option.value}>{option.label}</option>
+                  ))
+                }
+              </select>
+              <div id="currency-loading" class="absolute right-12 top-1/2 -translate-y-1/2">
+                <Loader size={18} class="animate-spin text-base-content/50" />
+              </div>
+            </div>
             <label class="label">
               <span class="label-text-alt text-base-content/60">
                 This currency will be used as the default when viewing reports and dashboards.
@@ -126,16 +144,21 @@ const cspNonce = Astro.locals.cspNonce || '';
 </ProtectedLayout>
 
 <script
-  define:vars={{ apiProfileUrl: '/api/user/profile', apiSettingsUrl: '/api/user/settings' }}
+  define:vars={{
+    apiProfileUrl: '/api/user/profile',
+    apiSettingsUrl: '/api/user/settings',
+    createSuccessAlertFn,
+    createErrorAlertFn,
+    setButtonLoadingFn,
+    defaultCurrency: DEFAULT_CURRENCY,
+  }}
   nonce={cspNonce}
   is:inline
 >
-  // HTML escaping utility to prevent XSS
-  const escapeHtml = (text) => {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-  };
+  // Client utility functions (injected from server-side for CSP compatibility)
+  const createSuccessAlert = eval('(' + createSuccessAlertFn + ')');
+  const createErrorAlert = eval('(' + createErrorAlertFn + ')');
+  const setButtonLoading = eval('(' + setButtonLoadingFn + ')');
 
   // ==================== PROFILE FORM ====================
   const profileForm = document.getElementById('profile-form');
@@ -143,8 +166,6 @@ const cspNonce = Astro.locals.cspNonce || '';
   const profileNameInput = document.getElementById('displayName');
   const profileEmailInput = document.getElementById('email');
   const profileSubmitButton = profileForm?.querySelector('button[type="submit"]');
-  const profileButtonText = profileSubmitButton?.querySelector('[data-button-text]');
-  const profileLoadingSpinner = profileSubmitButton?.querySelector('[data-loading-spinner]');
 
   if (profileForm && profileNameInput && profileEmailInput && profileSubmitButton) {
     // Clear messages on input
@@ -179,22 +200,13 @@ const cspNonce = Astro.locals.cspNonce || '';
       // Display validation errors
       if (errors.length > 0) {
         if (profileMessagesContainer) {
-          profileMessagesContainer.innerHTML = `
-            <div role="alert" class="alert alert-error">
-              <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span>${escapeHtml(errors.join('. '))}</span>
-            </div>
-          `;
+          profileMessagesContainer.innerHTML = createErrorAlert(errors.join('. '));
         }
         return;
       }
 
       // Show loading state
-      if (profileButtonText) profileButtonText.classList.add('hidden');
-      if (profileLoadingSpinner) profileLoadingSpinner.classList.remove('hidden');
-      if (profileSubmitButton) profileSubmitButton.disabled = true;
+      setButtonLoading(profileSubmitButton, true);
 
       try {
         const formData = new FormData(profileForm);
@@ -217,47 +229,28 @@ const cspNonce = Astro.locals.cspNonce || '';
         if (response.ok && result.success) {
           // Success - show success message
           if (profileMessagesContainer) {
-            profileMessagesContainer.innerHTML = `
-              <div role="alert" class="alert alert-success">
-                <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span>Profile updated successfully!</span>
-              </div>
-            `;
+            profileMessagesContainer.innerHTML = createSuccessAlert(
+              'Profile updated successfully!'
+            );
           }
         } else {
           // Error - show error message
           const errorMessage =
             result.error?.message || 'Failed to update profile. Please try again.';
           if (profileMessagesContainer) {
-            profileMessagesContainer.innerHTML = `
-              <div role="alert" class="alert alert-error">
-                <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span>${escapeHtml(errorMessage)}</span>
-              </div>
-            `;
+            profileMessagesContainer.innerHTML = createErrorAlert(errorMessage);
           }
         }
       } catch (error) {
         console.error('Profile update error:', error);
         if (profileMessagesContainer) {
-          profileMessagesContainer.innerHTML = `
-            <div role="alert" class="alert alert-error">
-              <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span>An error occurred. Please check your connection and try again.</span>
-            </div>
-          `;
+          profileMessagesContainer.innerHTML = createErrorAlert(
+            'An error occurred. Please check your connection and try again.'
+          );
         }
       } finally {
         // Reset loading state
-        if (profileButtonText) profileButtonText.classList.remove('hidden');
-        if (profileLoadingSpinner) profileLoadingSpinner.classList.add('hidden');
-        if (profileSubmitButton) profileSubmitButton.disabled = false;
+        setButtonLoading(profileSubmitButton, false);
       }
     });
   }
@@ -266,12 +259,14 @@ const cspNonce = Astro.locals.cspNonce || '';
   const settingsForm = document.getElementById('settings-form');
   const settingsMessagesContainer = document.getElementById('settings-messages');
   const settingsCurrencyInput = document.getElementById('currency');
+  const currencyLoadingIndicator = document.getElementById('currency-loading');
   const settingsSubmitButton = settingsForm?.querySelector('button[type="submit"]');
-  const settingsButtonText = settingsSubmitButton?.querySelector('[data-button-text]');
-  const settingsLoadingSpinner = settingsSubmitButton?.querySelector('[data-loading-spinner]');
 
-  // Fetch current settings and pre-fill currency
+  // Fetch current settings and pre-fill currency with race condition guard
+  let isFetchingSettings = false;
   const fetchCurrentSettings = async () => {
+    if (isFetchingSettings) return;
+    isFetchingSettings = true;
     try {
       const response = await fetch(apiSettingsUrl, {
         method: 'GET',
@@ -282,12 +277,21 @@ const cspNonce = Astro.locals.cspNonce || '';
         const result = await response.json();
         if (result.success && result.data) {
           if (settingsCurrencyInput) {
-            settingsCurrencyInput.value = result.data.primaryCurrency || 'IDR';
+            settingsCurrencyInput.value = result.data.primaryCurrency || defaultCurrency;
           }
         }
       }
     } catch (error) {
       console.error('Error fetching user settings:', error);
+    } finally {
+      // Hide loading spinner and enable select
+      if (currencyLoadingIndicator) {
+        currencyLoadingIndicator.classList.add('hidden');
+      }
+      if (settingsCurrencyInput) {
+        settingsCurrencyInput.disabled = false;
+      }
+      isFetchingSettings = false;
     }
   };
 
@@ -314,22 +318,13 @@ const cspNonce = Astro.locals.cspNonce || '';
       // Client-side validation
       if (!settingsCurrencyInput.value) {
         if (settingsMessagesContainer) {
-          settingsMessagesContainer.innerHTML = `
-            <div role="alert" class="alert alert-error">
-              <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span>Please select a currency</span>
-            </div>
-          `;
+          settingsMessagesContainer.innerHTML = createErrorAlert('Please select a currency');
         }
         return;
       }
 
       // Show loading state
-      if (settingsButtonText) settingsButtonText.classList.add('hidden');
-      if (settingsLoadingSpinner) settingsLoadingSpinner.classList.remove('hidden');
-      if (settingsSubmitButton) settingsSubmitButton.disabled = true;
+      setButtonLoading(settingsSubmitButton, true);
 
       try {
         const formData = new FormData(settingsForm);
@@ -351,47 +346,28 @@ const cspNonce = Astro.locals.cspNonce || '';
         if (response.ok && result.success) {
           // Success - show success message
           if (settingsMessagesContainer) {
-            settingsMessagesContainer.innerHTML = `
-              <div role="alert" class="alert alert-success">
-                <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span>Settings saved successfully!</span>
-              </div>
-            `;
+            settingsMessagesContainer.innerHTML = createSuccessAlert(
+              'Settings saved successfully!'
+            );
           }
         } else {
           // Error - show error message
           const errorMessage =
             result.error?.message || 'Failed to save settings. Please try again.';
           if (settingsMessagesContainer) {
-            settingsMessagesContainer.innerHTML = `
-              <div role="alert" class="alert alert-error">
-                <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span>${escapeHtml(errorMessage)}</span>
-              </div>
-            `;
+            settingsMessagesContainer.innerHTML = createErrorAlert(errorMessage);
           }
         }
       } catch (error) {
         console.error('Settings update error:', error);
         if (settingsMessagesContainer) {
-          settingsMessagesContainer.innerHTML = `
-            <div role="alert" class="alert alert-error">
-              <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span>An error occurred. Please check your connection and try again.</span>
-            </div>
-          `;
+          settingsMessagesContainer.innerHTML = createErrorAlert(
+            'An error occurred. Please check your connection and try again.'
+          );
         }
       } finally {
         // Reset loading state
-        if (settingsButtonText) settingsButtonText.classList.remove('hidden');
-        if (settingsLoadingSpinner) settingsLoadingSpinner.classList.add('hidden');
-        if (settingsSubmitButton) settingsSubmitButton.disabled = false;
+        setButtonLoading(settingsSubmitButton, false);
       }
     });
   }

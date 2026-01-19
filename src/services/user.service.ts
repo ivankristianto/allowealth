@@ -174,7 +174,7 @@ export class UserService {
     await constantTimeDelay(100);
 
     if (!isValidOldPassword) {
-      throw new UserServiceError(ServiceErrorCode.INVALID_PASSWORD, 'Invalid old password', 401);
+      throw new UserServiceError(ServiceErrorCode.INVALID_PASSWORD, 'Invalid old password', 400);
     }
 
     // Hash new password

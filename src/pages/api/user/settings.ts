@@ -13,7 +13,27 @@ import { UserServiceError, ServiceErrorCode } from '@/services/service-errors';
 
 /**
  * GET /api/user/settings
- * Get current user settings with defaults applied
+ *
+ * Retrieves the current authenticated user's settings with defaults applied
+ * for any missing values.
+ *
+ * @authentication Requires valid session cookie (handled by requireAuth)
+ * @returns {Promise<Response>} JSON response with user settings
+ * @returns {Object} data.primaryCurrency - Primary currency code (default: 'IDR')
+ * @returns {Object} data.preferences - User preferences object
+ * @returns {number} status - 200 on success, 401 if unauthorized, 404 if user not found, 500 on server error
+ *
+ * @example
+ * Response (200):
+ * ```json
+ * {
+ *   "success": true,
+ *   "data": {
+ *     "primaryCurrency": "IDR",
+ *     "preferences": {}
+ *   }
+ * }
+ * ```
  */
 export const GET: APIRoute = async (context) => {
   try {
@@ -36,7 +56,57 @@ export const GET: APIRoute = async (context) => {
 
 /**
  * PUT /api/user/settings
- * Update user settings (primary currency, preferences)
+ *
+ * Updates the current authenticated user's settings. Creates settings record
+ * if it doesn't exist (upsert operation).
+ *
+ * @authentication Requires valid session cookie (handled by requireAuth)
+ * @param {Object} requestBody - Request body containing settings updates
+ * @param {string} requestBody.primaryCurrency - Primary currency code (required, must be 'IDR' or 'USD')
+ * @param {Object} [requestBody.preferences] - Optional user preferences object
+ * @returns {Promise<Response>} JSON response with updated settings
+ * @returns {Object} data.primaryCurrency - Updated primary currency code
+ * @returns {Object} data.preferences - Updated user preferences
+ * @returns {number} status - 200 on success, 400 on validation error, 401 if unauthorized, 404 if user not found, 500 on server error
+ *
+ * @example
+ * Request:
+ * ```json
+ * {
+ *   "primaryCurrency": "USD",
+ *   "preferences": {}
+ * }
+ * ```
+ *
+ * @example
+ * Response (200):
+ * ```json
+ * {
+ *   "success": true,
+ *   "data": {
+ *     "primaryCurrency": "USD",
+ *     "preferences": {}
+ *   }
+ * }
+ * ```
+ *
+ * @example
+ * Response (400) - Validation Error:
+ * ```json
+ * {
+ *   "success": false,
+ *   "error": {
+ *     "message": "Validation failed",
+ *     "code": "VALIDATION_ERROR",
+ *     "details": [
+ *       {
+ *         "path": ["primaryCurrency"],
+ *         "message": "Invalid currency. Must be one of: IDR, USD"
+ *       }
+ *     ]
+ *   }
+ * }
+ * ```
  */
 export const PUT: APIRoute = async (context) => {
   try {
