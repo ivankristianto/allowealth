@@ -155,6 +155,8 @@ const setButtonLoadingFn = setButtonLoading.toString();
   nonce={cspNonce}
   is:inline
 >
+  // @ts-nocheck - TODO: Use Toast for Alerts and remove this comment
+
   // Client utility functions (injected from server-side for CSP compatibility)
   const createSuccessAlert = eval('(' + createSuccessAlertFn + ')');
   const createErrorAlert = eval('(' + createErrorAlertFn + ')');

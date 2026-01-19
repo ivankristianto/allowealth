@@ -245,18 +245,19 @@ export class UserService {
       // Update existing settings
       await this.db.update(userSettings).set(updateData).where(eq(userSettings.user_id, userId));
     } else {
-      // Create new settings
-      // await is required here otherwise it will fail the test.
-      await this.db.insert(userSettings).values({
-        user_id: userId,
-        primary_currency: validated.primaryCurrency,
-        show_converted_totals:
-          validated.showConvertedTotals ?? DEFAULT_SETTINGS.showConvertedTotals,
-        show_individual_currencies:
-          validated.showIndividualCurrencies ?? DEFAULT_SETTINGS.showIndividualCurrencies,
-        created_at: new Date(),
-        updated_at: new Date(),
-      });
+      // Create new settings (Promise.resolve ensures await works correctly)
+      await Promise.resolve(
+        this.db.insert(userSettings).values({
+          user_id: userId,
+          primary_currency: validated.primaryCurrency,
+          show_converted_totals:
+            validated.showConvertedTotals ?? DEFAULT_SETTINGS.showConvertedTotals,
+          show_individual_currencies:
+            validated.showIndividualCurrencies ?? DEFAULT_SETTINGS.showIndividualCurrencies,
+          created_at: new Date(),
+          updated_at: new Date(),
+        })
+      );
     }
 
     // Return updated settings
