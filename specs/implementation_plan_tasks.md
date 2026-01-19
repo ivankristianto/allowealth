@@ -1152,12 +1152,19 @@ paths:
 
 **Checklist:**
 
-- [ ] Add conditional check before calling `updateCurrencyForCategory()`
-- [ ] Only call if category was NOT pre-selected (no value set)
-- [ ] Test that currency updates correctly on page load with pre-selected category
-- [ ] Test that currency updates correctly when category has no pre-selection
+- [x] Add conditional check before calling `updateCurrencyForCategory()`
+- [x] Only call if category was NOT pre-selected (no value set)
+- [x] Test that currency updates correctly on page load with pre-selected category
+- [x] Test that currency updates correctly when category has no pre-selection
 
 **Estimated Time:** 30 minutes
+
+**Status:** ✅ Completed
+
+- Modified `preselectLastUsedValues()` to return boolean indicating if category was pre-selected
+- Updated initialization code to only call `updateCurrencyForCategory()` if category was NOT pre-selected
+- All quality gates pass (typecheck, lint, stylelint, format)
+- Code review: APPROVED with minor non-blocking suggestions
 
 ---
 
@@ -1173,12 +1180,20 @@ paths:
 
 **Checklist:**
 
-- [ ] Extract `getCategoryStorageKey(transactionType)` helper function
-- [ ] Update `getLastUsedCategory()` to use helper
-- [ ] Update `setLastUsedCategory()` to use helper
-- [ ] Test that expense and income categories are still stored separately
+- [x] Extract `getCategoryStorageKey(transactionType)` helper function
+- [x] Update `getLastUsedCategory()` to use helper
+- [x] Update `setLastUsedCategory()` to use helper
+- [x] Test that expense and income categories are still stored separately
 
 **Estimated Time:** 15 minutes
+
+**Status:** ✅ Completed
+
+- Added `getCategoryStorageKey()` helper function to eliminate code duplication
+- Updated `getLastUsedCategory()` to use the helper
+- Updated `setLastUsedCategory()` to use the helper (including error retry logic)
+- All quality gates pass (typecheck, lint, stylelint, format)
+- Code review: APPROVED with minor non-blocking suggestions
 
 ---
 
@@ -1194,11 +1209,18 @@ paths:
 
 **Checklist:**
 
-- [ ] Define `DEFAULT_TRANSACTION_TYPE = 'expense'` constant
-- [ ] Replace all instances of `'expense'` default with constant
-- [ ] Test that expense type is still the default
+- [x] Define `DEFAULT_TRANSACTION_TYPE = 'expense'` constant
+- [x] Replace all instances of `'expense'` default with constant
+- [x] Test that expense type is still the default
 
 **Estimated Time:** 15 minutes
+
+**Status:** ✅ Completed
+
+- Added `DEFAULT_TRANSACTION_TYPE` constant to replace magic string 'expense'
+- Updated all instances to use the constant (in `preselectLastUsedValues()` and form submission)
+- All quality gates pass (typecheck, lint, stylelint, format)
+- Code review: APPROVED with minor non-blocking suggestions
 
 ---
 
