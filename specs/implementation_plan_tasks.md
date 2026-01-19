@@ -1103,7 +1103,95 @@ paths:
 
 ---
 
-**Total Estimated Effort for Section 4:** 9-11 hours
+#### 4.9 Fix Race Condition on Form Initialization (Priority: P1)
+
+**Source:** Code review feedback for Task 3.2
+
+**Goal:** Eliminate potential double-update caused by redundant initialization calls.
+
+**Files affected:**
+
+- `src/components/molecules/TransactionForm.astro`
+
+**Issue:**
+
+- The initialization calls both `preselectLastUsedValues()` (which dispatches a 'change' event) AND `updateCurrencyForCategory()`
+- This creates a potential double-update and timing ambiguity
+
+**Checklist:**
+
+- [ ] Add conditional check before calling `updateCurrencyForCategory()`
+- [ ] Only call if category was NOT pre-selected (no value set)
+- [ ] Test that currency updates correctly on page load with pre-selected category
+- [ ] Test that currency updates correctly when category has no pre-selection
+
+**Estimated Time:** 30 minutes
+
+---
+
+#### 4.10 Extract localStorage Key Selection Helper (Priority: P2)
+
+**Source:** Code review feedback for Task 3.2
+
+**Goal:** Eliminate code duplication in localStorage key selection logic.
+
+**Files affected:**
+
+- `src/components/molecules/TransactionForm.astro`
+
+**Checklist:**
+
+- [ ] Extract `getCategoryStorageKey(transactionType)` helper function
+- [ ] Update `getLastUsedCategory()` to use helper
+- [ ] Update `setLastUsedCategory()` to use helper
+- [ ] Test that expense and income categories are still stored separately
+
+**Estimated Time:** 15 minutes
+
+---
+
+#### 4.11 Extract Default Transaction Type Constant (Priority: P2)
+
+**Source:** Code review feedback for Task 3.2
+
+**Goal:** Replace magic string 'expense' with named constant.
+
+**Files affected:**
+
+- `src/components/molecules/TransactionForm.astro`
+
+**Checklist:**
+
+- [ ] Define `DEFAULT_TRANSACTION_TYPE = 'expense'` constant
+- [ ] Replace all instances of `'expense'` default with constant
+- [ ] Test that expense type is still the default
+
+**Estimated Time:** 15 minutes
+
+---
+
+#### 4.12 Add Namespace Prefix to localStorage Keys (Priority: P2)
+
+**Source:** Code review feedback for Task 3.2
+
+**Goal:** Prevent localStorage key collisions with other code on same origin.
+
+**Files affected:**
+
+- `src/components/molecules/TransactionForm.astro`
+
+**Checklist:**
+
+- [ ] Add namespace prefix to all STORAGE_KEYS (e.g., `expensesApp.`)
+- [ ] Update migration logic to clear old keys and set new namespaced keys
+- [ ] Test that existing users' preferences are migrated correctly
+- [ ] Test that new selections are stored with namespaced keys
+
+**Estimated Time:** 1 hour
+
+---
+
+**Total Estimated Effort for Section 4:** 9-11 hours + 2 hours (Task 3.2 follow-ups) = **11-13 hours**
 
 ---
 
