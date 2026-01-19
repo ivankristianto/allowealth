@@ -123,6 +123,70 @@ import { X, Plus, Edit, Trash2, Check, AlertCircle, Search, Filter } from '@luci
 <Badge variant="primary" outline>New</Badge>
 ```
 
+### Toast (`src/components/molecules/ToastContainer.astro`)
+
+**Global toast notification system** using Nano Stores and Motion for state management and animations. Automatically included in `BaseLayout.astro`.
+
+**Usage (in client-side scripts):**
+
+```astro
+<script>
+  import { addToast } from '@/lib/stores/toastStore';
+
+  // Basic usage
+  addToast('Profile saved!', 'success');
+  addToast('Failed to save', 'error');
+  addToast('Please review', 'warning');
+  addToast('New update available', 'info');
+
+  // Custom duration (ms)
+  addToast('Quick message', 'success', { duration: 2000 });
+
+  // Persistent (manual dismiss)
+  addToast('Action required', 'warning', { duration: 0 });
+
+  // Remove specific toast
+  import { removeToast } from '@/lib/stores/toastStore';
+  const toastId = addToast('Message', 'info');
+  removeToast(toastId);
+
+  // Clear all toasts
+  import { clearAllToasts } from '@/lib/stores/toastStore';
+  clearAllToasts();
+</script>
+```
+
+**Types:** `success` | `error` | `warning` | `info`
+
+**Behavior:**
+
+- Success/info/warning: Auto-dismiss after 5 seconds
+- Error: Persistent until manually dismissed
+- Maximum 5 toasts visible at once (older toasts removed when limit reached)
+- Positioned top-right with slide animations
+- Cleaned up on page navigation to prevent memory leaks
+
+**DaisyUI Classes Used:**
+
+```html
+<!-- Container -->
+<div class="toast toast-top toast-end z-50" role="region" aria-label="Notifications">
+  <!-- Individual toast -->
+  <div class="alert alert-success" role="alert" aria-live="polite">
+    <span>Message here</span>
+    <button class="btn btn-ghost btn-xs" aria-label="Dismiss">✕</button>
+  </div>
+</div>
+```
+
+**Accessibility:**
+
+- Container: `role="region"` and `aria-label="Notifications"`
+- Each toast: `role="alert"` with `aria-live="polite"` (success/info/warning) or `aria-live="assertive"` (error)
+- Dismissible button with `aria-label`
+
+**Note:** The close button uses inline SVG instead of `@lucide/astro` icon component. This is necessary due to Astro SSR limitations for client-side scripts that dynamically create DOM elements.
+
 ## Patterns
 
 ### Conditional Classes

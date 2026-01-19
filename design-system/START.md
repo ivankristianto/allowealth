@@ -15,7 +15,7 @@
 5. **Server-side** - Astro components are SSR by default
 6. **Modern HTML** - Use semantic elements (`<button>`, `<nav>`, `<main>`, `<section>`, `<article>`)
 7. **Icons** - Use `@lucide/astro` for all icons (consistent, accessible)
-8. **Animations** - Use `framer-motion` for complex animations and transitions
+8. **Animations** - Use `motion` for complex animations and transitions
 
 ### Import Tokens
 
@@ -32,7 +32,7 @@ import { X, Plus, Edit, Trash2 } from '@lucide/astro';
 ### Import Animations
 
 ```typescript
-import { motion } from 'framer-motion';
+import { animate } from 'motion';
 ```
 
 ## Token Quick Reference
@@ -124,7 +124,8 @@ design-system/
 ├── 04-accessibility.md   # WCAG, keyboard, ARIA, screen readers
 ├── 05-responsive.md      # Mobile-first, breakpoints
 ├── 06-data-visualization.md # Currency, charts, tables
-└── 07-patterns.md        # Layouts, navigation, lists
+├── 07-patterns.md        # Layouts, navigation, lists
+└── 08-animations.md      # Motion animation patterns
 ```
 
 ## When to Consult Docs
@@ -138,6 +139,7 @@ design-system/
 | Responsive layout              | 05-responsive.md         |
 | Display currency/charts        | 06-data-visualization.md |
 | Dashboard/list page            | 07-patterns.md           |
+| Complex animations             | 08-animations.md         |
 
 ## Essential Checklists
 
@@ -180,57 +182,35 @@ import { X, Plus, Edit, Trash2, Check, AlertCircle } from '@lucide/astro';
 </div>
 ```
 
-### Animations (Framer Motion)
+### Animations (Motion)
 
 ```astro
 ---
-import { motion } from 'framer-motion';
+// In client-side script
+import { animate } from 'motion';
 ---
 
-<!-- Fade in animation -->
-<motion.div
-  client:load
-  initial={{ opacity: 0 }}
-  animate={{ opacity: 1 }}
-  transition={{ duration: 0.3 }}
->
-  Content
-</motion.div>
+<script>
+  // Fade in animation
+  const element = document.querySelector('.fade-in');
+  animate(element, { opacity: [0, 1] }, { duration: 0.3 });
 
-<!-- Slide in from bottom -->
-<motion.div
-  client:load
-  initial={{ y: 20, opacity: 0 }}
-  animate={{ y: 0, opacity: 1 }}
-  transition={{ duration: 0.4 }}
->
-  Modal content
-</motion.div>
+  // Slide in from bottom
+  const modal = document.querySelector('.modal');
+  animate(modal, { y: [20, 0], opacity: [0, 1] }, { duration: 0.4 });
 
-<!-- Stagger children -->
-<motion.ul
-  client:load
-  initial="hidden"
-  animate="visible"
-  variants={{
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-      },
-    },
-  }}
->
-  <motion.li variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } }}>
-    Item 1
-  </motion.li>
-</motion.ul>
+  // Stagger children
+  const items = document.querySelectorAll('.list-item');
+  items.forEach((item, index) => {
+    animate(item, { opacity: [0, 1], y: [10, 0] }, { duration: 0.3, delay: index * 0.1 });
+  });
 
-<!-- Exit animation -->
-<motion.div client:load exit={{ opacity: 0, scale: 0.95 }} transition={{ duration: 0.2 }}>
-  Dismissible element
-</motion.div>
+  // Exit animation
+  const dismissible = document.querySelector('.dismissible');
+  animate(dismissible, { opacity: [1, 0], scale: [1, 0.95] }, { duration: 0.2 }).then(() =>
+    dismissible.remove()
+  );
+</script>
 ```
 
 ### Responsive Grid
@@ -324,7 +304,7 @@ import { motion } from 'framer-motion';
 ✅ Lucide icons: `<Plus size={20} />`
 
 ❌ CSS transitions only: `transition: all 0.3s`
-✅ Framer Motion for complex: `<motion.div animate={{ scale: 1.1 }}>`
+✅ Motion for complex: `animate(element, { scale: [1, 1.1] }, { duration: 0.2 })`
 
 ## Need More Details?
 

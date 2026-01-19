@@ -179,6 +179,128 @@ Common page and component compositions.
 </div>
 ```
 
+## Toast Notifications
+
+Toast notifications provide feedback for user actions, API responses, and background task completion. The toast system uses Nano Stores for state management and Motion for smooth animations.
+
+### When to Use Toasts
+
+**Use toasts for:**
+
+- Form submission feedback (success/error)
+- API response notifications
+- Background task completion
+- Non-blocking error messages
+- Informational updates
+
+**Do NOT use toasts for:**
+
+- Form validation errors (use inline errors)
+- Critical blocking errors (use error page/modal)
+- Confirmation dialogs (use Modal)
+
+### Basic Usage
+
+```astro
+<script>
+  import { addToast } from '@/lib/stores/toastStore';
+
+  // Success toast (auto-dismisses after 5 seconds)
+  addToast('Profile updated successfully!', 'success');
+
+  // Error toast (persistent until dismissed)
+  addToast('Failed to save. Please try again.', 'error');
+
+  // Warning toast (auto-dismisses after 5 seconds)
+  addToast('Budget limit approaching', 'warning');
+
+  // Info toast (auto-dismisses after 5 seconds)
+  addToast('New feature available', 'info');
+</script>
+```
+
+### Advanced Usage
+
+```astro
+<script>
+  import { addToast, removeToast, clearAllToasts } from '@/lib/stores/toastStore';
+
+  // Custom duration (in milliseconds)
+  addToast('Quick notification', 'success', { duration: 2000 });
+
+  // Persistent toast (manual dismiss only)
+  addToast('Important: Action required', 'warning', { duration: 0 });
+
+  // Remove specific toast programmatically
+  const toastId = addToast('Loading...', 'info');
+  // ... later
+  removeToast(toastId);
+
+  // Clear all toasts (useful for navigation cleanup)
+  clearAllToasts();
+</script>
+```
+
+### Toast Types and Behavior
+
+| Type    | Auto-Dismiss | Duration   | ARIA Live | Use Case                          |
+| ------- | ------------ | ---------- | --------- | --------------------------------- |
+| success | Yes          | 5 seconds  | polite    | Successful actions, confirmations |
+| error   | No           | Persistent | assertive | Errors requiring attention        |
+| warning | Yes          | 5 seconds  | polite    | Warnings, cautions                |
+| info    | Yes          | 5 seconds  | polite    | Informational messages            |
+
+### Multi-Toast Stacking
+
+The toast system displays a maximum of 5 toasts at once. When the limit is reached, older toasts are automatically removed:
+
+```javascript
+// Rapidly adding toasts
+for (let i = 0; i < 10; i++) {
+  addToast(`Message ${i}`, 'info');
+}
+// Only the last 5 toasts will be visible
+```
+
+### Animation Patterns
+
+Toasts use CSS transitions for smooth enter/exit animations:
+
+- **Enter**: Fade in + slide from right (300ms, easeOut)
+- **Exit**: Fade out + slide to right (200ms, easeIn)
+
+### Example: Form Submission
+
+```astro
+<script>
+  import { addToast } from '@/lib/stores/toastStore';
+
+  async function handleSubmit(event) {
+    event.preventDefault();
+    const formData = new FormData(event.target);
+
+    try {
+      const response = await fetch('/api/settings', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save');
+      }
+
+      addToast('Settings saved successfully!', 'success');
+    } catch (error) {
+      addToast('Failed to save settings. Please try again.', 'error');
+    }
+  }
+</script>
+
+<form onsubmit={handleSubmit}>
+  <!-- Form fields -->
+</form>
+```
+
 ## Loading
 
 ```html

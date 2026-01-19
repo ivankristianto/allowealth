@@ -42,6 +42,8 @@ bd stats              # Project health overview
 - **Framework:** Astro 5.x (file-based routing)
 - **Styling:** Tailwind CSS v4 + DaisyUI v5
 - **Components:** Astro components (server-side)
+- **State Management:** Nano Stores (client-side reactive state)
+- **Animations:** Motion (client-side animations)
 - **Storybook:** 8.x with HTML framework
 - **Database:** Drizzle ORM + SQLite (dev) / MySQL (prod)
 - **Auth:** Lucia Auth
@@ -90,6 +92,8 @@ src/
 │   ├── calculators/
 │   └── settings/
 ├── lib/
+│   ├── stores/           # Nano Stores for client-side state
+│   │   └── toastStore.ts # Toast notification state
 │   └── tokens.ts         # Design tokens & helpers
 └── styles/
     ├── globals.css       # Global styles
@@ -127,6 +131,34 @@ The project uses **OpenAPI 3.1.0** for API documentation.
 - Use `.stories.ts` files (TypeScript)
 - Render functions create DOM elements directly
 - Test all variants and states
+
+### Toast Notifications
+
+Use the toast system for user feedback instead of inline alerts:
+
+```typescript
+// In client-side <script> tags
+import { addToast } from '@/lib/stores/toastStore';
+
+// After successful action
+addToast('Changes saved!', 'success');
+
+// After error
+addToast('Failed to save. Please try again.', 'error');
+```
+
+**When to use:**
+
+- Form submission feedback
+- API response notifications
+- Background task completion
+- Error messages that don't block UI
+
+**When NOT to use:**
+
+- Form validation errors (use inline errors)
+- Critical blocking errors (use error page/modal)
+- Confirmation dialogs (use Modal)
 
 ## TypeScript Guidelines
 
