@@ -235,6 +235,7 @@ const paymentMethodsJson = JSON.stringify(
 
   // Parse categories and budget info from data attributes (server-serialized JSON)
   const categories = JSON.parse(form?.dataset.categoriesJson || '[]');
+  const paymentMethods = JSON.parse(form?.dataset.paymentMethodsJson || '[]');
   const action = form?.dataset.action || '/api/transactions';
   const method = form?.dataset.method || 'POST';
 
@@ -256,27 +257,75 @@ const paymentMethodsJson = JSON.stringify(
   };
 
   function getLastUsedCategory(transactionType) {
-    const key =
-      transactionType === 'expense'
-        ? STORAGE_KEYS.lastExpenseCategory
-        : STORAGE_KEYS.lastIncomeCategory;
-    return localStorage.getItem(key);
+    try {
+      const key =
+        transactionType === 'expense'
+          ? STORAGE_KEYS.lastExpenseCategory
+          : STORAGE_KEYS.lastIncomeCategory;
+      const value = localStorage.getItem(key);
+      // Sanitize: ensure it's a string matching expected ID format
+      if (value && /^[a-zA-Z0-9\-]+$/.test(value)) {
+        return value;
+      }
+      return null;
+    } catch (e) {
+      // localStorage unavailable (private mode, quota exceeded, etc.)
+      console.warn('localStorage unavailable:', e);
+      return null;
+    }
   }
 
   function setLastUsedCategory(transactionType, categoryId) {
-    const key =
-      transactionType === 'expense'
-        ? STORAGE_KEYS.lastExpenseCategory
-        : STORAGE_KEYS.lastIncomeCategory;
-    localStorage.setItem(key, categoryId);
+    try {
+      const key =
+        transactionType === 'expense'
+          ? STORAGE_KEYS.lastExpenseCategory
+          : STORAGE_KEYS.lastIncomeCategory;
+      localStorage.setItem(key, categoryId);
+    } catch (e) {
+      // Quota exceeded or localStorage unavailable
+      console.warn('Failed to save category to localStorage:', e);
+      // Try to clear old data and retry
+      try {
+        localStorage.clear();
+        const key =
+          transactionType === 'expense'
+            ? STORAGE_KEYS.lastExpenseCategory
+            : STORAGE_KEYS.lastIncomeCategory;
+        localStorage.setItem(key, categoryId);
+      } catch (e2) {
+        // Still failing - give up silently
+      }
+    }
   }
 
   function getLastUsedPaymentMethod() {
-    return localStorage.getItem(STORAGE_KEYS.lastPaymentMethod);
+    try {
+      const value = localStorage.getItem(STORAGE_KEYS.lastPaymentMethod);
+      // Sanitize: ensure it's a string matching expected ID format
+      if (value && /^[a-zA-Z0-9\-]+$/.test(value)) {
+        return value;
+      }
+      return null;
+    } catch (e) {
+      console.warn('localStorage unavailable:', e);
+      return null;
+    }
   }
 
   function setLastUsedPaymentMethod(paymentMethodId) {
-    localStorage.setItem(STORAGE_KEYS.lastPaymentMethod, paymentMethodId);
+    try {
+      localStorage.setItem(STORAGE_KEYS.lastPaymentMethod, paymentMethodId);
+    } catch (e) {
+      console.warn('Failed to save payment method to localStorage:', e);
+      // Try to clear old data and retry
+      try {
+        localStorage.clear();
+        localStorage.setItem(STORAGE_KEYS.lastPaymentMethod, paymentMethodId);
+      } catch (e2) {
+        // Still failing - give up silently
+      }
+    }
   }
 
   // Pre-select last used values on form load
@@ -295,6 +344,8 @@ const paymentMethodsJson = JSON.stringify(
           categorySelect.value = lastCategory;
           // Trigger change event to update currency and budget display
           categorySelect.dispatchEvent(new Event('change'));
+        } else {
+          console.warn(`Last used category "${lastCategory}" no longer available`);
         }
       }
     }
@@ -303,7 +354,13 @@ const paymentMethodsJson = JSON.stringify(
     if (paymentMethodSelect && !paymentMethodSelect.value) {
       const lastPaymentMethod = getLastUsedPaymentMethod();
       if (lastPaymentMethod) {
-        paymentMethodSelect.value = lastPaymentMethod;
+        // Validate payment method still exists
+        const paymentMethod = paymentMethods.find((pm) => pm.id === lastPaymentMethod);
+        if (paymentMethod) {
+          paymentMethodSelect.value = lastPaymentMethod;
+        } else {
+          console.warn(`Last used payment method "${lastPaymentMethod}" no longer available`);
+        }
       }
     }
   }
