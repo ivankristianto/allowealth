@@ -480,13 +480,18 @@ const paymentMethodsJson = JSON.stringify(
     lastIncomeCategory: 'lastIncomeCategory',
     lastPaymentMethod: 'lastPaymentMethod',
   };
+  const DEFAULT_TRANSACTION_TYPE = 'expense';
+
+  // Helper: Get localStorage key for category based on transaction type
+  function getCategoryStorageKey(transactionType) {
+    return transactionType === 'expense'
+      ? STORAGE_KEYS.lastExpenseCategory
+      : STORAGE_KEYS.lastIncomeCategory;
+  }
 
   function getLastUsedCategory(transactionType) {
     try {
-      const key =
-        transactionType === 'expense'
-          ? STORAGE_KEYS.lastExpenseCategory
-          : STORAGE_KEYS.lastIncomeCategory;
+      const key = getCategoryStorageKey(transactionType);
       const value = localStorage.getItem(key);
       // Sanitize: ensure it's a string matching expected ID format
       if (value && /^[a-zA-Z0-9\-]+$/.test(value)) {
@@ -502,10 +507,7 @@ const paymentMethodsJson = JSON.stringify(
 
   function setLastUsedCategory(transactionType, categoryId) {
     try {
-      const key =
-        transactionType === 'expense'
-          ? STORAGE_KEYS.lastExpenseCategory
-          : STORAGE_KEYS.lastIncomeCategory;
+      const key = getCategoryStorageKey(transactionType);
       localStorage.setItem(key, categoryId);
     } catch (e) {
       // Quota exceeded or localStorage unavailable
@@ -513,10 +515,7 @@ const paymentMethodsJson = JSON.stringify(
       // Try to clear old data and retry
       try {
         localStorage.clear();
-        const key =
-          transactionType === 'expense'
-            ? STORAGE_KEYS.lastExpenseCategory
-            : STORAGE_KEYS.lastIncomeCategory;
+        const key = getCategoryStorageKey(transactionType);
         localStorage.setItem(key, categoryId);
       } catch (e2) {
         // Still failing - give up silently
@@ -554,10 +553,13 @@ const paymentMethodsJson = JSON.stringify(
   }
 
   // Pre-select last used values on form load
+  // Returns true if a category was pre-selected, false otherwise
   function preselectLastUsedValues() {
-    const formType = document.querySelector('input[name="type"]:checked')?.value || 'expense';
+    const formType =
+      document.querySelector('input[name="type"]:checked')?.value || DEFAULT_TRANSACTION_TYPE;
     const categorySelect = document.querySelector('select[name="category_id"]');
     const paymentMethodSelect = document.querySelector('select[name="payment_method_id"]');
+    let categoryPreselected = false;
 
     // Only pre-select if the form doesn't already have a value (server-rendered)
     if (categorySelect && !categorySelect.value) {
@@ -567,6 +569,7 @@ const paymentMethodsJson = JSON.stringify(
         const category = categories.find((c) => c.id === lastCategory && c.type === formType);
         if (category) {
           categorySelect.value = lastCategory;
+          categoryPreselected = true;
           // Trigger change event to update currency and budget display
           categorySelect.dispatchEvent(new Event('change'));
         } else {
@@ -588,6 +591,8 @@ const paymentMethodsJson = JSON.stringify(
         }
       }
     }
+
+    return categoryPreselected;
   }
 
   // === End localStorage helpers ===
@@ -829,7 +834,7 @@ const paymentMethodsJson = JSON.stringify(
     try {
       const formData = new FormData(form);
       const data = {
-        type: formData.get('type') || 'expense',
+        type: formData.get('type') || DEFAULT_TRANSACTION_TYPE,
         amount: formData.get('amount') || '0',
         currency: formData.get('currency') || 'IDR',
         category_id: formData.get('category_id') || '',
@@ -910,7 +915,10 @@ const paymentMethodsJson = JSON.stringify(
 
   // Initialize form with pre-selected values, validation listeners, and update displays
   attachValidationListeners();
-  preselectLastUsedValues();
-  updateCurrencyForCategory();
+  const wasCategoryPreselected = preselectLastUsedValues();
+  // Only update currency if category was NOT pre-selected (pre-selection triggers change event)
+  if (!wasCategoryPreselected) {
+    updateCurrencyForCategory();
+  }
   updateBudgetDisplay();
 </script>
