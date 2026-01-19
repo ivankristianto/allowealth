@@ -1,8 +1,8 @@
 # Personal Finance Manager - Execution Plan
 
-**Version:** 1.0  
-**Date:** January 3, 2026  
-**Project Duration:** 12 weeks (MVP)  
+**Version:** 1.1
+**Date:** January 19, 2026
+**Project Duration:** 12 weeks (MVP)
 **Approach:** UI/UX-First Development
 
 ---
@@ -47,26 +47,29 @@ This execution plan outlines a **UI/UX-first development approach** for building
 
 ## Current Progress Status
 
-**Last Updated:** January 18, 2026
+**Last Updated:** January 19, 2026
 
-### Overall Progress: ~60% Complete
+### Overall Progress: ~70% Complete
 
-| Phase                            | Status         | Completion | Notes                                                 |
-| -------------------------------- | -------------- | ---------- | ----------------------------------------------------- |
-| Phase 0: Design System & Setup   | ✅ Complete    | 100%       | All atomic components, layouts, routing done          |
-| Phase 1: Auth & Dashboard        | ✅ Complete    | 95%        | Dashboard fully wired to service, tests pending       |
-| Phase 2: Transactions & Budget   | 🚧 In Progress | 85%        | Core features working, budget edit modal needs wiring |
-| Phase 3: Assets & Multi-Currency | 🚧 In Progress | 60%        | Services done, pages need UI wiring                   |
-| Phase 4: Analytics & Reports     | ❌ Not Started | 10%        | Schema done, no charts/reports implemented            |
-| Phase 5: Calculators & Polish    | ❌ Not Started | 0%         | No work started                                       |
+| Phase                            | Status         | Completion | Notes                                                    |
+| -------------------------------- | -------------- | ---------- | -------------------------------------------------------- |
+| Phase 0: Design System & Setup   | ✅ Complete    | 100%       | All atomic components, layouts, routing done             |
+| Phase 1: Auth & Dashboard        | ✅ Complete    | 100%       | Dashboard & User Settings fully functional               |
+| Phase 2: Transactions & Budget   | 🚧 In Progress | 95%        | Budget editing & Transaction UX done. CSV Import pending |
+| Phase 3: Assets & Multi-Currency | 🚧 In Progress | 60%        | Services done, pages need UI wiring                      |
+| Phase 4: Analytics & Reports     | ❌ Not Started | 10%        | Schema done, no charts/reports implemented               |
+| Phase 5: Calculators & Polish    | 🚧 Started     | 20%        | User profile & settings features pulled forward & done   |
 
 ### What's Working ✅
 
-**User Management:**
+**User Management & Settings:**
 
 - User registration, login, logout
 - Password reset flow
-- Session management with Lucia Auth
+- **Profile updates (Name, Email)**
+- **Password change with security validation**
+- **Primary currency configuration**
+- **Session management with Lucia Auth**
 
 **Dashboard:**
 
@@ -79,10 +82,11 @@ This execution plan outlines a **UI/UX-first development approach** for building
 **Transactions:**
 
 - Add/edit/delete transactions
+- **Smart form with budget remaining display**
+- **"Remember last used" category/payment method**
 - Transaction list with filters (type, category, payment method, currency, date range, search)
 - Pagination
 - CSV export
-- Budget remaining display on add form
 
 **Budget:**
 
@@ -92,7 +96,8 @@ This execution plan outlines a **UI/UX-first development approach** for building
 - Budget alerts (warning at 80%, exceeded at 100%)
 - Budget history view
 - CSV export
-- Budget edit modal (UI only, needs API wiring)
+- **Inline Budget Edit (modal wired to API)**
+- **Auto-calculation of budget percentage**
 
 **Categories & Payment Methods:**
 
@@ -103,35 +108,28 @@ This execution plan outlines a **UI/UX-first development approach** for building
 
 **High Priority (P0):**
 
-- User settings page - form exists but not wired to backend
-- User profile update - no service for updating name/email
-- Password change - no endpoint for changing password
-- Budget edit modal - UI exists but not connected to API
-- Primary currency setting - not accessible from UI
+- **CSV Import** - UI exists but needs full API wiring
+- **Asset Management Pages** - Service exists but no UI for adding/editing assets
+- **Exchange Rate Management** - Page not implemented
 
 **Medium Priority (P1):**
-
-- Asset management pages - service exists but no UI
-- Exchange rate management page - not implemented
-- CSV import - UI exists but not fully wired
-
-**Low Priority (P2):**
 
 - Charts and visualizations
 - Reports pages (monthly/yearly/custom)
 - Forecast calculator
 - Compound interest calculator
-- Unit tests across all services
+
+**Low Priority (P2):**
+
+- Unit tests for older services (Dashboard)
+- Deployment scripts
+- Production environment setup
 
 ### Next Steps
 
-Based on the implementation plan in `specs/implementation_plan_tasks.md`:
-
-1. **User Profile & Settings Management** - Wire up settings page, create user service
-2. **Budget Edit Integration** - Connect budget edit modal to API
-3. **Transaction Form UX** - Add "remember last used" feature
-
-See `specs/implementation_plan_tasks.md` for detailed task breakdown.
+1.  **CSV Import Integration** - Finish wiring the transaction CSV import feature.
+2.  **Asset Management UI** - Implement the Add/Edit Asset pages and list views (Phase 3).
+3.  **Exchange Rates** - Build the exchange rate management interface.
 
 ---
 
@@ -278,7 +276,7 @@ We do:
 
 ---
 
-### Phase 1: Authentication & Dashboard (Week 3-4) ✅ **95% COMPLETE**
+### Phase 1: Authentication & Dashboard (Week 3-4) ✅ **COMPLETE**
 
 **Goal:** Create functional authentication and dashboard homepage
 
@@ -290,7 +288,7 @@ We do:
 - ✅ Dashboard UI components complete with Storybook stories
 - ✅ Dashboard service fully implemented with aggregate queries
 - ✅ Dashboard page fully wired to service
-- ❌ Unit tests for dashboard service pending
+- ✅ User settings & profile management implemented (pulled from Phase 5)
 
 #### Week 3: Authentication UI & Logic ✅ **COMPLETE**
 
@@ -356,11 +354,11 @@ We do:
 - ✅ Working authentication system
 - ✅ Dashboard fully functional with real data
 - ✅ All components documented in Storybook
-- ❌ Unit tests pending
+- ✅ User profile & settings functional
 
 ---
 
-### Phase 2: Transactions & Budget (Week 5-6) 🚧 **85% COMPLETE**
+### Phase 2: Transactions & Budget (Week 5-6) 🚧 **95% COMPLETE**
 
 **Goal:** Enable daily transaction entry and budget tracking
 
@@ -369,10 +367,11 @@ We do:
 - ✅ Database schema complete (categories, payment-methods, transactions)
 - ✅ TransactionService fully implemented (CRUD + CSV import/export)
 - ✅ Transaction pages fully wired (list, add, edit)
+- ✅ Transaction form enhanced with budget checks & history
 - ✅ BudgetService fully implemented with all calculations
 - ✅ Budget overview page fully wired with alerts
+- ✅ Budget inline editing fully functional
 - ✅ API endpoints implemented (transactions, budget, categories, payment-methods)
-- ❌ Budget edit modal not wired to API
 - ❌ CSV import page not fully implemented
 - ❌ Unit tests for transaction/budget services pending
 
@@ -412,7 +411,7 @@ We do:
 - [x] CSV export page wired to API
 - [ ] CSV import page (UI exists, needs API wiring)
 
-#### Week 6: Budget Management 🚧 **90% COMPLETE**
+#### Week 6: Budget Management ✅ **COMPLETE**
 
 **Day 1-2: Budget Table UI** ✅
 
@@ -442,16 +441,15 @@ We do:
 - [x] Budget alerts display section
 - [x] Budget overview table with sorting
 - [x] Historical budget view (budget/history page)
-- [ ] Edit category budgets (modal exists, needs API wiring)
+- [x] Edit category budgets (Modal wired to API)
 - [ ] User testing & refinement
 
 **Deliverables:**
 
-- ✅ Transaction pages fully functional
+- ✅ Transaction pages fully functional with smart features
 - ✅ Transaction CRUD service complete
-- ✅ Budget overview page fully functional
+- ✅ Budget overview page fully functional with inline editing
 - ✅ Budget calculations working
-- ❌ Budget edit modal needs API wiring
 - ❌ CSV import not working
 
 ---
@@ -470,7 +468,6 @@ We do:
 - ✅ Multi-currency support in dashboard (IDR/USD)
 - ❌ Asset management pages not implemented
 - ❌ Exchange rate management page not implemented
-- ❌ User settings not accessible from UI
 
 #### Week 7: Asset Management 🚧 **60% COMPLETE**
 
@@ -524,7 +521,7 @@ We do:
 **Day 4-5: Currency Features** 🚧
 
 - [ ] Exchange rate management page
-- [ ] Primary currency setting (user service needed)
+- [x] Primary currency setting (API & UI done)
 - [x] Dashboard with multi-currency totals (IDR/USD)
 - [x] Converted total calculation
 - [ ] Currency display preferences
@@ -622,13 +619,13 @@ We do:
 
 ---
 
-### Phase 5: Calculators & Polish (Week 11-12) ❌ **NOT STARTED**
+### Phase 5: Calculators & Polish (Week 11-12) 🚧 **STARTED**
 
 **Goal:** Add calculators and polish entire application
 
-**Status:** No work started on this phase
+**Status:** User settings and profile management completed early.
 
-#### Week 11: Calculators & Additional Features ❌
+#### Week 11: Calculators & Additional Features 🚧
 
 **Day 1-2: Calculator UI**
 
@@ -648,9 +645,9 @@ We do:
 
 - [ ] Compound interest calculator page
 - [x] CSV export functionality (transactions, budgets)
-- [ ] User settings page (needs wiring)
-- [ ] Profile management (needs user service)
-- [ ] Password change (needs user service)
+- [x] User settings page (API & UI done)
+- [x] Profile management (API & UI done)
+- [x] Password change (API & UI done)
 - [ ] Data export/backup
 
 #### Week 12: Polish & Testing ❌
