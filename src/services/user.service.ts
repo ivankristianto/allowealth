@@ -17,6 +17,11 @@ import { eq } from 'drizzle-orm';
 import { verifyPassword, hashPassword } from '@/lib/auth/password';
 import { z } from 'zod';
 import { UserServiceError, ServiceErrorCode } from './service-errors';
+import {
+  PASSWORD_MIN_LENGTH,
+  PASSWORD_REQUIREMENTS,
+  PASSWORD_ERROR_MESSAGES,
+} from '@/lib/validation';
 
 /**
  * Zod schemas for user service validation
@@ -30,12 +35,9 @@ export const updatePasswordSchema = z.object({
   oldPassword: z.string().min(1, 'Old password is required'),
   newPassword: z
     .string()
-    .min(12, 'Password must be at least 12 characters')
-    .regex(/[a-zA-Z]/, 'Password must contain at least one letter')
-    .regex(
-      /[0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/,
-      'Password must contain at least one number or special character'
-    ),
+    .min(PASSWORD_MIN_LENGTH, PASSWORD_ERROR_MESSAGES.minLength)
+    .regex(PASSWORD_REQUIREMENTS.hasLetter, PASSWORD_ERROR_MESSAGES.hasLetter)
+    .regex(PASSWORD_REQUIREMENTS.hasNumberOrSpecial, PASSWORD_ERROR_MESSAGES.hasNumberOrSpecial),
 });
 
 export const updateSettingsSchema = z.object({

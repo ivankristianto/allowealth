@@ -7,7 +7,7 @@
 // HTML validation patterns for form input validation
 export {
   email,
-  password,
+  password as passwordPatterns,
   url,
   phone,
   creditCard,
@@ -19,6 +19,19 @@ export {
   type ValidationPattern,
   type PasswordPattern,
 } from './patterns';
+
+// Password validation constants (used by both client and server)
+export {
+  PASSWORD_MIN_LENGTH,
+  PASSWORD_REQUIREMENTS,
+  PASSWORD_REGEX_SOURCES,
+  PASSWORD_ERROR_MESSAGES,
+  PASSWORD_VALID_REGEX,
+  isPasswordValid,
+  getPasswordValidation,
+  getPasswordStrength,
+  PASSWORD_EXAMPLES,
+} from './password';
 
 // Shared enums (export once from central location)
 export {

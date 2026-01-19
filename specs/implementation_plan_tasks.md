@@ -976,26 +976,6 @@ paths:
 
 **Note:** These tasks are follow-up improvements identified during code review for tasks 1.4 and 1.5. They are non-blocking but recommended for better code quality, accessibility, and maintainability.
 
-#### 4.1 Accessibility: Focus Management for Form Messages
-
-**Goal:** Improve screen reader experience by moving focus to error/success messages after form submission.
-
-**Files affected:**
-
-- `src/pages/settings/index.astro`
-- `src/components/molecules/PasswordChangeForm.astro`
-
-**Checklist:**
-
-- [ ] Add `tabindex="-1"` to message containers
-- [ ] Add focus() call after inserting success/error messages
-- [ ] Test with screen reader to verify announcements
-- [ ] Test keyboard navigation after form submission
-
-**Estimated Time:** 1 hour
-
----
-
 #### 4.2 Extract Client-Side Utility Functions
 
 **Goal:** Eliminate code duplication by extracting shared client-side utilities.
@@ -1021,7 +1001,7 @@ paths:
 
 #### 4.3 Add Loading State for Settings Fetch
 
-**Goal:** Show loading indicator while fetching user settings on page load.
+**Goal:** Show loading indicator while fetching user settings on page load. use @lucide/astro icon.
 
 **Files affected:**
 
@@ -1046,19 +1026,46 @@ paths:
 
 - `src/components/molecules/PasswordChangeForm.astro`
 - `src/services/user.service.ts`
-
-**New file:** `src/lib/validation/password.ts` (or add to existing)
+- `src/lib/validation/password.ts` (new)
+- `src/lib/validation/index.ts`
+- `src/lib/validation/password.test.ts` (new)
 
 **Checklist:**
 
-- [ ] Create password validation constants file
-- [ ] Define `PASSWORD_MIN_LENGTH = 12`
-- [ ] Define `PASSWORD_REQUIREMENTS` object with regex patterns
-- [ ] Update PasswordChangeForm to use constants
-- [ ] Update userService to use same constants
-- [ ] Ensure client and server validation remain in sync
+- [x] Create password validation constants file
+- [x] Define `PASSWORD_MIN_LENGTH = 12`
+- [x] Define `PASSWORD_REQUIREMENTS` object with regex patterns
+- [x] Update PasswordChangeForm to use constants
+- [x] Update UserService to use same constants
+- [x] Ensure client and server validation remain in sync
+- [x] Export regex source strings for client-side validation (`PASSWORD_REGEX_SOURCES`)
+- [x] Write comprehensive tests (32 tests pass)
 
 **Estimated Time:** 1 hour
+
+**Status:** ✅ Completed
+
+- Created `src/lib/validation/password.ts` with:
+  - `PASSWORD_MIN_LENGTH = 12` constant
+  - `PASSWORD_REQUIREMENTS` object with regex patterns (hasLetter, hasNumberOrSpecial)
+  - `PASSWORD_ERROR_MESSAGES` object with user-friendly error messages
+  - `PASSWORD_REGEX_SOURCES` for client-side validation
+  - `PASSWORD_VALID_REGEX` combined pattern
+  - Utility functions: `isPasswordValid()`, `getPasswordValidation()`, `getPasswordStrength()`
+  - `PASSWORD_EXAMPLES` for testing
+- Updated `src/services/user.service.ts` to use constants instead of magic numbers
+- Updated `src/components/molecules/PasswordChangeForm.astro` to use constants via `define:vars`
+- Updated `src/lib/validation/index.ts` to export all password constants
+- Added 32 comprehensive tests in `src/lib/validation/password.test.ts`
+- All quality gates pass (typecheck, lint, stylelint, format)
+- Code review: APPROVED with P1 fix applied (PASSWORD_REGEX_SOURCES export)
+
+**Key improvements:**
+
+- Single source of truth for password validation requirements
+- Client and server validation remain in sync
+- Regex patterns defined once and reused
+- Comprehensive test coverage ensures consistency
 
 ---
 
@@ -1288,77 +1295,6 @@ paths:
 - `expensesApp.lastIncomeCategory`
 - `expensesApp.lastPaymentMethod`
 - `expensesApp.migrated` (migration flag)
-
----
-
-#### 4.13 Fix localStorage.clear() Error Recovery (Priority: P3)
-
-**Source:** Code review feedback for Task 4.12 (pre-existing issue)
-
-**Goal:** Prevent data loss when localStorage quota is exceeded.
-
-**Issue:** The current error recovery in `setLastUsedCategory()` and `setLastUsedPaymentMethod()` uses `localStorage.clear()` which wipes ALL localStorage data including data from other parts of the application.
-
-**Files affected:**
-
-- `src/components/molecules/TransactionForm.astro`
-
-**Checklist:**
-
-- [ ] Replace `localStorage.clear()` with selective removal of only our app's keys
-- [ ] Ensure error recovery only clears `STORAGE_KEYS` and `MIGRATION_FLAG_KEY`
-- [ ] Test that quota error gracefully degrades (form works without localStorage)
-- [ ] Update error handling in both `setLastUsedCategory()` and `setLastUsedPaymentMethod()`
-
-**Estimated Time:** 30 minutes
-
----
-
-#### 4.14 Extract Storage Keys to Shared Module (Priority: P3)
-
-**Source:** Code review feedback for Task 4.12
-
-**Goal:** Eliminate duplication of storage constants between component and test file.
-
-**Files affected:**
-
-- `src/lib/storage-keys.ts` (new file)
-- `src/components/molecules/TransactionForm.astro`
-- `src/components/molecules/TransactionForm.localstorage.test.ts`
-
-**Checklist:**
-
-- [ ] Create `src/lib/storage-keys.ts` with exported constants
-- [ ] Export STORAGE_PREFIX, STORAGE_KEYS, OLD_STORAGE_KEYS, MIGRATION_FLAG_KEY
-- [ ] Update component to import from shared module (if feasible with inline scripts)
-- [ ] Update test file to import from shared module
-- [ ] Verify imports work correctly in both contexts
-
-**Estimated Time:** 1 hour
-
-**Note:** This may be challenging due to Astro's inline script limitations. If imports don't work in inline scripts, document the duplication as acceptable.
-
----
-
-#### 4.15 Add Migration Version Number (Priority: P3)
-
-**Source:** Code review feedback for Task 4.12
-
-**Goal:** Support future localStorage migrations by tracking migration version.
-
-**Files affected:**
-
-- `src/components/molecules/TransactionForm.astro`
-
-**Checklist:**
-
-- [ ] Replace `MIGRATION_FLAG_KEY` with `MIGRATION_VERSION_KEY`
-- [ ] Define `CURRENT_MIGRATION_VERSION` constant
-- [ ] Update migration logic to check version number instead of boolean flag
-- [ ] Store version number as integer in localStorage
-- [ ] Document migration versioning strategy for future developers
-
-**Estimated Time:** 30 minutes
 
 ---
 
