@@ -203,7 +203,7 @@ Toast notifications provide feedback for user actions, API responses, and backgr
 
 ```astro
 <script>
-  import { addToast } from '@/lib/stores/toastStore';
+  import { addToast } from '@lib/stores/toastStore';
 
   // Success toast (auto-dismisses after 5 seconds)
   addToast('Profile updated successfully!', 'success');
@@ -223,7 +223,7 @@ Toast notifications provide feedback for user actions, API responses, and backgr
 
 ```astro
 <script>
-  import { addToast, removeToast, clearAllToasts } from '@/lib/stores/toastStore';
+  import { addToast, removeToast, clearAllToasts } from '@lib/stores/toastStore';
 
   // Custom duration (in milliseconds)
   addToast('Quick notification', 'success', { duration: 2000 });
@@ -273,7 +273,7 @@ Toasts use CSS transitions for smooth enter/exit animations:
 
 ```astro
 <script>
-  import { addToast } from '@/lib/stores/toastStore';
+  import { addToast } from '@lib/stores/toastStore';
 
   async function handleSubmit(event) {
     event.preventDefault();
