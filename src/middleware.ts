@@ -4,6 +4,10 @@
  * Validates session cookies on every request and attaches user data to Astro.locals.
  * This middleware runs on every request to provide authentication context to pages.
  *
+ * Route Protection:
+ * - Routes under /dashboard, /transactions, /budget, /assets, /reports, /forecast, /calculators, /settings
+ *   require authentication and will redirect to /login if not authenticated.
+ *
  * @see https://docs.astro.build/en/reference/middleware-reference/
  */
 
@@ -17,6 +21,21 @@ import { logError } from './lib/utils/error-logger';
  * sessionCookie configuration. This is set in the lucia.ts configuration.
  */
 const SESSION_COOKIE_NAME = 'sid';
+
+/**
+ * Routes that require authentication
+ * Any path starting with these prefixes will redirect to /login if not authenticated
+ */
+const PROTECTED_ROUTES = [
+  '/dashboard',
+  '/transactions',
+  '/budget',
+  '/assets',
+  '/reports',
+  '/forecast',
+  '/calculators',
+  '/settings',
+] as const;
 
 /**
  * Content Security Policy headers for XSS prevention
@@ -105,11 +124,21 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
   (context.locals as any).cspNonce = nonce;
 
   const sessionId = context.cookies.get(SESSION_COOKIE_NAME)?.value;
+  const pathname = context.url.pathname;
+
+  // Check if this is a protected route
+  const isProtectedRoute = PROTECTED_ROUTES.some((route) => pathname.startsWith(route));
 
   // No session cookie - user is not authenticated
   if (!sessionId) {
     (context.locals as any).user = null;
     (context.locals as any).session = null;
+
+    // Redirect to login if accessing protected route
+    if (isProtectedRoute) {
+      const returnUrl = pathname + context.url.search;
+      return context.redirect(`/login?redirect=${encodeURIComponent(returnUrl)}`, 302);
+    }
 
     // Still apply CSP headers for unauthenticated requests
     const response = await next();
@@ -155,6 +184,12 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
     logError('Session validation error', error);
     (context.locals as any).user = null;
     (context.locals as any).session = null;
+
+    // Redirect to login if accessing protected route
+    if (isProtectedRoute) {
+      const returnUrl = pathname + context.url.search;
+      return context.redirect(`/login?redirect=${encodeURIComponent(returnUrl)}`, 302);
+    }
 
     // Still apply CSP headers even when session validation fails
     const response = await next();

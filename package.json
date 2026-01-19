@@ -22,7 +22,7 @@
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "db:seed": "bun run src/db/seed.ts",
-    "db:reset": "rm -f db/.dev.db db/.dev.db-wal db/.dev.db-shm && bun run db:push --force && bun run db:seed",
+    "db:reset": "mkdir -p db && rm -f db/.dev.db db/.dev.db-wal db/.dev.db-shm && bun run db:push --force && bun run db:seed",
     "test": "bun test",
     "test:watch": "bun test --watch",
     "test:coverage": "bun test --coverage"

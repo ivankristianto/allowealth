@@ -9,6 +9,8 @@
  */
 
 import { createRequire } from 'node:module';
+import fs from 'node:fs';
+import path from 'node:path';
 import type { DatabaseDriver, PreparedStatement, RunResult } from '../driver';
 
 /**
@@ -22,12 +24,25 @@ type BetterSqlite3Database = any;
 type BetterSqlite3Statement = any;
 
 /**
+ * Ensure the database directory exists
+ */
+function ensureDatabaseDir(dbPath: string): void {
+  const dir = path.dirname(dbPath);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+}
+
+/**
  * Create a Node.js SQLite driver using better-sqlite3
  *
  * @param dbPath - Path to the SQLite database file
  * @returns DatabaseDriver instance with raw SQLite connection
  */
 export function createNodeDriver(dbPath: string): DatabaseDriver & { _raw: BetterSqlite3Database } {
+  // Ensure the database directory exists
+  ensureDatabaseDir(dbPath);
+
   // Import better-sqlite3 dynamically
   // This package is compatible with Node.js and already in devDependencies
   const require = createRequire(import.meta.url);

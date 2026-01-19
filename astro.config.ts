@@ -4,6 +4,9 @@ import tailwindcss from '@tailwindcss/vite';
 import { fileURLToPath } from 'node:url';
 
 export default defineConfig({
+  server: {
+    host: true,
+  },
   output: 'server',
   adapter: node({
     mode: 'standalone',
