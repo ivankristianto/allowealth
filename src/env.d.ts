@@ -13,7 +13,6 @@ declare global {
 
   interface Window {
     showToast?: (message: string, type?: string, duration?: number) => HTMLDivElement | undefined;
-    quickEditBudget?: (categoryId: string) => void;
   }
 }
 
