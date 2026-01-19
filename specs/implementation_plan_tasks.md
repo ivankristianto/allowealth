@@ -587,20 +587,49 @@ localStorage.setItem('lastPaymentMethod', formData.get('payment_method_id'));
 
 **File:** `src/components/molecules/TransactionForm.astro`
 
+**Estimated Time:** 1-2 hours
+
+**Status:** ✅ Completed
+
+- Added real-time validation on input/change events for all form fields
+- Added specific error messages for each validation rule (amount, date, category, payment method)
+- Added submit button disable until all required fields are valid
+- Loading state during submission already existed (kept working)
+- Added success message with safe DOM creation (XSS prevention) before redirect
+- Validates amount > 0 with max 2 decimal places (handles currency formatting)
+- Validates date format YYYY-MM-DD and cannot be in future (UTC comparison for timezone safety)
+- Validates category is required for transaction type
+- Validates payment method is required
+- Validates description max 500 characters (optional field)
+- Added aria-describedby for error association (accessibility improvement)
+- Fixed button re-enable logic in finally block
+
 **Checklist:**
 
-- [ ] Add real-time validation as user types
-- [ ] Show specific error messages (not generic)
-- [ ] Disable submit button until form is valid
-- [ ] Show loading state during submission
-- [ ] Show success message and redirect after save
-- [ ] Validate amount > 0 with max 2 decimal places
-- [ ] Validate date cannot be in future
-- [ ] Validate category is required for transaction type
-- [ ] Validate payment method is required
-- [ ] Test all validation rules with invalid inputs
-- [ ] Test form submission with valid data
-- [ ] Test loading state displays correctly during submission
+- [x] Add real-time validation as user types
+- [x] Show specific error messages (not generic)
+- [x] Disable submit button until form is valid
+- [x] Show loading state during submission
+- [x] Show success message and redirect after save
+- [x] Validate amount > 0 with max 2 decimal places
+- [x] Validate date cannot be in future
+- [x] Validate category is required for transaction type
+- [x] Validate payment method is required
+- [x] Test all validation rules with invalid inputs
+- [x] Test form submission with valid data
+- [x] Test loading state displays correctly during submission
+
+**Code Quality:**
+
+- Client-side validators match server-side Zod schema rules
+- Fixed XSS vulnerability in success message display (use safe DOM creation)
+- Fixed amount validation to handle currency formatting (strip non-numeric chars)
+- Fixed date validation timezone bug (use UTC timestamp comparison)
+- Fixed submit button logic to only check required fields (description is optional)
+- Added aria-describedby for proper error association with screen readers
+- Fixed button re-enable logic in finally block for clarity
+- All quality gates pass (typecheck, lint, stylelint, format)
+- Code review: P0 and P1 feedback applied
 
 ---
 
@@ -793,8 +822,11 @@ bun test src/services/user.service.test.ts
 - [x] Last used category is pre-selected (task 3.2 ✅)
 - [x] Last used payment method is pre-selected (task 3.2 ✅)
 - [x] Expense/income categories remembered separately (task 3.2 ✅)
-- [ ] Form validation provides specific error messages (task 3.3)
-- [ ] Loading state shows during submission (task 3.3)
+- [x] Form validation provides specific error messages (task 3.3 ✅)
+- [x] Loading state shows during submission (task 3.3 ✅)
+- [x] Real-time validation as user types (task 3.3 ✅)
+- [x] Submit button disabled until form is valid (task 3.3 ✅)
+- [x] Success message displays before redirect (task 3.3 ✅)
 
 ---
 
