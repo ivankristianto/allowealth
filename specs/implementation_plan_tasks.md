@@ -1080,15 +1080,28 @@ paths:
 
 **Checklist:**
 
-- [ ] Update PasswordField requirements checklist to match server validation:
+- [x] Update PasswordField requirements checklist to match server validation:
   - Remove separate "uppercase" and "lowercase" requirements
   - Keep "at least one letter" (combined)
   - Keep "at least one number OR special character"
-- [ ] Update strength meter calculation to match server logic
-- [ ] Test password validation with various inputs
-- [ ] Document password requirements in UI
+- [x] Update strength meter calculation to match server logic
+- [x] Test password validation with various inputs
+- [x] Document password requirements in UI
 
 **Estimated Time:** 2 hours
+
+**Status:** ✅ Completed
+
+- Updated PasswordField component to use server-side password validation constants from `@/lib/validation`
+- Changed requirements checklist from 5 items to 3 items matching server:
+  - At least 12 characters
+  - At least one letter (A-Z or a-z) - combined uppercase/lowercase
+  - At least one number or special character - combined number/special
+- Updated strength meter calculation to count 3 requirements instead of 5
+- Fixed visual scaling: 1 req → 1 bar, 2 reqs → 3 bars, 3 reqs → 4 bars
+- Added `@ts-ignore` comments for Astro's `define:vars` injected variables
+- All quality gates pass (typecheck, lint, stylelint, format)
+- Code review: APPROVED with P1 fixes applied (TypeScript warnings, strength meter scaling)
 
 ---
 
