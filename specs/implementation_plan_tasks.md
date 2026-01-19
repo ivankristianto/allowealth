@@ -12,6 +12,7 @@ This plan focuses on completing three interdependent features in the **User Prof
 
 - Users can update their profile (name, email) and settings (primary currency)
 - Budget allocations can be edited inline from the budget page
+- Budget percentage is auto-calculated from budget amount (reducing manual input)
 - Transaction form will show budget remaining and remember recent selections
 - The app will have a fully functional user management foundation
 
@@ -410,6 +411,67 @@ document.getElementById('quick-edit-budget-form')?.addEventListener('submit', as
   }
 });
 ```
+
+---
+
+#### 2.3 Auto-calculate Budget Percentage (Priority: P2)
+
+**Goal:** Improve budget edit UX by automatically calculating percentage based on budget amount.
+
+**Current Issue:**
+
+- The budget edit modal requires manual input for both budget amount AND percentage
+- This creates potential for user error and manual calculation
+- Percentage should be derived from: `(category_budget_amount / total_budget_amount) * 100`
+
+**Checklist:**
+
+- [ ] Remove percentage input field from quick edit modal
+- [ ] Calculate percentage automatically based on budget amount input
+- [ ] Fetch total budget amount for the selected currency
+- [ ] Update percentage field to be read-only display
+- [ ] Round percentage to 2 decimal places
+- [ ] Update API to accept only budget_amount (remove percentage from PATCH request)
+- [ ] Update backend to calculate percentage when budget_amount changes
+- [ ] Test percentage calculation with various budget amounts
+- [ ] Test percentage updates when currency changes
+- [ ] Verify table updates show correct calculated percentages
+
+**Files to modify:**
+
+- `src/pages/budget/index.astro` - Remove percentage input from modal
+- `src/components/organisms/BudgetOverviewTable.astro` - Update form submission to only send budget_amount
+- `src/pages/api/budget/category/[id].ts` - Auto-calculate percentage from budget_amount
+- `src/services/category.service.ts` - Add percentage calculation logic
+
+**UI Change:**
+
+```
+Before:
+┌─────────────────────────────────────┐
+│ Budget Allocation %  [*Required*]    │
+│ Monthly Budget Amount [*Required*]   │
+│ Currency (read-only)                  │
+└─────────────────────────────────────┘
+
+After:
+┌─────────────────────────────────────┐
+│ Monthly Budget Amount [*Required*]   │
+│ Allocation: [15.5%] (auto-calculated) │
+│ Currency (read-only)                  │
+└─────────────────────────────────────┘
+```
+
+**Backend Logic:**
+
+```typescript
+// In category.service.ts update method
+// Calculate percentage based on budget amount relative to total budget
+const totalBudget = await getTotalBudgetAmount(userId, category.currency);
+const percentage = totalBudget > 0 ? (budget_amount / totalBudget) * 100 : 0;
+```
+
+**Estimated Time:** 2-3 hours
 
 ---
 
