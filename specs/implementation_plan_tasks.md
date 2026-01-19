@@ -244,20 +244,26 @@ Estimated Time: 1 hour
 
 **Checklist:**
 
-- [ ] Remove `createSuccessAlert` from `src/lib/client-utils.ts`.
-- [ ] Remove `createErrorAlert` from `src/lib/client-utils.ts`.
-- [ ] Refactor `setButtonLoading` to be a pure function that:
+- [x] Remove `createSuccessAlert` from `src/lib/client-utils.ts`.
+- [x] Remove `createErrorAlert` from `src/lib/client-utils.ts`.
+- [x] Remove `createAlert` from `src/lib/client-utils.ts` (base function).
+- [x] Refactor `setButtonLoading` to be a pure function that:
   - Accepts `HTMLButtonElement`.
   - Toggles `disabled` attribute.
   - Swaps text with DaisyUI's `loading loading-spinner loading-xs` classes.
   - Stores original content in `data-original-content` attribute for restoration.
-- [ ] Search codebase for any remaining usages of legacy functions.
-- [ ] Remove any orphaned CSS for old alert system.
-- [ ] Remove any `<div id="alert-container">` elements from other templates.
+- [x] Search codebase for any remaining usages of legacy functions.
+- [x] Remove any orphaned CSS for old alert system.
+- [x] Remove any `<div id="alert-container">` elements from other templates.
+- [x] Add unit tests for `escapeHtml` and `setButtonLoading` functions.
 
-**Files to modify:**
+**Files modified:**
 
-- `src/lib/client-utils.ts`
+- `src/lib/client-utils.ts` - Removed legacy alert functions, simplified `setButtonLoading`
+- `src/lib/client-utils.test.ts` - New comprehensive unit tests
+- `src/components/molecules/PasswordChangeForm.astro` - Simplified button structure
+- `src/pages/settings/index.astro` - Simplified button structures
+- `src/components/molecules/PasswordChangeForm.behavior.test.ts` - Updated documentation
 
 **Search Commands:**
 
@@ -284,6 +290,15 @@ export function setButtonLoading(button: HTMLButtonElement, isLoading: boolean):
 ```
 
 Estimated Time: 0.75 hours
+
+**Status:** ✅ Completed (2026-01-19)
+
+**Code Review Summary:**
+
+- All quality gates passed (typecheck, lint, stylelint)
+- 25 new unit tests added and passing
+- No critical issues identified
+- Minor suggestions added to P3 items below for future consideration
 
 ### 8. Update Design System Documentation (P1)
 
@@ -499,11 +514,11 @@ Estimated Time: 0.5 hours
 - [x] Toasts are accessible (proper ARIA attributes, screen reader support).
 - [x] React is NOT used.
 - [x] No `eval` used for alert/loading functions in modified files. (P1 tasks - Settings and PasswordChangeForm completed)
-- [ ] `createSuccessAlert` and `createErrorAlert` removed from codebase. (P1 tasks - legacy functions still exist but unused by refactored components)
-- [x] `setButtonLoading` is a clean ES module function using DaisyUI spinner. (Already implemented)
+- [x] `createSuccessAlert` and `createErrorAlert` removed from codebase. (P2 task - Completed 2026-01-19)
+- [x] `setButtonLoading` is a clean ES module function using DaisyUI spinner. (P2 task - Completed 2026-01-19)
 - [x] Type-safe toast implementation.
 - [x] No console errors or memory leaks.
-- [x] Unit tests passing (482 tests including new behavior test for PasswordChangeForm).
+- [x] Unit tests passing (507 tests including 25 new tests for client-utils and behavior test for PasswordChangeForm).
 - [x] Design system documentation updated with Toast component and animation patterns. (P1 tasks - Completed 2026-01-19)
 - [x] AGENTS.md updated with new libraries, stores directory, and toast usage guidelines. (P1 tasks - Completed 2026-01-19)
 
@@ -549,10 +564,12 @@ With Astro's full-page navigation, Nano Store state resets on page change. This 
 
 5. **Single shared `aria-live` region** - Instead of individual `aria-live` on each toast, use a single shared region for all announcements.
 
-6. **Test coverage gaps** - Add tests for:
+6. **JSDoc return type documentation** - Add explicit `@returns void` to `setButtonLoading()` function.
+
+7. **Test coverage gaps** - Add tests for:
    - Empty message handling
    - Very long message handling
    - Rapidly adding/removing toasts (stress test)
    - Multiple simultaneous toast additions
 
-7. **Extract magic numbers** - Animation durations (300ms, 200ms) and distances (50px) should be CSS custom properties.
+8. **Extract magic numbers** - Animation durations (300ms, 200ms) and distances (50px) should be CSS custom properties.

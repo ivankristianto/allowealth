@@ -2,7 +2,7 @@
  * Client-side utility functions for Astro components.
  *
  * These utilities are designed to work in browser environments and are
- * imported via Astro's `define:vars` directive for use in inline scripts.
+ * imported via Astro's module scripts for use in inline scripts.
  *
  * IMPORTANT: These utilities must use browser-compatible APIs only.
  * Do not use Node.js-specific APIs (like `bun:` imports) in this file.
@@ -43,82 +43,10 @@ export function escapeHtml(text: string): string {
 }
 
 /**
- * Creates a DaisyUI alert element HTML string for displaying messages.
- *
- * @param options - Alert configuration options
- * @param options.type - Alert type: 'success' or 'error'
- * @param options.message - The message to display (will be HTML-escaped)
- * @returns HTML string for the alert element
- *
- * @example
- * ```ts
- * const alertHtml = createAlert({
- *   type: 'success',
- *   message: 'Changes saved successfully!'
- * });
- * container.innerHTML = alertHtml;
- * ```
- */
-export function createAlert(options: { type: 'success' | 'error'; message: string }): string {
-  const { type, message } = options;
-  const safeMessage = escapeHtml(message);
-
-  const iconSvg =
-    type === 'success'
-      ? `<svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>`
-      : `<svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>`;
-
-  return `
-    <div role="alert" class="alert alert-${type}">
-      ${iconSvg}
-      <span>${safeMessage}</span>
-    </div>
-  `;
-}
-
-/**
- * Creates a success alert HTML string.
- *
- * Convenience function for creating success alerts.
- *
- * @param message - The success message to display
- * @returns HTML string for the success alert element
- *
- * @example
- * ```ts
- * container.innerHTML = createSuccessAlert('Profile updated!');
- * ```
- */
-export function createSuccessAlert(message: string): string {
-  return createAlert({ type: 'success', message });
-}
-
-/**
- * Creates an error alert HTML string.
- *
- * Convenience function for creating error alerts.
- *
- * @param message - The error message to display
- * @returns HTML string for the error alert element
- *
- * @example
- * ```ts
- * container.innerHTML = createErrorAlert('Failed to save. Please try again.');
- * ```
- */
-export function createErrorAlert(message: string): string {
-  return createAlert({ type: 'error', message });
-}
-
-/**
  * Manages button loading state during async operations.
  *
  * This utility provides a consistent way to show loading state on buttons
- * during form submissions or other async operations.
+ * during form submissions or other async operations using DaisyUI's spinner.
  *
  * @param button - The button element
  * @param isLoading - Whether to show or hide loading state
@@ -137,16 +65,17 @@ export function setButtonLoading(
 ): void {
   if (!button) return;
 
-  const buttonText = button.querySelector('[data-button-text]');
-  const loadingSpinner = button.querySelector('[data-loading-spinner]');
-
   if (isLoading) {
-    buttonText?.classList.add('hidden');
-    loadingSpinner?.classList.remove('hidden');
+    // Store original content before showing loading state
+    if (!button.dataset.originalContent) {
+      button.dataset.originalContent = button.innerHTML;
+    }
     button.disabled = true;
+    button.innerHTML = '<span class="loading loading-spinner loading-xs"></span>';
   } else {
-    buttonText?.classList.remove('hidden');
-    loadingSpinner?.classList.add('hidden');
+    // Restore original content when done loading
     button.disabled = false;
+    button.innerHTML = button.dataset.originalContent ?? button.innerHTML;
+    delete button.dataset.originalContent;
   }
 }

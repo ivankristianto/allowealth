@@ -87,9 +87,10 @@ describe('PasswordChangeForm Behavior', () => {
     it('should have submit button with loading state', () => {
       /**
        * Expected button structure:
-       * - <span data-button-text> for normal text
-       * - <span data-loading-spinner class="hidden"> for loading state
-       * - Button uses DaisyUI loading spinner
+       * - Simple button with text content: "Change Password"
+       * - When loading: innerHTML replaced with DaisyUI spinner
+       * - When restored: original content restored from data-original-content
+       * - Button uses DaisyUI loading spinner (loading loading-spinner loading-xs)
        */
       expect(true).toBe(true); // Documentation test
     });
@@ -228,8 +229,8 @@ describe('PasswordChangeForm Behavior', () => {
        * Scenario:
        * 1. User submits valid form
        * 2. setButtonLoading(submitButton, true) is called
-       * 3. Button text is hidden (data-button-text gets 'hidden' class)
-       * 4. Loading spinner is shown (data-loading-spinner has 'hidden' class removed)
+       * 3. Original content stored in data-original-content attribute
+       * 4. Button innerHTML replaced with: <span class="loading loading-spinner loading-xs"></span>
        * 5. Button is disabled
        */
       expect(true).toBe(true); // Documentation test
@@ -296,8 +297,8 @@ describe('PasswordChangeForm Behavior', () => {
        * 2. finally block always executes
        * 3. setButtonLoading(submitButton, false) is called
        * 4. Button is enabled
-       * 5. Button text is restored
-       * 6. Loading spinner is hidden
+       * 5. Original content restored from data-original-content
+       * 6. data-original-content attribute is removed
        */
       expect(true).toBe(true); // Documentation test
     });
