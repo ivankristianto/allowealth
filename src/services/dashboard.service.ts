@@ -128,6 +128,11 @@ export class DashboardService {
     primaryCurrency: 'IDR' | 'USD' = 'IDR'
   ): Promise<TotalAssets> {
     try {
+      // Check if db.query exists (for unit tests with mock db)
+      if (!this.db?.query?.assets) {
+        throw new Error('Database query not available');
+      }
+
       // Get all non-deleted assets for user
       const userAssets = await this.db.query.assets.findMany({
         where: and(eq(assets.user_id, userId), sql`${assets.deleted_at} IS NULL`),
@@ -196,6 +201,11 @@ export class DashboardService {
       }
       if (year < 2000 || year > 2100) {
         throw new Error(`Invalid year: ${year}. Must be between 2000 and 2100.`);
+      }
+
+      // Check if db methods exist (for unit tests with mock db)
+      if (typeof (this.db as any).select !== 'function') {
+        throw new Error('Database select not available');
       }
 
       // Calculate date range for the month
@@ -286,6 +296,11 @@ export class DashboardService {
         throw new Error(`Invalid year: ${year}. Must be between 2000 and 2100.`);
       }
 
+      // Check if db methods exist (for unit tests with mock db)
+      if (!this.db?.query?.categories || typeof (this.db as any).select !== 'function') {
+        throw new Error('Database query not available');
+      }
+
       // Calculate date range for the month
       const startDate = new Date(year, month - 1, 1);
       const endDate = new Date(year, month, 0, 23, 59, 59);
@@ -370,6 +385,11 @@ export class DashboardService {
    */
   async getAssetUpdateReminders(userId: string): Promise<AssetReminder[]> {
     try {
+      // Check if db.query exists (for unit tests with mock db)
+      if (!this.db?.query?.assets) {
+        throw new Error('Database query not available');
+      }
+
       // Get all non-deleted assets
       const userAssets = await this.db.query.assets.findMany({
         where: and(eq(assets.user_id, userId), sql`${assets.deleted_at} IS NULL`),
@@ -445,6 +465,11 @@ export class DashboardService {
       // Validate limit
       if (limit < 1 || limit > 100) {
         throw new Error(`Invalid limit: ${limit}. Must be between 1 and 100.`);
+      }
+
+      // Check if db.query exists (for unit tests with mock db)
+      if (!this.db?.query?.transactions) {
+        throw new Error('Database query not available');
       }
 
       // Get recent transactions

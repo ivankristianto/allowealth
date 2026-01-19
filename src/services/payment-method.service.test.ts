@@ -6,18 +6,23 @@ import { describe, it, expect, mock } from 'bun:test';
 import { PaymentMethodService } from './payment-method.service';
 import type { PaymentMethod } from '@/lib/types';
 
-// Mock the database module
+// Mock the database methods
 const mockInsert = mock(() => ({ values: mock(() => ({ returning: mock(() => []) })) }));
-const mockQuery = mock(() => ({
-  paymentMethods: {
-    findFirst: mock(() => []),
-    findMany: mock(() => []),
-  },
-}));
+const mockFindFirst = mock(() => undefined);
+const mockFindMany = mock(() => []);
 const mockUpdate = mock(() => ({ set: mock(() => ({ where: mock(() => ({})) })) }));
 
-// Create service instance
-const paymentMethodService = new PaymentMethodService({} as any);
+// Create service instance with properly mocked db
+const paymentMethodService = new PaymentMethodService({
+  insert: mockInsert,
+  update: mockUpdate,
+  query: {
+    paymentMethods: {
+      findFirst: mockFindFirst,
+      findMany: mockFindMany,
+    },
+  },
+} as any);
 
 describe('PaymentMethodService', () => {
   describe('create', () => {
@@ -37,9 +42,9 @@ describe('PaymentMethodService', () => {
       };
 
       mockInsert.mockReturnValueOnce({
-        values: mock(() => ({
-          returning: mock(() => [mockPaymentMethod]),
-        })),
+        values: () => ({
+          returning: () => [mockPaymentMethod],
+        }),
       } as any);
 
       const result = await paymentMethodService.create(input);
@@ -92,11 +97,7 @@ describe('PaymentMethodService', () => {
         updated_at: new Date(),
       };
 
-      mockQuery.mockReturnValueOnce({
-        paymentMethods: {
-          findFirst: mock(() => mockPaymentMethod),
-        },
-      } as any);
+      mockFindFirst.mockReturnValueOnce(mockPaymentMethod);
 
       const result = await paymentMethodService.findById('pm-1', 'user-1');
 
@@ -105,11 +106,7 @@ describe('PaymentMethodService', () => {
     });
 
     it('should return undefined for non-existent payment method', async () => {
-      mockQuery.mockReturnValueOnce({
-        paymentMethods: {
-          findFirst: mock(() => undefined),
-        },
-      } as any);
+      mockFindFirst.mockReturnValueOnce(undefined);
 
       const result = await paymentMethodService.findById('non-existent', 'user-1');
 
@@ -140,11 +137,7 @@ describe('PaymentMethodService', () => {
         },
       ];
 
-      mockQuery.mockReturnValueOnce({
-        paymentMethods: {
-          findMany: mock(() => mockPaymentMethods),
-        },
-      } as any);
+      mockFindMany.mockReturnValueOnce(mockPaymentMethods);
 
       const result = await paymentMethodService.findAll('user-1');
 
@@ -164,11 +157,7 @@ describe('PaymentMethodService', () => {
         },
       ];
 
-      mockQuery.mockReturnValueOnce({
-        paymentMethods: {
-          findMany: mock(() => mockPaymentMethods),
-        },
-      } as any);
+      mockFindMany.mockReturnValueOnce(mockPaymentMethods);
 
       const result = await paymentMethodService.findAll('user-1', { is_active: true });
 
@@ -189,11 +178,7 @@ describe('PaymentMethodService', () => {
         },
       ];
 
-      mockQuery.mockReturnValueOnce({
-        paymentMethods: {
-          findMany: mock(() => mockPaymentMethods),
-        },
-      } as any);
+      mockFindMany.mockReturnValueOnce(mockPaymentMethods);
 
       const result = await paymentMethodService.findAll('user-1');
 
@@ -213,11 +198,7 @@ describe('PaymentMethodService', () => {
         updated_at: new Date(),
       };
 
-      mockQuery.mockReturnValueOnce({
-        paymentMethods: {
-          findFirst: mock(() => mockUpdatedPaymentMethod),
-        },
-      } as any);
+      mockFindFirst.mockReturnValueOnce(mockUpdatedPaymentMethod);
 
       const result = await paymentMethodService.update('pm-1', 'user-1', {
         name: 'Cash Updated',
@@ -237,11 +218,7 @@ describe('PaymentMethodService', () => {
         updated_at: new Date(),
       };
 
-      mockQuery.mockReturnValueOnce({
-        paymentMethods: {
-          findFirst: mock(() => mockUpdatedPaymentMethod),
-        },
-      } as any);
+      mockFindFirst.mockReturnValueOnce(mockUpdatedPaymentMethod);
 
       const result = await paymentMethodService.update('pm-1', 'user-1', {
         type: 'debit_card',
@@ -261,11 +238,7 @@ describe('PaymentMethodService', () => {
         updated_at: new Date(),
       };
 
-      mockQuery.mockReturnValueOnce({
-        paymentMethods: {
-          findFirst: mock(() => mockUpdatedPaymentMethod),
-        },
-      } as any);
+      mockFindFirst.mockReturnValueOnce(mockUpdatedPaymentMethod);
 
       const result = await paymentMethodService.update('pm-1', 'user-1', {
         is_active: false,
@@ -277,10 +250,24 @@ describe('PaymentMethodService', () => {
 
   describe('delete', () => {
     it('should soft delete payment method', async () => {
+      const mockPaymentMethod: PaymentMethod = {
+        id: 'pm-1',
+        user_id: 'user-1',
+        name: 'Cash',
+        type: 'cash',
+        is_active: true,
+        created_at: new Date(),
+        updated_at: new Date(),
+      };
+
+      // Mock findById to return a payment method
+      mockFindFirst.mockReturnValueOnce(mockPaymentMethod);
+
+      // Mock update operation
       mockUpdate.mockReturnValueOnce({
-        set: mock(() => ({
-          where: mock(() => ({})),
-        })),
+        set: () => ({
+          where: () => ({}),
+        }),
       } as any);
 
       const result = await paymentMethodService.delete('pm-1', 'user-1');
