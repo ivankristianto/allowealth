@@ -1,6 +1,12 @@
 import type { APIRoute } from 'astro';
 import { transactionService } from '@/services';
-import { successResponse, errorResponse, validateBody, requireAuth } from '@/lib/api-utils';
+import {
+  successResponse,
+  errorResponse,
+  validateBody,
+  requireAuth,
+  isValidationError,
+} from '@/lib/api-utils';
 import { updateTransactionAPISchema, transactionIdSchema } from '@/lib/validation/transactions';
 import { logError } from '@/lib/utils';
 import { ServiceError } from '@/services/service-errors';
@@ -63,12 +69,8 @@ export const PUT: APIRoute = async ({ params, request, url }) => {
 
     const validation = await validateBody(request, updateTransactionAPISchema);
 
-    if (!validation.success) {
-      // The validation result has .error only if success is false,
-      // but validation type doesn't guarantee .error exists on both branches.
-      // To fix types, destructure .error from validation when !success.
-      const issues = 'error' in validation ? validation.error.issues : [];
-      return errorResponse('Validation failed', 400, 'VALIDATION_ERROR', issues);
+    if (isValidationError(validation)) {
+      return errorResponse('Validation failed', 400, 'VALIDATION_ERROR', validation.error.issues);
     }
 
     const updateData: any = {};

@@ -7,6 +7,7 @@ import {
   requireAuth,
   getPaginationParams,
   isValidDate,
+  isValidationError,
 } from '@/lib/api-utils';
 import { createTransactionAPISchema } from '@/lib/validation';
 import { logError } from '@/lib/utils';
@@ -107,13 +108,8 @@ export const POST: APIRoute = async ({ request, url }) => {
 
     const validation = await validateBody(request, createTransactionAPISchema);
 
-    if (!validation.success) {
-      return errorResponse(
-        'Validation failed',
-        400,
-        'VALIDATION_ERROR',
-        (validation as any).error.issues
-      );
+    if (isValidationError(validation)) {
+      return errorResponse('Validation failed', 400, 'VALIDATION_ERROR', validation.error.issues);
     }
 
     // Convert date string (YYYY-MM-DD) to Date object

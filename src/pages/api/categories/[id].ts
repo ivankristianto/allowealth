@@ -1,6 +1,12 @@
 import type { APIRoute } from 'astro';
 import { categoryService } from '@/services';
-import { successResponse, errorResponse, validateBody, requireAuth } from '@/lib/api-utils';
+import {
+  successResponse,
+  errorResponse,
+  validateBody,
+  requireAuth,
+  isValidationError,
+} from '@/lib/api-utils';
 import { updateCategoryAPISchema } from '@/lib/validation';
 import { logError } from '@/lib/utils';
 
@@ -48,13 +54,8 @@ export const PUT: APIRoute = async ({ params, request, url }) => {
 
     const validation = await validateBody(request, updateCategoryAPISchema);
 
-    if (!validation.success) {
-      return errorResponse(
-        'Validation failed',
-        400,
-        'VALIDATION_ERROR',
-        (validation as any).error.issues
-      );
+    if (isValidationError(validation)) {
+      return errorResponse('Validation failed', 400, 'VALIDATION_ERROR', validation.error.issues);
     }
 
     // Check if name is being updated and if it conflicts

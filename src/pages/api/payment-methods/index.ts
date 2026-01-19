@@ -1,6 +1,12 @@
 import type { APIRoute } from 'astro';
 import { paymentMethodService } from '@/services';
-import { successResponse, errorResponse, validateBody, requireAuth } from '@/lib/api-utils';
+import {
+  successResponse,
+  errorResponse,
+  validateBody,
+  requireAuth,
+  isValidationError,
+} from '@/lib/api-utils';
 import { createPaymentMethodAPISchema } from '@/lib/validation';
 import { logError } from '@/lib/utils';
 
@@ -41,13 +47,8 @@ export const POST: APIRoute = async ({ request, url }) => {
 
     const validation = await validateBody(request, createPaymentMethodAPISchema);
 
-    if (!validation.success) {
-      return errorResponse(
-        'Validation failed',
-        400,
-        'VALIDATION_ERROR',
-        (validation as any).error.issues
-      );
+    if (isValidationError(validation)) {
+      return errorResponse('Validation failed', 400, 'VALIDATION_ERROR', validation.error.issues);
     }
 
     const paymentMethod = await paymentMethodService.create({

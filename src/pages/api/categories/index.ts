@@ -1,6 +1,12 @@
 import type { APIRoute } from 'astro';
 import { categoryService } from '@/services';
-import { successResponse, errorResponse, validateBody, requireAuth } from '@/lib/api-utils';
+import {
+  successResponse,
+  errorResponse,
+  validateBody,
+  requireAuth,
+  isValidationError,
+} from '@/lib/api-utils';
 import { createCategoryAPISchema } from '@/lib/validation';
 import { logError } from '@/lib/utils';
 
@@ -45,13 +51,8 @@ export const POST: APIRoute = async ({ request, url }) => {
 
     const validation = await validateBody(request, createCategoryAPISchema);
 
-    if (!validation.success) {
-      return errorResponse(
-        'Validation failed',
-        400,
-        'VALIDATION_ERROR',
-        (validation as any).error.issues
-      );
+    if (isValidationError(validation)) {
+      return errorResponse('Validation failed', 400, 'VALIDATION_ERROR', validation.error.issues);
     }
 
     // Check if category name already exists

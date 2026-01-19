@@ -1,6 +1,12 @@
 import type { APIRoute } from 'astro';
 import { categoryService, type UpdateCategoryInput } from '@/services';
-import { successResponse, errorResponse, validateBody, requireAuth } from '@/lib/api-utils';
+import {
+  successResponse,
+  errorResponse,
+  validateBody,
+  requireAuth,
+  isValidationError,
+} from '@/lib/api-utils';
 import { logError } from '@/lib/utils';
 import { z } from 'zod';
 import { CategoryServiceError } from '@/services/service-errors';
@@ -62,13 +68,8 @@ export const PATCH: APIRoute = async (context) => {
     // Validate request body
     const validation = await validateBody(context.request, updateBudgetSchema);
 
-    if (!validation.success) {
-      return errorResponse(
-        'Validation failed',
-        400,
-        'VALIDATION_ERROR',
-        (validation as any).error.issues
-      );
+    if (isValidationError(validation)) {
+      return errorResponse('Validation failed', 400, 'VALIDATION_ERROR', validation.error.issues);
     }
 
     const input = validation.data as UpdateBudgetInput;

@@ -1,7 +1,6 @@
 import type { APIContext } from 'astro';
 import { z } from 'zod';
 import { auth } from '@/lib/auth/lucia';
-import type { ZodIssue } from 'zod';
 
 /**
  * Standard API response format
@@ -26,11 +25,12 @@ export interface ValidationResultSuccess<T> {
 
 /**
  * Result of validateBody - error case
+ * Using z.ZodError['issues'] type for Zod v4 compatibility
  */
 export interface ValidationError {
   success: false;
   error: {
-    issues: ZodIssue[];
+    issues: z.ZodError['issues'];
   };
 }
 
@@ -135,7 +135,7 @@ export async function validateBody<T>(
         error: {
           issues: [
             {
-              code: z.ZodIssueCode.custom,
+              code: 'custom' as const,
               message: 'Invalid JSON in request body',
               path: [],
             },
@@ -149,7 +149,7 @@ export async function validateBody<T>(
       error: {
         issues: [
           {
-            code: z.ZodIssueCode.custom,
+            code: 'custom' as const,
             message: 'Failed to parse request body',
             path: [],
           },

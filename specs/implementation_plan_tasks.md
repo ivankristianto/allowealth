@@ -1152,6 +1152,65 @@ paths:
 
 ---
 
+#### 4.6.1 Complete Type-Safe Validation Pattern Across All API Endpoints
+
+**Source:** Follow-up task from Task 4.6 code review
+
+**Goal:** Apply type-safe validation pattern to all remaining API endpoints and migrate to Zod v4 compatible types.
+
+**Files affected:**
+
+- `src/lib/api-utils.ts`
+- `src/pages/api/payment-methods/index.ts`
+- `src/pages/api/payment-methods/[id].ts`
+- `src/pages/api/budget/category/[id].ts`
+- `src/pages/api/categories/index.ts`
+- `src/pages/api/categories/[id].ts`
+- `src/pages/api/transactions/index.ts`
+- `src/pages/api/transactions/[id].ts`
+- `src/pages/api/assets/index.ts`
+- `src/pages/api/assets/[id].ts`
+- `src/pages/api/assets/[id]/balance.ts`
+
+**Checklist:**
+
+- [x] Apply `isValidationError` pattern to payment-methods endpoints (2 files)
+- [x] Apply `isValidationError` pattern to budget/category endpoint
+- [x] Apply `isValidationError` pattern to categories endpoints (2 files)
+- [x] Apply `isValidationError` pattern to transactions endpoints (2 files)
+- [x] Apply `isValidationError` pattern to assets endpoints (3 files)
+- [x] Remove deprecated `ZodIssue` import, use `z.ZodError['issues']` instead
+- [x] Replace `z.ZodIssueCode.custom` with `'custom' as const`
+- [x] Fix P0 issue: `src/pages/api/transactions/[id].ts` with inconsistent pattern
+
+**Estimated Time:** 2-3 hours
+
+**Status:** ✅ Completed
+
+- Applied `isValidationError` type guard pattern to 10 API endpoints (9 planned + 1 found during review)
+- Migrated from deprecated `ZodIssue` type to `z.ZodError['issues']` for Zod v4 compatibility
+- Replaced `z.ZodIssueCode.custom` with `'custom' as const` string literal
+- Fixed P0 issue in `src/pages/api/transactions/[id].ts` which was using manual type workaround
+- All 14 API endpoints now use consistent type-safe validation pattern
+- All quality gates pass (typecheck, lint, stylelint, format)
+- Code review: APPROVED with P0 fix applied
+
+**Files Modified Summary:**
+
+1. `src/lib/api-utils.ts` - Zod v4 migration (removed deprecated imports)
+2. `src/pages/api/payment-methods/index.ts` - Added isValidationError
+3. `src/pages/api/payment-methods/[id].ts` - Added isValidationError
+4. `src/pages/api/budget/category/[id].ts` - Added isValidationError
+5. `src/pages/api/categories/index.ts` - Added isValidationError
+6. `src/pages/api/categories/[id].ts` - Added isValidationError
+7. `src/pages/api/transactions/index.ts` - Added isValidationError
+8. `src/pages/api/transactions/[id].ts` - Added isValidationError (P0 fix)
+9. `src/pages/api/assets/index.ts` - Added isValidationError
+10. `src/pages/api/assets/[id].ts` - Added isValidationError
+11. `src/pages/api/assets/[id]/balance.ts` - Added isValidationError
+
+---
+
 #### 4.7 Add JSDoc to API Endpoints
 
 **Goal:** Improve documentation for all exported API route handlers.
