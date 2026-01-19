@@ -291,18 +291,18 @@ Estimated Time: 0.75 hours
 
 **Checklist:**
 
-- [ ] Add Toast section to `design-system/02-components.md`:
+- [x] Add Toast section to `design-system/02-components.md`:
   - Component location and import
   - Toast types (success, error, warning, info)
   - Usage examples with `addToast()`
   - DaisyUI classes used
   - Accessibility attributes
-- [ ] Add Toast Notifications pattern to `design-system/07-patterns.md`:
+- [x] Add Toast Notifications pattern to `design-system/07-patterns.md`:
   - When to use toasts vs inline errors vs banners
   - Auto-dismiss behavior (5s for success, persistent for errors)
   - Multi-toast stacking
   - Animation patterns with Motion
-- [ ] Add Motion animation section to `design-system/01-foundations.md` or create new `08-animations.md`:
+- [x] Add Motion animation section to `design-system/01-foundations.md` or create new `08-animations.md`:
   - Standard animation durations and easings
   - Enter/exit animation patterns
   - Usage with `animate()` function
@@ -388,10 +388,10 @@ Estimated Time: 1 hour
 
 **Checklist:**
 
-- [ ] Add `nanostores` and `motion` to Tech Stack section.
-- [ ] Add `src/lib/stores/` to Project Structure with `toastStore.ts`.
-- [ ] Add Toast usage guideline to Component Guidelines section.
-- [ ] Document the pattern for using stores in Astro client scripts.
+- [x] Add `nanostores` and `motion` to Tech Stack section.
+- [x] Add `src/lib/stores/` to Project Structure with `toastStore.ts`.
+- [x] Add Toast usage guideline to Component Guidelines section.
+- [x] Document the pattern for using stores in Astro client scripts.
 
 **Files to modify:**
 
@@ -504,8 +504,8 @@ Estimated Time: 0.5 hours
 - [x] Type-safe toast implementation.
 - [x] No console errors or memory leaks.
 - [x] Unit tests passing (482 tests including new behavior test for PasswordChangeForm).
-- [ ] Design system documentation updated with Toast component and animation patterns. (P1 tasks)
-- [ ] AGENTS.md updated with new libraries, stores directory, and toast usage guidelines. (P1 tasks)
+- [x] Design system documentation updated with Toast component and animation patterns. (P1 tasks - Completed 2026-01-19)
+- [x] AGENTS.md updated with new libraries, stores directory, and toast usage guidelines. (P1 tasks - Completed 2026-01-19)
 
 ## Estimated Effort
 
@@ -543,9 +543,7 @@ With Astro's full-page navigation, Nano Store state resets on page change. This 
 
 1. **Design System Compliance** - The close button uses inline SVG instead of `@lucide/astro` icon component. This is necessary due to Astro SSR limitations for client-side scripts, but should be documented as an exception.
 
-2. **Add JSDoc comment to `addToast`** - Document that older toasts are silently removed when max visible toasts limit is reached.
-
-3. **Defensive coding for `crypto.randomUUID()`** - Add fallback for environments where crypto API is not available.
+2. **Defensive coding for `crypto.randomUUID()`** - Add fallback for environments where crypto API is not available.
 
 ### P3 Items (Nice to Have)
 
