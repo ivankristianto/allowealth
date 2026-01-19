@@ -8,12 +8,13 @@ This project uses **bd** (beads) for issue tracking. Run `bd prime` to refresh c
 
 ## Agent Initialization
 
-**Before any task, read the constitution.**
+**Before any task, read the constitution and design system.**
 
 ```
 1. Read `docs/constitution.md` — understand principles and fences
-2. Read task context (spec, plan, or issue)
-3. Then execute
+2. Read `design-system/START.md` — understand design patterns and tokens
+3. Read task context (spec, plan, or issue)
+4. Then execute
 ```
 
 Agents must internalize:
@@ -106,6 +107,8 @@ The project uses **OpenAPI 3.1.0** for API documentation.
 
 ## Component Guidelines
 
+**IMPORTANT:** Follow the design system guidelines in `design-system/START.md` for all UI implementation. This includes using design tokens, DaisyUI classes, accessibility requirements, and responsive patterns.
+
 ### Use Astro Components For:
 
 - All UI components (atoms, molecules, organisms)
@@ -154,14 +157,6 @@ export {};
 - Import custom types from project files (`@/lib/auth/lucia`), not from library packages directly
 - The `export {}` at the end ensures the file is treated as a module
 
-## Design Tokens
-
-Always import and use design tokens from `@/lib/tokens`:
-
-```typescript
-import { formatCurrency, colors, fontSizes } from '@/lib/tokens';
-```
-
 ## Pre-Commit Quality Gates
 
 **Before committing ANY code**, you MUST run:
@@ -184,7 +179,7 @@ bun run typecheck     # TypeScript type checking
 2. **Claim:** Run `bd update <id> --status in_progress` for each task
 3. **Branch:** `git checkout -b feature/<descriptive-name>`
 4. **Implement:** For each task:
-   - Write code following component guidelines and design tokens
+   - Write code following design system (`design-system/START.md`) and component guidelines
    - Run `bun run typecheck && bun run lint && bun run stylelint && bun run format:fix`
    - Commit with clear message: `git commit -m "feat: descriptive message"`
    - Push: `git push`
