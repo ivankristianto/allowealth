@@ -89,6 +89,87 @@ describe('User API Integration Tests', () => {
     return fetch(url.toString(), options);
   };
 
+  describe('GET /api/user/profile', () => {
+    it('should return current user profile', async () => {
+      skipIfNoUser(async () => {
+        const response = await makeRequest('/api/user/profile', 'GET');
+
+        expect(response.status).toBe(200);
+
+        const json = await response.json();
+        expect(json.success).toBe(true);
+        expect(json.data).toHaveProperty('id', testUserId);
+        expect(json.data).toHaveProperty('name');
+        expect(json.data).toHaveProperty('email');
+      });
+    });
+
+    it('should reject requests without authentication', async () => {
+      skipIfNoUser(async () => {
+        const url = new URL('/api/user/profile', 'http://localhost:4321');
+
+        const response = await fetch(url.toString(), {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+        });
+
+        expect(response.status).toBe(401);
+
+        const json = await response.json();
+        expect(json.success).toBe(false);
+      });
+    });
+  });
+
+  describe('GET /api/user/settings', () => {
+    it('should return user settings with defaults', async () => {
+      skipIfNoUser(async () => {
+        const response = await makeRequest('/api/user/settings', 'GET');
+
+        expect(response.status).toBe(200);
+
+        const json = await response.json();
+        expect(json.success).toBe(true);
+        expect(json.data).toHaveProperty('primaryCurrency');
+        expect(json.data).toHaveProperty('showConvertedTotals');
+        expect(json.data).toHaveProperty('showIndividualCurrencies');
+      });
+    });
+
+    it('should return default values when settings do not exist', async () => {
+      skipIfNoUser(async () => {
+        // Delete existing settings
+        await db.delete(userSettings).where(eq(userSettings.user_id, testUserId));
+
+        const response = await makeRequest('/api/user/settings', 'GET');
+
+        expect(response.status).toBe(200);
+
+        const json = await response.json();
+        expect(json.success).toBe(true);
+        expect(json.data.primaryCurrency).toBe('IDR');
+        expect(json.data.showConvertedTotals).toBe(true);
+        expect(json.data.showIndividualCurrencies).toBe(true);
+      });
+    });
+
+    it('should reject requests without authentication', async () => {
+      skipIfNoUser(async () => {
+        const url = new URL('/api/user/settings', 'http://localhost:4321');
+
+        const response = await fetch(url.toString(), {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+        });
+
+        expect(response.status).toBe(401);
+
+        const json = await response.json();
+        expect(json.success).toBe(false);
+      });
+    });
+  });
+
   describe('PUT /api/user/profile', () => {
     it('should update user name and email', async () => {
       skipIfNoUser(async () => {

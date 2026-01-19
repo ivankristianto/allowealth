@@ -1,8 +1,19 @@
 ---
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import { patterns } from '@/lib/validation/patterns';
+import PasswordChangeForm from '@/components/molecules/PasswordChangeForm.astro';
+import Label from '@/components/atoms/Label.astro';
+import Input from '@/components/atoms/Input.astro';
+import Button from '@/components/atoms/Button.astro';
+import type { User } from '@/lib/auth/lucia';
 
 const currentPath = '/settings';
+
+// User is authenticated (enforced by ProtectedLayout)
+const user = Astro.locals.user! as User;
+
+// Get CSP nonce from middleware
+const cspNonce = Astro.locals.cspNonce || '';
 ---
 
 <ProtectedLayout title="Settings - Finance Manager" currentPath={currentPath}>
@@ -15,6 +26,7 @@ const currentPath = '/settings';
       <a class="tab" href="/settings/payment-methods">Payment Methods</a>
     </div>
 
+    <!-- Profile Information Form -->
     <div class="card bg-base-100 shadow border border-base-300 max-w-2xl">
       <div class="card-body p-6">
         <h3 class="card-title text-lg mb-2">Profile Information</h3>
@@ -22,48 +34,365 @@ const currentPath = '/settings';
           Update your personal information and preferences
         </p>
 
-        <form class="space-y-5">
+        <form id="profile-form" class="space-y-5" novalidate>
           <div class="form-control">
-            <label class="label" for="displayName">
-              <span class="label-text font-medium">Display Name</span>
-            </label>
-            <input
+            <Label htmlFor="displayName" required>Display Name</Label>
+            <Input
               type="text"
               id="displayName"
+              name="name"
               placeholder="Your name"
-              class="input input-bordered w-full"
+              value={user.name}
+              required
             />
           </div>
 
           <div class="form-control">
-            <label class="label" for="email">
-              <span class="label-text font-medium">Email</span>
-            </label>
-            <input
+            <Label htmlFor="email" required>Email</Label>
+            <Input
               type="email"
               id="email"
+              name="email"
               placeholder="your@email.com"
+              value={user.email}
               pattern={patterns.email.html}
               title={patterns.email.title}
-              class="input input-bordered w-full"
+              required
             />
           </div>
 
-          <div class="form-control">
-            <label class="label" for="currency">
-              <span class="label-text font-medium">Default Currency</span>
-            </label>
-            <select id="currency" class="select select-bordered w-full">
-              <option value="IDR">IDR - Indonesian Rupiah</option>
-              <option value="USD">USD - US Dollar</option>
-            </select>
-          </div>
+          <!-- Messages Container -->
+          <div id="profile-messages" class="space-y-2" aria-live="polite" aria-atomic="true"></div>
 
           <div class="pt-2">
-            <button type="submit" class="btn btn-primary min-w-[140px]">Save Changes</button>
+            <Button type="submit" variant="primary" className="min-w-[140px]">
+              <span data-button-text>Save Changes</span>
+              <span data-loading-spinner class="hidden">
+                <span class="loading loading-spinner"></span>
+                Saving...
+              </span>
+            </Button>
           </div>
         </form>
       </div>
     </div>
+
+    <!-- Currency Preferences Form -->
+    <div class="card bg-base-100 shadow border border-base-300 max-w-2xl">
+      <div class="card-body p-6">
+        <h3 class="card-title text-lg mb-2">Currency Preferences</h3>
+        <p class="text-sm text-base-content/70 mb-6">
+          Set your default currency for displaying financial data
+        </p>
+
+        <form id="settings-form" class="space-y-5" novalidate>
+          <div class="form-control">
+            <Label htmlFor="currency" required>Default Currency</Label>
+            <select
+              id="currency"
+              name="primaryCurrency"
+              class="select select-bordered w-full"
+              required
+            >
+              <option value="IDR">IDR - Indonesian Rupiah</option>
+              <option value="USD">USD - US Dollar</option>
+            </select>
+            <label class="label">
+              <span class="label-text-alt text-base-content/60">
+                This currency will be used as the default when viewing reports and dashboards.
+              </span>
+            </label>
+          </div>
+
+          <!-- Messages Container -->
+          <div id="settings-messages" class="space-y-2" aria-live="polite" aria-atomic="true"></div>
+
+          <div class="pt-2">
+            <Button type="submit" variant="primary" className="min-w-[140px]">
+              <span data-button-text>Save Changes</span>
+              <span data-loading-spinner class="hidden">
+                <span class="loading loading-spinner"></span>
+                Saving...
+              </span>
+            </Button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Password Change Form -->
+    <PasswordChangeForm formId="password-change-form" />
   </div>
 </ProtectedLayout>
+
+<script
+  define:vars={{ apiProfileUrl: '/api/user/profile', apiSettingsUrl: '/api/user/settings' }}
+  nonce={cspNonce}
+  is:inline
+>
+  // HTML escaping utility to prevent XSS
+  const escapeHtml = (text) => {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  };
+
+  // ==================== PROFILE FORM ====================
+  const profileForm = document.getElementById('profile-form');
+  const profileMessagesContainer = document.getElementById('profile-messages');
+  const profileNameInput = document.getElementById('displayName');
+  const profileEmailInput = document.getElementById('email');
+  const profileSubmitButton = profileForm?.querySelector('button[type="submit"]');
+  const profileButtonText = profileSubmitButton?.querySelector('[data-button-text]');
+  const profileLoadingSpinner = profileSubmitButton?.querySelector('[data-loading-spinner]');
+
+  if (profileForm && profileNameInput && profileEmailInput && profileSubmitButton) {
+    // Clear messages on input
+    [profileNameInput, profileEmailInput].forEach((input) => {
+      input.addEventListener('input', () => {
+        if (profileMessagesContainer) {
+          profileMessagesContainer.innerHTML = '';
+        }
+      });
+    });
+
+    // Profile form submission
+    profileForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      // Clear previous messages
+      if (profileMessagesContainer) {
+        profileMessagesContainer.innerHTML = '';
+      }
+
+      // Client-side validation
+      const errors = [];
+
+      if (!profileNameInput.value || !profileNameInput.value.trim()) {
+        errors.push('Please enter your name');
+      }
+
+      if (!profileEmailInput.value || !profileEmailInput.checkValidity()) {
+        errors.push('Please enter a valid email address');
+      }
+
+      // Display validation errors
+      if (errors.length > 0) {
+        if (profileMessagesContainer) {
+          profileMessagesContainer.innerHTML = `
+            <div role="alert" class="alert alert-error">
+              <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>${escapeHtml(errors.join('. '))}</span>
+            </div>
+          `;
+        }
+        return;
+      }
+
+      // Show loading state
+      if (profileButtonText) profileButtonText.classList.add('hidden');
+      if (profileLoadingSpinner) profileLoadingSpinner.classList.remove('hidden');
+      if (profileSubmitButton) profileSubmitButton.disabled = true;
+
+      try {
+        const formData = new FormData(profileForm);
+        const data = {
+          name: formData.get('name'),
+          email: formData.get('email'),
+        };
+
+        const response = await fetch(apiProfileUrl, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify(data),
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+          // Success - show success message
+          if (profileMessagesContainer) {
+            profileMessagesContainer.innerHTML = `
+              <div role="alert" class="alert alert-success">
+                <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>Profile updated successfully!</span>
+              </div>
+            `;
+          }
+        } else {
+          // Error - show error message
+          const errorMessage =
+            result.error?.message || 'Failed to update profile. Please try again.';
+          if (profileMessagesContainer) {
+            profileMessagesContainer.innerHTML = `
+              <div role="alert" class="alert alert-error">
+                <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>${escapeHtml(errorMessage)}</span>
+              </div>
+            `;
+          }
+        }
+      } catch (error) {
+        console.error('Profile update error:', error);
+        if (profileMessagesContainer) {
+          profileMessagesContainer.innerHTML = `
+            <div role="alert" class="alert alert-error">
+              <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>An error occurred. Please check your connection and try again.</span>
+            </div>
+          `;
+        }
+      } finally {
+        // Reset loading state
+        if (profileButtonText) profileButtonText.classList.remove('hidden');
+        if (profileLoadingSpinner) profileLoadingSpinner.classList.add('hidden');
+        if (profileSubmitButton) profileSubmitButton.disabled = false;
+      }
+    });
+  }
+
+  // ==================== SETTINGS FORM ====================
+  const settingsForm = document.getElementById('settings-form');
+  const settingsMessagesContainer = document.getElementById('settings-messages');
+  const settingsCurrencyInput = document.getElementById('currency');
+  const settingsSubmitButton = settingsForm?.querySelector('button[type="submit"]');
+  const settingsButtonText = settingsSubmitButton?.querySelector('[data-button-text]');
+  const settingsLoadingSpinner = settingsSubmitButton?.querySelector('[data-loading-spinner]');
+
+  // Fetch current settings and pre-fill currency
+  const fetchCurrentSettings = async () => {
+    try {
+      const response = await fetch(apiSettingsUrl, {
+        method: 'GET',
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success && result.data) {
+          if (settingsCurrencyInput) {
+            settingsCurrencyInput.value = result.data.primaryCurrency || 'IDR';
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching user settings:', error);
+    }
+  };
+
+  // Fetch settings on page load
+  fetchCurrentSettings();
+
+  if (settingsForm && settingsCurrencyInput && settingsSubmitButton) {
+    // Clear messages on input
+    settingsCurrencyInput.addEventListener('change', () => {
+      if (settingsMessagesContainer) {
+        settingsMessagesContainer.innerHTML = '';
+      }
+    });
+
+    // Settings form submission
+    settingsForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      // Clear previous messages
+      if (settingsMessagesContainer) {
+        settingsMessagesContainer.innerHTML = '';
+      }
+
+      // Client-side validation
+      if (!settingsCurrencyInput.value) {
+        if (settingsMessagesContainer) {
+          settingsMessagesContainer.innerHTML = `
+            <div role="alert" class="alert alert-error">
+              <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>Please select a currency</span>
+            </div>
+          `;
+        }
+        return;
+      }
+
+      // Show loading state
+      if (settingsButtonText) settingsButtonText.classList.add('hidden');
+      if (settingsLoadingSpinner) settingsLoadingSpinner.classList.remove('hidden');
+      if (settingsSubmitButton) settingsSubmitButton.disabled = true;
+
+      try {
+        const formData = new FormData(settingsForm);
+        const data = {
+          primaryCurrency: formData.get('primaryCurrency'),
+        };
+
+        const response = await fetch(apiSettingsUrl, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify(data),
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+          // Success - show success message
+          if (settingsMessagesContainer) {
+            settingsMessagesContainer.innerHTML = `
+              <div role="alert" class="alert alert-success">
+                <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>Settings saved successfully!</span>
+              </div>
+            `;
+          }
+        } else {
+          // Error - show error message
+          const errorMessage =
+            result.error?.message || 'Failed to save settings. Please try again.';
+          if (settingsMessagesContainer) {
+            settingsMessagesContainer.innerHTML = `
+              <div role="alert" class="alert alert-error">
+                <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>${escapeHtml(errorMessage)}</span>
+              </div>
+            `;
+          }
+        }
+      } catch (error) {
+        console.error('Settings update error:', error);
+        if (settingsMessagesContainer) {
+          settingsMessagesContainer.innerHTML = `
+            <div role="alert" class="alert alert-error">
+              <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>An error occurred. Please check your connection and try again.</span>
+            </div>
+          `;
+        }
+      } finally {
+        // Reset loading state
+        if (settingsButtonText) settingsButtonText.classList.remove('hidden');
+        if (settingsLoadingSpinner) settingsLoadingSpinner.classList.add('hidden');
+        if (settingsSubmitButton) settingsSubmitButton.disabled = false;
+      }
+    });
+  }
+</script>

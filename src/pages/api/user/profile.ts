@@ -4,6 +4,37 @@ import { successResponse, errorResponse, validateBody, requireAuth } from '@/lib
 import { updateProfileSchema } from '@/services/user.service';
 import { logError } from '@/lib/utils';
 import { UserServiceError, ServiceErrorCode } from '@/services/service-errors';
+import { db } from '@/db';
+import { users } from '@/db/schema';
+
+/**
+ * GET /api/user/profile
+ * Get current user profile data
+ */
+export const GET: APIRoute = async (context) => {
+  try {
+    const userId = await requireAuth(context);
+    const user = await db.query.users.findFirst({
+      where: (users, { eq }) => eq(users.id, userId),
+    });
+
+    if (!user) {
+      return errorResponse('User not found', 404, 'USER_NOT_FOUND');
+    }
+
+    return successResponse({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+    });
+  } catch (error) {
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return errorResponse('Unauthorized', 401);
+    }
+    logError('Error fetching user profile', error);
+    return errorResponse('Failed to fetch profile', 500);
+  }
+};
 
 /**
  * PUT /api/user/profile

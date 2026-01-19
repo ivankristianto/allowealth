@@ -6,6 +6,29 @@ import { logError } from '@/lib/utils';
 import { UserServiceError, ServiceErrorCode } from '@/services/service-errors';
 
 /**
+ * GET /api/user/settings
+ * Get current user settings with defaults applied
+ */
+export const GET: APIRoute = async (context) => {
+  try {
+    const userId = await requireAuth(context);
+    const settings = await userService.getSettings(userId);
+    return successResponse(settings);
+  } catch (error) {
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return errorResponse('Unauthorized', 401);
+    }
+    if (error instanceof UserServiceError) {
+      if (error.code === ServiceErrorCode.USER_NOT_FOUND) {
+        return errorResponse(error.message, error.statusCode, error.code);
+      }
+    }
+    logError('Error fetching user settings', error);
+    return errorResponse('Failed to fetch settings', 500);
+  }
+};
+
+/**
  * PUT /api/user/settings
  * Update user settings (primary currency, preferences)
  */
