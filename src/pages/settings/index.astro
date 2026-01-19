@@ -15,34 +15,53 @@ const currentPath = '/settings';
       <a class="tab" href="/settings/payment-methods">Payment Methods</a>
     </div>
 
-    <div class="card bg-base-100 shadow border border-base-300">
-      <div class="card-body">
-        <form class="space-y-4">
-          <div class="form-control">
-            <label class="label"><span class="label-text">Display Name</span></label>
-            <input type="text" placeholder="Your name" class="input input-bordered" />
-          </div>
+    <div class="card bg-base-100 shadow border border-base-300 max-w-2xl">
+      <div class="card-body p-6">
+        <h3 class="card-title text-lg mb-2">Profile Information</h3>
+        <p class="text-sm text-base-content/70 mb-6">
+          Update your personal information and preferences
+        </p>
 
+        <form class="space-y-5">
           <div class="form-control">
-            <label class="label"><span class="label-text">Email</span></label>
+            <label class="label" for="displayName">
+              <span class="label-text font-medium">Display Name</span>
+            </label>
             <input
-              type="email"
-              placeholder="your@email.com"
-              pattern={patterns.email.html}
-              title={patterns.email.title}
-              class="input input-bordered"
+              type="text"
+              id="displayName"
+              placeholder="Your name"
+              class="input input-bordered w-full"
             />
           </div>
 
           <div class="form-control">
-            <label class="label"><span class="label-text">Default Currency</span></label>
-            <select class="select select-bordered">
+            <label class="label" for="email">
+              <span class="label-text font-medium">Email</span>
+            </label>
+            <input
+              type="email"
+              id="email"
+              placeholder="your@email.com"
+              pattern={patterns.email.html}
+              title={patterns.email.title}
+              class="input input-bordered w-full"
+            />
+          </div>
+
+          <div class="form-control">
+            <label class="label" for="currency">
+              <span class="label-text font-medium">Default Currency</span>
+            </label>
+            <select id="currency" class="select select-bordered w-full">
               <option value="IDR">IDR - Indonesian Rupiah</option>
               <option value="USD">USD - US Dollar</option>
             </select>
           </div>
 
-          <button type="submit" class="btn btn-primary">Save Changes</button>
+          <div class="pt-2">
+            <button type="submit" class="btn btn-primary min-w-[140px]">Save Changes</button>
+          </div>
         </form>
       </div>
     </div>

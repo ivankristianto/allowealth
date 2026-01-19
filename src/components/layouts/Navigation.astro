@@ -7,12 +7,14 @@
  */
 
 import Icon from '../atoms/Icon.astro';
+import type { User } from '@/lib/auth/lucia';
 
 interface Props {
   currentPath?: string;
+  user?: User | null;
 }
 
-const { currentPath = '/' } = Astro.props;
+const { currentPath = '/', user = null } = Astro.props;
 
 interface NavItem {
   href: string;
@@ -76,13 +78,17 @@ const isActive = (href: string) => {
   <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-base-300 bg-base-100">
     <div class="flex items-center gap-3">
       <div class="avatar placeholder">
-        <div class="bg-neutral text-neutral-content rounded-full w-10">
-          <span class="text-xs">UK</span>
+        <div
+          class="bg-neutral text-neutral-content rounded-full w-10 flex items-center justify-center"
+        >
+          <span class="text-xs font-semibold">
+            {user ? (user.name || 'U').substring(0, 2).toUpperCase() : 'UK'}
+          </span>
         </div>
       </div>
       <div class="flex-1 min-w-0">
-        <p class="text-sm font-medium truncate">User Name</p>
-        <p class="text-xs text-neutral-500 truncate">user@example.com</p>
+        <p class="text-sm font-medium truncate">{user?.name || 'User Name'}</p>
+        <p class="text-xs text-neutral-500 truncate">{user?.email || 'user@example.com'}</p>
       </div>
     </div>
   </div>

@@ -8,22 +8,13 @@
  * @param {user?: User | null} user - User object from session (null if not authenticated)
  */
 
-import type { User } from 'lucia';
+import type { User } from '@/lib/auth/lucia';
 
 interface Props {
   user?: User | null;
 }
 
 const { user = null } = Astro.props;
-
-// User type with attributes
-type UserWithAttributes = User & {
-  attributes: {
-    id: string;
-    email: string;
-    name: string;
-  };
-};
 ---
 
 <div class="dropdown dropdown-end" data-user-context>
@@ -33,15 +24,13 @@ type UserWithAttributes = User & {
       <>
         <button tabindex={0} class="btn btn-ghost btn-sm gap-2" aria-label="User menu">
           <div class="avatar placeholder">
-            <div class="bg-primary text-primary-content rounded-full w-8">
-              <span class="text-xs">
-                {((user as UserWithAttributes)?.attributes?.name || 'U').charAt(0).toUpperCase()}
+            <div class="bg-primary text-primary-content rounded-full w-8 flex items-center justify-center">
+              <span class="text-xs font-semibold">
+                {(user?.name || 'U').charAt(0).toUpperCase()}
               </span>
             </div>
           </div>
-          <span class="hidden sm:inline text-sm font-medium">
-            {(user as UserWithAttributes)?.attributes?.name || 'User'}
-          </span>
+          <span class="hidden sm:inline text-sm font-medium">{user?.name || 'User'}</span>
           <svg
             xmlns="http://www.w3.org/2000/svg"
             class="h-4 w-4"

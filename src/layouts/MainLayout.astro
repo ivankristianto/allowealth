@@ -43,7 +43,7 @@ const { title = 'Finance Manager', currentPath = '/', user } = Astro.props;
     <!-- Sidebar navigation -->
     <div class="drawer-side">
       <label for="drawer-toggle" aria-label="close sidebar" class="drawer-overlay"></label>
-      <Navigation currentPath={currentPath} />
+      <Navigation currentPath={currentPath} user={user} />
     </div>
   </div>
 
