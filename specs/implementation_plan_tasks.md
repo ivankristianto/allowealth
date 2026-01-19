@@ -507,19 +507,37 @@ const calculatedPercentage =
 
 ### 3. Transaction Form UX Enhancements (Priority: P2)
 
-#### 3.1 Add Budget Remaining Display
+#### 3.1 Add Budget Remaining Display ✅
 
 **File:** `src/pages/transactions/add.astro`
 
+**Estimated Time:** 1-2 hours
+
+**Status:** ✅ Completed
+
+- API endpoint `/api/budget/category/:id/remaining` already exists (GET endpoint)
+- Service method `budgetService.getCategoryRemaining()` already implemented
+- Client-side fetch in `TransactionForm.astro` (`updateBudgetDisplay()`) already implemented
+- Budget warning display with color coding (`showBudgetWarning()`) already implemented
+- **Added comprehensive integration tests** for the budget remaining API endpoint
+- Tests verify: 0% spent, 50% spent, 80% warning threshold, 100% exceeded, decimal amounts, multiple transactions, current month filtering, soft-deleted transactions, authentication/authorization
+
 **Checklist:**
 
-- [ ] Fetch budget remaining for selected category
-- [ ] Display budget remaining indicator on form
-- [ ] Show warning if budget is low (>80% used)
-- [ ] Show error if budget is exceeded
-- [ ] Test budget remaining displays correctly
-- [ ] Test warning appears at 80% threshold
-- [ ] Test error appears when budget exceeded
+- [x] Fetch budget remaining for selected category (already implemented)
+- [x] Display budget remaining indicator on form (already implemented)
+- [x] Show warning if budget is low (>80% used) (already implemented)
+- [x] Show error if budget is exceeded (already implemented)
+- [x] Test budget remaining displays correctly (13 integration tests pass)
+- [x] Test warning appears at 80% threshold (covered in integration tests)
+- [x] Test error appears when budget exceeded (covered in integration tests)
+
+**Code Quality:**
+
+- Created `src/pages/api/budget/category/budget-remaining.api.integration.test.ts`
+- 13 integration tests pass covering all scenarios
+- All quality gates pass (typecheck, lint, stylelint, format)
+- Code review: APPROVED with no P0/P1 issues
 
 **UI:**
 
@@ -816,9 +834,10 @@ bun test src/services/user.service.test.ts
 
 ### Transaction Form UX
 
-- [x] Budget remaining displays for expense categories (task 3.1 - already implemented)
-- [x] Warning shows when budget is low (task 3.1 - already implemented)
-- [x] Error shows when budget is exceeded (task 3.1 - already implemented)
+- [x] Budget remaining displays for expense categories (task 3.1 ✅)
+- [x] Warning shows when budget is low (task 3.1 ✅)
+- [x] Error shows when budget is exceeded (task 3.1 ✅)
+- [x] Integration tests verify all budget remaining scenarios (task 3.1 ✅)
 - [x] Last used category is pre-selected (task 3.2 ✅)
 - [x] Last used payment method is pre-selected (task 3.2 ✅)
 - [x] Expense/income categories remembered separately (task 3.2 ✅)
