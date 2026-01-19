@@ -131,7 +131,7 @@ import { X, Plus, Edit, Trash2, Check, AlertCircle, Search, Filter } from '@luci
 
 ```astro
 <script>
-  import { addToast } from '@/lib/stores/toastStore';
+  import { addToast } from '@lib/stores/toastStore';
 
   // Basic usage
   addToast('Profile saved!', 'success');
@@ -146,12 +146,12 @@ import { X, Plus, Edit, Trash2, Check, AlertCircle, Search, Filter } from '@luci
   addToast('Action required', 'warning', { duration: 0 });
 
   // Remove specific toast
-  import { removeToast } from '@/lib/stores/toastStore';
+  import { removeToast } from '@lib/stores/toastStore';
   const toastId = addToast('Message', 'info');
   removeToast(toastId);
 
   // Clear all toasts
-  import { clearAllToasts } from '@/lib/stores/toastStore';
+  import { clearAllToasts } from '@lib/stores/toastStore';
   clearAllToasts();
 </script>
 ```

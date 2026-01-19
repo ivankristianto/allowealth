@@ -138,7 +138,7 @@ Use the toast system for user feedback instead of inline alerts:
 
 ```typescript
 // In client-side <script> tags
-import { addToast } from '@/lib/stores/toastStore';
+import { addToast } from '@lib/stores/toastStore';
 
 // After successful action
 addToast('Changes saved!', 'success');
