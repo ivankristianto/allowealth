@@ -246,7 +246,7 @@ export class UserService {
       await this.db.update(userSettings).set(updateData).where(eq(userSettings.user_id, userId));
     } else {
       // Create new settings
-      await this.db.insert(userSettings).values({
+      this.db.insert(userSettings).values({
         user_id: userId,
         primary_currency: validated.primaryCurrency,
         show_converted_totals:

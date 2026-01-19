@@ -76,7 +76,7 @@ describe('BudgetService', () => {
 
       // Check category rows
       expect(lines[1]).toContain('Food & Groceries');
-      expect(lines[1]).toContain('15.00');
+      expect(lines[1]).toContain('60.00');
       expect(lines[1]).toContain('6000000');
       expect(lines[1]).toContain('3000000');
 

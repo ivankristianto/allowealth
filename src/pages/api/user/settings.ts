@@ -18,10 +18,6 @@ import { UserServiceError, ServiceErrorCode } from '@/services/service-errors';
  * for any missing values.
  *
  * @authentication Requires valid session cookie (handled by requireAuth)
- * @returns {Promise<Response>} JSON response with user settings
- * @returns {Object} data.primaryCurrency - Primary currency code (default: 'IDR')
- * @returns {Object} data.preferences - User preferences object
- * @returns {number} status - 200 on success, 401 if unauthorized, 404 if user not found, 500 on server error
  *
  * @example
  * Response (200):
@@ -64,10 +60,6 @@ export const GET: APIRoute = async (context) => {
  * @param {Object} requestBody - Request body containing settings updates
  * @param {string} requestBody.primaryCurrency - Primary currency code (required, must be 'IDR' or 'USD')
  * @param {Object} [requestBody.preferences] - Optional user preferences object
- * @returns {Promise<Response>} JSON response with updated settings
- * @returns {Object} data.primaryCurrency - Updated primary currency code
- * @returns {Object} data.preferences - Updated user preferences
- * @returns {number} status - 200 on success, 400 on validation error, 401 if unauthorized, 404 if user not found, 500 on server error
  *
  * @example
  * Request:

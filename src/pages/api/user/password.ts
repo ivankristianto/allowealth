@@ -21,9 +21,6 @@ import { UserServiceError, ServiceErrorCode } from '@/services/service-errors';
  * @param {Object} requestBody - Request body containing password change data
  * @param {string} requestBody.oldPassword - Current password (required)
  * @param {string} requestBody.newPassword - New password (required, min 12 chars, must contain letter + number/special)
- * @returns {Promise<Response>} JSON response indicating success
- * @returns {Object} data.message - Success message
- * @returns {number} status - 200 on success, 400 on validation error, 401 if unauthorized, 404 if user not found, 500 on server error
  *
  * @example
  * Request:

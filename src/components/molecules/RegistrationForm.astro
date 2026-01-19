@@ -197,7 +197,7 @@ const cspNonce = Astro.locals.cspNonce || '';
   }
 </style>
 
-<script define:vars={{ loginLink }} nonce={cspNonce}>
+<script define:vars={{ loginLink }} nonce={cspNonce} is:inline>
   // HTML escaping utility to prevent XSS
   const escapeHtml = (text) => {
     const div = document.createElement('div');

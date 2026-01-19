@@ -18,11 +18,6 @@ import { db } from '@/db';
  * Retrieves the current authenticated user's profile data.
  *
  * @authentication Requires valid session cookie (handled by requireAuth)
- * @returns {Promise<Response>} JSON response with user profile data
- * @returns {Object} data.id - User ID
- * @returns {Object} data.name - User's display name
- * @returns {Object} data.email - User's email address
- * @returns {number} status - 200 on success, 401 if unauthorized, 404 if user not found, 500 on server error
  *
  * @example
  * Response (200):
@@ -83,11 +78,6 @@ export const GET: APIRoute = async (context) => {
  * @param {Object} requestBody - Request body containing profile updates
  * @param {string} requestBody.name - User's display name (required, max 100 chars)
  * @param {string} requestBody.email - User's email address (required, must be valid email format)
- * @returns {Promise<Response>} JSON response with updated user profile
- * @returns {Object} data.id - User ID
- * @returns {Object} data.name - Updated display name
- * @returns {Object} data.email - Updated email address
- * @returns {number} status - 200 on success, 400 on validation error, 401 if unauthorized, 404 if user not found, 409 if email already exists, 500 on server error
  *
  * @example
  * Request:
