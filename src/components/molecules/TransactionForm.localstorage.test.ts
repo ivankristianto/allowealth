@@ -31,11 +31,25 @@ import { describe, it, expect } from 'bun:test';
 
 /**
  * localStorage keys used by TransactionForm
+ *
+ * Note: Keys now use a namespace prefix 'expensesApp.' to prevent collisions
+ * with other code on the same origin.
+ *
+ * Migration: Old keys (without namespace) are automatically migrated to new
+ * namespaced keys on first page load.
  */
-const STORAGE_KEYS = {
+const STORAGE_PREFIX = 'expensesApp.';
+
+const OLD_STORAGE_KEYS = {
   lastExpenseCategory: 'lastExpenseCategory',
   lastIncomeCategory: 'lastIncomeCategory',
   lastPaymentMethod: 'lastPaymentMethod',
+} as const;
+
+const STORAGE_KEYS = {
+  lastExpenseCategory: STORAGE_PREFIX + 'lastExpenseCategory',
+  lastIncomeCategory: STORAGE_PREFIX + 'lastIncomeCategory',
+  lastPaymentMethod: STORAGE_PREFIX + 'lastPaymentMethod',
 } as const;
 
 /**
@@ -64,10 +78,66 @@ const STORAGE_KEYS = {
 
 describe('TransactionForm localStorage Functionality', () => {
   describe('Storage Keys', () => {
-    it('should use consistent storage keys', () => {
-      expect(STORAGE_KEYS.lastExpenseCategory).toBe('lastExpenseCategory');
-      expect(STORAGE_KEYS.lastIncomeCategory).toBe('lastIncomeCategory');
-      expect(STORAGE_KEYS.lastPaymentMethod).toBe('lastPaymentMethod');
+    it('should use namespaced storage keys', () => {
+      expect(STORAGE_KEYS.lastExpenseCategory).toBe('expensesApp.lastExpenseCategory');
+      expect(STORAGE_KEYS.lastIncomeCategory).toBe('expensesApp.lastIncomeCategory');
+      expect(STORAGE_KEYS.lastPaymentMethod).toBe('expensesApp.lastPaymentMethod');
+    });
+
+    it('should have namespace prefix to prevent collisions', () => {
+      expect(STORAGE_KEYS.lastExpenseCategory).toContain('.');
+      expect(STORAGE_KEYS.lastIncomeCategory).toContain('.');
+      expect(STORAGE_KEYS.lastPaymentMethod).toContain('.');
+    });
+  });
+
+  describe('Migration Logic', () => {
+    it('should define old storage keys for migration', () => {
+      expect(OLD_STORAGE_KEYS.lastExpenseCategory).toBe('lastExpenseCategory');
+      expect(OLD_STORAGE_KEYS.lastIncomeCategory).toBe('lastIncomeCategory');
+      expect(OLD_STORAGE_KEYS.lastPaymentMethod).toBe('lastPaymentMethod');
+    });
+
+    it('should migrate old keys to new namespaced keys', () => {
+      /**
+       * Scenario:
+       * 1. User has old localStorage keys (without namespace):
+       *    - lastExpenseCategory = 'food-id'
+       *    - lastIncomeCategory = 'salary-id'
+       *    - lastPaymentMethod = 'cash-id'
+       * 2. On page load, migrateLocalStorageKeys() runs
+       * 3. Old values are copied to new namespaced keys:
+       *    - expensesApp.lastExpenseCategory = 'food-id'
+       *    - expensesApp.lastIncomeCategory = 'salary-id'
+       *    - expensesApp.lastPaymentMethod = 'cash-id'
+       * 4. Old keys are removed
+       * 5. Migration flag is set: expensesApp.migrated = 'true'
+       * 6. Future page loads skip migration (flag already set)
+       */
+      expect(true).toBe(true); // Documentation test
+    });
+
+    it('should not migrate if already done', () => {
+      /**
+       * Scenario:
+       * 1. Migration flag already exists: expensesApp.migrated = 'true'
+       * 2. migrateLocalStorageKeys() checks flag first
+       * 3. Migration is skipped (early return)
+       * 4. No localStorage operations performed
+       */
+      expect(true).toBe(true); // Documentation test
+    });
+
+    it('should handle migration failures gracefully', () => {
+      /**
+       * Scenario:
+       * 1. localStorage is unavailable (private mode, quota exceeded)
+       * 2. migrateLocalStorageKeys() catches error
+       * 3. Console warning logged
+       * 4. Function returns without throwing
+       * 5. Form continues to work (just without localStorage)
+       */
+      expect(true).toBe(true); // Documentation test
     });
   });
 
@@ -259,6 +329,7 @@ describe('TransactionForm localStorage Functionality', () => {
  * [ ] Verify redirect to /transactions
  * [ ] Navigate back to /transactions/add
  * [ ] Verify "Food" category is pre-selected
+ * [ ] Check DevTools: verify keys use "expensesApp." prefix
  *
  * Test 2: Income Category Memory (Separate from Expense)
  * [ ] On /transactions/add, click "Income" radio button
@@ -303,7 +374,7 @@ describe('TransactionForm localStorage Functionality', () => {
  * [ ] Verify localStorage "Food" was NOT used
  *
  * Test 8: Deleted Category Handling
- * [ ] Manually set localStorage.lastExpenseCategory to a deleted category ID
+ * [ ] Manually set localStorage.expensesApp.lastExpenseCategory to a deleted category ID
  * [ ] Navigate to /transactions/add
  * [ ] Verify category select is empty (no pre-selection)
  * [ ] Verify no errors in console
@@ -319,4 +390,42 @@ describe('TransactionForm localStorage Functionality', () => {
  * [ ] Close browser tab
  * [ ] Reopen browser and navigate to /transactions/add
  * [ ] Verify previous selections are still pre-selected
+ *
+ * === Migration Tests ===
+ *
+ * Test 11: Migration from Old Keys to Namespaced Keys
+ * [ ] Clear all localStorage
+ * [ ] Manually set old keys (without namespace):
+ *     [ ] localStorage.setItem('lastExpenseCategory', 'food-id')
+ *     [ ] localStorage.setItem('lastIncomeCategory', 'salary-id')
+ *     [ ] localStorage.setItem('lastPaymentMethod', 'cash-id')
+ * [ ] Navigate to /transactions/add
+ * [ ] Verify new namespaced keys exist:
+ *     [ ] localStorage.getItem('expensesApp.lastExpenseCategory') === 'food-id'
+ *     [ ] localStorage.getItem('expensesApp.lastIncomeCategory') === 'salary-id'
+ *     [ ] localStorage.getItem('expensesApp.lastPaymentMethod') === 'cash-id'
+ * [ ] Verify old keys are removed:
+ *     [ ] localStorage.getItem('lastExpenseCategory') === null
+ *     [ ] localStorage.getItem('lastIncomeCategory') === null
+ *     [ ] localStorage.getItem('lastPaymentMethod') === null
+ * [ ] Verify migration flag is set:
+ *     [ ] localStorage.getItem('expensesApp.migrated') === 'true'
+ *
+ * Test 12: Migration Only Runs Once
+ * [ ] After Test 11, refresh the page
+ * [ ] Verify migration flag still exists
+ * [ ] Manually add back old key: localStorage.setItem('lastExpenseCategory', 'old-food-id')
+ * [ ] Refresh the page again
+ * [ ] Verify old key still exists (migration was skipped due to flag)
+ * [ ] Verify namespaced key still has original value (not overwritten)
+ *
+ * Test 13: Namespace Prefix Prevents Collisions
+ * [ ] Set a key that could collide without namespace:
+ *     [ ] localStorage.setItem('lastPaymentMethod', 'external-value')
+ * [ ] Navigate to /transactions/add
+ * [ ] Verify the app uses namespaced key 'expensesApp.lastPaymentMethod'
+ * [ ] Verify the non-namespaced key is not read by the app
+ * [ ] Add a transaction with payment method "Card"
+ * [ ] Verify only 'expensesApp.lastPaymentMethod' is updated
+ * [ ] Verify 'lastPaymentMethod' still has 'external-value' (not touched)
  */

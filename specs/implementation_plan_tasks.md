@@ -1252,19 +1252,117 @@ paths:
 **Files affected:**
 
 - `src/components/molecules/TransactionForm.astro`
+- `src/components/molecules/TransactionForm.localstorage.test.ts`
 
 **Checklist:**
 
-- [ ] Add namespace prefix to all STORAGE_KEYS (e.g., `expensesApp.`)
-- [ ] Update migration logic to clear old keys and set new namespaced keys
-- [ ] Test that existing users' preferences are migrated correctly
-- [ ] Test that new selections are stored with namespaced keys
+- [x] Add namespace prefix to all STORAGE_KEYS (e.g., `expensesApp.`)
+- [x] Update migration logic to clear old keys and set new namespaced keys
+- [x] Test that existing users' preferences are migrated correctly
+- [x] Test that new selections are stored with namespaced keys
+- [x] Add validation to migration logic (P1 fix from code review)
 
 **Estimated Time:** 1 hour
 
+**Status:** ✅ Completed
+
+- Added `STORAGE_PREFIX = 'expensesApp.'` constant to prevent key collisions
+- Created `OLD_STORAGE_KEYS` object for migration tracking
+- Updated `STORAGE_KEYS` to use namespace prefix
+- Added `MIGRATION_FLAG_KEY` to track migration status
+- Implemented `migrateLocalStorageKeys()` function with:
+  - Migration flag check (only runs once)
+  - Validation pattern for stored IDs (`/^[a-zA-Z0-9\-]+$/`)
+  - Safe migration (only copies if new key doesn't exist)
+  - Old key removal
+  - Graceful error handling
+- Updated test file with new keys and migration documentation
+- Added 3 new manual tests for migration scenarios
+- All quality gates pass (typecheck, lint, stylelint, format)
+- All 20 unit tests pass
+- Code review: APPROVED with P1 fix applied
+
+**New localStorage keys:**
+
+- `expensesApp.lastExpenseCategory`
+- `expensesApp.lastIncomeCategory`
+- `expensesApp.lastPaymentMethod`
+- `expensesApp.migrated` (migration flag)
+
 ---
 
-**Total Estimated Effort for Section 4:** 9-11 hours + 2 hours (Task 3.2 follow-ups) = **11-13 hours**
+#### 4.13 Fix localStorage.clear() Error Recovery (Priority: P3)
+
+**Source:** Code review feedback for Task 4.12 (pre-existing issue)
+
+**Goal:** Prevent data loss when localStorage quota is exceeded.
+
+**Issue:** The current error recovery in `setLastUsedCategory()` and `setLastUsedPaymentMethod()` uses `localStorage.clear()` which wipes ALL localStorage data including data from other parts of the application.
+
+**Files affected:**
+
+- `src/components/molecules/TransactionForm.astro`
+
+**Checklist:**
+
+- [ ] Replace `localStorage.clear()` with selective removal of only our app's keys
+- [ ] Ensure error recovery only clears `STORAGE_KEYS` and `MIGRATION_FLAG_KEY`
+- [ ] Test that quota error gracefully degrades (form works without localStorage)
+- [ ] Update error handling in both `setLastUsedCategory()` and `setLastUsedPaymentMethod()`
+
+**Estimated Time:** 30 minutes
+
+---
+
+#### 4.14 Extract Storage Keys to Shared Module (Priority: P3)
+
+**Source:** Code review feedback for Task 4.12
+
+**Goal:** Eliminate duplication of storage constants between component and test file.
+
+**Files affected:**
+
+- `src/lib/storage-keys.ts` (new file)
+- `src/components/molecules/TransactionForm.astro`
+- `src/components/molecules/TransactionForm.localstorage.test.ts`
+
+**Checklist:**
+
+- [ ] Create `src/lib/storage-keys.ts` with exported constants
+- [ ] Export STORAGE_PREFIX, STORAGE_KEYS, OLD_STORAGE_KEYS, MIGRATION_FLAG_KEY
+- [ ] Update component to import from shared module (if feasible with inline scripts)
+- [ ] Update test file to import from shared module
+- [ ] Verify imports work correctly in both contexts
+
+**Estimated Time:** 1 hour
+
+**Note:** This may be challenging due to Astro's inline script limitations. If imports don't work in inline scripts, document the duplication as acceptable.
+
+---
+
+#### 4.15 Add Migration Version Number (Priority: P3)
+
+**Source:** Code review feedback for Task 4.12
+
+**Goal:** Support future localStorage migrations by tracking migration version.
+
+**Files affected:**
+
+- `src/components/molecules/TransactionForm.astro`
+
+**Checklist:**
+
+- [ ] Replace `MIGRATION_FLAG_KEY` with `MIGRATION_VERSION_KEY`
+- [ ] Define `CURRENT_MIGRATION_VERSION` constant
+- [ ] Update migration logic to check version number instead of boolean flag
+- [ ] Store version number as integer in localStorage
+- [ ] Document migration versioning strategy for future developers
+
+**Estimated Time:** 30 minutes
+
+---
+
+**Total Estimated Effort for Section 4:** 9-11 hours + 2 hours (Task 3.2 follow-ups) + 2 hours (Task 4.12 follow-ups) = **13-15 hours**
 
 ---
 

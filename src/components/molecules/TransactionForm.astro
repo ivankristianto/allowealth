@@ -475,12 +475,61 @@ const paymentMethodsJson = JSON.stringify(
   // === End Form Validation ===
 
   // === localStorage helpers for remembering last used selections ===
-  const STORAGE_KEYS = {
+  // Namespace prefix to prevent collisions with other code on same origin
+  const STORAGE_PREFIX = 'expensesApp.';
+
+  // Old keys (without namespace) - used for migration
+  const OLD_STORAGE_KEYS = {
     lastExpenseCategory: 'lastExpenseCategory',
     lastIncomeCategory: 'lastIncomeCategory',
     lastPaymentMethod: 'lastPaymentMethod',
   };
+
+  // New keys (with namespace prefix)
+  const STORAGE_KEYS = {
+    lastExpenseCategory: STORAGE_PREFIX + 'lastExpenseCategory',
+    lastIncomeCategory: STORAGE_PREFIX + 'lastIncomeCategory',
+    lastPaymentMethod: STORAGE_PREFIX + 'lastPaymentMethod',
+  };
+
+  // Migration flag to track if migration has been done
+  const MIGRATION_FLAG_KEY = STORAGE_PREFIX + 'migrated';
+
   const DEFAULT_TRANSACTION_TYPE = 'expense';
+
+  // Migrate old localStorage keys to new namespaced keys
+  function migrateLocalStorageKeys() {
+    try {
+      // Check if migration already done
+      if (localStorage.getItem(MIGRATION_FLAG_KEY) === 'true') {
+        return;
+      }
+
+      // Validation pattern for stored IDs (matches getter validation)
+      const VALID_ID_PATTERN = /^[a-zA-Z0-9\-]+$/;
+
+      // Migrate each old key to new namespaced key
+      for (const [keyName, oldKey] of Object.entries(OLD_STORAGE_KEYS)) {
+        const newKey = STORAGE_KEYS[keyName];
+        const oldValue = localStorage.getItem(oldKey);
+
+        if (oldValue !== null && localStorage.getItem(newKey) === null) {
+          // Validate old value format before migrating
+          if (VALID_ID_PATTERN.test(oldValue)) {
+            localStorage.setItem(newKey, oldValue);
+          }
+          // Always remove old key, even if value was invalid
+          localStorage.removeItem(oldKey);
+        }
+      }
+
+      // Mark migration as complete
+      localStorage.setItem(MIGRATION_FLAG_KEY, 'true');
+    } catch (e) {
+      console.warn('localStorage migration failed:', e);
+      // Don't throw - migration failure is non-critical
+    }
+  }
 
   // Helper: Get localStorage key for category based on transaction type
   function getCategoryStorageKey(transactionType) {
@@ -914,6 +963,8 @@ const paymentMethodsJson = JSON.stringify(
   });
 
   // Initialize form with pre-selected values, validation listeners, and update displays
+  // First, migrate any old localStorage keys to new namespaced keys
+  migrateLocalStorageKeys();
   attachValidationListeners();
   const wasCategoryPreselected = preselectLastUsedValues();
   // Only update currency if category was NOT pre-selected (pre-selection triggers change event)
