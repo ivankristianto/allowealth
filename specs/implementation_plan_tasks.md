@@ -159,21 +159,44 @@ Replace authentication boilerplate in all protected pages to use `ProtectedLayou
 
 **Checklist:**
 
-- [ ] Create `src/pages/api/user/profile.ts` (PUT endpoint)
-- [ ] Add authentication check to profile endpoint
-- [ ] Implement profile update logic with validation
-- [ ] Add error handling for duplicate email
-- [ ] Create `src/pages/api/user/password.ts` (PUT endpoint)
-- [ ] Add authentication check to password endpoint
-- [ ] Implement password change with old password verification
-- [ ] Add error handling for invalid old password
-- [ ] Create `src/pages/api/user/settings.ts` (PUT endpoint)
-- [ ] Add authentication check to settings endpoint
-- [ ] Implement settings update logic
-- [ ] Add upsert logic for user_settings (create if not exists)
-- [ ] Test all endpoints with valid requests
-- [ ] Test all endpoints with invalid requests
-- [ ] Test all endpoints without authentication (should fail)
+- [x] Create `src/pages/api/user/profile.ts` (PUT endpoint)
+- [x] Add authentication check to profile endpoint
+- [x] Implement profile update logic with validation
+- [x] Add error handling for duplicate email
+- [x] Create `src/pages/api/user/password.ts` (PUT endpoint)
+- [x] Add authentication check to password endpoint
+- [x] Implement password change with old password verification
+- [x] Add error handling for invalid old password
+- [x] Create `src/pages/api/user/settings.ts` (PUT endpoint)
+- [x] Add authentication check to settings endpoint
+- [x] Implement settings update logic
+- [x] Add upsert logic for user_settings (create if not exists)
+- [x] Write integration tests for all three endpoints
+- [x] Update openapi.yml with new endpoint documentation
+- [x] Test all endpoints with valid requests
+- [x] Test all endpoints with invalid requests
+- [x] Test all endpoints without authentication (should fail)
+
+**Estimated Time:** 1-2 hours
+
+**Status:** ✅ Completed
+
+- Created `src/pages/api/user/profile.ts` - PUT endpoint for profile updates (name, email)
+- Created `src/pages/api/user/password.ts` - PUT endpoint for password changes
+- Created `src/pages/api/user/settings.ts` - PUT endpoint for user settings (currency, preferences)
+- Added proper authentication using `requireAuth()` for all endpoints
+- Comprehensive error handling for duplicate emails, invalid passwords, weak passwords
+- Integration tests for all three endpoints covering:
+  - Valid requests with expected responses
+  - Duplicate email rejection
+  - Invalid old password rejection
+  - Password strength validation
+  - Currency validation
+  - Malformed JSON handling
+  - Authentication requirement
+- Updated `openapi.yml` with User tag and all three endpoint definitions
+- All quality gates pass (typecheck, lint, stylelint, format)
+- Code review: APPROVED with type safety fix applied
 
 **Response format:**
 
@@ -544,10 +567,11 @@ bun test src/services/user.service.test.ts
 - [x] Password validation implemented (12+ chars, letters + numbers/special)
 - [x] Settings defaults applied correctly
 - [x] Error codes defined and integrated with shared service error handling
-- [ ] User can update name and email from settings page (needs task 1.3, 1.4)
-- [ ] User can change password with validation (needs task 1.3, 1.5)
-- [ ] Primary currency setting affects display across app (needs task 1.3, 1.4)
-- [ ] All settings persist across sessions (needs task 1.3, 1.4)
+- [x] API endpoints created for profile, password, and settings updates (task 1.3)
+- [ ] User can update name and email from settings page (needs task 1.4)
+- [ ] User can change password with validation (needs task 1.5)
+- [ ] Primary currency setting affects display across app (needs task 1.4)
+- [ ] All settings persist across sessions (needs task 1.4)
 - [ ] Form validation prevents invalid inputs (needs task 1.4, 1.5)
 - [ ] Success/error messages display correctly (needs task 1.4, 1.5)
 - [ ] User avatar properly shown as initial name (needs task 1.4)
