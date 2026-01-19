@@ -129,8 +129,8 @@ const user = Astro.locals.user! as User;
 </ProtectedLayout>
 
 <script type="module">
-  import { addToast } from '@/lib/stores/toastStore';
-  import { setButtonLoading } from '@/lib/client-utils';
+  import { addToast } from '@lib/stores/toastStore';
+  import { setButtonLoading } from '@lib/client-utils';
 
   const API_PROFILE_URL = '/api/user/profile';
   const API_SETTINGS_URL = '/api/user/settings';
