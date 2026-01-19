@@ -543,8 +543,6 @@ With Astro's full-page navigation, Nano Store state resets on page change. This 
 
 1. **Design System Compliance** - The close button uses inline SVG instead of `@lucide/astro` icon component. This is necessary due to Astro SSR limitations for client-side scripts, but should be documented as an exception.
 
-2. **Defensive coding for `crypto.randomUUID()`** - Add fallback for environments where crypto API is not available.
-
 ### P3 Items (Nice to Have)
 
 4. **Focus management** - When toast is dismissed, return focus to the element that had focus before toast appeared.
