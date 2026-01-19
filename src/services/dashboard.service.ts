@@ -7,6 +7,16 @@
  * - Budget health alerts
  * - Asset update reminders
  * - Recent transactions
+ *
+ * Error Handling:
+ * Methods catch errors and return safe default values (empty arrays, zeroed values).
+ * This ensures the service gracefully handles missing database connections or
+ * invalid input parameters without throwing exceptions.
+ *
+ * Unit Tests:
+ * Unit tests pass an empty object {} as the db mock to verify error handling.
+ * The null checks below detect this scenario and trigger the error handling
+ * path, which logs to console and returns safe defaults.
  */
 
 import { assets, transactions, categories, type IDatabase } from '@/db';
