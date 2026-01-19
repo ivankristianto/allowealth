@@ -8,10 +8,10 @@
  */
 
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
-import BudgetOverviewTable from '../../components/organisms/BudgetOverviewTable.astro';
+import BudgetOverviewTable from '@components/organisms/BudgetOverviewTable.astro';
 import { budgetService, type BudgetSummary } from '@/services';
-import Icon from '../../components/atoms/Icon.astro';
-import Badge from '../../components/atoms/Badge.astro';
+import Icon from '@components/atoms/Icon.astro';
+import Badge from '@components/atoms/Badge.astro';
 import { formatCurrency } from '@/lib/tokens';
 
 const user = Astro.locals.user!;

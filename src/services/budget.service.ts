@@ -107,6 +107,12 @@ export class BudgetService {
     }
 
     // Calculate budget overview for each category
+    // First, calculate total budget for percentage calculation
+    const totalBudgetAmount = userCategories.reduce(
+      (sum, cat) => sum + parseFloat(cat.budget_amount || '0'),
+      0
+    );
+
     const categoryOverviews: BudgetOverview[] = userCategories.map((category) => {
       const budgetAmount = category.budget_amount;
       const spentAmount = spentByCategory.get(category.id) || '0';
@@ -114,6 +120,12 @@ export class BudgetService {
       const percentageUsed = !decimalIsZero(budgetAmount)
         ? parseFloat(decimalDivide(decimalMultiply(spentAmount, 100), budgetAmount))
         : 0;
+
+      // Calculate percentage dynamically from budget amount
+      // percentage = (category_budget_amount / total_budget_amount) * 100
+      const budgetAmountNum = parseFloat(budgetAmount || '0');
+      const calculatedPercentage =
+        totalBudgetAmount > 0 ? (budgetAmountNum / totalBudgetAmount) * 100 : 0;
 
       let status: 'ok' | 'warning' | 'exceeded' = 'ok';
       if (percentageUsed >= 100) {
@@ -126,7 +138,7 @@ export class BudgetService {
         category_id: category.id,
         category_name: category.name,
         category_type: category.type,
-        percentage: category.percentage,
+        percentage: calculatedPercentage.toFixed(2),
         budget_amount: budgetAmount,
         spent_amount: spentAmount,
         balance,
