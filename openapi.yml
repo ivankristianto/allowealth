@@ -1295,8 +1295,8 @@ paths:
       tags: [Budget]
       summary: Update category budget allocation
       description: |
-        Update budget allocation (percentage and/or budget_amount) for a specific category.
-        At least one of percentage or budget_amount must be provided.
+        Update budget allocation for a specific category by providing the budget amount.
+        The percentage is automatically calculated from the budget amount relative to the total budget.
         Category must belong to the authenticated user.
       security:
         - sessionAuth: []
@@ -2318,22 +2318,19 @@ components:
 
     UpdateBudgetCategoryRequest:
       type: object
-      description: Request body for updating category budget allocation
+      description: Request body for updating category budget allocation. Percentage is auto-calculated from budget_amount.
+      required:
+        - budget_amount
       properties:
-        percentage:
-          type: string
-          pattern: '^\d+(\.\d{1,2})?$'
-          description: Budget percentage (0-100)
-          example: "10.00"
         budget_amount:
           type: string
           pattern: '^\d+(\.\d{1,2})?$'
-          description: Budget amount (must be non-negative)
+          description: Budget amount (must be non-negative). Percentage is auto-calculated from this value relative to total budget.
           example: "10000000"
         currency:
           type: string
           enum: [IDR, USD]
-          description: Currency must match existing category currency
+          description: Currency must match existing category currency (optional, validation only)
           example: IDR
 
     BudgetCategoryResponse:

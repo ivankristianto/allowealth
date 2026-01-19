@@ -426,16 +426,17 @@ document.getElementById('quick-edit-budget-form')?.addEventListener('submit', as
 
 **Checklist:**
 
-- [ ] Remove percentage input field from quick edit modal
-- [ ] Calculate percentage automatically based on budget amount input
-- [ ] Fetch total budget amount for the selected currency
-- [ ] Update percentage field to be read-only display
-- [ ] Round percentage to 2 decimal places
-- [ ] Update API to accept only budget_amount (remove percentage from PATCH request)
-- [ ] Update backend to calculate percentage when budget_amount changes
-- [ ] Test percentage calculation with various budget amounts
-- [ ] Test percentage updates when currency changes
-- [ ] Verify table updates show correct calculated percentages
+- [x] Remove percentage input field from quick edit modal
+- [x] Calculate percentage automatically based on budget amount input
+- [x] Fetch total budget amount for the selected currency
+- [x] Update percentage field to be read-only display
+- [x] Round percentage to 2 decimal places
+- [x] Update API to accept only budget_amount (remove percentage from PATCH request)
+- [x] Update backend to calculate percentage when budget_amount changes
+- [x] Update OpenAPI specification to reflect new API contract
+- [x] Test percentage calculation with various budget amounts
+- [x] Test percentage updates when currency changes
+- [x] Verify table updates show correct calculated percentages
 
 **Files to modify:**
 
@@ -472,6 +473,35 @@ const percentage = totalBudget > 0 ? (budget_amount / totalBudget) * 100 : 0;
 ```
 
 **Estimated Time:** 2-3 hours
+
+**Status:** ✅ Completed
+
+- Removed percentage input field from quick edit modal
+- Added read-only display showing "Allocation: XX%" with "(auto-calculated from budget amount)" helper text
+- Updated API to only accept budget_amount (percentage field removed from request schema)
+- Added percentage calculation logic that excludes category being updated from total
+- Updated client-side form to only send budget_amount
+- Updated OpenAPI specification to reflect new API contract
+- Added proper validation for budget_amount field
+- All quality gates pass (typecheck, lint, stylelint, format)
+- Code review: APPROVED with P0 and P1 feedback applied
+
+**Percentage Calculation:**
+
+```typescript
+// Total budget EXCLUDING the category being updated
+const totalBudgetAmount = sameCurrencyCategories.reduce(
+  (sum, cat) => sum + (cat.id === id ? 0 : parseFloat(cat.budget_amount || '0')),
+  0
+);
+// New total includes the updated budget amount
+const newTotalBudgetAmount = totalBudgetAmount + parseFloat(input.budget_amount || '0');
+// Calculate percentage
+const calculatedPercentage =
+  newTotalBudgetAmount > 0
+    ? (parseFloat(input.budget_amount || '0') / newTotalBudgetAmount) * 100
+    : 0;
+```
 
 ---
 
@@ -722,6 +752,11 @@ bun test src/services/user.service.test.ts
 - [x] Budget edit modal opens from budget page (task 2.2 ✅)
 - [x] UI updates without page refresh (task 2.2 ✅)
 - [x] Total budget recalculates correctly (task 2.2 ✅)
+- [x] Percentage is auto-calculated from budget amount (task 2.3 ✅)
+- [x] Percentage input field removed from modal (task 2.3 ✅)
+- [x] Read-only percentage display shows calculated value (task 2.3 ✅)
+- [x] API only accepts budget_amount (task 2.3 ✅)
+- [x] OpenAPI specification updated (task 2.3 ✅)
 
 ### Transaction Form UX
 

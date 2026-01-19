@@ -665,10 +665,16 @@ const buildExportUrl = (): string => {
       if (form) {
         (form.querySelector('[name="category_id"]') as HTMLInputElement).value = category.id;
         (form.querySelector('[name="category-name"]') as HTMLInputElement).value = category.name;
-        (form.querySelector('[name="percentage"]') as HTMLInputElement).value = category.percentage;
         (form.querySelector('[name="budget_amount"]') as HTMLInputElement).value =
           category.budget_amount;
         (form.querySelector('[name="currency"]') as HTMLInputElement).value = category.currency;
+      }
+
+      // Display the current percentage
+      const calculatedPercentageEl = document.getElementById('calculated-percentage');
+      if (calculatedPercentageEl) {
+        const percentage = parseFloat(category.percentage || '0');
+        calculatedPercentageEl.textContent = `${percentage.toFixed(2)}%`;
       }
 
       clearFormError();
@@ -691,16 +697,8 @@ const buildExportUrl = (): string => {
         return;
       }
 
-      // Get values as strings (API expects strings for decimal precision)
-      const percentageStr = formData.get('percentage') as string;
+      // Get budget amount as string (API expects string for decimal precision)
       const budgetAmountStr = formData.get('budget_amount') as string;
-
-      // Validate percentage (parse as number for validation, but send as string)
-      const percentageNum = parseFloat(percentageStr);
-      if (isNaN(percentageNum) || percentageNum < 0 || percentageNum > 100) {
-        showFormError('Percentage must be between 0 and 100');
-        return;
-      }
 
       // Validate budget amount (parse as number for validation, but send as string)
       const budgetAmountNum = parseFloat(budgetAmountStr);
@@ -710,7 +708,6 @@ const buildExportUrl = (): string => {
       }
 
       const data = {
-        percentage: percentageStr,
         budget_amount: budgetAmountStr,
       };
 

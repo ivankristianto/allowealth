@@ -8,17 +8,21 @@ import { updateCategorySchema } from '@/lib/validation/categories';
 
 /**
  * Validation schema for budget category updates
- * At least one of percentage or budget_amount must be provided
+ * Only budget_amount is required; percentage is auto-calculated
  */
 const updateBudgetSchema = updateCategorySchema
   .pick({
-    percentage: true,
     budget_amount: true,
     currency: true,
   })
-  .refine((data) => data.percentage !== undefined || data.budget_amount !== undefined, {
-    message: 'At least one of percentage or budget_amount must be provided',
-  });
+  .refine(
+    (data) => {
+      if (!data.budget_amount) return false;
+      const num = parseFloat(data.budget_amount);
+      return !isNaN(num) && num >= 0;
+    },
+    { message: 'Budget amount must be a valid non-negative number' }
+  );
 
 type UpdateBudgetInput = z.infer<typeof updateBudgetSchema>;
 
@@ -28,10 +32,11 @@ type UpdateBudgetInput = z.infer<typeof updateBudgetSchema>;
  *
  * Request body:
  * {
- *   "percentage": "5.00",      // Optional: 0-100
- *   "budget_amount": "5000000", // Optional: >= 0
+ *   "budget_amount": "5000000", // Required: >= 0
  *   "currency": "IDR"           // Optional: must match existing category currency
  * }
+ *
+ * Percentage is auto-calculated from budget_amount relative to total budget.
  *
  * Response:
  * {
@@ -39,7 +44,7 @@ type UpdateBudgetInput = z.infer<typeof updateBudgetSchema>;
  *   "data": {
  *     "id": "abc123",
  *     "name": "Food & Groceries",
- *     "percentage": "5.00",
+ *     "percentage": "15.50",
  *     "budget_amount": "5000000",
  *     "currency": "IDR"
  *   }
@@ -85,16 +90,37 @@ export const PATCH: APIRoute = async (context) => {
       );
     }
 
-    // Build update data with only the fields we want to update
-    const updateData: UpdateCategoryInput = {};
+    // Auto-calculate percentage from budget_amount
+    // Get all active expense categories for the user with the same currency
+    const allCategories = await categoryService.findAll(userId, {
+      type: 'expense',
+      is_active: true,
+    });
 
-    if (input.percentage !== undefined) {
-      updateData.percentage = input.percentage;
-    }
+    // Filter categories by currency (matching the category being updated)
+    const sameCurrencyCategories = allCategories.filter((c) => c.currency === category.currency);
 
-    if (input.budget_amount !== undefined) {
-      updateData.budget_amount = input.budget_amount;
-    }
+    // Calculate total budget amount EXCLUDING the category being updated
+    // This ensures the percentage is based on what the total will be AFTER the update
+    const totalBudgetAmount = sameCurrencyCategories.reduce(
+      (sum, cat) => sum + (cat.id === id ? 0 : parseFloat(cat.budget_amount || '0')),
+      0
+    );
+
+    // The new total will be the current total (excluding this category) + new budget amount
+    const newTotalBudgetAmount = totalBudgetAmount + parseFloat(input.budget_amount || '0');
+
+    // Calculate percentage: (category_budget_amount / new_total_budget_amount) * 100
+    const calculatedPercentage =
+      newTotalBudgetAmount > 0
+        ? (parseFloat(input.budget_amount || '0') / newTotalBudgetAmount) * 100
+        : 0;
+
+    // Build update data with budget_amount and calculated percentage
+    const updateData: UpdateCategoryInput = {
+      budget_amount: input.budget_amount,
+      percentage: calculatedPercentage.toFixed(2),
+    };
 
     // Update the category using the category service
     // The service layer handles ownership verification via WHERE clause
