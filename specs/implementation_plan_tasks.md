@@ -32,8 +32,8 @@ We are replacing the fragile `eval`-based injection of `createSuccessAlert`, `cr
 
 **Checklist:**
 
-- [ ] Install `nanostores`
-- [ ] Install `framer-motion`
+- [x] Install `nanostores`
+- [x] ~~Install `framer-motion`~~ (Changed: Using CSS transitions instead for Astro compatibility)
 
 **Command:**
 
@@ -49,11 +49,13 @@ Estimated Time: 0.2 hours
 
 **Checklist:**
 
-- [ ] Create `src/lib/stores/toastStore.ts` with `addToast`, `removeToast`, and types.
-- [ ] Export `ToastType` and `ToastMessage` interfaces.
-- [ ] Implement auto-dismiss with configurable duration.
-- [ ] Implement max visible toasts limit (default: 5).
-- [ ] Handle toast queue when max is reached.
+- [x] Create `src/lib/stores/toastStore.ts` with `addToast`, `removeToast`, and types.
+- [x] Export `ToastType` and `ToastMessage` interfaces.
+- [x] Implement auto-dismiss with configurable duration.
+- [x] Implement max visible toasts limit (default: 5).
+- [x] Handle toast queue when max is reached.
+- [x] Added `clearAllToasts()` for cleanup on navigation (memory leak fix)
+- [x] Added timeout tracking to prevent race conditions
 
 **Files to modify:**
 
@@ -113,27 +115,27 @@ Estimated Time: 0.75 hours
 
 ### 3. Create Toast UI Component (P0)
 
-**Goal:** Create an Astro component to subscribe to the store and render toasts using DaisyUI with Framer Motion animations.
+**Goal:** Create an Astro component to subscribe to the store and render toasts using DaisyUI with CSS animations.
 
 **Checklist:**
 
-- [ ] Create `src/components/molecules/ToastContainer.astro`.
-- [ ] Add a container `div` with DaisyUI classes (`toast toast-top toast-end`).
-- [ ] Ensure proper z-index to appear above modals (`z-50`).
-- [ ] Add a `<script>` tag that:
-  - Imports `toasts`, `removeToast` from `@/lib/stores/toastStore`.
-  - Imports `animate` from `framer-motion`.
+- [x] Create `src/components/molecules/ToastContainer.astro`.
+- [x] Add a container `div` with DaisyUI classes (`toast toast-top toast-end`).
+- [x] Ensure proper z-index to appear above modals (`z-50`).
+- [x] Add a `<script>` tag that:
+  - Imports `toasts`, `removeToast`, `clearAllToasts` from `@/lib/stores/toastStore`.
   - Subscribes to the store.
   - Reconciles the DOM based on the active toasts (creates/removes alert elements).
-  - Applies enter animation (fade-in + slide from right).
-  - Applies exit animation (fade-out + slide to right).
+  - Applies enter animation (fade-in + slide from right) using CSS transitions.
+  - Applies exit animation (fade-out + slide to right) using CSS transitions.
   - Handles proper styling for different toast types using DaisyUI alert classes.
-- [ ] Add accessibility attributes:
+  - Cleans up on page navigation to prevent memory leaks.
+- [x] Add accessibility attributes:
   - `role="region"` and `aria-label="Notifications"` on container.
   - `role="alert"` on each toast.
   - `aria-live="polite"` for success/info/warning toasts.
   - `aria-live="assertive"` for error toasts.
-- [ ] Add dismiss button for persistent toasts (errors).
+- [x] Add dismiss button for all toasts with Lucide X icon SVG.
 
 **Files to modify:**
 
@@ -174,8 +176,8 @@ Estimated Time: 1.5 hours
 
 **Checklist:**
 
-- [ ] Import `ToastContainer` in `src/layouts/BaseLayout.astro`.
-- [ ] Add `<ToastContainer />` to the body (before closing `</body>` tag).
+- [x] Import `ToastContainer` in `src/layouts/BaseLayout.astro`.
+- [x] Add `<ToastContainer />` to the body (before closing `</body>` tag).
 
 **Files to modify:**
 
@@ -478,20 +480,21 @@ Estimated Time: 0.5 hours
 
 ## Success Criteria
 
-- [ ] Toast notifications appear for success and error actions.
-- [ ] Toasts have smooth enter/exit animations via Framer Motion.
-- [ ] Success/info/warning toasts auto-dismiss after 5 seconds.
-- [ ] Error toasts persist until manually dismissed.
-- [ ] Maximum 5 toasts visible at once.
-- [ ] Toasts are accessible (proper ARIA attributes, screen reader support).
-- [ ] React is NOT used.
-- [ ] No `eval` used for alert/loading functions in modified files.
-- [ ] `createSuccessAlert` and `createErrorAlert` removed from codebase.
-- [ ] `setButtonLoading` is a clean ES module function using DaisyUI spinner.
-- [ ] Type-safe toast implementation.
-- [ ] No console errors or memory leaks.
-- [ ] Design system documentation updated with Toast component and animation patterns.
-- [ ] AGENTS.md updated with new libraries, stores directory, and toast usage guidelines.
+- [x] Toast notifications appear for success and error actions.
+- [x] Toasts have smooth enter/exit animations via CSS transitions.
+- [x] Success/info/warning toasts auto-dismiss after 5 seconds.
+- [x] Error toasts persist until manually dismissed.
+- [x] Maximum 5 toasts visible at once.
+- [x] Toasts are accessible (proper ARIA attributes, screen reader support).
+- [x] React is NOT used.
+- [ ] No `eval` used for alert/loading functions in modified files. (P1 tasks)
+- [ ] `createSuccessAlert` and `createErrorAlert` removed from codebase. (P1 tasks)
+- [ ] `setButtonLoading` is a clean ES module function using DaisyUI spinner. (Already implemented)
+- [x] Type-safe toast implementation.
+- [x] No console errors or memory leaks.
+- [x] Unit tests passing (18 tests).
+- [ ] Design system documentation updated with Toast component and animation patterns. (P1 tasks)
+- [ ] AGENTS.md updated with new libraries, stores directory, and toast usage guidelines. (P1 tasks)
 
 ## Estimated Effort
 
@@ -525,4 +528,24 @@ With Astro's full-page navigation, Nano Store state resets on page change. This 
 
 **Note:** This section is reserved for follow-up improvements identified during code review. They are non-blocking but recommended for better code quality, accessibility, and maintainability.
 
-_(To be populated during implementation and code review)_
+### P2 Items (Should Fix - Non-blocking)
+
+1. **Design System Compliance** - The close button uses inline SVG instead of `@lucide/astro` icon component. This is necessary due to Astro SSR limitations for client-side scripts, but should be documented as an exception.
+
+2. **Add JSDoc comment to `addToast`** - Document that older toasts are silently removed when max visible toasts limit is reached.
+
+3. **Defensive coding for `crypto.randomUUID()`** - Add fallback for environments where crypto API is not available.
+
+### P3 Items (Nice to Have)
+
+4. **Focus management** - When toast is dismissed, return focus to the element that had focus before toast appeared.
+
+5. **Single shared `aria-live` region** - Instead of individual `aria-live` on each toast, use a single shared region for all announcements.
+
+6. **Test coverage gaps** - Add tests for:
+   - Empty message handling
+   - Very long message handling
+   - Rapidly adding/removing toasts (stress test)
+   - Multiple simultaneous toast additions
+
+7. **Extract magic numbers** - Animation durations (300ms, 200ms) and distances (50px) should be CSS custom properties.

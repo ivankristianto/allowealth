@@ -1,77 +1,159 @@
 ---
 /**
- * Toast Container Component
+ * ToastContainer Component
  *
- * Container for toast notifications. Place once in your main layout.
+ * Global toast notification system using Nano Stores for state management
+ * and CSS transitions for smooth animations.
  *
- * Usage: Call `showToast(message, type)` from client-side scripts
+ * Automatically included in BaseLayout. Use addToast() from client scripts.
+ *
+ * @example
+ * ```typescript
+ * import { addToast } from '@/lib/stores/toastStore';
+ * addToast('Success!', 'success');
+ * ```
  */
 ---
 
-<div id="toast-container" class="toast toast-end toast-top z-50"></div>
+<div
+  id="toast-container"
+  class="toast toast-top toast-end z-50"
+  role="region"
+  aria-label="Notifications"
+>
+</div>
 
 <script>
-  /**
-   * Show a toast notification
-   * @param message - The message to display
-   * @param type - Type of toast: success, error, warning, info
-   * @param duration - Duration in milliseconds (0 to disable auto-dismiss)
-   * @returns The toast element or undefined if container not found
-   */
-  function showToast(message: string, type: string = 'info', duration: number = 5000) {
-    const container = document.getElementById('toast-container');
-    if (!container) return;
+  import { toasts, removeToast, clearAllToasts, type ToastMessage } from '@/lib/stores/toastStore';
 
-    const toast = document.createElement('div');
-    toast.className = `alert shadow-lg alert-${type}`;
-
-    // Use textContent instead of innerHTML for message to prevent XSS
-    const messageSpan = document.createElement('span');
-    messageSpan.textContent = message; // Automatically escapes HTML
-
-    const closeButton = document.createElement('button');
-    closeButton.className = 'btn btn-sm btn-ghost';
-    closeButton.setAttribute('aria-label', 'Close toast');
-    closeButton.innerHTML = `
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-      </svg>
-    `;
-    closeButton.onclick = () => toast.remove();
-
-    toast.appendChild(messageSpan);
-    toast.appendChild(closeButton);
-
-    toast.style.animation = 'slideIn 0.3s ease-out';
-    container.appendChild(toast);
-
-    // Auto-dismiss
-    if (duration > 0) {
-      setTimeout(() => {
-        toast.remove();
-      }, duration);
-    }
-
-    return toast;
+  const container = document.getElementById('toast-container');
+  if (!container) {
+    console.error('Toast container not found');
   }
 
-  window.showToast = showToast;
+  // Track rendered toasts for efficient DOM updates
+  const renderedToasts = new Map<string, HTMLElement>();
+
+  // Get DaisyUI alert class for toast type
+  function getAlertClass(type: string): string {
+    const typeClasses: Record<string, string> = {
+      success: 'alert-success',
+      error: 'alert-error',
+      warning: 'alert-warning',
+      info: 'alert-info',
+    };
+    return typeClasses[type] || 'alert-info';
+  }
+
+  // Get aria-live value for toast type
+  function getAriaLive(type: string): string {
+    return type === 'error' ? 'assertive' : 'polite';
+  }
+
+  // Create toast element with enter animation
+  function createToastElement(toast: ToastMessage): HTMLElement {
+    const toastEl = document.createElement('div');
+    toastEl.className = `alert shadow-lg ${getAlertClass(toast.type)}`;
+    toastEl.id = `toast-${toast.id}`;
+    toastEl.setAttribute('role', 'alert');
+    toastEl.setAttribute('aria-live', getAriaLive(toast.type));
+
+    // Set initial state for enter animation
+    toastEl.style.opacity = '0';
+    toastEl.style.transform = 'translateX(50px)';
+    toastEl.style.transition = 'opacity 0.3s ease-out, transform 0.3s ease-out';
+
+    // Message span
+    const messageSpan = document.createElement('span');
+    messageSpan.textContent = toast.message;
+    toastEl.appendChild(messageSpan);
+
+    // Dismiss button (using Lucide X icon)
+    const closeButton = document.createElement('button');
+    closeButton.className = 'btn btn-ghost btn-xs';
+    closeButton.setAttribute('aria-label', 'Dismiss notification');
+    closeButton.innerHTML = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M18 6 6 18"></path>
+        <path d="m6 6 12 12"></path>
+      </svg>
+    `;
+
+    // Handle dismiss click with exit animation
+    closeButton.addEventListener('click', () => {
+      dismissToast(toast.id, toastEl);
+    });
+
+    toastEl.appendChild(closeButton);
+
+    // Trigger enter animation after append
+    requestAnimationFrame(() => {
+      toastEl.style.opacity = '1';
+      toastEl.style.transform = 'translateX(0)';
+    });
+
+    return toastEl;
+  }
+
+  // Dismiss toast with exit animation
+  function dismissToast(id: string, element: HTMLElement): void {
+    // Apply exit animation
+    element.style.transition = 'opacity 0.2s ease-in, transform 0.2s ease-in';
+    element.style.opacity = '0';
+    element.style.transform = 'translateX(50px)';
+
+    // Remove after animation completes
+    setTimeout(() => {
+      element.remove();
+      renderedToasts.delete(id);
+      removeToast(id);
+    }, 200);
+  }
+
+  // Reconcile DOM based on store state
+  function reconcileDOM(currentToasts: readonly ToastMessage[]): void {
+    const currentIds = new Set(currentToasts.map((t) => t.id));
+    const renderedIds = new Set(renderedToasts.keys());
+
+    // Remove toasts that are no longer in store
+    for (const id of renderedIds) {
+      if (!currentIds.has(id)) {
+        const element = renderedToasts.get(id);
+        if (element) {
+          element.remove();
+          renderedToasts.delete(id);
+        }
+      }
+    }
+
+    // Add new toasts
+    for (const toast of currentToasts) {
+      if (!renderedToasts.has(toast.id)) {
+        const element = createToastElement(toast);
+        if (container) {
+          container.appendChild(element);
+          renderedToasts.set(toast.id, element);
+        }
+      }
+    }
+  }
+
+  // Subscribe to toast store changes
+  const unsubscribe = toasts.subscribe((currentToasts) => {
+    reconcileDOM(currentToasts);
+  });
+
+  // Cleanup on page navigation to prevent memory leaks
+  addEventListener('astro:page-load', () => {
+    unsubscribe();
+    renderedToasts.clear();
+    clearAllToasts(); // Clear all pending timeouts
+  });
 </script>
 
 <style>
-  .toast-container > div {
-    animation: slideIn 0.3s ease-out;
-    margin-bottom: 0.5rem;
-  }
-
-  @keyframes slideIn {
-    from {
-      opacity: 0;
-      transform: translateX(100%);
-    }
-    to {
-      opacity: 1;
-      transform: translateX(0);
-    }
+  /* Toast enter animation */
+  #toast-container > div {
+    will-change: opacity, transform;
   }
 </style>
