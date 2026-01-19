@@ -289,23 +289,38 @@ Replace authentication boilerplate in all protected pages to use `ProtectedLayou
 
 ### 2. Budget Edit Integration (Priority: P1)
 
-#### 2.1 Create Budget Edit API Endpoint
+#### 2.1 Create Budget Edit API Endpoint ✅
 
 **Checklist:**
 
-- [ ] Create `src/pages/api/budget/category/[id].ts` (PATCH endpoint)
-- [ ] Add authentication check
-- [ ] Add category ownership verification (must belong to user)
-- [ ] Implement budget update logic
-- [ ] Add percentage validation (0-100)
-- [ ] Add budget_amount validation (>= 0)
-- [ ] Add currency validation (must match category currency)
-- [ ] Update both percentage and budget_amount if both provided
-- [ ] Return updated category data
-- [ ] Test with valid updates
-- [ ] Test with invalid percentage (> 100)
-- [ ] Test with negative amounts
-- [ ] Test with another user's category (should fail)
+- [x] Create `src/pages/api/budget/category/[id].ts` (PATCH endpoint)
+- [x] Add authentication check
+- [x] Add category ownership verification (must belong to user)
+- [x] Implement budget update logic
+- [x] Add percentage validation (0-100)
+- [x] Add budget_amount validation (>= 0)
+- [x] Add currency validation (must match category currency)
+- [x] Update both percentage and budget_amount if both provided
+- [x] Return updated category data
+- [x] Test with valid updates
+- [x] Test with invalid percentage (> 100)
+- [x] Test with negative amounts
+- [x] Test with another user's category (should fail)
+
+**Estimated Time:** 1-2 hours
+
+**Status:** ✅ Completed
+
+- Created `src/pages/api/budget/category/[id].ts` PATCH endpoint for budget allocation updates
+- Uses existing validation schema from `lib/validation/categories.ts` for consistency
+- Authentication via `requireAuth`
+- Ownership verification via `categoryService.findById()` and service layer WHERE clause
+- Currency validation ensures currency matches existing category
+- Proper error handling for `CategoryServiceError`
+- Integration tests covering all scenarios including edge cases
+- Updated `openapi.yml` with endpoint documentation and schemas
+- All quality gates pass (typecheck, lint, stylelint, format)
+- Code review: Completed with P0/P1 feedback applied
 
 **Request body:**
 
@@ -620,12 +635,15 @@ bun test src/services/user.service.test.ts
 
 ### Budget Edit
 
-- [ ] Budget edit modal opens from budget page
-- [ ] Changes save to database correctly
-- [ ] UI updates without page refresh
-- [ ] Total budget recalculates correctly
-- [ ] Validation prevents invalid values
-- [ ] Other users' budgets cannot be edited
+- [x] API endpoint created for budget category updates (task 2.1 completed)
+- [x] Authentication and authorization verified (ownership check)
+- [x] Validation prevents invalid values (percentage 0-100, amount >= 0)
+- [x] Currency validation ensures category currency match
+- [x] Other users' budgets cannot be edited (403 response)
+- [x] Changes save to database correctly via API
+- [ ] Budget edit modal opens from budget page (task 2.2)
+- [ ] UI updates without page refresh (task 2.2)
+- [ ] Total budget recalculates correctly (task 2.2)
 
 ### Transaction Form UX
 

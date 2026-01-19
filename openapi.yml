@@ -1290,6 +1290,54 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  /api/budget/category/{id}:
+    patch:
+      tags: [Budget]
+      summary: Update category budget allocation
+      description: |
+        Update budget allocation (percentage and/or budget_amount) for a specific category.
+        At least one of percentage or budget_amount must be provided.
+        Category must belong to the authenticated user.
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdParameter'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateBudgetCategoryRequest'
+      responses:
+        '200':
+          description: Category budget updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BudgetCategoryResponse'
+        '400':
+          description: Validation error or invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: User does not own this category
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Category not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
   /api/budget/export:
     get:
       tags: [Budget]
@@ -2267,3 +2315,63 @@ components:
                     type: number
                     format: float
                     description: Percentage of total budget used (0-100+)
+
+    UpdateBudgetCategoryRequest:
+      type: object
+      description: Request body for updating category budget allocation
+      properties:
+        percentage:
+          type: string
+          pattern: '^\d+(\.\d{1,2})?$'
+          description: Budget percentage (0-100)
+          example: "10.00"
+        budget_amount:
+          type: string
+          pattern: '^\d+(\.\d{1,2})?$'
+          description: Budget amount (must be non-negative)
+          example: "10000000"
+        currency:
+          type: string
+          enum: [IDR, USD]
+          description: Currency must match existing category currency
+          example: IDR
+
+    BudgetCategoryResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          required: [success, data]
+          properties:
+            success:
+              type: boolean
+              example: true
+            data:
+              type: object
+              required: [id, name, type, percentage, budget_amount, currency, is_active]
+              properties:
+                id:
+                  type: string
+                  format: uuid
+                  description: Category ID
+                name:
+                  type: string
+                  description: Category name
+                type:
+                  type: string
+                  enum: [expense, income]
+                  description: Category type
+                percentage:
+                  type: string
+                  pattern: '^\d+(\.\d{1,2})?$'
+                  description: Budget percentage
+                budget_amount:
+                  type: string
+                  pattern: '^\d+(\.\d{1,2})?$'
+                  description: Budget amount
+                currency:
+                  type: string
+                  enum: [IDR, USD]
+                  description: Category currency
+                is_active:
+                  type: boolean
+                  description: Active status
