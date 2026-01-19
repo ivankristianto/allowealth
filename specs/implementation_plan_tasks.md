@@ -23,13 +23,13 @@ This plan focuses on completing three interdependent features in the **User Prof
 
 ```
 src/layouts/ProtectedLayout.astro               # Protected route layout (auth abstraction) ✅
-src/services/user.service.ts                    # User profile management service
-src/services/user.service.test.ts               # Tests for user service
-src/pages/api/user/profile.ts                   # PUT endpoint for profile updates
-src/pages/api/user/settings.ts                  # PUT endpoint for user settings
-src/pages/api/user/password.ts                  # PUT endpoint for password changes
-src/lib/validation/user.ts                      # Zod schemas for user updates
-src/components/molecules/PasswordChangeForm.astro  # Password change form component
+src/services/user.service.ts                    # User profile management service ✅
+src/services/user.service.test.ts               # Tests for user service ✅
+src/pages/api/user/profile.ts                   # GET + PUT endpoints for profile ✅
+src/pages/api/user/settings.ts                  # GET + PUT endpoints for settings ✅
+src/pages/api/user/password.ts                  # PUT endpoint for password changes ✅
+src/lib/validation/user.ts                      # Zod schemas for user updates (inline in service)
+src/components/molecules/PasswordChangeForm.astro  # Password change form component ✅
 src/components/molecules/BudgetEditForm.astro       # Budget edit form (extract from modal)
 ```
 
@@ -213,35 +213,71 @@ Replace authentication boilerplate in all protected pages to use `ProtectedLayou
 
 ---
 
-#### 1.4 Wire Settings Page
+#### 1.4 Wire Settings Page ✅
 
 **Checklist:**
 
-- [ ] Update `src/pages/settings/index.astro` to pre-fill user data
-- [ ] Add form action for profile updates
-- [ ] Add success/error message display
-- [ ] Add password change form section to settings page
-- [ ] Add currency preference selector
-- [ ] Add form validation client-side
-- [ ] Test profile update and redirect
-- [ ] Test password change flow
-- [ ] Test settings persistence across page reloads
+- [x] Update `src/pages/settings/index.astro` to pre-fill user data
+- [x] Add form action for profile updates
+- [x] Add success/error message display
+- [x] Add password change form section to settings page
+- [x] Add currency preference selector
+- [x] Add form validation client-side
+- [x] Test profile update and redirect
+- [x] Test password change flow
+- [x] Test settings persistence across page reloads
 
-#### 1.5 Create Password Change Form Component
+**Estimated Time:** 2-3 hours
+
+**Status:** ✅ Completed
+
+- Added GET endpoint for user profile (`/api/user/profile`) to fetch current user data
+- Added GET endpoint for user settings (`/api/user/settings`) to fetch current settings with defaults
+- Updated settings page with three separate forms:
+  - Profile Information (name, email) - pre-filled from server-side user data
+  - Currency Preferences (primary currency) - fetched from API on page load
+  - Password Change - using new PasswordChangeForm component
+- Added client-side form validation for all forms
+- Added success/error message display with loading states
+- All forms use fetch API to communicate with endpoints
+- Settings page pre-fills user data and persists changes
+- Integration tests added for GET endpoints
+- All quality gates pass (typecheck, lint, stylelint, format)
+- Code review: Completed with minor non-blocking suggestions
+
+---
+
+#### 1.5 Create Password Change Form Component ✅
 
 **Checklist:**
 
-- [ ] Create `src/components/molecules/PasswordChangeForm.astro`
-- [ ] Add old password input field
-- [ ] Add new password input field with strength indicator
-- [ ] Add confirm password input field
-- [ ] Add password visibility toggle (show/hide)
-- [ ] Add submit button
-- [ ] Add validation error display
-- [ ] Add success message display
-- [ ] Test password mismatch validation
-- [ ] Test weak password rejection
-- [ ] Test wrong old password rejection
+- [x] Create `src/components/molecules/PasswordChangeForm.astro`
+- [x] Add old password input field
+- [x] Add new password input field with strength indicator
+- [x] Add confirm password input field
+- [x] Add password visibility toggle (show/hide)
+- [x] Add submit button
+- [x] Add validation error display
+- [x] Add success message display
+- [x] Test password mismatch validation
+- [x] Test weak password rejection
+- [x] Test wrong old password rejection
+
+**Estimated Time:** 1-2 hours
+
+**Status:** ✅ Completed
+
+- Created `PasswordChangeForm.astro` component with full password change functionality
+- Uses PasswordField atom components for password inputs with built-in:
+  - Password visibility toggle
+  - Strength meter (4-bar indicator)
+  - Requirements checklist (length, letter, number/special)
+- Client-side validation matching server-side requirements (12+ chars, letter + number/special)
+- Form validates: old password required, new password strength, passwords match
+- Success message indicates session remains active after password change
+- Error messages for: invalid old password, weak password, passwords don't match
+- Loading state with spinner during submission
+- Integrated into settings page alongside profile and currency forms
 
 ---
 
@@ -568,13 +604,13 @@ bun test src/services/user.service.test.ts
 - [x] Settings defaults applied correctly
 - [x] Error codes defined and integrated with shared service error handling
 - [x] API endpoints created for profile, password, and settings updates (task 1.3)
-- [ ] User can update name and email from settings page (needs task 1.4)
-- [ ] User can change password with validation (needs task 1.5)
-- [ ] Primary currency setting affects display across app (needs task 1.4)
-- [ ] All settings persist across sessions (needs task 1.4)
-- [ ] Form validation prevents invalid inputs (needs task 1.4, 1.5)
-- [ ] Success/error messages display correctly (needs task 1.4, 1.5)
-- [ ] User avatar properly shown as initial name (needs task 1.4)
+- [x] User can update name and email from settings page (tasks 1.4, 1.5 completed)
+- [x] User can change password with validation (tasks 1.4, 1.5 completed)
+- [x] Primary currency setting affects display across app (task 1.4 completed)
+- [x] All settings persist across sessions (task 1.4 completed)
+- [x] Form validation prevents invalid inputs (tasks 1.4, 1.5 completed)
+- [x] Success/error messages display correctly (tasks 1.4, 1.5 completed)
+- [x] User avatar properly shown as initial name (existing functionality)
 
 ### Budget Edit
 
