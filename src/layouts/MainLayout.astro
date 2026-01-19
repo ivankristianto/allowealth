@@ -11,7 +11,6 @@ import BaseLayout from './BaseLayout.astro';
 import Navigation from '../components/layouts/Navigation.astro';
 import Header from '../components/layouts/Header.astro';
 import Footer from '../components/layouts/Footer.astro';
-import ToastContainer from '../components/molecules/ToastContainer.astro';
 
 interface Props {
   title?: string;
@@ -46,7 +45,4 @@ const { title = 'Finance Manager', currentPath = '/', user } = Astro.props;
       <Navigation currentPath={currentPath} user={user} />
     </div>
   </div>
-
-  <!-- Toast notifications container -->
-  <ToastContainer />
 </BaseLayout>

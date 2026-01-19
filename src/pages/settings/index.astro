@@ -7,21 +7,12 @@ import Input from '@/components/atoms/Input.astro';
 import Button from '@/components/atoms/Button.astro';
 import { Loader } from '@lucide/astro';
 import type { User } from '@/lib/auth/lucia';
-import { createSuccessAlert, createErrorAlert, setButtonLoading } from '@/lib/client-utils';
-import { CURRENCY_OPTIONS, DEFAULT_CURRENCY } from '@/lib/constants';
+import { CURRENCY_OPTIONS } from '@/lib/constants';
 
 const currentPath = '/settings';
 
 // User is authenticated (enforced by ProtectedLayout)
 const user = Astro.locals.user! as User;
-
-// Get CSP nonce from middleware
-const cspNonce = Astro.locals.cspNonce || '';
-
-// Client utility functions for inline script use
-const createSuccessAlertFn = createSuccessAlert.toString();
-const createErrorAlertFn = createErrorAlert.toString();
-const setButtonLoadingFn = setButtonLoading.toString();
 ---
 
 <ProtectedLayout title="Settings - Finance Manager" currentPath={currentPath}>
@@ -68,9 +59,6 @@ const setButtonLoadingFn = setButtonLoading.toString();
               required
             />
           </div>
-
-          <!-- Messages Container -->
-          <div id="profile-messages" class="space-y-2" aria-live="polite" aria-atomic="true"></div>
 
           <div class="pt-2">
             <Button type="submit" variant="primary" className="min-w-[140px]">
@@ -122,9 +110,6 @@ const setButtonLoadingFn = setButtonLoading.toString();
             </label>
           </div>
 
-          <!-- Messages Container -->
-          <div id="settings-messages" class="space-y-2" aria-live="polite" aria-atomic="true"></div>
-
           <div class="pt-2">
             <Button type="submit" variant="primary" className="min-w-[140px]">
               <span data-button-text>Save Changes</span>
@@ -143,50 +128,24 @@ const setButtonLoadingFn = setButtonLoading.toString();
   </div>
 </ProtectedLayout>
 
-<script
-  define:vars={{
-    apiProfileUrl: '/api/user/profile',
-    apiSettingsUrl: '/api/user/settings',
-    createSuccessAlertFn,
-    createErrorAlertFn,
-    setButtonLoadingFn,
-    defaultCurrency: DEFAULT_CURRENCY,
-  }}
-  nonce={cspNonce}
-  is:inline
->
-  // @ts-nocheck - TODO: Use Toast for Alerts and remove this comment
+<script type="module">
+  import { addToast } from '@/lib/stores/toastStore';
+  import { setButtonLoading } from '@/lib/client-utils';
 
-  // Client utility functions (injected from server-side for CSP compatibility)
-  const createSuccessAlert = eval('(' + createSuccessAlertFn + ')');
-  const createErrorAlert = eval('(' + createErrorAlertFn + ')');
-  const setButtonLoading = eval('(' + setButtonLoadingFn + ')');
+  const API_PROFILE_URL = '/api/user/profile';
+  const API_SETTINGS_URL = '/api/user/settings';
+  const DEFAULT_CURRENCY = 'IDR';
 
   // ==================== PROFILE FORM ====================
   const profileForm = document.getElementById('profile-form');
-  const profileMessagesContainer = document.getElementById('profile-messages');
   const profileNameInput = document.getElementById('displayName');
   const profileEmailInput = document.getElementById('email');
   const profileSubmitButton = profileForm?.querySelector('button[type="submit"]');
 
   if (profileForm && profileNameInput && profileEmailInput && profileSubmitButton) {
-    // Clear messages on input
-    [profileNameInput, profileEmailInput].forEach((input) => {
-      input.addEventListener('input', () => {
-        if (profileMessagesContainer) {
-          profileMessagesContainer.innerHTML = '';
-        }
-      });
-    });
-
     // Profile form submission
     profileForm.addEventListener('submit', async (e) => {
       e.preventDefault();
-
-      // Clear previous messages
-      if (profileMessagesContainer) {
-        profileMessagesContainer.innerHTML = '';
-      }
 
       // Client-side validation
       const errors = [];
@@ -201,9 +160,7 @@ const setButtonLoadingFn = setButtonLoading.toString();
 
       // Display validation errors
       if (errors.length > 0) {
-        if (profileMessagesContainer) {
-          profileMessagesContainer.innerHTML = createErrorAlert(errors.join('. '));
-        }
+        addToast(errors.join('. '), 'error');
         return;
       }
 
@@ -217,7 +174,7 @@ const setButtonLoadingFn = setButtonLoading.toString();
           email: formData.get('email'),
         };
 
-        const response = await fetch(apiProfileUrl, {
+        const response = await fetch(API_PROFILE_URL, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -229,27 +186,15 @@ const setButtonLoadingFn = setButtonLoading.toString();
         const result = await response.json();
 
         if (response.ok && result.success) {
-          // Success - show success message
-          if (profileMessagesContainer) {
-            profileMessagesContainer.innerHTML = createSuccessAlert(
-              'Profile updated successfully!'
-            );
-          }
+          addToast('Profile updated successfully!', 'success');
         } else {
-          // Error - show error message
           const errorMessage =
             result.error?.message || 'Failed to update profile. Please try again.';
-          if (profileMessagesContainer) {
-            profileMessagesContainer.innerHTML = createErrorAlert(errorMessage);
-          }
+          addToast(errorMessage, 'error');
         }
       } catch (error) {
         console.error('Profile update error:', error);
-        if (profileMessagesContainer) {
-          profileMessagesContainer.innerHTML = createErrorAlert(
-            'An error occurred. Please check your connection and try again.'
-          );
-        }
+        addToast('An error occurred. Please check your connection and try again.', 'error');
       } finally {
         // Reset loading state
         setButtonLoading(profileSubmitButton, false);
@@ -259,7 +204,6 @@ const setButtonLoadingFn = setButtonLoading.toString();
 
   // ==================== SETTINGS FORM ====================
   const settingsForm = document.getElementById('settings-form');
-  const settingsMessagesContainer = document.getElementById('settings-messages');
   const settingsCurrencyInput = document.getElementById('currency');
   const currencyLoadingIndicator = document.getElementById('currency-loading');
   const settingsSubmitButton = settingsForm?.querySelector('button[type="submit"]');
@@ -270,17 +214,15 @@ const setButtonLoadingFn = setButtonLoading.toString();
     if (isFetchingSettings) return;
     isFetchingSettings = true;
     try {
-      const response = await fetch(apiSettingsUrl, {
+      const response = await fetch(API_SETTINGS_URL, {
         method: 'GET',
         credentials: 'include',
       });
 
       if (response.ok) {
         const result = await response.json();
-        if (result.success && result.data) {
-          if (settingsCurrencyInput) {
-            settingsCurrencyInput.value = result.data.primaryCurrency || defaultCurrency;
-          }
+        if (result.success && result.data && settingsCurrencyInput) {
+          settingsCurrencyInput.value = result.data.primaryCurrency || DEFAULT_CURRENCY;
         }
       }
     } catch (error) {
@@ -301,27 +243,13 @@ const setButtonLoadingFn = setButtonLoading.toString();
   fetchCurrentSettings();
 
   if (settingsForm && settingsCurrencyInput && settingsSubmitButton) {
-    // Clear messages on input
-    settingsCurrencyInput.addEventListener('change', () => {
-      if (settingsMessagesContainer) {
-        settingsMessagesContainer.innerHTML = '';
-      }
-    });
-
     // Settings form submission
     settingsForm.addEventListener('submit', async (e) => {
       e.preventDefault();
 
-      // Clear previous messages
-      if (settingsMessagesContainer) {
-        settingsMessagesContainer.innerHTML = '';
-      }
-
       // Client-side validation
       if (!settingsCurrencyInput.value) {
-        if (settingsMessagesContainer) {
-          settingsMessagesContainer.innerHTML = createErrorAlert('Please select a currency');
-        }
+        addToast('Please select a currency', 'error');
         return;
       }
 
@@ -334,7 +262,7 @@ const setButtonLoadingFn = setButtonLoading.toString();
           primaryCurrency: formData.get('primaryCurrency'),
         };
 
-        const response = await fetch(apiSettingsUrl, {
+        const response = await fetch(API_SETTINGS_URL, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -346,27 +274,15 @@ const setButtonLoadingFn = setButtonLoading.toString();
         const result = await response.json();
 
         if (response.ok && result.success) {
-          // Success - show success message
-          if (settingsMessagesContainer) {
-            settingsMessagesContainer.innerHTML = createSuccessAlert(
-              'Settings saved successfully!'
-            );
-          }
+          addToast('Settings saved successfully!', 'success');
         } else {
-          // Error - show error message
           const errorMessage =
             result.error?.message || 'Failed to save settings. Please try again.';
-          if (settingsMessagesContainer) {
-            settingsMessagesContainer.innerHTML = createErrorAlert(errorMessage);
-          }
+          addToast(errorMessage, 'error');
         }
       } catch (error) {
         console.error('Settings update error:', error);
-        if (settingsMessagesContainer) {
-          settingsMessagesContainer.innerHTML = createErrorAlert(
-            'An error occurred. Please check your connection and try again.'
-          );
-        }
+        addToast('An error occurred. Please check your connection and try again.', 'error');
       } finally {
         // Reset loading state
         setButtonLoading(settingsSubmitButton, false);

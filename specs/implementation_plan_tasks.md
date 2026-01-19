@@ -194,20 +194,24 @@ Estimated Time: 0.2 hours
 
 **Checklist:**
 
-- [ ] Change `<script define:vars...>` to `<script>` (module script).
-- [ ] Import `addToast` from `@/lib/stores/toastStore`.
-- [ ] Import `setButtonLoading` from `@/lib/client-utils`.
-- [ ] Replace `createSuccessAlert(msg)` with `addToast(msg, 'success')`.
-- [ ] Replace `createErrorAlert(msg)` with `addToast(msg, 'error')`.
-- [ ] Use `setButtonLoading(btn, true/false)` directly (no `eval`).
-- [ ] Remove the `innerHTML` assignments for alerts.
-- [ ] Remove any `<div id="alert-container">` or similar legacy containers.
+- [x] Change `<script define:vars...>` to `<script>` (module script).
+- [x] Import `addToast` from `@/lib/stores/toastStore`.
+- [x] Import `setButtonLoading` from `@/lib/client-utils`.
+- [x] Replace `createSuccessAlert(msg)` with `addToast(msg, 'success')`.
+- [x] Replace `createErrorAlert(msg)` with `addToast(msg, 'error')`.
+- [x] Use `setButtonLoading(btn, true/false)` directly (no `eval`).
+- [x] Remove the `innerHTML` assignments for alerts.
+- [x] Remove any `<div id="alert-container">` or similar legacy containers.
 
 **Files to modify:**
 
 - `src/pages/settings/index.astro`
 
+**Additional fix:** Removed duplicate `ToastContainer` from `MainLayout.astro` (it was already in `BaseLayout.astro`).
+
 Estimated Time: 1 hour
+
+**Status:** ✅ Completed (2026-01-19)
 
 ### 6. Refactor Password Change Form (P1)
 
