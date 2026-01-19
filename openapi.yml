@@ -39,6 +39,8 @@ servers:
 tags:
   - name: Authentication
     description: User authentication and session management
+  - name: User
+    description: User profile and settings management
   - name: Transactions
     description: Transaction management (income and expenses)
   - name: Categories
@@ -151,6 +153,109 @@ paths:
                       message:
                         type: string
                         example: Logged out successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/user/profile:
+    put:
+      tags: [User]
+      summary: Update user profile
+      description: Update user name and email. Email must be unique across all users.
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserProfileRequest'
+      responses:
+        '200':
+          description: Profile updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfileResponse'
+        '400':
+          description: Validation error or invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          description: Email already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/user/password:
+    put:
+      tags: [User]
+      summary: Change user password
+      description: Update user password. Requires current password for verification.
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePasswordRequest'
+      responses:
+        '200':
+          description: Password updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PasswordUpdateResponse'
+        '400':
+          description: Validation error or weak password
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Invalid old password or unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/user/settings:
+    put:
+      tags: [User]
+      summary: Update user settings
+      description: Update user preferences including primary currency and display options.
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserSettingsRequest'
+      responses:
+        '200':
+          description: Settings updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserSettingsResponse'
+        '400':
+          description: Validation error or invalid currency
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '500':
@@ -1402,6 +1507,138 @@ components:
                     name:
                       type: string
                       description: User display name
+
+    # User Schemas
+    UpdateUserProfileRequest:
+      type: object
+      required:
+        - name
+        - email
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+          description: User display name
+          example: John Doe
+        email:
+          type: string
+          format: email
+          description: User email address (must be unique)
+          example: john.doe@example.com
+
+    UserProfileResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          required:
+            - success
+            - data
+          properties:
+            success:
+              type: boolean
+              example: true
+            data:
+              type: object
+              required:
+                - id
+                - email
+                - name
+              properties:
+                id:
+                  type: string
+                  format: uuid
+                  description: User ID
+                email:
+                  type: string
+                  format: email
+                  description: User email address
+                name:
+                  type: string
+                  description: User display name
+
+    UpdatePasswordRequest:
+      type: object
+      required:
+        - oldPassword
+        - newPassword
+      properties:
+        oldPassword:
+          type: string
+          description: Current password for verification
+          example: OldPassword123!
+        newPassword:
+          type: string
+          minLength: 12
+          description: New password (min 12 characters, letters + numbers/special chars)
+          example: NewPassword123!
+          pattern: '^(?=.*[A-Za-z])(?=.*[0-9!@#$%^&*()_+\-=\[\]{};'"\\|,.<>\/?]).{12,}$'
+
+    PasswordUpdateResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          required:
+            - success
+            - data
+          properties:
+            success:
+              type: boolean
+              example: true
+            data:
+              type: object
+              required:
+                - success
+              properties:
+                success:
+                  type: boolean
+                  example: true
+
+    UpdateUserSettingsRequest:
+      type: object
+      properties:
+        primaryCurrency:
+          type: string
+          enum: [IDR, USD]
+          description: Primary currency for displaying totals
+          example: IDR
+        showConvertedTotals:
+          type: boolean
+          description: Show totals converted to primary currency
+          example: true
+        showIndividualCurrencies:
+          type: boolean
+          description: Show individual currency amounts
+          example: true
+
+    UserSettingsResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          required:
+            - success
+            - data
+          properties:
+            success:
+              type: boolean
+              example: true
+            data:
+              type: object
+              required:
+                - primaryCurrency
+                - showConvertedTotals
+                - showIndividualCurrencies
+              properties:
+                primaryCurrency:
+                  type: string
+                  enum: [IDR, USD]
+                  description: Primary currency for displaying totals
+                showConvertedTotals:
+                  type: boolean
+                  description: Show totals converted to primary currency
+                showIndividualCurrencies:
+                  type: boolean
+                  description: Show individual currency amounts
 
     # Transaction Schemas
     Transaction:
