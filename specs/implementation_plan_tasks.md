@@ -22,6 +22,7 @@ This plan focuses on completing three interdependent features in the **User Prof
 ### New Files
 
 ```
+# Core Tasks
 src/layouts/ProtectedLayout.astro               # Protected route layout (auth abstraction) ✅
 src/services/user.service.ts                    # User profile management service ✅
 src/services/user.service.test.ts               # Tests for user service ✅
@@ -31,6 +32,11 @@ src/pages/api/user/password.ts                  # PUT endpoint for password chan
 src/lib/validation/user.ts                      # Zod schemas for user updates (inline in service)
 src/components/molecules/PasswordChangeForm.astro  # Password change form component ✅
 src/components/molecules/BudgetEditForm.astro       # Budget edit form (extract from modal)
+
+# Code Quality Improvements (Section 4)
+src/lib/client-utils.ts                         # Client-side utility functions
+src/lib/validation/password.ts                  # Password validation constants
+src/lib/constants/currency.ts                   # Currency options constants
 ```
 
 ### Modified Files
@@ -649,8 +655,17 @@ bun test src/services/user.service.test.ts
 | Remember Last Used              | 1-2 hours      | P2       |
 | Form Validation Improvements    | 1-2 hours      | P2       |
 | Testing & Bug Fixes             | 2-3 hours      | P0       |
+| **Code Quality Improvements**   |                |          |
+| Focus Management                | 1 hour         | P3       |
+| Extract Client Utils            | 1 hour         | P3       |
+| Settings Loading State          | 1 hour         | P3       |
+| Password Constants              | 1 hour         | P3       |
+| Align Password Validation       | 2 hours        | P3       |
+| Fix Type Assertions             | 1-2 hours      | P3       |
+| Add JSDoc to APIs               | 1 hour         | P3       |
+| Extract Currency Constants      | 1 hour         | P3       |
 
-**Total: 17-27 hours** (includes refactoring)
+**Total: 17-27 hours** (core tasks) + **9-11 hours** (code quality improvements)
 
 ---
 
@@ -745,6 +760,192 @@ paths:
                   type: string
                   pattern: '^[0-9]+(\.[0-9]{1,2})?$'
 ```
+
+---
+
+### 4. Code Quality & Accessibility Improvements (Priority: P3)
+
+**Note:** These tasks are follow-up improvements identified during code review for tasks 1.4 and 1.5. They are non-blocking but recommended for better code quality, accessibility, and maintainability.
+
+#### 4.1 Accessibility: Focus Management for Form Messages
+
+**Goal:** Improve screen reader experience by moving focus to error/success messages after form submission.
+
+**Files affected:**
+
+- `src/pages/settings/index.astro`
+- `src/components/molecules/PasswordChangeForm.astro`
+
+**Checklist:**
+
+- [ ] Add `tabindex="-1"` to message containers
+- [ ] Add focus() call after inserting success/error messages
+- [ ] Test with screen reader to verify announcements
+- [ ] Test keyboard navigation after form submission
+
+**Estimated Time:** 1 hour
+
+---
+
+#### 4.2 Extract Client-Side Utility Functions
+
+**Goal:** Eliminate code duplication by extracting shared client-side utilities.
+
+**Files affected:**
+
+- `src/pages/settings/index.astro`
+- `src/components/molecules/PasswordChangeForm.astro`
+
+**New file:** `src/lib/client-utils.ts`
+
+**Checklist:**
+
+- [ ] Create `src/lib/client-utils.ts`
+- [ ] Add `escapeHtml(text)` function
+- [ ] Update settings page to import and use utility
+- [ ] Update PasswordChangeForm to import and use utility
+- [ ] Add JSDoc documentation for utility functions
+
+**Estimated Time:** 1 hour
+
+---
+
+#### 4.3 Add Loading State for Settings Fetch
+
+**Goal:** Show loading indicator while fetching user settings on page load.
+
+**Files affected:**
+
+- `src/pages/settings/index.astro`
+
+**Checklist:**
+
+- [ ] Add loading state variable for settings fetch
+- [ ] Show loading skeleton or spinner in currency dropdown during fetch
+- [ ] Update UI with fetched currency when load completes
+- [ ] Handle fetch errors gracefully
+
+**Estimated Time:** 1 hour
+
+---
+
+#### 4.4 Define Password Validation Constants
+
+**Goal:** Replace magic numbers with named constants for password requirements.
+
+**Files affected:**
+
+- `src/components/molecules/PasswordChangeForm.astro`
+- `src/services/user.service.ts`
+
+**New file:** `src/lib/validation/password.ts` (or add to existing)
+
+**Checklist:**
+
+- [ ] Create password validation constants file
+- [ ] Define `PASSWORD_MIN_LENGTH = 12`
+- [ ] Define `PASSWORD_REQUIREMENTS` object with regex patterns
+- [ ] Update PasswordChangeForm to use constants
+- [ ] Update userService to use same constants
+- [ ] Ensure client and server validation remain in sync
+
+**Estimated Time:** 1 hour
+
+---
+
+#### 4.5 Align Password Validation Between Client and Server
+
+**Goal:** Fix PasswordField component to match server-side password requirements.
+
+**Files affected:**
+
+- `src/components/atoms/PasswordField.astro`
+- `src/services/user.service.ts`
+
+**Checklist:**
+
+- [ ] Update PasswordField requirements checklist to match server validation:
+  - Remove separate "uppercase" and "lowercase" requirements
+  - Keep "at least one letter" (combined)
+  - Keep "at least one number OR special character"
+- [ ] Update strength meter calculation to match server logic
+- [ ] Test password validation with various inputs
+- [ ] Document password requirements in UI
+
+**Estimated Time:** 2 hours
+
+---
+
+#### 4.6 Fix Type Assertion in validateBody
+
+**Goal:** Improve type safety by properly typing validation error responses.
+
+**Files affected:**
+
+- `src/lib/api-utils.ts`
+- `src/pages/api/user/profile.ts`
+- `src/pages/api/user/settings.ts`
+- `src/pages/api/user/password.ts`
+
+**Checklist:**
+
+- [ ] Update `validateBody` return type to include error case
+- [ ] Remove `(validation as any).error.issues` type assertions
+- [ ] Use proper type guards for error checking
+- [ ] Update all API endpoints to use new type-safe pattern
+- [ ] Run typecheck to verify no type errors
+
+**Estimated Time:** 1-2 hours
+
+---
+
+#### 4.7 Add JSDoc to API Endpoints
+
+**Goal:** Improve documentation for all exported API route handlers.
+
+**Files affected:**
+
+- `src/pages/api/user/profile.ts`
+- `src/pages/api/user/settings.ts`
+- `src/pages/api/user/password.ts`
+
+**Checklist:**
+
+- [ ] Add JSDoc comments to GET /api/user/profile
+- [ ] Add JSDoc comments to PUT /api/user/profile
+- [ ] Add JSDoc comments to GET /api/user/settings
+- [ ] Add JSDoc comments to PUT /api/user/settings
+- [ ] Add JSDoc comments to PUT /api/user/password
+- [ ] Include parameter descriptions and return types
+
+**Estimated Time:** 1 hour
+
+---
+
+#### 4.8 Extract Currency Options to Constants
+
+**Goal:** Centralize currency options to avoid hardcoded values in multiple places.
+
+**Files affected:**
+
+- `src/pages/settings/index.astro`
+- `src/lib/validation/patterns.ts` (or new constants file)
+
+**New file:** `src/lib/constants/currency.ts` (or add to existing)
+
+**Checklist:**
+
+- [ ] Create currency constants file with `CURRENCY_OPTIONS` array
+- [ ] Define `AVAILABLE_CURRENCIES` type (IDR | USD)
+- [ ] Update settings page to use constants
+- [ ] Ensure consistency with server-side validation
+- [ ] Document in code where to add new currencies
+
+**Estimated Time:** 1 hour
+
+---
+
+**Total Estimated Effort for Section 4:** 9-11 hours
 
 ---
 
