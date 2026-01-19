@@ -989,13 +989,27 @@ paths:
 
 **Checklist:**
 
-- [ ] Create `src/lib/client-utils.ts`
-- [ ] Add `escapeHtml(text)` function
-- [ ] Update settings page to import and use utility
-- [ ] Update PasswordChangeForm to import and use utility
-- [ ] Add JSDoc documentation for utility functions
+- [x] Create `src/lib/client-utils.ts`
+- [x] Add `escapeHtml(text)` function
+- [x] Update settings page to import and use utility
+- [x] Update PasswordChangeForm to import and use utility
+- [x] Add JSDoc documentation for utility functions
 
 **Estimated Time:** 1 hour
+
+**Status:** ✅ Completed
+
+- Created `src/lib/client-utils.ts` with utilities:
+  - `escapeHtml()` - HTML escaping for XSS prevention
+  - `createAlert()` - Creates DaisyUI alert HTML
+  - `createSuccessAlert()` - Success alert convenience function
+  - `createErrorAlert()` - Error alert convenience function
+  - `setButtonLoading()` - Manages button loading states
+- Updated settings page and PasswordChangeForm to use utilities
+- Added comprehensive JSDoc documentation
+- Improved escapeHtml with direct string replacement for better performance
+- All quality gates pass (typecheck, lint, stylelint, format)
+- Code review: APPROVED with P1 fixes applied
 
 ---
 
@@ -1009,12 +1023,22 @@ paths:
 
 **Checklist:**
 
-- [ ] Add loading state variable for settings fetch
-- [ ] Show loading skeleton or spinner in currency dropdown during fetch
-- [ ] Update UI with fetched currency when load completes
-- [ ] Handle fetch errors gracefully
+- [x] Add loading state variable for settings fetch
+- [x] Show loading skeleton or spinner in currency dropdown during fetch
+- [x] Update UI with fetched currency when load completes
+- [x] Handle fetch errors gracefully
+- [x] Added race condition guard to prevent concurrent fetches
 
 **Estimated Time:** 1 hour
+
+**Status:** ✅ Completed
+
+- Added `@lucide/astro` Loader icon with spinner animation
+- Currency dropdown shows loading state during fetch
+- Select disabled during fetch, enabled after completion
+- Added race condition guard (`isFetchingSettings` flag)
+- All quality gates pass (typecheck, lint, stylelint, format)
+- Code review: APPROVED with P1 fixes applied
 
 ---
 
@@ -1223,14 +1247,26 @@ paths:
 
 **Checklist:**
 
-- [ ] Add JSDoc comments to GET /api/user/profile
-- [ ] Add JSDoc comments to PUT /api/user/profile
-- [ ] Add JSDoc comments to GET /api/user/settings
-- [ ] Add JSDoc comments to PUT /api/user/settings
-- [ ] Add JSDoc comments to PUT /api/user/password
-- [ ] Include parameter descriptions and return types
+- [x] Add JSDoc comments to GET /api/user/profile
+- [x] Add JSDoc comments to PUT /api/user/profile
+- [x] Add JSDoc comments to GET /api/user/settings
+- [x] Add JSDoc comments to PUT /api/user/settings
+- [x] Add JSDoc comments to PUT /api/user/password
+- [x] Include parameter descriptions and return types
 
 **Estimated Time:** 1 hour
+
+**Status:** ✅ Completed
+
+- Added comprehensive JSDoc to all 5 user API endpoints
+- Each endpoint includes:
+  - Description and authentication requirements
+  - @param tags for request parameters
+  - @returns tags for response structure
+  - @example blocks with request/response examples
+  - Status code documentation (200, 400, 401, 404, 409)
+- All quality gates pass (typecheck, lint, stylelint, format)
+- Code review: APPROVED
 
 ---
 
@@ -1247,13 +1283,31 @@ paths:
 
 **Checklist:**
 
-- [ ] Create currency constants file with `CURRENCY_OPTIONS` array
-- [ ] Define `AVAILABLE_CURRENCIES` type (IDR | USD)
-- [ ] Update settings page to use constants
-- [ ] Ensure consistency with server-side validation
-- [ ] Document in code where to add new currencies
+- [x] Create currency constants file with `CURRENCY_OPTIONS` array
+- [x] Define `AVAILABLE_CURRENCIES` type (IDR | USD)
+- [x] Update settings page to use constants
+- [x] Ensure consistency with server-side validation
+- [x] Document in code where to add new currencies
+- [x] Reorganized types to define before use
+- [x] Removed unused flagEmoji from CurrencyOption
 
 **Estimated Time:** 1 hour
+
+**Status:** ✅ Completed
+
+- Created `src/lib/constants/currency.ts` with:
+  - `AVAILABLE_CURRENCIES` array
+  - `Currency` type (derived from array)
+  - `CURRENCY_META` object with formatting metadata
+  - `CURRENCY_OPTIONS` array for UI selects
+  - `DEFAULT_CURRENCY` constant
+  - Helper functions: `isValidCurrency()`, `getCurrencyMeta()`, `formatCurrency()`
+  - Type definitions (`CurrencyInfo`, `CurrencyOption`, `CurrencySymbolPosition`)
+- Updated settings page to use `CURRENCY_OPTIONS` and `DEFAULT_CURRENCY`
+- Reorganized types to define before use (fixed P1 issue)
+- Removed unused flagEmoji from CurrencyOption (fixed P1 issue)
+- All quality gates pass (typecheck, lint, stylelint, format)
+- Code review: APPROVED with P1 fixes applied
 
 ---
 
