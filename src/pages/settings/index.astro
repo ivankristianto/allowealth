@@ -128,19 +128,21 @@ const user = Astro.locals.user! as User;
   </div>
 </ProtectedLayout>
 
-<script type="module">
-  import { addToast } from '../../lib/stores/toastStore';
-  import { setButtonLoading } from '../../lib/client-utils';
+<script>
+  import { addToast } from '@/lib/stores/toastStore';
+  import { setButtonLoading } from '@/lib/client-utils';
 
   const API_PROFILE_URL = '/api/user/profile';
   const API_SETTINGS_URL = '/api/user/settings';
   const DEFAULT_CURRENCY = 'IDR';
 
   // ==================== PROFILE FORM ====================
-  const profileForm = document.getElementById('profile-form');
-  const profileNameInput = document.getElementById('displayName');
-  const profileEmailInput = document.getElementById('email');
-  const profileSubmitButton = profileForm?.querySelector('button[type="submit"]');
+  const profileForm = document.getElementById('profile-form') as HTMLFormElement | null;
+  const profileNameInput = document.getElementById('displayName') as HTMLInputElement | null;
+  const profileEmailInput = document.getElementById('email') as HTMLInputElement | null;
+  const profileSubmitButton = profileForm?.querySelector(
+    'button[type="submit"]'
+  ) as HTMLButtonElement | null;
 
   if (profileForm && profileNameInput && profileEmailInput && profileSubmitButton) {
     // Profile form submission
@@ -203,10 +205,12 @@ const user = Astro.locals.user! as User;
   }
 
   // ==================== SETTINGS FORM ====================
-  const settingsForm = document.getElementById('settings-form');
-  const settingsCurrencyInput = document.getElementById('currency');
+  const settingsForm = document.getElementById('settings-form') as HTMLFormElement | null;
+  const settingsCurrencyInput = document.getElementById('currency') as HTMLSelectElement | null;
   const currencyLoadingIndicator = document.getElementById('currency-loading');
-  const settingsSubmitButton = settingsForm?.querySelector('button[type="submit"]');
+  const settingsSubmitButton = settingsForm?.querySelector(
+    'button[type="submit"]'
+  ) as HTMLButtonElement | null;
 
   // Fetch current settings and pre-fill currency with race condition guard
   let isFetchingSettings = false;

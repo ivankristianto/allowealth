@@ -9,7 +9,7 @@
  *
  * @example
  * ```typescript
- * import { addToast } from '../../lib/stores/toastStore';
+ * import { addToast } from '@/lib/stores/toastStore';
  * addToast('Success!', 'success');
  * ```
  */
@@ -24,12 +24,7 @@
 </div>
 
 <script>
-  import {
-    toasts,
-    removeToast,
-    clearAllToasts,
-    type ToastMessage,
-  } from '../../lib/stores/toastStore';
+  import { toasts, removeToast, clearAllToasts, type ToastMessage } from '@/lib/stores/toastStore';
 
   const container = document.getElementById('toast-container');
   if (!container) {

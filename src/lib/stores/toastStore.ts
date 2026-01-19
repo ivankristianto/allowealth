@@ -1,5 +1,17 @@
 import { atom } from 'nanostores';
 
+/**
+ * Generate a unique ID with fallback for non-secure contexts.
+ * crypto.randomUUID() requires HTTPS; this provides a fallback for localhost HTTP.
+ */
+function generateId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  // Fallback for non-secure contexts
+  return `${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 11)}`;
+}
+
 export type ToastType = 'success' | 'error' | 'warning' | 'info';
 
 export interface ToastMessage {
@@ -25,7 +37,7 @@ export function addToast(
   type: ToastType = 'info',
   options?: ToastOptions
 ): string {
-  const id = crypto.randomUUID();
+  const id = generateId();
   const duration = options?.duration ?? getDefaultDuration(type);
 
   const toast: ToastMessage = { id, message, type, duration };

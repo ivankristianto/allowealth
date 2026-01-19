@@ -36,11 +36,6 @@ const FORM_ID = 'password-change-form';
 const API_ENDPOINT = '/api/user/password';
 
 /**
- * Toast notification types used by PasswordChangeForm
- */
-type ToastType = 'success' | 'error' | 'warning' | 'info';
-
-/**
  * Password validation requirements
  */
 const PASSWORD_REQUIREMENTS = {
