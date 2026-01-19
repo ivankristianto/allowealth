@@ -232,6 +232,7 @@ const paymentMethodsJson = JSON.stringify(
   const form = document.getElementById('transaction-form');
   const formError = document.getElementById('form-error');
   const submitButton = form?.querySelector('button[type="submit"]');
+  const formSuccess = document.getElementById('form-success');
 
   // Parse categories and budget info from data attributes (server-serialized JSON)
   const categories = JSON.parse(form?.dataset.categoriesJson || '[]');
@@ -248,6 +249,230 @@ const paymentMethodsJson = JSON.stringify(
       maximumFractionDigits: 0,
     }).format(amount);
   }
+
+  // === Form Validation ===
+
+  // Client-side validation rules matching server-side validation
+  const validators = {
+    amount: {
+      validate: (value) => {
+        // Strip currency formatting before validation
+        const cleanValue = String(value).replace(/[^\d.-]/g, '');
+        const num = parseFloat(cleanValue);
+        if (!value || value.trim() === '') return 'Amount is required';
+        if (isNaN(num)) return 'Amount must be a valid number';
+        if (num <= 0) return 'Amount must be greater than 0';
+        // Check for max 2 decimal places on clean value
+        const decimalPlaces = cleanValue.split('.')[1]?.length || 0;
+        if (decimalPlaces > 2) return 'Amount can have at most 2 decimal places';
+        return null;
+      },
+    },
+    transaction_date: {
+      validate: (value) => {
+        if (!value || value.trim() === '') return 'Transaction date is required';
+        // Check YYYY-MM-DD format
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return 'Date must be in YYYY-MM-DD format';
+        const date = new Date(value);
+        if (isNaN(date.getTime())) return 'Invalid date';
+        // Check if date is in the future using UTC timestamp comparison
+        const todayUTC = Date.now();
+        const inputDateUTC = new Date(value).getTime();
+        if (inputDateUTC > todayUTC) return 'Transaction date cannot be in the future';
+        return null;
+      },
+    },
+    category_id: {
+      validate: (value) => {
+        if (!value || value.trim() === '') return 'Category is required';
+        return null;
+      },
+    },
+    payment_method_id: {
+      validate: (value) => {
+        if (!value || value.trim() === '') return 'Payment method is required';
+        return null;
+      },
+    },
+    description: {
+      validate: (value) => {
+        if (value && value.length > 500) return 'Description must not exceed 500 characters';
+        return null;
+      },
+    },
+  };
+
+  // Field validation state
+  const fieldErrors = {};
+
+  // Validate a single field
+  function validateField(fieldName, value) {
+    const validator = validators[fieldName];
+    if (!validator) return null;
+
+    const error = validator.validate(value);
+    fieldErrors[fieldName] = error;
+
+    // Update UI
+    updateFieldErrorUI(fieldName, error);
+    updateSubmitButton();
+
+    return error;
+  }
+
+  // Update field error UI
+  function updateFieldErrorUI(fieldName, errorMessage) {
+    const field = form?.querySelector(`[name="${fieldName}"]`);
+    if (!field) return;
+
+    const fieldContainer = field.closest('.form-control');
+    if (!fieldContainer) return;
+
+    // Remove existing error
+    const existingError = fieldContainer.querySelector('.field-error');
+    if (existingError) {
+      existingError.remove();
+    }
+
+    const errorDivId = `${fieldName}-error`;
+
+    // Update input styling and ARIA attributes
+    if (errorMessage) {
+      field.classList.add('input-error', 'border-error');
+      field.setAttribute('aria-invalid', 'true');
+      field.setAttribute('aria-describedby', errorDivId);
+
+      // Add error message
+      const errorDiv = document.createElement('div');
+      errorDiv.className = 'field-error text-error text-sm mt-1';
+      errorDiv.id = errorDivId;
+      errorDiv.textContent = errorMessage;
+      errorDiv.setAttribute('role', 'alert');
+      fieldContainer.appendChild(errorDiv);
+    } else {
+      field.classList.remove('input-error', 'border-error');
+      field.setAttribute('aria-invalid', 'false');
+      field.removeAttribute('aria-describedby');
+    }
+  }
+
+  // Validate all fields
+  function validateForm() {
+    const formData = new FormData(form);
+    let isValid = true;
+
+    // Validate each field
+    for (const fieldName in validators) {
+      const value = formData.get(fieldName);
+      const error = validateField(fieldName, value);
+      if (error) isValid = false;
+    }
+
+    return isValid;
+  }
+
+  // Update submit button state
+  function updateSubmitButton() {
+    if (!submitButton) return;
+
+    // Check required fields only (description is optional)
+    const requiredFields = ['amount', 'transaction_date', 'category_id', 'payment_method_id'];
+    let allValid = true;
+
+    for (const fieldName of requiredFields) {
+      const value = form?.querySelector(`[name="${fieldName}"]`)?.value;
+      const error = fieldErrors[fieldName];
+
+      // Invalid if: has error OR value is empty/undefined
+      if (error || !value || value.trim() === '') {
+        allValid = false;
+        break;
+      }
+    }
+
+    submitButton.disabled = !allValid;
+  }
+
+  // Attach real-time validation listeners
+  function attachValidationListeners() {
+    // Amount input - validate on input
+    const amountInput = form?.querySelector('input[name="amount"]');
+    amountInput?.addEventListener('input', (e) => {
+      validateField('amount', e.target.value);
+    });
+
+    // Date input - validate on change
+    const dateInput = form?.querySelector('input[name="transaction_date"]');
+    dateInput?.addEventListener('change', (e) => {
+      validateField('transaction_date', e.target.value);
+    });
+
+    // Category select - validate on change
+    const categorySelect = form?.querySelector('select[name="category_id"]');
+    categorySelect?.addEventListener('change', (e) => {
+      validateField('category_id', e.target.value);
+    });
+
+    // Payment method select - validate on change
+    const paymentMethodSelect = form?.querySelector('select[name="payment_method_id"]');
+    paymentMethodSelect?.addEventListener('change', (e) => {
+      validateField('payment_method_id', e.target.value);
+    });
+
+    // Description textarea - validate on input (for max length)
+    const descriptionTextarea = form?.querySelector('textarea[name="description"]');
+    descriptionTextarea?.addEventListener('input', (e) => {
+      validateField('description', e.target.value);
+    });
+  }
+
+  // Show success message
+  function showSuccessMessage(message) {
+    if (!formSuccess) {
+      // Create success element if it doesn't exist
+      const successEl = document.createElement('div');
+      successEl.id = 'form-success';
+      successEl.className = 'alert alert-success mb-4';
+      successEl.setAttribute('role', 'status');
+
+      // Create SVG element
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+      svg.classList.add('stroke-current', 'shrink-0', 'h-6', 'w-6');
+      svg.setAttribute('fill', 'none');
+      svg.setAttribute('viewBox', '0 0 24 24');
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('stroke-linecap', 'round');
+      path.setAttribute('stroke-linejoin', 'round');
+      path.setAttribute('stroke-width', '2');
+      path.setAttribute('d', 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z');
+      svg.appendChild(path);
+
+      // Create text span with safe textContent
+      const span = document.createElement('span');
+      span.textContent = message;
+
+      successEl.appendChild(svg);
+      successEl.appendChild(span);
+      form?.insertBefore(successEl, form.firstChild);
+    } else {
+      formSuccess.classList.remove('hidden');
+      const successText = formSuccess.querySelector('span');
+      if (successText) successText.textContent = message;
+    }
+
+    // Scroll success message into view
+    formSuccess?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  // Hide success message
+  function hideSuccessMessage() {
+    if (formSuccess) {
+      formSuccess.classList.add('hidden');
+    }
+  }
+
+  // === End Form Validation ===
 
   // === localStorage helpers for remembering last used selections ===
   const STORAGE_KEYS = {
@@ -581,6 +806,19 @@ const paymentMethodsJson = JSON.stringify(
   // Handle form submission
   form?.addEventListener('submit', async (e) => {
     e.preventDefault();
+
+    // Hide any previous success message
+    hideSuccessMessage();
+
+    // Run client-side validation first
+    const isFormValid = validateForm();
+    if (!isFormValid) {
+      // Focus first field with error
+      const firstErrorField = form?.querySelector('[aria-invalid="true"]');
+      firstErrorField?.focus();
+      return;
+    }
+
     clearFieldErrors();
 
     if (submitButton) {
@@ -632,7 +870,7 @@ const paymentMethodsJson = JSON.stringify(
           }
         }
       } else {
-        // Success - save last used values to localStorage before redirect
+        // Success - save last used values to localStorage
         const formType = data.type;
         const categoryId = data.category_id;
         const paymentMethodId = data.payment_method_id;
@@ -644,8 +882,13 @@ const paymentMethodsJson = JSON.stringify(
           setLastUsedPaymentMethod(paymentMethodId);
         }
 
-        // Redirect to transactions list
-        window.location.href = '/transactions';
+        // Show success message before redirect
+        showSuccessMessage('Transaction saved successfully!');
+
+        // Redirect to transactions list after short delay
+        setTimeout(() => {
+          window.location.href = '/transactions';
+        }, 500);
       }
     } catch (err) {
       // Network or other error
@@ -654,14 +897,19 @@ const paymentMethodsJson = JSON.stringify(
         formError.classList.remove('hidden');
       }
     } finally {
+      // Keep button disabled if showing success message
       if (submitButton) {
-        submitButton.disabled = false;
-        submitButton.textContent = 'Save Transaction';
+        const isShowingSuccess = formSuccess && !formSuccess.classList.contains('hidden');
+        if (!isShowingSuccess) {
+          submitButton.disabled = false;
+          submitButton.textContent = 'Save Transaction';
+        }
       }
     }
   });
 
-  // Initialize form with pre-selected values, then update currency and budget display
+  // Initialize form with pre-selected values, validation listeners, and update displays
+  attachValidationListeners();
   preselectLastUsedValues();
   updateCurrencyForCategory();
   updateBudgetDisplay();
