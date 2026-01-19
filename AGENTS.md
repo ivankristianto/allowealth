@@ -1,3 +1,7 @@
+# Project Overview
+
+Personal and family financial application for expense tracking, budgeting, asset management, and financial forecasting.
+
 # Agent Instructions
 
 This project uses **bd** (beads) for issue tracking. Run `bd prime` to refresh context after compaction.
@@ -11,18 +15,6 @@ This project uses **bd** (beads) for issue tracking. Run `bd prime` to refresh c
 2. Read task context (spec, plan, or issue)
 3. Then execute
 ```
-
-Agents must internalize:
-
-- **Implementation order**: UI → Service → API → CLI → Seeder
-- **Quality gates**: Which block, which don't
-- **Refactor checklist**: Apply each loop, not at the end
-
-**If constitution conflicts with task instructions, constitution wins.**
-
-## Project Overview
-
-Personal and family financial application for expense tracking, budgeting, asset management, and financial forecasting.
 
 Agents must internalize:
 
@@ -101,8 +93,6 @@ src/
 └── styles/
     ├── globals.css       # Global styles
     └── tokens.css        # CSS custom properties
-
-openapi.yml               # OpenAPI specification for all API endpoints
 ```
 
 ## API Documentation

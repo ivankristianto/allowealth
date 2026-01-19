@@ -1,284 +1,223 @@
-# Design System Documentation
+# Design System
 
-**Version:** 1.0.0
-**Last Updated:** 2026-01-19
-**Framework:** Astro 5.x + Tailwind CSS v4 + DaisyUI v5
+**Version:** 1.0.0 | **Framework:** Astro 5.x + Tailwind v4 + DaisyUI v5
 
-## Overview
+## Quick Start
 
-This design system provides comprehensive guidelines for building consistent, accessible, and maintainable UI components for the Personal Finance Manager application. It is specifically tailored for **AI coding agents** to follow when implementing frontend features.
+**Read this file first.** Consult other docs only when needed.
 
-## Purpose
-
-This documentation serves as:
-
-1. **Single source of truth** for design decisions
-2. **Reference guide** for implementing new components
-3. **Quality checklist** for code reviews
-4. **Consistency framework** to ensure unified UX across the application
-
-## How to Use This Documentation
-
-### For AI Coding Agents
-
-**BEFORE implementing any UI component:**
-
-1. **Read the relevant documentation** from the table of contents below
-2. **Check existing components** in `src/components/` for patterns
-3. **Use design tokens** from `src/lib/tokens.ts` (never hardcode values)
-4. **Follow accessibility guidelines** - this is mandatory, not optional
-5. **Test responsiveness** across breakpoints (sm, md, lg, xl, 2xl)
-
-### Documentation Structure
-
-This design system is organized into the following sections:
-
-```
-design-system/
-├── START.md                    # ← You are here (index & usage guide)
-├── 01-foundations.md           # Colors, typography, spacing, shadows, etc.
-├── 02-components.md            # Component patterns & guidelines
-├── 03-forms.md                 # Form controls & validation patterns
-├── 04-accessibility.md         # A11y requirements & ARIA patterns
-├── 05-responsive.md            # Breakpoints & responsive patterns
-├── 06-data-visualization.md    # Charts, tables, currency displays
-└── 07-patterns.md              # Common UI patterns & compositions
-```
-
-## Quick Reference
-
-### Key Principles
+### Core Rules
 
 1. **Use design tokens** - Import from `@/lib/tokens` (never hardcode)
-2. **DaisyUI first** - Leverage DaisyUI classes before custom CSS
-3. **Accessibility required** - Every component must be keyboard navigable with proper ARIA
-4. **Mobile-first** - Design for small screens, enhance for larger
-5. **Server-side rendering** - Astro components are server-rendered by default
-6. **Semantic HTML** - Use appropriate HTML elements for their intended purpose
+2. **DaisyUI first** - Use DaisyUI classes, then Tailwind
+3. **Accessibility required** - Keyboard nav + ARIA + contrast
+4. **Mobile-first** - Base styles for mobile, enhance for desktop
+5. **Server-side** - Astro components are SSR by default
 
-### Design Token Import
+### Import Tokens
 
 ```typescript
 import { colors, fontSizes, spacing, formatCurrency } from '@/lib/tokens';
 ```
 
-### Color Palette (Quick Reference)
+## Token Quick Reference
+
+### Colors
 
 ```typescript
-Primary (Emerald):  #10b981  // Financial growth, CTAs
-Warning (Amber):    #f59e0b  // Budget alerts, cautions
-Error (Red):        #ef4444  // Over budget, errors
-Success (Green):    #10b981  // Confirmations, positive actions
-Info (Blue):        #3b82f6  // Neutral information
+colors.primary; // #10b981 (emerald - growth, CTAs)
+colors.warning; // #f59e0b (amber - budget alerts)
+colors.error; // #ef4444 (red - over budget)
+colors.success; // #10b981 (green - confirmations)
+colors.info; // #3b82f6 (blue - info, USD)
+
+colors.currency.idr; // #10b981 (green)
+colors.currency.usd; // #3b82f6 (blue)
+
+colors.status.ok; // #22c55e (<80%)
+colors.status.warning; // #f59e0b (80-99%)
+colors.status.danger; // #ef4444 (≥100%)
 ```
 
-### Spacing Scale (Quick Reference)
+### Typography
 
 ```typescript
-4px   → spacing-1      // Tight spacing
-8px   → spacing-2      // Small spacing
-16px  → spacing-4      // Form fields (--spacing-form)
-24px  → spacing-6      // Card padding (--spacing-card)
-32px  → spacing-8      // Section gaps (--spacing-section)
+fontSizes.xs; // 12px - labels, helper
+fontSizes.sm; // 14px - body (small)
+fontSizes.base; // 16px - body (default)
+fontSizes.lg; // 18px - emphasized
+fontSizes.xl; // 20px - section headings
+fontSizes['2xl']; // 24px - page headings
+fontSizes['4xl']; // 36px - hero
 ```
 
-### Typography Scale (Quick Reference)
+### Spacing
 
 ```typescript
-12px → text-xs         // Small labels, helper text
-14px → text-sm         // Body text (small)
-16px → text-base       // Body text (default)
-20px → text-xl         // Section headings
-24px → text-2xl        // Page headings
-36px → text-4xl        // Hero headings
+spacing.form; // 16px - form field gaps
+spacing.card; // 24px - card padding
+spacing.section; // 32px - section gaps
 ```
 
-## Common Patterns
+### Breakpoints
 
-### Component Structure
+```typescript
+sm: 640px   md: 768px   lg: 1024px   xl: 1280px   2xl: 1536px
+```
 
-All Astro components should follow this structure:
+### Utility Functions
+
+```typescript
+formatCurrency(150000, 'IDR'); // "Rp150.000"
+formatCurrency(1500000, 'IDR', true); // "Rp1.5M"
+formatPercentage(85.5, 2); // "85.50%"
+formatCompactNumber(1500000); // "1.5M"
+getBudgetStatusClass(percentage); // 'status-ok' | 'status-warning' | 'status-danger'
+```
+
+## Component Pattern
 
 ```astro
 ---
 /**
- * Component Name
- *
- * Brief description of what this component does.
- *
+ * Component Name - Brief description
  * @param {string} variant - Description
- * @param {boolean} disabled - Description
  */
-
 export interface Props {
   variant?: 'primary' | 'secondary';
-  disabled?: boolean;
   className?: string;
 }
 
-const { variant = 'primary', disabled = false, className = '' } = Astro.props;
+const { variant = 'primary', className = '' } = Astro.props;
 
-// Build class strings using arrays + filter + join
-const componentClasses = [
-  'base-classes',
-  variant === 'primary' && 'variant-classes',
-  disabled && 'disabled-classes',
-  className,
-]
+const classes = ['base-classes', variant === 'primary' && 'primary-classes', className]
   .filter(Boolean)
   .join(' ');
 ---
 
-<element class={componentClasses}>
-  <slot />
-</element>
+<element class={classes}><slot /></element>
 ```
 
-### Responsive Classes
+## File Structure
 
-Use Tailwind's responsive prefixes:
+```
+design-system/
+├── START.md              # ← You are here (read first)
+├── 01-foundations.md     # Tokens, colors, typography, spacing
+├── 02-components.md      # Button, Card, Input, Modal patterns
+├── 03-forms.md           # Form controls, validation
+├── 04-accessibility.md   # WCAG, keyboard, ARIA, screen readers
+├── 05-responsive.md      # Mobile-first, breakpoints
+├── 06-data-visualization.md # Currency, charts, tables
+└── 07-patterns.md        # Layouts, navigation, lists
+```
+
+## When to Consult Docs
+
+| Task                           | Read                     |
+| ------------------------------ | ------------------------ |
+| Need color/spacing/font values | 01-foundations.md        |
+| Building Button/Card/Modal     | 02-components.md         |
+| Creating forms                 | 03-forms.md              |
+| Keyboard nav / ARIA            | 04-accessibility.md      |
+| Responsive layout              | 05-responsive.md         |
+| Display currency/charts        | 06-data-visualization.md |
+| Dashboard/list page            | 07-patterns.md           |
+
+## Essential Checklists
+
+### Before Implementation
+
+- [ ] Checked existing components first
+- [ ] Imported design tokens from `@/lib/tokens`
+- [ ] Planned component props and variants
+
+## Common Patterns
+
+### Responsive Grid
 
 ```html
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-  <!-- Mobile: 1 column, Tablet: 2 columns, Desktop: 3 columns -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+```
+
+### Form Field
+
+```astro
+<div class="form-control">
+  <Label htmlFor="name" required>Name</Label>
+  <Input id="name" name="name" error={!!errors.name} errorMessage={errors.name} />
 </div>
 ```
 
-### Accessibility Checklist
-
-- [ ] Semantic HTML elements used correctly
-- [ ] Interactive elements keyboard accessible (Tab, Enter, Space, Esc)
-- [ ] ARIA attributes for dynamic content (`aria-label`, `aria-describedby`, `role`)
-- [ ] Focus visible styles (`:focus-visible` outline)
-- [ ] Color contrast ratio ≥ 4.5:1 for text
-- [ ] Form fields have associated labels (`<Label>` component or `aria-label`)
-- [ ] Error states announced with `role="alert"`
-
-## File Organization
-
-### Component Hierarchy
-
-```
-src/components/
-├── atoms/           # Basic building blocks (Button, Input, Badge)
-├── molecules/       # Compound components (Modal, Toast, Form groups)
-├── organisms/       # Complex compositions (TransactionList, SummaryCards)
-└── layouts/         # Layout components (Header, Footer, Navigation)
-```
-
-### When to Create New Components
-
-**Create a new component when:**
-
-- The pattern is reused 3+ times
-- The component has distinct behavior or state
-- It improves code organization and maintainability
-
-**Use inline markup when:**
-
-- The pattern is used once or twice
-- It's a simple wrapper without logic
-- Creating a component would add unnecessary abstraction
-
-## Currency & Number Formatting
-
-### Always Use Utility Functions
-
-```typescript
-import { formatCurrency, formatPercentage, formatCompactNumber } from '@/lib/tokens';
-
-// Currency formatting
-formatCurrency(150000, 'IDR'); // → "Rp150.000"
-formatCurrency(1500000, 'IDR', true); // → "Rp1.5M"
-formatCurrency(99.99, 'USD'); // → "$99.99"
-
-// Percentage formatting
-formatPercentage(85.5, 2); // → "85.50%"
-formatPercentage(85.5, 0); // → "86%"
-
-// Compact numbers
-formatCompactNumber(1500000); // → "1.5M"
-formatCompactNumber(2500); // → "2.5K"
-```
-
-### Currency Colors
+### Budget Status
 
 ```html
-<span class="currency-idr">Rp 150.000</span>
-<!-- Green -->
-<span class="currency-usd">$99.99</span>
-<!-- Blue -->
+<span class="{getBudgetStatusClass(percentage)}">
+  {percentage < 80 ? 'Under budget' : percentage < 100 ? 'Near limit' : 'Over budget'}
+</span>
 ```
 
-### Budget Status Colors
+### Currency Display
+
+```astro
+<Currency amount={150000} currency="IDR" className="currency-idr" />
+```
+
+### Loading State
 
 ```html
-<span class="status-ok">Under budget</span>
-<!-- Green: <80% -->
-<span class="status-warning">Near budget</span>
-<!-- Yellow: 80-99% -->
-<span class="status-danger">Over budget</span>
-<!-- Red: ≥100% -->
+<div class="animate-pulse">
+  <div class="h-4 bg-neutral-200 rounded w-1/3"></div>
+</div>
 ```
 
-## Testing & Validation
+## DaisyUI Classes
 
-### Pre-Implementation Checklist
+```html
+<!-- Buttons -->
+<button class="btn btn-primary">Primary</button>
+<button class="btn btn-outline">Outline</button>
 
-- [ ] Read relevant design system documentation
-- [ ] Check existing components for similar patterns
-- [ ] Identify design tokens needed (colors, spacing, typography)
-- [ ] Plan component props and variants
-- [ ] Consider accessibility requirements
+<!-- Inputs -->
+<input class="input input-bordered" />
 
-### Pre-Commit Checklist
+<!-- Cards -->
+<div class="card card-bordered bg-base-100">
+  <!-- Badges -->
+  <span class="badge badge-primary">Badge</span>
 
-- [ ] `bun run typecheck` passes
-- [ ] `bun run lint` passes
-- [ ] `bun run format:fix` applied
-- [ ] Component has proper TypeScript interfaces
-- [ ] Accessibility tested (keyboard navigation)
-- [ ] Responsive behavior verified
-- [ ] Design tokens used (no hardcoded values)
+  <!-- Alerts -->
+  <div class="alert alert-warning">Warning</div>
+</div>
+```
 
-## Getting Help
+## Accessibility Essentials
 
-### Where to Look
+- **Semantic HTML**: Use `<button>`, `<nav>`, `<main>`, not `<div>`
+- **Labels**: Every input needs `<label for="id">` or `aria-label`
+- **Keyboard**: Tab to navigate, Enter/Space to activate, Esc to close
+- **Focus**: Never remove outline without replacement
+- **Contrast**: Text ≥4.5:1, UI ≥3:1
+- **ARIA**: Use `aria-label`, `aria-describedby`, `role="alert"`
+- **Touch**: Min 44x44px for mobile buttons
 
-1. **Existing components** - Check `src/components/` for similar patterns
-2. **Design tokens** - Reference `src/lib/tokens.ts` and `src/styles/tokens.css`
-3. **DaisyUI docs** - https://daisyui.com/components/
-4. **Tailwind CSS docs** - https://tailwindcss.com/docs
-5. **Astro docs** - https://docs.astro.build
+## Common Mistakes to Avoid
 
-### Common Issues
+❌ Hardcoding values: `style="color: #10b981"`
+✅ Use tokens: `class="text-primary"`
 
-**Issue:** "Should I use a DaisyUI class or custom Tailwind classes?"
-**Answer:** Prefer DaisyUI classes when available (btn, card, input, modal, etc.). Use custom Tailwind for one-off styling.
+❌ Non-semantic: `<div onclick="...">Submit</div>`
+✅ Semantic: `<button type="submit">Submit</button>`
 
-**Issue:** "What spacing value should I use?"
-**Answer:** Use semantic presets: `--spacing-card` (24px), `--spacing-section` (32px), `--spacing-form` (16px)
+❌ Desktop-first: `@media (max-width: 768px)`
+✅ Mobile-first: `class="text-sm md:text-base"`
 
-**Issue:** "How do I handle dark mode?"
-**Answer:** DaisyUI handles dark mode automatically. Use semantic color classes (text-base-content, bg-base-100) that adapt to theme.
+❌ No labels: `<input placeholder="Name" />`
+✅ With label: `<Label htmlFor="name">Name</Label><Input id="name" />`
 
-**Issue:** "Should I create a new component or use existing ones?"
-**Answer:** Check atoms → molecules → organisms. Compose existing components before creating new ones.
+❌ Color only: `<span class="text-red-500">Error</span>`
+✅ Icon + text: `<Icon name="alert" /><span class="text-error">Error</span>`
 
-## Version History
+## Need More Details?
 
-- **1.0.0** (2026-01-19) - Initial design system documentation created
-
-## Next Steps
-
-1. **Read 01-foundations.md** to understand colors, typography, and spacing
-2. **Read 02-components.md** for component patterns and best practices
-3. **Read 03-forms.md** if implementing form controls
-4. **Read 04-accessibility.md** for accessibility requirements (mandatory)
-5. **Read 05-responsive.md** for responsive design patterns
-6. **Read 06-data-visualization.md** for charts and financial data displays
-7. **Read 07-patterns.md** for common UI patterns and compositions
-
----
-
-**Remember:** This design system exists to help you build better, more consistent UIs. When in doubt, check existing components first, then consult this documentation.
+Consult the specific doc for your task from the file structure above. START.md covers 80% of daily use cases.
