@@ -89,6 +89,9 @@ const budgetInfoJson = budgetInfo
 const categoriesJson = JSON.stringify(
   categories.map((c) => ({ id: c.id, name: c.name, type: c.type, currency: c.currency || 'IDR' }))
 );
+const paymentMethodsJson = JSON.stringify(
+  paymentMethods.map((pm) => ({ id: pm.id, name: pm.name, type: pm.type }))
+);
 ---
 
 <form
@@ -96,6 +99,7 @@ const categoriesJson = JSON.stringify(
   data-action={action}
   data-method={method}
   data-categories-json={categoriesJson}
+  data-payment-methods-json={paymentMethodsJson}
   data-budget-info-json={budgetInfoJson}
   class="space-y-4"
   novalidate
@@ -243,6 +247,68 @@ const categoriesJson = JSON.stringify(
       maximumFractionDigits: 0,
     }).format(amount);
   }
+
+  // === localStorage helpers for remembering last used selections ===
+  const STORAGE_KEYS = {
+    lastExpenseCategory: 'lastExpenseCategory',
+    lastIncomeCategory: 'lastIncomeCategory',
+    lastPaymentMethod: 'lastPaymentMethod',
+  };
+
+  function getLastUsedCategory(transactionType) {
+    const key =
+      transactionType === 'expense'
+        ? STORAGE_KEYS.lastExpenseCategory
+        : STORAGE_KEYS.lastIncomeCategory;
+    return localStorage.getItem(key);
+  }
+
+  function setLastUsedCategory(transactionType, categoryId) {
+    const key =
+      transactionType === 'expense'
+        ? STORAGE_KEYS.lastExpenseCategory
+        : STORAGE_KEYS.lastIncomeCategory;
+    localStorage.setItem(key, categoryId);
+  }
+
+  function getLastUsedPaymentMethod() {
+    return localStorage.getItem(STORAGE_KEYS.lastPaymentMethod);
+  }
+
+  function setLastUsedPaymentMethod(paymentMethodId) {
+    localStorage.setItem(STORAGE_KEYS.lastPaymentMethod, paymentMethodId);
+  }
+
+  // Pre-select last used values on form load
+  function preselectLastUsedValues() {
+    const formType = document.querySelector('input[name="type"]:checked')?.value || 'expense';
+    const categorySelect = document.querySelector('select[name="category_id"]');
+    const paymentMethodSelect = document.querySelector('select[name="payment_method_id"]');
+
+    // Only pre-select if the form doesn't already have a value (server-rendered)
+    if (categorySelect && !categorySelect.value) {
+      const lastCategory = getLastUsedCategory(formType);
+      if (lastCategory) {
+        // Check if the category still exists and is valid for current type
+        const category = categories.find((c) => c.id === lastCategory && c.type === formType);
+        if (category) {
+          categorySelect.value = lastCategory;
+          // Trigger change event to update currency and budget display
+          categorySelect.dispatchEvent(new Event('change'));
+        }
+      }
+    }
+
+    // Only pre-select payment method if the form doesn't already have a value
+    if (paymentMethodSelect && !paymentMethodSelect.value) {
+      const lastPaymentMethod = getLastUsedPaymentMethod();
+      if (lastPaymentMethod) {
+        paymentMethodSelect.value = lastPaymentMethod;
+      }
+    }
+  }
+
+  // === End localStorage helpers ===
 
   // Update currency based on selected category
   function updateCurrencyForCategory() {
@@ -393,6 +459,15 @@ const categoriesJson = JSON.stringify(
         categorySelect.value = '';
       }
 
+      // Try to pre-select the last used category for the new type
+      const lastCategory = getLastUsedCategory(newType);
+      if (lastCategory && categorySelect) {
+        const category = categories.find((c) => c.id === lastCategory && c.type === newType);
+        if (category) {
+          categorySelect.value = lastCategory;
+        }
+      }
+
       // Update currency when category changes
       updateCurrencyForCategory();
 
@@ -500,7 +575,19 @@ const categoriesJson = JSON.stringify(
           }
         }
       } else {
-        // Success - redirect to transactions list
+        // Success - save last used values to localStorage before redirect
+        const formType = data.type;
+        const categoryId = data.category_id;
+        const paymentMethodId = data.payment_method_id;
+
+        if (categoryId) {
+          setLastUsedCategory(formType, categoryId);
+        }
+        if (paymentMethodId) {
+          setLastUsedPaymentMethod(paymentMethodId);
+        }
+
+        // Redirect to transactions list
         window.location.href = '/transactions';
       }
     } catch (err) {
@@ -517,7 +604,8 @@ const categoriesJson = JSON.stringify(
     }
   });
 
-  // Initialize currency and budget display based on pre-selected category
+  // Initialize form with pre-selected values, then update currency and budget display
+  preselectLastUsedValues();
   updateCurrencyForCategory();
   updateBudgetDisplay();
 </script>

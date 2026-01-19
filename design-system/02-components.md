@@ -27,6 +27,48 @@ const classes = ['base-classes', variant === 'primary' && 'primary-classes', cla
 
 ## Core Components
 
+### Icon (`@lucide/astro`)
+
+**Use Lucide icons** for all icons in the application. They are accessible, consistent, and well-maintained.
+
+```astro
+---
+import { X, Plus, Edit, Trash2, Check, AlertCircle, Search, Filter } from '@lucide/astro';
+---
+
+<!-- Basic icon -->
+<Plus size={20} />
+
+<!-- With color -->
+<Check size={16} class="text-success" />
+
+<!-- In button -->
+<button class="btn btn-primary">
+  <Plus size={20} />
+  <span>Add New</span>
+</button>
+
+<!-- Icon-only button (needs aria-label) -->
+<button class="btn btn-ghost btn-square" aria-label="Close">
+  <X size={24} />
+</button>
+
+<!-- With status -->
+<div class="flex items-center gap-2 text-error">
+  <AlertCircle size={16} />
+  <span>Error occurred</span>
+</div>
+```
+
+**Common icons:**
+
+- `Plus`, `Minus`, `X` - Actions
+- `Edit`, `Trash2`, `Save` - CRUD operations
+- `Search`, `Filter`, `Download` - Tools
+- `Check`, `AlertCircle`, `Info` - Status
+- `ChevronDown`, `ChevronRight` - Navigation
+- `Menu`, `Settings`, `User` - UI elements
+
 ### Button (`src/components/atoms/Button.astro`)
 
 ```astro
@@ -140,6 +182,57 @@ const { variant = 'primary', size = 'md', disabled = false, className = '' } = A
 - [ ] Keyboard accessible
 - [ ] Responsive
 
+## Modern HTML Elements
+
+**Always use semantic HTML elements** instead of generic divs and spans. This improves accessibility, SEO, and code readability.
+
+```html
+<!-- Layout elements -->
+<header><!-- Site/section header --></header>
+<nav><!-- Navigation menu --></nav>
+<main><!-- Primary content --></main>
+<aside><!-- Sidebar, related content --></aside>
+<footer><!-- Site/section footer --></footer>
+
+<!-- Content sectioning -->
+<section><!-- Thematic grouping --></section>
+<article><!-- Self-contained content --></article>
+<figure>
+  <img src="..." alt="..." />
+  <figcaption>Caption</figcaption>
+</figure>
+
+<!-- Interactive elements -->
+<button><!-- Clickable action --></button>
+<dialog><!-- Modal/popup --></dialog>
+<details>
+  <summary>Expandable title</summary>
+  Content
+</details>
+```
+
+**Example: Dashboard layout**
+
+```html
+<main class="container mx-auto p-6">
+  <header class="mb-8">
+    <h1 class="text-4xl font-bold">Dashboard</h1>
+  </header>
+
+  <section class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <article class="card">
+      <h2 class="text-xl font-semibold">Budget Overview</h2>
+      <p>...</p>
+    </article>
+
+    <article class="card">
+      <h2 class="text-xl font-semibold">Recent Transactions</h2>
+      <p>...</p>
+    </article>
+  </section>
+</main>
+```
+
 ## Anti-Patterns
 
 ❌ Hardcoded: `style="color: #10b981"`
@@ -150,3 +243,9 @@ const { variant = 'primary', size = 'md', disabled = false, className = '' } = A
 
 ❌ No accessibility: `<input placeholder="Name" />`
 ✅ With label: `<Label htmlFor="name">Name</Label><Input id="name" />`
+
+❌ Generic divs: `<div class="wrapper"><div class="item" onclick="...">Click</div></div>`
+✅ Semantic HTML: `<section><button>Click</button></section>`
+
+❌ Custom icons: `<span class="icon">✓</span>`
+✅ Lucide icons: `<Check size={16} />`

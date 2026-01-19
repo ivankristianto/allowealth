@@ -187,6 +187,96 @@ transitions.slow; // 300ms - complex animations
 <button class="transition-colors duration-200 hover:bg-primary-hover"></button>
 ```
 
+## Animations (Framer Motion)
+
+Use **framer-motion** for complex animations, interactive gestures, and orchestrated sequences. Use CSS transitions for simple hover/focus states.
+
+### Basic Animations
+
+```astro
+---
+import { motion } from 'framer-motion';
+---
+
+<!-- Fade in -->
+<motion.div
+  client:load
+  initial={{ opacity: 0 }}
+  animate={{ opacity: 1 }}
+  transition={{ duration: 0.3 }}
+>
+  Content
+</motion.div>
+```
+
+### Common Animation Patterns
+
+```typescript
+// Fade in
+{ initial: { opacity: 0 }, animate: { opacity: 1 } }
+
+// Slide up
+{ initial: { y: 20, opacity: 0 }, animate: { y: 0, opacity: 1 } }
+
+// Scale in
+{ initial: { scale: 0.95, opacity: 0 }, animate: { scale: 1, opacity: 1 } }
+
+// Slide from left
+{ initial: { x: -20, opacity: 0 }, animate: { x: 0, opacity: 1 } }
+```
+
+### Stagger Children
+
+```astro
+<motion.ul
+  client:load
+  initial="hidden"
+  animate="visible"
+  variants={{
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: { staggerChildren: 0.1 },
+    },
+  }}
+>
+  <motion.li variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } }}>
+    Item 1
+  </motion.li>
+  <motion.li variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } }}>
+    Item 2
+  </motion.li>
+</motion.ul>
+```
+
+### Exit Animations
+
+```astro
+<motion.div client:load exit={{ opacity: 0, scale: 0.95 }} transition={{ duration: 0.2 }}>
+  Dismissible content
+</motion.div>
+```
+
+### Gesture Animations
+
+```astro
+<motion.button
+  client:load
+  whileHover={{ scale: 1.05 }}
+  whileTap={{ scale: 0.95 }}
+  transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+>
+  Click me
+</motion.button>
+```
+
+### Animation Timing
+
+- **Fast** (150-200ms): Hover effects, small UI changes
+- **Base** (300-400ms): Modals, dropdowns, tooltips
+- **Slow** (500-600ms): Page transitions, complex sequences
+- **Spring**: Interactive elements (buttons, cards)
+
 ## Breakpoints
 
 ```typescript

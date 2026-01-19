@@ -9,15 +9,30 @@
 ### Core Rules
 
 1. **Use design tokens** - Import from `@/lib/tokens` (never hardcode)
-2. **DaisyUI first** - Use DaisyUI classes, then Tailwind
+2. **DaisyUI first** - Use DaisyUI classes, then Tailwind. Use @design-system/daisyui-llm.md as reference.
 3. **Accessibility required** - Keyboard nav + ARIA + contrast
 4. **Mobile-first** - Base styles for mobile, enhance for desktop
 5. **Server-side** - Astro components are SSR by default
+6. **Modern HTML** - Use semantic elements (`<button>`, `<nav>`, `<main>`, `<section>`, `<article>`)
+7. **Icons** - Use `@lucide/astro` for all icons (consistent, accessible)
+8. **Animations** - Use `framer-motion` for complex animations and transitions
 
 ### Import Tokens
 
 ```typescript
 import { colors, fontSizes, spacing, formatCurrency } from '@/lib/tokens';
+```
+
+### Import Icons
+
+```typescript
+import { X, Plus, Edit, Trash2 } from '@lucide/astro';
+```
+
+### Import Animations
+
+```typescript
+import { motion } from 'framer-motion';
 ```
 
 ## Token Quick Reference
@@ -134,6 +149,90 @@ design-system/
 
 ## Common Patterns
 
+### Icons (Lucide)
+
+```astro
+---
+import { X, Plus, Edit, Trash2, Check, AlertCircle } from '@lucide/astro';
+---
+
+<!-- Button with icon -->
+<button class="btn btn-primary">
+  <Plus size={20} />
+  <span>Add Transaction</span>
+</button>
+
+<!-- Icon button -->
+<button class="btn btn-ghost btn-square" aria-label="Close">
+  <X size={24} />
+</button>
+
+<!-- Status with icon -->
+<div class="flex items-center gap-2 text-success">
+  <Check size={16} />
+  <span>Complete</span>
+</div>
+
+<!-- Alert with icon -->
+<div class="alert alert-warning">
+  <AlertCircle size={20} />
+  <span>Budget limit reached</span>
+</div>
+```
+
+### Animations (Framer Motion)
+
+```astro
+---
+import { motion } from 'framer-motion';
+---
+
+<!-- Fade in animation -->
+<motion.div
+  client:load
+  initial={{ opacity: 0 }}
+  animate={{ opacity: 1 }}
+  transition={{ duration: 0.3 }}
+>
+  Content
+</motion.div>
+
+<!-- Slide in from bottom -->
+<motion.div
+  client:load
+  initial={{ y: 20, opacity: 0 }}
+  animate={{ y: 0, opacity: 1 }}
+  transition={{ duration: 0.4 }}
+>
+  Modal content
+</motion.div>
+
+<!-- Stagger children -->
+<motion.ul
+  client:load
+  initial="hidden"
+  animate="visible"
+  variants={{
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+      },
+    },
+  }}
+>
+  <motion.li variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } }}>
+    Item 1
+  </motion.li>
+</motion.ul>
+
+<!-- Exit animation -->
+<motion.div client:load exit={{ opacity: 0, scale: 0.95 }} transition={{ duration: 0.2 }}>
+  Dismissible element
+</motion.div>
+```
+
 ### Responsive Grid
 
 ```html
@@ -209,6 +308,9 @@ design-system/
 ❌ Non-semantic: `<div onclick="...">Submit</div>`
 ✅ Semantic: `<button type="submit">Submit</button>`
 
+❌ Non-semantic wrappers: `<div class="wrapper"><div class="content">...</div></div>`
+✅ Modern HTML: `<section><article>...</article></section>`
+
 ❌ Desktop-first: `@media (max-width: 768px)`
 ✅ Mobile-first: `class="text-sm md:text-base"`
 
@@ -216,7 +318,13 @@ design-system/
 ✅ With label: `<Label htmlFor="name">Name</Label><Input id="name" />`
 
 ❌ Color only: `<span class="text-red-500">Error</span>`
-✅ Icon + text: `<Icon name="alert" /><span class="text-error">Error</span>`
+✅ Icon + text: `<AlertCircle size={16} /><span class="text-error">Error</span>`
+
+❌ Custom icons: `<svg>...</svg>` or emoji
+✅ Lucide icons: `<Plus size={20} />`
+
+❌ CSS transitions only: `transition: all 0.3s`
+✅ Framer Motion for complex: `<motion.div animate={{ scale: 1.1 }}>`
 
 ## Need More Details?
 

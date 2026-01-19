@@ -73,9 +73,15 @@ WCAG 2.1 AA compliance is **mandatory**.
 
 ### Labels
 
-```html
+```astro
+---
+import { X } from '@lucide/astro';
+---
+
 <!-- Invisible label -->
-<button aria-label="Close modal"><Icon name="x" /></button>
+<button aria-label="Close modal">
+  <X size={24} />
+</button>
 
 <!-- Reference visible label -->
 <h2 id="dialog-title">Confirm</h2>
@@ -146,18 +152,39 @@ WCAG 2.1 AA compliance is **mandatory**.
 
 **Don't rely on color alone** - use icons, text, patterns.
 
-```html
-✅ <Icon name="error" /><span class="text-error">Error</span> ❌
-<span class="text-error">Error</span>
+```astro
+---
+import { AlertCircle, Check, Info } from '@lucide/astro';
+---
+
+✅ Good - Icon + text + color
+<div class="flex items-center gap-2 text-error">
+  <AlertCircle size={16} />
+  <span>Error occurred</span>
+</div>
+
+<div class="flex items-center gap-2 text-success">
+  <Check size={16} />
+  <span>Success</span>
+</div>
+
+❌ Bad - Color only
+<span class="text-error">Error occurred</span>
 ```
 
 ## Touch Targets
 
 Minimum **44x44px** on mobile.
 
-```html
+```astro
+---
+import { X } from '@lucide/astro';
+---
+
 <button class="btn min-h-[44px]">Submit</button>
-<button class="btn-square w-11 h-11"><Icon name="x" /></button>
+<button class="btn-square w-11 h-11" aria-label="Close">
+  <X size={24} />
+</button>
 ```
 
 ## Testing
