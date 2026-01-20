@@ -1,0 +1,1367 @@
+# Icon Migration to @lucide/astro - Implementation Plan
+
+Migrate all custom Icon components to use @lucide/astro icons for consistency, accessibility, and maintainability.
+
+## Summary
+
+The project currently uses a custom `Icon.astro` component with hardcoded SVG paths (Heroicons-style). The design system mandates using `@lucide/astro` for all icons. This migration will:
+
+1. Replace all custom Icon component usage with direct Lucide icon imports
+2. Remove the custom Icon.astro component and its stories
+3. Update all affected components, pages, and tests
+4. Ensure consistent icon sizing and styling across the application
+
+### Proposed Changes
+
+#### Scope of Migration
+
+The migration covers **TWO types of icon usage**:
+
+1. **Custom Icon Component** (Icon.astro) - 19 component files + 5 page files
+2. **Inline SVGs** - 20 files with hardcoded SVG elements
+
+**Total Files to Migrate:** 44 files
+
+#### Icon Name Mapping (Custom → Lucide)
+
+| Current Name    | Lucide Icon   | Import                     |
+| --------------- | ------------- | -------------------------- |
+| arrow-left      | ArrowLeft     | `{ ArrowLeft }`            |
+| arrow-right     | ArrowRight    | `{ ArrowRight }`           |
+| check           | Check         | `{ Check }`                |
+| x               | X             | `{ X }`                    |
+| plus            | Plus          | `{ Plus }`                 |
+| minus           | Minus         | `{ Minus }`                |
+| pencil          | Pencil/Edit   | `{ Pencil }` or `{ Edit }` |
+| trash           | Trash2        | `{ Trash2 }`               |
+| ban             | Ban/XCircle   | `{ Ban }` or `{ XCircle }` |
+| refresh         | RefreshCw     | `{ RefreshCw }`            |
+| tag             | Tag           | `{ Tag }`                  |
+| search          | Search        | `{ Search }`               |
+| calendar        | Calendar      | `{ Calendar }`             |
+| chevron-down    | ChevronDown   | `{ ChevronDown }`          |
+| chevron-up      | ChevronUp     | `{ ChevronUp }`            |
+| information     | Info          | `{ Info }`                 |
+| warning         | AlertTriangle | `{ AlertTriangle }`        |
+| alert           | Bell          | `{ Bell }`                 |
+| eye             | Eye/EyeOff    | `{ Eye }` or `{ EyeOff }`  |
+| currency-dollar | DollarSign    | `{ DollarSign }`           |
+| home            | Home          | `{ Home }`                 |
+| menu            | Menu          | `{ Menu }`                 |
+| list            | List          | `{ List }`                 |
+
+#### Files Using Icon.astro Component
+
+**Components (19 files)**
+
+- `src/components/atoms/EmptyState.astro`
+- `src/components/atoms/PasswordField.astro`
+- `src/components/layouts/Header.astro`
+- `src/components/layouts/Navigation.astro`
+- `src/components/molecules/BudgetHealthWidget.astro`
+- `src/components/molecules/CSVImportForm.astro`
+- `src/components/molecules/Modal.astro`
+- `src/components/molecules/QuickActions.astro`
+- `src/components/molecules/TransactionFilters.astro`
+- `src/components/molecules/TransactionForm.astro`
+- `src/components/molecules/TransactionRow.astro`
+- `src/components/organisms/AssetUpdateTodoList.astro`
+- `src/components/organisms/BudgetHistoryComparison.astro`
+- `src/components/organisms/BudgetOverviewTable.astro`
+- `src/components/organisms/DashboardError.astro`
+- `src/components/organisms/RecentTransactionsList.astro`
+- `src/components/organisms/TransactionList.astro`
+
+**Pages (5 files)**
+
+- `src/pages/budget/index.astro`
+- `src/pages/settings/categories.astro`
+- `src/pages/settings/payment-methods.astro`
+- `src/pages/transactions/export.astro`
+- `src/pages/transactions/import.astro`
+
+**Stories (11 files)**
+
+- `src/components/atoms/EmptyState.stories.ts`
+- `src/components/atoms/Icon.stories.ts` ✅ (will be deleted)
+- `src/components/atoms/PasswordField.stories.ts`
+- `src/components/layouts/Header.stories.ts`
+- `src/components/layouts/Navigation.stories.ts`
+- `src/components/molecules/BudgetHealthWidget.stories.ts`
+- `src/components/molecules/QuickActions.stories.ts`
+- `src/components/molecules/TransactionRow.stories.ts`
+- `src/components/organisms/AssetUpdateTodoList.stories.ts`
+- `src/components/organisms/RecentTransactionsList.stories.ts`
+
+**Files with Inline SVGs (20 files)**
+
+**Atoms (2 files)**
+
+- `src/components/atoms/ErrorMessage.astro`
+- `src/components/atoms/PasswordField.astro` (also uses Icon.astro)
+
+**Molecules (8 files)**
+
+- `src/components/molecules/AuthValidationMessages.astro` (SVG strings in config)
+- `src/components/molecules/BudgetHealthWidget.astro` (also uses Icon.astro)
+- `src/components/molecules/ForgotPasswordForm.astro`
+- `src/components/molecules/LoginForm.astro`
+- `src/components/molecules/RegistrationForm.astro`
+- `src/components/molecules/Toast.astro`
+- `src/components/molecules/ToastContainer.astro`
+- `src/components/molecules/TransactionForm.astro` (also uses Icon.astro)
+
+**Organisms (6 files)**
+
+- `src/components/organisms/AssetUpdateTodoList.astro` (also uses Icon.astro)
+- `src/components/organisms/BudgetOverviewTable.astro` (also uses Icon.astro)
+- `src/components/organisms/DashboardError.astro`
+- `src/components/organisms/RecentTransactionsList.astro` (also uses Icon.astro)
+- `src/components/organisms/SummaryCards.astro`
+- `src/components/organisms/UserContext.astro`
+
+**Pages (4 files)**
+
+- `src/pages/budget/history.astro`
+- `src/pages/budget/index.astro` (also uses Icon.astro)
+- `src/pages/register.astro`
+- `src/pages/signup.astro`
+
+**Files to Delete**
+
+- `src/components/atoms/Icon.astro` ✅
+- `src/components/atoms/Icon.stories.ts` ✅
+
+#### Inline SVG Icon Mapping
+
+Common inline SVG patterns found in the codebase:
+
+| SVG Path Description             | Lucide Icon              | Import                         |
+| -------------------------------- | ------------------------ | ------------------------------ |
+| XCircle (error, dismiss)         | XCircle                  | `{ XCircle }`                  |
+| AlertTriangle (warning)          | AlertTriangle            | `{ AlertTriangle }`            |
+| X (close button)                 | X                        | `{ X }`                        |
+| Eye/EyeOff (password visibility) | Eye, EyeOff              | `{ Eye, EyeOff }`              |
+| Lock (password, security)        | Lock                     | `{ Lock }`                     |
+| CheckCircle2 (success)           | CheckCircle2             | `{ CheckCircle2 }`             |
+| TrendingUp/Down (financial)      | TrendingUp, TrendingDown | `{ TrendingUp, TrendingDown }` |
+
+#### Size Conversion
+
+The current Icon component uses size props: `xs`, `sm`, `md`, `lg`, `xl`
+
+Map to Lucide size attribute (in pixels):
+
+- `xs` → `size={12}`
+- `sm` → `size={16}`
+- `md` → `size={20}` (default)
+- `lg` → `size={24}`
+- `xl` → `size={32}`
+
+For inline SVGs with class-based sizing:
+
+- `h-4 w-4` → `size={16}`
+- `h-5 w-5` → `size={20}`
+- `h-6 w-6` → `size={24}`
+- `h-8 w-8` → `size={32}`
+
+## Detailed Tasks
+
+### Phase 1: Prepare Icon Mapping Reference (Priority: P0)
+
+**Goal:** Create a comprehensive mapping document for developers to reference during migration
+
+**Checklist:**
+
+- [x] Document all current icon names from Icon.astro
+- [x] Map each icon to its Lucide equivalent
+- [x] Create size conversion table
+- [x] Document import pattern examples
+
+**Files to create:**
+
+- `docs/icon-migration-guide.md` (reference for developers)
+
+**Estimated Time:** 1 hour
+
+**Status:** ✅ Completed (documented in this plan)
+
+---
+
+### Phase 2: Migrate Atomic Components (Priority: P0)
+
+**Goal:** Migrate the smallest reusable components first
+
+#### Task 2.1: Migrate EmptyState.astro
+
+**Checklist:**
+
+- [ ] Read current EmptyState.astro implementation
+- [ ] Identify icons used (currently passes icon name as prop)
+- [ ] Update to accept Lucide icon component as slot or prop
+- [ ] Update EmptyState.stories.ts to use Lucide icons
+- [ ] Test in Storybook
+- [ ] Run quality gates
+
+**Files to modify:**
+
+- `src/components/atoms/EmptyState.astro`
+- `src/components/atoms/EmptyState.stories.ts`
+
+**Current Usage Pattern:**
+
+```astro
+<Icon name="search" size="xl" />
+```
+
+**New Pattern:**
+
+```astro
+import {Search} from '@lucide/astro';
+<Search size={32} />
+```
+
+**Estimated Time:** 1-2 hours
+
+**Status:** Pending
+
+---
+
+#### Task 2.2: Migrate PasswordField.astro
+
+**Checklist:**
+
+- [ ] Read current PasswordField.astro implementation
+- [ ] Replace Icon imports with Eye/EyeOff from Lucide
+- [ ] Update toggle visibility icon logic
+- [ ] Update PasswordField.stories.ts
+- [ ] Test in Storybook
+- [ ] Run quality gates
+
+**Files to modify:**
+
+- `src/components/atoms/PasswordField.astro`
+- `src/components/atoms/PasswordField.stories.ts`
+
+**Icons to replace:**
+
+- `eye` → `Eye` and `EyeOff`
+
+**Estimated Time:** 1 hour
+
+**Status:** Pending
+
+---
+
+### Phase 3: Migrate Layout Components (Priority: P0)
+
+**Goal:** Update navigation and header components that are used site-wide
+
+#### Task 3.1: Migrate Navigation.astro
+
+**Checklist:**
+
+- [ ] Read current Navigation.astro implementation
+- [ ] Map all navigation icons to Lucide equivalents
+- [ ] Update icon imports
+- [ ] Replace all Icon component usage
+- [ ] Update Navigation.stories.ts
+- [ ] Test in Storybook
+- [ ] Run quality gates
+
+**Files to modify:**
+
+- `src/components/layouts/Navigation.astro`
+- `src/components/layouts/Navigation.stories.ts`
+
+**Icons to replace:**
+
+- `home` → `Home`
+- `search` → `Search`
+- `calendar` → `Calendar`
+- `currency-dollar` → `DollarSign`
+- `information` → `Info`
+- `warning` → `AlertTriangle`
+- `plus` → `Plus`
+- `pencil` → `Settings` (more appropriate for settings)
+- `x` → `X`
+
+**UI Example:**
+
+```astro
+<!-- Before -->
+<Icon name="home" size="sm" />
+
+<!-- After -->
+import {Home} from '@lucide/astro';
+<Home size={16} />
+```
+
+**Estimated Time:** 2 hours
+
+**Status:** Pending
+
+---
+
+#### Task 3.2: Migrate Header.astro
+
+**Checklist:**
+
+- [ ] Read current Header.astro implementation
+- [ ] Replace Icon component with Lucide icons
+- [ ] Update Header.stories.ts
+- [ ] Test in Storybook
+- [ ] Run quality gates
+
+**Files to modify:**
+
+- `src/components/layouts/Header.astro`
+- `src/components/layouts/Header.stories.ts`
+
+**Estimated Time:** 1 hour
+
+**Status:** Pending
+
+---
+
+### Phase 4: Migrate Molecule Components (Priority: P1)
+
+**Goal:** Update composite components that combine atoms
+
+#### Task 4.1: Migrate Modal.astro
+
+**Checklist:**
+
+- [ ] Read current Modal.astro implementation
+- [ ] Replace close button icon (X)
+- [ ] Update Modal.stories.ts
+- [ ] Test in Storybook
+- [ ] Run quality gates
+
+**Files to modify:**
+
+- `src/components/molecules/Modal.astro`
+- `src/components/molecules/Modal.stories.ts`
+
+**Icons to replace:**
+
+- `x` → `X`
+
+**Estimated Time:** 1 hour
+
+**Status:** Pending
+
+---
+
+#### Task 4.2: Migrate QuickActions.astro
+
+**Checklist:**
+
+- [ ] Read current QuickActions.astro implementation
+- [ ] Replace action icons with Lucide
+- [ ] Update QuickActions.stories.ts
+- [ ] Test in Storybook
+- [ ] Run quality gates
+
+**Files to modify:**
+
+- `src/components/molecules/QuickActions.astro`
+- `src/components/molecules/QuickActions.stories.ts`
+
+**Icons to replace:**
+
+- `minus` → `Minus` (for expenses)
+- `plus` → `Plus` (for income)
+- `search` → `BarChart3` (more appropriate for reports)
+
+**Estimated Time:** 1-2 hours
+
+**Status:** Pending
+
+---
+
+#### Task 4.3: Migrate BudgetHealthWidget.astro
+
+**Checklist:**
+
+- [ ] Read current implementation
+- [ ] Replace status icons
+- [ ] Update BudgetHealthWidget.stories.ts
+- [ ] Test in Storybook
+- [ ] Run quality gates
+
+**Files to modify:**
+
+- `src/components/molecules/BudgetHealthWidget.astro`
+- `src/components/molecules/BudgetHealthWidget.stories.ts`
+
+**Icons to replace:**
+
+- `warning` → `AlertTriangle`
+- `check` → `Check` or `CheckCircle2`
+- `ban` → `XCircle`
+
+**Estimated Time:** 1 hour
+
+**Status:** Pending
+
+---
+
+#### Task 4.4: Migrate TransactionRow.astro
+
+**Checklist:**
+
+- [ ] Read current implementation
+- [ ] Replace edit/delete icons
+- [ ] Update TransactionRow.stories.ts
+- [ ] Test in Storybook
+- [ ] Run quality gates
+
+**Files to modify:**
+
+- `src/components/molecules/TransactionRow.astro`
+- `src/components/molecules/TransactionRow.stories.ts`
+
+**Icons to replace:**
+
+- `pencil` → `Edit` or `Pencil`
+- `trash` → `Trash2`
+
+**Estimated Time:** 1 hour
+
+**Status:** Pending
+
+---
+
+#### Task 4.5: Migrate TransactionFilters.astro
+
+**Checklist:**
+
+- [ ] Read current implementation
+- [ ] Replace filter/search icons
+- [ ] Test component functionality
+- [ ] Run quality gates
+
+**Files to modify:**
+
+- `src/components/molecules/TransactionFilters.astro`
+
+**Icons to replace:**
+
+- `search` → `Search`
+- `calendar` → `Calendar`
+- `x` → `X` (for clear filters)
+
+**Estimated Time:** 1 hour
+
+**Status:** Pending
+
+---
+
+#### Task 4.6: Migrate TransactionForm.astro
+
+**Checklist:**
+
+- [ ] Read current implementation
+- [ ] Replace form icons
+- [ ] Test form submission
+- [ ] Run quality gates
+
+**Files to modify:**
+
+- `src/components/molecules/TransactionForm.astro`
+
+**Icons to replace:**
+
+- `calendar` → `Calendar`
+- `tag` → `Tag`
+- `currency-dollar` → `DollarSign`
+
+**Estimated Time:** 1 hour
+
+**Status:** Pending
+
+---
+
+#### Task 4.7: Migrate CSVImportForm.astro
+
+**Checklist:**
+
+- [ ] Read current implementation
+- [ ] Replace upload/import icons
+- [ ] Test import functionality
+- [ ] Run quality gates
+
+**Files to modify:**
+
+- `src/components/molecules/CSVImportForm.astro`
+
+**Icons to replace:**
+
+- `arrow-up` (if used) → `Upload`
+- `check` → `Check`
+- `x` → `X`
+
+**Estimated Time:** 1 hour
+
+**Status:** Pending
+
+---
+
+### Phase 5: Migrate Organism Components (Priority: P1)
+
+**Goal:** Update complex composite components
+
+#### Task 5.1: Migrate TransactionList.astro
+
+**Checklist:**
+
+- [ ] Read current implementation
+- [ ] Replace list/filter icons
+- [ ] Test list rendering and interactions
+- [ ] Run quality gates
+
+**Files to modify:**
+
+- `src/components/organisms/TransactionList.astro`
+
+**Icons to replace:**
+
+- `search` → `Search`
+- `list` → `List`
+- `pencil` → `Edit`
+- `trash` → `Trash2`
+
+**Estimated Time:** 1-2 hours
+
+**Status:** Pending
+
+---
+
+#### Task 5.2: Migrate BudgetOverviewTable.astro
+
+**Checklist:**
+
+- [ ] Read current implementation
+- [ ] Replace status and action icons
+- [ ] Test table rendering and sorting
+- [ ] Run quality gates
+
+**Files to modify:**
+
+- `src/components/organisms/BudgetOverviewTable.astro`
+
+**Icons to replace:**
+
+- `warning` → `AlertTriangle`
+- `check` → `CheckCircle2`
+- `ban` → `XCircle`
+- `arrow-up`/`arrow-down` → `ArrowUp`/`ArrowDown` (for sorting)
+
+**Estimated Time:** 2 hours
+
+**Status:** Pending
+
+---
+
+#### Task 5.3: Migrate RecentTransactionsList.astro
+
+**Checklist:**
+
+- [ ] Read current implementation
+- [ ] Replace list icons
+- [ ] Update RecentTransactionsList.stories.ts
+- [ ] Test in Storybook
+- [ ] Run quality gates
+
+**Files to modify:**
+
+- `src/components/organisms/RecentTransactionsList.astro`
+- `src/components/organisms/RecentTransactionsList.stories.ts`
+
+**Icons to replace:**
+
+- `list` → `List`
+- `arrow-right` → `ArrowRight`
+
+**Estimated Time:** 1 hour
+
+**Status:** Pending
+
+---
+
+#### Task 5.4: Migrate AssetUpdateTodoList.astro
+
+**Checklist:**
+
+- [ ] Read current implementation
+- [ ] Replace status and action icons
+- [ ] Update AssetUpdateTodoList.stories.ts
+- [ ] Test in Storybook
+- [ ] Run quality gates
+
+**Files to modify:**
+
+- `src/components/organisms/AssetUpdateTodoList.astro`
+- `src/components/organisms/AssetUpdateTodoList.stories.ts`
+
+**Icons to replace:**
+
+- `refresh` → `RefreshCw`
+- `check` → `Check`
+- `alert` → `Bell` or `AlertCircle`
+
+**Estimated Time:** 1-2 hours
+
+**Status:** Pending
+
+---
+
+#### Task 5.5: Migrate BudgetHistoryComparison.astro
+
+**Checklist:**
+
+- [ ] Read current implementation
+- [ ] Replace chart/comparison icons
+- [ ] Test component rendering
+- [ ] Run quality gates
+
+**Files to modify:**
+
+- `src/components/organisms/BudgetHistoryComparison.astro`
+
+**Icons to replace:**
+
+- `calendar` → `Calendar`
+- `arrow-left`/`arrow-right` → `ChevronLeft`/`ChevronRight`
+
+**Estimated Time:** 1 hour
+
+**Status:** Pending
+
+---
+
+#### Task 5.6: Migrate DashboardError.astro
+
+**Checklist:**
+
+- [ ] Read current implementation
+- [ ] Replace error icons
+- [ ] Test error states
+- [ ] Run quality gates
+
+**Files to modify:**
+
+- `src/components/organisms/DashboardError.astro`
+
+**Icons to replace:**
+
+- `warning` → `AlertTriangle`
+- `refresh` → `RefreshCw`
+
+**Estimated Time:** 30 minutes
+
+**Status:** Pending
+
+---
+
+### Phase 6: Migrate Page Components (Priority: P1)
+
+**Goal:** Update all page-level components
+
+#### Task 6.1: Migrate Budget Page
+
+**Checklist:**
+
+- [ ] Read current budget/index.astro implementation
+- [ ] Replace all Icon usage with Lucide
+- [ ] Test page functionality
+- [ ] Run quality gates
+
+**Files to modify:**
+
+- `src/pages/budget/index.astro`
+
+**Estimated Time:** 1 hour
+
+**Status:** Pending
+
+---
+
+#### Task 6.2: Migrate Settings Pages
+
+**Checklist:**
+
+- [ ] Migrate settings/categories.astro
+- [ ] Migrate settings/payment-methods.astro
+- [ ] Test CRUD operations
+- [ ] Run quality gates
+
+**Files to modify:**
+
+- `src/pages/settings/categories.astro`
+- `src/pages/settings/payment-methods.astro`
+
+**Icons to replace:**
+
+- `plus` → `Plus`
+- `pencil` → `Edit`
+- `trash` → `Trash2`
+- `tag` → `Tag`
+
+**Estimated Time:** 2 hours
+
+**Status:** Pending
+
+---
+
+#### Task 6.3: Migrate Transaction Pages
+
+**Checklist:**
+
+- [ ] Migrate transactions/import.astro
+- [ ] Migrate transactions/export.astro
+- [ ] Test import/export functionality
+- [ ] Run quality gates
+
+**Files to modify:**
+
+- `src/pages/transactions/import.astro`
+- `src/pages/transactions/export.astro`
+
+**Icons to replace:**
+
+- `arrow-up` → `Upload`
+- `arrow-down` → `Download`
+
+**Estimated Time:** 1-2 hours
+
+**Status:** Pending
+
+---
+
+### Phase 7: Migrate Inline SVGs - Atoms & Molecules (Priority: P1)
+
+**Goal:** Replace inline SVG elements with Lucide icons in atomic and molecule components
+
+#### Task 7.1: Migrate ErrorMessage.astro (Inline SVGs)
+
+**Checklist:**
+
+- [ ] Read current ErrorMessage.astro implementation
+- [ ] Replace error icon SVG with XCircle from Lucide
+- [ ] Replace dismiss button X icon
+- [ ] Update ErrorMessage.stories.ts
+- [ ] Test in Storybook
+- [ ] Run quality gates
+
+**Files to modify:**
+
+- `src/components/atoms/ErrorMessage.astro`
+- `src/components/atoms/ErrorMessage.stories.ts`
+
+**Current Pattern:**
+
+```html
+<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24">
+  <path
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    stroke-width="2"
+    d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+  />
+</svg>
+```
+
+**New Pattern:**
+
+```astro
+---
+import { XCircle, X } from '@lucide/astro';
+---
+
+<XCircle size={24} class="shrink-0" />
+<X size={16} />
+```
+
+**Estimated Time:** 1 hour
+
+**Status:** Pending
+
+---
+
+#### Task 7.2: Migrate Toast.astro (Inline SVGs)
+
+**Checklist:**
+
+- [ ] Read current Toast.astro implementation
+- [ ] Replace dismiss button SVG with X from Lucide
+- [ ] Test toast functionality
+- [ ] Run quality gates
+
+**Files to modify:**
+
+- `src/components/molecules/Toast.astro`
+
+**Icons to replace:**
+
+- Dismiss X icon → `X`
+
+**Estimated Time:** 30 minutes
+
+**Status:** Pending
+
+---
+
+#### Task 7.3: Migrate AuthValidationMessages.astro (SVG Strings in Config)
+
+**Checklist:**
+
+- [ ] Read current implementation (SVG strings in config object)
+- [ ] Refactor to use Lucide icon components instead of SVG strings
+- [ ] Update alertConfig to reference Lucide components
+- [ ] Update AuthValidationMessages.stories.ts
+- [ ] Test all validation message types
+- [ ] Run quality gates
+
+**Files to modify:**
+
+- `src/components/molecules/AuthValidationMessages.astro`
+- `src/components/molecules/AuthValidationMessages.stories.ts`
+
+**Current Pattern (SVG as String):**
+
+```typescript
+const alertConfig = {
+  'email-format': {
+    alertClass: 'alert-warning',
+    icon: 'svg xmlns="..." <path .../> </svg>', // SVG as string
+    defaultMessage: 'Please enter a valid email address',
+  },
+  // ...
+};
+```
+
+**New Pattern (Lucide Component):**
+
+```astro
+---
+import { AlertTriangle, XCircle, Lock, AlertCircle } from '@lucide/astro';
+
+const iconMap = {
+  'email-format': AlertTriangle,
+  'password-mismatch': XCircle,
+  'invalid-credentials': Lock,
+  // ...
+};
+
+const Icon = iconMap[type];
+---
+
+<Icon size={24} class="shrink-0" />
+```
+
+**Estimated Time:** 2 hours
+
+**Status:** Pending
+
+---
+
+#### Task 7.4: Migrate Form Components (Inline SVGs)
+
+**Checklist:**
+
+- [ ] Migrate ForgotPasswordForm.astro
+- [ ] Migrate LoginForm.astro
+- [ ] Migrate RegistrationForm.astro
+- [ ] Test form submissions
+- [ ] Run quality gates
+
+**Files to modify:**
+
+- `src/components/molecules/ForgotPasswordForm.astro`
+- `src/components/molecules/LoginForm.astro`
+- `src/components/molecules/RegistrationForm.astro`
+
+**Common inline SVGs:**
+
+- Lock icons
+- Eye/EyeOff for password fields
+- Alert/warning icons
+
+**Estimated Time:** 2-3 hours
+
+**Status:** Pending
+
+---
+
+#### Task 7.5: Migrate ToastContainer.astro (Inline SVGs)
+
+**Checklist:**
+
+- [ ] Read current implementation
+- [ ] Replace inline SVG icons
+- [ ] Test toast notifications
+- [ ] Run quality gates
+
+**Files to modify:**
+
+- `src/components/molecules/ToastContainer.astro`
+
+**Estimated Time:** 30 minutes
+
+**Status:** Pending
+
+---
+
+### Phase 8: Migrate Inline SVGs - Organisms & Pages (Priority: P1)
+
+**Goal:** Replace inline SVG elements in organism components and page files
+
+#### Task 8.1: Migrate Organism Components (Inline SVGs)
+
+**Checklist:**
+
+- [ ] Migrate SummaryCards.astro
+- [ ] Migrate UserContext.astro
+- [ ] Migrate DashboardError.astro (if has inline SVGs beyond Icon.astro)
+- [ ] Test organism rendering
+- [ ] Run quality gates
+
+**Files to modify:**
+
+- `src/components/organisms/SummaryCards.astro`
+- `src/components/organisms/UserContext.astro`
+- `src/components/organisms/DashboardError.astro`
+
+**Common inline SVGs:**
+
+- Status icons (check, warning, error)
+- Financial trend icons (up/down arrows)
+- Alert icons
+
+**Estimated Time:** 2-3 hours
+
+**Status:** Pending
+
+---
+
+#### Task 8.2: Migrate Page Components (Inline SVGs)
+
+**Checklist:**
+
+- [ ] Migrate budget/history.astro
+- [ ] Migrate register.astro
+- [ ] Migrate signup.astro
+- [ ] Test page functionality
+- [ ] Run quality gates
+
+**Files to modify:**
+
+- `src/pages/budget/history.astro`
+- `src/pages/register.astro`
+- `src/pages/signup.astro`
+
+**Common inline SVGs:**
+
+- Form icons
+- Navigation icons
+- Status indicators
+
+**Estimated Time:** 2-3 hours
+
+**Status:** Pending
+
+---
+
+### Phase 9: Cleanup and Documentation (Priority: P2)
+
+**Goal:** Remove deprecated code and update documentation
+
+#### Task 9.1: Delete Icon Component
+
+**Checklist:**
+
+- [ ] Verify no remaining references to Icon.astro
+- [ ] Delete src/components/atoms/Icon.astro
+- [ ] Delete src/components/atoms/Icon.stories.ts
+- [ ] Run typecheck to catch any missed imports
+- [ ] Run quality gates
+
+**Files to delete:**
+
+- `src/components/atoms/Icon.astro`
+- `src/components/atoms/Icon.stories.ts`
+
+**Verification command:**
+
+```bash
+# Search for any remaining Icon imports
+grep -r "import Icon from" src/
+grep -r "import.*Icon\.astro" src/
+```
+
+**Estimated Time:** 30 minutes
+
+**Status:** Pending
+
+---
+
+#### Task 9.2: Update Design System Documentation
+
+**Checklist:**
+
+- [ ] Verify design-system/START.md is current
+- [ ] Add migration notes to design-system/02-components.md
+- [ ] Create examples in docs/ for common icon patterns
+- [ ] Document icon sizing standards
+
+**Files to modify:**
+
+- `design-system/02-components.md` (add icon usage section)
+- `docs/icon-migration-guide.md` (create as reference)
+
+**Estimated Time:** 1 hour
+
+**Status:** Pending
+
+---
+
+#### Task 9.3: Update Storybook Stories
+
+**Checklist:**
+
+- [ ] Verify all component stories work with Lucide icons
+- [ ] Update story titles/descriptions as needed
+- [ ] Test Storybook build
+- [ ] Take screenshots for documentation
+
+**Command:**
+
+```bash
+bun run storybook
+bun run build-storybook
+```
+
+**Estimated Time:** 1 hour
+
+**Status:** Pending
+
+---
+
+## How to Test
+
+### Manual Test Steps
+
+**For each migrated component:**
+
+1. **Visual Check**: Run Storybook and verify icons render correctly
+
+   ```bash
+   bun run storybook
+   ```
+
+2. **Size Verification**: Check all icon sizes match design system
+   - xs (12px), sm (16px), md (20px), lg (24px), xl (32px)
+
+3. **Interaction Test**: For interactive icons (buttons, toggles):
+   - Click/tap functionality works
+   - Hover states are correct
+   - Focus indicators are visible
+
+4. **Accessibility Test**:
+   - Screen reader announces icons appropriately
+   - Keyboard navigation works
+   - ARIA labels are present where needed
+
+5. **Responsive Test**:
+   - Icons scale properly on mobile
+   - Touch targets are ≥44x44px
+   - Layout doesn't break
+
+### Automated Tests
+
+**Quality Gates (run after each migration):**
+
+```bash
+bun run typecheck     # TypeScript validation
+bun run lint          # ESLint validation
+bun run stylelint     # CSS validation
+bun run format:fix    # Prettier formatting
+```
+
+**Search for missed migrations:**
+
+```bash
+# Should return 0 results after Phase 9.1
+grep -r "import Icon from" src/
+grep -r '<Icon name=' src/
+grep -r 'xmlns="http://www.w3.org/2000/svg"' src/components/ src/pages/ | grep -v node_modules
+```
+
+### Visual Regression Testing
+
+**Before/After Screenshots:**
+
+- Take Storybook screenshots before migration
+- Compare after migration to ensure visual parity
+- Document any intentional changes
+
+## Dependencies
+
+### Required Packages
+
+- ✅ `@lucide/astro` v0.562.0 (already installed)
+
+### No Additional Installations Needed
+
+All dependencies are already in package.json.
+
+## Success Criteria
+
+- [ ] All 24 files using Icon.astro component are migrated to Lucide
+- [ ] All 20 files with inline SVGs are migrated to Lucide
+- [ ] Icon.astro component is deleted
+- [ ] Icon.stories.ts is deleted
+- [ ] No inline SVG elements remain in components or pages
+- [ ] All quality gates pass (typecheck, lint, stylelint, format)
+- [ ] All Storybook stories render correctly
+- [ ] No visual regressions in components
+- [ ] Accessibility standards maintained (WCAG 2.1 AA)
+- [ ] Design system documentation updated
+- [ ] No console errors or warnings
+- [ ] All pages render correctly in development
+- [ ] Search for `xmlns="http://www.w3.org/2000/svg"` returns 0 results (excluding node_modules)
+
+## Estimated Effort
+
+| Phase                               | Tasks  | Time Estimate   | Priority |
+| ----------------------------------- | ------ | --------------- | -------- |
+| 1. Preparation                      | 1      | 1 hour          | P0       |
+| 2. Atomic Components (Icon.astro)   | 2      | 2-3 hours       | P0       |
+| 3. Layout Components (Icon.astro)   | 2      | 3 hours         | P0       |
+| 4. Molecule Components (Icon.astro) | 7      | 7-9 hours       | P1       |
+| 5. Organism Components (Icon.astro) | 6      | 7-9 hours       | P1       |
+| 6. Page Components (Icon.astro)     | 3      | 4-5 hours       | P1       |
+| 7. Inline SVGs - Atoms & Molecules  | 5      | 6-7.5 hours     | P1       |
+| 8. Inline SVGs - Organisms & Pages  | 2      | 4-6 hours       | P1       |
+| 9. Cleanup & Docs                   | 3      | 2.5 hours       | P2       |
+| **Total**                           | **31** | **37-46 hours** |          |
+
+**Recommended Approach:** Complete phases sequentially. Each phase builds on the previous one and allows for early feedback on patterns.
+
+## Migration Pattern Reference
+
+### Before (Custom Icon Component)
+
+```astro
+---
+import Icon from '../atoms/Icon.astro';
+---
+
+<button class="btn btn-primary">
+  <Icon name="plus" size="sm" />
+  <span>Add Item</span>
+</button>
+```
+
+### After (Lucide Icons)
+
+```astro
+---
+import { Plus } from '@lucide/astro';
+---
+
+<button class="btn btn-primary">
+  <Plus size={16} />
+  <span>Add Item</span>
+</button>
+```
+
+### Multiple Icons
+
+```astro
+---
+import { Plus, Edit, Trash2, Check } from '@lucide/astro';
+---
+
+<div class="actions">
+  <button><Plus size={20} /> Add</button>
+  <button><Edit size={20} /> Edit</button>
+  <button><Trash2 size={20} /> Delete</button>
+  <button><Check size={20} /> Confirm</button>
+</div>
+```
+
+### Icon with ARIA
+
+```astro
+---
+import { X } from '@lucide/astro';
+---
+
+<!-- Icon button needs aria-label -->
+<button class="btn btn-circle btn-ghost" aria-label="Close dialog">
+  <X size={24} />
+</button>
+
+<!-- Icon with text label doesn't need aria-label -->
+<button class="btn btn-primary">
+  <X size={20} />
+  <span>Cancel</span>
+</button>
+```
+
+### Inline SVG Migration Patterns
+
+#### Before (Inline SVG Element)
+
+```astro
+<div class="alert alert-error">
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    class="stroke-current shrink-0 h-6 w-6"
+    fill="none"
+    viewBox="0 0 24 24"
+  >
+    <path
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      stroke-width="2"
+      d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+  </svg>
+  <span>Error message</span>
+</div>
+```
+
+#### After (Lucide Icon)
+
+```astro
+---
+import { XCircle } from '@lucide/astro';
+---
+
+<div class="alert alert-error">
+  <XCircle size={24} class="shrink-0" />
+  <span>Error message</span>
+</div>
+```
+
+#### Before (SVG String in Config)
+
+```typescript
+const alertConfig = {
+  'email-format': {
+    alertClass: 'alert-warning',
+    icon: '<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>',
+    defaultMessage: 'Please enter a valid email address',
+  },
+};
+
+// Render with set:html (unsafe!)
+<div set:html={alertConfig[type].icon} />
+```
+
+#### After (Lucide Component Map)
+
+```astro
+---
+import { AlertTriangle, XCircle, Lock, AlertCircle } from '@lucide/astro';
+
+const iconComponents = {
+  'email-format': AlertTriangle,
+  'password-mismatch': XCircle,
+  'invalid-credentials': Lock,
+  'network-error': AlertCircle,
+};
+
+const alertConfig = {
+  'email-format': {
+    alertClass: 'alert-warning',
+    defaultMessage: 'Please enter a valid email address',
+  },
+  // ... other configs
+};
+
+const IconComponent = iconComponents[type] || AlertCircle;
+const config = alertConfig[type];
+---
+
+<div class={`alert ${config.alertClass}`}>
+  <IconComponent size={24} class="shrink-0" />
+  <span>{config.defaultMessage}</span>
+</div>
+```
+
+#### Before (Conditional SVG)
+
+```astro
+<button onclick="togglePassword()">
+  {
+    showPassword ? (
+      <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+        <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+        <path
+          fill-rule="evenodd"
+          d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z"
+          clip-rule="evenodd"
+        />
+      </svg>
+    ) : (
+      <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+        <path
+          fill-rule="evenodd"
+          d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-1.473-1.473A10.014 10.014 0 0019.542 10C18.268 5.943 14.478 3 10 3a9.958 9.958 0 00-4.512 1.074l-1.78-1.781zm4.261 4.26l1.514 1.515a2.003 2.003 0 012.45 2.45l1.514 1.514a4 4 0 00-5.478-5.478z"
+          clip-rule="evenodd"
+        />
+        <path d="M12.454 16.697L9.75 13.992a4 4 0 01-3.742-3.741L2.335 6.578A9.98 9.98 0 00.458 10c1.274 4.057 5.065 7 9.542 7 .847 0 1.669-.105 2.454-.303z" />
+      </svg>
+    )
+  }
+</button>
+```
+
+#### After (Conditional Lucide Icons)
+
+```astro
+---
+import { Eye, EyeOff } from '@lucide/astro';
+
+const showPassword = false; // dynamic state
+---
+
+<button onclick="togglePassword()">
+  {showPassword ? <Eye size={20} /> : <EyeOff size={20} />}
+</button>
+```
+
+## Risk Mitigation
+
+### Potential Issues
+
+1. **Breaking Changes**: Icon names or sizes might not match exactly
+   - **Mitigation**: Use mapping table, test each component in Storybook
+
+2. **Visual Differences**: Lucide icons may look slightly different
+   - **Mitigation**: Review in Storybook, adjust sizes if needed
+
+3. **Performance**: Importing many icons could increase bundle size
+   - **Mitigation**: Lucide supports tree-shaking, only imports used icons
+
+4. **Accessibility**: Missing ARIA labels after migration
+   - **Mitigation**: Add aria-label to icon-only buttons
+
+### Rollforward Plan
+
+If issues are found: FIX IT.
+
+## Notes
+
+- **Design System Compliance**: This migration aligns with design-system/START.md Rule #7 (Icons: Use `@lucide/astro` for all icons)
+- **Constitution Alignment**: Follows constitution.md Section I (Code Quality) and Section III (Quality Gates)
+- **Accessibility**: Maintains WCAG 2.1 AA compliance throughout migration
+- **Performance**: Lucide's tree-shaking ensures no bundle size increase
+- **Future-Proof**: Lucide is actively maintained with 1000+ icons available
+- **Security**: Eliminates unsafe `set:html` usage for SVG strings
+- **Maintainability**: Single source of truth for all icons (no custom SVG paths to maintain)
+- **Comprehensive Scope**: Migrates both Icon.astro component (24 files) AND inline SVGs (20 files)
