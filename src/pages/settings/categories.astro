@@ -8,7 +8,7 @@
 
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import { categoryService } from '@/services';
-import Icon from '@components/atoms/Icon.astro';
+import { Plus, Search, X, Pencil, Ban, RefreshCw, Tag } from '@lucide/astro';
 import Badge from '@components/atoms/Badge.astro';
 import { formatCurrency } from '@/lib/tokens';
 
@@ -68,7 +68,7 @@ const getTypeLabel = (type: string) => {
         </p>
       </div>
       <button onclick="categoryModal.showModal()" class="btn btn-primary gap-2" data-type="expense">
-        <Icon name="plus" size="sm" />
+        <Plus size={16} class="stroke-current" aria-hidden="true" />
         Add Category
       </button>
     </div>
@@ -101,13 +101,17 @@ const getTypeLabel = (type: string) => {
           class="input input-bordered join-item"
           value={searchQuery}
         />
-        <button type="submit" class="btn btn-neutral join-item">
-          <Icon name="search" size="sm" />
+        <button type="submit" class="btn btn-neutral join-item" aria-label="Search categories">
+          <Search size={16} class="stroke-current" aria-hidden="true" />
         </button>
         {
           searchQuery && (
-            <a href="/settings/categories" class="btn btn-ghost join-item">
-              <Icon name="x" size="sm" />
+            <a
+              href="/settings/categories"
+              class="btn btn-ghost join-item"
+              aria-label="Clear search"
+            >
+              <X size={16} class="stroke-current" aria-hidden="true" />
             </a>
           )
         }
@@ -187,14 +191,14 @@ const getTypeLabel = (type: string) => {
                                 onclick={'editCategory("' + category.id + '")'}
                                 aria-label="Edit category"
                               >
-                                <Icon name="pencil" size="sm" />
+                                <Pencil size={16} class="stroke-current" aria-hidden="true" />
                               </button>
                               <button
                                 class="btn btn-ghost btn-sm text-warning"
                                 onclick={'deactivateCategory("' + category.id + '")'}
                                 aria-label="Deactivate category"
                               >
-                                <Icon name="ban" size="sm" />
+                                <Ban size={16} class="stroke-current" aria-hidden="true" />
                               </button>
                             </>
                           ) : (
@@ -203,7 +207,7 @@ const getTypeLabel = (type: string) => {
                               onclick={'activateCategory("' + category.id + '")'}
                               aria-label="Reactivate category"
                             >
-                              <Icon name="refresh" size="sm" />
+                              <RefreshCw size={16} class="stroke-current" aria-hidden="true" />
                               Reactivate
                             </button>
                           )}
@@ -216,7 +220,7 @@ const getTypeLabel = (type: string) => {
             </div>
           ) : (
             <div class="py-12 text-center text-neutral-500">
-              <Icon name="tag" size="lg" className="mx-auto mb-2 opacity-50" />
+              <Tag size={24} class="mx-auto mb-2 opacity-50" aria-hidden="true" />
               <p>
                 {showInactive
                   ? 'No inactive categories'

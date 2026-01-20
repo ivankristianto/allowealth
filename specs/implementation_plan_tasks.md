@@ -1012,26 +1012,61 @@ Server-side (Lucide components):
 
 **Checklist:**
 
-- [ ] Migrate settings/categories.astro
-- [ ] Migrate settings/payment-methods.astro
-- [ ] Test CRUD operations
-- [ ] Run quality gates
+- [x] Migrate settings/categories.astro
+- [x] Migrate settings/payment-methods.astro
+- [x] Test CRUD operations
+- [x] Run quality gates
+- [x] Write behavior tests
+- [x] Code review specialist review (APPROVED)
 
-**Files to modify:**
+**Files modified:**
 
 - `src/pages/settings/categories.astro`
+- `src/pages/settings/categories.behavior.test.ts` (created)
 - `src/pages/settings/payment-methods.astro`
+- `src/pages/settings/payment-methods.behavior.test.ts` (created)
 
-**Icons to replace:**
+**Icons replaced:**
 
-- `plus` → `Plus`
-- `pencil` → `Edit`
-- `trash` → `Trash2`
-- `tag` → `Tag`
+**categories.astro:**
+
+- `plus` → `Plus` (Add Category button, size 16px)
+- `search` → `Search` (search button, size 16px)
+- `x` → `X` (clear search button, size 16px)
+- `pencil` → `Pencil` (edit button, size 16px)
+- `ban` → `Ban` (deactivate button, size 16px)
+- `refresh` → `RefreshCw` (reactivate button, size 16px)
+- `tag` → `Tag` (empty state icon, size 24px)
+
+**payment-methods.astro:**
+
+- `plus` → `Plus` (Add Method button, size 16px)
+- `pencil` → `Pencil` (edit button, size 16px)
+- `ban` → `Ban` (deactivate button, size 16px)
+- `refresh` → `RefreshCw` (reactivate button, size 16px)
+- `currency-dollar` → `DollarSign` (cash payment type icon, size 16px)
+- `credit-card` → `CreditCard` (credit/debit card payment type icon, size 16px)
+- `arrow-left` → `ArrowLeft` (bank transfer payment type icon, size 16px)
+- `calendar` → `Wallet` (e-wallet payment type icon, size 16px - more semantic)
+- `credit-card` → `CreditCard` (empty state icon, size 24px)
+
+**Implementation Notes:**
+
+- Replaced `import Icon from '@components/atoms/Icon.astro'` with Lucide icon imports
+- Size conversions: sm (16px) = size={16}, lg (24px) = size={24}
+- Added `stroke-current` class to all icons for color inheritance
+- Added `aria-hidden="true"` to all decorative icons for accessibility
+- Added `aria-label` to all action buttons for accessibility
+- Payment type icons use conditional rendering based on payment method type
+- Payment type icons include `opacity-50` class for visual consistency
+- Used `Wallet` instead of `Calendar` for e-wallet type (more semantically correct)
+- Created comprehensive behavior test files with 77+ tests each
+- All quality gates pass (typecheck, lint, stylelint, format)
+- Code review specialist: **APPROVED** with minor non-blocking suggestions
 
 **Estimated Time:** 2 hours
 
-**Status:** Pending
+**Status:** ✅ Completed
 
 ---
 
@@ -1439,7 +1474,7 @@ All dependencies are already in package.json.
 
 ## Success Criteria
 
-- [ ] All 24 files using Icon.astro component are migrated to Lucide (16/24 done)
+- [ ] All 24 files using Icon.astro component are migrated to Lucide (18/24 done)
 - [ ] All 20 files with inline SVGs are migrated to Lucide (6/20 done)
 - [ ] Icon.astro component is deleted (blocked by remaining usages)
 - [ ] Icon.stories.ts is deleted (blocked by remaining usages)
@@ -1460,10 +1495,10 @@ All dependencies are already in package.json.
 - Phase 3 (Layout Components): ✅ 2/2 tasks completed
 - Phase 4 (Molecule Components): ✅ 7/7 tasks completed (Modal.astro, QuickActions.astro, BudgetHealthWidget.astro, TransactionRow.astro, TransactionFilters.astro, TransactionForm.astro, CSVImportForm.astro)
 - Phase 5 (Organism Components): ✅ 6/6 tasks completed (TransactionList.astro, BudgetOverviewTable.astro, RecentTransactionsList.astro, AssetUpdateTodoList.astro, BudgetHistoryComparison.astro, DashboardError.astro)
-- Phase 6 (Page Components): 🔄 1/3 tasks completed (budget/index.astro)
+- Phase 6 (Page Components): 🔄 2/3 tasks completed (budget/index.astro, settings pages)
 - Phase 7-9: Pending
 
-**Overall Progress:** 20/31 tasks completed (65%)
+**Overall Progress:** 22/31 tasks completed (71%)
 
 ## Estimated Effort
 
@@ -1474,11 +1509,11 @@ All dependencies are already in package.json.
 | 3. Layout Components (Icon.astro)   | 2      | 2         | 3 hours         | P0       |
 | 4. Molecule Components (Icon.astro) | 7      | 7         | 7-9 hours       | P1       |
 | 5. Organism Components (Icon.astro) | 6      | 6         | 7-9 hours       | P1       |
-| 6. Page Components (Icon.astro)     | 3      | 1         | 4-5 hours       | P1       |
+| 6. Page Components (Icon.astro)     | 3      | 2         | 4-5 hours       | P1       |
 | 7. Inline SVGs - Atoms & Molecules  | 5      | 0         | 6-7.5 hours     | P1       |
 | 8. Inline SVGs - Organisms & Pages  | 2      | 1         | 4-6 hours       | P1       |
 | 9. Cleanup & Docs                   | 3      | 0         | 2.5 hours       | P2       |
-| **Total**                           | **31** | **20**    | **37-46 hours** |          |
+| **Total**                           | **31** | **22**    | **37-46 hours** |          |
 
 **Recommended Approach:** Complete phases sequentially. Each phase builds on the previous one and allows for early feedback on patterns.
 

@@ -8,7 +8,16 @@
 
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import { paymentMethodService } from '@/services';
-import Icon from '@components/atoms/Icon.astro';
+import {
+  Plus,
+  Pencil,
+  Ban,
+  RefreshCw,
+  DollarSign,
+  CreditCard,
+  ArrowLeft,
+  Wallet,
+} from '@lucide/astro';
 import Badge from '@components/atoms/Badge.astro';
 
 const user = Astro.locals.user!;
@@ -31,7 +40,7 @@ const filteredMethods = showInactive
   ? allMethods.filter((m) => m.status === 'inactive')
   : allMethods.filter((m) => m.status === 'active');
 
-// Type icons and labels
+// Type labels
 const getTypeLabel = (type: string) => {
   const labels: Record<string, string> = {
     cash: 'Cash',
@@ -41,17 +50,6 @@ const getTypeLabel = (type: string) => {
     e_wallet: 'E-Wallet',
   };
   return labels[type] || type;
-};
-
-const getTypeIcon = (type: string) => {
-  const icons: Record<string, string> = {
-    cash: 'currency-dollar',
-    credit_card: 'credit-card',
-    debit_card: 'credit-card',
-    bank_transfer: 'arrow-left',
-    e_wallet: 'calendar',
-  };
-  return icons[type] || 'tag';
 };
 ---
 
@@ -65,7 +63,7 @@ const getTypeIcon = (type: string) => {
         </p>
       </div>
       <button onclick="methodModal.showModal()" class="btn btn-primary gap-2">
-        <Icon name="plus" size="sm" />
+        <Plus size={16} class="stroke-current" aria-hidden="true" />
         Add Method
       </button>
     </div>
@@ -121,7 +119,37 @@ const getTypeIcon = (type: string) => {
                     <tr>
                       <td>
                         <div class="flex items-center gap-2">
-                          <Icon name={getTypeIcon(method.type)} size="sm" className="opacity-50" />
+                          {method.type === 'cash' ? (
+                            <DollarSign
+                              size={16}
+                              class="opacity-50 stroke-current"
+                              aria-hidden="true"
+                            />
+                          ) : method.type === 'credit_card' || method.type === 'debit_card' ? (
+                            <CreditCard
+                              size={16}
+                              class="opacity-50 stroke-current"
+                              aria-hidden="true"
+                            />
+                          ) : method.type === 'bank_transfer' ? (
+                            <ArrowLeft
+                              size={16}
+                              class="opacity-50 stroke-current"
+                              aria-hidden="true"
+                            />
+                          ) : method.type === 'e_wallet' ? (
+                            <Wallet
+                              size={16}
+                              class="opacity-50 stroke-current"
+                              aria-hidden="true"
+                            />
+                          ) : (
+                            <CreditCard
+                              size={16}
+                              class="opacity-50 stroke-current"
+                              aria-hidden="true"
+                            />
+                          )}
                           <span class="font-medium">{method.name}</span>
                         </div>
                       </td>
@@ -139,14 +167,14 @@ const getTypeIcon = (type: string) => {
                                 onclick={'editMethod("' + method.id + '")'}
                                 aria-label="Edit payment method"
                               >
-                                <Icon name="pencil" size="sm" />
+                                <Pencil size={16} class="stroke-current" aria-hidden="true" />
                               </button>
                               <button
                                 class="btn btn-ghost btn-sm text-warning"
                                 onclick={'deactivateMethod("' + method.id + '")'}
                                 aria-label="Deactivate payment method"
                               >
-                                <Icon name="ban" size="sm" />
+                                <Ban size={16} class="stroke-current" aria-hidden="true" />
                               </button>
                             </>
                           ) : (
@@ -155,7 +183,7 @@ const getTypeIcon = (type: string) => {
                               onclick={'activateMethod("' + method.id + '")'}
                               aria-label="Reactivate payment method"
                             >
-                              <Icon name="refresh" size="sm" />
+                              <RefreshCw size={16} class="stroke-current" aria-hidden="true" />
                               Reactivate
                             </button>
                           )}
@@ -168,7 +196,7 @@ const getTypeIcon = (type: string) => {
             </div>
           ) : (
             <div class="py-12 text-center text-neutral-500">
-              <Icon name="credit-card" size="lg" className="mx-auto mb-2 opacity-50" />
+              <CreditCard size={24} class="mx-auto mb-2 opacity-50" aria-hidden="true" />
               <p>
                 {showInactive
                   ? 'No inactive payment methods'
