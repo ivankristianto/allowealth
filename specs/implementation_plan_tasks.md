@@ -1167,22 +1167,42 @@ Inline SVG → Lucide components:
 
 **Checklist:**
 
-- [ ] Read current Toast.astro implementation
-- [ ] Replace dismiss button SVG with X from Lucide
-- [ ] Test toast functionality
-- [ ] Run quality gates
+- [x] Read current Toast.astro implementation
+- [x] Replace dismiss button SVG with X from Lucide
+- [x] Write behavior tests (Toast.behavior.test.ts)
+- [x] Run quality gates
+- [x] Code review specialist review (APPROVED)
+- [x] Fix P1 feedback (it() → test(), add manual testing steps)
 
-**Files to modify:**
+**Files modified:**
 
 - `src/components/molecules/Toast.astro`
+- `src/components/molecules/Toast.behavior.test.ts` (created)
 
-**Icons to replace:**
+**Icons replaced:**
 
-- Dismiss X icon → `X`
+Inline SVG → Lucide component:
+
+- Dismiss X icon (h-4 w-4) → `X` (size 16px)
+
+**Implementation Notes:**
+
+- Replaced inline SVG with `import { X } from '@lucide/astro'`
+- Dismiss button: inline SVG → `<X size={16} class="stroke-current" aria-hidden="true" />`
+- Size conversion: h-4 w-4 (16px) = size={16}
+- Added `stroke-current` class to icon for color inheritance
+- Added `aria-hidden="true"` to decorative icon for accessibility
+- Button already has `aria-label="Dismiss notification"` for accessibility
+- Created comprehensive behavior test file with 80+ tests covering icon migration, props, types, positions, dismiss button, auto-dismiss, accessibility, styling, animation, client-side script, integration, visual design, edge cases, and data attributes
+- Fixed P1 feedback: Changed `it()` to `test()` for consistency with other behavior test files
+- Fixed P1 feedback: Added manual testing steps and usage info to header comment
+- P2 feedback added to implementation plan for future improvements (role="alert", aria-live region)
+- All quality gates pass (typecheck, lint, stylelint, format)
+- Code review specialist: **APPROVED** with P1 feedback addressed
 
 **Estimated Time:** 30 minutes
 
-**Status:** Pending
+**Status:** ✅ Completed
 
 ---
 
@@ -1493,7 +1513,7 @@ All dependencies are already in package.json.
 ## Success Criteria
 
 - [ ] All 24 files using Icon.astro component are migrated to Lucide (20/24 done)
-- [ ] All 20 files with inline SVGs are migrated to Lucide (7/20 done)
+- [ ] All 20 files with inline SVGs are migrated to Lucide (8/20 done)
 - [ ] Icon.astro component is deleted (blocked by remaining usages)
 - [ ] Icon.stories.ts is deleted (blocked by remaining usages)
 - [ ] No inline SVG elements remain in components or pages
@@ -1514,11 +1534,11 @@ All dependencies are already in package.json.
 - Phase 4 (Molecule Components): ✅ 7/7 tasks completed (Modal.astro, QuickActions.astro, BudgetHealthWidget.astro, TransactionRow.astro, TransactionFilters.astro, TransactionForm.astro, CSVImportForm.astro)
 - Phase 5 (Organism Components): ✅ 6/6 tasks completed (TransactionList.astro, BudgetOverviewTable.astro, RecentTransactionsList.astro, AssetUpdateTodoList.astro, BudgetHistoryComparison.astro, DashboardError.astro)
 - Phase 6 (Page Components): ✅ 3/3 tasks completed (budget/index.astro, settings pages, transaction pages)
-- Phase 7 (Inline SVGs - Atoms & Molecules): 🔄 1/5 tasks completed (ErrorMessage.astro)
+- Phase 7 (Inline SVGs - Atoms & Molecules): 🔄 2/5 tasks completed (ErrorMessage.astro, Toast.astro)
 - Phase 8 (Inline SVGs - Organisms & Pages): Pending
 - Phase 9 (Cleanup & Docs): Pending
 
-**Overall Progress:** 24/31 tasks completed (77%)
+**Overall Progress:** 25/31 tasks completed (81%)
 
 ## Estimated Effort
 
@@ -1530,10 +1550,10 @@ All dependencies are already in package.json.
 | 4. Molecule Components (Icon.astro) | 7      | 7         | 7-9 hours       | P1       |
 | 5. Organism Components (Icon.astro) | 6      | 6         | 7-9 hours       | P1       |
 | 6. Page Components (Icon.astro)     | 3      | 3         | 4-5 hours       | P1       |
-| 7. Inline SVGs - Atoms & Molecules  | 5      | 1         | 6-7.5 hours     | P1       |
+| 7. Inline SVGs - Atoms & Molecules  | 5      | 2         | 6-7.5 hours     | P1       |
 | 8. Inline SVGs - Organisms & Pages  | 2      | 1         | 4-6 hours       | P1       |
 | 9. Cleanup & Docs                   | 3      | 0         | 2.5 hours       | P2       |
-| **Total**                           | **31** | **24**    | **37-46 hours** |          |
+| **Total**                           | **31** | **25**    | **37-46 hours** |          |
 
 **Recommended Approach:** Complete phases sequentially. Each phase builds on the previous one and allows for early feedback on patterns.
 

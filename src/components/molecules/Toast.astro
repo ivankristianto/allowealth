@@ -11,6 +11,8 @@
  * @param {string} position - Position: top-right, top-left, bottom-right, bottom-left
  */
 
+import { X } from '@lucide/astro';
+
 interface Props {
   id: string;
   message: string;
@@ -48,16 +50,7 @@ const positionClasses: Record<string, string> = {
     aria-label="Dismiss notification"
     onclick="this.parentElement.remove()"
   >
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      class="h-4 w-4"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-    >
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"
-      ></path>
-    </svg>
+    <X size={16} class="stroke-current" aria-hidden="true" />
   </button>
 </toast-message>
 
