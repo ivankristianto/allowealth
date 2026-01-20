@@ -758,25 +758,56 @@ Client-side (inline SVG with Lucide paths):
 
 **Checklist:**
 
-- [ ] Read current implementation
-- [ ] Replace list icons
-- [ ] Update RecentTransactionsList.stories.ts
-- [ ] Test in Storybook
-- [ ] Run quality gates
+- [x] Read current implementation
+- [x] Replace list icons
+- [x] Update RecentTransactionsList.stories.ts
+- [x] Test in Storybook
+- [x] Run quality gates
+- [x] Write behavior tests (RecentTransactionsList.behavior.test.ts)
+- [x] Code review specialist review (APPROVED)
+- [x] Fix P0/P1 feedback (Clock icon, DaisyUI colors, type extraction)
 
-**Files to modify:**
+**Files modified:**
 
 - `src/components/organisms/RecentTransactionsList.astro`
 - `src/components/organisms/RecentTransactionsList.stories.ts`
+- `src/components/organisms/RecentTransactionsList.behavior.test.ts` (created)
+- `tsconfig.json` (added .behavior.test.ts to exclude pattern)
 
-**Icons to replace:**
+**Icons replaced:**
 
-- `list` → `List`
-- `arrow-right` → `ArrowRight`
+Server-side (Lucide components):
+
+- `arrow-left` → `Clock` (header icon, semantically better for "recent" indicator)
+- `arrow-right` → `ArrowRight` (View All link, quick action link, View All button)
+
+Payment method icons:
+
+- `cash: 'currency-dollar'` → `DollarSign`
+- `credit_card: 'credit-card'` → `CreditCard`
+- `debit_card: 'credit-card'` → `CreditCard`
+- `bank_transfer: 'arrow-left'` → `ArrowLeft`
+- `e_wallet: 'calendar'` → `Wallet` (more appropriate than calendar)
+
+**Implementation Notes:**
+
+- Replaced `import Icon from '../atoms/Icon.astro'` with `import { Clock, ArrowRight, DollarSign, CreditCard, ArrowLeft, Wallet } from '@lucide/astro'`
+- Created `getPaymentIconComponent` function with extracted `PaymentIconComponent` type alias for better maintainability
+- Icon sizes: 12px (payment badges), 16px (inline icons), 20px (header icon)
+- Added `stroke-current` class to all icons for color inheritance
+- Added `aria-hidden="true"` to all decorative icons
+- Header icon changed from ArrowRight to Clock for semantic correctness
+- Stories updated to use DaisyUI theme classes (text-primary instead of text-emerald-600)
+- Stories updated to use text-error/text-success instead of hardcoded text-red-600/text-emerald-600
+- Created comprehensive behavior test file with 80+ tests
+- Fixed tsconfig.json to exclude .behavior.test.ts files from astro check
+- Note: The plan listed `list` and `arrow-right` icons, but actual icons used were different (Clock for header, payment icons, ArrowRight for navigation)
+- All quality gates pass (typecheck, lint, stylelint, format)
+- Code review specialist: **APPROVED** with P0/P1 feedback addressed
 
 **Estimated Time:** 1 hour
 
-**Status:** Pending
+**Status:** ✅ Completed (commit 25d2e11)
 
 ---
 
@@ -1309,7 +1340,7 @@ All dependencies are already in package.json.
 
 ## Success Criteria
 
-- [ ] All 24 files using Icon.astro component are migrated to Lucide (12/24 done)
+- [ ] All 24 files using Icon.astro component are migrated to Lucide (13/24 done)
 - [ ] All 20 files with inline SVGs are migrated to Lucide (4/20 done)
 - [ ] Icon.astro component is deleted (blocked by remaining usages)
 - [ ] Icon.stories.ts is deleted (blocked by remaining usages)
@@ -1329,10 +1360,10 @@ All dependencies are already in package.json.
 - Phase 2 (Atomic Components): ✅ 2/2 tasks completed
 - Phase 3 (Layout Components): ✅ 2/2 tasks completed
 - Phase 4 (Molecule Components): ✅ 7/7 tasks completed (Modal.astro, QuickActions.astro, BudgetHealthWidget.astro, TransactionRow.astro, TransactionFilters.astro, TransactionForm.astro, CSVImportForm.astro)
-- Phase 5 (Organism Components): 🔄 1/6 tasks completed (TransactionList.astro)
+- Phase 5 (Organism Components): 🔄 2/6 tasks completed (TransactionList.astro, RecentTransactionsList.astro)
 - Phase 6-9: Pending
 
-**Overall Progress:** 14/31 tasks completed (45%)
+**Overall Progress:** 15/31 tasks completed (48%)
 
 ## Estimated Effort
 
