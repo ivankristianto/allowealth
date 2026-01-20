@@ -6,29 +6,56 @@
  *
  * @param {string} title - Heading text
  * @param {string} message - Descriptive message
- * @param {string} icon - Icon name from Icon component
+ * @param {string} iconName - Lucide icon name (search, folder, inbox, calendar, etc.)
  * @param {string} actionLabel - Button label
  * @param {string} actionHref - Link destination (if using link)
  * @param {string} variant - Visual style: default, compact, centered
  * @param {string} className - Additional CSS classes
  */
 
-import Icon from './Icon.astro';
+import {
+  Search,
+  Folder,
+  Inbox,
+  Calendar,
+  FileText,
+  Wallet,
+  TrendingUp,
+  TriangleAlert,
+  Info,
+  Check,
+  Plus,
+} from '@lucide/astro';
 
 export interface Props {
   title: string;
   message: string;
-  icon?: string;
+  iconName?: keyof typeof iconMap;
   actionLabel?: string;
   actionHref?: string;
   variant?: 'default' | 'compact' | 'centered';
   className?: string;
 }
 
+// Map icon names to Lucide icon components
+const iconMap = {
+  search: Search,
+  folder: Folder,
+  inbox: Inbox,
+  calendar: Calendar,
+  file: FileText,
+  wallet: Wallet,
+  trending: TrendingUp,
+  alert: TriangleAlert,
+  info: Info,
+  check: Check,
+  plus: Plus,
+} as const;
+
 const {
   title,
   message,
-  icon = '',
+  iconName,
   actionLabel = '',
   actionHref = '',
   variant = 'default',
@@ -42,13 +69,16 @@ const containerClasses = [
 ]
   .filter(Boolean)
   .join(' ');
+
+// Get the Lucide icon component
+const IconComponent = iconName ? iconMap[iconName] : null;
 ---
 
 <div class={containerClasses}>
   {
-    icon && (
-      <div class="mb-4">
-        <Icon name={icon} size="xl" className="text-neutral-400" />
+    IconComponent && (
+      <div class="mb-4" aria-hidden="true">
+        <IconComponent size={32} class="text-neutral-400" />
       </div>
     )
   }

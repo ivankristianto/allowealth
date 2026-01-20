@@ -196,17 +196,21 @@ For inline SVGs with class-based sizing:
 
 **Checklist:**
 
-- [ ] Read current EmptyState.astro implementation
-- [ ] Identify icons used (currently passes icon name as prop)
-- [ ] Update to accept Lucide icon component as slot or prop
-- [ ] Update EmptyState.stories.ts to use Lucide icons
-- [ ] Test in Storybook
-- [ ] Run quality gates
+- [x] Read current EmptyState.astro implementation
+- [x] Identify icons used (currently passes icon name as prop)
+- [x] Update to accept Lucide icon component as slot or prop
+- [x] Update EmptyState.stories.ts to use Lucide icons
+- [x] Test in Storybook
+- [x] Run quality gates
+- [x] Fix P0 accessibility issue (added aria-hidden to icon wrapper)
+- [x] Fix P1 deprecation warning (replaced AlertCircle with TriangleAlert)
 
 **Files to modify:**
 
 - `src/components/atoms/EmptyState.astro`
 - `src/components/atoms/EmptyState.stories.ts`
+- `src/components/organisms/AssetUpdateTodoList.astro` (updated icon -> iconName prop)
+- `src/components/organisms/RecentTransactionsList.astro` (updated icon -> iconName prop)
 
 **Current Usage Pattern:**
 
@@ -221,9 +225,19 @@ import {Search} from '@lucide/astro';
 <Search size={32} />
 ```
 
+**Implementation Notes:**
+
+- Created icon mapping inside EmptyState component for backward compatibility
+- Icon names supported: search, folder, inbox, calendar, file, wallet, trending, alert, info, check, plus
+- Changed prop from `icon` to `iconName` for clarity
+- Added `aria-hidden="true"` to icon wrapper for accessibility
+- Fixed deprecation warnings by using TriangleAlert instead of AlertTriangle/AlertCircle
+- Icon size fixed at 32px (equivalent to previous `xl` size)
+- Updated consuming components to use new `iconName` prop
+
 **Estimated Time:** 1-2 hours
 
-**Status:** Pending
+**Status:** ✅ Completed
 
 ---
 
