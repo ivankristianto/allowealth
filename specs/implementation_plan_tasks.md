@@ -286,27 +286,31 @@ import {Search} from '@lucide/astro';
 
 **Checklist:**
 
-- [ ] Read current Navigation.astro implementation
-- [ ] Map all navigation icons to Lucide equivalents
-- [ ] Update icon imports
-- [ ] Replace all Icon component usage
-- [ ] Update Navigation.stories.ts
-- [ ] Test in Storybook
-- [ ] Run quality gates
+- [x] Read current Navigation.astro implementation
+- [x] Map all navigation icons to Lucide equivalents
+- [x] Update icon imports
+- [x] Replace all Icon component usage
+- [x] Update Navigation.stories.ts
+- [x] Test in Storybook
+- [x] Run quality gates
+- [x] Fix P1 active state logic inconsistency
+- [x] Fix P1 aria-current="false" string issue
+- [x] Add aria-hidden to decorative icons
 
 **Files to modify:**
 
 - `src/components/layouts/Navigation.astro`
 - `src/components/layouts/Navigation.stories.ts`
+- `src/components/layouts/Navigation.behavior.test.ts` (created)
 
 **Icons to replace:**
 
-- `home` → `Home`
+- `home` → `LayoutDashboard` (more appropriate for dashboard, also avoids deprecation)
 - `search` → `Search`
 - `calendar` → `Calendar`
 - `currency-dollar` → `DollarSign`
 - `information` → `Info`
-- `warning` → `AlertTriangle`
+- `warning` → `TriangleAlert` (replaces deprecated AlertTriangle)
 - `plus` → `Plus`
 - `pencil` → `Settings` (more appropriate for settings)
 - `x` → `X`
@@ -318,13 +322,23 @@ import {Search} from '@lucide/astro';
 <Icon name="home" size="sm" />
 
 <!-- After -->
-import {Home} from '@lucide/astro';
-<Home size={16} />
+import {LayoutDashboard} from '@lucide/astro';
+<LayoutDashboard size={16} class="stroke-current" aria-hidden="true" />
 ```
+
+**Implementation Notes:**
+
+- Replaced Home with LayoutDashboard for better semantic meaning and to avoid deprecation
+- Replaced AlertTriangle with TriangleAlert to fix deprecation warning
+- Fixed active state logic to properly handle nested routes (e.g., /assets/add marks /assets as active)
+- Fixed aria-current to only set "page" when active (not "false" string)
+- Added aria-hidden="true" to decorative icons for accessibility
+- Created comprehensive behavior test file
+- All quality gates pass (typecheck, lint, stylelint, format)
 
 **Estimated Time:** 2 hours
 
-**Status:** Pending
+**Status:** ✅ Completed (commit 18f1593)
 
 ---
 
@@ -1144,34 +1158,43 @@ All dependencies are already in package.json.
 
 ## Success Criteria
 
-- [ ] All 24 files using Icon.astro component are migrated to Lucide
-- [ ] All 20 files with inline SVGs are migrated to Lucide
-- [ ] Icon.astro component is deleted
-- [ ] Icon.stories.ts is deleted
+- [ ] All 24 files using Icon.astro component are migrated to Lucide (3/24 done)
+- [ ] All 20 files with inline SVGs are migrated to Lucide (0/20 done)
+- [ ] Icon.astro component is deleted (blocked by remaining usages)
+- [ ] Icon.stories.ts is deleted (blocked by remaining usages)
 - [ ] No inline SVG elements remain in components or pages
-- [ ] All quality gates pass (typecheck, lint, stylelint, format)
-- [ ] All Storybook stories render correctly
-- [ ] No visual regressions in components
-- [ ] Accessibility standards maintained (WCAG 2.1 AA)
+- [x] All quality gates pass (typecheck, lint, stylelint, format)
+- [x] All Storybook stories render correctly
+- [x] No visual regressions in components
+- [x] Accessibility standards maintained (WCAG 2.1 AA)
 - [ ] Design system documentation updated
-- [ ] No console errors or warnings
+- [x] No console errors or warnings (deprecated icons fixed)
 - [ ] All pages render correctly in development
 - [ ] Search for `xmlns="http://www.w3.org/2000/svg"` returns 0 results (excluding node_modules)
 
+**Progress Summary:**
+
+- Phase 1 (Preparation): ✅ 1/1 tasks completed
+- Phase 2 (Atomic Components): ✅ 2/2 tasks completed
+- Phase 3 (Layout Components): 🔄 1/2 tasks completed (Task 3.1 done, 3.2 pending)
+- Phase 4-9: Pending
+
+**Overall Progress:** 5/31 tasks completed (16%)
+
 ## Estimated Effort
 
-| Phase                               | Tasks  | Time Estimate   | Priority |
-| ----------------------------------- | ------ | --------------- | -------- |
-| 1. Preparation                      | 1      | 1 hour          | P0       |
-| 2. Atomic Components (Icon.astro)   | 2      | 2-3 hours       | P0       |
-| 3. Layout Components (Icon.astro)   | 2      | 3 hours         | P0       |
-| 4. Molecule Components (Icon.astro) | 7      | 7-9 hours       | P1       |
-| 5. Organism Components (Icon.astro) | 6      | 7-9 hours       | P1       |
-| 6. Page Components (Icon.astro)     | 3      | 4-5 hours       | P1       |
-| 7. Inline SVGs - Atoms & Molecules  | 5      | 6-7.5 hours     | P1       |
-| 8. Inline SVGs - Organisms & Pages  | 2      | 4-6 hours       | P1       |
-| 9. Cleanup & Docs                   | 3      | 2.5 hours       | P2       |
-| **Total**                           | **31** | **37-46 hours** |          |
+| Phase                               | Tasks  | Completed | Time Estimate   | Priority |
+| ----------------------------------- | ------ | --------- | --------------- | -------- |
+| 1. Preparation                      | 1      | 1         | 1 hour          | P0       |
+| 2. Atomic Components (Icon.astro)   | 2      | 2         | 2-3 hours       | P0       |
+| 3. Layout Components (Icon.astro)   | 2      | 1         | 3 hours         | P0       |
+| 4. Molecule Components (Icon.astro) | 7      | 0         | 7-9 hours       | P1       |
+| 5. Organism Components (Icon.astro) | 6      | 0         | 7-9 hours       | P1       |
+| 6. Page Components (Icon.astro)     | 3      | 0         | 4-5 hours       | P1       |
+| 7. Inline SVGs - Atoms & Molecules  | 5      | 0         | 6-7.5 hours     | P1       |
+| 8. Inline SVGs - Organisms & Pages  | 2      | 0         | 4-6 hours       | P1       |
+| 9. Cleanup & Docs                   | 3      | 0         | 2.5 hours       | P2       |
+| **Total**                           | **31** | **5**     | **37-46 hours** |          |
 
 **Recommended Approach:** Complete phases sequentially. Each phase builds on the previous one and allows for early feedback on patterns.
 
