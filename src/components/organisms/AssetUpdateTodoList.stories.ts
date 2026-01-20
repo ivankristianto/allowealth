@@ -4,6 +4,7 @@ import {
   mockAssetUpdateTodosEmpty,
   mockAssetUpdateTodosAllUpdated,
 } from '@/services/__tests__/mocks/dashboard-mocks';
+import { Calendar, Pencil, X, RefreshCw, Check } from '@lucide/astro';
 
 const meta: Meta = {
   title: 'Organisms/AssetUpdateTodoList',
@@ -74,11 +75,13 @@ const createAssetUpdateTodoList = (args: { assets?: object[]; loading?: boolean 
   // Header
   const header = document.createElement('div');
   header.className = 'flex items-center justify-between mb-4';
+  const calendarIcon = Calendar.render(
+    { size: 20, class: 'stroke-current text-warning' },
+    { 'aria-hidden': 'true' }
+  );
   header.innerHTML = `
     <h2 class="text-lg font-semibold flex items-center gap-2">
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-      </svg>
+      ${calendarIcon}
       Asset Updates Needed
     </h2>
     ${!loading && assets.length > 0 ? `<span class="badge badge-warning badge-sm">${assets.length}</span>` : ''}
@@ -106,10 +109,12 @@ const createAssetUpdateTodoList = (args: { assets?: object[]; loading?: boolean 
     // Empty state
     const emptyState = document.createElement('div');
     emptyState.className = 'text-center py-8';
+    const checkIcon = Check.render(
+      { size: 48, class: 'stroke-current text-neutral-400' },
+      { 'aria-hidden': 'true' }
+    );
     emptyState.innerHTML = `
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto mb-4 text-neutral-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-      </svg>
+      ${checkIcon}
       <h3 class="text-lg font-semibold mb-2">All assets up to date!</h3>
       <p class="text-neutral-500">You don't have any assets that need updating right now.</p>
     `;
@@ -131,6 +136,13 @@ const createAssetUpdateTodoList = (args: { assets?: object[]; loading?: boolean 
               : 'bg-base-200 border-base-300';
 
       item.className = `flex items-center gap-4 p-3 rounded-lg border transition-all hover:shadow-sm ${bgColor}`;
+
+      const pencilIcon = Pencil.render(
+        { size: 16, class: 'stroke-current' },
+        { 'aria-hidden': 'true' }
+      );
+      const xIcon = X.render({ size: 16, class: 'stroke-current' }, { 'aria-hidden': 'true' });
+
       item.innerHTML = `
         <div class="flex-shrink-0 text-2xl" aria-label="Priority: ${asset.priority}">
           ${getPriorityIcon(asset.priority)}
@@ -149,14 +161,10 @@ const createAssetUpdateTodoList = (args: { assets?: object[]; loading?: boolean 
           </div>
         </div>
         <button class="flex-shrink-0 btn btn-ghost btn-sm" aria-label="Update ${asset.name}">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-          </svg>
+          ${pencilIcon}
         </button>
         <button class="flex-shrink-0 btn btn-ghost btn-sm text-neutral-400 hover:text-neutral-600" aria-label="Dismiss ${asset.name} reminder">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-          </svg>
+          ${xIcon}
         </button>
       `;
       list.appendChild(item);
@@ -167,11 +175,13 @@ const createAssetUpdateTodoList = (args: { assets?: object[]; loading?: boolean 
     // Update all button
     const updateAllBtn = document.createElement('div');
     updateAllBtn.className = 'mt-4 pt-4 border-t border-base-300';
+    const refreshCwIcon = RefreshCw.render(
+      { size: 16, class: 'stroke-current' },
+      { 'aria-hidden': 'true' }
+    );
     updateAllBtn.innerHTML = `
-      <button class="btn btn-primary btn-sm w-full">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-        </svg>
+      <button class="btn btn-primary btn-sm w-full gap-2">
+        ${refreshCwIcon}
         Update All Assets
       </button>
     `;

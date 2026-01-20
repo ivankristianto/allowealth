@@ -13,7 +13,7 @@
 import Card from '../atoms/Card.astro';
 import Badge from '../atoms/Badge.astro';
 import EmptyState from '../atoms/EmptyState.astro';
-import Icon from '../atoms/Icon.astro';
+import { Calendar, Pencil, X, RefreshCw } from '@lucide/astro';
 import { formatCurrency } from '@/lib/tokens';
 
 export interface AssetUpdateTodoItem {
@@ -76,7 +76,7 @@ const sortedAssets = [...assets].sort((a, b) => {
 <Card className={className} data-asset-update-todo-list>
   <div class="flex items-center justify-between mb-4">
     <h2 class="text-lg font-semibold flex items-center gap-2">
-      <Icon name="calendar" size="md" className="text-warning" />
+      <Calendar size={20} class="stroke-current text-warning" aria-hidden="true" />
       Asset Updates Needed
     </h2>
     {
@@ -157,21 +157,7 @@ const sortedAssets = [...assets].sort((a, b) => {
               data-update-asset
               type="button"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                class="h-4 w-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                aria-hidden="true"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-                />
-              </svg>
+              <Pencil size={16} class="stroke-current" aria-hidden="true" />
             </button>
 
             {/* Dismiss button */}
@@ -182,21 +168,7 @@ const sortedAssets = [...assets].sort((a, b) => {
               data-dismiss-reminder
               type="button"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                class="h-4 w-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                aria-hidden="true"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
+              <X size={16} class="stroke-current" aria-hidden="true" />
             </button>
           </li>
         ))}
@@ -209,24 +181,11 @@ const sortedAssets = [...assets].sort((a, b) => {
     !loading && sortedAssets.length > 0 && (
       <div class="mt-4 pt-4 border-t border-base-300">
         <button
-          class="btn btn-primary btn-sm w-full"
+          class="btn btn-primary btn-sm w-full gap-2"
           aria-label="Update all assets"
           data-update-all-assets
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            class="h-4 w-4"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-            />
-          </svg>
+          <RefreshCw size={16} class="stroke-current" aria-hidden="true" />
           Update All Assets
         </button>
       </div>
