@@ -732,25 +732,41 @@ Client-side (inline SVG with Lucide paths):
 
 **Checklist:**
 
-- [ ] Read current implementation
-- [ ] Replace status and action icons
-- [ ] Test table rendering and sorting
-- [ ] Run quality gates
+- [x] Read current implementation
+- [x] Replace status and action icons
+- [x] Test table rendering and sorting
+- [x] Run quality gates
 
-**Files to modify:**
+**Files modified:**
 
 - `src/components/organisms/BudgetOverviewTable.astro`
 
-**Icons to replace:**
+**Icons replaced:**
 
-- `warning` → `AlertTriangle`
-- `check` → `CheckCircle2`
-- `ban` → `XCircle`
-- `arrow-up`/`arrow-down` → `ArrowUp`/`ArrowDown` (for sorting)
+Server-side (Lucide components):
+
+- `warning` → `TriangleAlert` (exceeded/warning badges, size 16px)
+- `bell` → `Bell` (warning badges, size 16px)
+- `pencil` → `Pencil` (edit buttons, size 12px)
+- `eye` → `Eye` (view buttons, size 12px)
+- `chevron-right` → `ChevronRight` (navigation, size 12px)
+- `download` → `Download` (export button, size 16px)
+- `arrow-up`/`arrow-down` → `ChevronUp`/`ChevronDown` (sorting indicators, size 16px)
+- `arrow-up-down` → `ArrowUpDown` (unsorted column indicator, size 16px)
+
+**Implementation Notes:**
+
+- Component was already using Lucide icons from @lucide/astro
+- Icons used: TriangleAlert, Bell, Pencil, Eye, ChevronRight, Download, ChevronUp, ChevronDown, ArrowUpDown
+- Icon sizes: 12px (action buttons), 16px (badges, sorting)
+- Added `stroke-current` class to all icons for color inheritance
+- Added `aria-hidden="true"` to all decorative icons
+- All quality gates pass (typecheck, lint, stylelint, format)
+- Note: Task was already completed - component uses TriangleAlert instead of deprecated AlertTriangle
 
 **Estimated Time:** 2 hours
 
-**Status:** Pending
+**Status:** ✅ Completed (already migrated)
 
 ---
 
@@ -898,23 +914,44 @@ Server-side (Lucide components):
 
 **Checklist:**
 
-- [ ] Read current implementation
-- [ ] Replace error icons
-- [ ] Test error states
-- [ ] Run quality gates
+- [x] Read current implementation
+- [x] Replace error icons
+- [x] Test error states
+- [x] Write behavior tests (DashboardError.behavior.test.ts)
+- [x] Run quality gates
+- [x] Code review specialist review (APPROVED)
+- [x] Fix P1 feedback (test documentation, aria-label redundancy)
 
-**Files to modify:**
+**Files modified:**
 
 - `src/components/organisms/DashboardError.astro`
+- `src/components/organisms/DashboardError.behavior.test.ts` (created)
 
-**Icons to replace:**
+**Icons replaced:**
 
-- `warning` → `AlertTriangle`
-- `refresh` → `RefreshCw`
+Inline SVG → Lucide components:
+
+- `warning` (triangle with exclamation) → `TriangleAlert` (error icon, size 64px)
+- `refresh` (circular arrows) → `RefreshCw` (retry button, size 16px)
+- `help` (circle with question) → `Info` (support button, size 16px)
+
+**Implementation Notes:**
+
+- Replaced inline SVG error icon with `<TriangleAlert size={64} class="text-error" aria-hidden="true" />`
+- Replaced inline SVG refresh icon with `<RefreshCw size={16} class="stroke-current" aria-hidden="true" />`
+- Replaced inline SVG help icon with `<Info size={16} class="stroke-current" aria-hidden="true" />`
+- Used non-deprecated Lucide icons (TriangleAlert instead of AlertTriangle, Info instead of deprecated CircleHelp/HelpCircle)
+- Fixed P1 accessibility issue: Removed redundant aria-label from retry button (visible text "Try Again" is sufficient per WCAG 2.4.4)
+- Fixed P1 documentation issue: Updated test file to reference correct icon names (TriangleAlert, Info)
+- Added `stroke-current` class to action icons for color inheritance
+- All icons have `aria-hidden="true"` as they are decorative
+- Created comprehensive behavior test file with 65+ tests covering icon migration, props, rendering, accessibility, interactions, styling, responsive design, error states, and integration
+- All quality gates pass (typecheck, lint, stylelint, format)
+- Code review specialist: **APPROVED** with P1 feedback addressed
 
 **Estimated Time:** 30 minutes
 
-**Status:** Pending
+**Status:** ✅ Completed
 
 ---
 
@@ -1373,7 +1410,7 @@ All dependencies are already in package.json.
 ## Success Criteria
 
 - [ ] All 24 files using Icon.astro component are migrated to Lucide (15/24 done)
-- [ ] All 20 files with inline SVGs are migrated to Lucide (5/20 done)
+- [ ] All 20 files with inline SVGs are migrated to Lucide (6/20 done)
 - [ ] Icon.astro component is deleted (blocked by remaining usages)
 - [ ] Icon.stories.ts is deleted (blocked by remaining usages)
 - [ ] No inline SVG elements remain in components or pages
@@ -1392,10 +1429,10 @@ All dependencies are already in package.json.
 - Phase 2 (Atomic Components): ✅ 2/2 tasks completed
 - Phase 3 (Layout Components): ✅ 2/2 tasks completed
 - Phase 4 (Molecule Components): ✅ 7/7 tasks completed (Modal.astro, QuickActions.astro, BudgetHealthWidget.astro, TransactionRow.astro, TransactionFilters.astro, TransactionForm.astro, CSVImportForm.astro)
-- Phase 5 (Organism Components): 🔄 4/6 tasks completed (TransactionList.astro, RecentTransactionsList.astro, AssetUpdateTodoList.astro, BudgetHistoryComparison.astro)
+- Phase 5 (Organism Components): ✅ 6/6 tasks completed (TransactionList.astro, BudgetOverviewTable.astro, RecentTransactionsList.astro, AssetUpdateTodoList.astro, BudgetHistoryComparison.astro, DashboardError.astro)
 - Phase 6-9: Pending
 
-**Overall Progress:** 17/31 tasks completed (55%)
+**Overall Progress:** 19/31 tasks completed (61%)
 
 ## Estimated Effort
 
@@ -1405,12 +1442,12 @@ All dependencies are already in package.json.
 | 2. Atomic Components (Icon.astro)   | 2      | 2         | 2-3 hours       | P0       |
 | 3. Layout Components (Icon.astro)   | 2      | 2         | 3 hours         | P0       |
 | 4. Molecule Components (Icon.astro) | 7      | 7         | 7-9 hours       | P1       |
-| 5. Organism Components (Icon.astro) | 6      | 4         | 7-9 hours       | P1       |
+| 5. Organism Components (Icon.astro) | 6      | 6         | 7-9 hours       | P1       |
 | 6. Page Components (Icon.astro)     | 3      | 0         | 4-5 hours       | P1       |
 | 7. Inline SVGs - Atoms & Molecules  | 5      | 0         | 6-7.5 hours     | P1       |
-| 8. Inline SVGs - Organisms & Pages  | 2      | 0         | 4-6 hours       | P1       |
+| 8. Inline SVGs - Organisms & Pages  | 2      | 1         | 4-6 hours       | P1       |
 | 9. Cleanup & Docs                   | 3      | 0         | 2.5 hours       | P2       |
-| **Total**                           | **31** | **17**    | **37-46 hours** |          |
+| **Total**                           | **31** | **19**    | **37-46 hours** |          |
 
 **Recommended Approach:** Complete phases sequentially. Each phase builds on the previous one and allows for early feedback on patterns.
 

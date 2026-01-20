@@ -14,6 +14,7 @@
 
 import Card from '../atoms/Card.astro';
 import Button from '../atoms/Button.astro';
+import { TriangleAlert, RefreshCw, Info } from '@lucide/astro';
 
 export interface Props {
   message?: string;
@@ -37,21 +38,7 @@ const {
     <div class="flex flex-col items-center text-center py-8">
       <!-- Error Icon -->
       <div class="mb-4">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          class="h-16 w-16 text-error"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          aria-hidden="true"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-          ></path>
-        </svg>
+        <TriangleAlert size={64} class="text-error" aria-hidden="true" />
       </div>
 
       <!-- Error Message -->
@@ -82,21 +69,7 @@ const {
               onclick="window.location.reload()"
               class="btn btn-primary flex items-center gap-2"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                class="h-4 w-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                aria-hidden="true"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                />
-              </svg>
+              <RefreshCw size={16} class="stroke-current" aria-hidden="true" />
               Try Again
             </button>
           )
@@ -105,21 +78,7 @@ const {
         {
           supportUrl && (
             <Button variant="outline" href={supportUrl} className="flex items-center gap-2">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                class="h-4 w-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                aria-hidden="true"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
+              <Info size={16} class="stroke-current" aria-hidden="true" />
               Get Help
             </Button>
           )
