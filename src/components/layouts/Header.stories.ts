@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/html';
+import { Menu, Plus, Bell } from '@lucide/astro';
 
 const meta: Meta = {
   title: 'Layouts/Header',
@@ -40,12 +41,13 @@ const createHeader = (args: { currentPath?: string; showMenuToggle?: boolean }):
   if (showMenuToggle) {
     const menuBtn = document.createElement('button');
     menuBtn.className = 'btn btn-square btn-ghost';
-    menuBtn.innerHTML = `
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-      </svg>
-    `;
     menuBtn.setAttribute('aria-label', 'Toggle menu');
+
+    // Use Lucide Menu icon
+    const menuIcon = document.createElement('div');
+    menuIcon.innerHTML = Menu.render({ size: 20, class: 'stroke-current' });
+    menuBtn.appendChild(menuIcon);
+
     leftDiv.appendChild(menuBtn);
   }
 
@@ -62,12 +64,18 @@ const createHeader = (args: { currentPath?: string; showMenuToggle?: boolean }):
 
   const addBtn = document.createElement('button');
   addBtn.className = 'btn btn-primary btn-sm gap-2';
-  addBtn.innerHTML = `
-    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-    </svg>
-    <span class="hidden sm:inline">Add New</span>
-  `;
+  addBtn.setAttribute('aria-label', 'Add new item');
+
+  // Use Lucide Plus icon
+  const plusIcon = document.createElement('div');
+  plusIcon.innerHTML = Plus.render({ size: 16, class: 'stroke-current' });
+  addBtn.appendChild(plusIcon);
+
+  const addSpan = document.createElement('span');
+  addSpan.className = 'hidden sm:inline';
+  addSpan.textContent = 'Add New';
+  addBtn.appendChild(addSpan);
+
   rightDiv.appendChild(addBtn);
 
   // Notifications
@@ -77,12 +85,17 @@ const createHeader = (args: { currentPath?: string; showMenuToggle?: boolean }):
   const notifBtn = document.createElement('button');
   notifBtn.className = 'btn btn-square btn-ghost btn-sm relative';
   notifBtn.setAttribute('aria-label', 'Notifications');
-  notifBtn.innerHTML = `
-    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-    </svg>
-    <span class="badge badge-xs badge-error absolute top-1 right-1">3</span>
-  `;
+
+  // Use Lucide Bell icon
+  const bellIcon = document.createElement('div');
+  bellIcon.innerHTML = Bell.render({ size: 20, class: 'stroke-current' });
+  notifBtn.appendChild(bellIcon);
+
+  const badge = document.createElement('span');
+  badge.className = 'badge badge-xs badge-error absolute top-1 right-1';
+  badge.textContent = '3';
+  notifBtn.appendChild(badge);
+
   notifDiv.appendChild(notifBtn);
 
   const notifMenu = document.createElement('ul');

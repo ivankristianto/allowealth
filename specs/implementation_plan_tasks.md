@@ -346,20 +346,36 @@ import {LayoutDashboard} from '@lucide/astro';
 
 **Checklist:**
 
-- [ ] Read current Header.astro implementation
-- [ ] Replace Icon component with Lucide icons
-- [ ] Update Header.stories.ts
-- [ ] Test in Storybook
-- [ ] Run quality gates
+- [x] Read current Header.astro implementation
+- [x] Replace Icon component with Lucide icons
+- [x] Update Header.stories.ts
+- [x] Test in Storybook
+- [x] Run quality gates
+- [x] Fix P1 accessibility issue (added aria-label to Add New button)
 
 **Files to modify:**
 
 - `src/components/layouts/Header.astro`
 - `src/components/layouts/Header.stories.ts`
 
+**Icons to replace:**
+
+- `menu` → `Menu`
+- `plus` → `Plus`
+- `warning` → `Bell` (semantically better for notifications)
+
+**Implementation Notes:**
+
+- Replaced custom Icon component import with `import { Menu, Plus, Bell } from '@lucide/astro'`
+- Updated all icon usages to use Lucide components with `size={number}` and `class="stroke-current"`
+- Added `aria-hidden="true"` to decorative icons for accessibility
+- Fixed P1 accessibility issue: Added `aria-label="Add new item"` to the "Add New" button (critical for mobile screen readers when text is hidden)
+- Updated Header.stories.ts to use Lucide's `.render()` method for icon rendering
+- Added `relative` class to notification button for proper badge positioning
+
 **Estimated Time:** 1 hour
 
-**Status:** Pending
+**Status:** ✅ Completed
 
 ---
 
@@ -1158,7 +1174,7 @@ All dependencies are already in package.json.
 
 ## Success Criteria
 
-- [ ] All 24 files using Icon.astro component are migrated to Lucide (3/24 done)
+- [ ] All 24 files using Icon.astro component are migrated to Lucide (4/24 done)
 - [ ] All 20 files with inline SVGs are migrated to Lucide (0/20 done)
 - [ ] Icon.astro component is deleted (blocked by remaining usages)
 - [ ] Icon.stories.ts is deleted (blocked by remaining usages)
@@ -1176,10 +1192,10 @@ All dependencies are already in package.json.
 
 - Phase 1 (Preparation): ✅ 1/1 tasks completed
 - Phase 2 (Atomic Components): ✅ 2/2 tasks completed
-- Phase 3 (Layout Components): 🔄 1/2 tasks completed (Task 3.1 done, 3.2 pending)
+- Phase 3 (Layout Components): ✅ 2/2 tasks completed
 - Phase 4-9: Pending
 
-**Overall Progress:** 5/31 tasks completed (16%)
+**Overall Progress:** 6/31 tasks completed (19%)
 
 ## Estimated Effort
 
@@ -1187,14 +1203,14 @@ All dependencies are already in package.json.
 | ----------------------------------- | ------ | --------- | --------------- | -------- |
 | 1. Preparation                      | 1      | 1         | 1 hour          | P0       |
 | 2. Atomic Components (Icon.astro)   | 2      | 2         | 2-3 hours       | P0       |
-| 3. Layout Components (Icon.astro)   | 2      | 1         | 3 hours         | P0       |
+| 3. Layout Components (Icon.astro)   | 2      | 2         | 3 hours         | P0       |
 | 4. Molecule Components (Icon.astro) | 7      | 0         | 7-9 hours       | P1       |
 | 5. Organism Components (Icon.astro) | 6      | 0         | 7-9 hours       | P1       |
 | 6. Page Components (Icon.astro)     | 3      | 0         | 4-5 hours       | P1       |
 | 7. Inline SVGs - Atoms & Molecules  | 5      | 0         | 6-7.5 hours     | P1       |
 | 8. Inline SVGs - Organisms & Pages  | 2      | 0         | 4-6 hours       | P1       |
 | 9. Cleanup & Docs                   | 3      | 0         | 2.5 hours       | P2       |
-| **Total**                           | **31** | **5**     | **37-46 hours** |          |
+| **Total**                           | **31** | **6**     | **37-46 hours** |          |
 
 **Recommended Approach:** Complete phases sequentially. Each phase builds on the previous one and allows for early feedback on patterns.
 

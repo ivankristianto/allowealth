@@ -6,7 +6,7 @@
  * Displays user menu when authenticated, or login/register links when not.
  */
 
-import Icon from '../atoms/Icon.astro';
+import { Menu, Plus, Bell } from '@lucide/astro';
 import UserContext from '../organisms/UserContext.astro';
 
 interface Props {
@@ -56,7 +56,7 @@ const getPageTitle = (path: string) => {
           class="btn btn-square btn-ghost lg:hidden"
           aria-label="Toggle menu"
         >
-          <Icon name="menu" size="md" />
+          <Menu size={20} class="stroke-current" aria-hidden="true" />
         </label>
       )
     }
@@ -69,15 +69,19 @@ const getPageTitle = (path: string) => {
     <UserContext user={user} />
 
     <!-- Add new button -->
-    <button class="btn btn-primary btn-sm gap-2">
-      <Icon name="plus" size="sm" />
+    <button class="btn btn-primary btn-sm gap-2" aria-label="Add new item">
+      <Plus size={16} class="stroke-current" aria-hidden="true" />
       <span class="hidden sm:inline">Add New</span>
     </button>
 
     <!-- Notifications -->
     <div class="dropdown dropdown-end">
-      <button tabindex={0} class="btn btn-square btn-ghost btn-sm" aria-label="Notifications">
-        <Icon name="warning" size="md" />
+      <button
+        tabindex={0}
+        class="btn btn-square btn-ghost btn-sm relative"
+        aria-label="Notifications"
+      >
+        <Bell size={20} class="stroke-current" aria-hidden="true" />
         <span class="badge badge-xs badge-error absolute top-1 right-1">3</span>
       </button>
       <ul
