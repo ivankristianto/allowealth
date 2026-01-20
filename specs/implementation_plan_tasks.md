@@ -521,6 +521,7 @@ Estimated Time: 0.5 hours
 - [x] Unit tests passing (507 tests including 25 new tests for client-utils and behavior test for PasswordChangeForm).
 - [x] Design system documentation updated with Toast component and animation patterns. (P1 tasks - Completed 2026-01-19)
 - [x] AGENTS.md updated with new libraries, stores directory, and toast usage guidelines. (P1 tasks - Completed 2026-01-19)
+- [x] P3 accessibility improvements completed (focus management, shared aria-live regions, CSS animation tokens). (Completed 2026-01-20)
 
 ## Estimated Effort
 
@@ -554,14 +555,24 @@ With Astro's full-page navigation, Nano Store state resets on page change. This 
 
 **Note:** This section is reserved for follow-up improvements identified during code review. They are non-blocking but recommended for better code quality, accessibility, and maintainability.
 
-### P3 Items (Nice to Have)
+### P3 Items (Nice to Have) - COMPLETED (2026-01-20)
 
 4. **Focus management** - When toast is dismissed, return focus to the element that had focus before toast appeared.
+   - [x] **COMPLETED**: Focus is now captured when toast is created and restored only on manual dismiss (not auto-dismiss to avoid interrupting user activity).
 
 5. **Single shared `aria-live` region** - Instead of individual `aria-live` on each toast, use a single shared region for all announcements.
+   - [x] **COMPLETED**: Implemented separate `aria-live` regions for polite (success/info/warning) and assertive (error) announcements.
 
-- [] Single shared `aria-live` for all announcements.
+6. **Extract magic numbers** - Animation durations (300ms, 200ms) and distances (50px) should be CSS custom properties.
+   - [x] **COMPLETED**: Added CSS custom properties for toast animations in `tokens.css`:
+     - `--toast-duration-enter: 0.3s`
+     - `--toast-duration-exit: 0.2s`
+     - `--toast-easing-enter: ease-out`
+     - `--toast-easing-exit: ease-in`
+     - `--toast-distance: 50px`
 
-8. **Extract magic numbers** - Animation durations (300ms, 200ms) and distances (50px) should be CSS custom properties.
+### Additional Improvements Completed (2026-01-20)
 
-- [] Exctract animation duration and distance into CSS custom properties
+- [x] Added `sr-only` utility class to `globals.css` using modern `clip-path` approach
+- [x] Read exit animation duration from CSS variable using `getComputedStyle()`
+- [x] Use `focusRestoreMap` with toast ID mapping to properly track and clean up focus restoration
