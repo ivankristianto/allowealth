@@ -1121,45 +1121,45 @@ Server-side (Lucide components):
 
 **Checklist:**
 
-- [ ] Read current ErrorMessage.astro implementation
-- [ ] Replace error icon SVG with XCircle from Lucide
-- [ ] Replace dismiss button X icon
-- [ ] Update ErrorMessage.stories.ts
-- [ ] Test in Storybook
-- [ ] Run quality gates
+- [x] Read current ErrorMessage.astro implementation
+- [x] Replace error icon SVG with CircleX from Lucide
+- [x] Replace dismiss button X icon
+- [x] Update ErrorMessage.stories.ts
+- [x] Write behavior tests (ErrorMessage.behavior.test.ts)
+- [x] Run quality gates
+- [x] Code review specialist review (APPROVED)
+- [x] Fix P1 documentation inconsistency (XCircle → CircleX)
 
-**Files to modify:**
+**Files modified:**
 
 - `src/components/atoms/ErrorMessage.astro`
 - `src/components/atoms/ErrorMessage.stories.ts`
+- `src/components/atoms/ErrorMessage.behavior.test.ts` (created)
 
-**Current Pattern:**
+**Icons replaced:**
 
-```html
-<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24">
-  <path
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    stroke-width="2"
-    d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
-  />
-</svg>
-```
+Inline SVG → Lucide components:
 
-**New Pattern:**
+- Error icon SVG (h-6 w-6) → `CircleX` (size 24px)
+- Dismiss X icon SVG (h-4 w-4) → `X` (size 16px)
 
-```
----
-import { XCircle, X } from '@lucide/astro';
----
+**Implementation Notes:**
 
-<XCircle size={24} class="shrink-0" />
-<X size={16} />
-```
+- Replaced `import { XCircle, X } from '@lucide/astro'` with `import { CircleX, X } from '@lucide/astro'` to avoid deprecation warning
+- Replaced error icon SVG with `<CircleX size={24} class="shrink-0" aria-hidden="true" />`
+- Replaced dismiss button SVG with `<X size={16} class="stroke-current" aria-hidden="true" />`
+- Size conversions: h-6 w-6 (24px) = size={24}, h-4 w-4 (16px) = size={16}
+- Added `aria-hidden="true"` to all decorative icons for accessibility
+- Added `stroke-current` class to dismiss icon for color inheritance
+- Updated ErrorMessage.stories.ts to use `CircleX.render()` and `X.render()` methods
+- Created comprehensive behavior test file with 52 tests covering icon migration, props, accessibility, structure, visual design, integration, and edge cases
+- Fixed P1 documentation issue by updating all references from XCircle to CircleX in behavior tests
+- All quality gates pass (typecheck, lint, stylelint, format)
+- Code review specialist: **APPROVED** with P1 feedback addressed
 
 **Estimated Time:** 1 hour
 
-**Status:** Pending
+**Status:** ✅ Completed
 
 ---
 
@@ -1493,7 +1493,7 @@ All dependencies are already in package.json.
 ## Success Criteria
 
 - [ ] All 24 files using Icon.astro component are migrated to Lucide (20/24 done)
-- [ ] All 20 files with inline SVGs are migrated to Lucide (6/20 done)
+- [ ] All 20 files with inline SVGs are migrated to Lucide (7/20 done)
 - [ ] Icon.astro component is deleted (blocked by remaining usages)
 - [ ] Icon.stories.ts is deleted (blocked by remaining usages)
 - [ ] No inline SVG elements remain in components or pages
@@ -1514,9 +1514,11 @@ All dependencies are already in package.json.
 - Phase 4 (Molecule Components): ✅ 7/7 tasks completed (Modal.astro, QuickActions.astro, BudgetHealthWidget.astro, TransactionRow.astro, TransactionFilters.astro, TransactionForm.astro, CSVImportForm.astro)
 - Phase 5 (Organism Components): ✅ 6/6 tasks completed (TransactionList.astro, BudgetOverviewTable.astro, RecentTransactionsList.astro, AssetUpdateTodoList.astro, BudgetHistoryComparison.astro, DashboardError.astro)
 - Phase 6 (Page Components): ✅ 3/3 tasks completed (budget/index.astro, settings pages, transaction pages)
-- Phase 7-9: Pending
+- Phase 7 (Inline SVGs - Atoms & Molecules): 🔄 1/5 tasks completed (ErrorMessage.astro)
+- Phase 8 (Inline SVGs - Organisms & Pages): Pending
+- Phase 9 (Cleanup & Docs): Pending
 
-**Overall Progress:** 23/31 tasks completed (74%)
+**Overall Progress:** 24/31 tasks completed (77%)
 
 ## Estimated Effort
 
@@ -1528,10 +1530,10 @@ All dependencies are already in package.json.
 | 4. Molecule Components (Icon.astro) | 7      | 7         | 7-9 hours       | P1       |
 | 5. Organism Components (Icon.astro) | 6      | 6         | 7-9 hours       | P1       |
 | 6. Page Components (Icon.astro)     | 3      | 3         | 4-5 hours       | P1       |
-| 7. Inline SVGs - Atoms & Molecules  | 5      | 0         | 6-7.5 hours     | P1       |
+| 7. Inline SVGs - Atoms & Molecules  | 5      | 1         | 6-7.5 hours     | P1       |
 | 8. Inline SVGs - Organisms & Pages  | 2      | 1         | 4-6 hours       | P1       |
 | 9. Cleanup & Docs                   | 3      | 0         | 2.5 hours       | P2       |
-| **Total**                           | **31** | **23**    | **37-46 hours** |          |
+| **Total**                           | **31** | **24**    | **37-46 hours** |          |
 
 **Recommended Approach:** Complete phases sequentially. Each phase builds on the previous one and allows for early feedback on patterns.
 
