@@ -17,6 +17,14 @@ import Card from '../atoms/Card.astro';
 import Badge from '../atoms/Badge.astro';
 import { formatCurrency, formatPercentage } from '@/lib/tokens';
 import { decimalSubtract } from '@/lib/utils/decimal';
+import {
+  CircleAlert,
+  TrendingUp,
+  DollarSign,
+  Calendar,
+  ShieldCheck,
+  ChevronRight,
+} from '@lucide/astro';
 
 export interface SummaryCardsData {
   totalAssets: {
@@ -101,20 +109,7 @@ const getProgressClass = (percentage: number): string => {
       <div class="col-span-full" role="alert" aria-live="assertive">
         <Card className="border-error">
           <div class="flex items-center gap-3 text-error">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="h-6 w-6"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
+            <CircleAlert size={24} class="shrink-0" aria-hidden="true" />
             <div>
               <p class="font-semibold">Unable to load summary data</p>
               <p class="text-sm">Please try again later</p>
@@ -162,20 +157,7 @@ const getProgressClass = (percentage: number): string => {
       <div class="col-span-full" role="status" aria-live="polite">
         <Card>
           <div class="text-center py-8">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="h-12 w-12 mx-auto mb-4 text-neutral-400"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-              />
-            </svg>
+            <TrendingUp size={48} class="mx-auto mb-4 text-neutral-400" aria-hidden="true" />
             <h3 class="text-lg font-semibold mb-2">No data yet</h3>
             <p class="text-neutral-500">Start by adding your assets and transactions</p>
           </div>
@@ -194,20 +176,7 @@ const getProgressClass = (percentage: number): string => {
               Total Assets
             </h3>
             <div class="p-2 bg-success/10 rounded-lg group-hover:bg-success/20 transition-colors">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                class="h-5 w-5 text-success"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
+              <DollarSign size={20} class="text-success" aria-hidden="true" />
             </div>
           </div>
 
@@ -246,20 +215,7 @@ const getProgressClass = (percentage: number): string => {
               This Month
             </h3>
             <div class="p-2 bg-info/10 rounded-lg group-hover:bg-info/20 transition-colors">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                class="h-5 w-5 text-info"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"
-                />
-              </svg>
+              <Calendar size={20} class="text-info" aria-hidden="true" />
             </div>
           </div>
 
@@ -312,20 +268,7 @@ const getProgressClass = (percentage: number): string => {
               Budget Health
             </h3>
             <div class="p-2 bg-warning/10 rounded-lg group-hover:bg-warning/20 transition-colors">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                class="h-5 w-5 text-warning"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
+              <ShieldCheck size={20} class="text-warning" aria-hidden="true" />
             </div>
           </div>
 
@@ -354,20 +297,11 @@ const getProgressClass = (percentage: number): string => {
             aria-label="View budget details"
           >
             View Budget
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="h-4 w-4 group-hover:translate-x-1 transition-transform"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M9 5l7 7-7 7"
-              />
-            </svg>
+            <ChevronRight
+              size={16}
+              class="group-hover:translate-x-1 transition-transform"
+              aria-hidden="true"
+            />
           </a>
         </Card>
       </>

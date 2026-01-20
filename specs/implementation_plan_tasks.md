@@ -1370,27 +1370,53 @@ Inline SVG → Lucide icon path (verified correct):
 
 **Checklist:**
 
-- [ ] Migrate SummaryCards.astro
-- [ ] Migrate UserContext.astro
+- [x] Migrate SummaryCards.astro
+- [x] Migrate UserContext.astro
 - [ ] Migrate DashboardError.astro (if has inline SVGs beyond Icon.astro)
-- [ ] Test organism rendering
-- [ ] Run quality gates
+- [x] Test organism rendering
+- [x] Run quality gates
+- [x] Write behavior tests (SummaryCards.behavior.test.ts, UserContext.behavior.test.ts)
+- [x] Code review specialist review (APPROVED)
+- [x] Fix P1 feedback (replaced PieChart with TrendingUp - non-deprecated icon)
 
-**Files to modify:**
+**Files modified:**
 
 - `src/components/organisms/SummaryCards.astro`
 - `src/components/organisms/UserContext.astro`
-- `src/components/organisms/DashboardError.astro`
+- `src/components/organisms/SummaryCards.behavior.test.ts` (created)
+- `src/components/organisms/UserContext.behavior.test.ts` (created)
 
-**Common inline SVGs:**
+**Icons replaced:**
 
-- Status icons (check, warning, error)
-- Financial trend icons (up/down arrows)
-- Alert icons
+**SummaryCards.astro:**
+
+- Error state SVG → `CircleAlert` (size 24px, class="shrink-0")
+- Empty state SVG → `TrendingUp` (size 48px, class="mx-auto mb-4 text-neutral-400")
+- Total Assets card SVG → `DollarSign` (size 20px, class="text-success")
+- Monthly Spent card SVG → `Calendar` (size 20px, class="text-info")
+- Budget Health card SVG → `ShieldCheck` (size 20px, class="text-warning")
+- View Budget link SVG → `ChevronRight` (size 16px, with hover animation)
+
+**UserContext.astro:**
+
+- Dropdown chevron SVG → `ChevronDown` (size 16px, class="stroke-current")
+- Profile settings SVG → `User as UserIcon` (size 16px, class="stroke-current") - aliased to avoid conflict with Lucia User type
+- Sign out SVG → `LogOut` (size 16px, class="stroke-current")
+
+**Implementation Notes:**
+
+- Replaced inline SVGs with Lucide icon components from @lucide/astro
+- Size conversions: h-4 w-4 (16px), h-5 w-5 (20px), h-6 w-6 (24px), h-12 w-12 (48px)
+- Added `aria-hidden="true"` to all decorative icons for accessibility
+- Added clarifying comment for UserIcon alias to avoid future confusion
+- Used TrendingUp instead of deprecated PieChart/BarChart3 for empty state
+- Created comprehensive behavior test files with 70+ and 60+ tests respectively
+- All quality gates pass (typecheck, lint, stylelint, format)
+- Code review specialist: **APPROVED** with P1 feedback addressed
 
 **Estimated Time:** 2-3 hours
 
-**Status:** Pending
+**Status:** ✅ Completed
 
 ---
 
@@ -1568,7 +1594,7 @@ All dependencies are already in package.json.
 ## Success Criteria
 
 - [ ] All 24 files using Icon.astro component are migrated to Lucide (20/24 done)
-- [ ] All 20 files with inline SVGs are migrated to Lucide (13/20 done)
+- [ ] All 20 files with inline SVGs are migrated to Lucide (15/20 done)
 - [ ] Icon.astro component is deleted (blocked by remaining usages)
 - [ ] Icon.stories.ts is deleted (blocked by remaining usages)
 - [ ] No inline SVG elements remain in components or pages
@@ -1590,10 +1616,10 @@ All dependencies are already in package.json.
 - Phase 5 (Organism Components): ✅ 6/6 tasks completed (TransactionList.astro, BudgetOverviewTable.astro, RecentTransactionsList.astro, AssetUpdateTodoList.astro, BudgetHistoryComparison.astro, DashboardError.astro)
 - Phase 6 (Page Components): ✅ 3/3 tasks completed (budget/index.astro, settings pages, transaction pages)
 - Phase 7 (Inline SVGs - Atoms & Molecules): ✅ 5/5 tasks completed (ErrorMessage.astro, Toast.astro, ToastContainer.astro, AuthValidationMessages.astro, Form Components)
-- Phase 8 (Inline SVGs - Organisms & Pages): Pending
+- Phase 8 (Inline SVGs - Organisms & Pages): 🚧 1/2 tasks completed (SummaryCards.astro, UserContext.astro ✅; budget/history.astro, register.astro, signup.astro remaining)
 - Phase 9 (Cleanup & Docs): Pending
 
-**Overall Progress:** 28/31 tasks completed (90%)
+**Overall Progress:** 29/31 tasks completed (94%)
 
 ## Estimated Effort
 
@@ -1606,9 +1632,9 @@ All dependencies are already in package.json.
 | 5. Organism Components (Icon.astro) | 6      | 6         | 7-9 hours       | P1       |
 | 6. Page Components (Icon.astro)     | 3      | 3         | 4-5 hours       | P1       |
 | 7. Inline SVGs - Atoms & Molecules  | 5      | 5         | 6-7.5 hours     | P1       |
-| 8. Inline SVGs - Organisms & Pages  | 2      | 0         | 4-6 hours       | P1       |
+| 8. Inline SVGs - Organisms & Pages  | 2      | 1         | 4-6 hours       | P1       |
 | 9. Cleanup & Docs                   | 3      | 0         | 2.5 hours       | P2       |
-| **Total**                           | **31** | **28**    | **37-46 hours** |          |
+| **Total**                           | **31** | **29**    | **37-46 hours** |          |
 
 **Recommended Approach:** Complete phases sequentially. Each phase builds on the previous one and allows for early feedback on patterns.
 
@@ -2004,5 +2030,78 @@ import { Info, Download } from '@lucide/astro';
 ```
 
 **Estimated Time:** 10 minutes
+
+**Status:** Pending
+
+---
+
+#### Task: Add shrink-0 to SummaryCards card header icons (Priority: P2)
+
+**Checklist:**
+
+- [ ] Add `shrink-0` class to DollarSign icon in Total Assets card
+- [ ] Add `shrink-0` class to Calendar icon in Monthly Spent card
+- [ ] Add `shrink-0` class to ShieldCheck icon in Budget Health card
+- [ ] Test icon behavior with card content overflow
+- [ ] Run quality gates
+
+**Files to modify:**
+
+- `src/components/organisms/SummaryCards.astro`
+
+**Rationale:**
+
+The card header icons (DollarSign, Calendar, ShieldCheck) lack `shrink-0` class, while the error state icon (CircleAlert) properly includes it. This could cause unexpected flex behavior if card content overflows. The `shrink-0` class prevents flex items from shrinking below their natural size, ensuring icon consistency across all viewport sizes and content states.
+
+**Current:**
+
+```astro
+<div class="p-2 bg-success/10 rounded-lg group-hover:bg-success/20 transition-colors">
+  <DollarSign size={20} class="text-success" aria-hidden="true" />
+</div>
+```
+
+**Should be:**
+
+```astro
+<div class="p-2 bg-success/10 rounded-lg group-hover:bg-success/20 transition-colors">
+  <DollarSign size={20} class="shrink-0 text-success" aria-hidden="true" />
+</div>
+```
+
+**Estimated Time:** 15 minutes
+
+**Status:** Pending
+
+---
+
+#### Task: Add icon sizing hierarchy comment to SummaryCards.astro (Priority: P3)
+
+**Checklist:**
+
+- [ ] Add sizing hierarchy comment to SummaryCards.astro
+- [ ] Document rationale for icon sizes
+- [ ] Run quality gates
+
+**Files to modify:**
+
+- `src/components/organisms/SummaryCards.astro`
+
+**Rationale:**
+
+The SummaryCards component uses a sizing hierarchy that could benefit from documentation. Adding a comment explaining the rationale helps future maintainers understand design decisions without needing to reference design system docs.
+
+**Suggested comment:**
+
+```astro
+<!-- Icon sizing hierarchy (from largest to smallest):
+  - 48px: Empty state illustration (prominent visual cue)
+  - 24px: Error state alert (attention-grabbing)
+  - 20px: Card header icons (medium emphasis)
+  - 16px: Navigation/interactive icons (subtle)
+-->
+```
+
+**Estimated Time:** 5 minutes
 
 **Status:** Pending
