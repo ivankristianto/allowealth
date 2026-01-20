@@ -25,7 +25,7 @@ import PaymentMethodSelect from '../atoms/PaymentMethodSelect.astro';
 import DatePicker from '../atoms/DatePicker.astro';
 import Button from '../atoms/Button.astro';
 import Currency from '../atoms/Currency.astro';
-import Icon from '../atoms/Icon.astro';
+import { TriangleAlert } from '@lucide/astro';
 
 export interface Props {
   action: string;
@@ -209,7 +209,7 @@ const paymentMethodsJson = JSON.stringify(
   {
     showBudgetWarning && formType === 'expense' && (
       <div role="alert" class="alert alert-warning">
-        <Icon name="warning" size="sm" />
+        <TriangleAlert size={16} class="shrink-0 stroke-current" aria-hidden="true" />
         <span>
           Budget remaining:{' '}
           <Currency amount={parseFloat(budgetRemaining) || 0} currency={budgetRemainingCurrency} />
@@ -435,24 +435,25 @@ const paymentMethodsJson = JSON.stringify(
       successEl.className = 'alert alert-success mb-4';
       successEl.setAttribute('role', 'status');
 
-      // Create SVG element
-      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-      svg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
-      svg.classList.add('stroke-current', 'shrink-0', 'h-6', 'w-6');
-      svg.setAttribute('fill', 'none');
-      svg.setAttribute('viewBox', '0 0 24 24');
-      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      path.setAttribute('stroke-linecap', 'round');
-      path.setAttribute('stroke-linejoin', 'round');
-      path.setAttribute('stroke-width', '2');
-      path.setAttribute('d', 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z');
-      svg.appendChild(path);
+      // Create Check icon SVG (Lucide style)
+      const iconSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      iconSvg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+      iconSvg.classList.add('stroke-current', 'shrink-0', 'h-6', 'w-6');
+      iconSvg.setAttribute('fill', 'none');
+      iconSvg.setAttribute('viewBox', '0 0 24 24');
+      iconSvg.setAttribute('aria-hidden', 'true');
+      const poly1 = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+      poly1.setAttribute('points', '20 6 9 17 4 12');
+      poly1.setAttribute('stroke-linecap', 'round');
+      poly1.setAttribute('stroke-linejoin', 'round');
+      poly1.setAttribute('stroke-width', '2');
+      iconSvg.appendChild(poly1);
 
       // Create text span with safe textContent
       const span = document.createElement('span');
       span.textContent = message;
 
-      successEl.appendChild(svg);
+      successEl.appendChild(iconSvg);
       successEl.appendChild(span);
       form?.insertBefore(successEl, form.firstChild);
     } else {
@@ -714,8 +715,10 @@ const paymentMethodsJson = JSON.stringify(
         budgetWarningEl.className = 'alert alert-warning';
         budgetWarningEl.setAttribute('role', 'alert');
         budgetWarningEl.innerHTML = `
-          <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v4" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 17h.01" />
           </svg>
           <span id="budget-warning-text"></span>
         `;

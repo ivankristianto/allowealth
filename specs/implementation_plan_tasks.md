@@ -591,24 +591,39 @@ import {LayoutDashboard} from '@lucide/astro';
 
 **Checklist:**
 
-- [ ] Read current implementation
-- [ ] Replace form icons
-- [ ] Test form submission
-- [ ] Run quality gates
+- [x] Read current implementation
+- [x] Replace form icons
+- [x] Test form submission
+- [x] Run quality gates
+- [x] Write behavior tests
+- [x] Code review specialist review (APPROVED)
 
-**Files to modify:**
+**Files modified:**
 
 - `src/components/molecules/TransactionForm.astro`
+- `src/components/molecules/TransactionForm.behavior.test.ts` (created)
 
-**Icons to replace:**
+**Icons replaced:**
 
-- `calendar` → `Calendar`
-- `tag` → `Tag`
-- `currency-dollar` → `DollarSign`
+- `warning` → `TriangleAlert` (server-side, size 16px)
+- Inline SVG (success message) → Check icon path (client-side)
+- Inline SVG (budget warning) → TriangleAlert icon path (client-side)
+
+**Implementation Notes:**
+
+- Replaced `import Icon from '../atoms/Icon.astro'` with `import { TriangleAlert } from '@lucide/astro'`
+- Budget warning Icon usage: `<Icon name="warning" size="sm" />` → `<TriangleAlert size={16} class="shrink-0 stroke-current" aria-hidden="true" />`
+- Success message inline SVG: Replaced custom path with Lucide Check icon path (`polyline points="20 6 9 17 4 12"`)
+- Budget warning inline SVG: Replaced custom path with Lucide TriangleAlert icon path (triangle + exclamation mark paths)
+- Added `aria-hidden="true"` to all decorative icons for accessibility
+- Created comprehensive behavior test file with 89 tests covering icon migration, form structure, validation, client-side features, and accessibility
+- Note: The plan listed `calendar`, `tag`, and `currency-dollar` icons, but these are handled by child components (DatePicker, CategorySelect, CurrencyInput) - not directly in TransactionForm
+- All quality gates pass (typecheck, lint, stylelint, format)
+- Code review specialist: **APPROVED** with minor non-blocking suggestions
 
 **Estimated Time:** 1 hour
 
-**Status:** Pending
+**Status:** ✅ Completed (commit pending)
 
 ---
 
@@ -1248,8 +1263,8 @@ All dependencies are already in package.json.
 
 ## Success Criteria
 
-- [ ] All 24 files using Icon.astro component are migrated to Lucide (9/24 done)
-- [ ] All 20 files with inline SVGs are migrated to Lucide (1/20 done)
+- [ ] All 24 files using Icon.astro component are migrated to Lucide (10/24 done)
+- [ ] All 20 files with inline SVGs are migrated to Lucide (3/20 done)
 - [ ] Icon.astro component is deleted (blocked by remaining usages)
 - [ ] Icon.stories.ts is deleted (blocked by remaining usages)
 - [ ] No inline SVG elements remain in components or pages
@@ -1267,10 +1282,10 @@ All dependencies are already in package.json.
 - Phase 1 (Preparation): ✅ 1/1 tasks completed
 - Phase 2 (Atomic Components): ✅ 2/2 tasks completed
 - Phase 3 (Layout Components): ✅ 2/2 tasks completed
-- Phase 4 (Molecule Components): 🔄 5/7 tasks completed (Modal.astro, QuickActions.astro, BudgetHealthWidget.astro, TransactionRow.astro, TransactionFilters.astro)
+- Phase 4 (Molecule Components): 🔄 6/7 tasks completed (Modal.astro, QuickActions.astro, BudgetHealthWidget.astro, TransactionRow.astro, TransactionFilters.astro, TransactionForm.astro)
 - Phase 5-9: Pending
 
-**Overall Progress:** 11/31 tasks completed (35%)
+**Overall Progress:** 12/31 tasks completed (39%)
 
 ## Estimated Effort
 
@@ -1279,13 +1294,13 @@ All dependencies are already in package.json.
 | 1. Preparation                      | 1      | 1         | 1 hour          | P0       |
 | 2. Atomic Components (Icon.astro)   | 2      | 2         | 2-3 hours       | P0       |
 | 3. Layout Components (Icon.astro)   | 2      | 2         | 3 hours         | P0       |
-| 4. Molecule Components (Icon.astro) | 7      | 5         | 7-9 hours       | P1       |
+| 4. Molecule Components (Icon.astro) | 7      | 6         | 7-9 hours       | P1       |
 | 5. Organism Components (Icon.astro) | 6      | 0         | 7-9 hours       | P1       |
 | 6. Page Components (Icon.astro)     | 3      | 0         | 4-5 hours       | P1       |
 | 7. Inline SVGs - Atoms & Molecules  | 5      | 0         | 6-7.5 hours     | P1       |
 | 8. Inline SVGs - Organisms & Pages  | 2      | 0         | 4-6 hours       | P1       |
 | 9. Cleanup & Docs                   | 3      | 0         | 2.5 hours       | P2       |
-| **Total**                           | **31** | **11**    | **37-46 hours** |          |
+| **Total**                           | **31** | **12**    | **37-46 hours** |          |
 
 **Recommended Approach:** Complete phases sequentially. Each phase builds on the previous one and allows for early feedback on patterns.
 
