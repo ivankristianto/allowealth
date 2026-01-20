@@ -1596,29 +1596,6 @@ The Eye, EyeOff, Check, and X icons are decorative and should have `aria-hidden=
 
 ---
 
-#### Task: Document icon size conversion mapping (Priority: P3)
-
-**Checklist:**
-
-- [ ] Create or update docs/icon-migration-guide.md with size conversion table
-- [ ] Document: xs: 12, sm: 16, md: 20, lg: 24, xl: 32
-- [ ] Include examples from migrated components
-- [ ] Run quality gates
-
-**Files to modify:**
-
-- `docs/icon-migration-guide.md` (create if not exists)
-
-**Rationale:**
-
-While size conversion is straightforward (xs=12, sm=16, md=20, lg=24, xl=32), documenting this mapping helps future maintainers understand the conversion pattern. Currently this information is only in the implementation plan.
-
-**Estimated Time:** 30 minutes
-
-**Status:** Pending
-
----
-
 #### Task: Consider using ChevronRight instead of rotated ChevronLeft (Priority: P4)
 
 **Checklist:**
@@ -1639,55 +1616,5 @@ While size conversion is straightforward (xs=12, sm=16, md=20, lg=24, xl=32), do
 The current implementation uses `ChevronLeft` rotated 180 degrees for the Next button. While functionally equivalent, using `ChevronRight` directly is more semantically correct and eliminates the CSS rotation. This is a minor stylistic preference - the current implementation works fine.
 
 **Estimated Time:** 15 minutes
-
-**Status:** Pending
-
----
-
-#### Task: Consider adding integration tests for behavior tests (Priority: P4)
-
-**Checklist:**
-
-- [ ] Research integration test patterns for Astro components
-- [ ] Create example integration test for TransactionList.astro
-- [ ] Verify actual DOM output contains expected elements
-- [ ] Document pattern for future component tests
-- [ ] Run quality gates
-
-**Files to modify:**
-
-- `src/components/organisms/TransactionList.behavior.test.ts` (add integration tests)
-- Create new file: `src/components/organisms/TransactionList.integration.test.ts`
-
-**Rationale:**
-
-Current behavior tests are primarily declarative (`expect(true).toBe(true)` patterns) that document expected behavior but don't actually render and verify the component output. Adding integration tests would provide actual verification of component rendering.
-
-**Estimated Time:** 2-3 hours
-
-**Status:** Pending
-
----
-
-#### Task: Move manual test checklist to separate documentation file (Priority: P4)
-
-**Checklist:**
-
-- [ ] Extract manual test checklist from TransactionList.behavior.test.ts
-- [ ] Create docs/manual-testing/TransactionList.md
-- [ ] Update behavior test file to reference the documentation
-- [ ] Apply same pattern to other behavior tests with manual checklists
-- [ ] Run quality gates
-
-**Files to modify:**
-
-- `docs/manual-testing/TransactionList.md` (create)
-- `src/components/organisms/TransactionList.behavior.test.ts` (remove checklist, add reference)
-
-**Rationale:**
-
-The manual test checklist is comprehensive and provides thorough coverage, but having it in the test file makes it harder to maintain. Moving to a separate documentation file improves maintainability and makes it easier to follow during manual testing.
-
-**Estimated Time:** 30 minutes
 
 **Status:** Pending

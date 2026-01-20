@@ -16,8 +16,18 @@
 
 import { formatCurrency, formatPercentage } from '@/lib/tokens';
 import Badge from '../atoms/Badge.astro';
-import Icon from '../atoms/Icon.astro';
 import EmptyState from '../atoms/EmptyState.astro';
+import {
+  TriangleAlert,
+  Bell,
+  Pencil,
+  Eye,
+  ChevronRight,
+  Download,
+  ChevronUp,
+  ChevronDown,
+  ArrowUpDown,
+} from '@lucide/astro';
 
 export interface BudgetCategory {
   category_id: string;
@@ -168,15 +178,22 @@ const buildSortUrl = (
   return `${baseUrl}?${params.toString()}`;
 };
 
-// Get sort icon
-const getSortIcon = (column: string, currentSort: string, currentOrder: string): string => {
+// Get sort icon component and class
+const getSortIcon = (
+  column: string,
+  currentSort: string,
+  currentOrder: string
+): {
+  Icon: typeof ArrowUpDown | typeof ChevronUp | typeof ChevronDown;
+  className: string;
+} => {
   if (column !== currentSort) {
-    return `<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" /></svg>`;
+    return { Icon: ArrowUpDown, className: 'opacity-30' };
   }
   if (currentOrder === 'asc') {
-    return `<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h6m4 4l4-4m0 0l4 4m-4-4l-4 4" /></svg>`;
+    return { Icon: ChevronUp, className: '' };
   }
-  return `<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h9m4-4l4 4m0 0l-4-4m-4 4l4 4" /></svg>`;
+  return { Icon: ChevronDown, className: '' };
 };
 
 // Helper to build export URL from baseUrl
@@ -206,20 +223,7 @@ const buildExportUrl = (): string => {
       {
         baseUrl && (
           <a href={buildExportUrl()} class="btn btn-outline btn-sm gap-2" download>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="h-4 w-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-              />
-            </svg>
+            <Download size={16} class="stroke-current" aria-hidden="true" />
             Export CSV
           </a>
         )
@@ -231,13 +235,13 @@ const buildExportUrl = (): string => {
           <div class="flex items-center gap-2">
             {categories_exceeded > 0 && (
               <Badge variant="error" size="lg" className="gap-1">
-                <Icon name="warning" size="sm" />
+                <TriangleAlert size={16} class="stroke-current" aria-hidden="true" />
                 {categories_exceeded} exceeded
               </Badge>
             )}
             {categories_warning > 0 && (
               <Badge variant="warning" size="lg" className="gap-1">
-                <Icon name="alert" size="sm" />
+                <Bell size={16} class="stroke-current" aria-hidden="true" />
                 {categories_warning} warning
               </Badge>
             )}
@@ -259,45 +263,113 @@ const buildExportUrl = (): string => {
               <a
                 href={buildSortUrl('category', sortBy, sortOrder, baseUrl)}
                 class="flex items-center gap-1 hover:text-primary transition-colors cursor-pointer"
+                aria-sort={
+                  sortBy === 'category'
+                    ? sortOrder === 'asc'
+                      ? 'ascending'
+                      : 'descending'
+                    : 'none'
+                }
               >
                 Category
-                <span set:html={getSortIcon('category', sortBy, sortOrder)} />
+                {(() => {
+                  const { Icon, className: iconClassName } = getSortIcon(
+                    'category',
+                    sortBy,
+                    sortOrder
+                  );
+                  return (
+                    <Icon size={16} class={`stroke-current ${iconClassName}`} aria-hidden="true" />
+                  );
+                })()}
               </a>
             </div>
             <div class="col-span-1 text-center">
               <a
                 href={buildSortUrl('percentage', sortBy, sortOrder, baseUrl)}
                 class="flex items-center justify-center gap-1 hover:text-primary transition-colors cursor-pointer"
+                aria-sort={
+                  sortBy === 'percentage'
+                    ? sortOrder === 'asc'
+                      ? 'ascending'
+                      : 'descending'
+                    : 'none'
+                }
               >
                 %
-                <span set:html={getSortIcon('percentage', sortBy, sortOrder)} />
+                {(() => {
+                  const { Icon, className: iconClassName } = getSortIcon(
+                    'percentage',
+                    sortBy,
+                    sortOrder
+                  );
+                  return (
+                    <Icon size={16} class={`stroke-current ${iconClassName}`} aria-hidden="true" />
+                  );
+                })()}
               </a>
             </div>
             <div class="col-span-2 text-right">
               <a
                 href={buildSortUrl('budget', sortBy, sortOrder, baseUrl)}
                 class="flex items-center justify-end gap-1 hover:text-primary transition-colors cursor-pointer"
+                aria-sort={
+                  sortBy === 'budget' ? (sortOrder === 'asc' ? 'ascending' : 'descending') : 'none'
+                }
               >
                 Budget
-                <span set:html={getSortIcon('budget', sortBy, sortOrder)} />
+                {(() => {
+                  const { Icon, className: iconClassName } = getSortIcon(
+                    'budget',
+                    sortBy,
+                    sortOrder
+                  );
+                  return (
+                    <Icon size={16} class={`stroke-current ${iconClassName}`} aria-hidden="true" />
+                  );
+                })()}
               </a>
             </div>
             <div class="col-span-2 text-right">
               <a
                 href={buildSortUrl('spent', sortBy, sortOrder, baseUrl)}
                 class="flex items-center justify-end gap-1 hover:text-primary transition-colors cursor-pointer"
+                aria-sort={
+                  sortBy === 'spent' ? (sortOrder === 'asc' ? 'ascending' : 'descending') : 'none'
+                }
               >
                 Expense
-                <span set:html={getSortIcon('spent', sortBy, sortOrder)} />
+                {(() => {
+                  const { Icon, className: iconClassName } = getSortIcon(
+                    'spent',
+                    sortBy,
+                    sortOrder
+                  );
+                  return (
+                    <Icon size={16} class={`stroke-current ${iconClassName}`} aria-hidden="true" />
+                  );
+                })()}
               </a>
             </div>
             <div class="col-span-2 text-right">
               <a
                 href={buildSortUrl('balance', sortBy, sortOrder, baseUrl)}
                 class="flex items-center justify-end gap-1 hover:text-primary transition-colors cursor-pointer"
+                aria-sort={
+                  sortBy === 'balance' ? (sortOrder === 'asc' ? 'ascending' : 'descending') : 'none'
+                }
               >
                 Balance
-                <span set:html={getSortIcon('balance', sortBy, sortOrder)} />
+                {(() => {
+                  const { Icon, className: iconClassName } = getSortIcon(
+                    'balance',
+                    sortBy,
+                    sortOrder
+                  );
+                  return (
+                    <Icon size={16} class={`stroke-current ${iconClassName}`} aria-hidden="true" />
+                  );
+                })()}
               </a>
             </div>
             <div class="col-span-1">{enableEdit && <span>Edit</span>}</div>
@@ -373,14 +445,14 @@ const buildExportUrl = (): string => {
                         onclick={`quickEditBudget("${category.category_id}")`}
                         class="btn btn-ghost btn-xs gap-1"
                       >
-                        <Icon name="pencil" size="xs" />
+                        <Pencil size={12} class="stroke-current" aria-hidden="true" />
                         Edit Budget
                       </button>
                       <a
                         href={`/transactions?category_id=${category.category_id}`}
                         class="btn btn-ghost btn-xs gap-1"
                       >
-                        <Icon name="eye" size="xs" />
+                        <Eye size={12} class="stroke-current" aria-hidden="true" />
                         View
                       </a>
                     </div>
@@ -428,7 +500,7 @@ const buildExportUrl = (): string => {
                         title={`Edit ${category.category_name} budget`}
                         aria-label={`Edit ${category.category_name} budget`}
                       >
-                        <Icon name="pencil" size="xs" />
+                        <Pencil size={12} class="stroke-current" aria-hidden="true" />
                       </button>
                       <a
                         href={`/transactions?category_id=${category.category_id}`}
@@ -436,7 +508,7 @@ const buildExportUrl = (): string => {
                         title={`View ${category.category_name} transactions`}
                         aria-label={`View ${category.category_name} transactions`}
                       >
-                        <Icon name="chevron-up" size="xs" className="rotate-90" />
+                        <ChevronRight size={12} class="stroke-current" aria-hidden="true" />
                       </a>
                     </div>
                   </div>
@@ -486,7 +558,11 @@ const buildExportUrl = (): string => {
               <div class="hidden lg:block col-span-3">
                 <span class={`font-bold ${totalPercentage > 100 ? 'text-error' : 'text-success'}`}>
                   {totalPercentage > 100 && (
-                    <Icon name="warning" size="sm" className="text-error inline mr-1" />
+                    <TriangleAlert
+                      size={16}
+                      class="stroke-current inline mr-1"
+                      aria-hidden="true"
+                    />
                   )}
                   {formatPercentage(totalPercentage)}
                 </span>
@@ -629,19 +705,15 @@ const buildExportUrl = (): string => {
       const toast = document.createElement('div');
       toast.className = `alert alert-${type} shadow-lg fixed top-4 right-4 z-50 max-w-sm`;
       toast.setAttribute('role', 'alert');
+
+      // Use Lucide icon paths for consistency
+      const iconSvg =
+        type === 'success'
+          ? '<svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="2"><circle cx="12" cy="12" r="10"/><path stroke-linecap="round" stroke-linejoin="round" d="m9 12 2 2 4-4"/></svg>'
+          : '<svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="2"><circle cx="12" cy="12" r="10"/><path stroke-linecap="round" stroke-linejoin="round" d="m15 9-6 6"/><path stroke-linecap="round" stroke-linejoin="round" d="m9 9 6 6"/></svg>';
+
       toast.innerHTML = `
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          class="stroke-current shrink-0 h-6 w-6"
-          fill="none"
-          viewBox="0 0 24 24"
-        >
-          ${
-            type === 'success'
-              ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />'
-              : '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />'
-          }
-        </svg>
+        ${iconSvg}
         <span>${message}</span>
       `;
 
