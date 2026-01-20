@@ -1424,27 +1424,75 @@ Inline SVG → Lucide icon path (verified correct):
 
 **Checklist:**
 
-- [ ] Migrate budget/history.astro
-- [ ] Migrate register.astro
-- [ ] Migrate signup.astro
-- [ ] Test page functionality
-- [ ] Run quality gates
+- [x] Migrate budget/history.astro
+- [x] Migrate register.astro
+- [x] Migrate signup.astro
+- [x] Test page functionality
+- [x] Run quality gates
+- [x] Write behavior tests
+- [x] Code review specialist review (APPROVED)
+- [x] Fix P1 feedback (XSS prevention - added escapeHtml to register.astro)
+- [x] Fix P3 feedback (added shrink-0 to SlidersHorizontal)
 
-**Files to modify:**
+**Files modified:**
 
 - `src/pages/budget/history.astro`
+- `src/pages/budget/history.behavior.test.ts` (created)
 - `src/pages/register.astro`
+- `src/pages/register.behavior.test.ts` (created)
 - `src/pages/signup.astro`
+- `src/pages/signup.behavior.test.ts` (created)
 
-**Common inline SVGs:**
+**Icons replaced:**
 
-- Form icons
-- Navigation icons
-- Status indicators
+**budget/history.astro:**
+
+Server-side (Lucide components):
+
+- Filter icon → `SlidersHorizontal` (currency selector, size 16px, class="stroke-current shrink-0")
+- Error alert inline SVG → `CircleX` (error icon, size 24px, class="shrink-0")
+
+**register.astro:**
+
+Server-side (Lucide components):
+
+- Error alert inline SVG → `CircleX` (error icon, size 24px, class="shrink-0")
+
+Client-side (inline SVG with Lucide paths):
+
+- Error alert inline SVG → Lucide CircleX icon paths (circle + 2 diagonal paths)
+- Success alert inline SVG → Lucide CircleCheck icon paths (circle + check path)
+
+**signup.astro:**
+
+Server-side (Lucide components):
+
+- Error alert inline SVG → `CircleX` (error icon, size 24px, class="shrink-0")
+
+Client-side (inline SVG with Lucide paths):
+
+- Error alert inline SVG → Lucide CircleX icon paths (circle + 2 diagonal paths)
+- Success alert inline SVG → Lucide CircleCheck icon paths (circle + check path)
+
+**Implementation Notes:**
+
+- Replaced `import Icon from '../atoms/Icon.astro'` with Lucide icon imports
+- Used `SlidersHorizontal` instead of deprecated `Filter` icon in budget/history.astro
+- Size conversions: h-4 w-4 (16px) = size={16}, h-6 w-6 (24px) = size={24}
+- Added `stroke-current` class to button icons for color inheritance
+- Added `shrink-0` class to all icons for proper flex layout
+- Added `aria-hidden="true"` to all decorative icons for accessibility
+- Error states use `role="alert"`
+- Client-side SVGs use Lucide icon paths (necessary due to dynamic innerHTML creation)
+- Added `escapeHtml` function to register.astro for comprehensive XSS prevention (P1 fix)
+- Updated validation error escaping to use DOM-based escapeHtml instead of .replace()
+- Created comprehensive behavior test files with 60+ tests each
+- All quality gates pass (typecheck, lint, stylelint, format)
+- Code review specialist: **APPROVED** with P1 feedback addressed
 
 **Estimated Time:** 2-3 hours
 
-**Status:** Pending
+**Status:** ✅ Completed (commit pending)
 
 ---
 
@@ -1594,7 +1642,7 @@ All dependencies are already in package.json.
 ## Success Criteria
 
 - [ ] All 24 files using Icon.astro component are migrated to Lucide (20/24 done)
-- [ ] All 20 files with inline SVGs are migrated to Lucide (15/20 done)
+- [ ] All 20 files with inline SVGs are migrated to Lucide (18/20 done)
 - [ ] Icon.astro component is deleted (blocked by remaining usages)
 - [ ] Icon.stories.ts is deleted (blocked by remaining usages)
 - [ ] No inline SVG elements remain in components or pages
@@ -1616,10 +1664,10 @@ All dependencies are already in package.json.
 - Phase 5 (Organism Components): ✅ 6/6 tasks completed (TransactionList.astro, BudgetOverviewTable.astro, RecentTransactionsList.astro, AssetUpdateTodoList.astro, BudgetHistoryComparison.astro, DashboardError.astro)
 - Phase 6 (Page Components): ✅ 3/3 tasks completed (budget/index.astro, settings pages, transaction pages)
 - Phase 7 (Inline SVGs - Atoms & Molecules): ✅ 5/5 tasks completed (ErrorMessage.astro, Toast.astro, ToastContainer.astro, AuthValidationMessages.astro, Form Components)
-- Phase 8 (Inline SVGs - Organisms & Pages): 🚧 1/2 tasks completed (SummaryCards.astro, UserContext.astro ✅; budget/history.astro, register.astro, signup.astro remaining)
+- Phase 8 (Inline SVGs - Organisms & Pages): ✅ 2/2 tasks completed (SummaryCards.astro, UserContext.astro ✅; budget/history.astro, register.astro, signup.astro ✅)
 - Phase 9 (Cleanup & Docs): Pending
 
-**Overall Progress:** 29/31 tasks completed (94%)
+**Overall Progress:** 30/31 tasks completed (97%)
 
 ## Estimated Effort
 
@@ -1632,9 +1680,9 @@ All dependencies are already in package.json.
 | 5. Organism Components (Icon.astro) | 6      | 6         | 7-9 hours       | P1       |
 | 6. Page Components (Icon.astro)     | 3      | 3         | 4-5 hours       | P1       |
 | 7. Inline SVGs - Atoms & Molecules  | 5      | 5         | 6-7.5 hours     | P1       |
-| 8. Inline SVGs - Organisms & Pages  | 2      | 1         | 4-6 hours       | P1       |
+| 8. Inline SVGs - Organisms & Pages  | 2      | 2         | 4-6 hours       | P1       |
 | 9. Cleanup & Docs                   | 3      | 0         | 2.5 hours       | P2       |
-| **Total**                           | **31** | **29**    | **37-46 hours** |          |
+| **Total**                           | **31** | **30**    | **37-46 hours** |          |
 
 **Recommended Approach:** Complete phases sequentially. Each phase builds on the previous one and allows for early feedback on patterns.
 

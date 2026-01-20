@@ -10,6 +10,7 @@ import Input from '../components/atoms/Input.astro';
 import PasswordField from '../components/atoms/PasswordField.astro';
 import Label from '../components/atoms/Label.astro';
 import Button from '../components/atoms/Button.astro';
+import { CircleX } from '@lucide/astro';
 
 // Get error message from query params (if any)
 const url = new URL(Astro.request.url);
@@ -33,19 +34,7 @@ const cspNonce = Astro.locals.cspNonce || '';
     {
       errorMessage && (
         <div role="alert" class="alert alert-error mb-4">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            class="stroke-current shrink-0 h-6 w-6"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
+          <CircleX size={24} class="shrink-0" aria-hidden="true" />
           <span>{errorMessage}</span>
         </div>
       )
@@ -183,7 +172,9 @@ const cspNonce = Astro.locals.cspNonce || '';
         messagesContainer.innerHTML = `
           <div role="alert" class="alert alert-error">
             <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              <circle cx="12" cy="12" r="10"></circle>
+              <path d="m15 9-6 6"></path>
+              <path d="m9 9 6 6"></path>
             </svg>
             <div>
               <h3 class="font-bold">Please fix the following errors:</h3>
@@ -223,7 +214,8 @@ const cspNonce = Astro.locals.cspNonce || '';
           messagesContainer.innerHTML = `
             <div role="alert" class="alert alert-success">
               <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="m9 12 2 2 4-4"></path>
               </svg>
               <span>Account created successfully! Redirecting to login...</span>
             </div>
@@ -241,7 +233,9 @@ const cspNonce = Astro.locals.cspNonce || '';
           messagesContainer.innerHTML = `
             <div role="alert" class="alert alert-error">
               <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="m15 9-6 6"></path>
+                <path d="m9 9 6 6"></path>
               </svg>
               <span>${escapeHtml(result.error?.message || 'Registration failed. Please try again.')}</span>
             </div>
@@ -252,7 +246,9 @@ const cspNonce = Astro.locals.cspNonce || '';
         messagesContainer.innerHTML = `
           <div role="alert" class="alert alert-error">
             <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              <circle cx="12" cy="12" r="10"></circle>
+              <path d="m15 9-6 6"></path>
+              <path d="m9 9 6 6"></path>
             </svg>
             <span>An error occurred. Please try again.</span>
           </div>
