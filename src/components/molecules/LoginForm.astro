@@ -28,15 +28,15 @@ const { errorMessage = '', email = '', redirectTo = '' } = Astro.props;
 const cspNonce = Astro.locals.cspNonce || '';
 ---
 
-<div class="card bg-base-100 shadow-xl">
-  <div class="card-body">
-    <h2 class="card-title text-2xl font-bold mb-4">Sign In</h2>
+<div class="card bg-base-100 shadow-2xl border border-base-300">
+  <div class="card-body p-8">
+    <h2 class="text-2xl font-bold mb-6 text-center">Welcome Back</h2>
 
     <div id="login-messages" aria-live="polite" aria-atomic="true">
       {errorMessage && <ErrorMessage message={errorMessage} />}
     </div>
 
-    <form id="login-form" class="space-y-4" novalidate>
+    <form id="login-form" class="space-y-5" novalidate>
       <!-- Email Field -->
       <div class="form-control">
         <Label htmlFor="email" required>Email</Label>
@@ -65,18 +65,20 @@ const cspNonce = Astro.locals.cspNonce || '';
       </div>
 
       <!-- Submit Button -->
-      <Button id="login-submit-button" type="submit" variant="primary" className="w-full">
-        <span data-button-text>Sign In</span>
-        <span data-loading-spinner class="hidden">
-          <span class="loading loading-spinner"></span>
-          Signing In...
-        </span>
-      </Button>
+      <div class="pt-2">
+        <Button id="login-submit-button" type="submit" variant="primary" className="w-full">
+          <span data-button-text>Sign In</span>
+          <span data-loading-spinner class="hidden">
+            <span class="loading loading-spinner"></span>
+            Signing In...
+          </span>
+        </Button>
+      </div>
 
       <!-- Sign Up Link -->
-      <div class="text-center text-sm">
+      <div class="text-center text-sm pt-4 border-t border-base-300">
         Don't have an account?
-        <a href="/register" class="text-primary hover:underline font-medium ml-1">Sign up</a>
+        <a href="/register" class="text-primary hover:underline font-semibold ml-1">Sign up</a>
       </div>
     </form>
   </div>

@@ -16,29 +16,26 @@ const { title = 'Finance Manager - Login' } = Astro.props;
 ---
 
 <BaseLayout title={title}>
-  <div class="min-h-screen flex flex-col bg-base-200">
-    <!-- Header with Logo/Branding -->
-    <header class="p-4 lg:p-6">
-      <div class="container mx-auto">
-        <div class="flex items-center gap-2">
-          <div class="w-10 h-10 rounded-lg bg-primary flex items-center justify-center">
-            <span class="text-white font-bold text-xl">FM</span>
+  <div class="min-h-screen flex items-center justify-center bg-base-200 p-4">
+    <div class="w-full max-w-md">
+      <!-- Logo/Branding -->
+      <div class="text-center mb-8">
+        <div class="flex items-center justify-center gap-3 mb-2">
+          <div class="w-12 h-12 rounded-lg bg-primary flex items-center justify-center">
+            <span class="text-white font-bold text-2xl">FM</span>
           </div>
-          <h1 class="text-xl font-bold text-base-content">Finance Manager</h1>
+          <h1 class="text-2xl font-bold text-base-content">Finance Manager</h1>
         </div>
+        <p class="text-sm text-base-content/70 mt-2">Manage your finances with ease</p>
       </div>
-    </header>
 
-    <!-- Main Content - Centered Card Container -->
-    <main class="flex-1 flex items-center justify-center p-4">
-      <div class="w-full max-w-md">
-        <slot />
-      </div>
-    </main>
+      <!-- Main Content -->
+      <slot />
 
-    <!-- Footer with Copyright -->
-    <footer class="p-4 text-center text-sm text-base-content/70">
-      <p>&copy; 2026 Finance Manager. All rights reserved.</p>
-    </footer>
+      <!-- Footer -->
+      <p class="text-center text-xs text-base-content/60 mt-8">
+        &copy; 2026 Finance Manager. All rights reserved.
+      </p>
+    </div>
   </div>
 </BaseLayout>
