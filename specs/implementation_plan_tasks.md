@@ -963,18 +963,48 @@ Inline SVG → Lucide components:
 
 **Checklist:**
 
-- [ ] Read current budget/index.astro implementation
-- [ ] Replace all Icon usage with Lucide
-- [ ] Test page functionality
-- [ ] Run quality gates
+- [x] Read current budget/index.astro implementation
+- [x] Replace all Icon usage with Lucide
+- [x] Test page functionality
+- [x] Run quality gates
+- [x] Write behavior tests (index.behavior.test.ts)
+- [x] Code review specialist review (APPROVED)
+- [x] Fix P1 feedback (added stroke-current to CircleX)
 
-**Files to modify:**
+**Files modified:**
 
 - `src/pages/budget/index.astro`
+- `src/pages/budget/index.behavior.test.ts` (created)
+
+**Icons replaced:**
+
+Server-side (Lucide components):
+
+- `alert` → `TriangleAlert` (budget alerts header, size 20px)
+- Inline filter SVG → `ChevronDown` (currency dropdown, size 16px)
+- Inline arrow-left SVG → `ChevronLeft` (previous month button, size 20px)
+- Inline arrow-right SVG → `ChevronRight` (next month button, size 20px)
+- Inline XCircle SVG → `CircleX` (error alert, size 24px)
+- Inline plus SVG → `Plus` (Add Expense button, size 20px)
+- Inline tag SVG → `Tag` (Manage Categories button, size 20px)
+- Inline info SVG → `Info` (allocation percentage hint, size 16px)
+
+**Implementation Notes:**
+
+- Replaced `import Icon from '@components/atoms/Icon.astro'` with `import { TriangleAlert, ChevronDown, ChevronLeft, ChevronRight, CircleX, Plus, Tag, Info } from '@lucide/astro'`
+- Replaced `<Icon name="alert" size="md" className="text-warning" />` with `<TriangleAlert size={20} class="text-warning" aria-hidden="true" />`
+- Size conversions: md (20px) = size={20}, sm (16px) = size={16}, h-4 w-4 = size={16}, h-5 w-5 = size={20}, h-6 w-6 = size={24}
+- Added `stroke-current` class to all icons for color inheritance
+- Added `aria-hidden="true"` to all decorative icons for accessibility
+- Buttons have `aria-label` for accessibility (previous/next month navigation)
+- Error state uses `role="alert"`
+- Created comprehensive behavior test file with 78 tests covering icon migration, page structure, components, data flow, accessibility, responsive design, client-side behavior, and integration points
+- All quality gates pass (typecheck, lint, stylelint, format)
+- Code review specialist: **APPROVED** with P1 feedback addressed
 
 **Estimated Time:** 1 hour
 
-**Status:** Pending
+**Status:** ✅ Completed
 
 ---
 
@@ -1409,7 +1439,7 @@ All dependencies are already in package.json.
 
 ## Success Criteria
 
-- [ ] All 24 files using Icon.astro component are migrated to Lucide (15/24 done)
+- [ ] All 24 files using Icon.astro component are migrated to Lucide (16/24 done)
 - [ ] All 20 files with inline SVGs are migrated to Lucide (6/20 done)
 - [ ] Icon.astro component is deleted (blocked by remaining usages)
 - [ ] Icon.stories.ts is deleted (blocked by remaining usages)
@@ -1430,9 +1460,10 @@ All dependencies are already in package.json.
 - Phase 3 (Layout Components): ✅ 2/2 tasks completed
 - Phase 4 (Molecule Components): ✅ 7/7 tasks completed (Modal.astro, QuickActions.astro, BudgetHealthWidget.astro, TransactionRow.astro, TransactionFilters.astro, TransactionForm.astro, CSVImportForm.astro)
 - Phase 5 (Organism Components): ✅ 6/6 tasks completed (TransactionList.astro, BudgetOverviewTable.astro, RecentTransactionsList.astro, AssetUpdateTodoList.astro, BudgetHistoryComparison.astro, DashboardError.astro)
-- Phase 6-9: Pending
+- Phase 6 (Page Components): 🔄 1/3 tasks completed (budget/index.astro)
+- Phase 7-9: Pending
 
-**Overall Progress:** 19/31 tasks completed (61%)
+**Overall Progress:** 20/31 tasks completed (65%)
 
 ## Estimated Effort
 
@@ -1443,11 +1474,11 @@ All dependencies are already in package.json.
 | 3. Layout Components (Icon.astro)   | 2      | 2         | 3 hours         | P0       |
 | 4. Molecule Components (Icon.astro) | 7      | 7         | 7-9 hours       | P1       |
 | 5. Organism Components (Icon.astro) | 6      | 6         | 7-9 hours       | P1       |
-| 6. Page Components (Icon.astro)     | 3      | 0         | 4-5 hours       | P1       |
+| 6. Page Components (Icon.astro)     | 3      | 1         | 4-5 hours       | P1       |
 | 7. Inline SVGs - Atoms & Molecules  | 5      | 0         | 6-7.5 hours     | P1       |
 | 8. Inline SVGs - Organisms & Pages  | 2      | 1         | 4-6 hours       | P1       |
 | 9. Cleanup & Docs                   | 3      | 0         | 2.5 hours       | P2       |
-| **Total**                           | **31** | **19**    | **37-46 hours** |          |
+| **Total**                           | **31** | **20**    | **37-46 hours** |          |
 
 **Recommended Approach:** Complete phases sequentially. Each phase builds on the previous one and allows for early feedback on patterns.
 
