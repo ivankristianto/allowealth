@@ -215,13 +215,13 @@ For inline SVGs with class-based sizing:
 
 **Current Usage Pattern:**
 
-```astro
+```
 <Icon name="search" size="xl" />
 ```
 
 **New Pattern:**
 
-```astro
+```
 import {Search} from '@lucide/astro';
 <Search size={32} />
 ```
@@ -317,7 +317,7 @@ import {Search} from '@lucide/astro';
 
 **UI Example:**
 
-```astro
+```
 <!-- Before -->
 <Icon name="home" size="sm" />
 
@@ -1130,7 +1130,7 @@ Server-side (Lucide components):
 
 **New Pattern:**
 
-```astro
+```
 ---
 import { XCircle, X } from '@lucide/astro';
 ---
@@ -1199,7 +1199,7 @@ const alertConfig = {
 
 **New Pattern (Lucide Component):**
 
-```astro
+```
 ---
 import { AlertTriangle, XCircle, Lock, AlertCircle } from '@lucide/astro';
 
@@ -1521,7 +1521,7 @@ All dependencies are already in package.json.
 
 ### Before (Custom Icon Component)
 
-```astro
+```
 ---
 import Icon from '../atoms/Icon.astro';
 ---
@@ -1534,7 +1534,7 @@ import Icon from '../atoms/Icon.astro';
 
 ### After (Lucide Icons)
 
-```astro
+```
 ---
 import { Plus } from '@lucide/astro';
 ---
@@ -1547,7 +1547,7 @@ import { Plus } from '@lucide/astro';
 
 ### Multiple Icons
 
-```astro
+```
 ---
 import { Plus, Edit, Trash2, Check } from '@lucide/astro';
 ---
@@ -1562,7 +1562,7 @@ import { Plus, Edit, Trash2, Check } from '@lucide/astro';
 
 ### Icon with ARIA
 
-```astro
+```
 ---
 import { X } from '@lucide/astro';
 ---
@@ -1583,7 +1583,7 @@ import { X } from '@lucide/astro';
 
 #### Before (Inline SVG Element)
 
-```astro
+```
 <div class="alert alert-error">
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -1603,7 +1603,7 @@ import { X } from '@lucide/astro';
 
 #### After (Lucide Icon)
 
-```astro
+```
 ---
 import { XCircle } from '@lucide/astro';
 ---
@@ -1631,7 +1631,7 @@ const alertConfig = {
 
 #### After (Lucide Component Map)
 
-```astro
+```
 ---
 import { AlertTriangle, XCircle, Lock, AlertCircle } from '@lucide/astro';
 
@@ -1662,7 +1662,7 @@ const config = alertConfig[type];
 
 #### Before (Conditional SVG)
 
-```astro
+```
 <button onclick="togglePassword()">
   {
     showPassword ? (
@@ -1690,7 +1690,7 @@ const config = alertConfig[type];
 
 #### After (Conditional Lucide Icons)
 
-```astro
+```
 ---
 import { Eye, EyeOff } from '@lucide/astro';
 
@@ -1834,5 +1834,80 @@ The current behavior test files serve as comprehensive documentation but use `ex
 Current icon implementations use `stroke-current` class which correctly inherits color via `currentColor`. However, stroke width handling varies - some components may benefit from explicit stroke-width classes for visual consistency. Review and document the preferred pattern for the project.
 
 **Estimated Time:** 1-2 hours
+
+**Status:** Pending
+
+---
+
+#### Task: Add stroke-current to Info icons in transaction pages (Priority: P2)
+
+**Checklist:**
+
+- [ ] Add `stroke-current` class to Info icon in transactions/import.astro
+- [ ] Add `stroke-current` class to Info icon in transactions/export.astro
+- [ ] Verify icons inherit color correctly in alert-info context
+- [ ] Run quality gates
+
+**Files to modify:**
+
+- `src/pages/transactions/import.astro`
+- `src/pages/transactions/export.astro`
+
+**Rationale:**
+
+The Info icons in both transaction pages use `class="shrink-0"` but other Lucide icons in alert contexts consistently use `class="stroke-current shrink-0"` (see budget/index.astro:355). Adding `stroke-current` ensures the icon inherits text color from its parent, providing better visual consistency when themes change.
+
+**Current:**
+
+```
+<Info size={16} class="shrink-0" aria-hidden="true" />
+```
+
+**Should be:**
+
+```
+<Info size={16} class="stroke-current shrink-0" aria-hidden="true" />
+```
+
+**Estimated Time:** 15 minutes
+
+**Status:** Pending
+
+---
+
+#### Task: Replace ArrowRight with Download icon for template download (Priority: P2)
+
+**Checklist:**
+
+- [ ] Replace ArrowRight import with Download in transactions/import.astro
+- [ ] Update icon usage in template download link
+- [ ] Verify visual consistency with export.astro Download icon
+- [ ] Run quality gates
+
+**Files to modify:**
+
+- `src/pages/transactions/import.astro`
+
+**Rationale:**
+
+The template download link uses ArrowRight icon, but semantically a Download icon would be more appropriate for a download action. Users associate arrow-right with navigation/forward actions, not downloads. The export.astro page already correctly uses the Download icon for its download action, so this would create consistency.
+
+**Current:**
+
+```
+import { Info, ArrowRight } from '@lucide/astro';
+...
+<ArrowRight size={16} class="stroke-current" aria-hidden="true" />
+```
+
+**Should be:**
+
+```
+import { Info, Download } from '@lucide/astro';
+...
+<Download size={16} class="stroke-current" aria-hidden="true" />
+```
+
+**Estimated Time:** 10 minutes
 
 **Status:** Pending

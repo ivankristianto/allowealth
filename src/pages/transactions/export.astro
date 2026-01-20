@@ -8,7 +8,7 @@
 
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import TransactionFilters from '../../components/molecules/TransactionFilters.astro';
-import Icon from '../../components/atoms/Icon.astro';
+import { Info, Download } from '@lucide/astro';
 import { categoryService, paymentMethodService } from '@/services';
 
 const user = Astro.locals.user!;
@@ -53,7 +53,7 @@ const exportUrl = buildExportUrl();
       <div class="card-body">
         <!-- Instructions -->
         <div class="alert alert-info mb-6">
-          <Icon name="information" size="sm" />
+          <Info size={16} class="shrink-0" aria-hidden="true" />
           <div>
             <h3 class="font-bold">Export Options</h3>
             <div class="text-sm mt-2">
@@ -91,7 +91,7 @@ const exportUrl = buildExportUrl();
 
           <!-- Export Button -->
           <a href={exportUrl} class="btn btn-primary gap-2" download>
-            <Icon name="download" size="sm" />
+            <Download size={16} class="stroke-current" aria-hidden="true" />
             Download CSV Export
           </a>
         </div>
