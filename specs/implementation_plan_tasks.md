@@ -246,12 +246,13 @@ import {Search} from '@lucide/astro';
 
 **Checklist:**
 
-- [ ] Read current PasswordField.astro implementation
-- [ ] Replace Icon imports with Eye/EyeOff from Lucide
-- [ ] Update toggle visibility icon logic
-- [ ] Update PasswordField.stories.ts
-- [ ] Test in Storybook
-- [ ] Run quality gates
+- [x] Read current PasswordField.astro implementation
+- [x] Replace Icon imports with Eye/EyeOff from Lucide
+- [x] Update toggle visibility icon logic
+- [x] Update PasswordField.stories.ts
+- [x] Test in Storybook
+- [x] Run quality gates
+- [x] Fix P1 validation logic mismatch in stories
 
 **Files to modify:**
 
@@ -261,10 +262,19 @@ import {Search} from '@lucide/astro';
 **Icons to replace:**
 
 - `eye` → `Eye` and `EyeOff`
+- `check` → `Check` (for requirements checklist)
+- `x` → `X` (for requirements checklist)
+
+**Implementation Notes:**
+
+- Replaced inline SVGs for toggle button with `<Eye size={20} class="stroke-current" data-eye-icon />` and `<EyeOff size={20} class="hidden stroke-current" data-eye-off-icon />`
+- Replaced inline SVGs in requirements checklist with `<Check size={16} class="hidden shrink-0" data-check-icon />` and `<X size={16} class="shrink-0" data-x-icon />`
+- Fixed stories validation logic to match component (3 requirements: length, letter, numberOrSpecial)
+- Added `shrink-0` class to icons for proper flex layout
 
 **Estimated Time:** 1 hour
 
-**Status:** Pending
+**Status:** ✅ Completed
 
 ---
 
@@ -1384,3 +1394,26 @@ If issues are found: FIX IT.
 ### Code Quality & Accessibility Improvements (Priority: P3)
 
 **Note:** These tasks are follow-up improvements identified during code review. They are non-blocking but recommended for better code quality, accessibility, and maintainability. Use proper checklist when adding.
+
+#### Task: Add aria-hidden to decorative icons in PasswordField.astro (Priority: P2)
+
+**Checklist:**
+
+- [ ] Add `aria-hidden="true"` to Eye icon in PasswordField.astro
+- [ ] Add `aria-hidden="true"` to EyeOff icon in PasswordField.astro
+- [ ] Add `aria-hidden="true"` to Check icons in PasswordField.astro
+- [ ] Add `aria-hidden="true"` to X icons in PasswordField.astro
+- [ ] Test with screen reader to verify icons are not announced
+- [ ] Run quality gates
+
+**Files to modify:**
+
+- `src/components/atoms/PasswordField.astro`
+
+**Rationale:**
+
+The Eye, EyeOff, Check, and X icons are decorative and should have `aria-hidden="true"` to prevent screen readers from announcing them. The button already has an `aria-label` that describes the action, and the requirement list items have `aria-label` at the parent level. Adding `aria-hidden="true"` to decorative icons is a WCAG best practice that prevents redundant screen reader announcements.
+
+**Estimated Time:** 30 minutes
+
+**Status:** Pending

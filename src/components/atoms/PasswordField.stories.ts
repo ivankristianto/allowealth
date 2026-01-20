@@ -96,30 +96,17 @@ const createPasswordField = (args: {
   button.setAttribute('data-toggle-password', uniqueId);
   if (disabled) button.disabled = true;
 
-  // Eye icon (show)
-  const eyeIcon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  eyeIcon.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
-  eyeIcon.setAttribute('fill', 'none');
-  eyeIcon.setAttribute('viewBox', '0 0 24 24');
-  eyeIcon.setAttribute('stroke', 'currentColor');
-  eyeIcon.classList.add('h-5', 'w-5');
+  // Eye icon (show) - using Lucide icon
+  const eyeIcon = document.createElement('div');
+  eyeIcon.className = 'stroke-current';
   eyeIcon.setAttribute('data-eye-icon', '');
-  eyeIcon.innerHTML = `
-		<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-		<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-	`;
+  eyeIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>`;
 
-  // Eye slash icon (hide)
-  const eyeOffIcon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  eyeOffIcon.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
-  eyeOffIcon.setAttribute('fill', 'none');
-  eyeOffIcon.setAttribute('viewBox', '0 0 24 24');
-  eyeOffIcon.setAttribute('stroke', 'currentColor');
-  eyeOffIcon.classList.add('h-5', 'w-5', 'hidden');
+  // Eye slash icon (hide) - using Lucide icon
+  const eyeOffIcon = document.createElement('div');
+  eyeOffIcon.className = 'hidden stroke-current';
   eyeOffIcon.setAttribute('data-eye-off-icon', '');
-  eyeOffIcon.innerHTML = `
-		<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-	`;
+  eyeOffIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/></svg>`;
 
   button.appendChild(eyeIcon);
   button.appendChild(eyeOffIcon);
@@ -167,12 +154,11 @@ const createPasswordField = (args: {
     // Add strength calculation
     input.addEventListener('input', () => {
       const password = input.value;
+      // Validation matching component logic (3 requirements: length, letter, numberOrSpecial)
       const checks = {
         length: password.length >= 12,
-        uppercase: /[A-Z]/.test(password),
-        lowercase: /[a-z]/.test(password),
-        number: /[0-9]/.test(password),
-        special: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password),
+        letter: /[a-zA-Z]/.test(password),
+        numberOrSpecial: /[0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password),
       };
 
       const passedCount = Object.values(checks).filter(Boolean).length;
@@ -220,10 +206,8 @@ const createPasswordField = (args: {
 
     const requirements = [
       { key: 'length', text: 'At least 12 characters' },
-      { key: 'uppercase', text: 'At least one uppercase letter' },
-      { key: 'lowercase', text: 'At least one lowercase letter' },
-      { key: 'number', text: 'At least one number' },
-      { key: 'special', text: 'At least one special character' },
+      { key: 'letter', text: 'At least one letter (A-Z or a-z)' },
+      { key: 'numberOrSpecial', text: 'At least one number or special character' },
     ];
 
     requirements.forEach(({ key, text }) => {
@@ -231,25 +215,17 @@ const createPasswordField = (args: {
       li.className = 'flex items-center gap-2 text-base-content/60';
       li.setAttribute('data-requirement', key);
 
-      const checkIcon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-      checkIcon.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
-      checkIcon.setAttribute('fill', 'none');
-      checkIcon.setAttribute('viewBox', '0 0 24 24');
-      checkIcon.setAttribute('stroke', 'currentColor');
-      checkIcon.classList.add('h-4', 'w-4', 'hidden');
+      // Check icon - using Lucide Check icon
+      const checkIcon = document.createElement('div');
+      checkIcon.className = 'hidden shrink-0';
       checkIcon.setAttribute('data-check-icon', '');
-      checkIcon.innerHTML =
-        '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />';
+      checkIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
 
-      const xIcon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-      xIcon.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
-      xIcon.setAttribute('fill', 'none');
-      xIcon.setAttribute('viewBox', '0 0 24 24');
-      xIcon.setAttribute('stroke', 'currentColor');
-      xIcon.classList.add('h-4', 'w-4');
+      // X icon - using Lucide X icon
+      const xIcon = document.createElement('div');
+      xIcon.className = 'shrink-0';
       xIcon.setAttribute('data-x-icon', '');
-      xIcon.innerHTML =
-        '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />';
+      xIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>`;
 
       const span = document.createElement('span');
       span.textContent = text;
@@ -265,12 +241,11 @@ const createPasswordField = (args: {
     // Add requirement checking
     input.addEventListener('input', () => {
       const password = input.value;
+      // Validation matching component logic (3 requirements: length, letter, numberOrSpecial)
       const checks = {
         length: password.length >= 12,
-        uppercase: /[A-Z]/.test(password),
-        lowercase: /[a-z]/.test(password),
-        number: /[0-9]/.test(password),
-        special: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password),
+        letter: /[a-zA-Z]/.test(password),
+        numberOrSpecial: /[0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password),
       };
 
       Object.entries(checks).forEach(([key, passed]) => {
