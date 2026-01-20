@@ -1,578 +1,1367 @@
-# Toast Notifications & Client Utils Refactor
+# Icon Migration to @lucide/astro - Implementation Plan
 
-Implement a centralized Toast notification system using Nano Stores and Motion (within Astro) to replace legacy string-based alert injection and DOM manipulation utilities.
+Migrate all custom Icon components to use @lucide/astro icons for consistency, accessibility, and maintainability.
 
 ## Summary
 
-We are replacing the fragile `eval`-based injection of `createSuccessAlert`, `createErrorAlert`, and `setButtonLoading` with a modern, reactive Toast notification system. This involves creating a Nano Store for toast state and an Astro component that uses client-side JavaScript with Motion for smooth animations.
+The project currently uses a custom `Icon.astro` component with hardcoded SVG paths (Heroicons-style). The design system mandates using `@lucide/astro` for all icons. This migration will:
+
+1. Replace all custom Icon component usage with direct Lucide icon imports
+2. Remove the custom Icon.astro component and its stories
+3. Update all affected components, pages, and tests
+4. Ensure consistent icon sizing and styling across the application
 
 ### Proposed Changes
 
-#### New Files
+#### Scope of Migration
 
-- `src/lib/stores/toastStore.ts`
+The migration covers **TWO types of icon usage**:
+
+1. **Custom Icon Component** (Icon.astro) - 19 component files + 5 page files
+2. **Inline SVGs** - 20 files with hardcoded SVG elements
+
+**Total Files to Migrate:** 44 files
+
+#### Icon Name Mapping (Custom → Lucide)
+
+| Current Name    | Lucide Icon   | Import                     |
+| --------------- | ------------- | -------------------------- |
+| arrow-left      | ArrowLeft     | `{ ArrowLeft }`            |
+| arrow-right     | ArrowRight    | `{ ArrowRight }`           |
+| check           | Check         | `{ Check }`                |
+| x               | X             | `{ X }`                    |
+| plus            | Plus          | `{ Plus }`                 |
+| minus           | Minus         | `{ Minus }`                |
+| pencil          | Pencil/Edit   | `{ Pencil }` or `{ Edit }` |
+| trash           | Trash2        | `{ Trash2 }`               |
+| ban             | Ban/XCircle   | `{ Ban }` or `{ XCircle }` |
+| refresh         | RefreshCw     | `{ RefreshCw }`            |
+| tag             | Tag           | `{ Tag }`                  |
+| search          | Search        | `{ Search }`               |
+| calendar        | Calendar      | `{ Calendar }`             |
+| chevron-down    | ChevronDown   | `{ ChevronDown }`          |
+| chevron-up      | ChevronUp     | `{ ChevronUp }`            |
+| information     | Info          | `{ Info }`                 |
+| warning         | AlertTriangle | `{ AlertTriangle }`        |
+| alert           | Bell          | `{ Bell }`                 |
+| eye             | Eye/EyeOff    | `{ Eye }` or `{ EyeOff }`  |
+| currency-dollar | DollarSign    | `{ DollarSign }`           |
+| home            | Home          | `{ Home }`                 |
+| menu            | Menu          | `{ Menu }`                 |
+| list            | List          | `{ List }`                 |
+
+#### Files Using Icon.astro Component
+
+**Components (19 files)**
+
+- `src/components/atoms/EmptyState.astro`
+- `src/components/atoms/PasswordField.astro`
+- `src/components/layouts/Header.astro`
+- `src/components/layouts/Navigation.astro`
+- `src/components/molecules/BudgetHealthWidget.astro`
+- `src/components/molecules/CSVImportForm.astro`
+- `src/components/molecules/Modal.astro`
+- `src/components/molecules/QuickActions.astro`
+- `src/components/molecules/TransactionFilters.astro`
+- `src/components/molecules/TransactionForm.astro`
+- `src/components/molecules/TransactionRow.astro`
+- `src/components/organisms/AssetUpdateTodoList.astro`
+- `src/components/organisms/BudgetHistoryComparison.astro`
+- `src/components/organisms/BudgetOverviewTable.astro`
+- `src/components/organisms/DashboardError.astro`
+- `src/components/organisms/RecentTransactionsList.astro`
+- `src/components/organisms/TransactionList.astro`
+
+**Pages (5 files)**
+
+- `src/pages/budget/index.astro`
+- `src/pages/settings/categories.astro`
+- `src/pages/settings/payment-methods.astro`
+- `src/pages/transactions/export.astro`
+- `src/pages/transactions/import.astro`
+
+**Stories (11 files)**
+
+- `src/components/atoms/EmptyState.stories.ts`
+- `src/components/atoms/Icon.stories.ts` ✅ (will be deleted)
+- `src/components/atoms/PasswordField.stories.ts`
+- `src/components/layouts/Header.stories.ts`
+- `src/components/layouts/Navigation.stories.ts`
+- `src/components/molecules/BudgetHealthWidget.stories.ts`
+- `src/components/molecules/QuickActions.stories.ts`
+- `src/components/molecules/TransactionRow.stories.ts`
+- `src/components/organisms/AssetUpdateTodoList.stories.ts`
+- `src/components/organisms/RecentTransactionsList.stories.ts`
+
+**Files with Inline SVGs (20 files)**
+
+**Atoms (2 files)**
+
+- `src/components/atoms/ErrorMessage.astro`
+- `src/components/atoms/PasswordField.astro` (also uses Icon.astro)
+
+**Molecules (8 files)**
+
+- `src/components/molecules/AuthValidationMessages.astro` (SVG strings in config)
+- `src/components/molecules/BudgetHealthWidget.astro` (also uses Icon.astro)
+- `src/components/molecules/ForgotPasswordForm.astro`
+- `src/components/molecules/LoginForm.astro`
+- `src/components/molecules/RegistrationForm.astro`
+- `src/components/molecules/Toast.astro`
 - `src/components/molecules/ToastContainer.astro`
+- `src/components/molecules/TransactionForm.astro` (also uses Icon.astro)
 
-#### Modified Files
+**Organisms (6 files)**
 
-- `src/layouts/BaseLayout.astro`
-- `src/pages/settings/index.astro`
-- `src/components/molecules/PasswordChangeForm.astro`
-- `src/lib/client-utils.ts` (Cleanup)
-- `design-system/02-components.md` (Documentation)
-- `design-system/07-patterns.md` (Documentation)
-- `design-system/01-foundations.md` or new `08-animations.md` (Documentation)
-- `AGENTS.md` (Documentation)
+- `src/components/organisms/AssetUpdateTodoList.astro` (also uses Icon.astro)
+- `src/components/organisms/BudgetOverviewTable.astro` (also uses Icon.astro)
+- `src/components/organisms/DashboardError.astro`
+- `src/components/organisms/RecentTransactionsList.astro` (also uses Icon.astro)
+- `src/components/organisms/SummaryCards.astro`
+- `src/components/organisms/UserContext.astro`
+
+**Pages (4 files)**
+
+- `src/pages/budget/history.astro`
+- `src/pages/budget/index.astro` (also uses Icon.astro)
+- `src/pages/register.astro`
+- `src/pages/signup.astro`
+
+**Files to Delete**
+
+- `src/components/atoms/Icon.astro` ✅
+- `src/components/atoms/Icon.stories.ts` ✅
+
+#### Inline SVG Icon Mapping
+
+Common inline SVG patterns found in the codebase:
+
+| SVG Path Description             | Lucide Icon              | Import                         |
+| -------------------------------- | ------------------------ | ------------------------------ |
+| XCircle (error, dismiss)         | XCircle                  | `{ XCircle }`                  |
+| AlertTriangle (warning)          | AlertTriangle            | `{ AlertTriangle }`            |
+| X (close button)                 | X                        | `{ X }`                        |
+| Eye/EyeOff (password visibility) | Eye, EyeOff              | `{ Eye, EyeOff }`              |
+| Lock (password, security)        | Lock                     | `{ Lock }`                     |
+| CheckCircle2 (success)           | CheckCircle2             | `{ CheckCircle2 }`             |
+| TrendingUp/Down (financial)      | TrendingUp, TrendingDown | `{ TrendingUp, TrendingDown }` |
+
+#### Size Conversion
+
+The current Icon component uses size props: `xs`, `sm`, `md`, `lg`, `xl`
+
+Map to Lucide size attribute (in pixels):
+
+- `xs` → `size={12}`
+- `sm` → `size={16}`
+- `md` → `size={20}` (default)
+- `lg` → `size={24}`
+- `xl` → `size={32}`
+
+For inline SVGs with class-based sizing:
+
+- `h-4 w-4` → `size={16}`
+- `h-5 w-5` → `size={20}`
+- `h-6 w-6` → `size={24}`
+- `h-8 w-8` → `size={32}`
 
 ## Detailed Tasks
 
-### 1. Install Dependencies (P0)
+### Phase 1: Prepare Icon Mapping Reference (Priority: P0)
 
-**Goal:** Install state management and animation libraries.
+**Goal:** Create a comprehensive mapping document for developers to reference during migration
 
 **Checklist:**
 
-- [x] Install `nanostores`
-- [x] Install `motion`
-- [x] ~~Install `framer-motion`~~ (Changed: Using CSS transitions instead for Astro compatibility)
+- [x] Document all current icon names from Icon.astro
+- [x] Map each icon to its Lucide equivalent
+- [x] Create size conversion table
+- [x] Document import pattern examples
+
+**Files to create:**
+
+- `docs/icon-migration-guide.md` (reference for developers)
+
+**Estimated Time:** 1 hour
+
+**Status:** ✅ Completed (documented in this plan)
+
+---
+
+### Phase 2: Migrate Atomic Components (Priority: P0)
+
+**Goal:** Migrate the smallest reusable components first
+
+#### Task 2.1: Migrate EmptyState.astro
+
+**Checklist:**
+
+- [ ] Read current EmptyState.astro implementation
+- [ ] Identify icons used (currently passes icon name as prop)
+- [ ] Update to accept Lucide icon component as slot or prop
+- [ ] Update EmptyState.stories.ts to use Lucide icons
+- [ ] Test in Storybook
+- [ ] Run quality gates
+
+**Files to modify:**
+
+- `src/components/atoms/EmptyState.astro`
+- `src/components/atoms/EmptyState.stories.ts`
+
+**Current Usage Pattern:**
+
+```astro
+<Icon name="search" size="xl" />
+```
+
+**New Pattern:**
+
+```astro
+import {Search} from '@lucide/astro';
+<Search size={32} />
+```
+
+**Estimated Time:** 1-2 hours
+
+**Status:** Pending
+
+---
+
+#### Task 2.2: Migrate PasswordField.astro
+
+**Checklist:**
+
+- [ ] Read current PasswordField.astro implementation
+- [ ] Replace Icon imports with Eye/EyeOff from Lucide
+- [ ] Update toggle visibility icon logic
+- [ ] Update PasswordField.stories.ts
+- [ ] Test in Storybook
+- [ ] Run quality gates
+
+**Files to modify:**
+
+- `src/components/atoms/PasswordField.astro`
+- `src/components/atoms/PasswordField.stories.ts`
+
+**Icons to replace:**
+
+- `eye` → `Eye` and `EyeOff`
+
+**Estimated Time:** 1 hour
+
+**Status:** Pending
+
+---
+
+### Phase 3: Migrate Layout Components (Priority: P0)
+
+**Goal:** Update navigation and header components that are used site-wide
+
+#### Task 3.1: Migrate Navigation.astro
+
+**Checklist:**
+
+- [ ] Read current Navigation.astro implementation
+- [ ] Map all navigation icons to Lucide equivalents
+- [ ] Update icon imports
+- [ ] Replace all Icon component usage
+- [ ] Update Navigation.stories.ts
+- [ ] Test in Storybook
+- [ ] Run quality gates
+
+**Files to modify:**
+
+- `src/components/layouts/Navigation.astro`
+- `src/components/layouts/Navigation.stories.ts`
+
+**Icons to replace:**
+
+- `home` → `Home`
+- `search` → `Search`
+- `calendar` → `Calendar`
+- `currency-dollar` → `DollarSign`
+- `information` → `Info`
+- `warning` → `AlertTriangle`
+- `plus` → `Plus`
+- `pencil` → `Settings` (more appropriate for settings)
+- `x` → `X`
+
+**UI Example:**
+
+```astro
+<!-- Before -->
+<Icon name="home" size="sm" />
+
+<!-- After -->
+import {Home} from '@lucide/astro';
+<Home size={16} />
+```
+
+**Estimated Time:** 2 hours
+
+**Status:** Pending
+
+---
+
+#### Task 3.2: Migrate Header.astro
+
+**Checklist:**
+
+- [ ] Read current Header.astro implementation
+- [ ] Replace Icon component with Lucide icons
+- [ ] Update Header.stories.ts
+- [ ] Test in Storybook
+- [ ] Run quality gates
+
+**Files to modify:**
+
+- `src/components/layouts/Header.astro`
+- `src/components/layouts/Header.stories.ts`
+
+**Estimated Time:** 1 hour
+
+**Status:** Pending
+
+---
+
+### Phase 4: Migrate Molecule Components (Priority: P1)
+
+**Goal:** Update composite components that combine atoms
+
+#### Task 4.1: Migrate Modal.astro
+
+**Checklist:**
+
+- [ ] Read current Modal.astro implementation
+- [ ] Replace close button icon (X)
+- [ ] Update Modal.stories.ts
+- [ ] Test in Storybook
+- [ ] Run quality gates
+
+**Files to modify:**
+
+- `src/components/molecules/Modal.astro`
+- `src/components/molecules/Modal.stories.ts`
+
+**Icons to replace:**
+
+- `x` → `X`
+
+**Estimated Time:** 1 hour
+
+**Status:** Pending
+
+---
+
+#### Task 4.2: Migrate QuickActions.astro
+
+**Checklist:**
+
+- [ ] Read current QuickActions.astro implementation
+- [ ] Replace action icons with Lucide
+- [ ] Update QuickActions.stories.ts
+- [ ] Test in Storybook
+- [ ] Run quality gates
+
+**Files to modify:**
+
+- `src/components/molecules/QuickActions.astro`
+- `src/components/molecules/QuickActions.stories.ts`
+
+**Icons to replace:**
+
+- `minus` → `Minus` (for expenses)
+- `plus` → `Plus` (for income)
+- `search` → `BarChart3` (more appropriate for reports)
+
+**Estimated Time:** 1-2 hours
+
+**Status:** Pending
+
+---
+
+#### Task 4.3: Migrate BudgetHealthWidget.astro
+
+**Checklist:**
+
+- [ ] Read current implementation
+- [ ] Replace status icons
+- [ ] Update BudgetHealthWidget.stories.ts
+- [ ] Test in Storybook
+- [ ] Run quality gates
+
+**Files to modify:**
+
+- `src/components/molecules/BudgetHealthWidget.astro`
+- `src/components/molecules/BudgetHealthWidget.stories.ts`
+
+**Icons to replace:**
+
+- `warning` → `AlertTriangle`
+- `check` → `Check` or `CheckCircle2`
+- `ban` → `XCircle`
+
+**Estimated Time:** 1 hour
+
+**Status:** Pending
+
+---
+
+#### Task 4.4: Migrate TransactionRow.astro
+
+**Checklist:**
+
+- [ ] Read current implementation
+- [ ] Replace edit/delete icons
+- [ ] Update TransactionRow.stories.ts
+- [ ] Test in Storybook
+- [ ] Run quality gates
+
+**Files to modify:**
+
+- `src/components/molecules/TransactionRow.astro`
+- `src/components/molecules/TransactionRow.stories.ts`
+
+**Icons to replace:**
+
+- `pencil` → `Edit` or `Pencil`
+- `trash` → `Trash2`
+
+**Estimated Time:** 1 hour
+
+**Status:** Pending
+
+---
+
+#### Task 4.5: Migrate TransactionFilters.astro
+
+**Checklist:**
+
+- [ ] Read current implementation
+- [ ] Replace filter/search icons
+- [ ] Test component functionality
+- [ ] Run quality gates
+
+**Files to modify:**
+
+- `src/components/molecules/TransactionFilters.astro`
+
+**Icons to replace:**
+
+- `search` → `Search`
+- `calendar` → `Calendar`
+- `x` → `X` (for clear filters)
+
+**Estimated Time:** 1 hour
+
+**Status:** Pending
+
+---
+
+#### Task 4.6: Migrate TransactionForm.astro
+
+**Checklist:**
+
+- [ ] Read current implementation
+- [ ] Replace form icons
+- [ ] Test form submission
+- [ ] Run quality gates
+
+**Files to modify:**
+
+- `src/components/molecules/TransactionForm.astro`
+
+**Icons to replace:**
+
+- `calendar` → `Calendar`
+- `tag` → `Tag`
+- `currency-dollar` → `DollarSign`
+
+**Estimated Time:** 1 hour
+
+**Status:** Pending
+
+---
+
+#### Task 4.7: Migrate CSVImportForm.astro
+
+**Checklist:**
+
+- [ ] Read current implementation
+- [ ] Replace upload/import icons
+- [ ] Test import functionality
+- [ ] Run quality gates
+
+**Files to modify:**
+
+- `src/components/molecules/CSVImportForm.astro`
+
+**Icons to replace:**
+
+- `arrow-up` (if used) → `Upload`
+- `check` → `Check`
+- `x` → `X`
+
+**Estimated Time:** 1 hour
+
+**Status:** Pending
+
+---
+
+### Phase 5: Migrate Organism Components (Priority: P1)
+
+**Goal:** Update complex composite components
+
+#### Task 5.1: Migrate TransactionList.astro
+
+**Checklist:**
+
+- [ ] Read current implementation
+- [ ] Replace list/filter icons
+- [ ] Test list rendering and interactions
+- [ ] Run quality gates
+
+**Files to modify:**
+
+- `src/components/organisms/TransactionList.astro`
+
+**Icons to replace:**
+
+- `search` → `Search`
+- `list` → `List`
+- `pencil` → `Edit`
+- `trash` → `Trash2`
+
+**Estimated Time:** 1-2 hours
+
+**Status:** Pending
+
+---
+
+#### Task 5.2: Migrate BudgetOverviewTable.astro
+
+**Checklist:**
+
+- [ ] Read current implementation
+- [ ] Replace status and action icons
+- [ ] Test table rendering and sorting
+- [ ] Run quality gates
+
+**Files to modify:**
+
+- `src/components/organisms/BudgetOverviewTable.astro`
+
+**Icons to replace:**
+
+- `warning` → `AlertTriangle`
+- `check` → `CheckCircle2`
+- `ban` → `XCircle`
+- `arrow-up`/`arrow-down` → `ArrowUp`/`ArrowDown` (for sorting)
+
+**Estimated Time:** 2 hours
+
+**Status:** Pending
+
+---
+
+#### Task 5.3: Migrate RecentTransactionsList.astro
+
+**Checklist:**
+
+- [ ] Read current implementation
+- [ ] Replace list icons
+- [ ] Update RecentTransactionsList.stories.ts
+- [ ] Test in Storybook
+- [ ] Run quality gates
+
+**Files to modify:**
+
+- `src/components/organisms/RecentTransactionsList.astro`
+- `src/components/organisms/RecentTransactionsList.stories.ts`
+
+**Icons to replace:**
+
+- `list` → `List`
+- `arrow-right` → `ArrowRight`
+
+**Estimated Time:** 1 hour
+
+**Status:** Pending
+
+---
+
+#### Task 5.4: Migrate AssetUpdateTodoList.astro
+
+**Checklist:**
+
+- [ ] Read current implementation
+- [ ] Replace status and action icons
+- [ ] Update AssetUpdateTodoList.stories.ts
+- [ ] Test in Storybook
+- [ ] Run quality gates
+
+**Files to modify:**
+
+- `src/components/organisms/AssetUpdateTodoList.astro`
+- `src/components/organisms/AssetUpdateTodoList.stories.ts`
+
+**Icons to replace:**
+
+- `refresh` → `RefreshCw`
+- `check` → `Check`
+- `alert` → `Bell` or `AlertCircle`
+
+**Estimated Time:** 1-2 hours
+
+**Status:** Pending
+
+---
+
+#### Task 5.5: Migrate BudgetHistoryComparison.astro
+
+**Checklist:**
+
+- [ ] Read current implementation
+- [ ] Replace chart/comparison icons
+- [ ] Test component rendering
+- [ ] Run quality gates
+
+**Files to modify:**
+
+- `src/components/organisms/BudgetHistoryComparison.astro`
+
+**Icons to replace:**
+
+- `calendar` → `Calendar`
+- `arrow-left`/`arrow-right` → `ChevronLeft`/`ChevronRight`
+
+**Estimated Time:** 1 hour
+
+**Status:** Pending
+
+---
+
+#### Task 5.6: Migrate DashboardError.astro
+
+**Checklist:**
+
+- [ ] Read current implementation
+- [ ] Replace error icons
+- [ ] Test error states
+- [ ] Run quality gates
+
+**Files to modify:**
+
+- `src/components/organisms/DashboardError.astro`
+
+**Icons to replace:**
+
+- `warning` → `AlertTriangle`
+- `refresh` → `RefreshCw`
+
+**Estimated Time:** 30 minutes
+
+**Status:** Pending
+
+---
+
+### Phase 6: Migrate Page Components (Priority: P1)
+
+**Goal:** Update all page-level components
+
+#### Task 6.1: Migrate Budget Page
+
+**Checklist:**
+
+- [ ] Read current budget/index.astro implementation
+- [ ] Replace all Icon usage with Lucide
+- [ ] Test page functionality
+- [ ] Run quality gates
+
+**Files to modify:**
+
+- `src/pages/budget/index.astro`
+
+**Estimated Time:** 1 hour
+
+**Status:** Pending
+
+---
+
+#### Task 6.2: Migrate Settings Pages
+
+**Checklist:**
+
+- [ ] Migrate settings/categories.astro
+- [ ] Migrate settings/payment-methods.astro
+- [ ] Test CRUD operations
+- [ ] Run quality gates
+
+**Files to modify:**
+
+- `src/pages/settings/categories.astro`
+- `src/pages/settings/payment-methods.astro`
+
+**Icons to replace:**
+
+- `plus` → `Plus`
+- `pencil` → `Edit`
+- `trash` → `Trash2`
+- `tag` → `Tag`
+
+**Estimated Time:** 2 hours
+
+**Status:** Pending
+
+---
+
+#### Task 6.3: Migrate Transaction Pages
+
+**Checklist:**
+
+- [ ] Migrate transactions/import.astro
+- [ ] Migrate transactions/export.astro
+- [ ] Test import/export functionality
+- [ ] Run quality gates
+
+**Files to modify:**
+
+- `src/pages/transactions/import.astro`
+- `src/pages/transactions/export.astro`
+
+**Icons to replace:**
+
+- `arrow-up` → `Upload`
+- `arrow-down` → `Download`
+
+**Estimated Time:** 1-2 hours
+
+**Status:** Pending
+
+---
+
+### Phase 7: Migrate Inline SVGs - Atoms & Molecules (Priority: P1)
+
+**Goal:** Replace inline SVG elements with Lucide icons in atomic and molecule components
+
+#### Task 7.1: Migrate ErrorMessage.astro (Inline SVGs)
+
+**Checklist:**
+
+- [ ] Read current ErrorMessage.astro implementation
+- [ ] Replace error icon SVG with XCircle from Lucide
+- [ ] Replace dismiss button X icon
+- [ ] Update ErrorMessage.stories.ts
+- [ ] Test in Storybook
+- [ ] Run quality gates
+
+**Files to modify:**
+
+- `src/components/atoms/ErrorMessage.astro`
+- `src/components/atoms/ErrorMessage.stories.ts`
+
+**Current Pattern:**
+
+```html
+<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24">
+  <path
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    stroke-width="2"
+    d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+  />
+</svg>
+```
+
+**New Pattern:**
+
+```astro
+---
+import { XCircle, X } from '@lucide/astro';
+---
+
+<XCircle size={24} class="shrink-0" />
+<X size={16} />
+```
+
+**Estimated Time:** 1 hour
+
+**Status:** Pending
+
+---
+
+#### Task 7.2: Migrate Toast.astro (Inline SVGs)
+
+**Checklist:**
+
+- [ ] Read current Toast.astro implementation
+- [ ] Replace dismiss button SVG with X from Lucide
+- [ ] Test toast functionality
+- [ ] Run quality gates
+
+**Files to modify:**
+
+- `src/components/molecules/Toast.astro`
+
+**Icons to replace:**
+
+- Dismiss X icon → `X`
+
+**Estimated Time:** 30 minutes
+
+**Status:** Pending
+
+---
+
+#### Task 7.3: Migrate AuthValidationMessages.astro (SVG Strings in Config)
+
+**Checklist:**
+
+- [ ] Read current implementation (SVG strings in config object)
+- [ ] Refactor to use Lucide icon components instead of SVG strings
+- [ ] Update alertConfig to reference Lucide components
+- [ ] Update AuthValidationMessages.stories.ts
+- [ ] Test all validation message types
+- [ ] Run quality gates
+
+**Files to modify:**
+
+- `src/components/molecules/AuthValidationMessages.astro`
+- `src/components/molecules/AuthValidationMessages.stories.ts`
+
+**Current Pattern (SVG as String):**
+
+```typescript
+const alertConfig = {
+  'email-format': {
+    alertClass: 'alert-warning',
+    icon: 'svg xmlns="..." <path .../> </svg>', // SVG as string
+    defaultMessage: 'Please enter a valid email address',
+  },
+  // ...
+};
+```
+
+**New Pattern (Lucide Component):**
+
+```astro
+---
+import { AlertTriangle, XCircle, Lock, AlertCircle } from '@lucide/astro';
+
+const iconMap = {
+  'email-format': AlertTriangle,
+  'password-mismatch': XCircle,
+  'invalid-credentials': Lock,
+  // ...
+};
+
+const Icon = iconMap[type];
+---
+
+<Icon size={24} class="shrink-0" />
+```
+
+**Estimated Time:** 2 hours
+
+**Status:** Pending
+
+---
+
+#### Task 7.4: Migrate Form Components (Inline SVGs)
+
+**Checklist:**
+
+- [ ] Migrate ForgotPasswordForm.astro
+- [ ] Migrate LoginForm.astro
+- [ ] Migrate RegistrationForm.astro
+- [ ] Test form submissions
+- [ ] Run quality gates
+
+**Files to modify:**
+
+- `src/components/molecules/ForgotPasswordForm.astro`
+- `src/components/molecules/LoginForm.astro`
+- `src/components/molecules/RegistrationForm.astro`
+
+**Common inline SVGs:**
+
+- Lock icons
+- Eye/EyeOff for password fields
+- Alert/warning icons
+
+**Estimated Time:** 2-3 hours
+
+**Status:** Pending
+
+---
+
+#### Task 7.5: Migrate ToastContainer.astro (Inline SVGs)
+
+**Checklist:**
+
+- [ ] Read current implementation
+- [ ] Replace inline SVG icons
+- [ ] Test toast notifications
+- [ ] Run quality gates
+
+**Files to modify:**
+
+- `src/components/molecules/ToastContainer.astro`
+
+**Estimated Time:** 30 minutes
+
+**Status:** Pending
+
+---
+
+### Phase 8: Migrate Inline SVGs - Organisms & Pages (Priority: P1)
+
+**Goal:** Replace inline SVG elements in organism components and page files
+
+#### Task 8.1: Migrate Organism Components (Inline SVGs)
+
+**Checklist:**
+
+- [ ] Migrate SummaryCards.astro
+- [ ] Migrate UserContext.astro
+- [ ] Migrate DashboardError.astro (if has inline SVGs beyond Icon.astro)
+- [ ] Test organism rendering
+- [ ] Run quality gates
+
+**Files to modify:**
+
+- `src/components/organisms/SummaryCards.astro`
+- `src/components/organisms/UserContext.astro`
+- `src/components/organisms/DashboardError.astro`
+
+**Common inline SVGs:**
+
+- Status icons (check, warning, error)
+- Financial trend icons (up/down arrows)
+- Alert icons
+
+**Estimated Time:** 2-3 hours
+
+**Status:** Pending
+
+---
+
+#### Task 8.2: Migrate Page Components (Inline SVGs)
+
+**Checklist:**
+
+- [ ] Migrate budget/history.astro
+- [ ] Migrate register.astro
+- [ ] Migrate signup.astro
+- [ ] Test page functionality
+- [ ] Run quality gates
+
+**Files to modify:**
+
+- `src/pages/budget/history.astro`
+- `src/pages/register.astro`
+- `src/pages/signup.astro`
+
+**Common inline SVGs:**
+
+- Form icons
+- Navigation icons
+- Status indicators
+
+**Estimated Time:** 2-3 hours
+
+**Status:** Pending
+
+---
+
+### Phase 9: Cleanup and Documentation (Priority: P2)
+
+**Goal:** Remove deprecated code and update documentation
+
+#### Task 9.1: Delete Icon Component
+
+**Checklist:**
+
+- [ ] Verify no remaining references to Icon.astro
+- [ ] Delete src/components/atoms/Icon.astro
+- [ ] Delete src/components/atoms/Icon.stories.ts
+- [ ] Run typecheck to catch any missed imports
+- [ ] Run quality gates
+
+**Files to delete:**
+
+- `src/components/atoms/Icon.astro`
+- `src/components/atoms/Icon.stories.ts`
+
+**Verification command:**
+
+```bash
+# Search for any remaining Icon imports
+grep -r "import Icon from" src/
+grep -r "import.*Icon\.astro" src/
+```
+
+**Estimated Time:** 30 minutes
+
+**Status:** Pending
+
+---
+
+#### Task 9.2: Update Design System Documentation
+
+**Checklist:**
+
+- [ ] Verify design-system/START.md is current
+- [ ] Add migration notes to design-system/02-components.md
+- [ ] Create examples in docs/ for common icon patterns
+- [ ] Document icon sizing standards
+
+**Files to modify:**
+
+- `design-system/02-components.md` (add icon usage section)
+- `docs/icon-migration-guide.md` (create as reference)
+
+**Estimated Time:** 1 hour
+
+**Status:** Pending
+
+---
+
+#### Task 9.3: Update Storybook Stories
+
+**Checklist:**
+
+- [ ] Verify all component stories work with Lucide icons
+- [ ] Update story titles/descriptions as needed
+- [ ] Test Storybook build
+- [ ] Take screenshots for documentation
 
 **Command:**
 
 ```bash
-bun add nanostores motion
+bun run storybook
+bun run build-storybook
 ```
 
-Estimated Time: 0.2 hours
+**Estimated Time:** 1 hour
 
-### 2. Create Toast Store (P0)
+**Status:** Pending
 
-**Goal:** Implement the state management for toast notifications with auto-dismiss and multi-toast support.
-
-**Checklist:**
-
-- [x] Create `src/lib/stores/toastStore.ts` with `addToast`, `removeToast`, and types.
-- [x] Export `ToastType` and `ToastMessage` interfaces.
-- [x] Implement auto-dismiss with configurable duration.
-- [x] Implement max visible toasts limit (default: 5).
-- [x] Handle toast queue when max is reached.
-- [x] Added `clearAllToasts()` for cleanup on navigation (memory leak fix)
-- [x] Added timeout tracking to prevent race conditions
-
-**Files to modify:**
-
-- `src/lib/stores/toastStore.ts`
-
-**Code Structure:**
-
-```typescript
-import { atom } from 'nanostores';
-
-export type ToastType = 'success' | 'error' | 'warning' | 'info';
-
-export interface ToastMessage {
-  id: string;
-  message: string;
-  type: ToastType;
-  duration: number; // ms, 0 = persistent
-}
-
-interface ToastOptions {
-  duration?: number; // Default: 5000ms for success/info/warning, 0 for error
-}
-
-const MAX_VISIBLE_TOASTS = 5;
-
-export const toasts = atom<ToastMessage[]>([]);
-
-export function addToast(
-  message: string,
-  type: ToastType = 'info',
-  options?: ToastOptions
-): string {
-  const id = crypto.randomUUID();
-  const duration = options?.duration ?? getDefaultDuration(type);
-
-  const toast: ToastMessage = { id, message, type, duration };
-
-  toasts.set([...toasts.get().slice(-MAX_VISIBLE_TOASTS + 1), toast]);
-
-  if (duration > 0) {
-    setTimeout(() => removeToast(id), duration);
-  }
-
-  return id;
-}
-
-export function removeToast(id: string): void {
-  toasts.set(toasts.get().filter((t) => t.id !== id));
-}
-
-function getDefaultDuration(type: ToastType): number {
-  return type === 'error' ? 0 : 5000; // Errors persist until dismissed
-}
-```
-
-Estimated Time: 0.75 hours
-
-### 3. Create Toast UI Component (P0)
-
-**Goal:** Create an Astro component to subscribe to the store and render toasts using DaisyUI with CSS animations.
-
-**Checklist:**
-
-- [x] Create `src/components/molecules/ToastContainer.astro`.
-- [x] Add a container `div` with DaisyUI classes (`toast toast-top toast-end`).
-- [x] Ensure proper z-index to appear above modals (`z-50`).
-- [x] Add a `<script>` tag that:
-  - Imports `toasts`, `removeToast`, `clearAllToasts` from `@/lib/stores/toastStore`.
-  - Subscribes to the store.
-  - Reconciles the DOM based on the active toasts (creates/removes alert elements).
-  - Applies enter animation (fade-in + slide from right) using CSS transitions.
-  - Applies exit animation (fade-out + slide to right) using CSS transitions.
-  - Handles proper styling for different toast types using DaisyUI alert classes.
-  - Cleans up on page navigation to prevent memory leaks.
-- [x] Add accessibility attributes:
-  - `role="region"` and `aria-label="Notifications"` on container.
-  - `role="alert"` on each toast.
-  - `aria-live="polite"` for success/info/warning toasts.
-  - `aria-live="assertive"` for error toasts.
-- [x] Add dismiss button for all toasts with Lucide X icon SVG.
-
-**Files to modify:**
-
-- `src/components/molecules/ToastContainer.astro`
-
-**DaisyUI Classes Reference:**
-
-```html
-<!-- Container -->
-<div class="toast toast-top toast-end z-50" role="region" aria-label="Notifications">
-  <!-- Individual toast -->
-  <div class="alert alert-success" role="alert" aria-live="polite">
-    <span>Message here</span>
-    <button class="btn btn-ghost btn-xs" aria-label="Dismiss">✕</button>
-  </div>
-</div>
-```
-
-**Motion Animation:**
-
-```typescript
-import { animate } from 'motion';
-
-// Enter animation
-animate(element, { opacity: [0, 1], x: [50, 0] }, { duration: 0.3, easing: 'easeOut' });
-
-// Exit animation
-animate(element, { opacity: [1, 0], x: [0, 50] }, { duration: 0.2, easing: 'easeIn' }).then(() =>
-  element.remove()
-);
-```
-
-Estimated Time: 1.5 hours
-
-### 4. Integrate Toast Container (P0)
-
-**Goal:** Add the ToastContainer to the global layout so it's available everywhere.
-
-**Checklist:**
-
-- [x] Import `ToastContainer` in `src/layouts/BaseLayout.astro`.
-- [x] Add `<ToastContainer />` to the body (before closing `</body>` tag).
-
-**Files to modify:**
-
-- `src/layouts/BaseLayout.astro`
-
-Estimated Time: 0.2 hours
-
-### 5. Refactor Settings Page (P1)
-
-**Goal:** Replace legacy utils in `settings/index.astro` with `addToast`.
-
-**Current Issue:** Uses `define:vars` and `eval` to inject stringified functions.
-
-**Checklist:**
-
-- [x] Change `<script define:vars...>` to `<script>` (module script).
-- [x] Import `addToast` from `@/lib/stores/toastStore`.
-- [x] Import `setButtonLoading` from `@/lib/client-utils`.
-- [x] Replace `createSuccessAlert(msg)` with `addToast(msg, 'success')`.
-- [x] Replace `createErrorAlert(msg)` with `addToast(msg, 'error')`.
-- [x] Use `setButtonLoading(btn, true/false)` directly (no `eval`).
-- [x] Remove the `innerHTML` assignments for alerts.
-- [x] Remove any `<div id="alert-container">` or similar legacy containers.
-
-**Files to modify:**
-
-- `src/pages/settings/index.astro`
-
-**Additional fix:** Removed duplicate `ToastContainer` from `MainLayout.astro` (it was already in `BaseLayout.astro`).
-
-Estimated Time: 1 hour
-
-**Status:** ✅ Completed (2026-01-19)
-
-### 6. Refactor Password Change Form (P1)
-
-**Goal:** Replace legacy utils in `PasswordChangeForm.astro`.
-
-**Checklist:**
-
-- [x] Change `<script define:vars...>` to `<script>` (module script).
-- [x] Import `addToast` from `@/lib/stores/toastStore`.
-- [x] Import `setButtonLoading` from `@/lib/client-utils`.
-- [x] Import validation constants from `@/lib/validation/password` (fixes P0 validation mismatch).
-- [x] Replace usage of `createSuccessAlert`, `createErrorAlert` with `addToast`.
-- [x] Use `setButtonLoading(btn, true/false)` directly.
-- [x] Remove any legacy alert container elements (`#password-messages`).
-- [x] Add `// @ts-nocheck` comment for client-side script with DOM manipulation.
-- [x] Create behavior test file with manual test checklist.
-
-**Files modified:**
-
-- `src/components/molecules/PasswordChangeForm.astro`
-- `src/components/molecules/PasswordChangeForm.behavior.test.ts` (new)
-
-Estimated Time: 1 hour
-
-**Status:** ✅ Completed (2026-01-19)
-
-### 7. Cleanup Client Utils (P2)
-
-**Goal:** Remove unused legacy functions, modernize `setButtonLoading`, and clean up legacy alert infrastructure.
-
-**Checklist:**
-
-- [x] Remove `createSuccessAlert` from `src/lib/client-utils.ts`.
-- [x] Remove `createErrorAlert` from `src/lib/client-utils.ts`.
-- [x] Remove `createAlert` from `src/lib/client-utils.ts` (base function).
-- [x] Refactor `setButtonLoading` to be a pure function that:
-  - Accepts `HTMLButtonElement`.
-  - Toggles `disabled` attribute.
-  - Swaps text with DaisyUI's `loading loading-spinner loading-xs` classes.
-  - Stores original content in `data-original-content` attribute for restoration.
-- [x] Search codebase for any remaining usages of legacy functions.
-- [x] Remove any orphaned CSS for old alert system.
-- [x] Remove any `<div id="alert-container">` elements from other templates.
-- [x] Add unit tests for `escapeHtml` and `setButtonLoading` functions.
-
-**Files modified:**
-
-- `src/lib/client-utils.ts` - Removed legacy alert functions, simplified `setButtonLoading`
-- `src/lib/client-utils.test.ts` - New comprehensive unit tests
-- `src/components/molecules/PasswordChangeForm.astro` - Simplified button structure
-- `src/pages/settings/index.astro` - Simplified button structures
-- `src/components/molecules/PasswordChangeForm.behavior.test.ts` - Updated documentation
-
-**Search Commands:**
-
-```bash
-# Find any remaining legacy function usage
-grep -r "createSuccessAlert\|createErrorAlert" src/
-grep -r "alert-container" src/
-```
-
-**setButtonLoading Implementation:**
-
-```typescript
-export function setButtonLoading(button: HTMLButtonElement, isLoading: boolean): void {
-  if (isLoading) {
-    button.dataset.originalContent = button.innerHTML;
-    button.disabled = true;
-    button.innerHTML = '<span class="loading loading-spinner loading-xs"></span>';
-  } else {
-    button.disabled = false;
-    button.innerHTML = button.dataset.originalContent ?? button.innerHTML;
-    delete button.dataset.originalContent;
-  }
-}
-```
-
-Estimated Time: 0.75 hours
-
-**Status:** ✅ Completed (2026-01-19)
-
-**Code Review Summary:**
-
-- All quality gates passed (typecheck, lint, stylelint)
-- 25 new unit tests added and passing
-- No critical issues identified
-- Minor suggestions added to P3 items below for future consideration
-
-### 8. Update Design System Documentation (P1)
-
-**Goal:** Document the Toast component and Motion animation patterns in the design system.
-
-**Checklist:**
-
-- [x] Add Toast section to `design-system/02-components.md`:
-  - Component location and import
-  - Toast types (success, error, warning, info)
-  - Usage examples with `addToast()`
-  - DaisyUI classes used
-  - Accessibility attributes
-- [x] Add Toast Notifications pattern to `design-system/07-patterns.md`:
-  - When to use toasts vs inline errors vs banners
-  - Auto-dismiss behavior (5s for success, persistent for errors)
-  - Multi-toast stacking
-  - Animation patterns with Motion
-- [x] Add Motion animation section to `design-system/01-foundations.md` or create new `08-animations.md`:
-  - Standard animation durations and easings
-  - Enter/exit animation patterns
-  - Usage with `animate()` function
-
-**Files to modify:**
-
-- `design-system/02-components.md`
-- `design-system/07-patterns.md`
-- `design-system/01-foundations.md` (or new `design-system/08-animations.md`)
-
-**Toast Component Documentation:**
-
-```markdown
-### Toast (`src/components/molecules/ToastContainer.astro`)
-
-Global toast notification system. Automatically included in BaseLayout.
-
-**Usage (in client-side scripts):**
-
-\`\`\`typescript
-import { addToast } from '@/lib/stores/toastStore';
-
-// Basic usage
-addToast('Profile saved!', 'success');
-addToast('Failed to save', 'error');
-addToast('Please review', 'warning');
-addToast('New update available', 'info');
-
-// Custom duration (ms)
-addToast('Quick message', 'success', { duration: 2000 });
-
-// Persistent (manual dismiss)
-addToast('Action required', 'warning', { duration: 0 });
-\`\`\`
-
-**Types:** `success` | `error` | `warning` | `info`
-
-**Behavior:**
-
-- Success/info/warning: Auto-dismiss after 5 seconds
-- Error: Persistent until manually dismissed
-- Maximum 5 toasts visible at once
-- Positioned top-right with slide animations
-```
-
-**Animation Documentation:**
-
-```markdown
-## Animations (Motion)
-
-Standard animation patterns using `motion`.
-
-### Enter/Exit
-
-\`\`\`typescript
-import { animate } from 'motion';
-
-// Fade + slide in
-animate(element, { opacity: [0, 1], x: [50, 0] }, { duration: 0.3, easing: 'easeOut' });
-
-// Fade + slide out
-animate(element, { opacity: [1, 0], x: [0, 50] }, { duration: 0.2, easing: 'easeIn' });
-\`\`\`
-
-### Standard Durations
-
-- **Fast:** 0.15s - Micro-interactions (hover, focus)
-- **Normal:** 0.3s - Enter animations, transitions
-- **Slow:** 0.5s - Page transitions, large elements
-
-### Standard Easings
-
-- **easeOut:** Enter animations (elements appearing)
-- **easeIn:** Exit animations (elements disappearing)
-- **easeInOut:** State changes, transforms
-```
-
-Estimated Time: 1 hour
-
-### 9. Update AGENTS.md (P1)
-
-**Goal:** Update project documentation to reflect new toast system, store pattern, and animation library.
-
-**Checklist:**
-
-- [x] Add `nanostores` and `motion` to Tech Stack section.
-- [x] Add `src/lib/stores/` to Project Structure with `toastStore.ts`.
-- [x] Add Toast usage guideline to Component Guidelines section.
-- [x] Document the pattern for using stores in Astro client scripts.
-
-**Files to modify:**
-
-- `AGENTS.md`
-
-**Tech Stack Addition:**
-
-```markdown
-- **State Management:** Nano Stores (client-side reactive state)
-- **Animations:** Motion (client-side animations)
-```
-
-**Project Structure Addition:**
-
-```markdown
-├── lib/
-│ ├── stores/ # Nano Stores for client-side state
-│ │ └── toastStore.ts # Toast notification state
-│ └── tokens.ts # Design tokens & helpers
-```
-
-**Component Guidelines Addition:**
-
-```markdown
-### Toast Notifications
-
-Use the toast system for user feedback instead of inline alerts:
-
-\`\`\`typescript
-// In client-side <script> tags
-import { addToast } from '@/lib/stores/toastStore';
-
-// After successful action
-addToast('Changes saved!', 'success');
-
-// After error
-addToast('Failed to save. Please try again.', 'error');
-\`\`\`
-
-**When to use:**
-
-- Form submission feedback
-- API response notifications
-- Background task completion
-- Error messages that don't block UI
-
-**When NOT to use:**
-
-- Form validation errors (use inline errors)
-- Critical blocking errors (use error page/modal)
-- Confirmation dialogs (use Modal)
-```
-
-Estimated Time: 0.5 hours
+---
 
 ## How to Test
 
 ### Manual Test Steps
 
-1. **Toast Rendering:** Open browser console and run:
+**For each migrated component:**
 
-   ```javascript
-   import { addToast } from '@/lib/stores/toastStore';
-   addToast('Test message', 'success');
-   addToast('Error message', 'error');
+1. **Visual Check**: Run Storybook and verify icons render correctly
+
+   ```bash
+   bun run storybook
    ```
 
-   Verify toasts appear in top-right with proper animations.
+2. **Size Verification**: Check all icon sizes match design system
+   - xs (12px), sm (16px), md (20px), lg (24px), xl (32px)
 
-2. **Auto-Dismiss:** Trigger a success toast, verify it disappears after 5 seconds. Trigger an error toast, verify it persists until manually dismissed.
+3. **Interaction Test**: For interactive icons (buttons, toggles):
+   - Click/tap functionality works
+   - Hover states are correct
+   - Focus indicators are visible
 
-3. **Multi-Toast Stacking:** Trigger 6+ toasts rapidly, verify only 5 are visible and they stack properly.
+4. **Accessibility Test**:
+   - Screen reader announces icons appropriately
+   - Keyboard navigation works
+   - ARIA labels are present where needed
 
-4. **Accessibility:** Use screen reader (VoiceOver/NVDA) to verify toasts are announced.
+5. **Responsive Test**:
+   - Icons scale properly on mobile
+   - Touch targets are ≥44x44px
+   - Layout doesn't break
 
-5. **Settings Update:** Go to `/settings`, update profile. Verify "Profile updated!" toast appears with enter animation.
+### Automated Tests
 
-6. **Error Handling:** Trigger an error (e.g., empty required field or network failure). Verify error toast appears and persists.
+**Quality Gates (run after each migration):**
 
-7. **Password Change:** Try changing password. Verify success/error toasts with proper animations.
+```bash
+bun run typecheck     # TypeScript validation
+bun run lint          # ESLint validation
+bun run stylelint     # CSS validation
+bun run format:fix    # Prettier formatting
+```
 
-8. **Button Loading:** Verify button shows DaisyUI loading spinner during submission and restores original content afterwards.
+**Search for missed migrations:**
 
-9. **Toast Dismiss:** Click dismiss button on error toast, verify exit animation plays and toast is removed.
+```bash
+# Should return 0 results after Phase 9.1
+grep -r "import Icon from" src/
+grep -r '<Icon name=' src/
+grep -r 'xmlns="http://www.w3.org/2000/svg"' src/components/ src/pages/ | grep -v node_modules
+```
 
-10. **Console Errors:** Check browser console for any JavaScript errors or memory leak warnings.
+### Visual Regression Testing
 
-### Dependencies
+**Before/After Screenshots:**
 
-#### Required Services
+- Take Storybook screenshots before migration
+- Compare after migration to ensure visual parity
+- Document any intentional changes
 
-- None (Client-side only)
+## Dependencies
 
-#### Browser Support
+### Required Packages
 
-- Motion requires browsers with Web Animations API support (all modern browsers)
+- ✅ `@lucide/astro` v0.562.0 (already installed)
+
+### No Additional Installations Needed
+
+All dependencies are already in package.json.
 
 ## Success Criteria
 
-- [x] Toast notifications appear for success and error actions.
-- [x] Toasts have smooth enter/exit animations via CSS transitions.
-- [x] Success/info/warning toasts auto-dismiss after 5 seconds.
-- [x] Error toasts persist until manually dismissed.
-- [x] Maximum 5 toasts visible at once.
-- [x] Toasts are accessible (proper ARIA attributes, screen reader support).
-- [x] React is NOT used.
-- [x] No `eval` used for alert/loading functions in modified files. (P1 tasks - Settings and PasswordChangeForm completed)
-- [x] `createSuccessAlert` and `createErrorAlert` removed from codebase. (P2 task - Completed 2026-01-19)
-- [x] `setButtonLoading` is a clean ES module function using DaisyUI spinner. (P2 task - Completed 2026-01-19)
-- [x] Type-safe toast implementation.
-- [x] No console errors or memory leaks.
-- [x] Unit tests passing (507 tests including 25 new tests for client-utils and behavior test for PasswordChangeForm).
-- [x] Design system documentation updated with Toast component and animation patterns. (P1 tasks - Completed 2026-01-19)
-- [x] AGENTS.md updated with new libraries, stores directory, and toast usage guidelines. (P1 tasks - Completed 2026-01-19)
-- [x] P3 accessibility improvements completed (focus management, shared aria-live regions, CSS animation tokens). (Completed 2026-01-20)
+- [ ] All 24 files using Icon.astro component are migrated to Lucide
+- [ ] All 20 files with inline SVGs are migrated to Lucide
+- [ ] Icon.astro component is deleted
+- [ ] Icon.stories.ts is deleted
+- [ ] No inline SVG elements remain in components or pages
+- [ ] All quality gates pass (typecheck, lint, stylelint, format)
+- [ ] All Storybook stories render correctly
+- [ ] No visual regressions in components
+- [ ] Accessibility standards maintained (WCAG 2.1 AA)
+- [ ] Design system documentation updated
+- [ ] No console errors or warnings
+- [ ] All pages render correctly in development
+- [ ] Search for `xmlns="http://www.w3.org/2000/svg"` returns 0 results (excluding node_modules)
 
 ## Estimated Effort
 
-| Task                      | Time     | Priority |
-| :------------------------ | :------- | :------- |
-| Install Dependencies      | 0.2h     | P0       |
-| Create Store              | 0.75h    | P0       |
-| Create Component          | 1.5h     | P0       |
-| Integration               | 0.2h     | P0       |
-| Refactor Settings         | 1h       | P1       |
-| Refactor Password Form    | 1h       | P1       |
-| Cleanup                   | 0.75h    | P2       |
-| Update Design System Docs | 1h       | P1       |
-| Update AGENTS.md          | 0.5h     | P1       |
-| **Total**                 | **6.9h** |          |
+| Phase                               | Tasks  | Time Estimate   | Priority |
+| ----------------------------------- | ------ | --------------- | -------- |
+| 1. Preparation                      | 1      | 1 hour          | P0       |
+| 2. Atomic Components (Icon.astro)   | 2      | 2-3 hours       | P0       |
+| 3. Layout Components (Icon.astro)   | 2      | 3 hours         | P0       |
+| 4. Molecule Components (Icon.astro) | 7      | 7-9 hours       | P1       |
+| 5. Organism Components (Icon.astro) | 6      | 7-9 hours       | P1       |
+| 6. Page Components (Icon.astro)     | 3      | 4-5 hours       | P1       |
+| 7. Inline SVGs - Atoms & Molecules  | 5      | 6-7.5 hours     | P1       |
+| 8. Inline SVGs - Organisms & Pages  | 2      | 4-6 hours       | P1       |
+| 9. Cleanup & Docs                   | 3      | 2.5 hours       | P2       |
+| **Total**                           | **31** | **37-46 hours** |          |
+
+**Recommended Approach:** Complete phases sequentially. Each phase builds on the previous one and allows for early feedback on patterns.
+
+## Migration Pattern Reference
+
+### Before (Custom Icon Component)
+
+```astro
+---
+import Icon from '../atoms/Icon.astro';
+---
+
+<button class="btn btn-primary">
+  <Icon name="plus" size="sm" />
+  <span>Add Item</span>
+</button>
+```
+
+### After (Lucide Icons)
+
+```astro
+---
+import { Plus } from '@lucide/astro';
+---
+
+<button class="btn btn-primary">
+  <Plus size={16} />
+  <span>Add Item</span>
+</button>
+```
+
+### Multiple Icons
+
+```astro
+---
+import { Plus, Edit, Trash2, Check } from '@lucide/astro';
+---
+
+<div class="actions">
+  <button><Plus size={20} /> Add</button>
+  <button><Edit size={20} /> Edit</button>
+  <button><Trash2 size={20} /> Delete</button>
+  <button><Check size={20} /> Confirm</button>
+</div>
+```
+
+### Icon with ARIA
+
+```astro
+---
+import { X } from '@lucide/astro';
+---
+
+<!-- Icon button needs aria-label -->
+<button class="btn btn-circle btn-ghost" aria-label="Close dialog">
+  <X size={24} />
+</button>
+
+<!-- Icon with text label doesn't need aria-label -->
+<button class="btn btn-primary">
+  <X size={20} />
+  <span>Cancel</span>
+</button>
+```
+
+### Inline SVG Migration Patterns
+
+#### Before (Inline SVG Element)
+
+```astro
+<div class="alert alert-error">
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    class="stroke-current shrink-0 h-6 w-6"
+    fill="none"
+    viewBox="0 0 24 24"
+  >
+    <path
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      stroke-width="2"
+      d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+  </svg>
+  <span>Error message</span>
+</div>
+```
+
+#### After (Lucide Icon)
+
+```astro
+---
+import { XCircle } from '@lucide/astro';
+---
+
+<div class="alert alert-error">
+  <XCircle size={24} class="shrink-0" />
+  <span>Error message</span>
+</div>
+```
+
+#### Before (SVG String in Config)
+
+```typescript
+const alertConfig = {
+  'email-format': {
+    alertClass: 'alert-warning',
+    icon: '<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>',
+    defaultMessage: 'Please enter a valid email address',
+  },
+};
+
+// Render with set:html (unsafe!)
+<div set:html={alertConfig[type].icon} />
+```
+
+#### After (Lucide Component Map)
+
+```astro
+---
+import { AlertTriangle, XCircle, Lock, AlertCircle } from '@lucide/astro';
+
+const iconComponents = {
+  'email-format': AlertTriangle,
+  'password-mismatch': XCircle,
+  'invalid-credentials': Lock,
+  'network-error': AlertCircle,
+};
+
+const alertConfig = {
+  'email-format': {
+    alertClass: 'alert-warning',
+    defaultMessage: 'Please enter a valid email address',
+  },
+  // ... other configs
+};
+
+const IconComponent = iconComponents[type] || AlertCircle;
+const config = alertConfig[type];
+---
+
+<div class={`alert ${config.alertClass}`}>
+  <IconComponent size={24} class="shrink-0" />
+  <span>{config.defaultMessage}</span>
+</div>
+```
+
+#### Before (Conditional SVG)
+
+```astro
+<button onclick="togglePassword()">
+  {
+    showPassword ? (
+      <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+        <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+        <path
+          fill-rule="evenodd"
+          d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z"
+          clip-rule="evenodd"
+        />
+      </svg>
+    ) : (
+      <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+        <path
+          fill-rule="evenodd"
+          d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-1.473-1.473A10.014 10.014 0 0019.542 10C18.268 5.943 14.478 3 10 3a9.958 9.958 0 00-4.512 1.074l-1.78-1.781zm4.261 4.26l1.514 1.515a2.003 2.003 0 012.45 2.45l1.514 1.514a4 4 0 00-5.478-5.478z"
+          clip-rule="evenodd"
+        />
+        <path d="M12.454 16.697L9.75 13.992a4 4 0 01-3.742-3.741L2.335 6.578A9.98 9.98 0 00.458 10c1.274 4.057 5.065 7 9.542 7 .847 0 1.669-.105 2.454-.303z" />
+      </svg>
+    )
+  }
+</button>
+```
+
+#### After (Conditional Lucide Icons)
+
+```astro
+---
+import { Eye, EyeOff } from '@lucide/astro';
+
+const showPassword = false; // dynamic state
+---
+
+<button onclick="togglePassword()">
+  {showPassword ? <Eye size={20} /> : <EyeOff size={20} />}
+</button>
+```
+
+## Risk Mitigation
+
+### Potential Issues
+
+1. **Breaking Changes**: Icon names or sizes might not match exactly
+   - **Mitigation**: Use mapping table, test each component in Storybook
+
+2. **Visual Differences**: Lucide icons may look slightly different
+   - **Mitigation**: Review in Storybook, adjust sizes if needed
+
+3. **Performance**: Importing many icons could increase bundle size
+   - **Mitigation**: Lucide supports tree-shaking, only imports used icons
+
+4. **Accessibility**: Missing ARIA labels after migration
+   - **Mitigation**: Add aria-label to icon-only buttons
+
+### Rollforward Plan
+
+If issues are found: FIX IT.
 
 ## Notes
 
-### Page Navigation Consideration
-
-With Astro's full-page navigation, Nano Store state resets on page change. This is acceptable for the current use case since toasts are triggered by in-page actions (form submissions, API calls). If View Transitions are enabled in the future, the toast state will persist across navigations automatically.
-
-### Future Enhancements (Out of Scope)
-
-- Toast positioning options (top-left, bottom-right, etc.)
-- Custom toast content (JSX/HTML)
-- Toast grouping/deduplication
-- Undo action support
-
-## Code Quality & Accessibility Improvements (Priority: P3)
-
-**Note:** This section is reserved for follow-up improvements identified during code review. They are non-blocking but recommended for better code quality, accessibility, and maintainability.
-
-### P3 Items (Nice to Have) - COMPLETED (2026-01-20)
-
-4. **Focus management** - When toast is dismissed, return focus to the element that had focus before toast appeared.
-   - [x] **COMPLETED**: Focus is now captured when toast is created and restored only on manual dismiss (not auto-dismiss to avoid interrupting user activity).
-
-5. **Single shared `aria-live` region** - Instead of individual `aria-live` on each toast, use a single shared region for all announcements.
-   - [x] **COMPLETED**: Implemented separate `aria-live` regions for polite (success/info/warning) and assertive (error) announcements.
-
-6. **Extract magic numbers** - Animation durations (300ms, 200ms) and distances (50px) should be CSS custom properties.
-   - [x] **COMPLETED**: Added CSS custom properties for toast animations in `tokens.css`:
-     - `--toast-duration-enter: 0.3s`
-     - `--toast-duration-exit: 0.2s`
-     - `--toast-easing-enter: ease-out`
-     - `--toast-easing-exit: ease-in`
-     - `--toast-distance: 50px`
-
-### Additional Improvements Completed (2026-01-20)
-
-- [x] Added `sr-only` utility class to `globals.css` using modern `clip-path` approach
-- [x] Read exit animation duration from CSS variable using `getComputedStyle()`
-- [x] Use `focusRestoreMap` with toast ID mapping to properly track and clean up focus restoration
+- **Design System Compliance**: This migration aligns with design-system/START.md Rule #7 (Icons: Use `@lucide/astro` for all icons)
+- **Constitution Alignment**: Follows constitution.md Section I (Code Quality) and Section III (Quality Gates)
+- **Accessibility**: Maintains WCAG 2.1 AA compliance throughout migration
+- **Performance**: Lucide's tree-shaking ensures no bundle size increase
+- **Future-Proof**: Lucide is actively maintained with 1000+ icons available
+- **Security**: Eliminates unsafe `set:html` usage for SVG strings
+- **Maintainability**: Single source of truth for all icons (no custom SVG paths to maintain)
+- **Comprehensive Scope**: Migrates both Icon.astro component (24 files) AND inline SVGs (20 files)
