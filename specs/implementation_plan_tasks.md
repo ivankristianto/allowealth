@@ -387,24 +387,39 @@ import {LayoutDashboard} from '@lucide/astro';
 
 **Checklist:**
 
-- [ ] Read current Modal.astro implementation
-- [ ] Replace close button icon (X)
-- [ ] Update Modal.stories.ts
-- [ ] Test in Storybook
-- [ ] Run quality gates
+- [x] Read current Modal.astro implementation
+- [x] Replace close button icon (X)
+- [x] Update Modal.stories.ts
+- [x] Test in Storybook
+- [x] Run quality gates
+- [x] Write unit tests (Modal.behavior.test.ts)
+- [x] Code review specialist review
+- [x] Fix P1 accessibility improvement (added aria-labelledby)
 
 **Files to modify:**
 
 - `src/components/molecules/Modal.astro`
 - `src/components/molecules/Modal.stories.ts`
+- `src/components/molecules/Modal.behavior.test.ts` (created)
 
 **Icons to replace:**
 
 - `x` → `X`
 
+**Implementation Notes:**
+
+- Replaced `import Icon from '../atoms/Icon.astro'` with `import { X } from '@lucide/astro'`
+- Replaced `<Icon name="x" size="sm" />` with `<X size={16} class="stroke-current" aria-hidden="true" />`
+- Size conversion: sm (16px) = size={16}
+- Added accessibility: `aria-hidden="true"` on decorative icon, button has `aria-label="Close modal"`
+- Added `aria-labelledby` to dialog element linking to title for improved screen reader support
+- Updated Modal.stories.ts to use `X.render({ size: 16, class: 'stroke-current' }, { 'aria-hidden': 'true' })`
+- Created comprehensive behavior test file (Modal.behavior.test.ts) following Navigation.behavior.test.ts pattern
+- Code review specialist: **APPROVED** with minor suggestions for enhancement
+
 **Estimated Time:** 1 hour
 
-**Status:** Pending
+**Status:** ✅ Completed
 
 ---
 
@@ -1174,7 +1189,7 @@ All dependencies are already in package.json.
 
 ## Success Criteria
 
-- [ ] All 24 files using Icon.astro component are migrated to Lucide (4/24 done)
+- [ ] All 24 files using Icon.astro component are migrated to Lucide (5/24 done)
 - [ ] All 20 files with inline SVGs are migrated to Lucide (0/20 done)
 - [ ] Icon.astro component is deleted (blocked by remaining usages)
 - [ ] Icon.stories.ts is deleted (blocked by remaining usages)
@@ -1193,9 +1208,10 @@ All dependencies are already in package.json.
 - Phase 1 (Preparation): ✅ 1/1 tasks completed
 - Phase 2 (Atomic Components): ✅ 2/2 tasks completed
 - Phase 3 (Layout Components): ✅ 2/2 tasks completed
-- Phase 4-9: Pending
+- Phase 4 (Molecule Components): 🔄 1/7 tasks completed (Modal.astro)
+- Phase 5-9: Pending
 
-**Overall Progress:** 6/31 tasks completed (19%)
+**Overall Progress:** 7/31 tasks completed (23%)
 
 ## Estimated Effort
 
@@ -1204,13 +1220,13 @@ All dependencies are already in package.json.
 | 1. Preparation                      | 1      | 1         | 1 hour          | P0       |
 | 2. Atomic Components (Icon.astro)   | 2      | 2         | 2-3 hours       | P0       |
 | 3. Layout Components (Icon.astro)   | 2      | 2         | 3 hours         | P0       |
-| 4. Molecule Components (Icon.astro) | 7      | 0         | 7-9 hours       | P1       |
+| 4. Molecule Components (Icon.astro) | 7      | 1         | 7-9 hours       | P1       |
 | 5. Organism Components (Icon.astro) | 6      | 0         | 7-9 hours       | P1       |
 | 6. Page Components (Icon.astro)     | 3      | 0         | 4-5 hours       | P1       |
 | 7. Inline SVGs - Atoms & Molecules  | 5      | 0         | 6-7.5 hours     | P1       |
 | 8. Inline SVGs - Organisms & Pages  | 2      | 0         | 4-6 hours       | P1       |
 | 9. Cleanup & Docs                   | 3      | 0         | 2.5 hours       | P2       |
-| **Total**                           | **31** | **6**     | **37-46 hours** |          |
+| **Total**                           | **31** | **7**     | **37-46 hours** |          |
 
 **Recommended Approach:** Complete phases sequentially. Each phase builds on the previous one and allows for early feedback on patterns.
 

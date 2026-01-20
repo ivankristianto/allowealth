@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/html';
+import { X } from '@lucide/astro';
 
 const meta: Meta = {
   title: 'Molecules/Modal',
@@ -69,7 +70,8 @@ const createModal = (args: {
   if (closable) {
     const closeBtn = document.createElement('button');
     closeBtn.className = 'btn btn-sm btn-circle btn-ghost';
-    closeBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>`;
+    closeBtn.ariaLabel = 'Close modal';
+    closeBtn.innerHTML = X.render({ size: 16, class: 'stroke-current' }, { 'aria-hidden': 'true' });
     closeBtn.onclick = () => modal.close();
     header.appendChild(closeBtn);
   }

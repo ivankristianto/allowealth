@@ -14,7 +14,7 @@
  * @param {string} className - Additional CSS classes
  */
 
-import Icon from '../atoms/Icon.astro';
+import { X } from '@lucide/astro';
 
 interface Props {
   id: string;
@@ -42,10 +42,13 @@ const sizeClasses: Record<string, string> = {
   lg: 'max-w-2xl',
   xl: 'max-w-4xl',
 };
+
+// Generate unique ID for title element to link with aria-labelledby
+const titleId = title ? `${id}-title` : undefined;
 ---
 
 <!-- Modal -->
-<dialog id={id} class:list={['modal', open && 'modal-open', className]}>
+<dialog id={id} aria-labelledby={titleId} class:list={['modal', open && 'modal-open', className]}>
   <!-- Backdrop -->
   {
     backdropClose && (
@@ -61,11 +64,15 @@ const sizeClasses: Record<string, string> = {
     {
       (title || closable) && (
         <div class="flex items-center justify-between mb-4">
-          {title && <h3 class="font-bold text-lg">{title}</h3>}
+          {title && (
+            <h3 id={titleId} class="font-bold text-lg">
+              {title}
+            </h3>
+          )}
           {closable && (
             <form method="dialog">
               <button class="btn btn-sm btn-circle btn-ghost" aria-label="Close modal">
-                <Icon name="x" size="sm" />
+                <X size={16} class="stroke-current" aria-hidden="true" />
               </button>
             </form>
           )}
