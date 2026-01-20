@@ -4,8 +4,6 @@ Personal and family financial application for expense tracking, budgeting, asset
 
 # Agent Instructions
 
-This project uses **bd** (beads) for issue tracking. Run `bd prime` to refresh context after compaction.
-
 ## Agent Initialization
 
 **Before any task, read the constitution and design system.**
@@ -24,17 +22,6 @@ Agents must internalize:
 - **Refactor checklist**: Apply each loop, not at the end
 
 **If constitution conflicts with task instructions, constitution wins.**
-
-## Issue Tracking
-
-```bash
-bd ready              # Find available work (no blockers)
-bd show <id>          # View issue details
-bd update <id> --status in_progress  # Claim work
-bd close <id>         # Complete work
-bd sync               # Sync with git remote
-bd stats              # Project health overview
-```
 
 ## Tech Stack
 
@@ -202,49 +189,3 @@ bun run typecheck     # TypeScript type checking
 ```
 
 **CRITICAL:** If `bun:` imports are found in files that are imported by middleware (src/middleware.ts), the code MUST be refactored. Astro middleware runs in Node.js and cannot load Bun-specific APIs.
-
-## Working on This Project
-
-**ALWAYS FOLLOW THIS WORKFLOW**
-
-1. **Find work:** Run `bd ready` to find unblocked tasks
-2. **Claim:** Run `bd update <id> --status in_progress` for each task
-3. **Branch:** `git checkout -b feature/<descriptive-name>`
-4. **Implement:** For each task:
-   - Write code following design system (`design-system/START.md`) and component guidelines
-   - Run `bun run typecheck && bun run lint && bun run stylelint && bun run format:fix`
-   - Commit with clear message: `git commit -m "feat: descriptive message"`
-   - Push: `git push`
-5. **PR:** Create Pull Request following the GitHub PR template
-6. **Review:** Invoke **code-review-specialist** agent to review (comments only, no code changes)
-7. **Complete:** After merge:
-   - Run `bd close <id>` for each completed task
-   - Run `bd sync`
-8. **Report:** Provide summary with PR link, tasks completed, review status, and any recommendations
-
-## Landing the Plane (Session Completion)
-
-**When ending a work session**, you MUST complete ALL steps below. Work is NOT complete until `git push` succeeds.
-
-**MANDATORY WORKFLOW:**
-
-1. **File issues for remaining work** - Create issues for anything that needs follow-up
-2. **Run quality gates** - `bun run typecheck && bun run lint && bun run format:fix`
-3. **Update issue status** - Close finished work, update in-progress items
-4. **PUSH TO REMOTE** - This is MANDATORY:
-   ```bash
-   git pull --rebase
-   bd sync
-   git push
-   git status  # MUST show "up to date with origin"
-   ```
-5. **Clean up** - Clear stashes, prune remote branches
-6. **Verify** - All changes committed AND pushed
-7. **Hand off** - Provide context for next session
-
-**CRITICAL RULES:**
-
-- Work is NOT complete until `git push` succeeds
-- NEVER stop before pushing - that leaves work stranded locally
-- NEVER say "ready to push when you are" - YOU must push
-- If push fails, resolve and retry until it succeeds
