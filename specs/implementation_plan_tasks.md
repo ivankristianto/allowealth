@@ -1210,53 +1210,52 @@ Inline SVG → Lucide component:
 
 **Checklist:**
 
-- [ ] Read current implementation (SVG strings in config object)
-- [ ] Refactor to use Lucide icon components instead of SVG strings
-- [ ] Update alertConfig to reference Lucide components
-- [ ] Update AuthValidationMessages.stories.ts
-- [ ] Test all validation message types
-- [ ] Run quality gates
+- [x] Read current implementation (SVG strings in config object)
+- [x] Refactor to use Lucide icon components instead of SVG strings
+- [x] Update alertConfig to reference Lucide components
+- [x] Update AuthValidationMessages.stories.ts
+- [x] Test all validation message types
+- [x] Run quality gates
+- [x] Write behavior tests (AuthValidationMessages.behavior.test.ts)
+- [x] Code review specialist review (APPROVED)
+- [x] Fix P1 feedback (updated stories to use Lucide icons)
 
-**Files to modify:**
+**Files modified:**
 
 - `src/components/molecules/AuthValidationMessages.astro`
 - `src/components/molecules/AuthValidationMessages.stories.ts`
+- `src/components/molecules/AuthValidationMessages.behavior.test.ts` (created)
 
-**Current Pattern (SVG as String):**
+**Icons replaced:**
 
-```typescript
-const alertConfig = {
-  'email-format': {
-    alertClass: 'alert-warning',
-    icon: 'svg xmlns="..." <path .../> </svg>', // SVG as string
-    defaultMessage: 'Please enter a valid email address',
-  },
-  // ...
-};
-```
+SVG strings → Lucide components:
 
-**New Pattern (Lucide Component):**
+- `email-format` → `TriangleAlert` (warning triangle, size 24px)
+- `password-mismatch` → `CircleX` (circle with X, size 24px)
+- `password-requirements` → `TriangleAlert` (warning triangle, size 24px)
+- `email-exists` → `CircleX` (circle with X, size 24px)
+- `invalid-credentials` → `Lock` (lock icon, size 24px - fixed from previous incorrect CircleX)
+- `network-error` → `CircleOff` (circle with slash, size 24px)
+- `success` → `CircleCheck` (circle with checkmark, size 24px)
+- Dismiss X button → `X` (size 16px)
 
-```
----
-import { AlertTriangle, XCircle, Lock, AlertCircle } from '@lucide/astro';
+**Implementation Notes:**
 
-const iconMap = {
-  'email-format': AlertTriangle,
-  'password-mismatch': XCircle,
-  'invalid-credentials': Lock,
-  // ...
-};
-
-const Icon = iconMap[type];
----
-
-<Icon size={24} class="shrink-0" />
-```
+- Replaced SVG strings in alertConfig with iconMap containing Lucide icon components
+- Replaced `<span set:html={config.icon} />` with `<IconComponent size={24} class="shrink-0" aria-hidden="true" />`
+- Security improvement: Eliminated `set:html` usage, removing XSS vulnerability
+- Replaced dismiss button inline SVG with `<X size={16} class="stroke-current" aria-hidden="true" />`
+- Added `aria-hidden="true"` to all decorative icons for accessibility
+- Fixed bug: `invalid-credentials` now correctly uses `Lock` instead of `CircleX`
+- Fixed bug: `password-requirements` now uses `alert-warning` instead of `alert-info`
+- Updated stories to use Lucide `.render()` method with proper icon mapping
+- Created comprehensive behavior test file with 70+ tests covering icon migration, props, types, configuration, rendering, accessibility, styling, integration, security improvements, edge cases, and Storybook integration
+- All quality gates pass (typecheck, lint, stylelint, format)
+- Code review specialist: **APPROVED** with P1 feedback addressed
 
 **Estimated Time:** 2 hours
 
-**Status:** Pending
+**Status:** ✅ Completed (commit 4305f00)
 
 ---
 
@@ -1264,27 +1263,64 @@ const Icon = iconMap[type];
 
 **Checklist:**
 
-- [ ] Migrate ForgotPasswordForm.astro
-- [ ] Migrate LoginForm.astro
-- [ ] Migrate RegistrationForm.astro
-- [ ] Test form submissions
-- [ ] Run quality gates
+- [x] Migrate ForgotPasswordForm.astro
+- [x] Migrate LoginForm.astro
+- [x] Migrate RegistrationForm.astro
+- [x] Test form submissions
+- [x] Run quality gates
+- [x] Write behavior tests (ForgotPasswordForm.behavior.test.ts, LoginForm.behavior.test.ts, RegistrationForm.behavior.test.ts)
+- [x] Code review specialist review (APPROVED)
+- [x] Fix P1 feedback (class ordering, aria-hidden)
 
-**Files to modify:**
+**Files modified:**
 
 - `src/components/molecules/ForgotPasswordForm.astro`
 - `src/components/molecules/LoginForm.astro`
 - `src/components/molecules/RegistrationForm.astro`
+- `src/components/molecules/ForgotPasswordForm.behavior.test.ts` (created)
+- `src/components/molecules/LoginForm.behavior.test.ts` (created)
+- `src/components/molecules/RegistrationForm.behavior.test.ts` (created)
 
-**Common inline SVGs:**
+**Icons replaced:**
 
-- Lock icons
-- Eye/EyeOff for password fields
-- Alert/warning icons
+**ForgotPasswordForm.astro:**
+
+- Server-side success alert SVG → `CircleCheck` component (size 24px, class="shrink-0")
+- Client-side validation error SVG → Lucide CircleX paths (class="shrink-0 h-6 w-6", aria-hidden="true")
+- Client-side success message SVG → Lucide CircleCheck paths (class="shrink-0 h-6 w-6", aria-hidden="true")
+- Client-side API error SVG → Lucide CircleX paths (class="shrink-0 h-6 w-6", aria-hidden="true")
+- Client-side network error SVG → Lucide CircleX paths (class="shrink-0 h-6 w-6", aria-hidden="true")
+
+**LoginForm.astro:**
+
+- Client-side validation error SVG → Lucide CircleX paths (class="shrink-0 h-6 w-6", aria-hidden="true")
+- Client-side login error SVG → Lucide CircleX paths (class="shrink-0 h-6 w-6", aria-hidden="true")
+- Client-side network error SVG → Lucide CircleX paths (class="shrink-0 h-6 w-6", aria-hidden="true")
+
+**RegistrationForm.astro:**
+
+- Server-side Eye/EyeOff SVGs → `Eye` and `EyeOff` components (size 20px, class="stroke-current")
+- Client-side validation error SVG → Lucide CircleX paths (class="shrink-0 h-6 w-6", aria-hidden="true")
+- Client-side success message SVG → Lucide CircleCheck paths (class="shrink-0 h-6 w-6", aria-hidden="true")
+- Client-side error message SVG → Lucide CircleX paths (class="shrink-0 h-6 w-6", aria-hidden="true")
+
+**Implementation Notes:**
+
+- Replaced `import { CircleCheck } from '@lucide/astro'` in ForgotPasswordForm.astro
+- Replaced `import { Eye, EyeOff } from '@lucide/astro'` in RegistrationForm.astro
+- Client-side SVGs use Lucide icon paths (CircleX: circle + two diagonal paths, CircleCheck: circle + check path)
+- Icon sizing: 24px (h-6 w-6) for alerts, 20px (h-5 w-5) for password toggle icons
+- Class ordering standardized to match ErrorMessage pattern: "shrink-0 h-6 w-6" (positioning first, sizing next)
+- Added `aria-hidden="true"` to all decorative icons for accessibility
+- Server-side Lucide components use `class="shrink-0"` (stroke-current not needed as Lucide uses stroke="currentColor" by default)
+- Password toggle icons use `class="stroke-current"` for proper interactive button styling (matches PasswordField pattern)
+- Created comprehensive behavior test files with 60+ tests each covering icon migration, form behavior, validation, accessibility, security, and integration
+- All quality gates pass (typecheck, lint, stylelint, format)
+- Code review specialist: **APPROVED** with P1 feedback addressed
 
 **Estimated Time:** 2-3 hours
 
-**Status:** Pending
+**Status:** ✅ Completed
 
 ---
 
@@ -1532,7 +1568,7 @@ All dependencies are already in package.json.
 ## Success Criteria
 
 - [ ] All 24 files using Icon.astro component are migrated to Lucide (20/24 done)
-- [ ] All 20 files with inline SVGs are migrated to Lucide (9/20 done)
+- [ ] All 20 files with inline SVGs are migrated to Lucide (13/20 done)
 - [ ] Icon.astro component is deleted (blocked by remaining usages)
 - [ ] Icon.stories.ts is deleted (blocked by remaining usages)
 - [ ] No inline SVG elements remain in components or pages
@@ -1553,11 +1589,11 @@ All dependencies are already in package.json.
 - Phase 4 (Molecule Components): ✅ 7/7 tasks completed (Modal.astro, QuickActions.astro, BudgetHealthWidget.astro, TransactionRow.astro, TransactionFilters.astro, TransactionForm.astro, CSVImportForm.astro)
 - Phase 5 (Organism Components): ✅ 6/6 tasks completed (TransactionList.astro, BudgetOverviewTable.astro, RecentTransactionsList.astro, AssetUpdateTodoList.astro, BudgetHistoryComparison.astro, DashboardError.astro)
 - Phase 6 (Page Components): ✅ 3/3 tasks completed (budget/index.astro, settings pages, transaction pages)
-- Phase 7 (Inline SVGs - Atoms & Molecules): 🔄 3/5 tasks completed (ErrorMessage.astro, Toast.astro, ToastContainer.astro)
+- Phase 7 (Inline SVGs - Atoms & Molecules): ✅ 5/5 tasks completed (ErrorMessage.astro, Toast.astro, ToastContainer.astro, AuthValidationMessages.astro, Form Components)
 - Phase 8 (Inline SVGs - Organisms & Pages): Pending
 - Phase 9 (Cleanup & Docs): Pending
 
-**Overall Progress:** 26/31 tasks completed (84%)
+**Overall Progress:** 28/31 tasks completed (90%)
 
 ## Estimated Effort
 
@@ -1569,10 +1605,10 @@ All dependencies are already in package.json.
 | 4. Molecule Components (Icon.astro) | 7      | 7         | 7-9 hours       | P1       |
 | 5. Organism Components (Icon.astro) | 6      | 6         | 7-9 hours       | P1       |
 | 6. Page Components (Icon.astro)     | 3      | 3         | 4-5 hours       | P1       |
-| 7. Inline SVGs - Atoms & Molecules  | 5      | 3         | 6-7.5 hours     | P1       |
+| 7. Inline SVGs - Atoms & Molecules  | 5      | 5         | 6-7.5 hours     | P1       |
 | 8. Inline SVGs - Organisms & Pages  | 2      | 0         | 4-6 hours       | P1       |
 | 9. Cleanup & Docs                   | 3      | 0         | 2.5 hours       | P2       |
-| **Total**                           | **31** | **26**    | **37-46 hours** |          |
+| **Total**                           | **31** | **28**    | **37-46 hours** |          |
 
 **Recommended Approach:** Complete phases sequentially. Each phase builds on the previous one and allows for early feedback on patterns.
 

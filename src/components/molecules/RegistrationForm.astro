@@ -55,6 +55,7 @@ import Input from '../atoms/Input.astro';
 import PasswordField from '../atoms/PasswordField.astro';
 import Button from '../atoms/Button.astro';
 import Label from '../atoms/Label.astro';
+import { Eye, EyeOff } from '@lucide/astro';
 
 interface Props {
   action?: string;
@@ -122,41 +123,8 @@ const cspNonce = Astro.locals.cspNonce || '';
         data-toggle-password="confirm-password"
         tabindex="-1"
       >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          class="h-5 w-5"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          data-eye-icon
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-          ></path>
-        </svg>
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          class="h-5 w-5 hidden"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          data-eye-off-icon
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"
-          ></path>
-        </svg>
+        <Eye size={20} class="stroke-current" data-eye-icon />
+        <EyeOff size={20} class="stroke-current hidden" data-eye-off-icon />
       </button>
     </div>
   </div>
@@ -289,8 +257,10 @@ const cspNonce = Astro.locals.cspNonce || '';
         if (messagesContainer) {
           messagesContainer.innerHTML = `
 						<div role="alert" class="alert alert-error">
-							<svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+							<svg xmlns="http://www.w3.org/2000/svg" class="shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+								<circle cx="12" cy="12" r="10"></circle>
+								<path d="m15 9-6 6"></path>
+								<path d="m9 9 6 6"></path>
 							</svg>
 							<div>
 								<h3 class="font-bold">Please fix the following errors:</h3>
@@ -331,8 +301,9 @@ const cspNonce = Astro.locals.cspNonce || '';
         if (messagesContainer) {
           messagesContainer.innerHTML = `
 						<div role="alert" class="alert alert-success">
-							<svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+							<svg xmlns="http://www.w3.org/2000/svg" class="shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+								<circle cx="12" cy="12" r="10"></circle>
+								<path d="m9 12 2 2 4-4"></path>
 							</svg>
 							<span>Account created successfully! Redirecting to login...</span>
 						</div>
@@ -351,8 +322,10 @@ const cspNonce = Astro.locals.cspNonce || '';
         if (messagesContainer) {
           messagesContainer.innerHTML = `
 						<div role="alert" class="alert alert-error">
-							<svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+							<svg xmlns="http://www.w3.org/2000/svg" class="shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+								<circle cx="12" cy="12" r="10"></circle>
+								<path d="m15 9-6 6"></path>
+								<path d="m9 9 6 6"></path>
 							</svg>
 							<span>An error occurred. Please try again.</span>
 						</div>
