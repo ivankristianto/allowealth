@@ -19,6 +19,7 @@ The migration covers **TWO types of icon usage**:
 
 1. **Custom Icon Component** (Icon.astro) - 19 component files + 5 page files
 2. **Inline SVGs** - 20 files with hardcoded SVG elements
+3. **No backward compatibility required**
 
 **Total Files to Migrate:** 44 files
 
@@ -1379,3 +1380,7 @@ If issues are found: FIX IT.
 - **Security**: Eliminates unsafe `set:html` usage for SVG strings
 - **Maintainability**: Single source of truth for all icons (no custom SVG paths to maintain)
 - **Comprehensive Scope**: Migrates both Icon.astro component (24 files) AND inline SVGs (20 files)
+
+### Code Quality & Accessibility Improvements (Priority: P3)
+
+**Note:** These tasks are follow-up improvements identified during code review. They are non-blocking but recommended for better code quality, accessibility, and maintainability. Use proper checklist when adding.
