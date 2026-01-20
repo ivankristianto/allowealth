@@ -513,25 +513,41 @@ import {LayoutDashboard} from '@lucide/astro';
 
 **Checklist:**
 
-- [ ] Read current implementation
-- [ ] Replace edit/delete icons
-- [ ] Update TransactionRow.stories.ts
-- [ ] Test in Storybook
-- [ ] Run quality gates
+- [x] Read current implementation
+- [x] Replace edit/delete icons
+- [x] Update TransactionRow.stories.ts
+- [x] Write behavior tests (TransactionRow.behavior.test.ts)
+- [x] Run quality gates
+- [x] Code review specialist review (APPROVED)
+- [x] Fix P1 feedback (data attribute consistency in stories)
 
-**Files to modify:**
+**Files modified:**
 
 - `src/components/molecules/TransactionRow.astro`
 - `src/components/molecules/TransactionRow.stories.ts`
+- `src/components/molecules/TransactionRow.behavior.test.ts` (created)
 
 **Icons to replace:**
 
-- `pencil` → `Edit` or `Pencil`
+- `pencil` → `Pencil` (used instead of deprecated Edit)
 - `trash` → `Trash2`
+
+**Implementation Notes:**
+
+- Replaced `import Icon from '../atoms/Icon.astro'` with `import { Pencil, Trash2 } from '@lucide/astro'`
+- Edit button: `<Icon name="pencil" size="sm" />` → `<Pencil size={16} class="stroke-current" aria-hidden="true" />`
+- Delete button: `<Icon name="trash" size="sm" />` → `<Trash2 size={16} class="stroke-current" aria-hidden="true" />`
+- Size conversion: sm (16px) = size={16}
+- Added accessibility: `aria-hidden="true"` on decorative icons, buttons have `aria-label`
+- Fixed data attributes in stories to match component (data-delete-transaction, data-transaction-details)
+- Created comprehensive behavior test file with 45 tests
+- Used Pencil instead of deprecated Edit icon
+- All quality gates pass (typecheck, lint, stylelint, format)
+- Code review specialist: **APPROVED** with P1 feedback addressed
 
 **Estimated Time:** 1 hour
 
-**Status:** Pending
+**Status:** ✅ Completed (commit pending)
 
 ---
 
@@ -1221,7 +1237,7 @@ All dependencies are already in package.json.
 
 ## Success Criteria
 
-- [ ] All 24 files using Icon.astro component are migrated to Lucide (7/24 done)
+- [ ] All 24 files using Icon.astro component are migrated to Lucide (8/24 done)
 - [ ] All 20 files with inline SVGs are migrated to Lucide (1/20 done)
 - [ ] Icon.astro component is deleted (blocked by remaining usages)
 - [ ] Icon.stories.ts is deleted (blocked by remaining usages)
@@ -1240,10 +1256,10 @@ All dependencies are already in package.json.
 - Phase 1 (Preparation): ✅ 1/1 tasks completed
 - Phase 2 (Atomic Components): ✅ 2/2 tasks completed
 - Phase 3 (Layout Components): ✅ 2/2 tasks completed
-- Phase 4 (Molecule Components): 🔄 3/7 tasks completed (Modal.astro, QuickActions.astro, BudgetHealthWidget.astro)
+- Phase 4 (Molecule Components): 🔄 4/7 tasks completed (Modal.astro, QuickActions.astro, BudgetHealthWidget.astro, TransactionRow.astro)
 - Phase 5-9: Pending
 
-**Overall Progress:** 9/31 tasks completed (29%)
+**Overall Progress:** 10/31 tasks completed (32%)
 
 ## Estimated Effort
 
@@ -1252,13 +1268,13 @@ All dependencies are already in package.json.
 | 1. Preparation                      | 1      | 1         | 1 hour          | P0       |
 | 2. Atomic Components (Icon.astro)   | 2      | 2         | 2-3 hours       | P0       |
 | 3. Layout Components (Icon.astro)   | 2      | 2         | 3 hours         | P0       |
-| 4. Molecule Components (Icon.astro) | 7      | 3         | 7-9 hours       | P1       |
+| 4. Molecule Components (Icon.astro) | 7      | 4         | 7-9 hours       | P1       |
 | 5. Organism Components (Icon.astro) | 6      | 0         | 7-9 hours       | P1       |
 | 6. Page Components (Icon.astro)     | 3      | 0         | 4-5 hours       | P1       |
 | 7. Inline SVGs - Atoms & Molecules  | 5      | 0         | 6-7.5 hours     | P1       |
 | 8. Inline SVGs - Organisms & Pages  | 2      | 0         | 4-6 hours       | P1       |
 | 9. Cleanup & Docs                   | 3      | 0         | 2.5 hours       | P2       |
-| **Total**                           | **31** | **9**     | **37-46 hours** |          |
+| **Total**                           | **31** | **10**    | **37-46 hours** |          |
 
 **Recommended Approach:** Complete phases sequentially. Each phase builds on the previous one and allows for early feedback on patterns.
 

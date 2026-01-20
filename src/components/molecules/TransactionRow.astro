@@ -11,7 +11,7 @@
 
 import Currency from '../atoms/Currency.astro';
 import Badge from '../atoms/Badge.astro';
-import Icon from '../atoms/Icon.astro';
+import { Pencil, Trash2 } from '@lucide/astro';
 import type { TransactionOutput } from '@/lib/types/transaction';
 
 export interface Props {
@@ -78,7 +78,7 @@ const formattedDate = date.toLocaleDateString('en-US', {
       <div class="flex-shrink-0 flex gap-1">
         {editUrl && (
           <a href={editUrl} class="btn btn-ghost btn-sm" aria-label="Edit transaction">
-            <Icon name="pencil" size="sm" />
+            <Pencil size={16} class="stroke-current" aria-hidden="true" />
           </a>
         )}
         {deleteUrl && (
@@ -89,7 +89,7 @@ const formattedDate = date.toLocaleDateString('en-US', {
             data-delete-transaction={transaction.id}
             data-transaction-details={JSON.stringify(transaction)}
           >
-            <Icon name="trash" size="sm" />
+            <Trash2 size={16} class="stroke-current" aria-hidden="true" />
           </button>
         )}
       </div>
