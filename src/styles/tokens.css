@@ -177,6 +177,16 @@
   --transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
 
   /* ========================================
+   * TOAST ANIMATIONS
+   * ======================================== */
+
+  --toast-duration-enter: 0.3s;
+  --toast-duration-exit: 0.2s;
+  --toast-easing-enter: ease-out;
+  --toast-easing-exit: ease-in;
+  --toast-distance: 50px;
+
+  /* ========================================
    * BREAKPOINTS (for reference in JS)
    * ======================================== */
 

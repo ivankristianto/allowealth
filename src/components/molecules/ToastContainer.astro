@@ -21,6 +21,23 @@
   role="region"
   aria-label="Notifications"
 >
+  <!-- Separate aria-live regions for polite and assertive announcements -->
+  <div
+    id="toast-announcer-polite"
+    role="status"
+    aria-live="polite"
+    aria-atomic="true"
+    class="sr-only"
+  >
+  </div>
+  <div
+    id="toast-announcer-assertive"
+    role="alert"
+    aria-live="assertive"
+    aria-atomic="true"
+    class="sr-only"
+  >
+  </div>
 </div>
 
 <script>
@@ -34,6 +51,15 @@
   // Track rendered toasts for efficient DOM updates
   const renderedToasts = new Map<string, HTMLElement>();
 
+  // Track focused elements for restoration - only restore on MANUAL dismiss
+  // Map toast ID to focused element so we can clean up on auto-dismiss
+  const focusRestoreMap = new Map<string, HTMLElement>();
+
+  // Get exit animation duration from CSS variable (in ms)
+  const exitDurationMs =
+    parseFloat(getComputedStyle(container).getPropertyValue('--toast-duration-exit').trim()) *
+      1000 || 200;
+
   // Get DaisyUI alert class for toast type
   function getAlertClass(type: string): string {
     const typeClasses: Record<string, string> = {
@@ -45,23 +71,43 @@
     return typeClasses[type] || 'alert-info';
   }
 
-  // Get aria-live value for toast type
-  function getAriaLive(type: string): string {
-    return type === 'error' ? 'assertive' : 'polite';
+  // Announce toast to screen readers via separate aria-live regions
+  function announceToast(message: string, type: string): void {
+    const announcerId = type === 'error' ? '#toast-announcer-assertive' : '#toast-announcer-polite';
+    const announcer = container?.querySelector(announcerId) as HTMLElement;
+    if (!announcer) return;
+
+    announcer.textContent = message;
+
+    // Clear after announcement to prevent re-announcement
+    setTimeout(() => {
+      announcer.textContent = '';
+    }, 1000);
   }
 
   // Create toast element with enter animation
   function createToastElement(toast: ToastMessage): HTMLElement {
+    // Capture currently focused element BEFORE toast appears
+    // Only if it's not already focused on a toast element
+    const currentFocus = document.activeElement as HTMLElement;
+    if (
+      currentFocus &&
+      currentFocus !== document.body &&
+      !currentFocus.closest('#toast-container')
+    ) {
+      focusRestoreMap.set(toast.id, currentFocus);
+    }
+
     const toastEl = document.createElement('div');
     toastEl.className = `alert shadow-lg ${getAlertClass(toast.type)}`;
     toastEl.id = `toast-${toast.id}`;
     toastEl.setAttribute('role', 'alert');
-    toastEl.setAttribute('aria-live', getAriaLive(toast.type));
 
     // Set initial state for enter animation
     toastEl.style.opacity = '0';
     toastEl.style.transform = 'translateX(50px)';
-    toastEl.style.transition = 'opacity 0.3s ease-out, transform 0.3s ease-out';
+    toastEl.style.transition =
+      'opacity var(--toast-duration-enter) var(--toast-easing-enter), transform var(--toast-duration-enter) var(--toast-easing-enter)';
 
     // Message span
     const messageSpan = document.createElement('span');
@@ -79,12 +125,15 @@
       </svg>
     `;
 
-    // Handle dismiss click with exit animation
+    // Handle dismiss click with exit animation and focus restoration (manual)
     closeButton.addEventListener('click', () => {
-      dismissToast(toast.id, toastEl);
+      dismissToast(toast.id, toastEl, true);
     });
 
     toastEl.appendChild(closeButton);
+
+    // Announce toast to screen readers
+    announceToast(toast.message, toast.type);
 
     // Trigger enter animation after append
     requestAnimationFrame(() => {
@@ -95,19 +144,32 @@
     return toastEl;
   }
 
-  // Dismiss toast with exit animation
-  function dismissToast(id: string, element: HTMLElement): void {
+  // Dismiss toast with exit animation and optional focus restoration
+  function dismissToast(id: string, element: HTMLElement, manual: boolean = false): void {
     // Apply exit animation
-    element.style.transition = 'opacity 0.2s ease-in, transform 0.2s ease-in';
+    element.style.transition =
+      'opacity var(--toast-duration-exit) var(--toast-easing-exit), transform var(--toast-duration-exit) var(--toast-easing-exit)';
     element.style.opacity = '0';
-    element.style.transform = 'translateX(50px)';
+    element.style.transform = 'translateX(var(--toast-distance))';
 
     // Remove after animation completes
     setTimeout(() => {
       element.remove();
       renderedToasts.delete(id);
       removeToast(id);
-    }, 200);
+
+      // Only restore focus for manually dismissed toasts
+      if (manual) {
+        const restoreFocus = focusRestoreMap.get(id);
+        focusRestoreMap.delete(id);
+        if (restoreFocus && document.contains(restoreFocus)) {
+          restoreFocus.focus();
+        }
+      } else {
+        // Auto-dismiss: clean up the focus map entry
+        focusRestoreMap.delete(id);
+      }
+    }, exitDurationMs);
   }
 
   // Reconcile DOM based on store state
@@ -122,6 +184,8 @@
         if (element) {
           element.remove();
           renderedToasts.delete(id);
+          // Clean up focus map entry for auto-dismissed toasts
+          focusRestoreMap.delete(id);
         }
       }
     }
@@ -147,6 +211,7 @@
   addEventListener('astro:page-load', () => {
     unsubscribe();
     renderedToasts.clear();
+    focusRestoreMap.clear(); // Clear focus map
     clearAllToasts(); // Clear all pending timeouts
   });
 </script>
