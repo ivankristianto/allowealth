@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/html';
+import { TriangleAlert, CircleX, Lock, CircleOff, CircleCheck, X } from '@lucide/astro';
 
 const meta: Meta = {
   title: 'Molecules/AuthValidationMessages',
@@ -32,6 +33,17 @@ export default meta;
 
 type Story = StoryObj;
 
+// Icon component mapping for each message type (matches component implementation)
+const iconMap: Record<string, typeof TriangleAlert> = {
+  'email-format': TriangleAlert,
+  'password-mismatch': CircleX,
+  'password-requirements': TriangleAlert,
+  'email-exists': CircleX,
+  'invalid-credentials': Lock,
+  'network-error': CircleOff,
+  success: CircleCheck,
+};
+
 const createAuthValidationMessage = (args: {
   type?: string;
   message?: string;
@@ -41,13 +53,14 @@ const createAuthValidationMessage = (args: {
 
   const alert = document.createElement('div');
   alert.className = 'alert';
+  alert.setAttribute('role', 'alert');
 
-  // Add alert type class
+  // Add alert type class (matches component implementation)
   const alertTypeClasses: Record<string, string> = {
     'email-format': 'alert-warning',
     'password-mismatch': 'alert-error',
-    'password-requirements': 'alert-info',
-    'email-exists': 'alert-warning',
+    'password-requirements': 'alert-warning',
+    'email-exists': 'alert-error',
     'invalid-credentials': 'alert-error',
     'network-error': 'alert-error',
     success: 'alert-success',
@@ -59,28 +72,15 @@ const createAuthValidationMessage = (args: {
   const alertContent = document.createElement('div');
   alertContent.className = 'flex items-start gap-3';
 
-  // Add icon
-  const iconHtml: Record<string, string> = {
-    'email-format':
-      '<svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>',
-    'password-mismatch':
-      '<svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>',
-    'password-requirements':
-      '<svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>',
-    'email-exists':
-      '<svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>',
-    'invalid-credentials':
-      '<svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>',
-    'network-error':
-      '<svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>',
-    success:
-      '<svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>',
-  };
-
+  // Add icon using Lucide render method
+  const IconComponent = iconMap[type] || CircleCheck;
   const iconContainer = document.createElement('div');
   iconContainer.className = 'flex-shrink-0';
-  iconContainer.innerHTML = iconHtml[type as keyof typeof iconHtml] || iconHtml.success;
-
+  iconContainer.innerHTML = IconComponent.render({
+    size: 24,
+    class: 'shrink-0',
+    'aria-hidden': 'true',
+  });
   alertContent.appendChild(iconContainer);
 
   // Add message
@@ -88,12 +88,11 @@ const createAuthValidationMessage = (args: {
   const defaultMessage: Record<string, string> = {
     'email-format': 'Please enter a valid email address',
     'password-mismatch': 'Passwords do not match',
-    'password-requirements':
-      'Password must be at least 12 characters with uppercase, lowercase, number, and special character',
+    'password-requirements': 'Password does not meet requirements',
     'email-exists': 'An account with this email already exists',
     'invalid-credentials': 'Invalid email or password',
-    'network-error': 'Network error. Please check your connection and try again.',
-    success: 'Operation successful!',
+    'network-error': 'Network error. Please check your connection and try again',
+    success: 'Success!',
   };
 
   const messageText = message || defaultMessage[type] || '';
@@ -103,16 +102,30 @@ const createAuthValidationMessage = (args: {
       <div class="alert-content">
         ${messageText}
       </div>
-      <button class="btn btn-ghost btn-sm ml-4" onclick="this.parentElement.parentElement.parentElement.remove()">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
-      </button>
     `;
+    alertContent.appendChild(messageContainer);
+
+    // Add dismiss button with X icon
+    const dismissButton = document.createElement('button');
+    dismissButton.className = 'btn btn-sm btn-circle btn-ghost';
+    dismissButton.setAttribute('aria-label', 'Dismiss message');
+    dismissButton.onclick = () => alert.remove();
+
+    const xIcon = document.createElement('span');
+    xIcon.innerHTML = X.render({
+      size: 16,
+      class: 'stroke-current',
+      'aria-hidden': 'true',
+    });
+    dismissButton.appendChild(xIcon);
+
+    alertContent.appendChild(dismissButton);
   } else {
     messageContainer.className = 'alert-content';
     messageContainer.textContent = messageText;
+    alertContent.appendChild(messageContainer);
   }
 
-  alertContent.appendChild(messageContainer);
   alert.appendChild(alertContent);
 
   return alert;
