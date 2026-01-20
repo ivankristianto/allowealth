@@ -23,6 +23,19 @@ const meta: Meta = {
 
 export default meta;
 
+// Lucide-style icon SVGs for Storybook
+const icons = {
+  layoutDashboard: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>`,
+  search: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>`,
+  calendar: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>`,
+  currencyDollar: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>`,
+  info: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>`,
+  triangleAlert: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>`,
+  plus: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>`,
+  settings: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.74v-.47a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.39a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>`,
+  x: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>`,
+};
+
 const createNavigation = (args: { currentPath?: string }): HTMLElement => {
   const { currentPath = '/' } = args;
 
@@ -36,31 +49,31 @@ const createNavigation = (args: { currentPath?: string }): HTMLElement => {
   mobileHeader.innerHTML = `
     <span class="font-bold text-lg">Menu</span>
     <label for="nav-drawer-toggle" class="btn btn-sm btn-circle btn-ghost">
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-      </svg>
+      ${icons.x}
     </label>
   `;
   aside.appendChild(mobileHeader);
 
   // Navigation items
   const navItems = [
-    { href: '/dashboard', label: 'Dashboard', icon: 'home' },
-    { href: '/transactions', label: 'Transactions', icon: 'search' },
-    { href: '/budget', label: 'Budget', icon: 'calendar' },
-    { href: '/assets', label: 'Assets', icon: 'currency-dollar' },
-    { href: '/reports', label: 'Reports', icon: 'information' },
-    { href: '/forecast', label: 'Forecast', icon: 'warning' },
-    { href: '/calculators', label: 'Calculators', icon: 'plus' },
-    { href: '/settings', label: 'Settings', icon: 'pencil' },
+    { href: '/dashboard', label: 'Dashboard', iconKey: 'layoutDashboard' as const },
+    { href: '/transactions', label: 'Transactions', iconKey: 'search' as const },
+    { href: '/budget', label: 'Budget', iconKey: 'calendar' as const },
+    { href: '/assets', label: 'Assets', iconKey: 'currencyDollar' as const },
+    { href: '/reports', label: 'Reports', iconKey: 'info' as const },
+    { href: '/forecast', label: 'Forecast', iconKey: 'triangleAlert' as const },
+    { href: '/calculators', label: 'Calculators', iconKey: 'plus' as const },
+    { href: '/settings', label: 'Settings', iconKey: 'settings' as const },
   ];
 
   const ul = document.createElement('ul');
   ul.className = 'menu p-4 w-full flex-1';
 
   const isActive = (href: string) => {
-    if (href === '/dashboard' && currentPath === '/') return true;
-    return currentPath.startsWith(href);
+    // Exact match for index routes
+    if (currentPath === href) return true;
+    // For nested routes (e.g., /assets/add), parent is active if path starts with href + '/'
+    return currentPath.startsWith(href + '/');
   };
 
   navItems.forEach((item) => {
@@ -68,11 +81,11 @@ const createNavigation = (args: { currentPath?: string }): HTMLElement => {
     const a = document.createElement('a');
     a.href = item.href;
     a.className = isActive(item.href) ? 'active gap-3' : 'gap-3';
-    a.setAttribute('aria-current', isActive(item.href) ? 'page' : 'false');
+    if (isActive(item.href)) {
+      a.setAttribute('aria-current', 'page');
+    }
     a.innerHTML = `
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-      </svg>
+      ${icons[item.iconKey]}
       <span>${item.label}</span>
     `;
     li.appendChild(a);

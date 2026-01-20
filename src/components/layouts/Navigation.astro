@@ -6,7 +6,17 @@
  * Active route is highlighted. Mobile-friendly with drawer toggle.
  */
 
-import Icon from '../atoms/Icon.astro';
+import {
+  LayoutDashboard,
+  Search,
+  Calendar,
+  DollarSign,
+  Info,
+  TriangleAlert,
+  Plus,
+  Settings,
+  X,
+} from '@lucide/astro';
 import type { User } from '@/lib/auth/lucia';
 
 interface Props {
@@ -19,19 +29,19 @@ const { currentPath = '/', user = null } = Astro.props;
 interface NavItem {
   href: string;
   label: string;
-  icon: string;
+  icon: typeof LayoutDashboard;
   badge?: string;
 }
 
 const navItems: NavItem[] = [
-  { href: '/dashboard', label: 'Dashboard', icon: 'home' },
-  { href: '/transactions', label: 'Transactions', icon: 'search' },
-  { href: '/budget', label: 'Budget', icon: 'calendar' },
-  { href: '/assets', label: 'Assets', icon: 'currency-dollar' },
-  { href: '/reports', label: 'Reports', icon: 'information' },
-  { href: '/forecast', label: 'Forecast', icon: 'warning' },
-  { href: '/calculators', label: 'Calculators', icon: 'plus' },
-  { href: '/settings', label: 'Settings', icon: 'pencil' },
+  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/transactions', label: 'Transactions', icon: Search },
+  { href: '/budget', label: 'Budget', icon: Calendar },
+  { href: '/assets', label: 'Assets', icon: DollarSign },
+  { href: '/reports', label: 'Reports', icon: Info },
+  { href: '/forecast', label: 'Forecast', icon: TriangleAlert },
+  { href: '/calculators', label: 'Calculators', icon: Plus },
+  { href: '/settings', label: 'Settings', icon: Settings },
 ];
 
 const isActive = (href: string) => {
@@ -51,7 +61,7 @@ const isActive = (href: string) => {
   <div class="lg:hidden p-4 border-b border-base-300 flex justify-between items-center">
     <span class="font-bold text-lg">Menu</span>
     <label for="drawer-toggle" class="btn btn-sm btn-circle btn-ghost" aria-label="Close menu">
-      <Icon name="x" size="sm" />
+      <X size={16} class="stroke-current" />
     </label>
   </div>
 
@@ -65,7 +75,7 @@ const isActive = (href: string) => {
             class:list={[isActive(item.href) && 'active', 'gap-3']}
             aria-current={isActive(item.href) ? 'page' : undefined}
           >
-            <Icon name={item.icon} size="sm" />
+            <item.icon size={16} class="stroke-current" aria-hidden="true" />
             <span>{item.label}</span>
             {item.badge && <span class="badge badge-sm badge-primary">{item.badge}</span>}
           </a>
