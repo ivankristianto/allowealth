@@ -15,7 +15,7 @@
  * @param {string} className - Additional CSS classes
  */
 
-import Icon from '../atoms/Icon.astro';
+import { Minus, Plus, ChartPie } from '@lucide/astro';
 
 export interface QuickAction {
   label: string;
@@ -29,6 +29,16 @@ export interface Props {
   actions?: QuickAction[];
   className?: string;
 }
+
+// Icon mapping for backward compatibility
+// Using ChartPie instead of deprecated BarChart3/PieChart for "View Reports" action
+// ChartPie represents "exploring" or "analyzing" reports
+/** @type {Record<string, import('@lucide/astro').Component>} */
+const iconMap = {
+  minus: Minus,
+  plus: Plus,
+  search: ChartPie,
+};
 
 // Default quick actions
 const defaultActions: QuickAction[] = [
@@ -65,22 +75,25 @@ const { actions = defaultActions, className = '' } = Astro.props;
   aria-label="Quick actions"
 >
   {
-    actions.map((action) => (
-      <a
-        href={action.url}
-        class={`btn btn-${action.variant} gap-2 flex-1 justify-center ${
-          action.variant === 'primary'
-            ? 'btn-primary'
-            : action.variant === 'secondary'
-              ? 'bg-neutral-200 text-neutral-800 hover:bg-neutral-300'
-              : 'btn-outline'
-        }`}
-        aria-label={action.ariaLabel}
-      >
-        <Icon name={action.icon} size="sm" />
-        <span>{action.label}</span>
-      </a>
-    ))
+    actions.map((action) => {
+      const IconComponent = iconMap[action.icon] || Plus;
+      return (
+        <a
+          href={action.url}
+          class={`btn btn-${action.variant} gap-2 flex-1 justify-center ${
+            action.variant === 'primary'
+              ? 'btn-primary'
+              : action.variant === 'secondary'
+                ? 'bg-neutral-200 text-neutral-800 hover:bg-neutral-300'
+                : 'btn-outline'
+          }`}
+          aria-label={action.ariaLabel}
+        >
+          <IconComponent size={16} class="stroke-current" aria-hidden="true" />
+          <span>{action.label}</span>
+        </a>
+      );
+    })
   }
 </div>
 

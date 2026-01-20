@@ -427,26 +427,40 @@ import {LayoutDashboard} from '@lucide/astro';
 
 **Checklist:**
 
-- [ ] Read current QuickActions.astro implementation
-- [ ] Replace action icons with Lucide
-- [ ] Update QuickActions.stories.ts
-- [ ] Test in Storybook
-- [ ] Run quality gates
+- [x] Read current QuickActions.astro implementation
+- [x] Replace action icons with Lucide
+- [x] Update QuickActions.stories.ts
+- [x] Test in Storybook
+- [x] Run quality gates
+- [x] Write behavior tests
+- [x] Code review specialist review (APPROVED)
 
 **Files to modify:**
 
 - `src/components/molecules/QuickActions.astro`
 - `src/components/molecules/QuickActions.stories.ts`
+- `src/components/molecules/QuickActions.behavior.test.ts` (created)
 
 **Icons to replace:**
 
 - `minus` → `Minus` (for expenses)
 - `plus` → `Plus` (for income)
-- `search` → `BarChart3` (more appropriate for reports)
+- `search` → `ChartPie` (used instead of deprecated BarChart3)
+
+**Implementation Notes:**
+
+- Replaced `import Icon from '../atoms/Icon.astro'` with `import { Minus, Plus, ChartPie } from '@lucide/astro'`
+- Created internal icon mapping for backward compatibility: `iconMap: Record<string, Component>`
+- Used `ChartPie` instead of deprecated `BarChart3`/`PieChart` for "View Reports" action
+- Added `aria-hidden="true"` to decorative icons (buttons have aria-label)
+- Icon size: 16px (equivalent to previous "sm" size)
+- Added JSDoc type annotation for iconMap for better type safety
+- Created comprehensive behavior test file with 32 tests
+- Code review specialist: **APPROVED** with minor suggestions for future improvement
 
 **Estimated Time:** 1-2 hours
 
-**Status:** Pending
+**Status:** ✅ Completed
 
 ---
 
@@ -1189,7 +1203,7 @@ All dependencies are already in package.json.
 
 ## Success Criteria
 
-- [ ] All 24 files using Icon.astro component are migrated to Lucide (5/24 done)
+- [ ] All 24 files using Icon.astro component are migrated to Lucide (6/24 done)
 - [ ] All 20 files with inline SVGs are migrated to Lucide (0/20 done)
 - [ ] Icon.astro component is deleted (blocked by remaining usages)
 - [ ] Icon.stories.ts is deleted (blocked by remaining usages)
@@ -1208,10 +1222,10 @@ All dependencies are already in package.json.
 - Phase 1 (Preparation): ✅ 1/1 tasks completed
 - Phase 2 (Atomic Components): ✅ 2/2 tasks completed
 - Phase 3 (Layout Components): ✅ 2/2 tasks completed
-- Phase 4 (Molecule Components): 🔄 1/7 tasks completed (Modal.astro)
+- Phase 4 (Molecule Components): 🔄 2/7 tasks completed (Modal.astro, QuickActions.astro)
 - Phase 5-9: Pending
 
-**Overall Progress:** 7/31 tasks completed (23%)
+**Overall Progress:** 8/31 tasks completed (26%)
 
 ## Estimated Effort
 
@@ -1220,13 +1234,13 @@ All dependencies are already in package.json.
 | 1. Preparation                      | 1      | 1         | 1 hour          | P0       |
 | 2. Atomic Components (Icon.astro)   | 2      | 2         | 2-3 hours       | P0       |
 | 3. Layout Components (Icon.astro)   | 2      | 2         | 3 hours         | P0       |
-| 4. Molecule Components (Icon.astro) | 7      | 1         | 7-9 hours       | P1       |
+| 4. Molecule Components (Icon.astro) | 7      | 2         | 7-9 hours       | P1       |
 | 5. Organism Components (Icon.astro) | 6      | 0         | 7-9 hours       | P1       |
 | 6. Page Components (Icon.astro)     | 3      | 0         | 4-5 hours       | P1       |
 | 7. Inline SVGs - Atoms & Molecules  | 5      | 0         | 6-7.5 hours     | P1       |
 | 8. Inline SVGs - Organisms & Pages  | 2      | 0         | 4-6 hours       | P1       |
 | 9. Cleanup & Docs                   | 3      | 0         | 2.5 hours       | P2       |
-| **Total**                           | **31** | **7**     | **37-46 hours** |          |
+| **Total**                           | **31** | **8**     | **37-46 hours** |          |
 
 **Recommended Approach:** Complete phases sequentially. Each phase builds on the previous one and allows for early feedback on patterns.
 

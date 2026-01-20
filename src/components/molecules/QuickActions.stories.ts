@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/html';
+import { Minus, Plus, ChartPie } from '@lucide/astro';
 
 const meta: Meta = {
   title: 'Molecules/QuickActions',
@@ -45,15 +46,10 @@ const defaultActions: QuickAction[] = [
   },
 ];
 
-const getIconSvg = (iconName: string): string => {
-  const icons: Record<string, string> = {
-    minus: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4" />',
-    plus: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />',
-    search:
-      '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />',
-  };
-  const result = icons[iconName];
-  return result ?? icons['plus']!;
+const iconMap = {
+  minus: Minus,
+  plus: Plus,
+  search: ChartPie,
 };
 
 const createQuickActions = (args: { actions?: QuickAction[] }): HTMLElement => {
@@ -79,12 +75,16 @@ const createQuickActions = (args: { actions?: QuickAction[] }): HTMLElement => {
       button.classList.add('btn-outline');
     }
 
-    button.innerHTML = `
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        ${getIconSvg(action.icon)}
-      </svg>
-      <span>${action.label}</span>
-    `;
+    const IconComponent = iconMap[action.icon as keyof typeof iconMap] || Plus;
+    const iconWrapper = document.createElement('span');
+    iconWrapper.setAttribute('aria-hidden', 'true');
+    iconWrapper.innerHTML = IconComponent.render({ size: 16, class: 'stroke-current' });
+
+    button.appendChild(iconWrapper);
+
+    const span = document.createElement('span');
+    span.textContent = action.label;
+    button.appendChild(span);
 
     wrapper.appendChild(button);
   });
@@ -149,14 +149,14 @@ export const AllOutline: StoryObj = {
         url: '/transactions/add?type=expense',
         icon: 'minus',
         variant: 'outline',
-        ariaLabel: 'Add new expense transaction',
+        ariaLabel: 'Add expense transaction',
       },
       {
         label: 'Add Income',
         url: '/transactions/add?type=income',
         icon: 'plus',
         variant: 'outline',
-        ariaLabel: 'Add new income transaction',
+        ariaLabel: 'Add income transaction',
       },
       {
         label: 'View Reports',
@@ -217,14 +217,14 @@ export const AllVariants: StoryObj = {
             url: '/transactions/add?type=expense',
             icon: 'minus',
             variant: 'outline',
-            ariaLabel: 'Add new expense transaction',
+            ariaLabel: 'Add expense transaction',
           },
           {
             label: 'Add Income',
             url: '/transactions/add?type=income',
             icon: 'plus',
             variant: 'outline',
-            ariaLabel: 'Add new income transaction',
+            ariaLabel: 'Add income transaction',
           },
           {
             label: 'View Reports',
