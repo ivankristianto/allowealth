@@ -861,23 +861,36 @@ Server-side (Lucide components):
 
 **Checklist:**
 
-- [ ] Read current implementation
-- [ ] Replace chart/comparison icons
-- [ ] Test component rendering
-- [ ] Run quality gates
+- [x] Read current implementation
+- [x] Replace chart/comparison icons
+- [x] Test component rendering
+- [x] Run quality gates
+- [x] Write behavior tests (BudgetHistoryComparison.behavior.test.ts)
+- [x] Code review specialist review (APPROVED)
 
-**Files to modify:**
+**Files modified:**
 
 - `src/components/organisms/BudgetHistoryComparison.astro`
+- `src/components/organisms/BudgetHistoryComparison.behavior.test.ts` (created)
 
-**Icons to replace:**
+**Icons replaced:**
 
-- `calendar` → `Calendar`
-- `arrow-left`/`arrow-right` → `ChevronLeft`/`ChevronRight`
+- `download` → `Download` (export button, size 16px)
+
+**Implementation Notes:**
+
+- Replaced `import Icon from '../atoms/Icon.astro'` with `import { Download } from '@lucide/astro'`
+- Export button icon: `<Icon name="download" size="sm" />` → `<Download size={16} class="stroke-current" aria-hidden="true" />`
+- Size conversion: sm (16px) = size={16}
+- Added accessibility: `aria-hidden="true"` on decorative icon (button has text label)
+- Created comprehensive behavior test file with 60+ tests covering icon migration, component props, data rendering, sorting, comparison logic, status badges, progress bars, current month highlighting, empty state, accessibility, and responsive design
+- Note: The plan listed `calendar` and `arrow-left`/`arrow-right` icons, but the actual icon used was only `download`
+- All quality gates pass (typecheck, lint, stylelint, format)
+- Code review specialist: **APPROVED** with no blocking issues
 
 **Estimated Time:** 1 hour
 
-**Status:** Pending
+**Status:** ✅ Completed
 
 ---
 
@@ -1359,7 +1372,7 @@ All dependencies are already in package.json.
 
 ## Success Criteria
 
-- [ ] All 24 files using Icon.astro component are migrated to Lucide (14/24 done)
+- [ ] All 24 files using Icon.astro component are migrated to Lucide (15/24 done)
 - [ ] All 20 files with inline SVGs are migrated to Lucide (5/20 done)
 - [ ] Icon.astro component is deleted (blocked by remaining usages)
 - [ ] Icon.stories.ts is deleted (blocked by remaining usages)
@@ -1379,10 +1392,10 @@ All dependencies are already in package.json.
 - Phase 2 (Atomic Components): ✅ 2/2 tasks completed
 - Phase 3 (Layout Components): ✅ 2/2 tasks completed
 - Phase 4 (Molecule Components): ✅ 7/7 tasks completed (Modal.astro, QuickActions.astro, BudgetHealthWidget.astro, TransactionRow.astro, TransactionFilters.astro, TransactionForm.astro, CSVImportForm.astro)
-- Phase 5 (Organism Components): 🔄 3/6 tasks completed (TransactionList.astro, RecentTransactionsList.astro, AssetUpdateTodoList.astro)
+- Phase 5 (Organism Components): 🔄 4/6 tasks completed (TransactionList.astro, RecentTransactionsList.astro, AssetUpdateTodoList.astro, BudgetHistoryComparison.astro)
 - Phase 6-9: Pending
 
-**Overall Progress:** 16/31 tasks completed (52%)
+**Overall Progress:** 17/31 tasks completed (55%)
 
 ## Estimated Effort
 
@@ -1392,12 +1405,12 @@ All dependencies are already in package.json.
 | 2. Atomic Components (Icon.astro)   | 2      | 2         | 2-3 hours       | P0       |
 | 3. Layout Components (Icon.astro)   | 2      | 2         | 3 hours         | P0       |
 | 4. Molecule Components (Icon.astro) | 7      | 7         | 7-9 hours       | P1       |
-| 5. Organism Components (Icon.astro) | 6      | 3         | 7-9 hours       | P1       |
+| 5. Organism Components (Icon.astro) | 6      | 4         | 7-9 hours       | P1       |
 | 6. Page Components (Icon.astro)     | 3      | 0         | 4-5 hours       | P1       |
 | 7. Inline SVGs - Atoms & Molecules  | 5      | 0         | 6-7.5 hours     | P1       |
 | 8. Inline SVGs - Organisms & Pages  | 2      | 0         | 4-6 hours       | P1       |
 | 9. Cleanup & Docs                   | 3      | 0         | 2.5 hours       | P2       |
-| **Total**                           | **31** | **16**    | **37-46 hours** |          |
+| **Total**                           | **31** | **17**    | **37-46 hours** |          |
 
 **Recommended Approach:** Complete phases sequentially. Each phase builds on the previous one and allows for early feedback on patterns.
 

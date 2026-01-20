@@ -15,7 +15,7 @@
 
 import { formatCurrency, formatPercentage } from '@/lib/tokens';
 import Badge from '../atoms/Badge.astro';
-import Icon from '../atoms/Icon.astro';
+import { Download } from '@lucide/astro';
 import EmptyState from '../atoms/EmptyState.astro';
 
 export interface MonthlyBudgetData {
@@ -91,7 +91,7 @@ const sortedHistory = [...history].sort((a, b) => {
 
     {/* Export Button (future) */}
     <button class="btn btn-outline btn-sm gap-2" disabled title="Coming soon">
-      <Icon name="download" size="sm" />
+      <Download size={16} class="stroke-current" aria-hidden="true" />
       Export Report
       <Badge variant="neutral" size="sm"> Soon </Badge>
     </button>
