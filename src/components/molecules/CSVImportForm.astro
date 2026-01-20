@@ -26,7 +26,7 @@
  */
 
 import Label from '../atoms/Label.astro';
-import Icon from '../atoms/Icon.astro';
+import { Check, RefreshCw, ArrowRight, Info, ArrowLeft, Plus, List } from '@lucide/astro';
 
 export interface Props {
   action: string;
@@ -105,7 +105,7 @@ const cspNonce = Astro.locals.cspNonce || '';
   <div id="preview-section" class="hidden space-y-4">
     <!-- File Info -->
     <div id="file-info" class="alert alert-success" role="alert" aria-live="polite">
-      <Icon name="check" size="sm" />
+      <Check size={16} class="shrink-0" aria-hidden="true" />
       <div>
         <h4 class="font-bold">File Parsed Successfully</h4>
         <p id="file-info-text" class="text-sm"></p>
@@ -148,7 +148,7 @@ const cspNonce = Astro.locals.cspNonce || '';
         class="btn btn-ghost"
         aria-label="Choose different file"
       >
-        <Icon name="refresh" size="sm" />
+        <RefreshCw size={16} class="stroke-current" aria-hidden="true" />
         Choose Different File
       </button>
       <button
@@ -157,7 +157,7 @@ const cspNonce = Astro.locals.cspNonce || '';
         class="btn btn-primary"
         aria-label="Proceed to column mapping"
       >
-        <Icon name="arrow-right" size="sm" />
+        <ArrowRight size={16} class="stroke-current" aria-hidden="true" />
         Map Columns
       </button>
     </div>
@@ -166,7 +166,7 @@ const cspNonce = Astro.locals.cspNonce || '';
   <!-- Step 3: Column Mapping Section (hidden initially) -->
   <div id="mapping-section" class="hidden space-y-4">
     <div class="alert alert-info">
-      <Icon name="information" size="sm" />
+      <Info size={16} class="shrink-0" aria-hidden="true" />
       <div>
         <h4 class="font-bold">Step 2: Map CSV Columns to Fields</h4>
         <p class="text-sm">
@@ -210,7 +210,7 @@ const cspNonce = Astro.locals.cspNonce || '';
         class="btn btn-ghost"
         aria-label="Back to file preview"
       >
-        <Icon name="arrow-left" size="sm" />
+        <ArrowLeft size={16} class="stroke-current" aria-hidden="true" />
         Back to Preview
       </button>
       <button
@@ -219,7 +219,7 @@ const cspNonce = Astro.locals.cspNonce || '';
         class="btn btn-outline"
         aria-label="Auto-detect column mappings"
       >
-        <Icon name="refresh" size="sm" />
+        <RefreshCw size={16} class="stroke-current" aria-hidden="true" />
         Auto-Detect
       </button>
       <button
@@ -228,7 +228,7 @@ const cspNonce = Astro.locals.cspNonce || '';
         class="btn btn-primary"
         aria-label="Confirm mapping and start import"
       >
-        <Icon name="check" size="sm" />
+        <Check size={16} class="stroke-current" aria-hidden="true" />
         Import Transactions
       </button>
     </div>
@@ -303,11 +303,11 @@ const cspNonce = Astro.locals.cspNonce || '';
             class="btn btn-primary"
             aria-label="Import another file"
           >
-            <Icon name="plus" size="sm" />
+            <Plus size={16} class="stroke-current" aria-hidden="true" />
             Import Another File
           </button>
           <a href="/transactions" class="btn btn-outline">
-            <Icon name="list" size="sm" />
+            <List size={16} class="stroke-current" aria-hidden="true" />
             View All Transactions
           </a>
         </div>
@@ -519,7 +519,8 @@ const cspNonce = Astro.locals.cspNonce || '';
         path.setAttribute('stroke-linecap', 'round');
         path.setAttribute('stroke-linejoin', 'round');
         path.setAttribute('stroke-width', '2');
-        path.setAttribute('d', 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z');
+        // Lucide Check icon path
+        path.setAttribute('d', 'M20 6 9 17l-5-5');
         svg.appendChild(path);
 
         const span = document.createElement('span');
@@ -542,14 +543,18 @@ const cspNonce = Astro.locals.cspNonce || '';
         svg.setAttribute('class', 'stroke-current shrink-0 h-6 w-6');
         svg.setAttribute('fill', 'none');
         svg.setAttribute('viewBox', '0 0 24 24');
+        // Circle
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('cx', '12');
+        circle.setAttribute('cy', '12');
+        circle.setAttribute('r', '10');
+        // X mark
         const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
         path.setAttribute('stroke-linecap', 'round');
         path.setAttribute('stroke-linejoin', 'round');
         path.setAttribute('stroke-width', '2');
-        path.setAttribute(
-          'd',
-          'M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z'
-        );
+        path.setAttribute('d', 'm15 9-6 6m0-6 6 6');
+        svg.appendChild(circle);
         svg.appendChild(path);
 
         const div = document.createElement('div');
@@ -583,15 +588,28 @@ const cspNonce = Astro.locals.cspNonce || '';
         svg.setAttribute('class', 'stroke-current shrink-0 h-6 w-6');
         svg.setAttribute('fill', 'none');
         svg.setAttribute('viewBox', '0 0 24 24');
+        // Lucide TriangleAlert icon path
         const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
         path.setAttribute('stroke-linecap', 'round');
         path.setAttribute('stroke-linejoin', 'round');
         path.setAttribute('stroke-width', '2');
         path.setAttribute(
           'd',
-          'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z'
+          'm21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z'
         );
+        const path2 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path2.setAttribute('stroke-linecap', 'round');
+        path2.setAttribute('stroke-linejoin', 'round');
+        path2.setAttribute('stroke-width', '2');
+        path2.setAttribute('d', 'M12 9v4');
+        const path3 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path3.setAttribute('stroke-linecap', 'round');
+        path3.setAttribute('stroke-linejoin', 'round');
+        path3.setAttribute('stroke-width', '2');
+        path3.setAttribute('d', 'M12 17h.01');
         svg.appendChild(path);
+        svg.appendChild(path2);
+        svg.appendChild(path3);
 
         const div = document.createElement('div');
         const h4 = document.createElement('h4');
@@ -767,21 +785,28 @@ const cspNonce = Astro.locals.cspNonce || '';
       svg.setAttribute('fill', 'none');
       svg.setAttribute('viewBox', '0 0 24 24');
 
-      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      path.setAttribute('stroke-linecap', 'round');
-      path.setAttribute('stroke-linejoin', 'round');
-      path.setAttribute('stroke-width', '2');
-
       if (isError) {
-        path.setAttribute(
-          'd',
-          'M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z'
-        );
+        // XCircle icon
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('cx', '12');
+        circle.setAttribute('cy', '12');
+        circle.setAttribute('r', '10');
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('stroke-linecap', 'round');
+        path.setAttribute('stroke-linejoin', 'round');
+        path.setAttribute('stroke-width', '2');
+        path.setAttribute('d', 'm15 9-6 6m0-6 6 6');
+        svg.appendChild(circle);
+        svg.appendChild(path);
       } else {
-        path.setAttribute('d', 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z');
+        // Check icon
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('stroke-linecap', 'round');
+        path.setAttribute('stroke-linejoin', 'round');
+        path.setAttribute('stroke-width', '2');
+        path.setAttribute('d', 'M20 6 9 17l-5-5');
+        svg.appendChild(path);
       }
-
-      svg.appendChild(path);
 
       const span = document.createElement('span');
       span.textContent = message;
@@ -991,32 +1016,57 @@ const cspNonce = Astro.locals.cspNonce || '';
         resultSummary.classList.add('alert-error');
       }
 
-      // Create summary content
+      // Create summary content with Lucide icon paths
       const summaryIcon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
       summaryIcon.setAttribute('class', 'stroke-current shrink-0 h-6 w-6');
       summaryIcon.setAttribute('fill', 'none');
       summaryIcon.setAttribute('viewBox', '0 0 24 24');
 
-      const summaryPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      summaryPath.setAttribute('stroke-linecap', 'round');
-      summaryPath.setAttribute('stroke-linejoin', 'round');
-      summaryPath.setAttribute('stroke-width', '2');
-
       if (hasErrors && hasSuccess) {
-        summaryPath.setAttribute(
+        // TriangleAlert icon for partial success
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('stroke-linecap', 'round');
+        path.setAttribute('stroke-linejoin', 'round');
+        path.setAttribute('stroke-width', '2');
+        path.setAttribute(
           'd',
-          'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z'
+          'm21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z'
         );
+        const path2 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path2.setAttribute('stroke-linecap', 'round');
+        path2.setAttribute('stroke-linejoin', 'round');
+        path2.setAttribute('stroke-width', '2');
+        path2.setAttribute('d', 'M12 9v4');
+        const path3 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path3.setAttribute('stroke-linecap', 'round');
+        path3.setAttribute('stroke-linejoin', 'round');
+        path3.setAttribute('stroke-width', '2');
+        path3.setAttribute('d', 'M12 17h.01');
+        summaryIcon.appendChild(path);
+        summaryIcon.appendChild(path2);
+        summaryIcon.appendChild(path3);
       } else if (hasSuccess) {
-        summaryPath.setAttribute('d', 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z');
+        // Check icon for success
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('stroke-linecap', 'round');
+        path.setAttribute('stroke-linejoin', 'round');
+        path.setAttribute('stroke-width', '2');
+        path.setAttribute('d', 'M20 6 9 17l-5-5');
+        summaryIcon.appendChild(path);
       } else {
-        summaryPath.setAttribute(
-          'd',
-          'M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z'
-        );
+        // XCircle icon for complete failure
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('cx', '12');
+        circle.setAttribute('cy', '12');
+        circle.setAttribute('r', '10');
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('stroke-linecap', 'round');
+        path.setAttribute('stroke-linejoin', 'round');
+        path.setAttribute('stroke-width', '2');
+        path.setAttribute('d', 'm15 9-6 6m0-6 6 6');
+        summaryIcon.appendChild(circle);
+        summaryIcon.appendChild(path);
       }
-
-      summaryIcon.appendChild(summaryPath);
 
       const summaryDiv = document.createElement('div');
       const summaryTitle = document.createElement('h4');

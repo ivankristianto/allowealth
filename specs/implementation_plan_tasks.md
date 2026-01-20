@@ -631,24 +631,54 @@ import {LayoutDashboard} from '@lucide/astro';
 
 **Checklist:**
 
-- [ ] Read current implementation
-- [ ] Replace upload/import icons
-- [ ] Test import functionality
-- [ ] Run quality gates
+- [x] Read current implementation
+- [x] Replace upload/import icons
+- [x] Test import functionality
+- [x] Run quality gates
+- [x] Write behavior tests (CSVImportForm.behavior.test.ts)
+- [x] Code review specialist review (APPROVED)
 
-**Files to modify:**
+**Files modified:**
 
 - `src/components/molecules/CSVImportForm.astro`
+- `src/components/molecules/CSVImportForm.behavior.test.ts` (created)
 
-**Icons to replace:**
+**Icons replaced:**
 
-- `arrow-up` (if used) → `Upload`
-- `check` → `Check`
-- `x` → `X`
+Server-side (Lucide components):
+
+- `check` → `Check` (file parsed success, confirm import button)
+- `refresh` → `RefreshCw` (reset button, auto-detect button)
+- `arrow-right` → `ArrowRight` (map columns button)
+- `information` → `Info` (mapping instructions)
+- `arrow-left` → `ArrowLeft` (back to preview button)
+- `plus` → `Plus` (import another file button)
+- `list` → `List` (view transactions link)
+
+Client-side (inline SVG with Lucide paths):
+
+- Check icon path (`M20 6 9 17l-5-5`) for validation success
+- XCircle icon paths (circle + x) for validation errors
+- TriangleAlert icon paths (triangle + exclamation) for warnings
+- All icons used in mapping validation and import results
+
+**Implementation Notes:**
+
+- Replaced `import Icon from '../atoms/Icon.astro'` with `import { Check, RefreshCw, ArrowRight, Info, ArrowLeft, Plus, List } from '@lucide/astro'`
+- Icon size: 16px (equivalent to previous "sm" size)
+- Added `stroke-current` class to button icons for color inheritance
+- Added `shrink-0` class to alert icons for flex layout
+- Added `aria-hidden="true"` to all decorative icons
+- Buttons have `aria-label` for accessibility
+- Updated client-side SVG creation to use Lucide icon paths
+- Created comprehensive behavior test file with 75+ tests
+- Note: The plan listed `arrow-up`, `x` icons, but the actual icons used were different (refresh, arrow-left, list, etc.)
+- All quality gates pass (typecheck, lint, stylelint, format)
+- Code review specialist: **APPROVED** with no blocking feedback
 
 **Estimated Time:** 1 hour
 
-**Status:** Pending
+**Status:** ✅ Completed
 
 ---
 
@@ -1263,8 +1293,8 @@ All dependencies are already in package.json.
 
 ## Success Criteria
 
-- [ ] All 24 files using Icon.astro component are migrated to Lucide (10/24 done)
-- [ ] All 20 files with inline SVGs are migrated to Lucide (3/20 done)
+- [ ] All 24 files using Icon.astro component are migrated to Lucide (11/24 done)
+- [ ] All 20 files with inline SVGs are migrated to Lucide (4/20 done)
 - [ ] Icon.astro component is deleted (blocked by remaining usages)
 - [ ] Icon.stories.ts is deleted (blocked by remaining usages)
 - [ ] No inline SVG elements remain in components or pages
@@ -1282,10 +1312,10 @@ All dependencies are already in package.json.
 - Phase 1 (Preparation): ✅ 1/1 tasks completed
 - Phase 2 (Atomic Components): ✅ 2/2 tasks completed
 - Phase 3 (Layout Components): ✅ 2/2 tasks completed
-- Phase 4 (Molecule Components): 🔄 6/7 tasks completed (Modal.astro, QuickActions.astro, BudgetHealthWidget.astro, TransactionRow.astro, TransactionFilters.astro, TransactionForm.astro)
+- Phase 4 (Molecule Components): ✅ 7/7 tasks completed (Modal.astro, QuickActions.astro, BudgetHealthWidget.astro, TransactionRow.astro, TransactionFilters.astro, TransactionForm.astro, CSVImportForm.astro)
 - Phase 5-9: Pending
 
-**Overall Progress:** 12/31 tasks completed (39%)
+**Overall Progress:** 13/31 tasks completed (42%)
 
 ## Estimated Effort
 
@@ -1294,13 +1324,13 @@ All dependencies are already in package.json.
 | 1. Preparation                      | 1      | 1         | 1 hour          | P0       |
 | 2. Atomic Components (Icon.astro)   | 2      | 2         | 2-3 hours       | P0       |
 | 3. Layout Components (Icon.astro)   | 2      | 2         | 3 hours         | P0       |
-| 4. Molecule Components (Icon.astro) | 7      | 6         | 7-9 hours       | P1       |
+| 4. Molecule Components (Icon.astro) | 7      | 7         | 7-9 hours       | P1       |
 | 5. Organism Components (Icon.astro) | 6      | 0         | 7-9 hours       | P1       |
 | 6. Page Components (Icon.astro)     | 3      | 0         | 4-5 hours       | P1       |
 | 7. Inline SVGs - Atoms & Molecules  | 5      | 0         | 6-7.5 hours     | P1       |
 | 8. Inline SVGs - Organisms & Pages  | 2      | 0         | 4-6 hours       | P1       |
 | 9. Cleanup & Docs                   | 3      | 0         | 2.5 hours       | P2       |
-| **Total**                           | **31** | **12**    | **37-46 hours** |          |
+| **Total**                           | **31** | **13**    | **37-46 hours** |          |
 
 **Recommended Approach:** Complete phases sequentially. Each phase builds on the previous one and allows for early feedback on patterns.
 
