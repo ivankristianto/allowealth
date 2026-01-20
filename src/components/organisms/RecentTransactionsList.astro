@@ -14,8 +14,8 @@
 import Card from '../atoms/Card.astro';
 import Badge from '../atoms/Badge.astro';
 import EmptyState from '../atoms/EmptyState.astro';
-import Icon from '../atoms/Icon.astro';
 import Currency from '../atoms/Currency.astro';
+import { Clock, ArrowRight, DollarSign, CreditCard, ArrowLeft, Wallet } from '@lucide/astro';
 import type { TransactionOutput } from '@/lib/types/transaction';
 import { formatCurrency } from '@/lib/tokens';
 
@@ -45,23 +45,30 @@ const formatDate = (date: Date): string => {
   });
 };
 
-// Payment method icon mapping
-const getPaymentIcon = (type: string): string => {
-  const icons: Record<string, string> = {
-    cash: 'currency-dollar',
-    credit_card: 'credit-card',
-    debit_card: 'credit-card',
-    bank_transfer: 'arrow-left',
-    e_wallet: 'calendar',
+// Type alias for payment method icon components
+type PaymentIconComponent =
+  | typeof DollarSign
+  | typeof CreditCard
+  | typeof ArrowLeft
+  | typeof Wallet;
+
+// Payment method icon mapping - returns Lucide component type
+const getPaymentIconComponent = (type: string): PaymentIconComponent => {
+  const icons: Record<string, PaymentIconComponent> = {
+    cash: DollarSign,
+    credit_card: CreditCard,
+    debit_card: CreditCard,
+    bank_transfer: ArrowLeft,
+    e_wallet: Wallet,
   };
-  return icons[type] || 'currency-dollar';
+  return icons[type] || DollarSign;
 };
 ---
 
 <Card className={className} data-recent-transactions-list>
   <div class="flex items-center justify-between mb-4">
     <h2 class="text-lg font-semibold flex items-center gap-2">
-      <Icon name="arrow-left" size="md" className="text-info" />
+      <Clock size={20} class="stroke-current text-info" aria-hidden="true" />
       Recent Transactions
     </h2>
     {
@@ -71,20 +78,7 @@ const getPaymentIcon = (type: string): string => {
           class="text-sm text-primary hover:text-primary-hover font-medium flex items-center gap-1 transition-colors"
         >
           View All
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            class="h-4 w-4"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M9 5l7 7-7 7"
-            />
-          </svg>
+          <ArrowRight size={16} class="stroke-current" aria-hidden="true" />
         </a>
       )
     }
@@ -150,7 +144,10 @@ const getPaymentIcon = (type: string): string => {
               {/* Payment Method */}
               <div class="flex-shrink-0 hidden sm:block">
                 <Badge variant="neutral" size="sm" className="flex items-center gap-1">
-                  <Icon name={getPaymentIcon(transaction.payment_method.type)} size="xs" />
+                  {(() => {
+                    const PaymentIcon = getPaymentIconComponent(transaction.payment_method.type);
+                    return <PaymentIcon size={12} class="stroke-current" aria-hidden="true" />;
+                  })()}
                   {transaction.payment_method.name}
                 </Badge>
               </div>
@@ -172,21 +169,7 @@ const getPaymentIcon = (type: string): string => {
                 class="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity btn btn-ghost btn-sm"
                 aria-label={`View ${transaction.category.name} transaction for ${formatCurrency(amount, transaction.currency)}`}
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  class="h-4 w-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  aria-hidden="true"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M9 5l7 7-7 7"
-                  />
-                </svg>
+                <ArrowRight size={16} class="stroke-current" aria-hidden="true" />
               </a>
             </li>
           );
@@ -204,20 +187,11 @@ const getPaymentIcon = (type: string): string => {
           class="flex items-center justify-center gap-2 w-full py-2 px-4 bg-base-200 hover:bg-base-300 rounded-lg transition-colors text-sm font-medium group"
         >
           View All Transactions
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            class="h-4 w-4 group-hover:translate-x-1 transition-transform"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M9 5l7 7-7 7"
-            />
-          </svg>
+          <ArrowRight
+            size={16}
+            class="stroke-current group-hover:translate-x-1 transition-transform"
+            aria-hidden="true"
+          />
         </a>
       </div>
     )
