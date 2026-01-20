@@ -554,22 +554,14 @@ With Astro's full-page navigation, Nano Store state resets on page change. This 
 
 **Note:** This section is reserved for follow-up improvements identified during code review. They are non-blocking but recommended for better code quality, accessibility, and maintainability.
 
-### P2 Items (Should Fix - Non-blocking)
-
-1. **Design System Compliance** - The close button uses inline SVG instead of `@lucide/astro` icon component. This is necessary due to Astro SSR limitations for client-side scripts, but should be documented as an exception.
-
 ### P3 Items (Nice to Have)
 
 4. **Focus management** - When toast is dismissed, return focus to the element that had focus before toast appeared.
 
 5. **Single shared `aria-live` region** - Instead of individual `aria-live` on each toast, use a single shared region for all announcements.
 
-6. **JSDoc return type documentation** - Add explicit `@returns void` to `setButtonLoading()` function.
-
-7. **Test coverage gaps** - Add tests for:
-   - Empty message handling
-   - Very long message handling
-   - Rapidly adding/removing toasts (stress test)
-   - Multiple simultaneous toast additions
+- [] Single shared `aria-live` for all announcements.
 
 8. **Extract magic numbers** - Animation durations (300ms, 200ms) and distances (50px) should be CSS custom properties.
+
+- [] Exctract animation duration and distance into CSS custom properties
