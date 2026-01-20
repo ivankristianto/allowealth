@@ -17,7 +17,7 @@ import CategorySelect from '../atoms/CategorySelect.astro';
 import PaymentMethodSelect from '../atoms/PaymentMethodSelect.astro';
 import DatePicker from '../atoms/DatePicker.astro';
 import Button from '../atoms/Button.astro';
-import Icon from '../atoms/Icon.astro';
+import { Search } from '@lucide/astro';
 
 export interface Props {
   action: string;
@@ -51,8 +51,8 @@ const { action, categories = [], paymentMethods = [], values = {}, count = 0 } =
         placeholder="Search by description..."
         className="join-item"
       />
-      <Button type="submit" variant="secondary" size="md" className="join-item">
-        <Icon name="search" size="sm" />
+      <Button type="submit" variant="secondary" size="md" className="join-item" aria-label="Search">
+        <Search size={16} class="stroke-current" aria-hidden="true" />
       </Button>
     </div>
   </div>
