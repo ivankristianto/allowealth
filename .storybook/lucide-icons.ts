@@ -177,6 +177,7 @@ export function iconRenderString(iconNode: IconNode) {
 }
 
 // String renderers for template literal usage
+// Synced with IconRenderers - all icons are available in both exports
 export const IconStrings = {
   X: { render: iconRenderString(X) },
   Plus: { render: iconRenderString(Plus) },
@@ -188,20 +189,40 @@ export const IconStrings = {
   Bell: { render: iconRenderString(Bell) },
   Search: { render: iconRenderString(Search) },
   Calendar: { render: iconRenderString(Calendar) },
+  ChevronDown: { render: iconRenderString(ChevronDown) },
+  ChevronUp: { render: iconRenderString(ChevronUp) },
+  ChevronLeft: { render: iconRenderString(ChevronLeft) },
+  ChevronRight: { render: iconRenderString(ChevronRight) },
   ArrowRight: { render: iconRenderString(ArrowRight) },
   ArrowLeft: { render: iconRenderString(ArrowLeft) },
+  ArrowUpDown: { render: iconRenderString(ArrowUpDown) },
   TriangleAlert: { render: iconRenderString(TriangleAlert) },
   CircleX: { render: iconRenderString(CircleX) },
   CircleCheck: { render: iconRenderString(CircleCheck) },
   CircleOff: { render: iconRenderString(CircleOff) },
+  CircleAlert: { render: iconRenderString(CircleAlert) },
   Lock: { render: iconRenderString(Lock) },
+  Eye: { render: iconRenderString(Eye) },
+  EyeOff: { render: iconRenderString(EyeOff) },
+  Info: { render: iconRenderString(Info) },
   Clock: { render: iconRenderString(Clock) },
   DollarSign: { render: iconRenderString(DollarSign) },
   CreditCard: { render: iconRenderString(CreditCard) },
   Wallet: { render: iconRenderString(Wallet) },
   ChartPie: { render: iconRenderString(ChartPie) },
   RefreshCw: { render: iconRenderString(RefreshCw) },
+  Download: { render: iconRenderString(Download) },
   TrendingUp: { render: iconRenderString(TrendingUp) },
+  ShieldCheck: { render: iconRenderString(ShieldCheck) },
+  User: { render: iconRenderString(User) },
+  LogOut: { render: iconRenderString(LogOut) },
+  SlidersHorizontal: { render: iconRenderString(SlidersHorizontal) },
+  Tag: { render: iconRenderString(Tag) },
+  Ban: { render: iconRenderString(Ban) },
+  List: { render: iconRenderString(List) },
+  Folder: { render: iconRenderString(Folder) },
+  Inbox: { render: iconRenderString(Inbox) },
+  File: { render: iconRenderString(File) },
 };
 
 // Pre-configured render functions that match the @lucide/astro API

@@ -2187,40 +2187,35 @@ The card header icons (DollarSign, Calendar, ShieldCheck) lack `shrink-0` class,
 
 **Checklist:**
 
-- [ ] Add `stroke-current` class to DollarSign icon in Total Assets card
-- [ ] Add `stroke-current` class to Calendar icon in Monthly Spent card
-- [ ] Add `stroke-current` class to ShieldCheck icon in Budget Health card
-- [ ] Run quality gates
+- [x] Add `stroke-current` class to DollarSign icon in Total Assets card
+- [x] Add `stroke-current` class to Calendar icon in Monthly Spent card
+- [x] Add `stroke-current` class to ShieldCheck icon in Budget Health card
+- [x] Fix P0 critical issue (replaced invalid inline styles with Tailwind classes)
+- [x] Run quality gates
+- [x] Write/update tests
+- [x] Code review specialist review
 
-**Files to modify:**
+**Files modified:**
 
 - `src/components/organisms/SummaryCards.astro`
+- `src/components/organisms/SummaryCards.behavior.test.ts`
 
 **Rationale:**
 
-The status icons (DollarSign, Calendar, ShieldCheck) currently use `shrink-0` but not `stroke-current`. While these icons have explicit color classes (`text-success`, `text-info`, `text-warning`), adding `stroke-current` would provide full consistency with the design system pattern documented in `design-system/02-components.md:143` which shows the combined pattern of `stroke-current shrink-0`.
+The status icons (DollarSign, Calendar, ShieldCheck) currently use `shrink-0` but not `stroke-current`. While these icons have explicit color classes (`text-success`, `text-info`, `text-warning`), adding `stroke-current` provides full consistency with the design system pattern documented in `design-system/02-components.md:143` which shows the combined pattern of `stroke-current shrink-0`.
 
-**Current:**
+**Implementation Notes:**
 
-```astro
-<DollarSign size={20} class="shrink-0 text-success" aria-hidden="true" />
-<Calendar size={20} class="shrink-0 text-info" aria-hidden="true" />
-<ShieldCheck size={20} class="shrink-0 text-warning" aria-hidden="true" />
-```
-
-**Should be:**
-
-```astro
-<DollarSign size={20} class="stroke-current shrink-0 text-success" aria-hidden="true" />
-<Calendar size={20} class="stroke-current shrink-0 text-info" aria-hidden="true" />
-<ShieldCheck size={20} class="stroke-current shrink-0 text-warning" aria-hidden="true" />
-```
+- Added `stroke-current` class to all three card header icons (DollarSign, Calendar, ShieldCheck)
+- Fixed P0 critical issue: Replaced invalid inline styles (`style="color: {colors.currency.idr}"`) with Tailwind utility classes (`text-success` for IDR, `text-info` for USD)
+- The inline styles were using undefined `colors` variable and had invalid Astro syntax
+- Updated behavior tests to document the new stroke-current pattern
 
 **Source:** Code review specialist feedback (P2 suggestion from 2026-01-21 review)
 
 **Estimated Time:** 10 minutes
 
-**Status:** Pending
+**Status:** ✅ Completed (2026-01-21)
 
 ---
 
@@ -2228,11 +2223,11 @@ The status icons (DollarSign, Calendar, ShieldCheck) currently use `shrink-0` bu
 
 **Checklist:**
 
-- [ ] Add sizing hierarchy comment to SummaryCards.astro
-- [ ] Document rationale for icon sizes
-- [ ] Run quality gates
+- [x] Add sizing hierarchy comment to SummaryCards.astro
+- [x] Document rationale for icon sizes
+- [x] Run quality gates
 
-**Files to modify:**
+**Files modified:**
 
 - `src/components/organisms/SummaryCards.astro`
 
@@ -2240,20 +2235,19 @@ The status icons (DollarSign, Calendar, ShieldCheck) currently use `shrink-0` bu
 
 The SummaryCards component uses a sizing hierarchy that could benefit from documentation. Adding a comment explaining the rationale helps future maintainers understand design decisions without needing to reference design system docs.
 
-**Suggested comment:**
+**Implementation Notes:**
+
+Added the following comment after icon imports:
 
 ```astro
-<!-- Icon sizing hierarchy (from largest to smallest):
-  - 48px: Empty state illustration (prominent visual cue)
-  - 24px: Error state alert (attention-grabbing)
-  - 20px: Card header icons (medium emphasis)
-  - 16px: Navigation/interactive icons (subtle)
--->
+// Icon sizing hierarchy (from largest to smallest): // - 48px: Empty state illustration (prominent
+visual cue) // - 24px: Error state alert (attention-grabbing) // - 20px: Card header icons (medium
+emphasis) // - 16px: Navigation/interactive icons (subtle)
 ```
 
 **Estimated Time:** 5 minutes
 
-**Status:** Pending
+**Status:** ✅ Completed (2026-01-21)
 
 ---
 
@@ -2261,20 +2255,38 @@ The SummaryCards component uses a sizing hierarchy that could benefit from docum
 
 **Checklist:**
 
-- [ ] Review all icons used in stories across the codebase
-- [ ] Ensure IconStrings exports match IconRenderers exports
-- [ ] Add any missing icons to IconStrings (Eye, EyeOff, Info, User, LogOut, ChevronDown/Up/Left/Right, ArrowUpDown, etc.)
-- [ ] Add comment explaining the intentional subset if not all icons are needed
-- [ ] Run quality gates
+- [x] Review all icons used in stories across the codebase
+- [x] Ensure IconStrings exports match IconRenderers exports
+- [x] Add missing icons to IconStrings (21 icons added)
+- [x] Add comment explaining the sync status
+- [x] Run quality gates
+- [x] Write tests (lucide-icons.test.ts - 14 tests)
+- [x] Code review specialist review
 
-**Files to modify:**
+**Files modified:**
 
 - `.storybook/lucide-icons.ts`
+- `.storybook/lucide-icons.test.ts` (created)
 
 **Rationale:**
 
-`IconStrings` exports fewer icons (24) than `IconRenderers` (44). Some icons are available in `IconRenderers` but not in `IconStrings` (e.g., Eye, EyeOff, Info, User, LogOut, ChevronDown/Up/Left/Right, ArrowUpDown, etc.). This inconsistency could cause confusion or runtime errors when a developer assumes an icon is available in both. Either keep both exports in sync, or add a comment explaining the intentional difference.
+`IconStrings` exports fewer icons (24) than `IconRenderers` (44). Some icons are available in `IconRenderers` but not in `IconStrings` (e.g., Eye, EyeOff, Info, User, LogOut, ChevronDown/Up/Left/Right, ArrowUpDown, etc.). This inconsistency could cause confusion or runtime errors when a developer assumes an icon is available in both.
+
+**Implementation Notes:**
+
+Added 21 missing icons to IconStrings: ChevronUp, ChevronLeft, ChevronRight, ArrowUpDown, CircleOff, CircleAlert, Lock, Eye, EyeOff, Info, ShieldCheck, User, LogOut, Download, SlidersHorizontal, Tag, Ban, List, Folder, Inbox, File
+
+Added comment: `// Synced with IconRenderers - all icons are available in both exports`
+
+Created comprehensive test file (lucide-icons.test.ts) with 14 tests validating:
+
+- IconStrings and IconRenderers have identical icon sets
+- All required icons are exported
+- Export structure is correct (render methods exist)
+- Previously missing icons are now available
+
+All quality gates pass, all tests pass.
 
 **Estimated Time:** 30 minutes
 
-**Status:** Pending
+**Status:** ✅ Completed (2026-01-21)

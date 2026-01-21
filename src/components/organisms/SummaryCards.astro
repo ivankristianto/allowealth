@@ -26,6 +26,12 @@ import {
   ChevronRight,
 } from '@lucide/astro';
 
+// Icon sizing hierarchy (from largest to smallest):
+// - 48px: Empty state illustration (prominent visual cue)
+// - 24px: Error state alert (attention-grabbing)
+// - 20px: Card header icons (medium emphasis)
+// - 16px: Navigation/interactive icons (subtle)
+
 export interface SummaryCardsData {
   totalAssets: {
     idr: string;
@@ -176,20 +182,24 @@ const getProgressClass = (percentage: number): string => {
               Total Assets
             </h3>
             <div class="p-2 bg-success/10 rounded-lg group-hover:bg-success/20 transition-colors">
-              <DollarSign size={20} class="shrink-0 text-success" aria-hidden="true" />
+              <DollarSign
+                size={20}
+                class="stroke-current shrink-0 text-success"
+                aria-hidden="true"
+              />
             </div>
           </div>
 
           <div class="space-y-2 mb-4">
             <div class="flex justify-between items-baseline">
               <span class="text-sm text-neutral-500">IDR:</span>
-              <span class="font-semibold text-lg" style="color: {colors.currency.idr}">
+              <span class="font-semibold text-lg text-success">
                 {formatCurrency(data!.totalAssets.idr, 'IDR')}
               </span>
             </div>
             <div class="flex justify-between items-baseline">
               <span class="text-sm text-neutral-500">USD:</span>
-              <span class="font-semibold text-lg" style="color: {colors.currency.usd}">
+              <span class="font-semibold text-lg text-info">
                 {formatCurrency(data!.totalAssets.usd, 'USD')}
               </span>
             </div>
@@ -215,7 +225,7 @@ const getProgressClass = (percentage: number): string => {
               This Month
             </h3>
             <div class="p-2 bg-info/10 rounded-lg group-hover:bg-info/20 transition-colors">
-              <Calendar size={20} class="shrink-0 text-info" aria-hidden="true" />
+              <Calendar size={20} class="stroke-current shrink-0 text-info" aria-hidden="true" />
             </div>
           </div>
 
@@ -268,7 +278,11 @@ const getProgressClass = (percentage: number): string => {
               Budget Health
             </h3>
             <div class="p-2 bg-warning/10 rounded-lg group-hover:bg-warning/20 transition-colors">
-              <ShieldCheck size={20} class="shrink-0 text-warning" aria-hidden="true" />
+              <ShieldCheck
+                size={20}
+                class="stroke-current shrink-0 text-warning"
+                aria-hidden="true"
+              />
             </div>
           </div>
 

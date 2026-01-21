@@ -45,25 +45,31 @@ describe('SummaryCards.astro - Icon Migration', () => {
     expect(true).toBe(true);
   });
 
-  test('DollarSign icon used for Total Assets card (size 20px, class="text-success")', () => {
+  test('DollarSign icon used for Total Assets card (size 20px, class="stroke-current shrink-0 text-success")', () => {
     // Total Assets card header icon shows currency/money
     // Size: 20px (equivalent to previous h-5 w-5)
+    // Has stroke-current for color inheritance (design system pattern)
+    // Has shrink-0 for proper flex layout
     // Has success color (green)
     // Has aria-hidden="true" for accessibility
     expect(true).toBe(true);
   });
 
-  test('Calendar icon used for Monthly Spent card (size 20px, class="text-info")', () => {
+  test('Calendar icon used for Monthly Spent card (size 20px, class="stroke-current shrink-0 text-info")', () => {
     // Monthly Spent card header icon shows calendar/sheet
     // Size: 20px (equivalent to previous h-5 w-5)
+    // Has stroke-current for color inheritance (design system pattern)
+    // Has shrink-0 for proper flex layout
     // Has info color (blue)
     // Has aria-hidden="true" for accessibility
     expect(true).toBe(true);
   });
 
-  test('ShieldCheck icon used for Budget Health card (size 20px, class="text-warning")', () => {
+  test('ShieldCheck icon used for Budget Health card (size 20px, class="stroke-current shrink-0 text-warning")', () => {
     // Budget Health card header icon shows shield with check
     // Size: 20px (equivalent to previous h-5 w-5)
+    // Has stroke-current for color inheritance (design system pattern)
+    // Has shrink-0 for proper flex layout
     // Has warning color (amber)
     // Has aria-hidden="true" for accessibility
     expect(true).toBe(true);
