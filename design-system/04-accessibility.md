@@ -154,17 +154,17 @@ import { X } from '@lucide/astro';
 
 ```astro
 ---
-import { AlertCircle, Check, Info } from '@lucide/astro';
+import { CircleAlert, Check, CircleInfo } from '@lucide/astro';
 ---
 
 ✅ Good - Icon + text + color
 <div class="flex items-center gap-2 text-error">
-  <AlertCircle size={16} />
+  <CircleAlert size={16} aria-hidden="true" />
   <span>Error occurred</span>
 </div>
 
 <div class="flex items-center gap-2 text-success">
-  <Check size={16} />
+  <Check size={16} aria-hidden="true" />
   <span>Success</span>
 </div>
 

@@ -33,7 +33,18 @@ const classes = ['base-classes', variant === 'primary' && 'primary-classes', cla
 
 ```astro
 ---
-import { X, Plus, Edit, Trash2, Check, AlertCircle, Search, Filter } from '@lucide/astro';
+import {
+  X,
+  Plus,
+  Edit,
+  Trash2,
+  Check,
+  TriangleAlert,
+  Info,
+  Search,
+  ChevronDown,
+  ChevronRight,
+} from '@lucide/astro';
 ---
 
 <!-- Basic icon -->
@@ -55,19 +66,84 @@ import { X, Plus, Edit, Trash2, Check, AlertCircle, Search, Filter } from '@luci
 
 <!-- With status -->
 <div class="flex items-center gap-2 text-error">
-  <AlertCircle size={16} />
+  <TriangleAlert size={16} />
   <span>Error occurred</span>
 </div>
 ```
 
+**Icon Sizing Standards:**
+
+| Context     | Size (px) | Usage Example                    |
+| ----------- | --------- | -------------------------------- |
+| Extra small | 12        | Compact badges, inline icons     |
+| Small       | 16        | Button icons, inline text icons  |
+| Medium      | 20        | Form field icons, card headers   |
+| Large       | 24        | Alert icons, modal headers       |
+| Extra large | 32        | Empty states, hero illustrations |
+
+**Class-based sizing (for inline SVGs):**
+
+| Tailwind Class | Size (px) |
+| -------------- | --------- |
+| `h-3 w-3`      | 12        |
+| `h-4 w-4`      | 16        |
+| `h-5 w-5`      | 20        |
+| `h-6 w-6`      | 24        |
+| `h-8 w-8`      | 32        |
+
 **Common icons:**
 
 - `Plus`, `Minus`, `X` - Actions
-- `Edit`, `Trash2`, `Save` - CRUD operations
-- `Search`, `Filter`, `Download` - Tools
-- `Check`, `AlertCircle`, `Info` - Status
-- `ChevronDown`, `ChevronRight` - Navigation
-- `Menu`, `Settings`, `User` - UI elements
+- `Edit` (or `Pencil`), `Trash2`, `Save` - CRUD operations
+- `Search`, `Download`, `Upload` - Tools
+- `Check`, `CircleCheck` - Success/complete
+- `TriangleAlert`, `CircleX`, `Info` - Errors/warnings/info
+- `ChevronDown`, `ChevronRight`, `ChevronLeft`, `ChevronUp` - Navigation
+- `Menu`, `Settings`, `User`, `LogOut` - UI elements
+- `Eye`, `EyeOff` - Password visibility toggle
+- `Calendar`, `Tag`, `DollarSign` - Data entry icons
+
+**Icon accessibility patterns:**
+
+```astro
+<!-- Decorative icon (not announced by screen readers) -->
+<Search size={16} class="stroke-current" aria-hidden="true" />
+
+<!-- Icon with adjacent text (no aria-label needed) -->
+<button class="btn btn-primary">
+  <Plus size={20} class="stroke-current" aria-hidden="true" />
+  <span>Add New</span>
+</button>
+
+<!-- Icon-only button (aria-label required) -->
+<button class="btn btn-ghost btn-circle" aria-label="Close dialog">
+  <X size={16} class="stroke-current" aria-hidden="true" />
+</button>
+
+<!-- Status icon with text (aria-hidden on icon) -->
+<div class="flex items-center gap-2">
+  <Check size={16} class="text-success" aria-hidden="true" />
+  <span>Changes saved</span>
+</div>
+```
+
+**Standard icon classes:**
+
+```astro
+<!-- For buttons/interactive elements -->
+<Icon size={16} class="stroke-current" aria-hidden="true" />
+
+<!-- For flex layouts (prevents shrinking) -->
+<Icon size={20} class="shrink-0" aria-hidden="true" />
+
+<!-- For colored icons -->
+<Icon size={24} class="text-primary" aria-hidden="true" />
+
+<!-- Combined -->
+<Icon size={16} class="stroke-current shrink-0" aria-hidden="true" />
+```
+
+**Migration note:** The custom `Icon.astro` component has been removed. All icons now use `@lucide/astro` directly. See `docs/icon-migration-guide.md` for migration patterns.
 
 ### Button (`src/components/atoms/Button.astro`)
 

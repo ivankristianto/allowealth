@@ -155,29 +155,29 @@ design-system/
 
 ```astro
 ---
-import { X, Plus, Edit, Trash2, Check, AlertCircle } from '@lucide/astro';
+import { X, Plus, Edit, Trash2, Check, TriangleAlert } from '@lucide/astro';
 ---
 
 <!-- Button with icon -->
 <button class="btn btn-primary">
-  <Plus size={20} />
+  <Plus size={20} class="stroke-current" aria-hidden="true" />
   <span>Add Transaction</span>
 </button>
 
 <!-- Icon button -->
 <button class="btn btn-ghost btn-square" aria-label="Close">
-  <X size={24} />
+  <X size={24} class="stroke-current" aria-hidden="true" />
 </button>
 
 <!-- Status with icon -->
 <div class="flex items-center gap-2 text-success">
-  <Check size={16} />
+  <Check size={16} aria-hidden="true" />
   <span>Complete</span>
 </div>
 
 <!-- Alert with icon -->
 <div class="alert alert-warning">
-  <AlertCircle size={20} />
+  <TriangleAlert size={20} class="shrink-0" aria-hidden="true" />
   <span>Budget limit reached</span>
 </div>
 ```
@@ -298,7 +298,7 @@ import { animate } from 'motion';
 ✅ With label: `<Label htmlFor="name">Name</Label><Input id="name" />`
 
 ❌ Color only: `<span class="text-red-500">Error</span>`
-✅ Icon + text: `<AlertCircle size={16} /><span class="text-error">Error</span>`
+✅ Icon + text: `<TriangleAlert size={16} aria-hidden="true" /><span class="text-error">Error</span>`
 
 ❌ Custom icons: `<svg>...</svg>` or emoji
 ✅ Lucide icons: `<Plus size={20} />`
