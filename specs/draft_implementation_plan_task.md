@@ -11,10 +11,18 @@ This plan addresses **significant discrepancies** between the current implementa
 1. **Color Palette Overhaul** - Migrate from emerald-primary to slate-primary with indigo-accent system
 2. **Typography Update** - Add Inter font, adjust font sizes to match spec
 3. **Component Restyling** - Update all atoms/molecules/organisms to match new specs
-4. **Animation System** - Implement Motion library patterns
+4. **Animation System** - Implement Motion library patterns (after foundation)
 5. **Dark Theme** - Implement proper dark theme from spec
 6. **Icon Standardization** - Fix inline SVGs in JavaScript, standardize icon sizes
 7. **Layout Updates** - Align with container, spacing, and dimension specs
+8. **Color Semantics Audit** - Ensure primary vs accent usage is consistent
+
+### Design System Alignment Rules (Apply to All Tasks)
+
+- Use design tokens from `@/lib/tokens` and CSS variables from `tokens.css`; avoid hardcoded hex values.
+- Use DaisyUI semantic colors (`btn-accent`, `text-base-content`, `bg-base-200`, `border-base-300`) instead of Tailwind palette classes (`text-slate-*`, `bg-slate-*`, `dark:` variants).
+- Use `@lucide/astro` for icons and follow the size scale from `design-system/styles.json`.
+- Use Motion (`motion`) presets for animations when required by the spec.
 
 ### Proposed Changes
 
@@ -29,6 +37,7 @@ This plan addresses **significant discrepancies** between the current implementa
 - `src/styles/globals.css` - Update DaisyUI theme, add new utilities
 - `src/lib/tokens.ts` - Update TypeScript token exports
 - `tailwind.config.ts` - Update DaisyUI theme colors
+- `src/layouts/BaseLayout.astro` - Add Inter font import
 - `src/components/atoms/Button.astro` - New color scheme, sizes
 - `src/components/atoms/Card.astro` - New padding, radius, shadow
 - `src/components/atoms/Input.astro` - New height, radius, focus ring
@@ -47,6 +56,7 @@ This plan addresses **significant discrepancies** between the current implementa
 - All 14 molecule components - Color and spacing updates
 - All 9 organism components - Color and spacing updates
 - All 4 layout components - Layout dimension updates
+- All UI components - Replace hardcoded colors with tokens or DaisyUI semantic classes
 
 ---
 
@@ -80,9 +90,8 @@ This plan addresses **significant discrepancies** between the current implementa
 - [ ] Add Inter font family to `--font-sans`: `'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif`
 - [ ] Add component-specific tokens (button, card, input, sidebar, badge, table)
 - [ ] Add effect tokens (glass, gradient, shadows including accentGlow: `0 10px 15px -3px rgba(99, 102, 241, 0.2)`)
+- [ ] Add status tokens (ok/warning/danger) and currency tokens (IDR/USD) as CSS variables
 - [ ] Update dark theme overrides with full dark palette
-- [ ] Run `bun run stylelint:fix`
-- [ ] Run `bun run format:fix`
 
 **Files to modify:**
 
@@ -131,11 +140,9 @@ This plan addresses **significant discrepancies** between the current implementa
 - [ ] Update font family to include Inter as primary
 - [ ] Update font sizes to match new scale (xs: 0.625rem through 3xl: 1.875rem)
 - [ ] Add component spacing constants from styles.json
+- [ ] Add `colors.status` and `colors.currency` mappings to match the design system
 - [ ] Add animation duration constants (fast: 0.15, normal: 0.3, slow: 0.5)
 - [ ] Add spring configuration presets (smooth, bouncy, gentle, snappy)
-- [ ] Run `bun run typecheck`
-- [ ] Run `bun run lint:fix`
-- [ ] Run `bun run format:fix`
 
 **Files to modify:**
 
@@ -165,7 +172,6 @@ This plan addresses **significant discrepancies** between the current implementa
 - [ ] Add base-200 as slate-50 (`#f8fafc`)
 - [ ] Add base-300 as slate-200 (`#e2e8f0`)
 - [ ] Add dark theme with full color mapping from styles.json
-- [ ] Run `bun run typecheck`
 
 **Files to modify:**
 
@@ -227,20 +233,56 @@ dark: {
 
 - [ ] Import tokens.css (currently commented out)
 - [ ] Configure DaisyUI with custom theme using @plugin syntax
-- [ ] Add Inter font import or CSS variable
+- [ ] Ensure global font styles reference the tokenized font family
 - [ ] Update focus styles to use accent color (`--color-accent`)
 - [ ] Add glass effect utilities (backdrop-blur: 12px, opacity: 0.8)
-- [ ] Add gradient utilities (sidebarActive: `linear-gradient(90deg, rgba(99, 102, 241, 0.1) 0%, transparent)`)
-- [ ] Add premium shadow utilities (accentGlow: `0 10px 15px -3px rgba(99, 102, 241, 0.2)`)
+- [ ] Add gradient utilities using pattern tokens (e.g., `sidebarActive`)
+- [ ] Add premium shadow utilities using tokenized shadows (e.g., `accentGlow`)
 - [ ] Update scrollbar colors to use slate scale
-- [ ] Run `bun run stylelint:fix`
-- [ ] Run `bun run format:fix`
 
 **Files to modify:**
 
 - `src/styles/globals.css`
 
 **Estimated Time:** 1-2 hours
+
+**Status:** ⏳ Pending
+
+---
+
+### Task 1.5: Add Inter Font Import (Priority: P0)
+
+**Goal:** Integrate Inter font family as specified in styles.json
+
+**Checklist:**
+
+- [ ] Decide on self-hosted vs CDN font delivery (privacy vs convenience)
+- [ ] Add Inter font import in `src/layouts/BaseLayout.astro`
+- [ ] Ensure `font-display: swap` is used if self-hosting
+- [ ] Keep font weights aligned with spec: 300, 400, 500, 600, 700
+
+**Files to modify:**
+
+- `src/layouts/BaseLayout.astro`
+
+**Estimated Time:** 30 minutes
+
+**Status:** ⏳ Pending
+
+---
+
+### Task 1.6: Define Primary vs Accent Usage (Priority: P0)
+
+**Goal:** Prevent CTA and text color conflicts after the palette shift
+
+**Checklist:**
+
+- [ ] Define usage: primary = headings/body text, accent = CTAs/interactive, success/warning/error = status
+- [ ] Audit `btn-primary`, `text-primary`, and `bg-primary` usage to ensure CTAs use `btn-accent` (or equivalent)
+- [ ] Reserve `btn-primary` for neutral/secondary emphasis if needed; avoid using it for primary CTAs
+- [ ] Document the mapping in the plan to keep component work consistent
+
+**Estimated Time:** 30 minutes
 
 **Status:** ⏳ Pending
 
@@ -262,17 +304,15 @@ dark: {
 
 - [ ] Update primary variant to use accent/indigo colors (`btn-accent` or custom `bg-accent`)
 - [ ] Update secondary variant to use slate-900 (`#0f172a`)
-- [ ] Add ghost variant with transparent bg, border slate-200 (`border-[#e2e8f0]`)
-- [ ] Update focus ring to use accent/indigo color (`focus:ring-indigo-500`)
-- [ ] Add accent glow shadow on primary buttons (`shadow-[0_10px_15px_-3px_rgba(99,102,241,0.2)]`)
+- [ ] Add ghost variant with transparent bg and `border-base-300` (or tokenized border color)
+- [ ] Update focus ring to use accent token (theme-friendly, no hardcoded color)
+- [ ] Add accent glow shadow using tokenized shadow utility
 - [ ] Update size specs to match styles.json exactly:
   - sm: height 2rem, padding `0.375rem 0.75rem`, fontSize `0.75rem`
   - md: height 2.5rem, padding `0.625rem 1.25rem`, fontSize `0.875rem`
   - lg: height 3rem, padding `0.75rem 1.5rem`, fontSize `0.875rem`
 - [ ] Remove emerald-specific hover colors
-- [ ] Update outline variant border to indigo
-- [ ] Run `bun run typecheck`
-- [ ] Run `bun run lint:fix`
+- [ ] Update outline variant border to accent token
 
 **Files to modify:**
 
@@ -308,12 +348,10 @@ After:
 
 - [ ] Update default padding from `p-6` to `p-7` (1.75rem / 28px) or `p-[1.75rem]`
 - [ ] Update border radius to `rounded-[1.25rem]` (20px)
-- [ ] Add premium shadow: `shadow-[0_1px_3px_0_rgba(0,0,0,0.05),0_1px_2px_0_rgba(0,0,0,0.03)]`
-- [ ] Update border color to slate-200 light (`border-[#e2e8f0]`), slate-800 dark (`dark:border-[#1e293b]`)
+- [ ] Add premium shadow via tokenized shadow utility
+- [ ] Use `border-base-300` for borders so the theme handles light/dark variants
 - [ ] Update compact padding from `p-4` to appropriate smaller value
 - [ ] Add hover animation support (y: -4, enhanced shadow)
-- [ ] Run `bun run typecheck`
-- [ ] Run `bun run lint:fix`
 
 **Files to modify:**
 
@@ -337,11 +375,9 @@ After:
 - [ ] Update padding to match spec: `py-2 pr-10 pl-3` (0.5rem 2.5rem 0.5rem 0.75rem)
 - [ ] Set font size to 0.75rem (12px) using `text-xs`
 - [ ] Update border radius to 0.75rem using `rounded-xl`
-- [ ] Add background: `bg-slate-100 dark:bg-slate-800` (`bg-[#f1f5f9] dark:bg-[#1e293b]`)
-- [ ] Update focus ring to 2px indigo with opacity: `focus:ring-2 focus:ring-[rgba(99,102,241,0.2)]`
-- [ ] Update error state border to rose-500 (`border-[#f43f5e]`)
-- [ ] Run `bun run typecheck`
-- [ ] Run `bun run lint:fix`
+- [ ] Add background using theme base tokens (e.g., `bg-base-200`)
+- [ ] Update focus ring to 2px using accent token (theme-friendly)
+- [ ] Update error state border to `border-error` (or tokenized equivalent)
 
 **Files to modify:**
 
@@ -365,9 +401,7 @@ After:
 - [ ] Update font size to `text-[0.625rem]` (10px)
 - [ ] Update font weight to `font-bold` (700)
 - [ ] Ensure border radius is full (`rounded-full` / 9999px)
-- [ ] Update color variants to use new semantic colors (accent for primary badge)
-- [ ] Run `bun run typecheck`
-- [ ] Run `bun run lint:fix`
+- [ ] Update color variants to use DaisyUI semantic colors (`badge-accent`, `badge-success`, `badge-warning`, `badge-error`)
 
 **Files to modify:**
 
@@ -387,11 +421,11 @@ After:
 
 **Checklist:**
 
-- [ ] Update `Currency.astro` - verify color tokens, IDR/USD colors
+- [ ] Update `Currency.astro` - ensure color tokens, IDR/USD colors
 - [ ] Update `CurrencyInput.astro` - input styling alignment with Task 2.3 specs
 - [ ] Update `DatePicker.astro` - input styling alignment with Task 2.3 specs
 - [ ] Update `EmptyState.astro` - color tokens, accent color for CTAs
-- [ ] Update `ErrorMessage.astro` - rose-500 error color (`#f43f5e`)
+- [ ] Update `ErrorMessage.astro` - error semantic color token (no hardcoded hex)
 - [ ] Update `Label.astro` - text colors using slate scale
 - [ ] Update `PasswordField.astro` - input styling, focus colors to indigo
 - [ ] Update `Percentage.astro` - status colors
@@ -399,8 +433,6 @@ After:
 - [ ] Update `Checkbox.astro` - accent color for checked state
 - [ ] Update `CategorySelect.astro` - styling alignment
 - [ ] Update `PaymentMethodSelect.astro` - styling alignment
-- [ ] Run `bun run typecheck` on all
-- [ ] Run `bun run lint:fix` on all
 
 **Files to modify:**
 
@@ -427,16 +459,14 @@ After:
 **Checklist:**
 
 - [ ] Update icon sizes from 16px to 22px (`size={22}`)
-- [ ] Add active gradient: `linear-gradient(90deg, rgba(99, 102, 241, 0.1) 0%, transparent)`
-- [ ] Add active left border: `border-l-2 border-[#6366f1]`
+- [ ] Add active gradient using the `sidebarActive` pattern token
+- [ ] Add active left border using the accent token (no hardcoded color)
 - [ ] Update nav item padding to `py-2.5 px-4` (0.625rem 1rem)
 - [ ] Update gap between icon and text to `gap-3` (0.75rem)
-- [ ] Verify sidebar width is 16rem (256px) - currently `w-64` ✅
-- [ ] Update border color to slate-200 (`border-[#e2e8f0]`)
+- [ ] Ensure sidebar width is 16rem (256px) - currently `w-64` ✅
+- [ ] Update border color to `border-base-300`
 - [ ] Update user section styling with slate colors
 - [ ] Add custom CSS class `.nav-active` for active state styling
-- [ ] Run `bun run typecheck`
-- [ ] Run `bun run lint:fix`
 
 **Files to modify:**
 
@@ -472,10 +502,8 @@ After:
 - [ ] Update padding to match spec: `p-5` (1.25rem)
 - [ ] Update icon sizes in header to 22px or 24px per spec
 - [ ] Update search input styling if present (match Input component)
-- [ ] Add glass effect if applicable (`backdrop-blur-[12px] bg-white/80`)
+- [ ] Add glass effect using the design system glass token (backdrop blur + themed surface)
 - [ ] Update notification bell styling
-- [ ] Run `bun run typecheck`
-- [ ] Run `bun run lint:fix`
 
 **Files to modify:**
 
@@ -499,8 +527,6 @@ After:
 - [ ] Add responsive padding: `px-6 lg:px-12` (mobile 1.5rem, desktop 3rem)
 - [ ] Center container using `mx-auto`
 - [ ] Update any existing width constraints
-- [ ] Run `bun run typecheck`
-- [ ] Run `bun run lint:fix`
 
 **Files to modify:**
 
@@ -520,10 +546,9 @@ After:
 
 **Checklist:**
 
-- [ ] Update text colors to use slate tokens (`text-slate-500`)
-- [ ] Update border color to slate-200 (`border-[#e2e8f0]`)
-- [ ] Verify padding matches design system
-- [ ] Run `bun run lint:fix`
+- [ ] Update text colors to use `text-base-content/60` or equivalent token
+- [ ] Update border color to `border-base-300`
+- [ ] Ensure padding matches design system
 
 **Files to modify:**
 
@@ -535,7 +560,7 @@ After:
 
 ---
 
-### Section 4: Icon Standardization (Priority: P0-P1)
+### Section 4: Icon Standardization (Priority: P1)
 
 **Goal:** Replace all inline SVGs with Lucide icons and standardize icon sizes
 
@@ -553,9 +578,6 @@ After:
 - [ ] Add IDs: `#icon-error-template`, `#icon-success-template`, `#icon-warning-template`
 - [ ] Update JavaScript to use `cloneNode(true)` from template elements
 - [ ] Remove inline SVG strings from JavaScript template literals (lines 128, 166, 181, 198)
-- [ ] Verify error/success states display correctly
-- [ ] Run `bun run typecheck`
-- [ ] Run `bun run lint:fix`
 
 **Files to modify:**
 
@@ -567,7 +589,7 @@ After:
 
 ---
 
-### Task 4.2: Fix CSVImportForm Dynamic SVGs (Priority: P0)
+### Task 4.2: Fix CSVImportForm Dynamic SVGs (Priority: P1)
 
 **Goal:** Replace dynamic SVG creation with proper icon rendering
 
@@ -579,9 +601,6 @@ After:
 - [ ] Add template elements with IDs: `#icon-check-template`, `#icon-error-template`, `#icon-warning-template`
 - [ ] Update JavaScript to use `cloneNode(true)` instead of `createElementNS`
 - [ ] Remove all `document.createElementNS('http://www.w3.org/2000/svg', ...)` code
-- [ ] Test all validation states display correctly
-- [ ] Run `bun run typecheck`
-- [ ] Run `bun run lint:fix`
 
 **Files to modify:**
 
@@ -606,8 +625,6 @@ After:
 - [ ] Update JavaScript to clone and display the template icon
 - [ ] Or refactor to use the ErrorMessage component which already uses Lucide `CircleX`
 - [ ] Remove inline SVG string from JavaScript
-- [ ] Run `bun run typecheck`
-- [ ] Run `bun run lint:fix`
 
 **Files to modify:**
 
@@ -633,8 +650,8 @@ After:
 - [ ] Update table/list icons to 22px (md size)
 - [ ] Update header icons to 24px (lg size)
 - [ ] Update small UI icons (close, etc.) to 16px (xs size)
+- [ ] Align icon package naming across docs and code to `@lucide/astro` (update styles.json metadata if needed)
 - [ ] Document icon size conventions in design system
-- [ ] Run bulk lint/typecheck
 
 **Files to modify:**
 
@@ -662,11 +679,9 @@ After:
 
 - [ ] Update animation timing to match spec: enter 0.2s, exit 0.2s
 - [ ] Update initial/animate states: `{ opacity: 0, y: -10, scale: 0.95 }` → `{ opacity: 1, y: 0, scale: 1 }`
-- [ ] Consider migrating to Motion library for consistency
-- [ ] Update toast colors to use new semantic colors (accent for info, rose for error)
+- [ ] Use Motion presets for toast animations to match the design system
+- [ ] Update toast colors to use semantic colors (info/success/warning/error) via DaisyUI or tokens
 - [ ] Update positioning if needed
-- [ ] Run `bun run typecheck`
-- [ ] Run `bun run lint:fix`
 
 **Files to modify:**
 
@@ -689,10 +704,8 @@ After:
 
 - [ ] Update backdrop animation: opacity 0→1, duration 0.2s
 - [ ] Update content animation: `{ opacity: 0, scale: 0.95, y: 20 }` → `{ opacity: 1, scale: 1, y: 0 }`, duration 0.3s
-- [ ] Verify modal styling uses new tokens (border-radius, shadow)
+- [ ] Ensure modal styling uses new tokens (border-radius, shadow)
 - [ ] Update close button styling with accent hover
-- [ ] Run `bun run typecheck`
-- [ ] Run `bun run lint:fix`
 
 **Files to modify:**
 
@@ -712,12 +725,10 @@ After:
 
 **Checklist:**
 
-- [ ] Verify status colors match new tokens (success: emerald, warning: amber, danger: rose)
+- [ ] Ensure status colors match new tokens (success, warning, danger) via tokens or semantic classes
 - [ ] Update any hardcoded colors to use CSS variables
 - [ ] Update badge styling to match Task 2.4 specs
 - [ ] Update progress bar styling
-- [ ] Run `bun run typecheck`
-- [ ] Run `bun run lint:fix`
 
 **Files to modify:**
 
@@ -737,12 +748,10 @@ After:
 
 **Checklist:**
 
-- [ ] Verify all inputs use updated Input component styling
-- [ ] Verify buttons use updated Button component styling
+- [ ] Ensure all inputs use updated Input component styling
+- [ ] Ensure buttons use updated Button component styling
 - [ ] Update any direct color references to use tokens
 - [ ] Update spacing to match form gap spec: `gap-4` (16px)
-- [ ] Run `bun run typecheck`
-- [ ] Run `bun run lint:fix`
 
 **Files to modify:**
 
@@ -770,8 +779,6 @@ After:
 - [ ] Update `RegistrationForm.astro` - form styling
 - [ ] Update `TransactionFilters.astro` - input/select styling
 - [ ] Update `TransactionRow.astro` - hover colors, text colors
-- [ ] Run `bun run typecheck` on all
-- [ ] Run `bun run lint:fix` on all
 
 **Files to modify:**
 
@@ -797,13 +804,11 @@ After:
 
 **Checklist:**
 
-- [ ] Update header background to semi-transparent slate: `bg-[rgba(248,250,252,0.5)]` light, `bg-[rgba(30,41,59,0.5)]` dark
-- [ ] Update row hover color to slate-50: `hover:bg-[#f8fafc]`
+- [ ] Update header background to the table header token from styles.json (theme-friendly)
+- [ ] Update row hover color to the table rowHover token (theme-friendly)
 - [ ] Update cell padding to `py-4 px-6` (1rem 1.5rem)
 - [ ] Update icon sizes to 22px
-- [ ] Update status colors to new tokens (rose for danger, amber for warning)
-- [ ] Run `bun run typecheck`
-- [ ] Run `bun run lint:fix`
+- [ ] Update status colors to new tokens (warning/danger)
 
 **Files to modify:**
 
@@ -823,12 +828,10 @@ After:
 
 **Checklist:**
 
-- [ ] Verify cards use updated Card component (p-7, rounded-[1.25rem], premium shadow)
-- [ ] Update icon colors to use new accent color (`text-[#6366f1]`)
+- [ ] Ensure cards use updated Card component (p-7, rounded-[1.25rem], premium shadow)
+- [ ] Update icon colors to use accent token (`text-accent` or equivalent)
 - [ ] Update trend indicators styling (emerald for up, rose for down)
 - [ ] Update text colors to slate scale
-- [ ] Run `bun run typecheck`
-- [ ] Run `bun run lint:fix`
 
 **Files to modify:**
 
@@ -848,12 +851,10 @@ After:
 
 **Checklist:**
 
-- [ ] Update row hover colors to slate-50 (`hover:bg-[#f8fafc]`)
+- [ ] Update row hover colors using table rowHover token
 - [ ] Update icon sizes to 22px
 - [ ] Update text colors to slate tokens
 - [ ] Update badge styling to match Task 2.4 specs
-- [ ] Run `bun run typecheck`
-- [ ] Run `bun run lint:fix`
 
 **Files to modify:**
 
@@ -879,8 +880,6 @@ After:
 - [ ] Update `TransactionList.astro` - table styling, hover colors
 - [ ] Update `TransactionModal.astro` - modal styling, button colors
 - [ ] Update `UserContext.astro` - text colors, hover states
-- [ ] Run `bun run typecheck` on all
-- [ ] Run `bun run lint:fix` on all
 
 **Files to modify:**
 
@@ -913,7 +912,6 @@ After:
 - [ ] Export stagger timing utilities: fast (0.05s), normal (0.1s), slow (0.15s)
 - [ ] Export component-specific animation configs (modal, toast, dropdown, card, listItem)
 - [ ] Add TypeScript types for all exports
-- [ ] Run `bun run typecheck`
 
 **Files to create:**
 
@@ -978,7 +976,6 @@ export const presets = {
 - [ ] Add easing variables matching styles.json: default, in, out, inOut, bounce, elastic
 - [ ] Add keyframe definitions for common animations (fadeIn, slideIn, scaleIn)
 - [ ] Import in globals.css
-- [ ] Run `bun run stylelint:fix`
 
 **Files to create:**
 
@@ -991,147 +988,6 @@ export const presets = {
 **Estimated Time:** 1 hour
 
 **Status:** ⏳ Pending
-
----
-
-### Section 8: Dark Theme Implementation (Priority: P1)
-
-**Goal:** Implement full dark theme from styles.json
-
----
-
-### Task 8.1: Implement Dark Theme (Priority: P1)
-
-**Goal:** Add complete dark theme configuration
-
-**Current Issue:** Dark theme is placeholder only with minimal overrides, not fully implemented per styles.json spec.
-
-**Checklist:**
-
-- [ ] Add dark theme to tailwind.config.ts DaisyUI themes array
-- [ ] Update CSS tokens with dark theme values in `[data-theme='dark']` block
-- [ ] Set dark primary: `#f8fafc` (slate-50)
-- [ ] Set dark accent: `#818cf8` (indigo-400)
-- [ ] Set dark background (base-100): `#020617` (slate-950)
-- [ ] Set dark cardBg (base-200): `#0f172a` (slate-900)
-- [ ] Set dark border (base-300): `#1e293b` (slate-800)
-- [ ] Set dark textMain: `#f1f5f9` (slate-100)
-- [ ] Set dark textMuted: `#94a3b8` (slate-400)
-- [ ] Verify all components work in dark mode
-- [ ] Test theme toggle functionality
-- [ ] Run `bun run typecheck`
-- [ ] Run `bun run lint:fix`
-
-**Files to modify:**
-
-- `tailwind.config.ts`
-- `src/styles/tokens.css`
-- `src/styles/globals.css`
-
-**Estimated Time:** 2-3 hours
-
-**Status:** ⏳ Pending
-
----
-
-### Section 9: Font Integration (Priority: P0)
-
-**Goal:** Add Inter font and update typography
-
----
-
-### Task 9.1: Add Inter Font (Priority: P0)
-
-**Goal:** Integrate Inter font family as specified in styles.json
-
-**Current Issue:** Using system font stack, but styles.json specifies Inter as the primary font family.
-
-**Checklist:**
-
-- [ ] Evaluate self-hosting vs CDN (consider privacy for financial app)
-- [ ] Add Inter font import (Google Fonts CDN or local hosting)
-- [ ] Add `font-display: swap` to prevent FOIT (Flash of Invisible Text)
-- [ ] Consider using Inter variable font for reduced file size
-- [ ] Update `--font-sans` in tokens.css to: `'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif`
-- [ ] Update TypeScript fonts constant in tokens.ts
-- [ ] Verify font renders correctly across browsers
-- [ ] Test font weights render correctly: 300 (light), 400 (regular), 500 (medium), 600 (semibold), 700 (bold)
-- [ ] Run visual verification
-
-**Files to modify:**
-
-- `src/styles/tokens.css`
-- `src/lib/tokens.ts`
-- `src/layouts/BaseLayout.astro` (font import)
-
-**Font Import (Google Fonts):**
-
-```html
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link
-  href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
-  rel="stylesheet"
-/>
-```
-
-**Font Import (Self-hosted alternative):**
-
-```css
-@font-face {
-  font-family: 'Inter';
-  src: url('/fonts/Inter-Variable.woff2') format('woff2');
-  font-weight: 300 700;
-  font-display: swap;
-}
-```
-
-**Estimated Time:** 45 minutes
-
-**Status:** ⏳ Pending
-
----
-
-## How to Test
-
-### Manual Test Steps
-
-1. **Visual Regression Testing**
-   - Compare screenshots before/after each component update
-   - Verify color palette matches styles.json (indigo accent, slate neutrals)
-   - Check spacing and sizing consistency
-
-2. **Component Testing**
-   - View each updated component in Storybook
-   - Test all variants and states
-   - Verify hover/focus/active states use correct colors
-
-3. **Theme Testing**
-   - Toggle between light and dark themes
-   - Verify all components render correctly in both
-   - Check that accent color changes appropriately (indigo-500 → indigo-400)
-
-4. **Accessibility Testing**
-   - Run axe-core accessibility audit
-   - Test keyboard navigation
-   - Verify focus states are visible (indigo focus ring)
-   - Check color contrast ratios meet WCAG AA (4.5:1 text, 3:1 UI)
-
-5. **Responsive Testing**
-   - Test at mobile breakpoint (< 640px)
-   - Test at tablet breakpoint (768px)
-   - Test at desktop breakpoint (1024px+)
-
-### Automated Tests
-
-```bash
-# Quality gates - run after each task
-bun run typecheck      # TypeScript compilation
-bun run lint:fix       # ESLint
-bun run stylelint:fix  # Stylelint
-bun run format:fix     # Prettier
-bun run test           # Unit tests (non-blocking)
-```
 
 ---
 
@@ -1160,6 +1016,8 @@ bun run test           # Unit tests (non-blocking)
 ## Success Criteria
 
 - [ ] All color tokens match styles.json specification (slate primary, indigo accent)
+- [ ] Primary vs accent usage is consistent across CTAs, text, and interactive elements
+- [ ] Status and currency tokens are exposed in `@/lib/tokens`
 - [ ] Inter font is properly loaded and rendering with correct weights
 - [ ] Button component matches styles.json specs (indigo accent, correct sizes, accent glow shadow)
 - [ ] Card component matches specs (1.75rem padding, 1.25rem radius, premium shadow)
@@ -1169,11 +1027,9 @@ bun run test           # Unit tests (non-blocking)
 - [ ] Header height is 5rem with 1.25rem padding
 - [ ] Container max-width is 1400px with responsive padding
 - [ ] All inline SVGs in JavaScript replaced with pre-rendered Lucide icons
+- [ ] Icon imports standardized to `@lucide/astro` across components and docs
 - [ ] Dark theme fully functional with correct color mapping
-- [ ] All quality gates pass (typecheck, lint, stylelint, format)
 - [ ] No hardcoded color values in components
-- [ ] Storybook stories render without errors
-- [ ] Color contrast meets WCAG AA standards (verified with audit tool)
 
 ---
 
@@ -1181,18 +1037,16 @@ bun run test           # Unit tests (non-blocking)
 
 | Section                         | Task Count | Time Estimate   | Priority |
 | ------------------------------- | ---------- | --------------- | -------- |
-| Section 1: Foundation Tokens    | 4          | 5-8 hours       | P0       |
+| Section 1: Foundation Tokens    | 6          | 6-9 hours       | P0       |
 | Section 2: Atom Components      | 5          | 6-8 hours       | P0-P1    |
 | Section 3: Layout Components    | 4          | 2-3 hours       | P0-P2    |
-| Section 4: Icon Standardization | 4          | 2-3 hours       | P0-P1    |
+| Section 4: Icon Standardization | 4          | 2-3 hours       | P1       |
 | Section 5: Molecule Components  | 5          | 4-6 hours       | P1-P2    |
 | Section 6: Organism Components  | 4          | 5-7 hours       | P1-P2    |
 | Section 7: Animation System     | 2          | 2-3 hours       | P2       |
-| Section 8: Dark Theme           | 1          | 2-3 hours       | P1       |
-| Section 9: Font Integration     | 1          | 0.75 hours      | P0       |
-| **Total**                       | **30**     | **29-44 hours** | -        |
+| **Total**                       | **30**     | **27-39 hours** | -        |
 
-**Note:** Add 20-30% buffer for testing, visual verification, and potential design review cycles.
+**Note:** Add 20-30% buffer for integration work and potential design review cycles.
 
 ---
 
