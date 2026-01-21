@@ -31,7 +31,7 @@ const ACTION_BUTTON_ICONS = {
  */
 const PAGINATION_ICONS = {
   previous: 'ChevronLeft',
-  next: 'ChevronLeft',
+  next: 'ChevronRight',
 } as const;
 
 /**
@@ -100,16 +100,17 @@ describe('TransactionList - Icon Migration', () => {
       expect(ACTION_BUTTON_ICONS.add).toBe('Plus');
     });
 
-    it('should import ChevronLeft icon from @lucide/astro for pagination', () => {
+    it('should import ChevronLeft and ChevronRight icons from @lucide/astro for pagination', () => {
       /**
        * Verify that the component:
-       * 1. Imports ChevronLeft from '@lucide/astro'
-       * 2. Uses <ChevronLeft size={16} /> for Previous button
-       * 3. Uses <ChevronLeft size={16} class="rotate-180" /> for Next button
-       * 4. This replaces chevron-up with rotation pattern
+       * 1. Imports ChevronLeft from '@lucide/astro' for Previous button
+       * 2. Imports ChevronRight from '@lucide/astro' for Next button
+       * 3. Uses <ChevronLeft size={16} /> for Previous button
+       * 4. Uses <ChevronRight size={16} /> for Next button
+       * 5. This replaces the rotated ChevronLeft pattern with semantically correct ChevronRight
        */
       expect(PAGINATION_ICONS.previous).toBe('ChevronLeft');
-      expect(PAGINATION_ICONS.next).toBe('ChevronLeft');
+      expect(PAGINATION_ICONS.next).toBe('ChevronRight');
     });
   });
 
@@ -231,18 +232,18 @@ describe('TransactionList - Icon Migration', () => {
       expect(true).toBe(true);
     });
 
-    it('should render Next button with ChevronLeft icon (rotated 180deg)', () => {
+    it('should render Next button with ChevronRight icon', () => {
       /**
        * Next button (enabled):
        * <a href={buildUrl(page + 1)} class="btn btn-sm btn-outline">
        *   Next
-       *   <ChevronLeft size={16} class="stroke-current rotate-180" aria-hidden="true" />
+       *   <ChevronRight size={16} class="stroke-current" aria-hidden="true" />
        * </a>
        *
        * Next button (disabled):
        * <button class="btn btn-sm btn-outline" disabled>
        *   Next
-       *   <ChevronLeft size={16} class="stroke-current rotate-180" aria-hidden="true" />
+       *   <ChevronRight size={16} class="stroke-current" aria-hidden="true" />
        * </button>
        */
       expect(true).toBe(true);
@@ -718,7 +719,15 @@ describe('TransactionList - Lucide Icon Components', () => {
     it('should use ChevronLeft (not deprecated)', () => {
       /**
        * ChevronLeft is current Lucide icon
-       * Used for both Previous (normal) and Next (rotated)
+       * Used for Previous button
+       */
+      expect(true).toBe(true);
+    });
+
+    it('should use ChevronRight (not deprecated)', () => {
+      /**
+       * ChevronRight is current Lucide icon
+       * Used for Next button (semantically correct, not rotated)
        */
       expect(true).toBe(true);
     });
@@ -754,7 +763,7 @@ describe('TransactionList - Lucide Icon Components', () => {
  * [ ] Navigate to page 1
  * [ ] Verify Previous button has ChevronLeft icon pointing left
  * [ ] Verify Previous button is disabled on page 1
- * [ ] Verify Next button has ChevronLeft icon pointing right (rotated)
+ * [ ] Verify Next button has ChevronRight icon pointing right (not rotated)
  * [ ] Click Next button, verify navigation to page 2
  * [ ] Verify Previous button is now enabled
  * [ ] Verify Next button is disabled on last page

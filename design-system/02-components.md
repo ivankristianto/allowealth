@@ -143,6 +143,36 @@ import {
 <Icon size={16} class="stroke-current shrink-0" aria-hidden="true" />
 ```
 
+**Stroke-width guidance:**
+
+Lucide icons use a default stroke-width of 2, which provides good visual clarity at all standard sizes. **Do NOT explicitly set stroke-width** - use Lucide's default for consistency.
+
+| Size (px) | Default Stroke Width | Visual Effect              |
+| --------- | -------------------- | -------------------------- |
+| 12        | 2 (default)          | Crisp at small sizes       |
+| 16        | 2 (default)          | Standard for buttons       |
+| 20        | 2 (default)          | Balanced for UI elements   |
+| 24        | 2 (default)          | Clear for alerts/status    |
+| 32        | 2 (default)          | Proportionate for emphasis |
+
+**Rationale:** Lucide's default stroke-width is carefully designed for each icon's visual balance. Changing stroke-width can make icons appear too heavy or too light, reducing accessibility and visual consistency.
+
+**Avoid:**
+
+```astro
+<!-- Don't explicitly set stroke-width -->
+<X size={16} stroke-width={1} />
+<Plus size={20} stroke={3} />
+```
+
+**Use:**
+
+```astro
+<!-- Let Lucide use its default stroke-width -->
+<X size={16} class="stroke-current" />
+<Plus size={20} class="stroke-current shrink-0" />
+```
+
 **Migration note:** The custom `Icon.astro` component has been removed. All icons now use `@lucide/astro` directly. See `docs/icon-migration-guide.md` for migration patterns.
 
 ### Button (`src/components/atoms/Button.astro`)

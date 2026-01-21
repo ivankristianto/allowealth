@@ -19,7 +19,7 @@ import TransactionRow from '../molecules/TransactionRow.astro';
 import TransactionFilters from '../molecules/TransactionFilters.astro';
 import EmptyState from '../atoms/EmptyState.astro';
 import Badge from '../atoms/Badge.astro';
-import { ArrowLeft, Download, ArrowRight, Plus, ChevronLeft } from '@lucide/astro';
+import { ArrowLeft, Download, ArrowRight, Plus, ChevronLeft, ChevronRight } from '@lucide/astro';
 import type { TransactionOutput } from '@/lib/types/transaction';
 
 export interface Props {
@@ -201,12 +201,12 @@ const buildDirectExportUrl = () => {
                   {hasNext ? (
                     <a href={buildUrl(page + 1)} class="btn btn-sm btn-outline">
                       Next
-                      <ChevronLeft size={16} class="stroke-current rotate-180" aria-hidden="true" />
+                      <ChevronRight size={16} class="stroke-current" aria-hidden="true" />
                     </a>
                   ) : (
                     <button class="btn btn-sm btn-outline" disabled>
                       Next
-                      <ChevronLeft size={16} class="stroke-current rotate-180" aria-hidden="true" />
+                      <ChevronRight size={16} class="stroke-current" aria-hidden="true" />
                     </button>
                   )}
                 </div>
