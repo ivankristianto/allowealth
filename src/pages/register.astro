@@ -8,7 +8,6 @@
 
 import AuthLayout from '../layouts/AuthLayout.astro';
 import RegistrationForm from '../components/molecules/RegistrationForm.astro';
-import { CircleX } from '@lucide/astro';
 import { PASSWORD_MIN_LENGTH, PASSWORD_REGEX_SOURCES } from '@/lib/validation';
 
 // Get error message from query params (if any)
@@ -20,27 +19,19 @@ const errorMessages: Record<string, string> = {
   weak_password: 'Password must be at least 12 characters long.',
   invalid_email: 'Please enter a valid email address.',
   invalid_input: 'Please check your input and try again.',
+  network_error: 'Network error. Please check your connection.',
+  server_error: 'A server error occurred. Please try again later.',
 };
 
-// Only use whitelisted error codes to prevent XSS
-const errorMessage = error && errorMessages[error] ? errorMessages[error] : '';
+// Only use whitelisted error codes to prevent XSS, with fallback for unknown errors
+const errorMessage = error ? errorMessages[error] || 'An error occurred. Please try again.' : '';
 
 // Get CSP nonce from middleware
 const cspNonce = Astro.locals.cspNonce || '';
 ---
 
 <AuthLayout title="Finance Manager - Sign Up">
-  <div id="registration-messages" aria-live="polite" aria-atomic="true">
-    {
-      errorMessage && (
-        <div role="alert" class="alert alert-error mb-4">
-          <CircleX size={24} class="shrink-0" aria-hidden="true" />
-          <span>{errorMessage}</span>
-        </div>
-      )
-    }
-  </div>
-  <RegistrationForm />
+  <RegistrationForm initialServerError={errorMessage} />
 </AuthLayout>
 
 <script
@@ -62,7 +53,7 @@ const cspNonce = Astro.locals.cspNonce || '';
       return div.innerHTML;
     };
     const form = document.querySelector('[data-registration-form]');
-    const messagesContainer = document.getElementById('registration-messages');
+    const messagesContainer = document.getElementById('form-messages');
     const submitButton = form?.querySelector('[data-submit-button]');
     const buttonText = submitButton?.querySelector('[data-button-text]');
     const loadingSpinner = submitButton?.querySelector('[data-loading-spinner]');

@@ -63,6 +63,7 @@ interface Props {
   method?: 'POST' | 'GET';
   submitText?: string;
   loginLink?: string;
+  initialServerError?: string;
 }
 
 const {
@@ -70,6 +71,7 @@ const {
   method = 'POST',
   submitText = 'Create Account',
   loginLink = '/login',
+  initialServerError = '',
 } = Astro.props;
 
 // Get CSP nonce from middleware
@@ -172,6 +174,7 @@ const cspNonce = Astro.locals.cspNonce || '';
     PASSWORD_MIN_LENGTH,
     hasLetterRegex: PASSWORD_REGEX_SOURCES.hasLetter,
     hasNumberOrSpecialRegex: PASSWORD_REGEX_SOURCES.hasNumberOrSpecial,
+    initialServerError,
   }}
   nonce={cspNonce}
   is:inline
@@ -190,6 +193,19 @@ const cspNonce = Astro.locals.cspNonce || '';
   const loadingSpinner = submitButton?.querySelector('[data-loading-spinner]');
 
   if (form) {
+    // Display initial server error if provided
+    if (initialServerError && messagesContainer) {
+      messagesContainer.innerHTML = `
+        <div role="alert" class="alert alert-error">
+          <svg xmlns="http://www.w3.org/2000/svg" class="shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="12" r="10"></circle>
+            <path d="m15 9-6 6"></path>
+            <path d="m9 9 6 6"></path>
+          </svg>
+          <span>${escapeHtml(initialServerError)}</span>
+        </div>
+      `;
+    }
     // Handle password toggle for confirm password field
     const toggleButtons = form.querySelectorAll('[data-toggle-password]');
     toggleButtons.forEach((button) => {

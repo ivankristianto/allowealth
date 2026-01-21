@@ -1037,6 +1037,9 @@ npx @redocly/cli --version
 - ✅ Password strength meter accurately reflects validation requirements (3 requirements)
 - ✅ Consistent validation across all layers (client/server/UI)
 - ✅ Bar progression is intuitive (0 → 1 → 2 → 4 bars)
+- ✅ No duplicate pages (/signup removed, only /register remains)
+- ✅ Single error message container (#form-messages in RegistrationForm)
+- ✅ Error fallback for unknown error codes
 - ✅ No user-facing errors or broken links
 - ✅ Documentation matches implementation
 - ✅ OpenAPI specification is split into modular, maintainable files
@@ -1136,11 +1139,110 @@ paths:
                     example: 'Email already registered'
 ```
 
+### Remove Duplicate Signup Page and Fix Error Message Containers (Priority: P0)
+
+**Goal:** Remove duplicate /signup page and consolidate error message display
+
+**Current Issue:**
+The application has both `/signup` and `/register` pages that serve the same purpose, creating confusion and maintenance overhead. Additionally, the register page has duplicate error message containers (`#registration-messages` and `#form-messages`) which causes inconsistent error display.
+
+**Checklist:**
+
+- [x] Remove `src/pages/signup.astro` (duplicate of register.astro)
+- [x] Remove `src/pages/signup.behavior.test.ts` (test file for signup page)
+- [x] Consolidate error message display to use single `#form-messages` container from RegistrationForm
+- [x] Add `initialServerError` prop to RegistrationForm component
+- [x] Update register.astro to pass server error messages to component
+- [x] Add fallback error message for unknown error codes
+- [x] Run quality gates and code review
+
+**Files modified:**
+
+- `src/pages/register.astro` - Simplified to use component's message container, added error fallback
+- `src/components/molecules/RegistrationForm.astro` - Added initialServerError prop
+
+**Files deleted:**
+
+- `src/pages/signup.astro`
+- `src/pages/signup.behavior.test.ts`
+
+**Status:** ✅ Completed
+
+---
+
 ## Code Quality Improvements (Priority: P3-P4)
 
 **Note:** These area reserved for follow-up improvements identified during code review. They are non-blocking but recommended for better code quality, accessibility, and maintainability.
 
-### P2: Add Error Response Examples for Password Validation
+### P2: Extract Duplicate Validation Logic to Shared Utility
+
+**Goal:** Reduce duplication by extracting validation logic to shared utility
+
+**Description:** Client-side validation logic is duplicated between the page script and the component script. Both files contain identical validation code for name, email, and password requirements.
+
+**Checklist:**
+
+- [ ] Create `src/lib/client-validation.ts` with `validateRegistrationForm()` function
+- [ ] Update register.astro to import and use shared validation
+- [ ] Update RegistrationForm.astro to import and use shared validation
+- [ ] Run tests to ensure validation behavior unchanged
+
+**Files to modify:**
+
+- `src/lib/client-validation.ts` (new file)
+- `src/pages/register.astro`
+- `src/components/molecules/RegistrationForm.astro`
+
+### P2: Add aria-describedby to Input Fields
+
+**Goal:** Improve accessibility by associating error messages with input fields
+
+**Description:** When validation errors are displayed in `#form-messages`, the input fields lack `aria-describedby` attributes to associate them with the error message container.
+
+**Checklist:**
+
+- [ ] Add `aria-describedby="form-messages"` to input fields in RegistrationForm
+- [ ] Dynamically update `aria-describedby` when errors are shown/hidden
+- [ ] Test with screen reader to ensure errors are announced
+
+**Files to modify:**
+
+- `src/components/molecules/RegistrationForm.astro`
+
+### P2: Use Environment Variable for API URL
+
+**Goal:** Make API URL configurable for different environments
+
+**Description:** The API URL `/api/auth/signup` is hardcoded in the client-side script.
+
+**Checklist:**
+
+- [ ] Create `src/lib/config.ts` with API base URL
+- [ ] Update register.astro to use configured API URL
+- [ ] Add `PUBLIC_API_URL` environment variable support
+
+**Files to modify:**
+
+- `src/lib/config.ts` (new file)
+- `src/pages/register.astro`
+
+### P3: Add Manual "Continue to Login" Link on Success
+
+**Goal:** Provide users option to manually navigate after successful registration
+
+**Description:** Consider making the auto-redirect optional or adding a manual "Continue to login" link for users who prefer not to wait.
+
+**Checklist:**
+
+- [ ] Add "Continue to login" link in success message
+- [ ] Keep auto-redirect as default behavior
+- [ ] Test user experience with both options
+
+**Files to modify:**
+
+- `src/pages/register.astro`
+
+### P3: Add Error Response Examples for Password Validation
 
 **Goal:** Improve API documentation with explicit error response examples
 
