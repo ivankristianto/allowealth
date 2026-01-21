@@ -279,10 +279,8 @@ function createPasswordFieldWithStrength(
 
   const requirements = [
     { key: 'length', text: 'At least 12 characters' },
-    { key: 'uppercase', text: 'At least one uppercase letter' },
-    { key: 'lowercase', text: 'At least one lowercase letter' },
-    { key: 'number', text: 'At least one number' },
-    { key: 'special', text: 'At least one special character' },
+    { key: 'letter', text: 'At least one letter (A-Z or a-z)' },
+    { key: 'numberOrSpecial', text: 'At least one number or special character' },
   ];
 
   requirements.forEach(({ key, text }) => {
@@ -324,12 +322,11 @@ function createPasswordFieldWithStrength(
   // Add validation
   input.addEventListener('input', () => {
     const password = input.value;
+    // Validation matching component logic (3 requirements: length, letter, numberOrSpecial)
     const checks = {
       length: password.length >= 12,
-      uppercase: /[A-Z]/.test(password),
-      lowercase: /[a-z]/.test(password),
-      number: /[0-9]/.test(password),
-      special: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password),
+      letter: /[a-zA-Z]/.test(password),
+      numberOrSpecial: /[0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password),
     };
 
     // Update requirements
@@ -361,10 +358,11 @@ function createPasswordFieldWithStrength(
     let strength = 'weak';
     let colorClass = 'bg-error';
 
+    // Bar progression: 0→0 bars (gray), 1→1 bar (red), 2→2 bars (orange), 3→4 bars (green)
     if (passedCount <= 1) {
       strength = password.length === 0 ? 'Not entered' : 'Weak';
       colorClass = 'bg-error';
-    } else if (passedCount <= 3) {
+    } else if (passedCount === 2) {
       strength = 'Medium';
       colorClass = 'bg-warning';
     } else {
@@ -380,7 +378,12 @@ function createPasswordFieldWithStrength(
       bar.classList.remove('bg-error', 'bg-warning', 'bg-success');
       if (password.length === 0) {
         bar.classList.add('bg-base-300');
+      } else if (passedCount === 3) {
+        // Show all 4 bars when strong (for emphasis)
+        bar.classList.remove('bg-base-300');
+        bar.classList.add(colorClass);
       } else if (index < passedCount) {
+        // Show 1 or 2 bars for weak/medium
         bar.classList.remove('bg-base-300');
         bar.classList.add(colorClass);
       } else {

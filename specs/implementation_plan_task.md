@@ -1048,6 +1048,7 @@ npx @redocly/cli --version
 - ✅ All quality gates pass (lint, format, typecheck)
 - ✅ All manual test cases pass
 - ✅ Zero console errors in browser
+- ✅ Duplicate client-side validation logic extracted to shared utility
 
 ## Estimated Effort
 
@@ -1182,16 +1183,37 @@ The application has both `/signup` and `/register` pages that serve the same pur
 
 **Checklist:**
 
-- [ ] Create `src/lib/client-validation.ts` with `validateRegistrationForm()` function
-- [ ] Update register.astro to import and use shared validation
-- [ ] Update RegistrationForm.astro to import and use shared validation
-- [ ] Run tests to ensure validation behavior unchanged
+- [x] Create `src/lib/client-validation.ts` with `validateRegistrationForm()` function
+- [x] Create `public/scripts/registration-validation.js` with browser-compatible validation module
+- [x] Update register.astro to use shared validation via `window.RegistrationValidation`
+- [x] Update RegistrationForm.astro to use shared validation via `window.RegistrationValidation`
+- [x] Add JSDoc comments to JavaScript module
+- [x] Add Window.RegistrationValidation global type declaration
+- [x] Run tests to ensure validation behavior unchanged
+- [x] Run code reviewer and fix issues (added warning comments, fixed null handling, added is:inline)
+- [x] Commit changes to git
 
-**Files to modify:**
+**Files created:**
 
-- `src/lib/client-validation.ts` (new file)
+- `src/lib/client-validation.ts` (TypeScript reference implementation)
+- `public/scripts/registration-validation.js` (browser-compatible module)
+
+**Files modified:**
+
 - `src/pages/register.astro`
 - `src/components/molecules/RegistrationForm.astro`
+- `src/lib/validation/index.ts`
+
+**Status:** ✅ Completed
+
+**Summary of Changes:**
+
+- Reduced code duplication by ~100 lines
+- Created shared validation utility that works across all registration forms
+- Added comprehensive JSDoc comments to JavaScript module
+- Added global Window interface declaration for type safety
+- Fixed critical code review issues (dual source warnings, null handling)
+- All quality gates passed (typecheck, lint, format)
 
 ### P2: Add aria-describedby to Input Fields
 
@@ -1226,37 +1248,9 @@ The application has both `/signup` and `/register` pages that serve the same pur
 - `src/lib/config.ts` (new file)
 - `src/pages/register.astro`
 
-### P3: Add Manual "Continue to Login" Link on Success
-
-**Goal:** Provide users option to manually navigate after successful registration
-
-**Description:** Consider making the auto-redirect optional or adding a manual "Continue to login" link for users who prefer not to wait.
-
-**Checklist:**
-
-- [ ] Add "Continue to login" link in success message
-- [ ] Keep auto-redirect as default behavior
-- [ ] Test user experience with both options
-
 **Files to modify:**
 
 - `src/pages/register.astro`
-
-### P3: Add Error Response Examples for Password Validation
-
-**Goal:** Improve API documentation with explicit error response examples
-
-**Description:** Add explicit error response examples showing password validation failures in the OpenAPI spec.
-
-**Checklist:**
-
-- [ ] Add error response example for `SignupRequest` with weak password
-- [ ] Add error response example for `UpdatePasswordRequest` with invalid password
-- [ ] Document error codes returned when validation fails
-
-**Files to modify:**
-
-- `openapi.yml` (add error response examples to signup and password update endpoints)
 
 **P3: Consider Reusable Password Schema Component**
 
@@ -1269,13 +1263,3 @@ The application has both `/signup` and `/register` pages that serve the same pur
 - [ ] Create `Password` schema component in `openapi.yml`
 - [ ] Update `SignupRequest.password` to use `$ref: '#/components/schemas/Password'`
 - [ ] Update `UpdatePasswordRequest.newPassword` to use `$ref: '#/components/schemas/Password'`
-
-**P3: Add Documentation Cross-Reference**
-
-**Goal:** Help maintainers understand where validation rules are sourced
-
-**Description:** Add a comment or note in the password schema description referencing the centralized validation module.
-
-**Checklist:**
-
-- [ ] Add note referencing `src/lib/validation/password.ts` in password descriptions
