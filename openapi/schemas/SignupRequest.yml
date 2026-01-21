@@ -12,10 +12,7 @@ SignupRequest:
       description: User email address
       example: user@example.com
     password:
-      type: string
-      minLength: 12
-      description: Password must be at least 12 characters, contain a letter, and contain a number or special character
-      example: SecurePass123!
+      $ref: './Password.yml#/Password'
     name:
       type: string
       minLength: 1

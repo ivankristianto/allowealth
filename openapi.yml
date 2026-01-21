@@ -139,6 +139,8 @@ components:
       $ref: './openapi/schemas/ErrorResponse.yml#/ErrorResponse'
 
     # Authentication Schemas
+    Password:
+      $ref: './openapi/schemas/Password.yml#/Password'
     SignupRequest:
       $ref: './openapi/schemas/SignupRequest.yml#/SignupRequest'
     LoginRequest:

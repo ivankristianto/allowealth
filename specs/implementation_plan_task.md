@@ -1333,6 +1333,37 @@ The application has both `/signup` and `/register` pages that serve the same pur
 
 **Checklist:**
 
-- [ ] Create `Password` schema component in `openapi.yml`
-- [ ] Update `SignupRequest.password` to use `$ref: '#/components/schemas/Password'`
-- [ ] Update `UpdatePasswordRequest.newPassword` to use `$ref: '#/components/schemas/Password'`
+- [x] Create `Password` schema component in `openapi/schemas/Password.yml`
+- [x] Update `SignupRequest.password` to use `$ref: './Password.yml#/Password'`
+- [x] Update `UpdatePasswordRequest.newPassword` to use `$ref: './Password.yml#/Password'`
+- [x] Update main `openapi.yml` to add Password schema reference
+- [x] Run quality gates and code review
+- [x] Update task document and commit
+
+**Files created:**
+
+- `openapi/schemas/Password.yml` ✅
+
+**Files modified:**
+
+- `openapi/schemas/SignupRequest.yml` ✅
+- `openapi/schemas/UpdatePasswordRequest.yml` ✅
+- `openapi.yml` ✅
+
+**Status:** ✅ Completed
+
+**Summary of Changes:**
+
+- Created reusable Password schema component with 3 requirements (12+ chars, letter, number OR special char)
+- Updated SignupRequest.password to use `$ref: './Password.yml#/Password'`
+- Updated UpdatePasswordRequest.newPassword to use `$ref: './Password.yml#/Password'`
+- Updated example password from `SecurePass123!` to `mypassword123` (minimum valid)
+- All quality gates passed (typecheck, lint, format, OpenAPI validation)
+- Code review approved with no critical issues
+
+**Code Review Findings:**
+
+- Approved with no critical issues
+- Minor suggestions (deferred as P3/P4 improvements below):
+  - P3: Consider adding maxLength to Password schema
+  - P3: Add Password.yml to openapi/README.md schema list
