@@ -85,7 +85,7 @@ const cspNonce = Astro.locals.cspNonce || '';
   data-registration-form
   novalidate
 >
-  <div id="form-messages" class="space-y-2" aria-live="polite" aria-atomic="true"></div>
+  <div id="form-messages" class="space-y-2" aria-live="polite" tabindex="-1"></div>
 
   <div class="form-control">
     <Label htmlFor="name" required>Full Name</Label>
@@ -184,6 +184,47 @@ const cspNonce = Astro.locals.cspNonce || '';
   const loadingSpinner = submitButton?.querySelector('[data-loading-spinner]');
 
   if (form) {
+    // Helper functions for dynamic aria-describedby management
+    // This ensures screen readers announce form-level errors when they appear
+
+    /**
+     * Add aria-describedby="form-messages" to all form inputs
+     * Associates inputs with the error message container for screen readers
+     */
+    const addFormMessagesAssociation = () => {
+      const inputs = form.querySelectorAll('input');
+      inputs.forEach((input) => {
+        const currentDescribedBy = input.getAttribute('aria-describedby') || '';
+        // Preserve existing aria-describedby values (like password requirements)
+        const describedByIds = currentDescribedBy
+          ? `${currentDescribedBy} form-messages`
+          : 'form-messages';
+        input.setAttribute('aria-describedby', describedByIds);
+      });
+    };
+
+    /**
+     * Remove aria-describedby="form-messages" from all form inputs
+     * Removes association when error messages are cleared
+     */
+    const removeFormMessagesAssociation = () => {
+      const inputs = form.querySelectorAll('input');
+      inputs.forEach((input) => {
+        const currentDescribedBy = input.getAttribute('aria-describedby') || '';
+        // Remove form-messages while preserving other aria-describedby values
+        const newDescribedBy = currentDescribedBy
+          .split(' ')
+          .filter((id) => id !== 'form-messages')
+          .join(' ')
+          .trim();
+        if (newDescribedBy) {
+          input.setAttribute('aria-describedby', newDescribedBy);
+        } else {
+          input.removeAttribute('aria-describedby');
+        }
+      });
+    };
+
     // Display initial server error if provided
     if (initialServerError && messagesContainer) {
       messagesContainer.innerHTML = `
@@ -196,6 +237,8 @@ const cspNonce = Astro.locals.cspNonce || '';
           <span>${window.RegistrationValidation.escapeHtml(initialServerError)}</span>
         </div>
       `;
+      // Associate inputs with error messages for screen readers
+      addFormMessagesAssociation();
     }
     // Handle password toggle for confirm password field
     const toggleButtons = form.querySelectorAll('[data-toggle-password]');
@@ -222,6 +265,8 @@ const cspNonce = Astro.locals.cspNonce || '';
       input.addEventListener('input', () => {
         if (messagesContainer) {
           messagesContainer.innerHTML = '';
+          // Remove association when messages are cleared
+          removeFormMessagesAssociation();
         }
       });
     });
@@ -249,6 +294,15 @@ const cspNonce = Astro.locals.cspNonce || '';
           messagesContainer.innerHTML = window.RegistrationValidation.renderValidationErrors(
             validationResult.errors
           );
+          // Associate inputs with error messages for screen readers
+          addFormMessagesAssociation();
+          // Move focus to first invalid input or message container for accessibility
+          const firstInvalidInput = form.querySelector('input[aria-invalid="true"]');
+          if (firstInvalidInput) {
+            firstInvalidInput.focus();
+          } else {
+            messagesContainer.focus();
+          }
         }
         return;
       }
@@ -287,6 +341,10 @@ const cspNonce = Astro.locals.cspNonce || '';
 							<span>Account created successfully! Redirecting to login...</span>
 						</div>
 					`;
+          // Associate inputs with success message for screen readers
+          addFormMessagesAssociation();
+          // Move focus to message container for accessibility
+          messagesContainer.focus();
         }
 
         // Reset form
@@ -309,6 +367,10 @@ const cspNonce = Astro.locals.cspNonce || '';
 							<span>An error occurred. Please try again.</span>
 						</div>
 					`;
+          // Associate inputs with error message for screen readers
+          addFormMessagesAssociation();
+          // Move focus to message container for accessibility
+          messagesContainer.focus();
         }
       } finally {
         // Reset loading state

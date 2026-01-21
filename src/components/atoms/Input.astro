@@ -33,6 +33,11 @@ export interface Props {
   required?: boolean;
   pattern?: string;
   title?: string;
+  /**
+   * Additional IDs for aria-describedby (combined with inline error message ID if error exists)
+   * Used to associate input with external description elements like form-level error containers
+   */
+  describedBy?: string;
 }
 
 const {
@@ -51,6 +56,7 @@ const {
   step = '',
   pattern = '',
   title = '',
+  describedBy = '',
 } = Astro.props;
 
 const inputClasses = [
@@ -61,6 +67,12 @@ const inputClasses = [
 ]
   .filter(Boolean)
   .join(' ');
+
+// Build aria-describedby value: combine inline error ID with external describedBy IDs
+const ariaDescribeIds = [error && errorMessage && id ? `${id}-error` : null, describedBy]
+  .filter(Boolean)
+  .join(' ')
+  .trim();
 
 const selectOptions = type === 'select' ? options : [];
 ---
@@ -73,6 +85,8 @@ const selectOptions = type === 'select' ? options : [];
       class={inputClasses}
       disabled={disabled}
       class:list={{ 'input-error': error }}
+      aria-invalid={error}
+      aria-describedby={ariaDescribeIds || undefined}
     >
       <option value="">{placeholder || 'Select...'}</option>
       {selectOptions.map((opt) => (
@@ -99,7 +113,7 @@ const selectOptions = type === 'select' ? options : [];
       pattern={pattern || undefined}
       title={title || undefined}
       aria-invalid={error}
-      aria-describedby={error ? `${id}-error` : undefined}
+      aria-describedby={ariaDescribeIds || undefined}
     />
   )
 }
