@@ -19,6 +19,18 @@ export type { PaymentMethodType } from './payment-method';
 export type { Transaction, TransactionOutput, TransactionSummary } from './transaction';
 export type { TransactionType } from './transaction';
 
+// Assets
+export type {
+  Asset,
+  AssetOutput,
+  AssetHistory,
+  AssetHistoryOutput,
+  AssetSummaryByCurrency,
+  AssetSummaryByType,
+} from './asset';
+export type { AssetType } from './asset';
+export { formatAssetType, getAssetTypeLabel, ASSET_TYPE_LABELS } from './asset';
+
 // Re-export Input/Update/Filter types from validation (single source of truth)
 export type { CreateCategoryInput, UpdateCategoryInput, CategoryFilter } from '@/lib/validation';
 

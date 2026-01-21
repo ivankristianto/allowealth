@@ -1,12 +1,38 @@
 ---
-import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
+/**
+ * Assets History Redirect Page
+ *
+ * This page shows all assets with links to their specific history pages.
+ */
 
+import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
+import { assetService } from '@/services';
+import type { AssetOutput } from '@/lib/types/asset';
+
+const user = Astro.locals.user!;
 const currentPath = '/assets/history';
+
+// Fetch all assets from database
+const rawAssets = await assetService.findAll(user.id);
+
+// Transform to AssetOutput format
+const assets: AssetOutput[] = rawAssets.map((asset) => ({
+  id: asset.id,
+  name: asset.name,
+  type: asset.type,
+  balance: asset.balance,
+  currency: asset.currency,
+  last_updated: asset.last_updated,
+  created_at: asset.created_at,
+  updated_at: asset.updated_at,
+}));
 ---
 
 <ProtectedLayout title="Asset History - Finance Manager" currentPath={currentPath}>
   <div class="space-y-6">
-    <h2 class="text-2xl font-bold">Asset History</h2>
+    <div class="flex justify-between items-center">
+      <h2 class="text-2xl font-bold">Asset History</h2>
+    </div>
 
     <div class="tabs">
       <a class="tab" href="/assets">List</a>
@@ -14,10 +40,41 @@ const currentPath = '/assets/history';
       <a class="tab tab-active" href="/assets/history">History</a>
     </div>
 
-    <div class="card bg-base-100 shadow border border-base-300">
-      <div class="card-body">
-        <p class="text-neutral-500">No asset history available yet.</p>
-      </div>
-    </div>
+    {
+      assets.length > 0 ? (
+        <div class="card bg-base-100 shadow border border-base-300">
+          <div class="card-body">
+            <h3 class="text-lg font-semibold mb-4">Select an asset to view its history</h3>
+            <div class="grid gap-2">
+              {assets.map((asset) => (
+                <a
+                  href={`/assets/history/${asset.id}`}
+                  class="flex items-center justify-between p-3 rounded-lg hover:bg-base-200 transition-colors"
+                >
+                  <span class="font-medium">{asset.name}</span>
+                  <span
+                    class={`font-semibold ${asset.currency === 'IDR' ? 'text-success' : 'text-info'}`}
+                  >
+                    {asset.currency === 'IDR' ? 'Rp' : '$'}
+                    {parseFloat(asset.balance).toLocaleString()}
+                  </span>
+                </a>
+              ))}
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div class="card bg-base-100 shadow border border-base-300">
+          <div class="card-body">
+            <p class="text-neutral-500">
+              No assets available. Add an asset first to view its history.
+            </p>
+            <a href="/assets/add" class="btn btn-primary mt-4">
+              Add Your First Asset
+            </a>
+          </div>
+        </div>
+      )
+    }
   </div>
 </ProtectedLayout>

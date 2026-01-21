@@ -1,0 +1,59 @@
+---
+/**
+ * Edit Asset Page
+ *
+ * Page for editing an existing asset.
+ */
+
+import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
+import AssetForm from '../../../components/molecules/AssetForm.astro';
+import { assetService } from '@/services';
+
+const user = Astro.locals.user!;
+const currentPath = '/assets/edit';
+
+// Get asset ID from URL params
+const { id } = Astro.params;
+
+if (!id) {
+  return Astro.redirect('/404');
+}
+
+// Load existing asset
+const asset = await assetService.findById(id, user.id);
+
+if (!asset) {
+  // Asset not found or doesn't belong to user
+  return Astro.redirect('/404');
+}
+
+// Pre-fill form with existing asset data
+const formValues = {
+  name: asset.name,
+  type: asset.type,
+  balance: asset.balance,
+  currency: asset.currency,
+};
+---
+
+<ProtectedLayout title="Edit Asset - Finance Manager" currentPath={currentPath}>
+  <div class="max-w-2xl">
+    <div class="mb-6">
+      <h2 class="text-2xl font-bold">Edit Asset</h2>
+      <p class="text-neutral-500">Update asset details</p>
+    </div>
+
+    <div class="card bg-base-100 shadow border border-base-300">
+      <div class="card-body">
+        <AssetForm
+          action={`/api/assets/${id}`}
+          method="PUT"
+          values={formValues}
+          assetId={id}
+          submitLabel="Update Asset"
+          cancelUrl="/assets"
+        />
+      </div>
+    </div>
+  </div>
+</ProtectedLayout>

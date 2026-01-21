@@ -1,0 +1,406 @@
+---
+/**
+ * Asset Form Component (Molecule)
+ *
+ * Form for adding/editing assets with validation.
+ *
+ * @param {string} action - Form action URL (API endpoint)
+ * @param {string} method - Form method (POST or PUT)
+ * @param {Object} values - Default form values
+ * @param {string} submitLabel - Submit button label
+ * @param {string} cancelUrl - URL to cancel and go back
+ */
+
+import Label from '../atoms/Label.astro';
+import Input from '../atoms/Input.astro';
+import Button from '../atoms/Button.astro';
+import { Wallet } from '@lucide/astro';
+import type { AssetType, Currency } from '@/lib/types/asset';
+
+export interface Props {
+  action: string;
+  method?: 'POST' | 'PUT';
+  values?: {
+    name?: string;
+    type?: AssetType;
+    balance?: string;
+    currency?: Currency;
+  };
+  errors?: Record<string, string>;
+  submitLabel?: string;
+  cancelUrl?: string;
+  assetId?: string;
+}
+
+const {
+  action,
+  method = 'POST',
+  values = {},
+  errors = {},
+  submitLabel = 'Save Asset',
+  cancelUrl = '/assets',
+  assetId = '',
+} = Astro.props;
+
+// Asset type options matching database schema
+const assetTypes: Array<{ value: AssetType; label: string }> = [
+  { value: 'bank_account', label: 'Bank Account' },
+  { value: 'mutual_fund', label: 'Mutual Fund' },
+  { value: 'stock', label: 'Stock' },
+  { value: 'bond', label: 'Bond' },
+  { value: 'crypto', label: 'Cryptocurrency' },
+  { value: 'other', label: 'Other' },
+];
+
+const currencyOptions: Array<{ value: Currency; label: string }> = [
+  { value: 'IDR', label: 'IDR - Indonesian Rupiah' },
+  { value: 'USD', label: 'USD - US Dollar' },
+];
+---
+
+<!-- Global error message container -->
+<div id="asset-form-error" class="hidden alert alert-error" role="alert"></div>
+
+<form
+  id="asset-form"
+  data-action={action}
+  data-method={method}
+  data-asset-id={assetId}
+  data-cancel-url={cancelUrl}
+  class="space-y-4"
+  novalidate
+>
+  <!-- Asset Name -->
+  <div class="form-control">
+    <Label required htmlFor="name" id="name-label">Asset Name</Label>
+    <Input
+      id="name"
+      name="name"
+      type="text"
+      value={values.name || ''}
+      placeholder="e.g., Savings Account, Mutual Fund ABC"
+      required={true}
+      error={!!errors.name}
+      errorMessage={errors.name}
+    />
+  </div>
+
+  <!-- Asset Type -->
+  <div class="form-control">
+    <Label required htmlFor="type" id="type-label">Asset Type</Label>
+    <select
+      id="type"
+      name="type"
+      class="select select-bordered"
+      required={true}
+      class:list={['select', 'select-bordered', errors.type && 'select-error']}
+      aria-describedby={errors.type ? 'type-error' : undefined}
+    >
+      <option value="">Select type...</option>
+      {
+        assetTypes.map((type) => (
+          <option value={type.value} selected={values.type === type.value}>
+            {type.label}
+          </option>
+        ))
+      }
+    </select>
+    {
+      errors.type && (
+        <span id="type-error" class="text-error text-sm mt-1">
+          {errors.type}
+        </span>
+      )
+    }
+  </div>
+
+  <!-- Currency -->
+  <div class="form-control">
+    <Label required htmlFor="currency" id="currency-label">Currency</Label>
+    <select
+      id="currency"
+      name="currency"
+      class="select select-bordered"
+      required={true}
+      class:list={['select', 'select-bordered', errors.currency && 'select-error']}
+      aria-describedby={errors.currency ? 'currency-error' : undefined}
+    >
+      {
+        currencyOptions.map((curr) => (
+          <option value={curr.value} selected={values.currency === curr.value}>
+            {curr.label}
+          </option>
+        ))
+      }
+    </select>
+    {
+      errors.currency && (
+        <span id="currency-error" class="text-error text-sm mt-1">
+          {errors.currency}
+        </span>
+      )
+    }
+  </div>
+
+  <!-- Current Balance -->
+  <div class="form-control">
+    <Label required htmlFor="balance" id="balance-label">Current Balance</Label>
+    <div class="join">
+      <select
+        id="currency-select"
+        class="select select-bordered select-sm join-item"
+        aria-label="Currency"
+      >
+        {
+          currencyOptions.map((curr) => (
+            <option value={curr.value} selected={values.currency === curr.value}>
+              {curr.value}
+            </option>
+          ))
+        }
+      </select>
+      <Input
+        id="balance"
+        name="balance"
+        type="number"
+        value={values.balance || ''}
+        placeholder="Enter current balance"
+        required={true}
+        error={!!errors.balance}
+        errorMessage={errors.balance}
+        step="0.01"
+        min="0"
+        className="join-item flex-1"
+      />
+    </div>
+  </div>
+
+  <!-- Actions -->
+  <div class="card-actions justify-end mt-6 gap-2">
+    <a href={cancelUrl} class="btn btn-ghost">Cancel</a>
+    <Button type="submit" variant="primary" className="gap-2">
+      <Wallet size={16} class="stroke-current" aria-hidden="true" />
+      {submitLabel}
+    </Button>
+  </div>
+</form>
+
+<script>
+  // Asset Form Client-side script
+  // Handles form validation and submission
+
+  interface AssetFormValues {
+    name: string;
+    type: string;
+    balance: string;
+    currency: string;
+  }
+
+  interface CreateAssetResponse {
+    success: boolean;
+    data?: any;
+    error?: {
+      message: string;
+      code?: string;
+      details?: Array<{ message: string; path: string[] }>;
+    };
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const form = document.getElementById('asset-form') as HTMLFormElement;
+    if (!form) return;
+
+    const action = form.getAttribute('data-action') || '';
+    const method = form.getAttribute('data-method') || 'POST';
+    const assetId = form.getAttribute('data-asset-id') || '';
+    const cancelUrl = form.getAttribute('data-cancel-url') || '/assets';
+    const formError = document.getElementById('asset-form-error') as HTMLElement;
+    const submitButton = form.querySelector('button[type="submit"]') as HTMLButtonElement;
+
+    // Currency select sync with balance currency prefix
+    const currencySelect = document.getElementById('currency') as HTMLSelectElement;
+    const balanceCurrencySelect = document.getElementById('currency-select') as HTMLSelectElement;
+
+    // Sync currency selects
+    if (currencySelect && balanceCurrencySelect) {
+      currencySelect.addEventListener('change', () => {
+        balanceCurrencySelect.value = currencySelect.value;
+      });
+
+      balanceCurrencySelect.addEventListener('change', () => {
+        currencySelect.value = balanceCurrencySelect.value;
+      });
+    }
+
+    // Show form error
+    function showFormError(message: string) {
+      if (formError) {
+        formError.textContent = message;
+        formError.classList.remove('hidden');
+        formError.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+
+    // Clear form error
+    function clearFormError() {
+      if (formError) {
+        formError.textContent = '';
+        formError.classList.add('hidden');
+      }
+    }
+
+    // Clear field errors
+    function clearFieldErrors() {
+      form.querySelectorAll('.text-error').forEach((el) => {
+        if (el.id !== 'asset-form-error') {
+          el.remove();
+        }
+      });
+      form.querySelectorAll('.select-error, .input-error').forEach((el) => {
+        el.classList.remove('select-error', 'input-error');
+      });
+    }
+
+    // Show field error
+    function showFieldError(field: string, message: string) {
+      const input = form.querySelector(`[name="${field}"]`) as HTMLElement;
+      if (input) {
+        input.classList.add(input.tagName === 'SELECT' ? 'select-error' : 'input-error');
+
+        // Check if error span already exists
+        let errorSpan = input.parentElement?.querySelector(`[id="${field}-error"]`) as HTMLElement;
+        if (!errorSpan) {
+          errorSpan = document.createElement('span');
+          errorSpan.id = `${field}-error`;
+          errorSpan.className = 'text-error text-sm mt-1';
+          input.parentElement?.appendChild(errorSpan);
+        }
+        errorSpan.textContent = message;
+        errorSpan.setAttribute('role', 'alert');
+      }
+    }
+
+    // Show loading state
+    function setLoading(isLoading: boolean) {
+      if (submitButton) {
+        submitButton.disabled = isLoading;
+        if (isLoading) {
+          submitButton.innerHTML =
+            '<span class="loading loading-spinner loading-sm"></span> Saving...';
+        } else {
+          submitButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2"><circle cx="12" cy="12" r="10"/><path stroke-linecap="round" stroke-linejoin="round" d="m9 12 2 2 4-4"/></svg> ${assetId ? 'Update Asset' : 'Save Asset'}`;
+        }
+      }
+    }
+
+    // Validate form
+    function validateForm(values: AssetFormValues): string[] {
+      const errors: string[] = [];
+
+      if (!values.name || values.name.trim().length === 0) {
+        errors.push('Asset name is required');
+      } else if (values.name.length > 255) {
+        errors.push('Asset name must be less than 255 characters');
+      }
+
+      if (!values.type) {
+        errors.push('Asset type is required');
+      }
+
+      if (!values.currency) {
+        errors.push('Currency is required');
+      }
+
+      if (!values.balance) {
+        errors.push('Balance is required');
+      } else {
+        const balance = parseFloat(values.balance);
+        if (isNaN(balance) || balance < 0) {
+          errors.push('Balance must be a valid positive number');
+        }
+      }
+
+      return errors;
+    }
+
+    // Show toast notification
+    function showToast(message: string, type: 'success' | 'error' = 'success') {
+      const toast = document.createElement('div');
+      toast.className = `alert alert-${type} shadow-lg fixed top-4 right-4 z-50 max-w-sm`;
+      toast.setAttribute('role', 'alert');
+
+      const iconSvg =
+        type === 'success'
+          ? '<svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="2"><circle cx="12" cy="12" r="10"/><path stroke-linecap="round" stroke-linejoin="round" d="m9 12 2 2 4-4"/></svg>'
+          : '<svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="2"><circle cx="12" cy="12" r="10"/><path stroke-linecap="round" stroke-linejoin="round" d="m15 9-6 6"/><path stroke-linecap="round" stroke-linejoin="round" d="m9 9 6 6"/></svg>';
+
+      toast.innerHTML = `${iconSvg}<span>${message}</span>`;
+      document.body.appendChild(toast);
+
+      setTimeout(() => {
+        toast.remove();
+      }, 3000);
+    }
+
+    // Form submission
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      clearFormError();
+      clearFieldErrors();
+
+      const formData = new FormData(form);
+      const values: AssetFormValues = {
+        name: formData.get('name') as string,
+        type: formData.get('type') as string,
+        balance: formData.get('balance') as string,
+        currency: formData.get('currency') as string,
+      };
+
+      // Client-side validation
+      const validationErrors = validateForm(values);
+      if (validationErrors.length > 0) {
+        showFormError(validationErrors.join('. '));
+        return;
+      }
+
+      setLoading(true);
+
+      try {
+        const url = assetId ? `/api/assets/${assetId}` : action;
+        const response = await fetch(url, {
+          method: assetId ? 'PUT' : method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(values),
+        });
+
+        const result = (await response.json()) as CreateAssetResponse;
+
+        if (!response.ok || !result.success) {
+          // Handle field-specific errors
+          if (result.error?.details) {
+            result.error.details.forEach((detail) => {
+              const field = detail.path[detail.path.length - 1];
+              showFieldError(field, detail.message);
+            });
+          } else {
+            showFormError(result.error?.message || 'Failed to save asset');
+          }
+        } else {
+          showToast(
+            assetId ? 'Asset updated successfully' : 'Asset created successfully',
+            'success'
+          );
+
+          // Redirect to assets list after brief delay
+          setTimeout(() => {
+            window.location.href = cancelUrl;
+          }, 500);
+        }
+      } catch (err) {
+        showFormError('Network error. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    });
+  });
+</script>

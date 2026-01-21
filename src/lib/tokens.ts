@@ -188,3 +188,18 @@ export function formatCompactNumber(value: number): string {
   });
   return formatter.format(value);
 }
+
+/**
+ * Format asset type for display
+ */
+export function formatAssetType(type: string): string {
+  const labels: Record<string, string> = {
+    bank_account: 'Bank Account',
+    mutual_fund: 'Mutual Fund',
+    bond: 'Bond',
+    crypto: 'Cryptocurrency',
+    stock: 'Stock',
+    other: 'Other',
+  };
+  return labels[type] || type;
+}
