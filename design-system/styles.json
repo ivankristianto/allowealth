@@ -1,0 +1,769 @@
+{
+  "design": {
+    "name": "Oasis Finance - Modern Family Finance Dashboard",
+    "version": "1.0.0",
+    "description": "Premium design system for family finance application with light/dark mode support"
+  },
+  "colors": {
+    "light": {
+      "primary": "#0f172a",
+      "accent": "#6366f1",
+      "background": "#f8fafc",
+      "cardBg": "#ffffff",
+      "border": "#e2e8f0",
+      "textMain": "#1e293b",
+      "textMuted": "#64748b",
+      "slate": {
+        "50": "#f8fafc",
+        "100": "#f1f5f9",
+        "200": "#e2e8f0",
+        "300": "#cbd5e1",
+        "400": "#94a3b8",
+        "500": "#64748b",
+        "600": "#475569",
+        "700": "#334155",
+        "800": "#1e293b",
+        "900": "#0f172a"
+      },
+      "emerald": {
+        "50": "#ecfdf5",
+        "100": "#d1fae5",
+        "500": "#10b981",
+        "600": "#059669"
+      },
+      "rose": {
+        "50": "#fff1f2",
+        "100": "#ffe4e6",
+        "500": "#f43f5e",
+        "600": "#e11d48"
+      },
+      "indigo": {
+        "50": "#eef2ff",
+        "100": "#e0e7ff",
+        "400": "#818cf8",
+        "500": "#6366f1",
+        "600": "#4f46e5",
+        "700": "#4338ca"
+      },
+      "orange": {
+        "50": "#fff7ed",
+        "600": "#ea580c"
+      },
+      "blue": {
+        "50": "#eff6ff",
+        "600": "#2563eb"
+      },
+      "amber": {
+        "500": "#f59e0b"
+      }
+    },
+    "dark": {
+      "primary": "#f8fafc",
+      "accent": "#818cf8",
+      "background": "#020617",
+      "cardBg": "#0f172a",
+      "border": "#1e293b",
+      "textMain": "#f1f5f9",
+      "textMuted": "#94a3b8",
+      "slate": {
+        "50": "#f8fafc",
+        "100": "#f1f5f9",
+        "200": "#e2e8f0",
+        "300": "#cbd5e1",
+        "400": "#94a3b8",
+        "500": "#64748b",
+        "700": "#334155",
+        "800": "#1e293b",
+        "900": "#0f172a"
+      },
+      "emerald": {
+        "400": "#34d399",
+        "900": "#064e3b"
+      },
+      "rose": {
+        "500": "#f43f5e"
+      },
+      "indigo": {
+        "400": "#818cf8",
+        "500": "#6366f1",
+        "900": "#312e81"
+      }
+    },
+    "semantic": {
+      "success": "#10b981",
+      "error": "#f43f5e",
+      "warning": "#f59e0b",
+      "info": "#6366f1"
+    }
+  },
+  "typography": {
+    "fontFamily": {
+      "primary": "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+      "fallback": "sans-serif"
+    },
+    "fontWeights": {
+      "light": 300,
+      "regular": 400,
+      "medium": 500,
+      "semibold": 600,
+      "bold": 700
+    },
+    "fontSizes": {
+      "xs": "0.625rem",
+      "sm": "0.75rem",
+      "base": "0.8125rem",
+      "md": "0.875rem",
+      "lg": "1rem",
+      "xl": "1.25rem",
+      "2xl": "1.5rem",
+      "3xl": "1.875rem"
+    },
+    "lineHeights": {
+      "none": "1",
+      "tight": "1.25",
+      "normal": "1.5",
+      "relaxed": "1.625"
+    },
+    "letterSpacing": {
+      "tighter": "-0.05em",
+      "tight": "-0.025em",
+      "normal": "0",
+      "wide": "0.025em",
+      "wider": "0.05em",
+      "widest": "0.1em"
+    }
+  },
+  "spacing": {
+    "0": "0",
+    "0.5": "0.125rem",
+    "1": "0.25rem",
+    "1.5": "0.375rem",
+    "2": "0.5rem",
+    "2.5": "0.625rem",
+    "3": "0.75rem",
+    "3.5": "0.875rem",
+    "4": "1rem",
+    "5": "1.25rem",
+    "6": "1.5rem",
+    "7": "1.75rem",
+    "8": "2rem",
+    "9": "2.25rem",
+    "10": "2.5rem",
+    "12": "3rem",
+    "24": "6rem"
+  },
+  "borderRadius": {
+    "sm": "0.25rem",
+    "md": "0.5rem",
+    "lg": "0.75rem",
+    "xl": "1rem",
+    "2xl": "1.25rem",
+    "full": "9999px",
+    "premium": "0.75rem",
+    "premiumLg": "1.25rem"
+  },
+  "shadows": {
+    "sm": "0 1px 2px 0 rgba(0, 0, 0, 0.05)",
+    "premium": "0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px 0 rgba(0, 0, 0, 0.03)",
+    "md": "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+    "lg": "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
+    "xl": "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+    "2xl": "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
+    "accentGlow": "0 10px 15px -3px rgba(99, 102, 241, 0.2)",
+    "accentGlowLg": "0 25px 50px -12px rgba(99, 102, 241, 0.3)"
+  },
+  "effects": {
+    "blur": {
+      "sm": "4px",
+      "md": "8px",
+      "lg": "12px",
+      "xl": "16px",
+      "2xl": "24px",
+      "3xl": "48px"
+    },
+    "backdropBlur": {
+      "glass": "12px"
+    },
+    "transitions": {
+      "fast": "150ms",
+      "base": "300ms",
+      "slow": "500ms",
+      "slower": "1000ms"
+    },
+    "opacity": {
+      "glass": {
+        "light": "0.8",
+        "dark": "0.8"
+      },
+      "overlay": "0.1",
+      "disabled": "0.5"
+    }
+  },
+  "components": {
+    "button": {
+      "sizes": {
+        "sm": {
+          "padding": "0.375rem 0.75rem",
+          "fontSize": "0.75rem",
+          "height": "2rem"
+        },
+        "md": {
+          "padding": "0.625rem 1.25rem",
+          "fontSize": "0.875rem",
+          "height": "2.5rem"
+        },
+        "lg": {
+          "padding": "0.75rem 1.5rem",
+          "fontSize": "0.875rem",
+          "height": "3rem"
+        }
+      },
+      "variants": {
+        "primary": {
+          "background": "#6366f1",
+          "color": "#ffffff",
+          "shadow": "0 10px 15px -3px rgba(99, 102, 241, 0.2)"
+        },
+        "secondary": {
+          "background": "#0f172a",
+          "color": "#ffffff"
+        },
+        "ghost": {
+          "background": "transparent",
+          "border": "1px solid #e2e8f0"
+        }
+      }
+    },
+    "card": {
+      "padding": "1.75rem",
+      "borderRadius": "1.25rem",
+      "border": "1px solid",
+      "borderColor": {
+        "light": "#e2e8f0",
+        "dark": "#1e293b"
+      },
+      "background": {
+        "light": "#ffffff",
+        "dark": "#0f172a"
+      },
+      "shadow": "0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px 0 rgba(0, 0, 0, 0.03)"
+    },
+    "input": {
+      "height": "2.5rem",
+      "padding": "0.5rem 2.5rem 0.5rem 0.75rem",
+      "fontSize": "0.75rem",
+      "borderRadius": "0.75rem",
+      "background": {
+        "light": "#f1f5f9",
+        "dark": "#1e293b"
+      },
+      "focusRing": "2px solid rgba(99, 102, 241, 0.2)"
+    },
+    "badge": {
+      "padding": "0.25rem 0.625rem",
+      "fontSize": "0.625rem",
+      "borderRadius": "9999px",
+      "fontWeight": 700
+    },
+    "sidebar": {
+      "width": "16rem",
+      "background": {
+        "light": "#ffffff",
+        "dark": "#0f172a"
+      },
+      "border": {
+        "light": "#e2e8f0",
+        "dark": "#1e293b"
+      },
+      "navItem": {
+        "padding": "0.625rem 1rem",
+        "gap": "0.75rem",
+        "iconSize": "22px"
+      },
+      "activeGradient": "linear-gradient(90deg, rgba(99, 102, 241, 0.1) 0%, rgba(99, 102, 241, 0) 100%)",
+      "activeBorder": "2px solid #6366f1"
+    },
+    "table": {
+      "headerBackground": {
+        "light": "rgba(248, 250, 252, 0.5)",
+        "dark": "rgba(30, 41, 59, 0.5)"
+      },
+      "rowHover": {
+        "light": "#f8fafc",
+        "dark": "rgba(30, 41, 59, 0.4)"
+      },
+      "cellPadding": "1rem 1.5rem",
+      "iconSize": "22px"
+    }
+  },
+  "layout": {
+    "container": {
+      "maxWidth": "1400px",
+      "padding": {
+        "mobile": "1.5rem",
+        "desktop": "3rem"
+      }
+    },
+    "header": {
+      "height": "5rem",
+      "padding": "1.25rem"
+    },
+    "bottomNav": {
+      "height": "4rem",
+      "padding": "0.75rem 1rem"
+    },
+    "breakpoints": {
+      "sm": "640px",
+      "md": "768px",
+      "lg": "1024px",
+      "xl": "1280px",
+      "2xl": "1536px"
+    }
+  },
+  "icons": {
+    "library": "lucide",
+    "package": "lucide-astro",
+    "usage": "import { IconName } from 'lucide-astro'; <IconName size={size} />",
+    "sizes": {
+      "xs": 16,
+      "sm": 20,
+      "md": 22,
+      "lg": 24,
+      "xl": 32
+    },
+    "strokeWidth": {
+      "thin": 1.5,
+      "regular": 2,
+      "bold": 2.5
+    },
+    "categories": {
+      "groceries": "ShoppingBasket",
+      "utilities": "Zap",
+      "media": "Film",
+      "income": "Wallet",
+      "wallet": "Wallet",
+      "shopping": "ShoppingCart",
+      "dashboard": "LayoutDashboard",
+      "transactions": "Receipt",
+      "budgets": "PieChart",
+      "assets": "GitBranch",
+      "analytics": "BarChart3",
+      "settings": "Settings",
+      "notifications": "Bell",
+      "search": "Search",
+      "add": "Plus",
+      "trendingUp": "TrendingUp",
+      "arrowDown": "ArrowDown",
+      "arrowUp": "ArrowUp",
+      "tips": "Lightbulb",
+      "chevronRight": "ChevronRight",
+      "unfoldMore": "ChevronsUpDown",
+      "contrast": "Sun",
+      "moon": "Moon",
+      "menu": "Menu",
+      "close": "X",
+      "check": "Check",
+      "info": "Info",
+      "alertCircle": "AlertCircle",
+      "alertTriangle": "AlertTriangle",
+      "chevronDown": "ChevronDown",
+      "chevronLeft": "ChevronLeft",
+      "externalLink": "ExternalLink",
+      "download": "Download",
+      "upload": "Upload",
+      "edit": "Pencil",
+      "trash": "Trash2",
+      "moreVertical": "MoreVertical",
+      "moreHorizontal": "MoreHorizontal",
+      "filter": "Filter",
+      "calendar": "Calendar",
+      "clock": "Clock",
+      "user": "User",
+      "users": "Users",
+      "creditCard": "CreditCard",
+      "dollarSign": "DollarSign",
+      "home": "Home",
+      "folder": "Folder",
+      "file": "FileText",
+      "image": "Image",
+      "eye": "Eye",
+      "eyeOff": "EyeOff",
+      "lock": "Lock",
+      "unlock": "Unlock",
+      "mail": "Mail",
+      "phone": "Phone",
+      "mapPin": "MapPin",
+      "globe": "Globe",
+      "share": "Share2",
+      "copy": "Copy",
+      "link": "Link",
+      "refresh": "RefreshCw",
+      "logout": "LogOut"
+    }
+  },
+  "daisyui": {
+    "version": "5.5.x",
+    "docs": "https://daisyui.com",
+    "config": {
+      "themes": ["light", "dark"],
+      "defaultTheme": "light",
+      "darkTheme": "dark",
+      "location": "src/styles/globals.css"
+    },
+    "usage": {
+      "semanticColors": "Use DaisyUI semantic colors (primary, secondary, accent, neutral, base-100/200/300, success, warning, error, info) instead of Tailwind color names for theme compatibility",
+      "components": "Use DaisyUI component classes (btn, card, input, etc.) with utility classes for customization",
+      "theming": "Colors automatically change based on active theme - no need for dark: variants"
+    },
+    "colors": {
+      "semantic": {
+        "primary": "Primary brand color - main color of your brand",
+        "primaryContent": "Foreground content color to use on primary color",
+        "secondary": "Secondary brand color - optional secondary color",
+        "secondaryContent": "Foreground content color to use on secondary color",
+        "accent": "Accent brand color - optional accent color",
+        "accentContent": "Foreground content color to use on accent color",
+        "neutral": "Neutral dark color - for non-saturated parts of UI",
+        "neutralContent": "Foreground content color to use on neutral color",
+        "base100": "Base surface color of page - used for blank backgrounds",
+        "base200": "Base color, darker shade - to create elevations",
+        "base300": "Base color, even darker shade - to create elevations",
+        "baseContent": "Foreground content color to use on base color",
+        "info": "Info color - for informative/helpful messages",
+        "infoContent": "Foreground content color to use on info color",
+        "success": "Success color - for success/safe messages",
+        "successContent": "Foreground content color to use on success color",
+        "warning": "Warning color - for warning/caution messages",
+        "warningContent": "Foreground content color to use on warning color",
+        "error": "Error color - for error/danger/destructive messages",
+        "errorContent": "Foreground content color to use on error color"
+      },
+      "usage": {
+        "background": "bg-primary, bg-base-100, bg-neutral",
+        "text": "text-primary, text-base-content, text-error",
+        "border": "border-primary, border-base-300"
+      },
+      "rules": [
+        "Use DaisyUI semantic colors for theme compatibility",
+        "Avoid Tailwind color names (red-500, gray-800) which don't change with themes",
+        "Use *-content colors for good contrast against their base colors",
+        "No need for dark: variants when using DaisyUI colors"
+      ]
+    },
+    "themes": {
+      "light": {
+        "description": "Default light theme - clean and modern",
+        "usage": "Active by default"
+      },
+      "dark": {
+        "description": "Default dark theme - comfortable for low-light environments",
+        "usage": "Active when prefers-color-scheme: dark"
+      }
+    },
+    "customTheme": {
+      "description": "Create custom themes using @plugin 'daisyui/theme'",
+      "location": "Define in src/styles/globals.css",
+      "structure": {
+        "colorVariables": [
+          "--color-base-100",
+          "--color-base-200",
+          "--color-base-300",
+          "--color-base-content",
+          "--color-primary",
+          "--color-primary-content",
+          "--color-secondary",
+          "--color-secondary-content",
+          "--color-accent",
+          "--color-accent-content",
+          "--color-neutral",
+          "--color-neutral-content",
+          "--color-info",
+          "--color-info-content",
+          "--color-success",
+          "--color-success-content",
+          "--color-warning",
+          "--color-warning-content",
+          "--color-error",
+          "--color-error-content"
+        ],
+        "designVariables": {
+          "radiusSelector": "Border radius of selectors (checkbox, toggle, badge) - 0rem, 0.25rem, 0.5rem, 1rem, 2rem",
+          "radiusField": "Border radius of fields (button, input, select, tab) - 0rem, 0.25rem, 0.5rem, 1rem, 2rem",
+          "radiusBox": "Border radius of boxes (card, modal, alert) - 0rem, 0.25rem, 0.5rem, 1rem, 2rem",
+          "sizeSelector": "Base size of selectors (checkbox, toggle, badge) - 0.25rem default",
+          "sizeField": "Base size of fields (button, input, select, tab) - 0.25rem default",
+          "border": "Border size - 1px default",
+          "depth": "Adds shadow and 3D depth effect - 0 or 1",
+          "noise": "Adds subtle grain effect - 0 or 1"
+        },
+        "example": "@plugin 'daisyui/theme' { name: 'mytheme'; default: true; --color-primary: oklch(55% 0.3 240); --radius-box: 1rem; --depth: 1; }"
+      }
+    },
+    "components": {
+      "naming": {
+        "component": "Required component class (btn, card, input)",
+        "part": "Child part of component (card-body, modal-box)",
+        "style": "Specific style variant (btn-outline, alert-soft)",
+        "behavior": "Changes behavior (btn-active, modal-open)",
+        "color": "Semantic color (btn-primary, badge-error)",
+        "size": "Size variant (btn-sm, input-lg)",
+        "placement": "Position (dropdown-end, indicator-top)",
+        "direction": "Orientation (menu-horizontal, timeline-vertical)",
+        "modifier": "Additional modifications (btn-wide, card-side)"
+      },
+      "usage": {
+        "basic": "class='btn btn-primary btn-lg'",
+        "customize": "Use Tailwind utilities: class='btn px-10 shadow-xl'",
+        "override": "Use ! for specificity: class='btn bg-red-500!'"
+      },
+      "sizes": {
+        "xs": "Extra small size variant",
+        "sm": "Small size variant",
+        "md": "Medium size variant (often default)",
+        "lg": "Large size variant",
+        "xl": "Extra large size variant"
+      },
+      "colors": {
+        "neutral": "Neutral color from theme",
+        "primary": "Primary brand color",
+        "secondary": "Secondary brand color",
+        "accent": "Accent brand color",
+        "info": "Informational state",
+        "success": "Success state",
+        "warning": "Warning state",
+        "error": "Error/danger state"
+      }
+    }
+  },
+  "resources": {
+    "fonts": {
+      "inter": {
+        "url": "https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap",
+        "weights": [300, 400, 500, 600, 700]
+      }
+    },
+    "cdn": {
+      "tailwind": "https://cdn.tailwindcss.com?plugins=forms,container-queries"
+    },
+    "packages": {
+      "icons": {
+        "name": "lucide-astro",
+        "version": "latest",
+        "install": "bun add lucide-astro"
+      },
+      "animation": {
+        "name": "motion",
+        "version": "latest",
+        "install": "bun add motion"
+      },
+      "styling": {
+        "name": "daisyui",
+        "version": "5.5.x",
+        "install": "bun add -D daisyui@latest"
+      }
+    }
+  },
+  "animation": {
+    "package": {
+      "name": "motion",
+      "install": "bun add motion",
+      "usage": "import { animate, spring, stagger } from 'motion'"
+    },
+    "duration": {
+      "instant": 0,
+      "fast": 0.15,
+      "normal": 0.3,
+      "slow": 0.5,
+      "slower": 1
+    },
+    "easing": {
+      "default": [0.4, 0, 0.2, 1],
+      "in": [0.4, 0, 1, 1],
+      "out": [0, 0, 0.2, 1],
+      "inOut": [0.4, 0, 0.2, 1],
+      "bounce": [0.68, -0.55, 0.265, 1.55],
+      "elastic": [0.68, -0.6, 0.32, 1.6]
+    },
+    "spring": {
+      "smooth": {
+        "stiffness": 100,
+        "damping": 15,
+        "mass": 1
+      },
+      "bouncy": {
+        "stiffness": 300,
+        "damping": 10,
+        "mass": 1
+      },
+      "gentle": {
+        "stiffness": 50,
+        "damping": 20,
+        "mass": 1
+      },
+      "snappy": {
+        "stiffness": 400,
+        "damping": 30,
+        "mass": 1
+      }
+    },
+    "presets": {
+      "fadeIn": {
+        "initial": { "opacity": 0 },
+        "animate": { "opacity": 1 },
+        "duration": 0.3
+      },
+      "fadeOut": {
+        "initial": { "opacity": 1 },
+        "animate": { "opacity": 0 },
+        "duration": 0.3
+      },
+      "slideInFromBottom": {
+        "initial": { "opacity": 0, "y": 20 },
+        "animate": { "opacity": 1, "y": 0 },
+        "duration": 0.3
+      },
+      "slideInFromTop": {
+        "initial": { "opacity": 0, "y": -20 },
+        "animate": { "opacity": 1, "y": 0 },
+        "duration": 0.3
+      },
+      "slideInFromLeft": {
+        "initial": { "opacity": 0, "x": -20 },
+        "animate": { "opacity": 1, "x": 0 },
+        "duration": 0.3
+      },
+      "slideInFromRight": {
+        "initial": { "opacity": 0, "x": 20 },
+        "animate": { "opacity": 1, "x": 0 },
+        "duration": 0.3
+      },
+      "scaleIn": {
+        "initial": { "opacity": 0, "scale": 0.9 },
+        "animate": { "opacity": 1, "scale": 1 },
+        "duration": 0.3
+      },
+      "scaleOut": {
+        "initial": { "opacity": 1, "scale": 1 },
+        "animate": { "opacity": 0, "scale": 0.9 },
+        "duration": 0.3
+      },
+      "popIn": {
+        "initial": { "opacity": 0, "scale": 0.8 },
+        "animate": { "opacity": 1, "scale": 1 },
+        "spring": "bouncy"
+      },
+      "buttonPress": {
+        "whileTap": { "scale": 0.98 },
+        "duration": 0.15
+      },
+      "buttonHover": {
+        "whileHover": { "scale": 1.05 },
+        "duration": 0.15
+      }
+    },
+    "stagger": {
+      "fast": 0.05,
+      "normal": 0.1,
+      "slow": 0.15
+    },
+    "gestures": {
+      "tap": {
+        "scale": 0.98,
+        "duration": 0.15
+      },
+      "hover": {
+        "scale": 1.05,
+        "duration": 0.15
+      },
+      "drag": {
+        "dragConstraints": { "top": 0, "left": 0, "right": 0, "bottom": 0 },
+        "dragElastic": 0.2
+      }
+    },
+    "scroll": {
+      "fadeInView": {
+        "initial": { "opacity": 0, "y": 20 },
+        "inView": { "opacity": 1, "y": 0 },
+        "duration": 0.5
+      },
+      "scaleInView": {
+        "initial": { "opacity": 0, "scale": 0.8 },
+        "inView": { "opacity": 1, "scale": 1 },
+        "duration": 0.5
+      }
+    },
+    "page": {
+      "transition": {
+        "initial": { "opacity": 0, "x": 20 },
+        "animate": { "opacity": 1, "x": 0 },
+        "exit": { "opacity": 0, "x": -20 },
+        "duration": 0.3
+      }
+    },
+    "components": {
+      "modal": {
+        "backdrop": {
+          "initial": { "opacity": 0 },
+          "animate": { "opacity": 1 },
+          "exit": { "opacity": 0 },
+          "duration": 0.2
+        },
+        "content": {
+          "initial": { "opacity": 0, "scale": 0.95, "y": 20 },
+          "animate": { "opacity": 1, "scale": 1, "y": 0 },
+          "exit": { "opacity": 0, "scale": 0.95, "y": 20 },
+          "duration": 0.3
+        }
+      },
+      "toast": {
+        "initial": { "opacity": 0, "y": -10, "scale": 0.95 },
+        "animate": { "opacity": 1, "y": 0, "scale": 1 },
+        "exit": { "opacity": 0, "scale": 0.95 },
+        "duration": 0.2
+      },
+      "dropdown": {
+        "initial": { "opacity": 0, "y": -8 },
+        "animate": { "opacity": 1, "y": 0 },
+        "exit": { "opacity": 0, "y": -8 },
+        "duration": 0.15
+      },
+      "card": {
+        "hover": {
+          "y": -4,
+          "boxShadow": "0 20px 25px -5px rgba(0, 0, 0, 0.1)",
+          "duration": 0.2
+        }
+      },
+      "listItem": {
+        "initial": { "opacity": 0, "x": -10 },
+        "animate": { "opacity": 1, "x": 0 }
+      }
+    }
+  },
+  "patterns": {
+    "glass": {
+      "backdropFilter": "blur(12px)",
+      "background": {
+        "light": "rgba(255, 255, 255, 0.8)",
+        "dark": "rgba(15, 23, 42, 0.8)"
+      }
+    },
+    "gradient": {
+      "sidebarActive": "linear-gradient(90deg, rgba(99, 102, 241, 0.1) 0%, rgba(99, 102, 241, 0) 100%)",
+      "accentGlow": "radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%)"
+    }
+  },
+  "accessibility": {
+    "focusRing": {
+      "width": "2px",
+      "color": "rgba(99, 102, 241, 0.2)",
+      "offset": "2px"
+    },
+    "minTouchTarget": "44px",
+    "contrastRatios": {
+      "normalText": "4.5:1",
+      "largeText": "3:1",
+      "uiComponents": "3:1"
+    }
+  }
+}
