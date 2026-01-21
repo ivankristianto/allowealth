@@ -39,6 +39,19 @@ export {
   isPasswordValid as isPasswordValidClient,
 } from './client-password';
 
+// Client-side form validation (shared validation for registration and other forms)
+export {
+  validateName,
+  validateEmail,
+  validatePasswordRequirements,
+  validatePassword,
+  validatePasswordMatch,
+  validateRegistrationForm,
+  renderValidationErrors,
+  escapeHtml as escapeHtmlClient,
+  type ValidationResult,
+} from '../client-validation';
+
 // Shared enums (export once from central location)
 export {
   currencyEnum,

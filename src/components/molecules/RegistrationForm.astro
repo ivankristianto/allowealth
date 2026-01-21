@@ -56,7 +56,6 @@ import PasswordField from '../atoms/PasswordField.astro';
 import Button from '../atoms/Button.astro';
 import Label from '../atoms/Label.astro';
 import { Eye, EyeOff } from '@lucide/astro';
-import { PASSWORD_MIN_LENGTH, PASSWORD_REGEX_SOURCES } from '@/lib/validation';
 
 interface Props {
   action?: string;
@@ -168,24 +167,16 @@ const cspNonce = Astro.locals.cspNonce || '';
   }
 </style>
 
+<script src="/scripts/registration-validation.js" nonce={cspNonce} is:inline></script>
+
 <script
   define:vars={{
     loginLink,
-    PASSWORD_MIN_LENGTH,
-    hasLetterRegex: PASSWORD_REGEX_SOURCES.hasLetter,
-    hasNumberOrSpecialRegex: PASSWORD_REGEX_SOURCES.hasNumberOrSpecial,
     initialServerError,
   }}
   nonce={cspNonce}
   is:inline
 >
-  // HTML escaping utility to prevent XSS
-  const escapeHtml = (text) => {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-  };
-
   const form = document.querySelector('[data-registration-form]');
   const messagesContainer = document.getElementById('form-messages');
   const submitButton = form?.querySelector('[data-submit-button]');
@@ -202,7 +193,7 @@ const cspNonce = Astro.locals.cspNonce || '';
             <path d="m15 9-6 6"></path>
             <path d="m9 9 6 6"></path>
           </svg>
-          <span>${escapeHtml(initialServerError)}</span>
+          <span>${window.RegistrationValidation.escapeHtml(initialServerError)}</span>
         </div>
       `;
     }
@@ -245,67 +236,19 @@ const cspNonce = Astro.locals.cspNonce || '';
       const formData = new FormData(form);
       const data = Object.fromEntries(formData.entries());
 
-      // Client-side validation
-      const errors = [];
-
-      // Validate name
-      if (!data.name || data.name.trim().length < 2) {
-        errors.push('Name must be at least 2 characters');
-      }
-
-      // Validate email format using HTML5 validation
+      // Use shared validation from RegistrationValidation module
       const emailInput = document.getElementById('email');
-      if (!data.email || !emailInput.checkValidity()) {
-        errors.push('Please enter a valid email address');
-      }
-
-      // Validate password requirements (matching server-side validation)
-      // Requirements: 12+ chars, at least one letter, at least one number OR special char
-      const password = data.password;
-      const passwordErrors = [];
-
-      if (password.length < PASSWORD_MIN_LENGTH) {
-        passwordErrors.push(`at least ${PASSWORD_MIN_LENGTH} characters`);
-      }
-
-      const hasLetterPattern = new RegExp(hasLetterRegex);
-      const hasNumberOrSpecialPattern = new RegExp(hasNumberOrSpecialRegex);
-
-      if (!hasLetterPattern.test(password)) {
-        passwordErrors.push('at least one letter');
-      }
-
-      if (!hasNumberOrSpecialPattern.test(password)) {
-        passwordErrors.push('at least one number or special character');
-      }
-
-      if (passwordErrors.length > 0) {
-        errors.push(`Password must include ${passwordErrors.join(', ')}`);
-      }
-
-      // Validate password match
-      if (password !== data['confirm-password']) {
-        errors.push('Passwords do not match');
-      }
+      const validationResult = window.RegistrationValidation.validateRegistrationForm(
+        data,
+        emailInput
+      );
 
       // Display validation errors
-      if (errors.length > 0) {
+      if (!validationResult.isValid) {
         if (messagesContainer) {
-          messagesContainer.innerHTML = `
-						<div role="alert" class="alert alert-error">
-							<svg xmlns="http://www.w3.org/2000/svg" class="shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24" aria-hidden="true">
-								<circle cx="12" cy="12" r="10"></circle>
-								<path d="m15 9-6 6"></path>
-								<path d="m9 9 6 6"></path>
-							</svg>
-							<div>
-								<h3 class="font-bold">Please fix the following errors:</h3>
-								<ul class="text-xs mt-1 list-disc list-inside">
-									${errors.map((err) => `<li>${escapeHtml(err)}</li>`).join('')}
-								</ul>
-							</div>
-						</div>
-					`;
+          messagesContainer.innerHTML = window.RegistrationValidation.renderValidationErrors(
+            validationResult.errors
+          );
         }
         return;
       }
