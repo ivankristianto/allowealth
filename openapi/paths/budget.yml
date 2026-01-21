@@ -1,0 +1,244 @@
+# Budget endpoint paths
+paths:
+  /api/budget/overview:
+    get:
+      tags: [Budget]
+      summary: Get budget overview
+      description: Retrieve budget overview for a specific month
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: year
+          in: query
+          description: Year (defaults to current year)
+          schema:
+            type: integer
+            minimum: 2000
+            maximum: 2100
+        - name: month
+          in: query
+          description: Month (1-12, defaults to current month)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 12
+        - name: currency
+          in: query
+          description: Currency (defaults to IDR)
+          schema:
+            type: string
+            enum: [IDR, USD]
+            default: IDR
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/BudgetOverviewResponse.yml#/BudgetOverviewResponse'
+        '400':
+          $ref: '../responses/common.yml#/BadRequest'
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'
+
+  /api/budget/alerts:
+    get:
+      tags: [Budget]
+      summary: Get budget alerts
+      description: Retrieve budget alerts for the current month
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: currency
+          in: query
+          description: Currency (defaults to IDR)
+          schema:
+            type: string
+            enum: [IDR, USD]
+            default: IDR
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/BudgetAlertsResponse.yml#/BudgetAlertsResponse'
+        '400':
+          $ref: '../responses/common.yml#/BadRequest'
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'
+
+  /api/budget/history:
+    get:
+      tags: [Budget]
+      summary: Get budget history
+      description: Retrieve budget history for multiple months with category breakdowns
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: currency
+          in: query
+          description: Currency (defaults to IDR)
+          schema:
+            type: string
+            enum: [IDR, USD]
+            default: IDR
+        - name: months
+          in: query
+          description: Number of months to retrieve (1-24, default 12)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 24
+            default: 12
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/BudgetHistoryResponse.yml#/BudgetHistoryResponse'
+        '400':
+          $ref: '../responses/common.yml#/BadRequest'
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'
+
+  /api/budget/category/{id}/remaining:
+    get:
+      tags: [Budget]
+      summary: Get category remaining budget
+      description: Retrieve remaining budget for a specific category in current month
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: '../parameters/common.yml#/IdParameter'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/CategoryRemainingResponse.yml#/CategoryRemainingResponse'
+        '400':
+          $ref: '../responses/common.yml#/BadRequest'
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '404':
+          description: Category not found
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'
+
+  /api/budget/category/{id}:
+    patch:
+      tags: [Budget]
+      summary: Update category budget allocation
+      description: |
+        Update budget allocation for a specific category by providing the budget amount.
+        The percentage is automatically calculated from the budget amount relative to the total budget.
+        Category must belong to the authenticated user.
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: '../parameters/common.yml#/IdParameter'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/UpdateBudgetCategoryRequest.yml#/UpdateBudgetCategoryRequest'
+      responses:
+        '200':
+          description: Category budget updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/BudgetCategoryResponse.yml#/BudgetCategoryResponse'
+        '400':
+          description: Validation error or invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '403':
+          description: User does not own this category
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+        '404':
+          description: Category not found
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'
+
+  /api/budget/export:
+    get:
+      tags: [Budget]
+      summary: Export budget overview to CSV
+      description: Export budget overview for a specific month to CSV file with category breakdowns.
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: year
+          in: query
+          description: Year (defaults to current year)
+          schema:
+            type: integer
+            minimum: 2000
+            maximum: 2100
+        - name: month
+          in: query
+          description: Month (1-12, defaults to current month)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 12
+        - name: currency
+          in: query
+          description: Currency (defaults to IDR)
+          schema:
+            type: string
+            enum: [IDR, USD]
+            default: IDR
+      responses:
+        '200':
+          description: CSV file generated successfully
+          headers:
+            Content-Type:
+              description: CSV file content type
+              schema:
+                type: string
+                example: text/csv; charset=utf-8
+            Content-Disposition:
+              description: File download attachment with filename
+              schema:
+                type: string
+                example: 'attachment; filename="budget_2024_Jan.csv"'
+          content:
+            text/csv:
+              schema:
+                type: string
+                example: |
+                  category_name,budget_amount,expense_amount,balance,percentage,status
+                  Food,5000000.00,3500000.00,1500000.00,70.0,ok
+        '400':
+          $ref: '../responses/common.yml#/BadRequest'
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'

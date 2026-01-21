@@ -1,0 +1,29 @@
+# Transaction Import Result Schema
+TransactionImportResult:
+  type: object
+  description: Result of CSV import operation
+  required: [imported, skipped, errors]
+  properties:
+    imported:
+      type: integer
+      description: Number of successfully imported transactions
+      example: 45
+    skipped:
+      type: integer
+      description: Number of skipped transactions (duplicates, invalid data)
+      example: 3
+    errors:
+      type: array
+      description: Validation errors for failed rows
+      items:
+        type: object
+        required: [row, message]
+        properties:
+          row:
+            type: integer
+            description: Row number in CSV (1-based, excluding header)
+            example: 5
+          message:
+            type: string
+            description: 'Error message explaining why the row was skipped'
+            example: 'Invalid date format: 2024-13-45'

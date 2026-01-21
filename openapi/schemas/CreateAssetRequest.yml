@@ -1,0 +1,18 @@
+# Create Asset Request Schema
+CreateAssetRequest:
+  type: object
+  required: [name, type, balance, currency]
+  properties:
+    name:
+      type: string
+      minLength: 1
+      maxLength: 255
+    type:
+      type: string
+      enum: [bank_account, mutual_fund, bond, crypto, stock, other]
+    balance:
+      type: string
+      pattern: '^\d+(\.\d{1,2})?$'
+    currency:
+      type: string
+      enum: [IDR, USD]

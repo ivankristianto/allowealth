@@ -1,0 +1,14 @@
+# Update Asset Request Schema
+UpdateAssetRequest:
+  type: object
+  properties:
+    name:
+      type: string
+      minLength: 1
+      maxLength: 255
+    type:
+      type: string
+      enum: [bank_account, mutual_fund, bond, crypto, stock, other]
+    currency:
+      type: string
+      enum: [IDR, USD]

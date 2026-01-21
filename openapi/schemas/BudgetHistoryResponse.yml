@@ -1,0 +1,61 @@
+# Budget History Response Schema
+BudgetHistoryResponse:
+  allOf:
+    - $ref: './ApiErrorResponse.yml#/ApiResponse'
+    - type: object
+      required: [success, data]
+      properties:
+        data:
+          type: array
+          items:
+            type: object
+            required:
+              [
+                month,
+                year,
+                month_name,
+                total_budget,
+                total_spent,
+                total_balance,
+                categories_count,
+                categories_exceeded,
+                categories_warning,
+                percentage_used,
+              ]
+            properties:
+              month:
+                type: integer
+                minimum: 1
+                maximum: 12
+                description: Month number (1-12)
+              year:
+                type: integer
+                description: Year
+              month_name:
+                type: string
+                description: Full month name (e.g., "January")
+              total_budget:
+                type: string
+                pattern: '^\d+(\.\d{1,2})?$'
+                description: Total budget amount for the month
+              total_spent:
+                type: string
+                pattern: '^\d+(\.\d{1,2})?$'
+                description: Total spent amount for the month
+              total_balance:
+                type: string
+                pattern: '^\d+(\.\d{1,2})?$'
+                description: Remaining balance (total_budget - total_spent)
+              categories_count:
+                type: integer
+                description: Number of active categories
+              categories_exceeded:
+                type: integer
+                description: Number of categories that exceeded budget
+              categories_warning:
+                type: integer
+                description: Number of categories approaching budget limit
+              percentage_used:
+                type: number
+                format: float
+                description: Percentage of total budget used (0-100+)

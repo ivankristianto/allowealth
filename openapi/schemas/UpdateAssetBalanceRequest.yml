@@ -1,0 +1,10 @@
+# Update Asset Balance Request Schema
+UpdateAssetBalanceRequest:
+  type: object
+  required: [balance]
+  properties:
+    balance:
+      type: string
+      pattern: '^\d+(\.\d{1,2})?$'
+    notes:
+      type: string

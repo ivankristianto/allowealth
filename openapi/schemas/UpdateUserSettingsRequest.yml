@@ -1,0 +1,17 @@
+# Update User Settings Request Schema
+UpdateUserSettingsRequest:
+  type: object
+  properties:
+    primaryCurrency:
+      type: string
+      enum: [IDR, USD]
+      description: Primary currency for displaying totals
+      example: IDR
+    showConvertedTotals:
+      type: boolean
+      description: Show totals converted to primary currency
+      example: true
+    showIndividualCurrencies:
+      type: boolean
+      description: Show individual currency amounts
+      example: true

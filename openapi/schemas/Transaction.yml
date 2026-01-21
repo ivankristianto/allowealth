@@ -1,0 +1,36 @@
+# Transaction Schema
+Transaction:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+    type:
+      type: string
+      enum: [expense, income]
+    amount:
+      type: string
+      pattern: '^\d+(\.\d{1,2})?$'
+      description: Amount as string (decimal with up to 2 decimal places)
+    currency:
+      type: string
+      enum: [IDR, USD]
+    category_id:
+      type: string
+      format: uuid
+    payment_method_id:
+      type: string
+      format: uuid
+    transaction_date:
+      type: string
+      format: date-time
+    description:
+      oneOf:
+        - type: string
+        - type: 'null'
+    created_at:
+      type: string
+      format: date-time
+    updated_at:
+      type: string
+      format: date-time

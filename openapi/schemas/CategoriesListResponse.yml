@@ -1,0 +1,11 @@
+# Categories List Response Schema
+CategoriesListResponse:
+  allOf:
+    - $ref: './ApiErrorResponse.yml#/ApiResponse'
+    - type: object
+      required: [success, data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: './Category.yml#/Category'

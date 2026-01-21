@@ -89,12 +89,56 @@ src/
 
 ## API Documentation
 
-The project uses **OpenAPI 3.1.0** for API documentation.
+The project uses **OpenAPI 3.1.0** for API documentation with a modular file structure.
 
-- **Specification file:** `openapi.yml`
-- **Purpose:** Document all API endpoints, request/response schemas, and authentication
+### File Structure
 
-**IMPORTANT:** Whenever you modify or add API endpoints, you MUST update `openapi.yml` to reflect the changes. This ensures the API documentation stays in sync with the implementation.
+```
+openapi.yml                    # Main entry point with $ref references
+openapi/
+├── README.md                  # Documentation for OpenAPI structure
+├── paths/                     # API endpoint definitions organized by feature
+│   ├── auth.yml               # Authentication endpoints
+│   ├── user.yml               # User profile and settings
+│   ├── transactions.yml       # Transaction management
+│   ├── categories.yml         # Category management
+│   ├── payment-methods.yml    # Payment method management
+│   ├── assets.yml             # Asset tracking
+│   └── budget.yml             # Budget overview and alerts
+├── schemas/                   # Reusable data model definitions
+│   ├── ApiErrorResponse.yml   # Base API response schema
+│   ├── ErrorResponse.yml      # Error response schema
+│   ├── SignupRequest.yml      # Registration request schema
+│   ├── LoginRequest.yml       # Login request schema
+│   └── ... (40+ schema files)
+├── responses/                 # Reusable response definitions
+│   └── common.yml             # Common HTTP responses (400, 401, 404, 500)
+└── parameters/                # Reusable parameter definitions
+    └── common.yml             # Common parameters (id)
+```
+
+### Updating API Documentation
+
+**IMPORTANT:** Whenever you modify or add API endpoints, you MUST update the appropriate OpenAPI files:
+
+1. **For new endpoints:** Add to the appropriate `openapi/paths/*.yml` file
+2. **For new schemas:** Add to `openapi/schemas/*.yml`
+3. **For references:** Update main `openapi.yml` with new `$ref` entries
+
+See `openapi/README.md` for detailed documentation on the structure and conventions.
+
+### Validation Commands
+
+```bash
+# Install OpenAPI validation tool
+npm install -g @redocly/cli
+
+# Validate the OpenAPI specification
+npx @redocly/cli lint openapi.yml
+
+# Preview documentation locally
+npx @redocly/cli preview-docs openapi.yml
+```
 
 ## Component Guidelines
 

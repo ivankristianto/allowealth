@@ -1,0 +1,9 @@
+# Common Parameter Definitions
+IdParameter:
+  name: id
+  in: path
+  required: true
+  description: Resource ID (UUID)
+  schema:
+    type: string
+    format: uuid

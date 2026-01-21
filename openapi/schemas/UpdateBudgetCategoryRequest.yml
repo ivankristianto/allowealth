@@ -1,0 +1,17 @@
+# Update Budget Category Request Schema
+UpdateBudgetCategoryRequest:
+  type: object
+  description: Request body for updating category budget allocation. Percentage is auto-calculated from budget_amount.
+  required:
+    - budget_amount
+  properties:
+    budget_amount:
+      type: string
+      pattern: '^\d+(\.\d{1,2})?$'
+      description: Budget amount (must be non-negative). Percentage is auto-calculated from this value relative to total budget.
+      example: '10000000'
+    currency:
+      type: string
+      enum: [IDR, USD]
+      description: Currency must match existing category currency (optional, validation only)
+      example: IDR

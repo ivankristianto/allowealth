@@ -1,0 +1,9 @@
+# Payment Method Response Schema
+PaymentMethodResponse:
+  allOf:
+    - $ref: './ApiErrorResponse.yml#/ApiResponse'
+    - type: object
+      required: [success, data]
+      properties:
+        data:
+          $ref: './PaymentMethod.yml#/PaymentMethod'

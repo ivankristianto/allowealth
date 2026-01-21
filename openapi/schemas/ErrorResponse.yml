@@ -1,0 +1,20 @@
+# Error Response Schema
+ErrorResponse:
+  allOf:
+    - $ref: './ApiErrorResponse.yml#/ApiResponse'
+    - type: object
+      required: [success, error]
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: object
+          required: [message]
+          properties:
+            message:
+              type: string
+            code:
+              type: string
+            details:
+              type: object

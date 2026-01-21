@@ -1,0 +1,26 @@
+# Category Remaining Response Schema
+CategoryRemainingResponse:
+  allOf:
+    - $ref: './ApiErrorResponse.yml#/ApiResponse'
+    - type: object
+      required: [success, data]
+      properties:
+        data:
+          type: object
+          required: [category_id, remaining, budget_amount, expense_amount]
+          properties:
+            category_id:
+              type: string
+              format: uuid
+            budget_amount:
+              type: string
+              pattern: '^\d+(\.\d{1,2})?$'
+            expense_amount:
+              type: string
+              pattern: '^\d+(\.\d{1,2})?$'
+            remaining:
+              type: string
+              pattern: '^\d+(\.\d{1,2})?$'
+            percentage:
+              type: number
+              format: float

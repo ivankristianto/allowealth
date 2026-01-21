@@ -1,0 +1,28 @@
+# Common HTTP Response Definitions
+BadRequest:
+  description: Bad request - validation error or invalid input
+  content:
+    application/json:
+      schema:
+        $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+
+Unauthorized:
+  description: Unauthorized - authentication required
+  content:
+    application/json:
+      schema:
+        $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+
+NotFound:
+  description: Resource not found
+  content:
+    application/json:
+      schema:
+        $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+
+InternalServerError:
+  description: Internal server error
+  content:
+    application/json:
+      schema:
+        $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'

@@ -1,0 +1,18 @@
+# Login Request Schema
+LoginRequest:
+  type: object
+  required:
+    - email
+    - password
+  properties:
+    email:
+      type: string
+      format: email
+      description: User email address
+      example: user@example.com
+    password:
+      type: string
+      description: |
+        User password. Password format validation is enforced during signup
+        and password changes, not during login.
+      example: mypassword123

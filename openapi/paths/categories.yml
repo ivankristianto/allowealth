@@ -1,0 +1,157 @@
+# Categories endpoint paths
+paths:
+  /api/categories:
+    get:
+      tags: [Categories]
+      summary: List all categories
+      description: Retrieve all categories for the authenticated user
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: type
+          in: query
+          description: Filter by category type
+          schema:
+            type: string
+            enum: [expense, income]
+        - name: is_active
+          in: query
+          description: Filter by active status
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/CategoriesListResponse.yml#/CategoriesListResponse'
+        '400':
+          $ref: '../responses/common.yml#/BadRequest'
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'
+    post:
+      tags: [Categories]
+      summary: Create a new category
+      description: Create a new expense or income category
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/CreateCategoryRequest.yml#/CreateCategoryRequest'
+      responses:
+        '201':
+          description: Category created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/CategoryResponse.yml#/CategoryResponse'
+        '400':
+          $ref: '../responses/common.yml#/BadRequest'
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '409':
+          description: Category with this name already exists
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'
+
+  /api/categories/{id}:
+    get:
+      tags: [Categories]
+      summary: Get a category by ID
+      description: Retrieve a single category by its ID
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: '../parameters/common.yml#/IdParameter'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/CategoryResponse.yml#/CategoryResponse'
+        '400':
+          $ref: '../responses/common.yml#/BadRequest'
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '404':
+          $ref: '../responses/common.yml#/NotFound'
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'
+    put:
+      tags: [Categories]
+      summary: Update a category
+      description: Update an existing category
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: '../parameters/common.yml#/IdParameter'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/UpdateCategoryRequest.yml#/UpdateCategoryRequest'
+      responses:
+        '200':
+          description: Category updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/CategoryResponse.yml#/CategoryResponse'
+        '400':
+          $ref: '../responses/common.yml#/BadRequest'
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '404':
+          $ref: '../responses/common.yml#/NotFound'
+        '409':
+          description: Category with this name already exists
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'
+    delete:
+      tags: [Categories]
+      summary: Delete a category
+      description: Soft delete a category (marks as inactive)
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: '../parameters/common.yml#/IdParameter'
+      responses:
+        '200':
+          description: Category deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        example: Category deleted successfully
+        '400':
+          $ref: '../responses/common.yml#/BadRequest'
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '404':
+          $ref: '../responses/common.yml#/NotFound'
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'

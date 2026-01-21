@@ -1,0 +1,11 @@
+# Assets List Response Schema
+AssetsListResponse:
+  allOf:
+    - $ref: './ApiErrorResponse.yml#/ApiResponse'
+    - type: object
+      required: [success, data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: './Asset.yml#/Asset'

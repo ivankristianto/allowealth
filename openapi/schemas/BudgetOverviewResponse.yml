@@ -1,0 +1,51 @@
+# Budget Overview Response Schema
+BudgetOverviewResponse:
+  allOf:
+    - $ref: './ApiErrorResponse.yml#/ApiResponse'
+    - type: object
+      required: [success, data]
+      properties:
+        data:
+          type: object
+          required: [categories, totals]
+          properties:
+            categories:
+              type: array
+              items:
+                type: object
+                properties:
+                  category_id:
+                    type: string
+                    format: uuid
+                  category_name:
+                    type: string
+                  budget_amount:
+                    type: string
+                    pattern: '^\d+(\.\d{1,2})?$'
+                  expense_amount:
+                    type: string
+                    pattern: '^\d+(\.\d{1,2})?$'
+                  balance:
+                    type: string
+                    pattern: '^\d+(\.\d{1,2})?$'
+                  percentage:
+                    type: number
+                    format: float
+                  status:
+                    type: string
+                    enum: [ok, warning, exceeded]
+            totals:
+              type: object
+              properties:
+                total_budget:
+                  type: string
+                  pattern: '^\d+(\.\d{1,2})?$'
+                total_expense:
+                  type: string
+                  pattern: '^\d+(\.\d{1,2})?$'
+                total_balance:
+                  type: string
+                  pattern: '^\d+(\.\d{1,2})?$'
+                budget_percentage:
+                  type: number
+                  format: float

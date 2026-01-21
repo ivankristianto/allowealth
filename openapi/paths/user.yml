@@ -1,0 +1,104 @@
+# User endpoint paths
+paths:
+  /api/user/profile:
+    put:
+      tags: [User]
+      summary: Update user profile
+      description: Update user name and email. Email must be unique across all users.
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/UpdateUserProfileRequest.yml#/UpdateUserProfileRequest'
+      responses:
+        '200':
+          description: Profile updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/UserProfileResponse.yml#/UserProfileResponse'
+        '400':
+          description: Validation error or invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '409':
+          description: Email already exists
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'
+
+  /api/user/password:
+    put:
+      tags: [User]
+      summary: Change user password
+      description: Update user password. Requires current password for verification.
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/UpdatePasswordRequest.yml#/UpdatePasswordRequest'
+      responses:
+        '200':
+          description: Password updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/PasswordUpdateResponse.yml#/PasswordUpdateResponse'
+        '400':
+          description: Validation error or weak password
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+        '401':
+          description: Invalid old password or unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'
+
+  /api/user/settings:
+    put:
+      tags: [User]
+      summary: Update user settings
+      description: Update user preferences including primary currency and display options.
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/UpdateUserSettingsRequest.yml#/UpdateUserSettingsRequest'
+      responses:
+        '200':
+          description: Settings updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/UserSettingsResponse.yml#/UserSettingsResponse'
+        '400':
+          description: Validation error or invalid currency
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'

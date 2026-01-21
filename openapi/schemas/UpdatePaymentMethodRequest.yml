@@ -1,0 +1,13 @@
+# Update Payment Method Request Schema
+UpdatePaymentMethodRequest:
+  type: object
+  properties:
+    name:
+      type: string
+      minLength: 1
+      maxLength: 255
+    type:
+      type: string
+      enum: [cash, credit_card, debit_card, bank_transfer, e_wallet]
+    is_active:
+      type: boolean

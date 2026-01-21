@@ -1,0 +1,35 @@
+# Auth Success Response Schema
+AuthSuccessResponse:
+  allOf:
+    - $ref: './ApiErrorResponse.yml#/ApiResponse'
+    - type: object
+      required:
+        - success
+        - data
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          required:
+            - user
+          properties:
+            user:
+              type: object
+              required:
+                - id
+                - email
+                - name
+              properties:
+                id:
+                  type: string
+                  format: uuid
+                  description: User ID
+                email:
+                  type: string
+                  format: email
+                  description: User email address
+                name:
+                  type: string
+                  description: User display name

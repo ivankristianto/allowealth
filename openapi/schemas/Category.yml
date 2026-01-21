@@ -1,0 +1,33 @@
+# Category Schema
+Category:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+    name:
+      type: string
+    type:
+      type: string
+      enum: [expense, income]
+    percentage:
+      oneOf:
+        - type: string
+          pattern: '^\d+(\.\d{1,2})?$'
+        - type: 'null'
+    budget_amount:
+      oneOf:
+        - type: string
+          pattern: '^\d+(\.\d{1,2})?$'
+        - type: 'null'
+    currency:
+      type: string
+      enum: [IDR, USD]
+    is_active:
+      type: boolean
+    created_at:
+      type: string
+      format: date-time
+    updated_at:
+      type: string
+      format: date-time

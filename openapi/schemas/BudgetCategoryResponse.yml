@@ -1,0 +1,40 @@
+# Budget Category Response Schema
+BudgetCategoryResponse:
+  allOf:
+    - $ref: './ApiErrorResponse.yml#/ApiResponse'
+    - type: object
+      required: [success, data]
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          required: [id, name, type, percentage, budget_amount, currency, is_active]
+          properties:
+            id:
+              type: string
+              format: uuid
+              description: Category ID
+            name:
+              type: string
+              description: Category name
+            type:
+              type: string
+              enum: [expense, income]
+              description: Category type
+            percentage:
+              type: string
+              pattern: '^\d+(\.\d{1,2})?$'
+              description: Budget percentage
+            budget_amount:
+              type: string
+              pattern: '^\d+(\.\d{1,2})?$'
+              description: Budget amount
+            currency:
+              type: string
+              enum: [IDR, USD]
+              description: Category currency
+            is_active:
+              type: boolean
+              description: Active status

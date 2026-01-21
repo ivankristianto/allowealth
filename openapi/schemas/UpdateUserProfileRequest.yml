@@ -1,0 +1,18 @@
+# Update User Profile Request Schema
+UpdateUserProfileRequest:
+  type: object
+  required:
+    - name
+    - email
+  properties:
+    name:
+      type: string
+      minLength: 1
+      maxLength: 255
+      description: User display name
+      example: John Doe
+    email:
+      type: string
+      format: email
+      description: User email address (must be unique)
+      example: john.doe@example.com

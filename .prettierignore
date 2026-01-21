@@ -46,6 +46,7 @@ coverage
 
 # OpenAPI specification (custom YAML formatting)
 openapi.yml
+openapi/
 
 # storybook static files
 storybook-static/

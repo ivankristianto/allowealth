@@ -1,0 +1,20 @@
+# Payment Method Schema
+PaymentMethod:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+    name:
+      type: string
+    type:
+      type: string
+      enum: [cash, credit_card, debit_card, bank_transfer, e_wallet]
+    is_active:
+      type: boolean
+    created_at:
+      type: string
+      format: date-time
+    updated_at:
+      type: string
+      format: date-time

@@ -1,0 +1,21 @@
+# Create Category Request Schema
+CreateCategoryRequest:
+  type: object
+  required: [name, type, currency]
+  properties:
+    name:
+      type: string
+      minLength: 1
+      maxLength: 255
+    type:
+      type: string
+      enum: [expense, income]
+    currency:
+      type: string
+      enum: [IDR, USD]
+    percentage:
+      type: string
+      pattern: '^\d+(\.\d{1,2})?$'
+    budget_amount:
+      type: string
+      pattern: '^\d+(\.\d{1,2})?$'

@@ -1,0 +1,25 @@
+# Transactions List Response Schema
+TransactionsListResponse:
+  allOf:
+    - $ref: './ApiErrorResponse.yml#/ApiResponse'
+    - type: object
+      required: [success, data]
+      properties:
+        data:
+          type: object
+          required: [transactions, pagination]
+          properties:
+            transactions:
+              type: array
+              items:
+                $ref: './Transaction.yml#/Transaction'
+            pagination:
+              type: object
+              required: [limit, offset, total]
+              properties:
+                limit:
+                  type: integer
+                offset:
+                  type: integer
+                total:
+                  type: integer

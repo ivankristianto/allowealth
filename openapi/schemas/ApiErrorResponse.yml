@@ -1,0 +1,19 @@
+# Base API Response Schema
+ApiResponse:
+  type: object
+  properties:
+    success:
+      type: boolean
+    data:
+      type: object
+      description: Response data (present on success)
+    error:
+      type: object
+      description: Error details (present on failure)
+      properties:
+        message:
+          type: string
+        code:
+          type: string
+        details:
+          type: object

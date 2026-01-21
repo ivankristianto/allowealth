@@ -1,0 +1,225 @@
+# Assets endpoint paths
+paths:
+  /api/assets:
+    get:
+      tags: [Assets]
+      summary: List all assets
+      description: Retrieve all assets for the authenticated user
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: type
+          in: query
+          description: Filter by asset type
+          schema:
+            type: string
+            enum: [bank_account, mutual_fund, bond, crypto, stock, other]
+        - name: currency
+          in: query
+          description: Filter by currency
+          schema:
+            type: string
+            enum: [IDR, USD]
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/AssetsListResponse.yml#/AssetsListResponse'
+        '400':
+          $ref: '../responses/common.yml#/BadRequest'
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'
+    post:
+      tags: [Assets]
+      summary: Create a new asset
+      description: Create a new asset
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/CreateAssetRequest.yml#/CreateAssetRequest'
+      responses:
+        '201':
+          description: Asset created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/AssetResponse.yml#/AssetResponse'
+        '400':
+          $ref: '../responses/common.yml#/BadRequest'
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'
+
+  /api/assets/{id}:
+    get:
+      tags: [Assets]
+      summary: Get an asset by ID
+      description: Retrieve a single asset by its ID
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: '../parameters/common.yml#/IdParameter'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/AssetResponse.yml#/AssetResponse'
+        '400':
+          $ref: '../responses/common.yml#/BadRequest'
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '404':
+          $ref: '../responses/common.yml#/NotFound'
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'
+    put:
+      tags: [Assets]
+      summary: Update an asset
+      description: Update an existing asset (name, type, or currency)
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: '../parameters/common.yml#/IdParameter'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/UpdateAssetRequest.yml#/UpdateAssetRequest'
+      responses:
+        '200':
+          description: Asset updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/AssetResponse.yml#/AssetResponse'
+        '400':
+          $ref: '../responses/common.yml#/BadRequest'
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '404':
+          $ref: '../responses/common.yml#/NotFound'
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'
+    delete:
+      tags: [Assets]
+      summary: Delete an asset
+      description: Soft delete an asset
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: '../parameters/common.yml#/IdParameter'
+      responses:
+        '200':
+          description: Asset deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        example: Asset deleted successfully
+        '400':
+          $ref: '../responses/common.yml#/BadRequest'
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '404':
+          $ref: '../responses/common.yml#/NotFound'
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'
+
+  /api/assets/{id}/balance:
+    post:
+      tags: [Assets]
+      summary: Update asset balance
+      description: Update an asset's balance (creates history entry)
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: '../parameters/common.yml#/IdParameter'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/UpdateAssetBalanceRequest.yml#/UpdateAssetBalanceRequest'
+      responses:
+        '200':
+          description: Asset balance updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/AssetResponse.yml#/AssetResponse'
+        '400':
+          $ref: '../responses/common.yml#/BadRequest'
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '404':
+          $ref: '../responses/common.yml#/NotFound'
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'
+
+  /api/assets/{id}/history:
+    get:
+      tags: [Assets]
+      summary: Get asset balance history
+      description: Retrieve balance history for an asset
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: '../parameters/common.yml#/IdParameter'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/AssetHistoryListResponse.yml#/AssetHistoryListResponse'
+        '400':
+          $ref: '../responses/common.yml#/BadRequest'
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '404':
+          description: Asset not found
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'
+
+  /api/assets/summary:
+    get:
+      tags: [Assets]
+      summary: Get asset summary
+      description: Retrieve totals by currency and by type
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/AssetSummaryResponse.yml#/AssetSummaryResponse'
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'

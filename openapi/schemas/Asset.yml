@@ -1,0 +1,27 @@
+# Asset Schema
+Asset:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+    name:
+      type: string
+    type:
+      type: string
+      enum: [bank_account, mutual_fund, bond, crypto, stock, other]
+    balance:
+      type: string
+      pattern: '^\d+(\.\d{1,2})?$'
+    currency:
+      type: string
+      enum: [IDR, USD]
+    last_updated:
+      type: string
+      format: date-time
+    created_at:
+      type: string
+      format: date-time
+    updated_at:
+      type: string
+      format: date-time
