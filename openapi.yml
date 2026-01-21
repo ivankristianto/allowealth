@@ -1495,7 +1495,7 @@ components:
         password:
           type: string
           minLength: 12
-          description: Password (min 12 characters, letters + numbers/special chars)
+          description: Password (min 12 characters, at least one letter, at least one number OR special character)
           example: SecurePassword123!
           pattern: '^(?=.*[A-Za-z])(?=.*[0-9!@#$%^&*()_+\-=\[\]{};'"\\|,.<>\/?]).{12,}$'
         name:
@@ -1618,7 +1618,7 @@ components:
         newPassword:
           type: string
           minLength: 12
-          description: New password (min 12 characters, letters + numbers/special chars)
+          description: New password (min 12 characters, at least one letter, at least one number OR special character)
           example: NewPassword123!
           pattern: '^(?=.*[A-Za-z])(?=.*[0-9!@#$%^&*()_+\-=\[\]{};'"\\|,.<>\/?]).{12,}$'
 

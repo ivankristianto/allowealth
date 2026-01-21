@@ -33,6 +33,12 @@ export {
   PASSWORD_EXAMPLES,
 } from './password';
 
+// Client-side password validation (matches server-side validation)
+export {
+  validatePasswordClient,
+  isPasswordValid as isPasswordValidClient,
+} from './client-password';
+
 // Shared enums (export once from central location)
 export {
   currencyEnum,
