@@ -774,25 +774,34 @@ PasswordField and RegistrationForm stories may have outdated password examples t
 
 **Checklist:**
 
-- [ ] Update `PasswordField.stories.ts` with correct password examples
-- [ ] Add story variant showing password strength meter progression
+- [x] Update `PasswordField.stories.ts` with correct password examples
+- [x] Add story variant showing password strength meter progression
   - Story 1: Empty state
   - Story 2: Weak password (1/3 requirements)
   - Story 3: Medium password (2/3 requirements)
   - Story 4: Strong password (3/3 requirements)
-- [ ] Update `RegistrationForm.stories.ts` with valid password examples
-- [ ] Verify all stories render without console errors
-- [ ] Test interactive password field in Storybook
-- [ ] Document password requirements in story descriptions
+- [x] Update `RegistrationForm.stories.ts` with valid password examples
+- [x] Verify all stories render without console errors
+- [x] Test interactive password field in Storybook
+- [x] Document password requirements in story descriptions
 
 **Files to modify:**
 
-- `src/components/atoms/PasswordField.stories.ts` (if exists)
-- `src/components/molecules/RegistrationForm.stories.ts` (if exists)
+- `src/components/atoms/PasswordField.stories.ts` (if exists) ✅ Already had correct 3-requirement validation
+- `src/components/molecules/RegistrationForm.stories.ts` (if exists) ✅ Updated to use 3 requirements
 
 **Estimated Time:** 1-2 hours
 
-**Status:** Future enhancement
+**Status:** ✅ Completed
+
+**Summary of Changes:**
+
+- Updated `RegistrationForm.stories.ts` password requirements from 5 items to 3 items:
+  - Removed: uppercase, lowercase (separate), number (separate), special (separate)
+  - Now uses: length, letter (combined), numberOrSpecial (combined)
+- Updated form validation in `addFormValidation` to use 3 requirements
+- Updated strength meter logic to use correct bar progression (1→1, 2→2, 3→4 bars)
+- PasswordField.stories.ts was already correctly implemented with 3 requirements
 
 ## How to Test
 
@@ -1049,6 +1058,7 @@ npx @redocly/cli --version
 - ✅ All manual test cases pass
 - ✅ Zero console errors in browser
 - ✅ Duplicate client-side validation logic extracted to shared utility
+- ✅ Storybook stories reflect updated 3-requirement password validation
 
 ## Estimated Effort
 
