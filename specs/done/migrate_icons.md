@@ -2024,11 +2024,11 @@ The Eye, EyeOff, Check, and X icons are decorative and should have `aria-hidden=
 
 **Checklist:**
 
-- [ ] Review TransactionList.astro pagination Next button implementation
-- [ ] Replace `<ChevronLeft size={16} class="stroke-current rotate-180" />` with `<ChevronRight size={16} class="stroke-current" />`
-- [ ] Update imports to include ChevronRight
-- [ ] Test pagination functionality
-- [ ] Run quality gates
+- [x] Review TransactionList.astro pagination Next button implementation
+- [x] Replace `<ChevronLeft size={16} class="stroke-current rotate-180" />` with `<ChevronRight size={16} class="stroke-current" />`
+- [x] Update imports to include ChevronRight
+- [x] Test pagination functionality
+- [x] Run quality gates
 
 **Files to modify:**
 
@@ -2039,9 +2039,19 @@ The Eye, EyeOff, Check, and X icons are decorative and should have `aria-hidden=
 
 The current implementation uses `ChevronLeft` rotated 180 degrees for the Next button. While functionally equivalent, using `ChevronRight` directly is more semantically correct and eliminates the CSS rotation. This is a minor stylistic preference - the current implementation works fine.
 
+**Implementation Notes:**
+
+- Replaced `<ChevronLeft size={16} class="stroke-current rotate-180" />` with `<ChevronRight size={16} class="stroke-current" />` for Next button
+- Updated imports to include ChevronRight from @lucide/astro
+- Updated PAGINATION_ICONS constant in behavior test (next: 'ChevronRight')
+- Updated test descriptions and manual testing checklist
+- Added test for ChevronRight not being deprecated
+- All quality gates pass (typecheck, lint, stylelint)
+- Code review specialist: **APPROVED**
+
 **Estimated Time:** 15 minutes
 
-**Status:** Pending
+**Status:** ✅ Completed (2026-01-21)
 
 ---
 
@@ -2049,22 +2059,41 @@ The current implementation uses `ChevronLeft` rotated 180 degrees for the Next b
 
 **Checklist:**
 
-- [ ] Audit all Lucide icon usages for stroke-width consistency
-- [ ] Document whether stroke-width should be explicitly set or use Lucide defaults
-- [ ] Update design-system/START.md with stroke-width guidance if needed
-- [ ] Run quality gates
+- [x] Audit all Lucide icon usages for stroke-width consistency
+- [x] Document whether stroke-width should be explicitly set or use Lucide defaults
+- [x] Update design-system/02-components.md with stroke-width guidance
+- [x] Create comprehensive test file (design-system/stroke-width.test.ts)
+- [x] Run quality gates
 
-**Files to review:**
+**Files modified:**
 
-- All migrated components using Lucide icons
+- `design-system/02-components.md` (added stroke-width guidance section)
+- `design-system/stroke-width.test.ts` (created - 6 tests)
 
 **Rationale:**
 
-Current icon implementations use `stroke-current` class which correctly inherits color via `currentColor`. However, stroke width handling varies - some components may benefit from explicit stroke-width classes for visual consistency. Review and document the preferred pattern for the project.
+Current icon implementations use `stroke-current` class which correctly inherits color via `currentColor`. However, stroke width handling was undocumented. This task reviews and documents the preferred pattern for the project.
+
+**Implementation Notes:**
+
+- Audited all Lucide icon usages - confirmed all use default stroke-width (no explicit stroke-width attributes)
+- Documented that Lucide icons use default stroke-width of 2
+- Added guidance to NOT explicitly set stroke-width on icons
+- Created comprehensive test file with 6 tests:
+  - Documentation coverage test
+  - Lucide icon pattern compliance tests
+  - Inline SVG stroke-width consistency tests
+  - Best practices documentation
+- Added table showing stroke-width behavior at different icon sizes
+- Provided examples of correct and incorrect usage
+- Fixed P2-1 feedback (removed emoji usage from documentation)
+- All quality gates pass (typecheck, lint, stylelint)
+- All tests passing (6/6)
+- Code review specialist: **APPROVED**
 
 **Estimated Time:** 1-2 hours
 
-**Status:** Pending
+**Status:** ✅ Completed (2026-01-21)
 
 ---
 
