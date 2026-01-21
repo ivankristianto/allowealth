@@ -54,3 +54,6 @@ db/*.db
 # bv (beads viewer) local config and caches
 .bv/
 .beads/.bv.lock
+
+# storybook static files
+storybook-static/
