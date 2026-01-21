@@ -23,6 +23,8 @@ This plan addresses **significant discrepancies** between the current implementa
 - Use DaisyUI semantic colors (`btn-accent`, `text-base-content`, `bg-base-200`, `border-base-300`) instead of Tailwind palette classes (`text-slate-*`, `bg-slate-*`, `dark:` variants).
 - Use `@lucide/astro` for icons and follow the size scale from `design-system/styles.json`.
 - Use Motion (`motion`) presets for animations when required by the spec.
+- Avoid arbitrary value utilities (e.g., `text-[...]`, `p-[...]`, `max-w-[...]`, `shadow-[...]`, `bg-[...]`); use tokens, DaisyUI size classes, or add tokenized utilities.
+- Avoid arbitrary radius utilities like `rounded-[...]`; use DaisyUI design variables (`--radius-*`) and tokenized radius classes.
 
 ### Proposed Changes
 
@@ -233,12 +235,15 @@ dark: {
 
 - [ ] Import tokens.css (currently commented out)
 - [ ] Configure DaisyUI with custom theme using @plugin syntax
+- [ ] Set DaisyUI design variables to match `styles.json` (radius/size/border/depth/noise)
+- [ ] Use: `--radius-selector: 1rem`, `--radius-field: 0rem`, `--radius-box: 0.5rem`, `--size-selector: 0.25rem`, `--size-field: 0.25rem`, `--border: 1px`, `--depth: 1`, `--noise: 0`
 - [ ] Ensure global font styles reference the tokenized font family
 - [ ] Update focus styles to use accent color (`--color-accent`)
 - [ ] Add glass effect utilities (backdrop-blur: 12px, opacity: 0.8)
 - [ ] Add gradient utilities using pattern tokens (e.g., `sidebarActive`)
 - [ ] Add premium shadow utilities using tokenized shadows (e.g., `accentGlow`)
-- [ ] Update scrollbar colors to use slate scale
+- [ ] Add tokenized utility classes for non-standard sizing (badge text size, container max width)
+- [ ] Update scrollbar colors to use base tokens
 
 **Files to modify:**
 
@@ -303,7 +308,7 @@ dark: {
 **Checklist:**
 
 - [ ] Update primary variant to use accent/indigo colors (`btn-accent` or custom `bg-accent`)
-- [ ] Update secondary variant to use slate-900 (`#0f172a`)
+- [ ] Update secondary variant to use tokenized primary/neutral color
 - [ ] Add ghost variant with transparent bg and `border-base-300` (or tokenized border color)
 - [ ] Update focus ring to use accent token (theme-friendly, no hardcoded color)
 - [ ] Add accent glow shadow using tokenized shadow utility
@@ -342,12 +347,12 @@ After:
 
 **Goal:** Align Card with styles.json specifications
 
-**Current Issue:** Card uses `p-6` padding (24px), but styles.json specifies `1.75rem` (28px). Border radius should be `1.25rem` (20px).
+**Current Issue:** Card uses `p-6` padding (24px), but styles.json specifies `1.75rem` (28px). Border radius should come from DaisyUI `--radius-box` (tokenized), not a custom `rounded-[...]` value.
 
 **Checklist:**
 
-- [ ] Update default padding from `p-6` to `p-7` (1.75rem / 28px) or `p-[1.75rem]`
-- [ ] Update border radius to `rounded-[1.25rem]` (20px)
+- [ ] Update default padding from `p-6` to `p-7` (1.75rem / 28px) using tokenized spacing
+- [ ] Use DaisyUI `radius-box` for card border radius (no `rounded-[...]`)
 - [ ] Add premium shadow via tokenized shadow utility
 - [ ] Use `border-base-300` for borders so the theme handles light/dark variants
 - [ ] Update compact padding from `p-4` to appropriate smaller value
@@ -367,14 +372,14 @@ After:
 
 **Goal:** Align Input with styles.json specifications
 
-**Current Issue:** Input doesn't match height (2.5rem), padding, background, or focus ring specs from styles.json.
+**Current Issue:** Input doesn't match height (2.5rem), padding, background, or focus ring specs from styles.json. Border radius should come from DaisyUI `--radius-field` (tokenized).
 
 **Checklist:**
 
 - [ ] Set height to 2.5rem (40px) using `h-10`
 - [ ] Update padding to match spec: `py-2 pr-10 pl-3` (0.5rem 2.5rem 0.5rem 0.75rem)
 - [ ] Set font size to 0.75rem (12px) using `text-xs`
-- [ ] Update border radius to 0.75rem using `rounded-xl`
+- [ ] Use DaisyUI `radius-field` for input border radius (no `rounded-[...]`)
 - [ ] Add background using theme base tokens (e.g., `bg-base-200`)
 - [ ] Update focus ring to 2px using accent token (theme-friendly)
 - [ ] Update error state border to `border-error` (or tokenized equivalent)
@@ -398,9 +403,9 @@ After:
 **Checklist:**
 
 - [ ] Update padding to `px-2.5 py-1` (0.25rem 0.625rem / 4px 10px)
-- [ ] Update font size to `text-[0.625rem]` (10px)
+- [ ] Update font size using a tokenized utility (e.g., `text-badge`) aligned to 0.625rem
 - [ ] Update font weight to `font-bold` (700)
-- [ ] Ensure border radius is full (`rounded-full` / 9999px)
+- [ ] Ensure badge radius follows DaisyUI selector radius (no `rounded-[...]`)
 - [ ] Update color variants to use DaisyUI semantic colors (`badge-accent`, `badge-success`, `badge-warning`, `badge-error`)
 
 **Files to modify:**
@@ -426,7 +431,7 @@ After:
 - [ ] Update `DatePicker.astro` - input styling alignment with Task 2.3 specs
 - [ ] Update `EmptyState.astro` - color tokens, accent color for CTAs
 - [ ] Update `ErrorMessage.astro` - error semantic color token (no hardcoded hex)
-- [ ] Update `Label.astro` - text colors using slate scale
+- [ ] Update `Label.astro` - text colors using base-content/neutral tokens
 - [ ] Update `PasswordField.astro` - input styling, focus colors to indigo
 - [ ] Update `Percentage.astro` - status colors
 - [ ] Update `Spinner.astro` - accent color for loading spinner
@@ -465,7 +470,7 @@ After:
 - [ ] Update gap between icon and text to `gap-3` (0.75rem)
 - [ ] Ensure sidebar width is 16rem (256px) - currently `w-64` ✅
 - [ ] Update border color to `border-base-300`
-- [ ] Update user section styling with slate colors
+- [ ] Update user section styling with base-content/neutral tokens
 - [ ] Add custom CSS class `.nav-active` for active state styling
 
 **Files to modify:**
@@ -523,7 +528,7 @@ After:
 
 **Checklist:**
 
-- [ ] Add max-width: 1400px using `max-w-[1400px]`
+- [ ] Add max-width: 1400px using a tokenized container class (e.g., `max-w-container`)
 - [ ] Add responsive padding: `px-6 lg:px-12` (mobile 1.5rem, desktop 3rem)
 - [ ] Center container using `mx-auto`
 - [ ] Update any existing width constraints
@@ -542,7 +547,7 @@ After:
 
 **Goal:** Ensure footer uses correct colors and spacing
 
-**Current Issue:** Footer may use old neutral colors instead of slate scale.
+**Current Issue:** Footer may use old neutral colors instead of base-content/neutral tokens.
 
 **Checklist:**
 
@@ -828,10 +833,10 @@ After:
 
 **Checklist:**
 
-- [ ] Ensure cards use updated Card component (p-7, rounded-[1.25rem], premium shadow)
+- [ ] Ensure cards use updated Card component (p-7, radius-box, premium shadow)
 - [ ] Update icon colors to use accent token (`text-accent` or equivalent)
 - [ ] Update trend indicators styling (emerald for up, rose for down)
-- [ ] Update text colors to slate scale
+- [ ] Update text colors to base-content/neutral tokens
 
 **Files to modify:**
 
@@ -853,7 +858,7 @@ After:
 
 - [ ] Update row hover colors using table rowHover token
 - [ ] Update icon sizes to 22px
-- [ ] Update text colors to slate tokens
+- [ ] Update text colors to base-content/neutral tokens
 - [ ] Update badge styling to match Task 2.4 specs
 
 **Files to modify:**
@@ -1020,7 +1025,7 @@ export const presets = {
 - [ ] Status and currency tokens are exposed in `@/lib/tokens`
 - [ ] Inter font is properly loaded and rendering with correct weights
 - [ ] Button component matches styles.json specs (indigo accent, correct sizes, accent glow shadow)
-- [ ] Card component matches specs (1.75rem padding, 1.25rem radius, premium shadow)
+- [ ] Card component matches specs (1.75rem padding, radius-box, premium shadow)
 - [ ] Input component matches specs (2.5rem height, 0.75rem radius, indigo focus ring)
 - [ ] Badge component matches specs (0.625rem font, 700 weight, full radius)
 - [ ] Navigation has active gradient and proper icon sizes (22px)

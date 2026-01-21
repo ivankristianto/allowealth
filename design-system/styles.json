@@ -236,7 +236,7 @@
     },
     "card": {
       "padding": "1.75rem",
-      "borderRadius": "1.25rem",
+      "borderRadius": "var(--radius-box)",
       "border": "1px solid",
       "borderColor": {
         "light": "#e2e8f0",
@@ -252,7 +252,7 @@
       "height": "2.5rem",
       "padding": "0.5rem 2.5rem 0.5rem 0.75rem",
       "fontSize": "0.75rem",
-      "borderRadius": "0.75rem",
+      "borderRadius": "var(--radius-field)",
       "background": {
         "light": "#f1f5f9",
         "dark": "#1e293b"
@@ -262,7 +262,7 @@
     "badge": {
       "padding": "0.25rem 0.625rem",
       "fontSize": "0.625rem",
-      "borderRadius": "9999px",
+      "borderRadius": "var(--radius-selector)",
       "fontWeight": 700
     },
     "sidebar": {
@@ -322,8 +322,8 @@
   },
   "icons": {
     "library": "lucide",
-    "package": "lucide-astro",
-    "usage": "import { IconName } from 'lucide-astro'; <IconName size={size} />",
+    "package": "@lucide/astro",
+    "usage": "import { IconName } from '@lucide/astro'; <IconName size={size} />",
     "sizes": {
       "xs": 16,
       "sm": 20,
@@ -496,6 +496,16 @@
           "depth": "Adds shadow and 3D depth effect - 0 or 1",
           "noise": "Adds subtle grain effect - 0 or 1"
         },
+        "designVariableValues": {
+          "radiusSelector": "1rem",
+          "radiusField": "0rem",
+          "radiusBox": "0.5rem",
+          "sizeSelector": "0.25rem",
+          "sizeField": "0.25rem",
+          "border": "1px",
+          "depth": "1",
+          "noise": "0"
+        },
         "example": "@plugin 'daisyui/theme' { name: 'mytheme'; default: true; --color-primary: oklch(55% 0.3 240); --radius-box: 1rem; --depth: 1; }"
       }
     },
@@ -547,9 +557,9 @@
     },
     "packages": {
       "icons": {
-        "name": "lucide-astro",
+        "name": "@lucide/astro",
         "version": "latest",
-        "install": "bun add lucide-astro"
+        "install": "bun add @lucide/astro"
       },
       "animation": {
         "name": "motion",
