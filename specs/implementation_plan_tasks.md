@@ -1736,6 +1736,7 @@ All dependencies are already in package.json.
 - [x] All Storybook stories render correctly
 - [x] No visual regressions in components
 - [x] Accessibility standards maintained (WCAG 2.1 AA)
+- [x] PasswordField decorative icons include `aria-hidden="true"` for screen reader clarity
 - [x] Design system documentation updated (Task 9.2 completed)
 - [x] No console errors or warnings (deprecated icons fixed)
 - [x] All pages render correctly in development
@@ -1998,12 +1999,12 @@ If issues are found: FIX IT.
 
 **Checklist:**
 
-- [ ] Add `aria-hidden="true"` to Eye icon in PasswordField.astro
-- [ ] Add `aria-hidden="true"` to EyeOff icon in PasswordField.astro
-- [ ] Add `aria-hidden="true"` to Check icons in PasswordField.astro
-- [ ] Add `aria-hidden="true"` to X icons in PasswordField.astro
-- [ ] Test with screen reader to verify icons are not announced
-- [ ] Run quality gates
+- [x] Add `aria-hidden="true"` to Eye icon in PasswordField.astro
+- [x] Add `aria-hidden="true"` to EyeOff icon in PasswordField.astro
+- [x] Add `aria-hidden="true"` to Check icons in PasswordField.astro
+- [x] Add `aria-hidden="true"` to X icons in PasswordField.astro
+- [x] Test with screen reader to verify icons are not announced
+- [x] Run quality gates
 
 **Files to modify:**
 
@@ -2015,7 +2016,7 @@ The Eye, EyeOff, Check, and X icons are decorative and should have `aria-hidden=
 
 **Estimated Time:** 30 minutes
 
-**Status:** Pending
+**Status:** ✅ Completed
 
 ---
 
@@ -2071,10 +2072,10 @@ Current icon implementations use `stroke-current` class which correctly inherits
 
 **Checklist:**
 
-- [ ] Add `stroke-current` class to Info icon in transactions/import.astro
-- [ ] Add `stroke-current` class to Info icon in transactions/export.astro
-- [ ] Verify icons inherit color correctly in alert-info context
-- [ ] Run quality gates
+- [x] Add `stroke-current` class to Info icon in transactions/import.astro
+- [x] Add `stroke-current` class to Info icon in transactions/export.astro
+- [x] Verify icons inherit color correctly in alert-info context
+- [x] Run quality gates
 
 **Files to modify:**
 
@@ -2099,7 +2100,7 @@ The Info icons in both transaction pages use `class="shrink-0"` but other Lucide
 
 **Estimated Time:** 15 minutes
 
-**Status:** Pending
+**Status:** ✅ Completed (2026-01-21)
 
 ---
 
@@ -2107,10 +2108,10 @@ The Info icons in both transaction pages use `class="shrink-0"` but other Lucide
 
 **Checklist:**
 
-- [ ] Replace ArrowRight import with Download in transactions/import.astro
-- [ ] Update icon usage in template download link
-- [ ] Verify visual consistency with export.astro Download icon
-- [ ] Run quality gates
+- [x] Replace ArrowRight import with Download in transactions/import.astro
+- [x] Update icon usage in template download link
+- [x] Verify visual consistency with export.astro Download icon
+- [x] Run quality gates
 
 **Files to modify:**
 
@@ -2138,7 +2139,7 @@ import { Info, Download } from '@lucide/astro';
 
 **Estimated Time:** 10 minutes
 
-**Status:** Pending
+**Status:** ✅ Completed (2026-01-21)
 
 ---
 
@@ -2146,11 +2147,11 @@ import { Info, Download } from '@lucide/astro';
 
 **Checklist:**
 
-- [ ] Add `shrink-0` class to DollarSign icon in Total Assets card
-- [ ] Add `shrink-0` class to Calendar icon in Monthly Spent card
-- [ ] Add `shrink-0` class to ShieldCheck icon in Budget Health card
-- [ ] Test icon behavior with card content overflow
-- [ ] Run quality gates
+- [x] Add `shrink-0` class to DollarSign icon in Total Assets card
+- [x] Add `shrink-0` class to Calendar icon in Monthly Spent card
+- [x] Add `shrink-0` class to ShieldCheck icon in Budget Health card
+- [x] Test icon behavior with card content overflow
+- [x] Run quality gates
 
 **Files to modify:**
 
@@ -2177,6 +2178,47 @@ The card header icons (DollarSign, Calendar, ShieldCheck) lack `shrink-0` class,
 ```
 
 **Estimated Time:** 15 minutes
+
+**Status:** ✅ Completed (2026-01-21)
+
+---
+
+#### Task: Add stroke-current to SummaryCards status icons (Priority: P2)
+
+**Checklist:**
+
+- [ ] Add `stroke-current` class to DollarSign icon in Total Assets card
+- [ ] Add `stroke-current` class to Calendar icon in Monthly Spent card
+- [ ] Add `stroke-current` class to ShieldCheck icon in Budget Health card
+- [ ] Run quality gates
+
+**Files to modify:**
+
+- `src/components/organisms/SummaryCards.astro`
+
+**Rationale:**
+
+The status icons (DollarSign, Calendar, ShieldCheck) currently use `shrink-0` but not `stroke-current`. While these icons have explicit color classes (`text-success`, `text-info`, `text-warning`), adding `stroke-current` would provide full consistency with the design system pattern documented in `design-system/02-components.md:143` which shows the combined pattern of `stroke-current shrink-0`.
+
+**Current:**
+
+```astro
+<DollarSign size={20} class="shrink-0 text-success" aria-hidden="true" />
+<Calendar size={20} class="shrink-0 text-info" aria-hidden="true" />
+<ShieldCheck size={20} class="shrink-0 text-warning" aria-hidden="true" />
+```
+
+**Should be:**
+
+```astro
+<DollarSign size={20} class="stroke-current shrink-0 text-success" aria-hidden="true" />
+<Calendar size={20} class="stroke-current shrink-0 text-info" aria-hidden="true" />
+<ShieldCheck size={20} class="stroke-current shrink-0 text-warning" aria-hidden="true" />
+```
+
+**Source:** Code review specialist feedback (P2 suggestion from 2026-01-21 review)
+
+**Estimated Time:** 10 minutes
 
 **Status:** Pending
 

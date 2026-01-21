@@ -46,7 +46,7 @@ describe('RecentTransactionsList - Icon Migration', () => {
         'utf-8'
       );
       // ArrowRight in View All link
-      expect(content).toMatch(/View All[\s\S]*?<ArrowRight size={16}/);
+      expect(content).toMatch(/View All[\s\S]*?<ArrowRight size=\{16\}/);
     });
 
     it('should use ArrowRight for quick action link (size 16px)', async () => {
@@ -576,15 +576,15 @@ describe('RecentTransactionsList - View All Button', () => {
 
 describe('RecentTransactionsList - Stories', () => {
   describe('Lucide Icon Usage in Stories', () => {
-    it('should import Lucide icons in stories', async () => {
+    it('should import IconRenderers for Lucide icons in stories', async () => {
       const fs = await import('fs/promises');
       const content = await fs.readFile(
         'src/components/organisms/RecentTransactionsList.stories.ts',
         'utf-8'
       );
-      expect(content).toContain("from '@lucide/astro'");
+      expect(content).toContain("from '../../../.storybook/lucide-icons'");
+      expect(content).toContain('IconRenderers');
       expect(content).toContain('ArrowRight');
-      expect(content).toContain('DollarSign');
     });
 
     it('should use .render() method for icons in stories', async () => {

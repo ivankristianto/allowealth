@@ -7,7 +7,7 @@
 
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import CSVImportForm from '../../components/molecules/CSVImportForm.astro';
-import { Info, ArrowRight } from '@lucide/astro';
+import { Info, Download } from '@lucide/astro';
 
 const currentPath = '/transactions/import';
 
@@ -29,7 +29,7 @@ const currentPath = '/transactions/import';
       <div class="card-body">
         <!-- Instructions -->
         <div class="alert alert-info mb-6">
-          <Info size={16} class="shrink-0" aria-hidden="true" />
+          <Info size={16} class="stroke-current shrink-0" aria-hidden="true" />
           <div>
             <h3 class="font-bold">CSV Format Requirements</h3>
             <div class="text-sm mt-2">
@@ -59,7 +59,7 @@ const currentPath = '/transactions/import';
             Download a sample CSV file to see the expected format.
           </p>
           <a href="/transactions/template.csv" class="btn btn-outline btn-sm">
-            <ArrowRight size={16} class="stroke-current" aria-hidden="true" />
+            <Download size={16} class="stroke-current" aria-hidden="true" />
             Download CSV Template
           </a>
         </div>
