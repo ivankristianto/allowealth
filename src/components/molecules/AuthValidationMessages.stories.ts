@@ -1,5 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/html';
-import { TriangleAlert, CircleX, Lock, CircleOff, CircleCheck, X } from '@lucide/astro';
+import { IconRenderers } from '../../../.storybook/lucide-icons';
+
+const { TriangleAlert, CircleX, Lock, CircleOff, CircleCheck, X } = IconRenderers;
 
 const meta: Meta = {
   title: 'Molecules/AuthValidationMessages',
@@ -74,14 +76,12 @@ const createAuthValidationMessage = (args: {
 
   // Add icon using Lucide render method
   const IconComponent = iconMap[type] || CircleCheck;
-  const iconContainer = document.createElement('div');
-  iconContainer.className = 'flex-shrink-0';
-  iconContainer.innerHTML = IconComponent.render({
+  const iconEl = IconComponent.render({
     size: 24,
     class: 'shrink-0',
     'aria-hidden': 'true',
   });
-  alertContent.appendChild(iconContainer);
+  alertContent.appendChild(iconEl);
 
   // Add message
   const messageContainer = document.createElement('div');
@@ -110,15 +110,9 @@ const createAuthValidationMessage = (args: {
     dismissButton.className = 'btn btn-sm btn-circle btn-ghost';
     dismissButton.setAttribute('aria-label', 'Dismiss message');
     dismissButton.onclick = () => alert.remove();
-
-    const xIcon = document.createElement('span');
-    xIcon.innerHTML = X.render({
-      size: 16,
-      class: 'stroke-current',
-      'aria-hidden': 'true',
-    });
-    dismissButton.appendChild(xIcon);
-
+    dismissButton.appendChild(
+      X.render({ size: 16, class: 'stroke-current', 'aria-hidden': 'true' })
+    );
     alertContent.appendChild(dismissButton);
   } else {
     messageContainer.className = 'alert-content';

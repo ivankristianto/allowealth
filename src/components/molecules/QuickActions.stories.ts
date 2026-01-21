@@ -1,5 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/html';
-import { Minus, Plus, ChartPie } from '@lucide/astro';
+import { IconRenderers } from '../../../.storybook/lucide-icons';
+
+const { Minus, Plus, ChartPie } = IconRenderers;
 
 const meta: Meta = {
   title: 'Molecules/QuickActions',
@@ -76,11 +78,12 @@ const createQuickActions = (args: { actions?: QuickAction[] }): HTMLElement => {
     }
 
     const IconComponent = iconMap[action.icon as keyof typeof iconMap] || Plus;
-    const iconWrapper = document.createElement('span');
-    iconWrapper.setAttribute('aria-hidden', 'true');
-    iconWrapper.innerHTML = IconComponent.render({ size: 16, class: 'stroke-current' });
-
-    button.appendChild(iconWrapper);
+    const iconEl = IconComponent.render({
+      size: 16,
+      class: 'stroke-current',
+      'aria-hidden': 'true',
+    });
+    button.appendChild(iconEl);
 
     const span = document.createElement('span');
     span.textContent = action.label;

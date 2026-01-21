@@ -1,5 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/html';
-import { Menu, Plus, Bell } from '@lucide/astro';
+import { IconRenderers } from '../../../.storybook/lucide-icons';
+
+const { Menu, Plus, Bell } = IconRenderers;
 
 const meta: Meta = {
   title: 'Layouts/Header',
@@ -44,9 +46,9 @@ const createHeader = (args: { currentPath?: string; showMenuToggle?: boolean }):
     menuBtn.setAttribute('aria-label', 'Toggle menu');
 
     // Use Lucide Menu icon
-    const menuIcon = document.createElement('div');
-    menuIcon.innerHTML = Menu.render({ size: 20, class: 'stroke-current' });
-    menuBtn.appendChild(menuIcon);
+    menuBtn.appendChild(
+      Menu.render({ size: 20, class: 'stroke-current' }, { 'aria-hidden': 'true' })
+    );
 
     leftDiv.appendChild(menuBtn);
   }
@@ -67,9 +69,7 @@ const createHeader = (args: { currentPath?: string; showMenuToggle?: boolean }):
   addBtn.setAttribute('aria-label', 'Add new item');
 
   // Use Lucide Plus icon
-  const plusIcon = document.createElement('div');
-  plusIcon.innerHTML = Plus.render({ size: 16, class: 'stroke-current' });
-  addBtn.appendChild(plusIcon);
+  addBtn.appendChild(Plus.render({ size: 16, class: 'stroke-current' }, { 'aria-hidden': 'true' }));
 
   const addSpan = document.createElement('span');
   addSpan.className = 'hidden sm:inline';
@@ -87,9 +87,9 @@ const createHeader = (args: { currentPath?: string; showMenuToggle?: boolean }):
   notifBtn.setAttribute('aria-label', 'Notifications');
 
   // Use Lucide Bell icon
-  const bellIcon = document.createElement('div');
-  bellIcon.innerHTML = Bell.render({ size: 20, class: 'stroke-current' });
-  notifBtn.appendChild(bellIcon);
+  notifBtn.appendChild(
+    Bell.render({ size: 20, class: 'stroke-current' }, { 'aria-hidden': 'true' })
+  );
 
   const badge = document.createElement('span');
   badge.className = 'badge badge-xs badge-error absolute top-1 right-1';

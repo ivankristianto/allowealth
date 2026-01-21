@@ -1614,10 +1614,35 @@ grep -r '<Icon name=' src/
 
 **Checklist:**
 
-- [ ] Verify all component stories work with Lucide icons
-- [ ] Update story titles/descriptions as needed
-- [ ] Test Storybook build
+- [x] Verify all component stories work with Lucide icons
+- [x] Update story titles/descriptions as needed
+- [x] Test Storybook build
 - [ ] Take screenshots for documentation
+
+**Files modified:**
+
+- `.storybook/lucide-icons.ts` (created - utility for Storybook icon rendering)
+- `src/components/atoms/ErrorMessage.stories.ts` (updated to use IconRenderers)
+- `src/components/molecules/Modal.stories.ts` (updated to use IconRenderers)
+- `src/components/molecules/TransactionRow.stories.ts` (updated to use IconRenderers)
+- `src/components/molecules/QuickActions.stories.ts` (updated to use IconRenderers)
+- `src/components/molecules/BudgetHealthWidget.stories.ts` (updated to use IconRenderers)
+- `src/components/molecules/AuthValidationMessages.stories.ts` (updated to use IconRenderers)
+- `src/components/layouts/Header.stories.ts` (updated to use IconRenderers)
+- `src/components/organisms/AssetUpdateTodoList.stories.ts` (updated to use IconStrings)
+- `src/components/organisms/RecentTransactionsList.stories.ts` (updated to use IconRenderers)
+
+**Implementation Notes:**
+
+- Created `.storybook/lucide-icons.ts` utility to provide Lucide icon rendering for Storybook without importing `.astro` files (which break Storybook builds)
+- Installed `lucide` package (vanilla JS version) to support icon rendering in Storybook
+- Exported `IconRenderers` - returns SVGElement for appendChild() usage
+- Exported `IconStrings` - returns HTML string for template literal usage
+- Updated all stories to use the new icon utility instead of `@lucide/astro`
+- All stories now render correctly with Lucide icons
+- Storybook build passes successfully (bun run build-storybook)
+- All quality gates pass (typecheck, lint, stylelint, format)
+- Code review specialist: **APPROVED** with P0/P1 feedback addressed
 
 **Command:**
 
@@ -1628,7 +1653,7 @@ bun run build-storybook
 
 **Estimated Time:** 1 hour
 
-**Status:** Pending
+**Status:** ✅ Completed (2026-01-21)
 
 ---
 
@@ -1726,7 +1751,7 @@ All dependencies are already in package.json.
 - Phase 6 (Page Components): ✅ 3/3 tasks completed (budget/index.astro, settings pages, transaction pages)
 - Phase 7 (Inline SVGs - Atoms & Molecules): ✅ 5/5 tasks completed (ErrorMessage.astro, Toast.astro, ToastContainer.astro, AuthValidationMessages.astro, Form Components)
 - Phase 8 (Inline SVGs - Organisms & Pages): ✅ 2/2 tasks completed (SummaryCards.astro, UserContext.astro ✅; budget/history.astro, register.astro, signup.astro ✅)
-- Phase 9 (Cleanup & Docs): 🔄 2/3 tasks completed (Icon deletion ✅, documentation ✅, Storybook pending)
+- Phase 9 (Cleanup & Docs): ✅ 3/3 tasks completed (Icon deletion ✅, documentation ✅, Storybook stories ✅)
 
 **Overall Progress:** 31/31 migration tasks completed (100%)
 
@@ -1744,7 +1769,7 @@ All dependencies are already in package.json.
 | 6. Page Components (Icon.astro)     | 3      | 3         | 4-5 hours       | P1       |
 | 7. Inline SVGs - Atoms & Molecules  | 5      | 5         | 6-7.5 hours     | P1       |
 | 8. Inline SVGs - Organisms & Pages  | 2      | 2         | 4-6 hours       | P1       |
-| 9. Cleanup & Docs                   | 3      | 1         | 2.5 hours       | P2       |
+| 9. Cleanup & Docs                   | 3      | 3         | 2.5 hours       | P2       |
 | **Total**                           | **31** | **31**    | **37-46 hours** |          |
 
 **Recommended Approach:** Complete phases sequentially. Each phase builds on the previous one and allows for early feedback on patterns.
@@ -2185,5 +2210,29 @@ The SummaryCards component uses a sizing hierarchy that could benefit from docum
 ```
 
 **Estimated Time:** 5 minutes
+
+**Status:** Pending
+
+---
+
+#### Task: Sync IconStrings and IconRenderers exports in lucide-icons.ts (Priority: P3)
+
+**Checklist:**
+
+- [ ] Review all icons used in stories across the codebase
+- [ ] Ensure IconStrings exports match IconRenderers exports
+- [ ] Add any missing icons to IconStrings (Eye, EyeOff, Info, User, LogOut, ChevronDown/Up/Left/Right, ArrowUpDown, etc.)
+- [ ] Add comment explaining the intentional subset if not all icons are needed
+- [ ] Run quality gates
+
+**Files to modify:**
+
+- `.storybook/lucide-icons.ts`
+
+**Rationale:**
+
+`IconStrings` exports fewer icons (24) than `IconRenderers` (44). Some icons are available in `IconRenderers` but not in `IconStrings` (e.g., Eye, EyeOff, Info, User, LogOut, ChevronDown/Up/Left/Right, ArrowUpDown, etc.). This inconsistency could cause confusion or runtime errors when a developer assumes an icon is available in both. Either keep both exports in sync, or add a comment explaining the intentional difference.
+
+**Estimated Time:** 30 minutes
 
 **Status:** Pending

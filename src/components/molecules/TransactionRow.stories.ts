@@ -1,6 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/html';
 import type { TransactionOutput } from '@/lib/types/transaction';
-import { Pencil, Trash2 } from '@lucide/astro';
+import { IconRenderers } from '../../../.storybook/lucide-icons';
+
+const { Pencil, Trash2 } = IconRenderers;
 
 const meta: Meta = {
   title: 'Molecules/TransactionRow',
@@ -120,11 +122,9 @@ const createTransactionRow = (args: {
       editBtn.href = editUrl;
       editBtn.className = 'btn btn-ghost btn-sm';
       editBtn.setAttribute('aria-label', 'Edit transaction');
-      const editIconHtml = Pencil.render(
-        { size: 16, class: 'stroke-current' },
-        { 'aria-hidden': 'true' }
+      editBtn.appendChild(
+        Pencil.render({ size: 16, class: 'stroke-current' }, { 'aria-hidden': 'true' })
       );
-      editBtn.innerHTML = editIconHtml;
       actionsDiv.appendChild(editBtn);
     }
 
@@ -135,11 +135,9 @@ const createTransactionRow = (args: {
       deleteBtn.setAttribute('aria-label', 'Delete transaction');
       deleteBtn.setAttribute('data-delete-transaction', transaction.id);
       deleteBtn.setAttribute('data-transaction-details', JSON.stringify(transaction));
-      const trashIconHtml = Trash2.render(
-        { size: 16, class: 'stroke-current' },
-        { 'aria-hidden': 'true' }
+      deleteBtn.appendChild(
+        Trash2.render({ size: 16, class: 'stroke-current' }, { 'aria-hidden': 'true' })
       );
-      deleteBtn.innerHTML = trashIconHtml;
       actionsDiv.appendChild(deleteBtn);
     }
 

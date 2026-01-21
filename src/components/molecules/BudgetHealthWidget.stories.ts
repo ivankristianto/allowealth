@@ -1,5 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/html';
-import { Check, TriangleAlert, ArrowRight } from '@lucide/astro';
+import { IconRenderers } from '../../../.storybook/lucide-icons';
+
+const { Check, TriangleAlert, ArrowRight } = IconRenderers;
 import {
   mockBudgetHealthData,
   mockBudgetHealthHealthy,

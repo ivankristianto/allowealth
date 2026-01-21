@@ -4,7 +4,10 @@ import {
   mockAssetUpdateTodosEmpty,
   mockAssetUpdateTodosAllUpdated,
 } from '@/services/__tests__/mocks/dashboard-mocks';
-import { Calendar, Pencil, X, RefreshCw, Check } from '@lucide/astro';
+import { IconStrings } from '../../../.storybook/lucide-icons';
+
+// Use IconStrings for template literal usage
+const { Calendar, Pencil, X, RefreshCw, Check } = IconStrings;
 
 const meta: Meta = {
   title: 'Organisms/AssetUpdateTodoList',

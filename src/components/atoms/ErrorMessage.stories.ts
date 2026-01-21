@@ -1,5 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/html';
-import { CircleX, X } from '@lucide/astro';
+import { IconRenderers } from '../../../.storybook/lucide-icons';
+
+const { CircleX, X } = IconRenderers;
 
 const meta: Meta = {
   title: 'Atoms/ErrorMessage',
@@ -41,12 +43,7 @@ const createErrorMessage = (args: {
   div.setAttribute('role', 'alert');
 
   // Icon - render CircleX from Lucide
-  const iconContainer = document.createElement('div');
-  iconContainer.innerHTML = CircleX.render(
-    { size: 24, class: 'shrink-0' },
-    { 'aria-hidden': 'true' }
-  );
-  div.appendChild(iconContainer.firstChild!);
+  div.appendChild(CircleX.render({ size: 24, class: 'shrink-0' }, { 'aria-hidden': 'true' }));
 
   // Content
   const content = document.createElement('div');
@@ -68,7 +65,7 @@ const createErrorMessage = (args: {
     btn.className = 'btn btn-sm btn-ghost';
     btn.type = 'button';
     btn.setAttribute('aria-label', 'Dismiss');
-    btn.innerHTML = X.render({ size: 16, class: 'stroke-current' }, { 'aria-hidden': 'true' });
+    btn.appendChild(X.render({ size: 16, class: 'stroke-current' }, { 'aria-hidden': 'true' }));
     div.appendChild(btn);
   }
 

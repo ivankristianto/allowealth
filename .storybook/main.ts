@@ -18,6 +18,25 @@ const config: StorybookConfig = {
   typescript: {
     reactDocgen: 'off',
   },
+  async viteFinal(config) {
+    return {
+      ...config,
+      resolve: {
+        ...config.resolve,
+        alias: {
+          '@': '/src',
+          '@/*': '/src/*',
+          '@lib/*': '/src/lib/*',
+          '@components/*': '/src/components/*',
+          '@db/*': '/src/db/*',
+          '@layouts/*': '/src/layouts/*',
+          '@services/*': '/src/services/*',
+          '@styles/*': '/src/styles/*',
+          '@src-types/*': '/src/types/*',
+        },
+      },
+    };
+  },
 };
 
 export default config;

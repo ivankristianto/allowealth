@@ -1,5 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/html';
-import { X } from '@lucide/astro';
+import { IconRenderers } from '../../../.storybook/lucide-icons';
+
+const { X } = IconRenderers;
 
 const meta: Meta = {
   title: 'Molecules/Modal',
@@ -71,7 +73,9 @@ const createModal = (args: {
     const closeBtn = document.createElement('button');
     closeBtn.className = 'btn btn-sm btn-circle btn-ghost';
     closeBtn.ariaLabel = 'Close modal';
-    closeBtn.innerHTML = X.render({ size: 16, class: 'stroke-current' }, { 'aria-hidden': 'true' });
+    closeBtn.appendChild(
+      X.render({ size: 16, class: 'stroke-current' }, { 'aria-hidden': 'true' })
+    );
     closeBtn.onclick = () => modal.close();
     header.appendChild(closeBtn);
   }

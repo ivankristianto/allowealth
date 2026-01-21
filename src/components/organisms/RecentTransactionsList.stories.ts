@@ -3,7 +3,9 @@ import {
   mockRecentTransactions,
   mockRecentTransactionsEmpty,
 } from '@/services/__tests__/mocks/dashboard-mocks';
-import { ArrowRight, DollarSign, CreditCard, ArrowLeft, Wallet, Plus, Clock } from '@lucide/astro';
+import { IconRenderers } from '../../../.storybook/lucide-icons';
+
+const { ArrowRight, DollarSign, CreditCard, ArrowLeft, Wallet, Plus, Clock } = IconRenderers;
 
 const meta: Meta = {
   title: 'Organisms/RecentTransactionsList',
