@@ -428,15 +428,13 @@ function addFormValidation(form: HTMLFormElement, loginLink: string) {
       errors.push('Please enter a valid email address');
     }
 
-    // Validate password requirements
+    // Validate password requirements (3 requirements: length, letter, numberOrSpecial)
     const password = data.password as string;
     const passwordErrors = [];
     if (password.length < 12) passwordErrors.push('at least 12 characters');
-    if (!/[A-Z]/.test(password)) passwordErrors.push('one uppercase letter');
-    if (!/[a-z]/.test(password)) passwordErrors.push('one lowercase letter');
-    if (!/[0-9]/.test(password)) passwordErrors.push('one number');
-    if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password))
-      passwordErrors.push('one special character');
+    if (!/[a-zA-Z]/.test(password)) passwordErrors.push('at least one letter');
+    if (!/[0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password))
+      passwordErrors.push('at least one number or special character');
 
     if (passwordErrors.length > 0) {
       errors.push(`Password must include ${passwordErrors.join(', ')}`);
