@@ -1,0 +1,441 @@
+# Design System Alignment - Milestone P1
+
+Complete audit and alignment of components and styles to strictly follow `design-system/styles.json`.
+
+## Summary
+
+This plan addresses **significant discrepancies** between the current implementation and the new "Oasis Finance" design system specification in `styles.json`. The current codebase uses an emerald-based color palette while the new design spec calls for a slate-primary, indigo-accent modern design language.
+
+### Key Changes Required
+
+1. **Color Palette Overhaul** - Migrate from emerald-primary to slate-primary with indigo-accent system
+2. **Typography Update** - Add Inter font, adjust font sizes to match spec
+3. **Component Restyling** - Update all atoms/molecules/organisms to match new specs
+4. **Animation System** - Implement Motion library patterns (after foundation)
+5. **Dark Theme** - Implement proper dark theme from spec
+6. **Icon Standardization** - Fix inline SVGs in JavaScript, standardize icon sizes
+7. **Layout Updates** - Align with container, spacing, and dimension specs
+8. **Color Semantics Audit** - Ensure primary vs accent usage is consistent
+
+### Design System Alignment Rules (Apply to All Tasks)
+
+- Use design tokens from `@/lib/tokens` and CSS variables from `tokens.css`; avoid hardcoded hex values.
+- Use DaisyUI semantic colors (`btn-accent`, `text-base-content`, `bg-base-200`, `border-base-300`) instead of Tailwind palette classes (`text-slate-*`, `bg-slate-*`, `dark:` variants).
+- Use `@lucide/astro` for icons and follow the size scale from `design-system/styles.json`.
+- Use Motion (`motion`) presets for animations when required by the spec.
+- Avoid arbitrary value utilities (e.g., `text-[...]`, `p-[...]`, `max-w-[...]`, `shadow-[...]`, `bg-[...]`); use tokens, DaisyUI size classes, or add tokenized utilities.
+- Avoid arbitrary radius utilities like `rounded-[...]`; use DaisyUI design variables (`--radius-*`) and tokenized radius classes.
+
+### Proposed Changes (Context)
+
+Note: This list reflects full-scope changes across all milestones.
+
+#### New Files
+
+- `src/styles/animations.css` - Motion animation CSS custom properties
+- `src/lib/animations.ts` - Motion animation presets and utilities
+
+#### Modified Files
+
+- `src/styles/tokens.css` - Update all color tokens
+- `src/styles/globals.css` - Update DaisyUI theme, add new utilities
+- `src/lib/tokens.ts` - Update TypeScript token exports
+- `tailwind.config.ts` - Update DaisyUI theme colors
+- `src/layouts/BaseLayout.astro` - Add Inter font import
+- `src/components/atoms/Button.astro` - New color scheme, sizes
+- `src/components/atoms/Card.astro` - New padding, radius, shadow
+- `src/components/atoms/Input.astro` - New height, radius, focus ring
+- `src/components/atoms/Badge.astro` - New sizing
+- `src/components/layouts/Navigation.astro` - Active gradient, icon sizes
+- `src/components/layouts/Header.astro` - Height adjustment
+- `src/components/molecules/ForgotPasswordForm.astro` - Replace JS template SVGs
+- `src/components/molecules/CSVImportForm.astro` - Replace dynamic SVGs
+- `src/components/molecules/LoginForm.astro` - Replace SVG in error template
+- `src/components/molecules/Toast.astro` - Motion animations
+- All organism components - Color and spacing updates
+
+#### Refactoring (Bulk Changes)
+
+- All 16 atom components - Color token updates
+- All 14 molecule components - Color and spacing updates
+- All 9 organism components - Color and spacing updates
+- All 4 layout components - Layout dimension updates
+- All UI components - Replace hardcoded colors with tokens or DaisyUI semantic classes
+
+---
+
+## Scope
+
+- Priority: P1 only
+- Sections included: Task 2.5, Task 3.3, Section 4, Section 5 (Tasks 5.1-5.4), Section 6 (Tasks 6.1-6.3)
+
+---
+
+## Detailed Tasks
+
+### Task 2.5: Update Remaining Atom Components (Priority: P1)
+
+**Goal:** Update all other atoms to use new color tokens
+
+**Current Issue:** Multiple atoms reference emerald colors or old token values that conflict with the new slate-primary, indigo-accent design system. Components need to use accent color for interactive elements and updated semantic colors.
+
+**Checklist:**
+
+- [ ] Update `Currency.astro` - ensure color tokens, IDR/USD colors
+- [ ] Update `CurrencyInput.astro` - input styling alignment with Task 2.3 specs
+- [ ] Update `DatePicker.astro` - input styling alignment with Task 2.3 specs
+- [ ] Update `EmptyState.astro` - color tokens, accent color for CTAs
+- [ ] Update `ErrorMessage.astro` - error semantic color token (no hardcoded hex)
+- [ ] Update `Label.astro` - text colors using base-content/neutral tokens
+- [ ] Update `PasswordField.astro` - input styling, focus colors to indigo
+- [ ] Update `Percentage.astro` - status colors
+- [ ] Update `Spinner.astro` - accent color for loading spinner
+- [ ] Update `Checkbox.astro` - accent color for checked state
+- [ ] Update `CategorySelect.astro` - styling alignment
+- [ ] Update `PaymentMethodSelect.astro` - styling alignment
+
+**Files to modify:**
+
+- All 16 files in `src/components/atoms/`
+
+**Estimated Time:** 3-4 hours
+
+**Status:** ⏳ Pending
+
+---
+
+### Task 3.3: Update PageContainer Component (Priority: P1)
+
+**Goal:** Add container max-width and padding specifications
+
+**Current Issue:** Container doesn't have max-width (should be 1400px) or responsive padding from spec (mobile: 1.5rem, desktop: 3rem).
+
+**Checklist:**
+
+- [ ] Add max-width: 1400px using a tokenized container class (e.g., `max-w-container`)
+- [ ] Add responsive padding: `px-6 lg:px-12` (mobile 1.5rem, desktop 3rem)
+- [ ] Center container using `mx-auto`
+- [ ] Update any existing width constraints
+
+**Files to modify:**
+
+- `src/components/layouts/PageContainer.astro`
+
+**Estimated Time:** 30 minutes
+
+**Status:** ⏳ Pending
+
+---
+
+### Section 4: Icon Standardization (Priority: P1)
+
+**Goal:** Replace all inline SVGs with Lucide icons and standardize icon sizes
+
+---
+
+### Task 4.1: Fix ForgotPasswordForm JavaScript Template SVGs (Priority: P1)
+
+**Goal:** Replace inline SVG strings in JavaScript template literals with pre-rendered Lucide icons
+
+**Current Issue:** The Astro template already imports and uses Lucide `CircleCheck` (line 16, 38). However, the client-side JavaScript `<script>` tag contains inline SVG strings in template literals (lines 128-135, 166-173, 181-189, 198-205) for dynamically created error messages.
+
+**Checklist:**
+
+- [ ] Pre-render hidden icon elements in the template for: `CircleX`, `CircleCheck`, `TriangleAlert`
+- [ ] Add IDs: `#icon-error-template`, `#icon-success-template`, `#icon-warning-template`
+- [ ] Update JavaScript to use `cloneNode(true)` from template elements
+- [ ] Remove inline SVG strings from JavaScript template literals (lines 128, 166, 181, 198)
+
+**Files to modify:**
+
+- `src/components/molecules/ForgotPasswordForm.astro`
+
+**Estimated Time:** 20 minutes
+
+**Status:** ⏳ Pending
+
+---
+
+### Task 4.2: Fix CSVImportForm Dynamic SVGs (Priority: P1)
+
+**Goal:** Replace dynamic SVG creation with proper icon rendering
+
+**Current Issue:** JavaScript uses `document.createElementNS` extensively (lines 514-524, 542-558, 586-610, 783-808, 1020-1069) to create SVG elements dynamically, which is hard to maintain and inconsistent with design system.
+
+**Checklist:**
+
+- [ ] Pre-render hidden SVG elements for validation states: `Check`, `XCircle`, `TriangleAlert`
+- [ ] Add template elements with IDs: `#icon-check-template`, `#icon-error-template`, `#icon-warning-template`
+- [ ] Update JavaScript to use `cloneNode(true)` instead of `createElementNS`
+- [ ] Remove all `document.createElementNS('http://www.w3.org/2000/svg', ...)` code
+
+**Files to modify:**
+
+- `src/components/molecules/CSVImportForm.astro`
+
+**Estimated Time:** 45 minutes
+
+**Status:** ⏳ Pending
+
+---
+
+### Task 4.3: Fix LoginForm Error SVG (Priority: P1)
+
+**Goal:** Replace SVG in error message template with Lucide icon
+
+**Current Issue:** Error message template uses inline SVG string in JavaScript for constructing error UI.
+
+**Checklist:**
+
+- [ ] Locate inline SVG in JavaScript error handling code
+- [ ] Pre-render error icon in the template (hidden by default) with ID
+- [ ] Update JavaScript to clone and display the template icon
+- [ ] Or refactor to use the ErrorMessage component which already uses Lucide `CircleX`
+- [ ] Remove inline SVG string from JavaScript
+
+**Files to modify:**
+
+- `src/components/molecules/LoginForm.astro`
+
+**Estimated Time:** 20 minutes
+
+**Status:** ⏳ Pending
+
+---
+
+### Task 4.4: Standardize Icon Sizes Across Components (Priority: P1)
+
+**Goal:** Update all icon sizes to match styles.json specifications
+
+**Current Issue:** Icons use inconsistent sizes (mostly 16px, 20px), should follow spec: xs=16, sm=20, md=22, lg=24, xl=32.
+
+**Checklist:**
+
+- [ ] Audit all components for icon usage
+- [ ] Update navigation icons to 22px (md size)
+- [ ] Update button icons to 20px (sm size) for default buttons
+- [ ] Update table/list icons to 22px (md size)
+- [ ] Update header icons to 24px (lg size)
+- [ ] Update small UI icons (close, etc.) to 16px (xs size)
+- [ ] Align icon package naming across docs and code to `@lucide/astro` (update styles.json metadata if needed)
+- [ ] Document icon size conventions in design system
+
+**Files to modify:**
+
+- Multiple component files across atoms, molecules, organisms, layouts
+
+**Estimated Time:** 1-2 hours
+
+**Status:** ⏳ Pending
+
+---
+
+### Section 5: Molecule Component Updates (Priority: P1)
+
+**Goal:** Update all molecule components to use new design tokens
+
+---
+
+### Task 5.1: Update Toast Component (Priority: P1)
+
+**Goal:** Align Toast with styles.json animation specifications
+
+**Current Issue:** Toast uses CSS keyframes, styles.json specifies Motion library animations with specific timing (enter: 0.2s, exit: 0.2s).
+
+**Checklist:**
+
+- [ ] Update animation timing to match spec: enter 0.2s, exit 0.2s
+- [ ] Update initial/animate states: `{ opacity: 0, y: -10, scale: 0.95 }` → `{ opacity: 1, y: 0, scale: 1 }`
+- [ ] Use Motion presets for toast animations to match the design system
+- [ ] Update toast colors to use semantic colors (info/success/warning/error) via DaisyUI or tokens
+- [ ] Update positioning if needed
+
+**Files to modify:**
+
+- `src/components/molecules/Toast.astro`
+- `src/components/molecules/ToastContainer.astro`
+
+**Estimated Time:** 45 minutes
+
+**Status:** ⏳ Pending
+
+---
+
+### Task 5.2: Update Modal Component (Priority: P1)
+
+**Goal:** Align Modal animations with styles.json specifications
+
+**Current Issue:** Modal may not have optimal animation specs matching styles.json modal presets.
+
+**Checklist:**
+
+- [ ] Update backdrop animation: opacity 0→1, duration 0.2s
+- [ ] Update content animation: `{ opacity: 0, scale: 0.95, y: 20 }` → `{ opacity: 1, scale: 1, y: 0 }`, duration 0.3s
+- [ ] Ensure modal styling uses new tokens (border-radius, shadow)
+- [ ] Update close button styling with accent hover
+
+**Files to modify:**
+
+- `src/components/molecules/Modal.astro`
+
+**Estimated Time:** 30 minutes
+
+**Status:** ⏳ Pending
+
+---
+
+### Task 5.3: Update BudgetHealthWidget (Priority: P1)
+
+**Goal:** Update colors and styling to new design tokens
+
+**Current Issue:** May use old color tokens for status indicators.
+
+**Checklist:**
+
+- [ ] Ensure status colors match new tokens (success, warning, danger) via tokens or semantic classes
+- [ ] Update any hardcoded colors to use CSS variables
+- [ ] Update badge styling to match Task 2.4 specs
+- [ ] Update progress bar styling
+
+**Files to modify:**
+
+- `src/components/molecules/BudgetHealthWidget.astro`
+
+**Estimated Time:** 30 minutes
+
+**Status:** ⏳ Pending
+
+---
+
+### Task 5.4: Update TransactionForm (Priority: P1)
+
+**Goal:** Update form styling to match new input/button specs
+
+**Current Issue:** Form may use old styling that doesn't match updated Input and Button components.
+
+**Checklist:**
+
+- [ ] Ensure all inputs use updated Input component styling
+- [ ] Ensure buttons use updated Button component styling
+- [ ] Update any direct color references to use tokens
+- [ ] Update spacing to match form gap spec: `gap-4` (16px)
+
+**Files to modify:**
+
+- `src/components/molecules/TransactionForm.astro`
+
+**Estimated Time:** 45 minutes
+
+**Status:** ⏳ Pending
+
+---
+
+### Section 6: Organism Component Updates (Priority: P1)
+
+**Goal:** Update all organism components to use new design tokens
+
+---
+
+### Task 6.1: Update BudgetOverviewTable (Priority: P1)
+
+**Goal:** Align table with styles.json specifications
+
+**Current Issue:** Table may not match header background, row hover, cell padding specs from styles.json.
+
+**Checklist:**
+
+- [ ] Update header background to the table header token from styles.json (theme-friendly)
+- [ ] Update row hover color to the table rowHover token (theme-friendly)
+- [ ] Update cell padding to `py-4 px-6` (1rem 1.5rem)
+- [ ] Update icon sizes to 22px
+- [ ] Update status colors to new tokens (warning/danger)
+
+**Files to modify:**
+
+- `src/components/organisms/BudgetOverviewTable.astro`
+
+**Estimated Time:** 45 minutes
+
+**Status:** ⏳ Pending
+
+---
+
+### Task 6.2: Update SummaryCards (Priority: P1)
+
+**Goal:** Update dashboard summary cards to new card styling
+
+**Current Issue:** Cards may not use updated Card component with new padding, radius, and shadow specs.
+
+**Checklist:**
+
+- [ ] Ensure cards use updated Card component (p-7, radius-box, premium shadow)
+- [ ] Update icon colors to use accent token (`text-accent` or equivalent)
+- [ ] Update trend indicators styling (emerald for up, rose for down)
+- [ ] Update text colors to base-content/neutral tokens
+
+**Files to modify:**
+
+- `src/components/organisms/SummaryCards.astro`
+
+**Estimated Time:** 30 minutes
+
+**Status:** ⏳ Pending
+
+---
+
+### Task 6.3: Update RecentTransactionsList (Priority: P1)
+
+**Goal:** Update list styling to match new design
+
+**Current Issue:** List may use old hover colors and inconsistent icon sizes.
+
+**Checklist:**
+
+- [ ] Update row hover colors using table rowHover token
+- [ ] Update icon sizes to 22px
+- [ ] Update text colors to base-content/neutral tokens
+- [ ] Update badge styling to match Task 2.4 specs
+
+**Files to modify:**
+
+- `src/components/organisms/RecentTransactionsList.astro`
+
+**Estimated Time:** 30 minutes
+
+**Status:** ⏳ Pending
+
+---
+
+## Dependencies
+
+### Required Packages
+
+- `@lucide/astro` ✅ (exists)
+- `daisyui` ✅ (exists)
+- `motion` ✅ (exists)
+- `tailwindcss` ✅ (exists)
+- `@tailwindcss/typography` ✅ (exists)
+
+### Required Services
+
+- None
+
+### Required Files
+
+- `design-system/styles.json` ✅ (reference spec)
+- `design-system/START.md` ✅ (design system guide)
+- `docs/constitution.md` ✅ (development guidelines)
+
+---
+
+## Success Criteria (P1)
+
+- [ ] Remaining atom components use new tokens and semantic colors
+- [ ] Page container uses tokenized max width and responsive padding
+- [ ] Inline SVGs in auth/import flows are replaced with Lucide templates
+- [ ] Icon sizing matches the md/sm/lg scale and uses `@lucide/astro`
+- [ ] Toast and modal animations match Motion presets
+- [ ] Budget health widget uses tokenized status colors and badges
+- [ ] Transaction form uses updated inputs, buttons, and spacing
+- [ ] Budget overview table aligns with header/rowHover tokens and padding
+- [ ] Summary cards and recent transactions list match updated card/list specs
