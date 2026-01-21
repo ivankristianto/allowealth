@@ -1495,9 +1495,13 @@ components:
         password:
           type: string
           minLength: 12
-          description: Password (min 12 characters, at least one letter, at least one number OR special character)
-          example: SecurePassword123!
-          pattern: '^(?=.*[A-Za-z])(?=.*[0-9!@#$%^&*()_+\-=\[\]{};'"\\|,.<>\/?]).{12,}$'
+          description: |
+            Password must meet the following requirements:
+            - At least 12 characters long
+            - Contains at least one letter (uppercase or lowercase)
+            - Contains at least one number OR one special character
+          example: mypassword123
+          pattern: '^(?=.*[a-zA-Z])(?=.*[0-9!@#$%^&*()_+\-=\[\]{};'"\\|,.<>\/?]).{12,}$'
         name:
           type: string
           minLength: 1
@@ -1518,8 +1522,10 @@ components:
           example: user@example.com
         password:
           type: string
-          description: User password
-          example: SecurePassword123!
+          description: |
+            User password. Password format validation is enforced during signup
+            and password changes, not during login.
+          example: mypassword123
 
     AuthSuccessResponse:
       allOf:
@@ -1613,14 +1619,19 @@ components:
       properties:
         oldPassword:
           type: string
-          description: Current password for verification
-          example: OldPassword123!
+          minLength: 1
+          description: Current password for verification (only checked against stored hash)
+          example: mypassword123
         newPassword:
           type: string
           minLength: 12
-          description: New password (min 12 characters, at least one letter, at least one number OR special character)
-          example: NewPassword123!
-          pattern: '^(?=.*[A-Za-z])(?=.*[0-9!@#$%^&*()_+\-=\[\]{};'"\\|,.<>\/?]).{12,}$'
+          description: |
+            New password must meet the following requirements:
+            - At least 12 characters long
+            - Contains at least one letter (uppercase or lowercase)
+            - Contains at least one number OR one special character
+          example: mypassword123
+          pattern: '^(?=.*[a-zA-Z])(?=.*[0-9!@#$%^&*()_+\-=\[\]{};'"\\|,.<>\/?]).{12,}$'
 
     PasswordUpdateResponse:
       allOf:
