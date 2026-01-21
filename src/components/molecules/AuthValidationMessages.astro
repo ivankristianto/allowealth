@@ -25,7 +25,6 @@ interface Props {
 const { type = 'success', message, dismissible = false } = Astro.props;
 
 // Icon component mapping for each message type
-/** @type {Record<string, any>} */
 const iconMap = {
   'email-format': TriangleAlert,
   'password-mismatch': CircleX,
