@@ -8,6 +8,7 @@
 
 import AuthLayout from '../layouts/AuthLayout.astro';
 import RegistrationForm from '../components/molecules/RegistrationForm.astro';
+import { getSignupUrl } from '@/lib/config';
 
 // Get error message from query params (if any)
 const url = new URL(Astro.request.url);
@@ -37,7 +38,7 @@ const cspNonce = Astro.locals.cspNonce || '';
 
 <script
   define:vars={{
-    apiSignupUrl: '/api/auth/signup',
+    apiSignupUrl: getSignupUrl(),
   }}
   nonce={cspNonce}
   is:inline

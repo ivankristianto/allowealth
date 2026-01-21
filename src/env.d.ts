@@ -14,6 +14,16 @@ declare global {
   interface Window {
     showToast?: (message: string, type?: string, duration?: number) => HTMLDivElement | undefined;
   }
+
+  /// <reference types="vite/client" />
+  interface ImportMetaEnv {
+    /** Base URL for API endpoints (default: /api) */
+    readonly PUBLIC_API_URL?: string;
+  }
+
+  interface ImportMeta {
+    readonly env: ImportMetaEnv;
+  }
 }
 
 /**
