@@ -17,6 +17,8 @@
 7. **Icons** - Use `@lucide/astro` for all icons (consistent, accessible)
 8. **Animations** - Use `motion` for complex animations and transitions
 
+**DaisyUI v5 Note:** Themes are configured using CSS `@plugin` syntax in `src/styles/globals.css`, not in `tailwind.config.ts`. See the DaisyUI theme configuration section for details.
+
 ### Import Tokens
 
 ```typescript
@@ -40,30 +42,46 @@ import { animate } from 'motion';
 ### Colors
 
 ```typescript
-colors.primary; // #10b981 (emerald - growth, CTAs)
-colors.warning; // #f59e0b (amber - budget alerts)
-colors.error; // #ef4444 (red - over budget)
-colors.success; // #10b981 (green - confirmations)
-colors.info; // #3b82f6 (blue - info, USD)
+// Primary color (slate) - headings, primary text, secondary buttons
+colors.primary; // #0f172a (slate-900 - headings, text)
+colors.primaryLight; // #f1f5f9 (slate-100 - backgrounds)
 
-colors.currency.idr; // #10b981 (green)
+// Accent color (indigo) - CTAs, interactive elements, active states
+colors.accent; // #6366f1 (indigo-500 - CTAs, interactive)
+colors.accentHover; // #4f46e5 (indigo-600)
+
+colors.warning; // #f59e0b (amber - budget alerts)
+colors.error; // #f43f5e (rose - over budget)
+colors.success; // #10b981 (emerald - confirmations)
+colors.info; // #6366f1 (indigo - info)
+
+colors.currency.idr; // #10b981 (emerald)
 colors.currency.usd; // #3b82f6 (blue)
 
 colors.status.ok; // #22c55e (<80%)
 colors.status.warning; // #f59e0b (80-99%)
-colors.status.danger; // #ef4444 (≥100%)
+colors.status.danger; // #f43f5e (≥100%)
 ```
+
+**Important Color Semantics:**
+
+- Use `btn-accent` for primary CTAs (indigo/purple)
+- Use `text-primary` for headings and primary text (slate)
+- Use `focus:ring-accent` for focus states (indigo)
+- Use DaisyUI semantic colors (`bg-base-200`, `border-base-300`) for theme-friendly styling
 
 ### Typography
 
 ```typescript
-fontSizes.xs; // 12px - labels, helper
-fontSizes.sm; // 14px - body (small)
-fontSizes.base; // 16px - body (default)
-fontSizes.lg; // 18px - emphasized
-fontSizes.xl; // 20px - section headings
-fontSizes['2xl']; // 24px - page headings
-fontSizes['4xl']; // 36px - hero
+// Accessibility-adjusted sizes (WCAG AA compliant minimums)
+fontSizes.xs; // 0.75rem (12px) - labels, helper - minimum accessible size
+fontSizes.sm; // 0.8125rem (13px) - body (small)
+fontSizes.base; // 0.875rem (14px) - body (default) - accessible body text
+fontSizes.md; // 0.9375rem (15px) - emphasized
+fontSizes.lg; // 1rem (16px) - emphasized
+fontSizes.xl; // 1.25rem (20px) - section headings
+fontSizes['2xl']; // 1.5rem (24px) - page headings
+fontSizes['3xl']; // 1.875rem (30px) - hero
 ```
 
 ### Spacing
@@ -159,7 +177,7 @@ import { X, Plus, Edit, Trash2, Check, TriangleAlert } from '@lucide/astro';
 ---
 
 <!-- Button with icon -->
-<button class="btn btn-primary">
+<button class="btn btn-accent">
   <Plus size={20} class="stroke-current" aria-hidden="true" />
   <span>Add Transaction</span>
 </button>
@@ -254,7 +272,7 @@ import { animate } from 'motion';
 
 ```html
 <!-- Buttons -->
-<button class="btn btn-primary">Primary</button>
+<button class="btn btn-accent">Primary CTA</button>
 <button class="btn btn-outline">Outline</button>
 
 <!-- Inputs -->

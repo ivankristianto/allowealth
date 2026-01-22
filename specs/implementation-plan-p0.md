@@ -574,18 +574,26 @@ This means components using `text-primary` will automatically switch from dark t
 
 **Checklist:**
 
-- [ ] Decide on self-hosted vs CDN font delivery (privacy vs convenience)
-- [ ] Add Inter font import in `src/layouts/BaseLayout.astro`
-- [ ] Ensure `font-display: swap` is used if self-hosting
-- [ ] Keep font weights aligned with spec: 300, 400, 500, 600, 700
+- [x] Decide on self-hosted vs CDN font delivery (privacy vs convenience) - **Decision: CDN (Google Fonts)**
+- [x] Add Inter font import in `src/layouts/BaseLayout.astro`
+- [x] Ensure `font-display: swap` is used if self-hosting
+- [x] Keep font weights aligned with spec: 300, 400, 500, 600, 700
 
 **Files to modify:**
 
-- `src/layouts/BaseLayout.astro`
+- `src/layouts/BaseLayout.astro` ✅
+- `src/middleware.ts` ✅ (CSP font-src update for P0 fix)
 
 **Estimated Time:** 30 minutes
 
-**Status:** ⏳ Pending
+**Status:** ✅ Completed (2025-01-22)
+
+**Implementation Notes:**
+
+- Chose Google Fonts CDN for simplicity and performance
+- Added preconnect hints for `fonts.googleapis.com` and `fonts.gstatic.com`
+- Used `display=swap` for FOUT (Flash of Unstyled Text) handling
+- Updated CSP `font-src` directive to allow Google Fonts domains (P0 fix)
 
 ---
 
@@ -922,7 +930,7 @@ bun run build  # Full production build
 - [x] Font sizes adjusted for accessibility (min 12px for xs, 14px for base) - Task 1.1 ✅
 - [x] DaisyUI v5 themes configured via CSS @plugin syntax - Task 1.3 ✅
 - [x] Utility classes defined (.shadow-premium, .shadow-accent-glow, .glass-effect, .nav-active, .text-badge, .container-app) - Task 1.4 ✅
-- [ ] Inter font is properly loaded and rendering with correct weights
+- [x] Inter font is properly loaded and rendering with correct weights - Task 1.5 ✅
 - [x] Status and currency tokens are exposed in `@/lib/tokens` - Task 1.2 ✅
 - [ ] Design system documentation updated (styles.json synced, START.md/01-foundations.md pending)
 

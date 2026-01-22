@@ -16,38 +16,65 @@ Visual building blocks. **Always import from `@/lib/tokens`** - never hardcode.
 ```typescript
 import { colors } from '@/lib/tokens';
 
-colors.primary; // #10b981
-colors.primaryHover; // #059669
-colors.primaryLight; // #d1fae5
+// Primary color (slate) - headings, primary text, secondary buttons
+colors.primary; // #0f172a (slate-900)
+colors.primaryLight; // #f1f5f9 (slate-100)
 
-colors.warning; // #f59e0b
-colors.warningHover; // #d97706
+// Accent color (indigo) - CTAs, interactive elements, active states
+colors.accent; // #6366f1 (indigo-500)
+colors.accentHover; // #4f46e5 (indigo-600)
 
-colors.error; // #ef4444
-colors.errorHover; // #dc2626
+colors.warning; // #f59e0b (amber-500)
+colors.error; // #f43f5e (rose-500)
+colors.errorHover; // #e11d48 (rose-600)
 
-colors.success; // #10b981
-colors.info; // #3b82f6
+colors.success; // #10b981 (emerald-500)
+colors.info; // #6366f1 (indigo-500)
 ```
+
+**Color Semantic Model:**
+
+| Usage         | Color   | Hex     | Semantic                   |
+| ------------- | ------- | ------- | -------------------------- |
+| Primary CTAs  | accent  | #6366f1 | indigo - CTAs, interactive |
+| Headings/text | primary | #0f172a | slate - headings, text     |
+| Success       | success | #10b981 | emerald - positive status  |
+| Warning       | warning | #f59e0b | amber - caution states     |
+| Error         | error   | #f43f5e | rose - destructive actions |
+| Info          | info    | #6366f1 | indigo - informational     |
 
 ### Currency & Status
 
 ```typescript
-colors.currency.idr; // #10b981
-colors.currency.usd; // #3b82f6
+colors.currency.idr; // #10b981 (emerald-500)
+colors.currency.usd; // #3b82f6 (blue-500)
 
-colors.status.ok; // #22c55e (<80%)
-colors.status.warning; // #f59e0b (80-99%)
-colors.status.danger; // #ef4444 (≥100%)
+colors.status.ok; // #22c55e (emerald-500, <80%)
+colors.status.warning; // #f59e0b (amber-500, 80-99%)
+colors.status.danger; // #f43f5e (rose-500, ≥100%)
 ```
 
-### Neutral Scale
+### Neutral Scale (Slate)
 
 ```css
---color-neutral-50: #f9fafb --color-neutral-100: #f3f4f6 --color-neutral-200: #e5e7eb
-  --color-neutral-300: #d1d5db --color-neutral-400: #9ca3af --color-neutral-500: #6b7280
-  --color-neutral-600: #4b5563 --color-neutral-700: #374151 --color-neutral-800: #1f2937
-  --color-neutral-900: #111827;
+--color-slate-50: #f8fafc --color-slate-100: #f1f5f9 --color-slate-200: #e2e8f0
+  --color-slate-300: #cbd5e1 --color-slate-400: #94a3b8 --color-slate-500: #64748b
+  --color-slate-600: #475569 --color-slate-700: #334155 --color-slate-800: #1e293b
+  --color-slate-900: #0f172a;
+```
+
+### Accent Scale (Indigo)
+
+```css
+--color-indigo-50: #eef2ff --color-indigo-100: #e0e7ff --color-indigo-400: #818cf8
+  --color-indigo-500: #6366f1 --color-indigo-600: #4f46e5 --color-indigo-700: #4338ca;
+```
+
+### Error Scale (Rose)
+
+```css
+--color-rose-50: #fff1f2 --color-rose-100: #ffe4e6 --color-rose-500: #f43f5e
+  --color-rose-600: #e11d48;
 ```
 
 ### Usage
@@ -58,10 +85,10 @@ import { colors } from '@/lib/tokens';
 const statusColor = colors.status.danger;
 
 // CSS
-.element { color: var(--color-primary); }
+.element { color: var(--color-accent); }
 
-// DaisyUI (preferred)
-<button class="btn btn-primary">
+// DaisyUI (preferred for theme-friendly styling)
+<button class="btn btn-accent">
 <span class="text-success">
 <span class="currency-idr">Rp 150.000</span>
 <span class="status-warning">Near limit</span>
@@ -78,21 +105,23 @@ const statusColor = colors.status.danger;
 ### Fonts
 
 ```typescript
-fonts.sans; // 'system-ui, -apple-system, sans-serif'
+fonts.sans; // 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
 fonts.mono; // 'SF Mono', Monaco, monospace (for currency)
 ```
 
-### Sizes (Major Third scale 1.125)
+**Note:** Inter font is loaded via Google Fonts CDN in `src/layouts/BaseLayout.astro` with `display=swap` for FOUT handling.
+
+### Sizes (Accessibility-Adjusted Scale)
 
 ```typescript
-fontSizes.xs; // 0.75rem  (12px)
-fontSizes.sm; // 0.875rem (14px)
-fontSizes.base; // 1rem     (16px)
-fontSizes.lg; // 1.125rem (18px)
-fontSizes.xl; // 1.25rem  (20px)
-fontSizes['2xl']; // 1.5rem   (24px)
-fontSizes['3xl']; // 1.875rem (30px)
-fontSizes['4xl']; // 2.25rem  (36px)
+fontSizes.xs; // 0.75rem  (12px) - minimum accessible size
+fontSizes.sm; // 0.8125rem (13px) - body (small)
+fontSizes.base; // 0.875rem (14px) - accessible body text
+fontSizes.md; // 0.9375rem (15px) - emphasized
+fontSizes.lg; // 1rem (16px) - emphasized
+fontSizes.xl; // 1.25rem  (20px) - section headings
+fontSizes['2xl']; // 1.5rem   (24px) - page headings
+fontSizes['3xl']; // 1.875rem (30px) - hero
 ```
 
 ### Weights
