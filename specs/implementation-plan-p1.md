@@ -12,11 +12,10 @@ This plan addresses **significant discrepancies** between the current implementa
 1. **Color Palette Overhaul** - Migrate from emerald-primary to slate-primary with indigo-accent system
 2. **Typography Update** - Add Inter font, adjust font sizes to match spec
 3. **Component Restyling** - Update all atoms/molecules/organisms to match new specs
-4. **Animation System** - Implement Motion library patterns (after foundation)
-5. **Dark Theme** - Implement proper dark theme from spec
-6. **Icon Standardization** - Fix inline SVGs in JavaScript, standardize icon sizes
-7. **Layout Updates** - Align with container, spacing, and dimension specs
-8. **Color Semantics Audit** - Ensure primary vs accent usage is consistent
+4. **Animation System** - Use Motion library directly for component animations
+5. **Icon Standardization** - Fix inline SVGs in JavaScript, standardize icon sizes
+6. **Layout Updates** - Align with container, spacing, and dimension specs
+7. **Color Semantics Audit** - Ensure primary vs accent usage is consistent
 
 ### Design System Alignment Rules (Apply to All Tasks)
 
@@ -29,12 +28,7 @@ This plan addresses **significant discrepancies** between the current implementa
 
 ### Proposed Changes (Context)
 
-Note: This list reflects full-scope changes across all milestones.
-
-#### New Files
-
-- `src/styles/animations.css` - Motion animation CSS custom properties
-- `src/lib/animations.ts` - Motion animation presets and utilities
+Note: This list reflects P1 scope only. Animation utilities (`src/lib/animations.ts`, `src/styles/animations.css`) are created in P2-P4.
 
 #### Modified Files
 
@@ -69,6 +63,21 @@ Note: This list reflects full-scope changes across all milestones.
 
 - Priority: P1 only
 - Sections included: Task 2.5, Task 3.3, Section 4, Section 5 (Tasks 5.1-5.4), Section 6 (Tasks 6.1-6.3)
+- Context: This plan continues from P0 milestone. Tasks 1.x-2.4 and 3.1-3.2 were completed in previous milestone.
+
+---
+
+## Execution Order
+
+Tasks must be completed in this sequence (atoms → molecules → organisms):
+
+1. **Task 2.5** - Atom components (foundation for all other components)
+2. **Task 3.3** - PageContainer layout
+3. **Section 4** - Icon standardization (Tasks 4.1-4.4)
+4. **Section 5** - Molecule components (depend on atoms)
+5. **Section 6** - Organism components (depend on molecules)
+
+**Rule:** Do not start a section until the previous section passes quality gates.
 
 ---
 
@@ -80,28 +89,80 @@ Note: This list reflects full-scope changes across all milestones.
 
 **Current Issue:** Multiple atoms reference emerald colors or old token values that conflict with the new slate-primary, indigo-accent design system. Components need to use accent color for interactive elements and updated semantic colors.
 
+---
+
+#### Task 2.5a: Update Input-Related Atoms
+
 **Checklist:**
 
-- [ ] Update `Currency.astro` - ensure color tokens, IDR/USD colors
-- [ ] Update `CurrencyInput.astro` - input styling alignment with Task 2.3 specs
-- [ ] Update `DatePicker.astro` - input styling alignment with Task 2.3 specs
-- [ ] Update `EmptyState.astro` - color tokens, accent color for CTAs
-- [ ] Update `ErrorMessage.astro` - error semantic color token (no hardcoded hex)
-- [ ] Update `Label.astro` - text colors using base-content/neutral tokens
-- [ ] Update `PasswordField.astro` - input styling, focus colors to indigo
-- [ ] Update `Percentage.astro` - status colors
-- [ ] Update `Spinner.astro` - accent color for loading spinner
-- [ ] Update `Checkbox.astro` - accent color for checked state
-- [ ] Update `CategorySelect.astro` - styling alignment
-- [ ] Update `PaymentMethodSelect.astro` - styling alignment
+- [ ] Update `CurrencyInput.astro` - input height 2.5rem, background `bg-base-200`, focus ring `rgba(99, 102, 241, 0.2)`
+- [ ] Update `DatePicker.astro` - input styling per styles.json input spec (height, padding, radius)
+- [ ] Update `PasswordField.astro` - focus ring indigo `rgba(99, 102, 241, 0.2)`, background `bg-base-200`
+- [ ] Update `Checkbox.astro` - accent color for checked state (`checkbox-accent`)
 
-**Files to modify:**
+**Files to modify:** `src/components/atoms/CurrencyInput.astro`, `DatePicker.astro`, `PasswordField.astro`, `Checkbox.astro`
 
-- All 16 files in `src/components/atoms/`
-
-**Estimated Time:** 3-4 hours
+**Estimated Time:** 1 hour
 
 **Status:** ⏳ Pending
+
+---
+
+#### Task 2.5b: Update Display Atoms
+
+**Checklist:**
+
+- [ ] Update `Currency.astro` - IDR color `text-success` (#10b981), USD color `text-info` (#3b82f6)
+- [ ] Update `Percentage.astro` - status colors via DaisyUI (`text-success`, `text-warning`, `text-error`)
+- [ ] Update `Spinner.astro` - accent color (`text-accent` or #6366f1)
+- [ ] Update `Badge.astro` - padding `0.25rem 0.625rem`, fontSize `0.625rem`, fontWeight 700
+
+**Files to modify:** `src/components/atoms/Currency.astro`, `Percentage.astro`, `Spinner.astro`, `Badge.astro`
+
+**Estimated Time:** 1 hour
+
+**Status:** ⏳ Pending
+
+---
+
+#### Task 2.5c: Update Feedback Atoms
+
+**Checklist:**
+
+- [ ] Update `EmptyState.astro` - CTA buttons use `btn-accent`, text uses `text-base-content`
+- [ ] Update `ErrorMessage.astro` - error color via DaisyUI (`text-error`), no hardcoded hex
+- [ ] Update `Label.astro` - text color `text-base-content` for labels, `text-neutral` for optional hints
+
+**Files to modify:** `src/components/atoms/EmptyState.astro`, `ErrorMessage.astro`, `Label.astro`
+
+**Estimated Time:** 45 minutes
+
+**Status:** ⏳ Pending
+
+---
+
+#### Task 2.5d: Update Select Atoms
+
+**Checklist:**
+
+- [ ] Update `CategorySelect.astro` - input styling alignment (height, background, focus ring)
+- [ ] Update `PaymentMethodSelect.astro` - input styling alignment (height, background, focus ring)
+
+**Files to modify:** `src/components/atoms/CategorySelect.astro`, `PaymentMethodSelect.astro`
+
+**Estimated Time:** 30 minutes
+
+**Status:** ⏳ Pending
+
+---
+
+#### Quality Checkpoint (Task 2.5)
+
+Before proceeding to Task 3.3:
+
+```bash
+bun run typecheck && bun run lint:fix && bun run stylelint:fix && bun run format:fix
+```
 
 ---
 
@@ -125,6 +186,16 @@ Note: This list reflects full-scope changes across all milestones.
 **Estimated Time:** 30 minutes
 
 **Status:** ⏳ Pending
+
+---
+
+#### Quality Checkpoint (Task 3.3)
+
+Before proceeding to Section 4:
+
+```bash
+bun run typecheck && bun run lint:fix && bun run stylelint:fix && bun run format:fix
+```
 
 ---
 
@@ -231,6 +302,16 @@ Note: This list reflects full-scope changes across all milestones.
 
 ---
 
+#### Quality Checkpoint (Section 4)
+
+Before proceeding to Section 5:
+
+```bash
+bun run typecheck && bun run lint:fix && bun run stylelint:fix && bun run format:fix
+```
+
+---
+
 ### Section 5: Molecule Component Updates (Priority: P1)
 
 **Goal:** Update all molecule components to use new design tokens
@@ -239,16 +320,17 @@ Note: This list reflects full-scope changes across all milestones.
 
 ### Task 5.1: Update Toast Component (Priority: P1)
 
-**Goal:** Align Toast with styles.json animation specifications
+**Goal:** Align Toast with styles.json animation specifications using Motion library
 
-**Current Issue:** Toast uses CSS keyframes, styles.json specifies Motion library animations with specific timing (enter: 0.2s, exit: 0.2s).
+**Current Issue:** Toast uses CSS keyframes, styles.json specifies Motion library animations with specific timing.
 
 **Checklist:**
 
-- [ ] Update animation timing to match spec: enter 0.2s, exit 0.2s
-- [ ] Update initial/animate states: `{ opacity: 0, y: -10, scale: 0.95 }` → `{ opacity: 1, y: 0, scale: 1 }`
-- [ ] Use Motion presets for toast animations to match the design system
-- [ ] Update toast colors to use semantic colors (info/success/warning/error) via DaisyUI or tokens
+- [ ] Import Motion library: `import { animate } from 'motion'`
+- [ ] Replace CSS keyframes with Motion animations:
+  - Enter: `animate(element, { opacity: [0, 1], y: [-10, 0], scale: [0.95, 1] }, { duration: 0.2 })`
+  - Exit: `animate(element, { opacity: [1, 0], scale: [1, 0.95] }, { duration: 0.2 })`
+- [ ] Update toast colors to DaisyUI semantic: `alert-info`, `alert-success`, `alert-warning`, `alert-error`
 - [ ] Update positioning if needed
 
 **Files to modify:**
@@ -264,16 +346,21 @@ Note: This list reflects full-scope changes across all milestones.
 
 ### Task 5.2: Update Modal Component (Priority: P1)
 
-**Goal:** Align Modal animations with styles.json specifications
+**Goal:** Align Modal animations with styles.json specifications using Motion library
 
 **Current Issue:** Modal may not have optimal animation specs matching styles.json modal presets.
 
 **Checklist:**
 
-- [ ] Update backdrop animation: opacity 0→1, duration 0.2s
-- [ ] Update content animation: `{ opacity: 0, scale: 0.95, y: 20 }` → `{ opacity: 1, scale: 1, y: 0 }`, duration 0.3s
-- [ ] Ensure modal styling uses new tokens (border-radius, shadow)
-- [ ] Update close button styling with accent hover
+- [ ] Import Motion library: `import { animate } from 'motion'`
+- [ ] Update backdrop animation using Motion:
+  - Enter: `animate(backdrop, { opacity: [0, 1] }, { duration: 0.2 })`
+  - Exit: `animate(backdrop, { opacity: [1, 0] }, { duration: 0.2 })`
+- [ ] Update content animation using Motion:
+  - Enter: `animate(content, { opacity: [0, 1], scale: [0.95, 1], y: [20, 0] }, { duration: 0.3 })`
+  - Exit: `animate(content, { opacity: [1, 0], scale: [1, 0.95], y: [0, 20] }, { duration: 0.3 })`
+- [ ] Ensure modal styling uses `rounded-box` (via `--radius-box`) and premium shadow
+- [ ] Update close button: `hover:bg-accent/10` or `hover:text-accent`
 
 **Files to modify:**
 
@@ -331,6 +418,16 @@ Note: This list reflects full-scope changes across all milestones.
 
 ---
 
+#### Quality Checkpoint (Section 5)
+
+Before proceeding to Section 6:
+
+```bash
+bun run typecheck && bun run lint:fix && bun run stylelint:fix && bun run format:fix
+```
+
+---
+
 ### Section 6: Organism Component Updates (Priority: P1)
 
 **Goal:** Update all organism components to use new design tokens
@@ -345,11 +442,11 @@ Note: This list reflects full-scope changes across all milestones.
 
 **Checklist:**
 
-- [ ] Update header background to the table header token from styles.json (theme-friendly)
-- [ ] Update row hover color to the table rowHover token (theme-friendly)
-- [ ] Update cell padding to `py-4 px-6` (1rem 1.5rem)
-- [ ] Update icon sizes to 22px
-- [ ] Update status colors to new tokens (warning/danger)
+- [ ] Update header background using DaisyUI: `bg-base-200/50` (matches styles.json light: `rgba(248, 250, 252, 0.5)`)
+- [ ] Update row hover color using DaisyUI: `hover:bg-base-100` (theme-friendly)
+- [ ] Update cell padding to `py-4 px-6` (1rem 1.5rem per styles.json)
+- [ ] Update icon sizes to 22px (md size per styles.json icons.sizes)
+- [ ] Update status colors using DaisyUI: `text-warning` for 80-99%, `text-error` for ≥100%
 
 **Files to modify:**
 
@@ -369,10 +466,10 @@ Note: This list reflects full-scope changes across all milestones.
 
 **Checklist:**
 
-- [ ] Ensure cards use updated Card component (p-7, radius-box, premium shadow)
-- [ ] Update icon colors to use accent token (`text-accent` or equivalent)
-- [ ] Update trend indicators styling (emerald for up, rose for down)
-- [ ] Update text colors to base-content/neutral tokens
+- [ ] Ensure cards use updated Card component (`p-7` = 1.75rem, `rounded-box`, premium shadow)
+- [ ] Update icon colors using DaisyUI: `text-accent`
+- [ ] Update trend indicators using DaisyUI: `text-success` for up, `text-error` for down
+- [ ] Update text colors using DaisyUI: `text-base-content` for main, `text-neutral` for secondary
 
 **Files to modify:**
 
@@ -392,10 +489,10 @@ Note: This list reflects full-scope changes across all milestones.
 
 **Checklist:**
 
-- [ ] Update row hover colors using table rowHover token
-- [ ] Update icon sizes to 22px
-- [ ] Update text colors to base-content/neutral tokens
-- [ ] Update badge styling to match Task 2.4 specs
+- [ ] Update row hover colors using DaisyUI: `hover:bg-base-100`
+- [ ] Update icon sizes to 22px (md size per styles.json)
+- [ ] Update text colors using DaisyUI: `text-base-content` for main, `text-neutral` for secondary
+- [ ] Update badge styling: padding `0.25rem 0.625rem`, fontSize `0.625rem`, use semantic badge colors
 
 **Files to modify:**
 
@@ -404,6 +501,16 @@ Note: This list reflects full-scope changes across all milestones.
 **Estimated Time:** 30 minutes
 
 **Status:** ⏳ Pending
+
+---
+
+#### Quality Checkpoint (Section 6 - Final)
+
+Before marking P1 milestone complete:
+
+```bash
+bun run typecheck && bun run lint:fix && bun run stylelint:fix && bun run format:fix
+```
 
 ---
 
