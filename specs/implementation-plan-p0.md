@@ -573,21 +573,22 @@ bun run dev  # Verify dev server starts
 
 **Checklist:**
 
-- [ ] Update primary variant to use accent/indigo colors (`btn-accent` or custom `bg-accent`)
-- [ ] Update secondary variant to use tokenized primary/neutral color
-- [ ] Add ghost variant with transparent bg and `border-base-300` (or tokenized border color)
-- [ ] Update focus ring to use accent token (theme-friendly, no hardcoded color)
-- [ ] Add accent glow shadow using tokenized shadow utility
-- [ ] Update size specs to match styles.json exactly:
+- [x] Update primary variant to use accent/indigo colors (`btn-accent` or custom `bg-accent`)
+- [x] Update secondary variant to use tokenized primary/neutral color
+- [x] Add ghost variant with transparent bg and `border-base-300` (or tokenized border color)
+- [x] Update focus ring to use accent token (theme-friendly, no hardcoded color)
+- [x] Add accent glow shadow using tokenized shadow utility
+- [x] Update size specs to match styles.json exactly:
   - sm: height 2rem, padding `0.375rem 0.75rem`, fontSize `0.75rem`
   - md: height 2.5rem, padding `0.625rem 1.25rem`, fontSize `0.875rem`
   - lg: height 3rem, padding `0.75rem 1.5rem`, fontSize `0.875rem`
-- [ ] Remove emerald-specific hover colors
-- [ ] Update outline variant border to accent token
+- [x] Remove emerald-specific hover colors
+- [x] Update outline variant border to accent token
 
 **Files to modify:**
 
-- `src/components/atoms/Button.astro`
+- `src/components/atoms/Button.astro` ✅
+- `src/components/atoms/Button.stories.ts` ✅
 
 **UI Change:**
 
@@ -605,7 +606,7 @@ After:
 
 **Estimated Time:** 1 hour
 
-**Status:** ⏳ Pending
+**Status:** ✅ Completed (2025-01-22)
 
 ---
 
@@ -843,7 +844,7 @@ bun run build  # Full production build
 
 ### Components (Section 2)
 
-- [ ] Button component uses `btn-accent` for primary CTAs (indigo, accent glow shadow)
+- [x] Button component uses `btn-accent` for primary CTAs (indigo, accent glow shadow) - Task 2.1 ✅
 - [ ] Card component matches specs (1.75rem padding, radius-box, premium shadow)
 - [ ] Input component matches specs (2.5rem height, accent focus ring)
 - [ ] Badge component matches specs (0.75rem font for accessibility, 700 weight)
@@ -875,3 +876,8 @@ bun run build  # Full production build
 - [ ] Consider adding `color-scheme: light` to the light theme for symmetry with dark theme
 - [ ] Add documentation note about where `styles.json` is located and how it relates to the design system
 - [x] Add `--size-selector` and `--size-field` variables to dark theme for consistency with light theme - Task 1.4 ✅
+
+#### Task 2.1 Code Review Feedback (P2/P3 - Non-blocking)
+
+- [ ] Add fallback values to utility classes for graceful degradation (e.g., `--shadow-accent-glow, 0 10px 15px -3px rgb(99 102 241 / 0.2)`)
+- [ ] Extract duplicate class configuration between Button.astro and Button.stories.ts to shared config file
