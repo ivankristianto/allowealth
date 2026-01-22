@@ -408,10 +408,10 @@ bun run typecheck && bun run lint:fix && bun run stylelint:fix && bun run format
 
 **Checklist:**
 
-- [ ] Ensure all inputs use updated Input component styling
-- [ ] Ensure buttons use updated Button component styling
-- [ ] Update any direct color references to use tokens
-- [ ] Update spacing to match form gap spec: `gap-4` (16px)
+- [x] Ensure all inputs use updated Input component styling
+- [x] Ensure buttons use updated Button component styling
+- [x] Update any direct color references to use tokens
+- [x] Update spacing to match form gap spec: `gap-4` (16px)
 
 **Files to modify:**
 
@@ -419,7 +419,7 @@ bun run typecheck && bun run lint:fix && bun run stylelint:fix && bun run format
 
 **Estimated Time:** 45 minutes
 
-**Status:** ⏳ Pending
+**Status:** ✅ Completed
 
 ---
 
@@ -550,7 +550,7 @@ bun run typecheck && bun run lint:fix && bun run stylelint:fix && bun run format
 - [x] Toast animations match Motion presets (Task 5.1 completed)
 - [x] Modal animations match Motion presets (Task 5.2 completed)
 - [x] Budget health widget uses tokenized status colors and badges (Task 5.3 completed)
-- [ ] Transaction form uses updated inputs, buttons, and spacing (Task 5.4 pending)
+- [x] Transaction form uses updated inputs, buttons, and spacing (Task 5.4 completed)
 - [ ] Budget overview table aligns with header/rowHover tokens and padding (Task 6.1 pending)
 - [ ] Summary cards and recent transactions list match updated card/list specs (Task 6.2-6.3 pending)
 

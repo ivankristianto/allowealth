@@ -27,20 +27,30 @@ const createTransactionForm = (args: {
   wrapper.className = 'max-w-2xl';
 
   const form = document.createElement('form');
-  form.className = 'space-y-6';
+  form.className = 'flex flex-col gap-4';
 
   // Transaction Type Toggle
   const typeToggle = document.createElement('div');
-  typeToggle.className = 'flex gap-2';
+  typeToggle.className = 'join w-full';
   typeToggle.innerHTML = `
-    <label class="label cursor-pointer justify-start gap-2">
-      <input type="radio" name="type" value="expense" class="radio radio-primary" ${type === 'expense' ? 'checked' : ''} />
-      <span class="label-text">Expense</span>
-    </label>
-    <label class="label cursor-pointer justify-start gap-2">
-      <input type="radio" name="type" value="income" class="radio radio-primary" ${type === 'income' ? 'checked' : ''} />
-      <span class="label-text">Income</span>
-    </label>
+    <input
+      type="radio"
+      name="type"
+      value="expense"
+      id="type-expense-story"
+      class="join-item btn h-10 px-5 py-2.5 text-sm flex-1"
+      ${type === 'expense' ? 'checked' : ''}
+    />
+    <label for="type-expense-story" class="join-item btn h-10 px-5 py-2.5 text-sm flex-1">Expense</label>
+    <input
+      type="radio"
+      name="type"
+      value="income"
+      id="type-income-story"
+      class="join-item btn h-10 px-5 py-2.5 text-sm flex-1"
+      ${type === 'income' ? 'checked' : ''}
+    />
+    <label for="type-income-story" class="join-item btn h-10 px-5 py-2.5 text-sm flex-1">Income</label>
   `;
   form.appendChild(typeToggle);
 
@@ -53,11 +63,11 @@ const createTransactionForm = (args: {
       <span class="label-text-alt text-error">*</span>
     </label>
     <div class="join">
-      <select class="select select-bordered join-item">
+      <select class="select select-bordered join-item h-10 pt-2 pb-2 pl-3 pr-10 text-xs bg-base-200 focus:ring-2 focus:ring-accent focus:ring-opacity-20 focus:outline-none focus:ring-offset-2">
         <option value="IDR" ${type === 'expense' ? 'selected' : ''}>IDR</option>
         <option value="USD">USD</option>
       </select>
-      <input type="number" name="amount" placeholder="0.00" class="input input-bordered join-item flex-1" required min="0" step="0.01" />
+      <input type="number" name="amount" placeholder="0.00" class="input input-bordered join-item flex-1 h-10 pt-2 pb-2 pl-3 pr-10 text-xs bg-base-200 focus:ring-2 focus:ring-accent focus:ring-opacity-20 focus:outline-none" required min="0" step="0.01" />
     </div>
   `;
   form.appendChild(amountGroup);
@@ -70,7 +80,7 @@ const createTransactionForm = (args: {
       <span class="label-text">Category</span>
       <span class="label-text-alt text-error">*</span>
     </label>
-    <select name="category_id" class="select select-bordered" required>
+    <select name="category_id" class="select select-bordered w-full h-10 pt-2 pb-2 pl-3 pr-10 text-xs bg-base-200 focus:ring-2 focus:ring-accent focus:ring-opacity-20 focus:outline-none focus:ring-offset-2" required>
       <option value="">Select category...</option>
       <option value="1">Food & Dining</option>
       <option value="2">Transportation</option>
@@ -89,7 +99,7 @@ const createTransactionForm = (args: {
       <span class="label-text">Payment Method</span>
       <span class="label-text-alt text-error">*</span>
     </label>
-    <select name="payment_method_id" class="select select-bordered" required>
+    <select name="payment_method_id" class="select select-bordered w-full h-10 pt-2 pb-2 pl-3 pr-10 text-xs bg-base-200 focus:ring-2 focus:ring-accent focus:ring-opacity-20 focus:outline-none focus:ring-offset-2" required>
       <option value="">Select payment method...</option>
       <option value="1">Cash</option>
       <option value="2">Credit Card</option>
@@ -107,7 +117,7 @@ const createTransactionForm = (args: {
       <span class="label-text">Date</span>
       <span class="label-text-alt text-error">*</span>
     </label>
-    <input type="date" name="transaction_date" class="input input-bordered" required value="${new Date().toISOString().split('T')[0]}" max="${new Date().toISOString().split('T')[0]}" />
+    <input type="date" name="transaction_date" class="input input-bordered w-full h-10 bg-base-200 text-xs focus:ring-2 focus:ring-accent focus:ring-opacity-20 focus:outline-none" required value="${new Date().toISOString().split('T')[0]}" max="${new Date().toISOString().split('T')[0]}" />
   `;
   form.appendChild(dateGroup);
 
@@ -119,7 +129,7 @@ const createTransactionForm = (args: {
       <span class="label-text">Description</span>
       <span class="label-text-alt">Optional</span>
     </label>
-    <textarea name="description" class="textarea textarea-bordered" rows="3" placeholder="Add a note about this transaction..." maxlength="500"></textarea>
+    <textarea name="description" class="textarea textarea-bordered w-full bg-base-200 text-xs pt-2 pb-2 px-3 focus:ring-2 focus:ring-accent focus:ring-opacity-20 focus:outline-none" rows="3" placeholder="Add a note about this transaction..." maxlength="500"></textarea>
     <label class="label">
       <span class="label-text-alt">0/500 characters</span>
     </label>
@@ -130,8 +140,8 @@ const createTransactionForm = (args: {
   const actions = document.createElement('div');
   actions.className = 'flex gap-3 justify-end';
   actions.innerHTML = `
-    <button type="button" class="btn btn-ghost">Cancel</button>
-    <button type="submit" class="btn btn-primary">${mode === 'create' ? 'Add Transaction' : 'Save Changes'}</button>
+    <button type="button" class="btn btn-ghost text-accent hover:bg-accent/5 h-10 px-5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent">Cancel</button>
+    <button type="submit" class="btn btn-accent shadow-accent-glow h-10 px-5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent">${mode === 'create' ? 'Add Transaction' : 'Save Changes'}</button>
   `;
   form.appendChild(actions);
 

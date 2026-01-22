@@ -101,7 +101,7 @@ const paymentMethodsJson = JSON.stringify(
   data-categories-json={categoriesJson}
   data-payment-methods-json={paymentMethodsJson}
   data-budget-info-json={budgetInfoJson}
-  class="space-y-4"
+  class="flex flex-col gap-4"
   novalidate
 >
   <!-- Global error message container -->
@@ -197,7 +197,7 @@ const paymentMethodsJson = JSON.stringify(
     <textarea
       id="description"
       name="description"
-      class="textarea textarea-bordered"
+      class="textarea textarea-bordered w-full bg-base-200 text-xs pt-2 pb-2 px-3 focus:ring-2 focus:ring-accent focus:ring-opacity-20 focus:outline-none"
       placeholder="Optional notes..."
       rows="3"
     >
@@ -220,7 +220,7 @@ const paymentMethodsJson = JSON.stringify(
 
   <!-- Actions -->
   <div class="card-actions justify-end gap-2 mt-6">
-    <a href={cancelUrl} class="btn btn-ghost">Cancel</a>
+    <Button href={cancelUrl} variant="ghost">Cancel</Button>
     <Button type="submit" variant="primary">
       {submitLabel}
     </Button>
