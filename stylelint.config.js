@@ -6,7 +6,16 @@ export default {
     'at-rule-no-unknown': [
       true,
       {
-        ignoreAtRules: ['tailwind', 'apply', 'layer', 'import', 'theme', 'source', 'plugin'],
+        ignoreAtRules: [
+          'tailwind',
+          'apply',
+          'layer',
+          'import',
+          'theme',
+          'source',
+          'plugin',
+          'property', // CSS Houdini @property for DaisyUI v5 radial progress animations
+        ],
       },
     ],
     // Allow custom class names
