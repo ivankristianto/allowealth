@@ -556,7 +556,15 @@ This means components using `text-primary` will automatically switch from dark t
 
 **Estimated Time:** 1-2 hours
 
-**Status:** ⏳ Pending
+**Status:** ✅ Completed (2025-01-22)
+
+---
+
+#### Task 1.4 Code Review Feedback (P2/P3 - Non-blocking)
+
+- [ ] Add fallback values to utility classes for graceful degradation (e.g., `var(--shadow-premium, 0 1px 3px 0 rgb(0 0 0 / 0.05))`)
+- [ ] Consider adding `@supports` for `backdrop-filter` in `.glass-effect` for older Safari versions
+- [ ] Add inline documentation comments for shadow utilities describing when to use each variant
 
 ---
 
@@ -913,7 +921,7 @@ bun run build  # Full production build
 - [x] All color tokens match styles.json specification (slate primary, indigo accent) - Task 1.1 ✅
 - [x] Font sizes adjusted for accessibility (min 12px for xs, 14px for base) - Task 1.1 ✅
 - [x] DaisyUI v5 themes configured via CSS @plugin syntax - Task 1.3 ✅
-- [x] Utility classes defined (.shadow-premium, .shadow-accent-glow, .glass-effect) - Task 1.1 ✅
+- [x] Utility classes defined (.shadow-premium, .shadow-accent-glow, .glass-effect, .nav-active, .text-badge, .container-app) - Task 1.4 ✅
 - [ ] Inter font is properly loaded and rendering with correct weights
 - [x] Status and currency tokens are exposed in `@/lib/tokens` - Task 1.2 ✅
 - [ ] Design system documentation updated (styles.json synced, START.md/01-foundations.md pending)
@@ -955,4 +963,4 @@ bun run build  # Full production build
 
 - [ ] Consider adding `color-scheme: light` to the light theme for symmetry with dark theme
 - [ ] Add documentation note about where `styles.json` is located and how it relates to the design system
-- [ ] Add `--size-selector` and `--size-field` variables to dark theme for consistency with light theme
+- [x] Add `--size-selector` and `--size-field` variables to dark theme for consistency with light theme - Task 1.4 ✅

@@ -82,6 +82,9 @@
   --radius-selector: 1rem;
   --radius-field: 0rem;
   --radius-box: 0.5rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
   --depth: 1;
   --noise: 0;
 }
@@ -175,4 +178,47 @@ body {
   clip-path: inset(50%);
   white-space: nowrap;
   border-width: 0;
+}
+
+/* ========================================
+   UTILITY CLASSES (from design system)
+   ======================================== */
+
+/* Shadow utilities - using tokenized shadows from styles.json */
+.shadow-premium {
+  box-shadow: var(--shadow-premium);
+}
+
+.shadow-accent-glow {
+  box-shadow: var(--shadow-accent-glow);
+}
+
+.shadow-accent-glow-lg {
+  box-shadow: var(--shadow-accent-glow-lg);
+}
+
+/* Active navigation gradient - using pattern token */
+.nav-active {
+  background: var(--sidebar-active-gradient);
+  border-left: var(--sidebar-active-border);
+}
+
+/* Glass effect - using glass tokens */
+.glass-effect {
+  backdrop-filter: blur(var(--glass-blur));
+  background: var(--glass-bg-light);
+}
+
+[data-theme='dark'] .glass-effect {
+  background: var(--glass-bg-dark);
+}
+
+/* Badge text size - accessibility-adjusted (12px minimum) */
+.text-badge {
+  font-size: var(--badge-font-size);
+}
+
+/* Container max width - using layout token */
+.container-app {
+  max-width: var(--layout-container-max-width);
 }
