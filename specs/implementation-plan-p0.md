@@ -300,17 +300,17 @@ This means components using `text-primary` will automatically switch from dark t
 
 **Checklist:**
 
-- [ ] Keep `--color-primary` as `#0f172a` (slate-900) for primary text/headings
-- [ ] Add `--color-accent` as `#6366f1` (indigo-500) for CTAs and interactive elements
-- [ ] Add `--color-accent-hover` as `#4f46e5` (indigo-600)
-- [ ] Add `--color-accent-content` as `#ffffff`
-- [ ] Update `--color-error` from `#ef4444` to `#f43f5e` (rose-500)
-- [ ] Update `--color-info` from `#3b82f6` to `#6366f1` (indigo-500)
-- [ ] Keep `--color-success` as `#10b981` (emerald-500)
-- [ ] Add slate color scale (50: #f8fafc, 100: #f1f5f9, 200: #e2e8f0, 300: #cbd5e1, 400: #94a3b8, 500: #64748b, 600: #475569, 700: #334155, 800: #1e293b, 900: #0f172a)
-- [ ] Add indigo color scale (50: #eef2ff, 100: #e0e7ff, 400: #818cf8, 500: #6366f1, 600: #4f46e5, 700: #4338ca)
-- [ ] Add rose color scale (50: #fff1f2, 100: #ffe4e6, 500: #f43f5e, 600: #e11d48)
-- [ ] Update typography font sizes with accessibility adjustment (diverges from styles.json for WCAG compliance):
+- [x] Keep `--color-primary` as `#0f172a` (slate-900) for primary text/headings
+- [x] Add `--color-accent` as `#6366f1` (indigo-500) for CTAs and interactive elements
+- [x] Add `--color-accent-hover` as `#4f46e5` (indigo-600)
+- [x] Add `--color-accent-content` as `#ffffff`
+- [x] Update `--color-error` from `#ef4444` to `#f43f5e` (rose-500)
+- [x] Update `--color-info` from `#3b82f6` to `#6366f1` (indigo-500)
+- [x] Keep `--color-success` as `#10b981` (emerald-500)
+- [x] Add slate color scale (50: #f8fafc, 100: #f1f5f9, 200: #e2e8f0, 300: #cbd5e1, 400: #94a3b8, 500: #64748b, 600: #475569, 700: #334155, 800: #1e293b, 900: #0f172a)
+- [x] Add indigo color scale (50: #eef2ff, 100: #e0e7ff, 400: #818cf8, 500: #6366f1, 600: #4f46e5, 700: #4338ca)
+- [x] Add rose color scale (50: #fff1f2, 100: #ffe4e6, 500: #f43f5e, 600: #e11d48)
+- [x] Update typography font sizes with accessibility adjustment (diverges from styles.json for WCAG compliance):
   - xs: 0.75rem (12px) - minimum accessible size
   - sm: 0.8125rem (13px)
   - base: 0.875rem (14px) - accessible body text
@@ -319,16 +319,18 @@ This means components using `text-primary` will automatically switch from dark t
   - xl: 1.25rem (20px)
   - 2xl: 1.5rem (24px)
   - 3xl: 1.875rem (30px)
-- [ ] Updates design-system/styles.json file to sync
-- [ ] Add Inter font family to `--font-sans`: `'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif`
-- [ ] Add component-specific tokens (button, card, input, sidebar, badge, table)
-- [ ] Add effect tokens (glass, gradient, shadows including accentGlow: `0 10px 15px -3px rgba(99, 102, 241, 0.2)`)
-- [ ] Add status tokens (ok/warning/danger) and currency tokens (IDR/USD) as CSS variables
-- [ ] Update dark theme overrides with full dark palette
+- [x] Updates design-system/styles.json file to sync
+- [x] Add Inter font family to `--font-sans`: `'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif`
+- [x] Add component-specific tokens (button, card, input, sidebar, badge, table)
+- [x] Add effect tokens (glass, gradient, shadows including accentGlow: `0 10px 15px -3px rgba(99, 102, 241, 0.2)`)
+- [x] Add status tokens (ok/warning/danger) and currency tokens (IDR/USD) as CSS variables
+- [x] Update dark theme overrides with full dark palette
 
 **Files to modify:**
 
 - `src/styles/tokens.css`
+- `src/styles/globals.css` (uncommented import)
+- `design-system/styles.json` (synced font sizes, border radius, badge font size)
 
 **Token Changes:**
 
@@ -350,7 +352,7 @@ This means components using `text-primary` will automatically switch from dark t
 
 **Estimated Time:** 2-3 hours
 
-**Status:** ⏳ Pending
+**Status:** ✅ Completed (2025-01-22)
 
 ---
 
@@ -907,14 +909,14 @@ bun run build  # Full production build
 
 ### Foundation (Section 1)
 
-- [ ] Color semantic model documented (Task 1.0): primary=text, accent=CTAs
-- [ ] All color tokens match styles.json specification (slate primary, indigo accent)
-- [ ] Font sizes adjusted for accessibility (min 12px for xs, 14px for base)
+- [x] Color semantic model documented (Task 1.0): primary=text, accent=CTAs
+- [x] All color tokens match styles.json specification (slate primary, indigo accent) - Task 1.1 ✅
+- [x] Font sizes adjusted for accessibility (min 12px for xs, 14px for base) - Task 1.1 ✅
 - [ ] DaisyUI v5 themes configured via CSS @plugin syntax
-- [ ] Utility classes defined (.shadow-premium, .shadow-accent-glow, .nav-active, .glass-effect)
+- [x] Utility classes defined (.shadow-premium, .shadow-accent-glow, .glass-effect) - Task 1.1 ✅
 - [ ] Inter font is properly loaded and rendering with correct weights
-- [ ] Status and currency tokens are exposed in `@/lib/tokens`
-- [ ] Design system documentation updated (START.md, 01-foundations.md)
+- [ ] Status and currency tokens are exposed in `@/lib/tokens` (CSS tokens done, TypeScript tokens pending)
+- [ ] Design system documentation updated (styles.json synced, START.md/01-foundations.md pending)
 
 ### Components (Section 2)
 
