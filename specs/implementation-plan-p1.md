@@ -95,16 +95,16 @@ Tasks must be completed in this sequence (atoms → molecules → organisms):
 
 **Checklist:**
 
-- [ ] Update `CurrencyInput.astro` - input height 2.5rem, background `bg-base-200`, focus ring `rgba(99, 102, 241, 0.2)`
-- [ ] Update `DatePicker.astro` - input styling per styles.json input spec (height, padding, radius)
-- [ ] Update `PasswordField.astro` - focus ring indigo `rgba(99, 102, 241, 0.2)`, background `bg-base-200`
-- [ ] Update `Checkbox.astro` - accent color for checked state (`checkbox-accent`)
+- [x] Update `CurrencyInput.astro` - input height 2.5rem, background `bg-base-200`, focus ring `rgba(99, 102, 241, 0.2)`
+- [x] Update `DatePicker.astro` - input styling per styles.json input spec (height, padding, radius)
+- [x] Update `PasswordField.astro` - focus ring indigo `rgba(99, 102, 241, 0.2)`, background `bg-base-200`
+- [x] Update `Checkbox.astro` - accent color for checked state (`checkbox-accent`)
 
 **Files to modify:** `src/components/atoms/CurrencyInput.astro`, `DatePicker.astro`, `PasswordField.astro`, `Checkbox.astro`
 
 **Estimated Time:** 1 hour
 
-**Status:** ⏳ Pending
+**Status:** ✅ Completed (commit 4c773d1)
 
 ---
 
@@ -547,3 +547,7 @@ bun run typecheck && bun run lint:fix && bun run stylelint:fix && bun run format
 - [ ] Transaction form uses updated inputs, buttons, and spacing
 - [ ] Budget overview table aligns with header/rowHover tokens and padding
 - [ ] Summary cards and recent transactions list match updated card/list specs
+
+## Code Quality & Accessibility Improvements
+
+**Note:** These area reserved for improvements identified during code review. They are non-blocking but recommended for better code quality, accessibility, and maintainability. When added, follow the same format as task and has checlists.

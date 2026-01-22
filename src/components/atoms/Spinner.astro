@@ -5,17 +5,17 @@
  * Animated loading indicator using DaisyUI spinner.
  *
  * @param {string} size - Spinner size: xs, sm, md, lg
- * @param {string} color - Color variant: primary, secondary, success, warning, error
+ * @param {string} color - Color variant: accent, primary, secondary, success, warning, error
  * @param {string} className - Additional CSS classes
  */
 
 export interface Props {
   size?: 'xs' | 'sm' | 'md' | 'lg';
-  color?: 'primary' | 'secondary' | 'success' | 'warning' | 'error';
+  color?: 'accent' | 'primary' | 'secondary' | 'success' | 'warning' | 'error';
   className?: string;
 }
 
-const { size = 'md', color = 'primary', className = '' } = Astro.props;
+const { size = 'md', color = 'accent', className = '' } = Astro.props;
 
 const spinnerClasses = ['loading', 'loading-spinner', `loading-${size}`, `text-${color}`, className]
   .filter(Boolean)

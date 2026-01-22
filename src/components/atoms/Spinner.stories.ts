@@ -10,7 +10,7 @@ const meta: Meta = {
     },
     color: {
       control: 'select',
-      options: ['primary', 'secondary', 'success', 'warning', 'error'],
+      options: ['accent', 'primary', 'secondary', 'success', 'warning', 'error'],
     },
   },
 };
@@ -18,7 +18,7 @@ const meta: Meta = {
 export default meta;
 
 const createSpinner = (args: { size?: string; color?: string }): HTMLElement => {
-  const { size = 'md', color = 'primary' } = args;
+  const { size = 'md', color = 'accent' } = args;
 
   const span = document.createElement('span');
   span.className = `loading loading-spinner loading-${size} text-${color}`;
@@ -29,27 +29,27 @@ const createSpinner = (args: { size?: string; color?: string }): HTMLElement => 
 };
 
 export const Default: StoryObj = {
-  args: { size: 'md', color: 'primary' },
+  args: { size: 'md', color: 'accent' },
   render: (args) => createSpinner(args),
 };
 
 export const ExtraSmall: StoryObj = {
-  args: { size: 'xs', color: 'primary' },
+  args: { size: 'xs', color: 'accent' },
   render: (args) => createSpinner(args),
 };
 
 export const Small: StoryObj = {
-  args: { size: 'sm', color: 'primary' },
+  args: { size: 'sm', color: 'accent' },
   render: (args) => createSpinner(args),
 };
 
 export const Medium: StoryObj = {
-  args: { size: 'md', color: 'primary' },
+  args: { size: 'md', color: 'accent' },
   render: (args) => createSpinner(args),
 };
 
 export const Large: StoryObj = {
-  args: { size: 'lg', color: 'primary' },
+  args: { size: 'lg', color: 'accent' },
   render: (args) => createSpinner(args),
 };
 
@@ -79,7 +79,7 @@ export const AllSizes: StoryObj = {
       const wrapper = document.createElement('div');
       wrapper.className = 'flex flex-col items-center gap-2';
 
-      const spinner = createSpinner({ size, color: 'primary' });
+      const spinner = createSpinner({ size, color: 'accent' });
       const label = document.createElement('span');
       label.className = 'text-sm';
       label.textContent = size;
@@ -98,7 +98,7 @@ export const AllColors: StoryObj = {
     const container = document.createElement('div');
     container.className = 'flex items-center gap-6';
 
-    const colors = ['primary', 'secondary', 'success', 'warning', 'error'] as const;
+    const colors = ['accent', 'primary', 'secondary', 'success', 'warning', 'error'] as const;
 
     colors.forEach((color) => {
       const wrapper = document.createElement('div');
@@ -123,7 +123,7 @@ export const WithText: StoryObj = {
     const container = document.createElement('div');
     container.className = 'flex items-center gap-3';
 
-    const spinner = createSpinner({ size: 'md', color: 'primary' });
+    const spinner = createSpinner({ size: 'md', color: 'accent' });
     const text = document.createElement('span');
     text.textContent = 'Loading...';
 
@@ -139,7 +139,7 @@ export const FullPage: StoryObj = {
     const container = document.createElement('div');
     container.className = 'flex flex-col items-center justify-center gap-4 min-h-[200px]';
 
-    const spinner = createSpinner({ size: 'lg', color: 'primary' });
+    const spinner = createSpinner({ size: 'lg', color: 'accent' });
     const text = document.createElement('p');
     text.className = 'text-neutral-500';
     text.textContent = 'Please wait...';

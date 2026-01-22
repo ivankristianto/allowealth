@@ -77,10 +77,10 @@ const createCurrency = (args: {
   };
 
   const variantClasses: Record<string, string> = {
-    default: '',
+    default: currency === 'IDR' ? 'text-success' : currency === 'USD' ? 'text-info' : '',
     positive: 'text-success',
     negative: 'text-error',
-    neutral: 'text-neutral-500',
+    neutral: 'text-neutral',
   };
 
   let formatted = formatCurrency(amount, currency as 'IDR' | 'USD', compact);

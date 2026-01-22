@@ -63,7 +63,7 @@ const createPercentage = (args: {
     success: 'text-success',
     warning: 'text-warning',
     error: 'text-error',
-    neutral: 'text-neutral-500',
+    neutral: 'text-neutral',
   };
 
   let formatted = formatPercentage(value, decimals);
