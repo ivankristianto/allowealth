@@ -47,34 +47,35 @@ const createButton = (args: {
   button.textContent = text;
   button.disabled = disabled;
 
-  // Base classes
+  // Base classes - focus ring uses accent color for theme-aware consistency
   const baseClasses =
-    'btn inline-flex items-center justify-center gap-2 font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2';
+    'btn inline-flex items-center justify-center gap-2 font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent';
 
-  // Variant classes
+  // Variant classes - primary uses btn-accent (indigo) for CTAs per Oasis Finance v1.0.0
   const variantClasses: Record<string, string> = {
-    primary: 'btn-primary text-white hover:bg-emerald-600 focus:ring-emerald-500',
-    secondary: 'bg-neutral-200 text-neutral-800 hover:bg-neutral-300 focus:ring-neutral-500',
-    outline:
-      'btn-outline border-2 border-emerald-500 text-emerald-600 hover:bg-emerald-50 focus:ring-emerald-500',
-    ghost: 'text-emerald-600 hover:bg-emerald-50 focus:ring-emerald-500',
-    danger: 'bg-error text-white hover:bg-error-hover focus:ring-error',
-    warning: 'bg-warning text-white hover:bg-warning-hover focus:ring-warning',
-    success: 'bg-success text-white hover:bg-success-hover focus:ring-success',
+    primary: 'btn-accent shadow-accent-glow',
+    secondary: 'btn-secondary',
+    outline: 'btn-outline border-accent text-accent hover:bg-accent/5',
+    ghost: 'btn-ghost text-accent hover:bg-accent/5',
+    danger: 'btn-error',
+    warning: 'btn-warning',
+    success: 'btn-success',
   };
 
-  // Size classes
+  // Size classes - match styles.json specifications exactly
   const sizeClasses: Record<string, string> = {
-    sm: 'btn-sm px-3 py-1.5 text-sm',
-    md: 'px-4 py-2 text-base',
-    lg: 'btn-lg px-6 py-3 text-lg',
+    sm: 'h-8 px-3 py-1.5 text-xs',
+    md: 'h-10 px-5 py-2.5 text-sm',
+    lg: 'h-12 px-6 py-3 text-sm',
   };
 
   const classes = [
     baseClasses,
     variantClasses[variant] || variantClasses.primary,
     sizeClasses[size] || sizeClasses.md,
-    disabled || loading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer',
+    disabled || loading
+      ? 'opacity-50 cursor-not-allowed focus:ring-0 focus:ring-offset-0'
+      : 'cursor-pointer',
   ].join(' ');
 
   button.className = classes;

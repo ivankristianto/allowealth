@@ -3,9 +3,10 @@
  * Button Component
  *
  * A versatile button component with multiple variants, sizes, and states.
+ * Follows Oasis Finance v1.0.0 design system with slate-primary/indigo-accent color model.
  *
- * @param {string} variant - Button style variant: primary, secondary, outline, ghost, danger, warning
- * @param {string} size - Button size: sm, md, lg
+ * @param {string} variant - Button style variant: primary (accent/indigo CTAs), secondary, outline, ghost, danger, warning, success
+ * @param {string} size - Button size: sm (2rem), md (2.5rem), lg (3rem)
  * @param {boolean} disabled - Whether the button is disabled
  * @param {boolean} loading - Show loading spinner
  * @param {string} type - Button type: button, submit, reset
@@ -38,29 +39,29 @@ const {
 const isDisabled = disabled || loading;
 const Tag = href ? 'a' : 'button';
 
-// Base classes
+// Base classes - focus ring uses accent color for theme-aware consistency
 const baseClasses =
-  'btn inline-flex items-center justify-center gap-2 font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2';
+  'btn inline-flex items-center justify-center gap-2 font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent';
 
-// Variant classes
+// Variant classes - primary uses btn-accent (indigo) for CTAs per Oasis Finance v1.0.0
 const variantClasses: Record<string, string> = {
-  primary: 'btn-primary text-white hover:bg-emerald-600 focus:ring-emerald-500',
-  secondary:
-    'bg-neutral-200 text-neutral-800 hover:bg-neutral-300 focus:ring-neutral-500 dark:bg-neutral-700 dark:text-neutral-200 dark:hover:bg-neutral-600',
-  outline:
-    'btn-outline border-2 border-emerald-500 text-emerald-600 hover:bg-emerald-50 focus:ring-emerald-500 dark:text-emerald-400 dark:hover:bg-emerald-950',
-  ghost:
-    'text-emerald-600 hover:bg-emerald-50 focus:ring-emerald-500 dark:text-emerald-400 dark:hover:bg-emerald-950',
-  danger: 'bg-error text-white hover:bg-error-hover focus:ring-error',
-  warning: 'bg-warning text-white hover:bg-warning-hover focus:ring-warning',
-  success: 'bg-success text-white hover:bg-success-hover focus:ring-success',
+  primary: 'btn-accent shadow-accent-glow',
+  secondary: 'btn-secondary',
+  outline: 'btn-outline border-accent text-accent hover:bg-accent/5',
+  ghost: 'btn-ghost text-accent hover:bg-accent/5',
+  danger: 'btn-error',
+  warning: 'btn-warning',
+  success: 'btn-success',
 };
 
-// Size classes
+// Size classes - match styles.json specifications exactly
+// sm: h-8 (2rem), padding 0.375rem 0.75rem, text-xs (0.75rem)
+// md: h-10 (2.5rem), padding 0.625rem 1.25rem, text-sm (0.875rem)
+// lg: h-12 (3rem), padding 0.75rem 1.5rem, text-sm (0.875rem)
 const sizeClasses: Record<string, string> = {
-  sm: 'btn-sm px-3 py-1.5 text-sm',
-  md: 'px-4 py-2 text-base',
-  lg: 'btn-lg px-6 py-3 text-lg',
+  sm: 'h-8 px-3 py-1.5 text-xs',
+  md: 'h-10 px-5 py-2.5 text-sm',
+  lg: 'h-12 px-6 py-3 text-sm',
 };
 
 // Combined classes
@@ -68,7 +69,7 @@ const buttonClasses = [
   baseClasses,
   variantClasses[variant] || variantClasses.primary,
   sizeClasses[size] || sizeClasses.md,
-  isDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer',
+  isDisabled ? 'opacity-50 cursor-not-allowed focus:ring-0 focus:ring-offset-0' : 'cursor-pointer',
   className,
 ]
   .filter(Boolean)
