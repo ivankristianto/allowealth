@@ -615,19 +615,22 @@ bun run typecheck && bun run lint:fix && bun run stylelint:fix && bun run format
 
 **Checklist:**
 
-- [ ] Add `focus:ring-offset-2` to Input.astro base classes
-- [ ] Add `focus:ring-offset-2` to CurrencyInput.astro input classes
-- [ ] Verify focus ring appearance across all input components
-- [ ] Update stories if needed
+- [x] Add `focus:ring-offset-2` to Input.astro base classes
+- [x] Add `focus:ring-offset-2` to CurrencyInput.astro input classes
+- [x] Verify focus ring appearance across all input components
+- [x] Update stories if needed
 
 **Files to modify:**
 
 - `src/components/atoms/Input.astro`
 - `src/components/atoms/CurrencyInput.astro`
+- `src/components/atoms/DatePicker.astro` (added during implementation for completeness)
+- `src/components/atoms/Input.stories.ts`
+- `src/components/atoms/DatePicker.stories.ts`
 
 **Estimated Time:** 15 minutes
 
-**Status:** ⏳ Pending
+**Status:** ✅ Completed (commit 2468a20)
 
 ---
 
