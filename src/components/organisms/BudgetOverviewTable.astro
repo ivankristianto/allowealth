@@ -27,6 +27,8 @@ import {
   ChevronUp,
   ChevronDown,
   ArrowUpDown,
+  CircleCheck,
+  CircleX,
 } from '@lucide/astro';
 
 export interface BudgetCategory {
@@ -215,7 +217,7 @@ const buildExportUrl = (): string => {
   <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
     <div>
       <h2 class="text-2xl font-bold">Budget Overview</h2>
-      <p class="text-neutral-600">Monthly budget breakdown and spending status</p>
+      <p class="text-neutral">Monthly budget breakdown and spending status</p>
     </div>
 
     <div class="flex items-center gap-2">
@@ -257,7 +259,7 @@ const buildExportUrl = (): string => {
       <div class="card bg-base-100 shadow border border-base-300 overflow-hidden">
         <div class="card-body p-0">
           {/* Table Header */}
-          <div class="hidden lg:grid grid-cols-12 gap-4 px-6 py-4 bg-base-200 text-sm font-semibold text-neutral-600">
+          <div class="hidden lg:grid grid-cols-12 gap-4 py-4 px-6 bg-base-200/50 text-sm font-semibold text-base-content">
             <div class="col-span-1 text-center">#</div>
             <div class="col-span-3">
               <a
@@ -385,7 +387,7 @@ const buildExportUrl = (): string => {
 
               return (
                 <div
-                  class={`grid grid-cols-1 lg:grid-cols-12 gap-2 lg:gap-4 px-4 lg:px-6 py-4 hover:bg-base-100/50 transition-colors ${getRowBackgroundClass(
+                  class={`grid grid-cols-1 lg:grid-cols-12 gap-2 lg:gap-4 py-4 px-6 hover:bg-base-100 transition-colors ${getRowBackgroundClass(
                     category.status
                   )}`}
                 >
@@ -393,7 +395,7 @@ const buildExportUrl = (): string => {
                   <div class="lg:hidden col-span-full space-y-2">
                     <div class="flex items-center justify-between">
                       <div class="flex items-center gap-2">
-                        <span class="text-sm font-medium text-neutral-500">{index + 1}.</span>
+                        <span class="text-sm font-medium text-neutral">{index + 1}.</span>
                         <a
                           href={`/transactions?category_id=${category.category_id}`}
                           class="font-semibold link link-primary"
@@ -407,17 +409,17 @@ const buildExportUrl = (): string => {
                     </div>
 
                     <div class="flex items-center justify-between text-sm">
-                      <span class="text-neutral-500">Budget:</span>
+                      <span class="text-neutral">Budget:</span>
                       <span class="font-medium">{formatCurrency(budgetAmount, currency)}</span>
                     </div>
 
                     <div class="flex items-center justify-between text-sm">
-                      <span class="text-neutral-500">Spent:</span>
+                      <span class="text-neutral">Spent:</span>
                       <span class="font-medium">{formatCurrency(spentAmount, currency)}</span>
                     </div>
 
                     <div class="flex items-center justify-between text-sm">
-                      <span class="text-neutral-500">Balance:</span>
+                      <span class="text-neutral">Balance:</span>
                       <span class={`font-medium ${getStatusColor(category.status)}`}>
                         {balance >= 0 ? '+' : '-'}
                         {formatCurrency(Math.abs(balance), currency)}
@@ -459,9 +461,7 @@ const buildExportUrl = (): string => {
                   </div>
 
                   {/* Desktop View - Table Row */}
-                  <div class="hidden lg:block col-span-1 text-center text-neutral-500">
-                    {index + 1}
-                  </div>
+                  <div class="hidden lg:block col-span-1 text-center text-neutral">{index + 1}</div>
                   <div class="hidden lg:block col-span-3">
                     <div class="flex items-center gap-2">
                       <a
@@ -518,7 +518,7 @@ const buildExportUrl = (): string => {
           </div>
 
           {/* Totals Row */}
-          <div class="mt-4 px-4 lg:px-6 py-4 bg-base-200 border-t-2 border-base-300">
+          <div class="mt-4 py-4 px-6 bg-base-200 border-t-2 border-base-300">
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-2 lg:gap-4 items-center">
               {/* Mobile Totals */}
               <div class="lg:hidden space-y-2">
@@ -531,19 +531,19 @@ const buildExportUrl = (): string => {
                   </span>
                 </div>
                 <div class="flex items-center justify-between">
-                  <span class="text-neutral-600">Total Budget:</span>
+                  <span class="text-neutral">Total Budget:</span>
                   <span class="font-semibold">
                     {formatCurrency(parseFloat(total_budget), currency)}
                   </span>
                 </div>
                 <div class="flex items-center justify-between">
-                  <span class="text-neutral-600">Total Spent:</span>
+                  <span class="text-neutral">Total Spent:</span>
                   <span class="font-semibold">
                     {formatCurrency(parseFloat(total_spent), currency)}
                   </span>
                 </div>
                 <div class="flex items-center justify-between">
-                  <span class="text-neutral-600">Total Balance:</span>
+                  <span class="text-neutral">Total Balance:</span>
                   <span
                     class={`font-semibold ${parseFloat(total_balance) >= 0 ? 'text-success' : 'text-error'}`}
                   >
@@ -602,6 +602,14 @@ const buildExportUrl = (): string => {
       </div>
     )
   }
+</div>
+
+<!-- Pre-rendered hidden icon templates for client-side cloning -->
+<div id="icon-success-template" class="hidden" aria-hidden="true">
+  <CircleCheck size={24} class="stroke-current shrink-0" />
+</div>
+<div id="icon-error-template" class="hidden" aria-hidden="true">
+  <CircleX size={24} class="stroke-current shrink-0" />
 </div>
 
 <script>
@@ -706,16 +714,18 @@ const buildExportUrl = (): string => {
       toast.className = `alert alert-${type} shadow-lg fixed top-4 right-4 z-50 max-w-sm`;
       toast.setAttribute('role', 'alert');
 
-      // Use Lucide icon paths for consistency
-      const iconSvg =
-        type === 'success'
-          ? '<svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="2"><circle cx="12" cy="12" r="10"/><path stroke-linecap="round" stroke-linejoin="round" d="m9 12 2 2 4-4"/></svg>'
-          : '<svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="2"><circle cx="12" cy="12" r="10"/><path stroke-linecap="round" stroke-linejoin="round" d="m15 9-6 6"/><path stroke-linecap="round" stroke-linejoin="round" d="m9 9 6 6"/></svg>';
+      // Clone icon from pre-rendered template
+      const templateId = type === 'success' ? 'icon-success-template' : 'icon-error-template';
+      const iconTemplate = document.getElementById(templateId);
+      const icon = iconTemplate?.firstElementChild?.cloneNode(true) as HTMLElement;
 
-      toast.innerHTML = `
-        ${iconSvg}
-        <span>${message}</span>
-      `;
+      if (icon) {
+        toast.appendChild(icon);
+      }
+
+      const messageSpan = document.createElement('span');
+      messageSpan.textContent = message;
+      toast.appendChild(messageSpan);
 
       document.body.appendChild(toast);
 

@@ -447,11 +447,16 @@ bun run typecheck && bun run lint:fix && bun run stylelint:fix && bun run format
 
 **Checklist:**
 
-- [ ] Update header background using DaisyUI: `bg-base-200/50` (matches styles.json light: `rgba(248, 250, 252, 0.5)`)
-- [ ] Update row hover color using DaisyUI: `hover:bg-base-100` (theme-friendly)
-- [ ] Update cell padding to `py-4 px-6` (1rem 1.5rem per styles.json)
-- [ ] Update icon sizes to 22px (md size per styles.json icons.sizes)
-- [ ] Update status colors using DaisyUI: `text-warning` for 80-99%, `text-error` for ≥100%
+- [x] Update header background using DaisyUI: `bg-base-200/50` (matches styles.json light: `rgba(248, 250, 252, 0.5)`)
+- [x] Update row hover color using DaisyUI: `hover:bg-base-100` (theme-friendly)
+- [x] Update cell padding to `py-4 px-6` (1rem 1.5rem per styles.json)
+- [x] Update icon sizes to 22px (md size per styles.json icons.sizes)
+- [x] Update status colors using DaisyUI: `text-warning` for 80-99%, `text-error` for ≥100%
+
+**Additional P0 fixes completed:**
+
+- [x] Replace inline SVG in toast notification with pre-rendered Lucide icons (CircleCheck, CircleX)
+- [x] Replace all `text-neutral-500/600` with DaisyUI semantic `text-neutral`
 
 **Files to modify:**
 
@@ -459,7 +464,7 @@ bun run typecheck && bun run lint:fix && bun run stylelint:fix && bun run format
 
 **Estimated Time:** 45 minutes
 
-**Status:** ⏳ Pending
+**Status:** ✅ Completed
 
 ---
 
@@ -551,7 +556,7 @@ bun run typecheck && bun run lint:fix && bun run stylelint:fix && bun run format
 - [x] Modal animations match Motion presets (Task 5.2 completed)
 - [x] Budget health widget uses tokenized status colors and badges (Task 5.3 completed)
 - [x] Transaction form uses updated inputs, buttons, and spacing (Task 5.4 completed)
-- [ ] Budget overview table aligns with header/rowHover tokens and padding (Task 6.1 pending)
+- [x] Budget overview table aligns with header/rowHover tokens and padding (Task 6.1 completed)
 - [ ] Summary cards and recent transactions list match updated card/list specs (Task 6.2-6.3 pending)
 
 ## Code Quality & Accessibility Improvements
