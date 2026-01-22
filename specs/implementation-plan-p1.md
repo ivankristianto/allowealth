@@ -501,10 +501,18 @@ bun run typecheck && bun run lint:fix && bun run stylelint:fix && bun run format
 
 **Checklist:**
 
-- [ ] Update row hover colors using DaisyUI: `hover:bg-base-100`
-- [ ] Update icon sizes to 22px (md size per styles.json)
-- [ ] Update text colors using DaisyUI: `text-base-content` for main, `text-neutral` for secondary
-- [ ] Update badge styling: padding `0.25rem 0.625rem`, fontSize `0.625rem`, use semantic badge colors
+- [x] Update row hover colors using DaisyUI: `hover:bg-base-100`
+- [x] Update icon sizes to 22px (md size per styles.json)
+- [x] Update text colors using DaisyUI: `text-accent` for interactive, `text-neutral` for secondary
+- [x] Update badge styling: verified Badge component matches Task 2.4 specs
+
+**Additional fixes:**
+
+- [x] Update "View All" link to use `text-accent hover:text-accent-hover` for interactive elements
+- [x] Update loading skeleton from `bg-neutral-300` to `bg-base-300`
+- [x] Update category group hover to use `text-accent`
+- [x] Update description text to use `text-neutral`
+- [x] Update view all button hover to `hover:bg-base-100`
 
 **Files to modify:**
 
@@ -512,7 +520,7 @@ bun run typecheck && bun run lint:fix && bun run stylelint:fix && bun run format
 
 **Estimated Time:** 30 minutes
 
-**Status:** ⏳ Pending
+**Status:** ✅ Completed (commit: forthcoming)
 
 ---
 
@@ -560,7 +568,7 @@ bun run typecheck && bun run lint:fix && bun run stylelint:fix && bun run format
 - [x] Transaction form uses updated inputs, buttons, and spacing (Task 5.4 completed)
 - [x] Budget overview table aligns with header/rowHover tokens and padding (Task 6.1 completed)
 - [x] Summary cards match updated card specs (Task 6.2 completed)
-- [ ] Recent transactions list matches updated list specs (Task 6.3 pending)
+- [x] Recent transactions list matches updated list specs (Task 6.3 completed)
 
 ## Code Quality & Accessibility Improvements
 
