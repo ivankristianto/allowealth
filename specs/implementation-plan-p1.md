@@ -584,12 +584,12 @@ bun run typecheck && bun run lint:fix && bun run stylelint:fix && bun run format
 
 **Checklist:**
 
-- [ ] Add `label` prop to CategorySelect.astro interface
-- [ ] Add `label` prop to PaymentMethodSelect.astro interface
-- [ ] Render `<label>` element with `htmlFor` pointing to the select's `id` when label is provided
-- [ ] Follow design system pattern from `design-system/START.md`
-- [ ] Update stories to demonstrate label usage
-- [ ] Update JSDoc comments
+- [x] Add `label` prop to CategorySelect.astro interface
+- [x] Add `label` prop to PaymentMethodSelect.astro interface
+- [x] Render `<label>` element with `htmlFor` pointing to the select's `id` when label is provided
+- [x] Follow design system pattern from `design-system/START.md`
+- [x] Update stories to demonstrate label usage
+- [x] Update JSDoc comments
 
 **Files to modify:**
 
@@ -598,7 +598,12 @@ bun run typecheck && bun run lint:fix && bun run stylelint:fix && bun run format
 
 **Estimated Time:** 30 minutes
 
-**Status:** ⏳ Pending
+**Status:** ✅ Completed (commit 4876edc)
+
+**Code Review Feedback Addressed:**
+
+- P1: Refactored to use existing `Label` component instead of duplicating label rendering logic
+- P1: Added JSDoc documentation for auto-generated `inputId` behavior
 
 ---
 
