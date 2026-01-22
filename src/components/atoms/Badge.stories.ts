@@ -1,12 +1,21 @@
 import type { Meta, StoryObj } from '@storybook/html';
 
+/**
+ * Badge Component Stories
+ *
+ * Aligned with Oasis Finance v1.0.0 design system specifications.
+ *
+ * @see design-system/styles.json - Badge component specifications
+ * @see src/components/atoms/Badge.astro - Component implementation
+ */
+
 const meta: Meta = {
   title: 'Atoms/Badge',
   tags: ['autodocs'],
   argTypes: {
     variant: {
       control: 'select',
-      options: ['neutral', 'primary', 'secondary', 'success', 'warning', 'error', 'info'],
+      options: ['neutral', 'primary', 'accent', 'secondary', 'success', 'warning', 'error', 'info'],
     },
     size: {
       control: 'select',
@@ -31,21 +40,25 @@ const createBadge = (args: {
 
   const variantClasses: Record<string, string> = {
     neutral: outline ? 'badge-outline' : 'badge-neutral',
-    primary: outline ? 'badge-outline text-primary' : 'badge-primary',
-    secondary: outline ? 'badge-outline text-secondary' : 'badge-secondary',
-    success: outline ? 'badge-outline text-success' : 'badge-success',
-    warning: outline ? 'badge-outline text-warning' : 'badge-warning',
-    error: outline ? 'badge-outline text-error' : 'badge-error',
-    info: outline ? 'badge-outline text-info' : 'badge-info',
+    primary: outline ? 'badge-outline' : 'badge-primary',
+    accent: outline ? 'badge-outline' : 'badge-accent',
+    secondary: outline ? 'badge-outline' : 'badge-secondary',
+    success: outline ? 'badge-outline' : 'badge-success',
+    warning: outline ? 'badge-outline' : 'badge-warning',
+    error: outline ? 'badge-outline' : 'badge-error',
+    info: outline ? 'badge-outline' : 'badge-info',
   };
 
   const sizeClasses: Record<string, string> = {
-    sm: 'badge-sm text-xs',
+    sm: 'badge-sm',
     md: '',
     lg: 'badge-lg',
   };
 
-  badge.className = `badge ${variantClasses[variant]} ${sizeClasses[size]}`;
+  // Base classes include tokenized padding (px-2.5 py-1), font size (text-badge), and font weight (font-bold)
+  const baseClasses = 'px-2.5 py-1 text-badge font-bold';
+
+  badge.className = `${baseClasses} badge ${variantClasses[variant]} ${sizeClasses[size]}`;
 
   return badge;
 };
@@ -103,6 +116,7 @@ export const AllVariants: StoryObj = {
     const variants = [
       'neutral',
       'primary',
+      'accent',
       'secondary',
       'success',
       'warning',
@@ -120,6 +134,11 @@ export const AllVariants: StoryObj = {
 
     return container;
   },
+};
+
+export const Accent: StoryObj = {
+  args: { variant: 'accent', text: 'Accent (Indigo)' },
+  render: (args) => createBadge(args),
 };
 
 export const AllSizes: StoryObj = {

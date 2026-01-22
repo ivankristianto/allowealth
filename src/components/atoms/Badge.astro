@@ -4,14 +4,26 @@
  *
  * Small status indicator badge for alerts and categories.
  *
- * @param {string} variant - Badge style: neutral, primary, secondary, success, warning, error, info
+ * Aligned with Oasis Finance v1.0.0 design system specifications.
+ *
+ * @see design-system/styles.json - Badge component specifications
+ *
+ * @param {string} variant - Badge style: neutral, primary, accent, secondary, success, warning, error, info
  * @param {string} size - Badge size: sm, md, lg
  * @param {boolean} outline - Show outline style
  * @param {string} className - Additional CSS classes
  */
 
 export interface Props {
-  variant?: 'neutral' | 'primary' | 'secondary' | 'success' | 'warning' | 'error' | 'info';
+  variant?:
+    | 'neutral'
+    | 'primary'
+    | 'accent'
+    | 'secondary'
+    | 'success'
+    | 'warning'
+    | 'error'
+    | 'info';
   size?: 'sm' | 'md' | 'lg';
   outline?: boolean;
   className?: string;
@@ -21,21 +33,26 @@ const { variant = 'neutral', size = 'md', outline = false, className = '' } = As
 
 const variantClasses: Record<string, string> = {
   neutral: outline ? 'badge-outline' : 'badge-neutral',
-  primary: outline ? 'badge-outline text-primary' : 'badge-primary',
-  secondary: outline ? 'badge-outline text-secondary' : 'badge-secondary',
-  success: outline ? 'badge-outline text-success' : 'badge-success',
-  warning: outline ? 'badge-outline text-warning' : 'badge-warning',
-  error: outline ? 'badge-outline text-error' : 'badge-error',
-  info: outline ? 'badge-outline text-info' : 'badge-info',
+  primary: outline ? 'badge-outline' : 'badge-primary',
+  accent: outline ? 'badge-outline' : 'badge-accent',
+  secondary: outline ? 'badge-outline' : 'badge-secondary',
+  success: outline ? 'badge-outline' : 'badge-success',
+  warning: outline ? 'badge-outline' : 'badge-warning',
+  error: outline ? 'badge-outline' : 'badge-error',
+  info: outline ? 'badge-outline' : 'badge-info',
 };
 
 const sizeClasses: Record<string, string> = {
-  sm: 'badge-sm text-xs',
+  sm: 'badge-sm',
   md: '',
   lg: 'badge-lg',
 };
 
-const badgeClasses = ['badge', variantClasses[variant], sizeClasses[size], className]
+// Base classes include tokenized padding (px-2.5 py-1), font size (text-badge), and font weight (font-bold)
+// Border radius is inherited from DaisyUI badge class using --radius-selector (1rem) from theme configuration
+const baseClasses = 'px-2.5 py-1 text-badge font-bold';
+
+const badgeClasses = [baseClasses, 'badge', variantClasses[variant], sizeClasses[size], className]
   .filter(Boolean)
   .join(' ');
 ---

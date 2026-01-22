@@ -704,19 +704,31 @@ After:
 
 **Checklist:**
 
-- [ ] Update padding to `px-2.5 py-1` (0.25rem 0.625rem / 4px 10px)
-- [ ] Update font size using a tokenized utility (e.g., `text-badge`) aligned to 0.625rem
-- [ ] Update font weight to `font-bold` (700)
-- [ ] Ensure badge radius follows DaisyUI selector radius (no `rounded-[...]`)
-- [ ] Update color variants to use DaisyUI semantic colors (`badge-accent`, `badge-success`, `badge-warning`, `badge-error`)
+- [x] Update padding to `px-2.5 py-1` (0.25rem 0.625rem / 4px 10px)
+- [x] Update font size using a tokenized utility (e.g., `text-badge`) aligned to 0.625rem
+- [x] Update font weight to `font-bold` (700)
+- [x] Ensure badge radius follows DaisyUI selector radius (no `rounded-[...]`)
+- [x] Update color variants to use DaisyUI semantic colors (`badge-accent`, `badge-success`, `badge-warning`, `badge-error`)
 
 **Files to modify:**
 
-- `src/components/atoms/Badge.astro`
+- `src/components/atoms/Badge.astro` ✅
+- `src/components/atoms/Badge.behavior.test.ts` ✅ (created)
+- `src/components/atoms/Badge.stories.ts` ✅ (updated)
 
 **Estimated Time:** 30 minutes
 
-**Status:** ⏳ Pending
+**Status:** ✅ Completed (2025-01-22)
+
+**Implementation Notes:**
+
+- Updated padding from unspecified to `px-2.5 py-1` (0.625rem horizontal, 0.25rem vertical)
+- Added `text-badge` utility class for 0.75rem (12px) font size (WCAG compliant)
+- Added `font-bold` (700) for improved readability
+- Added `accent` variant to Props interface and variantClasses
+- Border radius inherited from DaisyUI badge class using `--radius-selector` (1rem)
+- Created comprehensive behavior test file documenting design system alignment
+- Updated Storybook stories to match new component implementation
 
 ---
 
@@ -879,7 +891,7 @@ bun run build  # Full production build
 - [x] Button component uses `btn-accent` for primary CTAs (indigo, accent glow shadow) - Task 2.1 ✅
 - [x] Card component matches specs (1.75rem padding, radius-box, premium shadow) - Task 2.2 ✅
 - [x] Input component matches specs (2.5rem height, accent focus ring) - Task 2.3 ✅
-- [ ] Badge component matches specs (0.75rem font for accessibility, 700 weight)
+- [x] Badge component matches specs (0.75rem font for accessibility, 700 weight) - Task 2.4 ✅
 
 ### Layout (Section 3)
 
