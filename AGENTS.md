@@ -12,7 +12,8 @@ Personal and family financial application for expense tracking, budgeting, asset
 1. Read `docs/constitution.md` — understand principles and fences
 2. Read `design-system/START.md` — understand design patterns and tokens
 3. Read task context (spec, plan, or issue)
-4. Then execute
+4. Use TodoWrite to make the plan of execution
+5. Execute
 ```
 
 Agents must internalize:

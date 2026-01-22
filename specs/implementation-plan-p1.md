@@ -1,6 +1,7 @@
 # Design System Alignment - Milestone P1
 
 Complete audit and alignment of components and styles to strictly follow `design-system/styles.json`.
+This the part 2/3 milestones.
 
 ## Summary
 

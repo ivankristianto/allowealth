@@ -1,6 +1,7 @@
 # Design System Alignment - Milestone P0
 
 Complete audit and alignment of components and styles to strictly follow `design-system/styles.json`.
+This the part 1/3 milestones.
 
 ## Summary
 
@@ -79,6 +80,42 @@ Note: This list reflects full-scope changes across all milestones.
 
 ---
 
+### Task 1.0: Define Primary vs Accent Usage (Priority: P0)
+
+**Goal:** Establish color semantic mapping before implementation to prevent CTA and text color conflicts
+
+**Context:** This plan changes `--color-primary` from emerald (CTAs) to slate-900 (text). This is a semantic inversion that must be clearly defined before any implementation begins.
+
+**Checklist:**
+
+- [ ] Document the new color semantic model:
+  - `primary` = slate-900 → headings, primary text, secondary buttons
+  - `accent` = indigo-500 → CTAs, interactive elements, active states
+  - `success` = emerald-500 → positive status, confirmations
+  - `warning` = amber-500 → budget alerts, caution states
+  - `error` = rose-500 → over budget, destructive actions
+- [ ] Audit current `btn-primary` usage and identify which should become `btn-accent`
+- [ ] Audit current `text-primary` usage to ensure it's appropriate for the new text semantic
+- [ ] Audit current `bg-primary` usage for any CTA backgrounds that need `bg-accent`
+- [ ] Document the mapping in this plan for reference during component work
+- [ ] Reserve `btn-primary` for neutral/secondary emphasis; use `btn-accent` for primary CTAs
+
+**Color Semantic Mapping:**
+
+| Usage               | Before (Emerald)   | After (Slate/Indigo)           |
+| ------------------- | ------------------ | ------------------------------ |
+| Primary CTA buttons | `btn-primary`      | `btn-accent`                   |
+| Secondary buttons   | `btn-secondary`    | `btn-primary` or `btn-neutral` |
+| Headings/text       | `text-gray-900`    | `text-primary`                 |
+| Interactive focus   | `ring-emerald-500` | `ring-accent`                  |
+| Active nav items    | emerald background | indigo gradient + border       |
+
+**Estimated Time:** 30 minutes
+
+**Status:** ⏳ Pending
+
+---
+
 ### Task 1.1: Update CSS Design Tokens (Priority: P0)
 
 **Goal:** Update `src/styles/tokens.css` with new color palette from styles.json
@@ -97,7 +134,16 @@ Note: This list reflects full-scope changes across all milestones.
 - [ ] Add slate color scale (50: #f8fafc, 100: #f1f5f9, 200: #e2e8f0, 300: #cbd5e1, 400: #94a3b8, 500: #64748b, 600: #475569, 700: #334155, 800: #1e293b, 900: #0f172a)
 - [ ] Add indigo color scale (50: #eef2ff, 100: #e0e7ff, 400: #818cf8, 500: #6366f1, 600: #4f46e5, 700: #4338ca)
 - [ ] Add rose color scale (50: #fff1f2, 100: #ffe4e6, 500: #f43f5e, 600: #e11d48)
-- [ ] Update typography font sizes to match styles.json (xs: 0.625rem, sm: 0.75rem, base: 0.8125rem, md: 0.875rem, lg: 1rem, xl: 1.25rem, 2xl: 1.5rem, 3xl: 1.875rem)
+- [ ] Update typography font sizes with accessibility adjustment (diverges from styles.json for WCAG compliance):
+  - xs: 0.75rem (12px) - minimum accessible size
+  - sm: 0.8125rem (13px)
+  - base: 0.875rem (14px) - accessible body text
+  - md: 0.9375rem (15px)
+  - lg: 1rem (16px)
+  - xl: 1.25rem (20px)
+  - 2xl: 1.5rem (24px)
+  - 3xl: 1.875rem (30px)
+- Updates design-system/styles.json file to sync
 - [ ] Add Inter font family to `--font-sans`: `'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif`
 - [ ] Add component-specific tokens (button, card, input, sidebar, badge, table)
 - [ ] Add effect tokens (glass, gradient, shadows including accentGlow: `0 10px 15px -3px rgba(99, 102, 241, 0.2)`)
@@ -149,7 +195,9 @@ Note: This list reflects full-scope changes across all milestones.
 - [ ] Add full indigo color scale object
 - [ ] Add rose color scale object
 - [ ] Update font family to include Inter as primary
-- [ ] Update font sizes to match new scale (xs: 0.625rem through 3xl: 1.875rem)
+- [ ] Update font sizes to match accessibility-adjusted scale:
+  - xs: 0.75rem, sm: 0.8125rem, base: 0.875rem, md: 0.9375rem
+  - lg: 1rem, xl: 1.25rem, 2xl: 1.5rem, 3xl: 1.875rem
 - [ ] Add component spacing constants from styles.json
 - [ ] Add `colors.status` and `colors.currency` mappings to match the design system
 - [ ] Add animation duration constants (fast: 0.15, normal: 0.3, slow: 0.5)
@@ -165,66 +213,94 @@ Note: This list reflects full-scope changes across all milestones.
 
 ---
 
-### Task 1.3: Update Tailwind/DaisyUI Configuration (Priority: P0)
+### Task 1.3: Update DaisyUI Theme Configuration (Priority: P0)
 
-**Goal:** Update DaisyUI theme to use new color palette from styles.json
+**Goal:** Configure DaisyUI v5 custom themes using CSS @plugin syntax
 
-**Current Issue:** DaisyUI theme uses emerald primary (`#10b981`), but styles.json specifies slate-primary with indigo-accent system.
+**Current Issue:** DaisyUI v5 uses CSS `@plugin` syntax for theme configuration, not JavaScript theme objects in tailwind.config.ts.
 
 **Checklist:**
 
-- [ ] Update light theme primary to slate-900 (`#0f172a`) for primary text
-- [ ] Add accent color (`#6366f1`) to theme for CTAs
-- [ ] Update secondary to slate-900 (`#0f172a`) for secondary buttons
-- [ ] Update info to indigo (`#6366f1`)
-- [ ] Update error to rose (`#f43f5e`)
-- [ ] Update neutral to slate-500 (`#64748b`)
-- [ ] Update base-100 to white (`#ffffff`)
-- [ ] Add base-200 as slate-50 (`#f8fafc`)
-- [ ] Add base-300 as slate-200 (`#e2e8f0`)
-- [ ] Add dark theme with full color mapping from styles.json
+- [ ] Remove any DaisyUI theme configuration from `tailwind.config.ts` (themes defined in CSS)
+- [ ] Ensure `tailwind.config.ts` only has DaisyUI plugin registered without theme objects
+- [ ] Configure custom light theme in `globals.css` using @plugin syntax
+- [ ] Configure custom dark theme in `globals.css` using @plugin syntax
+- [ ] Set DaisyUI design variables (radius, size, border, depth, noise)
+- [ ] Verify theme switching works with `data-theme` attribute
 
 **Files to modify:**
 
-- `tailwind.config.ts`
+- `tailwind.config.ts` (simplify - remove theme config)
+- `src/styles/globals.css` (add @plugin theme configuration)
 
-**Theme Update:**
+**DaisyUI v5 Theme Configuration (globals.css):**
 
-```typescript
-/* Before */
-light: {
-  primary: '#10b981',
-  secondary: '#f59e0b',
-  accent: '#3b82f6',
+```css
+/* Light Theme */
+@plugin "daisyui/theme" {
+  name: 'light';
+  default: true;
+
+  /* Color tokens */
+  --color-primary: oklch(from #0f172a l c h); /* slate-900 - text/headings */
+  --color-primary-content: oklch(from #ffffff l c h);
+  --color-secondary: oklch(from #0f172a l c h); /* slate-900 - secondary buttons */
+  --color-secondary-content: oklch(from #ffffff l c h);
+  --color-accent: oklch(from #6366f1 l c h); /* indigo-500 - CTAs */
+  --color-accent-content: oklch(from #ffffff l c h);
+  --color-neutral: oklch(from #64748b l c h); /* slate-500 */
+  --color-neutral-content: oklch(from #ffffff l c h);
+  --color-base-100: oklch(from #ffffff l c h); /* white */
+  --color-base-200: oklch(from #f8fafc l c h); /* slate-50 */
+  --color-base-300: oklch(from #e2e8f0 l c h); /* slate-200 */
+  --color-base-content: oklch(from #1e293b l c h); /* slate-800 */
+  --color-info: oklch(from #6366f1 l c h); /* indigo-500 */
+  --color-info-content: oklch(from #ffffff l c h);
+  --color-success: oklch(from #10b981 l c h); /* emerald-500 */
+  --color-success-content: oklch(from #ffffff l c h);
+  --color-warning: oklch(from #f59e0b l c h); /* amber-500 */
+  --color-warning-content: oklch(from #ffffff l c h);
+  --color-error: oklch(from #f43f5e l c h); /* rose-500 */
+  --color-error-content: oklch(from #ffffff l c h);
+
+  /* Design variables */
+  --radius-selector: 1rem;
+  --radius-field: 0rem;
+  --radius-box: 0.5rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 1;
+  --noise: 0;
 }
 
-/* After - matching styles.json exactly */
-light: {
-  primary: '#0f172a',      // slate-900 (headings, primary text)
-  secondary: '#0f172a',    // slate-900 (secondary buttons)
-  accent: '#6366f1',       // indigo-500 (CTAs, active states)
-  neutral: '#64748b',      // slate-500
-  'base-100': '#ffffff',
-  'base-200': '#f8fafc',   // slate-50
-  'base-300': '#e2e8f0',   // slate-200
-  info: '#6366f1',         // indigo-500
-  success: '#10b981',      // emerald-500
-  warning: '#f59e0b',      // amber-500
-  error: '#f43f5e',        // rose-500
-}
+/* Dark Theme */
+@plugin "daisyui/theme" {
+  name: 'dark';
+  prefersdark: true;
 
-dark: {
-  primary: '#f8fafc',      // slate-50 (light text on dark)
-  secondary: '#f8fafc',
-  accent: '#818cf8',       // indigo-400
-  neutral: '#94a3b8',      // slate-400
-  'base-100': '#020617',   // slate-950
-  'base-200': '#0f172a',   // slate-900
-  'base-300': '#1e293b',   // slate-800
-  info: '#818cf8',
-  success: '#34d399',      // emerald-400
-  warning: '#fbbf24',      // amber-400
-  error: '#f43f5e',
+  --color-primary: oklch(from #f8fafc l c h); /* slate-50 - light text */
+  --color-primary-content: oklch(from #0f172a l c h);
+  --color-secondary: oklch(from #f8fafc l c h);
+  --color-secondary-content: oklch(from #0f172a l c h);
+  --color-accent: oklch(from #818cf8 l c h); /* indigo-400 */
+  --color-accent-content: oklch(from #0f172a l c h);
+  --color-neutral: oklch(from #94a3b8 l c h); /* slate-400 */
+  --color-neutral-content: oklch(from #0f172a l c h);
+  --color-base-100: oklch(from #020617 l c h); /* slate-950 */
+  --color-base-200: oklch(from #0f172a l c h); /* slate-900 */
+  --color-base-300: oklch(from #1e293b l c h); /* slate-800 */
+  --color-base-content: oklch(from #f1f5f9 l c h); /* slate-100 */
+  --color-info: oklch(from #818cf8 l c h); /* indigo-400 */
+  --color-success: oklch(from #34d399 l c h); /* emerald-400 */
+  --color-warning: oklch(from #fbbf24 l c h); /* amber-400 */
+  --color-error: oklch(from #f43f5e l c h); /* rose-500 */
+
+  --radius-selector: 1rem;
+  --radius-field: 0rem;
+  --radius-box: 0.5rem;
+  --depth: 1;
+  --noise: 0;
 }
 ```
 
@@ -258,6 +334,48 @@ dark: {
 
 - `src/styles/globals.css`
 
+**Utility Classes to Define:**
+
+```css
+/* Shadow utilities */
+.shadow-premium {
+  box-shadow:
+    0 1px 3px 0 rgba(0, 0, 0, 0.05),
+    0 1px 2px 0 rgba(0, 0, 0, 0.03);
+}
+.shadow-accent-glow {
+  box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.2);
+}
+.shadow-accent-glow-lg {
+  box-shadow: 0 25px 50px -12px rgba(99, 102, 241, 0.3);
+}
+
+/* Active navigation gradient */
+.nav-active {
+  background: linear-gradient(90deg, rgba(99, 102, 241, 0.1) 0%, transparent 100%);
+  border-left: 2px solid var(--color-accent);
+}
+
+/* Glass effect */
+.glass-effect {
+  backdrop-filter: blur(12px);
+  background: rgba(255, 255, 255, 0.8);
+}
+[data-theme='dark'] .glass-effect {
+  background: rgba(15, 23, 42, 0.8);
+}
+
+/* Badge text size (accessibility-adjusted) */
+.text-badge {
+  font-size: 0.75rem; /* 12px - adjusted from 0.625rem for accessibility */
+}
+
+/* Container max-width */
+.container-app {
+  max-width: 1400px;
+}
+```
+
 **Estimated Time:** 1-2 hours
 
 **Status:** ⏳ Pending
@@ -285,20 +403,58 @@ dark: {
 
 ---
 
-### Task 1.6: Define Primary vs Accent Usage (Priority: P0)
+### Task 1.6: Update Design System Documentation (Priority: P0)
 
-**Goal:** Prevent CTA and text color conflicts after the palette shift
+**Goal:** Sync design system documentation with new token values and color semantics
+
+**Context:** The color semantic model is changing significantly (primary = text, accent = CTAs). Documentation must be updated to prevent developer confusion.
 
 **Checklist:**
 
-- [ ] Define usage: primary = headings/body text, accent = CTAs/interactive, success/warning/error = status
-- [ ] Audit `btn-primary`, `text-primary`, and `bg-primary` usage to ensure CTAs use `btn-accent` (or equivalent)
-- [ ] Reserve `btn-primary` for neutral/secondary emphasis if needed; avoid using it for primary CTAs
-- [ ] Document the mapping in the plan to keep component work consistent
+- [ ] Update `design-system/START.md` Token Quick Reference section:
+  - Update `colors.primary` from `#10b981 (emerald - growth, CTAs)` to `#0f172a (slate - headings, text)`
+  - Add `colors.accent` as `#6366f1 (indigo - CTAs, interactive)`
+  - Add `colors.accentHover` as `#4f46e5 (indigo-600)`
+  - Update `colors.error` from `#ef4444` to `#f43f5e`
+  - Update `colors.info` from `#3b82f6` to `#6366f1`
+- [ ] Update `design-system/START.md` Common Patterns section:
+  - Change button examples from `btn-primary` to `btn-accent` for CTAs
+  - Update focus ring examples to use accent color
+- [ ] Update `design-system/01-foundations.md` with full new color palette
+- [ ] Update font size documentation to reflect accessibility-adjusted scale
+- [ ] Add note about DaisyUI v5 @plugin syntax for theme configuration
+- [ ] Verify all code examples in docs reflect new color usage
 
-**Estimated Time:** 30 minutes
+**Files to modify:**
+
+- `design-system/START.md`
+- `design-system/01-foundations.md`
+
+**Estimated Time:** 45 minutes
 
 **Status:** ⏳ Pending
+
+---
+
+### Quality Gate Checkpoint - Section 1
+
+**Run before proceeding to Section 2:**
+
+```bash
+bun run typecheck
+bun run lint:fix
+bun run stylelint:fix
+bun run format:fix
+bun run dev  # Verify dev server starts
+```
+
+**Verify:**
+
+- [ ] No TypeScript errors
+- [ ] No ESLint errors
+- [ ] Styles compile without warnings
+- [ ] Dev server starts without errors
+- [ ] Theme switching works (light/dark)
 
 ---
 
@@ -386,7 +542,10 @@ After:
 **Checklist:**
 
 - [ ] Set height to 2.5rem (40px) using `h-10`
-- [ ] Update padding to match spec: `py-2 pr-10 pl-3` (0.5rem 2.5rem 0.5rem 0.75rem)
+- [ ] Update padding to match spec (top right bottom left: 0.5rem 2.5rem 0.5rem 0.75rem):
+  - Use `pt-2 pb-2 pl-3` (0.5rem top/bottom, 0.75rem left)
+  - Use `pr-10` (2.5rem right - space for trailing icon/button)
+  - Or use inline style for exact values: `padding: 0.5rem 2.5rem 0.5rem 0.75rem`
 - [ ] Set font size to 0.75rem (12px) using `text-xs`
 - [ ] Use DaisyUI `radius-field` for input border radius (no `rounded-[...]`)
 - [ ] Add background using theme base tokens (e.g., `bg-base-200`)
@@ -424,6 +583,29 @@ After:
 **Estimated Time:** 30 minutes
 
 **Status:** ⏳ Pending
+
+---
+
+### Quality Gate Checkpoint - Section 2
+
+**Run before proceeding to Section 3:**
+
+```bash
+bun run typecheck
+bun run lint:fix
+bun run stylelint:fix
+bun run format:fix
+bun run storybook  # Verify components render correctly
+```
+
+**Verify:**
+
+- [ ] No TypeScript errors
+- [ ] Button component renders with accent colors for primary variant
+- [ ] Card component has correct padding and shadow
+- [ ] Input component has correct height and focus ring
+- [ ] Badge component has correct sizing and colors
+- [ ] All components work in both light and dark themes
 
 ---
 
@@ -498,6 +680,31 @@ After:
 
 ---
 
+### Quality Gate Checkpoint - Section 3 (Final P0)
+
+**Run after completing all P0 tasks:**
+
+```bash
+bun run typecheck
+bun run lint:fix
+bun run stylelint:fix
+bun run format:fix
+bun run build  # Full production build
+```
+
+**Final Verification:**
+
+- [ ] No TypeScript errors
+- [ ] No ESLint errors
+- [ ] Production build succeeds
+- [ ] Navigation has active gradient and 22px icons
+- [ ] Header has correct height (5rem) and padding
+- [ ] All pages render correctly in browser
+- [ ] Theme switching works throughout the app
+- [ ] All Success Criteria items checked
+
+---
+
 ## Dependencies
 
 ### Required Packages
@@ -522,13 +729,32 @@ After:
 
 ## Success Criteria (P0)
 
+### Foundation (Section 1)
+
+- [ ] Color semantic model documented (Task 1.0): primary=text, accent=CTAs
 - [ ] All color tokens match styles.json specification (slate primary, indigo accent)
-- [ ] Primary vs accent usage is consistent across CTAs, text, and interactive elements
-- [ ] Status and currency tokens are exposed in `@/lib/tokens`
+- [ ] Font sizes adjusted for accessibility (min 12px for xs, 14px for base)
+- [ ] DaisyUI v5 themes configured via CSS @plugin syntax
+- [ ] Utility classes defined (.shadow-premium, .shadow-accent-glow, .nav-active, .glass-effect)
 - [ ] Inter font is properly loaded and rendering with correct weights
-- [ ] Button component matches styles.json specs (indigo accent, correct sizes, accent glow shadow)
+- [ ] Status and currency tokens are exposed in `@/lib/tokens`
+- [ ] Design system documentation updated (START.md, 01-foundations.md)
+
+### Components (Section 2)
+
+- [ ] Button component uses `btn-accent` for primary CTAs (indigo, accent glow shadow)
 - [ ] Card component matches specs (1.75rem padding, radius-box, premium shadow)
-- [ ] Input component matches specs (2.5rem height, 0.75rem radius, indigo focus ring)
-- [ ] Badge component matches specs (0.625rem font, 700 weight, full radius)
+- [ ] Input component matches specs (2.5rem height, accent focus ring)
+- [ ] Badge component matches specs (0.75rem font for accessibility, 700 weight)
+
+### Layout (Section 3)
+
 - [ ] Navigation has active gradient and proper icon sizes (22px)
 - [ ] Header height is 5rem with 1.25rem padding
+- [ ] Glass effect applied where specified
+
+### Quality Gates
+
+- [ ] All quality gate checkpoints pass (typecheck, lint, stylelint, format)
+- [ ] Production build succeeds
+- [ ] Theme switching works throughout the app (light/dark)
