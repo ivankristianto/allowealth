@@ -214,10 +214,12 @@ bun run typecheck && bun run lint:fix && bun run stylelint:fix && bun run format
 
 **Checklist:**
 
-- [ ] Pre-render hidden icon elements in the template for: `CircleX`, `CircleCheck`, `TriangleAlert`
-- [ ] Add IDs: `#icon-error-template`, `#icon-success-template`, `#icon-warning-template`
-- [ ] Update JavaScript to use `cloneNode(true)` from template elements
-- [ ] Remove inline SVG strings from JavaScript template literals (lines 128, 166, 181, 198)
+- [x] Pre-render hidden icon elements in the template for: `CircleX`, `CircleCheck`
+- [x] Add IDs: `#icon-error-template`, `#icon-success-template`
+- [x] Update JavaScript to use `cloneNode(true)` from template elements via helper functions
+- [x] Remove inline SVG strings from JavaScript template literals
+- [x] Add `showAlert()` helper function to eliminate code duplication
+- [x] Remove unused `TriangleAlert` import and `icon-warning-template`
 
 **Files to modify:**
 
@@ -225,7 +227,7 @@ bun run typecheck && bun run lint:fix && bun run stylelint:fix && bun run format
 
 **Estimated Time:** 20 minutes
 
-**Status:** ⏳ Pending
+**Status:** ✅ Completed (commit: forthcoming)
 
 ---
 
@@ -541,13 +543,13 @@ bun run typecheck && bun run lint:fix && bun run stylelint:fix && bun run format
 
 - [x] Remaining atom components use new tokens and semantic colors (Task 2.5 completed)
 - [x] Page container uses tokenized max width and responsive padding (Task 3.3 completed)
-- [ ] Inline SVGs in auth/import flows are replaced with Lucide templates
-- [ ] Icon sizing matches the md/sm/lg scale and uses `@lucide/astro`
-- [ ] Toast and modal animations match Motion presets
-- [ ] Budget health widget uses tokenized status colors and badges
-- [ ] Transaction form uses updated inputs, buttons, and spacing
-- [ ] Budget overview table aligns with header/rowHover tokens and padding
-- [ ] Summary cards and recent transactions list match updated card/list specs
+- [ ] Inline SVGs in auth/import flows are replaced with Lucide templates (Task 4.1 completed, 4.2-4.4 pending)
+- [ ] Icon sizing matches the md/sm/lg scale and uses `@lucide/astro` (Task 4.4 pending)
+- [ ] Toast and modal animations match Motion presets (Task 5.1-5.2 pending)
+- [ ] Budget health widget uses tokenized status colors and badges (Task 5.3 pending)
+- [ ] Transaction form uses updated inputs, buttons, and spacing (Task 5.4 pending)
+- [ ] Budget overview table aligns with header/rowHover tokens and padding (Task 6.1 pending)
+- [ ] Summary cards and recent transactions list match updated card/list specs (Task 6.2-6.3 pending)
 
 ## Code Quality & Accessibility Improvements
 
