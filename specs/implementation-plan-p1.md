@@ -476,10 +476,12 @@ bun run typecheck && bun run lint:fix && bun run stylelint:fix && bun run format
 
 **Checklist:**
 
-- [ ] Ensure cards use updated Card component (`p-7` = 1.75rem, `rounded-box`, premium shadow)
-- [ ] Update icon colors using DaisyUI: `text-accent`
-- [ ] Update trend indicators using DaisyUI: `text-success` for up, `text-error` for down
-- [ ] Update text colors using DaisyUI: `text-base-content` for main, `text-neutral` for secondary
+- [x] Ensure cards use updated Card component (`p-7` = 1.75rem, `rounded-box`, premium shadow)
+- [x] Update icon colors using DaisyUI: `text-accent`
+- [x] Update trend indicators using DaisyUI: `text-success` for up, `text-error` for down
+- [x] Update text colors using DaisyUI: `text-base-content` for main, `text-neutral` for secondary
+- [x] Update loading skeleton background from `bg-neutral-200` to `bg-base-200`
+- [x] Update border color from `border-neutral-200` to `border-base-300`
 
 **Files to modify:**
 
@@ -487,7 +489,7 @@ bun run typecheck && bun run lint:fix && bun run stylelint:fix && bun run format
 
 **Estimated Time:** 30 minutes
 
-**Status:** ⏳ Pending
+**Status:** ✅ Completed (commit: forthcoming)
 
 ---
 
@@ -557,7 +559,8 @@ bun run typecheck && bun run lint:fix && bun run stylelint:fix && bun run format
 - [x] Budget health widget uses tokenized status colors and badges (Task 5.3 completed)
 - [x] Transaction form uses updated inputs, buttons, and spacing (Task 5.4 completed)
 - [x] Budget overview table aligns with header/rowHover tokens and padding (Task 6.1 completed)
-- [ ] Summary cards and recent transactions list match updated card/list specs (Task 6.2-6.3 pending)
+- [x] Summary cards match updated card specs (Task 6.2 completed)
+- [ ] Recent transactions list matches updated list specs (Task 6.3 pending)
 
 ## Code Quality & Accessibility Improvements
 
