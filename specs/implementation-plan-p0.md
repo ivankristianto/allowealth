@@ -143,7 +143,7 @@ Note: This list reflects full-scope changes across all milestones.
   - xl: 1.25rem (20px)
   - 2xl: 1.5rem (24px)
   - 3xl: 1.875rem (30px)
-- Updates design-system/styles.json file to sync
+- [ ] Updates design-system/styles.json file to sync
 - [ ] Add Inter font family to `--font-sans`: `'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif`
 - [ ] Add component-specific tokens (button, card, input, sidebar, badge, table)
 - [ ] Add effect tokens (glass, gradient, shadows including accentGlow: `0 10px 15px -3px rgba(99, 102, 241, 0.2)`)
