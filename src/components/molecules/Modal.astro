@@ -5,6 +5,8 @@
  * Dialog modal for focused user interactions.
  * Can be used for forms, confirmations, or detailed views.
  *
+ * Uses Motion library for smooth enter/exit animations per styles.json specification.
+ *
  * @param {string} id - Unique ID for the modal (required for dialog functionality)
  * @param {string} title - Modal title
  * @param {boolean} open - Whether the modal is open
@@ -52,14 +54,17 @@ const titleId = title ? `${id}-title` : undefined;
   <!-- Backdrop -->
   {
     backdropClose && (
-      <form method="dialog" class="modal-backdrop">
+      <form method="dialog" class="modal-backdrop" data-modal-backdrop>
         <button>Close</button>
       </form>
     )
   }
 
   <!-- Modal content -->
-  <div class:list={['modal-box', sizeClasses[size]]}>
+  <div
+    class:list={['modal-box', sizeClasses[size], 'rounded-box', 'shadow-premium']}
+    data-modal-content
+  >
     {/* Header */}
     {
       (title || closable) && (
@@ -71,7 +76,10 @@ const titleId = title ? `${id}-title` : undefined;
           )}
           {closable && (
             <form method="dialog">
-              <button class="btn btn-sm btn-circle btn-ghost" aria-label="Close modal">
+              <button
+                class="btn btn-sm btn-circle btn-ghost hover:bg-accent/10 hover:text-accent"
+                aria-label="Close modal"
+              >
                 <X size={16} class="stroke-current" aria-hidden="true" />
               </button>
             </form>
@@ -90,11 +98,134 @@ const titleId = title ? `${id}-title` : undefined;
   </div>
 </dialog>
 
-<script>
-  // Handle ESC key to close modal
-  const modal = document.getElementById(Astro.props.id) as HTMLDialogElement | null;
+<script define:vars={{ id, backdropClose }}>
+  import { animate } from 'motion';
 
-  if (modal && Astro.props.backdropClose) {
+  // Modal animation configuration from styles.json
+  const BACKDROP_DURATION = 0.2;
+  const CONTENT_DURATION = 0.3;
+  const INITIAL_SCALE = 0.95;
+  const INITIAL_Y_OFFSET = 20;
+
+  const modal = document.getElementById(id);
+  if (!modal) return;
+
+  // Get backdrop and content elements
+  const getBackdrop = () => modal.querySelector('[data-modal-backdrop]');
+  const getContent = () => modal.querySelector('[data-modal-content]');
+
+  // Track animation state to prevent overlapping animations
+  let isAnimating = false;
+
+  // Animate backdrop enter
+  const animateBackdropIn = async () => {
+    const backdrop = getBackdrop();
+    if (!backdrop) return;
+
+    await animate(backdrop, { opacity: [0, 1] }, { duration: BACKDROP_DURATION });
+  };
+
+  // Animate backdrop exit
+  const animateBackdropOut = async () => {
+    const backdrop = getBackdrop();
+    if (!backdrop) return;
+
+    await animate(backdrop, { opacity: [1, 0] }, { duration: BACKDROP_DURATION });
+  };
+
+  // Animate content enter
+  const animateContentIn = async () => {
+    const content = getContent();
+    if (!content) return;
+
+    await animate(
+      content,
+      { opacity: [0, 1], scale: [INITIAL_SCALE, 1], y: [INITIAL_Y_OFFSET, 0] },
+      { duration: CONTENT_DURATION }
+    );
+  };
+
+  // Animate content exit
+  const animateContentOut = async () => {
+    const content = getContent();
+    if (!content) return;
+
+    await animate(
+      content,
+      { opacity: [1, 0], scale: [1, INITIAL_SCALE], y: [0, INITIAL_Y_OFFSET] },
+      { duration: CONTENT_DURATION }
+    );
+  };
+
+  // Handle modal show (when modal opens)
+  const handleShow = async () => {
+    if (isAnimating) return;
+    isAnimating = true;
+
+    // Set initial states before animation
+    const backdrop = getBackdrop();
+    const content = getContent();
+
+    if (backdrop) backdrop.style.opacity = '0';
+    if (content) {
+      content.style.opacity = '0';
+      content.style.transform = `scale(${INITIAL_SCALE}) translateY(${INITIAL_Y_OFFSET}px)`;
+    }
+
+    // Run both animations (they start simultaneously)
+    await Promise.all([animateBackdropIn(), animateContentIn()]);
+
+    isAnimating = false;
+  };
+
+  // Handle modal close (when modal closes)
+  const handleClose = async (event) => {
+    if (isAnimating) return;
+    isAnimating = true;
+
+    // Prevent default to allow animation to complete
+    event.preventDefault();
+
+    // Run exit animations
+    await Promise.all([animateBackdropOut(), animateContentOut()]);
+
+    // Close the modal after animation completes
+    modal.close();
+
+    isAnimating = false;
+  };
+
+  // Listen for close event to reset modal state
+  modal.addEventListener('close', () => {
+    const backdrop = getBackdrop();
+    const content = getContent();
+
+    if (backdrop) backdrop.style.opacity = '';
+    if (content) {
+      content.style.opacity = '';
+      content.style.transform = '';
+    }
+  });
+
+  // Listen for click events on the dialog to trigger show animation
+  // (using a mutation observer to detect when modal-open class is added)
+  const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+        const isOpen = modal.classList.contains('modal-open');
+
+        if (isOpen && !isAnimating) {
+          // Modal is opening (modal-open class is the source of truth)
+          requestAnimationFrame(() => handleShow());
+        }
+      }
+    });
+  });
+
+  observer.observe(modal, { attributes: true });
+
+  // Handle backdrop click to close with animation
+  if (backdropClose) {
     modal.addEventListener('click', (e) => {
       const rect = modal.getBoundingClientRect();
       const isInDialog =
@@ -102,9 +233,35 @@ const titleId = title ? `${id}-title` : undefined;
         e.clientY <= rect.top + rect.height &&
         rect.left <= e.clientX &&
         e.clientX <= rect.left + rect.width;
-      if (!isInDialog) {
-        modal.close();
+
+      if (!isInDialog && modal.open && !isAnimating) {
+        handleClose(e);
       }
     });
   }
+
+  // Intercept form submissions (close button clicks)
+  const closeForms = modal.querySelectorAll('form[method="dialog"]');
+  closeForms.forEach((form) => {
+    form.addEventListener('submit', (e) => {
+      if (modal.open && !isAnimating) {
+        handleClose(e);
+      }
+    });
+  });
+
+  // Cleanup
+  const cleanup = () => {
+    observer.disconnect();
+  };
+
+  // Cleanup when modal is removed from DOM
+  const removalObserver = new MutationObserver(() => {
+    if (!document.contains(modal)) {
+      cleanup();
+      removalObserver.disconnect();
+    }
+  });
+
+  removalObserver.observe(document.body, { childList: true, subtree: true });
 </script>

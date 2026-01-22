@@ -355,15 +355,15 @@ bun run typecheck && bun run lint:fix && bun run stylelint:fix && bun run format
 
 **Checklist:**
 
-- [ ] Import Motion library: `import { animate } from 'motion'`
-- [ ] Update backdrop animation using Motion:
+- [x] Import Motion library: `import { animate } from 'motion'`
+- [x] Update backdrop animation using Motion:
   - Enter: `animate(backdrop, { opacity: [0, 1] }, { duration: 0.2 })`
   - Exit: `animate(backdrop, { opacity: [1, 0] }, { duration: 0.2 })`
-- [ ] Update content animation using Motion:
+- [x] Update content animation using Motion:
   - Enter: `animate(content, { opacity: [0, 1], scale: [0.95, 1], y: [20, 0] }, { duration: 0.3 })`
   - Exit: `animate(content, { opacity: [1, 0], scale: [1, 0.95], y: [0, 20] }, { duration: 0.3 })`
-- [ ] Ensure modal styling uses `rounded-box` (via `--radius-box`) and premium shadow
-- [ ] Update close button: `hover:bg-accent/10` or `hover:text-accent`
+- [x] Ensure modal styling uses `rounded-box` (via `--radius-box`) and premium shadow
+- [x] Update close button: `hover:bg-accent/10` or `hover:text-accent`
 
 **Files to modify:**
 
@@ -371,7 +371,7 @@ bun run typecheck && bun run lint:fix && bun run stylelint:fix && bun run format
 
 **Estimated Time:** 30 minutes
 
-**Status:** ⏳ Pending
+**Status:** ✅ Completed (commit: forthcoming)
 
 ---
 
@@ -546,7 +546,7 @@ bun run typecheck && bun run lint:fix && bun run stylelint:fix && bun run format
 - [x] Inline SVGs in auth/import flows are replaced with Lucide templates (Section 4 completed)
 - [x] Icon sizing matches the md/sm/lg scale and uses `@lucide/astro` (Task 4.4 completed)
 - [x] Toast animations match Motion presets (Task 5.1 completed)
-- [ ] Modal animations match Motion presets (Task 5.2 pending)
+- [x] Modal animations match Motion presets (Task 5.2 completed)
 - [ ] Budget health widget uses tokenized status colors and badges (Task 5.3 pending)
 - [ ] Transaction form uses updated inputs, buttons, and spacing (Task 5.4 pending)
 - [ ] Budget overview table aligns with header/rowHover tokens and padding (Task 6.1 pending)
