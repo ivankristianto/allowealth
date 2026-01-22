@@ -2,6 +2,14 @@
  * Design Tokens - JavaScript/TypeScript exports
  * ==========================================
  * Use these values in component logic for consistency
+ *
+ * Version: 1.0.0 - Oasis Finance Design System
+ * Color semantic model:
+ * - primary = slate-900 → headings, primary text, secondary buttons
+ * - accent = indigo-500 → CTAs, interactive elements, active states
+ * - success = emerald-500 → positive status, confirmations
+ * - warning = amber-500 → budget alerts, caution states
+ * - error = rose-500 → over budget, destructive actions
  */
 
 /* ========================================
@@ -9,18 +17,55 @@
  * ======================================== */
 
 export const colors = {
-  primary: '#10b981',
-  primaryHover: '#059669',
-  primaryLight: '#d1fae5',
+  // Primary semantic color - slate-900 (headings, primary text, secondary buttons)
+  primary: '#0f172a',
+  primaryLight: '#f1f5f9',
+
+  // Accent color - indigo-500 (CTAs, interactive elements, active states)
+  accent: '#6366f1',
+  accentHover: '#4f46e5',
+  accentContent: '#ffffff',
 
   warning: '#f59e0b',
   warningHover: '#d97706',
 
-  error: '#ef4444',
-  errorHover: '#dc2626',
+  error: '#f43f5e',
+  errorHover: '#e11d48',
 
   success: '#10b981',
-  info: '#3b82f6',
+  info: '#6366f1',
+
+  // Slate color scale
+  slate: {
+    50: '#f8fafc',
+    100: '#f1f5f9',
+    200: '#e2e8f0',
+    300: '#cbd5e1',
+    400: '#94a3b8',
+    500: '#64748b',
+    600: '#475569',
+    700: '#334155',
+    800: '#1e293b',
+    900: '#0f172a',
+  } as const,
+
+  // Indigo color scale
+  indigo: {
+    50: '#eef2ff',
+    100: '#e0e7ff',
+    400: '#818cf8',
+    500: '#6366f1',
+    600: '#4f46e5',
+    700: '#4338ca',
+  } as const,
+
+  // Rose color scale
+  rose: {
+    50: '#fff1f2',
+    100: '#ffe4e6',
+    500: '#f43f5e',
+    600: '#e11d48',
+  } as const,
 
   currency: {
     idr: '#10b981',
@@ -30,7 +75,7 @@ export const colors = {
   status: {
     ok: '#22c55e', // Under 80%
     warning: '#f59e0b', // 80-99%
-    danger: '#ef4444', // Over 100%
+    danger: '#f43f5e', // Over 100%
   },
 } as const;
 
@@ -39,15 +84,17 @@ export const colors = {
  * ======================================== */
 
 export const fonts = {
-  sans: 'system-ui, -apple-system, sans-serif',
-  mono: "'SF Mono', Monaco, monospace",
+  sans: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+  mono: "'SF Mono', Monaco, 'Cascadia Code', monospace",
 } as const;
 
+// Accessibility-adjusted font sizes (WCAG compliance: min 12px for xs)
 export const fontSizes = {
-  xs: '0.75rem', // 12px
-  sm: '0.875rem', // 14px
-  base: '1rem', // 16px
-  lg: '1.125rem', // 18px
+  xs: '0.75rem', // 12px - minimum accessible size
+  sm: '0.8125rem', // 13px
+  base: '0.875rem', // 14px - accessible body text
+  md: '0.9375rem', // 15px
+  lg: '1rem', // 16px
   xl: '1.25rem', // 20px
   '2xl': '1.5rem', // 24px
   '3xl': '1.875rem', // 30px
@@ -88,7 +135,40 @@ export const breakpoints = {
 } as const;
 
 /* ========================================
- * TRANSITIONS
+ * ANIMATIONS
+ * ======================================== */
+
+export const animationDuration = {
+  fast: 0.15, // 150ms
+  normal: 0.3, // 300ms
+  slow: 0.5, // 500ms
+} as const;
+
+export const springPresets = {
+  smooth: {
+    stiffness: 100,
+    damping: 15,
+    mass: 1,
+  },
+  bouncy: {
+    stiffness: 300,
+    damping: 10,
+    mass: 1,
+  },
+  gentle: {
+    stiffness: 50,
+    damping: 20,
+    mass: 1,
+  },
+  snappy: {
+    stiffness: 400,
+    damping: 30,
+    mass: 1,
+  },
+} as const;
+
+/* ========================================
+ * TRANSITIONS (Legacy - use animationDuration)
  * ======================================== */
 
 export const transitions = {

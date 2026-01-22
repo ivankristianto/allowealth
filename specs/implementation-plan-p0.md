@@ -364,22 +364,22 @@ This means components using `text-primary` will automatically switch from dark t
 
 **Checklist:**
 
-- [ ] Update `primary` color to `#0f172a` (slate-900)
-- [ ] Add `accent` color constant (`#6366f1`)
-- [ ] Add `accentHover` color constant (`#4f46e5`)
-- [ ] Update `error` color to `#f43f5e`
-- [ ] Update `info` color to `#6366f1`
-- [ ] Add full slate color scale object
-- [ ] Add full indigo color scale object
-- [ ] Add rose color scale object
-- [ ] Update font family to include Inter as primary
-- [ ] Update font sizes to match accessibility-adjusted scale:
+- [x] Update `primary` color to `#0f172a` (slate-900)
+- [x] Add `accent` color constant (`#6366f1`)
+- [x] Add `accentHover` color constant (`#4f46e5`)
+- [x] Update `error` color to `#f43f5e`
+- [x] Update `info` color to `#6366f1`
+- [x] Add full slate color scale object
+- [x] Add full indigo color scale object
+- [x] Add rose color scale object
+- [x] Update font family to include Inter as primary
+- [x] Update font sizes to match accessibility-adjusted scale:
   - xs: 0.75rem, sm: 0.8125rem, base: 0.875rem, md: 0.9375rem
   - lg: 1rem, xl: 1.25rem, 2xl: 1.5rem, 3xl: 1.875rem
-- [ ] Add component spacing constants from styles.json
-- [ ] Add `colors.status` and `colors.currency` mappings to match the design system
-- [ ] Add animation duration constants (fast: 0.15, normal: 0.3, slow: 0.5)
-- [ ] Add spring configuration presets (smooth, bouncy, gentle, snappy)
+- [x] Add component spacing constants from styles.json
+- [x] Add `colors.status` and `colors.currency` mappings to match the design system
+- [x] Add animation duration constants (fast: 0.15, normal: 0.3, slow: 0.5)
+- [x] Add spring configuration presets (smooth, bouncy, gentle, snappy)
 
 **Files to modify:**
 
@@ -387,7 +387,7 @@ This means components using `text-primary` will automatically switch from dark t
 
 **Estimated Time:** 1-2 hours
 
-**Status:** ⏳ Pending
+**Status:** ✅ Completed (2025-01-22)
 
 ---
 
@@ -915,7 +915,7 @@ bun run build  # Full production build
 - [ ] DaisyUI v5 themes configured via CSS @plugin syntax
 - [x] Utility classes defined (.shadow-premium, .shadow-accent-glow, .glass-effect) - Task 1.1 ✅
 - [ ] Inter font is properly loaded and rendering with correct weights
-- [ ] Status and currency tokens are exposed in `@/lib/tokens` (CSS tokens done, TypeScript tokens pending)
+- [x] Status and currency tokens are exposed in `@/lib/tokens` - Task 1.2 ✅
 - [ ] Design system documentation updated (styles.json synced, START.md/01-foundations.md pending)
 
 ### Components (Section 2)
@@ -940,3 +940,13 @@ bun run build  # Full production build
 ### Code Quality & Accessibility Improvements
 
 **Note:** Reserved for follow-up improvements identified during code review. They are non-blocking but recommended for better code quality, accessibility, and maintainability.
+
+#### Task 1.2 Code Review Feedback (P2/P3 - Non-blocking)
+
+- [ ] Update `design-system/START.md` Token Quick Reference section (lines 43-47) to reflect new color semantic model:
+  - `colors.primary` from `#10b981 (emerald - growth, CTAs)` to `#0f172a (slate - headings, text)`
+  - Add `colors.accent` as `#6366f1 (indigo - CTAs, interactive)`
+  - Update `colors.error` from `#ef4444` to `#f43f5e`
+  - Update `colors.info` from `#3b82f6` to `#6366f1`
+- [ ] Resolve `currency.usd` value inconsistency: tokens.ts has `#3b82f6` (blue-500) but styles.json specifies `#2563eb` (blue-600)
+- [ ] Decide whether to add `4xl`, `5xl`, `6xl` font sizes to styles.json or remove from tokens.ts for source-of-truth consistency
