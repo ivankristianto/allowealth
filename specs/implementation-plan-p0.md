@@ -758,3 +758,7 @@ bun run build  # Full production build
 - [ ] All quality gate checkpoints pass (typecheck, lint, stylelint, format)
 - [ ] Production build succeeds
 - [ ] Theme switching works throughout the app (light/dark)
+
+### Code Quality & Accessibility Improvements
+
+**Note:** Reserved for follow-up improvements identified during code review. They are non-blocking but recommended for better code quality, accessibility, and maintainability.
