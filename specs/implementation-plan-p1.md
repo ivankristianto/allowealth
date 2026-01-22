@@ -286,14 +286,14 @@ bun run typecheck && bun run lint:fix && bun run stylelint:fix && bun run format
 
 **Checklist:**
 
-- [ ] Audit all components for icon usage
-- [ ] Update navigation icons to 22px (md size)
-- [ ] Update button icons to 20px (sm size) for default buttons
-- [ ] Update table/list icons to 22px (md size)
-- [ ] Update header icons to 24px (lg size)
-- [ ] Update small UI icons (close, etc.) to 16px (xs size)
-- [ ] Align icon package naming across docs and code to `@lucide/astro` (update styles.json metadata if needed)
-- [ ] Document icon size conventions in design system
+- [x] Audit all components for icon usage
+- [x] Update navigation icons to 22px (md size)
+- [x] Update button icons to 20px (sm size) for default buttons
+- [x] Update table/list icons to 22px (md size)
+- [x] Update header icons to 24px (lg size)
+- [x] Update small UI icons (close, etc.) to 16px (xs size)
+- [x] Align icon package naming across docs and code to `@lucide/astro` (update styles.json metadata if needed)
+- [x] Document icon size conventions in design system
 
 **Files to modify:**
 
@@ -301,7 +301,7 @@ bun run typecheck && bun run lint:fix && bun run stylelint:fix && bun run format
 
 **Estimated Time:** 1-2 hours
 
-**Status:** ⏳ Pending
+**Status:** ✅ Completed (commit 810454c)
 
 ---
 
@@ -329,12 +329,12 @@ bun run typecheck && bun run lint:fix && bun run stylelint:fix && bun run format
 
 **Checklist:**
 
-- [ ] Import Motion library: `import { animate } from 'motion'`
-- [ ] Replace CSS keyframes with Motion animations:
+- [x] Import Motion library: `import { animate } from 'motion'`
+- [x] Replace CSS keyframes with Motion animations:
   - Enter: `animate(element, { opacity: [0, 1], y: [-10, 0], scale: [0.95, 1] }, { duration: 0.2 })`
   - Exit: `animate(element, { opacity: [1, 0], scale: [1, 0.95] }, { duration: 0.2 })`
-- [ ] Update toast colors to DaisyUI semantic: `alert-info`, `alert-success`, `alert-warning`, `alert-error`
-- [ ] Update positioning if needed
+- [x] Update toast colors to DaisyUI semantic: `alert-info`, `alert-success`, `alert-warning`, `alert-error`
+- [x] Update positioning if needed
 
 **Files to modify:**
 
@@ -343,7 +343,7 @@ bun run typecheck && bun run lint:fix && bun run stylelint:fix && bun run format
 
 **Estimated Time:** 45 minutes
 
-**Status:** ⏳ Pending
+**Status:** ✅ Completed (commit: forthcoming)
 
 ---
 
@@ -543,9 +543,10 @@ bun run typecheck && bun run lint:fix && bun run stylelint:fix && bun run format
 
 - [x] Remaining atom components use new tokens and semantic colors (Task 2.5 completed)
 - [x] Page container uses tokenized max width and responsive padding (Task 3.3 completed)
-- [ ] Inline SVGs in auth/import flows are replaced with Lucide templates (Tasks 4.1-4.3 completed, 4.4 pending)
-- [ ] Icon sizing matches the md/sm/lg scale and uses `@lucide/astro` (Task 4.4 pending)
-- [ ] Toast and modal animations match Motion presets (Task 5.1-5.2 pending)
+- [x] Inline SVGs in auth/import flows are replaced with Lucide templates (Section 4 completed)
+- [x] Icon sizing matches the md/sm/lg scale and uses `@lucide/astro` (Task 4.4 completed)
+- [x] Toast animations match Motion presets (Task 5.1 completed)
+- [ ] Modal animations match Motion presets (Task 5.2 pending)
 - [ ] Budget health widget uses tokenized status colors and badges (Task 5.3 pending)
 - [ ] Transaction form uses updated inputs, buttons, and spacing (Task 5.4 pending)
 - [ ] Budget overview table aligns with header/rowHover tokens and padding (Task 6.1 pending)
@@ -630,5 +631,79 @@ bun run typecheck && bun run lint:fix && bun run stylelint:fix && bun run format
 - `src/components/atoms/PasswordField.astro`
 
 **Estimated Time:** 30 minutes
+
+**Status:** ⏳ Pending
+
+---
+
+### Task QA.4: Add prefers-reduced-motion Support to Toast Components (Priority: P2)
+
+**Goal:** Improve accessibility by respecting user motion preferences in toast animations.
+
+**Issue:** Toast animations don't check for `prefers-reduced-motion` media query. Users with motion sensitivity may experience discomfort. Approximately 5-10% of users experience motion-induced vestibular disorders.
+
+**Checklist:**
+
+- [ ] Add `prefers-reduced-motion` check to Toast.astro enter animation
+- [ ] Add `prefers-reduced-motion` check to Toast.astro exit animation
+- [ ] Add `prefers-reduced-motion` check to ToastContainer.astro enter animation
+- [ ] Add `prefers-reduced-motion` check to ToastContainer.astro exit animation
+- [ ] Skip animations and show toasts immediately when reduced motion is preferred
+
+**Files to modify:**
+
+- `src/components/molecules/Toast.astro`
+- `src/components/molecules/ToastContainer.astro`
+
+**Estimated Time:** 30 minutes
+
+**Status:** ⏳ Pending
+
+---
+
+### Task QA.5: Extract Toast Animation Config to Shared Constants (Priority: P2)
+
+**Goal:** Improve maintainability by creating a shared animation configuration file for toast animations.
+
+**Issue:** Animation values are repeated in multiple places (Toast.astro and ToastContainer.astro), making updates error-prone and violating DRY principle.
+
+**Checklist:**
+
+- [ ] Create `src/lib/animations/toast.ts` with TOAST_ANIMATION_CONFIG constants
+- [ ] Export enter keyframes, enter options, exit keyframes, exit options
+- [ ] Update Toast.astro to import and use shared config
+- [ ] Update ToastContainer.astro to import and use shared config
+- [ ] Update JSDoc comments to reference shared config
+
+**Files to modify:**
+
+- `src/lib/animations/toast.ts` (new file)
+- `src/components/molecules/Toast.astro`
+- `src/components/molecules/ToastContainer.astro`
+
+**Estimated Time:** 20 minutes
+
+**Status:** ⏳ Pending
+
+---
+
+### Task QA.6: Fix Toast Auto-Dismiss Race Condition (Priority: P2)
+
+**Goal:** Prevent unnecessary animation calls when a toast is manually dismissed during auto-dismiss timeout.
+
+**Issue:** If a user manually dismisses the toast during the auto-dismiss timeout, the toast element may already be removed when the timeout fires, causing the `animate()` call to fail silently or potentially throw an error. ToastContainer handles this properly via timeoutMap, but Toast.astro needs the same treatment.
+
+**Checklist:**
+
+- [ ] Store auto-dismiss timeout ID in Toast.astro
+- [ ] Cancel timeout on manual dismiss button click
+- [ ] Ensure no animate() calls on removed elements
+- [ ] Test rapid dismiss scenarios
+
+**Files to modify:**
+
+- `src/components/molecules/Toast.astro`
+
+**Estimated Time:** 15 minutes
 
 **Status:** ⏳ Pending

@@ -3,6 +3,7 @@
  * Toast Notification Component
  *
  * Dismissible notification messages for user feedback.
+ * Uses Motion library for smooth enter/exit animations.
  *
  * @param {string} id - Unique ID for the toast
  * @param {string} message - Toast message
@@ -45,38 +46,55 @@ const positionClasses: Record<string, string> = {
   class:list={['alert shadow-lg', typeClasses[type], positionClasses[position]]}
 >
   <span>{message}</span>
-  <button
-    class="btn btn-sm btn-ghost"
-    aria-label="Dismiss notification"
-    onclick="this.parentElement.remove()"
-  >
+  <button class="btn btn-sm btn-ghost" aria-label="Dismiss notification" data-dismiss>
     <X size={16} class="stroke-current" aria-hidden="true" />
   </button>
 </toast-message>
 
-<script>
+<script define:vars={{ id, duration }}>
+  import { animate } from 'motion';
+
+  const toast = document.getElementById(id);
+  if (!toast) {
+    console.error('Toast element not found');
+    throw new Error('Toast element not found');
+  }
+
+  // Set initial state for enter animation
+  toast.style.opacity = '0';
+  toast.style.transform = 'translateY(-10px) scale(0.95)';
+
+  // Enter animation (matches styles.json toast preset)
+  animate(
+    toast,
+    { opacity: [0, 1], y: [-10, 0], scale: [0.95, 1] },
+    { duration: 0.2, easing: [0.4, 0, 0.2, 1] }
+  );
+
+  // Dismiss button handler with exit animation
+  const dismissBtn = toast.querySelector('[data-dismiss]');
+  if (dismissBtn) {
+    dismissBtn.addEventListener('click', () => {
+      // Exit animation (matches styles.json toast preset)
+      animate(
+        toast,
+        { opacity: [1, 0], scale: [1, 0.95] },
+        { duration: 0.2, easing: [0.4, 0, 0.2, 1] }
+      ).then(() => toast.remove());
+    });
+  }
+
   // Auto-dismiss after duration
-  if (Astro.props.duration > 0) {
+  if (duration > 0) {
     setTimeout(() => {
-      const toast = document.getElementById(Astro.props.id);
-      if (toast) toast.remove();
-    }, Astro.props.duration);
+      if (document.contains(toast)) {
+        // Exit animation (matches styles.json toast preset)
+        animate(
+          toast,
+          { opacity: [1, 0], scale: [1, 0.95] },
+          { duration: 0.2, easing: [0.4, 0, 0.2, 1] }
+        ).then(() => toast.remove());
+      }
+    }, duration);
   }
 </script>
-
-<style>
-  toast-message {
-    animation: slideIn 0.3s ease-out;
-  }
-
-  @keyframes slideIn {
-    from {
-      opacity: 0;
-      transform: translateX(100%);
-    }
-    to {
-      opacity: 1;
-      transform: translateX(0);
-    }
-  }
-</style>
