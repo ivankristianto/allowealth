@@ -262,11 +262,11 @@ bun run typecheck && bun run lint:fix && bun run stylelint:fix && bun run format
 
 **Checklist:**
 
-- [ ] Locate inline SVG in JavaScript error handling code
-- [ ] Pre-render error icon in the template (hidden by default) with ID
-- [ ] Update JavaScript to clone and display the template icon
-- [ ] Or refactor to use the ErrorMessage component which already uses Lucide `CircleX`
-- [ ] Remove inline SVG string from JavaScript
+- [x] Locate inline SVG in JavaScript error handling code
+- [x] Pre-render error icon in the template (hidden by default) with ID
+- [x] Update JavaScript to clone and display the template icon
+- [x] Or refactor to use the ErrorMessage component which already uses Lucide `CircleX`
+- [x] Remove inline SVG string from JavaScript
 
 **Files to modify:**
 
@@ -274,7 +274,7 @@ bun run typecheck && bun run lint:fix && bun run stylelint:fix && bun run format
 
 **Estimated Time:** 20 minutes
 
-**Status:** ⏳ Pending
+**Status:** ✅ Completed (commit: forthcoming)
 
 ---
 
@@ -543,7 +543,7 @@ bun run typecheck && bun run lint:fix && bun run stylelint:fix && bun run format
 
 - [x] Remaining atom components use new tokens and semantic colors (Task 2.5 completed)
 - [x] Page container uses tokenized max width and responsive padding (Task 3.3 completed)
-- [ ] Inline SVGs in auth/import flows are replaced with Lucide templates (Tasks 4.1-4.2 completed, 4.3-4.4 pending)
+- [ ] Inline SVGs in auth/import flows are replaced with Lucide templates (Tasks 4.1-4.3 completed, 4.4 pending)
 - [ ] Icon sizing matches the md/sm/lg scale and uses `@lucide/astro` (Task 4.4 pending)
 - [ ] Toast and modal animations match Motion presets (Task 5.1-5.2 pending)
 - [ ] Budget health widget uses tokenized status colors and badges (Task 5.3 pending)

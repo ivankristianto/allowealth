@@ -15,6 +15,7 @@ import Checkbox from '../atoms/Checkbox.astro';
 import Label from '../atoms/Label.astro';
 import Button from '../atoms/Button.astro';
 import ErrorMessage from '../atoms/ErrorMessage.astro';
+import { CircleX } from '@lucide/astro';
 
 export interface Props {
   errorMessage?: string;
@@ -84,12 +85,47 @@ const cspNonce = Astro.locals.cspNonce || '';
   </div>
 </div>
 
+<!-- Hidden icon templates for client-side messages -->
+<div class="hidden" aria-hidden="true">
+  <div id="icon-error-template">
+    <CircleX size={24} class="stroke-current shrink-0" />
+  </div>
+</div>
+
 <script define:vars={{ redirectTo, apiLoginUrl: '/api/auth/login' }} nonce={cspNonce} is:inline>
-  // HTML escaping utility to prevent XSS
-  const escapeHtml = (text) => {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+  // Helper function to clone icon from template
+  const getErrorIcon = () => {
+    const template = document.getElementById('icon-error-template');
+    if (!template?.firstElementChild) {
+      console.warn('Error icon template not found or empty');
+      return null;
+    }
+    const clone = template.firstElementChild.cloneNode(true);
+    clone.removeAttribute('id'); // Remove ID to avoid duplicates
+    return clone;
+  };
+
+  // Helper function to show alert messages
+  const showErrorAlert = (message) => {
+    if (!messagesContainer) return;
+
+    messagesContainer.innerHTML = '';
+
+    const alertDiv = document.createElement('div');
+    alertDiv.setAttribute('role', 'alert');
+    alertDiv.className = 'alert alert-error';
+
+    const icon = getErrorIcon();
+    if (icon) {
+      alertDiv.appendChild(icon);
+    }
+
+    const textSpan = document.createElement('span');
+    // Safe: textContent prevents XSS
+    textSpan.textContent = message;
+    alertDiv.appendChild(textSpan);
+
+    messagesContainer.appendChild(alertDiv);
   };
 
   const form = document.getElementById('login-form');
@@ -150,18 +186,7 @@ const cspNonce = Astro.locals.cspNonce || '';
 
       // Display validation errors
       if (errors.length > 0) {
-        if (messagesContainer) {
-          messagesContainer.innerHTML = `
-            <div role="alert" class="alert alert-error">
-              <svg xmlns="http://www.w3.org/2000/svg" class="shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24" aria-hidden="true">
-                <circle cx="12" cy="12" r="10"></circle>
-                <path d="m15 9-6 6"></path>
-                <path d="m9 9 6 6"></path>
-              </svg>
-              <span>${escapeHtml(errors.join(', '))}</span>
-            </div>
-          `;
-        }
+        showErrorAlert(errors.join(', '));
         return;
       }
 
@@ -195,34 +220,12 @@ const cspNonce = Astro.locals.cspNonce || '';
           window.location.href = returnUrl;
         } else {
           // Login failed - show error message
-          if (messagesContainer) {
-            messagesContainer.innerHTML = `
-              <div role="alert" class="alert alert-error">
-                <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <path d="m15 9-6 6"></path>
-                  <path d="m9 9 6 6"></path>
-                </svg>
-                <span>${escapeHtml(result.error?.message || 'Login failed. Please try again.')}</span>
-              </div>
-            `;
-          }
+          showErrorAlert(result.error?.message || 'Login failed. Please try again.');
         }
       } catch (error) {
         console.error('Login error:', error);
         // Show error message
-        if (messagesContainer) {
-          messagesContainer.innerHTML = `
-            <div role="alert" class="alert alert-error">
-              <svg xmlns="http://www.w3.org/2000/svg" class="shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24" aria-hidden="true">
-                <circle cx="12" cy="12" r="10"></circle>
-                <path d="m15 9-6 6"></path>
-                <path d="m9 9 6 6"></path>
-              </svg>
-              <span>An error occurred. Please try again.</span>
-            </div>
-          `;
-        }
+        showErrorAlert('An error occurred. Please try again.');
       } finally {
         // Reset loading state
         if (buttonText) buttonText.classList.remove('hidden');
