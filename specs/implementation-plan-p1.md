@@ -239,10 +239,10 @@ bun run typecheck && bun run lint:fix && bun run stylelint:fix && bun run format
 
 **Checklist:**
 
-- [ ] Pre-render hidden SVG elements for validation states: `Check`, `XCircle`, `TriangleAlert`
-- [ ] Add template elements with IDs: `#icon-check-template`, `#icon-error-template`, `#icon-warning-template`
-- [ ] Update JavaScript to use `cloneNode(true)` instead of `createElementNS`
-- [ ] Remove all `document.createElementNS('http://www.w3.org/2000/svg', ...)` code
+- [x] Pre-render hidden SVG elements for validation states: `Check`, `XCircle`, `TriangleAlert`
+- [x] Add template elements with IDs: `#icon-check-template`, `#icon-error-template`, `#icon-warning-template`
+- [x] Update JavaScript to use `cloneNode(true)` instead of `createElementNS`
+- [x] Remove all `document.createElementNS('http://www.w3.org/2000/svg', ...)` code
 
 **Files to modify:**
 
@@ -250,7 +250,7 @@ bun run typecheck && bun run lint:fix && bun run stylelint:fix && bun run format
 
 **Estimated Time:** 45 minutes
 
-**Status:** ⏳ Pending
+**Status:** ✅ Completed (commit: forthcoming)
 
 ---
 
@@ -543,7 +543,7 @@ bun run typecheck && bun run lint:fix && bun run stylelint:fix && bun run format
 
 - [x] Remaining atom components use new tokens and semantic colors (Task 2.5 completed)
 - [x] Page container uses tokenized max width and responsive padding (Task 3.3 completed)
-- [ ] Inline SVGs in auth/import flows are replaced with Lucide templates (Task 4.1 completed, 4.2-4.4 pending)
+- [ ] Inline SVGs in auth/import flows are replaced with Lucide templates (Tasks 4.1-4.2 completed, 4.3-4.4 pending)
 - [ ] Icon sizing matches the md/sm/lg scale and uses `@lucide/astro` (Task 4.4 pending)
 - [ ] Toast and modal animations match Motion presets (Task 5.1-5.2 pending)
 - [ ] Budget health widget uses tokenized status colors and badges (Task 5.3 pending)

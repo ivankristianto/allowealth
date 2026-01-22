@@ -26,7 +26,17 @@
  */
 
 import Label from '../atoms/Label.astro';
-import { Check, RefreshCw, ArrowRight, Info, ArrowLeft, Plus, List } from '@lucide/astro';
+import {
+  Check,
+  RefreshCw,
+  ArrowRight,
+  Info,
+  ArrowLeft,
+  Plus,
+  List,
+  XCircle,
+  TriangleAlert,
+} from '@lucide/astro';
 
 export interface Props {
   action: string;
@@ -55,6 +65,13 @@ const cspNonce = Astro.locals.cspNonce || '';
   <input type="hidden" name="map_payment_method" id="map-payment-method-hidden" />
   <input type="hidden" name="map_description" id="map-description-hidden" />
 </form>
+
+<!-- Hidden icon templates for client-side cloning -->
+<div class="hidden" aria-hidden="true">
+  <div id="icon-check-template"><Check size={24} class="stroke-current shrink-0" /></div>
+  <div id="icon-error-template"><XCircle size={24} class="stroke-current shrink-0" /></div>
+  <div id="icon-warning-template"><TriangleAlert size={24} class="stroke-current shrink-0" /></div>
+</div>
 
 <div class="csv-import-container space-y-6">
   <!-- Step 1: File Upload Section -->
@@ -320,6 +337,22 @@ const cspNonce = Astro.locals.cspNonce || '';
   (function () {
     'use strict';
 
+    // Helper function to clone icon templates
+    function cloneIconTemplate(templateId) {
+      const template = document.getElementById(templateId);
+      if (!template?.firstElementChild) {
+        console.error(`Icon template "${templateId}" not found or empty`);
+        // Fallback: create placeholder if template not found
+        const placeholder = document.createElement('span');
+        placeholder.className = 'shrink-0 h-6 w-6';
+        placeholder.setAttribute('aria-hidden', 'true');
+        return placeholder;
+      }
+      const clone = template.firstElementChild.cloneNode(true);
+      clone.setAttribute('aria-hidden', 'true');
+      return clone;
+    }
+
     // DOM Elements - Upload Step
     const fileInput = document.getElementById('csv-file-input');
     const fileError = document.getElementById('file-error');
@@ -511,25 +544,14 @@ const cspNonce = Astro.locals.cspNonce || '';
         const successDiv = document.createElement('div');
         successDiv.className = 'alert alert-success';
 
-        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-        svg.setAttribute('class', 'stroke-current shrink-0 h-6 w-6');
-        svg.setAttribute('fill', 'none');
-        svg.setAttribute('viewBox', '0 0 24 24');
-        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        path.setAttribute('stroke-linecap', 'round');
-        path.setAttribute('stroke-linejoin', 'round');
-        path.setAttribute('stroke-width', '2');
-        // Lucide Check icon path
-        path.setAttribute('d', 'M20 6 9 17l-5-5');
-        svg.appendChild(path);
+        const icon = cloneIconTemplate('icon-check-template');
+        successDiv.appendChild(icon);
 
         const span = document.createElement('span');
         span.textContent = 'CSV structure is valid! Click "Map Columns" to continue.';
-
-        successDiv.appendChild(svg);
         successDiv.appendChild(span);
-        validationResults.appendChild(successDiv);
 
+        validationResults.appendChild(successDiv);
         proceedButton.disabled = false;
         return;
       }
@@ -538,24 +560,10 @@ const cspNonce = Astro.locals.cspNonce || '';
       if (issues.errors.length > 0) {
         const errorDiv = document.createElement('div');
         errorDiv.className = 'alert alert-error';
+        errorDiv.setAttribute('role', 'alert');
 
-        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-        svg.setAttribute('class', 'stroke-current shrink-0 h-6 w-6');
-        svg.setAttribute('fill', 'none');
-        svg.setAttribute('viewBox', '0 0 24 24');
-        // Circle
-        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-        circle.setAttribute('cx', '12');
-        circle.setAttribute('cy', '12');
-        circle.setAttribute('r', '10');
-        // X mark
-        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        path.setAttribute('stroke-linecap', 'round');
-        path.setAttribute('stroke-linejoin', 'round');
-        path.setAttribute('stroke-width', '2');
-        path.setAttribute('d', 'm15 9-6 6m0-6 6 6');
-        svg.appendChild(circle);
-        svg.appendChild(path);
+        const icon = cloneIconTemplate('icon-error-template');
+        errorDiv.appendChild(icon);
 
         const div = document.createElement('div');
         const h4 = document.createElement('h4');
@@ -572,7 +580,6 @@ const cspNonce = Astro.locals.cspNonce || '';
 
         div.appendChild(h4);
         div.appendChild(ul);
-        errorDiv.appendChild(svg);
         errorDiv.appendChild(div);
         validationResults.appendChild(errorDiv);
 
@@ -584,32 +591,8 @@ const cspNonce = Astro.locals.cspNonce || '';
         const warningDiv = document.createElement('div');
         warningDiv.className = 'alert alert-warning';
 
-        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-        svg.setAttribute('class', 'stroke-current shrink-0 h-6 w-6');
-        svg.setAttribute('fill', 'none');
-        svg.setAttribute('viewBox', '0 0 24 24');
-        // Lucide TriangleAlert icon path
-        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        path.setAttribute('stroke-linecap', 'round');
-        path.setAttribute('stroke-linejoin', 'round');
-        path.setAttribute('stroke-width', '2');
-        path.setAttribute(
-          'd',
-          'm21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z'
-        );
-        const path2 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        path2.setAttribute('stroke-linecap', 'round');
-        path2.setAttribute('stroke-linejoin', 'round');
-        path2.setAttribute('stroke-width', '2');
-        path2.setAttribute('d', 'M12 9v4');
-        const path3 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        path3.setAttribute('stroke-linecap', 'round');
-        path3.setAttribute('stroke-linejoin', 'round');
-        path3.setAttribute('stroke-width', '2');
-        path3.setAttribute('d', 'M12 17h.01');
-        svg.appendChild(path);
-        svg.appendChild(path2);
-        svg.appendChild(path3);
+        const icon = cloneIconTemplate('icon-warning-template');
+        warningDiv.appendChild(icon);
 
         const div = document.createElement('div');
         const h4 = document.createElement('h4');
@@ -626,7 +609,6 @@ const cspNonce = Astro.locals.cspNonce || '';
 
         div.appendChild(h4);
         div.appendChild(ul);
-        warningDiv.appendChild(svg);
         warningDiv.appendChild(div);
         validationResults.appendChild(warningDiv);
       }
@@ -780,39 +762,14 @@ const cspNonce = Astro.locals.cspNonce || '';
       mappingValidation.className = isError ? 'alert alert-error' : 'alert alert-success';
       mappingValidation.innerHTML = '';
 
-      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-      svg.setAttribute('class', 'stroke-current shrink-0 h-6 w-6');
-      svg.setAttribute('fill', 'none');
-      svg.setAttribute('viewBox', '0 0 24 24');
-
-      if (isError) {
-        // XCircle icon
-        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-        circle.setAttribute('cx', '12');
-        circle.setAttribute('cy', '12');
-        circle.setAttribute('r', '10');
-        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        path.setAttribute('stroke-linecap', 'round');
-        path.setAttribute('stroke-linejoin', 'round');
-        path.setAttribute('stroke-width', '2');
-        path.setAttribute('d', 'm15 9-6 6m0-6 6 6');
-        svg.appendChild(circle);
-        svg.appendChild(path);
-      } else {
-        // Check icon
-        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        path.setAttribute('stroke-linecap', 'round');
-        path.setAttribute('stroke-linejoin', 'round');
-        path.setAttribute('stroke-width', '2');
-        path.setAttribute('d', 'M20 6 9 17l-5-5');
-        svg.appendChild(path);
-      }
+      const templateId = isError ? 'icon-error-template' : 'icon-check-template';
+      const icon = cloneIconTemplate(templateId);
+      mappingValidation.appendChild(icon);
 
       const span = document.createElement('span');
       span.textContent = message;
-
-      mappingValidation.appendChild(svg);
       mappingValidation.appendChild(span);
+
       mappingValidation.classList.remove('hidden');
     }
 
@@ -1016,57 +973,18 @@ const cspNonce = Astro.locals.cspNonce || '';
         resultSummary.classList.add('alert-error');
       }
 
-      // Create summary content with Lucide icon paths
-      const summaryIcon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-      summaryIcon.setAttribute('class', 'stroke-current shrink-0 h-6 w-6');
-      summaryIcon.setAttribute('fill', 'none');
-      summaryIcon.setAttribute('viewBox', '0 0 24 24');
-
-      if (hasErrors && hasSuccess) {
-        // TriangleAlert icon for partial success
-        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        path.setAttribute('stroke-linecap', 'round');
-        path.setAttribute('stroke-linejoin', 'round');
-        path.setAttribute('stroke-width', '2');
-        path.setAttribute(
-          'd',
-          'm21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z'
-        );
-        const path2 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        path2.setAttribute('stroke-linecap', 'round');
-        path2.setAttribute('stroke-linejoin', 'round');
-        path2.setAttribute('stroke-width', '2');
-        path2.setAttribute('d', 'M12 9v4');
-        const path3 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        path3.setAttribute('stroke-linecap', 'round');
-        path3.setAttribute('stroke-linejoin', 'round');
-        path3.setAttribute('stroke-width', '2');
-        path3.setAttribute('d', 'M12 17h.01');
-        summaryIcon.appendChild(path);
-        summaryIcon.appendChild(path2);
-        summaryIcon.appendChild(path3);
-      } else if (hasSuccess) {
-        // Check icon for success
-        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        path.setAttribute('stroke-linecap', 'round');
-        path.setAttribute('stroke-linejoin', 'round');
-        path.setAttribute('stroke-width', '2');
-        path.setAttribute('d', 'M20 6 9 17l-5-5');
-        summaryIcon.appendChild(path);
+      // Create summary content with Lucide icon templates
+      // Icon selection: warning for partial success (completed with issues), error for complete failure, check for success
+      let iconTemplateId;
+      if (hasErrors && !hasSuccess) {
+        iconTemplateId = 'icon-error-template'; // Complete failure (0 imported)
+      } else if (hasErrors) {
+        iconTemplateId = 'icon-warning-template'; // Partial success (some imported, some failed)
       } else {
-        // XCircle icon for complete failure
-        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-        circle.setAttribute('cx', '12');
-        circle.setAttribute('cy', '12');
-        circle.setAttribute('r', '10');
-        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        path.setAttribute('stroke-linecap', 'round');
-        path.setAttribute('stroke-linejoin', 'round');
-        path.setAttribute('stroke-width', '2');
-        path.setAttribute('d', 'm15 9-6 6m0-6 6 6');
-        summaryIcon.appendChild(circle);
-        summaryIcon.appendChild(path);
+        iconTemplateId = 'icon-check-template'; // Complete success
       }
+
+      const summaryIcon = cloneIconTemplate(iconTemplateId);
 
       const summaryDiv = document.createElement('div');
       const summaryTitle = document.createElement('h4');
