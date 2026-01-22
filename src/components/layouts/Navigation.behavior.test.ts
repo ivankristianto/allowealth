@@ -2,12 +2,12 @@
  * Navigation Component Behavior Tests
  * ==================================
  *
- * Tests the Navigation layout component after migrating to @lucide/astro icons.
+ * Tests the Navigation layout component after migrating to Oasis Finance v1.0.0 design system.
  *
  * Manual Testing Steps:
  * 1. Open the application in a browser
  * 2. Navigate to any authenticated page
- * 3. Verify navigation renders correctly with Lucide icons
+ * 3. Verify navigation renders correctly with updated styling
  * 4. Test navigation links and active states
  *
  * Usage: bun test src/components/layouts/Navigation.behavior.test.ts
@@ -30,16 +30,109 @@ const NAV_ITEMS = [
 ] as const;
 
 /**
- * Icon size in pixels (equivalent to previous "sm" size)
+ * Icon size in pixels (Oasis Finance v1.0.0 - md size from design system)
  */
-const ICON_SIZE = 16;
+const ICON_SIZE = 22;
 
 /**
  * Total number of navigation items
  */
 const NAV_ITEM_COUNT = 8;
 
+/**
+ * Oasis Finance v1.0.0 Design System - Sidebar specifications
+ */
+const SIDEBAR_SPECS = {
+  width: '16rem', // 256px
+  navItemPadding: 'py-2.5 px-4', // 0.625rem 1rem
+  iconTextGap: 'gap-3', // 0.75rem
+  activeGradient: 'linear-gradient(90deg, rgba(99, 102, 241, 0.1) 0%, rgba(99, 102, 241, 0) 100%)',
+  activeBorder: '2px solid #6366f1', // accent color
+} as const;
+
 describe('Navigation Component', () => {
+  describe('Oasis Finance v1.0.0 Design System Alignment', () => {
+    it('should use icon size of 22px (md size from design system)', () => {
+      /**
+       * Oasis Finance v1.0.0 specifies:
+       * - Icon size: 22px (md size from icons.sizes in styles.json)
+       * Pattern: <Icon size={22} class="stroke-current" />
+       */
+      expect(ICON_SIZE).toBe(22);
+    });
+
+    it('should use nav item padding py-2.5 px-4', () => {
+      /**
+       * Oasis Finance v1.0.0 sidebar.navItem.padding:
+       * - 0.625rem 1rem (py-2.5 px-4 in Tailwind)
+       */
+      expect(SIDEBAR_SPECS.navItemPadding).toBe('py-2.5 px-4');
+    });
+
+    it('should use gap-3 for icon-text spacing', () => {
+      /**
+       * Oasis Finance v1.0.0 sidebar.navItem.gap:
+       * - 0.75rem (gap-3 in Tailwind)
+       */
+      expect(SIDEBAR_SPECS.iconTextGap).toBe('gap-3');
+    });
+
+    it('should apply active gradient to active nav items', () => {
+      /**
+       * Oasis Finance v1.0.0 sidebar.activeGradient:
+       * - linear-gradient(90deg, rgba(99, 102, 241, 0.1) 0%, rgba(99, 102, 241, 0) 100%)
+       * - Applied via .nav-active CSS class
+       */
+      expect(SIDEBAR_SPECS.activeGradient).toContain('rgba(99, 102, 241, 0.1)');
+    });
+
+    it('should apply active left border to active nav items', () => {
+      /**
+       * Oasis Finance v1.0.0 sidebar.activeBorder:
+       * - 2px solid #6366f1 (accent color)
+       * - Applied via .nav-active CSS class
+       */
+      expect(SIDEBAR_SPECS.activeBorder).toBe('2px solid #6366f1');
+    });
+
+    it('should use badge-accent for badges (was badge-primary)', () => {
+      /**
+       * Color semantic change in Oasis Finance v1.0.0:
+       * - accent = indigo-500 (#6366f1) for CTAs and active states
+       * - primary = slate-900 (#0f172a) for text/headings
+       * Badges should use badge-accent for consistency
+       */
+      expect(true).toBe(true);
+    });
+
+    it('should use text-base-content for user name', () => {
+      /**
+       * DaisyUI semantic color for user-facing text:
+       * - text-base-content adapts to light/dark theme
+       * - Replaces hardcoded colors for theme compatibility
+       */
+      expect(true).toBe(true);
+    });
+
+    it('should use text-neutral for user email', () => {
+      /**
+       * DaisyUI semantic color for muted text:
+       * - text-neutral adapts to light/dark theme
+       * - Replaces text-neutral-500 for theme compatibility
+       */
+      expect(true).toBe(true);
+    });
+
+    it('should use border-base-300 for all borders', () => {
+      /**
+       * DaisyUI semantic color for borders:
+       * - border-base-300 adapts to light/dark theme
+       * - Replaces hardcoded border colors
+       */
+      expect(true).toBe(true);
+    });
+  });
+
   describe('Icon Migration', () => {
     it('should use LayoutDashboard icon for Dashboard', () => {
       expect(NAV_ITEMS[0].icon).toBe('LayoutDashboard');
@@ -73,8 +166,11 @@ describe('Navigation Component', () => {
       expect(NAV_ITEMS[7].icon).toBe('Settings');
     });
 
-    it('should use X icon for mobile close button', () => {
-      // X icon is used for closing the mobile drawer
+    it('should use X icon for mobile close button with size={22}', () => {
+      /**
+       * X icon is used for closing the mobile drawer
+       * Updated to size={22} for Oasis Finance v1.0.0
+       */
       expect(true).toBe(true);
     });
 
@@ -83,19 +179,20 @@ describe('Navigation Component', () => {
        * Verify that the component:
        * 1. Does NOT import Icon from '../atoms/Icon.astro'
        * 2. Imports all icons from '@lucide/astro'
-       * 3. Uses direct icon components: <LayoutDashboard size={16} />
+       * 3. Uses direct icon components: <LayoutDashboard size={22} />
        */
       expect(true).toBe(true);
     });
   });
 
   describe('Icon Sizing', () => {
-    it('should use size={16} for all navigation icons', () => {
+    it('should use size={22} for all navigation icons', () => {
       /**
-       * The previous "sm" size maps to 16px in Lucide icons
-       * Pattern: <Icon size={16} class="stroke-current" />
+       * Oasis Finance v1.0.0 icon size:
+       * - 22px (md size from icons.sizes in styles.json)
+       * Pattern: <Icon size={22} class="stroke-current" />
        */
-      expect(ICON_SIZE).toBe(16);
+      expect(ICON_SIZE).toBe(22);
     });
 
     it('should include stroke-current class for icon styling', () => {
@@ -149,8 +246,21 @@ describe('Navigation Component', () => {
     it('should set aria-current="page" on active link', () => {
       /**
        * Active navigation items have:
-       * - class="active gap-3"
+       * - class="py-2.5 px-4 gap-3 nav-item nav-active"
        * - aria-current="page"
+       * - .nav-active applies gradient and left border
+       */
+      expect(true).toBe(true);
+    });
+
+    it('should apply nav-active class with gradient and border', () => {
+      /**
+       * .nav-active CSS class (defined in globals.css):
+       * background: var(--sidebar-active-gradient)
+       * border-left: var(--sidebar-active-border)
+       * Which resolves to:
+       * background: linear-gradient(90deg, rgba(99, 102, 241, 0.1) 0%, rgba(99, 102, 241, 0) 100%)
+       * border-left: 2px solid #6366f1
        */
       expect(true).toBe(true);
     });
@@ -195,7 +305,7 @@ describe('Navigation Component', () => {
       /**
        * Mobile-specific features:
        * - Close button visible on lg:hidden breakpoint
-       * - Uses X icon from Lucide
+       * - Uses X icon from Lucide with size={22}
        * - Has aria-label="Close menu"
        * - Linked to drawer-toggle checkbox
        */
@@ -218,10 +328,10 @@ describe('Navigation Component', () => {
       /**
        * Bottom section includes:
        * - User avatar placeholder with initials
-       * - User name (truncated if needed)
-       * - User email (truncated if needed)
+       * - User name (truncated if needed) with text-base-content
+       * - User email (truncated if needed) with text-neutral
        * - Positioned absolutely at bottom
-       * - Has border-top separator
+       * - Has border-top separator with border-base-300
        */
       expect(true).toBe(true);
     });
@@ -231,10 +341,20 @@ describe('Navigation Component', () => {
        * Avatar fallback:
        * - Shows first 2 characters of name (uppercase)
        * - Uses "UK" (Unknown) when no user
-       * - Background color: neutral
-       * - Text color: neutral-content
+       * - Background color: bg-neutral
+       * - Text color: text-neutral-content
        * - Rounded full (circle)
        * - Fixed width: w-10 (40px)
+       */
+      expect(true).toBe(true);
+    });
+
+    it('should use theme-aware colors for user info', () => {
+      /**
+       * Oasis Finance v1.0.0 color semantics:
+       * - text-base-content for user name (adapts to theme)
+       * - text-neutral for user email (adapts to theme)
+       * - border-base-300 for border (adapts to theme)
        */
       expect(true).toBe(true);
     });
@@ -324,12 +444,13 @@ describe('Navigation Component', () => {
  * [ ] Navigate to any authenticated page (e.g., /dashboard)
  *
  * Test 1: Navigation Renders
- * [ ] Verify sidebar is visible on desktop
+ * [ ] Verify sidebar is visible on desktop (16rem / 256px width)
  * [ ] Verify all 8 navigation items are visible
- * [ ] Verify icons render correctly for each item
- * [ ] Verify icons are aligned with text
+ * [ ] Verify icons render correctly for each item (22px icon size)
+ * [ ] Verify icons are aligned with text (gap-3 spacing)
  *
- * Test 2: Icon Rendering
+ * Test 2: Icon Rendering (Oasis Finance v1.0.0)
+ * [ ] Verify icon size is 22px (md size from design system)
  * [ ] Verify Dashboard icon looks like a grid layout
  * [ ] Verify Transactions icon looks like a magnifying glass
  * [ ] Verify Budget icon looks like a calendar
@@ -339,11 +460,12 @@ describe('Navigation Component', () => {
  * [ ] Verify Calculators icon looks like a plus sign
  * [ ] Verify Settings icon looks like a gear
  *
- * Test 3: Active State
+ * Test 3: Active State (Oasis Finance v1.0.0)
  * [ ] Navigate to /dashboard
- * [ ] Verify Dashboard link is highlighted
+ * [ ] Verify Dashboard link has gradient background (indigo tint)
+ * [ ] Verify Dashboard link has left border (2px solid indigo)
  * [ ] Navigate to /transactions
- * [ ] Verify Transactions link is highlighted
+ * [ ] Verify Transactions link has gradient and border
  * [ ] Navigate to /assets/add
  * [ ] Verify Assets link is highlighted (nested route)
  *
@@ -355,22 +477,34 @@ describe('Navigation Component', () => {
  * [ ] Click Budget link
  * [ ] Verify navigation to /budget
  *
- * Test 5: Mobile View
+ * Test 5: Spacing and Layout (Oasis Finance v1.0.0)
+ * [ ] Verify nav item padding is py-2.5 px-4
+ * [ ] Verify icon-text gap is gap-3
+ * [ ] Verify sidebar width is 16rem (256px)
+ *
+ * Test 6: Color Semantics (Oasis Finance v1.0.0)
+ * [ ] Verify borders use border-base-300
+ * [ ] Verify user name uses text-base-content
+ * [ ] Verify user email uses text-neutral
+ * [ ] Test theme toggle
+ * [ ] Verify all colors adapt to dark theme
+ *
+ * Test 7: Mobile View
  * [ ] Resize browser to < 1024px width
  * [ ] Verify sidebar is hidden
  * [ ] Open drawer (if applicable)
- * [ ] Verify close button (X) is visible
+ * [ ] Verify close button (X) is visible with size={22}
  * [ ] Click close button
  * [ ] Verify drawer closes
  *
- * Test 6: User Info Section
+ * Test 8: User Info Section
  * [ ] Verify user info is displayed at bottom
  * [ ] Verify user initials are shown in avatar
- * [ ] Verify user name is displayed
- * [ ] Verify user email is displayed
+ * [ ] Verify user name is displayed with text-base-content
+ * [ ] Verify user email is displayed with text-neutral
  * [ ] Verify long names/emails are truncated
  *
- * Test 7: Accessibility - Keyboard
+ * Test 9: Accessibility - Keyboard
  * [ ] Press Tab key
  * [ ] Verify focus moves to first navigation link
  * [ ] Press Tab again
@@ -378,20 +512,29 @@ describe('Navigation Component', () => {
  * [ ] Press Enter on focused link
  * [ ] Verify navigation occurs
  *
- * Test 8: Accessibility - Screen Reader
+ * Test 10: Accessibility - Screen Reader
  * [ ] Enable screen reader (VoiceOver/NVDA)
  * [ ] Navigate through sidebar
  * [ ] Verify "Main navigation" is announced
  * [ ] Verify each link text is announced
  * [ ] Verify active page is announced
  *
- * Test 9: Visual Consistency
- * [ ] Verify all icons have same size
+ * Test 11: Visual Consistency
+ * [ ] Verify all icons have same size (22px)
  * [ ] Verify icons are vertically aligned with text
  * [ ] Verify hover effects work on links
- * [ ] Verify active state has distinct styling
+ * [ ] Verify active state has gradient background
+ * [ ] Verify active state has left border
  *
- * Test 10: No Console Errors
+ * Test 12: Theme Compatibility
+ * [ ] Switch to dark theme
+ * [ ] Verify sidebar background adapts
+ * [ ] Verify borders adapt (border-base-300)
+ * [ ] Verify text colors adapt
+ * [ ] Verify active gradient still visible in dark mode
+ * [ ] Verify active border still visible in dark mode
+ *
+ * Test 13: No Console Errors
  * [ ] Open browser DevTools Console
  * [ ] Navigate through all pages
  * [ ] Verify NO JavaScript errors

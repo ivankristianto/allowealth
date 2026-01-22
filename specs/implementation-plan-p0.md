@@ -769,19 +769,20 @@ bun run storybook  # Verify components render correctly
 
 **Checklist:**
 
-- [ ] Update icon sizes from 16px to 22px (`size={22}`)
-- [ ] Add active gradient using the `sidebarActive` pattern token
-- [ ] Add active left border using the accent token (no hardcoded color)
-- [ ] Update nav item padding to `py-2.5 px-4` (0.625rem 1rem)
-- [ ] Update gap between icon and text to `gap-3` (0.75rem)
-- [ ] Ensure sidebar width is 16rem (256px) - currently `w-64` ✅
-- [ ] Update border color to `border-base-300`
-- [ ] Update user section styling with base-content/neutral tokens
-- [ ] Add custom CSS class `.nav-active` for active state styling
+- [x] Update icon sizes from 16px to 22px (`size={22}`)
+- [x] Add active gradient using the `sidebarActive` pattern token
+- [x] Add active left border using the accent token (no hardcoded color)
+- [x] Update nav item padding to `py-2.5 px-4` (0.625rem 1rem)
+- [x] Update gap between icon and text to `gap-3` (0.75rem)
+- [x] Ensure sidebar width is 16rem (256px) - currently `w-64` ✅
+- [x] Update border color to `border-base-300`
+- [x] Update user section styling with base-content/neutral tokens
+- [x] Add custom CSS class `.nav-active` for active state styling
 
 **Files to modify:**
 
-- `src/components/layouts/Navigation.astro`
+- `src/components/layouts/Navigation.astro` ✅
+- `src/components/layouts/Navigation.behavior.test.ts` ✅
 
 **UI Change:**
 
@@ -797,7 +798,23 @@ After:
 
 **Estimated Time:** 1 hour
 
-**Status:** ⏳ Pending
+**Status:** ✅ Completed (2025-01-22)
+
+**Implementation Notes:**
+
+- Updated all icon sizes from 16px to 22px (md size from design system)
+- Updated nav item padding to `py-2.5 px-4`
+- Updated icon-text gap to `gap-3`
+- Active state uses `.nav-active` CSS class with `var(--sidebar-active-gradient)` and `var(--sidebar-active-border)`
+- Changed badge from `badge-primary` to `badge-accent` (color semantic change)
+- Updated user section to use `text-base-content` and `text-neutral` (theme-aware colors)
+- Fixed mobile close button icon size to 22px
+- Used flexbox layout (`flex flex-col` on aside, `flex-1` on nav, `mt-auto` on user section) to prevent overlap
+- Fixed user initials fallback from "UK" to "--" for clarity
+- Removed undefined `.nav-item` class (Tailwind utilities handle all styling)
+- Added JSDoc comments with Oasis Finance v1.0.0 reference
+
+---
 
 ---
 
@@ -895,7 +912,7 @@ bun run build  # Full production build
 
 ### Layout (Section 3)
 
-- [ ] Navigation has active gradient and proper icon sizes (22px)
+- [x] Navigation has active gradient and proper icon sizes (22px) - Task 3.1 ✅
 - [ ] Header height is 5rem with 1.25rem padding
 - [ ] Glass effect applied where specified
 
@@ -931,3 +948,11 @@ bun run build  # Full production build
 - [x] Update Storybook stories to match updated Input component styles (P1 - fixed during implementation)
 - [ ] Add `required` attribute to select and input elements (defined in Props but not passed to elements)
 - [ ] Update comment on line 67 to clarify right padding purpose (space for trailing icon/button)
+
+#### Task 3.1 Code Review Feedback (P2/P3 - Non-blocking)
+
+- [x] Remove undefined `.nav-item` class from Navigation component (P1 - fixed during implementation)
+- [x] Fix absolute positioning for user section - use flexbox layout instead (P1 - fixed during implementation)
+- [x] Fix hardcoded "UK" fallback - change to "--" for clarity (P1 - fixed during implementation)
+- [ ] Test contains non-asserting tests - consider converting to actual assertions or documentation-only comments
+- [ ] Navigation item array could use const assertion for better type safety
