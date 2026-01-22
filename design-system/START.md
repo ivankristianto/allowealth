@@ -6,6 +6,23 @@
 
 **Read this file first.** Consult other docs only when needed.
 
+### ⚠️ Design System Migration
+
+This guide reflects the **Oasis Finance** design system (v1.0.0).
+
+**Source of truth:** `design-system/styles.json`
+
+**Color system update:**
+
+- **Primary:** `#0f172a` (slate-900) - main brand color, text, borders
+- **Accent:** `#6366f1` (indigo-500) - interactive elements, CTAs, focus states
+- **Success:** `#10b981` (emerald-500) - confirmations, positive states, IDR currency
+- **Warning:** `#f59e0b` (amber-500) - budget alerts, caution states
+- **Error:** `#f43f5e` (rose-500) - errors, over budget, danger states
+- **Info:** `#6366f1` (indigo-500) - informational messages
+
+See `styles.json` for complete token definitions and theme configurations.
+
 ### Core Rules
 
 1. **Use design tokens** - Import from `@/lib/tokens` (never hardcode)
@@ -41,6 +58,8 @@ import { animate } from 'motion';
 
 ### Colors
 
+**Use DaisyUI semantic classes for theme compatibility:**
+
 ```typescript
 // Primary color (slate) - headings, primary text, secondary buttons
 colors.primary; // #0f172a (slate-900 - headings, text)
@@ -63,12 +82,31 @@ colors.status.warning; // #f59e0b (80-99%)
 colors.status.danger; // #f43f5e (≥100%)
 ```
 
+**DaisyUI Semantic Classes (automatically switch with light/dark theme):**
+
+```typescript
+'text-primary'      // Primary brand color (slate-900 light / slate-50 dark)
+'text-accent'       // Accent color (indigo-500) - CTAs, interactive elements
+'text-success'      // Success states (emerald-500) - confirmations, IDR
+'text-warning'      // Warning states (amber-500) - budget alerts
+'text-error'        // Error states (rose-500) - over budget, danger
+'text-info'         // Info states (indigo-500) - informational
+
+'bg-base-100'       // Base background
+'bg-base-200'       // Elevated background (cards, inputs)
+'bg-base-300'       // More elevated (hover states)
+'text-base-content' // Main text color (auto-adjusts with theme)
+'border-base-300'   // Border color (theme-aware)
+```
+
 **Important Color Semantics:**
 
-- Use `btn-accent` for primary CTAs (indigo/purple)
+- Use `btn-accent` for primary CTAs (indigo interactive elements)
 - Use `text-primary` for headings and primary text (slate)
 - Use `focus:ring-accent` for focus states (indigo)
 - Use DaisyUI semantic colors (`bg-base-200`, `border-base-300`) for theme-friendly styling
+
+**Avoid Tailwind color names** (`text-slate-500`, `bg-gray-100`) - they don't change with themes.
 
 ### Typography
 
