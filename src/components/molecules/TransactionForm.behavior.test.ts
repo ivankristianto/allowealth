@@ -14,7 +14,11 @@
  * Usage: bun test src/components/molecules/TransactionForm.behavior.test.ts
  */
 
+import { readFileSync } from 'node:fs';
 import { describe, it, expect } from 'bun:test';
+
+const COMPONENT_PATH = 'src/components/molecules/TransactionForm.astro';
+const componentContent = readFileSync(COMPONENT_PATH, 'utf8');
 
 /**
  * Expected icons for TransactionForm
@@ -168,13 +172,13 @@ describe('TransactionForm Component', () => {
       /**
        * Description field:
        * - name="description"
-       * - Uses textarea with class="textarea textarea-bordered"
+       * - Uses textarea with updated input styling classes
        * - Label: "Description" (no required indicator)
        * - Optional field
        * - Placeholder: "Optional notes..."
        * - Rows: 3
        */
-      expect(true).toBe(true);
+      expect(componentContent).toMatch(/class="textarea[^"]*bg-base-200[^"]*text-xs/);
     });
 
     it('should have budget warning alert for expenses', () => {
@@ -194,10 +198,10 @@ describe('TransactionForm Component', () => {
       /**
        * Actions section:
        * - class="card-actions justify-end gap-2 mt-6"
-       * - Cancel link (btn-ghost) to cancelUrl
-       * - Submit button (btn-primary) with submitLabel
+       * - Cancel button (Button variant="ghost") to cancelUrl
+       * - Submit button (Button variant="primary") with submitLabel
        */
-      expect(true).toBe(true);
+      expect(componentContent).toContain('variant="ghost"');
     });
   });
 
@@ -221,13 +225,13 @@ describe('TransactionForm Component', () => {
       expect(true).toBe(true);
     });
 
-    it('should use space-y-4 for form field spacing', () => {
+    it('should use gap-4 for form field spacing', () => {
       /**
        * Field spacing:
-       * - class="space-y-4" on form element
+       * - class="flex flex-col gap-4" on form element
        * - 16px vertical gap between fields
        */
-      expect(true).toBe(true);
+      expect(componentContent).toContain('flex flex-col gap-4');
     });
 
     it('should accept action prop for form submission URL', () => {
