@@ -29,10 +29,12 @@ const createCard = (args: {
 
   const card = document.createElement('div');
   const classes = ['card', 'bg-base-100'];
-  if (bordered) classes.push('card-bordered');
+  if (bordered) classes.push('card-bordered', 'border-base-300');
   if (compact) classes.push('card-compact', 'p-4');
-  else classes.push('p-6');
-  if (hoverable) classes.push('shadow-xl', 'hover:shadow-2xl', 'transition-shadow', 'duration-200');
+  else classes.push('p-7', 'shadow-premium');
+  if (hoverable) {
+    classes.push('hover:-translate-y-1', 'hover:shadow-lg', 'transition-all', 'duration-200');
+  }
   card.className = classes.join(' ');
 
   const titleEl = document.createElement('h2');
@@ -86,7 +88,7 @@ export const NoBorder: StoryObj = {
 export const WithActions: StoryObj = {
   render: () => {
     const card = document.createElement('div');
-    card.className = 'card bg-base-100 card-bordered p-6';
+    card.className = 'card bg-base-100 card-bordered border-base-300 p-7 shadow-premium';
 
     const title = document.createElement('h2');
     title.className = 'card-title';
@@ -99,7 +101,7 @@ export const WithActions: StoryObj = {
     actions.className = 'card-actions justify-end mt-4';
 
     const btn1 = document.createElement('button');
-    btn1.className = 'btn btn-primary';
+    btn1.className = 'btn btn-accent';
     btn1.textContent = 'View Details';
 
     const btn2 = document.createElement('button');
@@ -120,7 +122,7 @@ export const WithActions: StoryObj = {
 export const BudgetCard: StoryObj = {
   render: () => {
     const card = document.createElement('div');
-    card.className = 'card bg-base-100 card-bordered p-6';
+    card.className = 'card bg-base-100 card-bordered border-base-300 p-7 shadow-premium';
 
     const header = document.createElement('div');
     header.className = 'flex justify-between items-start';

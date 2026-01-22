@@ -3,10 +3,11 @@
  * Card Component
  *
  * Container component for grouping related content.
+ * Follows Oasis Finance v1.0.0 design system specifications.
  *
  * @param {boolean} bordered - Show border around card
  * @param {boolean} compact - Use compact padding
- * @param {boolean} hoverable - Add hover effect
+ * @param {boolean} hoverable - Add hover effect (y: -4, enhanced shadow)
  * @param {string} className - Additional CSS classes
  */
 
@@ -29,10 +30,16 @@ const {
 } = Astro.props;
 
 const cardClasses = [
+  // Base card styles with theme-aware background
   'card bg-base-100',
-  bordered && 'card-bordered',
-  compact ? 'card-compact p-4' : 'p-6',
-  hoverable && 'shadow-xl hover:shadow-2xl transition-shadow duration-200',
+  // Border using DaisyUI semantic color for theme compatibility
+  bordered && 'card-bordered border-base-300',
+  // Padding: default 1.75rem (28px), compact uses smaller value
+  compact ? 'card-compact p-4' : 'p-7',
+  // Hoverable cards get premium shadow and hover animation
+  hoverable && 'shadow-premium hover:-translate-y-1 hover:shadow-lg transition-all duration-200',
+  // Default premium shadow for non-hoverable cards
+  !hoverable && 'shadow-premium',
   className,
 ]
   .filter(Boolean)

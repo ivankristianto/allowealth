@@ -618,20 +618,39 @@ After:
 
 **Checklist:**
 
-- [ ] Update default padding from `p-6` to `p-7` (1.75rem / 28px) using tokenized spacing
-- [ ] Use DaisyUI `radius-box` for card border radius (no `rounded-[...]`)
-- [ ] Add premium shadow via tokenized shadow utility
-- [ ] Use `border-base-300` for borders so the theme handles light/dark variants
-- [ ] Update compact padding from `p-4` to appropriate smaller value
-- [ ] Add hover animation support (y: -4, enhanced shadow)
+- [x] Update default padding from `p-6` to `p-7` (1.75rem / 28px) using tokenized spacing
+- [x] Use DaisyUI `radius-box` for card border radius (no `rounded-[...]`)
+- [x] Add premium shadow via tokenized shadow utility
+- [x] Use `border-base-300` for borders so the theme handles light/dark variants
+- [x] Update compact padding from `p-4` to appropriate smaller value
+- [x] Add hover animation support (y: -4, enhanced shadow)
 
 **Files to modify:**
 
-- `src/components/atoms/Card.astro`
+- `src/components/atoms/Card.astro` ✅
+- `src/components/atoms/Card.stories.ts` ✅
+- `src/components/atoms/Card.behavior.test.ts` ✅
 
 **Estimated Time:** 30 minutes
 
-**Status:** ⏳ Pending
+**Status:** ✅ Completed (2025-01-22)
+
+**Implementation Notes:**
+
+- Updated padding from `p-6` to `p-7` (1.75rem/28px) to match styles.json
+- Added `shadow-premium` utility class for tokenized shadow
+- Added `border-base-300` for theme-aware border colors
+- Added hover animation: `hover:-translate-y-1 hover:shadow-lg transition-all duration-200`
+- Updated JSDoc comments to reference Oasis Finance v1.0.0 design system
+- Created comprehensive behavior test file documenting design system alignment
+- Updated Storybook stories to match new component implementation
+
+---
+
+#### Task 2.2 Code Review Feedback (P2/P3 - Non-blocking)
+
+- [ ] Add fallback values to `.shadow-premium` utility class for graceful degradation (also tracked in Task 1.4 feedback)
+- [ ] Update `spacing.card` token in `src/lib/tokens.ts` from `1.5rem` to `1.75rem` for consistency
 
 ---
 
@@ -845,7 +864,7 @@ bun run build  # Full production build
 ### Components (Section 2)
 
 - [x] Button component uses `btn-accent` for primary CTAs (indigo, accent glow shadow) - Task 2.1 ✅
-- [ ] Card component matches specs (1.75rem padding, radius-box, premium shadow)
+- [x] Card component matches specs (1.75rem padding, radius-box, premium shadow) - Task 2.2 ✅
 - [ ] Input component matches specs (2.5rem height, accent focus ring)
 - [ ] Badge component matches specs (0.75rem font for accessibility, 700 weight)
 
