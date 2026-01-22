@@ -51,8 +51,8 @@ const createInput = (args: {
   input.disabled = disabled;
   // Styles aligned with Oasis Finance v1.0.0 design system (Task 2.3)
   // Height: h-10 (2.5rem/40px), Font size: text-xs (0.75rem/12px), Padding: pt-2 pb-2 pl-3 pr-10
-  // Background: bg-base-200, Focus ring: 2px accent color
-  input.className = `input input-bordered w-full h-10 pt-2 pb-2 pl-3 pr-10 text-xs bg-base-200 focus:ring-2 focus:ring-accent focus:ring-opacity-20 focus:outline-none ${error ? 'input-error border-error' : ''} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`;
+  // Background: bg-base-200, Focus ring: 2px accent color with 2px offset
+  input.className = `input input-bordered w-full h-10 pt-2 pb-2 pl-3 pr-10 text-xs bg-base-200 focus:ring-2 focus:ring-accent focus:ring-opacity-20 focus:outline-none focus:ring-offset-2 ${error ? 'input-error border-error' : ''} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`;
   if (error) {
     input.setAttribute('aria-invalid', 'true');
   }
@@ -101,8 +101,8 @@ const createSelect = (args: {
   const select = document.createElement('select');
   // Styles aligned with Oasis Finance v1.0.0 design system (Task 2.3)
   // Height: h-10 (2.5rem/40px), Font size: text-xs (0.75rem/12px), Padding: pt-2 pb-2 pl-3 pr-10
-  // Background: bg-base-200, Focus ring: 2px accent color
-  select.className = `select select-bordered w-full h-10 pt-2 pb-2 pl-3 pr-10 text-xs bg-base-200 focus:ring-2 focus:ring-accent focus:ring-opacity-20 focus:outline-none ${error ? 'select-error border-error' : ''} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`;
+  // Background: bg-base-200, Focus ring: 2px accent color with 2px offset
+  select.className = `select select-bordered w-full h-10 pt-2 pb-2 pl-3 pr-10 text-xs bg-base-200 focus:ring-2 focus:ring-accent focus:ring-opacity-20 focus:outline-none focus:ring-offset-2 ${error ? 'select-error border-error' : ''} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`;
   select.disabled = disabled;
 
   const defaultOption = document.createElement('option');
