@@ -78,21 +78,23 @@ const IconComponent = iconName ? iconMap[iconName] : null;
   {
     IconComponent && (
       <div class="mb-4" aria-hidden="true">
-        <IconComponent size={32} class="text-neutral-400" />
+        <IconComponent size={32} class="text-neutral" />
       </div>
     )
   }
-  <h3 class="text-lg font-semibold mb-2">{title}</h3>
-  <p class="text-neutral-500 mb-4 max-w-md">{message}</p>
+  <h3 class="text-lg font-semibold mb-2 text-base-content">{title}</h3>
+  <p class="text-neutral mb-4 max-w-md">{message}</p>
   {
     actionLabel && (
       <div>
         {actionHref ? (
-          <a href={actionHref} class="btn btn-primary btn-sm">
+          <a href={actionHref} class="btn btn-accent btn-sm">
             {actionLabel}
           </a>
         ) : (
-          <button class="btn btn-primary btn-sm">{actionLabel}</button>
+          <button type="button" class="btn btn-accent btn-sm">
+            {actionLabel}
+          </button>
         )}
       </div>
     )
