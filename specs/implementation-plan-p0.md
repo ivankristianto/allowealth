@@ -88,17 +88,90 @@ Note: This list reflects full-scope changes across all milestones.
 
 **Checklist:**
 
-- [ ] Document the new color semantic model:
+- [x] Document the new color semantic model:
   - `primary` = slate-900 → headings, primary text, secondary buttons
   - `accent` = indigo-500 → CTAs, interactive elements, active states
   - `success` = emerald-500 → positive status, confirmations
   - `warning` = amber-500 → budget alerts, caution states
   - `error` = rose-500 → over budget, destructive actions
-- [ ] Audit current `btn-primary` usage and identify which should become `btn-accent`
-- [ ] Audit current `text-primary` usage to ensure it's appropriate for the new text semantic
-- [ ] Audit current `bg-primary` usage for any CTA backgrounds that need `bg-accent`
-- [ ] Document the mapping in this plan for reference during component work
-- [ ] Reserve `btn-primary` for neutral/secondary emphasis; use `btn-accent` for primary CTAs
+- [x] Audit current `btn-primary` usage and identify which should become `btn-accent`
+- [x] Audit current `text-primary` usage to ensure it's appropriate for the new text semantic
+- [x] Audit current `bg-primary` usage for any CTA backgrounds that need `bg-accent`
+- [x] Document the mapping in this plan for reference during component work
+- [x] Reserve `btn-primary` for neutral/secondary emphasis; use `btn-accent` for primary CTAs
+
+---
+
+## Audit Findings
+
+### Current State (Emerald-Based)
+
+**`btn-primary` Usage (70+ occurrences):**
+
+| Component                                                                                | Usage Pattern                                               | Should Become |
+| ---------------------------------------------------------------------------------------- | ----------------------------------------------------------- | ------------- |
+| `Button.astro`                                                                           | Primary variant definition                                  | `btn-accent`  |
+| Pages (export, payment-methods, categories, calculators, reports, budget, index, assets) | CTA buttons ("Save", "Calculate", "Generate Report", "Add") | `btn-accent`  |
+| `EmptyState.astro`                                                                       | Action buttons                                              | `btn-accent`  |
+| `UserContext.astro`                                                                      | "Sign Up" button                                            | `btn-accent`  |
+| `TransactionModal`                                                                       | "Save/Update Transaction" button                            | `btn-accent`  |
+| `Modal` stories                                                                          | Confirm buttons                                             | `btn-accent`  |
+| `Header.astro`                                                                           | "Add new item" button                                       | `btn-accent`  |
+| `CSVImportForm`                                                                          | Import buttons                                              | `btn-accent`  |
+| `QuickActions`                                                                           | Primary action (expense)                                    | `btn-accent`  |
+
+**Key Finding:** ALL current `btn-primary` usages are CTAs and should become `btn-accent`. The only exceptions would be secondary/de-emphasized actions.
+
+---
+
+**`text-primary` Usage (20+ occurrences):**
+
+| Component                         | Usage Pattern                                  | Action                                            |
+| --------------------------------- | ---------------------------------------------- | ------------------------------------------------- |
+| `RecentTransactionsList.astro`    | Link hover state (`hover:text-primary-hover`)  | Keep - appropriate for links                      |
+| `BudgetOverviewTable.astro`       | Sortable column headers (`hover:text-primary`) | Keep - appropriate for interactive elements       |
+| `Badge.astro`                     | Primary badge outline variant                  | Keep - appropriate for neutral emphasis           |
+| `LoginForm`, `ForgotPasswordForm` | Auth links ("Sign up", "Sign in")              | Keep - appropriate for links                      |
+| `UserContext.astro`               | Avatar with `bg-primary text-primary-content`  | **CHANGE** - avatar background should use neutral |
+| `AuthLayout.astro`                | Logo background (`bg-primary`)                 | **CHANGE** - logo should use accent or neutral    |
+| Settings pages                    | Stat values                                    | Keep - appropriate for emphasis text              |
+
+**Key Finding:** Most `text-primary` usages are appropriate for the new semantic (primary text color). However, `bg-primary` usage in avatars and logos should be reviewed.
+
+---
+
+**`bg-primary` Usage (8 occurrences):**
+
+| Component                       | Usage Pattern                            | Should Become                              |
+| ------------------------------- | ---------------------------------------- | ------------------------------------------ |
+| `UserContext.astro`             | Avatar background                        | `bg-neutral` or `bg-accent` (for branding) |
+| `AuthLayout.astro`              | Logo background box                      | `bg-accent` (for branding)                 |
+| `BudgetHistoryComparison.astro` | Current month highlight (`bg-primary/5`) | `bg-accent/5` (subtle accent)              |
+
+**Key Finding:** Avatar backgrounds should use neutral for user avatars, accent for branded elements.
+
+---
+
+**Focus Ring Colors:**
+
+| Component              | Current                  | Should Become       |
+| ---------------------- | ------------------------ | ------------------- |
+| `Button.astro`         | `focus:ring-emerald-500` | `focus:ring-accent` |
+| `Button.astro` outline | `focus:ring-emerald-500` | `focus:ring-accent` |
+| `Button.astro` ghost   | `focus:ring-emerald-500` | `focus:ring-accent` |
+
+**Key Finding:** All emerald focus rings should become accent (indigo).
+
+---
+
+**Hardcoded Emerald Colors:**
+
+| File                    | Usage                                                       | Replacement                                                           |
+| ----------------------- | ----------------------------------------------------------- | --------------------------------------------------------------------- |
+| `src/styles/tokens.css` | `--color-primary: #10b981` (emerald-500)                    | `--color-primary: #0f172a` (slate-900), add `--color-accent: #6366f1` |
+| `Button.astro`          | `hover:bg-emerald-600`, `text-emerald-600`, `bg-emerald-50` | Use DaisyUI accent utilities                                          |
+
+---
 
 **Color Semantic Mapping:**
 
@@ -112,7 +185,110 @@ Note: This list reflects full-scope changes across all milestones.
 
 **Estimated Time:** 30 minutes
 
-**Status:** ⏳ Pending
+**Status:** ✅ Completed
+
+---
+
+## Implementation Guide
+
+### For Task 2.1 (Button Component Update)
+
+When updating `src/components/atoms/Button.astro`, make these changes:
+
+```diff
+- primary: 'btn-primary text-white hover:bg-emerald-600 focus:ring-emerald-500',
++ primary: 'btn-accent text-white hover:bg-accent-hover focus:ring-accent',
+```
+
+For the outline variant:
+
+```diff
+- 'btn-outline border-2 border-emerald-500 text-emerald-600 hover:bg-emerald-50 focus:ring-emerald-500 dark:text-emerald-400 dark:hover:bg-emerald-950',
++ 'btn-outline border-2 border-accent text-accent hover:bg-accent/10 focus:ring-accent dark:text-accent dark:hover:bg-accent/20',
+```
+
+### For Templates Using `btn-primary`
+
+**Global find/replace pattern:**
+
+- Find: `btn btn-primary`
+- Replace: `btn btn-accent`
+
+**Exception:** If a button is intentionally de-emphasized (secondary action), consider `btn-neutral` instead.
+
+### For Avatar Backgrounds
+
+**`UserContext.astro`:**
+
+```diff
+- <div class="bg-primary text-primary-content rounded-full w-8 flex items-center justify-center">
++ <div class="bg-neutral text-neutral-content rounded-full w-8 flex items-center justify-center">
+```
+
+**`AuthLayout.astro`:** (for branding, keep accent)
+
+```diff
+- <div class="w-12 h-12 rounded-lg bg-primary flex items-center justify-center">
++ <div class="w-12 h-12 rounded-lg bg-accent flex items-center justify-center">
+```
+
+### For Budget History Highlight
+
+**`BudgetHistoryComparison.astro`:**
+
+```diff
+- class="... ${isCurrentMonth ? 'bg-primary/5' : ''}"
++ class="... ${isCurrentMonth ? 'bg-accent/5' : ''}"
+```
+
+---
+
+### Additional Guidance
+
+**Link Hover States:**
+
+For links using `text-primary` with hover states, replace `hover:text-primary-hover` with:
+
+- `hover:text-accent` for interactive links (primary navigation, CTAs)
+- Or `hover:opacity-80` for subtle emphasis
+
+```diff
+- class="text-primary hover:text-primary-hover"
++ class="text-primary hover:text-accent"
+```
+
+---
+
+### Verification Commands
+
+Use these grep commands to verify the audit findings or re-audit after implementation:
+
+```bash
+# Find all btn-primary usage
+grep -r "btn-primary" src/ --exclude-dir=node_modules
+
+# Find all bg-primary usage
+grep -r "bg-primary" src/ --exclude-dir=node_modules
+
+# Find all text-primary usage
+grep -r "text-primary" src/ --exclude-dir=node_modules
+
+# Find all emerald color usage
+grep -r "emerald-" src/ --exclude-dir=node_modules
+```
+
+---
+
+### Dark Mode Impact Note
+
+**Important:** The color semantic inversion has significant implications for dark mode:
+
+- **Before (emerald):** Primary was green in both light and dark mode
+- **After (slate/indigo):**
+  - Light mode: `primary` is slate-900 (dark), `accent` is indigo-500 (purple)
+  - Dark mode: `primary` is slate-50 (light), `accent` is indigo-400 (lighter purple)
+
+This means components using `text-primary` will automatically switch from dark text in light mode to light text in dark mode, which is the correct behavior for readability.
 
 ---
 
