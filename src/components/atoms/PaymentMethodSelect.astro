@@ -13,6 +13,7 @@
  * @param {string} className - Additional CSS classes
  * @param {string} id - Element ID
  * @param {boolean} disabled - Whether the select is disabled
+ * @param {string} describedBy - Additional IDs for aria-describedby (combined with inline error message ID)
  */
 
 export interface Props {
@@ -25,6 +26,11 @@ export interface Props {
   className?: string;
   id?: string;
   disabled?: boolean;
+  /**
+   * Additional IDs for aria-describedby (combined with inline error message ID if error exists)
+   * Used to associate select with external description elements like form-level error containers
+   */
+  describedBy?: string;
 }
 
 const {
@@ -37,10 +43,16 @@ const {
   className = '',
   id = '',
   disabled = false,
+  describedBy = '',
 } = Astro.props;
 
 const inputId = id || `${name}-select`;
-const errorId = `${name}-error`;
+
+// Build aria-describedby value: combine inline error ID with external describedBy IDs
+const ariaDescribeIds = [error && errorMessage && inputId ? `${inputId}-error` : null, describedBy]
+  .filter(Boolean)
+  .join(' ')
+  .trim();
 ---
 
 <div class="form-control">
@@ -51,14 +63,20 @@ const errorId = `${name}-error`;
     required={required}
     disabled={disabled}
     class:list={[
+      // Base select classes aligned with Oasis Finance v1.0.0 input spec
       'select select-bordered w-full',
-      error && 'select-error',
+      'h-10', // Height: 2.5rem (40px)
+      'pt-2 pb-2 pl-3 pr-10', // Padding: 0.5rem 2.5rem 0.5rem 0.75rem
+      'text-xs', // Font size: 0.75rem (12px)
+      'bg-base-200', // Theme-aware background
+      'focus:ring-2 focus:ring-accent focus:ring-opacity-20 focus:outline-none focus:ring-offset-2', // 2px accent focus ring with 2px offset
+      error && 'select-error border-error', // Error state with border-error
       disabled && 'opacity-50 cursor-not-allowed',
       className,
     ]}
     aria-invalid={error}
-    aria-describedby={error ? errorId : undefined}
-    aria-required={required}
+    aria-describedby={ariaDescribeIds || undefined}
+    aria-required={required ? 'true' : undefined}
   >
     <option value="">Select payment method...</option>
     {
@@ -72,7 +90,7 @@ const errorId = `${name}-error`;
 
   {
     error && errorMessage && (
-      <span id={errorId} class="text-error text-sm mt-1" role="alert">
+      <span id={`${inputId}-error`} class="text-error text-sm mt-1" role="alert">
         {errorMessage}
       </span>
     )

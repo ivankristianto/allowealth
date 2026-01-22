@@ -145,14 +145,14 @@ Tasks must be completed in this sequence (atoms → molecules → organisms):
 
 **Checklist:**
 
-- [ ] Update `CategorySelect.astro` - input styling alignment (height, background, focus ring)
-- [ ] Update `PaymentMethodSelect.astro` - input styling alignment (height, background, focus ring)
+- [x] Update `CategorySelect.astro` - input styling alignment (height, background, focus ring)
+- [x] Update `PaymentMethodSelect.astro` - input styling alignment (height, background, focus ring)
 
 **Files to modify:** `src/components/atoms/CategorySelect.astro`, `PaymentMethodSelect.astro`
 
 **Estimated Time:** 30 minutes
 
-**Status:** ⏳ Pending
+**Status:** ✅ Completed
 
 ---
 
@@ -538,7 +538,7 @@ bun run typecheck && bun run lint:fix && bun run stylelint:fix && bun run format
 
 ## Success Criteria (P1)
 
-- [~] Remaining atom components use new tokens and semantic colors (Task 2.5c completed, 2.5d pending)
+- [x] Remaining atom components use new tokens and semantic colors (Task 2.5 completed)
 - [ ] Page container uses tokenized max width and responsive padding
 - [ ] Inline SVGs in auth/import flows are replaced with Lucide templates
 - [ ] Icon sizing matches the md/sm/lg scale and uses `@lucide/astro`
@@ -550,4 +550,82 @@ bun run typecheck && bun run lint:fix && bun run stylelint:fix && bun run format
 
 ## Code Quality & Accessibility Improvements
 
-**Note:** These area reserved for improvements identified during code review. They are non-blocking but recommended for better code quality, accessibility, and maintainability. When added, follow the same format as task and has checlists.
+**Note:** These are reserved for improvements identified during code review. They are non-blocking but recommended for better code quality, accessibility, and maintainability. When added, follow the same format as tasks and have checklists.
+
+---
+
+### Task QA.1: Add Label Support to Select Components (Priority: P2)
+
+**Goal:** Improve accessibility by adding label support to CategorySelect and PaymentMethodSelect components.
+
+**Issue:** The select components lack associated labels, which impacts accessibility. Screen reader users rely on proper label associations to understand form fields.
+
+**Checklist:**
+
+- [ ] Add `label` prop to CategorySelect.astro interface
+- [ ] Add `label` prop to PaymentMethodSelect.astro interface
+- [ ] Render `<label>` element with `htmlFor` pointing to the select's `id` when label is provided
+- [ ] Follow design system pattern from `design-system/START.md`
+- [ ] Update stories to demonstrate label usage
+- [ ] Update JSDoc comments
+
+**Files to modify:**
+
+- `src/components/atoms/CategorySelect.astro`
+- `src/components/atoms/PaymentMethodSelect.astro`
+
+**Estimated Time:** 30 minutes
+
+**Status:** ⏳ Pending
+
+---
+
+### Task QA.2: Add Focus Ring Offset to Input Components (Priority: P2)
+
+**Goal:** Complete design system consistency by adding focus ring offset to all input-type components.
+
+**Issue:** CategorySelect and PaymentMethodSelect now include `focus:ring-offset-2`, but Input.astro and CurrencyInput.astro lack this offset. This creates visual inconsistency.
+
+**Checklist:**
+
+- [ ] Add `focus:ring-offset-2` to Input.astro base classes
+- [ ] Add `focus:ring-offset-2` to CurrencyInput.astro input classes
+- [ ] Verify focus ring appearance across all input components
+- [ ] Update stories if needed
+
+**Files to modify:**
+
+- `src/components/atoms/Input.astro`
+- `src/components/atoms/CurrencyInput.astro`
+
+**Estimated Time:** 15 minutes
+
+**Status:** ⏳ Pending
+
+---
+
+### Task QA.3: Standardize aria-required Pattern (Priority: P2)
+
+**Goal:** Standardize the `aria-required` attribute pattern across all form components for consistency.
+
+**Issue:** CategorySelect and PaymentMethodSelect use `aria-required={required ? 'true' : undefined}` (ternary pattern), while CurrencyInput uses `aria-required={required}` (boolean pattern). Both are ARIA-compliant but inconsistency creates maintenance burden.
+
+**Checklist:**
+
+- [ ] Decide on standard pattern (ternary for explicitness vs boolean for simplicity)
+- [ ] Update all form components to use the standard pattern
+- [ ] Verify ARIA compliance after changes
+- [ ] Document the pattern in design system guide
+
+**Files to modify:**
+
+- `src/components/atoms/CategorySelect.astro`
+- `src/components/atoms/PaymentMethodSelect.astro`
+- `src/components/atoms/CurrencyInput.astro`
+- `src/components/atoms/Input.astro`
+- `src/components/atoms/DatePicker.astro`
+- `src/components/atoms/PasswordField.astro`
+
+**Estimated Time:** 30 minutes
+
+**Status:** ⏳ Pending
