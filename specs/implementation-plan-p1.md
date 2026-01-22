@@ -112,16 +112,16 @@ Tasks must be completed in this sequence (atoms → molecules → organisms):
 
 **Checklist:**
 
-- [ ] Update `Currency.astro` - IDR color `text-success` (#10b981), USD color `text-info` (#3b82f6)
-- [ ] Update `Percentage.astro` - status colors via DaisyUI (`text-success`, `text-warning`, `text-error`)
-- [ ] Update `Spinner.astro` - accent color (`text-accent` or #6366f1)
-- [ ] Update `Badge.astro` - padding `0.25rem 0.625rem`, fontSize `0.625rem`, fontWeight 700
+- [x] Update `Currency.astro` - IDR color `text-success` (#10b981), USD color `text-info` (#3b82f6)
+- [x] Update `Percentage.astro` - status colors via DaisyUI (`text-success`, `text-warning`, `text-error`)
+- [x] Update `Spinner.astro` - accent color (`text-accent` or #6366f1)
+- [x] Update `Badge.astro` - padding `0.25rem 0.625rem`, fontSize `0.625rem`, fontWeight 700 (verified aligned)
 
 **Files to modify:** `src/components/atoms/Currency.astro`, `Percentage.astro`, `Spinner.astro`, `Badge.astro`
 
 **Estimated Time:** 1 hour
 
-**Status:** ⏳ Pending
+**Status:** ✅ Completed (commit e383ca8)
 
 ---
 
