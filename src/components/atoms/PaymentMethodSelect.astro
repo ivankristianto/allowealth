@@ -1,23 +1,31 @@
 ---
+import Label from './Label.astro';
+
 /**
  * Payment Method Select Component
  *
  * Dropdown for selecting payment methods.
  *
  * @param {Array} paymentMethods - Array of payment method objects {id, name, type}
+ * @param {string} label - Label text for the select (renders a <label> element)
+ * @param {string} helpText - Optional help text displayed below the label
  * @param {string} name - Input name
  * @param {string} value - Selected payment method ID
  * @param {boolean} required - Whether the field is required
  * @param {boolean} error - Show error state
  * @param {string} errorMessage - Error message to display
  * @param {string} className - Additional CSS classes
- * @param {string} id - Element ID
+ * @param {string} id - Element ID. If not provided, auto-generates as '{name}-select'
  * @param {boolean} disabled - Whether the select is disabled
  * @param {string} describedBy - Additional IDs for aria-describedby (combined with inline error message ID)
  */
 
 export interface Props {
   paymentMethods: Array<{ id: string; name: string; type: string }>;
+  /** Label text for the select (renders a <label> element) */
+  label?: string;
+  /** Optional help text displayed below the label */
+  helpText?: string;
   name?: string;
   value?: string;
   required?: boolean;
@@ -35,6 +43,8 @@ export interface Props {
 
 const {
   paymentMethods = [],
+  label = '',
+  helpText = '',
   name = 'payment_method_id',
   value = '',
   required = false,
@@ -56,6 +66,13 @@ const ariaDescribeIds = [error && errorMessage && inputId ? `${inputId}-error` :
 ---
 
 <div class="form-control">
+  {
+    label && (
+      <Label htmlFor={inputId} required={required} helpText={helpText}>
+        {label}
+      </Label>
+    )
+  }
   <select
     id={inputId}
     name={name}

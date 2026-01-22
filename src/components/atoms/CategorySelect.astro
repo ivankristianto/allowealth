@@ -1,10 +1,14 @@
 ---
+import Label from './Label.astro';
+
 /**
  * Category Select Component
  *
  * Searchable category dropdown for transaction forms.
  *
  * @param {Array} categories - Array of category objects {id, name, type}
+ * @param {string} label - Label text for the select (renders a <label> element)
+ * @param {string} helpText - Optional help text displayed below the label
  * @param {string} name - Input name
  * @param {string} value - Selected category ID
  * @param {string} type - Filter by transaction type (expense/income)
@@ -12,13 +16,17 @@
  * @param {boolean} error - Show error state
  * @param {string} errorMessage - Error message to display
  * @param {string} className - Additional CSS classes
- * @param {string} id - Element ID
+ * @param {string} id - Element ID. If not provided, auto-generates as '{name}-select'
  * @param {boolean} disabled - Whether the select is disabled
  * @param {string} describedBy - Additional IDs for aria-describedby (combined with inline error message ID)
  */
 
 export interface Props {
   categories: Array<{ id: string; name: string; type: string; currency?: string }>;
+  /** Label text for the select (renders a <label> element) */
+  label?: string;
+  /** Optional help text displayed below the label */
+  helpText?: string;
   name?: string;
   value?: string;
   type?: 'expense' | 'income';
@@ -37,6 +45,8 @@ export interface Props {
 
 const {
   categories = [],
+  label = '',
+  helpText = '',
   name = 'category_id',
   value = '',
   type = undefined,
@@ -62,6 +72,13 @@ const ariaDescribeIds = [error && errorMessage && inputId ? `${inputId}-error` :
 ---
 
 <div class="form-control">
+  {
+    label && (
+      <Label htmlFor={inputId} required={required} helpText={helpText}>
+        {label}
+      </Label>
+    )
+  }
   <select
     id={inputId}
     name={name}
