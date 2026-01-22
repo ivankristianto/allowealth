@@ -129,15 +129,15 @@ Tasks must be completed in this sequence (atoms → molecules → organisms):
 
 **Checklist:**
 
-- [ ] Update `EmptyState.astro` - CTA buttons use `btn-accent`, text uses `text-base-content`
-- [ ] Update `ErrorMessage.astro` - error color via DaisyUI (`text-error`), no hardcoded hex
-- [ ] Update `Label.astro` - text color `text-base-content` for labels, `text-neutral` for optional hints
+- [x] Update `EmptyState.astro` - CTA buttons use `btn-accent`, text uses `text-base-content`
+- [x] Update `ErrorMessage.astro` - error color via DaisyUI (`text-error`), no hardcoded hex
+- [x] Update `Label.astro` - text color `text-base-content` for labels, `text-neutral` for optional hints
 
 **Files to modify:** `src/components/atoms/EmptyState.astro`, `ErrorMessage.astro`, `Label.astro`
 
 **Estimated Time:** 45 minutes
 
-**Status:** ⏳ Pending
+**Status:** ✅ Completed (commit 7cdfb86)
 
 ---
 
@@ -538,7 +538,7 @@ bun run typecheck && bun run lint:fix && bun run stylelint:fix && bun run format
 
 ## Success Criteria (P1)
 
-- [ ] Remaining atom components use new tokens and semantic colors
+- [~] Remaining atom components use new tokens and semantic colors (Task 2.5c completed, 2.5d pending)
 - [ ] Page container uses tokenized max width and responsive padding
 - [ ] Inline SVGs in auth/import flows are replaced with Lucide templates
 - [ ] Icon sizing matches the md/sm/lg scale and uses `@lucide/astro`
