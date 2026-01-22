@@ -85,18 +85,18 @@ colors.status.danger; // #f43f5e (≥100%)
 **DaisyUI Semantic Classes (automatically switch with light/dark theme):**
 
 ```typescript
-'text-primary'      // Primary brand color (slate-900 light / slate-50 dark)
-'text-accent'       // Accent color (indigo-500) - CTAs, interactive elements
-'text-success'      // Success states (emerald-500) - confirmations, IDR
-'text-warning'      // Warning states (amber-500) - budget alerts
-'text-error'        // Error states (rose-500) - over budget, danger
-'text-info'         // Info states (indigo-500) - informational
+'text-primary'; // Primary brand color (slate-900 light / slate-50 dark)
+'text-accent'; // Accent color (indigo-500) - CTAs, interactive elements
+'text-success'; // Success states (emerald-500) - confirmations, IDR
+'text-warning'; // Warning states (amber-500) - budget alerts
+'text-error'; // Error states (rose-500) - over budget, danger
+'text-info'; // Info states (indigo-500) - informational
 
-'bg-base-100'       // Base background
-'bg-base-200'       // Elevated background (cards, inputs)
-'bg-base-300'       // More elevated (hover states)
-'text-base-content' // Main text color (auto-adjusts with theme)
-'border-base-300'   // Border color (theme-aware)
+'bg-base-100'; // Base background
+'bg-base-200'; // Elevated background (cards, inputs)
+'bg-base-300'; // More elevated (hover states)
+'text-base-content'; // Main text color (auto-adjusts with theme)
+'border-base-300'; // Border color (theme-aware)
 ```
 
 **Important Color Semantics:**
