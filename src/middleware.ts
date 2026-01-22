@@ -61,8 +61,8 @@ const CSP_HEADERS_PROD = {
   // Image sources - allow same origin, data URIs, and https images
   'img-src': "'self' data: https:",
 
-  // Font sources - allow same origin and data URIs
-  'font-src': "'self' data:",
+  // Font sources - allow same origin, data URIs, and Google Fonts CDN
+  'font-src': "'self' data: https://fonts.googleapis.com https://fonts.gstatic.com",
 
   // Connect sources - allow same origin API calls
   'connect-src': "'self'",
