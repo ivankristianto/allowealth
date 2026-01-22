@@ -383,18 +383,20 @@ bun run typecheck && bun run lint:fix && bun run stylelint:fix && bun run format
 
 **Checklist:**
 
-- [ ] Ensure status colors match new tokens (success, warning, danger) via tokens or semantic classes
-- [ ] Update any hardcoded colors to use CSS variables
-- [ ] Update badge styling to match Task 2.4 specs
-- [ ] Update progress bar styling
+- [x] Ensure status colors match new tokens (success, warning, danger) via tokens or semantic classes
+- [x] Update any hardcoded colors to use CSS variables
+- [x] Update badge styling to match Task 2.4 specs
+- [x] Update progress bar styling
 
 **Files to modify:**
 
 - `src/components/molecules/BudgetHealthWidget.astro`
+- `src/components/molecules/BudgetHealthWidget.behavior.test.ts`
+- `src/components/molecules/BudgetHealthWidget.stories.ts`
 
 **Estimated Time:** 30 minutes
 
-**Status:** ⏳ Pending
+**Status:** ✅ Completed (commit: forthcoming)
 
 ---
 
@@ -547,7 +549,7 @@ bun run typecheck && bun run lint:fix && bun run stylelint:fix && bun run format
 - [x] Icon sizing matches the md/sm/lg scale and uses `@lucide/astro` (Task 4.4 completed)
 - [x] Toast animations match Motion presets (Task 5.1 completed)
 - [x] Modal animations match Motion presets (Task 5.2 completed)
-- [ ] Budget health widget uses tokenized status colors and badges (Task 5.3 pending)
+- [x] Budget health widget uses tokenized status colors and badges (Task 5.3 completed)
 - [ ] Transaction form uses updated inputs, buttons, and spacing (Task 5.4 pending)
 - [ ] Budget overview table aligns with header/rowHover tokens and padding (Task 6.1 pending)
 - [ ] Summary cards and recent transactions list match updated card/list specs (Task 6.2-6.3 pending)

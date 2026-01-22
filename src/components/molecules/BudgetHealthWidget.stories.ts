@@ -57,7 +57,7 @@ const createBudgetHealthWidget = (args: { data: object; viewBudgetUrl?: string }
     </div>
     <div>
       <div class="text-2xl font-bold ${getStatusColor(budgetData.status)}">${budgetData.alertCount}</div>
-      <div class="text-sm text-neutral-600">alert${budgetData.alertCount !== 1 ? 's' : ''}</div>
+      <div class="text-sm text-neutral">alert${budgetData.alertCount !== 1 ? 's' : ''}</div>
     </div>
   `;
 
@@ -66,14 +66,14 @@ const createBudgetHealthWidget = (args: { data: object; viewBudgetUrl?: string }
   if (budgetData.status === 'healthy') {
     iconContainer.appendChild(
       Check.render(
-        { size: 20, class: `stroke-current ${getStatusColor(budgetData.status)}` },
+        { size: 22, class: `stroke-current ${getStatusColor(budgetData.status)}` },
         { 'aria-hidden': 'true' }
       )
     );
   } else {
     iconContainer.appendChild(
       TriangleAlert.render(
-        { size: 20, class: `stroke-current ${getStatusColor(budgetData.status)}` },
+        { size: 22, class: `stroke-current ${getStatusColor(budgetData.status)}` },
         { 'aria-hidden': 'true' }
       )
     );
@@ -98,7 +98,7 @@ const createBudgetHealthWidget = (args: { data: object; viewBudgetUrl?: string }
     alertsContainer.className = 'mb-4';
 
     const alertsTitle = document.createElement('h4');
-    alertsTitle.className = 'text-sm font-medium text-neutral-600 mb-2';
+    alertsTitle.className = 'text-sm font-medium text-neutral mb-2';
     alertsTitle.textContent = 'Categories needing attention:';
     alertsContainer.appendChild(alertsTitle);
 
@@ -123,8 +123,8 @@ const createBudgetHealthWidget = (args: { data: object; viewBudgetUrl?: string }
       const alertDetails = document.createElement('div');
       alertDetails.className = 'flex items-center justify-between text-sm mb-2';
       alertDetails.innerHTML = `
-        <span class="text-neutral-600">${formatCurrency(alert.spentAmount)} of ${formatCurrency(alert.budgetAmount)}</span>
-        <span class="font-medium ${alert.remaining < 0 ? 'text-red-600' : 'text-emerald-600'}">
+        <span class="text-neutral">${formatCurrency(alert.spentAmount)} of ${formatCurrency(alert.budgetAmount)}</span>
+        <span class="font-medium ${alert.remaining < 0 ? 'text-error' : 'text-success'}">
           ${alert.remaining < 0 ? '-' : '+'}${formatCurrency(Math.abs(alert.remaining))}
         </span>
       `;
@@ -157,7 +157,7 @@ const createBudgetHealthWidget = (args: { data: object; viewBudgetUrl?: string }
 
     // Render Check icon using Lucide's render method
     const checkIcon = Check.render(
-      { size: 24, class: 'stroke-current text-emerald-600 mx-auto mb-2' },
+      { size: 24, class: 'stroke-current text-success mx-auto mb-2' },
       {
         'aria-hidden': 'true',
       }
@@ -165,12 +165,12 @@ const createBudgetHealthWidget = (args: { data: object; viewBudgetUrl?: string }
     noAlerts.appendChild(checkIcon);
 
     const message = document.createElement('p');
-    message.className = 'text-sm font-medium text-emerald-600';
+    message.className = 'text-sm font-medium text-success';
     message.textContent = 'All budgets healthy!';
     noAlerts.appendChild(message);
 
     const subMessage = document.createElement('p');
-    subMessage.className = 'text-xs text-neutral-500 mt-1';
+    subMessage.className = 'text-xs text-neutral mt-1';
     subMessage.textContent = "You're on track with all your spending categories.";
     noAlerts.appendChild(subMessage);
 

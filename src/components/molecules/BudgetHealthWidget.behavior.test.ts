@@ -26,12 +26,12 @@ const BUDGET_HEALTH_ICONS = {
 } as const;
 
 /**
- * Icon sizes in pixels
+ * Icon sizes in pixels (per design-system/styles.json)
  */
 const ICON_SIZES = {
-  status: 20, // md size (header status icon)
+  status: 22, // md size (header status icon)
   large: 24, // lg size (no alerts state)
-  small: 16, // sm size (arrow icon)
+  small: 16, // xs size (arrow icon)
 } as const;
 
 /**
@@ -54,7 +54,7 @@ describe('BudgetHealthWidget Component', () => {
       /**
        * Verify that the component:
        * 1. Imports Check from '@lucide/astro'
-       * 2. Uses <Check size={20} class="stroke-current" /> for healthy status
+       * 2. Uses <Check size={22} class="stroke-current" /> for healthy status
        * 3. Uses <Check size={24} /> for "no alerts" state
        */
       expect(BUDGET_HEALTH_ICONS.healthy).toBe('Check');
@@ -80,12 +80,12 @@ describe('BudgetHealthWidget Component', () => {
 
     it('should use correct icon sizes for each context', () => {
       /**
-       * Size mapping:
-       * - Status icon (header): 20px (md)
+       * Size mapping per styles.json:
+       * - Status icon (header): 22px (md)
        * - No alerts state: 24px (lg)
-       * - Arrow icon: 16px (sm)
+       * - Arrow icon: 16px (xs)
        */
-      expect(ICON_SIZES.status).toBe(20);
+      expect(ICON_SIZES.status).toBe(22);
       expect(ICON_SIZES.large).toBe(24);
       expect(ICON_SIZES.small).toBe(16);
     });
@@ -146,7 +146,7 @@ describe('BudgetHealthWidget Component', () => {
       /**
        * Healthy state features:
        * - Green color (text-success)
-       * - Check icon with size={20}
+       * - Check icon with size={22}
        * - Badge shows "All Good"
        */
       expect(BUDGET_HEALTH_ICONS.healthy).toBe('Check');
@@ -156,7 +156,7 @@ describe('BudgetHealthWidget Component', () => {
       /**
        * Warning state features:
        * - Amber color (text-warning)
-       * - TriangleAlert icon with size={20}
+       * - TriangleAlert icon with size={22}
        * - Badge shows "Review"
        */
       expect(BUDGET_HEALTH_ICONS.warning).toBe('TriangleAlert');
@@ -166,7 +166,7 @@ describe('BudgetHealthWidget Component', () => {
       /**
        * Exceeded state features:
        * - Red color (text-error)
-       * - TriangleAlert icon with size={20}
+       * - TriangleAlert icon with size={22}
        * - Badge shows "Action Needed"
        */
       expect(BUDGET_HEALTH_ICONS.warning).toBe('TriangleAlert');
@@ -544,9 +544,9 @@ describe('BudgetHealthWidget Component', () => {
  * [ ] Verify Check icon renders as checkmark
  * [ ] Verify TriangleAlert icon renders as warning triangle
  * [ ] Verify ArrowRight icon renders as right arrow
- * [ ] Verify status icons are 20px
- * [ ] Verify no alerts Check icon is 24px
- * [ ] Verify ArrowRight icon is 16px
+ * [ ] Verify status icons are 22px (md size per spec)
+ * [ ] Verify no alerts Check icon is 24px (lg size)
+ * [ ] Verify ArrowRight icon is 16px (xs size)
  *
  * Test 6: Icon Colors
  * [ ] Verify healthy state icons are green (text-success)
