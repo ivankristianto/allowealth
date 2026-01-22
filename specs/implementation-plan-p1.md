@@ -174,18 +174,19 @@ bun run typecheck && bun run lint:fix && bun run stylelint:fix && bun run format
 
 **Checklist:**
 
-- [ ] Add max-width: 1400px using a tokenized container class (e.g., `max-w-container`)
-- [ ] Add responsive padding: `px-6 lg:px-12` (mobile 1.5rem, desktop 3rem)
-- [ ] Center container using `mx-auto`
-- [ ] Update any existing width constraints
+- [x] Add max-width: 1400px using a tokenized container class (`container-app`)
+- [x] Add responsive padding: `px-6 lg:px-12` (mobile 1.5rem, desktop 3rem)
+- [x] Center container using `mx-auto`
+- [x] Update stories file to match new component API
 
 **Files to modify:**
 
 - `src/components/layouts/PageContainer.astro`
+- `src/components/layouts/PageContainer.stories.ts`
 
 **Estimated Time:** 30 minutes
 
-**Status:** ⏳ Pending
+**Status:** ✅ Completed
 
 ---
 
@@ -539,7 +540,7 @@ bun run typecheck && bun run lint:fix && bun run stylelint:fix && bun run format
 ## Success Criteria (P1)
 
 - [x] Remaining atom components use new tokens and semantic colors (Task 2.5 completed)
-- [ ] Page container uses tokenized max width and responsive padding
+- [x] Page container uses tokenized max width and responsive padding (Task 3.3 completed)
 - [ ] Inline SVGs in auth/import flows are replaced with Lucide templates
 - [ ] Icon sizing matches the md/sm/lg scale and uses `@lucide/astro`
 - [ ] Toast and modal animations match Motion presets

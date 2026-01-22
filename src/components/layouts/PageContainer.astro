@@ -3,24 +3,18 @@
  * Page Container Component
  *
  * Wrapper component for page content with consistent spacing and max-width.
+ * Uses tokenized max-width (1400px) and responsive padding from design system.
  */
 
 interface Props {
-  size?: 'sm' | 'md' | 'lg' | 'xl' | 'full';
   className?: string;
 }
 
-const { size = 'lg', className = '' } = Astro.props;
+const { className = '' } = Astro.props;
 
-const sizeClasses: Record<string, string> = {
-  sm: 'max-w-2xl',
-  md: 'max-w-4xl',
-  lg: 'max-w-6xl',
-  xl: 'max-w-7xl',
-  full: 'max-w-full',
-};
-
-const containerClass = `${sizeClasses[size]} mx-auto w-full ${className}`;
+// Container uses tokenized max-width (1400px) from design system
+// Responsive padding: mobile 1.5rem (px-6), desktop 3rem (lg:px-12)
+const containerClass = `container-app mx-auto px-6 lg:px-12 w-full ${className}`;
 ---
 
 <div class={containerClass}>
