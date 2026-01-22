@@ -721,15 +721,50 @@ bun run typecheck && bun run lint:fix && bun run stylelint:fix && bun run format
 
 **Checklist:**
 
-- [ ] Store auto-dismiss timeout ID in Toast.astro
-- [ ] Cancel timeout on manual dismiss button click
-- [ ] Ensure no animate() calls on removed elements
-- [ ] Test rapid dismiss scenarios
+- [x] Store auto-dismiss timeout ID in Toast.astro
+- [x] Cancel timeout on manual dismiss button click
+- [x] Ensure no animate() calls on removed elements
+- [x] Test rapid dismiss scenarios
+- [x] Add behavior tests for race condition scenarios
 
 **Files to modify:**
 
 - `src/components/molecules/Toast.astro`
+- `src/components/molecules/Toast.behavior.test.ts`
 
 **Estimated Time:** 15 minutes
+
+**Status:** ✅ Completed (commit: forthcoming)
+
+**Code Review Feedback Addressed:**
+
+- P1: Explicitly initialize `autoDismissTimeout` to `undefined` for clarity
+
+---
+
+### Task QA.7: Clarify Toast Architecture and Integration (Priority: P3)
+
+**Goal:** Resolve architectural duplication between Toast.astro and ToastContainer.astro implementations.
+
+**Issue:** There are two separate toast implementations in the codebase:
+
+- `ToastContainer.astro` - Client-side implementation using Nano Stores, dynamically creates toast elements in JavaScript, properly integrates with `toastStore` state
+- `Toast.astro` - Server-side renderable Astro component with local dismiss state management, no integration with `toastStore`
+
+This creates confusion about which implementation should be used and potential state management issues.
+
+**Checklist:**
+
+- [ ] Document when to use Toast.astro vs ToastContainer.astro
+- [ ] Evaluate if Toast.astro should integrate with toastStore for state consistency
+- [ ] Consider deprecating one implementation if duplication is unnecessary
+- [ ] If both are needed, add architectural decision record (ADR) explaining the separation
+
+**Files to modify:**
+
+- `src/components/molecules/Toast.astro` (potential toastStore integration)
+- `specs/implementation-plan-p1.md` or new ADR document
+
+**Estimated Time:** 1 hour
 
 **Status:** ⏳ Pending

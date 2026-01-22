@@ -60,6 +60,11 @@ const positionClasses: Record<string, string> = {
     throw new Error('Toast element not found');
   }
 
+  // Track whether toast has been dismissed to prevent race conditions
+  let isDismissed = false;
+  // Store timeout ID to cancel on manual dismiss (explicitly initialized to undefined)
+  let autoDismissTimeout = undefined;
+
   // Set initial state for enter animation
   toast.style.opacity = '0';
   toast.style.transform = 'translateY(-10px) scale(0.95)';
@@ -71,30 +76,39 @@ const positionClasses: Record<string, string> = {
     { duration: 0.2, easing: [0.4, 0, 0.2, 1] }
   );
 
-  // Dismiss button handler with exit animation
+  // Dismiss toast with exit animation
+  const dismiss = () => {
+    if (isDismissed) return;
+    isDismissed = true;
+
+    // Cancel auto-dismiss timeout if running
+    if (autoDismissTimeout !== undefined) {
+      clearTimeout(autoDismissTimeout);
+      autoDismissTimeout = undefined;
+    }
+
+    // Exit animation (matches styles.json toast preset)
+    animate(
+      toast,
+      { opacity: [1, 0], scale: [1, 0.95] },
+      { duration: 0.2, easing: [0.4, 0, 0.2, 1] }
+    ).then(() => {
+      if (document.contains(toast)) {
+        toast.remove();
+      }
+    });
+  };
+
+  // Dismiss button handler
   const dismissBtn = toast.querySelector('[data-dismiss]');
   if (dismissBtn) {
-    dismissBtn.addEventListener('click', () => {
-      // Exit animation (matches styles.json toast preset)
-      animate(
-        toast,
-        { opacity: [1, 0], scale: [1, 0.95] },
-        { duration: 0.2, easing: [0.4, 0, 0.2, 1] }
-      ).then(() => toast.remove());
-    });
+    dismissBtn.addEventListener('click', dismiss);
   }
 
   // Auto-dismiss after duration
   if (duration > 0) {
-    setTimeout(() => {
-      if (document.contains(toast)) {
-        // Exit animation (matches styles.json toast preset)
-        animate(
-          toast,
-          { opacity: [1, 0], scale: [1, 0.95] },
-          { duration: 0.2, easing: [0.4, 0, 0.2, 1] }
-        ).then(() => toast.remove());
-      }
+    autoDismissTimeout = setTimeout(() => {
+      dismiss();
     }, duration);
   }
 </script>
