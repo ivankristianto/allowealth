@@ -662,24 +662,37 @@ After:
 
 **Checklist:**
 
-- [ ] Set height to 2.5rem (40px) using `h-10`
-- [ ] Update padding to match spec (top right bottom left: 0.5rem 2.5rem 0.5rem 0.75rem):
+- [x] Set height to 2.5rem (40px) using `h-10`
+- [x] Update padding to match spec (top right bottom left: 0.5rem 2.5rem 0.5rem 0.75rem):
   - Use `pt-2 pb-2 pl-3` (0.5rem top/bottom, 0.75rem left)
   - Use `pr-10` (2.5rem right - space for trailing icon/button)
   - Or use inline style for exact values: `padding: 0.5rem 2.5rem 0.5rem 0.75rem`
-- [ ] Set font size to 0.75rem (12px) using `text-xs`
-- [ ] Use DaisyUI `radius-field` for input border radius (no `rounded-[...]`)
-- [ ] Add background using theme base tokens (e.g., `bg-base-200`)
-- [ ] Update focus ring to 2px using accent token (theme-friendly)
-- [ ] Update error state border to `border-error` (or tokenized equivalent)
+- [x] Set font size to 0.75rem (12px) using `text-xs`
+- [x] Use DaisyUI `radius-field` for input border radius (no `rounded-[...]`)
+- [x] Add background using theme base tokens (e.g., `bg-base-200`)
+- [x] Update focus ring to 2px using accent token (theme-friendly)
+- [x] Update error state border to `border-error` (or tokenized equivalent)
 
 **Files to modify:**
 
-- `src/components/atoms/Input.astro`
+- `src/components/atoms/Input.astro` ✅
+- `src/components/atoms/Input.behavior.test.ts` ✅ (created)
+- `src/components/atoms/Input.stories.ts` ✅ (updated)
 
 **Estimated Time:** 45 minutes
 
-**Status:** ⏳ Pending
+**Status:** ✅ Completed (2025-01-22)
+
+**Implementation Notes:**
+
+- Updated height to `h-10` (2.5rem/40px) to match styles.json
+- Updated padding to `pt-2 pb-2 pl-3 pr-10` (0.5rem 2.5rem 0.5rem 0.75rem)
+- Updated font size to `text-xs` (0.75rem/12px) for accessibility
+- Added `bg-base-200` for theme-aware background
+- Updated focus ring to `focus:ring-2 focus:ring-accent focus:ring-opacity-20 focus:outline-none`
+- Updated error state to use `input-error border-error`
+- Created comprehensive behavior test file documenting design system alignment
+- Updated Storybook stories to match new component styles
 
 ---
 
@@ -865,7 +878,7 @@ bun run build  # Full production build
 
 - [x] Button component uses `btn-accent` for primary CTAs (indigo, accent glow shadow) - Task 2.1 ✅
 - [x] Card component matches specs (1.75rem padding, radius-box, premium shadow) - Task 2.2 ✅
-- [ ] Input component matches specs (2.5rem height, accent focus ring)
+- [x] Input component matches specs (2.5rem height, accent focus ring) - Task 2.3 ✅
 - [ ] Badge component matches specs (0.75rem font for accessibility, 700 weight)
 
 ### Layout (Section 3)
@@ -900,3 +913,9 @@ bun run build  # Full production build
 
 - [ ] Add fallback values to utility classes for graceful degradation (e.g., `--shadow-accent-glow, 0 10px 15px -3px rgb(99 102 241 / 0.2)`)
 - [ ] Extract duplicate class configuration between Button.astro and Button.stories.ts to shared config file
+
+#### Task 2.3 Code Review Feedback (P2/P3 - Non-blocking)
+
+- [x] Update Storybook stories to match updated Input component styles (P1 - fixed during implementation)
+- [ ] Add `required` attribute to select and input elements (defined in Props but not passed to elements)
+- [ ] Update comment on line 67 to clarify right padding purpose (space for trailing icon/button)
