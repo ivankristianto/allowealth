@@ -605,19 +605,19 @@ This means components using `text-primary` will automatically switch from dark t
 
 **Checklist:**
 
-- [ ] Update `design-system/START.md` Token Quick Reference section:
+- [x] Update `design-system/START.md` Token Quick Reference section:
   - Update `colors.primary` from `#10b981 (emerald - growth, CTAs)` to `#0f172a (slate - headings, text)`
   - Add `colors.accent` as `#6366f1 (indigo - CTAs, interactive)`
   - Add `colors.accentHover` as `#4f46e5 (indigo-600)`
   - Update `colors.error` from `#ef4444` to `#f43f5e`
   - Update `colors.info` from `#3b82f6` to `#6366f1`
-- [ ] Update `design-system/START.md` Common Patterns section:
+- [x] Update `design-system/START.md` Common Patterns section:
   - Change button examples from `btn-primary` to `btn-accent` for CTAs
   - Update focus ring examples to use accent color
-- [ ] Update `design-system/01-foundations.md` with full new color palette
-- [ ] Update font size documentation to reflect accessibility-adjusted scale
-- [ ] Add note about DaisyUI v5 @plugin syntax for theme configuration
-- [ ] Verify all code examples in docs reflect new color usage
+- [x] Update `design-system/01-foundations.md` with full new color palette
+- [x] Update font size documentation to reflect accessibility-adjusted scale
+- [x] Add note about DaisyUI v5 @plugin syntax for theme configuration
+- [x] Verify all code examples in docs reflect new color usage
 
 **Files to modify:**
 
@@ -626,7 +626,15 @@ This means components using `text-primary` will automatically switch from dark t
 
 **Estimated Time:** 45 minutes
 
-**Status:** ⏳ Pending
+**Status:** ✅ Completed (2025-01-22)
+
+**Implementation Notes:**
+
+- Updated Token Quick Reference section with new color semantic model (slate primary, indigo accent)
+- Updated Typography section with accessibility-adjusted font sizes
+- Updated Common Patterns section to use btn-accent for CTAs
+- Added DaisyUI v5 @plugin syntax note
+- Fixed documentation to match actual tokens.ts implementation (removed non-existent primaryHover)
 
 ---
 
@@ -932,7 +940,7 @@ bun run build  # Full production build
 - [x] Utility classes defined (.shadow-premium, .shadow-accent-glow, .glass-effect, .nav-active, .text-badge, .container-app) - Task 1.4 ✅
 - [x] Inter font is properly loaded and rendering with correct weights - Task 1.5 ✅
 - [x] Status and currency tokens are exposed in `@/lib/tokens` - Task 1.2 ✅
-- [ ] Design system documentation updated (styles.json synced, START.md/01-foundations.md pending)
+- [x] Design system documentation updated (styles.json synced, START.md/01-foundations.md) - Task 1.6 ✅
 
 ### Components (Section 2)
 
@@ -959,11 +967,7 @@ bun run build  # Full production build
 
 #### Task 1.2 Code Review Feedback (P2/P3 - Non-blocking)
 
-- [ ] Update `design-system/START.md` Token Quick Reference section (lines 43-47) to reflect new color semantic model:
-  - `colors.primary` from `#10b981 (emerald - growth, CTAs)` to `#0f172a (slate - headings, text)`
-  - Add `colors.accent` as `#6366f1 (indigo - CTAs, interactive)`
-  - Update `colors.error` from `#ef4444` to `#f43f5e`
-  - Update `colors.info` from `#3b82f6` to `#6366f1`
+- [x] Update `design-system/START.md` Token Quick Reference section (lines 43-47) to reflect new color semantic model - Task 1.6 ✅
 - [ ] Resolve `currency.usd` value inconsistency: tokens.ts has `#3b82f6` (blue-500) but styles.json specifies `#2563eb` (blue-600)
 - [ ] Decide whether to add `4xl`, `5xl`, `6xl` font sizes to styles.json or remove from tokens.ts for source-of-truth consistency
 
