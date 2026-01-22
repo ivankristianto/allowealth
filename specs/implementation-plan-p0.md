@@ -399,12 +399,12 @@ This means components using `text-primary` will automatically switch from dark t
 
 **Checklist:**
 
-- [ ] Remove any DaisyUI theme configuration from `tailwind.config.ts` (themes defined in CSS)
-- [ ] Ensure `tailwind.config.ts` only has DaisyUI plugin registered without theme objects
-- [ ] Configure custom light theme in `globals.css` using @plugin syntax
-- [ ] Configure custom dark theme in `globals.css` using @plugin syntax
-- [ ] Set DaisyUI design variables (radius, size, border, depth, noise)
-- [ ] Verify theme switching works with `data-theme` attribute
+- [x] Remove any DaisyUI theme configuration from `tailwind.config.ts` (themes defined in CSS)
+- [x] Ensure `tailwind.config.ts` only has DaisyUI plugin registered without theme objects
+- [x] Configure custom light theme in `globals.css` using @plugin syntax
+- [x] Configure custom dark theme in `globals.css` using @plugin syntax
+- [x] Set DaisyUI design variables (radius, size, border, depth, noise)
+- [x] Verify theme switching works with `data-theme` attribute
 
 **Files to modify:**
 
@@ -484,7 +484,7 @@ This means components using `text-primary` will automatically switch from dark t
 
 **Estimated Time:** 1 hour
 
-**Status:** ⏳ Pending
+**Status:** ✅ Completed (2025-01-22)
 
 ---
 
@@ -912,7 +912,7 @@ bun run build  # Full production build
 - [x] Color semantic model documented (Task 1.0): primary=text, accent=CTAs
 - [x] All color tokens match styles.json specification (slate primary, indigo accent) - Task 1.1 ✅
 - [x] Font sizes adjusted for accessibility (min 12px for xs, 14px for base) - Task 1.1 ✅
-- [ ] DaisyUI v5 themes configured via CSS @plugin syntax
+- [x] DaisyUI v5 themes configured via CSS @plugin syntax - Task 1.3 ✅
 - [x] Utility classes defined (.shadow-premium, .shadow-accent-glow, .glass-effect) - Task 1.1 ✅
 - [ ] Inter font is properly loaded and rendering with correct weights
 - [x] Status and currency tokens are exposed in `@/lib/tokens` - Task 1.2 ✅
@@ -950,3 +950,9 @@ bun run build  # Full production build
   - Update `colors.info` from `#3b82f6` to `#6366f1`
 - [ ] Resolve `currency.usd` value inconsistency: tokens.ts has `#3b82f6` (blue-500) but styles.json specifies `#2563eb` (blue-600)
 - [ ] Decide whether to add `4xl`, `5xl`, `6xl` font sizes to styles.json or remove from tokens.ts for source-of-truth consistency
+
+#### Task 1.3 Code Review Feedback (P2/P3 - Non-blocking)
+
+- [ ] Consider adding `color-scheme: light` to the light theme for symmetry with dark theme
+- [ ] Add documentation note about where `styles.json` is located and how it relates to the design system
+- [ ] Add `--size-selector` and `--size-field` variables to dark theme for consistency with light theme
