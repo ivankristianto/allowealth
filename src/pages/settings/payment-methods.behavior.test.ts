@@ -5,7 +5,7 @@
  * Tests icon migration, page structure, CRUD operations, accessibility, and integration.
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'bun:test';
 
 describe('Payment Methods Page - Icon Migration', () => {
   describe('Lucide Icon Imports', () => {

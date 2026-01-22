@@ -4,7 +4,7 @@
  * Tests component rendering, icon migration, accessibility, and user interactions
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'bun:test';
 
 describe('AssetUpdateTodoList - Icon Migration', () => {
   describe('Lucide Icon Imports', () => {

@@ -21,7 +21,7 @@
  * be used directly.
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'bun:test';
 
 describe('Register Page - Icon Migration', () => {
   describe('Server-side Error Icon', () => {

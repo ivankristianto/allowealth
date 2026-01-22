@@ -12,7 +12,7 @@
  * - Error alert icon → CircleX from @lucide/astro (size 24px)
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'bun:test';
 
 describe('Budget History Page - Icon Migration', () => {
   describe('SlidersHorizontal Icon (Currency Selector)', () => {

@@ -12,7 +12,7 @@
  * - Uses Lucide icons: CircleAlert, TrendingUp, DollarSign, Calendar, ShieldCheck, ChevronRight
  */
 
-import { describe, test, expect } from 'vitest';
+import { describe, test, expect } from 'bun:test';
 
 describe('SummaryCards.astro - Icon Migration', () => {
   test('imports Lucide icons: CircleAlert, TrendingUp, DollarSign, Calendar, ShieldCheck, ChevronRight', () => {

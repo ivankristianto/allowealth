@@ -156,6 +156,7 @@ npx @redocly/cli preview-docs openapi.yml
 - **DO NOT use TypeScript types in client-side `<script>` tags** - Astro's inline scripts run in the browser and don't support TypeScript type annotations. Use plain JavaScript or move typed code to separate `.ts` files.
 - **DO NOT access `user.attributes.property`** - The User type has properties directly on the object (`user.name`, `user.email`), not nested in `attributes`.
 - **DO NOT declare `Astro.locals` types in multiple files** - Centralize in `src/env.d.ts` only.
+- **DO NOT use `vitest` to write test, use `bun:test` instead.**
 
 ### Storybook Stories:
 

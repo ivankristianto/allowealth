@@ -13,7 +13,7 @@
  * - Has client-side logout functionality
  */
 
-import { describe, test, expect } from 'vitest';
+import { describe, test, expect } from 'bun:test';
 
 describe('UserContext.astro - Icon Migration', () => {
   test('imports Lucide icons: ChevronDown, User, LogOut', () => {
