@@ -221,7 +221,7 @@ Filter bar (Task 13) will implement progressive enhancement:
 
 ---
 
-### Task 2: Component Library Updates (Priority: P0)
+### Task 2: Component Library Updates (Priority: P0) ✅
 
 **Goal:** Update existing atomic components to support new premium design variants
 
@@ -229,47 +229,31 @@ Filter bar (Task 13) will implement progressive enhancement:
 
 **Checklist:**
 
-- [ ] Button: Add `variant="accent"` as default CTA, update shadow
-- [ ] Button: Add `variant="ghost"` with border
-- [ ] Card: Add `rounded="xl"` variant (uses existing premiumLg token)
-- [ ] Card: Add `padding="lg"` variant (p-8)
-- [ ] Badge: Add status variants (optimal, review, exceeded)
-- [ ] Badge: Update to `text-badge` size class (0.75rem)
-- [ ] Input: Add search input variant with icon slot
-- [ ] Create StatLabel atom for uppercase labels
-- [ ] Create Skeleton atom for loading states
-- [ ] Update existing Storybook stories with new variants
-- [ ] Create new stories for StatLabel and Skeleton
-- [ ] Run quality gates
+- [x] Button: Add `variant="accent"` as default CTA, update shadow
+- [x] Button: Add `variant="ghost"` with border
+- [x] Card: Add `rounded="xl"` variant (uses existing premiumLg token)
+- [x] Card: Add `padding="lg"` variant (p-8)
+- [x] Badge: Add status variants (optimal, review, exceeded)
+- [x] Badge: Update to `text-badge` size class (0.75rem)
+- [x] Input: Add search input variant with icon slot
+- [x] Create StatLabel atom for uppercase labels
+- [x] Create Skeleton atom for loading states
+- [x] Update existing Storybook stories with new variants
+- [x] Create new stories for StatLabel and Skeleton
+- [x] Run quality gates
 
 **Files to modify:**
 
-- `src/components/atoms/Button.astro`
-- `src/components/atoms/Card.astro`
-- `src/components/atoms/Badge.astro`
-- `src/components/atoms/Input.astro`
-- `src/components/atoms/StatLabel.astro` (new)
-- `src/components/atoms/Skeleton.astro` (new)
+- `src/components/atoms/Button.astro` ✅ (already had accent/ghost)
+- `src/components/atoms/Button.stories.ts` ✅ (added accent to options and variantClasses)
+- `src/components/atoms/Card.astro` ✅ (added rounded and padding props)
+- `src/components/atoms/Badge.astro` ✅ (added optimal/review/exceeded variants)
+- `src/components/atoms/Input.astro` ✅ (added search variant with icon slot)
+- `src/components/atoms/StatLabel.astro` ✅ (new component)
+- `src/components/atoms/Skeleton.astro` ✅ (new component)
+- Storybook stories for all new/modified components ✅
 
-**New Variant Examples:**
-
-```astro
-<!-- Button accent variant -->
-<Button variant="accent">Primary CTA</Button>
-
-<!-- Card with large padding -->
-<Card padding="lg" rounded="xl">Premium card</Card>
-
-<!-- Badge status variants -->
-<Badge variant="optimal">On track</Badge>
-<Badge variant="review">Review needed</Badge>
-<Badge variant="exceeded">Over budget</Badge>
-
-<!-- Stat label -->
-<StatLabel>Monthly Spending</StatLabel>
-```
-
-**Status:** ⏳ Pending
+**Status:** ✅ Complete
 
 ---
 
@@ -1300,7 +1284,7 @@ interface CashFlowItemProps {
 - [ ] All new components have Storybook stories
 - [ ] All quality gates pass
 
-**Progress:** Task 1 (P0) Complete ✅ - Design token foundation ready for component updates
+**Progress:** Tasks 1-2 (P0) Complete ✅ - Design tokens and component library updates ready for layout implementation
 
 ---
 
