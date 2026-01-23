@@ -848,12 +848,12 @@ This creates confusion about which implementation should be used and potential s
 
 **Checklist:**
 
-- [ ] Create `src/lib/animations/modal.ts` with MODAL_ANIMATION_CONFIG
-- [ ] Export backdrop animation (opacity: [0,1], duration: 0.2)
-- [ ] Export content enter animation (opacity: [0,1], scale: [0.95,1], y: [20,0], duration: 0.3)
-- [ ] Export content exit animation (opacity: [1,0], scale: [1,0.95], y: [0,20], duration: 0.3)
-- [ ] Update Modal.astro to import and use shared config
-- [ ] Ensure prefers-reduced-motion is respected
+- [x] Create `src/lib/animations/modal.ts` with MODAL_ANIMATION_CONFIG
+- [x] Export backdrop animation (opacity: [0,1], duration: 0.2, easing: [0.4, 0, 0.2, 1])
+- [x] Export content enter animation (opacity: [0,1], scale: [0.95,1], y: [20,0], duration: 0.3, easing: [0.4, 0, 0.2, 1])
+- [x] Export content exit animation (opacity: [1,0], scale: [1,0.95], y: [0,20], duration: 0.3, easing: [0.4, 0, 0.2, 1])
+- [x] Update Modal.astro to import and use shared config
+- [x] Ensure prefers-reduced-motion is respected
 
 **Files to modify:**
 
@@ -862,9 +862,14 @@ This creates confusion about which implementation should be used and potential s
 
 **Estimated Time:** 20 minutes
 
-**Status:** ⏳ Pending
+**Status:** ✅ Completed (commit: 5d68c50)
 
 **Code Review Feedback Source:** P2 feedback from Task QA.5 code review
+
+**Code Review Feedback Addressed:**
+
+- P1: Added easing configuration to match toast.ts pattern
+- P2: Added ModalAnimationPreset type export for consistency
 
 ---
 
