@@ -101,15 +101,14 @@ const titleId = title ? `${id}-title` : undefined;
 
 <script define:vars={{ id, backdropClose }}>
   import { animate } from 'motion';
+  import {
+    MODAL_ANIMATION_CONFIG,
+    MODAL_INITIAL_SCALE,
+    MODAL_INITIAL_Y_OFFSET,
+  } from '@/lib/animations/modal';
 
   // Check if user prefers reduced motion for accessibility
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-  // Modal animation configuration from styles.json
-  const BACKDROP_DURATION = 0.2;
-  const CONTENT_DURATION = 0.3;
-  const INITIAL_SCALE = 0.95;
-  const INITIAL_Y_OFFSET = 20;
 
   const modal = document.getElementById(id);
   if (!modal) return;
@@ -129,7 +128,7 @@ const titleId = title ? `${id}-title` : undefined;
     if (prefersReducedMotion) {
       backdrop.style.opacity = '1';
     } else {
-      await animate(backdrop, { opacity: [0, 1] }, { duration: BACKDROP_DURATION });
+      await animate(backdrop, { opacity: [0, 1] }, MODAL_ANIMATION_CONFIG.backdrop.options);
     }
   };
 
@@ -141,7 +140,7 @@ const titleId = title ? `${id}-title` : undefined;
     if (prefersReducedMotion) {
       backdrop.style.opacity = '0';
     } else {
-      await animate(backdrop, { opacity: [1, 0] }, { duration: BACKDROP_DURATION });
+      await animate(backdrop, { opacity: [1, 0] }, MODAL_ANIMATION_CONFIG.backdrop.options);
     }
   };
 
@@ -156,8 +155,8 @@ const titleId = title ? `${id}-title` : undefined;
     } else {
       await animate(
         content,
-        { opacity: [0, 1], scale: [INITIAL_SCALE, 1], y: [INITIAL_Y_OFFSET, 0] },
-        { duration: CONTENT_DURATION }
+        MODAL_ANIMATION_CONFIG.content.enter.keyframes,
+        MODAL_ANIMATION_CONFIG.content.enter.options
       );
     }
   };
@@ -169,12 +168,12 @@ const titleId = title ? `${id}-title` : undefined;
 
     if (prefersReducedMotion) {
       content.style.opacity = '0';
-      content.style.transform = `scale(${INITIAL_SCALE}) translateY(${INITIAL_Y_OFFSET}px)`;
+      content.style.transform = `scale(${MODAL_INITIAL_SCALE}) translateY(${MODAL_INITIAL_Y_OFFSET}px)`;
     } else {
       await animate(
         content,
-        { opacity: [1, 0], scale: [1, INITIAL_SCALE], y: [0, INITIAL_Y_OFFSET] },
-        { duration: CONTENT_DURATION }
+        MODAL_ANIMATION_CONFIG.content.exit.keyframes,
+        MODAL_ANIMATION_CONFIG.content.exit.options
       );
     }
   };
@@ -199,7 +198,7 @@ const titleId = title ? `${id}-title` : undefined;
       if (backdrop) backdrop.style.opacity = '0';
       if (content) {
         content.style.opacity = '0';
-        content.style.transform = `scale(${INITIAL_SCALE}) translateY(${INITIAL_Y_OFFSET}px)`;
+        content.style.transform = `scale(${MODAL_INITIAL_SCALE}) translateY(${MODAL_INITIAL_Y_OFFSET}px)`;
       }
 
       // Run both animations (they start simultaneously)
