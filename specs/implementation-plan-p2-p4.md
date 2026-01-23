@@ -1048,21 +1048,30 @@ From Task 3.4 code review (2025-01-23):
 
 From P3 code review (2025-01-23):
 
-#### P2 - Additional Story Files Need Design System Alignment
+#### P2 - Additional Story Files Need Design System Alignment ✅ (2025-01-23)
 
-The following story files still use non-semantic colors (`text-neutral-*`, `bg-neutral-*`, `bg-emerald-*`) and were not part of the P3 update:
+The following story files were updated to use DaisyUI semantic colors:
 
-1. **RecentTransactionsList.stories.ts** - Uses `text-neutral-*`, `bg-neutral-*`
-2. **SummaryCards.stories.ts** - Uses `text-neutral-*`, `bg-neutral-*`, `bg-emerald-*`
-3. **Navigation.stories.ts** - Uses `text-neutral-*`
-4. **Spinner.stories.ts** - Uses `text-neutral-*`
-5. **Percentage.stories.ts** - Uses `text-neutral-*`
-6. **Modal.stories.ts** - Uses `text-neutral-*`
-7. **Label.stories.ts** - Uses `text-neutral-*`
-8. **Card.stories.ts** - Uses `text-neutral-*`
-9. **EmptyState.stories.ts** - Uses `text-neutral-*`
+1. **RecentTransactionsList.stories.ts** - ✅ Updated `text-neutral-*`, `bg-neutral-*` → `text-base-content/*`, `bg-base-*`
+2. **SummaryCards.stories.ts** - ✅ Updated all colors including dynamic `text-red-600`/`text-amber-600`/`text-emerald-600` → `text-error`/`text-warning`/`text-success`
+3. **Navigation.stories.ts** - ✅ Updated `text-neutral-*` → `text-base-content/*`, `bg-neutral` → `bg-base-*`
+4. **Spinner.stories.ts** - ✅ Updated `text-neutral-*` → `text-base-content/*`
+5. **Percentage.stories.ts** - ✅ Updated `text-neutral-*` → `text-base-content/*`, `text-neutral` → `text-base-content`
+6. **Modal.stories.ts** - ✅ Updated `text-neutral-*` → `text-base-content/*`
+7. **Label.stories.ts** - ✅ Updated `text-neutral-*` → `text-base-content/*`
+8. **Card.stories.ts** - ✅ Updated `text-neutral-*` → `text-base-content/*`
+9. **EmptyState.stories.ts** - ✅ Updated `text-neutral-*` → `text-base-content/*`
 
-**Action:** Create a follow-up task to update these files to use DaisyUI semantic colors (`text-base-content`, `bg-base-200`, etc.).
+**Commit:** `feat(stories): update 9 story files for DaisyUI design system alignment` (pending)
+
+**Changes made:**
+
+- Replaced all `text-neutral-*` with `text-base-content/*` (with opacity modifiers)
+- Replaced all `bg-neutral-*` with `bg-base-*` (base-100, base-200, base-300)
+- Replaced hardcoded Tailwind colors (`text-red-600`, `text-amber-600`, `text-emerald-600`, `bg-red-500`, `bg-amber-500`, `bg-emerald-500`) with DaisyUI semantic equivalents (`text-error`, `text-warning`, `text-success`, `bg-error`, `bg-warning`, `bg-success`)
+- Replaced `badge-neutral` with `badge-ghost`
+- Fixed `hover:text-primary-hover` → `hover:text-accent` (non-existent DaisyUI class)
+- Updated `text-blue-*` → `text-info` where applicable
 
 #### P2 - TransactionModal.stories.ts Type Safety Improvements
 

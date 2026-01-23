@@ -101,7 +101,7 @@ const createRecentTransactionsList = (args: {
     const viewAllLink = document.createElement('a');
     viewAllLink.href = viewAllUrl;
     viewAllLink.className =
-      'text-sm text-primary hover:text-primary-hover font-medium flex items-center gap-1';
+      'text-sm text-primary hover:text-accent font-medium flex items-center gap-1';
     viewAllLink.textContent = 'View All';
     viewAllLink.appendChild(
       ArrowRight.render({ size: 16, class: 'stroke-current' }, { 'aria-hidden': 'true' })
@@ -119,12 +119,12 @@ const createRecentTransactionsList = (args: {
       const row = document.createElement('div');
       row.className = 'flex items-center gap-4 p-4 bg-base-200 rounded-lg animate-pulse';
       row.innerHTML = `
-        <div class="w-20 h-4 bg-neutral-300 rounded"></div>
+        <div class="w-20 h-4 bg-base-300 rounded"></div>
         <div class="flex-1 space-y-2">
-          <div class="h-4 bg-neutral-300 rounded w-3/4"></div>
-          <div class="h-3 bg-neutral-300 rounded w-1/2"></div>
+          <div class="h-4 bg-base-300 rounded w-3/4"></div>
+          <div class="h-3 bg-base-300 rounded w-1/2"></div>
         </div>
-        <div class="w-24 h-4 bg-neutral-300 rounded"></div>
+        <div class="w-24 h-4 bg-base-300 rounded"></div>
       `;
       skeleton.appendChild(row);
     }
@@ -136,7 +136,10 @@ const createRecentTransactionsList = (args: {
     const iconContainer = document.createElement('div');
     iconContainer.className = 'mb-4 flex justify-center';
     iconContainer.appendChild(
-      Plus.render({ size: 48, class: 'stroke-current text-neutral-400' }, { 'aria-hidden': 'true' })
+      Plus.render(
+        { size: 48, class: 'stroke-current text-base-content/40' },
+        { 'aria-hidden': 'true' }
+      )
     );
     emptyState.appendChild(iconContainer);
 
@@ -146,7 +149,7 @@ const createRecentTransactionsList = (args: {
     emptyState.appendChild(emptyTitle);
 
     const emptyMessage = document.createElement('p');
-    emptyMessage.className = 'text-neutral-500 mb-4';
+    emptyMessage.className = 'text-base-content/60 mb-4';
     emptyMessage.textContent = 'Start tracking by adding your first expense or income transaction.';
     emptyState.appendChild(emptyMessage);
 
@@ -195,7 +198,7 @@ const createRecentTransactionsList = (args: {
 
       if (transaction.description) {
         const descDiv = document.createElement('div');
-        descDiv.className = 'text-sm text-neutral-500 truncate';
+        descDiv.className = 'text-sm text-base-content/60 truncate';
         descDiv.textContent = transaction.description;
         infoDiv.appendChild(descDiv);
       }
@@ -205,7 +208,7 @@ const createRecentTransactionsList = (args: {
       const paymentDiv = document.createElement('div');
       paymentDiv.className = 'flex-shrink-0 hidden sm:block';
       const badge = document.createElement('span');
-      badge.className = 'badge badge-neutral badge-sm flex items-center gap-1';
+      badge.className = 'badge badge-ghost badge-sm flex items-center gap-1';
       const PaymentIcon = getPaymentIconComponent(transaction.payment_method.type);
       badge.appendChild(
         PaymentIcon.render({ size: 12, class: 'stroke-current' }, { 'aria-hidden': 'true' })

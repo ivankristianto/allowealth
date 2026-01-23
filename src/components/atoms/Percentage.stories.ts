@@ -63,7 +63,7 @@ const createPercentage = (args: {
     success: 'text-success',
     warning: 'text-warning',
     error: 'text-error',
-    neutral: 'text-neutral',
+    neutral: 'text-base-content',
   };
 
   let formatted = formatPercentage(value, decimals);
@@ -204,7 +204,7 @@ export const BudgetProgress: StoryObj = {
       left.appendChild(percentage);
 
       const amounts = document.createElement('div');
-      amounts.className = 'text-sm text-neutral-500';
+      amounts.className = 'text-sm text-base-content/60';
       amounts.textContent = `${formatCurrency(item.spent)} / ${formatCurrency(item.budget)}`;
 
       row.appendChild(left);

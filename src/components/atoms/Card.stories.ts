@@ -133,7 +133,7 @@ export const BudgetCard: StoryObj = {
     title.textContent = 'Groceries';
 
     const subtitle = document.createElement('p');
-    subtitle.className = 'text-neutral-500 text-sm';
+    subtitle.className = 'text-base-content/60 text-sm';
     subtitle.textContent = 'Monthly budget';
 
     titleDiv.appendChild(title);

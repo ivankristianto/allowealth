@@ -85,7 +85,7 @@ const createEmptyState = (args: {
     svg.setAttribute('stroke-width', '2');
     svg.setAttribute('stroke-linecap', 'round');
     svg.setAttribute('stroke-linejoin', 'round');
-    svg.classList.add('text-neutral-400');
+    svg.classList.add('text-base-content/40');
     svg.innerHTML = lucideIcons[iconName];
     iconDiv.appendChild(svg);
     container.appendChild(iconDiv);
@@ -99,7 +99,7 @@ const createEmptyState = (args: {
 
   // Message
   const messageEl = document.createElement('p');
-  messageEl.className = 'text-neutral-500 mb-4 max-w-md';
+  messageEl.className = 'text-base-content/60 mb-4 max-w-md';
   messageEl.textContent = message;
   container.appendChild(messageEl);
 
@@ -181,7 +181,7 @@ export const NoTransactions: StoryObj = {
     // Using Lucide FileText icon
     emptyState.innerHTML = `
       <div class="mb-4">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-neutral-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-base-content/30" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
           <polyline points="14 2 14 8 20 8" />
           <line x1="16" y1="13" x2="8" y2="13" />
@@ -190,9 +190,9 @@ export const NoTransactions: StoryObj = {
         </svg>
       </div>
       <h3 class="text-lg font-semibold mb-2">No transactions yet</h3>
-      <p class="text-neutral-500 mb-4">Your expense tracking journey starts here. Add your first transaction to begin.</p>
+      <p class="text-base-content/60 mb-4">Your expense tracking journey starts here. Add your first transaction to begin.</p>
       <div class="flex gap-2 justify-center">
-        <button class="btn btn-primary">Add Transaction</button>
+        <button class="btn btn-accent">Add Transaction</button>
         <button class="btn btn-outline">Import CSV</button>
       </div>
     `;
@@ -214,7 +214,7 @@ export const SearchNoResults: StoryObj = {
     header.className = 'mb-6';
     header.innerHTML = `
       <h2 class="text-xl font-semibold">Search Results</h2>
-      <p class="text-neutral-500 text-sm">Searching for "coffee shop"</p>
+      <p class="text-base-content/60 text-sm">Searching for "coffee shop"</p>
     `;
 
     const emptyState = createEmptyState({
@@ -252,11 +252,11 @@ export const AllIcons: StoryObj = {
       svg.setAttribute('stroke-width', '2');
       svg.setAttribute('stroke-linecap', 'round');
       svg.setAttribute('stroke-linejoin', 'round');
-      svg.classList.add('text-neutral-400', 'mb-2');
+      svg.classList.add('text-base-content/40', 'mb-2');
       svg.innerHTML = lucideIcons[name];
 
       const label = document.createElement('span');
-      label.className = 'text-xs text-neutral-500';
+      label.className = 'text-xs text-base-content/60';
       label.textContent = name;
 
       wrapper.appendChild(svg);

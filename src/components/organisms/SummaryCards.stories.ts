@@ -66,9 +66,9 @@ const createSummaryCards = (args: {
       card.className = 'border rounded-lg p-6 bg-base-100 animate-pulse';
       card.innerHTML = `
         <div class="space-y-3">
-          <div class="h-4 bg-neutral-200 rounded w-1/3"></div>
-          <div class="h-8 bg-neutral-200 rounded w-2/3"></div>
-          <div class="h-4 bg-neutral-200 rounded w-1/2"></div>
+          <div class="h-4 bg-base-300 rounded w-1/3"></div>
+          <div class="h-8 bg-base-300 rounded w-2/3"></div>
+          <div class="h-4 bg-base-300 rounded w-1/2"></div>
         </div>
       `;
       grid.appendChild(card);
@@ -79,11 +79,11 @@ const createSummaryCards = (args: {
     emptyCard.className = 'col-span-full';
     emptyCard.innerHTML = `
       <div class="border rounded-lg p-6 bg-base-100 text-center">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto mb-4 text-neutral-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto mb-4 text-base-content/40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
         </svg>
         <h3 class="text-lg font-semibold mb-2">No data yet</h3>
-        <p class="text-neutral-500">Start by adding your assets and transactions</p>
+        <p class="text-base-content/60">Start by adding your assets and transactions</p>
       </div>
     `;
     grid.appendChild(emptyCard);
@@ -96,27 +96,27 @@ const createSummaryCards = (args: {
       'border rounded-lg p-6 bg-base-100 hover:shadow-lg transition-shadow group';
     assetsCard.innerHTML = `
       <div class="flex items-start justify-between mb-4">
-        <h3 class="text-sm font-medium text-neutral-600 uppercase tracking-wide">Total Assets</h3>
-        <div class="p-2 bg-emerald-100 rounded-lg group-hover:bg-emerald-200 transition-colors">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <h3 class="text-sm font-medium text-base-content/60 uppercase tracking-wide">Total Assets</h3>
+        <div class="p-2 bg-success/10 rounded-lg group-hover:bg-success/20 transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         </div>
       </div>
       <div class="space-y-2 mb-4">
         <div class="flex justify-between items-baseline">
-          <span class="text-sm text-neutral-500">IDR:</span>
-          <span class="font-semibold text-lg text-emerald-600">${formatCurrency(summaryData.totalAssets.idr, 'IDR')}</span>
+          <span class="text-sm text-base-content/60">IDR:</span>
+          <span class="font-semibold text-lg text-success">${formatCurrency(summaryData.totalAssets.idr, 'IDR')}</span>
         </div>
         <div class="flex justify-between items-baseline">
-          <span class="text-sm text-neutral-500">USD:</span>
-          <span class="font-semibold text-lg text-blue-600">${formatCurrency(summaryData.totalAssets.usd, 'USD')}</span>
+          <span class="text-sm text-base-content/60">USD:</span>
+          <span class="font-semibold text-lg text-info">${formatCurrency(summaryData.totalAssets.usd, 'USD')}</span>
         </div>
       </div>
-      <div class="pt-3 border-t border-neutral-200">
+      <div class="pt-3 border-t border-base-300">
         <div class="flex justify-between items-baseline">
-          <span class="text-sm text-neutral-600">Total:</span>
-          <span class="font-bold text-xl text-emerald-600">${formatCurrency(summaryData.totalAssets.converted, summaryData.totalAssets.convertedCurrency)}</span>
+          <span class="text-sm text-base-content/60">Total:</span>
+          <span class="font-bold text-xl text-success">${formatCurrency(summaryData.totalAssets.converted, summaryData.totalAssets.convertedCurrency)}</span>
         </div>
       </div>
     `;
@@ -128,21 +128,21 @@ const createSummaryCards = (args: {
       'border rounded-lg p-6 bg-base-100 hover:shadow-lg transition-shadow group';
     const spentColor =
       summaryData.monthlySpent.percentage >= 100
-        ? 'text-red-600'
+        ? 'text-error'
         : summaryData.monthlySpent.percentage >= 80
-          ? 'text-amber-600'
-          : 'text-emerald-600';
+          ? 'text-warning'
+          : 'text-success';
     const progressColor =
       summaryData.monthlySpent.percentage >= 100
-        ? 'bg-red-500'
+        ? 'bg-error'
         : summaryData.monthlySpent.percentage >= 80
-          ? 'bg-amber-500'
-          : 'bg-emerald-500';
+          ? 'bg-warning'
+          : 'bg-success';
     spentCard.innerHTML = `
       <div class="flex items-start justify-between mb-4">
-        <h3 class="text-sm font-medium text-neutral-600 uppercase tracking-wide">This Month</h3>
-        <div class="p-2 bg-blue-100 rounded-lg group-hover:bg-blue-200 transition-colors">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <h3 class="text-sm font-medium text-base-content/60 uppercase tracking-wide">This Month</h3>
+        <div class="p-2 bg-info/10 rounded-lg group-hover:bg-info/20 transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-info" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
           </svg>
         </div>
@@ -150,17 +150,17 @@ const createSummaryCards = (args: {
       <div class="mb-4">
         <div class="flex justify-between items-baseline mb-2">
           <span class="text-2xl font-bold">${formatCurrency(summaryData.monthlySpent.spent, summaryData.monthlySpent.currency)}</span>
-          <span class="text-sm text-neutral-500">of ${formatCurrency(summaryData.monthlySpent.budget, summaryData.monthlySpent.currency)}</span>
+          <span class="text-sm text-base-content/60">of ${formatCurrency(summaryData.monthlySpent.budget, summaryData.monthlySpent.currency)}</span>
         </div>
         <div class="text-right">
           <span class="text-lg font-semibold ${spentColor}">${formatPercentage(summaryData.monthlySpent.percentage)}</span>
         </div>
       </div>
       <div class="space-y-2">
-        <div class="w-full bg-neutral-200 rounded-full h-3 overflow-hidden">
+        <div class="w-full bg-base-300 rounded-full h-3 overflow-hidden">
           <div class="h-full ${progressColor} transition-all duration-300" style="width: ${Math.min(summaryData.monthlySpent.percentage, 100)}%" role="progressbar" aria-valuenow="${summaryData.monthlySpent.percentage}" aria-valuemin="0" aria-valuemax="100"></div>
         </div>
-        <p class="text-xs text-neutral-500 text-center">
+        <p class="text-xs text-base-content/60 text-center">
           ${
             summaryData.monthlySpent.percentage >= 100
               ? `Over budget by ${formatPercentage(summaryData.monthlySpent.percentage - 100)}`
@@ -177,10 +177,10 @@ const createSummaryCards = (args: {
       'border rounded-lg p-6 bg-base-100 hover:shadow-lg transition-shadow group';
     const healthColor =
       summaryData.budgetHealth.status === 'healthy'
-        ? 'text-emerald-600'
+        ? 'text-success'
         : summaryData.budgetHealth.status === 'warning'
-          ? 'text-amber-600'
-          : 'text-red-600';
+          ? 'text-warning'
+          : 'text-error';
     const healthBadge =
       summaryData.budgetHealth.status === 'healthy'
         ? 'badge-success'
@@ -189,9 +189,9 @@ const createSummaryCards = (args: {
           : 'badge-error';
     healthCard.innerHTML = `
       <div class="flex items-start justify-between mb-4">
-        <h3 class="text-sm font-medium text-neutral-600 uppercase tracking-wide">Budget Health</h3>
-        <div class="p-2 bg-amber-100 rounded-lg group-hover:bg-amber-200 transition-colors">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <h3 class="text-sm font-medium text-base-content/60 uppercase tracking-wide">Budget Health</h3>
+        <div class="p-2 bg-warning/10 rounded-lg group-hover:bg-warning/20 transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-warning" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         </div>
@@ -199,7 +199,7 @@ const createSummaryCards = (args: {
       <div class="flex items-center gap-4 mb-4">
         <div class="flex-1">
           <div class="text-3xl font-bold ${healthColor}">${summaryData.budgetHealth.alertCount}</div>
-          <div class="text-sm text-neutral-500">alert${summaryData.budgetHealth.alertCount !== 1 ? 's' : ''}</div>
+          <div class="text-sm text-base-content/60">alert${summaryData.budgetHealth.alertCount !== 1 ? 's' : ''}</div>
         </div>
         <div class="badge ${healthBadge} badge-lg">${summaryData.budgetHealth.status === 'healthy' ? 'On Track' : summaryData.budgetHealth.status === 'warning' ? 'Review' : 'Action Needed'}</div>
       </div>

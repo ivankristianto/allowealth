@@ -87,7 +87,7 @@ const createModal = (args: {
   content.className = 'py-4';
   content.innerHTML = `
     <p class="mb-4">This is a ${size} modal with a title and some content.</p>
-    <p class="text-neutral-500">You can put forms, images, or any other content here.</p>
+    <p class="text-base-content/60">You can put forms, images, or any other content here.</p>
   `;
   modalBox.appendChild(content);
 

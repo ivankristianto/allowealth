@@ -35,7 +35,7 @@ const createLabel = (args: {
 
   if (helpText) {
     const helpSpan = document.createElement('span');
-    helpSpan.className = 'label-text-alt text-neutral-500';
+    helpSpan.className = 'label-text-alt text-base-content/60';
     helpSpan.textContent = helpText;
     label.appendChild(helpSpan);
   }

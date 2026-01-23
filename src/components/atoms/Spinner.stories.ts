@@ -141,7 +141,7 @@ export const FullPage: StoryObj = {
 
     const spinner = createSpinner({ size: 'lg', color: 'accent' });
     const text = document.createElement('p');
-    text.className = 'text-neutral-500';
+    text.className = 'text-base-content/60';
     text.textContent = 'Please wait...';
 
     container.appendChild(spinner);

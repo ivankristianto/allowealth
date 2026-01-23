@@ -100,13 +100,13 @@ const createNavigation = (args: { currentPath?: string }): HTMLElement => {
   userSection.innerHTML = `
     <div class="flex items-center gap-3">
       <div class="avatar placeholder">
-        <div class="bg-neutral text-neutral-content rounded-full w-10">
+        <div class="bg-base-300 text-base-content rounded-full w-10">
           <span class="text-xs">UK</span>
         </div>
       </div>
       <div class="flex-1 min-w-0">
         <p class="text-sm font-medium truncate">User Name</p>
-        <p class="text-xs text-neutral-500 truncate">user@example.com</p>
+        <p class="text-xs text-base-content/60 truncate">user@example.com</p>
       </div>
     </div>
   `;
