@@ -1,0 +1,94 @@
+---
+/**
+ * ProgressBar Component
+ *
+ * Horizontal progress bar for displaying completion percentage.
+ * Follows Oasis Finance v1.0.0 design system specifications.
+ *
+ * @param {number} value - Progress percentage (0-100)
+ * @param {string} status - Color status: ok, warning, danger
+ * @param {string} size - Bar height: sm, md, lg
+ * @param {boolean} showLabel - Show percentage label on the right
+ * @param {boolean} animate - Enable animation on initial render
+ * @param {string} className - Additional CSS classes
+ */
+
+export interface Props {
+  value: number;
+  status?: 'ok' | 'warning' | 'danger';
+  size?: 'sm' | 'md' | 'lg';
+  showLabel?: boolean;
+  animate?: boolean;
+  className?: string;
+}
+
+const {
+  value = 0,
+  status = 'ok',
+  size = 'md',
+  showLabel = false,
+  animate = true,
+  className = '',
+} = Astro.props;
+
+// Clamp value between 0 and 100
+const clampedValue = Math.max(0, Math.min(100, value));
+
+// Size classes: sm (h-2), md (h-3), lg (h-4)
+const sizeClasses: Record<string, string> = {
+  sm: 'h-2',
+  md: 'h-3',
+  lg: 'h-4',
+};
+
+// Status color classes using DaisyUI semantic colors
+const statusClasses: Record<string, string> = {
+  ok: 'bg-success',
+  warning: 'bg-warning',
+  danger: 'bg-error',
+};
+
+// Status badge color classes
+const statusBadgeClasses: Record<string, string> = {
+  ok: 'text-success bg-success/10',
+  warning: 'text-warning bg-warning/10',
+  danger: 'text-error bg-error/10',
+};
+
+const barContainerClasses = [
+  'w-full bg-base-300 rounded-full overflow-hidden shadow-inner',
+  sizeClasses[size],
+  className,
+]
+  .filter(Boolean)
+  .join(' ');
+
+const barFillClasses = [
+  'h-full rounded-full transition-all duration-1000 shadow-md',
+  statusClasses[status],
+  animate && 'animate-in slide-in-from-left',
+]
+  .filter(Boolean)
+  .join(' ');
+---
+
+<div class="flex items-center gap-3">
+  <div
+    class={barContainerClasses}
+    role="progressbar"
+    aria-valuenow={clampedValue}
+    aria-valuemin="0"
+    aria-valuemax="100"
+  >
+    <div class={barFillClasses} style={`width: ${clampedValue}%`}></div>
+  </div>
+  {
+    showLabel && (
+      <span
+        class={`text-xs font-bold tracking-wider uppercase ${statusBadgeClasses[status]} px-2 py-1 rounded-full shrink-0`}
+      >
+        {clampedValue}% used
+      </span>
+    )
+  }
+</div>

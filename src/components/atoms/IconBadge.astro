@@ -1,0 +1,77 @@
+---
+/**
+ * IconBadge Component
+ *
+ * Icon with colored background container.
+ * Follows Oasis Finance v1.0.0 design system specifications.
+ *
+ * @param {string} variant - Color variant: primary, accent, success, warning, error, info, neutral
+ * @param {string} size - Badge size: sm, md, lg
+ * @param {boolean} outlined - Use outlined style instead of solid background
+ * @param {string} className - Additional CSS classes
+ */
+
+export interface Props {
+  variant?: 'primary' | 'accent' | 'success' | 'warning' | 'error' | 'info' | 'neutral';
+  size?: 'sm' | 'md' | 'lg';
+  outlined?: boolean;
+  className?: string;
+}
+
+const { variant = 'primary', size = 'md', outlined = false, className = '' } = Astro.props;
+
+// Size classes: sm (p-3), md (p-4), lg (p-5)
+const sizeClasses: Record<string, string> = {
+  sm: 'p-3',
+  md: 'p-4',
+  lg: 'p-5',
+};
+
+// Icon size based on badge size
+const iconSizeClasses: Record<string, string> = {
+  sm: 'text-xl', // 20px
+  md: 'text-2xl', // 24px
+  lg: 'text-3xl', // 30px
+};
+
+// Variant color classes using DaisyUI semantic colors
+const variantClasses: Record<string, { bg: string; text: string; border?: string }> = {
+  primary: { bg: 'bg-primary/10', text: 'text-primary', border: 'border-primary/20' },
+  accent: { bg: 'bg-accent/10', text: 'text-accent', border: 'border-accent/20' },
+  success: { bg: 'bg-success/10', text: 'text-success', border: 'border-success/20' },
+  warning: { bg: 'bg-warning/10', text: 'text-warning', border: 'border-warning/20' },
+  error: { bg: 'bg-error/10', text: 'text-error', border: 'border-error/20' },
+  info: { bg: 'bg-info/10', text: 'text-info', border: 'border-info/20' },
+  neutral: { bg: 'bg-base-300', text: 'text-base-content', border: 'border-base-300' },
+};
+
+const variantStyle = variantClasses[variant];
+
+const badgeClasses = [
+  // Base rounded container
+  'rounded-2xl',
+  // Padding
+  sizeClasses[size],
+  // Background
+  outlined ? 'bg-base-100' : variantStyle.bg,
+  // Text color
+  variantStyle.text,
+  // Border (for outlined variant)
+  outlined && 'border',
+  outlined && variantStyle.border,
+  // Shadow
+  !outlined && 'shadow-sm',
+  // Prevent shrinking in flex layouts
+  'shrink-0',
+  // Additional classes
+  className,
+]
+  .filter(Boolean)
+  .join(' ');
+---
+
+<div class={badgeClasses}>
+  <span class={iconSizeClasses[size] + ' block'}>
+    <slot />
+  </span>
+</div>

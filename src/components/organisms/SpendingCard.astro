@@ -1,0 +1,156 @@
+---
+/**
+ * SpendingCard Component
+ *
+ * Monthly spending overview card with progress bar and optional budget alert.
+ * Follows Oasis Finance v1.0.0 design system specifications.
+ *
+ * @param {number} spent - Amount spent
+ * @param {number} budget - Total budget amount
+ * @param {string} currency - Currency code (IDR or USD)
+ * @param {string} remainingLabel - Label for remaining amount (e.g., "Remaining for Jan")
+ * @param {string} alertMessage - Optional alert message to display
+ * @param {boolean} loading - Show loading skeleton state
+ * @param {string} error - Error message to display
+ * @param {string} className - Additional CSS classes
+ */
+
+import { ShoppingCart } from '@lucide/astro';
+import { formatCurrency, getBudgetStatusClass } from '@/lib/tokens';
+import ProgressBar from '@/components/atoms/ProgressBar.astro';
+import IconBadge from '@/components/atoms/IconBadge.astro';
+import StatLabel from '@/components/atoms/StatLabel.astro';
+import BudgetAlertBanner from '@/components/molecules/BudgetAlertBanner.astro';
+import Card from '@/components/atoms/Card.astro';
+
+export interface Props {
+  spent: number;
+  budget: number;
+  currency?: 'IDR' | 'USD';
+  remainingLabel?: string;
+  alertMessage?: string;
+  loading?: boolean;
+  error?: string;
+  className?: string;
+}
+
+const {
+  spent,
+  budget,
+  currency = 'IDR',
+  remainingLabel = 'Remaining',
+  alertMessage,
+  loading = false,
+  error,
+  className = '',
+} = Astro.props;
+
+// Calculate percentage and remaining
+const percentage = budget > 0 ? (spent / budget) * 100 : 0;
+const remaining = budget - spent;
+const status = getBudgetStatusClass(percentage);
+
+// Map status class to progress bar status
+const getProgressBarStatus = (
+  statusClass: 'status-ok' | 'status-warning' | 'status-danger'
+): 'ok' | 'warning' | 'danger' => {
+  if (statusClass === 'status-ok') return 'ok';
+  if (statusClass === 'status-warning') return 'warning';
+  return 'danger';
+};
+
+const progressBarStatus = getProgressBarStatus(status);
+
+// Loading state
+if (loading) {
+  return (
+    <Card className={className} role="status" aria-live="polite" aria-busy="true">
+      <div class="flex flex-col gap-6">
+        <div class="flex justify-between items-start">
+          <div class="flex items-center gap-4">
+            <div class="w-12 h-12 bg-base-300 rounded-full animate-pulse"></div>
+            <div class="space-y-3">
+              <div class="h-3 bg-base-300 rounded w-20 animate-pulse"></div>
+              <div class="h-8 bg-base-300 rounded w-48 animate-pulse"></div>
+            </div>
+          </div>
+          <div class="h-6 bg-base-300 rounded w-16 animate-pulse"></div>
+        </div>
+
+        <div class="h-3 bg-base-300 rounded-full animate-pulse"></div>
+
+        <div class="h-4 bg-base-300 rounded w-40 animate-pulse"></div>
+
+        <div class="h-20 bg-base-300 rounded-3xl animate-pulse"></div>
+      </div>
+    </Card>
+  );
+}
+
+// Error state
+if (error) {
+  return (
+    <Card className={className} role="alert" aria-live="assertive">
+      <div class="p-6 text-center">
+        <p class="text-error font-medium">{error}</p>
+      </div>
+    </Card>
+  );
+}
+
+const spentFormatted = formatCurrency(spent, currency);
+const budgetFormatted = formatCurrency(budget, currency, true);
+const remainingFormatted = formatCurrency(remaining, currency);
+---
+
+<Card className={className} aria-labelledby="spending-card-title">
+  <div class="flex flex-col gap-6">
+    <div class="flex justify-between items-start">
+      <div class="flex items-center gap-4">
+        <IconBadge variant="warning" size="md">
+          <ShoppingCart size={24} class="stroke-current" aria-hidden="true" />
+        </IconBadge>
+        <div>
+          <StatLabel size="md" color="neutral">MONTHLY SPENDING</StatLabel>
+          <h3
+            id="spending-card-title"
+            class="text-3xl font-bold mt-1.5 tracking-tight leading-none"
+          >
+            {spentFormatted}
+            <span class="text-base text-base-content/60 font-medium tracking-normal"
+              >/ {budgetFormatted}</span
+            >
+          </h3>
+        </div>
+      </div>
+
+      <span
+        class={`text-xs font-bold tracking-wider uppercase px-3 py-1.5 rounded-full ${
+          status === 'status-ok'
+            ? 'text-success bg-success/10'
+            : status === 'status-warning'
+              ? 'text-warning bg-warning/10'
+              : 'text-error bg-error/10'
+        }`}
+      >
+        {Math.round(percentage)}% used
+      </span>
+    </div>
+
+    <ProgressBar value={percentage} status={progressBarStatus} size="md" />
+
+    <p class="text-base font-medium text-base-content/60">
+      {remainingLabel}: <span class="font-bold text-base-content">{remainingFormatted}</span>
+    </p>
+
+    {
+      alertMessage && (
+        <BudgetAlertBanner
+          title="Budget alert"
+          message={alertMessage}
+          variant={status === 'status-danger' ? 'error' : 'warning'}
+        />
+      )
+    }
+  </div>
+</Card>

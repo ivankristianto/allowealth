@@ -1,0 +1,124 @@
+---
+/**
+ * BudgetAlertBanner Component
+ *
+ * Contextual budget warning/alert banner with icon and message.
+ * Follows Oasis Finance v1.0.0 design system specifications.
+ *
+ * @param {string} title - Alert title (e.g., "Budget alert")
+ * @param {string} message - Alert message content
+ * @param {string} variant - Alert variant: warning, error, info
+ * @param {boolean} dismissible - Show dismiss button (client-side only)
+ * @param {string} className - Additional CSS classes
+ */
+
+import { TriangleAlert, Info, CircleX, X } from '@lucide/astro';
+
+export interface Props {
+  title?: string;
+  message: string;
+  variant?: 'warning' | 'error' | 'info';
+  dismissible?: boolean;
+  className?: string;
+}
+
+const {
+  title = 'Budget alert',
+  message,
+  variant = 'warning',
+  dismissible = false,
+  className = '',
+} = Astro.props;
+
+// Icon component based on variant
+const iconComponents = {
+  warning: TriangleAlert,
+  error: CircleX,
+  info: Info,
+};
+
+const IconComponent = iconComponents[variant];
+
+// Variant color classes using DaisyUI semantic colors
+const variantClasses: Record<
+  string,
+  { bg: string; border: string; icon: string; title: string; message: string }
+> = {
+  warning: {
+    bg: 'bg-warning/5 dark:bg-warning/10',
+    border: 'border-warning/20 dark:border-warning/30',
+    icon: 'text-warning',
+    title: 'text-warning dark:text-warning',
+    message: 'text-warning/90 dark:text-warning/80',
+  },
+  error: {
+    bg: 'bg-error/5 dark:bg-error/10',
+    border: 'border-error/20 dark:border-error/30',
+    icon: 'text-error',
+    title: 'text-error dark:text-error',
+    message: 'text-error/90 dark:text-error/80',
+  },
+  info: {
+    bg: 'bg-info/5 dark:bg-info/10',
+    border: 'border-info/20 dark:border-info/30',
+    icon: 'text-info',
+    title: 'text-info dark:text-info',
+    message: 'text-info/90 dark:text-info/80',
+  },
+};
+
+const variantStyle = variantClasses[variant];
+
+const bannerClasses = [
+  // Base styles
+  'p-6 rounded-3xl border',
+  // Variant colors
+  variantStyle.bg,
+  variantStyle.border,
+  // Additional classes
+  className,
+]
+  .filter(Boolean)
+  .join(' ');
+---
+
+<div class={bannerClasses} role="alert" aria-live="polite">
+  <div class="flex items-start gap-3">
+    <!-- Icon -->
+    <div class={variantStyle.icon + ' shrink-0 mt-0.5'}>
+      <IconComponent size={20} class="stroke-current" aria-hidden="true" />
+    </div>
+
+    <!-- Content -->
+    <div class="flex-1 min-w-0">
+      <p class={`text-sm font-bold tracking-wide ${variantStyle.title} leading-none mb-1.5`}>
+        {title}
+      </p>
+      <p class={`text-base font-medium leading-relaxed ${variantStyle.message}`}>
+        {message}
+      </p>
+    </div>
+
+    <!-- Dismissible button (client-side) -->
+    <button
+      class:list={[
+        'text-base-content/50 hover:text-base-content transition-colors p-1 -mr-1 -mt-1 shrink-0',
+        !dismissible && 'hidden',
+      ]}
+      aria-label="Dismiss alert"
+      data-dismiss="alert"
+    >
+      <X size={16} class="stroke-current" aria-hidden="true" />
+    </button>
+  </div>
+
+  <!-- Client-side dismiss functionality -->
+  <script define:vars={{ dismissible }}>
+    if (!dismissible) return;
+    const banner = document.currentScript?.parentElement;
+    const dismissBtn = banner?.querySelector('[data-dismiss="alert"]');
+    dismissBtn?.addEventListener('click', () => {
+      banner?.remove();
+    });
+  </script>
+</div>
