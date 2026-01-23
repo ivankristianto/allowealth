@@ -1,0 +1,204 @@
+/**
+ * Animation System
+ *
+ * CSS custom properties for animation timing and easing.
+ * Based on design-system/styles.json animation specifications.
+ *
+ * For complex animations, use Motion library (@/lib/animations.ts).
+ * Use these CSS variables for simple transitions.
+ */
+
+/* ============================================================================
+   Duration Variables
+   ========================================================================= */
+
+:root {
+  /* Animation durations - use for transition-duration */
+  --duration-instant: 0s;
+  --duration-fast: 0.15s;
+  --duration-normal: 0.3s;
+  --duration-slow: 0.5s;
+  --duration-slower: 1s;
+
+  /* Easing functions - use for transition-timing-function */
+  --ease-default: cubic-bezier(0.4, 0, 0.2, 1); /* Standard easing for most animations */
+  --ease-in: cubic-bezier(0.4, 0, 1, 1); /* Acceleration only */
+  --ease-out: cubic-bezier(0, 0, 0.2, 1); /* Deceleration only */
+  --ease-in-out: cubic-bezier(
+    0.4,
+    0,
+    0.2,
+    1
+  ); /* Same as default - both accelerate and decelerate */
+
+  --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55); /* Bouncy effect */
+  --ease-elastic: cubic-bezier(0.68, -0.6, 0.32, 1.6); /* Overshoot effect */
+}
+
+/* ============================================================================
+   Keyframe Animations
+   ========================================================================= */
+
+/* Fade animations */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fade-out {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+  }
+}
+
+/* Slide animations */
+@keyframes slide-in-from-bottom {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-in-from-top {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-in-from-left {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slide-in-from-right {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Scale animations */
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes scale-out {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  to {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ============================================================================
+   Utility Classes
+   ========================================================================= */
+
+/* Apply animation with CSS class - forwards preserves final state */
+.animate-fade-in {
+  animation: fade-in var(--duration-normal) var(--ease-default) forwards;
+}
+
+.animate-fade-out {
+  animation: fade-out var(--duration-normal) var(--ease-default) forwards;
+}
+
+.animate-slide-in-bottom {
+  animation: slide-in-from-bottom var(--duration-normal) var(--ease-default) forwards;
+}
+
+.animate-slide-in-top {
+  animation: slide-in-from-top var(--duration-normal) var(--ease-default) forwards;
+}
+
+.animate-slide-in-left {
+  animation: slide-in-from-left var(--duration-normal) var(--ease-default) forwards;
+}
+
+.animate-slide-in-right {
+  animation: slide-in-from-right var(--duration-normal) var(--ease-default) forwards;
+}
+
+.animate-scale-in {
+  animation: scale-in var(--duration-normal) var(--ease-default) forwards;
+}
+
+.animate-scale-out {
+  animation: scale-out var(--duration-normal) var(--ease-default) forwards;
+}
+
+.animate-pop-in {
+  animation: pop-in var(--duration-normal) var(--ease-bounce) forwards;
+}
+
+/* Transition utilities - use with hover/focus states */
+.transition-fast {
+  transition-duration: var(--duration-fast);
+  transition-timing-function: var(--ease-default);
+}
+
+.transition-normal {
+  transition-duration: var(--duration-normal);
+  transition-timing-function: var(--ease-default);
+}
+
+.transition-slow {
+  transition-duration: var(--duration-slow);
+  transition-timing-function: var(--ease-default);
+}

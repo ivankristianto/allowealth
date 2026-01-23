@@ -676,18 +676,18 @@ bun run typecheck && bun run lint:fix && bun run stylelint:fix && bun run format
 
 **Checklist:**
 
-- [ ] Create `src/styles/animations.css` with animation variables
-- [ ] Add duration variables: `--duration-instant: 0s`, `--duration-fast: 0.15s`, `--duration-normal: 0.3s`, `--duration-slow: 0.5s`, `--duration-slower: 1s`
-- [ ] Add easing variables matching styles.json:
+- [x] Create `src/styles/animations.css` with animation variables
+- [x] Add duration variables: `--duration-instant: 0s`, `--duration-fast: 0.15s`, `--duration-normal: 0.3s`, `--duration-slow: 0.5s`, `--duration-slower: 1s`
+- [x] Add easing variables matching styles.json:
   - `--ease-default: cubic-bezier(0.4, 0, 0.2, 1)`
   - `--ease-in: cubic-bezier(0.4, 0, 1, 1)`
   - `--ease-out: cubic-bezier(0, 0, 0.2, 1)`
   - `--ease-in-out: cubic-bezier(0.4, 0, 0.2, 1)`
   - `--ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55)`
   - `--ease-elastic: cubic-bezier(0.68, -0.6, 0.32, 1.6)`
-- [ ] Add keyframe definitions for common animations (fadeIn, slideIn, scaleIn)
-- [ ] Import in `globals.css` using `@import './animations.css';`
-- [ ] Add documentation comments
+- [x] Add keyframe definitions for common animations (fadeIn, slideIn, scaleIn)
+- [x] Import in `globals.css` using `@import './animations.css';`
+- [x] Add documentation comments
 
 **Files to create:**
 
@@ -873,16 +873,18 @@ bun run typecheck && bun run lint:fix && bun run stylelint:fix && bun run format
 
 **Acceptance Criteria:**
 
-- [ ] All CSS custom properties defined
-- [ ] All keyframe animations defined
-- [ ] Utility classes created for common animations
-- [ ] Documentation comments included
-- [ ] Imported in `globals.css`
-- [ ] No syntax errors (verified with stylelint)
-- [ ] Variables accessible in all components
-- [ ] Can use in component: `transition-duration: var(--duration-fast);`
-- [ ] Can use utility class: `class="animate-fade-in"`
-- [ ] Passes all quality gates
+- [x] All CSS custom properties defined
+- [x] All keyframe animations defined
+- [x] Utility classes created for common animations
+- [x] Documentation comments included
+- [x] Imported in `globals.css`
+- [x] No syntax errors (verified with stylelint)
+- [x] Variables accessible in all components
+- [x] Can use in component: `transition-duration: var(--duration-fast);`
+- [x] Can use utility class: `class="animate-fade-in"`
+- [x] Passes all quality gates
+
+**Commit**: (pending)
 
 ---
 
@@ -949,7 +951,7 @@ bun run typecheck && bun run lint:fix && bun run stylelint:fix && bun run format
 - [x] All remaining molecule components match new input/button/token styling ✅
 - [x] All remaining organism components align with table, modal, and status tokens ✅
 - [x] Animation utilities (`@/lib/animation-utils.ts`) created with full TypeScript types ✅
-- [ ] Animation CSS variables (`src/styles/animations.css`) available and documented
+- [x] Animation CSS variables (`src/styles/animations.css`) available and documented ✅
 - [x] All auth form security reviews passed ✅
 - [x] Zero hardcoded hex values remain in P2 scope components ✅
 - [x] All quality gates pass for all modified components ✅
