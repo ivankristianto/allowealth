@@ -787,7 +787,7 @@ interface NetWorthWidgetProps {
 
 ---
 
-### Task 11: Dashboard - Spending Analysis Chart (Priority: P1)
+### Task 11: Dashboard - Spending Analysis Chart (Priority: P1) ✅
 
 **Goal:** Implement interactive donut chart with category breakdown using Chart.js
 
@@ -795,27 +795,27 @@ interface NetWorthWidgetProps {
 
 **Checklist:**
 
-- [ ] Install Chart.js dependency (`bun add chart.js`)
-- [ ] Create SpendingChart organism component
-- [ ] Implement Chart.js doughnut chart in `<script>` tag
-- [ ] Use Intersection Observer for lazy initialization (`client:visible` pattern)
-- [ ] Add center text plugin (percentage + label)
-- [ ] Configure paddingAngle equivalent via `cutout` and `spacing`
-- [ ] Add hover effect (segment highlight)
-- [ ] Create legend component with color dots
-- [ ] Sync hover between chart and legend via Chart.js events
-- [ ] Style with design system colors (use `colors` from tokens)
-- [ ] Add `loading` prop with skeleton state
-- [ ] Handle error state gracefully
-- [ ] Add canvas `aria-label` for accessibility
-- [ ] Create Storybook story
-- [ ] Run quality gates
-- [ ] Test in dark mode (update chart colors)
+- [x] Install Chart.js dependency (`bun add chart.js`)
+- [x] Create SpendingChart organism component
+- [x] Implement Chart.js doughnut chart in `<script>` tag
+- [x] Use Intersection Observer for lazy initialization (`client:visible` pattern)
+- [x] Add center text plugin (percentage + label)
+- [x] Configure paddingAngle equivalent via `cutout` and `spacing`
+- [x] Add hover effect (segment highlight)
+- [x] Create legend component with color dots
+- [x] Sync hover between chart and legend via Chart.js events
+- [x] Style with design system colors (use `colors` from tokens)
+- [x] Add `loading` prop with skeleton state
+- [x] Handle error state gracefully
+- [x] Add canvas `aria-label` for accessibility
+- [x] Create Storybook story
+- [x] Run quality gates
+- [x] Test in dark mode (update chart colors)
 
 **Files to modify:**
 
-- `package.json` (add chart.js dependency)
-- `src/components/organisms/SpendingChart.astro` (new)
+- `package.json` ✅ (add chart.js dependency)
+- `src/components/organisms/SpendingChart.astro` ✅ (new)
 
 **Chart Configuration:**
 
@@ -845,11 +845,39 @@ interface NetWorthWidgetProps {
 
 **Accessibility:**
 
-- [ ] Add `aria-label` to canvas describing chart content
-- [ ] Provide data table alternative for screen readers (sr-only)
-- [ ] Ensure legend items are keyboard focusable
+- [x] Add `aria-label` to canvas describing chart content
+- [x] Provide data table alternative for screen readers (sr-only)
+- [x] Ensure legend items are keyboard focusable
 
-**Status:** ⏳ Pending
+**Status:** ✅ Complete
+
+**Implementation Notes:**
+
+- Chart.js 4.5.1 installed via `bun add chart.js`
+- Interactive donut chart with 70% cutout for center text display
+- Center text updates dynamically on hover (percentage + category label)
+- Legend uses button elements for proper ARIA roles with `aria-pressed` state
+- Full keyboard navigation support: Arrow keys, Home/End, Enter/Space, Escape
+- Focus visible styles with ring accent for keyboard accessibility
+- Dark mode support: tooltip colors adapt based on theme
+- Memory leak prevention: cleanup on page unload and Astro View Transitions
+- Intersection Observer for lazy loading (50px root margin)
+- Screen reader accessible data table included (sr-only class)
+- Legend hover synchronized with chart segment highlighting
+- Truncated category names with title attribute for long names
+- Comprehensive Storybook stories covering all states (default, loading, error, empty, high/low spending, few/many categories)
+
+**Accessibility Features:**
+
+- Canvas with `aria-label` and `role="img"`
+- Button elements for legend items with `aria-pressed` state
+- `role="group"` on legend container with keyboard navigation instructions
+- Arrow key navigation (Up/Down/Left/Right) between legend items
+- Home/End keys for first/last item navigation
+- Escape key to reset selection
+- Focus visible styles with ring accent
+- Screen reader data table (sr-only)
+- Proper color contrast maintained in both light and dark modes
 
 ---
 
@@ -1306,7 +1334,7 @@ interface CashFlowItemProps {
 
 ### Required Packages
 
-- `chart.js` ⏳ (to install: `bun add chart.js`)
+- `chart.js` ✅ (installed: chart.js@4.5.1)
 - `@lucide/astro` ✅ (exists)
 - `motion` ✅ (exists)
 - `daisyui` ✅ (exists)
@@ -1332,7 +1360,7 @@ interface CashFlowItemProps {
 
 - [ ] All dashboard widgets render correctly with real data
 - [x] Recent activity list matches premium design (icon badges, category label, payment method line)
-- [ ] Pie chart is interactive with hover states
+- [x] Pie chart is interactive with hover states
 - [x] Navigation sidebar matches premium design
 - [ ] Mobile bottom nav with FAB works correctly
 - [ ] Transactions page filters work correctly
@@ -1346,7 +1374,7 @@ interface CashFlowItemProps {
 - [x] All new components have Storybook stories
 - [x] All quality gates pass
 
-**Progress:** Tasks 1-4, 6-9 (P0-P1) Complete ✅ - Design tokens, component library updates, Navigation sidebar, Header redesign, Spending Summary Card, Quick Actions, Recent Activity list complete and Net Worth Widget complete. Ready for remaining Dashboard widget implementation.
+**Progress:** Tasks 1-4, 6-9, 11 (P0-P1) Complete ✅ - Design tokens, component library updates, Navigation sidebar, Header redesign, Spending Summary Card, Quick Actions, Recent Activity list, Net Worth Widget, and Spending Analysis Chart complete. Ready for remaining Dashboard widget implementation.
 
 ---
 
