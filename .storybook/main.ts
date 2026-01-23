@@ -1,4 +1,5 @@
 import type { StorybookConfig } from '@storybook/html-vite';
+import tailwindcss from '@tailwindcss/vite';
 
 const config: StorybookConfig = {
   stories: ['../src/**/*.mdx', '../src/**/*.stories.@(js|jsx|ts|tsx)'],
@@ -19,6 +20,15 @@ const config: StorybookConfig = {
     reactDocgen: 'off',
   },
   async viteFinal(config) {
+    // Add Tailwind CSS v4 plugin for Storybook
+    config.plugins = config.plugins || [];
+    config.plugins.push(
+      tailwindcss({
+        // Use the same content paths as main tailwind.config.ts
+        content: ['./src/**/*.{astro,html,js,jsx,md,mdx,svelte,ts,tsx,vue}'],
+      })
+    );
+
     return {
       ...config,
       resolve: {
