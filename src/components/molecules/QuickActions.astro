@@ -2,26 +2,29 @@
 /**
  * Quick Actions Component (Molecule)
  *
- * Quick action buttons for common tasks:
- * - Add Expense
- * - Add Income
- * - View Reports
+ * Premium quick action buttons for common tasks:
+ * - Add Expense (indigo theme)
+ * - Log Income (emerald theme)
  *
- * Responsive: vertical on mobile, horizontal on desktop.
+ * Features:
+ * - Premium card design with IconBadge
+ * - Hover scale and shadow effects
+ * - Active state with press feedback
+ * - Responsive: vertical on mobile, horizontal on desktop
+ * - Touch target: min-h-[44px] for accessibility
  *
- * @param {string} addExpenseUrl - URL for add expense action
- * @param {string} addIncomeUrl - URL for add income action
- * @param {string} reportsUrl - URL for reports action
+ * @param {QuickAction[]} actions - Array of quick action objects (default: Add Expense, Log Income)
  * @param {string} className - Additional CSS classes
  */
 
-import { Minus, Plus, ChartPie } from '@lucide/astro';
+import { ShoppingCart, CircleDollarSign, Plus } from '@lucide/astro';
+import IconBadge from '../atoms/IconBadge.astro';
 
 export interface QuickAction {
   label: string;
   url: string;
-  icon: string;
-  variant: 'primary' | 'secondary' | 'outline';
+  icon: 'shopping-cart' | 'circle-dollar' | 'plus';
+  variant: 'expense' | 'income';
   ariaLabel: string;
 }
 
@@ -30,37 +33,34 @@ export interface Props {
   className?: string;
 }
 
-// Icon mapping for backward compatibility
-// Using ChartPie instead of deprecated BarChart3/PieChart for "View Reports" action
-// ChartPie represents "exploring" or "analyzing" reports
-const iconMap = {
-  minus: Minus,
+// Icon mapping for Lucide Astro components
+const iconComponents = {
+  'shopping-cart': ShoppingCart,
+  'circle-dollar': CircleDollarSign,
   plus: Plus,
-  search: ChartPie,
 };
 
-// Default quick actions
+// Color variant mapping for IconBadge
+const variantColors: Record<string, 'accent' | 'success'> = {
+  expense: 'accent', // indigo
+  income: 'success', // emerald
+};
+
+// Default quick actions (Add Expense, Log Income)
 const defaultActions: QuickAction[] = [
   {
     label: 'Add Expense',
     url: '/transactions/add?type=expense',
-    icon: 'minus',
-    variant: 'primary',
+    icon: 'shopping-cart',
+    variant: 'expense',
     ariaLabel: 'Add new expense transaction',
   },
   {
-    label: 'Add Income',
+    label: 'Log Income',
     url: '/transactions/add?type=income',
-    icon: 'plus',
-    variant: 'secondary',
+    icon: 'circle-dollar',
+    variant: 'income',
     ariaLabel: 'Add new income transaction',
-  },
-  {
-    label: 'View Reports',
-    url: '/reports',
-    icon: 'search',
-    variant: 'outline',
-    ariaLabel: 'View financial reports',
   },
 ];
 
@@ -68,28 +68,37 @@ const { actions = defaultActions, className = '' } = Astro.props;
 ---
 
 <div
-  class={`flex flex-col sm:flex-row gap-3 ${className}`}
+  class={`flex flex-col sm:flex-row gap-5 ${className}`}
   data-quick-actions
   role="group"
   aria-label="Quick actions"
 >
   {
     actions.map((action) => {
-      const IconComponent = iconMap[action.icon] || Plus;
+      // Fallback to Plus icon for unknown icon names (runtime safety)
+      const IconComponent = iconComponents[action.icon] || Plus;
+      // Fallback to accent for unknown variants
+      const badgeVariant = variantColors[action.variant] || 'accent';
+
+      // Development warning for unknown icons
+      if (import.meta.env.DEV && !iconComponents[action.icon]) {
+        console.warn(`QuickActions: Unknown icon "${action.icon}", falling back to Plus`);
+      }
+
       return (
         <a
           href={action.url}
-          class={`btn btn-${action.variant} gap-2 flex-1 justify-center ${
-            action.variant === 'primary'
-              ? 'btn-accent'
-              : action.variant === 'secondary'
-                ? 'bg-base-200 text-base-content hover:bg-base-300'
-                : 'btn-outline'
-          }`}
+          class="flex-1 px-8 py-7 min-h-[44px] bg-base-100 text-base-content font-bold rounded-2xl border border-base-300 hover:bg-base-200 transition-all shadow-sm hover:shadow-md flex items-center justify-center gap-5 active:scale-95 hover:scale-[1.02] group relative overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
           aria-label={action.ariaLabel}
         >
-          <IconComponent size={20} class="stroke-current" aria-hidden="true" />
-          <span>{action.label}</span>
+          <IconBadge
+            variant={badgeVariant}
+            size="md"
+            className="group-hover:scale-110 transition-transform"
+          >
+            <IconComponent size={24} class="stroke-current" aria-hidden="true" />
+          </IconBadge>
+          <span class="text-lg tracking-tight font-bold leading-none">{action.label}</span>
         </a>
       );
     })
@@ -97,9 +106,23 @@ const { actions = defaultActions, className = '' } = Astro.props;
 </div>
 
 <style>
-  /* Ensure proper focus states for accessibility */
-  [data-quick-actions] a:focus {
-    outline: 2px solid currentColor;
-    outline-offset: 2px;
+  /* Ensure smooth transitions */
+  [data-quick-actions] a {
+    transition-property: transform, background-color, box-shadow, border-color;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 200ms;
+  }
+
+  [data-quick-actions] a:hover {
+    transition-duration: 150ms;
+  }
+
+  [data-quick-actions] a:active {
+    transition-duration: 75ms;
+  }
+
+  /* Ensure IconBadge hover doesn't cause layout shifts */
+  [data-quick-actions] [class*='IconBadge'] {
+    will-change: transform;
   }
 </style>

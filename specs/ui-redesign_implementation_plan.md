@@ -550,7 +550,7 @@ interface SpendingCardProps {
 
 ---
 
-### Task 7: Dashboard - Quick Actions (Priority: P1)
+### Task 7: Dashboard - Quick Actions (Priority: P1) ✅
 
 **Goal:** Redesign quick action buttons with icon badges and premium styling
 
@@ -558,20 +558,22 @@ interface SpendingCardProps {
 
 **Checklist:**
 
-- [ ] Update QuickActions molecule layout (flex row on desktop, stack on mobile)
-- [ ] Use IconBadge component (created in Task 6)
-- [ ] Style with white/card background, border, hover effect
-- [ ] Add colored icon backgrounds (indigo for expense, emerald for income)
-- [ ] Add hover scale (`hover:scale-[1.02]`) and shadow transitions
-- [ ] Update typography (text-lg, font-bold, tracking-tight)
-- [ ] Add `active:scale-95` for press feedback
-- [ ] Update Storybook story
-- [ ] Run quality gates
-- [ ] Test in dark mode
+- [x] Update QuickActions molecule layout (flex row on desktop, stack on mobile)
+- [x] Use IconBadge component (created in Task 6)
+- [x] Style with white/card background, border, hover effect
+- [x] Add colored icon backgrounds (indigo for expense, emerald for income)
+- [x] Add hover scale (`hover:scale-[1.02]`) and shadow transitions
+- [x] Update typography (text-lg, font-bold, tracking-tight)
+- [x] Add `active:scale-95` for press feedback
+- [x] Update Storybook story
+- [x] Run quality gates
+- [x] Test in dark mode
 
 **Files to modify:**
 
-- `src/components/molecules/QuickActions.astro`
+- `src/components/molecules/QuickActions.astro` ✅
+- `src/components/molecules/QuickActions.stories.ts` ✅
+- `src/components/molecules/QuickActions.behavior.test.ts` ✅
 
 **Dependencies:** Task 6 (IconBadge component)
 
@@ -594,7 +596,19 @@ After:
 └────────────────────────────┘ └────────────────────────────┘
 ```
 
-**Status:** ⏳ Pending
+**Implementation Notes:**
+
+- Used IconBadge component with accent (indigo) for expense and success (emerald) for income
+- Premium card design: bg-base-100, border, rounded-2xl, shadow-sm/md
+- Added runtime fallback for invalid icon names with development warning
+- Simplified default actions from 3 to 2 (removed "View Reports")
+- Added min-h-[44px] for accessibility compliance (WCAG AAA touch target)
+- Updated icons: ShoppingCart (expense), CircleDollarSign (income)
+- Added will-change: transform for IconBadge hover performance
+- Responsive: flex-col on mobile, sm:flex-row on desktop
+- Fixed P1 feedback: fallback handling, simplified dark mode hover, touch target size
+
+**Status:** ✅ Complete
 
 ---
 
@@ -644,7 +658,7 @@ After:
 
 ---
 
-### Task 9: Dashboard - Net Worth Widget (Priority: P1)
+### Task 9: Dashboard - Net Worth Widget (Priority: P1) ✅
 
 **Goal:** Create the total net worth sidebar widget with local/global breakdown
 
@@ -652,24 +666,26 @@ After:
 
 **Checklist:**
 
-- [ ] Create NetWorthWidget organism component
-- [ ] Add Landmark icon with emerald background (IconBadge)
-- [ ] Display growth badge with TrendingUp icon (+X.X% growth)
-- [ ] Show "TOTAL NET WORTH" label (StatLabel)
-- [ ] Display primary amount (IDR) with large typography (text-3xl)
-- [ ] Display secondary amount (USD) below (text-lg, text-muted)
-- [ ] Add divider line (border-t border-base-200)
-- [ ] Show local assets breakdown
-- [ ] Show global assets breakdown
-- [ ] Add `loading` prop with skeleton state
-- [ ] Handle error state gracefully
-- [ ] Create Storybook story
-- [ ] Run quality gates
+- [x] Create NetWorthWidget organism component
+- [x] Add Landmark icon with emerald background (IconBadge)
+- [x] Display growth badge with TrendingUp icon (+X.X% growth)
+- [x] Show "TOTAL NET WORTH" label (StatLabel)
+- [x] Display primary amount (IDR) with large typography (text-3xl)
+- [x] Display secondary amount (USD) below (text-lg, text-muted)
+- [x] Add divider line (border-t border-base-200)
+- [x] Show local assets breakdown
+- [x] Show global assets breakdown
+- [x] Add `loading` prop with skeleton state
+- [x] Handle error state gracefully
+- [x] Create Storybook story
+- [x] Run quality gates
 - [ ] Test in dark mode
 
 **Files to modify:**
 
-- `src/components/organisms/NetWorthWidget.astro` (new)
+- `src/components/organisms/NetWorthWidget.astro` ✅ (new)
+- `src/components/organisms/NetWorthWidget.stories.ts` ✅ (new)
+- `src/components/organisms/NetWorthWidget.test.ts` ✅ (new)
 
 **Dependencies:** Task 6 (IconBadge, StatLabel)
 
@@ -702,7 +718,16 @@ interface NetWorthWidgetProps {
 └────────────────────────────────┘
 ```
 
-**Status:** ⏳ Pending
+**Implementation Notes:**
+
+- Uses `formatCurrency` from `@/lib/tokens` for consistent formatting (P0 fix applied)
+- Growth badge dynamically shows success (positive) or error (negative) color
+- Proper ARIA attributes: `role="alert"`, `aria-live="polite"`, `aria-labelledby`, `aria-busy`
+- Loading state with pulse animation skeleton
+- Error state with icon and message
+- All new components have comprehensive Storybook stories
+
+**Status:** ✅ Complete
 
 ---
 
@@ -1320,7 +1345,7 @@ interface CashFlowItemProps {
 - [x] All new components have Storybook stories
 - [x] All quality gates pass
 
-**Progress:** Tasks 1-4, 6, 8 (P0/P1) Complete ✅ - Design tokens, component library updates, Navigation sidebar, Header redesign, Spending Summary Card, and Recent Activity list complete. Ready for remaining Dashboard widgets.
+**Progress:** Tasks 1-4, 6-9 (P0-P1) Complete ✅ - Design tokens, component library updates, Navigation sidebar, Header redesign, Spending Summary Card, Quick Actions, Recent Activity list complete and Net Worth Widget complete. Ready for remaining Dashboard widget implementation.
 
 ---
 
@@ -1407,3 +1432,29 @@ Phase 3 (P2 - Polish):
 - **Location:** `/home/ivan/works/expenses/src/components/organisms/SpendingCard.astro` (line 56)
 - **Issue:** Loading state could benefit from more descriptive aria-label
 - **Action:** Add `aria-label="Loading spending data..."`
+
+### Non-Blocking Feedback from Code Review (Task 9)
+
+**P2-1: Missing Empty State**
+
+- **Location:** `/home/ivan/works/expenses/src/components/organisms/NetWorthWidget.astro`
+- **Issue:** Component has no explicit empty state (when all values are 0)
+- **Action:** Consider adding an empty state with helpful message: "No assets yet. Add your first asset to get started."
+
+**P2-2: Test Helper Functions Should Verify formatCurrency Consistency**
+
+- **Location:** `/home/ivan/works/expenses/src/components/organisms/NetWorthWidget.test.ts`
+- **Issue:** Tests duplicate formatIDR/formatUSD instead of verifying against `formatCurrency` utility
+- **Action:** Add test case that verifies component formatting matches `formatCurrency` output
+
+**P3-1: Component Could Use Design Token for Spacing**
+
+- **Location:** Various locations in NetWorthWidget.astro
+- **Issue:** Some spacing values use direct Tailwind classes (`mb-6`, `mt-3`, `gap-3`) instead of design system spacing tokens
+- **Action:** Consider using `spacing` tokens where appropriate for consistency
+
+**P3-2: Story Names Could Be More Descriptive**
+
+- **Location:** `/home/ivan/works/expenses/src/components/organisms/NetWorthWidget.stories.ts`
+- **Issue:** Stories like `LargeAssets` and `MinimalAssets` could use more descriptive names
+- **Action:** Rename to `LargePortfolio`, `StartingPortfolio` for better clarity

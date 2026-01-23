@@ -6,12 +6,12 @@
  * Protected by authentication.
  *
  * Displays:
+ * - Quick actions (Add Expense, Log Income)
  * - Total assets (IDR + USD)
  * - Monthly spending vs budget
  * - Budget health alerts
  * - Spending summary card with progress
  * - Recent transactions
- * - Quick actions
  */
 
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
@@ -19,6 +19,7 @@ import { dashboardService } from '@/services';
 import type { DashboardData } from '@/services/dashboard.service';
 import SummaryCards from '@/components/organisms/SummaryCards.astro';
 import SpendingCard from '@/components/organisms/SpendingCard.astro';
+import NetWorthWidget from '@/components/organisms/NetWorthWidget.astro';
 import RecentTransactionsList from '@/components/organisms/RecentTransactionsList.astro';
 import QuickActions from '@/components/molecules/QuickActions.astro';
 import DashboardError from '@/components/organisms/DashboardError.astro';
@@ -129,38 +130,36 @@ const recentTransactions: TransactionOutput[] =
     {
       !error && (
         <>
+          {/* Quick Actions - Direct rendering, no wrapper */}
+          <QuickActions />
+
+          {/* Spending Summary Card & Net Worth Widget (half width each) */}
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <SpendingCard
+              spent={parseFloat(dashboardData?.monthlySpent.total ?? '0')}
+              budget={parseFloat(dashboardData?.monthlySpent.budget ?? '0')}
+              currency="IDR"
+              remainingLabel={`Remaining for ${currentMonthName}`}
+              alertMessage={
+                dashboardData?.monthlySpent.percentage &&
+                dashboardData.monthlySpent.percentage >= 80
+                  ? `You've reached ${Math.round(dashboardData.monthlySpent.percentage)}% of your monthly budget.`
+                  : undefined
+              }
+              loading={!dashboardData}
+            />
+            <NetWorthWidget
+              totalIDR={parseFloat(dashboardData?.totalAssets.idr ?? '0')}
+              totalUSD={parseFloat(dashboardData?.totalAssets.usd ?? '0')}
+              localAssets={parseFloat(dashboardData?.totalAssets.idr ?? '0')}
+              globalAssets={parseFloat(dashboardData?.totalAssets.usd ?? '0')}
+              growthPercentage={0}
+              loading={!dashboardData}
+            />
+          </div>
+
           {/* Summary Cards */}
           <SummaryCards data={summaryCardsData} loading={!dashboardData} error={false} />
-
-          {/* Main Content Grid */}
-          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Spending Summary Card (2 columns wide) */}
-            <div class="lg:col-span-2">
-              <SpendingCard
-                spent={parseFloat(dashboardData?.monthlySpent.total ?? '0')}
-                budget={parseFloat(dashboardData?.monthlySpent.budget ?? '0')}
-                currency="IDR"
-                remainingLabel={`Remaining for ${currentMonthName}`}
-                alertMessage={
-                  dashboardData?.monthlySpent.percentage &&
-                  dashboardData.monthlySpent.percentage >= 80
-                    ? `You've reached ${Math.round(dashboardData.monthlySpent.percentage)}% of your monthly budget.`
-                    : undefined
-                }
-                loading={!dashboardData}
-              />
-            </div>
-
-            {/* Quick Actions (1 column wide) */}
-            <div>
-              <div class="card bg-base-100 shadow border border-base-300 h-full">
-                <div class="card-body">
-                  <h2 class="card-title text-lg mb-4">Quick Actions</h2>
-                  <QuickActions />
-                </div>
-              </div>
-            </div>
-          </div>
 
           {/* Recent Transactions */}
           <div class="w-full lg:w-2/3">

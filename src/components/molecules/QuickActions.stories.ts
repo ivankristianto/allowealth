@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/html';
 import { IconRenderers } from '../../../.storybook/lucide-icons';
 
-const { Minus, Plus, ChartPie } = IconRenderers;
+const { ShoppingCart, CircleDollarSign, Plus } = IconRenderers;
 
 const meta: Meta = {
   title: 'Molecules/QuickActions',
@@ -19,39 +19,38 @@ export default meta;
 interface QuickAction {
   label: string;
   url: string;
-  icon: string;
-  variant: 'primary' | 'secondary' | 'outline';
+  icon: 'shopping-cart' | 'circle-dollar' | 'plus';
+  variant: 'expense' | 'income';
   ariaLabel: string;
 }
 
+// Default quick actions for dashboard
 const defaultActions: QuickAction[] = [
   {
     label: 'Add Expense',
     url: '/transactions/add?type=expense',
-    icon: 'minus',
-    variant: 'primary',
+    icon: 'shopping-cart',
+    variant: 'expense',
     ariaLabel: 'Add new expense transaction',
   },
   {
-    label: 'Add Income',
+    label: 'Log Income',
     url: '/transactions/add?type=income',
-    icon: 'plus',
-    variant: 'secondary',
+    icon: 'circle-dollar',
+    variant: 'income',
     ariaLabel: 'Add new income transaction',
-  },
-  {
-    label: 'View Reports',
-    url: '/reports',
-    icon: 'search',
-    variant: 'outline',
-    ariaLabel: 'View financial reports',
   },
 ];
 
-const iconMap = {
-  minus: Minus,
+const iconComponents = {
+  'shopping-cart': ShoppingCart,
+  'circle-dollar': CircleDollarSign,
   plus: Plus,
-  search: ChartPie,
+};
+
+const variantColors: Record<string, 'accent' | 'success'> = {
+  expense: 'accent',
+  income: 'success',
 };
 
 const createQuickActions = (args: { actions?: QuickAction[] }): HTMLElement => {
@@ -61,33 +60,42 @@ const createQuickActions = (args: { actions?: QuickAction[] }): HTMLElement => {
   container.className = 'p-4 bg-base-100';
 
   const wrapper = document.createElement('div');
-  wrapper.className = 'flex flex-col sm:flex-row gap-3';
+  wrapper.className = 'flex flex-col sm:flex-row gap-5';
+  wrapper.setAttribute('role', 'group');
+  wrapper.setAttribute('aria-label', 'Quick actions');
 
   actions.forEach((action) => {
     const button = document.createElement('a');
     button.href = action.url;
-    button.className = 'btn gap-2 flex-1 justify-center';
+    button.className =
+      'flex-1 px-8 py-7 bg-base-100 text-base-content font-bold rounded-2xl border border-base-300 hover:bg-base-200 transition-all shadow-sm hover:shadow-md flex items-center justify-center gap-5 active:scale-95 hover:scale-[1.02] group relative overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2';
     button.setAttribute('aria-label', action.ariaLabel);
 
-    // Updated to use design system button classes
-    if (action.variant === 'primary') {
-      button.classList.add('btn-accent');
-    } else if (action.variant === 'secondary') {
-      button.classList.add('bg-base-200', 'text-base-content', 'hover:bg-base-300');
-    } else {
-      button.classList.add('btn-outline');
-    }
+    // Create icon badge container
+    const badgeVariant = variantColors[action.variant];
+    const badgeContainer = document.createElement('div');
+    badgeContainer.className = `p-4 rounded-2xl shrink-0 group-hover:scale-110 transition-transform`;
 
-    const IconComponent = iconMap[action.icon as keyof typeof iconMap] || Plus;
+    // Apply color classes based on variant
+    if (badgeVariant === 'accent') {
+      badgeContainer.classList.add('bg-accent/10', 'text-accent');
+    } else {
+      badgeContainer.classList.add('bg-success/10', 'text-success');
+    }
+    badgeContainer.classList.add('shadow-sm');
+
+    const IconComponent = iconComponents[action.icon];
     const iconEl = IconComponent.render({
-      size: 20,
+      size: 24,
       class: 'stroke-current',
       'aria-hidden': 'true',
     });
-    button.appendChild(iconEl);
+    badgeContainer.appendChild(iconEl);
+    button.appendChild(badgeContainer);
 
     const span = document.createElement('span');
     span.textContent = action.label;
+    span.className = 'text-lg tracking-tight font-bold leading-none';
     button.appendChild(span);
 
     wrapper.appendChild(button);
@@ -97,7 +105,7 @@ const createQuickActions = (args: { actions?: QuickAction[] }): HTMLElement => {
   return container;
 };
 
-// Default state with primary (accent), secondary (base-200), and outline buttons
+// Default state with Add Expense (indigo) and Log Income (emerald)
 export const Default: StoryObj = {
   args: {
     actions: defaultActions,
@@ -107,43 +115,13 @@ export const Default: StoryObj = {
     docs: {
       description: {
         story:
-          'Default quick actions with primary accent button (Add Expense), secondary base-200 button (Add Income), and outline button (View Reports).',
+          'Default premium quick actions with Add Expense (indigo/accent theme) and Log Income (emerald/success theme). Features include IconBadge components, hover scale effects, and active state press feedback.',
       },
     },
   },
 };
 
-// Custom actions
-export const CustomActions: StoryObj = {
-  args: {
-    actions: [
-      {
-        label: 'Add Asset',
-        url: '/assets/add',
-        icon: 'plus',
-        variant: 'primary',
-        ariaLabel: 'Add new asset',
-      },
-      {
-        label: 'Import CSV',
-        url: '/transactions/import',
-        icon: 'search',
-        variant: 'secondary',
-        ariaLabel: 'Import transactions from CSV',
-      },
-    ],
-  },
-  render: (args) => createQuickActions(args),
-  parameters: {
-    docs: {
-      description: {
-        story: 'Custom quick actions with different labels and destinations.',
-      },
-    },
-  },
-};
-
-// Single action
+// Single action for full-width use
 export const SingleAction: StoryObj = {
   args: {
     actions: [
@@ -151,7 +129,7 @@ export const SingleAction: StoryObj = {
         label: 'Add Transaction',
         url: '/transactions/add',
         icon: 'plus',
-        variant: 'primary',
+        variant: 'expense',
         ariaLabel: 'Add new transaction',
       },
     ],
@@ -160,36 +138,30 @@ export const SingleAction: StoryObj = {
   parameters: {
     docs: {
       description: {
-        story: 'Single action button with full width.',
+        story:
+          'Single action button with full width. Useful for pages where only one primary action is needed.',
       },
     },
   },
 };
 
-// All outline
-export const AllOutline: StoryObj = {
+// Custom actions example
+export const CustomActions: StoryObj = {
   args: {
     actions: [
       {
-        label: 'Add Expense',
-        url: '/transactions/add?type=expense',
-        icon: 'minus',
-        variant: 'outline',
-        ariaLabel: 'Add expense transaction',
-      },
-      {
-        label: 'Add Income',
-        url: '/transactions/add?type=income',
+        label: 'Add Asset',
+        url: '/assets/add',
         icon: 'plus',
-        variant: 'outline',
-        ariaLabel: 'Add income transaction',
+        variant: 'income',
+        ariaLabel: 'Add new asset',
       },
       {
-        label: 'View Reports',
-        url: '/reports',
-        icon: 'search',
-        variant: 'outline',
-        ariaLabel: 'View financial reports',
+        label: 'Record Payment',
+        url: '/transactions/add?type=payment',
+        icon: 'circle-dollar',
+        variant: 'expense',
+        ariaLabel: 'Record a payment',
       },
     ],
   },
@@ -197,38 +169,24 @@ export const AllOutline: StoryObj = {
   parameters: {
     docs: {
       description: {
-        story: 'All quick actions with outline button variant for subtle styling.',
+        story: 'Custom quick actions with different labels, icons, and destinations.',
       },
     },
   },
 };
 
-// All states together
+// All variants together for visual comparison
 export const AllVariants: StoryObj = {
   render: () => {
     const container = document.createElement('div');
-    container.className = 'space-y-8';
+    container.className = 'space-y-12';
 
-    const states: { title: string; actions: QuickAction[] }[] = [
-      { title: 'Default (Mixed)', actions: defaultActions },
+    const states: { title: string; actions: QuickAction[]; description: string }[] = [
       {
-        title: 'Custom Actions',
-        actions: [
-          {
-            label: 'Add Asset',
-            url: '/assets/add',
-            icon: 'plus',
-            variant: 'primary',
-            ariaLabel: 'Add new asset',
-          },
-          {
-            label: 'Import CSV',
-            url: '/transactions/import',
-            icon: 'search',
-            variant: 'secondary',
-            ariaLabel: 'Import transactions from CSV',
-          },
-        ],
+        title: 'Default (Dashboard)',
+        actions: defaultActions,
+        description:
+          'Standard dashboard quick actions with Add Expense (indigo) and Log Income (emerald).',
       },
       {
         title: 'Single Action',
@@ -237,46 +195,55 @@ export const AllVariants: StoryObj = {
             label: 'Add Transaction',
             url: '/transactions/add',
             icon: 'plus',
-            variant: 'primary',
+            variant: 'expense',
             ariaLabel: 'Add new transaction',
           },
         ],
+        description: 'Single action button for focused use cases.',
       },
       {
-        title: 'All Outline',
+        title: 'Custom Actions',
         actions: [
           {
-            label: 'Add Expense',
-            url: '/transactions/add?type=expense',
-            icon: 'minus',
-            variant: 'outline',
-            ariaLabel: 'Add expense transaction',
-          },
-          {
-            label: 'Add Income',
-            url: '/transactions/add?type=income',
+            label: 'Add Asset',
+            url: '/assets/add',
             icon: 'plus',
-            variant: 'outline',
-            ariaLabel: 'Add income transaction',
+            variant: 'income',
+            ariaLabel: 'Add new asset',
           },
           {
-            label: 'View Reports',
-            url: '/reports',
-            icon: 'search',
-            variant: 'outline',
-            ariaLabel: 'View financial reports',
+            label: 'Record Payment',
+            url: '/transactions/add?type=payment',
+            icon: 'circle-dollar',
+            variant: 'expense',
+            ariaLabel: 'Record a payment',
           },
         ],
+        description: 'Custom quick actions with different icons and destinations.',
       },
     ];
 
     states.forEach((state) => {
       const section = document.createElement('section');
-      section.innerHTML = `<h3 class="text-lg font-semibold mb-4 text-base-content">${state.title}</h3>`;
+      section.className = 'space-y-4';
+
+      const header = document.createElement('div');
+      header.innerHTML = `
+        <h3 class="text-xl font-bold text-base-content tracking-tight">${state.title}</h3>
+        <p class="text-sm text-base-content/70 mt-1">${state.description}</p>
+      `;
+      section.appendChild(header);
       section.appendChild(createQuickActions({ actions: state.actions }));
       container.appendChild(section);
     });
 
     return container;
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: 'All quick action variants together for visual comparison and testing.',
+      },
+    },
   },
 };
