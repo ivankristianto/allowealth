@@ -6,7 +6,7 @@
  * Used in the notification dropdown panel.
  */
 
-import { TriangleAlert, DollarSign, AlertCircle, Info } from '@lucide/astro';
+import { TriangleAlert, DollarSign, CircleAlert, Info } from '@lucide/astro';
 import type { Notification } from '@/lib/stores/notificationStore';
 
 export interface Props {
@@ -19,7 +19,7 @@ const { notification } = Astro.props;
 const iconMap = {
   warning: TriangleAlert,
   success: DollarSign,
-  alert: AlertCircle,
+  alert: CircleAlert,
   info: Info,
 };
 
@@ -40,7 +40,7 @@ const iconBgClass = bgMap[notification.type];
   class="p-5 hover:bg-base-200/50 dark:hover:bg-base-200/20 transition-colors cursor-pointer flex gap-5"
 >
   <div
-    class="w-12 h-12 shrink-0 rounded-2xl flex items-center justify-center {iconBgClass} shadow-sm"
+    class={`w-12 h-12 shrink-0 rounded-2xl flex items-center justify-center shadow-sm ${iconBgClass}`}
   >
     <IconComponent size={24} class="shrink-0" aria-hidden="true" />
   </div>

@@ -2,7 +2,20 @@ import type { Meta, StoryObj } from '@storybook/html';
 import type { TransactionOutput } from '@/lib/types/transaction';
 import { IconRenderers } from '../../../.storybook/lucide-icons';
 
-const { Pencil, Trash2 } = IconRenderers;
+const {
+  Banknote,
+  Briefcase,
+  Car,
+  CreditCard,
+  Film,
+  House,
+  Pencil,
+  ShoppingBasket,
+  Trash2,
+  UtensilsCrossed,
+  Wallet,
+  Zap,
+} = IconRenderers;
 
 const meta: Meta = {
   title: 'Molecules/TransactionRow',
@@ -61,6 +74,7 @@ const createTransactionRow = (args: {
   const amount = parseFloat(transaction.amount) || 0;
   const isExpense = transaction.type === 'expense';
   const date = new Date(transaction.transaction_date);
+  const primaryText = transaction.description?.trim() || transaction.category.name;
 
   // Format date
   const formattedDate = date.toLocaleDateString('en-US', {
@@ -82,9 +96,79 @@ const createTransactionRow = (args: {
     return formatted;
   };
 
+  const iconVariants: Record<string, { bg: string; text: string }> = {
+    primary: { bg: 'bg-primary/10', text: 'text-primary' },
+    accent: { bg: 'bg-accent/10', text: 'text-accent' },
+    success: { bg: 'bg-success/10', text: 'text-success' },
+    warning: { bg: 'bg-warning/10', text: 'text-warning' },
+    error: { bg: 'bg-error/10', text: 'text-error' },
+    info: { bg: 'bg-info/10', text: 'text-info' },
+    neutral: { bg: 'bg-base-300', text: 'text-base-content' },
+  };
+
+  const getCategoryMeta = (name: string, type: TransactionOutput['type']) => {
+    const normalized = name.toLowerCase();
+
+    if (type === 'income') {
+      return { icon: Banknote, variant: 'success' };
+    }
+
+    if (
+      normalized.includes('grocery') ||
+      normalized.includes('market') ||
+      normalized.includes('food')
+    ) {
+      return { icon: ShoppingBasket, variant: 'warning' };
+    }
+    if (
+      normalized.includes('utility') ||
+      normalized.includes('electric') ||
+      normalized.includes('water') ||
+      normalized.includes('gas')
+    ) {
+      return { icon: Zap, variant: 'info' };
+    }
+    if (
+      normalized.includes('entertainment') ||
+      normalized.includes('movie') ||
+      normalized.includes('netflix')
+    ) {
+      return { icon: Film, variant: 'error' };
+    }
+    if (
+      normalized.includes('transport') ||
+      normalized.includes('uber') ||
+      normalized.includes('taxi') ||
+      normalized.includes('ride')
+    ) {
+      return { icon: Car, variant: 'accent' };
+    }
+    if (normalized.includes('dining') || normalized.includes('restaurant')) {
+      return { icon: UtensilsCrossed, variant: 'warning' };
+    }
+    if (
+      normalized.includes('housing') ||
+      normalized.includes('rent') ||
+      normalized.includes('mortgage')
+    ) {
+      return { icon: House, variant: 'primary' };
+    }
+    if (normalized.includes('freelance') || normalized.includes('contract')) {
+      return { icon: Briefcase, variant: 'info' };
+    }
+
+    return { icon: Wallet, variant: type === 'expense' ? 'error' : 'success' };
+  };
+
+  const categoryMeta = getCategoryMeta(transaction.category.name, transaction.type);
+  const iconStyle = iconVariants[categoryMeta.variant];
+
   const wrapper = document.createElement('div');
-  // Updated to use design system hover color
-  wrapper.className = 'flex items-center gap-4 p-4 hover:bg-base-100 rounded-lg transition-colors';
+  wrapper.className = [
+    'group flex items-center gap-5 p-5 transition-all cursor-pointer border-l-4 border-transparent',
+    isExpense ? 'hover:border-error/30' : 'hover:border-success/30',
+    'hover:bg-base-200/40',
+  ].join(' ');
 
   // Date
   const dateDiv = document.createElement('div');
@@ -94,24 +178,43 @@ const createTransactionRow = (args: {
 
   // Category & Description
   const infoDiv = document.createElement('div');
-  infoDiv.className = 'flex-1 min-w-0';
-  // Updated to use design system semantic color for secondary text
-  infoDiv.innerHTML = `
-    <div class="font-medium truncate">${transaction.category.name}</div>
-    ${transaction.description ? `<div class="text-sm text-base-content/60 truncate">${transaction.description}</div>` : ''}
+  infoDiv.className = 'flex-1 min-w-0 flex items-center gap-4';
+
+  const iconBadge = document.createElement('div');
+  iconBadge.className = `rounded-2xl p-3 shadow-sm ${iconStyle.bg} ${iconStyle.text} transition-transform group-hover:rotate-2`;
+  iconBadge.appendChild(
+    categoryMeta.icon.render({ size: 18, class: 'stroke-current' }, { 'aria-hidden': 'true' })
+  );
+  infoDiv.appendChild(iconBadge);
+
+  const textGroup = document.createElement('div');
+  textGroup.className = 'min-w-0';
+  textGroup.innerHTML = `
+    <div class="font-bold tracking-tight truncate text-base leading-none">${primaryText}</div>
+    <div class="mt-2 flex flex-wrap items-center gap-2 leading-none">
+      <span class="text-[10px] font-bold tracking-widest uppercase text-base-content/60 bg-base-200 px-2 py-0.5 rounded">
+        ${transaction.category.name}
+      </span>
+    </div>
   `;
+  infoDiv.appendChild(textGroup);
   wrapper.appendChild(infoDiv);
 
   // Payment Method
   const paymentDiv = document.createElement('div');
   paymentDiv.className = 'flex-shrink-0 hidden sm:block';
-  paymentDiv.innerHTML = `<span class="badge badge-neutral badge-sm">${transaction.payment_method.name}</span>`;
+  paymentDiv.className +=
+    ' text-[10px] uppercase tracking-widest text-base-content/60 flex items-center gap-1.5';
+  paymentDiv.appendChild(
+    CreditCard.render({ size: 12, class: 'stroke-current' }, { 'aria-hidden': 'true' })
+  );
+  paymentDiv.appendChild(document.createTextNode(transaction.payment_method.name));
   wrapper.appendChild(paymentDiv);
 
   // Amount
   const amountDiv = document.createElement('div');
-  amountDiv.className = 'flex-shrink-0 text-right';
-  amountDiv.innerHTML = `<span class="${isExpense ? 'text-error' : 'text-success'} font-medium">${formatCurrencyValue(amount, transaction.currency, true)}</span>`;
+  amountDiv.className = 'flex-shrink-0 text-right min-w-[120px]';
+  amountDiv.innerHTML = `<span class="${isExpense ? 'text-error' : 'text-success'} font-bold tracking-tight">${formatCurrencyValue(amount, transaction.currency, true)}</span>`;
   wrapper.appendChild(amountDiv);
 
   // Actions

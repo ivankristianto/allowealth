@@ -163,11 +163,13 @@ const recentTransactions: TransactionOutput[] =
           </div>
 
           {/* Recent Transactions */}
-          <RecentTransactionsList
-            transactions={recentTransactions}
-            loading={!dashboardData}
-            viewAllUrl="/transactions"
-          />
+          <div class="w-full lg:w-2/3">
+            <RecentTransactionsList
+              transactions={recentTransactions}
+              loading={!dashboardData}
+              viewAllUrl="/transactions"
+            />
+          </div>
         </>
       )
     }
