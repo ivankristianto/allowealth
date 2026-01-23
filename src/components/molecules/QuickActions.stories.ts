@@ -69,17 +69,18 @@ const createQuickActions = (args: { actions?: QuickAction[] }): HTMLElement => {
     button.className = 'btn gap-2 flex-1 justify-center';
     button.setAttribute('aria-label', action.ariaLabel);
 
+    // Updated to use design system button classes
     if (action.variant === 'primary') {
-      button.classList.add('btn-primary');
+      button.classList.add('btn-accent');
     } else if (action.variant === 'secondary') {
-      button.classList.add('bg-neutral-200', 'text-neutral-800', 'hover:bg-neutral-300');
+      button.classList.add('bg-base-200', 'text-base-content', 'hover:bg-base-300');
     } else {
       button.classList.add('btn-outline');
     }
 
     const IconComponent = iconMap[action.icon as keyof typeof iconMap] || Plus;
     const iconEl = IconComponent.render({
-      size: 16,
+      size: 20,
       class: 'stroke-current',
       'aria-hidden': 'true',
     });
@@ -96,12 +97,20 @@ const createQuickActions = (args: { actions?: QuickAction[] }): HTMLElement => {
   return container;
 };
 
-// Default state
+// Default state with primary (accent), secondary (base-200), and outline buttons
 export const Default: StoryObj = {
   args: {
     actions: defaultActions,
   },
   render: (args) => createQuickActions(args),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Default quick actions with primary accent button (Add Expense), secondary base-200 button (Add Income), and outline button (View Reports).',
+      },
+    },
+  },
 };
 
 // Custom actions
@@ -125,6 +134,13 @@ export const CustomActions: StoryObj = {
     ],
   },
   render: (args) => createQuickActions(args),
+  parameters: {
+    docs: {
+      description: {
+        story: 'Custom quick actions with different labels and destinations.',
+      },
+    },
+  },
 };
 
 // Single action
@@ -141,6 +157,13 @@ export const SingleAction: StoryObj = {
     ],
   },
   render: (args) => createQuickActions(args),
+  parameters: {
+    docs: {
+      description: {
+        story: 'Single action button with full width.',
+      },
+    },
+  },
 };
 
 // All outline
@@ -171,6 +194,13 @@ export const AllOutline: StoryObj = {
     ],
   },
   render: (args) => createQuickActions(args),
+  parameters: {
+    docs: {
+      description: {
+        story: 'All quick actions with outline button variant for subtle styling.',
+      },
+    },
+  },
 };
 
 // All states together
@@ -242,7 +272,7 @@ export const AllVariants: StoryObj = {
 
     states.forEach((state) => {
       const section = document.createElement('section');
-      section.innerHTML = `<h3 class="text-lg font-semibold mb-4">${state.title}</h3>`;
+      section.innerHTML = `<h3 class="text-lg font-semibold mb-4 text-base-content">${state.title}</h3>`;
       section.appendChild(createQuickActions({ actions: state.actions }));
       container.appendChild(section);
     });

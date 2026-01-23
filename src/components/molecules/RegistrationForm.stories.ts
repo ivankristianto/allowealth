@@ -86,10 +86,10 @@ const createRegistrationForm = (args: {
   );
   form.appendChild(confirmControl);
 
-  // Submit button
+  // Submit button - updated to use btn-accent
   const submitButton = document.createElement('button');
   submitButton.type = 'submit';
-  submitButton.className = 'btn btn-primary w-full';
+  submitButton.className = 'btn btn-accent w-full';
   submitButton.setAttribute('data-submit-button', '');
 
   const buttonText = document.createElement('span');

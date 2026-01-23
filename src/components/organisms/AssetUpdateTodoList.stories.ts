@@ -4,10 +4,9 @@ import {
   mockAssetUpdateTodosEmpty,
   mockAssetUpdateTodosAllUpdated,
 } from '@/services/__tests__/mocks/dashboard-mocks';
-import { IconStrings } from '../../../.storybook/lucide-icons';
+import { IconRenderers } from '../../../.storybook/lucide-icons';
 
-// Use IconStrings for template literal usage
-const { Calendar, Pencil, X, RefreshCw, Check } = IconStrings;
+const { Calendar, Pencil, X, RefreshCw, Check } = IconRenderers;
 
 const meta: Meta = {
   title: 'Organisms/AssetUpdateTodoList',
@@ -26,19 +25,6 @@ const meta: Meta = {
 
 export default meta;
 
-const getPriorityIcon = (priority: string): string => {
-  switch (priority) {
-    case 'high':
-      return '🔴';
-    case 'medium':
-      return '🟡';
-    case 'low':
-      return '🟢';
-    default:
-      return '✅';
-  }
-};
-
 const getPriorityBadge = (priority: string): string => {
   switch (priority) {
     case 'high':
@@ -49,6 +35,20 @@ const getPriorityBadge = (priority: string): string => {
       return 'badge-success';
     default:
       return 'badge-neutral';
+  }
+};
+
+const getPriorityBackground = (priority: string): string => {
+  // Updated to use DaisyUI semantic colors with opacity variants
+  switch (priority) {
+    case 'high':
+      return 'bg-error/10 border-error/20 hover:bg-error/20';
+    case 'medium':
+      return 'bg-warning/10 border-warning/20 hover:bg-warning/20';
+    case 'low':
+      return 'bg-success/10 border-success/20 hover:bg-success/20';
+    default:
+      return 'bg-base-200 border-base-300 hover:bg-base-100';
   }
 };
 
@@ -64,6 +64,18 @@ const formatCurrency = (amount: number, currency: 'IDR' | 'USD'): string => {
     minimumFractionDigits: config.decimals,
     maximumFractionDigits: config.decimals,
   }).format(amount);
+};
+
+const getAssetTypeLabel = (type: string): string => {
+  const labels: Record<string, string> = {
+    bank_account: 'Bank Account',
+    mutual_fund: 'Mutual Fund',
+    bond: 'Bond',
+    crypto: 'Crypto',
+    stock: 'Stock',
+    other: 'Other',
+  };
+  return labels[type] || type;
 };
 
 const createAssetUpdateTodoList = (args: { assets?: object[]; loading?: boolean }): HTMLElement => {
@@ -83,7 +95,7 @@ const createAssetUpdateTodoList = (args: { assets?: object[]; loading?: boolean 
     { 'aria-hidden': 'true' }
   );
   header.innerHTML = `
-    <h2 class="text-lg font-semibold flex items-center gap-2">
+    <h2 class="text-lg font-semibold flex items-center gap-2 text-base-content">
       ${calendarIcon}
       Asset Updates Needed
     </h2>
@@ -95,78 +107,88 @@ const createAssetUpdateTodoList = (args: { assets?: object[]; loading?: boolean 
     // Loading skeleton
     const skeleton = document.createElement('div');
     skeleton.className = 'space-y-3';
+    skeleton.setAttribute('role', 'status');
+    skeleton.setAttribute('aria-live', 'polite');
+    skeleton.setAttribute('aria-label', 'Loading asset updates');
     for (let i = 0; i < 3; i++) {
       const row = document.createElement('div');
       row.className = 'flex items-center gap-4 p-3 bg-base-200 rounded-lg animate-pulse';
       row.innerHTML = `
-        <div class="w-8 h-8 bg-neutral-300 rounded-full"></div>
+        <div class="w-8 h-8 bg-base-300 rounded-full" aria-hidden="true"></div>
         <div class="flex-1 space-y-2">
-          <div class="h-4 bg-neutral-300 rounded w-3/4"></div>
-          <div class="h-3 bg-neutral-300 rounded w-1/2"></div>
+          <div class="h-4 bg-base-300 rounded w-3/4" aria-hidden="true"></div>
+          <div class="h-3 bg-base-300 rounded w-1/2" aria-hidden="true"></div>
         </div>
       `;
       skeleton.appendChild(row);
     }
     card.appendChild(skeleton);
   } else if (assets.length === 0) {
-    // Empty state
+    // Empty state - all assets up to date
     const emptyState = document.createElement('div');
     emptyState.className = 'text-center py-8';
     const checkIcon = Check.render(
-      { size: 48, class: 'stroke-current text-neutral-400' },
+      { size: 48, class: 'stroke-current text-success' },
       { 'aria-hidden': 'true' }
     );
     emptyState.innerHTML = `
       ${checkIcon}
-      <h3 class="text-lg font-semibold mb-2">All assets up to date!</h3>
-      <p class="text-neutral-500">You don't have any assets that need updating right now.</p>
+      <h3 class="text-lg font-semibold mb-2 text-base-content">All assets up to date!</h3>
+      <p class="text-base-content/60">You don't have any assets that need updating right now.</p>
     `;
     card.appendChild(emptyState);
   } else {
     // Asset list
     const list = document.createElement('div');
     list.className = 'space-y-2';
+    list.setAttribute('role', 'list');
+    list.setAttribute('aria-label', 'Assets needing updates');
 
     assets.forEach((asset: any) => {
       const item = document.createElement('div');
-      const bgColor =
-        asset.priority === 'high'
-          ? 'bg-red-50 border-red-200'
-          : asset.priority === 'medium'
-            ? 'bg-amber-50 border-amber-200'
-            : asset.priority === 'low'
-              ? 'bg-emerald-50 border-emerald-200'
-              : 'bg-base-200 border-base-300';
+      const bgColor = getPriorityBackground(asset.priority);
 
-      item.className = `flex items-center gap-4 p-3 rounded-lg border transition-all hover:shadow-sm ${bgColor}`;
+      item.className = `flex items-center gap-4 p-3 rounded-lg border transition-all ${bgColor}`;
 
       const pencilIcon = Pencil.render(
         { size: 16, class: 'stroke-current' },
         { 'aria-hidden': 'true' }
       );
-      const xIcon = X.render({ size: 16, class: 'stroke-current' }, { 'aria-hidden': 'true' });
+      const xIcon = X.render(
+        { size: 16, class: 'stroke-current text-base-content/60' },
+        { 'aria-hidden': 'true' }
+      );
+
+      const priorityLabel =
+        asset.priority === 'high'
+          ? 'High'
+          : asset.priority === 'medium'
+            ? 'Medium'
+            : asset.priority === 'low'
+              ? 'Low'
+              : 'OK';
 
       item.innerHTML = `
-        <div class="flex-shrink-0 text-2xl" aria-label="Priority: ${asset.priority}">
-          ${getPriorityIcon(asset.priority)}
+        <div class="shrink-0" role="status" aria-label="Priority: ${asset.priority}">
+          <span class="badge ${getPriorityBadge(asset.priority)} badge-sm">${priorityLabel}</span>
         </div>
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-2 mb-1">
-            <span class="font-medium truncate">${asset.name}</span>
-            <span class="badge badge-neutral badge-sm outline">${asset.type.replace('_', ' ')}</span>
+            <span class="font-medium truncate text-base-content">${asset.name}</span>
+            <span class="badge badge-neutral badge-sm outline">${getAssetTypeLabel(asset.type)}</span>
           </div>
-          <div class="flex items-center gap-3 text-sm text-neutral-600">
+          <div class="flex items-center gap-3 text-sm text-base-content/60">
             <span class="font-mono font-medium">${formatCurrency(asset.balance, asset.currency)}</span>
-            <span>•</span>
-            <span class="${asset.priority === 'high' ? 'text-red-600 font-medium' : ''}">
+            <span aria-hidden="true">•</span>
+            <span class="${asset.priority === 'high' ? 'text-error font-medium' : ''}">
               ${asset.daysSinceUpdate === 1 ? '1 day ago' : `${asset.daysSinceUpdate} days ago`}
             </span>
           </div>
         </div>
-        <button class="flex-shrink-0 btn btn-ghost btn-sm" aria-label="Update ${asset.name}">
+        <button class="shrink-0 btn btn-ghost btn-sm hover:bg-base-100" aria-label="Update ${asset.name}">
           ${pencilIcon}
         </button>
-        <button class="flex-shrink-0 btn btn-ghost btn-sm text-neutral-400 hover:text-neutral-600" aria-label="Dismiss ${asset.name} reminder">
+        <button class="flex-shrink-0 btn btn-ghost btn-sm text-base-content/60 hover:text-base-content hover:bg-base-100" aria-label="Dismiss ${asset.name} reminder">
           ${xIcon}
         </button>
       `;
@@ -183,7 +205,7 @@ const createAssetUpdateTodoList = (args: { assets?: object[]; loading?: boolean 
       { 'aria-hidden': 'true' }
     );
     updateAllBtn.innerHTML = `
-      <button class="btn btn-primary btn-sm w-full gap-2">
+      <button class="btn btn-accent btn-sm w-full gap-2" aria-label="Update all assets">
         ${refreshCwIcon}
         Update All Assets
       </button>
@@ -202,6 +224,14 @@ export const Default: StoryObj = {
     loading: false,
   },
   render: (args) => createAssetUpdateTodoList(args),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Default state showing assets that need updating. Uses semantic DaisyUI badge colors (error/warning/success) for priority indicators.',
+      },
+    },
+  },
 };
 
 // Empty state - all assets up to date
@@ -211,6 +241,13 @@ export const AllUpdated: StoryObj = {
     loading: false,
   },
   render: (args) => createAssetUpdateTodoList(args),
+  parameters: {
+    docs: {
+      description: {
+        story: 'Empty state when all assets are up to date.',
+      },
+    },
+  },
 };
 
 // Empty state - no assets
@@ -220,6 +257,13 @@ export const Empty: StoryObj = {
     loading: false,
   },
   render: (args) => createAssetUpdateTodoList(args),
+  parameters: {
+    docs: {
+      description: {
+        story: 'Empty state when no assets exist in the system.',
+      },
+    },
+  },
 };
 
 // Loading state
@@ -229,6 +273,13 @@ export const Loading: StoryObj = {
     loading: true,
   },
   render: (args) => createAssetUpdateTodoList(args),
+  parameters: {
+    docs: {
+      description: {
+        story: 'Loading skeleton state while fetching asset data.',
+      },
+    },
+  },
 };
 
 // All states together
@@ -246,7 +297,7 @@ export const AllStates: StoryObj = {
 
     states.forEach((state) => {
       const section = document.createElement('section');
-      section.innerHTML = `<h3 class="text-lg font-semibold mb-4">${state.title}</h3>`;
+      section.innerHTML = `<h3 class="text-lg font-semibold mb-4 text-base-content">${state.title}</h3>`;
       section.appendChild(
         createAssetUpdateTodoList({ assets: state.assets, loading: state.loading })
       );

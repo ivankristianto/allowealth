@@ -958,7 +958,16 @@ bun run typecheck && bun run lint:fix && bun run stylelint:fix && bun run format
 
 ### P3 (Storybook & Visual QA)
 
-- [ ] All modified component stories updated to show new styling
+- [x] All modified component stories updated to show new styling ✅ (2025-01-23)
+  - Updated Footer.stories.ts (text-base-content/60)
+  - Updated QuickActions.stories.ts (btn-accent, bg-base-200)
+  - Updated RegistrationForm.stories.ts (btn-accent)
+  - Updated TransactionRow.stories.ts (hover:bg-base-100, text-base-content/60)
+  - Updated AssetUpdateTodoList.stories.ts (badge-error/warning/success, bg-\*/10)
+  - Updated TransactionList.stories.ts (hover:bg-base-100, text-base-content/60, btn-accent)
+  - Updated TransactionModal.stories.ts (btn-accent)
+  - Updated UserContext.stories.ts (btn-accent)
+  - AuthValidationMessages.stories.ts - already correct (no changes needed)
 - [ ] All stories demonstrate light and dark theme correctly
 - [ ] All stories show component variants and states
 - [ ] Storybook renders without console errors or warnings

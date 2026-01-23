@@ -83,7 +83,8 @@ const createTransactionRow = (args: {
   };
 
   const wrapper = document.createElement('div');
-  wrapper.className = 'flex items-center gap-4 p-4 hover:bg-base-200 rounded-lg transition-colors';
+  // Updated to use design system hover color
+  wrapper.className = 'flex items-center gap-4 p-4 hover:bg-base-100 rounded-lg transition-colors';
 
   // Date
   const dateDiv = document.createElement('div');
@@ -94,9 +95,10 @@ const createTransactionRow = (args: {
   // Category & Description
   const infoDiv = document.createElement('div');
   infoDiv.className = 'flex-1 min-w-0';
+  // Updated to use design system semantic color for secondary text
   infoDiv.innerHTML = `
     <div class="font-medium truncate">${transaction.category.name}</div>
-    ${transaction.description ? `<div class="text-sm text-neutral-500 truncate">${transaction.description}</div>` : ''}
+    ${transaction.description ? `<div class="text-sm text-base-content/60 truncate">${transaction.description}</div>` : ''}
   `;
   wrapper.appendChild(infoDiv);
 

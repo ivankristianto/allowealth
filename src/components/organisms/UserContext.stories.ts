@@ -150,7 +150,7 @@ const createUserContext = (args: UserContextArgs): HTMLElement => {
 
     const signupLink = document.createElement('a');
     signupLink.href = '/register';
-    signupLink.className = 'btn btn-primary btn-sm';
+    signupLink.className = 'btn btn-accent btn-sm';
     signupLink.textContent = 'Sign Up';
     div.appendChild(signupLink);
 

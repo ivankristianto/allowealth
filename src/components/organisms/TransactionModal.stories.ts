@@ -199,9 +199,10 @@ const createTransactionModal = (args: {
   // Form actions
   const actions = document.createElement('div');
   actions.className = 'modal-action';
+  // Updated submit button to use btn-accent
   actions.innerHTML = `
     <a href="#" class="btn btn-ghost" onclick="document.getElementById('${id}').close(); return false;">Cancel</a>
-    <button type="submit" class="btn btn-primary">${method === 'PUT' ? 'Update' : 'Save'} Transaction</button>
+    <button type="submit" class="btn btn-accent">${method === 'PUT' ? 'Update' : 'Save'} Transaction</button>
   `;
 
   form.append(typeGroup, amountGroup, categoryGroup, paymentGroup, dateGroup, descGroup, actions);
@@ -217,9 +218,9 @@ const createTransactionModal = (args: {
   modal.appendChild(backdrop);
   container.appendChild(modal);
 
-  // Add open button for demo
+  // Add open button for demo - updated to use btn-accent
   const openButton = document.createElement('button');
-  openButton.className = 'btn btn-primary mb-4';
+  openButton.className = 'btn btn-accent mb-4';
   openButton.textContent = 'Open Modal';
   openButton.onclick = () => {
     const dialog = container.querySelector('dialog') as HTMLDialogElement;
