@@ -132,6 +132,12 @@
       "wide": "0.025em",
       "wider": "0.05em",
       "widest": "0.1em"
+    },
+    "_premiumLabelStyles": {
+      "textTransform": "uppercase",
+      "letterSpacing": "0.1em",
+      "fontSize": "0.625rem",
+      "_note": "Premium label styles for stat/category badges (10px, uppercase, widest tracking)"
     }
   },
   "spacing": {
@@ -151,7 +157,9 @@
     "9": "2.25rem",
     "10": "2.5rem",
     "12": "3rem",
-    "24": "6rem"
+    "24": "6rem",
+    "cardLg": "2rem",
+    "_note": "cardLg is 2rem (32px) for large card padding matching PoC design"
   },
   "borderRadius": {
     "sm": "0.125rem",
@@ -161,7 +169,8 @@
     "2xl": "1rem",
     "full": "9999px",
     "premium": "0.75rem",
-    "premiumLg": "1.25rem"
+    "premiumLg": "1.25rem",
+    "_note": "Use rounded-card utility class for premiumLg (1.25rem)"
   },
   "shadows": {
     "sm": "0 1px 2px 0 rgba(0, 0, 0, 0.05)",
@@ -171,7 +180,8 @@
     "xl": "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
     "2xl": "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
     "accentGlow": "0 10px 15px -3px rgba(99, 102, 241, 0.2)",
-    "accentGlowLg": "0 25px 50px -12px rgba(99, 102, 241, 0.3)"
+    "accentGlowLg": "0 25px 50px -12px rgba(99, 102, 241, 0.3)",
+    "premiumLg": "0 20px 25px -5px rgba(0, 0, 0, 0.1)"
   },
   "effects": {
     "blur": {

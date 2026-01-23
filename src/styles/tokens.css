@@ -136,6 +136,7 @@
   --tracking-normal: 0;
   --tracking-wide: 0.025em;
   --tracking-wider: 0.05em;
+  --tracking-widest: 0.1em;
 
   /* ========================================
    * SPACING (Tailwind scale: 4px base)
@@ -167,6 +168,7 @@
 
   /* Common spacing presets */
   --spacing-card: var(--spacing-6); /* 24px - card padding */
+  --spacing-card-lg: var(--spacing-8); /* 32px - large card padding (PoC) */
   --spacing-section: var(--spacing-8); /* 32px - section gaps */
   --spacing-form: var(--spacing-4); /* 16px - form field gaps */
 
@@ -183,6 +185,10 @@
   --radius-3xl: 1.5rem; /* 24px */
   --radius-full: 9999px;
 
+  /* Premium card radius - matches PoC design */
+  --radius-card: var(--radius-xl); /* 0.75rem - premium card */
+  --radius-card-lg: 1.25rem; /* 20px - premium large card */
+
   /* ========================================
    * SHADOWS
    * ======================================== */
@@ -194,6 +200,9 @@
   --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
   --shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.25);
   --shadow-inner: inset 0 2px 4px 0 rgb(0 0 0 / 0.05);
+
+  /* Premium shadow tokens */
+  --shadow-premium-lg: 0 20px 25px -5px rgb(0 0 0 / 0.1);
 
   /* ========================================
    * Z-INDEX SCALE

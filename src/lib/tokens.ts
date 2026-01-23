@@ -118,6 +118,7 @@ export const fontWeights = {
 
 export const spacing = {
   card: '1.5rem', // 24px - card padding
+  cardLg: '2rem', // 32px - large card padding (PoC)
   section: '2rem', // 32px - section gaps
   form: '1rem', // 16px - form field gaps
 } as const;

@@ -190,12 +190,33 @@ body {
   box-shadow: var(--shadow-premium);
 }
 
+.shadow-premium-lg {
+  box-shadow: var(--shadow-premium-lg);
+}
+
 .shadow-accent-glow {
   box-shadow: var(--shadow-accent-glow);
 }
 
 .shadow-accent-glow-lg {
   box-shadow: var(--shadow-accent-glow-lg);
+}
+
+/* Border radius utilities - for premium cards */
+.rounded-card {
+  border-radius: var(--radius-card);
+}
+
+.rounded-card-lg {
+  border-radius: var(--radius-card-lg);
+}
+
+/* Typography utilities - premium label styles */
+/* Note: For decorative/supplementary labels only. For standalone labels, ensure minimum 12px (0.75rem) for WCAG AA compliance */
+.label-premium {
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-widest);
+  font-size: 0.625rem; /* 10px */
 }
 
 /* Active navigation gradient - using pattern token */
