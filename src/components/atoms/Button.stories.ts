@@ -6,7 +6,16 @@ const meta: Meta = {
   argTypes: {
     variant: {
       control: 'select',
-      options: ['primary', 'secondary', 'outline', 'ghost', 'danger', 'warning', 'success'],
+      options: [
+        'primary',
+        'accent',
+        'secondary',
+        'outline',
+        'ghost',
+        'danger',
+        'warning',
+        'success',
+      ],
       description: 'Button style variant',
     },
     size: {
@@ -51,9 +60,10 @@ const createButton = (args: {
   const baseClasses =
     'btn inline-flex items-center justify-center gap-2 font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent';
 
-  // Variant classes - primary uses btn-accent (indigo) for CTAs per Oasis Finance v1.0.0
+  // Variant classes - primary and accent both use btn-accent (indigo) for CTAs per Oasis Finance v1.0.0
   const variantClasses: Record<string, string> = {
     primary: 'btn-accent shadow-accent-glow',
+    accent: 'btn-accent shadow-accent-glow',
     secondary: 'btn-secondary',
     outline: 'btn-outline border-accent text-accent hover:bg-accent/5',
     ghost: 'btn-ghost text-accent hover:bg-accent/5',
@@ -148,6 +158,14 @@ export const Success: StoryObj = {
   render: (args) => createButton(args),
 };
 
+export const Accent: StoryObj = {
+  args: {
+    variant: 'accent',
+    text: 'Accent (Indigo)',
+  },
+  render: (args) => createButton(args),
+};
+
 // Sizes
 export const Small: StoryObj = {
   args: {
@@ -212,6 +230,7 @@ export const AllVariants: StoryObj = {
 
     const variants = [
       'primary',
+      'accent',
       'secondary',
       'outline',
       'ghost',

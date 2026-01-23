@@ -2,10 +2,10 @@
 /**
  * Input Component
  *
- * Form input component with support for text, number, date, and select types.
+ * Form input component with support for text, number, date, select, and search types.
  * Aligned with Oasis Finance v1.0.0 design system.
  *
- * @param {string} type - Input type: text, number, email, date, select
+ * @param {string} type - Input type: text, number, email, date, select, search, password
  * @param {string} placeholder - Placeholder text
  * @param {string} value - Input value
  * @param {boolean} disabled - Whether the input is disabled
@@ -18,7 +18,7 @@
  */
 
 export interface Props {
-  type?: 'text' | 'number' | 'email' | 'date' | 'select' | 'password';
+  type?: 'text' | 'number' | 'email' | 'date' | 'select' | 'search' | 'password';
   placeholder?: string;
   value?: string | number;
   disabled?: boolean;
@@ -39,6 +39,11 @@ export interface Props {
    * Used to associate input with external description elements like form-level error containers
    */
   describedBy?: string;
+  /**
+   * Icon slot name for rendering an icon inside the input (e.g., search icon)
+   * Use with <slot name="icon"> in the component usage
+   */
+  icon?: boolean;
 }
 
 const {
@@ -59,13 +64,18 @@ const {
   title = '',
   describedBy = '',
   required = false,
+  icon = false,
 } = Astro.props;
+
+// Check if input has an icon slot
+const hasIcon = icon || Astro.slots.has('icon');
 
 // Base input styles aligned with Oasis Finance v1.0.0 design system
 // Height: 2.5rem (40px), Font size: 0.75rem (12px), Border radius: var(--radius-field)
 const inputClasses = [
   'input input-bordered w-full h-10',
-  'pt-2 pb-2 pl-3 pr-10', // Padding: 0.5rem 2.5rem 0.5rem 0.75rem
+  // Adjust padding based on icon presence
+  hasIcon ? 'pt-2 pb-2 pl-10 pr-3' : 'pt-2 pb-2 pl-3 pr-10',
   'text-xs', // Font size: 0.75rem (12px)
   'bg-base-200', // Theme-aware background
   'focus:ring-2 focus:ring-accent focus:ring-opacity-20 focus:outline-none focus:ring-offset-2', // 2px accent focus ring with 2px offset
@@ -85,44 +95,57 @@ const ariaDescribeIds = [error && errorMessage && id ? `${id}-error` : null, des
 const selectOptions = type === 'select' ? options : [];
 ---
 
-{
-  type === 'select' ? (
-    <select
-      id={id}
-      name={name}
-      class={inputClasses}
-      disabled={disabled}
-      required={required}
-      aria-invalid={error}
-      aria-describedby={ariaDescribeIds || undefined}
-      aria-required={required}
-    >
-      <option value="">{placeholder || 'Select...'}</option>
-      {selectOptions.map((opt) => (
-        <option value={opt.value}>{opt.label}</option>
-      ))}
-    </select>
-  ) : (
-    <input
-      id={id}
-      name={name}
-      type={type}
-      placeholder={placeholder}
-      value={value}
-      disabled={disabled}
-      required={required}
-      class={inputClasses}
-      min={type === 'number' ? min : undefined}
-      max={type === 'number' ? max : undefined}
-      step={type === 'number' ? step : undefined}
-      pattern={pattern || undefined}
-      title={title || undefined}
-      aria-invalid={error}
-      aria-describedby={ariaDescribeIds || undefined}
-      aria-required={required}
-    />
-  )
-}
+<!-- Input wrapper for icon positioning -->
+<div class="relative">
+  {
+    hasIcon && (
+      <div
+        class="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground"
+        aria-hidden="true"
+      >
+        <slot name="icon" />
+      </div>
+    )
+  }
+  {
+    type === 'select' ? (
+      <select
+        id={id}
+        name={name}
+        class={inputClasses}
+        disabled={disabled}
+        required={required}
+        aria-invalid={error}
+        aria-describedby={ariaDescribeIds || undefined}
+        aria-required={required}
+      >
+        <option value="">{placeholder || 'Select...'}</option>
+        {selectOptions.map((opt) => (
+          <option value={opt.value}>{opt.label}</option>
+        ))}
+      </select>
+    ) : (
+      <input
+        id={id}
+        name={name}
+        type={type}
+        placeholder={placeholder}
+        value={value}
+        disabled={disabled}
+        required={required}
+        class={inputClasses}
+        min={type === 'number' ? min : undefined}
+        max={type === 'number' ? max : undefined}
+        step={type === 'number' ? step : undefined}
+        pattern={pattern || undefined}
+        title={title || undefined}
+        aria-invalid={error}
+        aria-describedby={ariaDescribeIds || undefined}
+        aria-required={required}
+      />
+    )
+  }
+</div>
 {
   error && errorMessage && (
     <span id={`${id}-error`} class="text-error text-sm mt-1" role="alert">

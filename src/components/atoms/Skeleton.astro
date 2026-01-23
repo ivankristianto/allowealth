@@ -1,0 +1,70 @@
+---
+/**
+ * Skeleton Component
+ *
+ * Loading placeholder component that displays a pulsing animation
+ * while content is being loaded.
+ * Follows Oasis Finance v1.0.0 design system specifications.
+ *
+ * @param {string} variant - Skeleton shape: text, heading, button, card, circular, rectangular
+ * @param {string} size - Size for text/button variants: sm, md, lg
+ * @param {number} width - Custom width (e.g., '100%', '200px', '20rem')
+ * @param {number} height - Custom height (e.g., '100%', '200px', '20rem')
+ * @param {boolean} animate - Show pulse animation
+ * @param {string} className - Additional CSS classes
+ */
+
+export interface Props {
+  variant?: 'text' | 'heading' | 'button' | 'card' | 'circular' | 'rectangular';
+  size?: 'sm' | 'md' | 'lg';
+  width?: string;
+  height?: string;
+  animate?: boolean;
+  className?: string;
+}
+
+const {
+  variant = 'rectangular',
+  size = 'md',
+  width = '',
+  height = '',
+  animate = true,
+  className = '',
+} = Astro.props;
+
+// Size classes for different variants
+const sizeClasses: Record<string, string> = {
+  sm: 'h-4 w-16', // Small text/button
+  md: 'h-6 w-24', // Medium text/button
+  lg: 'h-8 w-32', // Large text/button
+};
+
+// Variant-specific styles
+const variantClasses: Record<string, string> = {
+  text: 'rounded h-4 w-full', // Single line of text
+  heading: 'rounded-lg h-8 w-3/4', // Heading
+  button: 'rounded-lg h-10 w-24', // Button
+  card: 'rounded-xl w-full h-32', // Card placeholder
+  circular: 'rounded-full aspect-square', // Circular avatar/image
+  rectangular: 'rounded-lg', // Generic rectangular
+};
+
+// Base skeleton classes with pulse animation
+const baseClasses = [
+  'bg-base-300', // Theme-aware skeleton color
+  animate && 'animate-pulse', // Pulse animation
+  variantClasses[variant],
+  // Apply size-specific dimensions if width/height not provided
+  !width && !height && sizeClasses[size],
+  className,
+]
+  .filter(Boolean)
+  .join(' ');
+
+// Inline styles for custom width/height
+const customStyles: Record<string, string> = {};
+if (width) customStyles.width = width;
+if (height) customStyles.height = height;
+---
+
+<div class={baseClasses} style={customStyles} aria-hidden="true" role="presentation"></div>

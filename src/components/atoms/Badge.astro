@@ -8,7 +8,7 @@
  *
  * @see design-system/styles.json - Badge component specifications
  *
- * @param {string} variant - Badge style: neutral, primary, accent, secondary, success, warning, error, info
+ * @param {string} variant - Badge style: neutral, primary, accent, secondary, success, warning, error, info, optimal, review, exceeded
  * @param {string} size - Badge size: sm, md, lg
  * @param {boolean} outline - Show outline style
  * @param {string} className - Additional CSS classes
@@ -23,7 +23,10 @@ export interface Props {
     | 'success'
     | 'warning'
     | 'error'
-    | 'info';
+    | 'info'
+    | 'optimal'
+    | 'review'
+    | 'exceeded';
   size?: 'sm' | 'md' | 'lg';
   outline?: boolean;
   className?: string;
@@ -40,6 +43,10 @@ const variantClasses: Record<string, string> = {
   warning: outline ? 'badge-outline' : 'badge-warning',
   error: outline ? 'badge-outline' : 'badge-error',
   info: outline ? 'badge-outline' : 'badge-info',
+  // Budget status variants - using DaisyUI semantic colors
+  optimal: outline ? 'badge-outline' : 'badge-success', // On track (<80%)
+  review: outline ? 'badge-outline' : 'badge-warning', // Review needed (80-99%)
+  exceeded: outline ? 'badge-outline' : 'badge-error', // Over budget (≥100%)
 };
 
 const sizeClasses: Record<string, string> = {

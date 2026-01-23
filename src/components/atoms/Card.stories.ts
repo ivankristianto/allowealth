@@ -6,6 +6,16 @@ const meta: Meta = {
   argTypes: {
     bordered: { control: 'boolean' },
     compact: { control: 'boolean' },
+    padding: {
+      control: 'select',
+      options: ['sm', 'md', 'lg'],
+      description: 'Padding size: sm (1rem), md (1.75rem), lg (2rem/premium)',
+    },
+    rounded: {
+      control: 'select',
+      options: ['none', 'sm', 'md', 'lg', 'xl', '2xl', '3xl'],
+      description: 'Border radius',
+    },
     hoverable: { control: 'boolean' },
   },
 };
@@ -15,6 +25,8 @@ export default meta;
 const createCard = (args: {
   bordered?: boolean;
   compact?: boolean;
+  padding?: 'sm' | 'md' | 'lg';
+  rounded?: 'none' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl';
   hoverable?: boolean;
   title?: string;
   content?: string;
@@ -22,6 +34,8 @@ const createCard = (args: {
   const {
     bordered = true,
     compact = false,
+    padding = 'md',
+    rounded = 'md',
     hoverable = false,
     title = 'Card Title',
     content = 'Card content goes here. This is a versatile container component.',
@@ -30,11 +44,34 @@ const createCard = (args: {
   const card = document.createElement('div');
   const classes = ['card', 'bg-base-100'];
   if (bordered) classes.push('card-bordered', 'border-base-300');
+
+  // Padding classes
+  const paddingClasses: Record<string, string> = {
+    sm: 'p-4',
+    md: 'p-7',
+    lg: 'p-8',
+  };
+
+  // Rounded classes
+  const roundedClasses: Record<string, string> = {
+    none: 'rounded-none',
+    sm: 'rounded-sm',
+    md: 'rounded-md',
+    lg: 'rounded-lg',
+    xl: 'rounded-xl',
+    '2xl': 'rounded-2xl',
+    '3xl': 'rounded-3xl',
+  };
+
   if (compact) classes.push('card-compact', 'p-4');
-  else classes.push('p-7', 'shadow-premium');
+  else classes.push(paddingClasses[padding]);
+
+  classes.push(roundedClasses[rounded], 'shadow-premium');
+
   if (hoverable) {
     classes.push('hover:-translate-y-1', 'hover:shadow-lg', 'transition-all', 'duration-200');
   }
+
   card.className = classes.join(' ');
 
   const titleEl = document.createElement('h2');
@@ -176,6 +213,115 @@ export const BudgetCard: StoryObj = {
     card.appendChild(header);
     card.appendChild(stats);
     card.appendChild(progress);
+
+    return card;
+  },
+};
+
+// New stories for padding and rounded variants
+
+export const LargePadding: StoryObj = {
+  args: {
+    padding: 'lg',
+    rounded: 'xl',
+    title: 'Premium Card',
+    content: 'A card with large padding (2rem) and extra large rounded corners for a premium look.',
+  },
+  render: (args) => createCard(args),
+};
+
+export const ExtraRounded: StoryObj = {
+  args: {
+    rounded: '3xl',
+    title: 'Extra Rounded',
+    content: 'A card with maximum rounded corners (3xl) for a modern, soft appearance.',
+  },
+  render: (args) => createCard(args),
+};
+
+export const AllPaddingSizes: StoryObj = {
+  render: () => {
+    const container = document.createElement('div');
+    container.className = 'flex flex-col gap-4';
+
+    const sizes = ['sm', 'md', 'lg'] as const;
+    const sizeLabels = { sm: 'Small (1rem)', md: 'Medium (1.75rem)', lg: 'Large (2rem)' };
+
+    sizes.forEach((size) => {
+      const card = createCard({
+        padding: size,
+        rounded: 'xl',
+        title: sizeLabels[size],
+        content: `Card with ${sizeLabels[size]} padding.`,
+      });
+      container.appendChild(card);
+    });
+
+    return container;
+  },
+};
+
+export const AllRoundedSizes: StoryObj = {
+  render: () => {
+    const container = document.createElement('div');
+    container.className = 'grid grid-cols-2 md:grid-cols-4 gap-4';
+
+    const sizes = ['none', 'sm', 'md', 'lg', 'xl', '2xl', '3xl'] as const;
+
+    sizes.forEach((size) => {
+      const card = createCard({
+        rounded: size,
+        title: size.toUpperCase(),
+        content: `${size} corners`,
+      });
+      container.appendChild(card);
+    });
+
+    return container;
+  },
+};
+
+export const PremiumCard: StoryObj = {
+  render: () => {
+    const card = document.createElement('div');
+    card.className = 'card bg-base-100 card-bordered border-base-300 p-8 shadow-premium rounded-xl';
+
+    const header = document.createElement('div');
+    header.className = 'flex justify-between items-start mb-6';
+
+    const titleDiv = document.createElement('div');
+    titleDiv.className = 'flex flex-col gap-1';
+
+    const label = document.createElement('span');
+    label.className = 'text-xs uppercase tracking-widest text-base-content/60 font-semibold';
+    label.textContent = 'MONTHLY SPENDING';
+
+    const title = document.createElement('h3');
+    title.className = 'text-2xl font-bold tracking-tight text-primary';
+    title.textContent = 'Rp53.694.000';
+
+    titleDiv.appendChild(label);
+    titleDiv.appendChild(title);
+
+    const badge = document.createElement('span');
+    badge.className = 'badge badge-success';
+    badge.textContent = '82% used';
+
+    header.appendChild(titleDiv);
+    header.appendChild(badge);
+
+    const progress = document.createElement('progress');
+    progress.className = 'progress progress-success w-full';
+    progress.value = 82;
+    progress.max = 100;
+
+    const remaining = document.createElement('p');
+    remaining.className = 'text-sm text-base-content/60 mt-3';
+    remaining.textContent = 'Remaining for Jan: Rp12.246.000';
+
+    card.appendChild(header);
+    card.appendChild(progress);
+    card.appendChild(remaining);
 
     return card;
   },
