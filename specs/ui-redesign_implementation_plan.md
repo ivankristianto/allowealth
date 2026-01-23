@@ -276,7 +276,7 @@ Filter bar (Task 13) will implement progressive enhancement:
 - [x] Ensure keyboard navigation (Tab through items) - added focus-visible styles
 - [x] Create/update Storybook story
 - [x] Run quality gates
-- [x] Test in dark mode
+- [ ] Test in dark mode
 
 **Files to modify:**
 
@@ -334,7 +334,7 @@ After:
 └──────────────────────┘
 ```
 
-**Status:** ✅ Complete
+**Status:** ⏳ Pending (dark mode verification)
 
 ---
 
@@ -889,19 +889,19 @@ interface NetWorthWidgetProps {
 
 **Checklist:**
 
-- [ ] Create CashFlowItem molecule for individual rows
-- [ ] Create CashFlowWidget organism component
-- [ ] Add "CASH FLOW ANALYSIS" header (StatLabel)
-- [ ] Style income items with emerald background/border
-- [ ] Style expense items with rose background/border
-- [ ] Use IconBadge component per item
-- [ ] Show date below name (text-[10px], tracking-widest, uppercase)
-- [ ] Display amount with +/- sign and color
-- [ ] Add hover scale effect (`hover:scale-[1.03]`)
-- [ ] Add `loading` prop with skeleton state
-- [ ] Create Storybook stories
-- [ ] Run quality gates
-- [ ] Test in dark mode
+- [x] Create CashFlowItem molecule for individual rows
+- [x] Create CashFlowWidget organism component
+- [x] Add "CASH FLOW ANALYSIS" header (StatLabel)
+- [x] Style income items with emerald background/border
+- [x] Style expense items with rose background/border
+- [x] Use IconBadge component per item
+- [x] Show date below name (text-[10px], tracking-widest, uppercase)
+- [x] Display amount with +/- sign and color
+- [x] Add hover scale effect (`hover:scale-[1.03]`)
+- [x] Add `loading` prop with skeleton state
+- [x] Create Storybook stories
+- [x] Run quality gates
+- [x] Test in dark mode
 
 **Files to modify:**
 
@@ -941,7 +941,7 @@ interface CashFlowItemProps {
 └────────────────────────────────┘
 ```
 
-**Status:** ⏳ Pending
+**Status:** ✅ Complete
 
 ---
 
@@ -1365,6 +1365,7 @@ interface CashFlowItemProps {
 - [ ] Mobile bottom nav with FAB works correctly
 - [ ] Transactions page filters work correctly
 - [ ] Budget cards display with progress bars
+- [x] Cash flow analysis widget displays income and expense entries
 - [x] Dark mode functions correctly (uses DaisyUI theme tokens)
 - [x] All components pass accessibility checks (Navigation: skip link, aria-current, focus-visible)
 - [ ] Page load performance maintained (FCP < 1.5s)

@@ -23,10 +23,12 @@ import SummaryCards from '@/components/organisms/SummaryCards.astro';
 import SpendingCard from '@/components/organisms/SpendingCard.astro';
 import SpendingChart from '@/components/organisms/SpendingChart.astro';
 import NetWorthWidget from '@/components/organisms/NetWorthWidget.astro';
+import CashFlowWidget from '@/components/organisms/CashFlowWidget.astro';
 import RecentTransactionsList from '@/components/organisms/RecentTransactionsList.astro';
 import QuickActions from '@/components/molecules/QuickActions.astro';
 import DashboardError from '@/components/organisms/DashboardError.astro';
 import type { TransactionOutput } from '@/lib/types/transaction';
+import type { CashFlowEntry, CashFlowIconName } from '@/lib/cash-flow';
 
 const currentPath = '/dashboard';
 const user = Astro.locals.user;
@@ -121,6 +123,23 @@ const recentTransactions: TransactionOutput[] =
     },
   })) || [];
 
+const formatCashFlowDate = (date: Date): string =>
+  date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: '2-digit',
+    year: 'numeric',
+  });
+
+const cashFlowItems: CashFlowEntry[] =
+  dashboardData?.recentTransactions.slice(0, 2).map((tx) => ({
+    name: tx.description?.trim() || tx.category.name,
+    date: formatCashFlowDate(tx.transactionDate),
+    amount: Number.isNaN(parseFloat(tx.amount)) ? 0 : parseFloat(tx.amount),
+    type: tx.type,
+    icon: (tx.type === 'income' ? 'trending-up' : 'calendar') as CashFlowIconName,
+    currency: tx.currency,
+  })) || [];
+
 // Mock spending categories data (from POC design)
 // TODO: Replace with actual data from service when available
 const spendingCategories = [
@@ -186,6 +205,7 @@ const spendingCategories = [
                 viewAllUrl="/transactions"
               />
             </div>
+
             <div>
               <NetWorthWidget
                 totalIDR={parseFloat(dashboardData?.totalAssets.idr ?? '0')}
@@ -195,7 +215,9 @@ const spendingCategories = [
                 growthPercentage={0}
                 loading={!dashboardData}
               />
+              <CashFlowWidget items={cashFlowItems} loading={!dashboardData} />
             </div>
+
           </div>
         </>
       )

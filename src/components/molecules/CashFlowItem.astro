@@ -1,0 +1,91 @@
+---
+/**
+ * CashFlowItem Component
+ *
+ * Individual cash flow row showing upcoming income or expense.
+ * Follows Oasis Finance v1.0.0 design system specifications.
+ *
+ * @param {string} name - Item name (e.g., Project Salary)
+ * @param {string} date - Display date (e.g., Jan 28, 2024)
+ * @param {number} amount - Amount value
+ * @param {string} type - income or expense
+ * @param {string} icon - Lucide icon name
+ * @param {string} currency - Currency code (IDR or USD)
+ * @param {string} className - Additional CSS classes
+ */
+
+import { Banknote, Calendar, Receipt, TrendingUp } from '@lucide/astro';
+import IconBadge from '@/components/atoms/IconBadge.astro';
+import {
+  formatCashFlowAmount,
+  getCashFlowTypeConfig,
+  type CashFlowEntry,
+  type CashFlowIconName,
+} from '@/lib/cash-flow';
+
+export interface Props extends CashFlowEntry {
+  className?: string;
+}
+
+const { name, date, amount, type, icon, currency = 'IDR', className = '' } = Astro.props;
+
+const iconMap: Record<CashFlowIconName, typeof TrendingUp> = {
+  'trending-up': TrendingUp,
+  calendar: Calendar,
+  banknote: Banknote,
+  receipt: Receipt,
+};
+
+const Icon = iconMap[icon] ?? TrendingUp;
+const typeConfig = getCashFlowTypeConfig(type);
+const amountLabel = formatCashFlowAmount(amount, type, currency);
+
+const parsedDate = new Date(date);
+const dateTime = Number.isNaN(parsedDate.getTime()) ? undefined : parsedDate.toISOString();
+const dateLabel = date.toUpperCase();
+
+const itemClasses = [
+  'group flex items-center justify-between gap-4 p-6 rounded-3xl border shadow-sm',
+  'transition-all hover:scale-[1.03] hover:shadow-md',
+  typeConfig.containerClass,
+  className,
+]
+  .filter(Boolean)
+  .join(' ');
+---
+
+<li class={itemClasses}>
+  <div class="flex items-center gap-4 min-w-0">
+    <IconBadge
+      variant={typeConfig.badgeVariant}
+      size="md"
+      className="rounded-2xl shadow-md transition-transform group-hover:scale-105"
+    >
+      <Icon size={20} class="stroke-current" aria-hidden="true" />
+    </IconBadge>
+    <div class="min-w-0">
+      <p class="text-base font-bold tracking-tight leading-tight text-base-content truncate">
+        {name}
+      </p>
+      {
+        dateTime ? (
+          <time
+            datetime={dateTime}
+            class="text-[10px] font-bold text-base-content/50 tracking-widest uppercase mt-1 block"
+          >
+            {dateLabel}
+          </time>
+        ) : (
+          <span class="text-[10px] font-bold text-base-content/50 tracking-widest uppercase mt-1 block">
+            {dateLabel}
+          </span>
+        )
+      }
+    </div>
+  </div>
+  <div class="text-right leading-none shrink-0">
+    <span class={`text-base font-bold tracking-tight ${typeConfig.amountClass}`}>
+      {amountLabel}
+    </span>
+  </div>
+</li>
