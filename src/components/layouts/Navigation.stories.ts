@@ -8,7 +8,6 @@ const meta: Meta = {
       control: 'select',
       options: [
         '/',
-        '/dashboard',
         '/transactions',
         '/budget',
         '/assets',
@@ -25,15 +24,15 @@ export default meta;
 
 // Lucide-style icon SVGs for Storybook
 const icons = {
-  layoutDashboard: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>`,
-  search: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>`,
-  calendar: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>`,
-  currencyDollar: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>`,
-  info: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>`,
-  triangleAlert: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>`,
-  plus: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>`,
-  settings: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.74v-.47a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.39a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>`,
-  x: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>`,
+  layoutDashboard: `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>`,
+  receipt: `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-2 2 2 2-2 2 2 2-2 2 2 2-2 2 2V2z"/></svg>`,
+  donut: `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>`,
+  wallet: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></svg>`,
+  chartBar: `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="20" y2="10"/><line x1="18" x2="18" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="16"/></svg>`,
+  trendingUp: `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>`,
+  calculator: `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="14"/><line x1="16" x2="16" y1="18" y2="18"/><line x1="12" x2="12" y1="14" y2="14"/><line x1="12" x2="12" y1="18" y2="18"/><line x1="8" x2="8" y1="14" y2="14"/><line x1="8" x2="8" y1="18" y2="18"/></svg>`,
+  settings: `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.74v-.47a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.39a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>`,
+  x: `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>`,
 };
 
 const createNavigation = (args: { currentPath?: string }): HTMLElement => {
@@ -41,33 +40,58 @@ const createNavigation = (args: { currentPath?: string }): HTMLElement => {
 
   const aside = document.createElement('aside');
   aside.className = 'bg-base-100 w-64 min-h-screen border-r border-base-300 flex flex-col';
+  aside.setAttribute('role', 'navigation');
+  aside.setAttribute('aria-label', 'Main navigation');
+
+  // Skip link for keyboard users
+  const skipLink = document.createElement('a');
+  skipLink.href = '#main-content';
+  skipLink.className =
+    'sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:px-4 focus:py-2 focus:bg-accent focus:text-accent-content focus:rounded font-medium';
+  skipLink.textContent = 'Skip to main content';
+  aside.appendChild(skipLink);
 
   // Mobile close button
   const mobileHeader = document.createElement('div');
   mobileHeader.className =
     'lg:hidden p-4 border-b border-base-300 flex justify-between items-center';
   mobileHeader.innerHTML = `
-    <span class="font-bold text-lg">Menu</span>
-    <label for="nav-drawer-toggle" class="btn btn-sm btn-circle btn-ghost">
+    <span class="font-bold text-lg text-base-content">Menu</span>
+    <label for="nav-drawer-toggle" class="btn btn-sm btn-circle btn-ghost" aria-label="Close menu">
       ${icons.x}
     </label>
   `;
   aside.appendChild(mobileHeader);
 
-  // Navigation items
+  // Brand Logo Section
+  const brandSection = document.createElement('div');
+  brandSection.className = 'p-6 pb-4';
+  brandSection.innerHTML = `
+    <a href="/" class="flex items-center gap-3 group" aria-label="FamilyFinance Home">
+      <div class="bg-accent text-accent-content rounded-xl p-2 transition-transform duration-200 group-hover:scale-110">
+        ${icons.wallet}
+      </div>
+      <span class="text-xl font-bold tracking-tight text-base-content">
+        FamilyFinance
+      </span>
+    </a>
+  `;
+  aside.appendChild(brandSection);
+
+  // Navigation items - each with unique icon
   const navItems = [
-    { href: '/dashboard', label: 'Dashboard', iconKey: 'layoutDashboard' as const },
-    { href: '/transactions', label: 'Transactions', iconKey: 'search' as const },
-    { href: '/budget', label: 'Budget', iconKey: 'calendar' as const },
-    { href: '/assets', label: 'Assets', iconKey: 'currencyDollar' as const },
-    { href: '/reports', label: 'Reports', iconKey: 'info' as const },
-    { href: '/forecast', label: 'Forecast', iconKey: 'triangleAlert' as const },
-    { href: '/calculators', label: 'Calculators', iconKey: 'plus' as const },
+    { href: '/', label: 'Dashboard', iconKey: 'layoutDashboard' as const },
+    { href: '/transactions', label: 'Transactions', iconKey: 'receipt' as const },
+    { href: '/budget', label: 'Budget', iconKey: 'donut' as const },
+    { href: '/assets', label: 'Assets', iconKey: 'wallet' as const },
+    { href: '/reports', label: 'Reports', iconKey: 'chartBar' as const },
+    { href: '/forecast', label: 'Forecast', iconKey: 'trendingUp' as const },
+    { href: '/calculators', label: 'Calculators', iconKey: 'calculator' as const },
     { href: '/settings', label: 'Settings', iconKey: 'settings' as const },
   ];
 
   const ul = document.createElement('ul');
-  ul.className = 'menu p-4 w-full flex-1';
+  ul.className = 'menu w-full flex-1 px-3';
 
   const isActive = (href: string) => {
     // Exact match for index routes
@@ -80,33 +104,46 @@ const createNavigation = (args: { currentPath?: string }): HTMLElement => {
     const li = document.createElement('li');
     const a = document.createElement('a');
     a.href = item.href;
-    a.className = isActive(item.href) ? 'active gap-3' : 'gap-3';
+    const activeClass = isActive(item.href)
+      ? 'nav-active relative py-2.5 px-4 gap-3 font-bold tracking-tight text-base-content rounded-lg transition-all duration-200 hover:bg-base-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2'
+      : 'relative py-2.5 px-4 gap-3 font-bold tracking-tight text-base-content rounded-lg transition-all duration-200 hover:bg-base-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2';
+    a.className = activeClass;
     if (isActive(item.href)) {
       a.setAttribute('aria-current', 'page');
+      // Add pulsing indicator dot for active item
+      a.innerHTML = `
+        ${icons[item.iconKey]}
+        <span>${item.label}</span>
+      `;
+      const dot = document.createElement('span');
+      dot.className = 'absolute right-3 w-2 h-2 bg-accent rounded-full animate-pulse';
+      dot.setAttribute('aria-hidden', 'true');
+      a.appendChild(dot);
+    } else {
+      a.innerHTML = `
+        ${icons[item.iconKey]}
+        <span>${item.label}</span>
+      `;
     }
-    a.innerHTML = `
-      ${icons[item.iconKey]}
-      <span>${item.label}</span>
-    `;
     li.appendChild(a);
     ul.appendChild(li);
   });
 
   aside.appendChild(ul);
 
-  // User section
+  // User section with Pro Account
   const userSection = document.createElement('div');
-  userSection.className = 'p-4 border-t border-base-300 bg-base-100';
+  userSection.className = 'mt-auto p-4 border-t border-base-300 bg-base-100';
   userSection.innerHTML = `
     <div class="flex items-center gap-3">
       <div class="avatar placeholder">
-        <div class="bg-base-300 text-base-content rounded-full w-10">
-          <span class="text-xs">UK</span>
+        <div class="bg-accent/10 text-accent rounded-full w-10 flex items-center justify-center">
+          <span class="text-xs font-semibold">SJ</span>
         </div>
       </div>
       <div class="flex-1 min-w-0">
-        <p class="text-sm font-medium truncate">User Name</p>
-        <p class="text-xs text-base-content/60 truncate">user@example.com</p>
+        <p class="text-sm font-medium text-base-content truncate">Sarah Jenkins</p>
+        <p class="text-xs text-accent truncate">Pro Account</p>
       </div>
     </div>
   `;
@@ -116,7 +153,7 @@ const createNavigation = (args: { currentPath?: string }): HTMLElement => {
 };
 
 export const Default: StoryObj = {
-  args: { currentPath: '/dashboard' },
+  args: { currentPath: '/' },
   render: (args) => createNavigation(args),
 };
 
@@ -127,6 +164,21 @@ export const TransactionsActive: StoryObj = {
 
 export const BudgetActive: StoryObj = {
   args: { currentPath: '/budget' },
+  render: (args) => createNavigation(args),
+};
+
+export const AssetsActive: StoryObj = {
+  args: { currentPath: '/assets' },
+  render: (args) => createNavigation(args),
+};
+
+export const ReportsActive: StoryObj = {
+  args: { currentPath: '/reports' },
+  render: (args) => createNavigation(args),
+};
+
+export const ForecastActive: StoryObj = {
+  args: { currentPath: '/forecast' },
   render: (args) => createNavigation(args),
 };
 
