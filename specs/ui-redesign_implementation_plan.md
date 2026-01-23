@@ -881,7 +881,7 @@ interface NetWorthWidgetProps {
 
 ---
 
-### Task 12: Dashboard - Cash Flow Analysis Widget (Priority: P2)
+### Task 12: Dashboard - Cash Flow Analysis Widget (Priority: P2) ✅
 
 **Goal:** Create the cash flow sidebar widget showing upcoming income/expenses
 
@@ -901,7 +901,7 @@ interface NetWorthWidgetProps {
 - [x] Add `loading` prop with skeleton state
 - [x] Create Storybook stories
 - [x] Run quality gates
-- [x] Test in dark mode
+- [ ] Test in dark mode
 
 **Files to modify:**
 
