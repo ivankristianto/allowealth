@@ -6,12 +6,12 @@
  * Protected by authentication.
  *
  * Displays:
+ * - Quick actions (Add Expense, Log Income)
  * - Total assets (IDR + USD)
  * - Monthly spending vs budget
  * - Budget health alerts
  * - Spending summary card with progress
  * - Recent transactions
- * - Quick actions
  */
 
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
@@ -129,6 +129,9 @@ const recentTransactions: TransactionOutput[] =
     {
       !error && (
         <>
+          {/* Quick Actions - Direct rendering, no wrapper */}
+          <QuickActions />
+
           {/* Summary Cards */}
           <SummaryCards data={summaryCardsData} loading={!dashboardData} error={false} />
 
@@ -149,16 +152,6 @@ const recentTransactions: TransactionOutput[] =
                 }
                 loading={!dashboardData}
               />
-            </div>
-
-            {/* Quick Actions (1 column wide) */}
-            <div>
-              <div class="card bg-base-100 shadow border border-base-300 h-full">
-                <div class="card-body">
-                  <h2 class="card-title text-lg mb-4">Quick Actions</h2>
-                  <QuickActions />
-                </div>
-              </div>
             </div>
           </div>
 
