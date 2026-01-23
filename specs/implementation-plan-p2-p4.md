@@ -884,7 +884,7 @@ bun run typecheck && bun run lint:fix && bun run stylelint:fix && bun run format
 - [x] Can use utility class: `class="animate-fade-in"`
 - [x] Passes all quality gates
 
-**Commit**: (pending)
+**Commit**: `fa9e4a1` - feat(animations): add animation CSS variables and keyframes (Task 7.2)
 
 ---
 
