@@ -1,0 +1,31 @@
+{
+  "category": "Uncategorized",
+  "description": "Tell me the DB schema currently",
+  "title": "Query and display current database schema",
+  "images": [],
+  "imagePaths": [],
+  "textFilePaths": [],
+  "skipTests": true,
+  "model": "codex-gpt-5.2-codex",
+  "thinkingLevel": "none",
+  "reasoningEffort": "medium",
+  "branchName": "main",
+  "priority": 2,
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "dependencies": [],
+  "workMode": "current",
+  "titleGenerating": false,
+  "status": "verified",
+  "id": "feature-1769186774068-2t1dg3f6c",
+  "descriptionHistory": [
+    {
+      "description": "Tell me the DB schema currently",
+      "timestamp": "2026-01-23T16:46:14.160Z",
+      "source": "initial"
+    }
+  ],
+  "startedAt": "2026-01-23T16:46:17.025Z",
+  "updatedAt": "2026-01-23T16:48:07.108Z",
+  "justFinishedAt": "2026-01-23T16:48:07.108Z"
+}

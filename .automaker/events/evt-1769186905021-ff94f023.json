@@ -1,0 +1,11 @@
+{
+  "id": "evt-1769186905021-ff94f023",
+  "trigger": "feature_success",
+  "timestamp": "2026-01-23T16:48:25.021Z",
+  "projectPath": "/home/ivan/works/expenses",
+  "projectName": "expenses",
+  "featureId": "feature-1769186774068-2t1dg3f6c",
+  "featureName": "",
+  "error": "Feature completed in 128s",
+  "passes": true
+}

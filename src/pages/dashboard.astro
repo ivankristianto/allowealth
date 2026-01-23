@@ -19,6 +19,7 @@ import { dashboardService } from '@/services';
 import type { DashboardData } from '@/services/dashboard.service';
 import SummaryCards from '@/components/organisms/SummaryCards.astro';
 import SpendingCard from '@/components/organisms/SpendingCard.astro';
+import NetWorthWidget from '@/components/organisms/NetWorthWidget.astro';
 import RecentTransactionsList from '@/components/organisms/RecentTransactionsList.astro';
 import QuickActions from '@/components/molecules/QuickActions.astro';
 import DashboardError from '@/components/organisms/DashboardError.astro';
@@ -132,7 +133,7 @@ const recentTransactions: TransactionOutput[] =
           {/* Quick Actions - Direct rendering, no wrapper */}
           <QuickActions />
 
-          {/* Spending Summary Card (half width) */}
+          {/* Spending Summary Card & Net Worth Widget (half width each) */}
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <SpendingCard
               spent={parseFloat(dashboardData?.monthlySpent.total ?? '0')}
@@ -145,6 +146,14 @@ const recentTransactions: TransactionOutput[] =
                   ? `You've reached ${Math.round(dashboardData.monthlySpent.percentage)}% of your monthly budget.`
                   : undefined
               }
+              loading={!dashboardData}
+            />
+            <NetWorthWidget
+              totalIDR={parseFloat(dashboardData?.totalAssets.idr ?? '0')}
+              totalUSD={parseFloat(dashboardData?.totalAssets.usd ?? '0')}
+              localAssets={parseFloat(dashboardData?.totalAssets.idr ?? '0')}
+              globalAssets={parseFloat(dashboardData?.totalAssets.usd ?? '0')}
+              growthPercentage={0}
               loading={!dashboardData}
             />
           </div>

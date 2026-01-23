@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "notifications": [
+    {
+      "id": "4259ba24-0fdc-4ec4-8955-53f7e3a0ea8d",
+      "type": "feature_waiting_approval",
+      "title": "Feature Ready for Review",
+      "message": "\"feature-1769186774068-2t1dg3f6c\" is ready for your review and approval.",
+      "createdAt": "2026-01-23T16:48:07.110Z",
+      "read": true,
+      "dismissed": false,
+      "featureId": "feature-1769186774068-2t1dg3f6c",
+      "projectPath": "/home/ivan/works/expenses"
+    }
+  ]
+}
