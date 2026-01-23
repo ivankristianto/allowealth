@@ -132,28 +132,25 @@ const recentTransactions: TransactionOutput[] =
           {/* Quick Actions - Direct rendering, no wrapper */}
           <QuickActions />
 
+          {/* Spending Summary Card (half width) */}
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <SpendingCard
+              spent={parseFloat(dashboardData?.monthlySpent.total ?? '0')}
+              budget={parseFloat(dashboardData?.monthlySpent.budget ?? '0')}
+              currency="IDR"
+              remainingLabel={`Remaining for ${currentMonthName}`}
+              alertMessage={
+                dashboardData?.monthlySpent.percentage &&
+                dashboardData.monthlySpent.percentage >= 80
+                  ? `You've reached ${Math.round(dashboardData.monthlySpent.percentage)}% of your monthly budget.`
+                  : undefined
+              }
+              loading={!dashboardData}
+            />
+          </div>
+
           {/* Summary Cards */}
           <SummaryCards data={summaryCardsData} loading={!dashboardData} error={false} />
-
-          {/* Main Content Grid */}
-          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Spending Summary Card (2 columns wide) */}
-            <div class="lg:col-span-2">
-              <SpendingCard
-                spent={parseFloat(dashboardData?.monthlySpent.total ?? '0')}
-                budget={parseFloat(dashboardData?.monthlySpent.budget ?? '0')}
-                currency="IDR"
-                remainingLabel={`Remaining for ${currentMonthName}`}
-                alertMessage={
-                  dashboardData?.monthlySpent.percentage &&
-                  dashboardData.monthlySpent.percentage >= 80
-                    ? `You've reached ${Math.round(dashboardData.monthlySpent.percentage)}% of your monthly budget.`
-                    : undefined
-                }
-                loading={!dashboardData}
-              />
-            </div>
-          </div>
 
           {/* Recent Transactions */}
           <RecentTransactionsList
