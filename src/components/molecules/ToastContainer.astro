@@ -4,6 +4,7 @@
  *
  * Global toast notification system using Nano Stores for state management
  * and Motion library for smooth animations per styles.json specifications.
+ * Respects prefers-reduced-motion for accessibility.
  *
  * Automatically included in BaseLayout. Use addToast() from client scripts.
  *
@@ -81,6 +82,9 @@
     }, 1000);
   }
 
+  // Check if user prefers reduced motion for accessibility
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
   // Create toast element with Motion enter animation (matches styles.json toast preset)
   function createToastElement(toast: ToastMessage): HTMLElement {
     // Capture currently focused element BEFORE toast appears
@@ -100,8 +104,13 @@
     toastEl.setAttribute('role', 'alert');
 
     // Set initial state for enter animation (matches styles.json toast.initial)
-    toastEl.style.opacity = '0';
-    toastEl.style.transform = 'translateY(-10px) scale(0.95)';
+    // Skip animation if user prefers reduced motion - show toast immediately
+    if (prefersReducedMotion) {
+      toastEl.style.opacity = '1';
+    } else {
+      toastEl.style.opacity = '0';
+      toastEl.style.transform = 'translateY(-10px) scale(0.95)';
+    }
 
     // Message span
     const messageSpan = document.createElement('span');
@@ -135,11 +144,14 @@
     }
 
     // Enter animation (matches styles.json toast.animate preset)
-    animate(
-      toastEl,
-      { opacity: [0, 1], y: [-10, 0], scale: [0.95, 1] } as any,
-      { duration: 0.2, easing: [0.4, 0, 0.2, 1] } as any
-    );
+    // Skip animation if user prefers reduced motion
+    if (!prefersReducedMotion) {
+      animate(
+        toastEl,
+        { opacity: [0, 1], y: [-10, 0], scale: [0.95, 1] } as any,
+        { duration: 0.2, easing: [0.4, 0, 0.2, 1] } as any
+      );
+    }
 
     return toastEl;
   }
@@ -147,11 +159,8 @@
   // Dismiss toast with Motion exit animation and optional focus restoration (matches styles.json toast.exit)
   function dismissToast(id: string, element: HTMLElement, manual: boolean = false): void {
     // Exit animation (matches styles.json toast.exit preset)
-    animate(
-      element,
-      { opacity: [1, 0], scale: [1, 0.95] } as any,
-      { duration: 0.2, easing: [0.4, 0, 0.2, 1] } as any
-    ).then(() => {
+    // Skip animation if user prefers reduced motion - remove immediately
+    if (prefersReducedMotion) {
       element.remove();
       renderedToasts.delete(id);
       removeToast(id);
@@ -167,7 +176,29 @@
         // Auto-dismiss: clean up the focus map entry
         focusRestoreMap.delete(id);
       }
-    });
+    } else {
+      animate(
+        element,
+        { opacity: [1, 0], scale: [1, 0.95] } as any,
+        { duration: 0.2, easing: [0.4, 0, 0.2, 1] } as any
+      ).then(() => {
+        element.remove();
+        renderedToasts.delete(id);
+        removeToast(id);
+
+        // Only restore focus for manually dismissed toasts
+        if (manual) {
+          const restoreFocus = focusRestoreMap.get(id);
+          focusRestoreMap.delete(id);
+          if (restoreFocus && document.contains(restoreFocus)) {
+            restoreFocus.focus();
+          }
+        } else {
+          // Auto-dismiss: clean up the focus map entry
+          focusRestoreMap.delete(id);
+        }
+      });
+    }
   }
 
   // Reconcile DOM based on store state

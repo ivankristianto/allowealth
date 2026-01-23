@@ -659,7 +659,7 @@ bun run typecheck && bun run lint:fix && bun run stylelint:fix && bun run format
 
 **Estimated Time:** 30 minutes
 
-**Status:** ✅ Completed (commit: forthcoming)
+**Status:** ✅ Completed (commit bd029fc)
 
 **Code Review Feedback Addressed:**
 
@@ -675,20 +675,22 @@ bun run typecheck && bun run lint:fix && bun run stylelint:fix && bun run format
 
 **Checklist:**
 
-- [ ] Add `prefers-reduced-motion` check to Toast.astro enter animation
-- [ ] Add `prefers-reduced-motion` check to Toast.astro exit animation
-- [ ] Add `prefers-reduced-motion` check to ToastContainer.astro enter animation
-- [ ] Add `prefers-reduced-motion` check to ToastContainer.astro exit animation
-- [ ] Skip animations and show toasts immediately when reduced motion is preferred
+- [x] Add `prefers-reduced-motion` check to Toast.astro enter animation
+- [x] Add `prefers-reduced-motion` check to Toast.astro exit animation
+- [x] Add `prefers-reduced-motion` check to ToastContainer.astro enter animation
+- [x] Add `prefers-reduced-motion` check to ToastContainer.astro exit animation
+- [x] Skip animations and show toasts immediately when reduced motion is preferred
+- [x] Add `prefers-reduced-motion` support to Modal.astro for consistency (P1 feedback from code review)
 
 **Files to modify:**
 
 - `src/components/molecules/Toast.astro`
 - `src/components/molecules/ToastContainer.astro`
+- `src/components/molecules/Modal.astro` (added for consistency)
 
 **Estimated Time:** 30 minutes
 
-**Status:** ⏳ Pending
+**Status:** ✅ Completed (commit: forthcoming)
 
 ---
 
@@ -715,6 +717,36 @@ bun run typecheck && bun run lint:fix && bun run stylelint:fix && bun run format
 **Estimated Time:** 20 minutes
 
 **Status:** ⏳ Pending
+
+**Code Review Feedback Source:** P2 feedback from Task QA.4 code review - Code duplication in reduced motion pattern
+
+---
+
+### Task QA.8: Add Dynamic prefers-reduced-motion Listener Support (Priority: P2)
+
+**Goal:** Enable toast and modal components to respond to motion preference changes during runtime.
+
+**Issue:** The `prefersReducedMotion` value is checked once at component initialization. If a user changes their motion preferences while the page is open (e.g., through OS settings), the change will not take effect until the page is reloaded.
+
+**Checklist:**
+
+- [ ] Add `addEventListener('change')` listener for motion query in Toast.astro
+- [ ] Add `addEventListener('change')` listener for motion query in ToastContainer.astro
+- [ ] Add `addEventListener('change')` listener for motion query in Modal.astro
+- [ ] Update `prefersReducedMotion` value dynamically when preference changes
+- [ ] Test runtime preference changes
+
+**Files to modify:**
+
+- `src/components/molecules/Toast.astro`
+- `src/components/molecules/ToastContainer.astro`
+- `src/components/molecules/Modal.astro`
+
+**Estimated Time:** 30 minutes
+
+**Status:** ⏳ Pending
+
+**Code Review Feedback Source:** P2 feedback from Task QA.4 code review
 
 ---
 

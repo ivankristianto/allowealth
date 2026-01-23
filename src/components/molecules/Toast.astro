@@ -4,6 +4,7 @@
  *
  * Dismissible notification messages for user feedback.
  * Uses Motion library for smooth enter/exit animations.
+ * Respects prefers-reduced-motion for accessibility.
  *
  * @param {string} id - Unique ID for the toast
  * @param {string} message - Toast message
@@ -60,21 +61,29 @@ const positionClasses: Record<string, string> = {
     throw new Error('Toast element not found');
   }
 
+  // Check if user prefers reduced motion
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
   // Track whether toast has been dismissed to prevent race conditions
   let isDismissed = false;
   // Store timeout ID to cancel on manual dismiss (explicitly initialized to undefined)
   let autoDismissTimeout = undefined;
 
-  // Set initial state for enter animation
-  toast.style.opacity = '0';
-  toast.style.transform = 'translateY(-10px) scale(0.95)';
-
   // Enter animation (matches styles.json toast preset)
-  animate(
-    toast,
-    { opacity: [0, 1], y: [-10, 0], scale: [0.95, 1] },
-    { duration: 0.2, easing: [0.4, 0, 0.2, 1] }
-  );
+  // Skip animation if user prefers reduced motion - show toast immediately
+  if (prefersReducedMotion) {
+    toast.style.opacity = '1';
+  } else {
+    // Set initial state for enter animation
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateY(-10px) scale(0.95)';
+
+    animate(
+      toast,
+      { opacity: [0, 1], y: [-10, 0], scale: [0.95, 1] },
+      { duration: 0.2, easing: [0.4, 0, 0.2, 1] }
+    );
+  }
 
   // Dismiss toast with exit animation
   const dismiss = () => {
@@ -88,15 +97,20 @@ const positionClasses: Record<string, string> = {
     }
 
     // Exit animation (matches styles.json toast preset)
-    animate(
-      toast,
-      { opacity: [1, 0], scale: [1, 0.95] },
-      { duration: 0.2, easing: [0.4, 0, 0.2, 1] }
-    ).then(() => {
-      if (document.contains(toast)) {
-        toast.remove();
-      }
-    });
+    // Skip animation if user prefers reduced motion - remove immediately
+    if (prefersReducedMotion) {
+      toast.remove();
+    } else {
+      animate(
+        toast,
+        { opacity: [1, 0], scale: [1, 0.95] },
+        { duration: 0.2, easing: [0.4, 0, 0.2, 1] }
+      ).then(() => {
+        if (document.contains(toast)) {
+          toast.remove();
+        }
+      });
+    }
   };
 
   // Dismiss button handler

@@ -6,6 +6,7 @@
  * Can be used for forms, confirmations, or detailed views.
  *
  * Uses Motion library for smooth enter/exit animations per styles.json specification.
+ * Respects prefers-reduced-motion for accessibility.
  *
  * @param {string} id - Unique ID for the modal (required for dialog functionality)
  * @param {string} title - Modal title
@@ -101,6 +102,9 @@ const titleId = title ? `${id}-title` : undefined;
 <script define:vars={{ id, backdropClose }}>
   import { animate } from 'motion';
 
+  // Check if user prefers reduced motion for accessibility
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
   // Modal animation configuration from styles.json
   const BACKDROP_DURATION = 0.2;
   const CONTENT_DURATION = 0.3;
@@ -122,7 +126,11 @@ const titleId = title ? `${id}-title` : undefined;
     const backdrop = getBackdrop();
     if (!backdrop) return;
 
-    await animate(backdrop, { opacity: [0, 1] }, { duration: BACKDROP_DURATION });
+    if (prefersReducedMotion) {
+      backdrop.style.opacity = '1';
+    } else {
+      await animate(backdrop, { opacity: [0, 1] }, { duration: BACKDROP_DURATION });
+    }
   };
 
   // Animate backdrop exit
@@ -130,7 +138,11 @@ const titleId = title ? `${id}-title` : undefined;
     const backdrop = getBackdrop();
     if (!backdrop) return;
 
-    await animate(backdrop, { opacity: [1, 0] }, { duration: BACKDROP_DURATION });
+    if (prefersReducedMotion) {
+      backdrop.style.opacity = '0';
+    } else {
+      await animate(backdrop, { opacity: [1, 0] }, { duration: BACKDROP_DURATION });
+    }
   };
 
   // Animate content enter
@@ -138,11 +150,16 @@ const titleId = title ? `${id}-title` : undefined;
     const content = getContent();
     if (!content) return;
 
-    await animate(
-      content,
-      { opacity: [0, 1], scale: [INITIAL_SCALE, 1], y: [INITIAL_Y_OFFSET, 0] },
-      { duration: CONTENT_DURATION }
-    );
+    if (prefersReducedMotion) {
+      content.style.opacity = '1';
+      content.style.transform = '';
+    } else {
+      await animate(
+        content,
+        { opacity: [0, 1], scale: [INITIAL_SCALE, 1], y: [INITIAL_Y_OFFSET, 0] },
+        { duration: CONTENT_DURATION }
+      );
+    }
   };
 
   // Animate content exit
@@ -150,11 +167,16 @@ const titleId = title ? `${id}-title` : undefined;
     const content = getContent();
     if (!content) return;
 
-    await animate(
-      content,
-      { opacity: [1, 0], scale: [1, INITIAL_SCALE], y: [0, INITIAL_Y_OFFSET] },
-      { duration: CONTENT_DURATION }
-    );
+    if (prefersReducedMotion) {
+      content.style.opacity = '0';
+      content.style.transform = `scale(${INITIAL_SCALE}) translateY(${INITIAL_Y_OFFSET}px)`;
+    } else {
+      await animate(
+        content,
+        { opacity: [1, 0], scale: [1, INITIAL_SCALE], y: [0, INITIAL_Y_OFFSET] },
+        { duration: CONTENT_DURATION }
+      );
+    }
   };
 
   // Handle modal show (when modal opens)
@@ -166,14 +188,23 @@ const titleId = title ? `${id}-title` : undefined;
     const backdrop = getBackdrop();
     const content = getContent();
 
-    if (backdrop) backdrop.style.opacity = '0';
-    if (content) {
-      content.style.opacity = '0';
-      content.style.transform = `scale(${INITIAL_SCALE}) translateY(${INITIAL_Y_OFFSET}px)`;
-    }
+    if (prefersReducedMotion) {
+      // Show immediately without animation
+      if (backdrop) backdrop.style.opacity = '1';
+      if (content) {
+        content.style.opacity = '1';
+        content.style.transform = '';
+      }
+    } else {
+      if (backdrop) backdrop.style.opacity = '0';
+      if (content) {
+        content.style.opacity = '0';
+        content.style.transform = `scale(${INITIAL_SCALE}) translateY(${INITIAL_Y_OFFSET}px)`;
+      }
 
-    // Run both animations (they start simultaneously)
-    await Promise.all([animateBackdropIn(), animateContentIn()]);
+      // Run both animations (they start simultaneously)
+      await Promise.all([animateBackdropIn(), animateContentIn()]);
+    }
 
     isAnimating = false;
   };
@@ -186,11 +217,16 @@ const titleId = title ? `${id}-title` : undefined;
     // Prevent default to allow animation to complete
     event.preventDefault();
 
-    // Run exit animations
-    await Promise.all([animateBackdropOut(), animateContentOut()]);
+    if (prefersReducedMotion) {
+      // Close immediately without animation
+      modal.close();
+    } else {
+      // Run exit animations
+      await Promise.all([animateBackdropOut(), animateContentOut()]);
 
-    // Close the modal after animation completes
-    modal.close();
+      // Close the modal after animation completes
+      modal.close();
+    }
 
     isAnimating = false;
   };
