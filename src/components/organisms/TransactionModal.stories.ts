@@ -63,14 +63,25 @@ const createTransactionModal = (args: {
   // Modal header
   const header = document.createElement('div');
   header.className = 'flex items-center justify-between mb-4';
-  header.innerHTML = `
-    <h3 class="font-bold text-lg">${title}</h3>
-    <button class="btn btn-sm btn-circle btn-ghost" onclick="${id}.close()">
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-      </svg>
-    </button>
+
+  const titleEl = document.createElement('h3');
+  titleEl.className = 'font-bold text-lg';
+  titleEl.textContent = title;
+  header.appendChild(titleEl);
+
+  const closeButton = document.createElement('button');
+  closeButton.className = 'btn btn-sm btn-circle btn-ghost';
+  closeButton.setAttribute('aria-label', 'Close modal');
+  closeButton.innerHTML = `
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+    </svg>
   `;
+  closeButton.addEventListener('click', () => {
+    const dialog = document.getElementById(id) as HTMLDialogElement;
+    dialog?.close();
+  });
+  header.appendChild(closeButton);
 
   // Form
   const form = document.createElement('form');
@@ -199,11 +210,23 @@ const createTransactionModal = (args: {
   // Form actions
   const actions = document.createElement('div');
   actions.className = 'modal-action';
-  // Updated submit button to use btn-accent
-  actions.innerHTML = `
-    <a href="#" class="btn btn-ghost" onclick="document.getElementById('${id}').close(); return false;">Cancel</a>
-    <button type="submit" class="btn btn-accent">${method === 'PUT' ? 'Update' : 'Save'} Transaction</button>
-  `;
+
+  const cancelButton = document.createElement('a');
+  cancelButton.href = '#';
+  cancelButton.className = 'btn btn-ghost';
+  cancelButton.textContent = 'Cancel';
+  cancelButton.addEventListener('click', (e) => {
+    e.preventDefault();
+    const dialog = document.getElementById(id) as HTMLDialogElement;
+    dialog?.close();
+  });
+  actions.appendChild(cancelButton);
+
+  const submitButton = document.createElement('button');
+  submitButton.type = 'submit';
+  submitButton.className = 'btn btn-accent';
+  submitButton.textContent = `${method === 'PUT' ? 'Update' : 'Save'} Transaction`;
+  actions.appendChild(submitButton);
 
   form.append(typeGroup, amountGroup, categoryGroup, paymentGroup, dateGroup, descGroup, actions);
   modalBox.append(header, form);

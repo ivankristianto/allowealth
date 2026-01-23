@@ -17,11 +17,6 @@ type User = {
   id: string;
   email: string;
   name: string;
-  attributes: {
-    id: string;
-    email: string;
-    name: string;
-  };
 };
 
 type UserContextArgs = {
@@ -33,11 +28,6 @@ const mockUser: User = {
   id: '123',
   email: 'user@example.com',
   name: 'John Doe',
-  attributes: {
-    id: '123',
-    email: 'user@example.com',
-    name: 'John Doe',
-  },
 };
 
 const createUserContext = (args: UserContextArgs): HTMLElement => {
@@ -191,10 +181,6 @@ export const WithLongName: StoryObj<UserContextArgs> = {
     user: {
       ...mockUser,
       name: 'A Very Long User Name That Might Be Truncated',
-      attributes: {
-        ...mockUser.attributes,
-        name: 'A Very Long User Name That Might Be Truncated',
-      },
     },
   },
   render: (args) => createUserContext(args),
