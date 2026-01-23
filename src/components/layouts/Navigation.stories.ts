@@ -7,7 +7,7 @@ const meta: Meta = {
     currentPath: {
       control: 'select',
       options: [
-        '/',
+        '/dashboard',
         '/transactions',
         '/budget',
         '/assets',
@@ -36,7 +36,7 @@ const icons = {
 };
 
 const createNavigation = (args: { currentPath?: string }): HTMLElement => {
-  const { currentPath = '/' } = args;
+  const { currentPath = '/dashboard' } = args;
 
   const aside = document.createElement('aside');
   aside.className = 'bg-base-100 w-64 min-h-screen border-r border-base-300 flex flex-col';
@@ -65,10 +65,10 @@ const createNavigation = (args: { currentPath?: string }): HTMLElement => {
 
   // Brand Logo Section
   const brandSection = document.createElement('div');
-  brandSection.className = 'p-6 pb-4';
+  brandSection.className = 'p-8';
   brandSection.innerHTML = `
     <a href="/" class="flex items-center gap-3 group" aria-label="FamilyFinance Home">
-      <div class="bg-accent text-accent-content rounded-xl p-2 transition-transform duration-200 group-hover:scale-110">
+      <div class="bg-accent text-accent-content rounded-2xl p-2 shadow-accent-glow transition-transform duration-200 group-hover:scale-105">
         ${icons.wallet}
       </div>
       <span class="text-xl font-bold tracking-tight text-base-content">
@@ -80,7 +80,7 @@ const createNavigation = (args: { currentPath?: string }): HTMLElement => {
 
   // Navigation items - each with unique icon
   const navItems = [
-    { href: '/', label: 'Dashboard', iconKey: 'layoutDashboard' as const },
+    { href: '/dashboard', label: 'Dashboard', iconKey: 'layoutDashboard' as const },
     { href: '/transactions', label: 'Transactions', iconKey: 'receipt' as const },
     { href: '/budget', label: 'Budget', iconKey: 'donut' as const },
     { href: '/assets', label: 'Assets', iconKey: 'wallet' as const },
@@ -91,7 +91,7 @@ const createNavigation = (args: { currentPath?: string }): HTMLElement => {
   ];
 
   const ul = document.createElement('ul');
-  ul.className = 'menu w-full flex-1 px-3';
+  ul.className = 'menu w-full flex-1 px-4 space-y-2';
 
   const isActive = (href: string) => {
     // Exact match for index routes
@@ -104,26 +104,38 @@ const createNavigation = (args: { currentPath?: string }): HTMLElement => {
     const li = document.createElement('li');
     const a = document.createElement('a');
     a.href = item.href;
+    // New styling: border, no background change on hover, icon scale animation on hover
     const activeClass = isActive(item.href)
-      ? 'nav-active relative py-2.5 px-4 gap-3 font-bold tracking-tight text-base-content rounded-lg transition-all duration-200 hover:bg-base-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2'
-      : 'relative py-2.5 px-4 gap-3 font-bold tracking-tight text-base-content rounded-lg transition-all duration-200 hover:bg-base-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2';
+      ? 'relative flex items-center gap-4 py-3 px-5 font-bold text-base rounded-xl transition-all duration-200 group bg-accent/10 text-accent border border-accent/20'
+      : 'relative flex items-center gap-4 py-3 px-5 font-medium text-base rounded-xl transition-all duration-200 group text-base-content/60 hover:text-base-content border border-transparent';
     a.className = activeClass;
     if (isActive(item.href)) {
       a.setAttribute('aria-current', 'page');
       // Add pulsing indicator dot for active item
       a.innerHTML = `
-        ${icons[item.iconKey]}
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0 transition-transform duration-200 group-hover:scale-110 text-accent">${icons[item.iconKey].replace(/<svg[^>]*>/, '').replace(/<\/svg>/, '')}</svg>
         <span>${item.label}</span>
       `;
       const dot = document.createElement('span');
-      dot.className = 'absolute right-3 w-2 h-2 bg-accent rounded-full animate-pulse';
+      dot.className = 'ml-auto w-2 h-2 bg-accent rounded-full animate-pulse';
       dot.setAttribute('aria-hidden', 'true');
       a.appendChild(dot);
     } else {
-      a.innerHTML = `
-        ${icons[item.iconKey]}
-        <span>${item.label}</span>
-      `;
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = icons[item.iconKey];
+      const svg = tempDiv.firstElementChild as SVGElement;
+      if (svg) {
+        svg.classList.add(
+          'shrink-0',
+          'transition-transform',
+          'duration-200',
+          'group-hover:scale-110'
+        );
+      }
+      a.appendChild(svg);
+      const span = document.createElement('span');
+      span.textContent = item.label;
+      a.appendChild(span);
     }
     li.appendChild(a);
     ul.appendChild(li);
@@ -133,17 +145,17 @@ const createNavigation = (args: { currentPath?: string }): HTMLElement => {
 
   // User section with Pro Account
   const userSection = document.createElement('div');
-  userSection.className = 'mt-auto p-4 border-t border-base-300 bg-base-100';
+  userSection.className = 'mt-auto p-5 border-t border-base-300';
   userSection.innerHTML = `
-    <div class="flex items-center gap-3">
+    <div class="flex items-center gap-3 p-4 bg-base-200/80 dark:bg-base-200/50 rounded-2xl border border-base-300 dark:border-base-300/50">
       <div class="avatar placeholder">
-        <div class="bg-accent/10 text-accent rounded-full w-10 flex items-center justify-center">
+        <div class="bg-accent/20 text-accent rounded-full w-10 flex items-center justify-center shadow-inner">
           <span class="text-xs font-semibold">SJ</span>
         </div>
       </div>
       <div class="flex-1 min-w-0">
-        <p class="text-sm font-medium text-base-content truncate">Sarah Jenkins</p>
-        <p class="text-xs text-accent truncate">Pro Account</p>
+        <p class="text-base font-bold text-base-content truncate">Sarah Jenkins</p>
+        <p class="text-xs text-base-content/80 font-medium tracking-wide truncate">Pro Account</p>
       </div>
     </div>
   `;
@@ -153,7 +165,7 @@ const createNavigation = (args: { currentPath?: string }): HTMLElement => {
 };
 
 export const Default: StoryObj = {
-  args: { currentPath: '/' },
+  args: { currentPath: '/dashboard' },
   render: (args) => createNavigation(args),
 };
 

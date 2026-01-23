@@ -21,6 +21,7 @@ import {
   X,
 } from '@lucide/astro';
 import type { User } from '@/lib/auth/lucia';
+import UserProfile from './UserProfile.astro';
 
 interface Props {
   currentPath?: string;
@@ -38,7 +39,7 @@ interface NavItem {
 
 // Updated icons per premium design spec - each nav item has unique icon
 const navItems: NavItem[] = [
-  { href: '/', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/transactions', label: 'Transactions', icon: Receipt },
   { href: '/budget', label: 'Budget', icon: Donut },
   { href: '/assets', label: 'Assets', icon: Wallet },
@@ -55,23 +56,18 @@ const isActive = (href: string) => {
   return currentPath.startsWith(href + '/');
 };
 
-// Get user initials for avatar
-const getUserInitials = () => {
-  if (!user?.name) return '--';
-  return user.name.substring(0, 2).toUpperCase();
-};
-
 // Oasis Finance v1.0.0 Design System - Sidebar specifications:
 // - Width: 16rem (256px)
-// - Nav item padding: py-2.5 px-4 (0.625rem 1rem)
+// - Brand section padding: p-8 (2rem) - matches PoC
+// - Nav item padding: py-3 px-5 (0.75rem 1.25rem) - matches PoC
 // - Icon size: 22px (md size from design system)
-// - Icon-text gap: gap-3 (0.75rem)
-// - Active gradient: linear-gradient(90deg, rgba(99, 102, 241, 0.1) 0%, rgba(99, 102, 241, 0) 100%)
-// - Active left border: 2px solid #6366f1 (accent)
+// - Icon-text gap: gap-4 (1rem) - matches PoC
+// - Active state: solid bg-accent/10, rounded-xl, text-accent, no left border
+// - Inactive state: text-base-content/60, transparent bg
 ---
 
 <aside
-  class="bg-base-100 w-64 min-w-64 min-h-screen border-r border-base-300 hidden lg:block flex flex-col"
+  class="bg-base-100 w-64 min-w-64 h-screen border-r border-base-300 hidden lg:flex flex-col"
   role="navigation"
   aria-label="Main navigation"
 >
@@ -92,10 +88,10 @@ const getUserInitials = () => {
   </div>
 
   <!-- Brand Logo Section -->
-  <div class="p-6 pb-4">
+  <div class="p-8">
     <a href="/" class="flex items-center gap-3 group" aria-label="FamilyFinance Home">
       <div
-        class="bg-accent text-accent-content rounded-xl p-2 transition-transform duration-200 group-hover:scale-110"
+        class="bg-accent text-accent-content rounded-2xl p-2 shadow-accent-glow transition-transform duration-200 group-hover:scale-105"
       >
         <Wallet size={24} class="stroke-current" aria-hidden="true" />
       </div>
@@ -104,47 +100,43 @@ const getUserInitials = () => {
   </div>
 
   <!-- Navigation -->
-  <ul class="menu w-full flex-1 px-3">
+  <ul class="menu w-full flex-1 px-4 space-y-2 overflow-y-auto">
     {
-      navItems.map((item) => (
-        <li>
-          <a
-            href={item.href}
-            class:list={[
-              'relative py-2.5 px-4 gap-3 font-bold tracking-tight text-base-content rounded-lg transition-all duration-200',
-              'hover:bg-base-200',
-              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2',
-              isActive(item.href) && 'nav-active',
-            ]}
-            aria-current={isActive(item.href) ? 'page' : undefined}
-          >
-            <item.icon size={22} class="stroke-current shrink-0" aria-hidden="true" />
-            <span>{item.label}</span>
-            {isActive(item.href) && (
-              <span
-                class="absolute right-3 w-2 h-2 bg-accent rounded-full animate-pulse"
+      navItems.map((item) => {
+        const active = isActive(item.href);
+        return (
+          <li>
+            <a
+              href={item.href}
+              class={`relative flex items-center gap-4 py-3 px-5 text-base rounded-xl transition-all duration-200 group border ${
+                active
+                  ? 'bg-accent/10 text-accent font-bold border-accent/20'
+                  : 'text-base-content/60 hover:text-base-content font-medium border-transparent'
+              } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2`}
+              aria-current={active ? 'page' : undefined}
+            >
+              <item.icon
+                size={22}
+                class={`shrink-0 transition-transform duration-200 group-hover:scale-110 ${
+                  active ? 'text-accent' : ''
+                }`}
                 aria-hidden="true"
               />
-            )}
-            {item.badge && <span class="badge badge-sm badge-accent">{item.badge}</span>}
-          </a>
-        </li>
-      ))
+              <span>{item.label}</span>
+              {active && (
+                <span
+                  class="ml-auto w-2 h-2 bg-accent rounded-full animate-pulse"
+                  aria-hidden="true"
+                />
+              )}
+              {item.badge && <span class="badge badge-sm badge-accent">{item.badge}</span>}
+            </a>
+          </li>
+        );
+      })
     }
   </ul>
 
   <!-- Bottom section - User info -->
-  <div class="mt-auto p-4 border-t border-base-300 bg-base-100">
-    <div class="flex items-center gap-3">
-      <div class="avatar placeholder">
-        <div class="bg-accent/10 text-accent rounded-full w-10 flex items-center justify-center">
-          <span class="text-xs font-semibold">{getUserInitials()}</span>
-        </div>
-      </div>
-      <div class="flex-1 min-w-0">
-        <p class="text-sm font-medium text-base-content truncate">{user?.name || 'User Name'}</p>
-        <p class="text-xs text-accent truncate">Pro Account</p>
-      </div>
-    </div>
-  </div>
+  <UserProfile user={user} />
 </aside>
