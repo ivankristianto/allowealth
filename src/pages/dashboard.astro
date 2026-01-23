@@ -11,7 +11,9 @@
  * - Monthly spending vs budget
  * - Budget health alerts
  * - Spending summary card with progress
+ * - Spending analysis chart
  * - Recent transactions
+ * - Net worth widget
  */
 
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
@@ -19,6 +21,7 @@ import { dashboardService } from '@/services';
 import type { DashboardData } from '@/services/dashboard.service';
 import SummaryCards from '@/components/organisms/SummaryCards.astro';
 import SpendingCard from '@/components/organisms/SpendingCard.astro';
+import SpendingChart from '@/components/organisms/SpendingChart.astro';
 import NetWorthWidget from '@/components/organisms/NetWorthWidget.astro';
 import RecentTransactionsList from '@/components/organisms/RecentTransactionsList.astro';
 import QuickActions from '@/components/molecules/QuickActions.astro';
@@ -26,7 +29,7 @@ import DashboardError from '@/components/organisms/DashboardError.astro';
 import type { TransactionOutput } from '@/lib/types/transaction';
 
 const currentPath = '/dashboard';
-const user = Astro.locals.user!;
+const user = Astro.locals.user;
 
 // Get current month and year
 const now = new Date();
@@ -38,6 +41,11 @@ let dashboardData: DashboardData | null = null;
 let error: Error | null = null;
 
 try {
+  // Defensive check: user should be authenticated due to middleware protection
+  if (!user) {
+    throw new Error('User not authenticated. Please log in again.');
+  }
+
   dashboardData = await dashboardService.getDashboardData(
     user.id,
     currentMonth,
@@ -112,6 +120,16 @@ const recentTransactions: TransactionOutput[] =
       type: 'other', // Default type for now
     },
   })) || [];
+
+// Mock spending categories data (from POC design)
+// TODO: Replace with actual data from service when available
+const spendingCategories = [
+  { category: 'Housing', percentage: 45, color: '#ef4444' },
+  { category: 'Groceries', percentage: 22, color: '#3b82f6' },
+  { category: 'Dining', percentage: 12, color: '#f59e0b' },
+  { category: 'Transport', percentage: 8, color: '#8b5cf6' },
+  { category: 'Savings', percentage: 13, color: '#10b981' },
+];
 ---
 
 <ProtectedLayout title="Dashboard - Finance Manager" currentPath={currentPath}>
@@ -133,7 +151,7 @@ const recentTransactions: TransactionOutput[] =
           {/* Quick Actions - Direct rendering, no wrapper */}
           <QuickActions />
 
-          {/* Spending Summary Card & Net Worth Widget (half width each) */}
+          {/* Spending Summary Card & Spending Analysis Chart (side by side) */}
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <SpendingCard
               spent={parseFloat(dashboardData?.monthlySpent.total ?? '0')}
@@ -148,12 +166,10 @@ const recentTransactions: TransactionOutput[] =
               }
               loading={!dashboardData}
             />
-            <NetWorthWidget
-              totalIDR={parseFloat(dashboardData?.totalAssets.idr ?? '0')}
-              totalUSD={parseFloat(dashboardData?.totalAssets.usd ?? '0')}
-              localAssets={parseFloat(dashboardData?.totalAssets.idr ?? '0')}
-              globalAssets={parseFloat(dashboardData?.totalAssets.usd ?? '0')}
-              growthPercentage={0}
+            <SpendingChart
+              data={spendingCategories}
+              totalSpent={parseFloat(dashboardData?.monthlySpent.total ?? '0')}
+              totalBudget={parseFloat(dashboardData?.monthlySpent.budget ?? '0')}
               loading={!dashboardData}
             />
           </div>
@@ -161,13 +177,25 @@ const recentTransactions: TransactionOutput[] =
           {/* Summary Cards */}
           <SummaryCards data={summaryCardsData} loading={!dashboardData} error={false} />
 
-          {/* Recent Transactions */}
-          <div class="w-full lg:w-2/3">
-            <RecentTransactionsList
-              transactions={recentTransactions}
-              loading={!dashboardData}
-              viewAllUrl="/transactions"
-            />
+          {/* Recent Transactions & Net Worth Widget (side by side) */}
+          <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+            <div class="xl:col-span-2">
+              <RecentTransactionsList
+                transactions={recentTransactions}
+                loading={!dashboardData}
+                viewAllUrl="/transactions"
+              />
+            </div>
+            <div>
+              <NetWorthWidget
+                totalIDR={parseFloat(dashboardData?.totalAssets.idr ?? '0')}
+                totalUSD={parseFloat(dashboardData?.totalAssets.usd ?? '0')}
+                localAssets={parseFloat(dashboardData?.totalAssets.idr ?? '0')}
+                globalAssets={parseFloat(dashboardData?.totalAssets.usd ?? '0')}
+                growthPercentage={0}
+                loading={!dashboardData}
+              />
+            </div>
           </div>
         </>
       )
