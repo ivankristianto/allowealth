@@ -57,3 +57,6 @@ db/*.db
 
 # storybook static files
 storybook-static/
+
+# POC
+specs/familyfinance
