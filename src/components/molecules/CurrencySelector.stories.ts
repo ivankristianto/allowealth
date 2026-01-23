@@ -36,40 +36,63 @@ const createCurrencySelector = (args: {
   container.className = 'p-4 bg-base-100';
 
   const wrapper = document.createElement('div');
-  wrapper.className = 'relative inline-block text-left';
+  wrapper.className = 'dropdown dropdown-end';
 
-  const label = document.createElement('label');
-  label.setAttribute('for', 'currency-select');
-  label.className = 'sr-only';
-  label.textContent = 'Select currency';
-  wrapper.appendChild(label);
+  // Button - simple minimalist design
+  const button = document.createElement('button');
+  button.tabIndex = 0;
+  button.className =
+    'px-4 py-2 text-sm font-medium border border-base-300 bg-base-100 text-base-content rounded-xl hover:bg-base-200 transition-colors shadow-sm flex items-center gap-2';
+  button.setAttribute('aria-label', 'Currency selector');
 
-  const select = document.createElement('select');
-  select.id = 'currency-select';
-  select.name = 'currency';
-  select.className =
-    'block w-full pl-4 pr-10 py-2 text-base font-medium border-base-300 focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent rounded-xl bg-base-100 text-base-content appearance-none cursor-pointer shadow-sm hover:bg-base-200 transition-colors';
-  select.setAttribute('aria-label', 'Currency selector');
+  const buttonText = document.createElement('span');
+  buttonText.className = 'text-base-content';
+  buttonText.textContent = currencyLabels[selectedCurrency];
+  button.appendChild(buttonText);
+
+  const chevron = document.createElement('div');
+  chevron.appendChild(
+    ChevronDown.render({
+      size: 14,
+      class: 'stroke-current text-neutral shrink-0',
+      'aria-hidden': 'true',
+    })
+  );
+  button.appendChild(chevron);
+
+  wrapper.appendChild(button);
+
+  // Dropdown menu - matching UserContext style
+  const menu = document.createElement('ul');
+  menu.tabIndex = 0;
+  menu.className =
+    'dropdown-content z-[1] menu p-2 shadow-lg bg-base-100 rounded-box w-52 border border-base-300';
 
   currencies.forEach((currency) => {
-    const option = document.createElement('option');
-    option.value = currency;
-    option.textContent = currencyLabels[currency];
+    const li = document.createElement('li');
+
+    const itemButton = document.createElement('button');
+    itemButton.className = 'flex items-center gap-2 w-full text-left hover:bg-base-200 rounded-btn';
+    itemButton.setAttribute('data-currency', currency);
+    itemButton.type = 'button';
+
+    const itemSpan = document.createElement('span');
+    itemSpan.className = 'text-base-content';
+    itemSpan.textContent = currencyLabels[currency];
+    itemButton.appendChild(itemSpan);
+
     if (currency === selectedCurrency) {
-      option.selected = true;
+      const checkmark = document.createElement('span');
+      checkmark.className = 'ml-auto text-accent text-xs';
+      checkmark.textContent = '✓';
+      itemButton.appendChild(checkmark);
     }
-    select.appendChild(option);
+
+    li.appendChild(itemButton);
+    menu.appendChild(li);
   });
 
-  wrapper.appendChild(select);
-
-  const iconWrapper = document.createElement('div');
-  iconWrapper.className =
-    'pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-neutral';
-  iconWrapper.setAttribute('aria-hidden', 'true');
-  iconWrapper.appendChild(ChevronDown.render({ size: 20, class: 'stroke-current' }));
-
-  wrapper.appendChild(iconWrapper);
+  wrapper.appendChild(menu);
   container.appendChild(wrapper);
 
   return container;
@@ -83,7 +106,8 @@ export const Default: StoryObj = {
   parameters: {
     docs: {
       description: {
-        story: 'Default currency selector with IDR selected as default.',
+        story:
+          'Default currency selector with IDR selected. Simple minimalist button design with light border, white background, and subtle shadow.',
       },
     },
   },
@@ -97,22 +121,7 @@ export const USDSelected: StoryObj = {
   parameters: {
     docs: {
       description: {
-        story: 'Currency selector with USD selected.',
-      },
-    },
-  },
-};
-
-export const OnlyIDR: StoryObj = {
-  args: {
-    selectedCurrency: 'IDR',
-    currencies: ['IDR'],
-  },
-  render: (args) => createCurrencySelector(args),
-  parameters: {
-    docs: {
-      description: {
-        story: 'Currency selector with only IDR available.',
+        story: 'Currency selector with USD selected and checkmark indicator.',
       },
     },
   },
@@ -129,7 +138,7 @@ export const DarkMode: StoryObj = {
     },
     docs: {
       description: {
-        story: 'Currency selector in dark mode.',
+        story: 'Currency selector in dark mode with theme-aware styling.',
       },
     },
   },

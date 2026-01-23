@@ -80,40 +80,62 @@ const createHeader = (args: {
   const rightDiv = document.createElement('div');
   rightDiv.className = 'flex items-center gap-3 sm:gap-5';
 
-  // Currency Selector (hidden on mobile)
+  // Currency Selector (hidden on mobile) - simple minimalist design
   const currencyDiv = document.createElement('div');
-  currencyDiv.className = 'hidden sm:block relative inline-block text-left';
+  currencyDiv.className = 'hidden sm:block dropdown dropdown-end';
 
-  const currencyLabel = document.createElement('label');
-  currencyLabel.setAttribute('for', 'currency-select');
-  currencyLabel.className = 'sr-only';
-  currencyLabel.textContent = 'Select currency';
-  currencyDiv.appendChild(currencyLabel);
+  const currencyButton = document.createElement('button');
+  currencyButton.tabIndex = 0;
+  currencyButton.className =
+    'px-4 py-2 text-sm font-medium border border-base-300 bg-base-100 text-base-content rounded-xl hover:bg-base-200 transition-colors shadow-sm flex items-center gap-2';
+  currencyButton.setAttribute('aria-label', 'Currency selector');
 
-  const currencySelect = document.createElement('select');
-  currencySelect.id = 'currency-select';
-  currencySelect.name = 'currency';
-  currencySelect.className =
-    'block w-full pl-4 pr-10 py-2 text-base font-medium border-base-300 focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent rounded-xl bg-base-100 text-base-content appearance-none cursor-pointer shadow-sm hover:bg-base-200 transition-colors';
-  currencySelect.setAttribute('aria-label', 'Currency selector');
+  const buttonText = document.createElement('span');
+  buttonText.className = 'text-base-content';
+  buttonText.textContent = 'IDR (Default)';
+  currencyButton.appendChild(buttonText);
 
-  ['IDR', 'USD'].forEach((currency) => {
-    const option = document.createElement('option');
-    option.value = currency;
-    option.textContent = currency === 'IDR' ? 'IDR (Default)' : 'USD';
-    if (currency === 'IDR') option.selected = true;
-    currencySelect.appendChild(option);
+  const currencyChevron = document.createElement('div');
+  currencyChevron.appendChild(
+    ChevronDown.render({
+      size: 14,
+      class: 'stroke-current text-neutral shrink-0',
+      'aria-hidden': 'true',
+    })
+  );
+  currencyButton.appendChild(currencyChevron);
+
+  currencyDiv.appendChild(currencyButton);
+
+  // Dropdown menu - matching UserContext style
+  const currencyMenu = document.createElement('ul');
+  currencyMenu.tabIndex = 0;
+  currencyMenu.className =
+    'dropdown-content z-[1] menu p-2 shadow-lg bg-base-100 rounded-box w-52 border border-base-300';
+
+  const currencyData = [
+    { value: 'IDR', label: 'IDR (Default)' },
+    { value: 'USD', label: 'USD' },
+  ];
+
+  currencyData.forEach((item) => {
+    const li = document.createElement('li');
+
+    const itemButton = document.createElement('button');
+    itemButton.className = 'flex items-center gap-2 w-full text-left hover:bg-base-200 rounded-btn';
+    itemButton.setAttribute('data-currency', item.value);
+    itemButton.type = 'button';
+
+    const itemLabel = document.createElement('span');
+    itemLabel.className = 'text-base-content';
+    itemLabel.textContent = item.label;
+    itemButton.appendChild(itemLabel);
+
+    li.appendChild(itemButton);
+    currencyMenu.appendChild(li);
   });
 
-  currencyDiv.appendChild(currencySelect);
-
-  const currencyIcon = document.createElement('div');
-  currencyIcon.className =
-    'pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-neutral';
-  currencyIcon.setAttribute('aria-hidden', 'true');
-  currencyIcon.appendChild(ChevronDown.render({ size: 20, class: 'stroke-current' }));
-  currencyDiv.appendChild(currencyIcon);
-
+  currencyDiv.appendChild(currencyMenu);
   rightDiv.appendChild(currencyDiv);
 
   // Notifications
