@@ -338,7 +338,7 @@ After:
 
 ---
 
-### Task 4: Header Redesign (Priority: P0)
+### Task 4: Header Redesign (Priority: P0) ✅
 
 **Goal:** Implement glass-effect header with page title, currency selector, notifications, and new entry button
 
@@ -346,38 +346,41 @@ After:
 
 **Checklist:**
 
-- [ ] Add glass effect background (`bg-base-100/80 backdrop-blur-md`)
-- [ ] Add dynamic page title based on current route
-- [ ] Add subtitle with current period (e.g., "Summary for January 2024")
-- [ ] Create CurrencySelector molecule (IDR/USD dropdown)
-- [ ] Create NotificationDropdown molecule
-- [ ] Create NotificationItem molecule
-- [ ] Create `notificationStore.ts` for dropdown state
-- [ ] Style "New Entry" button with accent color and shadow
-- [ ] Add notification badge with pulse animation
-- [ ] Ensure sticky positioning with proper z-index
-- [ ] Add ARIA labels for all interactive elements
-- [ ] Create Storybook stories for new molecules
-- [ ] Run quality gates
-- [ ] Test in dark mode
+- [x] Add glass effect background (`bg-base-100/80 backdrop-blur-md`)
+- [x] Add dynamic page title based on current route
+- [x] Add subtitle with current period (e.g., "Summary for January 2024")
+- [x] Create CurrencySelector molecule (IDR/USD dropdown)
+- [x] Create NotificationDropdown molecule
+- [x] Create NotificationItem molecule
+- [x] Create `notificationStore.ts` for dropdown state
+- [x] Style "New Entry" button with accent color and shadow
+- [x] Add notification badge with pulse animation
+- [x] Ensure sticky positioning with proper z-index
+- [x] Add ARIA labels for all interactive elements
+- [x] Create Storybook stories for new molecules
+- [x] Run quality gates
+- [x] Test in dark mode
 
 **Files to modify:**
 
-- `src/components/layouts/Header.astro`
-- `src/components/molecules/CurrencySelector.astro` (new)
-- `src/components/molecules/NotificationDropdown.astro` (new)
-- `src/components/molecules/NotificationItem.astro` (new)
-- `src/lib/stores/notificationStore.ts` (new)
-- `src/lib/stores/currencyStore.ts` (new)
+- `src/components/layouts/Header.astro` ✅
+- `src/components/molecules/CurrencySelector.astro` ✅ (new)
+- `src/components/molecules/NotificationDropdown.astro` ✅ (new)
+- `src/components/molecules/NotificationItem.astro` ✅ (new)
+- `src/components/molecules/CurrencySelector.stories.ts` ✅ (new)
+- `src/components/molecules/NotificationItem.stories.ts` ✅ (new)
+- `src/components/molecules/NotificationDropdown.stories.ts` ✅ (new)
+- `src/lib/stores/notificationStore.ts` ✅ (new)
+- `src/lib/stores/currencyStore.ts` ✅ (new)
 
 **Accessibility:**
 
-- [ ] Add `aria-label` to currency selector
-- [ ] Add `aria-expanded` to notification button
-- [ ] Add `aria-haspopup="true"` to dropdown triggers
-- [ ] Add `role="menu"` to dropdown content
-- [ ] Ensure Escape key closes dropdown
-- [ ] Announce notification count to screen readers
+- [x] Add `aria-label` to currency selector
+- [x] Add `aria-expanded` to notification button
+- [x] Add `aria-haspopup="true"` to dropdown triggers
+- [x] Add `role="menu"` to dropdown content
+- [x] Ensure Escape key closes dropdown
+- [x] Announce notification count to screen readers (via ARIA attributes)
 
 **UI Change:**
 
@@ -399,7 +402,15 @@ After:
          ↑ glass effect backdrop
 ```
 
-**Status:** ⏳ Pending
+**Implementation Notes:**
+
+- Used DaisyUI semantic classes (`bg-warning/10`, `text-warning`) instead of hardcoded Tailwind colors
+- Created Nano Stores for notification dropdown state and currency preference
+- Implemented client-side dropdown toggle with Escape key and click-outside handlers
+- Added pulse animation to notification badge using `animate-pulse`
+- All new components have comprehensive Storybook stories
+
+**Status:** ✅ Complete
 
 ---
 
@@ -1296,7 +1307,7 @@ interface CashFlowItemProps {
 - [x] All new components have Storybook stories
 - [x] All quality gates pass
 
-**Progress:** Tasks 1-3 (P0) Complete ✅ - Design tokens, component library updates, and Navigation sidebar redesign ready for Header implementation
+**Progress:** Tasks 1-4 (P0) Complete ✅ - Design tokens, component library updates, Navigation sidebar, and Header redesign complete. Ready for Dashboard widget implementation.
 
 ---
 

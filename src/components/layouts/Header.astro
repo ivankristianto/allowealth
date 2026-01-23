@@ -2,21 +2,29 @@
 /**
  * Header Component
  *
- * Application header with mobile menu toggle, page title, and user context.
- * Displays user menu when authenticated, or login/register links when not.
+ * Premium glass-effect header with page title, subtitle, currency selector,
+ * notifications, and new entry button. Displays user context when authenticated.
  */
 
 import { Menu, Plus, Bell } from '@lucide/astro';
 import UserContext from '../organisms/UserContext.astro';
+import CurrencySelector from '../molecules/CurrencySelector.astro';
 
 interface Props {
   title?: string;
   currentPath?: string;
   showMenuToggle?: boolean;
   user?: any | null;
+  subtitle?: string;
 }
 
-const { title = 'Finance Manager', currentPath = '/', showMenuToggle = true, user } = Astro.props;
+const {
+  title = 'Finance Manager',
+  currentPath = '/',
+  showMenuToggle = true,
+  user,
+  subtitle = 'Summary for January 2024',
+} = Astro.props;
 
 // Get page title based on current path
 const getPageTitle = (path: string) => {
@@ -45,9 +53,9 @@ const getPageTitle = (path: string) => {
 ---
 
 <header
-  class="glass-effect border-b border-base-300 h-20 p-5 flex items-center justify-between gap-4"
+  class="glass-effect border-b border-base-300/50 px-6 lg:px-10 py-5 flex items-center justify-between gap-4 sticky top-0 z-40 bg-base-100/80 backdrop-blur-md"
 >
-  <!-- Left side: Menu toggle + Page title -->
+  <!-- Left side: Menu toggle + Page title + Subtitle -->
   <div class="flex items-center gap-3">
     {
       showMenuToggle && (
@@ -60,52 +68,167 @@ const getPageTitle = (path: string) => {
         </label>
       )
     }
-    <h1 class="text-xl font-semibold">{getPageTitle(currentPath)}</h1>
+    <div>
+      <h1 class="text-2xl lg:text-3xl font-bold tracking-tight text-primary leading-none">
+        {getPageTitle(currentPath)}
+      </h1>
+      <p class="text-sm font-medium text-neutral hidden sm:block mt-1.5 leading-none">{subtitle}</p>
+    </div>
   </div>
 
-  <!-- Right side: User context + Quick actions -->
-  <div class="flex items-center gap-2">
+  <!-- Right side: Currency selector + Notifications + New Entry button -->
+  <div class="flex items-center gap-3 sm:gap-5">
+    <!-- Currency Selector -->
+    <div class="hidden sm:block">
+      <CurrencySelector />
+    </div>
+
+    <!-- Notifications -->
+    <div class="relative">
+      <button
+        id="notification-button"
+        class="p-3 rounded-full transition-all relative text-neutral hover:bg-base-100 shadow-sm border border-base-300"
+        aria-label="Notifications"
+        aria-expanded="false"
+        aria-haspopup="true"
+      >
+        <Bell size={20} class="stroke-current" aria-hidden="true" />
+        <span
+          class="absolute top-2 right-2 w-2.5 h-2.5 bg-error rounded-full border-2 border-base-100 animate-pulse"
+          aria-hidden="true"></span>
+      </button>
+
+      <!-- Notification Dropdown Panel -->
+      <div
+        id="notification-dropdown"
+        class="absolute right-0 mt-4 w-80 bg-base-100 rounded-3xl border border-base-300 shadow-premium z-50 overflow-hidden hidden"
+        role="menu"
+        aria-label="Notifications menu"
+      >
+        <!-- Header -->
+        <div class="p-5 border-b border-base-300 flex justify-between items-center bg-base-200/50">
+          <span class="font-bold text-base text-neutral">Notifications</span>
+          <button
+            id="close-notifications"
+            class="text-sm font-bold text-accent hover:underline focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 rounded"
+            aria-label="Close notifications"
+          >
+            Close
+          </button>
+        </div>
+
+        <!-- Notification List -->
+        <div class="max-h-96 overflow-y-auto divide-y divide-base-300">
+          <div class="p-5 hover:bg-base-200/50 transition-colors cursor-pointer flex gap-5">
+            <div
+              class="w-12 h-12 shrink-0 rounded-2xl flex items-center justify-center bg-warning/10 text-warning dark:bg-warning/20 shadow-sm"
+            >
+              <Bell size={20} class="shrink-0" aria-hidden="true" />
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex justify-between items-start mb-1.5 leading-none">
+                <p class="text-base font-bold text-base-content tracking-tight">Budget Alert</p>
+                <span class="text-[10px] font-bold text-neutral uppercase tracking-widest"
+                  >2m ago</span
+                >
+              </div>
+              <p class="text-sm text-neutral leading-relaxed">
+                Dining has reached 95% of its monthly limit.
+              </p>
+            </div>
+          </div>
+          <div class="p-5 hover:bg-base-200/50 transition-colors cursor-pointer flex gap-5">
+            <div
+              class="w-12 h-12 shrink-0 rounded-2xl flex items-center justify-center bg-success/10 text-success dark:bg-success/20 shadow-sm"
+            >
+              <Plus size={20} class="shrink-0" aria-hidden="true" />
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex justify-between items-start mb-1.5 leading-none">
+                <p class="text-base font-bold text-base-content tracking-tight">Salary Received</p>
+                <span class="text-[10px] font-bold text-neutral uppercase tracking-widest"
+                  >4h ago</span
+                >
+              </div>
+              <p class="text-sm text-neutral leading-relaxed">Acme Corp deposited Rp51.025.000.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <button
+          class="w-full py-4 text-sm font-bold text-neutral hover:bg-base-200 transition-colors tracking-wide focus:outline-none focus:ring-2 focus:ring-accent focus:ring-inset"
+          aria-label="View all notification history"
+        >
+          View all history
+        </button>
+      </div>
+    </div>
+
     <!-- User Context (login/register or user menu) -->
     <UserContext user={user} />
 
-    <!-- Add new button -->
-    <button class="btn btn-accent btn-sm gap-2 shadow-accent-glow" aria-label="Add new item">
-      <Plus size={24} class="stroke-current" aria-hidden="true" />
-      <span class="hidden sm:inline">Add New</span>
+    <!-- New Entry Button -->
+    <button
+      class="bg-accent hover:bg-accent-hover text-white px-4 sm:px-6 py-2.5 rounded-2xl flex items-center gap-2 font-bold shadow-xl shadow-accent/20 transition-all active:scale-95 text-base"
+      aria-label="Add new entry"
+    >
+      <Plus size={20} class="stroke-current" aria-hidden="true" />
+      <span class="hidden sm:inline">New Entry</span>
     </button>
-
-    <!-- Notifications -->
-    <div class="dropdown dropdown-end">
-      <button
-        tabindex={0}
-        class="btn btn-square btn-ghost btn-sm relative"
-        aria-label="Notifications"
-      >
-        <Bell size={24} class="stroke-current" aria-hidden="true" />
-        <span class="badge badge-xs badge-error absolute top-1 right-1">3</span>
-      </button>
-      <ul
-        tabindex={0}
-        class="dropdown-content z-10 menu p-2 shadow-premium bg-base-100 border border-base-300 rounded-box w-80"
-      >
-        <li class="menu-title">
-          <span class="text-sm font-semibold">Notifications</span>
-        </li>
-        <li>
-          <a href="#" class="flex flex-col items-start gap-1 p-2">
-            <span class="text-sm font-medium">Budget exceeded</span>
-            <span class="text-xs text-neutral">Dining out is 120% over budget</span>
-            <span class="text-xs text-neutral/70">2 hours ago</span>
-          </a>
-        </li>
-        <li>
-          <a href="#" class="flex flex-col items-start gap-1 p-2">
-            <span class="text-sm font-medium">Asset update reminder</span>
-            <span class="text-xs text-neutral">Update your stock portfolio</span>
-            <span class="text-xs text-neutral/70">1 day ago</span>
-          </a>
-        </li>
-      </ul>
-    </div>
   </div>
 </header>
+
+<script>
+  // Client-side script to handle notification dropdown toggle
+  const notificationButton = document.getElementById('notification-button');
+  const notificationDropdown = document.getElementById('notification-dropdown');
+  const closeNotificationsBtn = document.getElementById('close-notifications');
+
+  function toggleNotifications() {
+    if (notificationDropdown) {
+      const isHidden = notificationDropdown.classList.contains('hidden');
+      notificationDropdown.classList.toggle('hidden');
+      if (notificationButton) {
+        notificationButton.setAttribute('aria-expanded', isHidden ? 'true' : 'false');
+      }
+    }
+  }
+
+  function closeNotifications() {
+    if (notificationDropdown) {
+      notificationDropdown.classList.add('hidden');
+      if (notificationButton) {
+        notificationButton.setAttribute('aria-expanded', 'false');
+      }
+    }
+  }
+
+  notificationButton?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggleNotifications();
+  });
+
+  closeNotificationsBtn?.addEventListener('click', () => {
+    closeNotifications();
+  });
+
+  // Close on Escape key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      closeNotifications();
+    }
+  });
+
+  // Close when clicking outside
+  document.addEventListener('click', (e) => {
+    if (
+      notificationDropdown &&
+      notificationButton &&
+      !notificationDropdown.contains(e.target as Node) &&
+      !notificationButton.contains(e.target as Node)
+    ) {
+      closeNotifications();
+    }
+  });
+</script>

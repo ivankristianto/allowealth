@@ -1,0 +1,103 @@
+---
+/**
+ * NotificationDropdown Component
+ *
+ * Dropdown panel for displaying notifications with header, list, and footer.
+ * Includes close button and "View all history" link.
+ */
+
+import NotificationItem from './NotificationItem.astro';
+
+export interface Props {
+  isOpen?: boolean;
+}
+
+const { isOpen = true } = Astro.props;
+
+// Note: In production, notifications would be passed as props from the API
+// For now, we'll use the mock data from the store
+const mockNotifications = [
+  {
+    id: '1',
+    type: 'warning' as const,
+    title: 'Budget Alert',
+    description: 'Dining has reached 95% of its monthly limit.',
+    time: '2m ago',
+  },
+  {
+    id: '2',
+    type: 'success' as const,
+    title: 'Salary Received',
+    description: 'Acme Corp deposited Rp51.025.000.',
+    time: '4h ago',
+  },
+];
+---
+
+<div
+  id="notification-dropdown"
+  class="absolute right-0 mt-4 w-80 bg-base-100 dark:bg-base-100 rounded-3xl border border-base-300 shadow-premium z-50 overflow-hidden"
+  style={isOpen ? 'display: block;' : 'display: none;'}
+  role="menu"
+  aria-label="Notifications menu"
+>
+  <!-- Header -->
+  <div class="p-5 border-b border-base-300 flex justify-between items-center bg-base-200/50">
+    <span class="font-bold text-base text-neutral">Notifications</span>
+    <button
+      id="close-notifications"
+      class="text-sm font-bold text-accent hover:underline focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 rounded"
+      aria-label="Close notifications"
+    >
+      Close
+    </button>
+  </div>
+
+  <!-- Notification List -->
+  <div class="max-h-96 overflow-y-auto divide-y divide-base-300">
+    {mockNotifications.map((notification) => <NotificationItem notification={notification} />)}
+  </div>
+
+  <!-- Footer -->
+  <button
+    class="w-full py-4 text-sm font-bold text-neutral hover:bg-base-200 transition-colors tracking-wide focus:outline-none focus:ring-2 focus:ring-accent focus:ring-inset"
+    aria-label="View all notification history"
+  >
+    View all history
+  </button>
+</div>
+
+<script>
+  // Client-side script to handle dropdown toggle
+  const closeBtn = document.getElementById('close-notifications');
+  closeBtn?.addEventListener('click', () => {
+    const dropdown = document.getElementById('notification-dropdown');
+    if (dropdown) {
+      dropdown.style.display = 'none';
+    }
+  });
+
+  // Close on Escape key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      const dropdown = document.getElementById('notification-dropdown');
+      if (dropdown) {
+        dropdown.style.display = 'none';
+      }
+    }
+  });
+
+  // Close when clicking outside
+  document.addEventListener('click', (e) => {
+    const dropdown = document.getElementById('notification-dropdown');
+    const button = document.querySelector('[aria-label="Notifications"]');
+    if (
+      dropdown &&
+      button &&
+      !dropdown.contains(e.target as Node) &&
+      !button.contains(e.target as Node)
+    ) {
+      dropdown.style.display = 'none';
+    }
+  });
+</script>
