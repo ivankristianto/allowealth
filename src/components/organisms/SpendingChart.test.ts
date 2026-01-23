@@ -22,7 +22,7 @@ describe('SpendingChart - overall percentage calculation', () => {
   };
 
   it('should calculate percentage correctly for typical values', () => {
-    expect(calculateOverallPercentage(53694000, 65900000)).toBe(82);
+    expect(calculateOverallPercentage(53694000, 65900000)).toBe(81);
     expect(calculateOverallPercentage(45000000, 65900000)).toBe(68);
     expect(calculateOverallPercentage(65900000, 65900000)).toBe(100);
   });
@@ -108,7 +108,7 @@ describe('SpendingChart - color assignment', () => {
 
     expect(getColorForIndex(5)).toBe('#ef4444'); // cycles back to red
     expect(getColorForIndex(6)).toBe('#3b82f6'); // cycles back to blue
-    expect(getColorForIndex(10)).toBe('#f59e0b'); // 10 % 5 = 0, but wait... 10 % 5 = 0, so red
+    expect(getColorForIndex(10)).toBe('#ef4444'); // 10 % 5 = 0, so red
   });
 });
 
