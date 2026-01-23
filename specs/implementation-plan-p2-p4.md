@@ -1062,7 +1062,7 @@ The following story files were updated to use DaisyUI semantic colors:
 8. **Card.stories.ts** - ✅ Updated `text-neutral-*` → `text-base-content/*`
 9. **EmptyState.stories.ts** - ✅ Updated `text-neutral-*` → `text-base-content/*`
 
-**Commit:** `feat(stories): update 9 story files for DaisyUI design system alignment` (pending)
+**Commit:** `28e8079` - feat(stories): update 9 story files for DaisyUI design system alignment
 
 **Changes made:**
 
