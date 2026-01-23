@@ -6,6 +6,8 @@
  * and Motion library for smooth animations per styles.json specifications.
  * Respects prefers-reduced-motion for accessibility.
  *
+ * Uses shared animation config from @/lib/animations/toast.ts for consistency.
+ *
  * Automatically included in BaseLayout. Use addToast() from client scripts.
  *
  * @example
@@ -43,6 +45,7 @@
 
 <script>
   import { animate } from 'motion';
+  import { TOAST_ANIMATION_CONFIG, TOAST_INITIAL_STYLES } from '@/lib/animations/toast';
   import { toasts, removeToast, clearAllToasts, type ToastMessage } from '@/lib/stores/toastStore';
 
   const container = document.getElementById('toast-container');
@@ -85,7 +88,7 @@
   // Check if user prefers reduced motion for accessibility
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  // Create toast element with Motion enter animation (matches styles.json toast preset)
+  // Create toast element with Motion enter animation (using shared config from @/lib/animations/toast.ts)
   function createToastElement(toast: ToastMessage): HTMLElement {
     // Capture currently focused element BEFORE toast appears
     // Only if it's not already focused on a toast element
@@ -103,13 +106,12 @@
     toastEl.id = `toast-${toast.id}`;
     toastEl.setAttribute('role', 'alert');
 
-    // Set initial state for enter animation (matches styles.json toast.initial)
+    // Set initial state for enter animation (using shared config from @/lib/animations/toast.ts)
     // Skip animation if user prefers reduced motion - show toast immediately
     if (prefersReducedMotion) {
       toastEl.style.opacity = '1';
     } else {
-      toastEl.style.opacity = '0';
-      toastEl.style.transform = 'translateY(-10px) scale(0.95)';
+      Object.assign(toastEl.style, TOAST_INITIAL_STYLES);
     }
 
     // Message span
@@ -143,22 +145,22 @@
       container.appendChild(toastEl);
     }
 
-    // Enter animation (matches styles.json toast.animate preset)
+    // Enter animation (using shared config from @/lib/animations/toast.ts)
     // Skip animation if user prefers reduced motion
     if (!prefersReducedMotion) {
       animate(
         toastEl,
-        { opacity: [0, 1], y: [-10, 0], scale: [0.95, 1] } as any,
-        { duration: 0.2, easing: [0.4, 0, 0.2, 1] } as any
+        TOAST_ANIMATION_CONFIG.enter.keyframes,
+        TOAST_ANIMATION_CONFIG.enter.options
       );
     }
 
     return toastEl;
   }
 
-  // Dismiss toast with Motion exit animation and optional focus restoration (matches styles.json toast.exit)
+  // Dismiss toast with Motion exit animation and optional focus restoration (using shared config from @/lib/animations/toast.ts)
   function dismissToast(id: string, element: HTMLElement, manual: boolean = false): void {
-    // Exit animation (matches styles.json toast.exit preset)
+    // Exit animation (using shared config from @/lib/animations/toast.ts)
     // Skip animation if user prefers reduced motion - remove immediately
     if (prefersReducedMotion) {
       element.remove();
@@ -179,8 +181,8 @@
     } else {
       animate(
         element,
-        { opacity: [1, 0], scale: [1, 0.95] } as any,
-        { duration: 0.2, easing: [0.4, 0, 0.2, 1] } as any
+        TOAST_ANIMATION_CONFIG.exit.keyframes,
+        TOAST_ANIMATION_CONFIG.exit.options
       ).then(() => {
         element.remove();
         renderedToasts.delete(id);

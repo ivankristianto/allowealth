@@ -702,11 +702,11 @@ bun run typecheck && bun run lint:fix && bun run stylelint:fix && bun run format
 
 **Checklist:**
 
-- [ ] Create `src/lib/animations/toast.ts` with TOAST_ANIMATION_CONFIG constants
-- [ ] Export enter keyframes, enter options, exit keyframes, exit options
-- [ ] Update Toast.astro to import and use shared config
-- [ ] Update ToastContainer.astro to import and use shared config
-- [ ] Update JSDoc comments to reference shared config
+- [x] Create `src/lib/animations/toast.ts` with TOAST_ANIMATION_CONFIG constants
+- [x] Export enter keyframes, enter options, exit keyframes, exit options
+- [x] Update Toast.astro to import and use shared config
+- [x] Update ToastContainer.astro to import and use shared config
+- [x] Update JSDoc comments to reference shared config
 
 **Files to modify:**
 
@@ -716,9 +716,14 @@ bun run typecheck && bun run lint:fix && bun run stylelint:fix && bun run format
 
 **Estimated Time:** 20 minutes
 
-**Status:** ⏳ Pending
+**Status:** ✅ Completed (commit: forthcoming)
 
-**Code Review Feedback Source:** P2 feedback from Task QA.4 code review - Code duplication in reduced motion pattern
+**Code Review Feedback Addressed:**
+
+- P2 (Added to future tasks): Add tests for toast animation config module
+- P2 (Added to future tasks): Extract Modal animations similarly to `src/lib/animations/modal.ts`
+- P2 (Added to future tasks): Add index.ts barrel file for cleaner imports when more animation modules are added
+- P3 (Added to future tasks): Document intended use case for ToastAnimationPreset type or remove if unused
 
 ---
 
@@ -805,3 +810,87 @@ This creates confusion about which implementation should be used and potential s
 **Estimated Time:** 1 hour
 
 **Status:** ⏳ Pending
+
+---
+
+### Task QA.9: Add Tests for Toast Animation Config (Priority: P2)
+
+**Goal:** Add test coverage for the new toast animation configuration module.
+
+**Issue:** The `src/lib/animations/toast.ts` module was created without tests. While it only exports constants, adding tests ensures the animation values match styles.json specifications and provides confidence for future updates.
+
+**Checklist:**
+
+- [ ] Create `src/lib/animations/toast.test.ts`
+- [ ] Test enter keyframes match expected values (opacity: [0,1], y: [-10,0], scale: [0.95,1])
+- [ ] Test exit keyframes match expected values (opacity: [1,0], scale: [1,0.95])
+- [ ] Test animation options (duration: 0.2, easing: [0.4, 0, 0.2, 1])
+- [ ] Test TOAST_ANIMATION_CONFIG structure
+- [ ] Test TOAST_INITIAL_STYLES values
+
+**Files to modify:**
+
+- `src/lib/animations/toast.test.ts` (new file)
+
+**Estimated Time:** 15 minutes
+
+**Status:** ⏳ Pending
+
+**Code Review Feedback Source:** P1 feedback from Task QA.5 code review
+
+---
+
+### Task QA.10: Extract Modal Animation Config (Priority: P2)
+
+**Goal:** Create shared animation configuration for Modal component, following the pattern established for Toast animations.
+
+**Issue:** Modal.astro has inline animation configuration similar to what Toast had before Task QA.5. Extracting to shared config improves consistency and maintainability.
+
+**Checklist:**
+
+- [ ] Create `src/lib/animations/modal.ts` with MODAL_ANIMATION_CONFIG
+- [ ] Export backdrop animation (opacity: [0,1], duration: 0.2)
+- [ ] Export content enter animation (opacity: [0,1], scale: [0.95,1], y: [20,0], duration: 0.3)
+- [ ] Export content exit animation (opacity: [1,0], scale: [1,0.95], y: [0,20], duration: 0.3)
+- [ ] Update Modal.astro to import and use shared config
+- [ ] Ensure prefers-reduced-motion is respected
+
+**Files to modify:**
+
+- `src/lib/animations/modal.ts` (new file)
+- `src/components/molecules/Modal.astro`
+
+**Estimated Time:** 20 minutes
+
+**Status:** ⏳ Pending
+
+**Code Review Feedback Source:** P2 feedback from Task QA.5 code review
+
+---
+
+### Task QA.11: Add Animations Index Barrel File (Priority: P2)
+
+**Goal:** Create an index.ts barrel file for cleaner imports from the animations module.
+
+**Issue:** As more animation modules are added (toast, modal, etc.), imports will become verbose. An index.ts provides a cleaner import path.
+
+**Checklist:**
+
+- [ ] Create `src/lib/animations/index.ts`
+- [ ] Export toast animation module
+- [ ] Export modal animation module (after Task QA.10)
+- [ ] Update imports in components to use `@/lib/animations` where appropriate
+- [ ] Document barrel export pattern for future animation modules
+
+**Files to modify:**
+
+- `src/lib/animations/index.ts` (new file)
+- `src/components/molecules/Toast.astro` (optional import update)
+- `src/components/molecules/ToastContainer.astro` (optional import update)
+- `src/components/molecules/Modal.astro` (optional import update)
+
+**Estimated Time:** 10 minutes
+
+**Status:** ⏳ Pending
+
+**Code Review Feedback Source:** P2 feedback from Task QA.5 code review

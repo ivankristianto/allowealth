@@ -6,6 +6,8 @@
  * Uses Motion library for smooth enter/exit animations.
  * Respects prefers-reduced-motion for accessibility.
  *
+ * Uses shared animation config from @/lib/animations/toast.ts for consistency.
+ *
  * @param {string} id - Unique ID for the toast
  * @param {string} message - Toast message
  * @param {string} type - Toast type: success, error, warning, info
@@ -54,6 +56,7 @@ const positionClasses: Record<string, string> = {
 
 <script define:vars={{ id, duration }}>
   import { animate } from 'motion';
+  import { TOAST_ANIMATION_CONFIG, TOAST_INITIAL_STYLES } from '@/lib/animations/toast';
 
   const toast = document.getElementById(id);
   if (!toast) {
@@ -69,20 +72,15 @@ const positionClasses: Record<string, string> = {
   // Store timeout ID to cancel on manual dismiss (explicitly initialized to undefined)
   let autoDismissTimeout = undefined;
 
-  // Enter animation (matches styles.json toast preset)
+  // Enter animation (using shared config from @/lib/animations/toast.ts)
   // Skip animation if user prefers reduced motion - show toast immediately
   if (prefersReducedMotion) {
     toast.style.opacity = '1';
   } else {
     // Set initial state for enter animation
-    toast.style.opacity = '0';
-    toast.style.transform = 'translateY(-10px) scale(0.95)';
+    Object.assign(toast.style, TOAST_INITIAL_STYLES);
 
-    animate(
-      toast,
-      { opacity: [0, 1], y: [-10, 0], scale: [0.95, 1] },
-      { duration: 0.2, easing: [0.4, 0, 0.2, 1] }
-    );
+    animate(toast, TOAST_ANIMATION_CONFIG.enter.keyframes, TOAST_ANIMATION_CONFIG.enter.options);
   }
 
   // Dismiss toast with exit animation
@@ -96,15 +94,15 @@ const positionClasses: Record<string, string> = {
       autoDismissTimeout = undefined;
     }
 
-    // Exit animation (matches styles.json toast preset)
+    // Exit animation (using shared config from @/lib/animations/toast.ts)
     // Skip animation if user prefers reduced motion - remove immediately
     if (prefersReducedMotion) {
       toast.remove();
     } else {
       animate(
         toast,
-        { opacity: [1, 0], scale: [1, 0.95] },
-        { duration: 0.2, easing: [0.4, 0, 0.2, 1] }
+        TOAST_ANIMATION_CONFIG.exit.keyframes,
+        TOAST_ANIMATION_CONFIG.exit.options
       ).then(() => {
         if (document.contains(toast)) {
           toast.remove();
