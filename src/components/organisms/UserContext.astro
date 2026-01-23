@@ -24,7 +24,11 @@ const { user = null } = Astro.props;
     user ? (
       // Logged in: Show user name and logout
       <>
-        <button tabindex={0} class="btn btn-ghost btn-sm gap-2" aria-label="User menu">
+        <button
+          tabindex={0}
+          class="btn btn-ghost btn-sm gap-2 hover:bg-base-100"
+          aria-label="User menu"
+        >
           <div class="avatar placeholder">
             <div class="bg-primary text-primary-content rounded-full w-8 flex items-center justify-center">
               <span class="text-xs font-semibold">
@@ -32,8 +36,10 @@ const { user = null } = Astro.props;
               </span>
             </div>
           </div>
-          <span class="hidden sm:inline text-sm font-medium">{user?.name || 'User'}</span>
-          <ChevronDown size={16} class="stroke-current" aria-hidden="true" />
+          <span class="hidden sm:inline text-sm font-medium text-base-content">
+            {user?.name || 'User'}
+          </span>
+          <ChevronDown size={22} class="stroke-current" aria-hidden="true" />
         </button>
 
         <ul
@@ -45,13 +51,13 @@ const { user = null } = Astro.props;
           </li>
           <li>
             <a href="/settings" class="flex items-center gap-2">
-              <UserIcon size={16} class="stroke-current" aria-hidden="true" />
+              <UserIcon size={22} class="stroke-current" aria-hidden="true" />
               <span>Profile Settings</span>
             </a>
           </li>
           <li>
             <button class="flex items-center gap-2 text-error" data-logout-button type="button">
-              <LogOut size={16} class="stroke-current" aria-hidden="true" />
+              <LogOut size={22} class="stroke-current" aria-hidden="true" />
               <span>Sign Out</span>
             </button>
           </li>
@@ -60,10 +66,10 @@ const { user = null } = Astro.props;
     ) : (
       // Logged out: Show login/register links
       <div class="flex items-center gap-2">
-        <a href="/login" class="btn btn-ghost btn-sm">
+        <a href="/login" class="btn btn-ghost btn-sm hover:bg-base-100">
           Sign In
         </a>
-        <a href="/register" class="btn btn-primary btn-sm">
+        <a href="/register" class="btn btn-accent btn-sm">
           Sign Up
         </a>
       </div>
@@ -72,6 +78,8 @@ const { user = null } = Astro.props;
 </div>
 
 <script>
+  import { addToast } from '@lib/stores/toastStore';
+
   // Handle logout functionality
   const logoutButton = document.querySelector('[data-logout-button]');
 
@@ -85,15 +93,16 @@ const { user = null } = Astro.props;
         });
 
         if (response.ok) {
-          // Redirect to login page
-          window.location.href = '/login';
+          addToast('Signed out successfully', 'success');
+          setTimeout(() => {
+            window.location.href = '/login';
+          }, 500);
         } else {
-          console.error('Logout failed');
-          // Could show a toast notification here
+          addToast('Failed to sign out. Please try again.', 'error');
         }
       } catch (error) {
         console.error('Logout error:', error);
-        // Show error toast or message
+        addToast('An error occurred. Please try again.', 'error');
       }
     });
   }

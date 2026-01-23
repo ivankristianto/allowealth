@@ -43,13 +43,13 @@ const {
 
       <!-- Error Message -->
       <h3 class="text-xl font-bold text-error mb-2">Something went wrong</h3>
-      <p class="text-neutral-600 mb-4 max-w-md">{message}</p>
+      <p class="text-base-content/60 mb-4 max-w-md">{message}</p>
 
       {
         details && (
           <div class="mb-4">
             <details class="text-left">
-              <summary class="cursor-pointer text-sm text-neutral-500 hover:text-neutral-700">
+              <summary class="cursor-pointer text-sm text-base-content/60 hover:text-base-content">
                 Technical details
               </summary>
               <pre class="mt-2 p-3 bg-base-200 rounded text-xs overflow-auto max-w-md">
@@ -67,7 +67,7 @@ const {
             <button
               type="button"
               onclick="window.location.reload()"
-              class="btn btn-primary flex items-center gap-2"
+              class="btn btn-accent flex items-center gap-2"
             >
               <RefreshCw size={16} class="stroke-current" aria-hidden="true" />
               Try Again
@@ -86,7 +86,7 @@ const {
       </div>
 
       <!-- Suggestion -->
-      <p class="text-sm text-neutral-500 mt-4">
+      <p class="text-sm text-base-content/60 mt-4">
         If this problem persists, please check your internet connection or contact support.
       </p>
     </div>

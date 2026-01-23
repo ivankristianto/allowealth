@@ -53,7 +53,7 @@ const getChangeIndicator = (
   previous: number | null
 ): { value: string; class: string } => {
   if (previous === null || previous === 0) {
-    return { value: 'N/A', class: 'text-neutral-400' };
+    return { value: 'N/A', class: 'text-base-content/40' };
   }
 
   const change = ((current - previous) / previous) * 100;
@@ -71,7 +71,7 @@ const getChangeIndicator = (
     };
   }
 
-  return { value: '0%', class: 'text-neutral-500' };
+  return { value: '0%', class: 'text-base-content/60' };
 };
 
 // Sort history by date (newest first)
@@ -86,7 +86,7 @@ const sortedHistory = [...history].sort((a, b) => {
   <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
     <div>
       <h2 class="text-2xl font-bold">Budget History</h2>
-      <p class="text-neutral-600">Compare your budget performance over time</p>
+      <p class="text-base-content/60">Compare your budget performance over time</p>
     </div>
 
     {/* Export Button (future) */}
@@ -102,7 +102,7 @@ const sortedHistory = [...history].sort((a, b) => {
       <div class="card bg-base-100 shadow border border-base-300 overflow-hidden">
         <div class="card-body p-0">
           {/* History Table - Desktop Header */}
-          <div class="hidden md:grid grid-cols-7 gap-4 px-6 py-4 bg-base-200 text-sm font-semibold text-neutral-600">
+          <div class="hidden md:grid grid-cols-7 gap-4 px-6 py-4 bg-base-200/50 text-sm font-semibold text-base-content/60">
             <div class="col-span-2">Month</div>
             <div class="col-span-1 text-right">Budget</div>
             <div class="col-span-1 text-right">Spent</div>
@@ -130,14 +130,14 @@ const sortedHistory = [...history].sort((a, b) => {
 
               return (
                 <div
-                  class={`grid grid-cols-1 md:grid-cols-7 gap-2 md:gap-4 px-4 md:px-6 py-4 hover:bg-base-100/50 transition-colors ${isCurrentMonth ? 'bg-primary/5' : ''}`}
+                  class={`grid grid-cols-1 md:grid-cols-7 gap-2 md:gap-4 py-4 px-6 hover:bg-base-100 transition-colors ${isCurrentMonth ? 'bg-primary/5' : ''}`}
                 >
                   {/* Mobile View - Card Layout */}
                   <div class="md:hidden col-span-full space-y-3">
                     <div class="flex items-center justify-between">
                       <div class="flex items-center gap-2">
                         <span class="font-bold text-lg">{monthData.month_name}</span>
-                        <span class="text-neutral-500">{monthData.year}</span>
+                        <span class="text-base-content/60">{monthData.year}</span>
                         {isCurrentMonth && (
                           <Badge variant="primary" size="sm">
                             Current
@@ -151,22 +151,22 @@ const sortedHistory = [...history].sort((a, b) => {
 
                     <div class="grid grid-cols-2 gap-3 text-sm">
                       <div>
-                        <div class="text-neutral-500">Budget</div>
+                        <div class="text-base-content/60">Budget</div>
                         <div class="font-medium">{formatCurrency(budgetAmount, currency)}</div>
                       </div>
                       <div>
-                        <div class="text-neutral-500">Spent</div>
+                        <div class="text-base-content/60">Spent</div>
                         <div class="font-medium">{formatCurrency(spentAmount, currency)}</div>
                       </div>
                       <div>
-                        <div class="text-neutral-500">Balance</div>
+                        <div class="text-base-content/60">Balance</div>
                         <div class={`font-medium ${balance >= 0 ? 'text-success' : 'text-error'}`}>
                           {balance >= 0 ? '+' : '-'}
                           {formatCurrency(Math.abs(balance), currency)}
                         </div>
                       </div>
                       <div>
-                        <div class="text-neutral-500">vs Prev Month</div>
+                        <div class="text-base-content/60">vs Prev Month</div>
                         <div class={`font-medium ${changeIndicator.class}`}>
                           {changeIndicator.value}
                         </div>
@@ -205,7 +205,7 @@ const sortedHistory = [...history].sort((a, b) => {
                   <div class="hidden md:block col-span-2">
                     <div class="flex items-center gap-2">
                       <span class="font-semibold">{monthData.month_name}</span>
-                      <span class="text-neutral-500">{monthData.year}</span>
+                      <span class="text-base-content/60">{monthData.year}</span>
                       {isCurrentMonth && (
                         <Badge variant="primary" size="sm">
                           Current
@@ -234,7 +234,7 @@ const sortedHistory = [...history].sort((a, b) => {
                       {formatPercentage(percentageUsed)}
                     </Badge>
                     {(monthData.categories_exceeded > 0 || monthData.categories_warning > 0) && (
-                      <div class="text-xs text-neutral-500 mt-1">
+                      <div class="text-xs text-base-content/60 mt-1">
                         {monthData.categories_exceeded > 0 && (
                           <span class="text-error">{monthData.categories_exceeded} exceeded</span>
                         )}
