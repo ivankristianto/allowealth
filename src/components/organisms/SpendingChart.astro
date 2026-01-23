@@ -1,0 +1,570 @@
+---
+/**
+ * SpendingChart Component
+ *
+ * Interactive donut chart showing spending breakdown by category.
+ * Uses Chart.js with custom center text plugin and hover-synced legend.
+ * Follows Oasis Finance v1.0.0 design system specifications.
+ *
+ * @param {SpendingCategory[]} data - Array of spending categories with percentages
+ * @param {number} totalSpent - Total amount spent (for center text calculation)
+ * @param {number} totalBudget - Total budget (for percentage calculation)
+ * @param {boolean} loading - Show loading skeleton state
+ * @param {string} error - Error message to display
+ * @param {string} className - Additional CSS classes
+ */
+
+import Card from '@/components/atoms/Card.astro';
+import StatLabel from '@/components/atoms/StatLabel.astro';
+import Skeleton from '@/components/atoms/Skeleton.astro';
+
+export interface SpendingCategory {
+  category: string;
+  percentage: number;
+  color?: string; // Optional override color
+}
+
+export interface Props {
+  data: SpendingCategory[];
+  totalSpent?: number;
+  totalBudget?: number;
+  loading?: boolean;
+  error?: string;
+  className?: string;
+}
+
+const {
+  data = [],
+  totalSpent = 0,
+  totalBudget = 0,
+  loading = false,
+  error,
+  className = '',
+} = Astro.props;
+
+// Chart colors from POC design
+const DEFAULT_COLORS = [
+  '#ef4444', // red - Housing
+  '#3b82f6', // blue - Groceries
+  '#f59e0b', // orange - Dining
+  '#8b5cf6', // purple - Transport
+  '#10b981', // green - Savings/Other
+];
+
+// Calculate overall spending percentage
+const overallPercentage = totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0;
+const overallPercentageRounded = Math.round(overallPercentage);
+
+// Serialize data for client-side script
+const serializedData = JSON.stringify(data);
+const serializedColors = JSON.stringify(DEFAULT_COLORS);
+
+// Generate unique ID for this chart instance
+const chartId = `spending-chart-${Math.random().toString(36).slice(2, 11)}`;
+---
+
+<Card className={className} role="region" aria-label="Spending analysis by major categories">
+  <div class="flex flex-col gap-6">
+    {/* Header */}
+    <div>
+      <h4 class="font-bold text-xl text-base-content leading-none tracking-tight">
+        Spending analysis
+      </h4>
+      <StatLabel size="sm" color="neutral" className="mt-2"> BY MAJOR CATEGORIES </StatLabel>
+    </div>
+
+    {/* Loading State */}
+    {
+      loading ? (
+        <div class="flex flex-col md:flex-row items-center gap-8 py-6">
+          <div class="h-[180px] w-full md:w-[180px] shrink-0">
+            <Skeleton variant="circular" width="180" height="180" />
+          </div>
+          <div class="flex-1 w-full space-y-3">
+            {Array.from({ length: 4 }).map(() => (
+              <div class="flex items-center justify-between p-3.5 rounded-2xl">
+                <div class="flex items-center gap-3">
+                  <div class="w-3.5 h-3.5 rounded-lg bg-base-300 animate-pulse" />
+                  <div class="h-4 bg-base-300 rounded w-24 animate-pulse" />
+                </div>
+                <div class="h-4 bg-base-300 rounded w-10 animate-pulse" />
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : error ? (
+        /* Error State */
+        <div class="p-12 text-center">
+          <p class="text-error font-medium" role="alert">
+            {error}
+          </p>
+        </div>
+      ) : data.length === 0 ? (
+        /* Empty State */
+        <div class="p-12 text-center">
+          <p class="text-base-content/60 font-medium">No spending data available yet.</p>
+        </div>
+      ) : (
+        /* Chart and Legend */
+        <div
+          class="flex flex-col md:flex-row items-center gap-8 py-2"
+          data-chart-data={serializedData}
+          data-chart-colors={serializedColors}
+          data-overall-percentage={overallPercentageRounded.toString()}
+        >
+          {/* Chart Container */}
+          <div class="h-[180px] w-full md:w-[180px] relative shrink-0" id={`${chartId}-container`}>
+            <canvas
+              id={chartId}
+              aria-label={`Spending breakdown chart showing ${data.length} categories`}
+              role="img"
+            />
+            {/* Center Text - Updated via JS */}
+            <div
+              id={`${chartId}-center-text`}
+              class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center px-4 transition-opacity duration-200"
+              aria-hidden="true"
+            >
+              <span class="text-2xl font-bold text-base-content tracking-tighter">
+                {overallPercentageRounded}%
+              </span>
+              <span class="text-[10px] font-bold text-base-content/50 tracking-wide mt-1 uppercase">
+                Spent
+              </span>
+            </div>
+          </div>
+
+          {/* Legend - Using button elements for proper ARIA */}
+          <div
+            id={`${chartId}-legend`}
+            class="flex-1 space-y-3 w-full"
+            role="group"
+            aria-label="Spending categories. Use arrow keys to navigate, Enter or Space to view details."
+          >
+            {data.slice(0, 5).map((item, index) => (
+              <button
+                type="button"
+                data-category-index={index}
+                class="spending-chart-legend-item flex items-center justify-between p-3.5 rounded-2xl transition-all border border-transparent hover:bg-base-200/50 hover:shadow-sm cursor-pointer opacity-80 hover:opacity-100 w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+                aria-pressed="false"
+                aria-label={`${item.category}: ${item.percentage}%. Click to view details.`}
+              >
+                <div class="flex items-center gap-3">
+                  <div
+                    class="w-3.5 h-3.5 rounded-lg shadow-sm"
+                    style={`background-color: ${item.color || DEFAULT_COLORS[index % DEFAULT_COLORS.length]}`}
+                    aria-hidden="true"
+                  />
+                  <span
+                    class="text-base font-semibold text-base-content tracking-tight truncate max-w-[120px]"
+                    title={item.category}
+                  >
+                    {item.category}
+                  </span>
+                </div>
+                <span class="text-base font-bold text-base-content">{item.percentage}%</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )
+    }
+
+    {/* Screen Reader Data Table */}
+    {
+      !loading && !error && data.length > 0 && (
+        <table class="sr-only" aria-label="Spending analysis data table">
+          <thead>
+            <tr>
+              <th>Category</th>
+              <th>Percentage</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.map((item) => (
+              <tr>
+                <td>{item.category}</td>
+                <td>{item.percentage}%</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )
+    }
+  </div>
+</Card>
+
+<style>
+  /* Visually hide but keep accessible for screen readers */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+
+  /* Focus visible styles for keyboard navigation */
+  .spending-chart-legend-item:focus-visible {
+    outline: 2px solid hsl(var(--a));
+    outline-offset: 2px;
+  }
+</style>
+
+<script>
+  import Chart from 'chart.js/auto';
+
+  interface SpendingCategory {
+    category: string;
+    percentage: number;
+    color?: string;
+  }
+
+  interface ChartData {
+    [chartId: string]: {
+      chart: Chart<'doughnut'>;
+      data: SpendingCategory[];
+      colors: string[];
+      activeIndex: number | null;
+    };
+  }
+
+  // Store chart instances globally for cleanup
+  const charts: ChartData = {};
+
+  // Store observer reference for cleanup
+  let chartObserver: IntersectionObserver | null = null;
+
+  /**
+   * Cleanup all chart instances and observer
+   * Prevents memory leaks when component unmounts or page navigates away
+   */
+  function cleanupCharts(): void {
+    // Destroy all chart instances
+    Object.values(charts).forEach(({ chart }) => {
+      try {
+        chart.destroy();
+      } catch (e) {
+        // Chart may already be destroyed
+      }
+    });
+
+    // Clear the charts object
+    for (const key in charts) {
+      delete charts[key];
+    }
+
+    // Disconnect observer
+    if (chartObserver) {
+      chartObserver.disconnect();
+      chartObserver = null;
+    }
+  }
+
+  /**
+   * Initialize spending chart with Chart.js
+   * Uses Intersection Observer for lazy loading
+   */
+  function initSpendingChart(
+    chartId: string,
+    data: SpendingCategory[],
+    colors: string[],
+    overallPercentage: number
+  ): void {
+    const canvas = document.getElementById(chartId) as HTMLCanvasElement;
+    const centerText = document.getElementById(`${chartId}-center-text`);
+    const legendContainer = document.getElementById(`${chartId}-legend`);
+
+    if (!canvas || !centerText || !legendContainer) {
+      return;
+    }
+
+    // Destroy existing chart if it exists
+    if (charts[chartId]?.chart) {
+      charts[chartId].chart.destroy();
+    }
+
+    const chartValues = data.map((d) => d.percentage);
+    const chartLabels = data.map((d) => d.category);
+    const chartColors = data.map((d, i) => d.color || colors[i % colors.length]);
+
+    // Detect dark mode for tooltip colors
+    const isDark = (): boolean => {
+      return (
+        document.documentElement.classList.contains('dark') ||
+        window.matchMedia('(prefers-color-scheme: dark)').matches
+      );
+    };
+
+    // Create new chart
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const chart = new Chart<'doughnut'>(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: chartLabels,
+        datasets: [
+          {
+            data: chartValues,
+            backgroundColor: chartColors,
+            borderWidth: 0,
+            spacing: 4,
+            hoverOffset: 8,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        cutout: '70%',
+        animation: {
+          animateScale: true,
+          animateRotate: true,
+        },
+        plugins: {
+          legend: {
+            display: false,
+          },
+          tooltip: {
+            backgroundColor: isDark() ? 'rgba(248, 250, 252, 0.95)' : 'rgba(15, 23, 42, 0.9)',
+            titleColor: isDark() ? '#0f172a' : '#fff',
+            bodyColor: isDark() ? '#0f172a' : '#fff',
+            padding: 12,
+            cornerRadius: 8,
+            displayColors: true,
+            callbacks: {
+              label: (context) => {
+                const label = context.label || '';
+                const value = context.parsed || 0;
+                return `${label}: ${value}%`;
+              },
+            },
+          },
+        },
+        onHover: (_event, elements) => {
+          const activeIndex = elements.length > 0 ? elements[0].index : null;
+          updateActiveState(chartId, activeIndex);
+        },
+      },
+    });
+
+    // Store chart instance
+    charts[chartId] = {
+      chart,
+      data,
+      colors,
+      activeIndex: null,
+    };
+
+    // Add legend item event listeners
+    const legendItems = legendContainer.querySelectorAll('.spending-chart-legend-item');
+    legendItems.forEach((item, index) => {
+      // Mouse enter
+      item.addEventListener('mouseenter', () => {
+        updateActiveState(chartId, index);
+        if (charts[chartId]?.chart) {
+          charts[chartId].chart.setActiveElements([{ datasetIndex: 0, index }]);
+          charts[chartId].chart.update();
+        }
+      });
+
+      // Mouse leave
+      item.addEventListener('mouseleave', () => {
+        updateActiveState(chartId, null);
+        if (charts[chartId]?.chart) {
+          charts[chartId].chart.setActiveElements([]);
+          charts[chartId].chart.update();
+        }
+      });
+
+      // Keyboard support with arrow key navigation
+      item.addEventListener('keydown', (e: KeyboardEvent) => {
+        const items = Array.from(
+          legendContainer.querySelectorAll('.spending-chart-legend-item')
+        ) as HTMLElement[];
+        const currentIndex = items.indexOf(item as HTMLElement);
+
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          // Toggle active state on keyboard activation
+          const isActive = charts[chartId]?.activeIndex === index;
+          updateActiveState(chartId, isActive ? null : index);
+          if (charts[chartId]?.chart) {
+            charts[chartId].chart.setActiveElements(isActive ? [] : [{ datasetIndex: 0, index }]);
+            charts[chartId].chart.update();
+          }
+        } else if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+          e.preventDefault();
+          const nextIndex = (currentIndex + 1) % items.length;
+          items[nextIndex]?.focus();
+        } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+          e.preventDefault();
+          const prevIndex = (currentIndex - 1 + items.length) % items.length;
+          items[prevIndex]?.focus();
+        } else if (e.key === 'Home') {
+          e.preventDefault();
+          items[0]?.focus();
+        } else if (e.key === 'End') {
+          e.preventDefault();
+          items[items.length - 1]?.focus();
+        } else if (e.key === 'Escape') {
+          e.preventDefault();
+          updateActiveState(chartId, null);
+          if (charts[chartId]?.chart) {
+            charts[chartId].chart.setActiveElements([]);
+            charts[chartId].chart.update();
+          }
+        }
+      });
+
+      // Focus event - update chart to show focused item
+      item.addEventListener('focus', () => {
+        updateActiveState(chartId, index);
+        if (charts[chartId]?.chart) {
+          charts[chartId].chart.setActiveElements([{ datasetIndex: 0, index }]);
+          charts[chartId].chart.update();
+        }
+      });
+
+      // Blur event - reset if no active item
+      item.addEventListener('blur', () => {
+        // Only reset if this was the active item
+        if (charts[chartId]?.activeIndex === index) {
+          updateActiveState(chartId, null);
+          if (charts[chartId]?.chart) {
+            charts[chartId].chart.setActiveElements([]);
+            charts[chartId].chart.update();
+          }
+        }
+      });
+    });
+  }
+
+  /**
+   * Update active state for chart and legend
+   */
+  function updateActiveState(chartId: string, activeIndex: number | null): void {
+    const chartData = charts[chartId];
+    if (!chartData) return;
+
+    chartData.activeIndex = activeIndex;
+
+    const centerText = document.getElementById(`${chartId}-center-text`);
+    const legendContainer = document.getElementById(`${chartId}-legend`);
+
+    if (!centerText || !legendContainer) return;
+
+    // Update center text
+    const percentageEl = centerText.querySelector('span:first-child');
+    const labelEl = centerText.querySelector('span:last-child');
+
+    if (activeIndex !== null && chartData.data[activeIndex]) {
+      const item = chartData.data[activeIndex];
+      if (percentageEl) percentageEl.textContent = `${item.percentage}%`;
+      if (labelEl) labelEl.textContent = item.category.toUpperCase();
+    } else {
+      const overallPercentage = Math.round(
+        chartData.data.reduce((sum, item) => sum + item.percentage, 0)
+      );
+      if (percentageEl) percentageEl.textContent = `${overallPercentage}%`;
+      if (labelEl) labelEl.textContent = 'SPENT';
+    }
+
+    // Update legend styles and aria-pressed
+    const legendItems = legendContainer.querySelectorAll('.spending-chart-legend-item');
+    legendItems.forEach((item, index) => {
+      if (activeIndex === null) {
+        // Reset to default
+        (item as HTMLElement).style.backgroundColor = '';
+        (item as HTMLElement).style.opacity = '0.8';
+        (item as HTMLElement).style.borderColor = 'transparent';
+        item.setAttribute('aria-pressed', 'false');
+      } else if (index === activeIndex) {
+        // Active item - use base-200 which adapts to theme
+        (item as HTMLElement).classList.add('bg-base-200');
+        (item as HTMLElement).style.opacity = '1';
+        (item as HTMLElement).classList.add('border-base-300');
+        item.setAttribute('aria-pressed', 'true');
+      } else {
+        // Inactive item
+        (item as HTMLElement).style.backgroundColor = '';
+        (item as HTMLElement).style.opacity = '0.4';
+        (item as HTMLElement).style.borderColor = 'transparent';
+        item.setAttribute('aria-pressed', 'false');
+      }
+    });
+  }
+
+  /**
+   * Initialize all charts on page load with Intersection Observer
+   */
+  function initAllCharts(): void {
+    // Cleanup first to prevent memory leaks
+    cleanupCharts();
+
+    const chartContainers = document.querySelectorAll('[id^="spending-chart-"][id$="-container"]');
+
+    chartObserver = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const container = entry.target as HTMLElement;
+            const chartId = container.querySelector('canvas')?.id;
+
+            if (chartId && !charts[chartId]) {
+              // Get data from data attributes
+              const dataAttr = container
+                .closest('[data-chart-data]')
+                ?.getAttribute('data-chart-data');
+              const colorsAttr = container
+                .closest('[data-chart-colors]')
+                ?.getAttribute('data-chart-colors');
+              const overallAttr = container
+                .closest('[data-overall-percentage]')
+                ?.getAttribute('data-overall-percentage');
+
+              if (dataAttr && colorsAttr && overallAttr) {
+                try {
+                  const data = JSON.parse(dataAttr) as SpendingCategory[];
+                  const colors = JSON.parse(colorsAttr) as string[];
+                  const overallPercentage = parseFloat(overallAttr);
+
+                  initSpendingChart(chartId, data, colors, overallPercentage);
+                } catch (e) {
+                  console.warn('Failed to parse chart data:', e);
+                }
+              }
+
+              // Stop observing after initialization
+              chartObserver?.unobserve(container);
+            }
+          }
+        });
+      },
+      { rootMargin: '50px' }
+    );
+
+    chartContainers.forEach((container) => {
+      if (chartObserver) chartObserver.observe(container);
+    });
+  }
+
+  // Initialize when DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initAllCharts);
+  } else {
+    initAllCharts();
+  }
+
+  // Cleanup on page navigation/unload
+  window.addEventListener('beforeunload', cleanupCharts);
+
+  // For Astro View Transitions
+  document.addEventListener('astro:page-load', cleanupCharts);
+  document.addEventListener('astro:after-swap', initAllCharts);
+</script>
