@@ -115,10 +115,10 @@ const { action, categories = [], paymentMethods = [], values = {}, count = 0 } =
 
   <!-- Actions -->
   <div class="flex items-center justify-between gap-4">
-    <span class="text-sm text-neutral-500">{count} transactions found</span>
+    <span class="text-sm text-base-content/60">{count} transactions found</span>
     <div class="flex gap-2">
       <a href={action} class="btn btn-ghost">Clear Filters</a>
-      <Button type="submit" variant="primary">Apply Filters</Button>
+      <Button type="submit" variant="accent">Apply Filters</Button>
     </div>
   </div>
 </form>

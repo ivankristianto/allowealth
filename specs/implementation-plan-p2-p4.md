@@ -64,6 +64,7 @@ Note: This list reflects full-scope changes across all milestones.
 - `src/lib/tokens.ts` - Update TypeScript token exports ✅ (P0)
 - `tailwind.config.ts` - Update DaisyUI theme colors ✅ (P0)
 - `src/layouts/BaseLayout.astro` - Add Inter font import ✅ (P0)
+- `src/components/atoms/Button.astro` - Added `accent` variant ✅ (P2)
 - `src/components/atoms/*` - Updated in P1
 - `src/components/molecules/*` - Core molecules updated in P1, remaining in P2
 - `src/components/organisms/*` - Core organisms updated in P1, remaining in P2
@@ -100,7 +101,7 @@ Tasks must be completed in this sequence:
 
 ## Detailed Tasks
 
-### Task 3.4: Update Footer Component (Priority: P2)
+### Task 3.4: Update Footer Component (Priority: P2) ✅
 
 **Goal:** Ensure footer uses correct colors and spacing per design system
 
@@ -108,12 +109,12 @@ Tasks must be completed in this sequence:
 
 **Checklist:**
 
-- [ ] Replace all `text-slate-*`, `text-gray-*`, `text-neutral-*` with `text-base-content/60` (DaisyUI semantic)
-- [ ] Verify no hardcoded opacity values (use `/60` suffix for 60% opacity)
-- [ ] Update border color to `border-base-300`
-- [ ] Ensure padding matches design system spacing tokens
-- [ ] Remove any dark mode variants (`dark:text-*`) - DaisyUI handles theme switching
-- [ ] **Storybook:** Update `Footer.stories.ts` to show new styling, light/dark theme variants
+- [x] Replace all `text-slate-*`, `text-gray-*`, `text-neutral-*` with `text-base-content/60` (DaisyUI semantic)
+- [x] Verify no hardcoded opacity values (use `/60` suffix for 60% opacity)
+- [x] Update border color to `border-base-300`
+- [x] Ensure padding matches design system spacing tokens
+- [x] Remove any dark mode variants (`dark:text-*`) - DaisyUI handles theme switching
+- [ ] **Storybook:** Update `Footer.stories.ts` to show new styling, light/dark theme variants (P3)
 
 **Files to modify:**
 
@@ -122,13 +123,13 @@ Tasks must be completed in this sequence:
 
 **Acceptance Criteria:**
 
-- [ ] Footer renders correctly in Storybook
-- [ ] Text color is `text-base-content/60` (verified in browser inspector)
-- [ ] Border color is `border-base-300` (verified in browser inspector)
-- [ ] No hardcoded hex values remain (grep verification: `grep -n "#[0-9a-fA-F]" src/components/layouts/Footer.astro`)
-- [ ] No Tailwind color classes remain (`text-slate-`, `text-gray-`, `text-neutral-`)
-- [ ] Storybook story shows light and dark theme correctly
-- [ ] Passes all quality gates without warnings
+- [ ] Footer renders correctly in Storybook (P3)
+- [x] Text color is `text-base-content/60` (verified in browser inspector)
+- [x] Border color is `border-base-300` (verified in browser inspector)
+- [x] No hardcoded hex values remain (grep verification: `grep -n "#[0-9a-fA-F]" src/components/layouts/Footer.astro`)
+- [x] No Tailwind color classes remain (`text-slate-`, `text-gray-`, `text-neutral-`)
+- [ ] Storybook story shows light and dark theme correctly (P3)
+- [x] Passes all quality gates without warnings
 
 **Security Review:**
 
@@ -162,37 +163,37 @@ bun run typecheck && bun run lint:fix && bun run stylelint:fix && bun run format
 
 **Auth Components (Security Review Required):**
 
-- [ ] Update `AuthValidationMessages.astro` - error colors to `text-error` (DaisyUI)
-- [ ] Update `ForgotPasswordForm.astro` - colors (SVG fix completed in P1 Task 4.1)
-  - [ ] Replace emerald/green tokens with `btn-accent` for CTAs
-  - [ ] Update input styling to match `Input.astro` spec
-  - [ ] Update error message colors to `text-error`
-- [ ] Update `LoginForm.astro` - colors (SVG fix completed in P1 Task 4.3)
-  - [ ] Replace emerald/green tokens with `btn-accent` for login button
-  - [ ] Update input styling (height 2.5rem, bg-base-200, indigo focus ring)
-  - [ ] Update error styling to `text-error`
-- [ ] Update `PasswordChangeForm.astro` - input/button styling
-  - [ ] Update inputs to match spec (height, background, focus ring)
-  - [ ] Update buttons to `btn-accent`
-- [ ] Update `RegistrationForm.astro` - form styling
-  - [ ] Update all input fields to match spec
-  - [ ] Update submit button to `btn-accent`
-  - [ ] Update validation error styling
+- [x] Update `AuthValidationMessages.astro` - error colors to `text-error` (DaisyUI)
+- [x] Update `ForgotPasswordForm.astro` - colors (SVG fix completed in P1 Task 4.1)
+  - [x] Replace emerald/green tokens with `btn-accent` for CTAs
+  - [x] Update input styling to match `Input.astro` spec
+  - [x] Update error message colors to `text-error`
+- [x] Update `LoginForm.astro` - colors (SVG fix completed in P1 Task 4.3)
+  - [x] Replace emerald/green tokens with `btn-accent` for login button
+  - [x] Update input styling (height 2.5rem, bg-base-200, indigo focus ring)
+  - [x] Update error styling to `text-error`
+- [x] Update `PasswordChangeForm.astro` - input/button styling
+  - [x] Update inputs to match spec (height, background, focus ring)
+  - [x] Update buttons to `btn-accent`
+- [x] Update `RegistrationForm.astro` - form styling
+  - [x] Update all input fields to match spec
+  - [x] Update submit button to `btn-accent`
+  - [x] Update validation error styling
 
 **Security Review (Auth Forms):**
 
-- [ ] ✅ Verify form validation logic unchanged
-- [ ] ✅ Verify CSRF token handling intact
-- [ ] ✅ Verify no sensitive data in client-side code
-- [ ] ✅ Verify password fields use `type="password"`
-- [ ] ✅ Verify no `console.log` statements with credentials
-- [ ] ✅ Verify no hardcoded tokens or secrets
+- [x] ✅ Verify form validation logic unchanged
+- [x] ✅ Verify CSRF token handling intact
+- [x] ✅ Verify no sensitive data in client-side code
+- [x] ✅ Verify password fields use `type="password"`
+- [x] ✅ Verify no `console.log` statements with credentials
+- [x] ✅ Verify no hardcoded tokens or secrets
 
 **Non-Auth Components:**
 
-- [ ] Update `QuickActions.astro` - button colors to `btn-accent`
-- [ ] Update `TransactionFilters.astro` - input/select styling matches updated atoms
-- [ ] Update `TransactionRow.astro` - hover colors `hover:bg-base-100`, text colors `text-base-content`
+- [x] Update `QuickActions.astro` - button colors to `btn-accent`
+- [x] Update `TransactionFilters.astro` - input/select styling matches updated atoms
+- [x] Update `TransactionRow.astro` - hover colors `hover:bg-base-100`, text colors `text-base-content`
 
 **Storybook Updates (P3):**
 
@@ -219,16 +220,16 @@ bun run typecheck && bun run lint:fix && bun run stylelint:fix && bun run format
 
 **Acceptance Criteria:**
 
-- [ ] All components use DaisyUI semantic colors (no `text-slate-*`, `bg-emerald-*`, etc.)
-- [ ] Auth forms maintain all security features (validation, CSRF, password masking)
-- [ ] Buttons use `btn-accent` for primary CTAs
-- [ ] Inputs match updated `Input.astro` spec (height, background, focus ring)
-- [ ] Error messages use `text-error` semantic class
-- [ ] Hover states use `hover:bg-base-100` or appropriate semantic class
-- [ ] No hardcoded hex values (verified with grep)
+- [x] All components use DaisyUI semantic colors (no `text-slate-*`, `bg-emerald-*`, etc.)
+- [x] Auth forms maintain all security features (validation, CSRF, password masking)
+- [x] Buttons use `btn-accent` for primary CTAs
+- [x] Inputs match updated `Input.astro` spec (height, background, focus ring)
+- [x] Error messages use `text-error` semantic class
+- [x] Hover states use `hover:bg-base-100` or appropriate semantic class
+- [x] No hardcoded hex values (verified with grep)
 - [ ] All Storybook stories show light/dark theme correctly (P3)
-- [ ] Security audit checklist passed for auth components
-- [ ] Passes all quality gates
+- [x] Security audit checklist passed for auth components
+- [x] Passes all quality gates
 
 ---
 
@@ -939,14 +940,14 @@ bun run typecheck && bun run lint:fix && bun run stylelint:fix && bun run format
 
 ### P2 (Core Implementation)
 
-- [ ] Footer aligns with base-content/neutral tokens and spacing
-- [ ] All remaining molecule components match new input/button/token styling
+- [x] Footer aligns with base-content/neutral tokens and spacing ✅
+- [x] All remaining molecule components match new input/button/token styling ✅
 - [ ] All remaining organism components align with table, modal, and status tokens
 - [ ] Animation utilities (`@/lib/animations.ts`) created with full TypeScript types
 - [ ] Animation CSS variables (`src/styles/animations.css`) available and documented
-- [ ] All auth form security reviews passed
-- [ ] Zero hardcoded hex values remain in P2 scope components
-- [ ] All quality gates pass for all modified components
+- [x] All auth form security reviews passed ✅
+- [x] Zero hardcoded hex values remain in P2 scope components ✅
+- [x] All quality gates pass for all modified components ✅
 
 ### P3 (Storybook & Visual QA)
 
@@ -980,17 +981,6 @@ The following items are **explicitly deferred** to post-P4 milestones:
 
 ## Notes
 
-### Constitution Compliance
-
-This plan follows all constitution requirements:
-
-- ✅ No time estimates (removed from all tasks)
-- ✅ Quality gates at every checkpoint
-- ✅ Security review for auth components
-- ✅ Storybook serves as test strategy
-- ✅ Clear acceptance criteria per task
-- ✅ Refactor checklist applied (maintainability, security, performance, consistency)
-
 ### Design System Source of Truth
 
 - **Primary:** `design-system/styles.json` (complete token definitions)
@@ -1009,3 +999,22 @@ Stories are updated **alongside component changes** (not as separate section):
 ---
 
 **End of Plan**
+
+## Code Quality & Accessibility Improvements
+
+**Note:** These are reserved for improvements identified during code review. They are non-blocking but recommended for better code quality, accessibility, and maintainability. When added, follow the same format as tasks and have checklists.
+
+### P3 - Footer Component Optional Enhancements
+
+From Task 3.4 code review (2025-01-23):
+
+1. **Consider using the dedicated `footer` component class** (P3)
+   - **Location:** `src/components/layouts/Footer.astro:9`
+   - **Suggested:** `<footer class="footer footer-center bg-base-100 border-t border-base-300 px-4 py-3">`
+   - **Rationale:** DaisyUI provides a dedicated `footer` component class for more consistent styling
+   - **Note:** Optional - current implementation works correctly
+
+2. **Typography size consideration** (P3)
+   - **Location:** `src/components/layouts/Footer.astro:10`
+   - **Note:** `text-sm` (0.875rem / 14px) correctly aligns with `fontSizes.sm` from design system
+   - **Future:** Consider using tokens if component becomes more complex
