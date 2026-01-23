@@ -813,33 +813,6 @@ This creates confusion about which implementation should be used and potential s
 
 ---
 
-### Task QA.9: Add Tests for Toast Animation Config (Priority: P2)
-
-**Goal:** Add test coverage for the new toast animation configuration module.
-
-**Issue:** The `src/lib/animations/toast.ts` module was created without tests. While it only exports constants, adding tests ensures the animation values match styles.json specifications and provides confidence for future updates.
-
-**Checklist:**
-
-- [ ] Create `src/lib/animations/toast.test.ts`
-- [ ] Test enter keyframes match expected values (opacity: [0,1], y: [-10,0], scale: [0.95,1])
-- [ ] Test exit keyframes match expected values (opacity: [1,0], scale: [1,0.95])
-- [ ] Test animation options (duration: 0.2, easing: [0.4, 0, 0.2, 1])
-- [ ] Test TOAST_ANIMATION_CONFIG structure
-- [ ] Test TOAST_INITIAL_STYLES values
-
-**Files to modify:**
-
-- `src/lib/animations/toast.test.ts` (new file)
-
-**Estimated Time:** 15 minutes
-
-**Status:** ⏳ Pending
-
-**Code Review Feedback Source:** P1 feedback from Task QA.5 code review
-
----
-
 ### Task QA.10: Extract Modal Animation Config (Priority: P2)
 
 **Goal:** Create shared animation configuration for Modal component, following the pattern established for Toast animations.
@@ -881,11 +854,11 @@ This creates confusion about which implementation should be used and potential s
 
 **Checklist:**
 
-- [ ] Create `src/lib/animations/index.ts`
-- [ ] Export toast animation module
-- [ ] Export modal animation module (after Task QA.10)
-- [ ] Update imports in components to use `@/lib/animations` where appropriate
-- [ ] Document barrel export pattern for future animation modules
+- [x] Create `src/lib/animations/index.ts`
+- [x] Export toast animation module
+- [x] Export modal animation module (after Task QA.10)
+- [x] Update imports in components to use `@/lib/animations` where appropriate
+- [x] Document barrel export pattern for future animation modules
 
 **Files to modify:**
 
@@ -896,6 +869,11 @@ This creates confusion about which implementation should be used and potential s
 
 **Estimated Time:** 10 minutes
 
-**Status:** ⏳ Pending
+**Status:** ✅ Completed (commit: forthcoming)
 
 **Code Review Feedback Source:** P2 feedback from Task QA.5 code review
+
+**Code Review Feedback Addressed:**
+
+- P1: Updated component imports to use the barrel export instead of direct module imports
+- P2 (Non-blocking): Consider adding JSDoc @example for combined import patterns (already documented)
