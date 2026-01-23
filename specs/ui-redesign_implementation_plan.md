@@ -658,7 +658,7 @@ After:
 
 ---
 
-### Task 9: Dashboard - Net Worth Widget (Priority: P1)
+### Task 9: Dashboard - Net Worth Widget (Priority: P1) ✅
 
 **Goal:** Create the total net worth sidebar widget with local/global breakdown
 
@@ -666,24 +666,26 @@ After:
 
 **Checklist:**
 
-- [ ] Create NetWorthWidget organism component
-- [ ] Add Landmark icon with emerald background (IconBadge)
-- [ ] Display growth badge with TrendingUp icon (+X.X% growth)
-- [ ] Show "TOTAL NET WORTH" label (StatLabel)
-- [ ] Display primary amount (IDR) with large typography (text-3xl)
-- [ ] Display secondary amount (USD) below (text-lg, text-muted)
-- [ ] Add divider line (border-t border-base-200)
-- [ ] Show local assets breakdown
-- [ ] Show global assets breakdown
-- [ ] Add `loading` prop with skeleton state
-- [ ] Handle error state gracefully
-- [ ] Create Storybook story
-- [ ] Run quality gates
+- [x] Create NetWorthWidget organism component
+- [x] Add Landmark icon with emerald background (IconBadge)
+- [x] Display growth badge with TrendingUp icon (+X.X% growth)
+- [x] Show "TOTAL NET WORTH" label (StatLabel)
+- [x] Display primary amount (IDR) with large typography (text-3xl)
+- [x] Display secondary amount (USD) below (text-lg, text-muted)
+- [x] Add divider line (border-t border-base-200)
+- [x] Show local assets breakdown
+- [x] Show global assets breakdown
+- [x] Add `loading` prop with skeleton state
+- [x] Handle error state gracefully
+- [x] Create Storybook story
+- [x] Run quality gates
 - [ ] Test in dark mode
 
 **Files to modify:**
 
-- `src/components/organisms/NetWorthWidget.astro` (new)
+- `src/components/organisms/NetWorthWidget.astro` ✅ (new)
+- `src/components/organisms/NetWorthWidget.stories.ts` ✅ (new)
+- `src/components/organisms/NetWorthWidget.test.ts` ✅ (new)
 
 **Dependencies:** Task 6 (IconBadge, StatLabel)
 
@@ -716,7 +718,16 @@ interface NetWorthWidgetProps {
 └────────────────────────────────┘
 ```
 
-**Status:** ⏳ Pending
+**Implementation Notes:**
+
+- Uses `formatCurrency` from `@/lib/tokens` for consistent formatting (P0 fix applied)
+- Growth badge dynamically shows success (positive) or error (negative) color
+- Proper ARIA attributes: `role="alert"`, `aria-live="polite"`, `aria-labelledby`, `aria-busy`
+- Loading state with pulse animation skeleton
+- Error state with icon and message
+- All new components have comprehensive Storybook stories
+
+**Status:** ✅ Complete
 
 ---
 
@@ -1333,7 +1344,7 @@ interface CashFlowItemProps {
 - [x] All new components have Storybook stories
 - [x] All quality gates pass
 
-**Progress:** Tasks 1-4, 6-7 (P0-P1) Complete ✅ - Design tokens, component library updates, Navigation sidebar, Header redesign, Spending Summary Card, and Quick Actions complete. Ready for remaining Dashboard widget implementation.
+**Progress:** Tasks 1-4, 6-7, 9 (P0-P1) Complete ✅ - Design tokens, component library updates, Navigation sidebar, Header redesign, Spending Summary Card, Quick Actions, and Net Worth Widget complete. Ready for remaining Dashboard widget implementation.
 
 ---
 
@@ -1420,3 +1431,29 @@ Phase 3 (P2 - Polish):
 - **Location:** `/home/ivan/works/expenses/src/components/organisms/SpendingCard.astro` (line 56)
 - **Issue:** Loading state could benefit from more descriptive aria-label
 - **Action:** Add `aria-label="Loading spending data..."`
+
+### Non-Blocking Feedback from Code Review (Task 9)
+
+**P2-1: Missing Empty State**
+
+- **Location:** `/home/ivan/works/expenses/src/components/organisms/NetWorthWidget.astro`
+- **Issue:** Component has no explicit empty state (when all values are 0)
+- **Action:** Consider adding an empty state with helpful message: "No assets yet. Add your first asset to get started."
+
+**P2-2: Test Helper Functions Should Verify formatCurrency Consistency**
+
+- **Location:** `/home/ivan/works/expenses/src/components/organisms/NetWorthWidget.test.ts`
+- **Issue:** Tests duplicate formatIDR/formatUSD instead of verifying against `formatCurrency` utility
+- **Action:** Add test case that verifies component formatting matches `formatCurrency` output
+
+**P3-1: Component Could Use Design Token for Spacing**
+
+- **Location:** Various locations in NetWorthWidget.astro
+- **Issue:** Some spacing values use direct Tailwind classes (`mb-6`, `mt-3`, `gap-3`) instead of design system spacing tokens
+- **Action:** Consider using `spacing` tokens where appropriate for consistency
+
+**P3-2: Story Names Could Be More Descriptive**
+
+- **Location:** `/home/ivan/works/expenses/src/components/organisms/NetWorthWidget.stories.ts`
+- **Issue:** Stories like `LargeAssets` and `MinimalAssets` could use more descriptive names
+- **Action:** Rename to `LargePortfolio`, `StartingPortfolio` for better clarity
