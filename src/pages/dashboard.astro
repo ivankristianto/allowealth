@@ -9,7 +9,7 @@
  * - Total assets (IDR + USD)
  * - Monthly spending vs budget
  * - Budget health alerts
- * - Assets needing updates
+ * - Spending summary card with progress
  * - Recent transactions
  * - Quick actions
  */
@@ -18,11 +18,10 @@ import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import { dashboardService } from '@/services';
 import type { DashboardData } from '@/services/dashboard.service';
 import SummaryCards from '@/components/organisms/SummaryCards.astro';
-import AssetUpdateTodoList from '@/components/organisms/AssetUpdateTodoList.astro';
+import SpendingCard from '@/components/organisms/SpendingCard.astro';
 import RecentTransactionsList from '@/components/organisms/RecentTransactionsList.astro';
 import QuickActions from '@/components/molecules/QuickActions.astro';
 import DashboardError from '@/components/organisms/DashboardError.astro';
-import type { AssetUpdateTodoItem } from '@/components/organisms/AssetUpdateTodoList.astro';
 import type { TransactionOutput } from '@/lib/types/transaction';
 
 const currentPath = '/dashboard';
@@ -72,18 +71,22 @@ const summaryCardsData = dashboardData
     }
   : undefined;
 
-// Transform asset reminders to todo list format
-const assetTodos: AssetUpdateTodoItem[] =
-  dashboardData?.assetReminders.map((reminder) => ({
-    id: reminder.assetId,
-    name: reminder.assetName,
-    type: reminder.assetType as AssetUpdateTodoItem['type'],
-    balance: parseFloat(reminder.currentBalance),
-    currency: reminder.currency,
-    daysSinceUpdate: reminder.daysSinceUpdate,
-    lastUpdated: reminder.lastUpdated,
-    priority: reminder.priority,
-  })) || [];
+// Get month name for remaining label
+const monthNames = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+];
+const currentMonthName = monthNames[currentMonth - 1];
 
 // Transform recent transactions to match component format
 const recentTransactions: TransactionOutput[] =
@@ -112,18 +115,6 @@ const recentTransactions: TransactionOutput[] =
 
 <ProtectedLayout title="Dashboard - Finance Manager" currentPath={currentPath}>
   <div class="space-y-6">
-    <!-- Welcome Section -->
-    <div class="card bg-base-100 shadow-lg border border-base-300">
-      <div class="card-body">
-        <h2 class="card-title text-2xl">
-          Welcome back, {user?.name || user?.email || 'User'}!
-        </h2>
-        <p class="text-neutral-600">
-          Track your expenses, manage budgets, and monitor your assets.
-        </p>
-      </div>
-    </div>
-
     <!-- Error State -->
     {
       error && (
@@ -143,9 +134,21 @@ const recentTransactions: TransactionOutput[] =
 
           {/* Main Content Grid */}
           <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Asset Updates (2 columns wide) */}
+            {/* Spending Summary Card (2 columns wide) */}
             <div class="lg:col-span-2">
-              <AssetUpdateTodoList assets={assetTodos} loading={!dashboardData} />
+              <SpendingCard
+                spent={parseFloat(dashboardData?.monthlySpent.total ?? '0')}
+                budget={parseFloat(dashboardData?.monthlySpent.budget ?? '0')}
+                currency="IDR"
+                remainingLabel={`Remaining for ${currentMonthName}`}
+                alertMessage={
+                  dashboardData?.monthlySpent.percentage &&
+                  dashboardData.monthlySpent.percentage >= 80
+                    ? `You've reached ${Math.round(dashboardData.monthlySpent.percentage)}% of your monthly budget.`
+                    : undefined
+                }
+                loading={!dashboardData}
+              />
             </div>
 
             {/* Quick Actions (1 column wide) */}
@@ -174,7 +177,6 @@ const recentTransactions: TransactionOutput[] =
 <style>
   /* Ensure smooth loading transitions */
   [data-summary-cards],
-  [data-asset-update-todo-list],
   [data-recent-transactions-list] {
     transition: opacity 0.2s ease-in-out;
   }
