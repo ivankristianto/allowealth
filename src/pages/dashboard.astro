@@ -29,7 +29,7 @@ import DashboardError from '@/components/organisms/DashboardError.astro';
 import type { TransactionOutput } from '@/lib/types/transaction';
 
 const currentPath = '/dashboard';
-const user = Astro.locals.user!;
+const user = Astro.locals.user;
 
 // Get current month and year
 const now = new Date();
@@ -41,6 +41,11 @@ let dashboardData: DashboardData | null = null;
 let error: Error | null = null;
 
 try {
+  // Defensive check: user should be authenticated due to middleware protection
+  if (!user) {
+    throw new Error('User not authenticated. Please log in again.');
+  }
+
   dashboardData = await dashboardService.getDashboardData(
     user.id,
     currentMonth,
