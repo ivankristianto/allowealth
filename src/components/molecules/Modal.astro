@@ -108,10 +108,21 @@ const titleId = title ? `${id}-title` : undefined;
   } from '@/lib/animations';
 
   // Check if user prefers reduced motion for accessibility
-  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // Use MediaQueryList object to enable dynamic preference changes
+  const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+  let prefersReducedMotion = motionQuery.matches;
+
+  // Listen for runtime motion preference changes
+  const handleMotionPreferenceChange = (e) => {
+    prefersReducedMotion = e.matches;
+  };
+  motionQuery.addEventListener('change', handleMotionPreferenceChange);
 
   const modal = document.getElementById(id);
-  if (!modal) return;
+  if (!modal) {
+    motionQuery.removeEventListener('change', handleMotionPreferenceChange);
+    return;
+  }
 
   // Get backdrop and content elements
   const getBackdrop = () => modal.querySelector('[data-modal-backdrop]');
@@ -288,6 +299,7 @@ const titleId = title ? `${id}-title` : undefined;
   // Cleanup
   const cleanup = () => {
     observer.disconnect();
+    motionQuery.removeEventListener('change', handleMotionPreferenceChange);
   };
 
   // Cleanup when modal is removed from DOM

@@ -86,7 +86,15 @@
   }
 
   // Check if user prefers reduced motion for accessibility
-  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // Use MediaQueryList object to enable dynamic preference changes
+  const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+  let prefersReducedMotion = motionQuery.matches;
+
+  // Listen for runtime motion preference changes
+  const handleMotionPreferenceChange = (e) => {
+    prefersReducedMotion = e.matches;
+  };
+  motionQuery.addEventListener('change', handleMotionPreferenceChange);
 
   // Create toast element with Motion enter animation (using shared config from @/lib/animations/toast.ts)
   function createToastElement(toast: ToastMessage): HTMLElement {
@@ -241,5 +249,6 @@
     renderedToasts.clear();
     focusRestoreMap.clear(); // Clear focus map
     clearAllToasts(); // Clear all pending timeouts
+    motionQuery.removeEventListener('change', handleMotionPreferenceChange); // Cleanup motion listener
   });
 </script>

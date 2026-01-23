@@ -65,7 +65,15 @@ const positionClasses: Record<string, string> = {
   }
 
   // Check if user prefers reduced motion
-  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // Use MediaQueryList object to enable dynamic preference changes
+  const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+  let prefersReducedMotion = motionQuery.matches;
+
+  // Listen for runtime motion preference changes
+  const handleMotionPreferenceChange = (e) => {
+    prefersReducedMotion = e.matches;
+  };
+  motionQuery.addEventListener('change', handleMotionPreferenceChange);
 
   // Track whether toast has been dismissed to prevent race conditions
   let isDismissed = false;
@@ -93,6 +101,9 @@ const positionClasses: Record<string, string> = {
       clearTimeout(autoDismissTimeout);
       autoDismissTimeout = undefined;
     }
+
+    // Cleanup motion preference listener
+    motionQuery.removeEventListener('change', handleMotionPreferenceChange);
 
     // Exit animation (using shared config from @/lib/animations/toast.ts)
     // Skip animation if user prefers reduced motion - remove immediately

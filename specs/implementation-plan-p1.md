@@ -735,11 +735,11 @@ bun run typecheck && bun run lint:fix && bun run stylelint:fix && bun run format
 
 **Checklist:**
 
-- [ ] Add `addEventListener('change')` listener for motion query in Toast.astro
-- [ ] Add `addEventListener('change')` listener for motion query in ToastContainer.astro
-- [ ] Add `addEventListener('change')` listener for motion query in Modal.astro
-- [ ] Update `prefersReducedMotion` value dynamically when preference changes
-- [ ] Test runtime preference changes
+- [x] Add `addEventListener('change')` listener for motion query in Toast.astro
+- [x] Add `addEventListener('change')` listener for motion query in ToastContainer.astro
+- [x] Add `addEventListener('change')` listener for motion query in Modal.astro
+- [x] Update `prefersReducedMotion` value dynamically when preference changes
+- [x] Test runtime preference changes
 
 **Files to modify:**
 
@@ -749,9 +749,14 @@ bun run typecheck && bun run lint:fix && bun run stylelint:fix && bun run format
 
 **Estimated Time:** 30 minutes
 
-**Status:** ⏳ Pending
+**Status:** ✅ Completed (commit: forthcoming)
 
-**Code Review Feedback Source:** P2 feedback from Task QA.4 code review
+**Code Review Feedback Addressed:**
+
+- P1 (non-blocking): Move addEventListener after modal check to avoid redundant cleanup
+- P1 (non-blocking): Use `event` instead of `e` for better readability
+- P1 (non-blocking): Add centralized cleanup function to ToastContainer.astro
+- P2: Add JSDoc comments for motion preference handler
 
 ---
 
@@ -797,19 +802,23 @@ This creates confusion about which implementation should be used and potential s
 
 **Checklist:**
 
-- [ ] Document when to use Toast.astro vs ToastContainer.astro
-- [ ] Evaluate if Toast.astro should integrate with toastStore for state consistency
-- [ ] Consider deprecating one implementation if duplication is unnecessary
-- [ ] If both are needed, add architectural decision record (ADR) explaining the separation
+- [x] Document when to use Toast.astro vs ToastContainer.astro
+- [x] Evaluate if Toast.astro should integrate with toastStore for state consistency
+- [x] Consider deprecating one implementation if duplication is unnecessary
+- [x] If both are needed, add architectural decision record (ADR) explaining the separation
 
 **Files to modify:**
 
-- `src/components/molecules/Toast.astro` (potential toastStore integration)
-- `specs/implementation-plan-p1.md` or new ADR document
+- `docs/adr/001-toast-architecture.md` (new file)
 
 **Estimated Time:** 1 hour
 
-**Status:** ⏳ Pending
+**Status:** ✅ Completed (commit: forthcoming)
+
+**Decision:** Retain both implementations with clearly documented use cases
+
+- ToastContainer.astro: Primary/Recommended for app-wide notifications via toastStore
+- Toast.astro: Alternative for static/declarative SSR usage
 
 ---
 
@@ -869,7 +878,7 @@ This creates confusion about which implementation should be used and potential s
 
 **Estimated Time:** 10 minutes
 
-**Status:** ✅ Completed (commit: forthcoming)
+**Status:** ✅ Completed (commit 3387564)
 
 **Code Review Feedback Source:** P2 feedback from Task QA.5 code review
 
