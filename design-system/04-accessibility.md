@@ -71,6 +71,41 @@ WCAG 2.1 AA compliance is **mandatory**.
 
 ## ARIA Attributes
 
+### Boolean Attribute Pattern (Standard)
+
+**For all form components, use boolean values for ARIA attributes:**
+
+```astro
+---
+// Standard pattern - use boolean directly
+const { required = false, error = false } = Astro.props;
+---
+
+<!-- Boolean pattern - standard across all form components -->
+<input
+  id="email"
+  type="email"
+  required={required}
+  aria-required={required}
+  aria-invalid={error}
+  aria-describedby={error ? 'email-error' : undefined}
+/>
+```
+
+**Why boolean?**
+
+- More concise and readable
+- ARIA-compliant (HTML5 boolean attributes)
+- Consistent with modern Astro/HTML idiomatic patterns
+- Renders as `aria-required="true"` when true, or is omitted when false
+
+**Never use:**
+
+```astro
+<!-- ❌ Ternary pattern - not our standard -->
+<input aria-required={required ? 'true' : undefined} />
+```
+
 ### Labels
 
 ```astro
@@ -129,17 +164,17 @@ import { X } from '@lucide/astro';
 
 ### Form Field
 
-```html
+```astro
 <label for="email">Email <span class="text-error">*</span></label>
 <input
   id="email"
   type="email"
-  required
-  aria-required="true"
-  aria-invalid="{!!errors.email}"
-  aria-describedby="email-error"
+  required={required}
+  aria-required={required}
+  aria-invalid={error}
+  aria-describedby={error ? 'email-error' : undefined}
 />
-<span id="email-error" class="text-error" role="alert">{errors.email}</span>
+<span id="email-error" class="text-error" role="alert">{errorMessage}</span>
 ```
 
 ## Color Contrast

@@ -99,7 +99,7 @@ const ariaDescribeIds = [error && errorMessage && inputId ? `${inputId}-error` :
     ]}
     aria-invalid={error}
     aria-describedby={ariaDescribeIds || undefined}
-    aria-required={required ? 'true' : undefined}
+    aria-required={required}
   >
     <option value="">Select category...</option>
     {

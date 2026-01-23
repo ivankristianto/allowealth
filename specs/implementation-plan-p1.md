@@ -642,10 +642,10 @@ bun run typecheck && bun run lint:fix && bun run stylelint:fix && bun run format
 
 **Checklist:**
 
-- [ ] Decide on standard pattern (ternary for explicitness vs boolean for simplicity)
-- [ ] Update all form components to use the standard pattern
-- [ ] Verify ARIA compliance after changes
-- [ ] Document the pattern in design system guide
+- [x] Decide on standard pattern (ternary for explicitness vs boolean for simplicity)
+- [x] Update all form components to use the standard pattern
+- [x] Verify ARIA compliance after changes
+- [x] Document the pattern in design system guide
 
 **Files to modify:**
 
@@ -655,10 +655,15 @@ bun run typecheck && bun run lint:fix && bun run stylelint:fix && bun run format
 - `src/components/atoms/Input.astro`
 - `src/components/atoms/DatePicker.astro`
 - `src/components/atoms/PasswordField.astro`
+- `design-system/04-accessibility.md`
 
 **Estimated Time:** 30 minutes
 
-**Status:** ⏳ Pending
+**Status:** ✅ Completed (commit: forthcoming)
+
+**Code Review Feedback Addressed:**
+
+- P2 (Non-blocking): Checkbox component missing `aria-required` support - added as future improvement consideration
 
 ---
 

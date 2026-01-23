@@ -58,6 +58,7 @@ const {
   pattern = '',
   title = '',
   describedBy = '',
+  required = false,
 } = Astro.props;
 
 // Base input styles aligned with Oasis Finance v1.0.0 design system
@@ -91,8 +92,10 @@ const selectOptions = type === 'select' ? options : [];
       name={name}
       class={inputClasses}
       disabled={disabled}
+      required={required}
       aria-invalid={error}
       aria-describedby={ariaDescribeIds || undefined}
+      aria-required={required}
     >
       <option value="">{placeholder || 'Select...'}</option>
       {selectOptions.map((opt) => (
@@ -107,6 +110,7 @@ const selectOptions = type === 'select' ? options : [];
       placeholder={placeholder}
       value={value}
       disabled={disabled}
+      required={required}
       class={inputClasses}
       min={type === 'number' ? min : undefined}
       max={type === 'number' ? max : undefined}
@@ -115,6 +119,7 @@ const selectOptions = type === 'select' ? options : [];
       title={title || undefined}
       aria-invalid={error}
       aria-describedby={ariaDescribeIds || undefined}
+      aria-required={required}
     />
   )
 }
