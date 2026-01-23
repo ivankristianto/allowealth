@@ -5,7 +5,19 @@ import {
 } from '@/services/__tests__/mocks/dashboard-mocks';
 import { IconRenderers } from '../../../.storybook/lucide-icons';
 
-const { ArrowRight, DollarSign, CreditCard, ArrowLeft, Wallet, Plus, Clock } = IconRenderers;
+const {
+  Banknote,
+  Briefcase,
+  Car,
+  CreditCard,
+  Film,
+  House,
+  Plus,
+  ShoppingBasket,
+  UtensilsCrossed,
+  Wallet,
+  Zap,
+} = IconRenderers;
 
 const meta: Meta = {
   title: 'Organisms/RecentTransactionsList',
@@ -28,7 +40,20 @@ const meta: Meta = {
 
 export default meta;
 
-const formatDate = (date: Date): string => {
+const formatActivityDate = (date: Date): string => {
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const startOfDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const diffDays = Math.round((startOfToday.getTime() - startOfDate.getTime()) / 86400000);
+  const time = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+
+  if (diffDays === 0) {
+    return `Today, ${time}`;
+  }
+  if (diffDays === 1) {
+    return `Yesterday, ${time}`;
+  }
+
   return date.toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
@@ -50,23 +75,68 @@ const formatCurrency = (amount: number, currency: 'IDR' | 'USD'): string => {
   }).format(amount);
 };
 
-// Type alias for payment method icon components
-type PaymentIconComponent =
-  | typeof DollarSign
-  | typeof CreditCard
-  | typeof ArrowLeft
-  | typeof Wallet;
+const iconVariants: Record<string, { bg: string; text: string }> = {
+  primary: { bg: 'bg-primary/10', text: 'text-primary' },
+  accent: { bg: 'bg-accent/10', text: 'text-accent' },
+  success: { bg: 'bg-success/10', text: 'text-success' },
+  warning: { bg: 'bg-warning/10', text: 'text-warning' },
+  error: { bg: 'bg-error/10', text: 'text-error' },
+  info: { bg: 'bg-info/10', text: 'text-info' },
+  neutral: { bg: 'bg-base-300', text: 'text-base-content' },
+};
 
-// Payment method icon component mapping
-const getPaymentIconComponent = (type: string): PaymentIconComponent => {
-  const icons: Record<string, PaymentIconComponent> = {
-    cash: DollarSign,
-    credit_card: CreditCard,
-    debit_card: CreditCard,
-    bank_transfer: ArrowLeft,
-    e_wallet: Wallet,
-  };
-  return icons[type] || DollarSign;
+const getCategoryMeta = (name: string, type: 'expense' | 'income') => {
+  const normalized = name.toLowerCase();
+
+  if (type === 'income') {
+    return { icon: Banknote, variant: 'success' };
+  }
+
+  if (
+    normalized.includes('grocery') ||
+    normalized.includes('market') ||
+    normalized.includes('food')
+  ) {
+    return { icon: ShoppingBasket, variant: 'warning' };
+  }
+  if (
+    normalized.includes('utility') ||
+    normalized.includes('electric') ||
+    normalized.includes('water') ||
+    normalized.includes('gas')
+  ) {
+    return { icon: Zap, variant: 'info' };
+  }
+  if (
+    normalized.includes('entertainment') ||
+    normalized.includes('movie') ||
+    normalized.includes('netflix')
+  ) {
+    return { icon: Film, variant: 'error' };
+  }
+  if (
+    normalized.includes('transport') ||
+    normalized.includes('uber') ||
+    normalized.includes('taxi') ||
+    normalized.includes('ride')
+  ) {
+    return { icon: Car, variant: 'accent' };
+  }
+  if (normalized.includes('dining') || normalized.includes('restaurant')) {
+    return { icon: UtensilsCrossed, variant: 'warning' };
+  }
+  if (
+    normalized.includes('housing') ||
+    normalized.includes('rent') ||
+    normalized.includes('mortgage')
+  ) {
+    return { icon: House, variant: 'primary' };
+  }
+  if (normalized.includes('freelance') || normalized.includes('contract')) {
+    return { icon: Briefcase, variant: 'info' };
+  }
+
+  return { icon: Wallet, variant: type === 'expense' ? 'error' : 'success' };
 };
 
 const createRecentTransactionsList = (args: {
@@ -81,50 +151,48 @@ const createRecentTransactionsList = (args: {
   } = args;
 
   const container = document.createElement('div');
-  container.className = 'p-4 bg-base-100';
-
-  const card = document.createElement('div');
-  card.className = 'border rounded-lg p-6 bg-base-100';
+  container.className = 'p-4 bg-base-100 space-y-5';
 
   // Header with Lucide icon
   const header = document.createElement('div');
-  header.className = 'flex items-center justify-between mb-4';
+  header.className = 'flex items-center justify-between px-2';
   const headerTitle = document.createElement('h2');
-  headerTitle.className = 'text-lg font-semibold flex items-center gap-2';
-  headerTitle.appendChild(
-    Clock.render({ size: 20, class: 'stroke-current text-info' }, { 'aria-hidden': 'true' })
-  );
-  headerTitle.appendChild(document.createTextNode('Recent Transactions'));
+  headerTitle.className = 'text-lg font-bold tracking-tight leading-none';
+  headerTitle.appendChild(document.createTextNode('Recent activity'));
   header.appendChild(headerTitle);
 
-  if (!loading && transactions.length > 5) {
+  if (!loading && transactions.length > 0) {
     const viewAllLink = document.createElement('a');
     viewAllLink.href = viewAllUrl;
     viewAllLink.className =
-      'text-sm text-primary hover:text-accent font-medium flex items-center gap-1';
-    viewAllLink.textContent = 'View All';
-    viewAllLink.appendChild(
-      ArrowRight.render({ size: 16, class: 'stroke-current' }, { 'aria-hidden': 'true' })
-    );
+      'btn btn-outline btn-sm text-accent border-accent/20 hover:bg-accent/5 rounded-xl tracking-wide';
+    viewAllLink.setAttribute('aria-label', 'View all transactions');
+    viewAllLink.textContent = 'View all';
     header.appendChild(viewAllLink);
   }
 
-  card.appendChild(header);
+  container.appendChild(header);
+
+  const card = document.createElement('div');
+  card.className = 'border rounded-2xl p-0 bg-base-100 shadow-sm overflow-hidden';
 
   if (loading) {
     // Loading skeleton
     const skeleton = document.createElement('div');
-    skeleton.className = 'space-y-3';
-    for (let i = 0; i < 5; i++) {
+    skeleton.className = 'divide-y divide-base-200';
+    for (let i = 0; i < 6; i++) {
       const row = document.createElement('div');
-      row.className = 'flex items-center gap-4 p-4 bg-base-200 rounded-lg animate-pulse';
+      row.className = 'flex items-center gap-5 p-5 animate-pulse';
       row.innerHTML = `
-        <div class="w-20 h-4 bg-base-300 rounded"></div>
+        <div class="h-12 w-12 rounded-2xl bg-base-200"></div>
         <div class="flex-1 space-y-2">
-          <div class="h-4 bg-base-300 rounded w-3/4"></div>
-          <div class="h-3 bg-base-300 rounded w-1/2"></div>
+          <div class="h-4 bg-base-200 rounded w-3/4"></div>
+          <div class="h-3 bg-base-200 rounded w-1/2"></div>
         </div>
-        <div class="w-24 h-4 bg-base-300 rounded"></div>
+        <div class="w-24 space-y-2">
+          <div class="h-4 bg-base-200 rounded"></div>
+          <div class="h-3 bg-base-200 rounded"></div>
+        </div>
       `;
       skeleton.appendChild(row);
     }
@@ -163,100 +231,85 @@ const createRecentTransactionsList = (args: {
   } else {
     // Transactions list
     const list = document.createElement('ul');
-    list.className = 'space-y-1';
+    list.className = 'divide-y divide-base-200';
     list.setAttribute('role', 'list');
     list.setAttribute('aria-label', 'Recent transactions');
 
-    transactions.slice(0, 5).forEach((transaction: any) => {
+    transactions.slice(0, 6).forEach((transaction: any) => {
       const amount = parseFloat(transaction.amount) || 0;
       const isExpense = transaction.type === 'expense';
       const date = new Date(transaction.transaction_date);
       const amountColor = isExpense ? 'text-error' : 'text-success';
       const amountSign = isExpense ? '-' : '+';
+      const categoryMeta = getCategoryMeta(transaction.category.name, transaction.type);
+      const iconStyle = iconVariants[categoryMeta.variant];
+      const primaryText = transaction.description || transaction.category.name;
 
       const item = document.createElement('li');
-      item.className =
-        'flex items-center gap-4 p-4 hover:bg-base-200 rounded-lg transition-colors group';
+      item.className = [
+        'group flex items-center gap-5 p-5 transition-all cursor-pointer border-l-4 border-transparent',
+        isExpense ? 'hover:border-error/30' : 'hover:border-success/30',
+        'hover:bg-base-200/40',
+      ].join(' ');
 
-      // Date
-      const dateDiv = document.createElement('div');
-      dateDiv.className = 'flex-shrink-0 w-20 text-sm';
+      const iconBadge = document.createElement('div');
+      iconBadge.className = `rounded-2xl p-3 shadow-sm ${iconStyle.bg} ${iconStyle.text} transition-transform group-hover:rotate-2`;
+      iconBadge.appendChild(
+        categoryMeta.icon.render({ size: 18, class: 'stroke-current' }, { 'aria-hidden': 'true' })
+      );
+      item.appendChild(iconBadge);
+
+      const contentDiv = document.createElement('div');
+      contentDiv.className = 'flex-1 min-w-0';
+
+      const topRow = document.createElement('div');
+      topRow.className = 'flex items-start justify-between gap-4';
+
+      const leftBlock = document.createElement('div');
+      leftBlock.className = 'min-w-0';
+      const title = document.createElement('div');
+      title.className = 'font-bold tracking-tight truncate text-base leading-none';
+      title.textContent = primaryText;
+      leftBlock.appendChild(title);
+
+      const metaRow = document.createElement('div');
+      metaRow.className =
+        'mt-2 flex flex-wrap items-center gap-3 text-[11px] font-semibold text-base-content/60 tracking-wide leading-none';
+      const categoryBadge = document.createElement('span');
+      categoryBadge.className =
+        'text-[10px] font-bold tracking-widest uppercase text-base-content/60 bg-base-200 px-2 py-0.5 rounded';
+      categoryBadge.textContent = transaction.category.name;
+      metaRow.appendChild(categoryBadge);
       const timeEl = document.createElement('time');
-      timeEl.className = 'font-medium';
-      timeEl.textContent = formatDate(date);
       timeEl.setAttribute('datetime', date.toISOString());
-      dateDiv.appendChild(timeEl);
-      item.appendChild(dateDiv);
+      timeEl.textContent = formatActivityDate(date);
+      metaRow.appendChild(timeEl);
+      leftBlock.appendChild(metaRow);
+      topRow.appendChild(leftBlock);
 
-      // Category & Description
-      const infoDiv = document.createElement('div');
-      infoDiv.className = 'flex-1 min-w-0';
-      const categoryDiv = document.createElement('div');
-      categoryDiv.className = 'font-medium truncate group-hover:text-primary transition-colors';
-      categoryDiv.textContent = transaction.category.name;
-      infoDiv.appendChild(categoryDiv);
-
-      if (transaction.description) {
-        const descDiv = document.createElement('div');
-        descDiv.className = 'text-sm text-base-content/60 truncate';
-        descDiv.textContent = transaction.description;
-        infoDiv.appendChild(descDiv);
-      }
-      item.appendChild(infoDiv);
-
-      // Payment Method
-      const paymentDiv = document.createElement('div');
-      paymentDiv.className = 'flex-shrink-0 hidden sm:block';
-      const badge = document.createElement('span');
-      badge.className = 'badge badge-ghost badge-sm flex items-center gap-1';
-      const PaymentIcon = getPaymentIconComponent(transaction.payment_method.type);
-      badge.appendChild(
-        PaymentIcon.render({ size: 12, class: 'stroke-current' }, { 'aria-hidden': 'true' })
-      );
-      badge.appendChild(document.createTextNode(transaction.payment_method.name));
-      paymentDiv.appendChild(badge);
-      item.appendChild(paymentDiv);
-
-      // Amount
-      const amountDiv = document.createElement('div');
-      amountDiv.className = 'flex-shrink-0 text-right min-w-[100px]';
+      const rightBlock = document.createElement('div');
+      rightBlock.className = 'flex flex-col items-end gap-1 min-w-[120px]';
       const amountSpan = document.createElement('span');
-      amountSpan.className = `font-semibold ${amountColor}`;
+      amountSpan.className = `font-bold tracking-tight ${amountColor}`;
       amountSpan.textContent = `${amountSign}${formatCurrency(amount, transaction.currency)}`;
-      amountDiv.appendChild(amountSpan);
-      item.appendChild(amountDiv);
-
-      // Quick action link
-      const actionLink = document.createElement('a');
-      actionLink.href = `/transactions/${transaction.id}`;
-      actionLink.className =
-        'flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity btn btn-ghost btn-sm';
-      actionLink.setAttribute('aria-label', `View ${transaction.category.name} transaction`);
-      actionLink.appendChild(
-        ArrowRight.render({ size: 16, class: 'stroke-current' }, { 'aria-hidden': 'true' })
+      rightBlock.appendChild(amountSpan);
+      const paymentRow = document.createElement('div');
+      paymentRow.className =
+        'flex items-center gap-1.5 text-[10px] uppercase tracking-widest text-base-content/60';
+      paymentRow.appendChild(
+        CreditCard.render({ size: 12, class: 'stroke-current' }, { 'aria-hidden': 'true' })
       );
-      item.appendChild(actionLink);
+      paymentRow.appendChild(document.createTextNode(transaction.payment_method.name));
+      rightBlock.appendChild(paymentRow);
+      topRow.appendChild(rightBlock);
+
+      contentDiv.appendChild(topRow);
+      item.appendChild(contentDiv);
 
       list.appendChild(item);
     });
 
     card.appendChild(list);
-
-    // View all button
-    const viewAllBtn = document.createElement('div');
-    viewAllBtn.className = 'mt-4 pt-4 border-t border-base-300';
-    const viewAllAnchor = document.createElement('a');
-    viewAllAnchor.href = viewAllUrl;
-    viewAllAnchor.className =
-      'flex items-center justify-center gap-2 w-full py-2 px-4 bg-base-200 hover:bg-base-300 rounded-lg transition-colors text-sm font-medium group';
-    viewAllAnchor.textContent = 'View All Transactions';
-    const arrowIcon = ArrowRight.render(
-      { size: 16, class: 'stroke-current group-hover:translate-x-1 transition-transform' },
-      { 'aria-hidden': 'true' }
-    );
-    viewAllAnchor.appendChild(arrowIcon);
-    viewAllBtn.appendChild(viewAllAnchor);
-    card.appendChild(viewAllBtn);
   }
 
   container.appendChild(card);

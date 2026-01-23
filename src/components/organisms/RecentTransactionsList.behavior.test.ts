@@ -7,15 +7,9 @@
 
 describe('RecentTransactionsList - Icon Migration', () => {
   describe('Lucide Icon Imports', () => {
-    it('should import ArrowRight from @lucide/astro', async () => {
+    it('should import CreditCard from @lucide/astro', async () => {
       const module = await import('@/components/organisms/RecentTransactionsList.astro');
-      // Component exists with ArrowRight import
-      expect(module).toBeDefined();
-    });
-
-    it('should import payment method icons from @lucide/astro', async () => {
-      const module = await import('@/components/organisms/RecentTransactionsList.astro');
-      // Component exists with payment icon imports
+      // Component exists with Lucide icon imports
       expect(module).toBeDefined();
     });
 
@@ -27,48 +21,25 @@ describe('RecentTransactionsList - Icon Migration', () => {
       );
       expect(content).not.toContain("import Icon from '../atoms/Icon.astro'");
     });
+
+    it('should import IconBadge for category icons', async () => {
+      const fs = await import('fs/promises');
+      const content = await fs.readFile(
+        'src/components/organisms/RecentTransactionsList.astro',
+        'utf-8'
+      );
+      expect(content).toContain("from '../atoms/IconBadge.astro'");
+    });
   });
 
   describe('Icon Usage Patterns', () => {
-    it('should use Clock for header icon (size 20px)', async () => {
+    it('should use CreditCard icon for payment method (size 12px)', async () => {
       const fs = await import('fs/promises');
       const content = await fs.readFile(
         'src/components/organisms/RecentTransactionsList.astro',
         'utf-8'
       );
-      expect(content).toContain('<Clock size={20}');
-    });
-
-    it('should use ArrowRight for "View All" link (size 16px)', async () => {
-      const fs = await import('fs/promises');
-      const content = await fs.readFile(
-        'src/components/organisms/RecentTransactionsList.astro',
-        'utf-8'
-      );
-      // ArrowRight in View All link
-      expect(content).toMatch(/View All[\s\S]*?<ArrowRight size=\{16\}/);
-    });
-
-    it('should use ArrowRight for quick action link (size 16px)', async () => {
-      const fs = await import('fs/promises');
-      const content = await fs.readFile(
-        'src/components/organisms/RecentTransactionsList.astro',
-        'utf-8'
-      );
-      // ArrowRight in quick action link
-      expect(content).toContain(
-        '<ArrowRight size={16} class="stroke-current" aria-hidden="true" />'
-      );
-    });
-
-    it('should use ArrowRight in "View All Transactions" button', async () => {
-      const fs = await import('fs/promises');
-      const content = await fs.readFile(
-        'src/components/organisms/RecentTransactionsList.astro',
-        'utf-8'
-      );
-      // ArrowRight in View All button
-      expect(content).toMatch(/View All Transactions[\s\S]*?<ArrowRight/);
+      expect(content).toContain('<CreditCard size={12}');
     });
   });
 
@@ -97,69 +68,33 @@ describe('RecentTransactionsList - Icon Migration', () => {
   });
 });
 
-describe('RecentTransactionsList - Payment Method Icons', () => {
+describe('RecentTransactionsList - Category Icon Mapping', () => {
   describe('Icon Component Mapping', () => {
-    it('should define getPaymentIconComponent function', async () => {
+    it('should define getCategoryMeta function', async () => {
       const fs = await import('fs/promises');
       const content = await fs.readFile(
         'src/components/organisms/RecentTransactionsList.astro',
         'utf-8'
       );
-      expect(content).toContain('getPaymentIconComponent');
+      expect(content).toContain('getCategoryMeta');
     });
 
-    it('should map cash to DollarSign', async () => {
+    it('should map grocery categories to ShoppingBasket', async () => {
       const fs = await import('fs/promises');
       const content = await fs.readFile(
         'src/components/organisms/RecentTransactionsList.astro',
         'utf-8'
       );
-      expect(content).toMatch(/cash:\s*DollarSign/);
+      expect(content).toMatch(/ShoppingBasket/);
     });
 
-    it('should map credit_card to CreditCard', async () => {
+    it('should render category icon with size 18px', async () => {
       const fs = await import('fs/promises');
       const content = await fs.readFile(
         'src/components/organisms/RecentTransactionsList.astro',
         'utf-8'
       );
-      expect(content).toMatch(/credit_card:\s*CreditCard/);
-    });
-
-    it('should map debit_card to CreditCard', async () => {
-      const fs = await import('fs/promises');
-      const content = await fs.readFile(
-        'src/components/organisms/RecentTransactionsList.astro',
-        'utf-8'
-      );
-      expect(content).toMatch(/debit_card:\s*CreditCard/);
-    });
-
-    it('should map bank_transfer to ArrowLeft', async () => {
-      const fs = await import('fs/promises');
-      const content = await fs.readFile(
-        'src/components/organisms/RecentTransactionsList.astro',
-        'utf-8'
-      );
-      expect(content).toMatch(/bank_transfer:\s*ArrowLeft/);
-    });
-
-    it('should map e_wallet to Wallet', async () => {
-      const fs = await import('fs/promises');
-      const content = await fs.readFile(
-        'src/components/organisms/RecentTransactionsList.astro',
-        'utf-8'
-      );
-      expect(content).toMatch(/e_wallet:\s*Wallet/);
-    });
-
-    it('should render payment icon with size 12px', async () => {
-      const fs = await import('fs/promises');
-      const content = await fs.readFile(
-        'src/components/organisms/RecentTransactionsList.astro',
-        'utf-8'
-      );
-      expect(content).toContain('size={12}');
+      expect(content).toContain('size={18}');
     });
   });
 });
@@ -215,13 +150,13 @@ describe('RecentTransactionsList - Component Structure', () => {
   });
 
   describe('Component Structure', () => {
-    it('should use Card component wrapper', async () => {
+    it('should render Card component for list container', async () => {
       const fs = await import('fs/promises');
       const content = await fs.readFile(
         'src/components/organisms/RecentTransactionsList.astro',
         'utf-8'
       );
-      expect(content).toContain('<Card className={className}');
+      expect(content).toContain('<Card rounded="2xl" padding="sm"');
     });
 
     it('should have header with title', async () => {
@@ -230,7 +165,7 @@ describe('RecentTransactionsList - Component Structure', () => {
         'src/components/organisms/RecentTransactionsList.astro',
         'utf-8'
       );
-      expect(content).toContain('Recent Transactions');
+      expect(content).toContain('Recent activity');
     });
 
     it('should have loading skeleton', async () => {
@@ -259,33 +194,33 @@ describe('RecentTransactionsList - Component Structure', () => {
         'src/components/organisms/RecentTransactionsList.astro',
         'utf-8'
       );
-      expect(content).toContain('<ul class="space-y-1"');
+      expect(content).toContain('<ul class="divide-y divide-base-200"');
     });
 
-    it('should limit to 5 transactions (maxTransactions constant)', async () => {
+    it('should limit to 6 transactions (maxTransactions constant)', async () => {
       const fs = await import('fs/promises');
       const content = await fs.readFile(
         'src/components/organisms/RecentTransactionsList.astro',
         'utf-8'
       );
-      expect(content).toMatch(/maxTransactions\s*=\s*5/);
+      expect(content).toMatch(/maxTransactions\s*=\s*6/);
     });
 
-    it('should have formatDate helper function', async () => {
+    it('should have formatActivityDate helper function', async () => {
       const fs = await import('fs/promises');
       const content = await fs.readFile(
         'src/components/organisms/RecentTransactionsList.astro',
         'utf-8'
       );
-      expect(content).toContain('const formatDate = (date: Date)');
-      expect(content).toContain('toLocaleDateString');
+      expect(content).toContain('const formatActivityDate = (date: Date)');
+      expect(content).toContain('toLocaleTimeString');
     });
   });
 });
 
 describe('RecentTransactionsList - Accessibility', () => {
   describe('ARIA Attributes', () => {
-    it('should have aria-hidden on decorative ArrowRight icons', async () => {
+    it('should have aria-hidden on decorative icons', async () => {
       const fs = await import('fs/promises');
       const content = await fs.readFile(
         'src/components/organisms/RecentTransactionsList.astro',
@@ -295,13 +230,13 @@ describe('RecentTransactionsList - Accessibility', () => {
       expect(content).toMatch(/aria-hidden="true"/g);
     });
 
-    it('should have aria-label on quick action link', async () => {
+    it('should have accessible label on loading state', async () => {
       const fs = await import('fs/promises');
       const content = await fs.readFile(
         'src/components/organisms/RecentTransactionsList.astro',
         'utf-8'
       );
-      expect(content).toMatch(/aria-label={`View.*transaction for/);
+      expect(content).toContain('aria-label="Loading recent transactions"');
     });
 
     it('should have role="list" on ul element', async () => {
@@ -340,15 +275,6 @@ describe('RecentTransactionsList - Accessibility', () => {
       expect(content).toContain('aria-live="polite"');
     });
 
-    it('should have aria-label on loading state', async () => {
-      const fs = await import('fs/promises');
-      const content = await fs.readFile(
-        'src/components/organisms/RecentTransactionsList.astro',
-        'utf-8'
-      );
-      expect(content).toContain('aria-label="Loading recent transactions"');
-    });
-
     it('should use semantic time element for dates', async () => {
       const fs = await import('fs/promises');
       const content = await fs.readFile(
@@ -368,7 +294,7 @@ describe('RecentTransactionsList - Accessibility', () => {
         'utf-8'
       );
       // Payment icons are decorative - aria-hidden should be present
-      expect(content).toMatch(/PaymentIcon.*aria-hidden/);
+      expect(content).toContain('CreditCard size={12} class="stroke-current" aria-hidden="true"');
     });
 
     it('should NOT have aria-label on icons (labels are on parent elements)', async () => {
@@ -378,7 +304,7 @@ describe('RecentTransactionsList - Accessibility', () => {
         'utf-8'
       );
       // Icons should not have aria-label, parent elements have labels
-      expect(content).not.toMatch(/<ArrowRight.*aria-label=/);
+      expect(content).not.toMatch(/<CreditCard.*aria-label=/);
     });
   });
 
@@ -390,7 +316,6 @@ describe('RecentTransactionsList - Accessibility', () => {
         'utf-8'
       );
       // Links should be properly structured
-      expect(content).toMatch(/href={`\/transactions\/\${transaction\.id}`}/);
       expect(content).toMatch(/href={viewAllUrl}/);
     });
   });
@@ -402,8 +327,8 @@ describe('RecentTransactionsList - Accessibility', () => {
         'src/components/organisms/RecentTransactionsList.astro',
         'utf-8'
       );
-      // Should use text-neutral-500 for secondary text
-      expect(content).toContain('text-neutral-500');
+      // Should use base-content opacity for secondary text
+      expect(content).toContain('text-base-content/60');
     });
 
     it('should have hover states for interactive elements', async () => {
@@ -412,9 +337,8 @@ describe('RecentTransactionsList - Accessibility', () => {
         'src/components/organisms/RecentTransactionsList.astro',
         'utf-8'
       );
-      // Should have hover:bg-base-200 on list items
-      expect(content).toContain('hover:bg-base-200');
-      expect(content).toContain('group-hover:opacity-100');
+      // Should have hover:bg-base-200/40 on list items
+      expect(content).toContain('hover:bg-base-200/40');
     });
   });
 });
@@ -427,7 +351,7 @@ describe('RecentTransactionsList - Transaction Display', () => {
         'src/components/organisms/RecentTransactionsList.astro',
         'utf-8'
       );
-      expect(content).toContain('formatDate(date)');
+      expect(content).toContain('formatActivityDate(date)');
     });
 
     it('should display category name', async () => {
@@ -439,13 +363,13 @@ describe('RecentTransactionsList - Transaction Display', () => {
       expect(content).toContain('{transaction.category.name}');
     });
 
-    it('should display description if present', async () => {
+    it('should display primary text using description or category', async () => {
       const fs = await import('fs/promises');
       const content = await fs.readFile(
         'src/components/organisms/RecentTransactionsList.astro',
         'utf-8'
       );
-      expect(content).toMatch(/transaction\.description[\s\S]*?truncate/);
+      expect(content).toContain('primaryTextForTransaction');
     });
 
     it('should display payment method', async () => {
@@ -467,26 +391,18 @@ describe('RecentTransactionsList - Transaction Display', () => {
       expect(content).toContain('showSign={true}');
     });
 
-    it('should have quick action link to transaction detail', async () => {
+    it('should render payment method label with CreditCard icon', async () => {
       const fs = await import('fs/promises');
       const content = await fs.readFile(
         'src/components/organisms/RecentTransactionsList.astro',
         'utf-8'
       );
-      expect(content).toMatch(/href={`\/transactions\/\${transaction\.id}`}/);
+      expect(content).toContain('CreditCard size={12}');
+      expect(content).toContain('{transaction.payment_method.name}');
     });
   });
 
   describe('Responsive Design', () => {
-    it('should hide payment method on small screens', async () => {
-      const fs = await import('fs/promises');
-      const content = await fs.readFile(
-        'src/components/organisms/RecentTransactionsList.astro',
-        'utf-8'
-      );
-      expect(content).toContain('hidden sm:block');
-    });
-
     it('should use proper spacing classes', async () => {
       const fs = await import('fs/promises');
       const content = await fs.readFile(
@@ -536,13 +452,13 @@ describe('RecentTransactionsList - Empty State', () => {
 
 describe('RecentTransactionsList - View All Button', () => {
   describe('Button Structure', () => {
-    it('should have "View All Transactions" text', async () => {
+    it('should have "View all" text', async () => {
       const fs = await import('fs/promises');
       const content = await fs.readFile(
         'src/components/organisms/RecentTransactionsList.astro',
         'utf-8'
       );
-      expect(content).toContain('View All Transactions');
+      expect(content).toContain('View all');
     });
 
     it('should link to viewAllUrl', async () => {
@@ -554,22 +470,31 @@ describe('RecentTransactionsList - View All Button', () => {
       expect(content).toContain('href={viewAllUrl}');
     });
 
+    it('should provide an accessible label for the button', async () => {
+      const fs = await import('fs/promises');
+      const content = await fs.readFile(
+        'src/components/organisms/RecentTransactionsList.astro',
+        'utf-8'
+      );
+      expect(content).toContain('aria-label="View all transactions"');
+    });
+
     it('should only show when there are transactions', async () => {
       const fs = await import('fs/promises');
       const content = await fs.readFile(
         'src/components/organisms/RecentTransactionsList.astro',
         'utf-8'
       );
-      expect(content).toMatch(/displayTransactions\.length > 0/);
+      expect(content).toMatch(/transactions\.length > 0/);
     });
 
-    it('should have hover animation on icon', async () => {
+    it('should use outline button styling', async () => {
       const fs = await import('fs/promises');
       const content = await fs.readFile(
         'src/components/organisms/RecentTransactionsList.astro',
         'utf-8'
       );
-      expect(content).toContain('group-hover:translate-x-1');
+      expect(content).toContain('btn-outline');
     });
   });
 });
@@ -584,7 +509,7 @@ describe('RecentTransactionsList - Stories', () => {
       );
       expect(content).toContain("from '../../../.storybook/lucide-icons'");
       expect(content).toContain('IconRenderers');
-      expect(content).toContain('ArrowRight');
+      expect(content).toContain('CreditCard');
     });
 
     it('should use .render() method for icons in stories', async () => {
@@ -593,7 +518,7 @@ describe('RecentTransactionsList - Stories', () => {
         'src/components/organisms/RecentTransactionsList.stories.ts',
         'utf-8'
       );
-      expect(content).toContain('ArrowRight.render(');
+      expect(content).toContain('CreditCard.render(');
     });
 
     it('should NOT have inline SVG elements in stories', async () => {
@@ -647,13 +572,13 @@ describe('RecentTransactionsList - Stories', () => {
   });
 
   describe('Payment Icon Mapping in Stories', () => {
-    it('should have getPaymentIconComponent function in stories', async () => {
+    it('should have getCategoryMeta function in stories', async () => {
       const fs = await import('fs/promises');
       const content = await fs.readFile(
         'src/components/organisms/RecentTransactionsList.stories.ts',
         'utf-8'
       );
-      expect(content).toContain('getPaymentIconComponent');
+      expect(content).toContain('getCategoryMeta');
     });
   });
 });
@@ -696,9 +621,9 @@ describe('RecentTransactionsList - Integration', () => {
         'utf-8'
       );
       expect(content).toContain("from '../atoms/Card.astro'");
-      expect(content).toContain("from '../atoms/Badge.astro'");
       expect(content).toContain("from '../atoms/EmptyState.astro'");
       expect(content).toContain("from '../atoms/Currency.astro'");
+      expect(content).toContain("from '../atoms/IconBadge.astro'");
     });
 
     it('should import type definitions', async () => {
@@ -710,13 +635,13 @@ describe('RecentTransactionsList - Integration', () => {
       expect(content).toContain("from '@/lib/types/transaction'");
     });
 
-    it('should import formatCurrency from tokens', async () => {
+    it('should not rely on formatCurrency helper', async () => {
       const fs = await import('fs/promises');
       const content = await fs.readFile(
         'src/components/organisms/RecentTransactionsList.astro',
         'utf-8'
       );
-      expect(content).toContain("from '@/lib/tokens'");
+      expect(content).not.toContain('formatCurrency(');
     });
   });
 });
@@ -744,13 +669,13 @@ describe('RecentTransactionsList - Edge Cases', () => {
   });
 
   describe('Icon Fallback', () => {
-    it('should have fallback for unknown payment types', async () => {
+    it('should have fallback for unknown categories', async () => {
       const fs = await import('fs/promises');
       const content = await fs.readFile(
         'src/components/organisms/RecentTransactionsList.astro',
         'utf-8'
       );
-      expect(content).toMatch(/icons\[type\] \|\| DollarSign/);
+      expect(content).toMatch(/return \{ icon: Wallet/);
     });
   });
 });
@@ -776,15 +701,14 @@ describe('RecentTransactionsList - Migration Verification', () => {
       expect(content).toContain('stroke-current');
     });
 
-    it('should have consistent icon sizing (12, 16, 20px)', async () => {
+    it('should have consistent icon sizing (12, 18px)', async () => {
       const fs = await import('fs/promises');
       const content = await fs.readFile(
         'src/components/organisms/RecentTransactionsList.astro',
         'utf-8'
       );
       expect(content).toContain('size={12}');
-      expect(content).toContain('size={16}');
-      expect(content).toContain('size={20}');
+      expect(content).toContain('size={18}');
     });
   });
 });
@@ -806,7 +730,7 @@ describe('RecentTransactionsList - Code Quality', () => {
         'src/components/organisms/RecentTransactionsList.astro',
         'utf-8'
       );
-      expect(content).toMatch(/type: string\)[\s\S]*?PaymentIconComponent/);
+      expect(content).toMatch(/type: TransactionOutput\['type'\]\)[\s\S]*?CategoryIconComponent/);
     });
   });
 

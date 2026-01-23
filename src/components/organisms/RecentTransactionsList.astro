@@ -12,12 +12,22 @@
  */
 
 import Card from '../atoms/Card.astro';
-import Badge from '../atoms/Badge.astro';
 import EmptyState from '../atoms/EmptyState.astro';
 import Currency from '../atoms/Currency.astro';
-import { Clock, ArrowRight, DollarSign, CreditCard, ArrowLeft, Wallet } from '@lucide/astro';
+import IconBadge from '../atoms/IconBadge.astro';
+import {
+  Banknote,
+  Briefcase,
+  Car,
+  CreditCard,
+  Film,
+  House,
+  ShoppingBasket,
+  UtensilsCrossed,
+  Wallet,
+  Zap,
+} from '@lucide/astro';
 import type { TransactionOutput } from '@/lib/types/transaction';
-import { formatCurrency } from '@/lib/tokens';
 
 export interface Props {
   transactions?: TransactionOutput[];
@@ -33,11 +43,27 @@ const {
   className = '',
 } = Astro.props;
 
-const maxTransactions = 5;
+const maxTransactions = 6;
 const displayTransactions = transactions.slice(0, maxTransactions);
 
-// Format date for display
-const formatDate = (date: Date): string => {
+const primaryTextForTransaction = (transaction: TransactionOutput) =>
+  transaction.description?.trim() || transaction.category.name;
+
+// Format date for display with recent context
+const formatActivityDate = (date: Date): string => {
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const startOfDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const diffDays = Math.round((startOfToday.getTime() - startOfDate.getTime()) / 86400000);
+  const time = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+
+  if (diffDays === 0) {
+    return `Today, ${time}`;
+  }
+  if (diffDays === 1) {
+    return `Yesterday, ${time}`;
+  }
+
   return date.toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
@@ -45,155 +71,187 @@ const formatDate = (date: Date): string => {
   });
 };
 
-// Type alias for payment method icon components
-type PaymentIconComponent =
-  | typeof DollarSign
-  | typeof CreditCard
-  | typeof ArrowLeft
+type CategoryIconComponent =
+  | typeof ShoppingBasket
+  | typeof Zap
+  | typeof Film
+  | typeof Car
+  | typeof House
+  | typeof UtensilsCrossed
+  | typeof Banknote
+  | typeof Briefcase
   | typeof Wallet;
 
-// Payment method icon mapping - returns Lucide component type
-const getPaymentIconComponent = (type: string): PaymentIconComponent => {
-  const icons: Record<string, PaymentIconComponent> = {
-    cash: DollarSign,
-    credit_card: CreditCard,
-    debit_card: CreditCard,
-    bank_transfer: ArrowLeft,
-    e_wallet: Wallet,
-  };
-  return icons[type] || DollarSign;
+type CategoryMeta = {
+  icon: CategoryIconComponent;
+  variant: 'primary' | 'accent' | 'success' | 'warning' | 'error' | 'info' | 'neutral';
+};
+
+const getCategoryMeta = (name: string, type: TransactionOutput['type']): CategoryMeta => {
+  const normalized = name.toLowerCase();
+
+  if (type === 'income') {
+    return { icon: Banknote, variant: 'success' as const };
+  }
+
+  if (
+    normalized.includes('grocery') ||
+    normalized.includes('market') ||
+    normalized.includes('food')
+  ) {
+    return { icon: ShoppingBasket, variant: 'warning' as const };
+  }
+  if (
+    normalized.includes('utility') ||
+    normalized.includes('electric') ||
+    normalized.includes('water') ||
+    normalized.includes('gas')
+  ) {
+    return { icon: Zap, variant: 'info' as const };
+  }
+  if (
+    normalized.includes('entertainment') ||
+    normalized.includes('movie') ||
+    normalized.includes('netflix')
+  ) {
+    return { icon: Film, variant: 'error' as const };
+  }
+  if (
+    normalized.includes('transport') ||
+    normalized.includes('uber') ||
+    normalized.includes('taxi') ||
+    normalized.includes('ride')
+  ) {
+    return { icon: Car, variant: 'accent' as const };
+  }
+  if (normalized.includes('dining') || normalized.includes('restaurant')) {
+    return { icon: UtensilsCrossed, variant: 'warning' as const };
+  }
+  if (
+    normalized.includes('housing') ||
+    normalized.includes('rent') ||
+    normalized.includes('mortgage')
+  ) {
+    return { icon: House, variant: 'primary' as const };
+  }
+  if (normalized.includes('freelance') || normalized.includes('contract')) {
+    return { icon: Briefcase, variant: 'info' as const };
+  }
+
+  return { icon: Wallet, variant: type === 'expense' ? ('error' as const) : ('success' as const) };
 };
 ---
 
-<Card className={className} data-recent-transactions-list>
-  <div class="flex items-center justify-between mb-4">
-    <h2 class="text-lg font-semibold flex items-center gap-2">
-      <Clock size={22} class="stroke-current text-info" aria-hidden="true" />
-      Recent Transactions
-    </h2>
+<div class={`space-y-5 ${className}`} data-recent-transactions-list>
+  <div class="flex items-center justify-between px-2">
+    <h2 class="text-lg font-bold tracking-tight leading-none">Recent activity</h2>
     {
-      !loading && transactions.length > maxTransactions && (
+      !loading && transactions.length > 0 && (
         <a
           href={viewAllUrl}
-          class="text-sm text-accent hover:text-accent-hover font-medium flex items-center gap-1 transition-colors"
+          class="btn btn-outline btn-sm text-accent border-accent/20 hover:bg-accent/5 rounded-xl tracking-wide"
+          aria-label="View all transactions"
         >
-          View All
-          <ArrowRight size={16} class="stroke-current" aria-hidden="true" />
+          View all
         </a>
       )
     }
   </div>
 
-  {
-    loading ? (
-      // Loading skeleton
-      <div
-        class="space-y-3"
-        role="status"
-        aria-live="polite"
-        aria-label="Loading recent transactions"
-      >
-        {[1, 2, 3, 4, 5].map(() => (
-          <div class="flex items-center gap-4 p-4 bg-base-200 rounded-lg animate-pulse">
-            <div class="w-20 h-4 bg-base-300 rounded" aria-hidden="true" />
-            <div class="flex-1 space-y-2">
-              <div class="h-4 bg-base-300 rounded w-3/4" aria-hidden="true" />
-              <div class="h-3 bg-base-300 rounded w-1/2" aria-hidden="true" />
-            </div>
-            <div class="w-24 h-4 bg-base-300 rounded" aria-hidden="true" />
-          </div>
-        ))}
-      </div>
-    ) : displayTransactions.length === 0 ? (
-      // Empty state
-      <EmptyState
-        title="No transactions yet"
-        message="Start tracking by adding your first expense or income transaction."
-        iconName="plus"
-        actionLabel="Add Transaction"
-        actionHref="/transactions/add"
-        variant="compact"
-      />
-    ) : (
-      // Transactions list
-      <ul class="space-y-1" role="list" aria-label="Recent transactions">
-        {displayTransactions.map((transaction) => {
-          const amount = parseFloat(transaction.amount) || 0;
-          const isExpense = transaction.type === 'expense';
-          const date = new Date(transaction.transaction_date);
-
-          return (
-            <li class="flex items-center gap-4 p-4 hover:bg-base-100 rounded-lg transition-colors group">
-              {/* Date */}
-              <div class="flex-shrink-0 w-20 text-sm">
-                <time class="font-medium" datetime={date.toISOString()}>
-                  {formatDate(date)}
-                </time>
-              </div>
-
-              {/* Category & Description */}
-              <div class="flex-1 min-w-0">
-                <div class="font-medium truncate group-hover:text-accent transition-colors">
-                  {transaction.category.name}
-                </div>
-                {transaction.description && (
-                  <div class="text-sm text-neutral truncate">{transaction.description}</div>
-                )}
-              </div>
-
-              {/* Payment Method */}
-              <div class="flex-shrink-0 hidden sm:block">
-                <Badge variant="neutral" size="sm" className="flex items-center gap-1">
-                  {(() => {
-                    const PaymentIcon = getPaymentIconComponent(transaction.payment_method.type);
-                    return <PaymentIcon size={12} class="stroke-current" aria-hidden="true" />;
-                  })()}
-                  {transaction.payment_method.name}
-                </Badge>
-              </div>
-
-              {/* Amount */}
-              <div class="flex-shrink-0 text-right min-w-[100px]">
-                <Currency
-                  amount={amount}
-                  currency={transaction.currency}
-                  showSign={true}
-                  variant={isExpense ? 'negative' : 'positive'}
-                  size="md"
-                />
-              </div>
-
-              {/* Quick action link */}
-              <a
-                href={`/transactions/${transaction.id}`}
-                class="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity btn btn-ghost btn-sm"
-                aria-label={`View ${transaction.category.name} transaction for ${formatCurrency(amount, transaction.currency)}`}
-              >
-                <ArrowRight size={16} class="stroke-current" aria-hidden="true" />
-              </a>
-            </li>
-          );
-        })}
-      </ul>
-    )
-  }
-
-  {/* View all button */}
-  {
-    !loading && displayTransactions.length > 0 && (
-      <div class="mt-4 pt-4 border-t border-base-300">
-        <a
-          href={viewAllUrl}
-          class="flex items-center justify-center gap-2 w-full py-2 px-4 bg-base-200 hover:bg-base-100 rounded-lg transition-colors text-sm font-medium group"
+  <Card rounded="2xl" padding="sm" className="p-0 overflow-hidden shadow-sm">
+    {
+      loading ? (
+        // Loading skeleton
+        <div
+          class="divide-y divide-base-200"
+          role="status"
+          aria-live="polite"
+          aria-label="Loading recent transactions"
         >
-          View All Transactions
-          <ArrowRight
-            size={16}
-            class="stroke-current group-hover:translate-x-1 transition-transform"
-            aria-hidden="true"
-          />
-        </a>
-      </div>
-    )
-  }
-</Card>
+          {[1, 2, 3, 4, 5, 6].map(() => (
+            <div class="flex items-center gap-5 p-5 animate-pulse">
+              <div class="h-12 w-12 rounded-2xl bg-base-200" aria-hidden="true" />
+              <div class="flex-1 space-y-2">
+                <div class="h-4 bg-base-200 rounded w-3/4" aria-hidden="true" />
+                <div class="h-3 bg-base-200 rounded w-1/2" aria-hidden="true" />
+              </div>
+              <div class="w-24 space-y-2">
+                <div class="h-4 bg-base-200 rounded" aria-hidden="true" />
+                <div class="h-3 bg-base-200 rounded" aria-hidden="true" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : displayTransactions.length === 0 ? (
+        // Empty state
+        <EmptyState
+          title="No transactions yet"
+          message="Start tracking by adding your first expense or income transaction."
+          iconName="plus"
+          actionLabel="Add Transaction"
+          actionHref="/transactions/add"
+          variant="compact"
+        />
+      ) : (
+        // Transactions list
+        <ul class="divide-y divide-base-200" role="list" aria-label="Recent transactions">
+          {displayTransactions.map((transaction) => {
+            const amount = parseFloat(transaction.amount) || 0;
+            const isExpense = transaction.type === 'expense';
+            const date = new Date(transaction.transaction_date);
+            const primaryText = primaryTextForTransaction(transaction);
+            const categoryMeta = getCategoryMeta(transaction.category.name, transaction.type);
+            const CategoryIcon = categoryMeta.icon;
+
+            return (
+              <li
+                class={`group flex items-center gap-5 p-5 transition-all cursor-pointer border-l-4 border-transparent ${
+                  isExpense ? 'hover:border-error/30' : 'hover:border-success/30'
+                } hover:bg-base-200/40`}
+              >
+                <IconBadge
+                  variant={categoryMeta.variant}
+                  size="sm"
+                  className="rounded-2xl transition-transform group-hover:rotate-2"
+                >
+                  <CategoryIcon size={18} class="stroke-current" aria-hidden="true" />
+                </IconBadge>
+
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-start justify-between gap-4">
+                    <div class="min-w-0">
+                      <div class="font-bold tracking-tight truncate text-base leading-none">
+                        {primaryText}
+                      </div>
+                      <div class="mt-2 flex flex-wrap items-center gap-3 text-[11px] font-semibold text-base-content/60 tracking-wide leading-none">
+                        <span class="text-[10px] font-bold tracking-widest uppercase text-base-content/60 bg-base-200 px-2 py-0.5 rounded">
+                          {transaction.category.name}
+                        </span>
+                        <time datetime={date.toISOString()}>{formatActivityDate(date)}</time>
+                      </div>
+                    </div>
+
+                    <div class="flex flex-col items-end gap-1 min-w-[120px]">
+                      <Currency
+                        amount={amount}
+                        currency={transaction.currency}
+                        showSign={true}
+                        variant={isExpense ? 'negative' : 'positive'}
+                        size="md"
+                        className="font-bold tracking-tight"
+                      />
+                      <div class="flex items-center gap-1.5 text-[10px] uppercase tracking-widest text-base-content/60">
+                        <CreditCard size={12} class="stroke-current" aria-hidden="true" />
+                        <span>{transaction.payment_method.name}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )
+    }
+  </Card>
+</div>

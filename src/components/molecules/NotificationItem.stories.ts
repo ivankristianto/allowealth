@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/html';
 import { IconRenderers } from '../../../.storybook/lucide-icons';
 
-const { TriangleAlert, DollarSign, AlertCircle, Info } = IconRenderers;
+const { TriangleAlert, DollarSign, CircleAlert, Info } = IconRenderers;
 
 const meta: Meta = {
   title: 'Molecules/NotificationItem',
@@ -32,7 +32,7 @@ export default meta;
 const iconMap = {
   warning: TriangleAlert,
   success: DollarSign,
-  alert: AlertCircle,
+  alert: CircleAlert,
   info: Info,
 };
 

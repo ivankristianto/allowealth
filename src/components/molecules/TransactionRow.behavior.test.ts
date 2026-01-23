@@ -100,10 +100,10 @@ describe('TransactionRow Component', () => {
     it('should use semantic div structure for transaction row', () => {
       /**
        * Expected structure:
-       * <div data-transaction-row="true" class="flex items-center gap-4 p-4 hover:bg-base-200 rounded-lg">
+       * <div data-transaction-row="true" class="group flex items-center gap-5 p-5 ... border-l-4">
        *   <div>Date</div>
-       *   <div>Category & Description</div>
-       *   <div>Payment Method Badge</div>
+       *   <div>IconBadge + Primary text + Category badge</div>
+       *   <div>Payment method (CreditCard icon + label)</div>
        *   <div>Amount</div>
        *   <div>Actions</div>
        * </div>
@@ -114,7 +114,8 @@ describe('TransactionRow Component', () => {
     it('should have proper hover state', () => {
       /**
        * Hover features:
-       * - class="hover:bg-base-200"
+       * - class="hover:bg-base-200/40"
+       * - border accent on hover (income=success/30, expense=error/30)
        * - class="transition-colors"
        * - Provides visual feedback on hover
        */
@@ -123,10 +124,10 @@ describe('TransactionRow Component', () => {
 
     it('should have responsive payment method badge', () => {
       /**
-       * Payment method badge:
+       * Payment method:
        * - class="hidden sm:block"
        * - Hidden on mobile, visible on tablet+
-       * - Badge shows payment method name
+       * - Uses CreditCard icon + uppercase label
        */
       expect(true).toBe(true);
     });
@@ -141,6 +142,7 @@ describe('TransactionRow Component', () => {
        *   editUrl?: string;
        *   deleteUrl?: string;
        *   showActions?: boolean;
+       *   className?: string;
        * }
        */
       expect(true).toBe(true);
@@ -187,8 +189,8 @@ describe('TransactionRow Component', () => {
     it('should display category name', () => {
       /**
        * Category:
-       * - Shows transaction.category.name
-       * - Truncated if too long
+       * - Shows transaction.category.name in uppercase badge
+       * - Badge uses tracking-widest text-[10px]
        */
       expect(true).toBe(true);
     });
@@ -197,19 +199,17 @@ describe('TransactionRow Component', () => {
       /**
        * Description:
        * - Optional field
-       * - Shows transaction.description if present
-       * - Truncated with class="truncate"
-       * - Hidden if empty
+       * - Primary line uses description when present
+       * - Falls back to category name when missing
        */
       expect(true).toBe(true);
     });
 
     it('should show payment method badge', () => {
       /**
-       * Payment method badge:
-       * - Uses Badge component
-       * - variant="neutral" size="sm"
-       * - Shows transaction.payment_method.name
+       * Payment method:
+       * - CreditCard icon with uppercase text label
+       * - Hidden on mobile (sm:block)
        */
       expect(true).toBe(true);
     });
@@ -220,7 +220,7 @@ describe('TransactionRow Component', () => {
        * - Uses Currency component
        * - showSign={true}
        * - variant="negative" for expense, "positive" for income
-       * - size="md"
+       * - size="lg" with tracking-tight styling
        */
       expect(true).toBe(true);
     });
@@ -478,7 +478,7 @@ describe('TransactionRow Component', () => {
     it('should have consistent padding', () => {
       /**
        * Padding:
-       * - class="p-4" (16px padding)
+       * - class="p-5"
        * - Consistent spacing around content
        */
       expect(true).toBe(true);
@@ -487,8 +487,7 @@ describe('TransactionRow Component', () => {
     it('should have rounded corners', () => {
       /**
        * Corners:
-       * - class="rounded-lg"
-       * - 8px border radius
+       * - No explicit rounding (handled by list container)
        */
       expect(true).toBe(true);
     });
@@ -576,7 +575,7 @@ describe('TransactionRow Component', () => {
  *
  * Test 9: Hover State
  * [ ] Hover over transaction row
- * [ ] Verify background color changes (hover:bg-base-200)
+ * [ ] Verify background color changes (hover:bg-base-200/40)
  * [ ] Verify transition is smooth
  *
  * Test 10: Edit Button

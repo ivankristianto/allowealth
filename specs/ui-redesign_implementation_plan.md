@@ -620,17 +620,17 @@ After:
 
 **Checklist:**
 
-- [ ] Update TransactionRow molecule with new design
-- [ ] Use IconBadge component for colored category icon
-- [ ] Style category as uppercase badge (text-[10px], tracking-widest)
-- [ ] Update amount typography (font-bold, tracking-tight)
-- [ ] Add payment method with CreditCard icon
-- [ ] Add left border accent on hover (income=emerald, expense=rose)
-- [ ] Update "View all" button styling (outline with primary text)
-- [ ] Ensure list has proper `divide-y divide-base-200` styling
-- [ ] Add `loading` prop with skeleton rows
-- [ ] Update Storybook story
-- [ ] Run quality gates
+- [x] Update TransactionRow molecule with new design
+- [x] Use IconBadge component for colored category icon
+- [x] Style category as uppercase badge (text-[10px], tracking-widest)
+- [x] Update amount typography (font-bold, tracking-tight)
+- [x] Add payment method with CreditCard icon
+- [x] Add left border accent on hover (income=emerald, expense=rose)
+- [x] Update "View all" button styling (outline with primary text)
+- [x] Ensure list has proper `divide-y divide-base-200` styling
+- [x] Add `loading` prop with skeleton rows
+- [x] Update Storybook story
+- [x] Run quality gates
 - [ ] Test in dark mode
 
 **Files to modify:**
@@ -654,7 +654,7 @@ After:
 └─────────────────────────────────────────────────────────────┘
 ```
 
-**Status:** ⏳ Pending
+**Status:** ⚠️ Needs dark mode verification
 
 ---
 
@@ -1331,6 +1331,7 @@ interface CashFlowItemProps {
 ## Success Criteria
 
 - [ ] All dashboard widgets render correctly with real data
+- [x] Recent activity list matches premium design (icon badges, category label, payment method line)
 - [ ] Pie chart is interactive with hover states
 - [x] Navigation sidebar matches premium design
 - [ ] Mobile bottom nav with FAB works correctly
@@ -1344,7 +1345,7 @@ interface CashFlowItemProps {
 - [x] All new components have Storybook stories
 - [x] All quality gates pass
 
-**Progress:** Tasks 1-4, 6-7, 9 (P0-P1) Complete ✅ - Design tokens, component library updates, Navigation sidebar, Header redesign, Spending Summary Card, Quick Actions, and Net Worth Widget complete. Ready for remaining Dashboard widget implementation.
+**Progress:** Tasks 1-4, 6-9 (P0-P1) Complete ✅ - Design tokens, component library updates, Navigation sidebar, Header redesign, Spending Summary Card, Quick Actions, Recent Activity list complete and Net Worth Widget complete. Ready for remaining Dashboard widget implementation.
 
 ---
 

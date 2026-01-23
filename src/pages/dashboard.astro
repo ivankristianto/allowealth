@@ -162,11 +162,13 @@ const recentTransactions: TransactionOutput[] =
           <SummaryCards data={summaryCardsData} loading={!dashboardData} error={false} />
 
           {/* Recent Transactions */}
-          <RecentTransactionsList
-            transactions={recentTransactions}
-            loading={!dashboardData}
-            viewAllUrl="/transactions"
-          />
+          <div class="w-full lg:w-2/3">
+            <RecentTransactionsList
+              transactions={recentTransactions}
+              loading={!dashboardData}
+              viewAllUrl="/transactions"
+            />
+          </div>
         </>
       )
     }
