@@ -1,0 +1,79 @@
+---
+/**
+ * CashFlowWidget Component
+ *
+ * Cash flow analysis widget showing upcoming income/expense items.
+ * Follows Oasis Finance v1.0.0 design system specifications.
+ *
+ * @param {Array} items - List of cash flow entries
+ * @param {boolean} loading - Show loading skeleton state
+ * @param {string} className - Additional CSS classes
+ */
+
+import Card from '@/components/atoms/Card.astro';
+import StatLabel from '@/components/atoms/StatLabel.astro';
+import CashFlowItem from '@/components/molecules/CashFlowItem.astro';
+import type { CashFlowEntry } from '@/lib/cash-flow';
+
+export interface Props {
+  items?: CashFlowEntry[];
+  loading?: boolean;
+  className?: string;
+}
+
+const { items = [], loading = false, className = '' } = Astro.props;
+
+const ariaBusy = loading ? 'true' : undefined;
+const ariaLabel = loading ? 'Loading cash flow analysis' : undefined;
+const ariaLabelledBy = loading ? undefined : 'cash-flow-title';
+---
+
+<Card
+  padding="lg"
+  rounded="3xl"
+  className={className}
+  role="region"
+  aria-labelledby={ariaLabelledBy}
+  aria-busy={ariaBusy}
+  aria-label={ariaLabel}
+>
+  <div class="space-y-6">
+    <div id="cash-flow-title">
+      <StatLabel size="md" color="neutral"> Cash flow analysis </StatLabel>
+    </div>
+
+    {
+      loading ? (
+        <div
+          class="space-y-5"
+          role="status"
+          aria-live="polite"
+          aria-label="Loading cash flow analysis"
+        >
+          {[1, 2].map(() => (
+            <div class="flex items-center justify-between gap-4 p-6 rounded-3xl border border-base-200 bg-base-200/40 animate-pulse">
+              <div class="flex items-center gap-4">
+                <div class="h-12 w-12 rounded-2xl bg-base-200" aria-hidden="true" />
+                <div class="space-y-2">
+                  <div class="h-4 w-32 bg-base-200 rounded" aria-hidden="true" />
+                  <div class="h-3 w-20 bg-base-200 rounded" aria-hidden="true" />
+                </div>
+              </div>
+              <div class="h-4 w-24 bg-base-200 rounded" aria-hidden="true" />
+            </div>
+          ))}
+        </div>
+      ) : items.length === 0 ? (
+        <p class="text-sm text-base-content/60">
+          No cash flow entries yet. Add income or expenses to see upcoming activity.
+        </p>
+      ) : (
+        <ul class="space-y-5" role="list">
+          {items.map((item) => (
+            <CashFlowItem {...item} />
+          ))}
+        </ul>
+      )
+    }
+  </div>
+</Card>
