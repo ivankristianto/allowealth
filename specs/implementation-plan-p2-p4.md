@@ -656,7 +656,7 @@ export function animateList(
 - [x] File passes all quality gates
 - [x] Can be imported without errors: `import { presets, durations } from '@/lib/animations'` (via barrel file)
 
-**Commit:** (to be added after git commit)
+**Commit**: `844e4c2` - feat(animations): add animation utilities based on design-system/styles.json (Task 7.1)
 
 ---
 
