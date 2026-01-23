@@ -355,15 +355,15 @@ bun run typecheck && bun run lint:fix && bun run stylelint:fix && bun run format
 
 **Checklist:**
 
-- [ ] Create `src/lib/animations.ts` with TypeScript types
-- [ ] Export spring configurations: smooth, bouncy, gentle, snappy
-- [ ] Export duration constants: instant, fast, normal, slow, slower
-- [ ] Export animation presets: fadeIn, slideInFromBottom/Top/Left/Right, scaleIn, scaleOut, popIn
-- [ ] Export button animations: buttonPress (scale 0.98), buttonHover (scale 1.05)
-- [ ] Export stagger timing utilities: fast (0.05s), normal (0.1s), slow (0.15s)
-- [ ] Export component-specific animation configs (modal, toast, dropdown, card, listItem)
-- [ ] Add JSDoc comments for all exports
-- [ ] Add usage examples in comments
+- [x] Create `src/lib/animation-utils.ts` with TypeScript types (renamed to avoid directory conflict)
+- [x] Export spring configurations: smooth, bouncy, gentle, snappy
+- [x] Export duration constants: instant, fast, normal, slow, slower
+- [x] Export animation presets: fadeIn, slideInFromBottom/Top/Left/Right, scaleIn, scaleOut, popIn
+- [x] Export button animations: buttonPress (scale 0.98), buttonHover (scale 1.05)
+- [x] Export stagger timing utilities: fast (0.05s), normal (0.1s), slow (0.15s)
+- [x] Export component-specific animation configs (modal, toast, dropdown, card, listItem)
+- [x] Add JSDoc comments for all exports
+- [x] Add usage examples in comments
 
 **Files to create:**
 
@@ -648,13 +648,15 @@ export function animateList(
 
 **Acceptance Criteria:**
 
-- [ ] All types are properly defined with TypeScript
-- [ ] All exports have JSDoc comments
-- [ ] Code matches styles.json animation specifications
-- [ ] No hardcoded values (all from styles.json)
-- [ ] Usage examples included in comments
-- [ ] File passes all quality gates
-- [ ] Can be imported without errors: `import { presets, durations } from '@/lib/animations'`
+- [x] All types are properly defined with TypeScript
+- [x] All exports have JSDoc comments
+- [x] Code matches styles.json animation specifications
+- [x] No hardcoded values (all from styles.json)
+- [x] Usage examples included in comments
+- [x] File passes all quality gates
+- [x] Can be imported without errors: `import { presets, durations } from '@/lib/animations'` (via barrel file)
+
+**Commit:** (to be added after git commit)
 
 ---
 
@@ -946,7 +948,7 @@ bun run typecheck && bun run lint:fix && bun run stylelint:fix && bun run format
 - [x] Footer aligns with base-content/neutral tokens and spacing ✅
 - [x] All remaining molecule components match new input/button/token styling ✅
 - [x] All remaining organism components align with table, modal, and status tokens ✅
-- [ ] Animation utilities (`@/lib/animations.ts`) created with full TypeScript types
+- [x] Animation utilities (`@/lib/animation-utils.ts`) created with full TypeScript types ✅
 - [ ] Animation CSS variables (`src/styles/animations.css`) available and documented
 - [x] All auth form security reviews passed ✅
 - [x] Zero hardcoded hex values remain in P2 scope components ✅

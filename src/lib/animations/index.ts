@@ -37,3 +37,25 @@ export {
   MODAL_CONTENT_INITIAL_STYLES,
 } from './modal';
 export type { ModalAnimationPreset } from './modal';
+
+// Centralized animation utilities (from ../animation-utils.ts)
+// Re-export general-purpose animation configurations
+export {
+  springs,
+  durations,
+  easings,
+  presets,
+  buttonAnimations,
+  stagger,
+  components,
+  scroll,
+  page,
+  gestures,
+  animateList,
+} from '../animation-utils';
+export type {
+  SpringConfig,
+  AnimationKeyframes,
+  AnimationPreset,
+  ComponentAnimation,
+} from '../animation-utils';
