@@ -206,7 +206,7 @@ const spendingCategories = [
               />
             </div>
 
-            <div>
+            <div class="space-y-6">
               <NetWorthWidget
                 totalIDR={parseFloat(dashboardData?.totalAssets.idr ?? '0')}
                 totalUSD={parseFloat(dashboardData?.totalAssets.usd ?? '0')}
@@ -217,7 +217,6 @@ const spendingCategories = [
               />
               <CashFlowWidget items={cashFlowItems} loading={!dashboardData} />
             </div>
-
           </div>
         </>
       )
