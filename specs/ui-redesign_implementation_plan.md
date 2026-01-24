@@ -1202,7 +1202,7 @@ interface CashFlowItemProps {
 
 ---
 
-### Task 17: Dark Mode Verification (Priority: P2)
+### Task 17: Dark Mode Verification (Priority: P2) ✅
 
 **Goal:** Verify all new components work correctly in dark mode
 
@@ -1210,32 +1210,64 @@ interface CashFlowItemProps {
 
 **Checklist:**
 
-- [ ] Verify glass effect in dark mode (`bg-base-100/80`)
-- [ ] Test gradient active states in dark mode (sidebar)
-- [ ] Verify card backgrounds (`bg-base-100` auto-adjusts)
-- [ ] Test icon badge colors in dark mode
-- [ ] Verify progress bar colors maintain contrast
-- [ ] Test Chart.js colors in dark mode (may need theme detection)
-- [ ] Verify text contrast ratios (4.5:1 minimum)
-- [ ] Test notification dropdown in dark mode
-- [ ] Test all alert/banner backgrounds
-- [ ] Fix any issues found
-- [ ] Run quality gates
+- [x] Verify glass effect in dark mode (`bg-base-100/80`)
+- [x] Test gradient active states in dark mode (sidebar)
+- [x] Verify card backgrounds (`bg-base-100` auto-adjusts)
+- [x] Test icon badge colors in dark mode
+- [x] Verify progress bar colors maintain contrast
+- [x] Test Chart.js colors in dark mode (may need theme detection)
+- [x] Verify text contrast ratios (4.5:1 minimum)
+- [x] Test notification dropdown in dark mode
+- [x] Test all alert/banner backgrounds
+- [x] Fix any issues found
+- [x] Run quality gates
 
-**Files to modify:**
+**Files created:**
 
-- Various component files as needed
-- `src/styles/globals.css` (if dark mode utilities needed)
+- `src/components/atoms/ThemeToggle.astro` ✅ (new)
+- `src/components/atoms/ThemeToggle.test.ts` ✅ (new)
+- `src/components/atoms/ThemeToggle.stories.ts` ✅ (new)
+
+**Files modified:**
+
+- `src/layouts/BaseLayout.astro` ✅ (FOUC prevention script)
+- `src/components/layouts/Navigation.astro` ✅ (added ThemeToggle)
+- `src/components/layouts/Header.astro` ✅ (removed dark: class prefixes)
+- `src/components/layouts/UserProfile.astro` ✅ (removed dark: class prefixes)
+- `src/components/molecules/BudgetAlertBanner.astro` ✅ (simplified dark mode)
+- `src/components/molecules/NotificationItem.astro` ✅ (removed dark: variants)
+- `src/components/molecules/NotificationDropdown.astro` ✅ (removed dark: variants)
+- `src/components/organisms/SpendingChart.astro` ✅ (fixed theme detection)
 
 **Testing Checklist:**
 
-- [ ] Dashboard page
-- [ ] Transactions page
-- [ ] Budget page
-- [ ] All modals/dropdowns
-- [ ] Mobile navigation
+- [x] Dashboard page
+- [x] Transactions page
+- [x] Budget page
+- [x] All modals/dropdowns
+- [ ] Mobile navigation (Task 5 pending)
 
-**Status:** ⏳ Pending
+**Implementation Notes:**
+
+- Created ThemeToggle component with moon icon (light mode) and sun icon (dark mode)
+- Uses DaisyUI's `data-theme` attribute for theme switching (not Tailwind `dark:` class)
+- Theme persisted to localStorage and respects system preference via `prefers-color-scheme`
+- FOUC (Flash of Unstyled Content) prevention script added to BaseLayout `<head>`
+- Removed all `dark:` Tailwind class prefixes from components - DaisyUI semantic colors auto-adapt
+- Fixed SpendingChart to detect theme via `data-theme` attribute instead of `dark` class
+- Fixed race condition: ThemeToggle now checks if theme is already set before re-initializing
+- All quality gates pass (lint, stylelint, format, typecheck)
+- 14 unit tests covering theme detection, persistence, toggle logic, and accessibility
+
+**Accessibility:**
+
+- [x] Button has proper `aria-label` that updates based on current theme
+- [x] Minimum touch target 44x44px (actually 56x56px with w-14 h-14)
+- [x] Focus visible styles with ring accent
+- [x] Keyboard accessible (Enter/Space to toggle)
+- [x] Icons have `aria-hidden="true"`
+
+**Status:** ✅ Complete
 
 ---
 
@@ -1424,7 +1456,7 @@ interface CashFlowItemProps {
 - [x] All new components have Storybook stories
 - [x] All quality gates pass
 
-**Progress:** Tasks 1-4, 6-9, 11-16 (P0-P1) Complete ✅ - Design tokens, component library updates, Navigation sidebar, Header redesign, Spending Summary Card, Quick Actions, Recent Activity list, Net Worth Widget, Spending Analysis Chart, Transaction Filter Bar, Transaction Summary Cards, Budget Card Grid, and Budget Page Header & Advice Banner complete. Ready for P2 tasks (Mobile Navigation, Dark Mode Verification, Responsive Verification).
+**Progress:** Tasks 1-4, 6-9, 11-17 (P0-P2) Complete ✅ - Design tokens, component library updates, Navigation sidebar, Header redesign, Spending Summary Card, Quick Actions, Recent Activity list, Net Worth Widget, Spending Analysis Chart, Transaction Filter Bar, Transaction Summary Cards, Budget Card Grid, Budget Page Header & Advice Banner, and Dark Mode Verification complete. Ready for remaining P1/P2 tasks (Mobile Navigation, Responsive Verification).
 
 ---
 
@@ -1601,3 +1633,23 @@ Phase 3 (P2 - Polish):
 - **Location:** Various new components
 - **Issue:** Import ordering could be more consistent (external → internal → types)
 - **Action:** Apply consistent import ordering: external packages → @/ aliases → relative imports → types
+
+### Non-Blocking Feedback from Code Review (Task 17 - Dark Mode)
+
+**P1-1: SpendingChart Tooltip Colors Don't Update on Theme Change** (Known limitation)
+
+- **Location:** `/home/ivan/works/k2-expenses-Hwk/src/components/organisms/SpendingChart.astro`
+- **Issue:** Chart tooltip colors are set at initialization time and don't update dynamically when theme changes
+- **Action:** Consider adding MutationObserver on `data-theme` attribute to update chart colors on theme change
+
+**P1-2: BudgetAlertBanner Uses is:inline with define:vars** (Pre-existing)
+
+- **Location:** `/home/ivan/works/k2-expenses-Hwk/src/components/molecules/BudgetAlertBanner.astro`
+- **Issue:** Uses `is:inline` with `define:vars` which limits script capabilities
+- **Action:** Refactor to use data attributes pattern per CLAUDE.md guidelines
+
+**P2-1: Consider Adding Theme Transition Animation**
+
+- **Location:** `src/components/atoms/ThemeToggle.astro`
+- **Issue:** Theme switch is instant without transition
+- **Action:** Consider adding CSS transition for smoother theme change: `html { transition: background-color 0.3s ease, color 0.3s ease; }`
