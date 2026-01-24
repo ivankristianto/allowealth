@@ -16,7 +16,7 @@
  */
 
 import { ShoppingCart } from '@lucide/astro';
-import { formatCurrency, getBudgetStatusClass } from '@/lib/tokens';
+import { formatCurrency, getBudgetStatusClass, getStatusBadgeClasses } from '@/lib/tokens';
 import ProgressBar from '@/components/atoms/ProgressBar.astro';
 import IconBadge from '@/components/atoms/IconBadge.astro';
 import StatLabel from '@/components/atoms/StatLabel.astro';
@@ -118,17 +118,7 @@ const remainingFormatted = formatCurrency(remaining, currency);
               </div>
             </div>
 
-            <span
-              class={`text-xs font-bold tracking-wider uppercase px-3 py-1.5 rounded-full ${
-                status === 'status-ok'
-                  ? 'text-success bg-success/10'
-                  : status === 'status-warning'
-                    ? 'text-warning bg-warning/10'
-                    : 'text-error bg-error/10'
-              }`}
-            >
-              {Math.round(percentage)}% used
-            </span>
+            <span class={getStatusBadgeClasses(status)}>{Math.round(percentage)}% used</span>
           </div>
 
           <ProgressBar value={percentage} status={progressBarStatus} size="md" />

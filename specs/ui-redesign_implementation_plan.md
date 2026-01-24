@@ -414,62 +414,6 @@ After:
 
 ---
 
-### Task 5: Mobile Bottom Navigation (Priority: P1)
-
-**Goal:** Implement mobile navigation bar with floating action button (FAB) for add transaction
-
-**Current Issue:** No dedicated mobile navigation component with FAB pattern.
-
-**Checklist:**
-
-- [ ] Create MobileNavigation layout component
-- [ ] Implement 5-slot layout (Home, Ledger, +FAB, Budget, Settings)
-- [ ] Create elevated FAB with scale animation on tap
-- [ ] Add glass effect background (`backdrop-blur-xl`)
-- [ ] Style nav items with icon + label (uppercase tracking-widest, 10px)
-- [ ] Implement active state styling (text-accent, scale-110)
-- [ ] Add shadow for elevation (`shadow-[0_-10px_40px_rgba(0,0,0,0.05)]`)
-- [ ] Hide on desktop (`lg:hidden`)
-- [ ] Add to MainLayout
-- [ ] Add `role="navigation"` and `aria-label`
-- [ ] Ensure touch targets minimum 44x44px
-- [ ] Create Storybook story
-- [x] Run quality gates
-- [ ] Test in dark mode
-
-**Files to modify:**
-
-- `src/components/layouts/MobileNavigation.astro` (new)
-- `src/layouts/MainLayout.astro`
-
-**Accessibility:**
-
-- [ ] Add `role="navigation"` to nav element
-- [ ] Add `aria-label="Mobile navigation"`
-- [ ] Add `aria-current="page"` to active item
-- [ ] Ensure FAB has accessible label ("Add new transaction")
-- [ ] Minimum touch target 44x44px for all buttons
-
-**UI Change:**
-
-```
-Mobile viewport (< 1024px):
-
-┌─────────────────────────────────────┐
-│                                     │
-│         Page Content                │
-│                                     │
-├───────────────┬─────┬───────────────┤
-│ 🏠    📋    │ [+] │    📊    ⚙️   │
-│ HOME  LEDGER │ FAB │  BUDGET  SET  │
-└───────────────┴─────┴───────────────┘
-                  ↑ elevated button (-top-10)
-```
-
-**Status:** ⏳ Pending
-
----
-
 ### Task 6: Dashboard - Spending Summary Card (Priority: P0) ✅
 
 **Goal:** Create the monthly spending overview card with progress bar and budget alert
@@ -1456,7 +1400,7 @@ interface CashFlowItemProps {
 - [x] All new components have Storybook stories
 - [x] All quality gates pass
 
-**Progress:** Tasks 1-4, 6-9, 11-17 (P0-P2) Complete ✅ - Design tokens, component library updates, Navigation sidebar, Header redesign, Spending Summary Card, Quick Actions, Recent Activity list, Net Worth Widget, Spending Analysis Chart, Transaction Filter Bar, Transaction Summary Cards, Budget Card Grid, Budget Page Header & Advice Banner, and Dark Mode Verification complete. Ready for remaining P1/P2 tasks (Mobile Navigation, Responsive Verification).
+**Progress:** Tasks 1-4, 6-9, 11-17 (P0-P2) Complete ✅ - Design tokens, component library updates, Navigation sidebar, Header redesign, Spending Summary Card, Quick Actions, Recent Activity list, Net Worth Widget, Spending Analysis Chart, Transaction Filter Bar, Transaction Summary Cards, Budget Card Grid, Budget Page Header & Advice Banner, and Dark Mode Verification complete. Code Quality Improvements: P2-1 (IconBadge comments) ✅, P2-2 (getStatusBadgeClasses utility) ✅, P1-1 (ARIA patterns in stories) ✅, P1-3 (StoryObj type safety) ✅. Ready for remaining P1/P2 tasks (Mobile Navigation, Responsive Verification) and additional P2 code quality suggestions.
 
 ---
 
@@ -1523,17 +1467,37 @@ Phase 3 (P2 - Polish):
 
 ### Non-Blocking Feedback from Code Review (Task 6)
 
-**P2-1: Hardcoded Size Values in Comments**
+**P2-1: Hardcoded Size Values in Comments** ✅ FIXED
 
 - **Location:** `/home/ivan/works/expenses/src/components/atoms/IconBadge.astro` (lines 31-35)
-- [ ] **Issue:** Comments mention pixel values (20px, 24px, 30px) but use Tailwind classes
+- [x] **Issue:** Comments mention pixel values (20px, 24px, 30px) but use Tailwind classes
 - **Action:** Update to reference Tailwind class names in comments instead
 
-**P2-2: Inconsistent Status Badge Styling**
+**Implementation Notes:**
+
+- Updated comments to reference design system typography tokens (`fontSizes.xl`, `fontSizes['2xl']`, `fontSizes['3xl']`)
+- Comments now include both token name, rem value, and pixel equivalent for clarity
+- Example: `// fontSizes.xl (1.25rem / 20px)` instead of just `// 20px`
+
+**P2-2: Inconsistent Status Badge Styling** ✅ FIXED
 
 - **Location:** `/home/ivan/works/expenses/src/components/organisms/SpendingCard.astro` (lines 110-118)
-- [ ] **Issue:** The status badge uses inline conditional class construction
+- [x] **Issue:** The status badge uses inline conditional class construction
 - **Action:** Extract to a reusable `getStatusBadgeClasses` utility
+
+**Implementation Notes:**
+
+- Created `getStatusBadgeClasses()` function in `src/lib/tokens.ts`
+- Function returns DaisyUI semantic color classes for theme compatibility
+- Updated `SpendingCard.astro` to use the new utility
+- Added comprehensive unit tests (12 tests) in `src/lib/tokens.test.ts`
+- Type-safe implementation with explicit literal type annotations
+- JSDoc documentation with @param, @returns, and @example
+
+**Additional P2 Suggestions from Code Review (Added for Future Work):**
+
+- **Extract BudgetStatusType type alias** - Currently the status type union is duplicated in multiple places. Could create `export type BudgetStatusType = 'status-ok' | 'status-warning' | 'status-danger';` for DRY compliance.
+- **Standardize status type conventions** - Codebase has two different status conventions (`status-ok/warning/danger` vs `ok/warning/exceeded`). Consider standardizing.
 
 **P2-3: Animations Not Using Motion Library**
 
@@ -1668,11 +1632,30 @@ Phase 3 (P2 - Polish):
 
 ### Non-Blocking Feedback from Code Review (Storybook Stories - Code Quality Session)
 
-**P1-1: Inconsistent ARIA Patterns Between Stories and Components**
+**P1-1: Inconsistent ARIA Patterns Between Stories and Components** ✅ FIXED
 
 - **Location:** All three new story files (TransactionSummaryCards, BudgetPageHeader, TransactionFiltersBar)
-- [ ] **Issue:** SVG icons in stories don't have `aria-hidden="true"` attribute that the Astro components include
+- [x] **Issue:** SVG icons in stories don't have `aria-hidden="true"` attribute that the Astro components include
 - **Action:** Add `aria-hidden="true"` to all decorative SVG icons in stories
+
+**Implementation Notes:**
+
+- Added `aria-hidden="true"` to all decorative SVG icons in TransactionSummaryCards.stories.ts (3 icons)
+- Added `aria-hidden="true"` to all decorative SVG icons in BudgetPageHeader.stories.ts (4 icons)
+- Added `aria-hidden="true"` to all decorative SVG icons in TransactionFiltersBar.stories.ts (7 icons + 1 dynamic check icon)
+- All icons now match the accessibility patterns in their corresponding Astro components
+
+**P1-3: Story Helper Function Type Safety** ✅ FIXED
+
+- **Location:** All three new story files
+- [x] **Issue:** Stories use type assertions `as Args` instead of proper StoryObj generic typing
+- **Action:** Use `type Story = StoryObj<Args>` pattern for proper type inference
+
+**Implementation Notes:**
+
+- Added `type Story = StoryObj<Args>` type alias to all three story files
+- Updated all story exports from `export const X: StoryObj` to `export const X: Story`
+- Removed type assertions `(args as Args)` from render functions - args are now properly typed
 
 **P1-2: Missing aria-disabled Handling in Story** ✅ FIXED
 
@@ -1688,11 +1671,11 @@ Phase 3 (P2 - Polish):
 - Added disabled state styling (opacity-30, cursor-not-allowed, pointer-events-none)
 - Added `FirstMonthDisabled` and `LastMonthDisabled` stories
 
-**P1-3: Story Helper Function Type Safety**
+**P2-1: Meta Type Could Be More Specific**
 
-- **Location:** All three new story files
-- [ ] **Issue:** Stories use type assertions `as Args` instead of proper StoryObj generic typing
-- **Action:** Use `type Story = StoryObj<Args>` pattern for proper type inference
+- **Location:** All three new story files (TransactionSummaryCards, BudgetPageHeader, TransactionFiltersBar)
+- [ ] **Issue:** The `Meta` type is used without type parameters, so argTypes aren't type-checked against Args
+- **Action:** Use `Meta<Args>` for better type safety: `const meta: Meta<TransactionSummaryCardsArgs> = { ... }`
 
 **P2-2: Duplicate Icon Definitions Across Stories**
 

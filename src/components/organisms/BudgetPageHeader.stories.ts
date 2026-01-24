@@ -71,11 +71,11 @@ const isSafeUrl = (url: string): boolean => {
   }
 };
 
-// SVG icons
-const sparklesIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="stroke-current"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/></svg>`;
-const historyIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="stroke-current"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>`;
-const chevronLeftIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="stroke-current"><path d="m15 18-6-6 6-6"/></svg>`;
-const chevronRightIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="stroke-current"><path d="m9 18 6-6-6-6"/></svg>`;
+// SVG icons (aria-hidden for decorative icons per design system accessibility guidelines)
+const sparklesIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="stroke-current" aria-hidden="true"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/></svg>`;
+const historyIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="stroke-current" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>`;
+const chevronLeftIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="stroke-current" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>`;
+const chevronRightIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="stroke-current" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>`;
 
 interface BudgetPageHeaderArgs {
   title?: string;
@@ -87,6 +87,8 @@ interface BudgetPageHeaderArgs {
   isNextDisabled?: boolean;
   showAiRebalancer?: boolean;
 }
+
+type Story = StoryObj<BudgetPageHeaderArgs>;
 
 const createBudgetPageHeader = (args: BudgetPageHeaderArgs): HTMLElement => {
   const {
@@ -170,7 +172,7 @@ const createBudgetPageHeader = (args: BudgetPageHeaderArgs): HTMLElement => {
   return container;
 };
 
-export const Default: StoryObj = {
+export const Default: Story = {
   args: {
     title: 'Family Spending Targets',
     subtitle: '',
@@ -181,10 +183,10 @@ export const Default: StoryObj = {
     isNextDisabled: true,
     showAiRebalancer: true,
   },
-  render: (args) => createBudgetPageHeader(args as BudgetPageHeaderArgs),
+  render: (args) => createBudgetPageHeader(args),
 };
 
-export const WithNavigation: StoryObj = {
+export const WithNavigation: Story = {
   args: {
     title: 'Family Spending Targets',
     subtitle: '',
@@ -195,10 +197,10 @@ export const WithNavigation: StoryObj = {
     isNextDisabled: false,
     showAiRebalancer: true,
   },
-  render: (args) => createBudgetPageHeader(args as BudgetPageHeaderArgs),
+  render: (args) => createBudgetPageHeader(args),
 };
 
-export const NoAiRebalancer: StoryObj = {
+export const NoAiRebalancer: Story = {
   args: {
     title: 'Family Spending Targets',
     subtitle: '',
@@ -209,10 +211,10 @@ export const NoAiRebalancer: StoryObj = {
     isNextDisabled: true,
     showAiRebalancer: false,
   },
-  render: (args) => createBudgetPageHeader(args as BudgetPageHeaderArgs),
+  render: (args) => createBudgetPageHeader(args),
 };
 
-export const CustomSubtitle: StoryObj = {
+export const CustomSubtitle: Story = {
   args: {
     title: 'Family Spending Targets',
     subtitle: 'Track your monthly spending across all categories.',
@@ -223,10 +225,10 @@ export const CustomSubtitle: StoryObj = {
     isNextDisabled: true,
     showAiRebalancer: true,
   },
-  render: (args) => createBudgetPageHeader(args as BudgetPageHeaderArgs),
+  render: (args) => createBudgetPageHeader(args),
 };
 
-export const NoBudgets: StoryObj = {
+export const NoBudgets: Story = {
   args: {
     title: 'Family Spending Targets',
     subtitle: '',
@@ -237,10 +239,10 @@ export const NoBudgets: StoryObj = {
     isNextDisabled: true,
     showAiRebalancer: true,
   },
-  render: (args) => createBudgetPageHeader(args as BudgetPageHeaderArgs),
+  render: (args) => createBudgetPageHeader(args),
 };
 
-export const SingleBudget: StoryObj = {
+export const SingleBudget: Story = {
   args: {
     title: 'Family Spending Targets',
     subtitle: '',
@@ -251,5 +253,5 @@ export const SingleBudget: StoryObj = {
     isNextDisabled: true,
     showAiRebalancer: true,
   },
-  render: (args) => createBudgetPageHeader(args as BudgetPageHeaderArgs),
+  render: (args) => createBudgetPageHeader(args),
 };

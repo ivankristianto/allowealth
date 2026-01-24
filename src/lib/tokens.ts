@@ -246,6 +246,31 @@ export function getBudgetStatusClass(
 }
 
 /**
+ * Get status badge classes for spending/usage badges
+ * Returns DaisyUI semantic color classes for theme compatibility
+ *
+ * @param status - The budget status category
+ * @returns A string of CSS classes for styling the status badge
+ * @example
+ * getStatusBadgeClasses('status-ok') // 'text-xs font-bold tracking-wider uppercase px-3 py-1.5 rounded-full text-success bg-success/10'
+ */
+export function getStatusBadgeClasses(
+  status: 'status-ok' | 'status-warning' | 'status-danger'
+): string {
+  const baseClasses = 'text-xs font-bold tracking-wider uppercase px-3 py-1.5 rounded-full';
+
+  // Explicit type annotation on Record for type safety
+  const statusClasses: Record<'status-ok' | 'status-warning' | 'status-danger', string> = {
+    'status-ok': 'text-success bg-success/10',
+    'status-warning': 'text-warning bg-warning/10',
+    'status-danger': 'text-error bg-error/10',
+  };
+
+  // No fallback needed - TypeScript enforces valid status values at compile time
+  return `${baseClasses} ${statusClasses[status]}`;
+}
+
+/**
  * Get asset update priority
  * Returns: 'high' (>30 days), 'medium' (>14 days), 'low' (>7 days), 'none' (<=7 days)
  */

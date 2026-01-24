@@ -27,11 +27,11 @@ const sizeClasses: Record<string, string> = {
   lg: 'p-5',
 };
 
-// Icon size based on badge size
+// Icon size based on badge size (maps to design system typography scale)
 const iconSizeClasses: Record<string, string> = {
-  sm: 'text-xl', // 20px
-  md: 'text-2xl', // 24px
-  lg: 'text-3xl', // 30px
+  sm: 'text-xl', // fontSizes.xl (1.25rem / 20px)
+  md: 'text-2xl', // fontSizes['2xl'] (1.5rem / 24px)
+  lg: 'text-3xl', // fontSizes['3xl'] (1.875rem / 30px)
 };
 
 // Variant color classes using DaisyUI semantic colors

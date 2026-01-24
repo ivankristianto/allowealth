@@ -61,10 +61,10 @@ const formatCurrency = (amount: number, curr: string): string => {
   }).format(amount);
 };
 
-// SVG icons
-const trendingUpIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="stroke-current text-success"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>`;
-const trendingDownIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="stroke-current text-error"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/></svg>`;
-const walletIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="stroke-current text-primary"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></svg>`;
+// SVG icons (aria-hidden for decorative icons per design system accessibility guidelines)
+const trendingUpIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="stroke-current text-success" aria-hidden="true"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>`;
+const trendingDownIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="stroke-current text-error" aria-hidden="true"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/></svg>`;
+const walletIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="stroke-current text-primary" aria-hidden="true"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></svg>`;
 
 interface TransactionSummaryCardsArgs {
   monthlyIncome?: number;
@@ -75,6 +75,8 @@ interface TransactionSummaryCardsArgs {
   loading?: boolean;
   error?: string;
 }
+
+type Story = StoryObj<TransactionSummaryCardsArgs>;
 
 const createTransactionSummaryCards = (args: TransactionSummaryCardsArgs): HTMLElement => {
   const {
@@ -179,7 +181,7 @@ const createTransactionSummaryCards = (args: TransactionSummaryCardsArgs): HTMLE
   return container;
 };
 
-export const Default: StoryObj = {
+export const Default: Story = {
   args: {
     monthlyIncome: 59700000,
     monthlyExpenses: 4800000,
@@ -189,10 +191,10 @@ export const Default: StoryObj = {
     loading: false,
     error: '',
   },
-  render: (args) => createTransactionSummaryCards(args as TransactionSummaryCardsArgs),
+  render: (args) => createTransactionSummaryCards(args),
 };
 
-export const HighSpending: StoryObj = {
+export const HighSpending: Story = {
   args: {
     monthlyIncome: 25000000,
     monthlyExpenses: 30000000,
@@ -202,10 +204,10 @@ export const HighSpending: StoryObj = {
     loading: false,
     error: '',
   },
-  render: (args) => createTransactionSummaryCards(args as TransactionSummaryCardsArgs),
+  render: (args) => createTransactionSummaryCards(args),
 };
 
-export const PositiveSavings: StoryObj = {
+export const PositiveSavings: Story = {
   args: {
     monthlyIncome: 100000000,
     monthlyExpenses: 35000000,
@@ -215,10 +217,10 @@ export const PositiveSavings: StoryObj = {
     loading: false,
     error: '',
   },
-  render: (args) => createTransactionSummaryCards(args as TransactionSummaryCardsArgs),
+  render: (args) => createTransactionSummaryCards(args),
 };
 
-export const USD: StoryObj = {
+export const USD: Story = {
   args: {
     monthlyIncome: 8500,
     monthlyExpenses: 3200,
@@ -228,10 +230,10 @@ export const USD: StoryObj = {
     loading: false,
     error: '',
   },
-  render: (args) => createTransactionSummaryCards(args as TransactionSummaryCardsArgs),
+  render: (args) => createTransactionSummaryCards(args),
 };
 
-export const NoTransactions: StoryObj = {
+export const NoTransactions: Story = {
   args: {
     monthlyIncome: 0,
     monthlyExpenses: 0,
@@ -241,10 +243,10 @@ export const NoTransactions: StoryObj = {
     loading: false,
     error: '',
   },
-  render: (args) => createTransactionSummaryCards(args as TransactionSummaryCardsArgs),
+  render: (args) => createTransactionSummaryCards(args),
 };
 
-export const Loading: StoryObj = {
+export const Loading: Story = {
   args: {
     monthlyIncome: 0,
     monthlyExpenses: 0,
@@ -254,10 +256,10 @@ export const Loading: StoryObj = {
     loading: true,
     error: '',
   },
-  render: (args) => createTransactionSummaryCards(args as TransactionSummaryCardsArgs),
+  render: (args) => createTransactionSummaryCards(args),
 };
 
-export const Error: StoryObj = {
+export const Error: Story = {
   args: {
     monthlyIncome: 0,
     monthlyExpenses: 0,
@@ -267,5 +269,5 @@ export const Error: StoryObj = {
     loading: false,
     error: 'Failed to load transaction summary',
   },
-  render: (args) => createTransactionSummaryCards(args as TransactionSummaryCardsArgs),
+  render: (args) => createTransactionSummaryCards(args),
 };

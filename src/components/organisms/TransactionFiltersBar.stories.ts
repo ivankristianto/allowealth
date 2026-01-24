@@ -51,14 +51,14 @@ const escapeAttr = (str: string): string => {
     .replace(/>/g, '&gt;');
 };
 
-// SVG icons
-const searchIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="stroke-current text-base-content/40"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>`;
-const chevronLeftIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="stroke-current"><path d="m15 18-6-6 6-6"/></svg>`;
-const chevronRightIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="stroke-current"><path d="m9 18 6-6-6-6"/></svg>`;
-const chevronDownIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="stroke-current text-base-content/40 shrink-0"><path d="m6 9 6 6 6-6"/></svg>`;
-const tagIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="stroke-current text-base-content/40"><path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z"/><path d="M7 7h.01"/></svg>`;
-const calendarIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="stroke-current text-base-content/40"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>`;
-const resetIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="stroke-current"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>`;
+// SVG icons (aria-hidden for decorative icons per design system accessibility guidelines)
+const searchIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="stroke-current text-base-content/40" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>`;
+const chevronLeftIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="stroke-current" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>`;
+const chevronRightIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="stroke-current" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>`;
+const chevronDownIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="stroke-current text-base-content/40 shrink-0" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>`;
+const tagIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="stroke-current text-base-content/40" aria-hidden="true"><path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z"/><path d="M7 7h.01"/></svg>`;
+const calendarIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="stroke-current text-base-content/40" aria-hidden="true"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>`;
+const resetIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="stroke-current" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>`;
 
 interface Category {
   id: string;
@@ -80,6 +80,8 @@ interface TransactionFiltersBarArgs {
   hasPrevMonth?: boolean;
   hasNextMonth?: boolean;
 }
+
+type Story = StoryObj<TransactionFiltersBarArgs>;
 
 const createTransactionFiltersBar = (args: TransactionFiltersBarArgs): HTMLElement => {
   const {
@@ -166,7 +168,7 @@ const createTransactionFiltersBar = (args: TransactionFiltersBarArgs): HTMLEleme
                   (cat) => `
                 <label class="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-colors hover:bg-base-200 ${categoryIds.includes(cat.id) ? 'bg-accent/10' : ''}">
                   <div class="w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-colors ${categoryIds.includes(cat.id) ? 'bg-accent border-accent' : 'border-base-300'}">
-                    ${categoryIds.includes(cat.id) ? '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>' : ''}
+                    ${categoryIds.includes(cat.id) ? '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>' : ''}
                   </div>
                   <span class="text-sm font-medium text-base-content truncate">${escapeHtml(cat.name)}</span>
                 </label>
@@ -268,7 +270,7 @@ const sampleCategories: Category[] = [
   { id: '9', name: 'Investments', type: 'income' },
 ];
 
-export const Default: StoryObj = {
+export const Default: Story = {
   args: {
     typeFilter: 'expense',
     searchValue: '',
@@ -279,10 +281,10 @@ export const Default: StoryObj = {
     selectedMonth: '2024-01',
     hasActiveFilters: false,
   },
-  render: (args) => createTransactionFiltersBar(args as TransactionFiltersBarArgs),
+  render: (args) => createTransactionFiltersBar(args),
 };
 
-export const WithSearchValue: StoryObj = {
+export const WithSearchValue: Story = {
   args: {
     typeFilter: 'expense',
     searchValue: 'grocery',
@@ -293,10 +295,10 @@ export const WithSearchValue: StoryObj = {
     selectedMonth: '2024-01',
     hasActiveFilters: true,
   },
-  render: (args) => createTransactionFiltersBar(args as TransactionFiltersBarArgs),
+  render: (args) => createTransactionFiltersBar(args),
 };
 
-export const WithSelectedCategories: StoryObj = {
+export const WithSelectedCategories: Story = {
   args: {
     typeFilter: 'expense',
     searchValue: '',
@@ -307,10 +309,10 @@ export const WithSelectedCategories: StoryObj = {
     selectedMonth: '2024-01',
     hasActiveFilters: true,
   },
-  render: (args) => createTransactionFiltersBar(args as TransactionFiltersBarArgs),
+  render: (args) => createTransactionFiltersBar(args),
 };
 
-export const IncomeFilter: StoryObj = {
+export const IncomeFilter: Story = {
   args: {
     typeFilter: 'income',
     searchValue: '',
@@ -321,10 +323,10 @@ export const IncomeFilter: StoryObj = {
     selectedMonth: '2024-01',
     hasActiveFilters: true,
   },
-  render: (args) => createTransactionFiltersBar(args as TransactionFiltersBarArgs),
+  render: (args) => createTransactionFiltersBar(args),
 };
 
-export const NoCategoryFilter: StoryObj = {
+export const NoCategoryFilter: Story = {
   args: {
     typeFilter: 'expense',
     searchValue: '',
@@ -335,10 +337,10 @@ export const NoCategoryFilter: StoryObj = {
     selectedMonth: '2024-01',
     hasActiveFilters: false,
   },
-  render: (args) => createTransactionFiltersBar(args as TransactionFiltersBarArgs),
+  render: (args) => createTransactionFiltersBar(args),
 };
 
-export const NoMonthSelector: StoryObj = {
+export const NoMonthSelector: Story = {
   args: {
     typeFilter: 'expense',
     searchValue: '',
@@ -349,10 +351,10 @@ export const NoMonthSelector: StoryObj = {
     selectedMonth: '',
     hasActiveFilters: false,
   },
-  render: (args) => createTransactionFiltersBar(args as TransactionFiltersBarArgs),
+  render: (args) => createTransactionFiltersBar(args),
 };
 
-export const AllFiltersActive: StoryObj = {
+export const AllFiltersActive: Story = {
   args: {
     typeFilter: 'income',
     searchValue: 'freelance',
@@ -363,10 +365,10 @@ export const AllFiltersActive: StoryObj = {
     selectedMonth: '2023-12',
     hasActiveFilters: true,
   },
-  render: (args) => createTransactionFiltersBar(args as TransactionFiltersBarArgs),
+  render: (args) => createTransactionFiltersBar(args),
 };
 
-export const FirstMonthDisabled: StoryObj = {
+export const FirstMonthDisabled: Story = {
   args: {
     typeFilter: 'expense',
     searchValue: '',
@@ -382,7 +384,7 @@ export const FirstMonthDisabled: StoryObj = {
     selectedMonth: '2024-01',
     hasActiveFilters: false,
   },
-  render: (args) => createTransactionFiltersBar(args as TransactionFiltersBarArgs),
+  render: (args) => createTransactionFiltersBar(args),
   parameters: {
     docs: {
       description: {
@@ -393,7 +395,7 @@ export const FirstMonthDisabled: StoryObj = {
   },
 };
 
-export const LastMonthDisabled: StoryObj = {
+export const LastMonthDisabled: Story = {
   args: {
     typeFilter: 'expense',
     searchValue: '',
@@ -409,7 +411,7 @@ export const LastMonthDisabled: StoryObj = {
     selectedMonth: '2023-11',
     hasActiveFilters: false,
   },
-  render: (args) => createTransactionFiltersBar(args as TransactionFiltersBarArgs),
+  render: (args) => createTransactionFiltersBar(args),
   parameters: {
     docs: {
       description: {
