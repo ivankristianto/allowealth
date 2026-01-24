@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/html';
 import { IconRenderers } from '../../../.storybook/lucide-icons';
 
-const { TriangleAlert, DollarSign, CircleAlert, Info } = IconRenderers;
+const { TriangleAlert, DollarSign, CircleAlert, Info: InfoIcon } = IconRenderers;
 
 const meta: Meta = {
   title: 'Molecules/NotificationItem',
@@ -33,7 +33,7 @@ const iconMap = {
   warning: TriangleAlert,
   success: DollarSign,
   alert: CircleAlert,
-  info: Info,
+  info: InfoIcon,
 };
 
 // Using DaisyUI semantic classes with opacity

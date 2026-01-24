@@ -1,5 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/web-components';
-import { html } from 'lit';
+import type { Meta, StoryObj } from '@storybook/html';
 
 const meta: Meta = {
   title: 'Molecules/CashFlowItem',
@@ -25,7 +24,7 @@ const meta: Meta = {
     icon: {
       control: 'select',
       options: ['trending-up', 'calendar', 'banknote', 'receipt'],
-      description: 'Lucide icon name',
+      description: 'Icon name',
     },
     currency: {
       control: 'select',
@@ -37,9 +36,98 @@ const meta: Meta = {
 
 export default meta;
 
-type Story = StoryObj;
+const icons: Record<string, string> = {
+  'trending-up':
+    '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="14 7 21 7 21 14"/></svg>',
+  calendar:
+    '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>',
+  banknote:
+    '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg>',
+  receipt:
+    '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l4-2 4 2 4-2 4 2V2z"/><path d="M16 8H8"/><path d="M16 12H8"/><path d="M16 16H8"/></svg>',
+};
 
-export const Income: Story = {
+const createCashFlowItem = (args: {
+  name?: string;
+  date?: string;
+  amount?: number;
+  type?: 'income' | 'expense';
+  icon?: string;
+  currency?: 'IDR' | 'USD';
+}): HTMLElement => {
+  const {
+    name = 'Cash flow item',
+    date = 'Jan 01, 2024',
+    amount = 0,
+    type = 'income',
+    icon = 'trending-up',
+    currency = 'IDR',
+  } = args;
+
+  const isIncome = type === 'income';
+  const amountClass = isIncome ? 'text-success' : 'text-error';
+  const containerClass = isIncome
+    ? 'bg-success/5 border-success/20 hover:border-success/30'
+    : 'bg-error/5 border-error/20 hover:border-error/30';
+  const badgeClass = isIncome ? 'bg-success/10 text-success' : 'bg-error/10 text-error';
+  const sign = amount === 0 ? '' : isIncome ? '+' : '-';
+
+  const formatted = new Intl.NumberFormat(currency === 'USD' ? 'en-US' : 'id-ID', {
+    style: 'currency',
+    currency,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: currency === 'USD' ? 2 : 0,
+  }).format(Math.abs(amount));
+
+  const container = document.createElement('div');
+  container.className = 'block max-w-sm';
+
+  const innerDiv = document.createElement('div');
+  innerDiv.className = `group flex items-center justify-between gap-4 p-6 rounded-3xl border shadow-sm transition-all hover:scale-[1.03] hover:shadow-md ${containerClass}`;
+
+  const leftDiv = document.createElement('div');
+  leftDiv.className = 'flex items-center gap-4 min-w-0';
+
+  const iconBadge = document.createElement('div');
+  iconBadge.className = `rounded-2xl shadow-md p-4 ${badgeClass}`;
+  iconBadge.innerHTML = icons[icon] ?? icons['trending-up'];
+
+  const textDiv = document.createElement('div');
+  textDiv.className = 'min-w-0';
+
+  const nameEl = document.createElement('p');
+  nameEl.className = 'text-base font-bold tracking-tight leading-tight text-base-content truncate';
+  nameEl.textContent = name;
+
+  const dateEl = document.createElement('span');
+  dateEl.className =
+    'text-[10px] font-bold text-base-content/50 tracking-widest uppercase mt-1 block';
+  dateEl.textContent = date.toUpperCase();
+
+  textDiv.appendChild(nameEl);
+  textDiv.appendChild(dateEl);
+
+  leftDiv.appendChild(iconBadge);
+  leftDiv.appendChild(textDiv);
+
+  const amountDiv = document.createElement('div');
+  amountDiv.className = 'text-right leading-none shrink-0';
+
+  const amountEl = document.createElement('span');
+  amountEl.className = `text-base font-bold tracking-tight ${amountClass}`;
+  amountEl.textContent = `${sign}${formatted}`;
+
+  amountDiv.appendChild(amountEl);
+
+  innerDiv.appendChild(leftDiv);
+  innerDiv.appendChild(amountDiv);
+
+  container.appendChild(innerDiv);
+
+  return container;
+};
+
+export const Income: StoryObj = {
   args: {
     name: 'Project Salary',
     date: 'Jan 28, 2024',
@@ -48,19 +136,10 @@ export const Income: Story = {
     icon: 'trending-up',
     currency: 'IDR',
   },
-  render: (args) => html`
-    <cash-flow-item
-      name="${args.name}"
-      date="${args.date}"
-      amount="${args.amount}"
-      type="${args.type}"
-      icon="${args.icon}"
-      currency="${args.currency}"
-    ></cash-flow-item>
-  `,
+  render: (args) => createCashFlowItem(args),
 };
 
-export const Expense: Story = {
+export const Expense: StoryObj = {
   args: {
     name: 'House Rent',
     date: 'Feb 01, 2024',
@@ -69,19 +148,10 @@ export const Expense: Story = {
     icon: 'calendar',
     currency: 'IDR',
   },
-  render: (args) => html`
-    <cash-flow-item
-      name="${args.name}"
-      date="${args.date}"
-      amount="${args.amount}"
-      type="${args.type}"
-      icon="${args.icon}"
-      currency="${args.currency}"
-    ></cash-flow-item>
-  `,
+  render: (args) => createCashFlowItem(args),
 };
 
-export const USDIncome: Story = {
+export const USDIncome: StoryObj = {
   args: {
     name: 'Consulting Payout',
     date: 'Mar 04, 2024',
@@ -90,74 +160,5 @@ export const USDIncome: Story = {
     icon: 'banknote',
     currency: 'USD',
   },
-  render: (args) => html`
-    <cash-flow-item
-      name="${args.name}"
-      date="${args.date}"
-      amount="${args.amount}"
-      type="${args.type}"
-      icon="${args.icon}"
-      currency="${args.currency}"
-    ></cash-flow-item>
-  `,
+  render: (args) => createCashFlowItem(args),
 };
-
-customElements.define(
-  'cash-flow-item',
-  class extends HTMLElement {
-    connectedCallback() {
-      const name = this.getAttribute('name') ?? 'Cash flow item';
-      const date = this.getAttribute('date') ?? 'Jan 01, 2024';
-      const amount = Number(this.getAttribute('amount') ?? '0');
-      const type = this.getAttribute('type') ?? 'income';
-      const icon = this.getAttribute('icon') ?? 'trending-up';
-      const currency = this.getAttribute('currency') ?? 'IDR';
-
-      const isIncome = type === 'income';
-      const amountClass = isIncome ? 'text-success' : 'text-error';
-      const containerClass = isIncome
-        ? 'bg-success/5 border-success/20 hover:border-success/30'
-        : 'bg-error/5 border-error/20 hover:border-error/30';
-      const badgeClass = isIncome ? 'bg-success/10 text-success' : 'bg-error/10 text-error';
-      const sign = amount === 0 ? '' : isIncome ? '+' : '-';
-
-      const formatted = new Intl.NumberFormat(currency === 'USD' ? 'en-US' : 'id-ID', {
-        style: 'currency',
-        currency,
-        minimumFractionDigits: 0,
-        maximumFractionDigits: currency === 'USD' ? 2 : 0,
-      }).format(Math.abs(amount));
-
-      const dateLabel = date.toUpperCase();
-
-      const icons: Record<string, string> = {
-        'trending-up':
-          '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="14 7 21 7 21 14"/></svg>',
-        calendar:
-          '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>',
-        banknote:
-          '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg>',
-        receipt:
-          '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l4-2 4 2 4-2 4 2V2z"/><path d="M16 8H8"/><path d="M16 12H8"/><path d="M16 16H8"/></svg>',
-      };
-
-      this.className = 'block max-w-sm';
-      this.innerHTML = `
-        <div class="group flex items-center justify-between gap-4 p-6 rounded-3xl border shadow-sm transition-all hover:scale-[1.03] hover:shadow-md ${containerClass}">
-          <div class="flex items-center gap-4 min-w-0">
-            <div class="rounded-2xl shadow-md p-4 ${badgeClass}">
-              ${icons[icon] ?? icons['trending-up']}
-            </div>
-            <div class="min-w-0">
-              <p class="text-base font-bold tracking-tight leading-tight text-base-content truncate">${name}</p>
-              <span class="text-[10px] font-bold text-base-content/50 tracking-widest uppercase mt-1 block">${dateLabel}</span>
-            </div>
-          </div>
-          <div class="text-right leading-none shrink-0">
-            <span class="text-base font-bold tracking-tight ${amountClass}">${sign}${formatted}</span>
-          </div>
-        </div>
-      `;
-    }
-  }
-);

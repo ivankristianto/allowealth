@@ -1,5 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/web-components';
-import { html } from 'lit';
+import type { Meta, StoryObj } from '@storybook/html';
 
 const meta: Meta = {
   title: 'Atoms/ProgressBar',
@@ -32,9 +31,56 @@ const meta: Meta = {
 
 export default meta;
 
-type Story = StoryObj;
+const sizeClasses: Record<string, string> = { sm: 'h-2', md: 'h-3', lg: 'h-4' };
+const statusClasses: Record<string, string> = {
+  ok: 'bg-success',
+  warning: 'bg-warning',
+  danger: 'bg-error',
+};
+const statusBadgeClasses: Record<string, string> = {
+  ok: 'text-success bg-success/10',
+  warning: 'text-warning bg-warning/10',
+  danger: 'text-error bg-error/10',
+};
 
-export const Ok: Story = {
+const createProgressBar = (args: {
+  value?: number;
+  status?: 'ok' | 'warning' | 'danger';
+  size?: 'sm' | 'md' | 'lg';
+  showLabel?: boolean;
+  animate?: boolean;
+}): HTMLElement => {
+  const { value = 0, status = 'ok', size = 'md', showLabel = false, animate = true } = args;
+  const clampedValue = Math.max(0, Math.min(100, value));
+
+  const container = document.createElement('div');
+  container.className = 'flex items-center gap-3';
+
+  const barContainer = document.createElement('div');
+  barContainer.className = `w-full bg-base-300 rounded-full overflow-hidden shadow-inner ${sizeClasses[size]}`;
+  barContainer.setAttribute('role', 'progressbar');
+  barContainer.setAttribute('aria-valuenow', String(clampedValue));
+  barContainer.setAttribute('aria-valuemin', '0');
+  barContainer.setAttribute('aria-valuemax', '100');
+
+  const barFill = document.createElement('div');
+  barFill.className = `h-full rounded-full transition-all duration-1000 shadow-md ${animate ? 'animate-in slide-in-from-left' : ''} ${statusClasses[status]}`;
+  barFill.style.width = `${clampedValue}%`;
+
+  barContainer.appendChild(barFill);
+  container.appendChild(barContainer);
+
+  if (showLabel) {
+    const label = document.createElement('span');
+    label.className = `text-xs font-bold tracking-wider uppercase ${statusBadgeClasses[status]} px-2 py-1 rounded-full shrink-0`;
+    label.textContent = `${clampedValue}% used`;
+    container.appendChild(label);
+  }
+
+  return container;
+};
+
+export const Ok: StoryObj = {
   args: {
     value: 45,
     status: 'ok',
@@ -42,18 +88,10 @@ export const Ok: Story = {
     showLabel: false,
     animate: true,
   },
-  render: (args) => html`
-    <progress-bar
-      value="${args.value}"
-      status="${args.status}"
-      size="${args.size}"
-      ?showLabel="${args.showLabel}"
-      ?animate="${args.animate}"
-    ></progress-bar>
-  `,
+  render: (args) => createProgressBar(args),
 };
 
-export const Warning: Story = {
+export const Warning: StoryObj = {
   args: {
     value: 82,
     status: 'warning',
@@ -61,18 +99,10 @@ export const Warning: Story = {
     showLabel: false,
     animate: true,
   },
-  render: (args) => html`
-    <progress-bar
-      value="${args.value}"
-      status="${args.status}"
-      size="${args.size}"
-      ?showLabel="${args.showLabel}"
-      ?animate="${args.animate}"
-    ></progress-bar>
-  `,
+  render: (args) => createProgressBar(args),
 };
 
-export const Danger: Story = {
+export const Danger: StoryObj = {
   args: {
     value: 105,
     status: 'danger',
@@ -80,18 +110,10 @@ export const Danger: Story = {
     showLabel: false,
     animate: true,
   },
-  render: (args) => html`
-    <progress-bar
-      value="${args.value}"
-      status="${args.status}"
-      size="${args.size}"
-      ?showLabel="${args.showLabel}"
-      ?animate="${args.animate}"
-    ></progress-bar>
-  `,
+  render: (args) => createProgressBar(args),
 };
 
-export const WithLabel: Story = {
+export const WithLabel: StoryObj = {
   args: {
     value: 67,
     status: 'ok',
@@ -99,120 +121,59 @@ export const WithLabel: Story = {
     showLabel: true,
     animate: true,
   },
-  render: (args) => html`
-    <progress-bar
-      value="${args.value}"
-      status="${args.status}"
-      size="${args.size}"
-      ?showLabel="${args.showLabel}"
-      ?animate="${args.animate}"
-    ></progress-bar>
-  `,
+  render: (args) => createProgressBar(args),
 };
 
-export const Sizes: Story = {
-  args: {
-    value: 50,
-    status: 'ok',
-    size: 'md',
-    showLabel: false,
-    animate: false,
+export const Sizes: StoryObj = {
+  render: () => {
+    const container = document.createElement('div');
+    container.className = 'space-y-4 p-4';
+
+    const sizes = ['sm', 'md', 'lg'] as const;
+
+    sizes.forEach((size) => {
+      const wrapper = document.createElement('div');
+
+      const label = document.createElement('span');
+      label.className = 'text-xs font-bold text-base-content/60 mb-2 block';
+      label.textContent = size.charAt(0).toUpperCase() + size.slice(1);
+      wrapper.appendChild(label);
+
+      wrapper.appendChild(
+        createProgressBar({ value: 50, status: 'ok', size, showLabel: false, animate: false })
+      );
+      container.appendChild(wrapper);
+    });
+
+    return container;
   },
-  render: (args) => html`
-    <div class="space-y-4 p-4">
-      <div>
-        <span class="text-xs font-bold text-base-content/60 mb-2 block">Small</span>
-        <progress-bar value="${args.value}" status="${args.status}" size="sm"></progress-bar>
-      </div>
-      <div>
-        <span class="text-xs font-bold text-base-content/60 mb-2 block">Medium</span>
-        <progress-bar value="${args.value}" status="${args.status}" size="md"></progress-bar>
-      </div>
-      <div>
-        <span class="text-xs font-bold text-base-content/60 mb-2 block">Large</span>
-        <progress-bar value="${args.value}" status="${args.status}" size="lg"></progress-bar>
-      </div>
-    </div>
-  `,
 };
 
-export const AllStatuses: Story = {
-  args: {
-    value: 50,
-    status: 'ok',
-    size: 'md',
-    showLabel: false,
-    animate: false,
+export const AllStatuses: StoryObj = {
+  render: () => {
+    const container = document.createElement('div');
+    container.className = 'space-y-4 p-4';
+
+    const statuses: Array<{ status: 'ok' | 'warning' | 'danger'; value: number; label: string }> = [
+      { status: 'ok', value: 45, label: 'OK (Under 80%)' },
+      { status: 'warning', value: 85, label: 'Warning (80-99%)' },
+      { status: 'danger', value: 105, label: 'Danger (100%+)' },
+    ];
+
+    statuses.forEach(({ status, value, label }) => {
+      const wrapper = document.createElement('div');
+
+      const labelText = document.createElement('span');
+      labelText.className = 'text-xs font-bold text-base-content/60 mb-2 block';
+      labelText.textContent = label;
+      wrapper.appendChild(labelText);
+
+      wrapper.appendChild(
+        createProgressBar({ value, status, size: 'md', showLabel: false, animate: false })
+      );
+      container.appendChild(wrapper);
+    });
+
+    return container;
   },
-  render: (args) => html`
-    <div class="space-y-4 p-4">
-      <div>
-        <span class="text-xs font-bold text-base-content/60 mb-2 block">OK (Under 80%)</span>
-        <progress-bar
-          value="45"
-          status="ok"
-          size="${args.size}"
-          ?showLabel="${args.showLabel}"
-        ></progress-bar>
-      </div>
-      <div>
-        <span class="text-xs font-bold text-base-content/60 mb-2 block">Warning (80-99%)</span>
-        <progress-bar
-          value="85"
-          status="warning"
-          size="${args.size}"
-          ?showLabel="${args.showLabel}"
-        ></progress-bar>
-      </div>
-      <div>
-        <span class="text-xs font-bold text-base-content/60 mb-2 block">Danger (100%+)</span>
-        <progress-bar
-          value="105"
-          status="danger"
-          size="${args.size}"
-          ?showLabel="${args.showLabel}"
-        ></progress-bar>
-      </div>
-    </div>
-  `,
 };
-
-// Register custom element for Storybook
-customElements.define(
-  'progress-bar',
-  class extends HTMLElement {
-    connectedCallback() {
-      const value = Number(this.getAttribute('value') ?? '0');
-      const status = this.getAttribute('status') ?? 'ok';
-      const size = this.getAttribute('size') ?? 'md';
-      const showLabel = this.hasAttribute('showLabel');
-      const animate = this.hasAttribute('animate');
-
-      this.className = 'block p-4';
-
-      // Create inner HTML structure
-      const clampedValue = Math.max(0, Math.min(100, value));
-
-      const sizeClasses: Record<string, string> = { sm: 'h-2', md: 'h-3', lg: 'h-4' };
-      const statusClasses: Record<string, string> = {
-        ok: 'bg-success',
-        warning: 'bg-warning',
-        danger: 'bg-error',
-      };
-      const statusBadgeClasses: Record<string, string> = {
-        ok: 'text-success bg-success/10',
-        warning: 'text-warning bg-warning/10',
-        danger: 'text-error bg-error/10',
-      };
-
-      this.innerHTML = `
-        <div class="flex items-center gap-3">
-          <div class="w-full bg-base-300 rounded-full overflow-hidden shadow-inner ${sizeClasses[size]}" role="progressbar" aria-valuenow="${clampedValue}" aria-valuemin="0" aria-valuemax="100">
-            <div class="h-full rounded-full transition-all duration-1000 shadow-md ${animate ? 'animate-in slide-in-from-left' : ''} ${statusClasses[status]}" style="width: ${clampedValue}%"></div>
-          </div>
-          ${showLabel ? `<span class="text-xs font-bold tracking-wider uppercase ${statusBadgeClasses[status]} px-2 py-1 rounded-full shrink-0">${clampedValue}% used</span>` : ''}
-        </div>
-      `;
-    }
-  }
-);
