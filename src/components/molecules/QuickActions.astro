@@ -68,7 +68,7 @@ const { actions = defaultActions, className = '' } = Astro.props;
 ---
 
 <div
-  class={`flex flex-col sm:flex-row gap-5 ${className}`}
+  class={`flex flex-col sm:flex-row gap-6 ${className}`}
   data-quick-actions
   role="group"
   aria-label="Quick actions"
@@ -88,7 +88,7 @@ const { actions = defaultActions, className = '' } = Astro.props;
       return (
         <a
           href={action.url}
-          class="flex-1 px-8 py-7 min-h-[44px] bg-base-100 text-base-content font-bold rounded-2xl border border-base-300 hover:bg-base-200 transition-all shadow-sm hover:shadow-md flex items-center justify-center gap-5 active:scale-95 hover:scale-[1.02] group relative overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+          class="flex-1 px-8 py-7 min-h-[44px] bg-base-100 text-base-content font-bold rounded-card-lg border border-base-300 hover:bg-base-200 transition-all shadow-sm hover:shadow-md flex items-center justify-center gap-5 active:scale-95 hover:scale-[1.02] group relative overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
           aria-label={action.ariaLabel}
         >
           <IconBadge

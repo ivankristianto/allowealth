@@ -434,7 +434,7 @@ After:
 - [ ] Add `role="navigation"` and `aria-label`
 - [ ] Ensure touch targets minimum 44x44px
 - [ ] Create Storybook story
-- [ ] Run quality gates
+- [x] Run quality gates
 - [ ] Test in dark mode
 
 **Files to modify:**
@@ -739,17 +739,17 @@ interface NetWorthWidgetProps {
 
 **Checklist:**
 
-- [ ] Update page grid structure (`lg:grid-cols-2`, `xl:grid-cols-3`)
-- [ ] Add Quick Actions row (full width, flex)
-- [ ] Add Spending Card (left column, lg:col-span-1)
-- [ ] Add Spending Chart placeholder (right column) - chart added in Task 11
-- [ ] Add Recent Activity list (xl:col-span-2)
-- [ ] Add Net Worth Widget (sidebar)
-- [ ] Add Cash Flow Widget placeholder - added in Task 12
-- [ ] Set proper spacing (`gap-8` between sections)
-- [ ] Add container max-width (`max-w-7xl mx-auto`)
-- [ ] Add page padding (`px-6 lg:px-10 py-8`)
-- [ ] Ensure responsive behavior (stack on mobile)
+- [x] Update page grid structure (`lg:grid-cols-2`, `xl:grid-cols-3`)
+- [x] Add Quick Actions row (full width, flex)
+- [x] Add Spending Card (left column, lg:col-span-1)
+- [x] Add Spending Chart placeholder (right column) - chart added in Task 11
+- [x] Add Recent Activity list (xl:col-span-2)
+- [x] Add Net Worth Widget (sidebar)
+- [x] Add Cash Flow Widget placeholder - added in Task 12
+- [x] Set proper spacing (`gap-8` between sections)
+- [x] Add container max-width (`max-w-7xl mx-auto`)
+- [x] Add page padding (`px-6 lg:px-10 py-8`)
+- [x] Ensure responsive behavior (stack on mobile)
 - [ ] Run quality gates
 - [ ] Test in dark mode
 - [ ] Test responsive breakpoints
@@ -783,7 +783,7 @@ interface NetWorthWidgetProps {
 └─────────────────────────────────────────────────┴─────────────┘
 ```
 
-**Status:** ⏳ Pending
+**Status:** ⏳ Pending (QA: dark mode + responsive verification)
 
 ---
 
@@ -1358,7 +1358,7 @@ interface CashFlowItemProps {
 
 ## Success Criteria
 
-- [ ] All dashboard widgets render correctly with real data
+- [x] All dashboard widgets render correctly with real data
 - [x] Recent activity list matches premium design (icon badges, category label, payment method line)
 - [x] Pie chart is interactive with hover states
 - [x] Navigation sidebar matches premium design

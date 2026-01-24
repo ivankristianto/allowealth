@@ -99,7 +99,7 @@ const titleId = title ? `${id}-title` : undefined;
   </div>
 </dialog>
 
-<script define:vars={{ id, backdropClose }}>
+<script is:inline define:vars={{ id, backdropClose }}>
   import { animate } from 'motion';
   import {
     MODAL_ANIMATION_CONFIG,

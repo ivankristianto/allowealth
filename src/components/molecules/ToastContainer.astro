@@ -91,9 +91,8 @@
   let prefersReducedMotion = motionQuery.matches;
 
   // Listen for runtime motion preference changes
-  /** @type {(event: MediaQueryListEvent) => void} */
-  const handleMotionPreferenceChange = (event) => {
-    prefersReducedMotion = event.matches;
+  const handleMotionPreferenceChange = () => {
+    prefersReducedMotion = motionQuery.matches;
   };
   motionQuery.addEventListener('change', handleMotionPreferenceChange);
 

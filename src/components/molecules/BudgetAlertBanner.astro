@@ -113,7 +113,7 @@ const bannerClasses = [
   </div>
 
   <!-- Client-side dismiss functionality -->
-  <script define:vars={{ dismissible }}>
+  <script is:inline define:vars={{ dismissible }}>
     if (!dismissible) return;
     const banner = document.currentScript?.parentElement;
     const dismissBtn = banner?.querySelector('[data-dismiss="alert"]');

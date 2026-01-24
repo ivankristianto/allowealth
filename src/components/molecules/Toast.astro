@@ -54,7 +54,7 @@ const positionClasses: Record<string, string> = {
   </button>
 </toast-message>
 
-<script define:vars={{ id, duration }}>
+<script is:inline define:vars={{ id, duration }}>
   import { animate } from 'motion';
   import { TOAST_ANIMATION_CONFIG, TOAST_INITIAL_STYLES } from '@/lib/animations';
 
