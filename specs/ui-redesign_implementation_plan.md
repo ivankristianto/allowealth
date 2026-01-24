@@ -1607,11 +1607,20 @@ Phase 3 (P2 - Polish):
 
 ### Non-Blocking Feedback from Code Review (Tasks 15-16)
 
-**P2-1: Duplicate Category Icon Mapping**
+**P2-1: Duplicate Category Icon Mapping** ✅ FIXED
 
 - **Location:** `BudgetCard.astro` and `BudgetCardGrid.astro`
-- [ ] **Issue:** Category icon mapping is duplicated in both components
+- [x] **Issue:** Category icon mapping is duplicated in both components
 - **Action:** Extract to a shared utility function in `@/lib/tokens.ts` or create a dedicated `categoryIcons.ts` utility
+
+**Implementation Notes:**
+
+- Created `src/lib/utils/categoryIcons.ts` with centralized `categoryIconMap` and `getIconForCategory()` function
+- Updated `BudgetCard.astro` to import and use the shared utility
+- Updated `BudgetCardGrid.astro` to import and use the shared utility
+- Updated both test files (`BudgetCard.test.ts`, `BudgetCardGrid.test.ts`) to import from shared utility
+- Fixed deprecated `Home` icon by replacing with `House`
+- All 57 tests pass
 
 **P2-2: Magic Number for Skeleton Count**
 
@@ -1665,11 +1674,19 @@ Phase 3 (P2 - Polish):
 - [ ] **Issue:** SVG icons in stories don't have `aria-hidden="true"` attribute that the Astro components include
 - **Action:** Add `aria-hidden="true"` to all decorative SVG icons in stories
 
-**P1-2: Missing aria-disabled Handling in Story**
+**P1-2: Missing aria-disabled Handling in Story** ✅ FIXED
 
 - **Location:** `/home/ivan/works/expenses/src/components/organisms/TransactionFiltersBar.stories.ts`
-- [ ] **Issue:** Month navigation buttons in story don't replicate aria-disabled pattern from Astro component
+- [x] **Issue:** Month navigation buttons in story don't replicate aria-disabled pattern from Astro component
 - **Action:** Match component's accessibility patterns for disabled state demonstration
+
+**Implementation Notes:**
+
+- Added `hasPrevMonth` and `hasNextMonth` props to interface
+- Added calculation of disabled state based on month index
+- Updated month navigation buttons with `aria-disabled`, `data-has-prev`, `data-has-next` attributes
+- Added disabled state styling (opacity-30, cursor-not-allowed, pointer-events-none)
+- Added `FirstMonthDisabled` and `LastMonthDisabled` stories
 
 **P1-3: Story Helper Function Type Safety**
 

@@ -24,7 +24,7 @@ import Skeleton from '@components/atoms/Skeleton.astro';
 import { formatCurrency } from '@/lib/tokens';
 import {
   Pencil,
-  Home,
+  House,
   ShoppingCart,
   Utensils,
   Car,
@@ -38,6 +38,7 @@ import {
   Plane,
   CircleDollarSign,
 } from '@lucide/astro';
+import { getIconForCategory } from '@/lib/utils/categoryIcons';
 
 export interface Props {
   categoryId?: string;
@@ -94,9 +95,13 @@ const getIconBadgeVariant = (
   return variantMap[statusVal] || 'neutral';
 };
 
-// Category icon mapping
-const iconMap: Record<string, typeof Home> = {
-  Home,
+// Get the icon component using the shared utility
+// Resolve icon name from category name if not explicitly provided
+const iconName = icon || getIconForCategory(categoryName, 'CircleDollarSign');
+
+// Category icon component mapping
+const iconMap: Record<string, typeof House> = {
+  House,
   ShoppingCart,
   Utensils,
   Car,
@@ -112,7 +117,7 @@ const iconMap: Record<string, typeof Home> = {
 };
 
 // Get the icon component, fallback to CircleDollarSign
-const IconComponent = iconMap[icon] || CircleDollarSign;
+const IconComponent = iconMap[iconName] || CircleDollarSign;
 
 const cardClasses = [
   // Base card styling

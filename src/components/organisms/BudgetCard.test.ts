@@ -5,6 +5,7 @@
  */
 
 import { describe, it, expect } from 'bun:test';
+import { getIconForCategory } from '@/lib/utils/categoryIcons';
 
 // Status badge styling logic (same as used in component)
 const getStatusBadgeClasses = (status: 'ok' | 'warning' | 'exceeded'): string => {
@@ -36,33 +37,6 @@ const formatCurrency = (amount: number, currency: string): string => {
     minimumFractionDigits: config.decimals,
     maximumFractionDigits: config.decimals,
   }).format(amount);
-};
-
-// Category icon mapping logic
-const categoryIconMap: Record<string, string> = {
-  housing: 'Home',
-  groceries: 'ShoppingCart',
-  grocery: 'ShoppingCart',
-  dining: 'Utensils',
-  restaurant: 'Utensils',
-  food: 'Utensils',
-  transport: 'Car',
-  transportation: 'Car',
-  entertainment: 'Film',
-  utilities: 'Zap',
-  utility: 'Zap',
-  bills: 'Zap',
-};
-
-const getIconForCategory = (categoryName: string, defaultIcon?: string): string => {
-  if (defaultIcon) return defaultIcon;
-  const lowerName = categoryName.toLowerCase();
-  for (const [key, icon] of Object.entries(categoryIconMap)) {
-    if (lowerName.includes(key)) {
-      return icon;
-    }
-  }
-  return 'CircleDollarSign';
 };
 
 describe('BudgetCard - getStatusBadgeClasses', () => {
@@ -180,10 +154,11 @@ describe('BudgetCard - currency formatting USD', () => {
 });
 
 describe('BudgetCard - getIconForCategory', () => {
-  it('should return Home icon for housing category', () => {
-    expect(getIconForCategory('Housing')).toBe('Home');
-    expect(getIconForCategory('housing')).toBe('Home');
-    expect(getIconForCategory('My Housing Expenses')).toBe('Home');
+  it('should return House icon for housing category', () => {
+    expect(getIconForCategory('Housing')).toBe('House');
+    expect(getIconForCategory('housing')).toBe('House');
+    expect(getIconForCategory('My Housing Expenses')).toBe('House');
+    expect(getIconForCategory('Home')).toBe('House');
   });
 
   it('should return ShoppingCart icon for groceries', () => {

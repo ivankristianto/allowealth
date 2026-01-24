@@ -5,45 +5,7 @@
  */
 
 import { describe, it, expect } from 'bun:test';
-
-// Category icon mapping logic (same as component)
-const categoryIconMap: Record<string, string> = {
-  housing: 'Home',
-  groceries: 'ShoppingCart',
-  grocery: 'ShoppingCart',
-  dining: 'Utensils',
-  restaurant: 'Utensils',
-  food: 'Utensils',
-  transport: 'Car',
-  transportation: 'Car',
-  entertainment: 'Film',
-  utilities: 'Zap',
-  utility: 'Zap',
-  bills: 'Zap',
-  work: 'Briefcase',
-  business: 'Briefcase',
-  health: 'Heart',
-  medical: 'Heart',
-  healthcare: 'Heart',
-  education: 'GraduationCap',
-  clothing: 'Shirt',
-  apparel: 'Shirt',
-  gifts: 'Gift',
-  gift: 'Gift',
-  travel: 'Plane',
-  vacation: 'Plane',
-};
-
-const getIconForCategory = (categoryName: string, defaultIcon?: string): string => {
-  if (defaultIcon) return defaultIcon;
-  const lowerName = categoryName.toLowerCase();
-  for (const [key, icon] of Object.entries(categoryIconMap)) {
-    if (lowerName.includes(key)) {
-      return icon;
-    }
-  }
-  return 'CircleDollarSign';
-};
+import { getIconForCategory } from '@/lib/utils/categoryIcons';
 
 // Budget data type (same as component)
 interface BudgetData {
@@ -87,7 +49,7 @@ const sampleBudgets: BudgetData[] = [
 
 describe('BudgetCardGrid - getIconForCategory', () => {
   it('should match categories with partial matches', () => {
-    expect(getIconForCategory('Monthly Housing')).toBe('Home');
+    expect(getIconForCategory('Monthly Housing')).toBe('House');
     // Note: groceries matches before food in iteration order
     expect(getIconForCategory('Food & Groceries')).toBe('ShoppingCart');
     expect(getIconForCategory('Work Expenses')).toBe('Briefcase');
@@ -98,7 +60,8 @@ describe('BudgetCardGrid - getIconForCategory', () => {
 
   it('should handle edge cases', () => {
     expect(getIconForCategory('')).toBe('CircleDollarSign');
-    expect(getIconForCategory('HOUSING')).toBe('Home'); // case insensitive
+    expect(getIconForCategory('HOUSING')).toBe('House'); // case insensitive
+    expect(getIconForCategory('Home')).toBe('House'); // house category
     expect(getIconForCategory('  groceries  ')).toBe('ShoppingCart'); // includes match
   });
 

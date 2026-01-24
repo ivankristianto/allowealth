@@ -14,6 +14,7 @@
 
 import BudgetCard from '@components/organisms/BudgetCard.astro';
 import { CircleX, Wallet } from '@lucide/astro';
+import { getIconForCategory } from '@/lib/utils/categoryIcons';
 
 export interface BudgetData {
   category_id: string;
@@ -34,47 +35,6 @@ export interface Props {
 }
 
 const { budgets = [], currency = 'IDR', loading = false, error, className = '' } = Astro.props;
-
-// Category name to icon mapping (can be extended or moved to a utility)
-const categoryIconMap: Record<string, string> = {
-  housing: 'Home',
-  groceries: 'ShoppingCart',
-  grocery: 'ShoppingCart',
-  dining: 'Utensils',
-  restaurant: 'Utensils',
-  food: 'Utensils',
-  transport: 'Car',
-  transportation: 'Car',
-  entertainment: 'Film',
-  utilities: 'Zap',
-  utility: 'Zap',
-  bills: 'Zap',
-  work: 'Briefcase',
-  business: 'Briefcase',
-  health: 'Heart',
-  medical: 'Heart',
-  healthcare: 'Heart',
-  education: 'GraduationCap',
-  clothing: 'Shirt',
-  apparel: 'Shirt',
-  gifts: 'Gift',
-  gift: 'Gift',
-  travel: 'Plane',
-  vacation: 'Plane',
-};
-
-// Get icon for category name
-const getIconForCategory = (categoryName: string, defaultIcon?: string): string => {
-  if (defaultIcon) return defaultIcon;
-  const lowerName = categoryName.toLowerCase();
-  // Check for partial matches
-  for (const [key, icon] of Object.entries(categoryIconMap)) {
-    if (lowerName.includes(key)) {
-      return icon;
-    }
-  }
-  return 'CircleDollarSign';
-};
 
 const gridClasses = [
   // Responsive grid: 1 col on mobile, 2 on tablet, 3 on desktop

@@ -44,7 +44,8 @@ const formatCurrency = (amount: number, curr: string): string => {
 
 // Icon SVG mapping
 const icons: Record<string, string> = {
-  Home: '<path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/>',
+  House:
+    '<path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/>',
   ShoppingCart:
     '<circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/>',
   Utensils:
@@ -77,7 +78,7 @@ const statusClasses: Record<string, { badge: string; progress: string; footer: s
 const getBudgetData = (currency: string) => [
   {
     category_name: 'Housing',
-    icon: 'Home',
+    icon: 'House',
     spent: currency === 'USD' ? 2500 : 37680000,
     budget: currency === 'USD' ? 2700 : 40000000,
     percentage_used: 94,
@@ -212,7 +213,7 @@ const createBudgetCardGrid = (args: {
   // Normal state - render budget cards
   const cards = budgets
     .map((budget) => {
-      const iconSvg = icons[budget.icon] || icons.Home;
+      const iconSvg = icons[budget.icon] || icons.House;
       const statusStyle = statusClasses[budget.status] || statusClasses.ok;
       const remaining = budget.budget - budget.spent;
       const isOver = remaining < 0;

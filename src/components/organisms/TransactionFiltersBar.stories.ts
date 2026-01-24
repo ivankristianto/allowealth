@@ -77,6 +77,8 @@ interface TransactionFiltersBarArgs {
   selectedMonth?: string;
   currentMonth?: string;
   hasActiveFilters?: boolean;
+  hasPrevMonth?: boolean;
+  hasNextMonth?: boolean;
 }
 
 const createTransactionFiltersBar = (args: TransactionFiltersBarArgs): HTMLElement => {
@@ -94,7 +96,14 @@ const createTransactionFiltersBar = (args: TransactionFiltersBarArgs): HTMLEleme
     ],
     selectedMonth = '2024-01',
     hasActiveFilters = false,
+    hasPrevMonth = true,
+    hasNextMonth = true,
   } = args;
+
+  // Calculate current month index for disabled state
+  const currentMonthIndex = availableMonths.findIndex((m) => m.key === selectedMonth);
+  const calculatedHasPrev = currentMonthIndex > 0;
+  const calculatedHasNext = currentMonthIndex < availableMonths.length - 1;
 
   const container = document.createElement('form');
   container.className = 'flex flex-col xl:flex-row items-center gap-4 xl:gap-6 justify-between';
@@ -176,7 +185,11 @@ const createTransactionFiltersBar = (args: TransactionFiltersBarArgs): HTMLEleme
           ? `
         <!-- Month Filter -->
         <div class="flex items-center gap-1">
-          <button type="button" class="btn btn-ghost btn-square border border-base-300 bg-base-100 rounded-2xl transition-all active:scale-95 shadow-sm text-base-content/40 hover:text-primary hover:border-accent/30" aria-label="Previous month">
+          <button type="button" class="btn btn-ghost btn-square border border-base-300 bg-base-100 rounded-2xl transition-all active:scale-95 shadow-sm ${
+            !calculatedHasPrev
+              ? 'opacity-30 cursor-not-allowed pointer-events-none'
+              : 'text-base-content/40 hover:text-primary hover:border-accent/30'
+          }" aria-label="Previous month" aria-disabled="${!calculatedHasPrev}" data-has-prev="${calculatedHasPrev ? 'true' : 'false'}">
             ${chevronLeftIcon}
           </button>
 
@@ -201,7 +214,11 @@ const createTransactionFiltersBar = (args: TransactionFiltersBarArgs): HTMLEleme
             </ul>
           </div>
 
-          <button type="button" class="btn btn-ghost btn-square border border-base-300 bg-base-100 rounded-2xl transition-all active:scale-95 shadow-sm text-base-content/40 hover:text-primary hover:border-accent/30" aria-label="Next month">
+          <button type="button" class="btn btn-ghost btn-square border border-base-300 bg-base-100 rounded-2xl transition-all active:scale-95 shadow-sm ${
+            !calculatedHasNext
+              ? 'opacity-30 cursor-not-allowed pointer-events-none'
+              : 'text-base-content/40 hover:text-primary hover:border-accent/30'
+          }" aria-label="Next month" aria-disabled="${!calculatedHasNext}" data-has-next="${calculatedHasNext ? 'true' : 'false'}">
             ${chevronRightIcon}
           </button>
         </div>
@@ -347,4 +364,58 @@ export const AllFiltersActive: StoryObj = {
     hasActiveFilters: true,
   },
   render: (args) => createTransactionFiltersBar(args as TransactionFiltersBarArgs),
+};
+
+export const FirstMonthDisabled: StoryObj = {
+  args: {
+    typeFilter: 'expense',
+    searchValue: '',
+    categoryIds: [],
+    categories: sampleCategories,
+    showCategoryFilter: true,
+    monthSelector: true,
+    availableMonths: [
+      { key: '2024-01', label: 'January 2024' },
+      { key: '2023-12', label: 'December 2023' },
+      { key: '2023-11', label: 'November 2023' },
+    ],
+    selectedMonth: '2024-01',
+    hasActiveFilters: false,
+  },
+  render: (args) => createTransactionFiltersBar(args as TransactionFiltersBarArgs),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Demonstrates the disabled state of the Previous month button when on the first month (aria-disabled="true"). The button has reduced opacity, cursor-not-allowed, and pointer-events-none styles.',
+      },
+    },
+  },
+};
+
+export const LastMonthDisabled: StoryObj = {
+  args: {
+    typeFilter: 'expense',
+    searchValue: '',
+    categoryIds: [],
+    categories: sampleCategories,
+    showCategoryFilter: true,
+    monthSelector: true,
+    availableMonths: [
+      { key: '2024-01', label: 'January 2024' },
+      { key: '2023-12', label: 'December 2023' },
+      { key: '2023-11', label: 'November 2023' },
+    ],
+    selectedMonth: '2023-11',
+    hasActiveFilters: false,
+  },
+  render: (args) => createTransactionFiltersBar(args as TransactionFiltersBarArgs),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Demonstrates the disabled state of the Next month button when on the last month (aria-disabled="true"). The button has reduced opacity, cursor-not-allowed, and pointer-events-none styles.',
+      },
+    },
+  },
 };
