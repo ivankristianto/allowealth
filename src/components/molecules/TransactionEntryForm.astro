@@ -1,0 +1,563 @@
+---
+/**
+ * Transaction Entry Form Component
+ *
+ * Form for adding or editing transactions with type-specific styling.
+ * Used within TransactionModal for expense and income entries.
+ *
+ * @param {string} type - Transaction type: 'expense' | 'income'
+ * @param {'create' | 'edit'} mode - Form mode
+ * @param {string} transactionId - Transaction ID for edit mode
+ * @param {string} action - Form action URL (API endpoint)
+ * @param {Object} values - Default form values
+ * @param {Array} categories - Available categories
+ * @param {Array} paymentMethods - Available payment methods (liquid accounts)
+ * @param {Object} errors - Form errors {field: message}
+ * @param {string} modalId - Parent modal ID for closing on success
+ */
+
+import Label from '../atoms/Label.astro';
+import Input from '../atoms/Input.astro';
+import CurrencyInput from '../atoms/CurrencyInput.astro';
+import CategorySelect from '../atoms/CategorySelect.astro';
+import PaymentMethodSelect from '../atoms/PaymentMethodSelect.astro';
+import DatePicker from '../atoms/DatePicker.astro';
+import Button from '../atoms/Button.astro';
+
+export interface Props {
+  type: 'expense' | 'income';
+  mode?: 'create' | 'edit';
+  transactionId?: string;
+  action: string;
+  values?: {
+    title?: string;
+    amount?: string;
+    currency?: 'IDR' | 'USD';
+    category_id?: string;
+    payment_method_id?: string;
+    transaction_date?: string;
+  };
+  categories: Array<{ id: string; name: string; type: string; currency?: string }>;
+  paymentMethods: Array<{ id: string; name: string; type: string }>;
+  errors?: Record<string, string>;
+  modalId?: string;
+}
+
+const {
+  type,
+  mode = 'create',
+  transactionId = '',
+  action,
+  values = {},
+  categories = [],
+  paymentMethods = [],
+  errors = {},
+  modalId = '',
+} = Astro.props;
+
+const isEditMode = mode === 'edit';
+
+const today = new Date().toISOString().split('T')[0];
+
+// Filter categories by type
+const typeCategories = categories.filter((c) => c.type === type);
+
+// Serialize data for client-side JavaScript
+const categoriesJson = JSON.stringify(
+  typeCategories.map((c) => ({
+    id: c.id,
+    name: c.name,
+    type: c.type,
+    currency: c.currency || 'IDR',
+  }))
+);
+const paymentMethodsJson = JSON.stringify(
+  paymentMethods.map((pm) => ({ id: pm.id, name: pm.name, type: pm.type }))
+);
+
+// Generate unique form ID
+const formId = `transaction-entry-form-${type}`;
+---
+
+<form
+  id={formId}
+  data-transaction-form
+  data-type={type}
+  data-mode={mode}
+  data-transaction-id={transactionId}
+  data-action={action}
+  data-modal-id={modalId}
+  data-categories-json={categoriesJson}
+  data-payment-methods-json={paymentMethodsJson}
+  class="flex flex-col gap-5"
+  novalidate
+>
+  <!-- Hidden type field -->
+  <input type="hidden" name="type" value={type} />
+
+  <!-- Global error message container -->
+  <div id={`${formId}-error`} class="hidden alert alert-error text-sm" role="alert"></div>
+
+  <!-- Title (required) -->
+  <div class="form-control">
+    <Label required htmlFor={`${formId}-title`} id={`${formId}-title-label`}>Title</Label>
+    <Input
+      id={`${formId}-title`}
+      name="title"
+      type="text"
+      placeholder="e.g. Weekly Groceries"
+      value={values.title || ''}
+      required={true}
+      error={!!errors.title}
+      errorMessage={errors.title}
+      className="rounded-full py-4 px-6 h-14 text-base font-bold border-0"
+    />
+  </div>
+
+  <!-- Amount and Date row -->
+  <div class="grid grid-cols-2 gap-4">
+    <div class="form-control">
+      <Label required htmlFor={`${formId}-amount`} id={`${formId}-amount-label`}>Amount</Label>
+      <CurrencyInput
+        id={`${formId}-amount`}
+        name="amount"
+        value={values.amount || ''}
+        currency={values.currency || 'IDR'}
+        required={true}
+        error={!!errors.amount}
+        errorMessage={errors.amount}
+      />
+    </div>
+
+    <div class="form-control">
+      <Label required htmlFor={`${formId}-date`} id={`${formId}-date-label`}>Date</Label>
+      <DatePicker
+        id={`${formId}-date`}
+        name="transaction_date"
+        value={values.transaction_date || today}
+        max={today}
+        required={true}
+        error={!!errors.transaction_date}
+        errorMessage={errors.transaction_date}
+      />
+    </div>
+  </div>
+
+  <!-- Category and Payment Method row -->
+  <div class="grid grid-cols-2 gap-4">
+    <div class="form-control">
+      <Label required htmlFor={`${formId}-category`} id={`${formId}-category-label`}>
+        Category
+      </Label>
+      <CategorySelect
+        id={`${formId}-category`}
+        categories={typeCategories}
+        value={values.category_id || ''}
+        type={type}
+        required={true}
+        error={!!errors.category_id}
+        errorMessage={errors.category_id}
+      />
+    </div>
+
+    <div class="form-control">
+      <Label required htmlFor={`${formId}-payment-method`} id={`${formId}-payment-label`}>
+        Account
+      </Label>
+      <PaymentMethodSelect
+        id={`${formId}-payment-method`}
+        paymentMethods={paymentMethods}
+        value={values.payment_method_id || ''}
+        required={true}
+        error={!!errors.payment_method_id}
+        errorMessage={errors.payment_method_id}
+      />
+    </div>
+  </div>
+
+  <!-- Actions -->
+  <div class="flex gap-4 pt-6">
+    <button
+      type="button"
+      class="btn btn-ghost flex-1 h-14 rounded-full font-bold text-base-content hover:bg-base-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent"
+      data-close-modal={modalId}
+    >
+      Cancel
+    </button>
+    <Button type="submit" variant="accent" className="flex-[2] h-14 rounded-full font-bold">
+      {isEditMode ? 'Save Changes' : 'Save Entry'}
+    </Button>
+  </div>
+</form>
+
+<script>
+  import { addToast } from '@/lib/stores/toastStore';
+
+  // Initialize all transaction entry forms on the page
+  function initTransactionEntryForms() {
+    document.querySelectorAll<HTMLFormElement>('[data-transaction-form]').forEach(initForm);
+  }
+
+  function initForm(form: HTMLFormElement) {
+    // Prevent duplicate initialization
+    if (form.dataset.initialized === 'true') return;
+    form.dataset.initialized = 'true';
+
+    const formId = form.id;
+    const formError = document.getElementById(`${formId}-error`);
+    const submitButton = form.querySelector('button[type="submit"]') as HTMLButtonElement | null;
+    const action = form.dataset.action || '/api/transactions';
+    const modalId = form.dataset.modalId || '';
+    // Note: type, mode, and transactionId are read dynamically at submit time
+    // because they can be updated by the edit modal handler
+
+    // Parse categories from data attribute
+    const categories = JSON.parse(form.dataset.categoriesJson || '[]');
+
+    // Validation rules
+    const validators: Record<string, { validate: (value: string) => string | null }> = {
+      title: {
+        validate: (value) => {
+          if (!value || value.trim() === '') return 'Title is required';
+          if (value.length > 200) return 'Title must not exceed 200 characters';
+          return null;
+        },
+      },
+      amount: {
+        validate: (value) => {
+          const cleanValue = value.replace(/[^\d.-]/g, '');
+          const num = parseFloat(cleanValue);
+          if (!value || value.trim() === '') return 'Amount is required';
+          if (isNaN(num)) return 'Amount must be a valid number';
+          if (num <= 0) return 'Amount must be greater than 0';
+          return null;
+        },
+      },
+      transaction_date: {
+        validate: (value) => {
+          if (!value || value.trim() === '') return 'Date is required';
+          if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return 'Date must be in YYYY-MM-DD format';
+          const date = new Date(value);
+          if (isNaN(date.getTime())) return 'Invalid date';
+          const todayUTC = Date.now();
+          const inputDateUTC = new Date(value).getTime();
+          if (inputDateUTC > todayUTC) return 'Date cannot be in the future';
+          return null;
+        },
+      },
+      category_id: {
+        validate: (value) => {
+          if (!value || value.trim() === '') return 'Category is required';
+          return null;
+        },
+      },
+      payment_method_id: {
+        validate: (value) => {
+          if (!value || value.trim() === '') return 'Payment method is required';
+          return null;
+        },
+      },
+    };
+
+    // Field error state
+    const fieldErrors: Record<string, string | null> = {};
+
+    // Update field error UI
+    function updateFieldErrorUI(fieldName: string, errorMessage: string | null) {
+      const field = form.querySelector(`[name="${fieldName}"]`) as HTMLElement | null;
+      if (!field) return;
+
+      const fieldContainer = field.closest('.form-control');
+      if (!fieldContainer) return;
+
+      // Remove existing error
+      const existingError = fieldContainer.querySelector('.field-error');
+      if (existingError) existingError.remove();
+
+      const errorDivId = `${formId}-${fieldName}-error`;
+
+      if (errorMessage) {
+        field.classList.add('input-error', 'border-error');
+        field.setAttribute('aria-invalid', 'true');
+        field.setAttribute('aria-describedby', errorDivId);
+
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'field-error text-error text-sm mt-1';
+        errorDiv.id = errorDivId;
+        errorDiv.textContent = errorMessage;
+        errorDiv.setAttribute('role', 'alert');
+        fieldContainer.appendChild(errorDiv);
+      } else {
+        field.classList.remove('input-error', 'border-error');
+        field.setAttribute('aria-invalid', 'false');
+        field.removeAttribute('aria-describedby');
+      }
+    }
+
+    // Validate single field
+    function validateField(fieldName: string, value: string): string | null {
+      const validator = validators[fieldName];
+      if (!validator) return null;
+
+      const error = validator.validate(value);
+      fieldErrors[fieldName] = error;
+      updateFieldErrorUI(fieldName, error);
+      updateSubmitButton();
+      return error;
+    }
+
+    // Validate all fields
+    function validateForm(): boolean {
+      const formData = new FormData(form);
+      let isValid = true;
+
+      for (const fieldName of Object.keys(validators)) {
+        const value = String(formData.get(fieldName) || '');
+        const error = validateField(fieldName, value);
+        if (error) isValid = false;
+      }
+
+      return isValid;
+    }
+
+    // Update submit button state
+    function updateSubmitButton() {
+      if (!submitButton) return;
+
+      const requiredFields = [
+        'title',
+        'amount',
+        'transaction_date',
+        'category_id',
+        'payment_method_id',
+      ];
+      let allValid = true;
+
+      for (const fieldName of requiredFields) {
+        const field = form.querySelector(`[name="${fieldName}"]`) as HTMLInputElement | null;
+        const value = field?.value || '';
+        const error = fieldErrors[fieldName];
+
+        if (error || !value || value.trim() === '') {
+          allValid = false;
+          break;
+        }
+      }
+
+      submitButton.disabled = !allValid;
+    }
+
+    // Clear all errors
+    function clearFieldErrors() {
+      form.querySelectorAll('.field-error').forEach((el) => el.remove());
+      form.querySelectorAll('.input-error, .border-error').forEach((el) => {
+        el.classList.remove('input-error', 'border-error');
+      });
+      if (formError) {
+        formError.classList.add('hidden');
+        formError.textContent = '';
+      }
+    }
+
+    // Set field error from server response
+    function setFieldError(fieldName: string, message: string) {
+      const fieldContainer = form.querySelector(`[name="${fieldName}"]`)?.closest('.form-control');
+      if (!fieldContainer) return;
+
+      const existingError = fieldContainer.querySelector('.field-error');
+      if (existingError) existingError.remove();
+
+      const input = fieldContainer.querySelector('input, select, textarea');
+      if (input) {
+        input.classList.add('input-error', 'border-error');
+      }
+
+      const errorDiv = document.createElement('div');
+      errorDiv.className = 'field-error text-error text-sm mt-1';
+      errorDiv.textContent = message;
+      fieldContainer.appendChild(errorDiv);
+    }
+
+    // Attach validation listeners
+    function attachValidationListeners() {
+      const titleInput = form.querySelector('input[name="title"]');
+      titleInput?.addEventListener('input', (e: Event) => {
+        validateField('title', (e.target as HTMLInputElement).value);
+      });
+
+      const amountInput = form.querySelector('input[name="amount"]');
+      amountInput?.addEventListener('input', (e: Event) => {
+        validateField('amount', (e.target as HTMLInputElement).value);
+      });
+
+      const dateInput = form.querySelector('input[name="transaction_date"]');
+      dateInput?.addEventListener('change', (e: Event) => {
+        validateField('transaction_date', (e.target as HTMLInputElement).value);
+      });
+
+      const categorySelect = form.querySelector('select[name="category_id"]');
+      categorySelect?.addEventListener('change', (e: Event) => {
+        validateField('category_id', (e.target as HTMLSelectElement).value);
+        updateCurrencyForCategory();
+      });
+
+      const paymentMethodSelect = form.querySelector('select[name="payment_method_id"]');
+      paymentMethodSelect?.addEventListener('change', (e: Event) => {
+        validateField('payment_method_id', (e.target as HTMLSelectElement).value);
+      });
+    }
+
+    // Update currency based on category
+    function updateCurrencyForCategory() {
+      const categorySelect = form.querySelector(
+        'select[name="category_id"]'
+      ) as HTMLSelectElement | null;
+      const currencyInput = form.querySelector('input[name="currency"]') as HTMLInputElement | null;
+      if (!categorySelect || !currencyInput) return;
+
+      const selectedCategoryId = categorySelect.value;
+      const selectedCategory = categories.find(
+        (c: { id: string; currency?: string }) => c.id === selectedCategoryId
+      );
+
+      if (selectedCategory && selectedCategory.currency) {
+        currencyInput.value = selectedCategory.currency;
+        currencyInput.dispatchEvent(new Event('change'));
+      }
+    }
+
+    // Close modal helper
+    function closeModal() {
+      if (!modalId) return;
+      const modal = document.getElementById(modalId) as HTMLDialogElement | null;
+      if (modal) {
+        modal.close();
+      }
+    }
+
+    // Handle cancel button
+    const cancelButton = form.querySelector('[data-close-modal]');
+    cancelButton?.addEventListener('click', (e: Event) => {
+      e.preventDefault();
+      closeModal();
+    });
+
+    // Handle form submission
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      // Read mode-related values at submit time (they can be updated by edit modal)
+      const transactionType = form.dataset.type || 'expense';
+      const formMode = form.dataset.mode || 'create';
+      const transactionId = form.dataset.transactionId || '';
+      const isEditMode = formMode === 'edit';
+
+      // Validate
+      const isFormValid = validateForm();
+      if (!isFormValid) {
+        const firstErrorField = form.querySelector('[aria-invalid="true"]') as HTMLElement | null;
+        firstErrorField?.focus();
+        return;
+      }
+
+      clearFieldErrors();
+
+      if (submitButton) {
+        submitButton.disabled = true;
+        submitButton.textContent = 'Saving...';
+      }
+
+      try {
+        const formData = new FormData(form);
+        // Map 'title' field to 'description' for API compatibility
+        // UI shows "Title" but API schema uses "description"
+        const data = {
+          type: transactionType,
+          description: String(formData.get('title') || ''),
+          amount: String(formData.get('amount') || '0').replace(/[^\d.-]/g, ''),
+          currency: String(formData.get('currency') || 'IDR'),
+          category_id: String(formData.get('category_id') || ''),
+          payment_method_id: String(formData.get('payment_method_id') || ''),
+          transaction_date: String(
+            formData.get('transaction_date') || new Date().toISOString().split('T')[0]
+          ),
+        };
+
+        // Use PUT for edit mode, POST for create mode
+        const apiUrl = isEditMode ? `${action}/${transactionId}` : action;
+        const method = isEditMode ? 'PUT' : 'POST';
+
+        const response = await fetch(apiUrl, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        });
+
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+          // Handle validation errors
+          if (result.error?.details) {
+            result.error.details.forEach(
+              (issue: { path: (string | number)[]; message: string }) => {
+                const fieldName = issue.path.join('.') || 'general';
+                setFieldError(fieldName, issue.message);
+              }
+            );
+            // Focus the first field with an error for accessibility
+            const firstInvalidField = form.querySelector(
+              '.input-error, .select-error, .border-error'
+            ) as HTMLElement | null;
+            firstInvalidField?.focus();
+          } else {
+            if (formError) {
+              formError.textContent = result.error?.message || 'Failed to save transaction';
+              formError.classList.remove('hidden');
+            }
+          }
+          addToast(result.error?.message || 'Failed to save transaction', 'error');
+        } else {
+          // Success
+          const actionWord = isEditMode ? 'updated' : 'saved';
+          addToast(
+            `${transactionType === 'expense' ? 'Expense' : 'Income'} ${actionWord} successfully!`,
+            'success'
+          );
+          closeModal();
+
+          // Refresh page to show new transaction
+          setTimeout(() => {
+            window.location.reload();
+          }, 300);
+        }
+      } catch (err) {
+        if (formError) {
+          formError.textContent = 'Network error. Please try again.';
+          formError.classList.remove('hidden');
+        }
+        addToast('Network error. Please try again.', 'error');
+      } finally {
+        if (submitButton) {
+          submitButton.disabled = false;
+          // Re-read mode in case it changed
+          const currentMode = form.dataset.mode || 'create';
+          submitButton.textContent = currentMode === 'edit' ? 'Save Changes' : 'Save Entry';
+        }
+      }
+    });
+
+    // Initialize
+    attachValidationListeners();
+    updateSubmitButton();
+  }
+
+  // Initialize on DOM ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initTransactionEntryForms);
+  } else {
+    initTransactionEntryForms();
+  }
+
+  // Re-initialize on Astro page transitions
+  document.addEventListener('astro:page-load', initTransactionEntryForms);
+</script>

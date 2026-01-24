@@ -1,0 +1,129 @@
+---
+/**
+ * Delete Confirmation Modal Component
+ *
+ * Modal for confirming deletion of items (transactions, etc).
+ * Uses the same Modal pattern as other modals in the application.
+ *
+ * @param {string} id - Modal ID
+ * @param {string} title - Modal title
+ * @param {string} description - Description text
+ * @param {string} confirmLabel - Label for confirm button
+ * @param {string} cancelLabel - Label for cancel button
+ */
+
+import Modal from '../molecules/Modal.astro';
+import { Trash2 } from '@lucide/astro';
+
+export interface Props {
+  id: string;
+  title?: string;
+  description?: string;
+  confirmLabel?: string;
+  cancelLabel?: string;
+}
+
+const {
+  id,
+  title = 'Delete Item',
+  description = 'Are you sure you want to delete this item? This action cannot be undone.',
+  confirmLabel = 'Delete',
+  cancelLabel = 'Cancel',
+} = Astro.props;
+---
+
+<div data-delete-confirmation-modal data-id={id}>
+  <Modal id={id} size="sm" closable={false} backdropClose={true}>
+    <div slot="default" class="flex flex-col gap-6">
+      <!-- Header section -->
+      <div class="flex items-center gap-4">
+        <!-- Icon -->
+        <div class="w-12 h-12 rounded-2xl flex items-center justify-center bg-error/10">
+          <Trash2 size={24} class="stroke-current text-error" aria-hidden="true" />
+        </div>
+
+        <!-- Title and description -->
+        <div class="flex-1">
+          <h2 class="text-2xl font-bold tracking-tight text-primary leading-none" data-modal-title>
+            {title}
+          </h2>
+          <p class="text-neutral text-sm mt-2 font-medium" data-modal-subtitle>
+            {description}
+          </p>
+        </div>
+      </div>
+
+      <!-- Details section (populated dynamically) -->
+      <div
+        id={`${id}-details`}
+        class="bg-base-200 rounded-2xl p-4 text-sm hidden"
+        data-delete-details
+      >
+        <!-- Item details will be inserted here -->
+      </div>
+
+      <!-- Error message -->
+      <div
+        id={`${id}-error`}
+        class="hidden alert alert-error text-sm rounded-2xl"
+        role="alert"
+        aria-live="polite"
+        data-delete-error
+      >
+      </div>
+
+      <!-- Actions -->
+      <div class="flex gap-4 pt-2">
+        <button
+          type="button"
+          class="btn btn-ghost flex-1 h-14 rounded-full font-bold text-base-content hover:bg-base-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent"
+          data-close-modal={id}
+        >
+          {cancelLabel}
+        </button>
+        <button
+          type="button"
+          id={`${id}-confirm-btn`}
+          class="btn btn-error flex-1 h-14 rounded-full font-bold"
+          data-confirm-delete
+        >
+          {confirmLabel}
+        </button>
+      </div>
+    </div>
+  </Modal>
+</div>
+
+<script>
+  // Initialize delete confirmation modal handlers
+  function initDeleteConfirmationModals() {
+    document.querySelectorAll('[data-delete-confirmation-modal]').forEach((container) => {
+      // Prevent duplicate initialization
+      const el = container as HTMLElement;
+      if (el.dataset.initialized === 'true') return;
+      el.dataset.initialized = 'true';
+
+      const id = container.getAttribute('data-id');
+      if (!id) return;
+
+      const modal = document.getElementById(id) as HTMLDialogElement | null;
+      if (!modal) return;
+
+      // Handle cancel button
+      const cancelBtn = container.querySelector('[data-close-modal]');
+      cancelBtn?.addEventListener('click', () => {
+        modal.close();
+      });
+    });
+  }
+
+  // Initialize on DOM ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initDeleteConfirmationModals);
+  } else {
+    initDeleteConfirmationModals();
+  }
+
+  // Re-initialize on Astro page transitions
+  document.addEventListener('astro:page-load', initDeleteConfirmationModals);
+</script>

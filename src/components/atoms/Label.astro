@@ -22,16 +22,10 @@ export interface Props {
 const { htmlFor = '', required = false, helpText = '', className = '', id = '' } = Astro.props;
 ---
 
-<label id={id} for={htmlFor} class={['label', className].filter(Boolean).join(' ')}>
-  <span class="label-text text-base-content">
+<label id={id} for={htmlFor} class={['label py-1', className].filter(Boolean).join(' ')}>
+  <span class="text-xs uppercase tracking-widest text-base-content/50 font-medium">
     <slot />
-    {
-      required && (
-        <span class="text-error ml-1" aria-label="required">
-          *
-        </span>
-      )
-    }
+    {required && <span class="sr-only">(required)</span>}
   </span>
   {helpText && <span class="label-text-alt text-neutral">{helpText}</span>}
 </label>

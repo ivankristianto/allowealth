@@ -166,12 +166,7 @@ const buildDirectExportUrl = () => {
 
             <div class="divide-y divide-base-200">
               {transactions.map((transaction) => (
-                <TransactionRow
-                  transaction={transaction}
-                  editUrl={`/transactions/edit/${transaction.id}`}
-                  deleteUrl={`/transactions/delete/${transaction.id}`}
-                  showActions={true}
-                />
+                <TransactionRow transaction={transaction} showActions={true} />
               ))}
             </div>
 
