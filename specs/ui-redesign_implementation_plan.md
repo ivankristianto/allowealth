@@ -1516,32 +1516,35 @@ Phase 3 (P2 - Polish):
 - [x] Create stories for new atoms (ProgressBar, IconBadge) ✅
 - [x] Create stories for new molecules (BudgetAlertBanner) ✅
 - [x] Create stories for new organisms (SpendingCard) ✅
-- [ ] Create stories for new organisms (SpendingChart, BudgetCard, etc.)
+- [x] Create stories for new organisms (SpendingChart, BudgetCard, etc.) ✅
+- [x] Create stories for TransactionSummaryCards ✅
+- [x] Create stories for BudgetPageHeader ✅
+- [x] Create stories for TransactionFiltersBar ✅
 
 ### Non-Blocking Feedback from Code Review (Task 6)
 
 **P2-1: Hardcoded Size Values in Comments**
 
 - **Location:** `/home/ivan/works/expenses/src/components/atoms/IconBadge.astro` (lines 31-35)
-- **Issue:** Comments mention pixel values (20px, 24px, 30px) but use Tailwind classes
+- [ ] **Issue:** Comments mention pixel values (20px, 24px, 30px) but use Tailwind classes
 - **Action:** Update to reference Tailwind class names in comments instead
 
 **P2-2: Inconsistent Status Badge Styling**
 
 - **Location:** `/home/ivan/works/expenses/src/components/organisms/SpendingCard.astro` (lines 110-118)
-- **Issue:** The status badge uses inline conditional class construction
+- [ ] **Issue:** The status badge uses inline conditional class construction
 - **Action:** Extract to a reusable `getStatusBadgeClasses` utility
 
 **P2-3: Animations Not Using Motion Library**
 
 - **Location:** `/home/ivan/works/expenses/src/components/atoms/ProgressBar.astro` (line 69)
-- **Issue:** Uses CSS class instead of Motion library
+- [ ] **Issue:** Uses CSS class instead of Motion library
 - **Action:** Consider using Motion for consistency with design system
 
 **P2-4: Missing Loading State Accessibility**
 
 - **Location:** `/home/ivan/works/expenses/src/components/organisms/SpendingCard.astro` (line 56)
-- **Issue:** Loading state could benefit from more descriptive aria-label
+- [ ] **Issue:** Loading state could benefit from more descriptive aria-label
 - **Action:** Add `aria-label="Loading spending data..."`
 
 ### Non-Blocking Feedback from Code Review (Task 9)
@@ -1549,13 +1552,13 @@ Phase 3 (P2 - Polish):
 **P2-1: Missing Empty State**
 
 - **Location:** `/home/ivan/works/expenses/src/components/organisms/NetWorthWidget.astro`
-- **Issue:** Component has no explicit empty state (when all values are 0)
+- [ ] **Issue:** Component has no explicit empty state (when all values are 0)
 - **Action:** Consider adding an empty state with helpful message: "No assets yet. Add your first asset to get started."
 
 **P2-2: Test Helper Functions Should Verify formatCurrency Consistency**
 
 - **Location:** `/home/ivan/works/expenses/src/components/organisms/NetWorthWidget.test.ts`
-- **Issue:** Tests duplicate formatIDR/formatUSD instead of verifying against `formatCurrency` utility
+- [ ] **Issue:** Tests duplicate formatIDR/formatUSD instead of verifying against `formatCurrency` utility
 - **Action:** Add test case that verifies component formatting matches `formatCurrency` output
 
 ### Non-Blocking Feedback from Code Review (Tasks 13 & 14)
@@ -1563,43 +1566,43 @@ Phase 3 (P2 - Polish):
 **P2-1: Loading States Not Used**
 
 - **Location:** `/home/ivan/works/k2-expenses-G8m/src/pages/transactions/index.astro`
-- **Issue:** TransactionSummaryCards has loading prop support but it's never passed
+- [ ] **Issue:** TransactionSummaryCards has loading prop support but it's never passed
 - **Action:** Add loading state during data fetching for better UX
 
 **P2-2: Hardcoded Currency**
 
 - **Location:** `/home/ivan/works/k2-expenses-G8m/src/pages/transactions/index.astro`
-- **Issue:** Currency is hardcoded as "IDR" instead of using user's preference
+- [ ] **Issue:** Currency is hardcoded as "IDR" instead of using user's preference
 - **Action:** Use user.currency or user settings for currency preference
 
 **P2-3: Store File Not Used**
 
 - **Location:** `/home/ivan/works/k2-expenses-G8m/src/lib/stores/transactionFiltersStore.ts`
-- **Issue:** Store exports functions that are never imported/used
+- [ ] **Issue:** Store exports functions that are never imported/used
 - **Action:** Either remove the file or implement client-side enhancement (kept for future use)
 
 **P3-1: Extract Month Navigation Logic to Utility**
 
 - **Location:** `/home/ivan/works/k2-expenses-G8m/src/pages/transactions/index.astro`
-- **Issue:** Month extraction logic could be in a reusable utility
+- [ ] **Issue:** Month extraction logic could be in a reusable utility
 - **Action:** Create `extractAvailableMonths()` in `@/lib/utils/date.ts`
 
 **P3-2: Use `<button>` Instead of `<a>` for Filters**
 
 - **Location:** `/home/ivan/works/k2-expenses-G8m/src/components/organisms/TransactionFiltersBar.astro`
-- **Issue:** Type filter uses `<a>` elements with `role="button"` causing semantic confusion
+- [ ] **Issue:** Type filter uses `<a>` elements with `role="button"` causing semantic confusion
 - **Action:** Consider using `<button>` elements with form submission for true progressive enhancement
 
 **P3-1: Component Could Use Design Token for Spacing**
 
 - **Location:** Various locations in NetWorthWidget.astro
-- **Issue:** Some spacing values use direct Tailwind classes (`mb-6`, `mt-3`, `gap-3`) instead of design system spacing tokens
+- [ ] **Issue:** Some spacing values use direct Tailwind classes (`mb-6`, `mt-3`, `gap-3`) instead of design system spacing tokens
 - **Action:** Consider using `spacing` tokens where appropriate for consistency
 
 **P3-2: Story Names Could Be More Descriptive**
 
 - **Location:** `/home/ivan/works/expenses/src/components/organisms/NetWorthWidget.stories.ts`
-- **Issue:** Stories like `LargeAssets` and `MinimalAssets` could use more descriptive names
+- [ ] **Issue:** Stories like `LargeAssets` and `MinimalAssets` could use more descriptive names
 - **Action:** Rename to `LargePortfolio`, `StartingPortfolio` for better clarity
 
 ### Non-Blocking Feedback from Code Review (Tasks 15-16)
@@ -1607,31 +1610,31 @@ Phase 3 (P2 - Polish):
 **P2-1: Duplicate Category Icon Mapping**
 
 - **Location:** `BudgetCard.astro` and `BudgetCardGrid.astro`
-- **Issue:** Category icon mapping is duplicated in both components
+- [ ] **Issue:** Category icon mapping is duplicated in both components
 - **Action:** Extract to a shared utility function in `@/lib/tokens.ts` or create a dedicated `categoryIcons.ts` utility
 
 **P2-2: Magic Number for Skeleton Count**
 
 - **Location:** `BudgetCardGrid.astro` (line 91)
-- **Issue:** Skeleton count is hardcoded as 6
+- [ ] **Issue:** Skeleton count is hardcoded as 6
 - **Action:** Consider making this a prop or deriving from expected grid layout
 
 **P2-3: Multiple Non-null Assertions in Budget Page**
 
 - **Location:** `src/pages/budget/index.astro` (lines 20, 41, 99, 136)
-- **Issue:** Multiple `user!` non-null assertions
+- [ ] **Issue:** Multiple `user!` non-null assertions
 - **Action:** Consider early return or guard clause at top of frontmatter
 
 **P3-1: Animation Classes Could Use Motion Library**
 
 - **Location:** `BudgetAdviceBanner.astro` script tag (lines 115-118)
-- **Issue:** Uses CSS classes (`animate-out`, `fade-out`) instead of Motion library
+- [ ] **Issue:** Uses CSS classes (`animate-out`, `fade-out`) instead of Motion library
 - **Action:** Consider using Motion for consistency with design system pattern
 
 **P3-2: Import Ordering Convention**
 
 - **Location:** Various new components
-- **Issue:** Import ordering could be more consistent (external → internal → types)
+- [ ] **Issue:** Import ordering could be more consistent (external → internal → types)
 - **Action:** Apply consistent import ordering: external packages → @/ aliases → relative imports → types
 
 ### Non-Blocking Feedback from Code Review (Task 17 - Dark Mode)
@@ -1639,17 +1642,49 @@ Phase 3 (P2 - Polish):
 **P1-1: SpendingChart Tooltip Colors Don't Update on Theme Change** (Known limitation)
 
 - **Location:** `/home/ivan/works/k2-expenses-Hwk/src/components/organisms/SpendingChart.astro`
-- **Issue:** Chart tooltip colors are set at initialization time and don't update dynamically when theme changes
+- [ ] **Issue:** Chart tooltip colors are set at initialization time and don't update dynamically when theme changes
 - **Action:** Consider adding MutationObserver on `data-theme` attribute to update chart colors on theme change
 
-**P1-2: BudgetAlertBanner Uses is:inline with define:vars** (Pre-existing)
+**P1-2: BudgetAlertBanner Uses is:inline with define:vars** ✅ FIXED
 
-- **Location:** `/home/ivan/works/k2-expenses-Hwk/src/components/molecules/BudgetAlertBanner.astro`
-- **Issue:** Uses `is:inline` with `define:vars` which limits script capabilities
-- **Action:** Refactor to use data attributes pattern per CLAUDE.md guidelines
+- **Location:** `/home/ivan/works/expenses/src/components/molecules/BudgetAlertBanner.astro`
+- [x] **Issue:** Uses `is:inline` with `define:vars` which limits script capabilities
+- **Action:** Refactored to use data attributes pattern per CLAUDE.md guidelines
 
 **P2-1: Consider Adding Theme Transition Animation**
 
 - **Location:** `src/components/atoms/ThemeToggle.astro`
-- **Issue:** Theme switch is instant without transition
+- [ ] **Issue:** Theme switch is instant without transition
 - **Action:** Consider adding CSS transition for smoother theme change: `html { transition: background-color 0.3s ease, color 0.3s ease; }`
+
+### Non-Blocking Feedback from Code Review (Storybook Stories - Code Quality Session)
+
+**P1-1: Inconsistent ARIA Patterns Between Stories and Components**
+
+- **Location:** All three new story files (TransactionSummaryCards, BudgetPageHeader, TransactionFiltersBar)
+- [ ] **Issue:** SVG icons in stories don't have `aria-hidden="true"` attribute that the Astro components include
+- **Action:** Add `aria-hidden="true"` to all decorative SVG icons in stories
+
+**P1-2: Missing aria-disabled Handling in Story**
+
+- **Location:** `/home/ivan/works/expenses/src/components/organisms/TransactionFiltersBar.stories.ts`
+- [ ] **Issue:** Month navigation buttons in story don't replicate aria-disabled pattern from Astro component
+- **Action:** Match component's accessibility patterns for disabled state demonstration
+
+**P1-3: Story Helper Function Type Safety**
+
+- **Location:** All three new story files
+- [ ] **Issue:** Stories use type assertions `as Args` instead of proper StoryObj generic typing
+- **Action:** Use `type Story = StoryObj<Args>` pattern for proper type inference
+
+**P2-2: Duplicate Icon Definitions Across Stories**
+
+- **Location:** BudgetPageHeader.stories.ts and TransactionFiltersBar.stories.ts
+- [ ] **Issue:** `chevronLeftIcon` and `chevronRightIcon` are defined identically in both files
+- **Action:** Consider creating shared `stories/icons.ts` utility for common SVG icons
+
+**P2-3: Stories Missing Storybook Parameters**
+
+- **Location:** All three new story files
+- [ ] **Issue:** Stories could have better presentation with layout and backgrounds parameters
+- **Action:** Add `parameters: { layout: 'padded' }` for better story presentation

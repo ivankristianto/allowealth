@@ -84,7 +84,13 @@ const bannerClasses = [
   .join(' ');
 ---
 
-<div class={bannerClasses} role="alert" aria-live="polite">
+<div
+  class={bannerClasses}
+  role="alert"
+  aria-live="polite"
+  data-budget-alert-banner
+  data-dismissible={dismissible ? 'true' : 'false'}
+>
   <div class="flex items-start gap-3">
     <!-- Icon -->
     <div class={variantStyle.icon + ' shrink-0 mt-0.5'}>
@@ -113,14 +119,16 @@ const bannerClasses = [
       <X size={16} class="stroke-current" aria-hidden="true" />
     </button>
   </div>
-
-  <!-- Client-side dismiss functionality -->
-  <script is:inline define:vars={{ dismissible }}>
-    if (!dismissible) return;
-    const banner = document.currentScript?.parentElement;
-    const dismissBtn = banner?.querySelector('[data-dismiss="alert"]');
-    dismissBtn?.addEventListener('click', () => {
-      banner?.remove();
-    });
-  </script>
 </div>
+
+<!-- Client-side dismiss functionality using data attributes pattern (per CLAUDE.md) -->
+<script>
+  document
+    .querySelectorAll('[data-budget-alert-banner][data-dismissible="true"]')
+    .forEach((banner) => {
+      const dismissBtn = banner.querySelector('[data-dismiss="alert"]');
+      dismissBtn?.addEventListener('click', () => {
+        banner.remove();
+      });
+    });
+</script>
