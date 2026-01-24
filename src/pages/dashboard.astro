@@ -19,7 +19,6 @@
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import { dashboardService } from '@/services';
 import type { DashboardData } from '@/services/dashboard.service';
-import SummaryCards from '@/components/organisms/SummaryCards.astro';
 import SpendingCard from '@/components/organisms/SpendingCard.astro';
 import SpendingChart from '@/components/organisms/SpendingChart.astro';
 import NetWorthWidget from '@/components/organisms/NetWorthWidget.astro';
@@ -59,28 +58,6 @@ try {
   error = err instanceof Error ? err : new Error('Unknown error occurred');
   dashboardData = null;
 }
-
-// Transform service data to component formats
-const summaryCardsData = dashboardData
-  ? {
-      totalAssets: {
-        idr: dashboardData.totalAssets.idr,
-        usd: dashboardData.totalAssets.usd,
-        converted: dashboardData.totalAssets.converted,
-        convertedCurrency: dashboardData.totalAssets.convertedCurrency,
-      },
-      monthlySpent: {
-        spent: dashboardData.monthlySpent.total,
-        budget: dashboardData.monthlySpent.budget,
-        currency: 'IDR' as const,
-        percentage: dashboardData.monthlySpent.percentage,
-      },
-      budgetHealth: {
-        alertCount: dashboardData.budgetHealth.alertCount,
-        status: dashboardData.budgetHealth.status,
-      },
-    }
-  : undefined;
 
 // Get month name for remaining label
 const monthNames = [
@@ -152,7 +129,7 @@ const spendingCategories = [
 ---
 
 <ProtectedLayout title="Dashboard - Finance Manager" currentPath={currentPath}>
-  <div class="space-y-6">
+  <div class="max-w-7xl mx-auto px-6 lg:px-10 py-8 space-y-8">
     <!-- Error State -->
     {
       error && (
@@ -171,7 +148,7 @@ const spendingCategories = [
           <QuickActions />
 
           {/* Spending Summary Card & Spending Analysis Chart (side by side) */}
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <SpendingCard
               spent={parseFloat(dashboardData?.monthlySpent.total ?? '0')}
               budget={parseFloat(dashboardData?.monthlySpent.budget ?? '0')}
@@ -193,11 +170,8 @@ const spendingCategories = [
             />
           </div>
 
-          {/* Summary Cards */}
-          <SummaryCards data={summaryCardsData} loading={!dashboardData} error={false} />
-
           {/* Recent Transactions & Net Worth Widget (side by side) */}
-          <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+          <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
             <div class="xl:col-span-2">
               <RecentTransactionsList
                 transactions={recentTransactions}
@@ -206,7 +180,7 @@ const spendingCategories = [
               />
             </div>
 
-            <div class="space-y-6">
+            <div class="space-y-8">
               <NetWorthWidget
                 totalIDR={parseFloat(dashboardData?.totalAssets.idr ?? '0')}
                 totalUSD={parseFloat(dashboardData?.totalAssets.usd ?? '0')}
@@ -226,7 +200,6 @@ const spendingCategories = [
 
 <style>
   /* Ensure smooth loading transitions */
-  [data-summary-cards],
   [data-recent-transactions-list] {
     transition: opacity 0.2s ease-in-out;
   }
