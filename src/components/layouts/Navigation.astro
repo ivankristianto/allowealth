@@ -22,7 +22,6 @@ import {
 } from '@lucide/astro';
 import type { User } from '@/lib/auth/lucia';
 import UserProfile from './UserProfile.astro';
-import ThemeToggle from '@/components/atoms/ThemeToggle.astro';
 
 interface Props {
   currentPath?: string;
@@ -137,11 +136,6 @@ const isActive = (href: string) => {
       })
     }
   </ul>
-
-  <!-- Theme Toggle -->
-  <div class="px-4 py-3 flex justify-center">
-    <ThemeToggle />
-  </div>
 
   <!-- Bottom section - User info -->
   <UserProfile user={user} />
