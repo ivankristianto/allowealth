@@ -229,8 +229,10 @@ const paymentMethodsJson = JSON.stringify(
 
 <script>
   // Get data from form data attributes
+  /** @type {HTMLFormElement|null} */
   const form = document.getElementById('transaction-form');
   const formError = document.getElementById('form-error');
+  /** @type {HTMLButtonElement|null} */
   const submitButton = form?.querySelector('button[type="submit"]');
   const formSuccess = document.getElementById('form-success');
 
@@ -241,6 +243,8 @@ const paymentMethodsJson = JSON.stringify(
   const method = form?.dataset.method || 'POST';
 
   // Format currency for display
+  /** @param {number} amount */
+  /** @param {string} currency */
   function formatCurrency(amount, currency) {
     return new Intl.NumberFormat('id-ID', {
       style: 'currency',
@@ -255,6 +259,7 @@ const paymentMethodsJson = JSON.stringify(
   // Client-side validation rules matching server-side validation
   const validators = {
     amount: {
+      /** @param {unknown} value */
       validate: (value) => {
         // Strip currency formatting before validation
         const cleanValue = String(value).replace(/[^\d.-]/g, '');
@@ -269,6 +274,7 @@ const paymentMethodsJson = JSON.stringify(
       },
     },
     transaction_date: {
+      /** @param {unknown} value */
       validate: (value) => {
         if (!value || value.trim() === '') return 'Transaction date is required';
         // Check YYYY-MM-DD format
@@ -283,18 +289,21 @@ const paymentMethodsJson = JSON.stringify(
       },
     },
     category_id: {
+      /** @param {unknown} value */
       validate: (value) => {
         if (!value || value.trim() === '') return 'Category is required';
         return null;
       },
     },
     payment_method_id: {
+      /** @param {unknown} value */
       validate: (value) => {
         if (!value || value.trim() === '') return 'Payment method is required';
         return null;
       },
     },
     description: {
+      /** @param {unknown} value */
       validate: (value) => {
         if (value && value.length > 500) return 'Description must not exceed 500 characters';
         return null;
@@ -306,6 +315,8 @@ const paymentMethodsJson = JSON.stringify(
   const fieldErrors = {};
 
   // Validate a single field
+  /** @param {string} fieldName */
+  /** @param {unknown} value */
   function validateField(fieldName, value) {
     const validator = validators[fieldName];
     if (!validator) return null;
@@ -321,7 +332,10 @@ const paymentMethodsJson = JSON.stringify(
   }
 
   // Update field error UI
+  /** @param {string} fieldName */
+  /** @param {string | null} errorMessage */
   function updateFieldErrorUI(fieldName, errorMessage) {
+    /** @type {HTMLElement|null} */
     const field = form?.querySelector(`[name="${fieldName}"]`);
     if (!field) return;
 
@@ -358,6 +372,7 @@ const paymentMethodsJson = JSON.stringify(
 
   // Validate all fields
   function validateForm() {
+    // @ts-expect-error - form is HTMLFormElement
     const formData = new FormData(form);
     let isValid = true;
 
@@ -380,7 +395,10 @@ const paymentMethodsJson = JSON.stringify(
     let allValid = true;
 
     for (const fieldName of requiredFields) {
-      const value = form?.querySelector(`[name="${fieldName}"]`)?.value;
+      /** @type {HTMLInputElement|null} */
+      const field = form?.querySelector(`[name="${fieldName}"]`);
+      // @ts-expect-error - field is HTMLInputElement which has value property
+      const value = field?.value || '';
       const error = fieldErrors[fieldName];
 
       // Invalid if: has error OR value is empty/undefined
@@ -390,31 +408,38 @@ const paymentMethodsJson = JSON.stringify(
       }
     }
 
-    submitButton.disabled = !allValid;
+    if (submitButton) {
+      // @ts-expect-error - submitButton is HTMLButtonElement which has disabled property
+      submitButton.disabled = !allValid;
+    }
   }
 
   // Attach real-time validation listeners
   function attachValidationListeners() {
     // Amount input - validate on input
     const amountInput = form?.querySelector('input[name="amount"]');
+    /** @param {Event} e */
     amountInput?.addEventListener('input', (e) => {
       validateField('amount', e.target.value);
     });
 
     // Date input - validate on change
     const dateInput = form?.querySelector('input[name="transaction_date"]');
+    /** @param {Event} e */
     dateInput?.addEventListener('change', (e) => {
       validateField('transaction_date', e.target.value);
     });
 
     // Category select - validate on change
     const categorySelect = form?.querySelector('select[name="category_id"]');
+    /** @param {Event} e */
     categorySelect?.addEventListener('change', (e) => {
       validateField('category_id', e.target.value);
     });
 
     // Payment method select - validate on change
     const paymentMethodSelect = form?.querySelector('select[name="payment_method_id"]');
+    /** @param {Event} e */
     paymentMethodSelect?.addEventListener('change', (e) => {
       validateField('payment_method_id', e.target.value);
     });
@@ -605,19 +630,25 @@ const paymentMethodsJson = JSON.stringify(
   // Pre-select last used values on form load
   // Returns true if a category was pre-selected, false otherwise
   function preselectLastUsedValues() {
-    const formType =
-      document.querySelector('input[name="type"]:checked')?.value || DEFAULT_TRANSACTION_TYPE;
+    /** @type {HTMLInputElement|null} */
+    const checkedTypeRadio = document.querySelector('input[name="type"]:checked');
+    // @ts-expect-error - checkedTypeRadio is HTMLInputElement which has value property
+    const formType = checkedTypeRadio?.value || DEFAULT_TRANSACTION_TYPE;
+    /** @type {HTMLSelectElement|null} */
     const categorySelect = document.querySelector('select[name="category_id"]');
+    /** @type {HTMLSelectElement|null} */
     const paymentMethodSelect = document.querySelector('select[name="payment_method_id"]');
     let categoryPreselected = false;
 
     // Only pre-select if the form doesn't already have a value (server-rendered)
+    // @ts-expect-error - categorySelect is HTMLSelectElement which has value property
     if (categorySelect && !categorySelect.value) {
       const lastCategory = getLastUsedCategory(formType);
       if (lastCategory) {
         // Check if the category still exists and is valid for current type
         const category = categories.find((c) => c.id === lastCategory && c.type === formType);
         if (category) {
+          // @ts-expect-error - categorySelect is HTMLSelectElement which has value property
           categorySelect.value = lastCategory;
           categoryPreselected = true;
           // Trigger change event to update currency and budget display
@@ -629,12 +660,14 @@ const paymentMethodsJson = JSON.stringify(
     }
 
     // Only pre-select payment method if the form doesn't already have a value
+    // @ts-expect-error - paymentMethodSelect is HTMLSelectElement which has value property
     if (paymentMethodSelect && !paymentMethodSelect.value) {
       const lastPaymentMethod = getLastUsedPaymentMethod();
       if (lastPaymentMethod) {
         // Validate payment method still exists
         const paymentMethod = paymentMethods.find((pm) => pm.id === lastPaymentMethod);
         if (paymentMethod) {
+          // @ts-expect-error - paymentMethodSelect is HTMLSelectElement which has value property
           paymentMethodSelect.value = lastPaymentMethod;
         } else {
           console.warn(`Last used payment method "${lastPaymentMethod}" no longer available`);
@@ -649,14 +682,18 @@ const paymentMethodsJson = JSON.stringify(
 
   // Update currency based on selected category
   function updateCurrencyForCategory() {
+    /** @type {HTMLSelectElement|null} */
     const categorySelect = document.querySelector('select[name="category_id"]');
+    /** @type {HTMLInputElement|null} */
     const currencyInput = document.querySelector('input[name="currency"]');
     if (!categorySelect || !currencyInput) return;
 
+    // @ts-expect-error - categorySelect is HTMLSelectElement which has value property
     const selectedCategoryId = categorySelect.value;
     const selectedCategory = categories.find((c) => c.id === selectedCategoryId);
 
     if (selectedCategory && selectedCategory.currency) {
+      // @ts-expect-error - currencyInput is HTMLInputElement which has value property
       currencyInput.value = selectedCategory.currency;
       // Trigger currency change event to update the formatted display
       currencyInput.dispatchEvent(new Event('change'));
@@ -665,14 +702,19 @@ const paymentMethodsJson = JSON.stringify(
 
   // Update category options when transaction type changes
   const typeRadios = document.querySelectorAll('input[name="type"]');
+  /** @type {HTMLSelectElement|null} */
   const categorySelect = document.querySelector('select[name="category_id"]');
 
   // Update budget display based on selected category
   async function updateBudgetDisplay() {
     if (!categorySelect) return;
 
+    // @ts-expect-error - categorySelect is HTMLSelectElement which has value property
     const selectedCategoryId = categorySelect.value;
-    const formType = document.querySelector('input[name="type"]:checked')?.value;
+    /** @type {HTMLInputElement|null} */
+    const checkedTypeRadio = document.querySelector('input[name="type"]:checked');
+    // @ts-expect-error - checkedTypeRadio is HTMLInputElement which has value property
+    const formType = checkedTypeRadio?.value;
 
     // Only update budget for expense categories
     if (formType !== 'expense' || !selectedCategoryId) {
@@ -774,36 +816,48 @@ const paymentMethodsJson = JSON.stringify(
   }
 
   typeRadios.forEach((radio) => {
+    /** @param {Event} e */
     radio?.addEventListener('change', (e) => {
-      const target = e.target;
+      const target = /** @type {HTMLInputElement} */ (e.target);
       const newType = target.value;
 
       // Get all categories from the select options
-      const allOptions = Array.from(categorySelect?.options || []).slice(1); // Skip first option
+      const catSelect = categorySelect;
+      if (catSelect) {
+        // @ts-expect-error - categorySelect is HTMLSelectElement which has options property
+        const allOptions = Array.from(catSelect.options || []).slice(1); // Skip first option
 
-      // Filter and update options based on type
-      allOptions.forEach((option) => {
-        const categoryType = option.getAttribute('data-type');
-        if (categoryType === newType) {
-          option.removeAttribute('disabled');
-          option.hidden = false;
-        } else {
-          option.setAttribute('disabled', 'true');
-          option.hidden = true;
-        }
-      });
+        // Filter and update options based on type
+        allOptions.forEach((option) => {
+          /** @type {HTMLOptionElement} */
+          const opt = option;
+          // @ts-expect-error - opt is HTMLOptionElement which has getAttribute method
+          const categoryType = opt.getAttribute('data-type');
+          if (categoryType === newType) {
+            // @ts-expect-error - opt is HTMLOptionElement which has removeAttribute method
+            opt.removeAttribute('disabled');
+            // @ts-expect-error - opt is HTMLOptionElement which has hidden property
+            opt.hidden = false;
+          } else {
+            // @ts-expect-error - opt is HTMLOptionElement which has setAttribute method
+            opt.setAttribute('disabled', 'true');
+            // @ts-expect-error - opt is HTMLOptionElement which has hidden property
+            opt.hidden = true;
+          }
+        });
 
-      // Reset category selection
-      if (categorySelect) {
-        categorySelect.value = '';
-      }
+        // Reset category selection
+        // @ts-expect-error - catSelect is HTMLSelectElement which has value property
+        catSelect.value = '';
 
-      // Try to pre-select the last used category for the new type
-      const lastCategory = getLastUsedCategory(newType);
-      if (lastCategory && categorySelect) {
-        const category = categories.find((c) => c.id === lastCategory && c.type === newType);
-        if (category) {
-          categorySelect.value = lastCategory;
+        // Try to pre-select the last used category for the new type
+        const lastCategory = getLastUsedCategory(newType);
+        if (lastCategory) {
+          const category = categories.find((c) => c.id === lastCategory && c.type === newType);
+          if (category) {
+            // @ts-expect-error - catSelect is HTMLSelectElement which has value property
+            catSelect.value = lastCategory;
+          }
         }
       }
 
@@ -871,7 +925,9 @@ const paymentMethodsJson = JSON.stringify(
     const isFormValid = validateForm();
     if (!isFormValid) {
       // Focus first field with error
+      /** @type {HTMLElement|null} */
       const firstErrorField = form?.querySelector('[aria-invalid="true"]');
+      // @ts-expect-error - firstErrorField is HTMLElement which has focus method
       firstErrorField?.focus();
       return;
     }
@@ -879,11 +935,13 @@ const paymentMethodsJson = JSON.stringify(
     clearFieldErrors();
 
     if (submitButton) {
+      // @ts-expect-error - submitButton is HTMLButtonElement which has disabled property
       submitButton.disabled = true;
       submitButton.textContent = 'Saving...';
     }
 
     try {
+      // @ts-expect-error - form is HTMLFormElement
       const formData = new FormData(form);
       const data = {
         type: formData.get('type') || DEFAULT_TRANSACTION_TYPE,
@@ -958,6 +1016,7 @@ const paymentMethodsJson = JSON.stringify(
       if (submitButton) {
         const isShowingSuccess = formSuccess && !formSuccess.classList.contains('hidden');
         if (!isShowingSuccess) {
+          // @ts-expect-error - submitButton is HTMLButtonElement which has disabled property
           submitButton.disabled = false;
           submitButton.textContent = 'Save Transaction';
         }

@@ -156,7 +156,7 @@ describe('RecentTransactionsList - Component Structure', () => {
         'src/components/organisms/RecentTransactionsList.astro',
         'utf-8'
       );
-      expect(content).toContain('<Card rounded="2xl" padding="sm"');
+      expect(content).toContain('<Card rounded="card-lg" padding="sm"');
     });
 
     it('should have header with title', async () => {
@@ -409,8 +409,10 @@ describe('RecentTransactionsList - Transaction Display', () => {
         'src/components/organisms/RecentTransactionsList.astro',
         'utf-8'
       );
-      expect(content).toContain('flex-shrink-0');
+      // min-w-0 is used for text truncation in flex containers
       expect(content).toContain('min-w-0');
+      // Check for fixed width classes on amount container
+      expect(content).toContain('min-w-[120px]');
     });
   });
 });
@@ -664,7 +666,8 @@ describe('RecentTransactionsList - Edge Cases', () => {
         'src/components/organisms/RecentTransactionsList.astro',
         'utf-8'
       );
-      expect(content).toMatch(/transaction\.description &&/);
+      // Component uses optional chaining with trim and fallback
+      expect(content).toMatch(/transaction\.description\?\.trim\(\)/);
     });
   });
 
@@ -730,7 +733,12 @@ describe('RecentTransactionsList - Code Quality', () => {
         'src/components/organisms/RecentTransactionsList.astro',
         'utf-8'
       );
-      expect(content).toMatch(/type: TransactionOutput\['type'\]\)[\s\S]*?CategoryIconComponent/);
+      // Check for CategoryIconComponent type definition
+      expect(content).toContain('type CategoryIconComponent');
+      // Check for TransactionOutput['type'] usage in function signature
+      expect(content).toContain("type: TransactionOutput['type']");
+      // Check for CategoryMeta return type
+      expect(content).toContain('CategoryMeta');
     });
   });
 

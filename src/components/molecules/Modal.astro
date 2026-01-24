@@ -298,6 +298,7 @@ const titleId = title ? `${id}-title` : undefined;
     // Intercept form submissions (close button clicks)
     const closeForms = modal.querySelectorAll('form[method="dialog"]');
     closeForms.forEach((closeForm) => {
+      /** @param {Event} e */
       closeForm.addEventListener('submit', (e) => {
         if (modal.open && !isAnimating) {
           handleClose(e);

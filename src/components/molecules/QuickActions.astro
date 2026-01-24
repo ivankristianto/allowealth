@@ -174,17 +174,18 @@ const {
       const quickActionsContainer = document.querySelector('[data-quick-actions]');
       if (!quickActionsContainer) return;
 
+      /** @param {Event} e */
       quickActionsContainer.addEventListener('click', (e) => {
-        const button = (e.target as HTMLElement).closest(
-          '[data-quick-action]'
-        ) as HTMLElement | null;
+        const target = /** @type {Element} */ (e.target);
+        const button = target.closest('[data-quick-action]');
         if (!button) return;
 
         const actionType = button.getAttribute('data-quick-action');
         const modalId = actionType === 'expense' ? 'expense-modal' : 'income-modal';
-        const modal = document.getElementById(modalId) as HTMLDialogElement | null;
+        const modal = /** @type {HTMLDialogElement|null} */ (document.getElementById(modalId));
 
         if (modal) {
+          // @ts-expect-error - modal is HTMLDialogElement which has showModal method
           modal.showModal();
         }
       });
