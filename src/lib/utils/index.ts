@@ -52,6 +52,8 @@ export {
   formatMonthKey,
   createMonthKey,
   getCurrentMonthKey,
+  extractAvailableMonths,
+  type AvailableMonth,
 } from './date';
 
 // Transaction utilities

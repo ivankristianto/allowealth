@@ -294,3 +294,67 @@ export function createMonthKey(date: Date): string {
 export function getCurrentMonthKey(): string {
   return createMonthKey(new Date());
 }
+
+/**
+ * Month data structure for available months selector
+ */
+export interface AvailableMonth {
+  key: string; // MM-YYYY format
+  label: string; // Human-readable format (e.g., "January 2026")
+}
+
+/**
+ * Extract available months from an array of items with transaction_date field.
+ *
+ * Used to build month selector dropdowns for filtering transactions.
+ * Returns unique months sorted chronologically (oldest first).
+ *
+ * @param items - Array of objects with transaction_date property
+ * @param locale - Locale for formatting labels (default: 'en-US')
+ * @returns Array of available months with keys and labels, sorted chronologically
+ *
+ * @example
+ * const transactions = [
+ *   { transaction_date: '2026-01-15' },
+ *   { transaction_date: '2026-02-20' },
+ *   { transaction_date: '2026-01-05' }
+ * ];
+ * extractAvailableMonths(transactions);
+ * // [
+ * //   { key: '01-2026', label: 'January 2026' },
+ * //   { key: '02-2026', label: 'February 2026' }
+ * // ]
+ */
+export function extractAvailableMonths<T extends { transaction_date: string | Date }>(
+  items: T[],
+  locale: string = 'en-US'
+): AvailableMonth[] {
+  const monthMap = new Map<string, string>();
+
+  items.forEach((item) => {
+    const date =
+      item.transaction_date instanceof Date
+        ? item.transaction_date
+        : new Date(item.transaction_date);
+
+    // Skip invalid dates
+    if (isNaN(date.getTime())) return;
+
+    const key = createMonthKey(date);
+    if (!monthMap.has(key)) {
+      monthMap.set(key, formatMonthKey(key, locale));
+    }
+  });
+
+  // Sort chronologically (oldest first)
+  const sortedKeys = Array.from(monthMap.keys()).sort((a, b) => {
+    const [monthA, yearA] = a.split('-').map(Number);
+    const [monthB, yearB] = b.split('-').map(Number);
+    return yearA !== yearB ? yearA - yearB : monthA - monthB;
+  });
+
+  return sortedKeys.map((key) => ({
+    key,
+    label: monthMap.get(key) || key,
+  }));
+}

@@ -21,6 +21,7 @@ import {
   formatMonthKey,
   createMonthKey,
   getCurrentMonthKey,
+  extractAvailableMonths,
 } from './date';
 
 describe('date utilities', () => {
@@ -280,6 +281,98 @@ describe('month key utilities', () => {
       const now = new Date();
       const expected = createMonthKey(now);
       expect(result).toBe(expected);
+    });
+  });
+
+  describe('extractAvailableMonths', () => {
+    test('extracts unique months from transactions', () => {
+      const transactions = [
+        { transaction_date: '2026-01-15' },
+        { transaction_date: '2026-02-20' },
+        { transaction_date: '2026-01-05' }, // Duplicate month
+      ];
+
+      const result = extractAvailableMonths(transactions);
+
+      expect(result).toHaveLength(2);
+      expect(result[0].key).toBe('01-2026');
+      expect(result[0].label).toBe('January 2026');
+      expect(result[1].key).toBe('02-2026');
+      expect(result[1].label).toBe('February 2026');
+    });
+
+    test('sorts months chronologically (oldest first)', () => {
+      const transactions = [
+        { transaction_date: '2026-03-15' },
+        { transaction_date: '2025-12-20' },
+        { transaction_date: '2026-01-05' },
+      ];
+
+      const result = extractAvailableMonths(transactions);
+
+      expect(result).toHaveLength(3);
+      expect(result[0].key).toBe('12-2025');
+      expect(result[1].key).toBe('01-2026');
+      expect(result[2].key).toBe('03-2026');
+    });
+
+    test('handles Date objects as transaction_date', () => {
+      const transactions = [
+        { transaction_date: new Date(2026, 0, 15) }, // January
+        { transaction_date: new Date(2026, 1, 20) }, // February
+      ];
+
+      const result = extractAvailableMonths(transactions);
+
+      expect(result).toHaveLength(2);
+      expect(result[0].key).toBe('01-2026');
+      expect(result[1].key).toBe('02-2026');
+    });
+
+    test('returns empty array for empty input', () => {
+      const result = extractAvailableMonths([]);
+      expect(result).toHaveLength(0);
+    });
+
+    test('skips invalid dates', () => {
+      const transactions = [
+        { transaction_date: '2026-01-15' },
+        { transaction_date: 'invalid-date' },
+        { transaction_date: '2026-02-20' },
+      ];
+
+      const result = extractAvailableMonths(transactions);
+
+      expect(result).toHaveLength(2);
+      expect(result[0].key).toBe('01-2026');
+      expect(result[1].key).toBe('02-2026');
+    });
+
+    test('handles months spanning multiple years', () => {
+      const transactions = [
+        { transaction_date: '2025-11-15' },
+        { transaction_date: '2025-12-20' },
+        { transaction_date: '2026-01-05' },
+        { transaction_date: '2026-02-10' },
+      ];
+
+      const result = extractAvailableMonths(transactions);
+
+      expect(result).toHaveLength(4);
+      expect(result[0].key).toBe('11-2025');
+      expect(result[1].key).toBe('12-2025');
+      expect(result[2].key).toBe('01-2026');
+      expect(result[3].key).toBe('02-2026');
+    });
+
+    test('handles single transaction', () => {
+      const transactions = [{ transaction_date: '2026-06-15' }];
+
+      const result = extractAvailableMonths(transactions);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].key).toBe('06-2026');
+      expect(result[0].label).toBe('June 2026');
     });
   });
 });

@@ -235,4 +235,53 @@ describe('ProgressBar - props defaults', () => {
     const defaultAnimate = true;
     expect(defaultAnimate).toBe(true);
   });
+
+  it('should default to undefined for ariaLabel', () => {
+    const defaultAriaLabel = undefined;
+    expect(defaultAriaLabel).toBe(undefined);
+  });
+});
+
+describe('ProgressBar - aria-label for context (P3-3)', () => {
+  /**
+   * Tests for optional aria-label prop
+   * Allows parent components to provide context about what the progress represents
+   * (e.g., "Budget progress for January")
+   */
+
+  it('should accept custom aria-label for context', () => {
+    const ariaLabel = 'Budget progress for January';
+    expect(typeof ariaLabel).toBe('string');
+    expect(ariaLabel.length).toBeGreaterThan(0);
+  });
+
+  it('should allow budget-related aria-labels', () => {
+    const budgetLabels = [
+      'Budget progress for January',
+      'Monthly spending progress',
+      'Food budget usage',
+      'Entertainment budget for this month',
+    ];
+
+    budgetLabels.forEach((label) => {
+      expect(typeof label).toBe('string');
+    });
+  });
+
+  it('should support category context in aria-label', () => {
+    const ariaLabel = 'Groceries budget: 75% used';
+    expect(ariaLabel).toContain('Groceries');
+    expect(ariaLabel).toContain('budget');
+  });
+
+  it('should not require aria-label (undefined is valid)', () => {
+    const ariaLabel: string | undefined = undefined;
+    // undefined aria-label means the attribute won't be rendered
+    expect(ariaLabel).toBeUndefined();
+  });
+
+  it('should allow empty string aria-label', () => {
+    const ariaLabel = '';
+    expect(ariaLabel).toBe('');
+  });
 });

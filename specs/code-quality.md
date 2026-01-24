@@ -102,11 +102,18 @@
 - [ ] **Issue:** TransactionSummaryCards has loading prop support but it's never passed
 - **Action:** Add loading state during data fetching for better UX
 
-**P2-2: Hardcoded Currency**
+**P2-2: Hardcoded Currency** ✅ FIXED
 
 - **Location:** `/home/ivan/works/k2-expenses-G8m/src/pages/transactions/index.astro`
-- [ ] **Issue:** Currency is hardcoded as "IDR" instead of using user's preference
+- [x] **Issue:** Currency is hardcoded as "IDR" instead of using user's preference
 - **Action:** Use user.currency or user settings for currency preference
+
+**Implementation Notes:**
+
+- Added `userService.getSettings(user.id)` call to fetch user settings
+- Replaced hardcoded `'IDR'` with `userCurrency` from user settings
+- Updated both SSR data object and `TransactionSummaryCards` component prop
+- User's `primaryCurrency` preference from `user_settings` table is now respected
 
 **P2-3: Store File Not Used**
 
@@ -114,17 +121,35 @@
 - [ ] **Issue:** Store exports functions that are never imported/used
 - **Action:** Either remove the file or implement client-side enhancement (kept for future use)
 
-**P3-1: Extract Month Navigation Logic to Utility**
+**P3-1: Extract Month Navigation Logic to Utility** ✅ FIXED
 
 - **Location:** `/home/ivan/works/k2-expenses-G8m/src/pages/transactions/index.astro`
-- [ ] **Issue:** Month extraction logic could be in a reusable utility
+- [x] **Issue:** Month extraction logic could be in a reusable utility
 - **Action:** Create `extractAvailableMonths()` in `@/lib/utils/date.ts`
 
-**P3-2: Use `<button>` Instead of `<a>` for Filters**
+**Implementation Notes:**
+
+- Created `extractAvailableMonths<T>()` generic function in `src/lib/utils/date.ts`
+- Exported `AvailableMonth` interface for type safety
+- Function accepts any array with `transaction_date` field (Date or string)
+- Returns unique months sorted chronologically (oldest first)
+- Updated `transactions/index.astro` to use the new utility
+- 7 unit tests added covering all edge cases
+
+**P3-2: Use `<button>` Instead of `<a>` for Filters** ✅ FIXED
 
 - **Location:** `/home/ivan/works/k2-expenses-G8m/src/components/organisms/TransactionFiltersBar.astro`
-- [ ] **Issue:** Type filter uses `<a>` elements with `role="button"` causing semantic confusion
+- [x] **Issue:** Type filter uses `<a>` elements with `role="button"` causing semantic confusion
 - **Action:** Consider using `<button>` elements with form submission for true progressive enhancement
+
+**Implementation Notes:**
+
+- Changed type filter from `<a>` elements to `<button type="button">` elements
+- Removed `role="button"` (no longer needed with real buttons)
+- Added `data-filter-url` attribute for progressive enhancement (navigation)
+- Updated click handlers to update hidden input, aria-pressed states, and dispatch filterChange event
+- Native keyboard support (Enter/Space) is now handled by browser
+- 23 unit tests added in new `TransactionFiltersBar.test.ts` file
 
 **P3-1: Component Could Use Design Token for Spacing**
 
@@ -367,11 +392,20 @@
 
 ### Non-Blocking Feedback from Code Review (Code Quality Session 3)
 
-**P2-1: SpendingChart - Theme Observer Doesn't Listen for System Preference Changes**
+**P2-1: SpendingChart - Theme Observer Doesn't Listen for System Preference Changes** ✅ FIXED
 
 - **Location:** `/home/ivan/works/expenses/src/components/organisms/SpendingChart.astro`
-- [ ] **Issue:** Observer only watches `data-theme` attribute. When no theme is explicitly set and user changes system preference, chart tooltips won't update
+- [x] **Issue:** Observer only watches `data-theme` attribute. When no theme is explicitly set and user changes system preference, chart tooltips won't update
 - **Action:** Add media query listener for `prefers-color-scheme` changes when no explicit theme is set
+
+**Implementation Notes:**
+
+- Added `systemThemeMediaQuery` variable to store media query reference
+- Created `handleSystemThemeChange()` function that only updates when no explicit theme is set
+- Added `matchMedia('(prefers-color-scheme: dark)')` listener in `initThemeObserver()`
+- Proper cleanup: `removeEventListener` called in `cleanupCharts()` to prevent memory leaks
+- Combined logic: explicit theme takes priority over system preference
+- 8 unit tests added covering system preference detection and combined logic
 
 **P2-2: Budget Page - Unused Helper Functions Duplicating Server Logic**
 
@@ -392,8 +426,16 @@
 - Updated h3 id attribute to use uniqueId
 - 9 unit tests added covering unique ID generation and behavior
 
-**P3-3: ProgressBar - Consider Adding aria-label for Context**
+**P3-3: ProgressBar - Consider Adding aria-label for Context** ✅ FIXED
 
 - **Location:** `/home/ivan/works/expenses/src/components/atoms/ProgressBar.astro`
-- [ ] **Issue:** While `aria-valuetext` helps, an optional `aria-label` prop would allow fuller context
+- [x] **Issue:** While `aria-valuetext` helps, an optional `aria-label` prop would allow fuller context
 - **Action:** Add optional `ariaLabel` prop for parent components to provide context (e.g., "Budget progress for January")
+
+**Implementation Notes:**
+
+- Added optional `ariaLabel?: string` prop to Props interface
+- Added `aria-label={ariaLabel}` to progressbar element
+- When undefined, attribute is not rendered (browser handles this correctly)
+- Updated JSDoc documentation to describe the new prop
+- 5 unit tests added covering aria-label prop behavior

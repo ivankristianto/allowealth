@@ -14,18 +14,23 @@ import TransactionFiltersBar from '@/components/organisms/TransactionFiltersBar.
 import DeleteConfirmationModal from '@/components/organisms/DeleteConfirmationModal.astro';
 import { Receipt, RotateCcw } from '@lucide/astro';
 import type { TransactionOutput } from '@/lib/types/transaction';
-import { transactionService, categoryService } from '@/services';
+import { transactionService, categoryService, userService } from '@/services';
 import {
   parseMonthKey,
   formatMonthKey,
   getCurrentMonthKey,
   createMonthKey,
   safeParseAmount,
+  extractAvailableMonths,
 } from '@/lib/utils';
 import { PAGINATION } from '@/lib/constants/pagination';
 
 const user = Astro.locals.user!;
 const currentPath = '/transactions';
+
+// Get user settings for currency preference
+const userSettings = await userService.getSettings(user.id);
+const userCurrency = userSettings.primaryCurrency;
 
 // Get query parameters for filtering
 const url = new URL(Astro.url);
@@ -105,22 +110,9 @@ const allUserTransactions = await transactionService.findAll({
   limit: PAGINATION.MAX_MONTH_TRANSACTIONS,
 });
 
-// Build available months list from transactions
-// Key: MM-YYYY (for API), Label: MMMM YYYY (for display)
-const monthMap = new Map<string, string>();
-allUserTransactions.forEach((t: any) => {
-  const date = new Date(t.transaction_date);
-  const key = createMonthKey(date);
-  const label = formatMonthKey(key);
-  monthMap.set(key, label);
-});
-
-// Sort months chronologically
-const availableMonths = Array.from(monthMap.keys()).sort((a, b) => {
-  const [monthA, yearA] = a.split('-').map(Number);
-  const [monthB, yearB] = b.split('-').map(Number);
-  return yearA !== yearB ? yearA - yearB : monthA - monthB;
-});
+// Extract available months using utility function
+const availableMonthsWithLabels = extractAvailableMonths(allUserTransactions);
+const availableMonths = availableMonthsWithLabels.map((m) => m.key);
 
 // Current month key - prefer latest available month, fallback to today's month
 const currentMonthKey = availableMonths[availableMonths.length - 1] || todayMonthKey;
@@ -159,13 +151,6 @@ const buildBaseUrl = () => {
 
 const baseUrl = buildBaseUrl();
 
-// Build available months with keys for client-side use
-// Key: MM-YYYY (for API), Label: MMMM YYYY (for display)
-const availableMonthsWithKeys = availableMonths.map((key) => ({
-  key,
-  label: monthMap.get(key) || key,
-}));
-
 // Serialize SSR data for client-side hydration
 const ssrData = {
   transactions,
@@ -192,8 +177,8 @@ const ssrData = {
   },
   currentMonth: currentMonthKey,
   categories: categories.map((c) => ({ id: c.id, name: c.name, type: c.type })),
-  availableMonths: availableMonthsWithKeys,
-  currency: 'IDR' as const,
+  availableMonths: availableMonthsWithLabels,
+  currency: userCurrency,
 };
 ---
 
@@ -209,7 +194,7 @@ const ssrData = {
       monthlyExpenses={monthlyExpenses}
       transactionCount={expenseCount}
       periodLabel={formatMonthKey(effectiveMonth)}
-      currency="IDR"
+      currency={userCurrency}
     />
 
     <!-- Filters & Transaction List -->
@@ -225,7 +210,7 @@ const ssrData = {
         categories={categories}
         showCategoryFilter={true}
         monthSelector={true}
-        availableMonths={availableMonthsWithKeys}
+        availableMonths={availableMonthsWithLabels}
         selectedMonth={selectedMonth || currentMonthKey}
         currentMonth={currentMonthKey}
         baseUrl={baseUrl}

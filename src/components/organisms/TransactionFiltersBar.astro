@@ -123,32 +123,32 @@ const currentMonthLabel =
       id="type-filter-group"
       data-filter-type-group
     >
-      <a
-        href={buildFilterUrl({ type: 'expense' })}
+      <button
+        type="button"
         class={`px-6 py-2.5 text-xs font-bold rounded-xl transition-all focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2 ${
           typeFilter === 'expense'
             ? 'bg-base-100 shadow text-primary'
             : 'text-base-content/50 hover:text-base-content/70'
         }`}
         data-filter-type="expense"
+        data-filter-url={buildFilterUrl({ type: 'expense' })}
         aria-pressed={typeFilter === 'expense'}
-        role="button"
       >
         Expenses
-      </a>
-      <a
-        href={buildFilterUrl({ type: 'income' })}
+      </button>
+      <button
+        type="button"
         class={`px-6 py-2.5 text-xs font-bold rounded-xl transition-all focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2 ${
           typeFilter === 'income'
             ? 'bg-base-100 shadow text-primary'
             : 'text-base-content/50 hover:text-base-content/70'
         }`}
         data-filter-type="income"
+        data-filter-url={buildFilterUrl({ type: 'income' })}
         aria-pressed={typeFilter === 'income'}
-        role="button"
       >
         Income
-      </a>
+      </button>
     </div>
 
     <!-- Category Filter (Multi-select with search) -->
@@ -483,14 +483,45 @@ const currentMonthLabel =
     });
   }
 
-  // Handle keyboard navigation for type filter buttons
-  document.addEventListener('keydown', (e) => {
-    if (e.target instanceof HTMLElement && e.target.hasAttribute('data-filter-type')) {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        e.target.click();
+  // Handle type filter button clicks
+  document.querySelectorAll<HTMLButtonElement>('[data-filter-type]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const filterType = btn.dataset.filterType;
+      const filterUrl = btn.dataset.filterUrl;
+      const hiddenInput = document.getElementById('type-filter-hidden') as HTMLInputElement;
+
+      // Update hidden input
+      if (hiddenInput && filterType) {
+        hiddenInput.value = filterType;
       }
-    }
+
+      // Update aria-pressed states on all buttons
+      document.querySelectorAll('[data-filter-type]').forEach((b) => {
+        b.setAttribute(
+          'aria-pressed',
+          b.getAttribute('data-filter-type') === filterType ? 'true' : 'false'
+        );
+
+        // Update visual styles
+        const isActive = b.getAttribute('data-filter-type') === filterType;
+        b.classList.toggle('bg-base-100', isActive);
+        b.classList.toggle('shadow', isActive);
+        b.classList.toggle('text-primary', isActive);
+        b.classList.toggle('text-base-content/50', !isActive);
+      });
+
+      // Dispatch custom event for client-side handling
+      window.dispatchEvent(
+        new CustomEvent('filterChange', {
+          detail: { type: 'type', value: filterType },
+        })
+      );
+
+      // Navigate to filtered URL for progressive enhancement
+      if (filterUrl) {
+        window.location.href = filterUrl;
+      }
+    });
   });
 
   // Handle category option clicks (multi-select)
@@ -583,14 +614,6 @@ const currentMonthLabel =
       updateResetButtonVisibility();
     });
   }
-
-  // Listen for type filter changes to update reset button
-  document.querySelectorAll('[data-filter-type]').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      // Small delay to let the UI update
-      setTimeout(updateResetButtonVisibility, 50);
-    });
-  });
 
   // Initialize on load
   initCategorySelection();

@@ -245,6 +245,7 @@ const chartId = `spending-chart-${Math.random().toString(36).slice(2, 11)}`;
   // Store observer reference for cleanup
   let chartObserver: IntersectionObserver | null = null;
   let themeObserver: MutationObserver | null = null;
+  let systemThemeMediaQuery: MediaQueryList | null = null;
 
   /**
    * Cleanup all chart instances and observer
@@ -276,6 +277,24 @@ const chartId = `spending-chart-${Math.random().toString(36).slice(2, 11)}`;
       themeObserver.disconnect();
       themeObserver = null;
     }
+
+    // Remove system preference listener
+    if (systemThemeMediaQuery) {
+      systemThemeMediaQuery.removeEventListener('change', handleSystemThemeChange);
+      systemThemeMediaQuery = null;
+    }
+  }
+
+  /**
+   * Handle system theme preference change
+   * Called when user changes system preference (light/dark mode)
+   */
+  function handleSystemThemeChange(): void {
+    // Only update if no explicit theme is set
+    const explicitTheme = document.documentElement.getAttribute('data-theme');
+    if (!explicitTheme) {
+      updateChartThemeColors();
+    }
   }
 
   /**
@@ -306,6 +325,7 @@ const chartId = `spending-chart-${Math.random().toString(36).slice(2, 11)}`;
 
   /**
    * Initialize theme observer to watch for data-theme attribute changes
+   * and system preference changes via prefers-color-scheme media query
    */
   function initThemeObserver(): void {
     // Cleanup existing observer
@@ -313,6 +333,7 @@ const chartId = `spending-chart-${Math.random().toString(36).slice(2, 11)}`;
       themeObserver.disconnect();
     }
 
+    // Watch for explicit data-theme attribute changes
     themeObserver = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
         if (mutation.type === 'attributes' && mutation.attributeName === 'data-theme') {
@@ -325,6 +346,12 @@ const chartId = `spending-chart-${Math.random().toString(36).slice(2, 11)}`;
       attributes: true,
       attributeFilter: ['data-theme'],
     });
+
+    // Watch for system preference changes (when no explicit theme is set)
+    if (window.matchMedia) {
+      systemThemeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      systemThemeMediaQuery.addEventListener('change', handleSystemThemeChange);
+    }
   }
 
   /**
