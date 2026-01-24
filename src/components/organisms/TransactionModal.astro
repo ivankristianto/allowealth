@@ -70,16 +70,19 @@ const {
 
 <script>
   // Override cancel button to close modal instead of navigating
-  document.querySelectorAll('[data-modal-container]').forEach((container) => {
-    const id = container.getAttribute('data-id');
-    if (!id) return;
+  // Wrap in IIFE to isolate scope when multiple modals are rendered
+  (function () {
+    document.querySelectorAll('[data-modal-container]').forEach((container) => {
+      const id = container.getAttribute('data-id');
+      if (!id) return;
 
-    const modal = document.getElementById(id) as HTMLDialogElement | null;
-    const cancelButton = modal?.querySelector('a[href="#"]');
+      const modal = document.getElementById(id) as HTMLDialogElement | null;
+      const cancelButton = modal?.querySelector('a[href="#"]');
 
-    cancelButton?.addEventListener('click', (e: Event) => {
-      e.preventDefault();
-      modal?.close();
+      cancelButton?.addEventListener('click', (e: Event) => {
+        e.preventDefault();
+        modal?.close();
+      });
     });
-  });
+  })();
 </script>

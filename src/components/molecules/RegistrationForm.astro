@@ -34,21 +34,7 @@
  *    - Flexible: Each page can customize API behavior without modifying the component
  *    - Progressive: Pages can start with simulated behavior, then add real API calls
  *
- * @example
- * ```astro
- * // In your page component:
- * <RegistrationForm />
- *
- * <script>
- *   document.addEventListener('DOMContentLoaded', () => {
- *     const form = document.querySelector('[data-registration-form]');
- *     form.addEventListener('submit', async (e) => {
- *       e.stopImmediatePropagation(); // Prevent default handler
- *       // Your API call logic here...
- *     });
- *   });
- * </script>
- * ```
+ * For implementation examples, see /src/pages/register.astro
  */
 
 import Input from '../atoms/Input.astro';
