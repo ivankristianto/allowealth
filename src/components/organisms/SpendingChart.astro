@@ -275,12 +275,7 @@ const chartId = `spending-chart-${Math.random().toString(36).slice(2, 11)}`;
    * Initialize spending chart with Chart.js
    * Uses Intersection Observer for lazy loading
    */
-  function initSpendingChart(
-    chartId: string,
-    data: SpendingCategory[],
-    colors: string[],
-    overallPercentage: number
-  ): void {
+  function initSpendingChart(chartId: string, data: SpendingCategory[], colors: string[]): void {
     const canvas = document.getElementById(chartId) as HTMLCanvasElement;
     const centerText = document.getElementById(`${chartId}-center-text`);
     const legendContainer = document.getElementById(`${chartId}-legend`);
@@ -530,17 +525,11 @@ const chartId = `spending-chart-${Math.random().toString(36).slice(2, 11)}`;
               const colorsAttr = container
                 .closest('[data-chart-colors]')
                 ?.getAttribute('data-chart-colors');
-              const overallAttr = container
-                .closest('[data-overall-percentage]')
-                ?.getAttribute('data-overall-percentage');
-
-              if (dataAttr && colorsAttr && overallAttr) {
+              if (dataAttr && colorsAttr) {
                 try {
                   const data = JSON.parse(dataAttr) as SpendingCategory[];
                   const colors = JSON.parse(colorsAttr) as string[];
-                  const overallPercentage = parseFloat(overallAttr);
-
-                  initSpendingChart(chartId, data, colors, overallPercentage);
+                  initSpendingChart(chartId, data, colors);
                 } catch (e) {
                   console.warn('Failed to parse chart data:', e);
                 }
