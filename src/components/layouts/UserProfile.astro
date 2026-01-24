@@ -28,10 +28,13 @@ const getUserInitials = () => {
 };
 ---
 
-<div class="p-5 border-t border-base-300 relative" data-profile-dropdown>
+<div
+  class="p-5 border-t border-base-300 relative group-data-[sidebar-collapsed=true]:p-3"
+  data-profile-dropdown
+>
   <button
     type="button"
-    class="w-full flex items-center gap-3 p-4 bg-base-200/80 dark:bg-base-200/50 rounded-2xl border border-base-300 dark:border-base-300/50 transition-all hover:bg-base-200 text-left group"
+    class="w-full flex items-center gap-3 p-4 bg-base-200/80 dark:bg-base-200/50 rounded-2xl border border-base-300 dark:border-base-300/50 transition-all hover:bg-base-200 text-left group group-data-[sidebar-collapsed=true]:justify-center group-data-[sidebar-collapsed=true]:gap-0 group-data-[sidebar-collapsed=true]:p-2"
     data-profile-button
     aria-expanded="false"
     aria-haspopup="menu"
@@ -45,13 +48,13 @@ const getUserInitials = () => {
         <span class="text-xs font-bold">{getUserInitials()}</span>
       </div>
     </div>
-    <div class="flex-1 min-w-0">
+    <div class="flex-1 min-w-0 group-data-[sidebar-collapsed=true]:hidden">
       <p class="text-base font-bold text-base-content truncate">{user?.name || 'User Name'}</p>
       <p class="text-xs text-base-content/60 font-medium tracking-wide truncate">Pro Account</p>
     </div>
     <ChevronDown
       size={20}
-      class="text-base-content/40 transition-transform duration-200 shrink-0"
+      class="text-base-content/40 transition-transform duration-200 shrink-0 group-data-[sidebar-collapsed=true]:hidden"
       data-profile-chevron
       aria-hidden="true"
     />
@@ -60,7 +63,7 @@ const getUserInitials = () => {
   <!-- User Menu Dropdown -->
   <div
     id={menuId}
-    class="absolute bottom-full left-5 right-5 mb-2 bg-base-100 rounded-2xl border border-base-300 shadow-xl z-50 overflow-hidden opacity-0 translate-y-2 pointer-events-none transition-all duration-200 ease-out"
+    class="absolute bottom-full left-5 right-5 mb-2 bg-base-100 rounded-2xl border border-base-300 shadow-xl z-50 overflow-hidden opacity-0 translate-y-2 pointer-events-none transition-all duration-200 ease-out group-data-[sidebar-collapsed=true]:left-1 group-data-[sidebar-collapsed=true]:right-auto group-data-[sidebar-collapsed=true]:w-48"
     data-profile-menu
     role="menu"
     tabindex="-1"

@@ -22,11 +22,18 @@ const { title = 'Finance Manager', currentPath = '/', user } = Astro.props;
 ---
 
 <BaseLayout title={title}>
-  <div class="drawer lg:drawer-open">
+  <div
+    class="drawer lg:drawer-open group transition-none data-[sidebar-ready=true]:transition-all data-[sidebar-ready=true]:duration-300"
+    data-sidebar-root
+    data-sidebar-collapsed="false"
+    data-sidebar-ready="false"
+  >
     <input id="drawer-toggle" type="checkbox" class="drawer-toggle" />
 
     <!-- Page content -->
-    <div class="drawer-content flex flex-col">
+    <div
+      class="drawer-content flex flex-col transition-none data-[sidebar-ready=true]:transition-all data-[sidebar-ready=true]:duration-300"
+    >
       <!-- Header -->
       <Header currentPath={currentPath} user={user} />
 
@@ -40,7 +47,7 @@ const { title = 'Finance Manager', currentPath = '/', user } = Astro.props;
     </div>
 
     <!-- Sidebar navigation -->
-    <div class="drawer-side">
+    <div class="drawer-side overflow-visible z-50">
       <label for="drawer-toggle" aria-label="close sidebar" class="drawer-overlay"></label>
       <Navigation currentPath={currentPath} user={user} />
     </div>
