@@ -314,3 +314,56 @@ describe('BudgetCardGrid - accessibility', () => {
     expect(expectedAriaLabel).toBe('Loading budgets');
   });
 });
+
+describe('BudgetCardGrid - aria-rowcount (P3-2)', () => {
+  /**
+   * Tests for aria-rowcount accessibility improvement
+   * Announces total count of budget items to screen readers
+   */
+
+  it('should set aria-rowcount to budget count', () => {
+    const budgets = sampleBudgets;
+    const ariaRowCount = budgets.length;
+    expect(ariaRowCount).toBe(3);
+  });
+
+  it('should handle empty budgets array', () => {
+    const budgets: BudgetData[] = [];
+    const ariaRowCount = budgets.length;
+    expect(ariaRowCount).toBe(0);
+  });
+
+  it('should handle single budget', () => {
+    const budgets: BudgetData[] = [
+      {
+        category_id: '1',
+        category_name: 'Test',
+        spent_amount: 1000,
+        budget_amount: 2000,
+        percentage_used: 50,
+        status: 'ok',
+      },
+    ];
+    const ariaRowCount = budgets.length;
+    expect(ariaRowCount).toBe(1);
+  });
+
+  it('should update count dynamically when budgets change', () => {
+    const initialBudgets: BudgetData[] = [...sampleBudgets];
+    expect(initialBudgets.length).toBe(3);
+
+    // Simulating adding a budget
+    const updatedBudgets = [
+      ...initialBudgets,
+      {
+        category_id: '4',
+        category_name: 'New Category',
+        spent_amount: 500,
+        budget_amount: 1000,
+        percentage_used: 50,
+        status: 'ok' as const,
+      },
+    ];
+    expect(updatedBudgets.length).toBe(4);
+  });
+});

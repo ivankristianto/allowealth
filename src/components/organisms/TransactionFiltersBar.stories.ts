@@ -1,8 +1,33 @@
 import type { Meta, StoryObj } from '@storybook/html';
+import { chevronLeftIcon, chevronRightIcon, chevronDownIcon } from '@/stories/icons';
 
-const meta: Meta = {
+interface Category {
+  id: string;
+  name: string;
+  type: string;
+}
+
+interface TransactionFiltersBarArgs {
+  typeFilter?: 'income' | 'expense';
+  searchValue?: string;
+  categoryIds?: string[];
+  categories?: Category[];
+  showCategoryFilter?: boolean;
+  monthSelector?: boolean;
+  availableMonths?: Array<{ key: string; label: string }>;
+  selectedMonth?: string;
+  currentMonth?: string;
+  hasActiveFilters?: boolean;
+  hasPrevMonth?: boolean;
+  hasNextMonth?: boolean;
+}
+
+const meta: Meta<TransactionFiltersBarArgs> = {
   title: 'Organisms/TransactionFiltersBar',
   tags: ['autodocs'],
+  parameters: {
+    layout: 'padded',
+  },
   argTypes: {
     typeFilter: {
       control: 'select',
@@ -52,34 +77,11 @@ const escapeAttr = (str: string): string => {
 };
 
 // SVG icons (aria-hidden for decorative icons per design system accessibility guidelines)
+// chevronLeftIcon, chevronRightIcon, chevronDownIcon imported from @/stories/icons
 const searchIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="stroke-current text-base-content/40" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>`;
-const chevronLeftIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="stroke-current" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>`;
-const chevronRightIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="stroke-current" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>`;
-const chevronDownIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="stroke-current text-base-content/40 shrink-0" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>`;
 const tagIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="stroke-current text-base-content/40" aria-hidden="true"><path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z"/><path d="M7 7h.01"/></svg>`;
 const calendarIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="stroke-current text-base-content/40" aria-hidden="true"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>`;
 const resetIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="stroke-current" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>`;
-
-interface Category {
-  id: string;
-  name: string;
-  type: string;
-}
-
-interface TransactionFiltersBarArgs {
-  typeFilter?: 'income' | 'expense';
-  searchValue?: string;
-  categoryIds?: string[];
-  categories?: Category[];
-  showCategoryFilter?: boolean;
-  monthSelector?: boolean;
-  availableMonths?: Array<{ key: string; label: string }>;
-  selectedMonth?: string;
-  currentMonth?: string;
-  hasActiveFilters?: boolean;
-  hasPrevMonth?: boolean;
-  hasNextMonth?: boolean;
-}
 
 type Story = StoryObj<TransactionFiltersBarArgs>;
 

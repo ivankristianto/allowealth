@@ -1,8 +1,21 @@
 import type { Meta, StoryObj } from '@storybook/html';
 
-const meta: Meta = {
+interface TransactionSummaryCardsArgs {
+  monthlyIncome?: number;
+  monthlyExpenses?: number;
+  transactionCount?: number;
+  periodLabel?: string;
+  currency?: 'IDR' | 'USD';
+  loading?: boolean;
+  error?: string;
+}
+
+const meta: Meta<TransactionSummaryCardsArgs> = {
   title: 'Organisms/TransactionSummaryCards',
   tags: ['autodocs'],
+  parameters: {
+    layout: 'padded',
+  },
   argTypes: {
     monthlyIncome: {
       control: 'number',
@@ -65,16 +78,6 @@ const formatCurrency = (amount: number, curr: string): string => {
 const trendingUpIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="stroke-current text-success" aria-hidden="true"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>`;
 const trendingDownIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="stroke-current text-error" aria-hidden="true"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/></svg>`;
 const walletIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="stroke-current text-primary" aria-hidden="true"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></svg>`;
-
-interface TransactionSummaryCardsArgs {
-  monthlyIncome?: number;
-  monthlyExpenses?: number;
-  transactionCount?: number;
-  periodLabel?: string;
-  currency?: 'IDR' | 'USD';
-  loading?: boolean;
-  error?: string;
-}
 
 type Story = StoryObj<TransactionSummaryCardsArgs>;
 

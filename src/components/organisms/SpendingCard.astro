@@ -64,6 +64,9 @@ const progressBarStatus = getProgressBarStatus(status);
 const spentFormatted = formatCurrency(spent, currency);
 const budgetFormatted = formatCurrency(budget, currency, true);
 const remainingFormatted = formatCurrency(remaining, currency);
+
+// Generate unique ID to prevent conflicts when multiple SpendingCards on same page
+const uniqueId = `spending-card-${Math.random().toString(36).slice(2, 11)}`;
 ---
 
 <Card
@@ -74,7 +77,7 @@ const remainingFormatted = formatCurrency(remaining, currency);
   aria-live="polite"
   aria-busy={loading}
   aria-label={loading ? 'Loading spending data...' : undefined}
-  aria-labelledby={!loading && !error ? 'spending-card-title' : undefined}
+  aria-labelledby={!loading && !error ? uniqueId : undefined}
 >
   <div class="flex flex-col gap-6">
     {/* Loading State */}
@@ -115,10 +118,7 @@ const remainingFormatted = formatCurrency(remaining, currency);
                 <StatLabel size="md" color="neutral">
                   MONTHLY SPENDING
                 </StatLabel>
-                <h3
-                  id="spending-card-title"
-                  class="text-3xl font-bold mt-1.5 tracking-tight leading-none"
-                >
+                <h3 id={uniqueId} class="text-3xl font-bold mt-1.5 tracking-tight leading-none">
                   {spentFormatted}
                   <span class="text-base text-base-content/60 font-medium tracking-normal">
                     / {budgetFormatted}

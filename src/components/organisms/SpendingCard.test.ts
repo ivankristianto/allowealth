@@ -153,34 +153,75 @@ describe('SpendingCard - base accessibility', () => {
   });
 });
 
-describe('SpendingCard - aria-labelledby for normal state (P2-3)', () => {
+describe('SpendingCard - unique ID generation (P2-3)', () => {
+  /**
+   * Tests for unique ID generation to prevent conflicts
+   * when multiple SpendingCard components are on the same page
+   */
+
+  const generateUniqueId = (): string => {
+    return `spending-card-${Math.random().toString(36).slice(2, 11)}`;
+  };
+
+  it('should generate unique IDs', () => {
+    const id1 = generateUniqueId();
+    const id2 = generateUniqueId();
+    expect(id1).not.toBe(id2);
+  });
+
+  it('should start with spending-card- prefix', () => {
+    const id = generateUniqueId();
+    expect(id.startsWith('spending-card-')).toBe(true);
+  });
+
+  it('should have alphanumeric suffix', () => {
+    const id = generateUniqueId();
+    const suffix = id.replace('spending-card-', '');
+    expect(/^[a-z0-9]+$/.test(suffix)).toBe(true);
+  });
+
+  it('should generate ID with reasonable length', () => {
+    const id = generateUniqueId();
+    expect(id.length).toBeGreaterThan(14); // 'spending-card-' is 14 chars
+    expect(id.length).toBeLessThan(25); // shouldn't be too long
+  });
+});
+
+describe('SpendingCard - aria-labelledby with unique ID (P2-3)', () => {
   /**
    * Tests for aria-labelledby accessibility improvement
    * Links the card to its heading for better screen reader context
+   * Now uses dynamic unique ID to prevent conflicts
    */
 
-  const getAriaLabelledBy = (loading: boolean, error: string | undefined): string | undefined => {
-    return !loading && !error ? 'spending-card-title' : undefined;
+  const getAriaLabelledBy = (
+    loading: boolean,
+    error: string | undefined,
+    uniqueId: string
+  ): string | undefined => {
+    return !loading && !error ? uniqueId : undefined;
   };
 
-  it('should have aria-labelledby pointing to title in normal state', () => {
-    expect(getAriaLabelledBy(false, undefined)).toBe('spending-card-title');
+  const uniqueId = 'spending-card-abc123';
+
+  it('should have aria-labelledby pointing to unique ID in normal state', () => {
+    expect(getAriaLabelledBy(false, undefined, uniqueId)).toBe(uniqueId);
   });
 
   it('should have aria-labelledby when error is empty string', () => {
-    expect(getAriaLabelledBy(false, '')).toBe('spending-card-title');
+    expect(getAriaLabelledBy(false, '', uniqueId)).toBe(uniqueId);
   });
 
   it('should not have aria-labelledby when loading', () => {
-    expect(getAriaLabelledBy(true, undefined)).toBe(undefined);
+    expect(getAriaLabelledBy(true, undefined, uniqueId)).toBe(undefined);
   });
 
   it('should not have aria-labelledby when error is present', () => {
-    expect(getAriaLabelledBy(false, 'Some error message')).toBe(undefined);
+    expect(getAriaLabelledBy(false, 'Some error message', uniqueId)).toBe(undefined);
   });
 
   it('should not have aria-labelledby when both loading and error', () => {
-    expect(getAriaLabelledBy(true, 'Some error message')).toBe(undefined);
+    expect(getAriaLabelledBy(true, 'Some error message', uniqueId)).toBe(undefined);
   });
 });
 

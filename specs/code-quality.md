@@ -94,12 +94,6 @@
 - Links to `/assets/add` for easy first asset creation
 - 6 unit tests added covering empty state detection
 
-**P2-2: Test Helper Functions Should Verify formatCurrency Consistency**
-
-- **Location:** `/home/ivan/works/expenses/src/components/organisms/NetWorthWidget.test.ts`
-- [ ] **Issue:** Tests duplicate formatIDR/formatUSD instead of verifying against `formatCurrency` utility
-- **Action:** Add test case that verifies component formatting matches `formatCurrency` output
-
 ### Non-Blocking Feedback from Code Review (Tasks 13 & 14)
 
 **P2-1: Loading States Not Used**
@@ -274,23 +268,41 @@
 - Added disabled state styling (opacity-30, cursor-not-allowed, pointer-events-none)
 - Added `FirstMonthDisabled` and `LastMonthDisabled` stories
 
-**P2-1: Meta Type Could Be More Specific**
+**P2-1: Meta Type Could Be More Specific** ✅ FIXED
 
 - **Location:** All three new story files (TransactionSummaryCards, BudgetPageHeader, TransactionFiltersBar)
-- [ ] **Issue:** The `Meta` type is used without type parameters, so argTypes aren't type-checked against Args
+- [x] **Issue:** The `Meta` type is used without type parameters, so argTypes aren't type-checked against Args
 - **Action:** Use `Meta<Args>` for better type safety: `const meta: Meta<TransactionSummaryCardsArgs> = { ... }`
 
-**P2-2: Duplicate Icon Definitions Across Stories**
+**Implementation Notes:**
+
+- Updated all three story files to use typed Meta: `Meta<TransactionSummaryCardsArgs>`, `Meta<BudgetPageHeaderArgs>`, `Meta<TransactionFiltersBarArgs>`
+- Moved interfaces before meta declarations for proper TypeScript compilation
+- Provides better type inference for argTypes
+
+**P2-2: Duplicate Icon Definitions Across Stories** ✅ FIXED
 
 - **Location:** BudgetPageHeader.stories.ts and TransactionFiltersBar.stories.ts
-- [ ] **Issue:** `chevronLeftIcon` and `chevronRightIcon` are defined identically in both files
+- [x] **Issue:** `chevronLeftIcon` and `chevronRightIcon` are defined identically in both files
 - **Action:** Consider creating shared `stories/icons.ts` utility for common SVG icons
 
-**P2-3: Stories Missing Storybook Parameters**
+**Implementation Notes:**
+
+- Created `src/stories/icons.ts` with shared icon definitions
+- Exported `chevronLeftIcon`, `chevronRightIcon`, `chevronDownIcon`
+- Updated BudgetPageHeader.stories.ts and TransactionFiltersBar.stories.ts to import from shared utility
+- Added 19 unit tests for icon consistency and accessibility
+
+**P2-3: Stories Missing Storybook Parameters** ✅ FIXED
 
 - **Location:** All three new story files
-- [ ] **Issue:** Stories could have better presentation with layout and backgrounds parameters
+- [x] **Issue:** Stories could have better presentation with layout and backgrounds parameters
 - **Action:** Add `parameters: { layout: 'padded' }` for better story presentation
+
+**Implementation Notes:**
+
+- Added `parameters: { layout: 'padded' }` to meta object in all three story files
+- Improves story presentation in Storybook UI
 
 ### Non-Blocking Feedback from Code Review (Code Quality Session 2)
 
@@ -341,11 +353,17 @@
 - [ ] **Issue:** Animation timing (1s) and easing hardcoded in CSS
 - **Action:** Consider extracting to `--animation-duration-slow` and `--animation-easing-ease-out`
 
-**P3-2: BudgetCardGrid - Consider aria-rowcount for Large Lists**
+**P3-2: BudgetCardGrid - Consider aria-rowcount for Large Lists** ✅ FIXED
 
 - **Location:** `/home/ivan/works/expenses/src/components/organisms/BudgetCardGrid.astro`
-- [ ] **Issue:** Large grids could benefit from total count announcement
+- [x] **Issue:** Large grids could benefit from total count announcement
 - **Action:** Add `aria-rowcount={budgets.length}` to grid container
+
+**Implementation Notes:**
+
+- Added `aria-rowcount={budgets.length}` to the grid container
+- Announces total number of budget items to screen readers
+- 4 unit tests added covering aria-rowcount behavior
 
 ### Non-Blocking Feedback from Code Review (Code Quality Session 3)
 
@@ -361,11 +379,18 @@
 - [ ] **Issue:** Functions `formatCurrencyClient`, `getStatus`, `getStatusBadgeClasses`, `getProgressColorClass` duplicate server-side logic
 - **Action:** Document why duplication is necessary (client-side cannot import server modules) or consider shared utility
 
-**P2-3: SpendingCard - aria-labelledby ID Could Conflict with Multiple Cards**
+**P2-3: SpendingCard - aria-labelledby ID Could Conflict with Multiple Cards** ✅ FIXED
 
 - **Location:** `/home/ivan/works/expenses/src/components/organisms/SpendingCard.astro`
-- [ ] **Issue:** If multiple SpendingCard components are on same page, they all have same ID (`spending-card-title`)
+- [x] **Issue:** If multiple SpendingCard components are on same page, they all have same ID (`spending-card-title`)
 - **Action:** Generate unique IDs similar to SpendingChart pattern: `spending-card-${Math.random().toString(36).slice(2, 11)}`
+
+**Implementation Notes:**
+
+- Added unique ID generation: `const uniqueId = \`spending-card-${Math.random().toString(36).slice(2, 11)}\``
+- Updated aria-labelledby to use uniqueId instead of hardcoded 'spending-card-title'
+- Updated h3 id attribute to use uniqueId
+- 9 unit tests added covering unique ID generation and behavior
 
 **P3-3: ProgressBar - Consider Adding aria-label for Context**
 

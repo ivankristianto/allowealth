@@ -96,7 +96,12 @@ const gridClasses = [
 {/* Budget grid */}
 {
   !error && !loading && budgets.length > 0 && (
-    <div class={gridClasses} role="list" aria-label="Budget categories">
+    <div
+      class={gridClasses}
+      role="list"
+      aria-label="Budget categories"
+      aria-rowcount={budgets.length}
+    >
       {budgets.map((budget) => (
         <div role="listitem">
           <BudgetCard
