@@ -19,6 +19,7 @@ import {
   Calculator,
   Settings,
   X,
+  ChevronLeft,
 } from '@lucide/astro';
 import type { User } from '@/lib/auth/lucia';
 import UserProfile from './UserProfile.astro';
@@ -67,7 +68,7 @@ const isActive = (href: string) => {
 ---
 
 <aside
-  class="bg-base-100 w-64 min-w-64 h-screen border-r border-base-300 flex flex-col"
+  class="bg-base-100 w-64 min-w-64 h-screen border-r border-base-300 hidden lg:flex flex-col transition-none group-data-[sidebar-ready=true]:transition-all group-data-[sidebar-ready=true]:duration-300 group-data-[sidebar-collapsed=true]:w-20 group-data-[sidebar-collapsed=true]:min-w-20 relative"
   role="navigation"
   aria-label="Main navigation"
 >
@@ -87,20 +88,48 @@ const isActive = (href: string) => {
     </label>
   </div>
 
+  <!-- Floating Collapse Toggle -->
+  <button
+    type="button"
+    class="hidden lg:flex absolute -right-5 top-[55px] w-10 h-10 bg-base-100 border border-base-300 rounded-full items-center justify-center shadow-xl text-neutral hover:text-accent transition-all hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 z-50"
+    data-sidebar-toggle
+    aria-pressed="false"
+    aria-label="Collapse sidebar"
+    title="Collapse sidebar"
+  >
+    <ChevronLeft
+      size={20}
+      class="stroke-current transition-transform duration-300 group-data-[sidebar-collapsed=true]:rotate-180"
+      aria-hidden="true"
+    />
+  </button>
+
   <!-- Brand Logo Section -->
-  <div class="p-8">
-    <a href="/" class="flex items-center gap-3 group" aria-label="FamilyFinance Home">
+  <div
+    class="p-8 flex items-center gap-3 group-data-[sidebar-collapsed=true]:p-4 group-data-[sidebar-collapsed=true]:justify-center group-data-[sidebar-collapsed=true]:gap-0"
+  >
+    <a
+      href="/"
+      class="flex items-center gap-3 group-data-[sidebar-collapsed=true]:gap-0"
+      aria-label="FamilyFinance Home"
+    >
       <div
         class="bg-accent text-accent-content rounded-2xl p-2 shadow-accent-glow transition-transform duration-200 group-hover:scale-105"
       >
         <Wallet size={24} class="stroke-current" aria-hidden="true" />
       </div>
-      <span class="text-xl font-bold tracking-tight text-base-content"> FamilyFinance </span>
+      <span
+        class="text-xl font-bold tracking-tight text-base-content group-data-[sidebar-collapsed=true]:hidden"
+      >
+        FamilyFinance
+      </span>
     </a>
   </div>
 
   <!-- Navigation -->
-  <ul class="menu w-full flex-1 px-4 space-y-2 overflow-y-auto">
+  <ul
+    class="menu w-full flex-1 px-4 space-y-2 overflow-y-auto group-data-[sidebar-collapsed=true]:px-2"
+  >
     {
       navItems.map((item) => {
         const active = isActive(item.href);
@@ -108,7 +137,9 @@ const isActive = (href: string) => {
           <li>
             <a
               href={item.href}
-              class={`relative flex items-center gap-4 py-3 px-5 text-base rounded-xl transition-all duration-200 group border ${
+              title={item.label}
+              aria-label={item.label}
+              class={`relative flex items-center gap-4 py-4 px-5 text-base rounded-xl transition-all duration-200 group border group-data-[sidebar-collapsed=true]:justify-center group-data-[sidebar-collapsed=true]:px-0 group-data-[sidebar-collapsed=true]:gap-0 ${
                 active
                   ? 'bg-accent/10 text-accent font-bold border-accent/20'
                   : 'text-base-content/60 hover:text-base-content font-medium border-transparent'
@@ -122,14 +153,18 @@ const isActive = (href: string) => {
                 }`}
                 aria-hidden="true"
               />
-              <span>{item.label}</span>
+              <span class="group-data-[sidebar-collapsed=true]:hidden">{item.label}</span>
               {active && (
                 <span
-                  class="ml-auto w-2 h-2 bg-accent rounded-full animate-pulse"
+                  class="ml-auto w-2 h-2 bg-accent rounded-full animate-pulse group-data-[sidebar-collapsed=true]:hidden"
                   aria-hidden="true"
                 />
               )}
-              {item.badge && <span class="badge badge-sm badge-accent">{item.badge}</span>}
+              {item.badge && (
+                <span class="badge badge-sm badge-accent group-data-[sidebar-collapsed=true]:hidden">
+                  {item.badge}
+                </span>
+              )}
             </a>
           </li>
         );
@@ -140,3 +175,68 @@ const isActive = (href: string) => {
   <!-- Bottom section - User info -->
   <UserProfile user={user} />
 </aside>
+
+<script>
+  const STORAGE_KEY = 'ff.sidebar.collapsed';
+
+  const initSidebarCollapse = () => {
+    const root = document.querySelector('[data-sidebar-root]');
+    if (!root) return;
+
+    const toggles = document.querySelectorAll('[data-sidebar-toggle]');
+    if (!toggles.length) return;
+
+    let isCollapsed = root.getAttribute('data-sidebar-collapsed') === 'true';
+
+    const applyCollapsedState = () => {
+      root.setAttribute('data-sidebar-collapsed', isCollapsed ? 'true' : 'false');
+      toggles.forEach((toggle) => {
+        toggle.setAttribute('aria-pressed', isCollapsed ? 'true' : 'false');
+        toggle.setAttribute('aria-label', isCollapsed ? 'Expand sidebar' : 'Collapse sidebar');
+        toggle.setAttribute('title', isCollapsed ? 'Expand sidebar' : 'Collapse sidebar');
+        toggle.setAttribute('aria-expanded', isCollapsed ? 'false' : 'true');
+      });
+    };
+
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored !== null) {
+        isCollapsed = stored === 'true';
+      }
+    } catch (error) {
+      console.warn('Sidebar state unavailable', error);
+    }
+
+    applyCollapsedState();
+    if (root.getAttribute('data-sidebar-ready') !== 'true') {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          root.setAttribute('data-sidebar-ready', 'true');
+        });
+      });
+    }
+
+    toggles.forEach((toggle) => {
+      if (!(toggle instanceof HTMLElement)) return;
+      if (toggle.dataset.sidebarBound === 'true') return;
+      toggle.dataset.sidebarBound = 'true';
+      toggle.addEventListener('click', () => {
+        isCollapsed = !isCollapsed;
+        applyCollapsedState();
+        try {
+          localStorage.setItem(STORAGE_KEY, String(isCollapsed));
+        } catch (error) {
+          console.warn('Sidebar state save failed', error);
+        }
+      });
+    });
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initSidebarCollapse, { once: true });
+  } else {
+    initSidebarCollapse();
+  }
+
+  document.addEventListener('astro:page-load', initSidebarCollapse);
+</script>

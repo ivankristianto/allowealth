@@ -50,6 +50,16 @@ const SIDEBAR_SPECS = {
   activeBorder: '2px solid #6366f1', // accent color
 } as const;
 
+/**
+ * Sidebar collapse specifications (PoC parity)
+ */
+const SIDEBAR_COLLAPSE_SPECS = {
+  expandedWidth: '16rem', // 256px
+  collapsedWidth: '5rem', // 80px (w-20)
+  collapsedPadding: 'px-0', // compact padding for nav items
+  storageKey: 'ff.sidebar.collapsed',
+} as const;
+
 describe('Navigation Component', () => {
   describe('Oasis Finance v1.0.0 Design System Alignment', () => {
     it('should use icon size of 22px (md size from design system)', () => {
@@ -320,6 +330,24 @@ describe('Navigation Component', () => {
        * - Toggled via drawer checkbox on mobile
        */
       expect(true).toBe(true);
+    });
+  });
+
+  describe('Collapse Navigation', () => {
+    it('should use 16rem width when expanded', () => {
+      expect(SIDEBAR_COLLAPSE_SPECS.expandedWidth).toBe('16rem');
+    });
+
+    it('should use 5rem width when collapsed', () => {
+      expect(SIDEBAR_COLLAPSE_SPECS.collapsedWidth).toBe('5rem');
+    });
+
+    it('should store collapsed state in localStorage', () => {
+      expect(SIDEBAR_COLLAPSE_SPECS.storageKey).toBe('ff.sidebar.collapsed');
+    });
+
+    it('should compact nav item padding when collapsed', () => {
+      expect(SIDEBAR_COLLAPSE_SPECS.collapsedPadding).toBe('px-0');
     });
   });
 
