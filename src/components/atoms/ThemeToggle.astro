@@ -1,0 +1,136 @@
+---
+/**
+ * ThemeToggle Component
+ *
+ * A floating button that toggles between light and dark themes.
+ * Displays a moon icon in light mode (to switch to dark) and
+ * a sun icon in dark mode (to switch to light).
+ *
+ * @design-system Oasis Finance v1.0.0
+ * @accessibility WCAG 2.1 AA compliant - minimum touch target 44x44px
+ */
+
+import { Moon, Sun } from '@lucide/astro';
+
+interface Props {
+  /** Additional CSS classes */
+  className?: string;
+}
+
+const { className = '' } = Astro.props;
+---
+
+<div class:list={['theme-toggle-wrapper', className]}>
+  <button
+    type="button"
+    id="theme-toggle"
+    class="w-14 h-14 bg-base-100 border border-base-300 shadow-xl rounded-2xl flex items-center justify-center transition-all duration-200 hover:scale-110 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 group"
+    aria-label="Toggle dark mode"
+    title="Toggle dark mode"
+  >
+    <!-- Moon icon - shown in light mode -->
+    <Moon
+      size={24}
+      class="stroke-current text-base-content theme-icon-light transition-transform duration-200 group-hover:rotate-12"
+      aria-hidden="true"
+    />
+    <!-- Sun icon - shown in dark mode -->
+    <Sun
+      size={24}
+      class="stroke-current text-base-content theme-icon-dark hidden transition-transform duration-200 group-hover:rotate-12"
+      aria-hidden="true"
+    />
+  </button>
+</div>
+
+<style>
+  /* Show/hide icons based on theme */
+  :global([data-theme='dark']) .theme-icon-light {
+    display: none;
+  }
+
+  :global([data-theme='dark']) .theme-icon-dark {
+    display: block;
+  }
+
+  :global([data-theme='light']) .theme-icon-light {
+    display: block;
+  }
+
+  :global([data-theme='light']) .theme-icon-dark {
+    display: none;
+  }
+</style>
+
+<script>
+  // Theme toggle functionality
+  function initThemeToggle() {
+    const toggle = document.getElementById('theme-toggle');
+    if (!toggle) return;
+
+    // Get current theme from HTML or localStorage
+    function getCurrentTheme(): 'light' | 'dark' {
+      const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
+      if (savedTheme) return savedTheme;
+
+      // Check system preference
+      if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        return 'dark';
+      }
+      return 'light';
+    }
+
+    // Set theme on document and save to localStorage
+    function setTheme(theme: 'light' | 'dark') {
+      document.documentElement.setAttribute('data-theme', theme);
+      localStorage.setItem('theme', theme);
+      updateAriaLabel(theme);
+    }
+
+    // Update aria-label based on current theme
+    function updateAriaLabel(theme: 'light' | 'dark') {
+      toggle.setAttribute(
+        'aria-label',
+        theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'
+      );
+    }
+
+    // Toggle theme
+    function toggleTheme() {
+      const current = document.documentElement.getAttribute('data-theme') as 'light' | 'dark';
+      const next = current === 'dark' ? 'light' : 'dark';
+      setTheme(next);
+    }
+
+    // Check if theme is already set by BaseLayout's FOUC prevention script
+    const existingTheme = document.documentElement.getAttribute('data-theme') as
+      | 'light'
+      | 'dark'
+      | null;
+    if (existingTheme) {
+      // Theme already set, just update aria-label
+      updateAriaLabel(existingTheme);
+    } else {
+      // No theme set yet, initialize it
+      const initialTheme = getCurrentTheme();
+      setTheme(initialTheme);
+    }
+
+    // Add click listener
+    toggle.addEventListener('click', toggleTheme);
+
+    // Listen for system preference changes
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+      // Only update if user hasn't explicitly set a preference
+      if (!localStorage.getItem('theme')) {
+        setTheme(e.matches ? 'dark' : 'light');
+      }
+    });
+  }
+
+  // Initialize on page load
+  initThemeToggle();
+
+  // Re-initialize on Astro page transitions
+  document.addEventListener('astro:after-swap', initThemeToggle);
+</script>
