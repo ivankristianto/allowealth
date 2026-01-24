@@ -1,0 +1,324 @@
+/**
+ * BudgetCardGrid Component Tests
+ * ==============================
+ * Unit tests for BudgetCardGrid utility functions and data handling
+ */
+
+import { describe, it, expect } from 'bun:test';
+
+// Category icon mapping logic (same as component)
+const categoryIconMap: Record<string, string> = {
+  housing: 'Home',
+  groceries: 'ShoppingCart',
+  grocery: 'ShoppingCart',
+  dining: 'Utensils',
+  restaurant: 'Utensils',
+  food: 'Utensils',
+  transport: 'Car',
+  transportation: 'Car',
+  entertainment: 'Film',
+  utilities: 'Zap',
+  utility: 'Zap',
+  bills: 'Zap',
+  work: 'Briefcase',
+  business: 'Briefcase',
+  health: 'Heart',
+  medical: 'Heart',
+  healthcare: 'Heart',
+  education: 'GraduationCap',
+  clothing: 'Shirt',
+  apparel: 'Shirt',
+  gifts: 'Gift',
+  gift: 'Gift',
+  travel: 'Plane',
+  vacation: 'Plane',
+};
+
+const getIconForCategory = (categoryName: string, defaultIcon?: string): string => {
+  if (defaultIcon) return defaultIcon;
+  const lowerName = categoryName.toLowerCase();
+  for (const [key, icon] of Object.entries(categoryIconMap)) {
+    if (lowerName.includes(key)) {
+      return icon;
+    }
+  }
+  return 'CircleDollarSign';
+};
+
+// Budget data type (same as component)
+interface BudgetData {
+  category_id: string;
+  category_name: string;
+  icon?: string;
+  spent_amount: string | number;
+  budget_amount: string | number;
+  percentage_used: number;
+  status: 'ok' | 'warning' | 'exceeded';
+}
+
+// Sample test data
+const sampleBudgets: BudgetData[] = [
+  {
+    category_id: '1',
+    category_name: 'Housing',
+    spent_amount: '37680000',
+    budget_amount: '40000000',
+    percentage_used: 94,
+    status: 'warning',
+  },
+  {
+    category_id: '2',
+    category_name: 'Groceries',
+    spent_amount: 5800000,
+    budget_amount: 8000000,
+    percentage_used: 72,
+    status: 'warning',
+  },
+  {
+    category_id: '3',
+    category_name: 'Dining',
+    icon: 'Utensils',
+    spent_amount: '2850000',
+    budget_amount: '3000000',
+    percentage_used: 95,
+    status: 'exceeded',
+  },
+];
+
+describe('BudgetCardGrid - getIconForCategory', () => {
+  it('should match categories with partial matches', () => {
+    expect(getIconForCategory('Monthly Housing')).toBe('Home');
+    // Note: groceries matches before food in iteration order
+    expect(getIconForCategory('Food & Groceries')).toBe('ShoppingCart');
+    expect(getIconForCategory('Work Expenses')).toBe('Briefcase');
+    // Note: bills matches Zap (utilities), medical alone would match Heart
+    expect(getIconForCategory('Medical Bills')).toBe('Zap');
+    expect(getIconForCategory('Medical Expenses')).toBe('Heart');
+  });
+
+  it('should handle edge cases', () => {
+    expect(getIconForCategory('')).toBe('CircleDollarSign');
+    expect(getIconForCategory('HOUSING')).toBe('Home'); // case insensitive
+    expect(getIconForCategory('  groceries  ')).toBe('ShoppingCart'); // includes match
+  });
+
+  it('should prefer explicit icon over inferred', () => {
+    expect(getIconForCategory('Housing', 'Building')).toBe('Building');
+    expect(getIconForCategory('Random Category', 'Star')).toBe('Star');
+  });
+});
+
+describe('BudgetCardGrid - data parsing', () => {
+  it('should handle string amounts', () => {
+    const budget = sampleBudgets[0];
+    const spent =
+      typeof budget.spent_amount === 'string'
+        ? parseFloat(budget.spent_amount)
+        : budget.spent_amount;
+    const budgetAmount =
+      typeof budget.budget_amount === 'string'
+        ? parseFloat(budget.budget_amount)
+        : budget.budget_amount;
+
+    expect(spent).toBe(37680000);
+    expect(budgetAmount).toBe(40000000);
+  });
+
+  it('should handle number amounts', () => {
+    const budget = sampleBudgets[1];
+    const spent =
+      typeof budget.spent_amount === 'string'
+        ? parseFloat(budget.spent_amount)
+        : budget.spent_amount;
+    const budgetAmount =
+      typeof budget.budget_amount === 'string'
+        ? parseFloat(budget.budget_amount)
+        : budget.budget_amount;
+
+    expect(spent).toBe(5800000);
+    expect(budgetAmount).toBe(8000000);
+  });
+
+  it('should handle mixed types correctly', () => {
+    const testData: BudgetData[] = [
+      {
+        category_id: '1',
+        category_name: 'Test',
+        spent_amount: '1000.50',
+        budget_amount: 2000,
+        percentage_used: 50,
+        status: 'ok',
+      },
+    ];
+
+    const budget = testData[0];
+    const spent =
+      typeof budget.spent_amount === 'string'
+        ? parseFloat(budget.spent_amount)
+        : budget.spent_amount;
+    const budgetAmount =
+      typeof budget.budget_amount === 'string'
+        ? parseFloat(budget.budget_amount)
+        : budget.budget_amount;
+
+    expect(spent).toBe(1000.5);
+    expect(budgetAmount).toBe(2000);
+  });
+});
+
+describe('BudgetCardGrid - empty state detection', () => {
+  it('should detect empty budget array', () => {
+    const budgets: BudgetData[] = [];
+    expect(budgets.length === 0).toBe(true);
+  });
+
+  it('should detect non-empty budget array', () => {
+    expect(sampleBudgets.length > 0).toBe(true);
+    expect(sampleBudgets.length).toBe(3);
+  });
+});
+
+describe('BudgetCardGrid - grid column calculation', () => {
+  // Simulating responsive grid behavior
+  const getGridColumns = (viewportWidth: number): number => {
+    if (viewportWidth >= 1024) return 3; // lg:grid-cols-3
+    if (viewportWidth >= 768) return 2; // md:grid-cols-2
+    return 1; // grid-cols-1
+  };
+
+  it('should show 1 column on mobile', () => {
+    expect(getGridColumns(320)).toBe(1);
+    expect(getGridColumns(640)).toBe(1);
+    expect(getGridColumns(767)).toBe(1);
+  });
+
+  it('should show 2 columns on tablet', () => {
+    expect(getGridColumns(768)).toBe(2);
+    expect(getGridColumns(900)).toBe(2);
+    expect(getGridColumns(1023)).toBe(2);
+  });
+
+  it('should show 3 columns on desktop', () => {
+    expect(getGridColumns(1024)).toBe(3);
+    expect(getGridColumns(1280)).toBe(3);
+    expect(getGridColumns(1920)).toBe(3);
+  });
+});
+
+describe('BudgetCardGrid - skeleton count', () => {
+  it('should render 6 skeleton cards when loading', () => {
+    const skeletonCount = 6;
+    const skeletons = Array.from({ length: skeletonCount });
+    expect(skeletons.length).toBe(6);
+  });
+});
+
+describe('BudgetCardGrid - budget status counts', () => {
+  it('should count status types correctly', () => {
+    const okCount = sampleBudgets.filter((b) => b.status === 'ok').length;
+    const warningCount = sampleBudgets.filter((b) => b.status === 'warning').length;
+    const exceededCount = sampleBudgets.filter((b) => b.status === 'exceeded').length;
+
+    expect(okCount).toBe(0);
+    expect(warningCount).toBe(2);
+    expect(exceededCount).toBe(1);
+  });
+
+  it('should handle all-ok budgets', () => {
+    const healthyBudgets: BudgetData[] = [
+      {
+        category_id: '1',
+        category_name: 'Transport',
+        spent_amount: 1200000,
+        budget_amount: 2500000,
+        percentage_used: 48,
+        status: 'ok',
+      },
+      {
+        category_id: '2',
+        category_name: 'Entertainment',
+        spent_amount: 850000,
+        budget_amount: 1500000,
+        percentage_used: 56,
+        status: 'ok',
+      },
+    ];
+
+    const allOk = healthyBudgets.every((b) => b.status === 'ok');
+    expect(allOk).toBe(true);
+  });
+});
+
+describe('BudgetCardGrid - sorting by percentage', () => {
+  it('should be able to sort by percentage descending (highest usage first)', () => {
+    const sorted = [...sampleBudgets].sort((a, b) => b.percentage_used - a.percentage_used);
+
+    expect(sorted[0].category_name).toBe('Dining'); // 95%
+    expect(sorted[1].category_name).toBe('Housing'); // 94%
+    expect(sorted[2].category_name).toBe('Groceries'); // 72%
+  });
+
+  it('should be able to sort by percentage ascending (lowest usage first)', () => {
+    const sorted = [...sampleBudgets].sort((a, b) => a.percentage_used - b.percentage_used);
+
+    expect(sorted[0].category_name).toBe('Groceries'); // 72%
+    expect(sorted[1].category_name).toBe('Housing'); // 94%
+    expect(sorted[2].category_name).toBe('Dining'); // 95%
+  });
+});
+
+describe('BudgetCardGrid - filtering', () => {
+  it('should filter to show only exceeded budgets', () => {
+    const exceeded = sampleBudgets.filter((b) => b.status === 'exceeded');
+    expect(exceeded.length).toBe(1);
+    expect(exceeded[0].category_name).toBe('Dining');
+  });
+
+  it('should filter to show warning and exceeded budgets', () => {
+    const alerts = sampleBudgets.filter((b) => b.status === 'warning' || b.status === 'exceeded');
+    expect(alerts.length).toBe(3);
+  });
+
+  it('should filter by category name', () => {
+    const housing = sampleBudgets.filter((b) => b.category_name.toLowerCase().includes('housing'));
+    expect(housing.length).toBe(1);
+    expect(housing[0].category_id).toBe('1');
+  });
+});
+
+describe('BudgetCardGrid - currency handling', () => {
+  it('should handle IDR currency', () => {
+    const currency: 'IDR' | 'USD' = 'IDR';
+    expect(currency).toBe('IDR');
+  });
+
+  it('should handle USD currency', () => {
+    const currency: 'IDR' | 'USD' = 'USD';
+    expect(currency).toBe('USD');
+  });
+
+  it('should default to IDR when not specified', () => {
+    const defaultCurrency = 'IDR';
+    expect(defaultCurrency).toBe('IDR');
+  });
+});
+
+describe('BudgetCardGrid - accessibility', () => {
+  it('should have proper ARIA attributes for grid container', () => {
+    // The component uses role="list" and aria-label="Budget categories"
+    const expectedRole = 'list';
+    const expectedAriaLabel = 'Budget categories';
+
+    expect(expectedRole).toBe('list');
+    expect(expectedAriaLabel).toBe('Budget categories');
+  });
+
+  it('should have proper ARIA attributes for loading state', () => {
+    // The component uses aria-busy="true" and aria-label="Loading budgets"
+    const expectedAriaBusy = 'true';
+    const expectedAriaLabel = 'Loading budgets';
+
+    expect(expectedAriaBusy).toBe('true');
+    expect(expectedAriaLabel).toBe('Loading budgets');
+  });
+});

@@ -1,0 +1,125 @@
+---
+/**
+ * BudgetPageHeader Component
+ *
+ * Header section for the Budget page with title, month navigation,
+ * and action buttons.
+ * Part of the premium Budget page redesign (Task 16).
+ *
+ * @param {string} title - Main heading (default: "Family Spending Targets")
+ * @param {string} subtitle - Description text
+ * @param {number} budgetCount - Number of budget categories being tracked
+ * @param {string} currentMonth - Display name for current month (e.g., "January 2024")
+ * @param {string} prevMonthUrl - URL for previous month navigation
+ * @param {string} nextMonthUrl - URL for next month navigation
+ * @param {boolean} isNextDisabled - Disable next month button (future months)
+ * @param {string} newBudgetUrl - URL for "Set New Budget" button
+ * @param {boolean} showAiRebalancer - Show AI Rebalancer button
+ * @param {string} className - Additional CSS classes
+ */
+
+import { Sparkles, ChevronLeft, ChevronRight } from '@lucide/astro';
+
+export interface Props {
+  title?: string;
+  subtitle?: string;
+  budgetCount?: number;
+  currentMonth: string;
+  prevMonthUrl: string;
+  nextMonthUrl?: string;
+  isNextDisabled?: boolean;
+  newBudgetUrl?: string;
+  showAiRebalancer?: boolean;
+  onAiRebalancerClick?: string;
+  className?: string;
+}
+
+const {
+  title = 'Family Spending Targets',
+  subtitle,
+  budgetCount = 0,
+  currentMonth,
+  prevMonthUrl,
+  nextMonthUrl,
+  isNextDisabled = false,
+  newBudgetUrl = '/settings/categories',
+  showAiRebalancer = true,
+  className = '',
+} = Astro.props;
+
+// Generate dynamic subtitle if not provided
+const displaySubtitle =
+  subtitle ||
+  (budgetCount > 0
+    ? `Monitoring ${budgetCount} critical expense categories for our household.`
+    : 'Set up spending limits to track your budget.');
+
+const headerClasses = [
+  'flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6',
+  className,
+]
+  .filter(Boolean)
+  .join(' ');
+---
+
+<header class={headerClasses}>
+  {/* Title and subtitle */}
+  <div>
+    <h1 class="text-2xl font-bold text-base-content tracking-tight leading-none">{title}</h1>
+    <p class="text-sm text-base-content/60 mt-2 font-medium">{displaySubtitle}</p>
+  </div>
+
+  {/* Actions: AI Rebalancer, Month Navigation, Set New Budget */}
+  <div class="flex flex-wrap items-center gap-3">
+    {/* AI Rebalancer Button */}
+    {
+      showAiRebalancer && (
+        <button
+          type="button"
+          class="btn btn-accent gap-2 rounded-2xl shadow-md hover:shadow-lg transition-all"
+          data-ai-rebalancer
+          aria-label="Open AI budget rebalancer"
+        >
+          <Sparkles size={18} class="stroke-current" aria-hidden="true" />
+          <span>AI Rebalancer</span>
+        </button>
+      )
+    }
+
+    {/* Month Navigation */}
+    <div class="flex items-center gap-1 bg-base-200 rounded-2xl p-1">
+      <a href={prevMonthUrl} class="btn btn-ghost btn-sm btn-circle" aria-label="Previous month">
+        <ChevronLeft size={18} class="stroke-current" aria-hidden="true" />
+      </a>
+
+      <span class="px-4 py-1.5 font-medium text-sm min-w-[140px] text-center text-base-content">
+        {currentMonth}
+      </span>
+
+      {
+        nextMonthUrl && !isNextDisabled ? (
+          <a href={nextMonthUrl} class="btn btn-ghost btn-sm btn-circle" aria-label="Next month">
+            <ChevronRight size={18} class="stroke-current" aria-hidden="true" />
+          </a>
+        ) : (
+          <button
+            type="button"
+            class="btn btn-ghost btn-sm btn-circle"
+            disabled
+            aria-label="Next month (disabled)"
+          >
+            <ChevronRight size={18} class="stroke-current opacity-30" aria-hidden="true" />
+          </button>
+        )
+      }
+    </div>
+
+    {/* Set New Budget Button */}
+    <a
+      href={newBudgetUrl}
+      class="btn btn-outline btn-primary gap-2 rounded-2xl border-2 hover:bg-primary/5"
+    >
+      <span>Set New Budget</span>
+    </a>
+  </div>
+</header>

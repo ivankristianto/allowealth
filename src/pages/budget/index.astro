@@ -3,25 +3,19 @@
  * Budget Overview Page
  *
  * Main budget page showing current month's budget overview.
- * Displays budget table with categories, spending, and alerts.
+ * Displays premium card grid with categories, spending, and progress.
  * Protected by authentication.
+ *
+ * Redesigned as part of Task 15 & 16 (Budget Page - Card Grid & Header).
  */
 
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
-import BudgetOverviewTable from '@components/organisms/BudgetOverviewTable.astro';
+import BudgetCardGrid from '@components/organisms/BudgetCardGrid.astro';
+import BudgetPageHeader from '@components/organisms/BudgetPageHeader.astro';
+import BudgetAdviceBanner from '@components/organisms/BudgetAdviceBanner.astro';
 import { budgetService, type BudgetSummary } from '@/services';
-import Badge from '@components/atoms/Badge.astro';
 import { formatCurrency } from '@/lib/tokens';
-import {
-  TriangleAlert,
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
-  CircleX,
-  Plus,
-  Tag,
-  Info,
-} from '@lucide/astro';
+import { ChevronDown, CircleX, Info } from '@lucide/astro';
 
 const user = Astro.locals.user!;
 const currentPath = '/budget';
@@ -31,23 +25,12 @@ const url = new URL(Astro.request.url);
 const yearParam = url.searchParams.get('year');
 const monthParam = url.searchParams.get('month');
 const currencyParam = url.searchParams.get('currency') as 'IDR' | 'USD' | null;
-const sortByParam = url.searchParams.get('sort') as
-  | 'category'
-  | 'percentage'
-  | 'budget'
-  | 'spent'
-  | 'balance'
-  | 'status'
-  | null;
-const sortOrderParam = url.searchParams.get('order') as 'asc' | 'desc' | null;
 
 // Default to current month if not specified
 const now = new Date();
 const selectedYear = yearParam ? parseInt(yearParam, 10) : now.getFullYear();
 const selectedMonth = monthParam ? parseInt(monthParam, 10) : now.getMonth() + 1;
 const selectedCurrency = currencyParam || 'IDR';
-const sortBy = sortByParam || 'category';
-const sortOrder = sortOrderParam || 'asc';
 
 // Get budget data from service
 let budgetData: BudgetSummary | null = null;
@@ -82,31 +65,16 @@ const monthNames = [
 ];
 
 const currentMonthName = monthNames[selectedMonth - 1];
+const currentMonthDisplay = `${currentMonthName} ${selectedYear}`;
 
-// Build URLs for month navigation (preserves sort order)
+// Build URLs for month navigation
 const buildMonthUrl = (year: number, month: number) => {
   const params = new URLSearchParams();
   params.set('year', year.toString());
   params.set('month', month.toString());
   params.set('currency', selectedCurrency);
-  params.set('sort', sortBy);
-  params.set('order', sortOrder);
   return `/budget?${params.toString()}`;
 };
-
-// Build base URL for sorting (preserves current month, currency, and sort order)
-const buildSortBaseUrl = () => {
-  const params = new URLSearchParams();
-  params.set('year', selectedYear.toString());
-  params.set('month', selectedMonth.toString());
-  params.set('currency', selectedCurrency);
-  params.set('sort', sortBy);
-  params.set('order', sortOrder);
-  // Keep the path as /budget?params so the component can replace with /api/budget/export?
-  return `/budget?${params.toString()}`;
-};
-
-const sortBaseUrl = buildSortBaseUrl();
 
 // Previous and next month
 const prevMonthDate = new Date(selectedYear, selectedMonth - 2, 1);
@@ -124,44 +92,115 @@ const maxMonth = nowDate.getMonth() + 1;
 const isNextMonthInFuture =
   nextMonthYear > maxYear || (nextMonthYear === maxYear && nextMonth > maxMonth);
 
-// Get budget alerts for the current month using budgetService.getAlerts()
+// Get budget alerts for generating advice
 let alerts: Awaited<ReturnType<typeof budgetService.getAlerts>> = [];
 if (budgetData) {
   try {
     alerts = await budgetService.getAlerts(user!.id, selectedCurrency);
   } catch (err) {
     console.error('Error fetching budget alerts:', err);
-    // Fallback to empty array if getAlerts fails
     alerts = [];
   }
 }
+
+// Generate structured advice data based on alerts (XSS-safe)
+interface AdviceData {
+  categoryName: string;
+  status: 'exceeded' | 'warning';
+  amount: string;
+  percentageUsed?: number;
+}
+
+const generateAdviceData = (): AdviceData | null => {
+  if (alerts.length === 0) return null;
+
+  const exceededCategories = alerts.filter((a) => a.status === 'exceeded');
+  const warningCategories = alerts.filter((a) => a.status === 'warning');
+
+  if (exceededCategories.length > 0) {
+    const category = exceededCategories[0];
+    const overage = formatCurrency(category.overage, selectedCurrency);
+    return {
+      categoryName: category.category_name,
+      status: 'exceeded',
+      amount: overage,
+    };
+  }
+
+  if (warningCategories.length > 0) {
+    const category = warningCategories[0];
+    const budgetAmount = parseFloat(category.budget_amount);
+    const spentAmount = parseFloat(category.spent_amount);
+    const percentageUsed = budgetAmount > 0 ? Math.round((spentAmount / budgetAmount) * 100) : 0;
+    const remaining = budgetAmount - spentAmount;
+    const remainingFormatted = formatCurrency(Math.max(0, remaining), selectedCurrency);
+    return {
+      categoryName: category.category_name,
+      status: 'warning',
+      amount: remainingFormatted,
+      percentageUsed,
+    };
+  }
+
+  return null;
+};
+
+const adviceData = generateAdviceData();
 
 // Fetch all categories for the edit modal
 import { categoryService } from '@/services';
 const allCategories = await categoryService.findAll(user!.id, { is_active: true });
 const expenseCategories = allCategories.filter((c) => c.type === 'expense');
+
+// Count budgets with actual limits set
+const budgetCount =
+  budgetData?.categories.filter((c) => parseFloat(c.budget_amount) > 0).length || 0;
 ---
 
 <ProtectedLayout title={`Budget - ${currentMonthName} ${selectedYear}`} currentPath={currentPath}>
   <div
-    class="space-y-6"
+    class="space-y-8"
     data-budget-container
     data-expense-categories={JSON.stringify(expenseCategories)}
+    data-currency={selectedCurrency}
   >
-    {/* Header with month navigation */}
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-      <div class="flex items-center gap-4">
-        <h2 class="text-2xl font-bold">Budget</h2>
+    {/* Premium Header with Month Navigation and Actions */}
+    <BudgetPageHeader
+      title="Family Spending Targets"
+      budgetCount={budgetCount}
+      currentMonth={currentMonthDisplay}
+      prevMonthUrl={buildMonthUrl(prevMonthYear, prevMonth)}
+      nextMonthUrl={!isNextMonthInFuture ? buildMonthUrl(nextMonthYear, nextMonth) : undefined}
+      isNextDisabled={isNextMonthInFuture}
+      newBudgetUrl="/settings/categories"
+      showAiRebalancer={budgetCount > 0}
+    />
+
+    {/* Currency Selector (compact) */}
+    <div class="flex items-center gap-4">
+      <div class="tabs">
+        <a class="tab tab-active" href="/budget">Overview</a>
+        <a class="tab" href="/budget/history">History</a>
+      </div>
+
+      <div class="ml-auto">
         <div class="dropdown dropdown-end">
-          <label tabindex="0" class="btn btn-outline btn-sm gap-2">
+          <button
+            type="button"
+            tabindex="0"
+            class="btn btn-ghost btn-sm gap-2"
+            aria-haspopup="listbox"
+            aria-label="Select currency"
+          >
             <ChevronDown size={16} class="stroke-current" aria-hidden="true" />
             {selectedCurrency}
-          </label>
+          </button>
           <ul
             tabindex="0"
+            role="listbox"
             class="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-32"
           >
-            <li>
+            <li role="option" aria-selected={selectedCurrency === 'IDR'}>
               <a
                 href={`/budget?year=${selectedYear}&month=${selectedMonth}&currency=IDR`}
                 class={selectedCurrency === 'IDR' ? 'active' : ''}
@@ -169,7 +208,7 @@ const expenseCategories = allCategories.filter((c) => c.type === 'expense');
                 IDR
               </a>
             </li>
-            <li>
+            <li role="option" aria-selected={selectedCurrency === 'USD'}>
               <a
                 href={`/budget?year=${selectedYear}&month=${selectedMonth}&currency=USD`}
                 class={selectedCurrency === 'USD' ? 'active' : ''}
@@ -180,35 +219,6 @@ const expenseCategories = allCategories.filter((c) => c.type === 'expense');
           </ul>
         </div>
       </div>
-
-      <div class="flex items-center gap-2">
-        <a
-          href={buildMonthUrl(prevMonthYear, prevMonth)}
-          class="btn btn-ghost btn-sm btn-circle"
-          aria-label="Previous month"
-        >
-          <ChevronLeft size={20} class="stroke-current" aria-hidden="true" />
-        </a>
-
-        <span class="px-4 py-2 bg-base-200 rounded-lg font-medium min-w-[160px] text-center">
-          {currentMonthName}
-          {selectedYear}
-        </span>
-
-        <button
-          class="btn btn-ghost btn-sm btn-circle"
-          disabled={isNextMonthInFuture}
-          aria-label="Next month"
-        >
-          <ChevronRight size={20} class="stroke-current" aria-hidden="true" />
-        </button>
-      </div>
-    </div>
-
-    {/* Tabs */}
-    <div class="tabs">
-      <a class="tab tab-active" href="/budget"> Overview </a>
-      <a class="tab" href="/budget/history"> History </a>
     </div>
 
     {/* Error State */}
@@ -220,96 +230,29 @@ const expenseCategories = allCategories.filter((c) => c.type === 'expense');
         </div>
       ) : (
         <>
-          {/* Budget Alerts Section */}
-          {alerts.length > 0 && (
-            <div class="card bg-base-100 shadow border border-base-300">
-              <div class="card-body">
-                <h3 class="card-title flex items-center gap-2">
-                  <TriangleAlert size={20} class="text-warning" aria-hidden="true" />
-                  Budget Alerts
-                </h3>
-                <div class="overflow-x-auto">
-                  <table class="table table-sm">
-                    <thead>
-                      <tr>
-                        <th>Category</th>
-                        <th>Status</th>
-                        <th class="text-right">Budget</th>
-                        <th class="text-right">Spent</th>
-                        <th class="text-right">Overage</th>
-                        <th />
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {alerts.map((alert) => (
-                        <tr>
-                          <td>
-                            <span class="font-medium">{alert.category_name}</span>
-                          </td>
-                          <td>
-                            <Badge
-                              variant={alert.status === 'exceeded' ? 'error' : 'warning'}
-                              size="sm"
-                            >
-                              {alert.status === 'exceeded' ? 'Exceeded' : 'Warning'}
-                            </Badge>
-                          </td>
-                          <td class="text-right">
-                            {formatCurrency(parseFloat(alert.budget_amount), selectedCurrency)}
-                          </td>
-                          <td class="text-right">
-                            {formatCurrency(parseFloat(alert.spent_amount), selectedCurrency)}
-                          </td>
-                          <td class="text-right">
-                            {Number(alert.overage) > 0 && (
-                              <span class="text-error font-semibold">
-                                +{formatCurrency(alert.overage, selectedCurrency)}
-                              </span>
-                            )}
-                          </td>
-                          <td>
-                            <a
-                              href={`/transactions?category_id=${alert.category_id}`}
-                              class="btn btn-ghost btn-xs"
-                            >
-                              View
-                            </a>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          )}
+          {/* Budget Card Grid */}
+          <BudgetCardGrid
+            budgets={budgetData?.categories || []}
+            currency={selectedCurrency}
+            loading={false}
+          />
 
-          {/* Budget Overview Table */}
-          {budgetData && (
-            <BudgetOverviewTable
-              summary={budgetData}
-              currency={selectedCurrency}
-              sortBy={sortBy}
-              sortOrder={sortOrder}
-              baseUrl={sortBaseUrl}
-              enableEdit={true}
+          {/* AI Advice Banner */}
+          {adviceData && (
+            <BudgetAdviceBanner
+              categoryName={adviceData.categoryName}
+              status={adviceData.status}
+              amount={adviceData.amount}
+              percentageUsed={adviceData.percentageUsed}
+              ctaText="Review spending"
+              ctaUrl="/transactions"
+              show={true}
+              dismissible={true}
             />
           )}
         </>
       )
     }
-
-    {/* Quick Actions */}
-    <div class="flex flex-wrap gap-3">
-      <a href="/transactions/add" class="btn btn-primary gap-2">
-        <Plus size={20} class="stroke-current" aria-hidden="true" />
-        Add Expense
-      </a>
-      <a href="/settings/categories" class="btn btn-outline gap-2">
-        <Tag size={20} class="stroke-current" aria-hidden="true" />
-        Manage Categories
-      </a>
-    </div>
   </div>
 </ProtectedLayout>
 
@@ -375,8 +318,8 @@ const expenseCategories = allCategories.filter((c) => c.type === 'expense');
       <div id="quick-edit-form-error" class="hidden alert alert-error text-sm" role="alert"></div>
 
       <div class="modal-action">
-        <button type="button" id="quick-edit-cancel-btn" class="btn btn-ghost"> Cancel </button>
-        <button type="submit" class="btn btn-primary"> Save Changes </button>
+        <button type="button" id="quick-edit-cancel-btn" class="btn btn-ghost">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Changes</button>
       </div>
     </form>
   </div>
@@ -384,3 +327,88 @@ const expenseCategories = allCategories.filter((c) => c.type === 'expense');
     <button>close</button>
   </form>
 </dialog>
+
+<script>
+  // Handle edit budget button clicks from BudgetCard components
+  document.querySelectorAll('[data-edit-budget]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const categoryId = btn.getAttribute('data-edit-budget');
+      if (!categoryId) return;
+
+      const container = document.querySelector('[data-budget-container]');
+      const currency = container?.getAttribute('data-currency') || 'IDR';
+      const categoriesJson = container?.getAttribute('data-expense-categories');
+
+      if (!categoriesJson) return;
+
+      try {
+        const categories = JSON.parse(categoriesJson);
+        const category = categories.find(
+          (c: { id: string; name: string; budget_amount: string }) => c.id === categoryId
+        );
+
+        if (!category) return;
+
+        const modal = document.getElementById('quick-edit-budget-modal') as HTMLDialogElement;
+        const form = document.getElementById('quick-edit-budget-form') as HTMLFormElement;
+
+        if (!modal || !form) return;
+
+        // Populate form fields
+        (form.querySelector('[name="category_id"]') as HTMLInputElement).value = categoryId;
+        (form.querySelector('[name="category-name"]') as HTMLInputElement).value = category.name;
+        (form.querySelector('[name="budget_amount"]') as HTMLInputElement).value =
+          category.budget_amount || '0';
+        (form.querySelector('[name="currency"]') as HTMLInputElement).value = currency;
+
+        modal.showModal();
+      } catch (err) {
+        console.error('Error opening edit modal:', err);
+      }
+    });
+  });
+
+  // Handle cancel button
+  document.getElementById('quick-edit-cancel-btn')?.addEventListener('click', () => {
+    const modal = document.getElementById('quick-edit-budget-modal') as HTMLDialogElement;
+    modal?.close();
+  });
+
+  // Handle form submission
+  document.getElementById('quick-edit-budget-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const form = e.target as HTMLFormElement;
+    const formData = new FormData(form);
+    const categoryId = formData.get('category_id');
+    const budgetAmount = formData.get('budget_amount');
+    const currency = formData.get('currency');
+    const errorDiv = document.getElementById('quick-edit-form-error');
+
+    try {
+      const response = await fetch(`/api/categories/${categoryId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          budget_amount: budgetAmount,
+          currency: currency,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to update budget');
+      }
+
+      // Success - reload page
+      window.location.reload();
+    } catch (err) {
+      if (errorDiv) {
+        errorDiv.textContent = err instanceof Error ? err.message : 'Failed to update budget';
+        errorDiv.classList.remove('hidden');
+      }
+    }
+  });
+</script>
