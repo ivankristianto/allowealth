@@ -58,10 +58,14 @@ const titleId = title ? `${id}-title` : undefined;
   data-modal
   data-backdrop-close={backdropClose ? 'true' : 'false'}
 >
-  <!-- Backdrop -->
+  <!-- Backdrop with blur effect -->
   {
     backdropClose && (
-      <form method="dialog" class="modal-backdrop" data-modal-backdrop>
+      <form
+        method="dialog"
+        class="modal-backdrop backdrop-blur-md bg-base-content/20"
+        data-modal-backdrop
+      >
         <button>Close</button>
       </form>
     )
@@ -69,7 +73,7 @@ const titleId = title ? `${id}-title` : undefined;
 
   <!-- Modal content -->
   <div
-    class:list={['modal-box', sizeClasses[size], 'rounded-box', 'shadow-premium']}
+    class:list={['modal-box', sizeClasses[size], 'rounded-3xl', 'shadow-premium']}
     data-modal-content
   >
     {/* Header */}
@@ -152,18 +156,6 @@ const titleId = title ? `${id}-title` : undefined;
       }
     };
 
-    // Animate backdrop exit
-    const animateBackdropOut = async () => {
-      const backdrop = getBackdrop();
-      if (!backdrop) return;
-
-      if (prefersReducedMotion) {
-        backdrop.style.opacity = '0';
-      } else {
-        await animate(backdrop, { opacity: [1, 0] }, MODAL_ANIMATION_CONFIG.backdrop.options);
-      }
-    };
-
     // Animate content enter
     const animateContentIn = async () => {
       const content = getContent();
@@ -240,8 +232,8 @@ const titleId = title ? `${id}-title` : undefined;
         // Close immediately without animation
         modal.close();
       } else {
-        // Run exit animations
-        await Promise.all([animateBackdropOut(), animateContentOut()]);
+        // Only animate content exit, backdrop closes instantly (no blur transition)
+        await animateContentOut();
 
         // Close the modal after animation completes
         modal.close();

@@ -30,19 +30,11 @@ import type { TransactionOutput } from '@/lib/types/transaction';
 
 export interface Props {
   transaction: TransactionOutput;
-  editUrl?: string;
-  deleteUrl?: string;
   showActions?: boolean;
   className?: string;
 }
 
-const {
-  transaction,
-  editUrl = '',
-  deleteUrl = '',
-  showActions = true,
-  className = '',
-} = Astro.props;
+const { transaction, showActions = true, className = '' } = Astro.props;
 
 const amount = parseFloat(transaction.amount) || 0;
 const isExpense = transaction.type === 'expense';
@@ -201,24 +193,35 @@ const rowClasses = [
 
   <!-- Actions -->
   {
-    showActions && (editUrl || deleteUrl) && (
+    showActions && (
       <div class="flex-shrink-0 flex gap-1">
-        {editUrl && (
-          <a href={editUrl} class="btn btn-ghost btn-sm" aria-label="Edit transaction">
-            <Pencil size={16} class="stroke-current" aria-hidden="true" />
-          </a>
-        )}
-        {deleteUrl && (
-          <button
-            type="button"
-            class="btn btn-ghost btn-sm text-error"
-            aria-label="Delete transaction"
-            data-delete-transaction={transaction.id}
-            data-transaction-details={JSON.stringify(transaction)}
-          >
-            <Trash2 size={16} class="stroke-current" aria-hidden="true" />
-          </button>
-        )}
+        <button
+          type="button"
+          class="btn btn-ghost btn-sm"
+          aria-label="Edit transaction"
+          data-edit-transaction={transaction.id}
+          data-transaction-data={JSON.stringify({
+            id: transaction.id,
+            type: transaction.type,
+            title: transaction.description,
+            amount: transaction.amount,
+            currency: transaction.currency,
+            category_id: transaction.category.id,
+            payment_method_id: transaction.payment_method.id,
+            transaction_date: date.toISOString().split('T')[0],
+          })}
+        >
+          <Pencil size={16} class="stroke-current" aria-hidden="true" />
+        </button>
+        <button
+          type="button"
+          class="btn btn-ghost btn-sm text-error"
+          aria-label="Delete transaction"
+          data-delete-transaction={transaction.id}
+          data-transaction-details={JSON.stringify(transaction)}
+        >
+          <Trash2 size={16} class="stroke-current" aria-hidden="true" />
+        </button>
       </div>
     )
   }
