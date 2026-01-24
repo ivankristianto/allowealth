@@ -241,8 +241,10 @@ const getPageTitle = (path: string) => {
 
     <!-- New Entry Button -->
     <button
+      id="new-entry-button"
       class="bg-accent hover:bg-accent-hover text-white px-4 sm:px-6 py-2.5 rounded-2xl flex items-center gap-2 font-bold shadow-xl shadow-accent/20 transition-all active:scale-95 text-base"
-      aria-label="Add new entry"
+      aria-label="Add new expense"
+      data-open-modal="expense"
     >
       <Plus size={20} class="stroke-current" aria-hidden="true" />
       <span class="hidden sm:inline">New Entry</span>
@@ -300,6 +302,26 @@ const getPageTitle = (path: string) => {
       !notificationButton.contains(e.target as Node)
     ) {
       closeNotifications();
+    }
+  });
+
+  // New Entry button - opens expense modal
+  const newEntryButton = document.getElementById('new-entry-button');
+  newEntryButton?.addEventListener('click', () => {
+    const modalType = newEntryButton.getAttribute('data-open-modal') || 'expense';
+
+    // Try to open modal directly if it exists
+    const modal = document.getElementById(`${modalType}-modal`) as HTMLDialogElement | null;
+    if (modal) {
+      modal.showModal();
+    } else {
+      // Dispatch custom event for pages without embedded modal
+      document.dispatchEvent(
+        new CustomEvent('open-transaction-modal', {
+          detail: { type: modalType },
+          bubbles: true,
+        })
+      );
     }
   });
 </script>

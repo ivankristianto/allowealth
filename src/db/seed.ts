@@ -59,10 +59,19 @@ function daysAgo(days: number): Date {
 
 /**
  * Generate a date for specific year, month, day
+ * Returns null if the date would be in the future
  */
-function specificDate(year: number, month: number, day: number): Date {
+function specificDate(year: number, month: number, day: number): Date | null {
   const date = new Date(year, month - 1, day);
   date.setHours(SEED_TIME_HOUR, 0, 0, 0);
+
+  // Don't create dates in the future
+  const today = new Date();
+  today.setHours(23, 59, 59, 999); // End of today
+  if (date > today) {
+    return null;
+  }
+
   return date;
 }
 
@@ -615,6 +624,9 @@ async function seedIncomeTransactions(
     const paymentMethodId = methodMap.get(paymentMethod || 'Transfer')!;
 
     const transactionDate = specificDate(income.year, income.month, income.day);
+    // Skip if date would be in the future
+    if (!transactionDate) continue;
+
     // Add some random time variation
     transactionDate.setHours(SEED_TIME_HOUR + Math.floor(Math.random() * 8), 0, 0, 0);
 
@@ -681,6 +693,9 @@ async function seedExpenseTransactions(
       // Random day in month
       const day = 1 + Math.floor(Math.random() * daysInMonth);
       const transactionDate = specificDate(year, month, day);
+      // Skip if date would be in the future
+      if (!transactionDate) continue;
+
       // Add some random time variation
       transactionDate.setHours(SEED_TIME_HOUR + Math.floor(Math.random() * 10), 0, 0, 0);
 
@@ -724,6 +739,9 @@ async function seedExpenseTransactions(
 
         const amount = randomAmount(50000, 500000);
         const transactionDate = specificDate(year, month, day);
+        // Skip if date would be in the future
+        if (!transactionDate) continue;
+
         transactionDate.setHours(SEED_TIME_HOUR + Math.floor(Math.random() * 12), 0, 0, 0);
 
         const methodName =

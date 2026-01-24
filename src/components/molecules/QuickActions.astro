@@ -15,17 +15,13 @@
  *
  * @param {QuickAction[]} actions - Array of quick action objects (default: Add Expense, Log Income)
  * @param {string} className - Additional CSS classes
- * @param {Array} categories - Available categories for transaction modal
- * @param {Array} paymentMethods - Available payment methods for transaction modal
  *
- * TODO: Temporary modal integration - TransactionModal should be properly integrated
- * into the routing/navigation system instead of being embedded here. This is a
- * short-term solution to enable modal-based transaction creation from the dashboard.
+ * Note: Transaction modals are provided globally by ProtectedLayout.
+ * This component opens those modals via showModal().
  */
 
 import { ShoppingCart, CircleDollarSign, Plus } from '@lucide/astro';
 import IconBadge from '../atoms/IconBadge.astro';
-import TransactionModal from '../organisms/TransactionModal.astro';
 
 export interface QuickAction {
   label: string;
@@ -38,8 +34,6 @@ export interface QuickAction {
 export interface Props {
   actions?: QuickAction[];
   className?: string;
-  categories?: Array<{ id: string; name: string; type: string; currency?: string }>;
-  paymentMethods?: Array<{ id: string; name: string; type: string }>;
 }
 
 // Icon mapping for Lucide Astro components
@@ -73,12 +67,7 @@ const defaultActions: QuickAction[] = [
   },
 ];
 
-const {
-  actions = defaultActions,
-  className = '',
-  categories = [],
-  paymentMethods = [],
-} = Astro.props;
+const { actions = defaultActions, className = '' } = Astro.props;
 ---
 
 <div
@@ -120,43 +109,21 @@ const {
   }
 </div>
 
-<!-- Transaction Modals (TODO: Temporary integration - should be moved to proper routing) -->
-<TransactionModal
-  id="expense-modal"
-  title="Add Expense"
-  open={false}
-  action="/api/transactions"
-  method="POST"
-  values={{ type: 'expense' }}
-  categories={categories}
-  paymentMethods={paymentMethods}
-  submitLabel="Save Expense"
-/>
-<TransactionModal
-  id="income-modal"
-  title="Log Income"
-  open={false}
-  action="/api/transactions"
-  method="POST"
-  values={{ type: 'income' }}
-  categories={categories}
-  paymentMethods={paymentMethods}
-  submitLabel="Save Income"
-/>
+<!-- Transaction Modals are provided globally by ProtectedLayout -->
 
 <style>
   /* Ensure smooth transitions */
-  [data-quick-actions] a {
+  [data-quick-actions] button {
     transition-property: transform, background-color, box-shadow, border-color;
     transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
     transition-duration: 200ms;
   }
 
-  [data-quick-actions] a:hover {
+  [data-quick-actions] button:hover {
     transition-duration: 150ms;
   }
 
-  [data-quick-actions] a:active {
+  [data-quick-actions] button:active {
     transition-duration: 75ms;
   }
 
