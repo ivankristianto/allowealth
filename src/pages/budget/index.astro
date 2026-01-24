@@ -18,8 +18,14 @@ import { budgetService, categoryService, type BudgetSummary } from '@/services';
 import { formatCurrency } from '@/lib/tokens';
 import { CircleX } from '@lucide/astro';
 
-const user = Astro.locals.user!;
+const user = Astro.locals.user;
 const currentPath = '/budget';
+
+// Early guard clause - redirect to login if user is not authenticated
+// This should never happen due to ProtectedLayout, but provides type safety
+if (!user) {
+  return Astro.redirect('/login');
+}
 
 // Get query parameters for month/year selection
 const url = new URL(Astro.request.url);
@@ -39,7 +45,7 @@ let error: string | null = null;
 
 try {
   budgetData = await budgetService.getMonthlyOverview(
-    user!.id,
+    user.id,
     selectedYear,
     selectedMonth,
     selectedCurrency
@@ -97,7 +103,7 @@ const isNextMonthInFuture =
 let alerts: Awaited<ReturnType<typeof budgetService.getAlerts>> = [];
 if (budgetData) {
   try {
-    alerts = await budgetService.getAlerts(user!.id, selectedCurrency);
+    alerts = await budgetService.getAlerts(user.id, selectedCurrency);
   } catch (err) {
     console.error('Error fetching budget alerts:', err);
     alerts = [];
@@ -149,7 +155,7 @@ const generateAdviceData = (): AdviceData | null => {
 const adviceData = generateAdviceData();
 
 // Fetch all categories for the edit modal
-const allCategories = await categoryService.findAll(user!.id, { is_active: true });
+const allCategories = await categoryService.findAll(user.id, { is_active: true });
 const expenseCategories = allCategories.filter((c) => c.type === 'expense');
 
 // Count budgets with actual limits set

@@ -244,6 +244,7 @@ const chartId = `spending-chart-${Math.random().toString(36).slice(2, 11)}`;
 
   // Store observer reference for cleanup
   let chartObserver: IntersectionObserver | null = null;
+  let themeObserver: MutationObserver | null = null;
 
   /**
    * Cleanup all chart instances and observer
@@ -264,11 +265,66 @@ const chartId = `spending-chart-${Math.random().toString(36).slice(2, 11)}`;
       delete charts[key];
     }
 
-    // Disconnect observer
+    // Disconnect intersection observer
     if (chartObserver) {
       chartObserver.disconnect();
       chartObserver = null;
     }
+
+    // Disconnect theme observer
+    if (themeObserver) {
+      themeObserver.disconnect();
+      themeObserver = null;
+    }
+  }
+
+  /**
+   * Update chart tooltip colors based on current theme
+   * Called when theme changes via MutationObserver
+   */
+  function updateChartThemeColors(): void {
+    const isDark = (): boolean => {
+      const theme = document.documentElement.getAttribute('data-theme');
+      if (theme) return theme === 'dark';
+      return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    };
+
+    const dark = isDark();
+
+    // Update all chart instances with new tooltip colors
+    Object.values(charts).forEach(({ chart }) => {
+      if (chart.options.plugins?.tooltip) {
+        chart.options.plugins.tooltip.backgroundColor = dark
+          ? 'rgba(248, 250, 252, 0.95)'
+          : 'rgba(15, 23, 42, 0.9)';
+        chart.options.plugins.tooltip.titleColor = dark ? '#0f172a' : '#fff';
+        chart.options.plugins.tooltip.bodyColor = dark ? '#0f172a' : '#fff';
+        chart.update('none'); // Update without animation
+      }
+    });
+  }
+
+  /**
+   * Initialize theme observer to watch for data-theme attribute changes
+   */
+  function initThemeObserver(): void {
+    // Cleanup existing observer
+    if (themeObserver) {
+      themeObserver.disconnect();
+    }
+
+    themeObserver = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.type === 'attributes' && mutation.attributeName === 'data-theme') {
+          updateChartThemeColors();
+        }
+      });
+    });
+
+    themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme'],
+    });
   }
 
   /**
@@ -507,6 +563,9 @@ const chartId = `spending-chart-${Math.random().toString(36).slice(2, 11)}`;
     // Cleanup first to prevent memory leaks
     cleanupCharts();
 
+    // Initialize theme observer
+    initThemeObserver();
+
     const chartContainers = document.querySelectorAll('[id^="spending-chart-"][id$="-container"]');
 
     chartObserver = new IntersectionObserver(
@@ -559,6 +618,7 @@ const chartId = `spending-chart-${Math.random().toString(36).slice(2, 11)}`;
   window.addEventListener('beforeunload', cleanupCharts);
 
   // For Astro View Transitions
-  document.addEventListener('astro:page-load', cleanupCharts);
+  // Cleanup BEFORE page swap, initialize AFTER
+  document.addEventListener('astro:before-swap', cleanupCharts);
   document.addEventListener('astro:after-swap', initAllCharts);
 </script>

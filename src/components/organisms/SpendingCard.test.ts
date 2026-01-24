@@ -153,6 +153,37 @@ describe('SpendingCard - base accessibility', () => {
   });
 });
 
+describe('SpendingCard - aria-labelledby for normal state (P2-3)', () => {
+  /**
+   * Tests for aria-labelledby accessibility improvement
+   * Links the card to its heading for better screen reader context
+   */
+
+  const getAriaLabelledBy = (loading: boolean, error: string | undefined): string | undefined => {
+    return !loading && !error ? 'spending-card-title' : undefined;
+  };
+
+  it('should have aria-labelledby pointing to title in normal state', () => {
+    expect(getAriaLabelledBy(false, undefined)).toBe('spending-card-title');
+  });
+
+  it('should have aria-labelledby when error is empty string', () => {
+    expect(getAriaLabelledBy(false, '')).toBe('spending-card-title');
+  });
+
+  it('should not have aria-labelledby when loading', () => {
+    expect(getAriaLabelledBy(true, undefined)).toBe(undefined);
+  });
+
+  it('should not have aria-labelledby when error is present', () => {
+    expect(getAriaLabelledBy(false, 'Some error message')).toBe(undefined);
+  });
+
+  it('should not have aria-labelledby when both loading and error', () => {
+    expect(getAriaLabelledBy(true, 'Some error message')).toBe(undefined);
+  });
+});
+
 describe('SpendingCard - props defaults', () => {
   it('should default currency to IDR', () => {
     const defaultCurrency = 'IDR';

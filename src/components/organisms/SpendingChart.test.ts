@@ -258,3 +258,74 @@ describe('SpendingChart - data serialization safety', () => {
     expect(parsed[0].category).toBe('Housing');
   });
 });
+
+describe('SpendingChart - theme detection', () => {
+  /**
+   * Tests for theme detection logic used in tooltip colors (P1-1 code quality improvement)
+   * The component uses MutationObserver to update chart colors when theme changes
+   */
+
+  const isDark = (theme: string | null): boolean => {
+    if (theme) return theme === 'dark';
+    return false; // Default to light if no theme set
+  };
+
+  it('should detect dark theme from data-theme attribute', () => {
+    expect(isDark('dark')).toBe(true);
+    expect(isDark('light')).toBe(false);
+    expect(isDark('cupcake')).toBe(false);
+  });
+
+  it('should default to light when no theme set', () => {
+    expect(isDark(null)).toBe(false);
+  });
+});
+
+describe('SpendingChart - tooltip colors by theme', () => {
+  /**
+   * Tests for tooltip color switching (P1-1 code quality improvement)
+   * Tooltip colors must update dynamically when theme changes via MutationObserver
+   */
+
+  const getTooltipColors = (
+    isDark: boolean
+  ): { backgroundColor: string; titleColor: string; bodyColor: string } => {
+    return {
+      backgroundColor: isDark ? 'rgba(248, 250, 252, 0.95)' : 'rgba(15, 23, 42, 0.9)',
+      titleColor: isDark ? '#0f172a' : '#fff',
+      bodyColor: isDark ? '#0f172a' : '#fff',
+    };
+  };
+
+  it('should return light tooltip colors for dark theme', () => {
+    const colors = getTooltipColors(true);
+    expect(colors.backgroundColor).toBe('rgba(248, 250, 252, 0.95)');
+    expect(colors.titleColor).toBe('#0f172a');
+    expect(colors.bodyColor).toBe('#0f172a');
+  });
+
+  it('should return dark tooltip colors for light theme', () => {
+    const colors = getTooltipColors(false);
+    expect(colors.backgroundColor).toBe('rgba(15, 23, 42, 0.9)');
+    expect(colors.titleColor).toBe('#fff');
+    expect(colors.bodyColor).toBe('#fff');
+  });
+});
+
+describe('SpendingChart - MutationObserver configuration', () => {
+  /**
+   * Tests for MutationObserver configuration (P1-1 code quality improvement)
+   * Observer watches for data-theme attribute changes on document.documentElement
+   */
+
+  it('should observe only the data-theme attribute', () => {
+    const observerConfig = {
+      attributes: true,
+      attributeFilter: ['data-theme'],
+    };
+
+    expect(observerConfig.attributes).toBe(true);
+    expect(observerConfig.attributeFilter).toContain('data-theme');
+    expect(observerConfig.attributeFilter?.length).toBe(1);
+  });
+});

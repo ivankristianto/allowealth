@@ -173,6 +173,43 @@ describe('ProgressBar - accessibility attributes', () => {
   });
 });
 
+describe('ProgressBar - aria-valuetext for screen readers (P2-1)', () => {
+  /**
+   * Tests for aria-valuetext accessibility improvement
+   * Provides human-readable progress description for screen reader users
+   */
+
+  const getAriaValueText = (value: number): string => {
+    const clampedValue = Math.max(0, Math.min(100, value));
+    return `${clampedValue} percent`;
+  };
+
+  it('should provide human-readable percentage for typical values', () => {
+    expect(getAriaValueText(75)).toBe('75 percent');
+    expect(getAriaValueText(50)).toBe('50 percent');
+    expect(getAriaValueText(100)).toBe('100 percent');
+  });
+
+  it('should clamp negative values and provide correct text', () => {
+    expect(getAriaValueText(-10)).toBe('0 percent');
+    expect(getAriaValueText(-100)).toBe('0 percent');
+  });
+
+  it('should clamp values over 100 and provide correct text', () => {
+    expect(getAriaValueText(150)).toBe('100 percent');
+    expect(getAriaValueText(200)).toBe('100 percent');
+  });
+
+  it('should handle decimal values correctly', () => {
+    expect(getAriaValueText(75.5)).toBe('75.5 percent');
+    expect(getAriaValueText(33.33)).toBe('33.33 percent');
+  });
+
+  it('should handle 0 value', () => {
+    expect(getAriaValueText(0)).toBe('0 percent');
+  });
+});
+
 describe('ProgressBar - props defaults', () => {
   it('should default to 0 for value', () => {
     const defaultValue = 0;

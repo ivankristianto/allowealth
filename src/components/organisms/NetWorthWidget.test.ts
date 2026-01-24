@@ -179,21 +179,18 @@ describe('NetWorthWidget - asset breakdown consistency', () => {
 
 describe('NetWorthWidget - empty state detection', () => {
   /**
-   * Tests for the empty state logic (P2-1 code quality improvement)
-   * Component shows empty state when all asset values are 0
+   * Tests for the empty state logic (P2-2 code quality improvement)
+   * Component shows empty state when all asset values are falsy (0, null, undefined)
+   * Uses falsy check instead of strict equality for robustness
    */
   const isEmptyState = (props: {
-    totalIDR: number;
-    totalUSD: number;
-    localAssets: number;
-    globalAssets: number;
+    totalIDR: number | null | undefined;
+    totalUSD: number | null | undefined;
+    localAssets: number | null | undefined;
+    globalAssets: number | null | undefined;
   }): boolean => {
-    return (
-      props.totalIDR === 0 &&
-      props.totalUSD === 0 &&
-      props.localAssets === 0 &&
-      props.globalAssets === 0
-    );
+    // Robust falsy check - handles 0, null, undefined, and NaN
+    return !props.totalIDR && !props.totalUSD && !props.localAssets && !props.globalAssets;
   };
 
   it('should detect empty state when all values are 0', () => {
@@ -204,6 +201,36 @@ describe('NetWorthWidget - empty state detection', () => {
       globalAssets: 0,
     };
     expect(isEmptyState(emptyProps)).toBe(true);
+  });
+
+  it('should detect empty state when all values are null', () => {
+    const nullProps = {
+      totalIDR: null,
+      totalUSD: null,
+      localAssets: null,
+      globalAssets: null,
+    };
+    expect(isEmptyState(nullProps)).toBe(true);
+  });
+
+  it('should detect empty state when all values are undefined', () => {
+    const undefinedProps = {
+      totalIDR: undefined,
+      totalUSD: undefined,
+      localAssets: undefined,
+      globalAssets: undefined,
+    };
+    expect(isEmptyState(undefinedProps)).toBe(true);
+  });
+
+  it('should detect empty state with mixed falsy values', () => {
+    const mixedFalsyProps = {
+      totalIDR: 0,
+      totalUSD: null,
+      localAssets: undefined,
+      globalAssets: 0,
+    };
+    expect(isEmptyState(mixedFalsyProps)).toBe(true);
   });
 
   it('should not be empty state when any IDR value is set', () => {
@@ -254,5 +281,15 @@ describe('NetWorthWidget - empty state detection', () => {
       globalAssets: 102782.67,
     };
     expect(isEmptyState(fullProps)).toBe(false);
+  });
+
+  it('should not be empty state with small positive values', () => {
+    const smallValueProps = {
+      totalIDR: 0.01,
+      totalUSD: 0,
+      localAssets: 0,
+      globalAssets: 0,
+    };
+    expect(isEmptyState(smallValueProps)).toBe(false);
   });
 });

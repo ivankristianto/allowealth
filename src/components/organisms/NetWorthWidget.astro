@@ -44,8 +44,10 @@ const {
   className = '',
 } = Astro.props;
 
-// Determine if this is an empty state (all values are 0)
-const isEmpty = totalIDR === 0 && totalUSD === 0 && localAssets === 0 && globalAssets === 0;
+// Determine if this is an empty state
+// Falsy check handles null, undefined, NaN, and exactly 0
+// Small positive/negative floats (e.g., 0.01) will correctly show normal state
+const isEmpty = !totalIDR && !totalUSD && !localAssets && !globalAssets;
 
 // Growth badge styling based on percentage (positive = success, negative = error)
 const isPositiveGrowth = growthPercentage >= 0;

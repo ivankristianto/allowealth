@@ -74,6 +74,7 @@ const remainingFormatted = formatCurrency(remaining, currency);
   aria-live="polite"
   aria-busy={loading}
   aria-label={loading ? 'Loading spending data...' : undefined}
+  aria-labelledby={!loading && !error ? 'spending-card-title' : undefined}
 >
   <div class="flex flex-col gap-6">
     {/* Loading State */}
