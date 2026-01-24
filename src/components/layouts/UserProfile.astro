@@ -3,18 +3,23 @@
  * UserProfile Component
  *
  * User profile section for the navigation sidebar.
- * Displays user avatar, name, and account type.
+ * Displays user avatar, name, account type, and a dropdown menu.
  *
  * @design-system Oasis Finance v1.0.0
  */
 
-import type { User } from '@/lib/auth/lucia';
+import { User, Shield, LogOut, ChevronDown } from '@lucide/astro';
+
+import type { User as UserType } from '@/lib/auth/lucia';
 
 interface Props {
-  user?: User | null;
+  user?: UserType | null;
 }
 
 const { user = null } = Astro.props;
+
+// Generate unique ID for menu (for aria-controls)
+const menuId = 'user-profile-menu';
 
 // Get user initials for avatar
 const getUserInitials = () => {
@@ -23,20 +28,200 @@ const getUserInitials = () => {
 };
 ---
 
-<div class="p-5 border-t border-base-300">
-  <div
-    class="flex items-center gap-3 p-4 bg-base-200/80 dark:bg-base-200/50 rounded-2xl border border-base-300 dark:border-base-300/50"
+<div class="p-5 border-t border-base-300 relative" data-profile-dropdown>
+  <button
+    type="button"
+    class="w-full flex items-center gap-3 p-4 bg-base-200/80 dark:bg-base-200/50 rounded-2xl border border-base-300 dark:border-base-300/50 transition-all hover:bg-base-200 text-left group"
+    data-profile-button
+    aria-expanded="false"
+    aria-haspopup="menu"
+    aria-controls={menuId}
+    aria-label="Open user menu"
   >
     <div class="avatar placeholder">
       <div
-        class="bg-accent/20 text-accent rounded-full w-10 flex items-center justify-center shadow-inner"
+        class="bg-accent/20 text-accent rounded-full w-9 flex items-center justify-center shadow-inner group-hover:scale-105 transition-transform"
       >
-        <span class="text-xs font-semibold">{getUserInitials()}</span>
+        <span class="text-xs font-bold">{getUserInitials()}</span>
       </div>
     </div>
     <div class="flex-1 min-w-0">
       <p class="text-base font-bold text-base-content truncate">{user?.name || 'User Name'}</p>
-      <p class="text-xs text-base-content/80 font-medium tracking-wide truncate">Pro Account</p>
+      <p class="text-xs text-base-content/60 font-medium tracking-wide truncate">Pro Account</p>
+    </div>
+    <ChevronDown
+      size={20}
+      class="text-base-content/40 transition-transform duration-200 shrink-0"
+      data-profile-chevron
+      aria-hidden="true"
+    />
+  </button>
+
+  <!-- User Menu Dropdown -->
+  <div
+    id={menuId}
+    class="absolute bottom-full left-5 right-5 mb-2 bg-base-100 rounded-2xl border border-base-300 shadow-xl z-50 overflow-hidden opacity-0 translate-y-2 pointer-events-none transition-all duration-200 ease-out"
+    data-profile-menu
+    role="menu"
+    tabindex="-1"
+    aria-label="User profile menu"
+    style="opacity: 0; transform: translateY(8px);"
+  >
+    <div class="p-2 space-y-1">
+      <a
+        href="/settings"
+        class="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-base-200 dark:hover:bg-base-200/50 text-left transition-colors"
+        role="menuitem"
+        tabindex="-1"
+      >
+        <User size={18} class="text-base-content/50" aria-hidden="true" />
+        <span class="text-sm font-bold text-base-content">Manage account</span>
+      </a>
+      <a
+        href="/settings/security"
+        class="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-base-200 dark:hover:bg-base-200/50 text-left transition-colors"
+        role="menuitem"
+        tabindex="-1"
+      >
+        <Shield size={18} class="text-base-content/50" aria-hidden="true" />
+        <span class="text-sm font-bold text-base-content">Security</span>
+      </a>
+      <div class="h-px bg-base-300 my-1 mx-2" role="separator"></div>
+      <a
+        href="/auth/logout"
+        class="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-error/10 dark:hover:bg-error/10 text-left transition-colors text-error hover:text-error"
+        role="menuitem"
+        tabindex="-1"
+      >
+        <LogOut size={18} aria-hidden="true" />
+        <span class="text-sm font-bold">Sign out</span>
+      </a>
     </div>
   </div>
 </div>
+
+<script>
+  const profileDropdowns = document.querySelectorAll('[data-profile-dropdown]');
+
+  profileDropdowns.forEach((container) => {
+    const button = container.querySelector('[data-profile-button]') as HTMLButtonElement;
+    const menu = container.querySelector('[data-profile-menu]') as HTMLElement;
+    const chevron = container.querySelector('[data-profile-chevron]') as HTMLElement;
+
+    if (!button || !menu || !chevron) return;
+
+    let isOpen = false;
+
+    const openMenu = () => {
+      isOpen = true;
+      button.setAttribute('aria-expanded', 'true');
+      // Show menu with animation
+      menu.style.opacity = '1';
+      menu.style.transform = 'translateY(0)';
+      menu.style.pointerEvents = 'auto';
+      chevron.style.transform = 'rotate(180deg)';
+    };
+
+    const closeMenu = () => {
+      isOpen = false;
+      button.setAttribute('aria-expanded', 'false');
+      // Hide menu with animation
+      menu.style.opacity = '0';
+      menu.style.transform = 'translateY(8px)';
+      menu.style.pointerEvents = 'none';
+      chevron.style.transform = 'rotate(0deg)';
+    };
+
+    const toggleMenu = () => {
+      if (isOpen) {
+        closeMenu();
+      } else {
+        openMenu();
+      }
+    };
+
+    // Store handler references for cleanup
+    const handleClick = (e: Event) => {
+      e.stopPropagation();
+      toggleMenu();
+    };
+
+    const handleButtonKeydown = (e: Event) => {
+      const keyEvent = e as KeyboardEvent;
+      if (keyEvent.key === 'Enter' || keyEvent.key === ' ') {
+        e.preventDefault();
+        toggleMenu();
+      } else if (keyEvent.key === 'Escape') {
+        closeMenu();
+        button.focus();
+      } else if (keyEvent.key === 'Tab') {
+        // Close menu on Tab navigation (focus trap)
+        if (isOpen) {
+          closeMenu();
+        }
+      }
+    };
+
+    const handleDocumentClick = (e: Event) => {
+      if (!container.contains(e.target as Node)) {
+        closeMenu();
+      }
+    };
+
+    // Attach event listeners
+    button.addEventListener('click', handleClick);
+    button.addEventListener('keydown', handleButtonKeydown);
+    document.addEventListener('click', handleDocumentClick);
+
+    // Cleanup function
+    const cleanup = () => {
+      button.removeEventListener('click', handleClick);
+      button.removeEventListener('keydown', handleButtonKeydown);
+      document.removeEventListener('click', handleDocumentClick);
+    };
+
+    // Cleanup on Astro page navigation (View Transitions)
+    document.addEventListener('astro:page-load', cleanup, { once: true });
+
+    // Cleanup when element is removed from DOM (prevents memory leaks)
+    const removalObserver = new MutationObserver(() => {
+      if (!document.contains(container)) {
+        cleanup();
+        removalObserver.disconnect();
+      }
+    });
+
+    removalObserver.observe(document.body, { childList: true, subtree: true });
+
+    // Keyboard support for menu items
+    const menuItems = menu.querySelectorAll('[role="menuitem"]');
+    menuItems.forEach((item, index) => {
+      item.addEventListener('keydown', (e: Event) => {
+        const keyEvent = e as KeyboardEvent;
+        if (keyEvent.key === 'ArrowDown') {
+          e.preventDefault();
+          const nextItem = menuItems[index + 1] || menuItems[0];
+          (nextItem as HTMLElement).focus();
+        } else if (keyEvent.key === 'ArrowUp') {
+          e.preventDefault();
+          const prevItem = menuItems[index - 1] || menuItems[menuItems.length - 1];
+          (prevItem as HTMLElement).focus();
+        } else if (keyEvent.key === 'Escape') {
+          closeMenu();
+          button.focus();
+        } else if (keyEvent.key === 'Tab') {
+          // Close menu on Tab (focus trap)
+          closeMenu();
+        }
+      });
+    });
+  });
+</script>
+
+<style>
+  /* Additional transition styles for smooth dropdown animation */
+  [data-profile-menu] {
+    transition-property: opacity, transform;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+</style>
