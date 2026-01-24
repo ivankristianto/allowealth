@@ -9,6 +9,7 @@
 import { Menu, Plus, Bell } from '@lucide/astro';
 import UserContext from '../organisms/UserContext.astro';
 import CurrencySelector from '../molecules/CurrencySelector.astro';
+import { formatMonthYear } from '@/lib/utils';
 
 interface Props {
   title?: string;
@@ -16,6 +17,12 @@ interface Props {
   showMenuToggle?: boolean;
   user?: any | null;
   subtitle?: string;
+  // Optional data for dynamic subtitles
+  transactionCount?: number;
+  budgetSpent?: string;
+  budgetTotal?: string;
+  netWorth?: string;
+  accountCount?: number;
 }
 
 const {
@@ -23,8 +30,72 @@ const {
   currentPath = '/',
   showMenuToggle = true,
   user,
-  subtitle = 'Summary for January 2024',
+  subtitle: subtitleProp,
+  transactionCount,
+  budgetSpent,
+  budgetTotal,
+  netWorth,
+  accountCount,
 } = Astro.props;
+
+/**
+ * Get dynamic subtitle based on current path and context
+ * @param path - Current route path
+ * @param data - Optional data for subtitle generation
+ * @returns Subtitle string for the current page
+ */
+function getSubtitle(
+  path: string,
+  data: {
+    transactionCount?: number;
+    budgetSpent?: string;
+    budgetTotal?: string;
+    netWorth?: string;
+    accountCount?: number;
+  } = {}
+): string {
+  // Check for exact match first
+  const pathMap: Record<string, string> = {
+    '/dashboard': `Welcome back! ${formatMonthYear(new Date())}`,
+    '/transactions': data.transactionCount
+      ? `${data.transactionCount} transaction${data.transactionCount !== 1 ? 's' : ''} this month`
+      : formatMonthYear(new Date()),
+    '/budget':
+      data.budgetSpent && data.budgetTotal
+        ? `Spent ${data.budgetSpent} of ${data.budgetTotal}`
+        : 'Monthly budget overview',
+    '/assets': data.netWorth ? `Net worth: ${data.netWorth}` : formatMonthYear(new Date()),
+    '/reports': formatMonthYear(new Date()),
+    '/forecast': 'Based on your spending patterns',
+    '/calculators': 'Financial planning tools',
+    '/settings': 'Manage your preferences',
+  };
+
+  // Return exact match
+  if (pathMap[path]) {
+    return pathMap[path];
+  }
+
+  // Check for partial matches (e.g., /transactions/add)
+  for (const [key, value] of Object.entries(pathMap)) {
+    if (path.startsWith(key + '/')) {
+      return value;
+    }
+  }
+
+  // Default fallback
+  return formatMonthYear(new Date());
+}
+
+const subtitle =
+  subtitleProp ??
+  getSubtitle(currentPath, {
+    transactionCount,
+    budgetSpent,
+    budgetTotal,
+    netWorth,
+    accountCount,
+  });
 
 // Get page title based on current path
 const getPageTitle = (path: string) => {

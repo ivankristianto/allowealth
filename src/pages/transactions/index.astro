@@ -26,21 +26,48 @@ const page = parseInt(searchParams.page || '1');
 const pageSize = 50;
 const offset = (page - 1) * pageSize;
 
-// Get filter values
-const typeFilter = (searchParams.type || 'all') as 'all' | 'income' | 'expense';
+// Get filter values - default to 'expense' (no 'all' option)
+const typeFilter = (searchParams.type === 'income' ? 'income' : 'expense') as 'income' | 'expense';
 const categoryId = searchParams.category_id || '';
+const categoryIdsParam = searchParams.category_ids || '';
+const categoryIds = categoryIdsParam ? categoryIdsParam.split(',').filter(Boolean) : [];
 const searchValue = searchParams.search || '';
 const selectedMonth = searchParams.month || '';
 
-// Build filters for service
+// Calculate current month key from today's date (used as default)
+const now = new Date();
+const todayMonthKey = `${String(now.getMonth() + 1).padStart(2, '0')}-${now.getFullYear()}`;
+
+// Helper to parse month key (MM-YYYY) into start/end dates
+function parseMonthToDateRange(monthKey: string): { start: Date; end: Date } | null {
+  const match = monthKey.match(/^(\d{2})-(\d{4})$/);
+  if (!match) return null;
+
+  const month = parseInt(match[1], 10) - 1; // 0-indexed
+  const year = parseInt(match[2], 10);
+
+  if (month < 0 || month > 11 || isNaN(year)) return null;
+
+  const start = new Date(year, month, 1);
+  const end = new Date(year, month + 1, 0); // Last day of month
+
+  return { start, end };
+}
+
+// Determine effective month (from URL or default to today's month)
+const effectiveMonth = selectedMonth || todayMonthKey;
+const monthDateRange = parseMonthToDateRange(effectiveMonth);
+
+// Build filters for service - ALWAYS filter by month
 const filters = {
   user_id: user.id,
-  type: typeFilter === 'all' ? undefined : (typeFilter as 'expense' | 'income' | undefined),
+  type: typeFilter as 'expense' | 'income',
   category_id: categoryId || undefined,
+  category_ids: categoryIds.length > 0 ? categoryIds : undefined,
   payment_method_id: searchParams.payment_method_id,
   currency: searchParams.currency as 'IDR' | 'USD' | undefined,
-  start_date: searchParams.start_date ? new Date(searchParams.start_date) : undefined,
-  end_date: searchParams.end_date ? new Date(searchParams.end_date) : undefined,
+  start_date: monthDateRange?.start,
+  end_date: monthDateRange?.end,
   search: searchValue || undefined,
   limit: pageSize,
   offset,
@@ -85,60 +112,108 @@ const allUserTransactions = await transactionService.findAll({
   limit: 10000,
 });
 
-// Build available months list from transactions using YYYY-MM for consistent sorting
+// Build available months list from transactions
+// Key: MM-YYYY (for API), Label: MMMM YYYY (for display)
 const monthMap = new Map<string, string>();
 allUserTransactions.forEach((t: any) => {
   const date = new Date(t.transaction_date);
-  const yearMonth = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-  const monthLabel = date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-  monthMap.set(yearMonth, monthLabel);
+  const key = `${String(date.getMonth() + 1).padStart(2, '0')}-${date.getFullYear()}`;
+  const label = date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  monthMap.set(key, label);
 });
 
-const availableMonths = Array.from(monthMap.keys())
-  .sort()
-  .map((key) => monthMap.get(key)!);
+// Sort months chronologically
+const availableMonths = Array.from(monthMap.keys()).sort((a, b) => {
+  const [monthA, yearA] = a.split('-').map(Number);
+  const [monthB, yearB] = b.split('-').map(Number);
+  return yearA !== yearB ? yearA - yearB : monthA - monthB;
+});
 
-// Calculate summary from filtered transactions
+// Current month key - prefer latest available month, fallback to today's month
+const currentMonthKey = availableMonths[availableMonths.length - 1] || todayMonthKey;
+
+// Calculate summary from ALL transactions in the selected month (not filtered)
+// Summary only changes when month changes, not when filters change
 let monthlyIncome = 0;
 let monthlyExpenses = 0;
 let expenseCount = 0;
 
-rawTransactions.forEach((t: any) => {
-  if (t.type === 'income') {
-    monthlyIncome += parseFloat(t.amount);
-  } else {
-    monthlyExpenses += Math.abs(parseFloat(t.amount));
-    expenseCount++;
+// Calculate from all user transactions for the selected month
+allUserTransactions.forEach((t: any) => {
+  const txDate = new Date(t.transaction_date);
+  const txMonthKey = `${String(txDate.getMonth() + 1).padStart(2, '0')}-${txDate.getFullYear()}`;
+
+  if (txMonthKey === effectiveMonth) {
+    if (t.type === 'income') {
+      monthlyIncome += parseFloat(t.amount);
+    } else {
+      monthlyExpenses += Math.abs(parseFloat(t.amount));
+      expenseCount++;
+    }
   }
 });
-
-const currentMonthLabel =
-  availableMonths[availableMonths.length - 1] ||
-  new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
 // Build base URL for navigation
 const buildBaseUrl = () => {
   const params = new URLSearchParams();
-  if (typeFilter !== 'all') params.set('type', typeFilter);
+  params.set('type', typeFilter);
   if (searchValue) params.set('search', searchValue);
-  if (categoryId) params.set('category_id', categoryId);
+  if (categoryIds.length > 0) params.set('category_ids', categoryIds.join(','));
   const queryString = params.toString();
   return queryString ? `/transactions?${queryString}` : '/transactions';
 };
 
 const baseUrl = buildBaseUrl();
+
+// Build available months with keys for client-side use
+// Key: MM-YYYY (for API), Label: MMMM YYYY (for display)
+const availableMonthsWithKeys = availableMonths.map((key) => ({
+  key,
+  label: monthMap.get(key) || key,
+}));
+
+// Serialize SSR data for client-side hydration
+const ssrData = {
+  transactions,
+  pagination: {
+    total,
+    limit: pageSize,
+    offset,
+    page,
+    totalPages: Math.ceil(total / pageSize),
+  },
+  summary: {
+    income: monthlyIncome,
+    expenses: monthlyExpenses,
+    transactionCount: expenseCount,
+  },
+  filters: {
+    type: typeFilter,
+    search: searchValue,
+    category_id: categoryId,
+    category_ids: categoryIds,
+    month: selectedMonth || currentMonthKey,
+    page,
+  },
+  currentMonth: currentMonthKey,
+  categories: categories.map((c) => ({ id: c.id, name: c.name, type: c.type })),
+  availableMonths: availableMonthsWithKeys,
+  currency: 'IDR' as const,
+};
 ---
 
 <ProtectedLayout title="Transactions - Finance Manager" currentPath={currentPath}>
   <div
+    id="transactions-page"
     class="max-w-7xl mx-auto px-6 lg:px-10 py-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500"
+    data-ssr-data={JSON.stringify(ssrData)}
   >
     <!-- Summary Cards -->
     <TransactionSummaryCards
       monthlyIncome={monthlyIncome}
       monthlyExpenses={monthlyExpenses}
       transactionCount={expenseCount}
-      periodLabel={currentMonthLabel.toUpperCase()}
+      periodLabel={effectiveMonth.toUpperCase()}
       currency="IDR"
     />
 
@@ -148,18 +223,49 @@ const baseUrl = buildBaseUrl();
       <TransactionFiltersBar
         typeFilter={typeFilter}
         searchValue={searchValue}
-        categoryId={categoryId}
+        categoryIds={categoryIds}
         categories={categories}
         showCategoryFilter={true}
         monthSelector={true}
-        availableMonths={availableMonths}
-        selectedMonth={selectedMonth || currentMonthLabel}
+        availableMonths={availableMonthsWithKeys}
+        selectedMonth={selectedMonth || currentMonthKey}
+        currentMonth={currentMonthKey}
         baseUrl={baseUrl}
       />
 
       <!-- Transaction List Card -->
-      <div class="card bg-base-100 border border-base-300 rounded-3xl shadow-sm overflow-hidden">
-        <div class="divide-y divide-base-200">
+      <div
+        id="transaction-list-card"
+        class="card bg-base-100 border border-base-300 rounded-3xl shadow-sm overflow-hidden"
+      >
+        <!-- Loading Skeleton (hidden by default, shown during fetch) -->
+        <div id="transaction-list-skeleton" class="divide-y divide-base-200 hidden">
+          {
+            Array.from({ length: 5 }).map(() => (
+              <div class="flex items-center gap-5 p-5 animate-pulse">
+                <div class="flex-shrink-0 w-24">
+                  <div class="h-4 bg-base-200 rounded w-20" />
+                </div>
+                <div class="flex-1 flex items-center gap-4">
+                  <div class="w-10 h-10 bg-base-200 rounded-2xl" />
+                  <div class="flex-1">
+                    <div class="h-4 bg-base-200 rounded w-32 mb-2" />
+                    <div class="h-3 bg-base-200 rounded w-20" />
+                  </div>
+                </div>
+                <div class="flex-shrink-0 hidden sm:block">
+                  <div class="h-3 bg-base-200 rounded w-16" />
+                </div>
+                <div class="flex-shrink-0 w-28">
+                  <div class="h-5 bg-base-200 rounded w-24 ml-auto" />
+                </div>
+              </div>
+            ))
+          }
+        </div>
+
+        <!-- Transaction List -->
+        <div id="transaction-list" class="divide-y divide-base-200">
           {
             transactions.length > 0 ? (
               transactions.map((transaction) => (
@@ -171,7 +277,7 @@ const baseUrl = buildBaseUrl();
                 />
               ))
             ) : (
-              <div class="py-24 text-center">
+              <div id="empty-state" class="py-24 text-center">
                 <div class="w-20 h-20 bg-base-200 mx-auto rounded-3xl flex items-center justify-center text-base-content/30 mb-6 shadow-inner">
                   <Receipt size={40} class="stroke-current" aria-hidden="true" />
                 </div>
@@ -179,7 +285,7 @@ const baseUrl = buildBaseUrl();
                 <p class="text-base-content/60 font-medium max-w-xs mx-auto mb-6">
                   Try adjusting your filters or search terms to find what you're looking for.
                 </p>
-                <a href="/transactions" class="btn btn-outline btn-sm gap-2">
+                <a href="/transactions" class="btn btn-outline btn-sm gap-2" data-reset-filters>
                   <RotateCcw size={16} class="stroke-current" aria-hidden="true" />
                   Reset filters
                 </a>
@@ -189,41 +295,44 @@ const baseUrl = buildBaseUrl();
         </div>
 
         <!-- Pagination -->
-        {
-          total > pageSize && (
-            <div class="flex items-center justify-between px-6 py-4 border-t border-base-200">
-              <div class="text-sm text-base-content/60">
-                Showing {(page - 1) * pageSize + 1} to {Math.min(page * pageSize, total)} of {total}{' '}
-                transactions
-              </div>
-              <div class="flex gap-2">
-                {page > 1 ? (
-                  <a href={`${baseUrl}&page=${page - 1}`} class="btn btn-sm btn-outline">
-                    Previous
-                  </a>
-                ) : (
-                  <button class="btn btn-sm btn-outline" disabled>
-                    Previous
-                  </button>
-                )}
+        <div
+          id="pagination-container"
+          class={`flex items-center justify-between px-6 py-4 border-t border-base-200 ${total <= pageSize ? 'hidden' : ''}`}
+          data-pagination
+          data-total={total}
+          data-page-size={pageSize}
+          data-current-page={page}
+        >
+          <div class="text-sm text-base-content/60" data-pagination-info>
+            Showing {(page - 1) * pageSize + 1} to {Math.min(page * pageSize, total)} of {total}{
+              ' '
+            }
+            transactions
+          </div>
+          <div class="flex gap-2">
+            <button
+              class="btn btn-sm btn-outline"
+              disabled={page <= 1}
+              data-pagination-prev
+              aria-label="Previous page"
+            >
+              Previous
+            </button>
 
-                <span class="btn btn-sm btn-ghost">
-                  Page {page} of {Math.ceil(total / pageSize)}
-                </span>
+            <span class="btn btn-sm btn-ghost" data-pagination-current>
+              Page {page} of {Math.ceil(total / pageSize)}
+            </span>
 
-                {page < Math.ceil(total / pageSize) ? (
-                  <a href={`${baseUrl}&page=${page + 1}`} class="btn btn-sm btn-outline">
-                    Next
-                  </a>
-                ) : (
-                  <button class="btn btn-sm btn-outline" disabled>
-                    Next
-                  </button>
-                )}
-              </div>
-            </div>
-          )
-        }
+            <button
+              class="btn btn-sm btn-outline"
+              disabled={page >= Math.ceil(total / pageSize)}
+              data-pagination-next
+              aria-label="Next page"
+            >
+              Next
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -253,84 +362,7 @@ const baseUrl = buildBaseUrl();
 </ProtectedLayout>
 
 <script>
-  // Delete transaction handling
-  const deleteDialog = document.getElementById('delete-dialog') as HTMLDialogElement;
-  const deleteButtons = document.querySelectorAll('[data-delete-transaction]');
-  const confirmDeleteBtn = document.getElementById('confirm-delete-btn') as HTMLButtonElement;
-  const deleteDetails = document.getElementById('delete-dialog-details');
-  const deleteError = document.getElementById('delete-error');
-
-  // Helper function to escape HTML
-  const escapeHtml = (text: string): string => {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-  };
-
-  deleteButtons.forEach((button) => {
-    button.addEventListener('click', () => {
-      const transactionId = button.getAttribute('data-delete-transaction');
-      const transactionDetails = button.getAttribute('data-transaction-details');
-
-      if (transactionDetails && deleteDetails) {
-        const tx = JSON.parse(transactionDetails);
-        const description = escapeHtml(tx.description || tx.category?.name || '');
-        const amount = parseFloat(tx.amount).toLocaleString();
-        const currency = escapeHtml(tx.currency || '');
-        const date = new Date(tx.transaction_date).toLocaleDateString();
-
-        // Use textContent for safe rendering
-        deleteDetails.innerHTML = '';
-        const list = document.createElement('dl');
-        list.className = 'grid grid-cols-[auto_1fr] gap-2 text-sm';
-
-        const descDt = document.createElement('dt');
-        descDt.className = 'font-semibold';
-        descDt.textContent = 'Description:';
-        const descDd = document.createElement('dd');
-        descDd.textContent = description;
-
-        const amountDt = document.createElement('dt');
-        amountDt.className = 'font-semibold';
-        amountDt.textContent = 'Amount:';
-        const amountDd = document.createElement('dd');
-        amountDd.textContent = `${currency} ${amount}`;
-
-        const dateDt = document.createElement('dt');
-        dateDt.className = 'font-semibold';
-        dateDt.textContent = 'Date:';
-        const dateDd = document.createElement('dd');
-        dateDd.textContent = date;
-
-        list.append(descDt, descDd, amountDt, amountDd, dateDt, dateDd);
-        deleteDetails.appendChild(list);
-      }
-
-      if (confirmDeleteBtn && transactionId) {
-        confirmDeleteBtn.onclick = async () => {
-          try {
-            const response = await fetch(`/api/transactions/${transactionId}`, {
-              method: 'DELETE',
-            });
-
-            if (!response.ok) {
-              const error = await response.json();
-              throw new Error(error.message || 'Failed to delete transaction');
-            }
-
-            // Reload page on success
-            window.location.reload();
-          } catch (err) {
-            if (deleteError) {
-              deleteError.textContent =
-                err instanceof Error ? err.message : 'Failed to delete transaction';
-              deleteError.classList.remove('hidden');
-            }
-          }
-        };
-      }
-
-      deleteDialog?.showModal();
-    });
-  });
+  // Initialize the interactive transactions page
+  import { initTransactionsPage } from '@/components/organisms/TransactionsPage.client';
+  initTransactionsPage();
 </script>

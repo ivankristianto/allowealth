@@ -11,14 +11,44 @@ import {
 } from '@/lib/api-utils';
 import { createTransactionAPISchema } from '@/lib/validation';
 import { logError } from '@/lib/utils';
+import type { TransactionOutput } from '@/lib/types/transaction';
+
+/**
+ * Transform Drizzle result to TransactionOutput format
+ * Drizzle uses camelCase (paymentMethod), API uses snake_case (payment_method)
+ */
+function transformTransaction(t: any): TransactionOutput {
+  return {
+    id: t.id,
+    type: t.type,
+    amount: t.amount,
+    currency: t.currency,
+    description: t.description,
+    transaction_date: t.transaction_date,
+    deleted_at: t.deleted_at,
+    created_at: t.created_at,
+    updated_at: t.updated_at,
+    category: {
+      id: t.category.id,
+      name: t.category.name,
+      type: t.category.type,
+    },
+    payment_method: {
+      id: t.paymentMethod.id,
+      name: t.paymentMethod.name,
+      type: t.paymentMethod.type,
+    },
+  };
+}
 
 /**
  * GET /api/transactions
  * List all transactions with optional filters
  */
-export const GET: APIRoute = async ({ request, url }) => {
+export const GET: APIRoute = async (context) => {
   try {
-    const userId = await requireAuth({ request, url } as any);
+    const userId = await requireAuth(context);
+    const { url } = context;
 
     const { limit, offset } = getPaginationParams(url);
 
@@ -37,6 +67,12 @@ export const GET: APIRoute = async ({ request, url }) => {
     const categoryId = url.searchParams.get('category_id');
     if (categoryId) {
       filters.category_id = categoryId;
+    }
+
+    // Handle multiple category IDs (comma-separated)
+    const categoryIds = url.searchParams.get('category_ids');
+    if (categoryIds) {
+      filters.category_ids = categoryIds.split(',').filter(Boolean);
     }
 
     const paymentMethodId = url.searchParams.get('payment_method_id');
@@ -72,8 +108,43 @@ export const GET: APIRoute = async ({ request, url }) => {
       filters.search = search;
     }
 
-    const transactions = await transactionService.findAll(filters);
+    const rawTransactions = await transactionService.findAll(filters);
     const total = await transactionService.count(filters);
+
+    // Transform to TransactionOutput format (snake_case for payment_method)
+    const transactions = rawTransactions.map(transformTransaction);
+
+    // Calculate month-based summary (only uses date range, not other filters)
+    // This summary stays constant regardless of type/category/search filters
+    let monthSummary = null;
+    if (filters.start_date && filters.end_date) {
+      const monthTransactions = await transactionService.findAll({
+        user_id: userId,
+        start_date: filters.start_date,
+        end_date: filters.end_date,
+        limit: 10000, // Get all for summary calculation
+      });
+
+      let income = 0;
+      let expenses = 0;
+      let expenseCount = 0;
+
+      monthTransactions.forEach((t: any) => {
+        const amount = parseFloat(t.amount);
+        if (t.type === 'income') {
+          income += amount;
+        } else {
+          expenses += Math.abs(amount);
+          expenseCount++;
+        }
+      });
+
+      monthSummary = {
+        income,
+        expenses,
+        transactionCount: expenseCount,
+      };
+    }
 
     return successResponse({
       transactions,
@@ -82,6 +153,7 @@ export const GET: APIRoute = async ({ request, url }) => {
         offset,
         total,
       },
+      ...(monthSummary && { summary: monthSummary }),
     });
   } catch (error) {
     if (error instanceof Error && error.message === 'Unauthorized') {
@@ -96,9 +168,10 @@ export const GET: APIRoute = async ({ request, url }) => {
  * POST /api/transactions
  * Create a new transaction
  */
-export const POST: APIRoute = async ({ request, url }) => {
+export const POST: APIRoute = async (context) => {
   try {
-    const userId = await requireAuth({ request, url } as any);
+    const userId = await requireAuth(context);
+    const { request } = context;
 
     // Validate Content-Type header
     const contentType = request.headers.get('content-type');
@@ -116,7 +189,7 @@ export const POST: APIRoute = async ({ request, url }) => {
     // The validation ensures the string is in the correct format
     const transactionDate = new Date(validation.data.transaction_date + 'T00:00:00.000Z');
 
-    const transaction = await transactionService.create({
+    const rawTransaction = await transactionService.create({
       user_id: userId,
       type: validation.data.type,
       amount: validation.data.amount,
@@ -127,7 +200,7 @@ export const POST: APIRoute = async ({ request, url }) => {
       description: validation.data.description,
     });
 
-    return successResponse(transaction, 201);
+    return successResponse(transformTransaction(rawTransaction), 201);
   } catch (error) {
     if (error instanceof Error && error.message === 'Unauthorized') {
       return errorResponse('Unauthorized', 401);
