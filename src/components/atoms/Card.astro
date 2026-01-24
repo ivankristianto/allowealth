@@ -17,7 +17,7 @@ export interface Props {
   bordered?: boolean;
   compact?: boolean;
   padding?: 'sm' | 'md' | 'lg';
-  rounded?: 'none' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl';
+  rounded?: 'none' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | 'card' | 'card-lg';
   hoverable?: boolean;
   className?: string;
   role?: string;
@@ -51,6 +51,8 @@ const roundedClasses: Record<string, string> = {
   xl: 'rounded-xl',
   '2xl': 'rounded-2xl',
   '3xl': 'rounded-3xl',
+  card: 'rounded-card',
+  'card-lg': 'rounded-card-lg',
 };
 
 const cardClasses = [

@@ -159,7 +159,7 @@ describe('QuickActions Component (Premium Design)', () => {
        * Card styling:
        * - bg-base-100 (white in light mode)
        * - border border-base-300
-       * - rounded-2xl for premium look
+       * - rounded-card-lg for premium look
        */
       expect(true).toBe(true);
     });
@@ -272,10 +272,10 @@ describe('QuickActions Component (Premium Design)', () => {
       expect(true).toBe(true);
     });
 
-    it('should use gap-5 for consistent spacing', () => {
+    it('should use gap-6 for consistent spacing', () => {
       /**
        * Spacing (increased from gap-3):
-       * - class="gap-5" provides 20px gap between buttons
+       * - class="gap-6" provides 24px gap between buttons
        * - Works for both column and row layouts
        */
       expect(true).toBe(true);
@@ -446,7 +446,7 @@ describe('QuickActions Component (Premium Design)', () => {
  * Test 2: Premium Card Design
  * [ ] Verify white card background (bg-base-100)
  * [ ] Verify border (border-base-300)
- * [ ] Verify rounded-2xl corners
+ * [ ] Verify rounded-card-lg corners
  * [ ] Verify shadow-sm base shadow
  * [ ] Verify px-8 py-7 padding
  *
@@ -478,7 +478,7 @@ describe('QuickActions Component (Premium Design)', () => {
  * [ ] Resize to mobile width (< 640px)
  * [ ] Verify buttons stack vertically
  * [ ] Verify buttons are full width
- * [ ] Verify gap-5 spacing (20px)
+ * [ ] Verify gap-6 spacing (24px)
  * [ ] Resize to desktop (≥640px)
  * [ ] Verify horizontal layout (sm:flex-row)
  *
@@ -541,7 +541,7 @@ describe('QuickActions Component (Premium Design)', () => {
  *
  * Test 15: Visual Consistency
  * [ ] Verify equal button widths (flex-1)
- * [ ] Verify consistent gap spacing (gap-5)
+ * [ ] Verify consistent gap spacing (gap-6)
  * [ ] Verify icons are vertically aligned
  * [ ] Verify text is vertically aligned with icons
  * [ ] Verify no layout shifts on hover
