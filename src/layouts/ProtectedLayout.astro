@@ -19,12 +19,15 @@
  * - Middleware redirects unauthenticated users before page execution
  * - Passes authenticated user to MainLayout
  * - Provides consistent layout for protected pages
+ * - Includes global TransactionModal for "New Entry" button in header
  *
  * Note: This layout should only be used for pages under protected route prefixes:
  * /transactions, /budget, /assets, /reports, /forecast, /calculators, /settings
  */
 
 import MainLayout from './MainLayout.astro';
+import TransactionModal from '@/components/organisms/TransactionModal.astro';
+import { categoryService, paymentMethodService } from '@/services';
 
 interface Props {
   title?: string;
@@ -35,8 +38,150 @@ const { title = 'Finance Manager', currentPath = '/' } = Astro.props;
 
 // User is authenticated (enforced by middleware)
 const user = Astro.locals.user!;
+
+// Fetch categories and payment methods for global transaction modal
+let categories: Array<{ id: string; name: string; type: string; currency?: string }> = [];
+let paymentMethods: Array<{ id: string; name: string; type: string }> = [];
+
+try {
+  [categories, paymentMethods] = await Promise.all([
+    categoryService.findAll(user.id, { is_active: true }),
+    paymentMethodService.findAll(user.id, { is_active: true }),
+  ]);
+} catch (err) {
+  console.error('Error loading transaction form data:', err);
+  // Non-critical: modal won't have options but pages still work
+}
 ---
 
 <MainLayout title={title} currentPath={currentPath} user={user}>
   <slot />
 </MainLayout>
+
+<!-- Global Transaction Modals (accessible from header "New Entry" button) -->
+<TransactionModal
+  id="expense-modal"
+  type="expense"
+  mode="create"
+  open={false}
+  action="/api/transactions"
+  categories={categories}
+  paymentMethods={paymentMethods}
+/>
+<TransactionModal
+  id="income-modal"
+  type="income"
+  mode="create"
+  open={false}
+  action="/api/transactions"
+  categories={categories}
+  paymentMethods={paymentMethods}
+/>
+
+<!-- Edit Modal (dynamically populated) -->
+<TransactionModal
+  id="edit-transaction-modal"
+  type="expense"
+  mode="edit"
+  open={false}
+  action="/api/transactions"
+  categories={categories}
+  paymentMethods={paymentMethods}
+/>
+
+<!-- Client-side script for edit modal handling -->
+<script>
+  // Handle edit transaction button clicks
+  function initEditTransactionHandlers() {
+    document.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement;
+      const editBtn = target.closest('[data-edit-transaction]') as HTMLElement | null;
+      if (!editBtn) return;
+
+      e.preventDefault();
+      const transactionData = editBtn.dataset.transactionData;
+      if (!transactionData) return;
+
+      try {
+        const data = JSON.parse(transactionData);
+        openEditModal(data);
+      } catch (err) {
+        console.error('Failed to parse transaction data:', err);
+      }
+    });
+  }
+
+  function openEditModal(data: {
+    id: string;
+    type: 'expense' | 'income';
+    title: string;
+    amount: string;
+    currency: string;
+    category_id: string;
+    payment_method_id: string;
+    transaction_date: string;
+  }) {
+    const modal = document.getElementById('edit-transaction-modal') as HTMLDialogElement | null;
+    if (!modal) return;
+
+    // Find the form inside the modal
+    const form = modal.querySelector('[data-transaction-form]') as HTMLFormElement | null;
+    if (!form) return;
+
+    // Update form data attributes for the correct type and transaction ID
+    form.dataset.type = data.type;
+    form.dataset.transactionId = data.id;
+    form.dataset.mode = 'edit';
+
+    // Update hidden type field
+    const typeInput = form.querySelector('input[name="type"]') as HTMLInputElement | null;
+    if (typeInput) typeInput.value = data.type;
+
+    // Populate form fields
+    const titleInput = form.querySelector('input[name="title"]') as HTMLInputElement | null;
+    if (titleInput) titleInput.value = data.title || '';
+
+    const amountInput = form.querySelector('input[name="amount"]') as HTMLInputElement | null;
+    if (amountInput) amountInput.value = data.amount || '';
+
+    const currencySelect = form.querySelector(
+      'select[name="currency"]'
+    ) as HTMLSelectElement | null;
+    if (currencySelect) currencySelect.value = data.currency || 'IDR';
+
+    const dateInput = form.querySelector(
+      'input[name="transaction_date"]'
+    ) as HTMLInputElement | null;
+    if (dateInput) dateInput.value = data.transaction_date || '';
+
+    const categorySelect = form.querySelector(
+      'select[name="category_id"]'
+    ) as HTMLSelectElement | null;
+    if (categorySelect) categorySelect.value = data.category_id || '';
+
+    const paymentMethodSelect = form.querySelector(
+      'select[name="payment_method_id"]'
+    ) as HTMLSelectElement | null;
+    if (paymentMethodSelect) paymentMethodSelect.value = data.payment_method_id || '';
+
+    // Update modal header based on type
+    const modalTitle = modal.querySelector('[data-modal-title]');
+    const modalSubtitle = modal.querySelector('[data-modal-subtitle]');
+    if (modalTitle)
+      modalTitle.textContent = data.type === 'expense' ? 'Edit Expense' : 'Edit Income';
+    if (modalSubtitle) modalSubtitle.textContent = 'Update the transaction details.';
+
+    // Show the modal
+    modal.showModal();
+  }
+
+  // Initialize on DOM ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initEditTransactionHandlers);
+  } else {
+    initEditTransactionHandlers();
+  }
+
+  // Re-initialize on Astro page transitions
+  document.addEventListener('astro:page-load', initEditTransactionHandlers);
+</script>

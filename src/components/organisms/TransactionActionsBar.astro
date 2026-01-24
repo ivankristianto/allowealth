@@ -1,0 +1,130 @@
+---
+/**
+ * Transaction Actions Bar Component
+ *
+ * Action bar with Scan Receipt, Import CSV, and Export CSV buttons.
+ * Displayed above the transaction filters bar.
+ */
+
+import { Sparkles, Upload, Download } from '@lucide/astro';
+
+export interface Props {
+  className?: string;
+}
+
+const { className = '' } = Astro.props;
+---
+
+<div
+  class:list={[
+    'card bg-base-100 border border-base-300 rounded-3xl shadow-sm p-4 sm:p-6',
+    'flex flex-col sm:flex-row items-center justify-between gap-4',
+    className,
+  ]}
+  data-transaction-actions-bar
+>
+  <!-- Left side: Scan Receipt -->
+  <button
+    type="button"
+    class="flex items-center gap-2 px-6 py-3 bg-accent/10 text-accent rounded-full text-sm font-bold border border-accent/20 transition-all hover:bg-accent/15 hover:border-accent/30 active:scale-95 group"
+    data-scan-receipt-button
+    aria-label="Scan receipt"
+  >
+    <Sparkles size={18} class="stroke-current group-hover:animate-pulse" aria-hidden="true" />
+    <span>Scan Receipt</span>
+  </button>
+
+  <!-- Right side: Import & Export -->
+  <div class="flex items-center gap-3">
+    <button
+      type="button"
+      class="btn btn-soft rounded-full px-5 h-12 text-sm font-bold transition-all active:scale-95"
+      data-import-csv-button
+      aria-label="Import CSV"
+    >
+      <Upload size={16} class="stroke-current" aria-hidden="true" />
+      <span>Import CSV</span>
+    </button>
+
+    <button
+      type="button"
+      class="btn btn-soft rounded-full px-5 h-12 text-sm font-bold transition-all active:scale-95"
+      data-export-csv-button
+      aria-label="Export CSV"
+    >
+      <Download size={16} class="stroke-current" aria-hidden="true" />
+      <span>Export CSV</span>
+    </button>
+  </div>
+</div>
+
+<script>
+  import { addToast } from '@/lib/stores/toastStore';
+
+  function initTransactionActionsBar() {
+    const actionsBar = document.querySelector(
+      '[data-transaction-actions-bar]'
+    ) as HTMLElement | null;
+    if (!actionsBar) return;
+
+    // Prevent duplicate initialization
+    if (actionsBar.dataset.initialized === 'true') return;
+    actionsBar.dataset.initialized = 'true';
+
+    // Scan Receipt button
+    const scanBtn = actionsBar.querySelector('[data-scan-receipt-button]');
+    scanBtn?.addEventListener('click', () => {
+      addToast('Receipt scanning coming soon!', 'info');
+    });
+
+    // Import CSV button
+    const importBtn = actionsBar.querySelector('[data-import-csv-button]');
+    importBtn?.addEventListener('click', () => {
+      addToast('CSV import coming soon!', 'info');
+    });
+
+    // Export CSV button
+    const exportBtn = actionsBar.querySelector('[data-export-csv-button]');
+    exportBtn?.addEventListener('click', async () => {
+      try {
+        // Get current filters from URL
+        const url = new URL(window.location.href);
+        const params = new URLSearchParams(url.search);
+
+        // Build export URL with filters
+        const exportUrl = `/api/transactions/export?${params.toString()}`;
+
+        // Trigger download
+        const response = await fetch(exportUrl);
+        if (!response.ok) {
+          throw new Error('Failed to export transactions');
+        }
+
+        const blob = await response.blob();
+        const downloadUrl = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.download = `transactions-${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(downloadUrl);
+
+        addToast('Transactions exported successfully!', 'success');
+      } catch (err) {
+        console.error('Export failed:', err);
+        addToast('Failed to export transactions. Please try again.', 'error');
+      }
+    });
+  }
+
+  // Initialize on DOM ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initTransactionActionsBar);
+  } else {
+    initTransactionActionsBar();
+  }
+
+  // Re-initialize on Astro page transitions
+  document.addEventListener('astro:page-load', initTransactionActionsBar);
+</script>

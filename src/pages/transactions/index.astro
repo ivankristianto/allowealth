@@ -9,7 +9,9 @@
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import TransactionRow from '@/components/molecules/TransactionRow.astro';
 import TransactionSummaryCards from '@/components/organisms/TransactionSummaryCards.astro';
+import TransactionActionsBar from '@/components/organisms/TransactionActionsBar.astro';
 import TransactionFiltersBar from '@/components/organisms/TransactionFiltersBar.astro';
+import DeleteConfirmationModal from '@/components/organisms/DeleteConfirmationModal.astro';
 import { Receipt, RotateCcw } from '@lucide/astro';
 import type { TransactionOutput } from '@/lib/types/transaction';
 import { transactionService, categoryService } from '@/services';
@@ -212,6 +214,9 @@ const ssrData = {
 
     <!-- Filters & Transaction List -->
     <div class="space-y-6">
+      <!-- Actions Bar (Scan Receipt, Import/Export CSV) -->
+      <TransactionActionsBar />
+
       <!-- Filter Bar -->
       <TransactionFiltersBar
         typeFilter={typeFilter}
@@ -262,12 +267,7 @@ const ssrData = {
           {
             transactions.length > 0 ? (
               transactions.map((transaction) => (
-                <TransactionRow
-                  transaction={transaction}
-                  editUrl={`/transactions/edit/${transaction.id}`}
-                  deleteUrl={`/transactions/delete/${transaction.id}`}
-                  showActions={true}
-                />
+                <TransactionRow transaction={transaction} showActions={true} />
               ))
             ) : (
               <div id="empty-state" class="py-24 text-center">
@@ -330,28 +330,14 @@ const ssrData = {
     </div>
   </div>
 
-  <!-- Delete Confirmation Dialog -->
-  <dialog id="delete-dialog" class="modal">
-    <div class="modal-box">
-      <h3 class="font-bold text-lg">Delete Transaction</h3>
-      <p class="py-4">
-        Are you sure you want to delete this transaction? This action cannot be undone.
-      </p>
-      <div id="delete-dialog-details" class="bg-base-200 rounded-lg p-3 mb-4 text-sm">
-        <!-- Transaction details will be inserted here -->
-      </div>
-      <div id="delete-error" class="hidden alert alert-error text-sm mb-4" role="alert"></div>
-      <div class="modal-action">
-        <form method="dialog">
-          <button class="btn">Cancel</button>
-        </form>
-        <button id="confirm-delete-btn" class="btn btn-error">Delete Transaction</button>
-      </div>
-    </div>
-    <form method="dialog" class="modal-backdrop">
-      <button>close</button>
-    </form>
-  </dialog>
+  <!-- Delete Confirmation Modal -->
+  <DeleteConfirmationModal
+    id="delete-dialog"
+    title="Delete Transaction"
+    description="Are you sure you want to delete this transaction? This action cannot be undone."
+    confirmLabel="Delete Transaction"
+    cancelLabel="Cancel"
+  />
 </ProtectedLayout>
 
 <script>

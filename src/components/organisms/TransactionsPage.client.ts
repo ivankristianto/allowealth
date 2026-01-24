@@ -375,9 +375,11 @@ function handlePageChange(page: number): void {
  */
 async function handleDelete(transactionId: string, transactionDetails: string): Promise<void> {
   const dialog = document.getElementById('delete-dialog') as HTMLDialogElement | null;
-  const deleteDetails = document.getElementById('delete-dialog-details');
-  const deleteError = document.getElementById('delete-error');
-  const confirmBtn = document.getElementById('confirm-delete-btn') as HTMLButtonElement | null;
+  const deleteDetails = document.getElementById('delete-dialog-details') as HTMLElement | null;
+  const deleteError = document.getElementById('delete-dialog-error') as HTMLElement | null;
+  const confirmBtn = document.getElementById(
+    'delete-dialog-confirm-btn'
+  ) as HTMLButtonElement | null;
 
   if (!dialog || !confirmBtn) return;
 
@@ -395,7 +397,7 @@ async function handleDelete(transactionId: string, transactionDetails: string): 
 
       deleteDetails.innerHTML = '';
       const list = document.createElement('dl');
-      list.className = 'grid grid-cols-[auto_1fr] gap-2 text-sm';
+      list.className = 'grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm';
 
       const items = [
         { label: 'Description:', value: description },
@@ -405,16 +407,19 @@ async function handleDelete(transactionId: string, transactionDetails: string): 
 
       items.forEach(({ label, value }) => {
         const dt = document.createElement('dt');
-        dt.className = 'font-semibold';
+        dt.className = 'font-semibold text-base-content/60';
         dt.textContent = label;
         const dd = document.createElement('dd');
+        dd.className = 'font-medium';
         dd.textContent = value;
         list.append(dt, dd);
       });
 
       deleteDetails.appendChild(list);
+      deleteDetails.classList.remove('hidden');
     } catch (e) {
       console.error('Failed to parse transaction details:', e);
+      deleteDetails.classList.add('hidden');
     }
   }
 
@@ -432,7 +437,7 @@ async function handleDelete(transactionId: string, transactionDetails: string): 
  */
 async function executeDelete(confirmBtn: HTMLButtonElement): Promise<void> {
   const dialog = document.getElementById('delete-dialog') as HTMLDialogElement | null;
-  const deleteError = document.getElementById('delete-error');
+  const deleteError = document.getElementById('delete-dialog-error') as HTMLElement | null;
 
   // Get transaction ID from button attribute (prevents race conditions)
   const transactionId = confirmBtn.getAttribute('data-pending-delete-id');
@@ -642,7 +647,7 @@ function setupEventListeners(): void {
 
   // Confirm delete button in dialog
   const confirmDeleteBtn = document.getElementById(
-    'confirm-delete-btn'
+    'delete-dialog-confirm-btn'
   ) as HTMLButtonElement | null;
   if (confirmDeleteBtn) {
     confirmDeleteBtn.addEventListener('click', () => {

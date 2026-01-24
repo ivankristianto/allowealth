@@ -293,12 +293,11 @@ const chartId = `spending-chart-${Math.random().toString(36).slice(2, 11)}`;
     const chartLabels = data.map((d) => d.category);
     const chartColors = data.map((d, i) => d.color || colors[i % colors.length]);
 
-    // Detect dark mode for tooltip colors
+    // Detect dark mode for tooltip colors (using data-theme attribute)
     const isDark = (): boolean => {
-      return (
-        document.documentElement.classList.contains('dark') ||
-        window.matchMedia('(prefers-color-scheme: dark)').matches
-      );
+      const theme = document.documentElement.getAttribute('data-theme');
+      if (theme) return theme === 'dark';
+      return window.matchMedia('(prefers-color-scheme: dark)').matches;
     };
 
     // Create new chart

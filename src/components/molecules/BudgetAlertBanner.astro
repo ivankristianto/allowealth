@@ -40,30 +40,32 @@ const iconComponents = {
 const IconComponent = iconComponents[variant];
 
 // Variant color classes using DaisyUI semantic colors
+// Note: Using single opacity values that work in both light and dark modes
+// DaisyUI themes automatically adjust the base color values
 const variantClasses: Record<
   string,
   { bg: string; border: string; icon: string; title: string; message: string }
 > = {
   warning: {
-    bg: 'bg-warning/5 dark:bg-warning/10',
-    border: 'border-warning/20 dark:border-warning/30',
+    bg: 'bg-warning/10',
+    border: 'border-warning/20',
     icon: 'text-warning',
-    title: 'text-warning dark:text-warning',
-    message: 'text-warning/90 dark:text-warning/80',
+    title: 'text-warning',
+    message: 'text-warning/80',
   },
   error: {
-    bg: 'bg-error/5 dark:bg-error/10',
-    border: 'border-error/20 dark:border-error/30',
+    bg: 'bg-error/10',
+    border: 'border-error/20',
     icon: 'text-error',
-    title: 'text-error dark:text-error',
-    message: 'text-error/90 dark:text-error/80',
+    title: 'text-error',
+    message: 'text-error/80',
   },
   info: {
-    bg: 'bg-info/5 dark:bg-info/10',
-    border: 'border-info/20 dark:border-info/30',
+    bg: 'bg-info/10',
+    border: 'border-info/20',
     icon: 'text-info',
-    title: 'text-info dark:text-info',
-    message: 'text-info/90 dark:text-info/80',
+    title: 'text-info',
+    message: 'text-info/80',
   },
 };
 

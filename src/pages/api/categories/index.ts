@@ -14,15 +14,15 @@ import { logError } from '@/lib/utils';
  * GET /api/categories
  * List all categories for the user
  */
-export const GET: APIRoute = async ({ request, url }) => {
+export const GET: APIRoute = async (context) => {
   try {
-    const userId = await requireAuth({ request, url } as any);
+    const userId = await requireAuth(context);
 
-    const type = url.searchParams.get('type');
-    const isActiveParam = url.searchParams.get('is_active');
+    const type = context.url.searchParams.get('type');
+    const isActiveParam = context.url.searchParams.get('is_active');
 
-    const filters: any = {};
-    if (type && (type === 'expense' || type === 'income')) {
+    const filters: { type?: 'expense' | 'income'; is_active?: boolean } = {};
+    if (type === 'expense' || type === 'income') {
       filters.type = type;
     }
     if (isActiveParam !== null) {
@@ -45,11 +45,11 @@ export const GET: APIRoute = async ({ request, url }) => {
  * POST /api/categories
  * Create a new category
  */
-export const POST: APIRoute = async ({ request, url }) => {
+export const POST: APIRoute = async (context) => {
   try {
-    const userId = await requireAuth({ request, url } as any);
+    const userId = await requireAuth(context);
 
-    const validation = await validateBody(request, createCategoryAPISchema);
+    const validation = await validateBody(context.request, createCategoryAPISchema);
 
     if (isValidationError(validation)) {
       return errorResponse('Validation failed', 400, 'VALIDATION_ERROR', validation.error.issues);

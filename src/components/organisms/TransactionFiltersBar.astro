@@ -85,7 +85,9 @@ const buildFilterUrl = (updates: Record<string, string>) => {
   });
 
   const queryString = params.toString();
-  return queryString ? `${baseUrl}?${queryString}` : baseUrl;
+  // Use base path without existing query params (baseUrl might already have them)
+  const basePath = '/transactions';
+  return queryString ? `${basePath}?${queryString}` : basePath;
 };
 
 // Get month index for navigation

@@ -209,42 +209,6 @@ export const AllSizes: StoryObj = {
   },
 };
 
-// Budget status variant stories
-
-export const Optimal: StoryObj = {
-  args: { variant: 'optimal', text: 'On Track' },
-  render: (args) => createBadge(args),
-};
-
-export const Review: StoryObj = {
-  args: { variant: 'review', text: 'Review Needed' },
-  render: (args) => createBadge(args),
-};
-
-export const Exceeded: StoryObj = {
-  args: { variant: 'exceeded', text: 'Over Budget' },
-  render: (args) => createBadge(args),
-};
-
-export const AllBudgetStatuses: StoryObj = {
-  render: () => {
-    const container = document.createElement('div');
-    container.className = 'flex flex-wrap gap-3';
-
-    const budgetStatuses = ['optimal', 'review', 'exceeded'] as const;
-
-    budgetStatuses.forEach((variant) => {
-      const badge = createBadge({
-        variant,
-        text: variant === 'optimal' ? 'On Track' : variant === 'review' ? 'Review' : 'Over Budget',
-      });
-      container.appendChild(badge);
-    });
-
-    return container;
-  },
-};
-
 export const BudgetStatus: StoryObj = {
   render: () => {
     const container = document.createElement('div');

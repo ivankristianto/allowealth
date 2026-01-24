@@ -17,7 +17,7 @@
  */
 
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
-import { dashboardService, categoryService, paymentMethodService } from '@/services';
+import { dashboardService } from '@/services';
 import type { DashboardData } from '@/services/dashboard.service';
 import SpendingCard from '@/components/organisms/SpendingCard.astro';
 import SpendingChart from '@/components/organisms/SpendingChart.astro';
@@ -59,21 +59,7 @@ try {
   dashboardData = null;
 }
 
-// Fetch categories and payment methods for transaction modals (TODO: Temporary integration)
-let categories: Array<{ id: string; name: string; type: string; currency?: string }> = [];
-let paymentMethods: Array<{ id: string; name: string; type: string }> = [];
-
-if (user) {
-  try {
-    [categories, paymentMethods] = await Promise.all([
-      categoryService.findAll(user.id, { is_active: true }),
-      paymentMethodService.findAll(user.id, { is_active: true }),
-    ]);
-  } catch (err) {
-    console.error('Error loading transaction form data:', err);
-    // Non-critical: modals won't have options but dashboard still works
-  }
-}
+// Categories and payment methods for transaction modals are provided by ProtectedLayout
 
 // Get month name for remaining label
 const monthNames = [
@@ -161,7 +147,7 @@ const spendingCategories = [
       !error && (
         <>
           {/* Quick Actions - Direct rendering, no wrapper */}
-          <QuickActions categories={categories} paymentMethods={paymentMethods} />
+          <QuickActions />
 
           {/* Spending Summary Card & Spending Analysis Chart (side by side) */}
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
