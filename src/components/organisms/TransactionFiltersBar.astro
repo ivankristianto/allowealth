@@ -1,0 +1,297 @@
+---
+/**
+ * Transaction Filters Bar
+ *
+ * Unified filter bar with type toggle, category dropdown, and search input.
+ * Matches POC design with pill-style buttons and rounded-3xl card.
+ *
+ * @param {string} typeFilter - Current type filter (all/income/expense)
+ * @param {string} searchValue - Current search query
+ * @param {string} categoryId - Current category filter
+ * @param {Array} categories - Available categories
+ * @param {boolean} showCategoryFilter - Show category dropdown
+ */
+
+import {
+  Search,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Calendar,
+  Tag,
+  SlidersHorizontal,
+} from '@lucide/astro';
+import Input from '../atoms/Input.astro';
+
+export interface Props {
+  typeFilter?: 'all' | 'income' | 'expense';
+  searchValue?: string;
+  categoryId?: string;
+  categories?: Array<{ id: string; name: string; type: string }>;
+  showCategoryFilter?: boolean;
+  monthSelector?: boolean;
+  availableMonths?: string[];
+  selectedMonth?: string;
+  baseUrl?: string;
+}
+
+const {
+  typeFilter = 'all',
+  searchValue = '',
+  categoryId = '',
+  categories = [],
+  showCategoryFilter = true,
+  monthSelector = true,
+  availableMonths = [],
+  selectedMonth = '',
+  baseUrl = '/transactions',
+} = Astro.props;
+
+// Build URL with current filters
+const buildFilterUrl = (updates: Record<string, string>) => {
+  const params = new URLSearchParams();
+
+  // Add current filters
+  if (typeFilter !== 'all') params.set('type', typeFilter);
+  if (searchValue) params.set('search', searchValue);
+  if (categoryId) params.set('category_id', categoryId);
+
+  // Add updates
+  Object.entries(updates).forEach(([key, value]) => {
+    if (value && value !== 'all') {
+      params.set(key, value);
+    } else {
+      params.delete(key);
+    }
+  });
+
+  const queryString = params.toString();
+  return queryString ? `${baseUrl}?${queryString}` : baseUrl;
+};
+
+// Get month index for navigation
+const currentMonthIndex = availableMonths.indexOf(selectedMonth);
+const hasPrevMonth = currentMonthIndex > 0;
+const hasNextMonth = currentMonthIndex < availableMonths.length - 1;
+
+// Build month navigation URL
+const buildMonthUrl = (direction: 'prev' | 'next') => {
+  const newIndex = direction === 'prev' ? currentMonthIndex - 1 : currentMonthIndex + 1;
+  if (newIndex < 0 || newIndex >= availableMonths.length) return '#';
+  return buildFilterUrl({ month: availableMonths[newIndex] });
+};
+---
+
+<div class="card bg-base-100 border border-base-300 rounded-3xl shadow-sm">
+  <div class="card-body p-4 md:p-6">
+    <form
+      action={baseUrl}
+      method="get"
+      class="flex flex-col xl:flex-row items-stretch xl:items-center gap-4 xl:gap-6"
+      role="search"
+      aria-label="Filter transactions"
+    >
+      <!-- Type Filter (Pill-style) -->
+      <div class="flex items-center gap-2">
+        <input type="hidden" name="type" value={typeFilter} data-filter-type />
+        <div
+          class="inline-flex bg-base-200 p-1 rounded-2xl"
+          role="group"
+          aria-label="Filter by transaction type"
+        >
+          <a
+            href={buildFilterUrl({ type: 'all' })}
+            class={`filter-type-btn px-4 md:px-6 py-2 text-xs font-bold rounded-xl transition-all ${
+              typeFilter === 'all'
+                ? 'bg-base-100 shadow text-primary'
+                : 'text-base-content/60 hover:text-primary'
+            }`}
+            data-type="all"
+            aria-pressed={typeFilter === 'all'}
+            role="button"
+          >
+            All
+          </a>
+          <a
+            href={buildFilterUrl({ type: 'expense' })}
+            class={`filter-type-btn px-4 md:px-6 py-2 text-xs font-bold rounded-xl transition-all ${
+              typeFilter === 'expense'
+                ? 'bg-base-100 shadow text-primary'
+                : 'text-base-content/60 hover:text-primary'
+            }`}
+            data-type="expense"
+            aria-pressed={typeFilter === 'expense'}
+            role="button"
+          >
+            Expenses
+          </a>
+          <a
+            href={buildFilterUrl({ type: 'income' })}
+            class={`filter-type-btn px-4 md:px-6 py-2 text-xs font-bold rounded-xl transition-all ${
+              typeFilter === 'income'
+                ? 'bg-base-100 shadow text-primary'
+                : 'text-base-content/60 hover:text-primary'
+            }`}
+            data-type="income"
+            aria-pressed={typeFilter === 'income'}
+            role="button"
+          >
+            Income
+          </a>
+        </div>
+      </div>
+
+      <!-- Category & Month Selectors -->
+      <div class="flex flex-wrap items-center gap-3">
+        {
+          showCategoryFilter && categories.length > 0 && (
+            <div class="relative min-w-[160px]">
+              <select
+                name="category_id"
+                class="select select-bordered select-sm font-bold rounded-2xl pr-10 appearance-none cursor-pointer shadow-sm hover:border-primary/30 transition-colors"
+                aria-label="Filter by category"
+              >
+                <option value="">All Categories</option>
+                {categories.map((cat) => (
+                  <option value={cat.id} selected={cat.id === categoryId}>
+                    {cat.name}
+                  </option>
+                ))}
+              </select>
+              <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-base-content/40">
+                <Tag size={16} class="stroke-current" aria-hidden="true" />
+              </div>
+              <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                <ChevronDown
+                  size={16}
+                  class="stroke-current text-base-content/40"
+                  aria-hidden="true"
+                />
+              </div>
+            </div>
+          )
+        }
+
+        {
+          monthSelector && availableMonths.length > 0 && (
+            <div class="flex items-center gap-1">
+              <a
+                href={buildMonthUrl('prev')}
+                class={`p-2.5 bg-base-100 border border-base-300 rounded-xl transition-all active:scale-95 shadow-sm ${
+                  !hasPrevMonth
+                    ? 'opacity-30 cursor-not-allowed pointer-events-none'
+                    : 'text-base-content/60 hover:text-primary hover:border-primary/30'
+                }`}
+                aria-label="Previous month"
+                aria-disabled={!hasPrevMonth}
+              >
+                <ChevronLeft size={18} class="stroke-current block" aria-hidden="true" />
+              </a>
+
+              <div class="relative min-w-[140px] md:min-w-[160px]">
+                <select
+                  name="month"
+                  class="select select-bordered select-sm font-bold rounded-2xl pl-10 pr-10 appearance-none cursor-pointer shadow-sm hover:border-primary/30 transition-colors"
+                  aria-label="Select month"
+                >
+                  {availableMonths.map((month) => (
+                    <option value={month} selected={month === selectedMonth}>
+                      {month}
+                    </option>
+                  ))}
+                </select>
+                <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-base-content/40">
+                  <Calendar size={16} class="stroke-current" aria-hidden="true" />
+                </div>
+                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                  <ChevronDown
+                    size={16}
+                    class="stroke-current text-base-content/40"
+                    aria-hidden="true"
+                  />
+                </div>
+              </div>
+
+              <a
+                href={buildMonthUrl('next')}
+                class={`p-2.5 bg-base-100 border border-base-300 rounded-xl transition-all active:scale-95 shadow-sm ${
+                  !hasNextMonth
+                    ? 'opacity-30 cursor-not-allowed pointer-events-none'
+                    : 'text-base-content/60 hover:text-primary hover:border-primary/30'
+                }`}
+                aria-label="Next month"
+                aria-disabled={!hasNextMonth}
+              >
+                <ChevronRight size={18} class="stroke-current block" aria-hidden="true" />
+              </a>
+            </div>
+          )
+        }
+      </div>
+
+      <!-- Search Input -->
+      <div class="relative w-full xl:max-w-xs flex-1 xl:flex-none">
+        <Search
+          size={18}
+          class="absolute left-4 top-1/2 -translate-y-1/2 text-base-content/40 stroke-current"
+          aria-hidden="true"
+        />
+        <Input
+          type="search"
+          name="search"
+          value={searchValue}
+          placeholder="Search activity..."
+          className="w-full pl-11 pr-4 py-3 shadow-sm rounded-2xl"
+        />
+      </div>
+
+      <!-- Advanced Filters Toggle -->
+      <button
+        type="button"
+        class="btn btn-ghost btn-sm rounded-2xl gap-2"
+        aria-label="Advanced filters"
+        data-advanced-filters-toggle
+      >
+        <SlidersHorizontal size={18} class="stroke-current" aria-hidden="true" />
+        <span class="hidden sm:inline">Filters</span>
+      </button>
+    </form>
+  </div>
+</div>
+
+<script>
+  // Handle keyboard navigation for type filter buttons
+  document.addEventListener('keydown', (e) => {
+    if (e.target instanceof HTMLElement && e.target.hasAttribute('data-filter-type')) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        e.target.click();
+      }
+    }
+  });
+
+  // Sync select changes with URL
+  const filterBar = document.querySelector('[role="search"] form');
+  if (filterBar) {
+    const selects = filterBar.querySelectorAll('select');
+    selects.forEach((select) => {
+      select.addEventListener('change', () => {
+        // Auto-submit form on select change
+        (filterBar as HTMLFormElement).submit();
+      });
+    });
+  }
+</script>
+
+<style>
+  /* Filter button keyboard focus */
+  .filter-type-btn {
+    position: relative;
+  }
+
+  .filter-type-btn:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 2px;
+    border-radius: 0.75rem;
+  }
+</style>
