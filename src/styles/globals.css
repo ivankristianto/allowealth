@@ -104,6 +104,28 @@ html {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Theme transition animation - smooth color changes when toggling themes */
+/* Applied to main containers only to avoid interfering with component animations */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    transition: background-color 0.3s ease;
+  }
+
+  body {
+    transition:
+      background-color 0.3s ease,
+      color 0.3s ease;
+  }
+
+  /* Main layout containers that should transition smoothly */
+  .theme-transition {
+    transition:
+      background-color 0.3s ease,
+      color 0.3s ease,
+      border-color 0.3s ease;
+  }
+}
+
 body {
   background-color: var(--color-base-100, #ffffff);
   color: var(--color-base-content, #1f2937);

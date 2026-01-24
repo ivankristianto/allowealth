@@ -222,7 +222,7 @@ const budgetCount =
     // Handle edit budget button clicks from BudgetCard components
     // Reuse the SetNewBudgetModal for editing
     document.querySelectorAll('[data-edit-budget]').forEach((btn) => {
-      btn.addEventListener('click', (e) => {
+      btn.addEventListener('click', (e: Event) => {
         e.stopPropagation();
 
         const categoryId = btn.getAttribute('data-edit-budget');

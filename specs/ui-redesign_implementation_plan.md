@@ -1400,7 +1400,7 @@ interface CashFlowItemProps {
 - [x] All new components have Storybook stories
 - [x] All quality gates pass
 
-**Progress:** Tasks 1-4, 6-9, 11-17 (P0-P2) Complete ✅ - Design tokens, component library updates, Navigation sidebar, Header redesign, Spending Summary Card, Quick Actions, Recent Activity list, Net Worth Widget, Spending Analysis Chart, Transaction Filter Bar, Transaction Summary Cards, Budget Card Grid, Budget Page Header & Advice Banner, and Dark Mode Verification complete. Code Quality Improvements: P2-1 (IconBadge comments) ✅, P2-2 (getStatusBadgeClasses utility) ✅, P1-1 (ARIA patterns in stories) ✅, P1-3 (StoryObj type safety) ✅. Ready for remaining P1/P2 tasks (Mobile Navigation, Responsive Verification) and additional P2 code quality suggestions.
+**Progress:** Tasks 1-4, 6-9, 11-17 (P0-P2) Complete ✅ - Design tokens, component library updates, Navigation sidebar, Header redesign, Spending Summary Card, Quick Actions, Recent Activity list, Net Worth Widget, Spending Analysis Chart, Transaction Filter Bar, Transaction Summary Cards, Budget Card Grid, Budget Page Header & Advice Banner, and Dark Mode Verification complete. Code Quality Improvements: P2-1 (IconBadge comments) ✅, P2-2 (getStatusBadgeClasses utility) ✅, P1-1 (ARIA patterns in stories) ✅, P1-3 (StoryObj type safety) ✅, P2-3 (ProgressBar animation with reduced motion support) ✅, P2-4 (SpendingCard loading accessibility) ✅, P2-1 (NetWorthWidget empty state) ✅, P2-2 (BudgetCardGrid skeletonCount prop) ✅, P2-1 (Theme transition animation) ✅. Ready for remaining P1/P2 tasks (Mobile Navigation, Responsive Verification) and additional P2/P3 code quality suggestions.
 
 ---
 
@@ -1499,25 +1499,46 @@ Phase 3 (P2 - Polish):
 - **Extract BudgetStatusType type alias** - Currently the status type union is duplicated in multiple places. Could create `export type BudgetStatusType = 'status-ok' | 'status-warning' | 'status-danger';` for DRY compliance.
 - **Standardize status type conventions** - Codebase has two different status conventions (`status-ok/warning/danger` vs `ok/warning/exceeded`). Consider standardizing.
 
-**P2-3: Animations Not Using Motion Library**
+**P2-3: Animations Not Using Motion Library** ✅ FIXED
 
 - **Location:** `/home/ivan/works/expenses/src/components/atoms/ProgressBar.astro` (line 69)
-- [ ] **Issue:** Uses CSS class instead of Motion library
-- **Action:** Consider using Motion for consistency with design system
+- [x] **Issue:** Uses CSS class instead of Motion library
+- **Action:** Per design system guidelines, CSS transitions are appropriate for simple animations. Added prefers-reduced-motion support.
 
-**P2-4: Missing Loading State Accessibility**
+**Implementation Notes:**
+
+- Used CSS transitions (per design system: "Use CSS Transitions For: Simple transforms")
+- Added `@media (prefers-reduced-motion: reduce)` to disable animation for users who prefer reduced motion
+- Used `requestAnimationFrame` for progressive enhancement
+- 36 unit tests added covering animation behavior, accessibility, and status mapping
+
+**P2-4: Missing Loading State Accessibility** ✅ FIXED
 
 - **Location:** `/home/ivan/works/expenses/src/components/organisms/SpendingCard.astro` (line 56)
-- [ ] **Issue:** Loading state could benefit from more descriptive aria-label
-- **Action:** Add `aria-label="Loading spending data..."`
+- [x] **Issue:** Loading state could benefit from more descriptive aria-label
+- **Action:** Added `aria-label="Loading spending data..."` and `aria-busy` attributes
+
+**Implementation Notes:**
+
+- Added `aria-busy={loading}` to indicate loading state
+- Added `aria-label={loading ? 'Loading spending data...' : undefined}` for screen readers
+- Wrapped skeleton elements with `aria-hidden="true"` to hide from assistive technology
+- 25 unit tests added covering accessibility patterns
 
 ### Non-Blocking Feedback from Code Review (Task 9)
 
-**P2-1: Missing Empty State**
+**P2-1: Missing Empty State** ✅ FIXED
 
 - **Location:** `/home/ivan/works/expenses/src/components/organisms/NetWorthWidget.astro`
-- [ ] **Issue:** Component has no explicit empty state (when all values are 0)
-- **Action:** Consider adding an empty state with helpful message: "No assets yet. Add your first asset to get started."
+- [x] **Issue:** Component has no explicit empty state (when all values are 0)
+- **Action:** Added empty state with helpful message and CTA button to add first asset
+
+**Implementation Notes:**
+
+- Added `isEmpty` check: `totalIDR === 0 && totalUSD === 0 && localAssets === 0 && globalAssets === 0`
+- Empty state shows Wallet icon, "No assets yet" message, and "Add Asset" CTA button
+- Links to `/assets/add` for easy first asset creation
+- 6 unit tests added covering empty state detection
 
 **P2-2: Test Helper Functions Should Verify formatCurrency Consistency**
 
@@ -1586,11 +1607,17 @@ Phase 3 (P2 - Polish):
 - Fixed deprecated `Home` icon by replacing with `House`
 - All 57 tests pass
 
-**P2-2: Magic Number for Skeleton Count**
+**P2-2: Magic Number for Skeleton Count** ✅ FIXED
 
 - **Location:** `BudgetCardGrid.astro` (line 91)
-- [ ] **Issue:** Skeleton count is hardcoded as 6
-- **Action:** Consider making this a prop or deriving from expected grid layout
+- [x] **Issue:** Skeleton count is hardcoded as 6
+- **Action:** Made `skeletonCount` a configurable prop with default value of 6
+
+**Implementation Notes:**
+
+- Added `skeletonCount?: number` prop to Props interface with JSDoc documentation
+- Default value of 6 represents 2 rows in 3-column grid layout
+- 5 unit tests added covering configurable skeleton count
 
 **P2-3: Multiple Non-null Assertions in Budget Page**
 
@@ -1624,11 +1651,18 @@ Phase 3 (P2 - Polish):
 - [x] **Issue:** Uses `is:inline` with `define:vars` which limits script capabilities
 - **Action:** Refactored to use data attributes pattern per CLAUDE.md guidelines
 
-**P2-1: Consider Adding Theme Transition Animation**
+**P2-1: Consider Adding Theme Transition Animation** ✅ FIXED
 
-- **Location:** `src/components/atoms/ThemeToggle.astro`
-- [ ] **Issue:** Theme switch is instant without transition
-- **Action:** Consider adding CSS transition for smoother theme change: `html { transition: background-color 0.3s ease, color 0.3s ease; }`
+- **Location:** `src/components/atoms/ThemeToggle.astro` and `src/styles/globals.css`
+- [x] **Issue:** Theme switch is instant without transition
+- **Action:** Added CSS transition with prefers-reduced-motion support
+
+**Implementation Notes:**
+
+- Added theme transition CSS in `globals.css` for html and body elements
+- Respects `prefers-reduced-motion: no-preference` media query
+- Added `.theme-transition` utility class for components needing theme-aware transitions
+- Transitions: background-color, color, border-color (0.3s ease)
 
 ### Non-Blocking Feedback from Code Review (Storybook Stories - Code Quality Session)
 
@@ -1688,3 +1722,41 @@ Phase 3 (P2 - Polish):
 - **Location:** All three new story files
 - [ ] **Issue:** Stories could have better presentation with layout and backgrounds parameters
 - **Action:** Add `parameters: { layout: 'padded' }` for better story presentation
+
+### Non-Blocking Feedback from Code Review (Code Quality Session 2)
+
+**P2-1: ProgressBar - Add aria-valuetext for Accessibility Enhancement**
+
+- **Location:** `/home/ivan/works/expenses/src/components/atoms/ProgressBar.astro`
+- [ ] **Issue:** Screen reader users may benefit from human-readable progress description
+- **Action:** Consider adding `aria-valuetext={\`${clampedValue} percent\`}` to progressbar
+
+**P2-2: NetWorthWidget - Empty State Check Could Be More Robust**
+
+- **Location:** `/home/ivan/works/expenses/src/components/organisms/NetWorthWidget.astro` (line 48)
+- [ ] **Issue:** Uses strict equality with 0. May not handle null, undefined, or small floats
+- **Action:** Consider defensive check: `!totalIDR && !totalUSD && !localAssets && !globalAssets`
+
+**P2-3: SpendingCard - Loading State Screen Reader Enhancement**
+
+- **Location:** `/home/ivan/works/expenses/src/components/organisms/SpendingCard.astro`
+- [ ] **Issue:** Normal state could also benefit from aria-labelledby pointing to heading
+- **Action:** Add `aria-labelledby={!loading && !error ? 'spending-card-title' : undefined}`
+
+**P2-4: Theme Transition - Document .theme-transition Class Usage**
+
+- **Location:** `/home/ivan/works/expenses/src/styles/globals.css`
+- [ ] **Issue:** `.theme-transition` class defined but not documented/used
+- **Action:** Document the class in design system or apply to relevant components
+
+**P3-1: ProgressBar - Extract Animation Configuration to CSS Variables**
+
+- **Location:** `/home/ivan/works/expenses/src/components/atoms/ProgressBar.astro`
+- [ ] **Issue:** Animation timing (1s) and easing hardcoded in CSS
+- **Action:** Consider extracting to `--animation-duration-slow` and `--animation-easing-ease-out`
+
+**P3-2: BudgetCardGrid - Consider aria-rowcount for Large Lists**
+
+- **Location:** `/home/ivan/works/expenses/src/components/organisms/BudgetCardGrid.astro`
+- [ ] **Issue:** Large grids could benefit from total count announcement
+- **Action:** Add `aria-rowcount={budgets.length}` to grid container

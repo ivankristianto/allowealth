@@ -63,13 +63,12 @@ const barContainerClasses = [
   .filter(Boolean)
   .join(' ');
 
-const barFillClasses = [
-  'h-full rounded-full transition-all duration-1000 shadow-md',
-  statusClasses[status],
-  animate && 'animate-in slide-in-from-left',
-]
+const barFillClasses = ['h-full rounded-full shadow-md progress-bar-fill', statusClasses[status]]
   .filter(Boolean)
   .join(' ');
+
+// Generate unique ID for this progress bar instance
+const progressBarId = `progress-bar-${Math.random().toString(36).slice(2, 11)}`;
 ---
 
 <div class="flex items-center gap-3">
@@ -80,7 +79,14 @@ const barFillClasses = [
     aria-valuemin="0"
     aria-valuemax="100"
   >
-    <div class={barFillClasses} style={`width: ${clampedValue}%`}></div>
+    <div
+      id={progressBarId}
+      class={barFillClasses}
+      style={animate ? 'width: 0%' : `width: ${clampedValue}%`}
+      data-target-width={clampedValue}
+      data-animate={animate.toString()}
+    >
+    </div>
   </div>
   {
     showLabel && (
@@ -92,3 +98,58 @@ const barFillClasses = [
     )
   }
 </div>
+
+<style>
+  /* CSS transition for progress bar animation
+   * Per design system guidelines, CSS transitions are appropriate for simple,
+   * single-property animations. Motion library is reserved for complex animations.
+   */
+  .progress-bar-fill {
+    transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Respect user's reduced motion preference - instant transition */
+  @media (prefers-reduced-motion: reduce) {
+    .progress-bar-fill {
+      transition: none;
+    }
+  }
+</style>
+
+<script>
+  function initProgressBar() {
+    const progressBars = document.querySelectorAll<HTMLElement>('[data-target-width]');
+
+    progressBars.forEach((bar) => {
+      const shouldAnimate = bar.dataset.animate === 'true';
+      const targetWidth = Number(bar.dataset.targetWidth);
+
+      // Skip if already animated or animation disabled
+      if (!shouldAnimate || bar.dataset.animated === 'true') {
+        bar.style.width = `${targetWidth}%`;
+        return;
+      }
+
+      // Use requestAnimationFrame to ensure the initial width (0%) is rendered
+      // before transitioning to the target width
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          bar.style.width = `${targetWidth}%`;
+        });
+      });
+
+      // Mark as animated to prevent re-animation
+      bar.dataset.animated = 'true';
+    });
+  }
+
+  // Initialize on DOM ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initProgressBar);
+  } else {
+    initProgressBar();
+  }
+
+  // Re-initialize on Astro page transitions
+  document.addEventListener('astro:after-swap', initProgressBar);
+</script>

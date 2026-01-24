@@ -66,12 +66,20 @@ const budgetFormatted = formatCurrency(budget, currency, true);
 const remainingFormatted = formatCurrency(remaining, currency);
 ---
 
-<Card padding="lg" rounded="card-lg" className={className} role="status" aria-live="polite">
+<Card
+  padding="lg"
+  rounded="card-lg"
+  className={className}
+  role="status"
+  aria-live="polite"
+  aria-busy={loading}
+  aria-label={loading ? 'Loading spending data...' : undefined}
+>
   <div class="flex flex-col gap-6">
     {/* Loading State */}
     {
       loading ? (
-        <>
+        <div aria-hidden="true">
           <div class="flex justify-between items-start">
             <div class="flex items-center gap-4">
               <div class="w-12 h-12 bg-base-300 rounded-full animate-pulse" />
@@ -83,12 +91,12 @@ const remainingFormatted = formatCurrency(remaining, currency);
             <div class="h-6 bg-base-300 rounded w-16 animate-pulse" />
           </div>
 
-          <div class="h-3 bg-base-300 rounded-full animate-pulse" />
+          <div class="h-3 bg-base-300 rounded-full animate-pulse mt-6" />
 
-          <div class="h-4 bg-base-300 rounded w-40 animate-pulse" />
+          <div class="h-4 bg-base-300 rounded w-40 animate-pulse mt-6" />
 
-          <div class="h-20 bg-base-300 rounded-3xl animate-pulse" />
-        </>
+          <div class="h-20 bg-base-300 rounded-3xl animate-pulse mt-6" />
+        </div>
       ) : error ? (
         /* Error State */
         <div class="p-6 text-center">

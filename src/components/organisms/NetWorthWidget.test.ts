@@ -176,3 +176,83 @@ describe('NetWorthWidget - asset breakdown consistency', () => {
     expect(props.globalAssets).toBeGreaterThan(0);
   });
 });
+
+describe('NetWorthWidget - empty state detection', () => {
+  /**
+   * Tests for the empty state logic (P2-1 code quality improvement)
+   * Component shows empty state when all asset values are 0
+   */
+  const isEmptyState = (props: {
+    totalIDR: number;
+    totalUSD: number;
+    localAssets: number;
+    globalAssets: number;
+  }): boolean => {
+    return (
+      props.totalIDR === 0 &&
+      props.totalUSD === 0 &&
+      props.localAssets === 0 &&
+      props.globalAssets === 0
+    );
+  };
+
+  it('should detect empty state when all values are 0', () => {
+    const emptyProps = {
+      totalIDR: 0,
+      totalUSD: 0,
+      localAssets: 0,
+      globalAssets: 0,
+    };
+    expect(isEmptyState(emptyProps)).toBe(true);
+  });
+
+  it('should not be empty state when any IDR value is set', () => {
+    const props = {
+      totalIDR: 1000000,
+      totalUSD: 0,
+      localAssets: 0,
+      globalAssets: 0,
+    };
+    expect(isEmptyState(props)).toBe(false);
+  });
+
+  it('should not be empty state when any USD value is set', () => {
+    const props = {
+      totalIDR: 0,
+      totalUSD: 100,
+      localAssets: 0,
+      globalAssets: 0,
+    };
+    expect(isEmptyState(props)).toBe(false);
+  });
+
+  it('should not be empty state when local assets are set', () => {
+    const props = {
+      totalIDR: 0,
+      totalUSD: 0,
+      localAssets: 500000,
+      globalAssets: 0,
+    };
+    expect(isEmptyState(props)).toBe(false);
+  });
+
+  it('should not be empty state when global assets are set', () => {
+    const props = {
+      totalIDR: 0,
+      totalUSD: 0,
+      localAssets: 0,
+      globalAssets: 50,
+    };
+    expect(isEmptyState(props)).toBe(false);
+  });
+
+  it('should not be empty state with full data', () => {
+    const fullProps = {
+      totalIDR: 1956063000,
+      totalUSD: 130404.2,
+      localAssets: 1541740000,
+      globalAssets: 102782.67,
+    };
+    expect(isEmptyState(fullProps)).toBe(false);
+  });
+});

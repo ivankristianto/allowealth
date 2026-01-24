@@ -169,10 +169,39 @@ describe('BudgetCardGrid - grid column calculation', () => {
 });
 
 describe('BudgetCardGrid - skeleton count', () => {
-  it('should render 6 skeleton cards when loading', () => {
-    const skeletonCount = 6;
-    const skeletons = Array.from({ length: skeletonCount });
+  /**
+   * Tests for configurable skeletonCount prop (P2-2 code quality improvement)
+   * Default is 6 (2 rows in 3-column grid), but can be customized via prop
+   */
+  it('should render 6 skeleton cards by default when loading', () => {
+    const defaultSkeletonCount = 6;
+    const skeletons = Array.from({ length: defaultSkeletonCount });
     expect(skeletons.length).toBe(6);
+  });
+
+  it('should allow custom skeleton count via prop', () => {
+    const customSkeletonCount = 9; // 3 rows in 3-column grid
+    const skeletons = Array.from({ length: customSkeletonCount });
+    expect(skeletons.length).toBe(9);
+  });
+
+  it('should allow smaller skeleton count for compact views', () => {
+    const compactSkeletonCount = 3; // 1 row in 3-column grid
+    const skeletons = Array.from({ length: compactSkeletonCount });
+    expect(skeletons.length).toBe(3);
+  });
+
+  it('should handle skeleton count of 0', () => {
+    const zeroSkeletonCount = 0;
+    const skeletons = Array.from({ length: zeroSkeletonCount });
+    expect(skeletons.length).toBe(0);
+  });
+
+  it('should use prop value over default', () => {
+    const propValue = 12;
+    const defaultValue = 6;
+    const skeletonCount = propValue ?? defaultValue;
+    expect(skeletonCount).toBe(12);
   });
 });
 

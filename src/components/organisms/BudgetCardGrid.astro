@@ -30,11 +30,20 @@ export interface Props {
   budgets: BudgetData[];
   currency?: 'IDR' | 'USD';
   loading?: boolean;
+  /** Number of skeleton cards to show during loading (default: 6 for 2 rows in 3-column grid) */
+  skeletonCount?: number;
   error?: string;
   className?: string;
 }
 
-const { budgets = [], currency = 'IDR', loading = false, error, className = '' } = Astro.props;
+const {
+  budgets = [],
+  currency = 'IDR',
+  loading = false,
+  skeletonCount = 6,
+  error,
+  className = '',
+} = Astro.props;
 
 const gridClasses = [
   // Responsive grid: 1 col on mobile, 2 on tablet, 3 on desktop
@@ -46,9 +55,6 @@ const gridClasses = [
 ]
   .filter(Boolean)
   .join(' ');
-
-// Number of skeleton cards to show during loading
-const skeletonCount = 6;
 ---
 
 {/* Error state */}
