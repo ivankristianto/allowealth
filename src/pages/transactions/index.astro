@@ -13,6 +13,14 @@ import TransactionFiltersBar from '@/components/organisms/TransactionFiltersBar.
 import { Receipt, RotateCcw } from '@lucide/astro';
 import type { TransactionOutput } from '@/lib/types/transaction';
 import { transactionService, categoryService } from '@/services';
+import {
+  parseMonthKey,
+  formatMonthKey,
+  getCurrentMonthKey,
+  createMonthKey,
+  safeParseAmount,
+} from '@/lib/utils';
+import { PAGINATION } from '@/lib/constants/pagination';
 
 const user = Astro.locals.user!;
 const currentPath = '/transactions';
@@ -23,7 +31,7 @@ const searchParams = Object.fromEntries(url.searchParams.entries());
 
 // Pagination
 const page = parseInt(searchParams.page || '1');
-const pageSize = 50;
+const pageSize = PAGINATION.DEFAULT_PAGE_SIZE;
 const offset = (page - 1) * pageSize;
 
 // Get filter values - default to 'expense' (no 'all' option)
@@ -35,28 +43,11 @@ const searchValue = searchParams.search || '';
 const selectedMonth = searchParams.month || '';
 
 // Calculate current month key from today's date (used as default)
-const now = new Date();
-const todayMonthKey = `${String(now.getMonth() + 1).padStart(2, '0')}-${now.getFullYear()}`;
-
-// Helper to parse month key (MM-YYYY) into start/end dates
-function parseMonthToDateRange(monthKey: string): { start: Date; end: Date } | null {
-  const match = monthKey.match(/^(\d{2})-(\d{4})$/);
-  if (!match) return null;
-
-  const month = parseInt(match[1], 10) - 1; // 0-indexed
-  const year = parseInt(match[2], 10);
-
-  if (month < 0 || month > 11 || isNaN(year)) return null;
-
-  const start = new Date(year, month, 1);
-  const end = new Date(year, month + 1, 0); // Last day of month
-
-  return { start, end };
-}
+const todayMonthKey = getCurrentMonthKey();
 
 // Determine effective month (from URL or default to today's month)
 const effectiveMonth = selectedMonth || todayMonthKey;
-const monthDateRange = parseMonthToDateRange(effectiveMonth);
+const monthDateRange = parseMonthKey(effectiveMonth);
 
 // Build filters for service - ALWAYS filter by month
 const filters = {
@@ -109,7 +100,7 @@ const categories = await categoryService.findAll(user.id, { is_active: true });
 // For month selector, fetch all months available (optimized query)
 const allUserTransactions = await transactionService.findAll({
   user_id: user.id,
-  limit: 10000,
+  limit: PAGINATION.MAX_MONTH_TRANSACTIONS,
 });
 
 // Build available months list from transactions
@@ -117,8 +108,8 @@ const allUserTransactions = await transactionService.findAll({
 const monthMap = new Map<string, string>();
 allUserTransactions.forEach((t: any) => {
   const date = new Date(t.transaction_date);
-  const key = `${String(date.getMonth() + 1).padStart(2, '0')}-${date.getFullYear()}`;
-  const label = date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  const key = createMonthKey(date);
+  const label = formatMonthKey(key);
   monthMap.set(key, label);
 });
 
@@ -141,13 +132,14 @@ let expenseCount = 0;
 // Calculate from all user transactions for the selected month
 allUserTransactions.forEach((t: any) => {
   const txDate = new Date(t.transaction_date);
-  const txMonthKey = `${String(txDate.getMonth() + 1).padStart(2, '0')}-${txDate.getFullYear()}`;
+  const txMonthKey = createMonthKey(txDate);
 
   if (txMonthKey === effectiveMonth) {
+    const amount = safeParseAmount(t.amount);
     if (t.type === 'income') {
-      monthlyIncome += parseFloat(t.amount);
+      monthlyIncome += amount;
     } else {
-      monthlyExpenses += Math.abs(parseFloat(t.amount));
+      monthlyExpenses += Math.abs(amount);
       expenseCount++;
     }
   }
@@ -186,6 +178,7 @@ const ssrData = {
     income: monthlyIncome,
     expenses: monthlyExpenses,
     transactionCount: expenseCount,
+    periodLabel: formatMonthKey(effectiveMonth),
   },
   filters: {
     type: typeFilter,
@@ -213,7 +206,7 @@ const ssrData = {
       monthlyIncome={monthlyIncome}
       monthlyExpenses={monthlyExpenses}
       transactionCount={expenseCount}
-      periodLabel={effectiveMonth.toUpperCase()}
+      periodLabel={formatMonthKey(effectiveMonth)}
       currency="IDR"
     />
 

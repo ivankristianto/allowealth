@@ -10,36 +10,8 @@ import {
   isValidationError,
 } from '@/lib/api-utils';
 import { createTransactionAPISchema } from '@/lib/validation';
-import { logError } from '@/lib/utils';
-import type { TransactionOutput } from '@/lib/types/transaction';
-
-/**
- * Transform Drizzle result to TransactionOutput format
- * Drizzle uses camelCase (paymentMethod), API uses snake_case (payment_method)
- */
-function transformTransaction(t: any): TransactionOutput {
-  return {
-    id: t.id,
-    type: t.type,
-    amount: t.amount,
-    currency: t.currency,
-    description: t.description,
-    transaction_date: t.transaction_date,
-    deleted_at: t.deleted_at,
-    created_at: t.created_at,
-    updated_at: t.updated_at,
-    category: {
-      id: t.category.id,
-      name: t.category.name,
-      type: t.category.type,
-    },
-    payment_method: {
-      id: t.paymentMethod.id,
-      name: t.paymentMethod.name,
-      type: t.paymentMethod.type,
-    },
-  };
-}
+import { logError, transformTransaction, safeParseAmount } from '@/lib/utils';
+import { PAGINATION } from '@/lib/constants/pagination';
 
 /**
  * GET /api/transactions
@@ -122,7 +94,7 @@ export const GET: APIRoute = async (context) => {
         user_id: userId,
         start_date: filters.start_date,
         end_date: filters.end_date,
-        limit: 10000, // Get all for summary calculation
+        limit: PAGINATION.MAX_MONTH_TRANSACTIONS,
       });
 
       let income = 0;
@@ -130,7 +102,7 @@ export const GET: APIRoute = async (context) => {
       let expenseCount = 0;
 
       monthTransactions.forEach((t: any) => {
-        const amount = parseFloat(t.amount);
+        const amount = safeParseAmount(t.amount);
         if (t.type === 'income') {
           income += amount;
         } else {

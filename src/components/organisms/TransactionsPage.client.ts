@@ -27,6 +27,8 @@ import {
   cancelPendingRequest,
 } from '@/lib/api/transactionsApiClient';
 import { addToast } from '@/lib/stores/toastStore';
+import { formatMonthKey } from '@/lib/utils';
+import { PAGINATION } from '@/lib/constants/pagination';
 import {
   renderTransactionList,
   renderSummaryCards,
@@ -41,7 +43,7 @@ let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 const SEARCH_DEBOUNCE_MS = 300;
 
 // Page size constant
-const PAGE_SIZE = 50;
+const PAGE_SIZE = PAGINATION.DEFAULT_PAGE_SIZE;
 
 // Track initialization to prevent duplicate event listeners
 let initialized = false;
@@ -128,11 +130,13 @@ function parseSSRData(): SSRData | null {
     const parsed = JSON.parse(ssrDataAttr);
     if (!isValidSSRData(parsed)) {
       console.error('Invalid SSR data structure');
+      addToast('Failed to load page data. Please refresh.', 'error');
       return null;
     }
     return parsed;
   } catch (e) {
     console.error('Failed to parse SSR data:', e);
+    addToast('Failed to load page data. Please refresh.', 'error');
     return null;
   }
 }
@@ -166,20 +170,22 @@ async function fetchAndRender(): Promise<void> {
   try {
     const response = await fetchMonthTransactions(currentMonth);
 
+    // Add periodLabel to summary
+    const periodLabel = formatMonthKey(currentMonth);
+    const summaryWithPeriod = {
+      ...(response.summary || { income: 0, expenses: 0, transactionCount: 0 }),
+      periodLabel,
+    };
+
     // Cache the raw month data (before filtering)
-    if (response.transactions.length > 0 && response.summary) {
-      setCachedMonth(currentMonth, response.transactions, response.summary);
+    if (response.transactions.length > 0) {
+      setCachedMonth(currentMonth, response.transactions, summaryWithPeriod);
     }
 
     hideLoadingState();
 
     // Apply filters and render
-    const summary = response.summary || {
-      income: 0,
-      expenses: 0,
-      transactionCount: 0,
-    };
-    renderFromCache(response.transactions, summary, filters);
+    renderFromCache(response.transactions, summaryWithPeriod, filters);
   } catch (error) {
     hideLoadingState();
     if (error instanceof Error && error.name !== 'AbortError') {
@@ -300,11 +306,12 @@ function handleMonthFilterChange(month: string): void {
  * Update month navigation button states
  */
 function updateMonthNavigationUI(): void {
-  const monthSelect = document.getElementById('month-filter') as HTMLSelectElement | null;
-  if (!monthSelect) return;
+  const state = transactionsDataStore.get();
+  const currentMonth = transactionFiltersStore.get().month;
 
-  const currentIndex = monthSelect.selectedIndex;
-  const totalMonths = monthSelect.options.length;
+  // Find current month index in available months
+  const currentIndex = state.availableMonths.findIndex((m) => m.key === currentMonth);
+  const totalMonths = state.availableMonths.length;
 
   const prevBtn = document.querySelector('[data-month-nav="prev"]');
   const nextBtn = document.querySelector('[data-month-nav="next"]');
@@ -319,7 +326,7 @@ function updateMonthNavigationUI(): void {
   }
 
   if (nextBtn) {
-    const hasNext = currentIndex < totalMonths - 1;
+    const hasNext = currentIndex >= 0 && currentIndex < totalMonths - 1;
     nextBtn.setAttribute('data-has-next', String(hasNext));
     nextBtn.setAttribute('aria-disabled', String(!hasNext));
     nextBtn.classList.toggle('opacity-30', !hasNext);

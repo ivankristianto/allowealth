@@ -7,6 +7,8 @@
 
 import type { TransactionOutput } from '@/lib/types/transaction';
 import type { TransactionFilters } from '@/lib/stores/transactionFiltersStore';
+import { parseMonthKeyToISO } from '@/lib/utils';
+import { PAGINATION } from '@/lib/constants/pagination';
 
 export interface FetchTransactionsResponse {
   transactions: TransactionOutput[];
@@ -37,48 +39,6 @@ export function cancelPendingRequest(): void {
   if (activeController) {
     activeController.abort();
     activeController = null;
-  }
-}
-
-/**
- * Parse month label (e.g., "01-2026") to start and end dates
- * Returns null if parsing fails
- */
-function parseMonthLabel(monthLabel: string): { startDate: string; endDate: string } | null {
-  try {
-    // Parse "MM-YYYY" format (e.g., "01-2026")
-    const match = monthLabel.match(/^(\d{2})-(\d{4})$/);
-    if (!match) {
-      return null;
-    }
-
-    const month = parseInt(match[1], 10) - 1; // Convert to 0-indexed
-    const year = parseInt(match[2], 10);
-
-    if (month < 0 || month > 11 || isNaN(year)) {
-      return null;
-    }
-
-    // Start of month
-    const startDate = new Date(year, month, 1);
-
-    // End of month (last day)
-    const endDate = new Date(year, month + 1, 0);
-
-    // Format as YYYY-MM-DD
-    const formatDate = (d: Date): string => {
-      const y = d.getFullYear();
-      const m = String(d.getMonth() + 1).padStart(2, '0');
-      const day = String(d.getDate()).padStart(2, '0');
-      return `${y}-${m}-${day}`;
-    };
-
-    return {
-      startDate: formatDate(startDate),
-      endDate: formatDate(endDate),
-    };
-  } catch {
-    return null;
   }
 }
 
@@ -116,7 +76,7 @@ function buildQueryString(filters: Partial<TransactionFilters>, pageSize: number
   // Convert month filter to start_date/end_date
   // Month filter takes precedence over explicit date filters
   if (filters.month) {
-    const dateRange = parseMonthLabel(filters.month);
+    const dateRange = parseMonthKeyToISO(filters.month);
     if (dateRange) {
       params.set('start_date', dateRange.startDate);
       params.set('end_date', dateRange.endDate);
@@ -234,7 +194,7 @@ export async function fetchMonthTransactions(month: string): Promise<FetchTransa
   activeController = new AbortController();
 
   // Parse month to date range
-  const dateRange = parseMonthLabel(month);
+  const dateRange = parseMonthKeyToISO(month);
   if (!dateRange) {
     throw new Error(`Invalid month format: ${month}`);
   }
@@ -242,7 +202,8 @@ export async function fetchMonthTransactions(month: string): Promise<FetchTransa
   const params = new URLSearchParams();
   params.set('start_date', dateRange.startDate);
   params.set('end_date', dateRange.endDate);
-  params.set('limit', '10000'); // Get all transactions for the month
+  params.set('limit', String(PAGINATION.MAX_MONTH_TRANSACTIONS));
+  params.set('_internal', 'true'); // Bypass normal limit cap for caching
 
   const url = `/api/transactions?${params.toString()}`;
 
@@ -267,14 +228,18 @@ export async function fetchMonthTransactions(month: string): Promise<FetchTransa
 
     return {
       transactions: data.transactions || [],
-      pagination: data.pagination || { total: 0, limit: 10000, offset: 0 },
+      pagination: data.pagination || {
+        total: 0,
+        limit: PAGINATION.MAX_MONTH_TRANSACTIONS,
+        offset: 0,
+      },
       summary: data.summary,
     };
   } catch (error) {
     if (error instanceof Error && error.name === 'AbortError') {
       return {
         transactions: [],
-        pagination: { total: 0, limit: 10000, offset: 0 },
+        pagination: { total: 0, limit: PAGINATION.MAX_MONTH_TRANSACTIONS, offset: 0 },
       };
     }
 

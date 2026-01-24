@@ -261,13 +261,19 @@ export function getQueryParams(url: URL): Record<string, string> {
 
 /**
  * Parse pagination params
+ * Normal requests are capped at 100 items.
+ * Internal requests (with _internal=true) are capped at 10000 for caching purposes.
  */
 export function getPaginationParams(url: URL): { limit: number; offset: number } {
   const limit = parseInt(url.searchParams.get('limit') || '50', 10);
   const offset = parseInt(url.searchParams.get('offset') || '0', 10);
+  const isInternal = url.searchParams.get('_internal') === 'true';
+
+  // Internal requests (for caching) allow higher limits
+  const maxLimit = isInternal ? 10000 : 100;
 
   return {
-    limit: Math.min(Math.max(limit, 1), 100), // Limit between 1-100
+    limit: Math.min(Math.max(limit, 1), maxLimit),
     offset: Math.max(offset, 0),
   };
 }

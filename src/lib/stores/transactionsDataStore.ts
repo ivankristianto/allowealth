@@ -25,8 +25,8 @@ export interface Category {
 }
 
 export interface AvailableMonth {
-  key: string; // YYYY-MM format
-  label: string; // "January 2024" format
+  key: string; // MM-YYYY format (e.g., "01-2026")
+  label: string; // "January 2026" format
 }
 
 export interface PaginationState {
@@ -41,6 +41,7 @@ export interface SummaryState {
   income: number;
   expenses: number;
   transactionCount: number;
+  periodLabel?: string;
 }
 
 export interface TransactionsState {

@@ -8,37 +8,8 @@ import {
   isValidationError,
 } from '@/lib/api-utils';
 import { updateTransactionAPISchema, transactionIdSchema } from '@/lib/validation/transactions';
-import { logError } from '@/lib/utils';
+import { logError, transformTransaction } from '@/lib/utils';
 import { ServiceError } from '@/services/service-errors';
-import type { TransactionOutput } from '@/lib/types/transaction';
-
-/**
- * Transform Drizzle result to TransactionOutput format
- * Drizzle uses camelCase (paymentMethod), API uses snake_case (payment_method)
- */
-function transformTransaction(t: any): TransactionOutput {
-  return {
-    id: t.id,
-    type: t.type,
-    amount: t.amount,
-    currency: t.currency,
-    description: t.description,
-    transaction_date: t.transaction_date,
-    deleted_at: t.deleted_at,
-    created_at: t.created_at,
-    updated_at: t.updated_at,
-    category: {
-      id: t.category.id,
-      name: t.category.name,
-      type: t.category.type,
-    },
-    payment_method: {
-      id: t.paymentMethod.id,
-      name: t.paymentMethod.name,
-      type: t.paymentMethod.type,
-    },
-  };
-}
 
 /**
  * GET /api/transactions/:id

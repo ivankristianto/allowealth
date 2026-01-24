@@ -249,19 +249,6 @@ function createEmptyState(): HTMLElement {
  * Render transaction list
  */
 export function renderTransactionList(transactions: TransactionOutput[]): void {
-  console.log(
-    '[TransactionsRenderer] renderTransactionList called with',
-    transactions.length,
-    'transactions'
-  );
-
-  if (transactions.length > 0) {
-    console.log(
-      '[TransactionsRenderer] First transaction sample:',
-      JSON.stringify(transactions[0], null, 2)
-    );
-  }
-
   const listContainer = document.getElementById('transaction-list');
   if (!listContainer) {
     console.error('[TransactionsRenderer] #transaction-list container not found!');
@@ -272,12 +259,10 @@ export function renderTransactionList(transactions: TransactionOutput[]): void {
   listContainer.innerHTML = '';
 
   if (transactions.length === 0) {
-    console.log('[TransactionsRenderer] No transactions, showing empty state');
     listContainer.appendChild(createEmptyState());
     return;
   }
 
-  console.log('[TransactionsRenderer] Creating rows for transactions');
   // Create rows with error handling
   const rows: HTMLElement[] = [];
   for (let i = 0; i < transactions.length; i++) {
@@ -318,6 +303,7 @@ export function renderSummaryCards(summary: SummaryState, currency: 'IDR' | 'USD
   const expenseEl = document.querySelector('[data-summary-expense]');
   const netEl = document.querySelector('[data-summary-net]');
   const countEl = document.querySelector('[data-summary-count]');
+  const periodEls = document.querySelectorAll('[data-summary-period]');
 
   if (incomeEl) {
     incomeEl.textContent = formatCurrency(summary.income, currency);
@@ -331,13 +317,20 @@ export function renderSummaryCards(summary: SummaryState, currency: 'IDR' | 'USD
     const netSavings = summary.income - summary.expenses;
     netEl.textContent = formatCurrency(netSavings, currency);
 
-    // Update color class
-    netEl.classList.remove('text-primary', 'text-error');
-    netEl.classList.add(netSavings >= 0 ? 'text-primary' : 'text-error');
+    // Update color class (text-success for positive, text-error for negative)
+    netEl.classList.remove('text-primary', 'text-success', 'text-error');
+    netEl.classList.add(netSavings >= 0 ? 'text-success' : 'text-error');
   }
 
   if (countEl) {
     countEl.textContent = `${summary.transactionCount} items`;
+  }
+
+  // Update period labels (on income and net savings cards)
+  if (summary.periodLabel) {
+    periodEls.forEach((el) => {
+      el.textContent = summary.periodLabel!;
+    });
   }
 }
 
