@@ -58,6 +58,15 @@ function daysAgo(days: number): Date {
 }
 
 /**
+ * Generate a date for specific year, month, day
+ */
+function specificDate(year: number, month: number, day: number): Date {
+  const date = new Date(year, month - 1, day);
+  date.setHours(SEED_TIME_HOUR, 0, 0, 0);
+  return date;
+}
+
+/**
  * Format amount as string (for Decimal.js compatibility)
  */
 function amt(amount: number): string {
@@ -75,33 +84,283 @@ function randomAmount(min: number, max: number): string {
 // DATA TEMPLATES
 // ============================================================================
 
+// Expense categories with their budgets
+const EXPENSE_CATEGORIES = [
+  { name: 'Holiday', budget: 3000000 },
+  { name: 'Food & Groceries', budget: 8000000 },
+  { name: 'Dine Out', budget: 3000000 },
+  { name: 'Vony Work Support', budget: 500000 },
+  { name: "Vony's Pocket Money", budget: 2000000 },
+  { name: 'Mama Medan', budget: 3000000 },
+  { name: 'Ivan Expenses', budget: 2000000 },
+  { name: 'Reina Expenses', budget: 2000000 },
+  { name: 'Rex Expenses', budget: 2000000 },
+  { name: 'Utility Bills', budget: 2000000 },
+  { name: 'Misc. Cost', budget: 2000000 },
+  { name: 'Entertainment', budget: 1500000 },
+  { name: 'Expenses for Mom', budget: 2000000 },
+  { name: 'Maid Salary', budget: 6000000 },
+  { name: 'Transportation', budget: 1500000 },
+  { name: 'Cicilan Properti', budget: 8000000 },
+  { name: 'Belanja Rumah', budget: 3000000 },
+  { name: 'Renovasi Rumah', budget: 5000000 },
+  { name: 'Insurance', budget: 3000000 },
+  { name: 'Reimburse to HM', budget: 5000000 },
+];
+
+// Income categories
 const INCOME_CATEGORIES = [
-  { name: 'Salary', budget: 0 },
-  { name: 'Freelance', budget: 0 },
-  { name: 'Investment Returns', budget: 0 },
+  { name: 'HM + Reimburse', budget: 0 },
+  { name: 'QW', budget: 0 },
+  { name: 'Primaya', budget: 0 },
+  { name: 'Premier Jatinegara', budget: 0 },
+  { name: 'BCA Ivan - ST12T2', budget: 0 },
+  { name: 'AKP Bintaro', budget: 0 },
+  { name: 'INDON48 CIMB Ivan', budget: 0 },
+  { name: 'FR 102 Vony', budget: 0 },
+  { name: 'Div BBRI BMRI', budget: 0 },
+  { name: 'Div ADRO', budget: 0 },
+  { name: 'CIMB BRPT-Vony', budget: 0 },
   { name: 'Other Income', budget: 0 },
 ];
 
-const EXPENSE_CATEGORIES = [
-  { name: 'Groceries', budget: 3000000 },
-  { name: 'Rent', budget: 8000000 },
-  { name: 'Utilities', budget: 1500000 },
-  { name: 'Transportation', budget: 1000000 },
-  { name: 'Dining Out', budget: 2000000 },
-  { name: 'Shopping', budget: 2500000 },
-  { name: 'Healthcare', budget: 1000000 },
-  { name: 'Entertainment', budget: 1500000 },
-  { name: 'Education', budget: 2000000 },
-  { name: 'Insurance', budget: 1500000 },
-  { name: 'Subscriptions', budget: 500000 },
-];
-
+// Payment methods
 const PAYMENT_METHODS = [
   { name: 'Cash', type: 'cash' as const },
   { name: 'BCA Debit', type: 'debit_card' as const },
   { name: 'BCA Credit Card', type: 'credit_card' as const },
   { name: 'GoPay', type: 'e_wallet' as const },
   { name: 'OVO', type: 'e_wallet' as const },
+  { name: 'Transfer', type: 'bank_transfer' as const },
+];
+
+// Income transactions with amounts and dates
+const INCOME_TRANSACTIONS = [
+  // January 2026
+  { description: 'HM + Reimburse', amount: 15000000, day: 25, month: 1, year: 2026 },
+  { description: 'QW', amount: 3500000, day: 5, month: 1, year: 2026 },
+  { description: 'Primaya', amount: 2500000, day: 10, month: 1, year: 2026 },
+  { description: 'BCA Ivan - ST12T2', amount: 5000000, day: 15, month: 1, year: 2026 },
+  { description: 'INDON48 CIMB Ivan', amount: 3000000, day: 20, month: 1, year: 2026 },
+  { description: 'Div BBRI BMRI', amount: 1500000, day: 8, month: 1, year: 2026 },
+  { description: 'Div ADRO', amount: 800000, day: 12, month: 1, year: 2026 },
+
+  // December 2025
+  { description: 'HM + Reimburse', amount: 15000000, day: 25, month: 12, year: 2025 },
+  { description: 'Premier Jatinegara', amount: 2000000, day: 5, month: 12, year: 2025 },
+  { description: 'AKP Bintaro', amount: 4000000, day: 10, month: 12, year: 2025 },
+  { description: 'FR 102 Vony', amount: 3500000, day: 15, month: 12, year: 2025 },
+  { description: 'CIMB BRPT-Vony', amount: 2500000, day: 20, month: 12, year: 2025 },
+  { description: 'QW', amount: 3500000, day: 8, month: 12, year: 2025 },
+
+  // November 2025
+  { description: 'HM + Reimburse', amount: 15000000, day: 25, month: 11, year: 2025 },
+  { description: 'Primaya', amount: 2500000, day: 5, month: 11, year: 2025 },
+  { description: 'BCA Ivan - ST12T2', amount: 5000000, day: 12, month: 11, year: 2025 },
+  { description: 'INDON48 CIMB Ivan', amount: 3000000, day: 18, month: 11, year: 2025 },
+  { description: 'Div BBRI BMRI', amount: 1500000, day: 8, month: 11, year: 2025 },
+  { description: 'Div ADRO', amount: 800000, day: 15, month: 11, year: 2025 },
+];
+
+// Expense transactions with categories and amounts
+const EXPENSE_TRANSACTIONS: Array<{
+  description: string;
+  category: string;
+  amount: number | [number, number]; // Fixed amount or range
+  months?: number[]; // Specific months (1=Jan, 2=Feb, etc.) - if undefined, all months
+}> = [
+  // Regular monthly expenses
+  { description: 'Cicilan CRV ke 20 / 36', category: 'Cicilan Properti', amount: 8500000 },
+  { description: 'JHT Ivan', category: 'Insurance', amount: 500000 },
+  { description: 'JHT Vony', category: 'Insurance', amount: 400000 },
+  { description: 'Allianz insurance', category: 'Insurance', amount: [300000, 500000] },
+  { description: 'Allianz insurance', category: 'Reimburse to HM', amount: [300000, 500000] },
+  { description: 'XLHome', category: 'Utility Bills', amount: 450000 },
+  { description: 'Apple, Xbox, Server, YouTube', category: 'Ivan Expenses', amount: 250000 },
+  { description: 'SPP Reina', category: 'Reina Expenses', amount: [500000, 1500000] },
+  { description: 'SPP Rex', category: 'Rex Expenses', amount: [400000, 1200000] },
+  { description: 'IPL Arana', category: 'Utility Bills', amount: [500000, 800000] },
+  { description: 'PDAM', category: 'Utility Bills', amount: [150000, 300000] },
+  { description: 'Listrik', category: 'Utility Bills', amount: [800000, 1500000] },
+  { description: 'Gaji mba kasbon 1.9 jt', category: 'Maid Salary', amount: 1900000 },
+  { description: 'Gaji mba kasbon 2.9 jt', category: 'Maid Salary', amount: 2900000 },
+  { description: 'Gaji mba kasbon 4 jt', category: 'Maid Salary', amount: 4000000 },
+  { description: 'Gaji mpo', category: 'Maid Salary', amount: [2000000, 2500000] },
+  { description: 'BPJS Medan', category: "Vony's Pocket Money", amount: [200000, 400000] },
+  { description: 'Ext alis', category: "Vony's Pocket Money", amount: [100000, 300000] },
+
+  // Variable expenses
+  { description: 'Dekoruma 02/03', category: 'Belanja Rumah', amount: [500000, 2000000] },
+  { description: 'Jangkrik Mimi', category: 'Misc. Cost', amount: [50000, 200000] },
+  { description: 'Helaparumaen Bipang', category: 'Food & Groceries', amount: [100000, 300000] },
+  { description: 'Ttitp belanja ke Mama', category: 'Misc. Cost', amount: [200000, 1000000] },
+  { description: 'Cece Buah', category: 'Food & Groceries', amount: [50000, 200000] },
+  { description: 'Grand Lucky', category: 'Food & Groceries', amount: [200000, 800000] },
+  { description: 'Pizza Grand Lucky', category: 'Food & Groceries', amount: [150000, 400000] },
+  { description: 'Alfamidi', category: 'Food & Groceries', amount: [100000, 500000] },
+  { description: 'Alfamidi n prime', category: 'Food & Groceries', amount: [150000, 600000] },
+  { description: 'Snack', category: 'Food & Groceries', amount: [30000, 150000] },
+  { description: 'Kebun buah', category: 'Food & Groceries', amount: [100000, 400000] },
+  { description: 'Roti Mako', category: 'Food & Groceries', amount: [50000, 150000] },
+  { description: 'Beli Obat di Apotik', category: 'Misc. Cost', amount: [100000, 500000] },
+  { description: 'Belanja di Century SMB', category: 'Misc. Cost', amount: [150000, 600000] },
+  { description: 'Sparepart LCD TV Mama', category: 'Misc. Cost', amount: [500000, 1500000] },
+  { description: 'Belanja Pasar - Ivan', category: 'Food & Groceries', amount: [200000, 700000] },
+  { description: 'Groceries Superindo', category: 'Food & Groceries', amount: [300000, 1000000] },
+  { description: 'Belanja pasar cash', category: 'Food & Groceries', amount: [150000, 600000] },
+  {
+    description: 'Cash: Makanan Mimi + Gorengan',
+    category: 'Food & Groceries',
+    amount: [50000, 200000],
+  },
+  {
+    description: 'Mie Aceh SMB + sari tebu',
+    category: 'Food & Groceries',
+    amount: [80000, 200000],
+  },
+  { description: 'Beard Papa SMB', category: 'Food & Groceries', amount: [50000, 150000] },
+  {
+    description: 'Sarapan Lontng + Nasi Uduk',
+    category: 'Food & Groceries',
+    amount: [40000, 120000],
+  },
+  { description: 'Beli Obat Cacing', category: 'Food & Groceries', amount: [50000, 150000] },
+  { description: 'Beli Ikan + Ulat', category: 'Belanja Rumah', amount: [100000, 300000] },
+  { description: 'Aqua 4 galon', category: 'Food & Groceries', amount: [60000, 80000] },
+  { description: 'Beli Jus', category: 'Food & Groceries', amount: [30000, 80000] },
+  { description: 'Belanja Buah', category: 'Food & Groceries', amount: [100000, 400000] },
+
+  // Dining out
+  { description: 'Ramen Seirockya', category: 'Dine Out', amount: [80000, 150000] },
+  { description: 'Makmal', category: 'Dine Out', amount: [100000, 300000] },
+  { description: 'Titik Beku Cafe', category: 'Dine Out', amount: [100000, 250000] },
+  { description: 'Paulaners', category: 'Dine Out', amount: [150000, 400000] },
+  { description: 'Makan di GI', category: 'Dine Out', amount: [200000, 500000] },
+  { description: 'Mie Gacoan', category: 'Dine Out', amount: [60000, 150000] },
+
+  // Holiday/Travel
+  { description: 'Belanja di Bandung OctoPay', category: 'Holiday', amount: [300000, 1500000] },
+  { description: 'Mode Bakery - Bandung', category: 'Holiday', amount: [100000, 300000] },
+  { description: 'Mode Kitchen', category: 'Holiday', amount: [150000, 400000] },
+  { description: 'Gecko & Permen di Farmhouse', category: 'Holiday', amount: [100000, 300000] },
+  { description: 'Fore Coffee - Ciwalk', category: 'Holiday', amount: [50000, 100000] },
+  {
+    description: 'Naik ATV & Kuda & Playground di Intercontinental',
+    category: 'Holiday',
+    amount: [500000, 1500000],
+  },
+  { description: 'Sunset Juice di Kartika Sari', category: 'Holiday', amount: [50000, 150000] },
+  { description: 'Sbux KM 72A', category: 'Holiday', amount: [80000, 200000] },
+  { description: 'Bijan - Bandung', category: 'Holiday', amount: [150000, 400000] },
+  { description: 'Extra Bed - Intercontinental', category: 'Holiday', amount: [500000, 1000000] },
+  { description: 'Rumah Mode', category: 'Holiday', amount: [300000, 1000000] },
+  { description: 'Mujigae - Ciwalk', category: 'Holiday', amount: [150000, 400000] },
+  { description: 'Kartika Sari - Dago', category: 'Holiday', amount: [100000, 500000] },
+  { description: 'Congo - Bandung', category: 'Holiday', amount: [200000, 600000] },
+  { description: 'Sagoo Kitchen - PVJ', category: 'Holiday', amount: [150000, 500000] },
+  { description: 'Intercontinental', category: 'Holiday', amount: [2000000, 5000000] },
+  { description: 'A&W Rest Area', category: 'Holiday', amount: [80000, 200000] },
+  { description: 'Kopi - Kota Baru Parahyangan', category: 'Holiday', amount: [50000, 150000] },
+  { description: 'Lunch di Kota Baru Parahyangan', category: 'Holiday', amount: [150000, 400000] },
+  { description: 'Lomie mambo', category: 'Holiday', amount: [80000, 200000] },
+  { description: 'Makmalam RuMod', category: 'Holiday', amount: [100000, 300000] },
+  { description: 'Jajan aeon', category: 'Holiday', amount: [200000, 600000] },
+  { description: 'Maksi', category: 'Holiday', amount: [150000, 400000] },
+
+  // Family expenses
+  { description: 'Trf mama', category: 'Mama Medan', amount: [1000000, 3000000] },
+  { description: 'Trf ci culien', category: 'Mama Medan', amount: [500000, 2000000] },
+  {
+    description: 'Rumah Sibolga 258 dr 300',
+    category: 'Expenses for Mom',
+    amount: [500000, 2000000],
+  },
+  { description: 'Transport PP Mama', category: 'Expenses for Mom', amount: [300000, 800000] },
+  { description: 'Belanja Mama', category: 'Expenses for Mom', amount: [500000, 2000000] },
+  { description: 'Cermin', category: 'Ivan Expenses', amount: [200000, 600000] },
+  { description: 'Kopi Saturday - GI', category: 'Ivan Expenses', amount: [80000, 200000] },
+  { description: 'Claude Code', category: 'Ivan Expenses', amount: [100000, 300000] },
+  {
+    description: 'Claude Code January',
+    category: 'Reimburse to HM',
+    amount: [100000, 300000],
+    months: [1],
+  },
+  { description: 'Matcha HI-Five', category: 'Ivan Expenses', amount: [80000, 150000] },
+  { description: 'Fore Kuningan City', category: 'Ivan Expenses', amount: [150000, 300000] },
+  { description: 'Ramen Kuningan City', category: 'Ivan Expenses', amount: [100000, 250000] },
+  { description: 'Potong Rambut', category: 'Ivan Expenses', amount: [75000, 150000] },
+  { description: 'Farmhouse', category: 'Reina Expenses', amount: [300000, 800000] },
+  { description: 'Timezone', category: 'Reina Expenses', amount: [200000, 500000] },
+  { description: 'Excur little chef', category: 'Reina Expenses', amount: [150000, 400000] },
+  { description: 'Buku i can read', category: 'Reina Expenses', amount: [200000, 500000] },
+  { description: 'Happy mandarin', category: 'Reina Expenses', amount: [500000, 1500000] },
+  { description: 'Kidzland', category: 'Reina Expenses', amount: [300000, 700000] },
+  { description: 'Kidzoona', category: 'Rex Expenses', amount: [250000, 600000] },
+  { description: 'Giyath 2x', category: 'Rex Expenses', amount: [100000, 300000] },
+  { description: 'Sikat n pasta gigi', category: 'Rex Expenses', amount: [50000, 150000] },
+
+  // Vony work
+  { description: 'Jajan rs', category: 'Vony Work Support', amount: [50000, 150000] },
+  {
+    description: 'Transport rsab rspj rsab',
+    category: 'Vony Work Support',
+    amount: [30000, 80000],
+  },
+  { description: 'Transport rspj rsab', category: 'Vony Work Support', amount: [30000, 80000] },
+  { description: 'Transport rspj', category: 'Vony Work Support', amount: [30000, 70000] },
+  {
+    description: 'Transport rspj rsab greyhound',
+    category: 'Vony Work Support',
+    amount: [40000, 100000],
+  },
+  { description: 'Patungan Natalan', category: 'Vony Work Support', amount: [200000, 500000] },
+
+  // Reimburse items
+  { description: 'Intercontinental', category: 'Reimburse to HM', amount: [2000000, 5000000] },
+  { description: 'Travel Insurance', category: 'Reimburse to HM', amount: [300000, 800000] },
+  { description: 'VFS Global - Visa', category: 'Reimburse to HM', amount: [800000, 2000000] },
+  { description: 'Visa Fee Croatia', category: 'Reimburse to HM', amount: [1000000, 2500000] },
+  {
+    description: 'Transport PP urusan Visa',
+    category: 'Reimburse to HM',
+    amount: [200000, 500000],
+  },
+  { description: 'Toped: Indihome', category: 'Reimburse to HM', amount: [300000, 600000] },
+
+  // Utilities and bills
+  { description: 'Halo vony', category: 'Utility Bills', amount: [200000, 400000] },
+  { description: 'Simpati vony', category: 'Utility Bills', amount: [150000, 350000] },
+  { description: 'Toped: Halo Ivan', category: 'Utility Bills', amount: [200000, 400000] },
+  { description: 'Toped: Halo Mama', category: 'Utility Bills', amount: [150000, 350000] },
+  { description: 'Toped: Listrik Sibolga', category: 'Utility Bills', amount: [300000, 800000] },
+
+  // Shopping and home
+  { description: 'Shopee: Tongtol', category: 'Misc. Cost', amount: [100000, 400000] },
+  { description: 'Prakarya: Reina - Lampu', category: 'Reina Expenses', amount: [50000, 200000] },
+  { description: 'Handuk putih', category: 'Belanja Rumah', amount: [100000, 300000] },
+  { description: 'Lem & Baterai', category: 'Belanja Rumah', amount: [50000, 150000] },
+  { description: 'AC Skyhouse', category: 'Belanja Rumah', amount: [500000, 1500000] },
+  { description: 'Spring bed comforta', category: 'Belanja Rumah', amount: [2000000, 5000000] },
+  { description: 'Em4 molase', category: 'Misc. Cost', amount: [80000, 200000] },
+  { description: 'Chandra asri excess 5 thn', category: 'Misc. Cost', amount: [300000, 800000] },
+  { description: 'Excess chandra asri', category: 'Misc. Cost', amount: [200000, 600000] },
+  { description: 'Hydroclean', category: 'Misc. Cost', amount: [150000, 400000] },
+
+  // Personal care
+  { description: 'Aplikator hair oil', category: "Vony's Pocket Money", amount: [100000, 300000] },
+  { description: 'Kaos kaki', category: "Vony's Pocket Money", amount: [50000, 150000] },
+
+  // Transportation
+  {
+    description: 'Shell - Kota Baru Parahyangan',
+    category: 'Transportation',
+    amount: [300000, 800000],
+  },
+  { description: 'Top up e money 2x', category: 'Transportation', amount: [200000, 600000] },
+
+  // Insurance via marketplace
+  { description: 'Toped: BPJS Mama', category: 'Insurance', amount: [300000, 800000] },
 ];
 
 const ASSET_TYPES = [
@@ -172,75 +431,6 @@ const ASSET_TYPES = [
   { name: 'USD Coin (USDC)', type: 'crypto' as const, balance: 10000000, currency: 'IDR' as const },
 ];
 
-// Indonesian expense patterns for realistic transaction data
-const EXPENSE_PATTERNS: Array<{
-  category: string;
-  description: string[];
-  amountRange: [number, number];
-  frequency: number; // Probability per day (0-1)
-}> = [
-  {
-    category: 'Groceries',
-    description: ['Supermarket', 'Fresh Market', 'Ranch Market', 'Lotte Mart'],
-    amountRange: [200000, 800000],
-    frequency: 0.3,
-  },
-  {
-    category: 'Dining Out',
-    description: ['Lunch', 'Dinner', 'Coffee', 'Snacks', 'GrabFood', 'GoFood'],
-    amountRange: [30000, 200000],
-    frequency: 0.6,
-  },
-  {
-    category: 'Transportation',
-    description: ['GoRide', 'Grab', 'Bensin', 'Parking', 'Toll'],
-    amountRange: [15000, 100000],
-    frequency: 0.5,
-  },
-  {
-    category: 'Shopping',
-    description: ['Tokopedia', 'Shopee', 'Lazada', 'Toko ABC', 'Online Shopping'],
-    amountRange: [100000, 1500000],
-    frequency: 0.2,
-  },
-  {
-    category: 'Utilities',
-    description: ['Electricity Bill', 'Water Bill', 'Internet Bill', 'Gas'],
-    amountRange: [200000, 800000],
-    frequency: 0.1,
-  },
-  {
-    category: 'Entertainment',
-    description: ['Netflix', 'Spotify', 'Movie Tickets', 'Concert', 'Games'],
-    amountRange: [50000, 500000],
-    frequency: 0.15,
-  },
-  {
-    category: 'Healthcare',
-    description: ['Pharmacy', 'Doctor Visit', 'Vitamins', 'Medicine'],
-    amountRange: [100000, 800000],
-    frequency: 0.1,
-  },
-  {
-    category: 'Education',
-    description: ['Online Course', 'Books', 'Workshop', 'Training'],
-    amountRange: [200000, 2000000],
-    frequency: 0.05,
-  },
-  {
-    category: 'Insurance',
-    description: ['Health Insurance', 'Life Insurance', 'Car Insurance'],
-    amountRange: [500000, 2000000],
-    frequency: 0.08,
-  },
-  {
-    category: 'Subscriptions',
-    description: ['Netflix', 'Spotify', 'YouTube Premium', 'Cloud Storage'],
-    amountRange: [50000, 200000],
-    frequency: 0.05,
-  },
-];
-
 // ============================================================================
 // SEED FUNCTIONS
 // ============================================================================
@@ -268,7 +458,6 @@ async function clearAllTables() {
     await db.delete(exchangeRates);
 
     // Run VACUUM to clean up the database and reclaim space
-    // This helps prevent I/O errors on subsequent operations
     console.log('🧹 Vacuuming database...');
     db.run(sql`VACUUM`);
 
@@ -389,112 +578,179 @@ async function seedPaymentMethods(userId: string): Promise<Map<string, string>> 
 }
 
 /**
- * Seed transactions (90 days of realistic data)
+ * Seed income transactions for the 3 months
  */
-async function seedTransactions(
+async function seedIncomeTransactions(
   userId: string,
   categoryMap: Map<string, string>,
   methodMap: Map<string, string>
-): Promise<void> {
-  console.log('💸 Seeding transactions...');
+): Promise<number> {
+  console.log('💰 Seeding income transactions...');
 
-  const methodNames = Array.from(methodMap.keys());
-  let transactionCount = 0;
+  let count = 0;
+  const paymentMethodNames = Array.from(methodMap.keys());
 
-  // Generate transactions for the past 90 days
-  for (let day = 0; day < 90; day++) {
-    const transactionDate = daysAgo(day);
-    const isSalaryDay = transactionDate.getDate() === 25; // Monthly salary on 25th
-
-    // Add salary transaction
-    if (isSalaryDay) {
-      await db.insert(transactions).values({
-        id: nanoid(),
+  for (const income of INCOME_TRANSACTIONS) {
+    const categoryId = categoryMap.get(income.description);
+    if (!categoryId) {
+      // Create category if it doesn't exist
+      const newId = nanoid();
+      await db.insert(categories).values({
+        id: newId,
         user_id: userId,
-        category_id: categoryMap.get('Salary')!,
-        payment_method_id: methodMap.get('BCA Debit')!,
+        name: income.description,
         type: 'income',
-        amount: amt(15000000), // 15 million IDR monthly salary
+        percentage: '0',
+        budget_amount: '0',
         currency: 'IDR',
-        description: 'Monthly Salary',
-        transaction_date: transactionDate,
-        created_at: transactionDate,
-        updated_at: transactionDate,
+        is_active: true,
+        created_at: new Date(),
+        updated_at: new Date(),
       });
-      transactionCount++;
+      categoryMap.set(income.description, newId);
     }
 
-    // Add 3-5 expense transactions per day
-    const dailyTransactions = 3 + Math.floor(Math.random() * 3);
-    for (let i = 0; i < dailyTransactions; i++) {
-      // Select a random expense pattern
-      const pattern = EXPENSE_PATTERNS[Math.floor(Math.random() * EXPENSE_PATTERNS.length)];
-      if (!pattern) continue;
+    const finalCategoryId = categoryMap.get(income.description)!;
+    const paymentMethod = paymentMethodNames[Math.floor(Math.random() * paymentMethodNames.length)];
+    const paymentMethodId = methodMap.get(paymentMethod || 'Transfer')!;
 
-      // Skip if this category doesn't exist
-      const categoryId = categoryMap.get(pattern.category);
+    const transactionDate = specificDate(income.year, income.month, income.day);
+    // Add some random time variation
+    transactionDate.setHours(SEED_TIME_HOUR + Math.floor(Math.random() * 8), 0, 0, 0);
+
+    await db.insert(transactions).values({
+      id: nanoid(),
+      user_id: userId,
+      category_id: finalCategoryId,
+      payment_method_id: paymentMethodId,
+      type: 'income',
+      amount: amt(income.amount),
+      currency: 'IDR',
+      description: income.description,
+      transaction_date: transactionDate,
+      created_at: transactionDate,
+      updated_at: transactionDate,
+    });
+    count++;
+  }
+
+  console.log(`✓ Created ${count} income transactions`);
+  return count;
+}
+
+/**
+ * Seed expense transactions for the 3 months
+ */
+async function seedExpenseTransactions(
+  userId: string,
+  categoryMap: Map<string, string>,
+  methodMap: Map<string, string>
+): Promise<number> {
+  console.log('💸 Seeding expense transactions...');
+
+  let count = 0;
+  const monthsToSeed = [
+    { year: 2025, month: 11 }, // November 2025
+    { year: 2025, month: 12 }, // December 2025
+    { year: 2026, month: 1 }, // January 2026
+  ];
+
+  const paymentMethodNames = Array.from(methodMap.keys());
+
+  for (const { year, month } of monthsToSeed) {
+    const daysInMonth = new Date(year, month, 0).getDate();
+
+    for (const expense of EXPENSE_TRANSACTIONS) {
+      // Check if this expense is for specific months
+      if (expense.months && !expense.months.includes(month)) {
+        continue;
+      }
+
+      const categoryId = categoryMap.get(expense.category);
       if (!categoryId) continue;
 
-      // Random amount within range
-      const [min, max] = pattern.amountRange;
-      const amount = randomAmount(min, max);
+      // Determine amount (fixed or range)
+      let amount: number;
+      if (Array.isArray(expense.amount)) {
+        amount = expense.amount[0] + Math.random() * (expense.amount[1] - expense.amount[0]);
+      } else {
+        // Add some variation to fixed amounts
+        amount = expense.amount * (0.95 + Math.random() * 0.1);
+      }
 
-      // Random description
-      const description =
-        pattern.description[Math.floor(Math.random() * pattern.description.length)];
+      // Random day in month
+      const day = 1 + Math.floor(Math.random() * daysInMonth);
+      const transactionDate = specificDate(year, month, day);
+      // Add some random time variation
+      transactionDate.setHours(SEED_TIME_HOUR + Math.floor(Math.random() * 10), 0, 0, 0);
 
-      // Random payment method (prefer debit/credit for larger amounts)
-      const randomMethodIndex = Math.floor(Math.random() * methodNames.length);
-      const selectedMethod = methodNames[randomMethodIndex];
-      if (!selectedMethod) continue;
-
-      let methodName = selectedMethod;
-      if (parseFloat(amount) > 500000) {
+      // Select payment method (prefer debit/credit for larger amounts)
+      let methodName = paymentMethodNames[Math.floor(Math.random() * paymentMethodNames.length)];
+      if (amount > 500000) {
         methodName = Math.random() > 0.5 ? 'BCA Debit' : 'BCA Credit Card';
       }
 
-      const paymentMethodId = methodMap.get(methodName);
+      const paymentMethodId = methodMap.get(methodName || 'BCA Debit');
       if (!paymentMethodId) continue;
-
-      // TypeScript needs explicit non-null assertion after continue
-      const methodId: string = paymentMethodId;
 
       await db.insert(transactions).values({
         id: nanoid(),
         user_id: userId,
         category_id: categoryId,
-        payment_method_id: methodId,
+        payment_method_id: paymentMethodId,
         type: 'expense',
-        amount,
+        amount: amt(Math.round(amount)),
         currency: 'IDR',
-        description,
+        description: expense.description,
         transaction_date: transactionDate,
         created_at: transactionDate,
         updated_at: transactionDate,
       });
-      transactionCount++;
+      count++;
     }
 
-    // Occasional freelance income (5% chance)
-    if (Math.random() < 0.05) {
-      await db.insert(transactions).values({
-        id: nanoid(),
-        user_id: userId,
-        category_id: categoryMap.get('Freelance')!,
-        payment_method_id: methodMap.get('BCA Debit')!,
-        type: 'income',
-        amount: randomAmount(1000000, 5000000),
-        currency: 'IDR',
-        description: 'Freelance Project',
-        transaction_date: transactionDate,
-        created_at: transactionDate,
-        updated_at: transactionDate,
-      });
-      transactionCount++;
+    // Add some random daily expenses
+    for (let day = 1; day <= daysInMonth; day++) {
+      // 70% chance of having random daily expenses
+      if (Math.random() > 0.7) continue;
+
+      const numDailyExpenses = 1 + Math.floor(Math.random() * 4);
+      for (let i = 0; i < numDailyExpenses; i++) {
+        // Pick a random expense category
+        const randomCategory =
+          EXPENSE_CATEGORIES[Math.floor(Math.random() * EXPENSE_CATEGORIES.length)];
+        const categoryId = categoryMap.get(randomCategory.name);
+        if (!categoryId) continue;
+
+        const amount = randomAmount(50000, 500000);
+        const transactionDate = specificDate(year, month, day);
+        transactionDate.setHours(SEED_TIME_HOUR + Math.floor(Math.random() * 12), 0, 0, 0);
+
+        const methodName =
+          paymentMethodNames[Math.floor(Math.random() * paymentMethodNames.length)];
+        const paymentMethodId = methodMap.get(methodName || 'Cash');
+        if (!paymentMethodId) continue;
+
+        await db.insert(transactions).values({
+          id: nanoid(),
+          user_id: userId,
+          category_id: categoryId,
+          payment_method_id: paymentMethodId,
+          type: 'expense',
+          amount,
+          currency: 'IDR',
+          description: `Daily expense - ${randomCategory.name}`,
+          transaction_date: transactionDate,
+          created_at: transactionDate,
+          updated_at: transactionDate,
+        });
+        count++;
+      }
     }
   }
 
-  console.log(`✓ Created ${transactionCount} transactions over 90 days`);
+  console.log(`✓ Created ${count} expense transactions`);
+  return count;
 }
 
 /**
@@ -695,7 +951,12 @@ async function seed() {
     const userId = await seedUsers();
     const categoryMap = await seedCategories(userId);
     const methodMap = await seedPaymentMethods(userId);
-    await seedTransactions(userId, categoryMap, methodMap);
+
+    // Seed transactions for the 3 months
+    await seedIncomeTransactions(userId, categoryMap, methodMap);
+    await seedExpenseTransactions(userId, categoryMap, methodMap);
+
+    // Seed assets
     const assetMap = await seedAssets(userId);
     await seedAssetHistory(assetMap);
     await seedAssetUpdateReminders(userId, assetMap);

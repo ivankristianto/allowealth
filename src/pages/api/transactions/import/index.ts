@@ -8,9 +8,10 @@ import { logError } from '@/lib/utils';
  * POST /api/transactions/import
  * Import transactions from CSV file
  */
-export const POST: APIRoute = async ({ request, url }) => {
+export const POST: APIRoute = async (context) => {
   try {
-    const userId = await requireAuth({ request, url } as any);
+    const userId = await requireAuth(context);
+    const { request } = context;
 
     // Parse form data with file
     const formData = await request.formData();

@@ -1,5 +1,5 @@
 import { transactions, type IDatabase } from '@/db';
-import { eq, and, gte, lte, desc, sql, like } from 'drizzle-orm';
+import { eq, and, gte, lte, desc, sql, like, inArray } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { CategoryService } from './category.service';
 import { PaymentMethodService } from './payment-method.service';
@@ -34,6 +34,7 @@ export interface TransactionFilters {
   user_id: string;
   type?: 'expense' | 'income';
   category_id?: string;
+  category_ids?: string[]; // Multiple category filter
   payment_method_id?: string;
   currency?: 'IDR' | 'USD';
   start_date?: Date;
@@ -159,6 +160,11 @@ export class TransactionService {
 
     if (filters.category_id) {
       conditions.push(eq(transactions.category_id, filters.category_id));
+    }
+
+    // Handle multiple category IDs (OR filter)
+    if (filters.category_ids && filters.category_ids.length > 0) {
+      conditions.push(inArray(transactions.category_id, filters.category_ids));
     }
 
     if (filters.payment_method_id) {
@@ -307,6 +313,11 @@ export class TransactionService {
 
     if (filters.category_id) {
       conditions.push(eq(transactions.category_id, filters.category_id));
+    }
+
+    // Handle multiple category IDs (OR filter)
+    if (filters.category_ids && filters.category_ids.length > 0) {
+      conditions.push(inArray(transactions.category_id, filters.category_ids));
     }
 
     if (filters.payment_method_id) {

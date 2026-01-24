@@ -200,3 +200,97 @@ export function getDaysBetween(startDate: Date | string, endDate: Date | string)
 export function getCurrentDateISO(): string {
   return new Date().toISOString().split('T')[0] ?? '';
 }
+
+// ============================================
+// Month Key Utilities
+// Format: "MM-YYYY" (e.g., "01-2026")
+// ============================================
+
+/**
+ * Parse a month key (MM-YYYY) to start and end dates
+ *
+ * @param monthKey - Month key in MM-YYYY format (e.g., "01-2026")
+ * @returns Object with start and end dates, or null if invalid
+ *
+ * @example
+ * parseMonthKey("01-2026")
+ * // { start: Date(2026-01-01), end: Date(2026-01-31) }
+ */
+export function parseMonthKey(monthKey: string): { start: Date; end: Date } | null {
+  const match = monthKey.match(/^(\d{2})-(\d{4})$/);
+  if (!match) return null;
+
+  const month = parseInt(match[1], 10) - 1; // 0-indexed
+  const year = parseInt(match[2], 10);
+
+  if (month < 0 || month > 11 || isNaN(year)) return null;
+
+  const start = new Date(year, month, 1);
+  const end = new Date(year, month + 1, 0); // Last day of month
+
+  return { start, end };
+}
+
+/**
+ * Parse a month key to ISO date strings for API use
+ *
+ * @param monthKey - Month key in MM-YYYY format
+ * @returns Object with startDate and endDate as YYYY-MM-DD strings, or null if invalid
+ */
+export function parseMonthKeyToISO(
+  monthKey: string
+): { startDate: string; endDate: string } | null {
+  const parsed = parseMonthKey(monthKey);
+  if (!parsed) return null;
+
+  const formatDateISO = (d: Date): string => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  };
+
+  return {
+    startDate: formatDateISO(parsed.start),
+    endDate: formatDateISO(parsed.end),
+  };
+}
+
+/**
+ * Format a month key (MM-YYYY) to readable format (e.g., "January 2026")
+ *
+ * @param monthKey - Month key in MM-YYYY format
+ * @param locale - Locale for formatting (default: 'en-US')
+ * @returns Formatted month label or original key if invalid
+ *
+ * @example
+ * formatMonthKey("01-2026") // "January 2026"
+ */
+export function formatMonthKey(monthKey: string, locale: string = 'en-US'): string {
+  const parsed = parseMonthKey(monthKey);
+  if (!parsed) return monthKey;
+
+  return parsed.start.toLocaleDateString(locale, { month: 'long', year: 'numeric' });
+}
+
+/**
+ * Create a month key from a Date object
+ *
+ * @param date - Date object
+ * @returns Month key in MM-YYYY format
+ *
+ * @example
+ * createMonthKey(new Date(2026, 0, 15)) // "01-2026"
+ */
+export function createMonthKey(date: Date): string {
+  return `${String(date.getMonth() + 1).padStart(2, '0')}-${date.getFullYear()}`;
+}
+
+/**
+ * Get the current month key
+ *
+ * @returns Current month key in MM-YYYY format
+ */
+export function getCurrentMonthKey(): string {
+  return createMonthKey(new Date());
+}

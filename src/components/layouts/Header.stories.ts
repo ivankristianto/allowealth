@@ -21,12 +21,44 @@ const meta: Meta = {
 
 export default meta;
 
+/**
+ * Get current month/year for subtitle generation (e.g., "January 2026")
+ */
+function getCurrentMonthYear(): string {
+  return new Date().toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+  });
+}
+
+/**
+ * Get dynamic subtitle based on current path
+ */
+function getDynamicSubtitle(path: string, customSubtitle?: string): string {
+  if (customSubtitle) return customSubtitle;
+
+  const subtitles: Record<string, string> = {
+    '/': `Welcome back! ${getCurrentMonthYear()}`,
+    '/dashboard': `Welcome back! ${getCurrentMonthYear()}`,
+    '/transactions': getCurrentMonthYear(),
+    '/budget': 'Monthly budget overview',
+    '/assets': getCurrentMonthYear(),
+    '/reports': getCurrentMonthYear(),
+    '/forecast': 'Based on your spending patterns',
+    '/calculators': 'Financial planning tools',
+    '/settings': 'Manage your preferences',
+  };
+
+  return subtitles[path] || getCurrentMonthYear();
+}
+
 const createHeader = (args: {
   currentPath?: string;
   showMenuToggle?: boolean;
   subtitle?: string;
 }): HTMLElement => {
-  const { currentPath = '/', showMenuToggle = true, subtitle = 'Summary for January 2024' } = args;
+  const { currentPath = '/', showMenuToggle = true, subtitle } = args;
+  const dynamicSubtitle = getDynamicSubtitle(currentPath, subtitle);
 
   const getPageTitle = (path: string) => {
     const titles: Record<string, string> = {
@@ -70,7 +102,7 @@ const createHeader = (args: {
 
   const subtitleEl = document.createElement('p');
   subtitleEl.className = 'text-sm font-medium text-neutral hidden sm:block mt-1.5 leading-none';
-  subtitleEl.textContent = subtitle;
+  subtitleEl.textContent = dynamicSubtitle;
   titleContainer.appendChild(subtitleEl);
 
   leftDiv.appendChild(titleContainer);
@@ -196,18 +228,63 @@ export const Default: StoryObj = {
 };
 
 export const Transactions: StoryObj = {
-  args: { currentPath: '/transactions', subtitle: 'Summary for January 2024' },
+  args: { currentPath: '/transactions' },
   render: (args) => createHeader(args),
+  parameters: {
+    docs: {
+      description: {
+        story: 'Header for Transactions page with current month subtitle.',
+      },
+    },
+  },
 };
 
 export const Budget: StoryObj = {
-  args: { currentPath: '/budget', subtitle: 'Active limits for current period' },
+  args: { currentPath: '/budget' },
   render: (args) => createHeader(args),
+  parameters: {
+    docs: {
+      description: {
+        story: 'Header for Budget page with overview subtitle.',
+      },
+    },
+  },
+};
+
+export const Assets: StoryObj = {
+  args: { currentPath: '/assets' },
+  render: (args) => createHeader(args),
+  parameters: {
+    docs: {
+      description: {
+        story: 'Header for Assets page with current period subtitle.',
+      },
+    },
+  },
 };
 
 export const Settings: StoryObj = {
-  args: { currentPath: '/settings', subtitle: 'Manage your preferences' },
+  args: { currentPath: '/settings' },
   render: (args) => createHeader(args),
+  parameters: {
+    docs: {
+      description: {
+        story: 'Header for Settings page with preferences subtitle.',
+      },
+    },
+  },
+};
+
+export const Forecast: StoryObj = {
+  args: { currentPath: '/forecast' },
+  render: (args) => createHeader(args),
+  parameters: {
+    docs: {
+      description: {
+        story: 'Header for Forecast page with spending patterns subtitle.',
+      },
+    },
+  },
 };
 
 export const NoMenuToggle: StoryObj = {
@@ -224,14 +301,29 @@ export const NoMenuToggle: StoryObj = {
 
 export const CustomSubtitle: StoryObj = {
   args: {
-    currentPath: '/reports',
-    subtitle: 'Financial insights and analytics',
+    currentPath: '/transactions',
+    subtitle: '23 transactions this month',
   },
   render: (args) => createHeader(args),
   parameters: {
     docs: {
       description: {
-        story: 'Header with custom subtitle text.',
+        story: 'Header with custom subtitle showing transaction count.',
+      },
+    },
+  },
+};
+
+export const BudgetProgress: StoryObj = {
+  args: {
+    currentPath: '/budget',
+    subtitle: 'Spent Rp 2.4M of Rp 8M',
+  },
+  render: (args) => createHeader(args),
+  parameters: {
+    docs: {
+      description: {
+        story: 'Header with custom subtitle showing budget progress.',
       },
     },
   },
