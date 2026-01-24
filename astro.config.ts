@@ -17,6 +17,9 @@ export default defineConfig({
   }),
   vite: {
     plugins: [tailwindcss()],
+    server: {
+      allowedHosts: ['.local'],
+    },
     resolve: {
       alias: {
         '@': fileURLToPath(new URL('./src', import.meta.url)),
