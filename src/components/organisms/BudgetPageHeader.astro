@@ -13,12 +13,11 @@
  * @param {string} prevMonthUrl - URL for previous month navigation
  * @param {string} nextMonthUrl - URL for next month navigation
  * @param {boolean} isNextDisabled - Disable next month button (future months)
- * @param {string} newBudgetUrl - URL for "Set New Budget" button
  * @param {boolean} showAiRebalancer - Show AI Rebalancer button
  * @param {string} className - Additional CSS classes
  */
 
-import { Sparkles, ChevronLeft, ChevronRight } from '@lucide/astro';
+import { Sparkles, ChevronLeft, ChevronRight, History } from '@lucide/astro';
 
 export interface Props {
   title?: string;
@@ -28,9 +27,7 @@ export interface Props {
   prevMonthUrl: string;
   nextMonthUrl?: string;
   isNextDisabled?: boolean;
-  newBudgetUrl?: string;
   showAiRebalancer?: boolean;
-  onAiRebalancerClick?: string;
   className?: string;
 }
 
@@ -42,7 +39,6 @@ const {
   prevMonthUrl,
   nextMonthUrl,
   isNextDisabled = false,
-  newBudgetUrl = '/settings/categories',
   showAiRebalancer = true,
   className = '',
 } = Astro.props;
@@ -51,7 +47,7 @@ const {
 const displaySubtitle =
   subtitle ||
   (budgetCount > 0
-    ? `Monitoring ${budgetCount} critical expense categories for our household.`
+    ? `Monitoring ${budgetCount} critical expense ${budgetCount === 1 ? 'category' : 'categories'} for our household.`
     : 'Set up spending limits to track your budget.');
 
 const headerClasses = [
@@ -69,8 +65,18 @@ const headerClasses = [
     <p class="text-sm text-base-content/60 mt-2 font-medium">{displaySubtitle}</p>
   </div>
 
-  {/* Actions: AI Rebalancer, Month Navigation, Set New Budget */}
+  {/* Actions: View History, AI Rebalancer, Month Navigation, Set New Budget */}
   <div class="flex flex-wrap items-center gap-3">
+    {/* View History Button */}
+    <a
+      href="/budget/history"
+      class="btn btn-outline gap-2 rounded-2xl border border-base-300 hover:border-accent/30 hover:text-accent hover:bg-transparent"
+      aria-label="View budget history"
+    >
+      <History size={18} class="stroke-current" aria-hidden="true" />
+      <span>View History</span>
+    </a>
+
     {/* AI Rebalancer Button */}
     {
       showAiRebalancer && (
@@ -87,39 +93,77 @@ const headerClasses = [
     }
 
     {/* Month Navigation */}
-    <div class="flex items-center gap-1 bg-base-200 rounded-2xl p-1">
-      <a href={prevMonthUrl} class="btn btn-ghost btn-sm btn-circle" aria-label="Previous month">
+    <div class="flex items-center gap-1">
+      <a
+        href={prevMonthUrl}
+        class="btn btn-sm btn-square bg-base-100 border border-base-300 hover:border-accent/30 hover:text-accent rounded-xl transition-all"
+        aria-label="Previous month"
+      >
         <ChevronLeft size={18} class="stroke-current" aria-hidden="true" />
       </a>
 
-      <span class="px-4 py-1.5 font-medium text-sm min-w-[140px] text-center text-base-content">
+      <div
+        class="px-4 py-2 bg-base-100 border border-base-300 rounded-xl text-sm font-bold text-base-content min-w-[130px] text-center"
+      >
         {currentMonth}
-      </span>
+      </div>
 
       {
         nextMonthUrl && !isNextDisabled ? (
-          <a href={nextMonthUrl} class="btn btn-ghost btn-sm btn-circle" aria-label="Next month">
+          <a
+            href={nextMonthUrl}
+            class="btn btn-sm btn-square bg-base-100 border border-base-300 hover:border-accent/30 hover:text-accent rounded-xl transition-all"
+            aria-label="Next month"
+          >
             <ChevronRight size={18} class="stroke-current" aria-hidden="true" />
           </a>
         ) : (
           <button
             type="button"
-            class="btn btn-ghost btn-sm btn-circle"
+            class="btn btn-sm btn-square bg-base-100 border border-base-300 rounded-xl opacity-30 cursor-not-allowed"
             disabled
             aria-label="Next month (disabled)"
           >
-            <ChevronRight size={18} class="stroke-current opacity-30" aria-hidden="true" />
+            <ChevronRight size={18} class="stroke-current" aria-hidden="true" />
           </button>
         )
       }
     </div>
 
     {/* Set New Budget Button */}
-    <a
-      href={newBudgetUrl}
-      class="btn btn-outline btn-primary gap-2 rounded-2xl border-2 hover:bg-primary/5"
+    <button
+      type="button"
+      class="btn btn-outline btn-accent gap-2 rounded-2xl border-2 hover:bg-accent/5"
+      id="set-new-budget-btn"
+      aria-label="Set new budget"
     >
       <span>Set New Budget</span>
-    </a>
+    </button>
   </div>
 </header>
+
+<script>
+  function initSetNewBudgetButton() {
+    const btn = document.getElementById('set-new-budget-btn');
+    if (!btn) return;
+
+    // Remove any existing listeners by cloning
+    const newBtn = btn.cloneNode(true) as HTMLButtonElement;
+    btn.parentNode?.replaceChild(newBtn, btn);
+
+    newBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const modal = document.getElementById('set-new-budget-modal') as HTMLDialogElement;
+      if (modal) {
+        modal.showModal();
+      }
+    });
+  }
+
+  // Initialize
+  initSetNewBudgetButton();
+
+  // Re-initialize on Astro page transitions
+  document.addEventListener('astro:page-load', initSetNewBudgetButton);
+</script>

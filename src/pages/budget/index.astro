@@ -13,9 +13,10 @@ import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import BudgetCardGrid from '@components/organisms/BudgetCardGrid.astro';
 import BudgetPageHeader from '@components/organisms/BudgetPageHeader.astro';
 import BudgetAdviceBanner from '@components/organisms/BudgetAdviceBanner.astro';
-import { budgetService, type BudgetSummary } from '@/services';
+import SetNewBudgetModal from '@components/organisms/SetNewBudgetModal.astro';
+import { budgetService, categoryService, type BudgetSummary } from '@/services';
 import { formatCurrency } from '@/lib/tokens';
-import { ChevronDown, CircleX, Info } from '@lucide/astro';
+import { CircleX } from '@lucide/astro';
 
 const user = Astro.locals.user!;
 const currentPath = '/budget';
@@ -148,7 +149,6 @@ const generateAdviceData = (): AdviceData | null => {
 const adviceData = generateAdviceData();
 
 // Fetch all categories for the edit modal
-import { categoryService } from '@/services';
 const allCategories = await categoryService.findAll(user!.id, { is_active: true });
 const expenseCategories = allCategories.filter((c) => c.type === 'expense');
 
@@ -172,54 +172,8 @@ const budgetCount =
       prevMonthUrl={buildMonthUrl(prevMonthYear, prevMonth)}
       nextMonthUrl={!isNextMonthInFuture ? buildMonthUrl(nextMonthYear, nextMonth) : undefined}
       isNextDisabled={isNextMonthInFuture}
-      newBudgetUrl="/settings/categories"
       showAiRebalancer={budgetCount > 0}
     />
-
-    {/* Currency Selector (compact) */}
-    <div class="flex items-center gap-4">
-      <div class="tabs">
-        <a class="tab tab-active" href="/budget">Overview</a>
-        <a class="tab" href="/budget/history">History</a>
-      </div>
-
-      <div class="ml-auto">
-        <div class="dropdown dropdown-end">
-          <button
-            type="button"
-            tabindex="0"
-            class="btn btn-ghost btn-sm gap-2"
-            aria-haspopup="listbox"
-            aria-label="Select currency"
-          >
-            <ChevronDown size={16} class="stroke-current" aria-hidden="true" />
-            {selectedCurrency}
-          </button>
-          <ul
-            tabindex="0"
-            role="listbox"
-            class="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-32"
-          >
-            <li role="option" aria-selected={selectedCurrency === 'IDR'}>
-              <a
-                href={`/budget?year=${selectedYear}&month=${selectedMonth}&currency=IDR`}
-                class={selectedCurrency === 'IDR' ? 'active' : ''}
-              >
-                IDR
-              </a>
-            </li>
-            <li role="option" aria-selected={selectedCurrency === 'USD'}>
-              <a
-                href={`/budget?year=${selectedYear}&month=${selectedMonth}&currency=USD`}
-                class={selectedCurrency === 'USD' ? 'active' : ''}
-              >
-                USD
-              </a>
-            </li>
-          </ul>
-        </div>
-      </div>
-    </div>
 
     {/* Error State */}
     {
@@ -254,161 +208,215 @@ const budgetCount =
       )
     }
   </div>
+
+  {/* Set New Budget Modal */}
+  <SetNewBudgetModal
+    id="set-new-budget-modal"
+    categories={expenseCategories}
+    currency={selectedCurrency}
+  />
 </ProtectedLayout>
 
-<!-- Quick Edit Budget Modal -->
-<dialog id="quick-edit-budget-modal" class="modal">
-  <div class="modal-box max-w-md">
-    <h3 class="font-bold text-lg">Edit Budget Allocation</h3>
-    <form id="quick-edit-budget-form" class="py-4 space-y-4">
-      <input type="hidden" name="category_id" value="" />
-
-      <div class="form-control">
-        <label class="label" for="category-name">
-          <span class="label-text">Category</span>
-        </label>
-        <input
-          type="text"
-          name="category-name"
-          id="category-name"
-          class="input input-bordered input-ghost"
-          disabled
-          readonly
-        />
-      </div>
-
-      <div class="form-control">
-        <label class="label" for="edit-budget-amount">
-          <span class="label-text">Monthly Budget Amount</span>
-          <span class="label-text-alt text-error">*</span>
-        </label>
-        <input
-          type="number"
-          name="budget_amount"
-          id="edit-budget-amount"
-          class="input input-bordered"
-          required
-          min="0"
-          step="0.01"
-        />
-        <label class="label">
-          <span class="label-text-alt">Fixed monthly budget for this category</span>
-        </label>
-        <div class="text-sm text-neutral-600 flex items-center gap-2">
-          <Info size={16} class="stroke-current shrink-0" aria-hidden="true" />
-          Allocation: <span id="calculated-percentage" class="font-medium">--%</span>
-          <span class="label-text-alt">(auto-calculated from budget amount)</span>
-        </div>
-      </div>
-
-      <div class="form-control">
-        <label class="label" for="edit-currency">
-          <span class="label-text">Currency</span>
-        </label>
-        <input
-          type="text"
-          name="currency"
-          id="edit-currency"
-          class="input input-bordered input-ghost"
-          disabled
-          readonly
-        />
-      </div>
-
-      <div id="quick-edit-form-error" class="hidden alert alert-error text-sm" role="alert"></div>
-
-      <div class="modal-action">
-        <button type="button" id="quick-edit-cancel-btn" class="btn btn-ghost">Cancel</button>
-        <button type="submit" class="btn btn-primary">Save Changes</button>
-      </div>
-    </form>
-  </div>
-  <form method="dialog" class="modal-backdrop">
-    <button>close</button>
-  </form>
-</dialog>
-
 <script>
-  // Handle edit budget button clicks from BudgetCard components
-  document.querySelectorAll('[data-edit-budget]').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const categoryId = btn.getAttribute('data-edit-budget');
-      if (!categoryId) return;
+  function initBudgetPageHandlers() {
+    // Handle edit budget button clicks from BudgetCard components
+    // Reuse the SetNewBudgetModal for editing
+    document.querySelectorAll('[data-edit-budget]').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
 
-      const container = document.querySelector('[data-budget-container]');
-      const currency = container?.getAttribute('data-currency') || 'IDR';
-      const categoriesJson = container?.getAttribute('data-expense-categories');
+        const categoryId = btn.getAttribute('data-edit-budget');
+        if (!categoryId) return;
 
-      if (!categoriesJson) return;
+        const container = document.querySelector('[data-budget-container]');
+        const categoriesJson = container?.getAttribute('data-expense-categories');
+        if (!categoriesJson) return;
 
-      try {
-        const categories = JSON.parse(categoriesJson);
-        const category = categories.find(
-          (c: { id: string; name: string; budget_amount: string }) => c.id === categoryId
-        );
+        try {
+          const categories = JSON.parse(categoriesJson);
+          const category = categories.find(
+            (c: { id: string; name: string; budget_amount: string }) => c.id === categoryId
+          );
 
-        if (!category) return;
+          if (!category) return;
 
-        const modal = document.getElementById('quick-edit-budget-modal') as HTMLDialogElement;
-        const form = document.getElementById('quick-edit-budget-form') as HTMLFormElement;
+          // Use the SetNewBudgetModal
+          const modal = document.getElementById('set-new-budget-modal') as HTMLDialogElement;
+          const form = document.getElementById('set-new-budget-modal-form') as HTMLFormElement;
+          const categorySelect = document.getElementById(
+            'set-new-budget-modal-category'
+          ) as HTMLSelectElement;
+          const amountInput = document.getElementById(
+            'set-new-budget-modal-amount'
+          ) as HTMLInputElement;
 
-        if (!modal || !form) return;
+          if (!modal || !form || !categorySelect || !amountInput) return;
 
-        // Populate form fields
-        (form.querySelector('[name="category_id"]') as HTMLInputElement).value = categoryId;
-        (form.querySelector('[name="category-name"]') as HTMLInputElement).value = category.name;
-        (form.querySelector('[name="budget_amount"]') as HTMLInputElement).value =
-          category.budget_amount || '0';
-        (form.querySelector('[name="currency"]') as HTMLInputElement).value = currency;
+          // Pre-select the category and set amount
+          categorySelect.value = categoryId;
+          amountInput.value = category.budget_amount || '';
 
-        modal.showModal();
-      } catch (err) {
-        console.error('Error opening edit modal:', err);
-      }
-    });
-  });
-
-  // Handle cancel button
-  document.getElementById('quick-edit-cancel-btn')?.addEventListener('click', () => {
-    const modal = document.getElementById('quick-edit-budget-modal') as HTMLDialogElement;
-    modal?.close();
-  });
-
-  // Handle form submission
-  document.getElementById('quick-edit-budget-form')?.addEventListener('submit', async (e) => {
-    e.preventDefault();
-
-    const form = e.target as HTMLFormElement;
-    const formData = new FormData(form);
-    const categoryId = formData.get('category_id');
-    const budgetAmount = formData.get('budget_amount');
-    const currency = formData.get('currency');
-    const errorDiv = document.getElementById('quick-edit-form-error');
-
-    try {
-      const response = await fetch(`/api/categories/${categoryId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          budget_amount: budgetAmount,
-          currency: currency,
-        }),
+          modal.showModal();
+        } catch (err) {
+          console.error('Error opening edit modal:', err);
+        }
       });
+    });
+  }
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to update budget');
-      }
+  // Format currency for display
+  function formatCurrencyClient(amount: number, currency: string): string {
+    if (currency === 'IDR') {
+      return new Intl.NumberFormat('id-ID', {
+        style: 'currency',
+        currency: 'IDR',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+      }).format(amount);
+    }
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(amount);
+  }
 
-      // Success - reload page
-      window.location.reload();
-    } catch (err) {
-      if (errorDiv) {
-        errorDiv.textContent = err instanceof Error ? err.message : 'Failed to update budget';
-        errorDiv.classList.remove('hidden');
+  // Get status based on percentage
+  function getStatus(percentage: number): 'ok' | 'warning' | 'exceeded' {
+    if (percentage >= 100) return 'exceeded';
+    if (percentage >= 80) return 'warning';
+    return 'ok';
+  }
+
+  // Get status badge classes
+  function getStatusBadgeClasses(status: 'ok' | 'warning' | 'exceeded'): string {
+    const statusMap: Record<string, string> = {
+      ok: 'bg-success/10 text-success',
+      warning: 'bg-warning/10 text-warning',
+      exceeded: 'bg-error/10 text-error',
+    };
+    return statusMap[status] || statusMap.ok;
+  }
+
+  // Get progress bar status color class
+  function getProgressColorClass(status: 'ok' | 'warning' | 'exceeded'): string {
+    const colorMap: Record<string, string> = {
+      ok: 'bg-success',
+      warning: 'bg-warning',
+      exceeded: 'bg-error',
+    };
+    return colorMap[status] || colorMap.ok;
+  }
+
+  // Handle budget-updated event to update BudgetCard interactively
+  function handleBudgetUpdated(
+    event: CustomEvent<{ categoryId: string; budgetAmount: string; currency: string }>
+  ) {
+    const { categoryId, budgetAmount, currency } = event.detail;
+    const newBudget = parseFloat(budgetAmount);
+
+    // Find the budget card for this category
+    const card = document.querySelector(`[data-budget-card="${categoryId}"]`) as HTMLElement;
+    if (!card) return;
+
+    // Get spent amount from the card
+    const spent = parseFloat(card.dataset.spent || '0');
+
+    // Calculate new values
+    const percentage = newBudget > 0 ? Math.round((spent / newBudget) * 100) : 0;
+    const remaining = newBudget - spent;
+    const isOver = remaining < 0;
+    const status = getStatus(percentage);
+
+    // Update status badge
+    const statusBadge = card.querySelector('[data-status-badge]');
+    if (statusBadge) {
+      statusBadge.textContent = `${percentage}% Used`;
+      statusBadge.className = `inline-block mt-2 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${getStatusBadgeClasses(status)}`;
+    }
+
+    // Update budget amount display
+    const budgetAmountEl = card.querySelector('[data-budget-amount]');
+    if (budgetAmountEl) {
+      budgetAmountEl.textContent = formatCurrencyClient(newBudget, currency);
+    }
+
+    // Update progress bar
+    const progressContainer = card.querySelector('[data-progress-container]');
+    if (progressContainer) {
+      const progressBar = progressContainer.querySelector('[role="progressbar"]');
+      const progressFill = progressBar?.querySelector('div');
+      if (progressBar && progressFill) {
+        const clampedValue = Math.min(percentage, 100);
+        progressBar.setAttribute('aria-valuenow', String(clampedValue));
+        progressFill.style.width = `${clampedValue}%`;
+        // Update color class using classList API
+        progressFill.classList.remove('bg-success', 'bg-warning', 'bg-error');
+        progressFill.classList.add(getProgressColorClass(status));
       }
     }
-  });
+
+    // Update footer
+    const footer = card.querySelector('[data-footer]') as HTMLElement;
+    if (footer) {
+      // Update footer container classes
+      footer.className = `p-4 rounded-2xl border ${
+        isOver
+          ? 'bg-error/5 border-error/10 text-error'
+          : 'bg-base-200/50 border-base-300 text-base-content/60'
+      }`;
+
+      // Update label
+      const footerLabel = footer.querySelector('[data-footer-label]');
+      if (footerLabel) {
+        footerLabel.textContent = isOver ? 'Over budget by' : 'Left to spend';
+      }
+
+      // Update amount
+      const footerAmount = footer.querySelector('[data-footer-amount]');
+      if (footerAmount) {
+        footerAmount.textContent = formatCurrencyClient(Math.abs(remaining), currency);
+        footerAmount.className = isOver ? 'text-error' : 'text-base-content';
+      }
+    }
+
+    // Update the data-expense-categories to keep it in sync
+    const container = document.querySelector('[data-budget-container]');
+    const categoriesJson = container?.getAttribute('data-expense-categories');
+    if (categoriesJson) {
+      try {
+        const categories = JSON.parse(categoriesJson);
+        const categoryIndex = categories.findIndex((c: { id: string }) => c.id === categoryId);
+        if (categoryIndex !== -1) {
+          categories[categoryIndex].budget_amount = budgetAmount;
+          container?.setAttribute('data-expense-categories', JSON.stringify(categories));
+        }
+      } catch (err) {
+        console.error('Error updating categories data:', err);
+      }
+    }
+  }
+
+  // Initialize on DOM ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initBudgetPageHandlers);
+  } else {
+    initBudgetPageHandlers();
+  }
+
+  // Re-initialize on Astro page transitions
+  document.addEventListener('astro:page-load', initBudgetPageHandlers);
+
+  // Listen for budget updates
+  document.addEventListener('budget-updated', handleBudgetUpdated as EventListener);
+
+  // Cleanup event listeners on Astro page transitions
+  document.addEventListener(
+    'astro:before-swap',
+    () => {
+      document.removeEventListener('budget-updated', handleBudgetUpdated as EventListener);
+    },
+    { once: true }
+  );
 </script>

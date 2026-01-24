@@ -159,7 +159,12 @@ const cardClasses = [
       </div>
     </div>
   ) : (
-    <article class={cardClasses} aria-label={`Budget for ${categoryName}`}>
+    <article
+      class={cardClasses}
+      aria-label={`Budget for ${categoryName}`}
+      data-budget-card={categoryId}
+      data-spent={spent}
+    >
       {/* Header: Icon, Name, Status Badge, Edit Button */}
       <div class="flex justify-between items-start mb-6 lg:mb-8">
         <div class="flex items-center gap-3 lg:gap-4">
@@ -174,6 +179,7 @@ const cardClasses = [
             <h3 class="font-bold text-base-content tracking-tight leading-none">{categoryName}</h3>
             <span
               class={`inline-block mt-2 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${getStatusBadgeClasses(status)}`}
+              data-status-badge
             >
               {Math.round(percentageUsed)}% Used
             </span>
@@ -200,18 +206,20 @@ const cardClasses = [
           </div>
           <div class="text-right">
             <StatLabel size="sm">Budget</StatLabel>
-            <p class="text-sm font-bold mt-1 text-base-content/60 leading-none">
+            <p class="text-sm font-bold mt-1 text-base-content/60 leading-none" data-budget-amount>
               {formatCurrency(budget, currency)}
             </p>
           </div>
         </div>
 
-        <ProgressBar
-          value={Math.min(percentageUsed, 100)}
-          status={progressStatus}
-          size="md"
-          animate={true}
-        />
+        <div data-progress-container>
+          <ProgressBar
+            value={Math.min(percentageUsed, 100)}
+            status={progressStatus}
+            size="md"
+            animate={true}
+          />
+        </div>
 
         {/* Footer: Remaining/Over amount */}
         <div
@@ -220,12 +228,13 @@ const cardClasses = [
               ? 'bg-error/5 border-error/10 text-error'
               : 'bg-base-200/50 border-base-300 text-base-content/60'
           }`}
+          data-footer
         >
           <div class="flex justify-between items-center text-xs font-bold leading-none">
-            <span class="uppercase tracking-widest">
+            <span class="uppercase tracking-widest" data-footer-label>
               {isOver ? 'Over budget by' : 'Left to spend'}
             </span>
-            <span class={isOver ? 'text-error' : 'text-base-content'}>
+            <span class={isOver ? 'text-error' : 'text-base-content'} data-footer-amount>
               {formatCurrency(Math.abs(remaining), currency)}
             </span>
           </div>

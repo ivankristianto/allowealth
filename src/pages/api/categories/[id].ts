@@ -14,10 +14,10 @@ import { logError } from '@/lib/utils';
  * GET /api/categories/:id
  * Get a single category by ID
  */
-export const GET: APIRoute = async ({ params, request, url }) => {
+export const GET: APIRoute = async (context) => {
   try {
-    const userId = await requireAuth({ request, url } as any);
-    const { id } = params;
+    const userId = await requireAuth(context);
+    const { id } = context.params;
 
     if (!id) {
       return errorResponse('Category ID is required', 400);
@@ -43,16 +43,16 @@ export const GET: APIRoute = async ({ params, request, url }) => {
  * PUT /api/categories/:id
  * Update a category
  */
-export const PUT: APIRoute = async ({ params, request, url }) => {
+export const PUT: APIRoute = async (context) => {
   try {
-    const userId = await requireAuth({ request, url } as any);
-    const { id } = params;
+    const userId = await requireAuth(context);
+    const { id } = context.params;
 
     if (!id) {
       return errorResponse('Category ID is required', 400);
     }
 
-    const validation = await validateBody(request, updateCategoryAPISchema);
+    const validation = await validateBody(context.request, updateCategoryAPISchema);
 
     if (isValidationError(validation)) {
       return errorResponse('Validation failed', 400, 'VALIDATION_ERROR', validation.error.issues);
@@ -86,10 +86,10 @@ export const PUT: APIRoute = async ({ params, request, url }) => {
  * DELETE /api/categories/:id
  * Soft delete a category (mark as inactive)
  */
-export const DELETE: APIRoute = async ({ params, request, url }) => {
+export const DELETE: APIRoute = async (context) => {
   try {
-    const userId = await requireAuth({ request, url } as any);
-    const { id } = params;
+    const userId = await requireAuth(context);
+    const { id } = context.params;
 
     if (!id) {
       return errorResponse('Category ID is required', 400);
