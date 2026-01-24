@@ -3,9 +3,13 @@ import node from '@astrojs/node';
 import tailwindcss from '@tailwindcss/vite';
 import { fileURLToPath } from 'node:url';
 
+// DEV_HOST: Set custom hostname (e.g., "k2-expenses.local")
+// Falls back to listening on all interfaces if not set
+const devHost = process.env.DEV_HOST || true;
+
 export default defineConfig({
   server: {
-    host: true,
+    host: devHost,
   },
   output: 'server',
   adapter: node({
@@ -13,6 +17,9 @@ export default defineConfig({
   }),
   vite: {
     plugins: [tailwindcss()],
+    server: {
+      allowedHosts: ['.local'],
+    },
     resolve: {
       alias: {
         '@': fileURLToPath(new URL('./src', import.meta.url)),

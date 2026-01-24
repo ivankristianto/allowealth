@@ -1,0 +1,144 @@
+---
+/**
+ * BudgetAdviceBanner Component
+ *
+ * AI-powered budget reallocation suggestion banner.
+ * Part of the premium Budget page redesign (Task 16).
+ *
+ * Security: Uses structured props instead of HTML strings to prevent XSS.
+ *
+ * @param {string} title - Banner title (default: "Budget Reallocation Advice")
+ * @param {string} categoryName - Name of the category for the advice
+ * @param {'exceeded' | 'warning'} status - Budget status type
+ * @param {string} amount - Formatted currency amount (overage or remaining)
+ * @param {number} percentageUsed - Percentage of budget used (for warning status)
+ * @param {string} ctaText - Call-to-action button text
+ * @param {string} ctaUrl - URL for CTA button (optional, uses button if not provided)
+ * @param {boolean} show - Whether to show the banner
+ * @param {boolean} dismissible - Whether to show dismiss button
+ * @param {string} className - Additional CSS classes
+ */
+
+import IconBadge from '@components/atoms/IconBadge.astro';
+import StatLabel from '@components/atoms/StatLabel.astro';
+import { Sparkles, X } from '@lucide/astro';
+
+export interface Props {
+  title?: string;
+  categoryName: string;
+  status: 'exceeded' | 'warning';
+  amount: string;
+  percentageUsed?: number;
+  ctaText?: string;
+  ctaUrl?: string;
+  show?: boolean;
+  dismissible?: boolean;
+  className?: string;
+}
+
+const {
+  title = 'Budget Reallocation Advice',
+  categoryName,
+  status,
+  amount,
+  percentageUsed,
+  ctaText = 'Execute re-allocation',
+  ctaUrl,
+  show = true,
+  dismissible = true,
+  className = '',
+} = Astro.props;
+
+// Don't render if not shown
+if (!show) return null;
+
+const bannerClasses = [
+  // Base styling with indigo tint
+  'bg-info/5 border border-info/10 rounded-card',
+  // Padding
+  'p-6 lg:p-8',
+  // Layout
+  'flex flex-col lg:flex-row lg:items-center gap-4 lg:gap-6',
+  // Position relative for dismiss button
+  'relative',
+  // Additional classes
+  className,
+]
+  .filter(Boolean)
+  .join(' ');
+---
+
+<aside class={bannerClasses} role="complementary" aria-label="Budget advice" data-advice-banner>
+  {/* Icon Badge */}
+  <IconBadge variant="info" size="md" className="shrink-0">
+    <Sparkles size={24} class="stroke-current" aria-hidden="true" />
+  </IconBadge>
+
+  {/* Content */}
+  <div class="flex-1 min-w-0">
+    <StatLabel size="sm" className="mb-2">{title}</StatLabel>
+    <p class="text-sm text-base-content leading-relaxed">
+      {
+        status === 'exceeded' ? (
+          <>
+            Your <strong class="font-semibold">{categoryName}</strong> budget has been exceeded by{' '}
+            <strong class="text-error font-bold">{amount}</strong>. Consider reviewing your spending
+            or adjusting your budget allocation.
+          </>
+        ) : (
+          <>
+            Your <strong class="font-semibold">{categoryName}</strong> budget is at{' '}
+            <strong class="font-semibold">{percentageUsed}%</strong> usage. You have{' '}
+            <strong class="text-info font-bold">{amount}</strong> remaining for this period.
+          </>
+        )
+      }
+    </p>
+  </div>
+
+  {/* CTA Button */}
+  {
+    ctaUrl ? (
+      <a href={ctaUrl} class="btn btn-accent gap-2 rounded-2xl whitespace-nowrap shrink-0">
+        {ctaText}
+      </a>
+    ) : (
+      <button
+        type="button"
+        class="btn btn-accent gap-2 rounded-2xl whitespace-nowrap shrink-0"
+        data-execute-reallocation
+      >
+        {ctaText}
+      </button>
+    )
+  }
+
+  {/* Dismiss Button */}
+  {
+    dismissible && (
+      <button
+        type="button"
+        class="absolute top-3 right-3 p-1 text-base-content/40 hover:text-base-content/60 transition-colors rounded-lg hover:bg-base-200/50"
+        aria-label="Dismiss advice"
+        data-dismiss-advice
+      >
+        <X size={18} class="stroke-current" aria-hidden="true" />
+      </button>
+    )
+  }
+</aside>
+
+<script>
+  // Handle dismiss functionality
+  document.querySelectorAll('[data-advice-banner]').forEach((banner) => {
+    const dismissBtn = banner.querySelector('[data-dismiss-advice]');
+    if (dismissBtn) {
+      dismissBtn.addEventListener('click', () => {
+        banner.classList.add('animate-out', 'fade-out', 'duration-200');
+        setTimeout(() => {
+          (banner as HTMLElement).style.display = 'none';
+        }, 200);
+      });
+    }
+  });
+</script>

@@ -1,0 +1,236 @@
+---
+/**
+ * BudgetCard Component
+ *
+ * Individual budget category card showing spending progress.
+ * Part of the premium Budget page redesign (Task 15).
+ *
+ * @param {string} categoryId - Category ID for edit link
+ * @param {string} categoryName - Display name for the category
+ * @param {string} icon - Lucide icon name for the category
+ * @param {number} spent - Amount spent in this category
+ * @param {number} budget - Budget limit for this category
+ * @param {number} percentageUsed - Percentage of budget used (0-100+)
+ * @param {'ok' | 'warning' | 'exceeded'} status - Budget status
+ * @param {string} currency - Currency code (IDR or USD)
+ * @param {boolean} loading - Show loading skeleton state
+ * @param {string} className - Additional CSS classes
+ */
+
+import IconBadge from '@components/atoms/IconBadge.astro';
+import ProgressBar from '@components/atoms/ProgressBar.astro';
+import StatLabel from '@components/atoms/StatLabel.astro';
+import Skeleton from '@components/atoms/Skeleton.astro';
+import { formatCurrency } from '@/lib/tokens';
+import {
+  Pencil,
+  Home,
+  ShoppingCart,
+  Utensils,
+  Car,
+  Film,
+  Zap,
+  Briefcase,
+  Heart,
+  GraduationCap,
+  Shirt,
+  Gift,
+  Plane,
+  CircleDollarSign,
+} from '@lucide/astro';
+
+export interface Props {
+  categoryId?: string;
+  categoryName: string;
+  icon?: string;
+  spent: number;
+  budget: number;
+  percentageUsed: number;
+  status?: 'ok' | 'warning' | 'exceeded';
+  currency?: 'IDR' | 'USD';
+  loading?: boolean;
+  className?: string;
+}
+
+const {
+  categoryId,
+  categoryName,
+  icon = 'CircleDollarSign',
+  spent,
+  budget,
+  percentageUsed,
+  status = 'ok',
+  currency = 'IDR',
+  loading = false,
+  className = '',
+} = Astro.props;
+
+// Calculate remaining amount
+const remaining = budget - spent;
+const isOver = remaining < 0;
+
+// Map status to ProgressBar status and badge colors
+const progressStatus = status === 'exceeded' ? 'danger' : status === 'warning' ? 'warning' : 'ok';
+
+// Status badge styling based on percentage
+const getStatusBadgeClasses = (statusVal: 'ok' | 'warning' | 'exceeded'): string => {
+  const statusMap: Record<string, string> = {
+    ok: 'bg-success/10 text-success',
+    warning: 'bg-warning/10 text-warning',
+    exceeded: 'bg-error/10 text-error',
+  };
+  return statusMap[statusVal] || statusMap.ok;
+};
+
+// Icon badge variant based on status
+const getIconBadgeVariant = (
+  statusVal: 'ok' | 'warning' | 'exceeded'
+): 'success' | 'warning' | 'error' | 'neutral' => {
+  const variantMap: Record<string, 'success' | 'warning' | 'error' | 'neutral'> = {
+    ok: 'neutral',
+    warning: 'neutral',
+    exceeded: 'neutral',
+  };
+  return variantMap[statusVal] || 'neutral';
+};
+
+// Category icon mapping
+const iconMap: Record<string, typeof Home> = {
+  Home,
+  ShoppingCart,
+  Utensils,
+  Car,
+  Film,
+  Zap,
+  Briefcase,
+  Heart,
+  GraduationCap,
+  Shirt,
+  Gift,
+  Plane,
+  CircleDollarSign,
+};
+
+// Get the icon component, fallback to CircleDollarSign
+const IconComponent = iconMap[icon] || CircleDollarSign;
+
+const cardClasses = [
+  // Base card styling
+  'bg-base-100 rounded-card border border-base-300',
+  // Premium shadow and hover effect
+  'shadow-sm hover:shadow-xl transition-all duration-300',
+  // Padding
+  'p-6 lg:p-8',
+  // Group for hover effects
+  'group',
+  // Additional classes
+  className,
+]
+  .filter(Boolean)
+  .join(' ');
+---
+
+{
+  loading ? (
+    <div class={cardClasses} aria-busy="true" aria-label="Loading budget card">
+      <div class="flex justify-between items-start mb-6">
+        <div class="flex items-center gap-4">
+          <Skeleton variant="circular" size="lg" />
+          <div class="space-y-2">
+            <Skeleton variant="text" width="120px" />
+            <Skeleton variant="text" width="80px" height="20px" />
+          </div>
+        </div>
+        <Skeleton variant="circular" size="sm" />
+      </div>
+      <div class="space-y-4">
+        <div class="flex justify-between">
+          <div class="space-y-1">
+            <Skeleton variant="text" width="40px" />
+            <Skeleton variant="text" width="100px" />
+          </div>
+          <div class="space-y-1 text-right">
+            <Skeleton variant="text" width="50px" />
+            <Skeleton variant="text" width="90px" />
+          </div>
+        </div>
+        <Skeleton variant="rectangular" width="100%" height="12px" className="rounded-full" />
+        <Skeleton variant="rectangular" width="100%" height="48px" className="rounded-2xl" />
+      </div>
+    </div>
+  ) : (
+    <article class={cardClasses} aria-label={`Budget for ${categoryName}`}>
+      {/* Header: Icon, Name, Status Badge, Edit Button */}
+      <div class="flex justify-between items-start mb-6 lg:mb-8">
+        <div class="flex items-center gap-3 lg:gap-4">
+          <IconBadge
+            variant={getIconBadgeVariant(status)}
+            size="md"
+            className="group-hover:scale-110 transition-transform"
+          >
+            <IconComponent size={24} class="stroke-current" aria-hidden="true" />
+          </IconBadge>
+          <div>
+            <h3 class="font-bold text-base-content tracking-tight leading-none">{categoryName}</h3>
+            <span
+              class={`inline-block mt-2 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${getStatusBadgeClasses(status)}`}
+            >
+              {Math.round(percentageUsed)}% Used
+            </span>
+          </div>
+        </div>
+        <button
+          type="button"
+          class="text-base-content/30 hover:text-base-content/60 transition-colors p-1 rounded-lg hover:bg-base-200"
+          aria-label={`Edit ${categoryName} budget`}
+          data-edit-budget={categoryId}
+        >
+          <Pencil size={18} class="stroke-current" aria-hidden="true" />
+        </button>
+      </div>
+
+      {/* Body: Spent/Budget amounts and Progress bar */}
+      <div class="space-y-4">
+        <div class="flex justify-between items-end">
+          <div>
+            <StatLabel size="sm">Spent</StatLabel>
+            <p class="text-lg font-bold mt-1 text-base-content leading-none">
+              {formatCurrency(spent, currency)}
+            </p>
+          </div>
+          <div class="text-right">
+            <StatLabel size="sm">Budget</StatLabel>
+            <p class="text-sm font-bold mt-1 text-base-content/60 leading-none">
+              {formatCurrency(budget, currency)}
+            </p>
+          </div>
+        </div>
+
+        <ProgressBar
+          value={Math.min(percentageUsed, 100)}
+          status={progressStatus}
+          size="md"
+          animate={true}
+        />
+
+        {/* Footer: Remaining/Over amount */}
+        <div
+          class={`p-4 rounded-2xl border ${
+            isOver
+              ? 'bg-error/5 border-error/10 text-error'
+              : 'bg-base-200/50 border-base-300 text-base-content/60'
+          }`}
+        >
+          <div class="flex justify-between items-center text-xs font-bold leading-none">
+            <span class="uppercase tracking-widest">
+              {isOver ? 'Over budget by' : 'Left to spend'}
+            </span>
+            <span class={isOver ? 'text-error' : 'text-base-content'}>
+              {formatCurrency(Math.abs(remaining), currency)}
+            </span>
+          </div>
+        </div>
+      </div>
+    </article>
+  )
+}
