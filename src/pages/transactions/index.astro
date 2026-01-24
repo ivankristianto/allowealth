@@ -197,6 +197,25 @@ const ssrData = {
       currency={userCurrency}
     />
 
+    <!-- Summary Cards Skeleton (shown during client-side loading) -->
+    <div
+      id="summary-cards-skeleton"
+      class="grid grid-cols-1 md:grid-cols-3 gap-6 hidden"
+      aria-hidden="true"
+    >
+      {
+        Array.from({ length: 3 }).map(() => (
+          <div class="card bg-base-100 border border-base-300 rounded-3xl shadow-sm relative overflow-hidden">
+            <div class="card-body p-8">
+              <div class="h-3 bg-base-300 rounded w-1/2 mb-4 animate-pulse" />
+              <div class="h-9 bg-base-300 rounded w-4/5 mb-3 animate-pulse" />
+              <div class="h-3 bg-base-300 rounded w-2/5 animate-pulse" />
+            </div>
+          </div>
+        ))
+      }
+    </div>
+
     <!-- Filters & Transaction List -->
     <div class="space-y-6">
       <!-- Actions Bar (Scan Receipt, Import/Export CSV) -->

@@ -96,11 +96,19 @@
 
 ### Non-Blocking Feedback from Code Review (Tasks 13 & 14)
 
-**P2-1: Loading States Not Used**
+**P2-1: Loading States Not Used** ✅ FIXED
 
 - **Location:** `/home/ivan/works/k2-expenses-G8m/src/pages/transactions/index.astro`
-- [ ] **Issue:** TransactionSummaryCards has loading prop support but it's never passed
+- [x] **Issue:** TransactionSummaryCards has loading prop support but it's never passed
 - **Action:** Add loading state during data fetching for better UX
+
+**Implementation Notes:**
+
+- Added `#summary-cards-skeleton` container to transactions page for client-side loading states
+- Added `showSummaryLoadingState()` and `hideSummaryLoadingState()` functions to TransactionsRenderer.client.ts
+- Updated `showLoadingState()` and `hideLoadingState()` to include summary card loading states
+- Skeleton container uses grid layout with 3 cards matching the summary cards structure
+- Proper ARIA attributes for accessibility (`aria-hidden`, `aria-busy`, `aria-label`)
 
 **P2-2: Hardcoded Currency** ✅ FIXED
 
@@ -151,17 +159,29 @@
 - Native keyboard support (Enter/Space) is now handled by browser
 - 23 unit tests added in new `TransactionFiltersBar.test.ts` file
 
-**P3-1: Component Could Use Design Token for Spacing**
+**P3-1: Component Could Use Design Token for Spacing** ✅ FIXED
 
 - **Location:** Various locations in NetWorthWidget.astro
-- [ ] **Issue:** Some spacing values use direct Tailwind classes (`mb-6`, `mt-3`, `gap-3`) instead of design system spacing tokens
+- [x] **Issue:** Some spacing values use direct Tailwind classes (`mb-6`, `mt-3`, `gap-3`) instead of design system spacing tokens
 - **Action:** Consider using `spacing` tokens where appropriate for consistency
 
-**P3-2: Story Names Could Be More Descriptive**
+**Implementation Notes:**
+
+- Tailwind spacing classes (`mb-6`, `mt-3`, `gap-3`) already map directly to design system CSS tokens
+- `mb-6` = `--spacing-6` = 1.5rem = 24px (card spacing)
+- Added documentation comment in NetWorthWidget.astro explaining the mapping
+- No code changes needed as Tailwind classes ARE the design system tokens
+
+**P3-2: Story Names Could Be More Descriptive** ✅ FIXED
 
 - **Location:** `/home/ivan/works/expenses/src/components/organisms/NetWorthWidget.stories.ts`
-- [ ] **Issue:** Stories like `LargeAssets` and `MinimalAssets` could use more descriptive names
+- [x] **Issue:** Stories like `LargeAssets` and `MinimalAssets` could use more descriptive names
 - **Action:** Rename to `LargePortfolio`, `StartingPortfolio` for better clarity
+
+**Implementation Notes:**
+
+- Renamed `LargeAssets` → `LargePortfolio` with JSDoc comment "Shows high net worth scenario with significant assets"
+- Renamed `MinimalAssets` → `StartingPortfolio` with JSDoc comment "Shows beginner user scenario with modest first assets"
 
 ### Non-Blocking Feedback from Code Review (Tasks 15-16)
 
@@ -204,11 +224,19 @@
 - Removed all `user!` non-null assertions (4 occurrences)
 - Provides both type safety and handles edge cases gracefully
 
-**P3-1: Animation Classes Could Use Motion Library**
+**P3-1: Animation Classes Could Use Motion Library** ✅ FIXED
 
 - **Location:** `BudgetAdviceBanner.astro` script tag (lines 115-118)
-- [ ] **Issue:** Uses CSS classes (`animate-out`, `fade-out`) instead of Motion library
+- [x] **Issue:** Uses CSS classes (`animate-out`, `fade-out`) instead of Motion library
 - **Action:** Consider using Motion for consistency with design system pattern
+
+**Implementation Notes:**
+
+- Replaced CSS class animation with Motion library `animate()` function
+- Added `BANNER_DISMISS_KEYFRAMES` with opacity, y, and scale transitions
+- Used type cast pattern `as Parameters<typeof animate>[1]` for TypeScript compatibility
+- Respects `prefers-reduced-motion` for accessibility
+- Matches modal exit animation pattern from design system
 
 **P3-2: Import Ordering Convention**
 
@@ -366,11 +394,19 @@
 - Only active when not loading and no error
 - 5 unit tests added covering aria-labelledby behavior
 
-**P2-4: Theme Transition - Document .theme-transition Class Usage**
+**P2-4: Theme Transition - Document .theme-transition Class Usage** ✅ FIXED
 
 - **Location:** `/home/ivan/works/expenses/src/styles/globals.css`
-- [ ] **Issue:** `.theme-transition` class defined but not documented/used
+- [x] **Issue:** `.theme-transition` class defined but not documented/used
 - **Action:** Document the class in design system or apply to relevant components
+
+**Implementation Notes:**
+
+- Added comprehensive documentation in `design-system/08-animations.md` under "Theme Transitions" section
+- Documents when to use (main layout containers, cards) and when NOT to use (components with own animations)
+- Applied `.theme-transition` class to `MainLayout.astro` main content area
+- Applied `.theme-transition` class to `Footer.astro` component
+- CSS definition uses `prefers-reduced-motion: no-preference` for accessibility
 
 **P3-1: ProgressBar - Extract Animation Configuration to CSS Variables**
 

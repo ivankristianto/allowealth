@@ -124,6 +124,7 @@ button.addEventListener('mouseleave', () => {
 - Color/opacity changes
 - Simple transforms (translate, scale)
 - Performance-critical frequent animations
+- **Theme transitions** (see below)
 
 ```css
 .button {
@@ -137,6 +138,45 @@ button.addEventListener('mouseleave', () => {
   transform: scale(1.05);
 }
 ```
+
+### Theme Transitions
+
+The `.theme-transition` utility class provides smooth color transitions when the user toggles between light and dark themes. This prevents jarring instant color changes on main content areas.
+
+**When to use `.theme-transition`:**
+
+- Main layout containers (sidebars, content areas)
+- Cards and panels with solid backgrounds
+- Components that change significantly between themes
+
+**When NOT to use:**
+
+- Components with their own animations (may conflict)
+- Small interactive elements (buttons, inputs - they have their own hover transitions)
+- Elements with complex background gradients
+
+**Usage:**
+
+```astro
+<div class="card theme-transition">
+  <!-- Card content -->
+</div>
+```
+
+**CSS Definition (from globals.css):**
+
+```css
+@media (prefers-reduced-motion: no-preference) {
+  .theme-transition {
+    transition:
+      background-color 0.3s ease,
+      color 0.3s ease,
+      border-color 0.3s ease;
+  }
+}
+```
+
+**Note:** The transition only applies when `prefers-reduced-motion: no-preference` to respect accessibility settings. The `html` and `body` elements already have theme transitions applied automatically.
 
 ### Use Motion For:
 

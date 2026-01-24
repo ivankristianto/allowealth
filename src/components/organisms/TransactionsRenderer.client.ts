@@ -381,6 +381,42 @@ export function renderPagination(pagination: PaginationState): void {
 }
 
 /**
+ * Show loading state for summary cards
+ */
+export function showSummaryLoadingState(): void {
+  const summaryContainer = document.getElementById('summary-cards-container');
+  const summarySkeleton = document.getElementById('summary-cards-skeleton');
+
+  if (summaryContainer) {
+    summaryContainer.classList.add('hidden');
+    summaryContainer.setAttribute('aria-hidden', 'true');
+  }
+  if (summarySkeleton) {
+    summarySkeleton.classList.remove('hidden');
+    summarySkeleton.setAttribute('aria-busy', 'true');
+    summarySkeleton.setAttribute('aria-label', 'Loading summary data...');
+  }
+}
+
+/**
+ * Hide loading state for summary cards
+ */
+export function hideSummaryLoadingState(): void {
+  const summaryContainer = document.getElementById('summary-cards-container');
+  const summarySkeleton = document.getElementById('summary-cards-skeleton');
+
+  if (summarySkeleton) {
+    summarySkeleton.classList.add('hidden');
+    summarySkeleton.removeAttribute('aria-busy');
+    summarySkeleton.removeAttribute('aria-label');
+  }
+  if (summaryContainer) {
+    summaryContainer.classList.remove('hidden');
+    summaryContainer.removeAttribute('aria-hidden');
+  }
+}
+
+/**
  * Show loading state
  */
 export function showLoadingState(): void {
@@ -389,6 +425,9 @@ export function showLoadingState(): void {
 
   if (skeleton) skeleton.classList.remove('hidden');
   if (list) list.classList.add('opacity-50', 'pointer-events-none');
+
+  // Show summary cards loading state
+  showSummaryLoadingState();
 
   // Announce to screen readers
   const liveRegion = document.getElementById('transactions-live-region');
@@ -406,6 +445,9 @@ export function hideLoadingState(): void {
 
   if (skeleton) skeleton.classList.add('hidden');
   if (list) list.classList.remove('opacity-50', 'pointer-events-none');
+
+  // Hide summary cards loading state
+  hideSummaryLoadingState();
 }
 
 /**

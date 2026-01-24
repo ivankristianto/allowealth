@@ -129,15 +129,40 @@ const bannerClasses = [
 </aside>
 
 <script>
-  // Handle dismiss functionality
+  import { animate } from 'motion';
+
+  // Animation keyframes for banner dismiss (matches modal exit pattern)
+  const BANNER_DISMISS_KEYFRAMES = {
+    opacity: [1, 0],
+    y: [0, -10],
+    scale: [1, 0.98],
+  } as const;
+
+  const BANNER_DISMISS_OPTIONS = {
+    duration: 0.2,
+    easing: [0.4, 0, 1, 1], // ease-in cubic bezier
+  } as const;
+
+  // Check if user prefers reduced motion
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // Handle dismiss functionality with Motion library
   document.querySelectorAll('[data-advice-banner]').forEach((banner) => {
     const dismissBtn = banner.querySelector('[data-dismiss-advice]');
     if (dismissBtn) {
-      dismissBtn.addEventListener('click', () => {
-        banner.classList.add('animate-out', 'fade-out', 'duration-200');
-        setTimeout(() => {
-          (banner as HTMLElement).style.display = 'none';
-        }, 200);
+      dismissBtn.addEventListener('click', async () => {
+        const bannerEl = banner as HTMLElement;
+
+        if (prefersReducedMotion) {
+          // Instant hide for reduced motion preference
+          bannerEl.style.display = 'none';
+        } else {
+          // Animated dismiss using Motion library
+          // Cast keyframes to satisfy motion library types
+          const keyframes = BANNER_DISMISS_KEYFRAMES as Parameters<typeof animate>[1];
+          await animate(bannerEl, keyframes, BANNER_DISMISS_OPTIONS).finished;
+          bannerEl.style.display = 'none';
+        }
       });
     }
   });

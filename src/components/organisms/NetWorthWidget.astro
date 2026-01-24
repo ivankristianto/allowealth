@@ -74,6 +74,10 @@ const ariaLive = error ? 'polite' : undefined;
 const ariaLabelledBy = !error && !loading ? 'net-worth-label' : undefined;
 const ariaBusy = loading ? 'true' : undefined;
 const ariaLabel = loading ? 'Loading net worth data...' : undefined;
+
+// Note: Spacing classes (mb-6, mt-3, gap-3, etc.) use Tailwind's built-in spacing scale
+// which directly maps to design system tokens (--spacing-6 = 1.5rem = 24px, etc.)
+// See: tokens.css for spacing token definitions
 ---
 
 <Card

@@ -168,7 +168,10 @@ export const NegativeGrowth: StoryObj = {
   render: (args) => createNetWorthWidget(args),
 };
 
-export const LargeAssets: StoryObj = {
+/**
+ * Large Portfolio - Shows high net worth scenario with significant assets
+ */
+export const LargePortfolio: StoryObj = {
   args: {
     totalIDR: 5000000000,
     totalUSD: 333333.33,
@@ -181,7 +184,10 @@ export const LargeAssets: StoryObj = {
   render: (args) => createNetWorthWidget(args),
 };
 
-export const MinimalAssets: StoryObj = {
+/**
+ * Starting Portfolio - Shows beginner user scenario with modest first assets
+ */
+export const StartingPortfolio: StoryObj = {
   args: {
     totalIDR: 150000000,
     totalUSD: 10000,
