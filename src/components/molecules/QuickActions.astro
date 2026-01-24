@@ -15,10 +15,17 @@
  *
  * @param {QuickAction[]} actions - Array of quick action objects (default: Add Expense, Log Income)
  * @param {string} className - Additional CSS classes
+ * @param {Array} categories - Available categories for transaction modal
+ * @param {Array} paymentMethods - Available payment methods for transaction modal
+ *
+ * TODO: Temporary modal integration - TransactionModal should be properly integrated
+ * into the routing/navigation system instead of being embedded here. This is a
+ * short-term solution to enable modal-based transaction creation from the dashboard.
  */
 
 import { ShoppingCart, CircleDollarSign, Plus } from '@lucide/astro';
 import IconBadge from '../atoms/IconBadge.astro';
+import TransactionModal from '../organisms/TransactionModal.astro';
 
 export interface QuickAction {
   label: string;
@@ -31,6 +38,8 @@ export interface QuickAction {
 export interface Props {
   actions?: QuickAction[];
   className?: string;
+  categories?: Array<{ id: string; name: string; type: string; currency?: string }>;
+  paymentMethods?: Array<{ id: string; name: string; type: string }>;
 }
 
 // Icon mapping for Lucide Astro components
@@ -64,7 +73,12 @@ const defaultActions: QuickAction[] = [
   },
 ];
 
-const { actions = defaultActions, className = '' } = Astro.props;
+const {
+  actions = defaultActions,
+  className = '',
+  categories = [],
+  paymentMethods = [],
+} = Astro.props;
 ---
 
 <div
@@ -86,9 +100,10 @@ const { actions = defaultActions, className = '' } = Astro.props;
       }
 
       return (
-        <a
-          href={action.url}
-          class="flex-1 px-8 py-7 min-h-[44px] bg-base-100 text-base-content font-bold rounded-card-lg border border-base-300 hover:bg-base-200 transition-all shadow-sm hover:shadow-md flex items-center justify-center gap-5 active:scale-95 hover:scale-[1.02] group relative overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+        <button
+          type="button"
+          data-quick-action={action.variant}
+          class="flex-1 px-8 py-7 min-h-[44px] bg-base-100 text-base-content font-bold rounded-card-lg border border-base-300 hover:bg-base-200 transition-all shadow-sm hover:shadow-md flex items-center justify-center gap-5 active:scale-95 hover:scale-[1.02] group relative overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 cursor-pointer text-left"
           aria-label={action.ariaLabel}
         >
           <IconBadge
@@ -99,11 +114,35 @@ const { actions = defaultActions, className = '' } = Astro.props;
             <IconComponent size={24} class="stroke-current" aria-hidden="true" />
           </IconBadge>
           <span class="text-lg tracking-tight font-bold leading-none">{action.label}</span>
-        </a>
+        </button>
       );
     })
   }
 </div>
+
+<!-- Transaction Modals (TODO: Temporary integration - should be moved to proper routing) -->
+<TransactionModal
+  id="expense-modal"
+  title="Add Expense"
+  open={false}
+  action="/api/transactions"
+  method="POST"
+  values={{ type: 'expense' }}
+  categories={categories}
+  paymentMethods={paymentMethods}
+  submitLabel="Save Expense"
+/>
+<TransactionModal
+  id="income-modal"
+  title="Log Income"
+  open={false}
+  action="/api/transactions"
+  method="POST"
+  values={{ type: 'income' }}
+  categories={categories}
+  paymentMethods={paymentMethods}
+  submitLabel="Save Income"
+/>
 
 <style>
   /* Ensure smooth transitions */
@@ -126,3 +165,36 @@ const { actions = defaultActions, className = '' } = Astro.props;
     will-change: transform;
   }
 </style>
+
+<script>
+  // TODO: Temporary modal integration - Open transaction modals when quick action buttons are clicked
+  // This should be replaced with proper modal state management
+  (function () {
+    function initModalHandlers() {
+      const quickActionsContainer = document.querySelector('[data-quick-actions]');
+      if (!quickActionsContainer) return;
+
+      quickActionsContainer.addEventListener('click', (e) => {
+        const button = (e.target as HTMLElement).closest(
+          '[data-quick-action]'
+        ) as HTMLElement | null;
+        if (!button) return;
+
+        const actionType = button.getAttribute('data-quick-action');
+        const modalId = actionType === 'expense' ? 'expense-modal' : 'income-modal';
+        const modal = document.getElementById(modalId) as HTMLDialogElement | null;
+
+        if (modal) {
+          modal.showModal();
+        }
+      });
+    }
+
+    // Initialize on DOM ready
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initModalHandlers);
+    } else {
+      initModalHandlers();
+    }
+  })();
+</script>

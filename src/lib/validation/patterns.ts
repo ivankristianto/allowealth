@@ -36,7 +36,7 @@ export const email = {
    * @example
    * <input type="email" pattern={email.html} title={email.title} />
    */
-  html: '[a-z0-9._%+-]+@[a-z0-9.-]+\\.[a-z]{2,}$',
+  html: '[a-z0-9._%+\\-]+@[a-z0-9.\\-]+\\.[a-z]{2,}$',
 
   /**
    * RegExp for email validation

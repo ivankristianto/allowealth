@@ -55,8 +55,8 @@ const CSP_HEADERS_PROD = {
   // Script sources - use nonce for inline scripts (strict)
   'script-src': "'self'",
 
-  // Style sources - allow same origin and inline styles (for Tailwind CSS)
-  'style-src': "'self' 'unsafe-inline'",
+  // Style sources - allow same origin, inline styles (for Tailwind CSS), and Google Fonts
+  'style-src': "'self' 'unsafe-inline' https://fonts.googleapis.com",
 
   // Image sources - allow same origin, data URIs, and https images
   'img-src': "'self' data: https:",
