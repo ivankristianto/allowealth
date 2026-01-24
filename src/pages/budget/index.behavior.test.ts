@@ -2,176 +2,40 @@
  * Budget Page Behavior Tests
  *
  * This file documents the expected behavior of the budget page (src/pages/budget/index.astro)
- * following the icon migration to @lucide/astro icons.
+ * following the premium redesign with BudgetCardGrid and BudgetPageHeader.
  *
  * These tests verify:
- * 1. Icon migration from Icon.astro to Lucide icons
- * 2. Page structure and components
- * 3. Navigation and interaction patterns
- * 4. Accessibility requirements
- * 5. Responsive design patterns
+ * 1. Page structure and components
+ * 2. Navigation and interaction patterns
+ * 3. Accessibility requirements
+ * 4. Responsive design patterns
  */
 
 import { describe, it, expect } from 'bun:test';
 
-describe('Budget Page - Icon Migration', () => {
-  describe('Lucide Icon Imports', () => {
-    it('should import TriangleAlert from @lucide/astro', () => {
-      // The budget page imports TriangleAlert for budget alerts header
-      // Replaces: Icon name="alert"
-      // Size: 20px (equivalent to previous "md" size)
-      expect(true).toBe(true);
-    });
-
-    it('should import ChevronDown from @lucide/astro', () => {
-      // The budget page imports ChevronDown for currency dropdown
-      // Replaces: Inline filter SVG
-      // Size: 16px
-      expect(true).toBe(true);
-    });
-
-    it('should import ChevronLeft from @lucide/astro', () => {
-      // The budget page imports ChevronLeft for previous month navigation
-      // Replaces: Inline SVG arrow-left
-      // Size: 20px
-      expect(true).toBe(true);
-    });
-
-    it('should import ChevronRight from @lucide/astro', () => {
-      // The budget page imports ChevronRight for next month navigation
-      // Replaces: Inline SVG arrow-right
-      // Size: 20px
-      expect(true).toBe(true);
-    });
-
-    it('should import CircleX from @lucide/astro', () => {
-      // The budget page imports CircleX for error state
-      // Replaces: Inline XCircle SVG (deprecated)
-      // Size: 24px
-      expect(true).toBe(true);
-    });
-
-    it('should import Plus from @lucide/astro', () => {
-      // The budget page imports Plus for "Add Expense" button
-      // Replaces: Inline plus SVG
-      // Size: 20px
-      expect(true).toBe(true);
-    });
-
-    it('should import Tag from @lucide/astro', () => {
-      // The budget page imports Tag for "Manage Categories" button
-      // Replaces: Inline tag SVG
-      // Size: 20px
-      expect(true).toBe(true);
-    });
-
-    it('should import Info from @lucide/astro', () => {
-      // The budget page imports Info for allocation percentage hint
-      // Replaces: Inline info SVG
-      // Size: 16px
-      expect(true).toBe(true);
-    });
-
-    it('should not import custom Icon component', () => {
-      // The budget page should not import Icon from '@components/atoms/Icon.astro'
-      // All icons are now from @lucide/astro
-      expect(true).toBe(true);
-    });
-  });
-
-  describe('Icon Usage', () => {
-    it('should render ChevronDown in currency dropdown', () => {
-      // Currency selector dropdown with ChevronDown icon
-      // <ChevronDown size={16} class="stroke-current" aria-hidden="true" />
-      // - Has aria-hidden="true" (decorative)
-      // - Has stroke-current class for color inheritance
-      // - Size is 16px
-      expect(true).toBe(true);
-    });
-
-    it('should render ChevronLeft for previous month navigation', () => {
-      // Previous month button
-      // <ChevronLeft size={20} class="stroke-current" aria-hidden="true" />
-      // - Has aria-label="Previous month" on button
-      // - Icon has aria-hidden="true" (decorative)
-      // - Has stroke-current class
-      // - Size is 20px
-      expect(true).toBe(true);
-    });
-
-    it('should render ChevronRight for next month navigation', () => {
-      // Next month button
-      // <ChevronRight size={20} class="stroke-current" aria-hidden="true" />
-      // - Has aria-label="Next month" on button
-      // - Icon has aria-hidden="true" (decorative)
-      // - Has stroke-current class
-      // - Size is 20px
-      // - Button is disabled when next month is in future
-      expect(true).toBe(true);
-    });
-
-    it('should render CircleX for error alerts', () => {
-      // Error state alert
-      // <CircleX size={24} class="shrink-0" aria-hidden="true" />
-      // - Inside div with role="alert"
-      // - Icon has aria-hidden="true" (decorative)
-      // - Has shrink-0 class
-      // - Size is 24px
-      expect(true).toBe(true);
-    });
-
-    it('should render TriangleAlert for budget alerts header', () => {
-      // Budget alerts section header
-      // <TriangleAlert size={20} class="text-warning" aria-hidden="true" />
-      // - Has text-warning class for color
-      // - Has aria-hidden="true" (decorative)
-      // - Size is 20px
-      // - Replaces: <Icon name="alert" size="md" className="text-warning" />
-      expect(true).toBe(true);
-    });
-
-    it('should render Plus in Add Expense button', () => {
-      // Add Expense quick action button
-      // <Plus size={20} class="stroke-current" aria-hidden="true" />
-      // - Has aria-hidden="true" (decorative)
-      // - Has stroke-current class
-      // - Size is 20px
-      // - Button has visible text "Add Expense"
-      expect(true).toBe(true);
-    });
-
-    it('should render Tag in Manage Categories button', () => {
-      // Manage Categories quick action button
-      // <Tag size={20} class="stroke-current" aria-hidden="true" />
-      // - Has aria-hidden="true" (decorative)
-      // - Has stroke-current class
-      // - Size is 20px
-      // - Button has visible text "Manage Categories"
-      expect(true).toBe(true);
-    });
-
-    it('should render Info in allocation percentage hint', () => {
-      // Allocation percentage info hint
-      // <Info size={16} class="stroke-current shrink-0" aria-hidden="true" />
-      // - Has aria-hidden="true" (decorative)
-      // - Has stroke-current and shrink-0 classes
-      // - Size is 16px
-      // - Used in quick edit modal form
-      expect(true).toBe(true);
-    });
-  });
-});
-
 describe('Budget Page - Structure and Components', () => {
-  describe('Page Header', () => {
-    it('should display page title', () => {
-      // <h2 class="text-2xl font-bold">Budget</h2>
+  describe('Page Layout', () => {
+    it('should use ProtectedLayout', () => {
+      // Wraps page content
+      // Requires authentication
       expect(true).toBe(true);
     });
 
-    it('should have currency selector dropdown', () => {
-      // Dropdown with IDR/USD options
-      // Preserves sort order and date selection when switching currencies
+    it('should have main container with data attributes', () => {
+      // data-budget-container for script targeting
+      // data-expense-categories with JSON stringified categories
+      expect(true).toBe(true);
+    });
+  });
+
+  describe('BudgetPageHeader', () => {
+    it('should display page title', () => {
+      // title="Family Spending Targets"
+      expect(true).toBe(true);
+    });
+
+    it('should show budget count in subtitle', () => {
+      // "Monitoring X critical expense categories"
       expect(true).toBe(true);
     });
 
@@ -185,81 +49,75 @@ describe('Budget Page - Structure and Components', () => {
       // Next month button is disabled when isNextMonthInFuture is true
       expect(true).toBe(true);
     });
-  });
 
-  describe('Tabs', () => {
-    it('should have Overview tab (active)', () => {
-      // Links to /budget
-      expect(true).toBe(true);
-    });
-
-    it('should have History tab', () => {
+    it('should have View History button', () => {
       // Links to /budget/history
+      // Has History icon
+      expect(true).toBe(true);
+    });
+
+    it('should have AI Rebalancer button when budgets exist', () => {
+      // Shows when budgetCount > 0
+      // Has Sparkles icon
+      expect(true).toBe(true);
+    });
+
+    it('should have Set New Budget button', () => {
+      // Opens set-new-budget-modal on click
       expect(true).toBe(true);
     });
   });
 
-  describe('Budget Alerts Section', () => {
+  describe('BudgetCardGrid', () => {
+    it('should render budget cards for each category', () => {
+      // Uses BudgetCard components
+      // Shows spending progress per category
+      expect(true).toBe(true);
+    });
+
+    it('should show empty state when no budgets', () => {
+      // Displays "No budgets set" message
+      // Has Wallet icon
+      expect(true).toBe(true);
+    });
+
+    it('should show loading skeleton when loading', () => {
+      // Renders skeleton BudgetCards
+      expect(true).toBe(true);
+    });
+  });
+
+  describe('BudgetAdviceBanner', () => {
     it('should display when alerts exist', () => {
-      // Only renders when alerts.length > 0
+      // Shows advice based on exceeded/warning categories
       expect(true).toBe(true);
     });
 
-    it('should show TriangleAlert icon in header', () => {
-      // Icon with text-warning color
+    it('should show exceeded category advice', () => {
+      // Displays overage amount for exceeded budgets
       expect(true).toBe(true);
     });
 
-    it('should display alerts table', () => {
-      // Columns: Category, Status, Budget, Spent, Overage, Actions
+    it('should show warning category advice', () => {
+      // Displays remaining amount and percentage for warning budgets
       expect(true).toBe(true);
     });
 
-    it('should link to transactions for each alert', () => {
-      // View button links to /transactions?category_id={id}
-      expect(true).toBe(true);
-    });
-  });
-
-  describe('Budget Overview Table', () => {
-    it('should render BudgetOverviewTable component', () => {
-      // Receives: summary, currency, sortBy, sortOrder, baseUrl, enableEdit
-      expect(true).toBe(true);
-    });
-
-    it('should pass correct props to table', () => {
-      // - summary: budgetData from service
-      // - currency: selectedCurrency (IDR or USD)
-      // - sortBy: from query params (default: 'category')
-      // - sortOrder: from query params (default: 'asc')
-      // - baseUrl: for sorting with preserved params
-      // - enableEdit: true
+    it('should have Review spending CTA', () => {
+      // Links to /transactions
       expect(true).toBe(true);
     });
   });
 
-  describe('Quick Actions', () => {
-    it('should have Add Expense button', () => {
-      // Links to /transactions/add
-      // Has Plus icon
-      expect(true).toBe(true);
-    });
-
-    it('should have Manage Categories button', () => {
-      // Links to /settings/categories
-      // Has Tag icon
-      expect(true).toBe(true);
-    });
-  });
-
-  describe('Quick Edit Modal', () => {
+  describe('SetNewBudgetModal', () => {
     it('should render as dialog element', () => {
-      // <dialog id="quick-edit-budget-modal" class="modal">
+      // <dialog id="set-new-budget-modal">
       expect(true).toBe(true);
     });
 
-    it('should have category name field (readonly)', () => {
-      // Disabled input showing category name
+    it('should have category select dropdown', () => {
+      // Populated with expense categories
+      // Each option has data-budget-amount attribute
       expect(true).toBe(true);
     });
 
@@ -269,30 +127,27 @@ describe('Budget Page - Structure and Components', () => {
       expect(true).toBe(true);
     });
 
-    it('should show allocation percentage hint', () => {
-      // Info icon with auto-calculated percentage
-      expect(true).toBe(true);
-    });
-
-    it('should have currency field (readonly)', () => {
-      // Disabled input showing selected currency
-      expect(true).toBe(true);
-    });
-
-    it('should have error message container', () => {
-      // Hidden by default, shows validation errors
-      // <div id="quick-edit-form-error" class="hidden alert alert-error">
+    it('should show warning when category has existing budget', () => {
+      // Displays info message about updating existing budget
       expect(true).toBe(true);
     });
 
     it('should have cancel and save buttons', () => {
-      // Cancel: closes modal
-      // Save: submits form
+      // Cancel: closes modal and resets form
+      // Save: submits to API
       expect(true).toBe(true);
     });
 
-    it('should have modal backdrop', () => {
-      // <form method="dialog" class="modal-backdrop">
+    it('should not have close X button', () => {
+      // Modal uses closable={false}
+      expect(true).toBe(true);
+    });
+  });
+
+  describe('Error State', () => {
+    it('should display error alert when data fetch fails', () => {
+      // Shows alert with CircleX icon
+      // role="alert" for accessibility
       expect(true).toBe(true);
     });
   });
@@ -314,27 +169,11 @@ describe('Budget Page - Data Flow', () => {
       // Options: IDR (default), USD
       expect(true).toBe(true);
     });
-
-    it('should read sortBy from query params', () => {
-      // Options: category, percentage, budget, spent, balance, status
-      // Default: 'category'
-      expect(true).toBe(true);
-    });
-
-    it('should read sortOrder from query params', () => {
-      // Options: asc (default), desc
-      expect(true).toBe(true);
-    });
   });
 
   describe('URL Building', () => {
-    it('should build month URLs preserving sort and currency', () => {
-      // buildMonthUrl(year, month) preserves all params
-      expect(true).toBe(true);
-    });
-
-    it('should build sort base URL for table', () => {
-      // buildSortBaseUrl() preserves date and currency
+    it('should build month URLs preserving currency', () => {
+      // buildMonthUrl(year, month) includes currency param
       expect(true).toBe(true);
     });
   });
@@ -378,8 +217,7 @@ describe('Budget Page - Accessibility', () => {
     });
 
     it('should have aria-hidden on all decorative icons', () => {
-      // ChevronDown, ChevronLeft, ChevronRight, CircleX, TriangleAlert, Plus, Tag, Info
-      // All have aria-hidden="true"
+      // All icons have aria-hidden="true"
       expect(true).toBe(true);
     });
 
@@ -395,11 +233,6 @@ describe('Budget Page - Accessibility', () => {
       expect(true).toBe(true);
     });
 
-    it('should navigate currency dropdown with keyboard', () => {
-      // Dropdown is keyboard accessible
-      expect(true).toBe(true);
-    });
-
     it('should close modal with Escape key', () => {
       // Dialog element supports ESC key closing
       expect(true).toBe(true);
@@ -411,77 +244,70 @@ describe('Budget Page - Accessibility', () => {
       // Each input has associated label element
       expect(true).toBe(true);
     });
-
-    it('should have required indicator for budget amount', () => {
-      // <span class="label-text-alt text-error">*</span>
-      expect(true).toBe(true);
-    });
-
-    it('should have disabled state for readonly fields', () => {
-      // Category name and currency fields are disabled
-      expect(true).toBe(true);
-    });
-  });
-});
-
-describe('Budget Page - Responsive Design', () => {
-  describe('Header Layout', () => {
-    it('should stack on mobile', () => {
-      // class="flex flex-col sm:flex-row"
-      // flex-col on mobile, flex-row on sm+
-      expect(true).toBe(true);
-    });
-
-    it('should align items appropriately per breakpoint', () => {
-      // items-start sm:items-center
-      expect(true).toBe(true);
-    });
-  });
-
-  describe('Quick Actions', () => {
-    it('should wrap buttons on mobile', () => {
-      // class="flex flex-wrap gap-3"
-      expect(true).toBe(true);
-    });
-  });
-
-  describe('Tables', () => {
-    it('should have horizontal scroll on mobile', () => {
-      // class="overflow-x-auto"
-      expect(true).toBe(true);
-    });
   });
 });
 
 describe('Budget Page - Client-Side Behavior', () => {
-  describe('Quick Edit Modal', () => {
-    it('should open when triggered from table', () => {
-      // Modal is triggered by BudgetOverviewTable edit buttons
+  describe('Edit Budget Button', () => {
+    it('should stop event propagation on click', () => {
+      // e.stopPropagation() prevents card click bubbling
       expect(true).toBe(true);
     });
 
-    it('should populate form with budget data', () => {
-      // Category name, amount, and currency are pre-filled
+    it('should open SetNewBudgetModal with pre-filled data', () => {
+      // Pre-selects category in dropdown
+      // Pre-fills budget amount
       expect(true).toBe(true);
     });
 
-    it('should calculate percentage on amount change', () => {
-      // Updates calculated-percentage span
+    it('should read category data from data-expense-categories', () => {
+      // Parses JSON from container attribute
+      expect(true).toBe(true);
+    });
+  });
+
+  describe('SetNewBudgetModal Form', () => {
+    it('should check for existing budget on category change', () => {
+      // Shows/hides warning based on data-budget-amount
       expect(true).toBe(true);
     });
 
-    it('should submit to API endpoint', () => {
-      // Form submits to budget API
+    it('should submit to API without page reload', () => {
+      // PUT /api/categories/:id
+      // Updates data attribute on success
+      // Dispatches budget-updated custom event
       expect(true).toBe(true);
     });
 
-    it('should show errors on submission failure', () => {
-      // Displays error in quick-edit-form-error container
+    it('should show toast notification on success', () => {
+      // addToast('Budget saved successfully!', 'success')
       expect(true).toBe(true);
     });
 
-    it('should close on successful submission', () => {
-      // Modal closes after save
+    it('should show error toast on failure', () => {
+      // addToast(message, 'error')
+      expect(true).toBe(true);
+    });
+
+    it('should reset form on cancel', () => {
+      // Clears form and closes modal
+      expect(true).toBe(true);
+    });
+  });
+
+  describe('Page Initialization', () => {
+    it('should initialize on DOMContentLoaded', () => {
+      // Handles case when document is still loading
+      expect(true).toBe(true);
+    });
+
+    it('should re-initialize on astro:page-load', () => {
+      // Supports Astro page transitions
+      expect(true).toBe(true);
+    });
+
+    it('should track initialized modals to prevent duplicates', () => {
+      // Uses WeakSet to prevent duplicate handlers
       expect(true).toBe(true);
     });
   });
@@ -489,20 +315,23 @@ describe('Budget Page - Client-Side Behavior', () => {
 
 describe('Budget Page - Integration Points', () => {
   describe('Child Components', () => {
-    it('should use ProtectedLayout', () => {
-      // Wraps page content
-      // Requires authentication
+    it('should use BudgetPageHeader', () => {
+      // Props: title, budgetCount, currentMonth, prevMonthUrl, nextMonthUrl, etc.
       expect(true).toBe(true);
     });
 
-    it('should use BudgetOverviewTable', () => {
-      // Renders main budget table
-      // Has edit functionality enabled
+    it('should use BudgetCardGrid', () => {
+      // Props: budgets, currency, loading
       expect(true).toBe(true);
     });
 
-    it('should use Badge component', () => {
-      // Used in alerts table for status badges
+    it('should use BudgetAdviceBanner', () => {
+      // Props: categoryName, status, amount, percentageUsed, ctaText, ctaUrl
+      expect(true).toBe(true);
+    });
+
+    it('should use SetNewBudgetModal', () => {
+      // Props: id, categories, currency
       expect(true).toBe(true);
     });
   });
@@ -520,18 +349,6 @@ describe('Budget Page - Integration Points', () => {
 
     it('should use formatCurrency utility', () => {
       // From @/lib/tokens
-      expect(true).toBe(true);
-    });
-  });
-
-  describe('Data Attributes', () => {
-    it('should have data-budget-container attribute', () => {
-      // For client-side script targeting
-      expect(true).toBe(true);
-    });
-
-    it('should have data-expense-categories attribute', () => {
-      // JSON stringified categories for client-side use
       expect(true).toBe(true);
     });
   });

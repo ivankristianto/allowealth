@@ -1,0 +1,278 @@
+---
+/**
+ * SetNewBudgetModal Component
+ *
+ * Modal for setting a new budget allocation for a category.
+ * Allows selecting an expense category and setting a monthly spending limit.
+ *
+ * @param {string} id - Modal ID
+ * @param {Array} categories - Available expense categories
+ * @param {string} currency - Currency for budget (IDR or USD)
+ */
+
+import Modal from '../molecules/Modal.astro';
+import { ChartNoAxesCombined } from '@lucide/astro';
+
+export interface Props {
+  id: string;
+  categories: Array<{ id: string; name: string; type: string; budget_amount?: string }>;
+  currency?: 'IDR' | 'USD';
+}
+
+const { id, categories = [], currency = 'IDR' } = Astro.props;
+
+// Filter to expense categories only (show all, user can set/update any budget)
+const expenseCategories = categories.filter((c) => c.type === 'expense');
+---
+
+<div data-set-budget-modal-container data-id={id}>
+  <Modal id={id} title="" size="md" closable={false} className="[&_.modal-box]:rounded-3xl">
+    <div class="space-y-6">
+      {/* Header with icon */}
+      <div class="flex items-center gap-4">
+        <div
+          class="w-12 h-12 rounded-2xl flex items-center justify-center bg-accent/10 text-accent"
+        >
+          <ChartNoAxesCombined size={24} class="stroke-current" aria-hidden="true" />
+        </div>
+        <div>
+          <h2 class="text-xl font-bold tracking-tight text-base-content leading-none">
+            Set New Budget
+          </h2>
+          <p class="text-base-content/60 text-sm mt-2 font-medium">
+            Configure spending limits for your categories.
+          </p>
+        </div>
+      </div>
+
+      {/* Form */}
+      <form id={`${id}-form`} class="space-y-6">
+        {/* Category Select */}
+        <div class="space-y-2">
+          <label
+            for={`${id}-category`}
+            class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest ml-1"
+          >
+            Category
+          </label>
+          <select
+            id={`${id}-category`}
+            name="category_id"
+            required
+            class="select select-lg w-full bg-base-200 border border-base-300 rounded-2xl font-bold text-base-content focus:ring-2 focus:ring-accent focus:outline-none focus:border-accent"
+          >
+            {
+              expenseCategories.map((category, index) => (
+                <option
+                  value={category.id}
+                  selected={index === 0}
+                  data-budget-amount={category.budget_amount || '0'}
+                >
+                  {category.name}
+                </option>
+              ))
+            }
+          </select>
+          {/* Warning when category already has budget */}
+          <div
+            id={`${id}-budget-exists-warning`}
+            class="hidden text-sm text-info flex items-center gap-2 mt-2"
+          >
+            <span
+              >This category already has a budget set. Saving will update the existing budget.</span
+            >
+          </div>
+        </div>
+
+        {/* Budget Amount */}
+        <div class="space-y-2">
+          <label
+            for={`${id}-amount`}
+            class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest ml-1"
+          >
+            Monthly Limit ({currency})
+          </label>
+          <input
+            id={`${id}-amount`}
+            name="budget_amount"
+            type="number"
+            required
+            min="0"
+            step="0.01"
+            placeholder={currency === 'IDR' ? 'e.g. 5,000,000' : 'e.g. 500'}
+            class="input input-lg w-full bg-base-200 border border-base-300 rounded-2xl font-bold text-base-content focus:ring-2 focus:ring-accent focus:outline-none focus:border-accent placeholder:text-base-content/30 placeholder:font-normal"
+          />
+        </div>
+
+        {/* Hidden currency field */}
+        <input type="hidden" name="currency" value={currency} />
+
+        {/* Error message container */}
+        <div id={`${id}-error`} class="hidden alert alert-error text-sm rounded-xl" role="alert">
+        </div>
+
+        {/* Actions */}
+        <div class="flex items-center gap-4 pt-4">
+          <button
+            type="button"
+            class="flex-1 py-4 text-base-content/60 font-bold hover:bg-base-200 rounded-2xl transition-colors"
+            data-cancel-budget
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            class="flex-[2] btn btn-accent py-4 rounded-full font-bold text-base shadow-lg shadow-accent/20 hover:shadow-xl transition-all"
+            disabled={expenseCategories.length === 0}
+          >
+            Set Budget
+          </button>
+        </div>
+      </form>
+    </div>
+  </Modal>
+</div>
+
+<script>
+  import { addToast } from '@lib/stores/toastStore';
+
+  // Track initialized modals to avoid duplicate handlers
+  const initializedModals = new WeakSet<Element>();
+
+  function initSetBudgetModal() {
+    document.querySelectorAll('[data-set-budget-modal-container]').forEach((container) => {
+      // Skip if already initialized
+      if (initializedModals.has(container)) return;
+      initializedModals.add(container);
+
+      const id = container.getAttribute('data-id');
+      if (!id) return;
+
+      const modal = document.getElementById(id) as HTMLDialogElement | null;
+      const form = document.getElementById(`${id}-form`) as HTMLFormElement | null;
+      const cancelBtn = container.querySelector('[data-cancel-budget]');
+      const errorDiv = document.getElementById(`${id}-error`);
+      const categorySelect = document.getElementById(`${id}-category`) as HTMLSelectElement | null;
+      const warningDiv = document.getElementById(`${id}-budget-exists-warning`);
+
+      if (!modal || !form || !categorySelect) return;
+
+      // Function to check and show warning for existing budget
+      const checkExistingBudget = () => {
+        const selectedOption = categorySelect.options[categorySelect.selectedIndex];
+        const budgetAmount = parseFloat(selectedOption?.dataset.budgetAmount || '0');
+
+        if (warningDiv) {
+          if (budgetAmount > 0) {
+            warningDiv.classList.remove('hidden');
+          } else {
+            warningDiv.classList.add('hidden');
+          }
+        }
+      };
+
+      // Check on category change
+      categorySelect.addEventListener('change', checkExistingBudget);
+
+      // Check initial state
+      checkExistingBudget();
+
+      // Handle cancel button - reset form and close
+      cancelBtn?.addEventListener('click', () => {
+        form.reset();
+        if (errorDiv) {
+          errorDiv.textContent = '';
+          errorDiv.classList.add('hidden');
+        }
+        if (warningDiv) {
+          warningDiv.classList.add('hidden');
+        }
+        modal.close();
+      });
+
+      // Handle form submission with loading state
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
+        const originalText = submitBtn?.textContent || 'Set Budget';
+
+        const formData = new FormData(form);
+        const categoryId = formData.get('category_id');
+        const budgetAmount = formData.get('budget_amount');
+        const currency = formData.get('currency');
+
+        // Clear previous errors
+        if (errorDiv) {
+          errorDiv.textContent = '';
+          errorDiv.classList.add('hidden');
+        }
+
+        // Show loading state
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.textContent = 'Saving...';
+        }
+
+        try {
+          const response = await fetch(`/api/categories/${categoryId}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              budget_amount: String(budgetAmount),
+              currency: String(currency),
+            }),
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to set budget');
+          }
+
+          // Success - close modal and show toast (no reload)
+          addToast('Budget saved successfully!', 'success');
+          form.reset();
+          modal.close();
+
+          // Update the data attribute with new budget amount
+          const selectedOption = categorySelect.options[categorySelect.selectedIndex];
+          if (selectedOption) {
+            selectedOption.dataset.budgetAmount = String(budgetAmount);
+          }
+
+          // Dispatch custom event so page can update if needed
+          document.dispatchEvent(
+            new CustomEvent('budget-updated', {
+              detail: { categoryId, budgetAmount, currency },
+            })
+          );
+        } catch (err) {
+          const message = err instanceof Error ? err.message : 'Failed to set budget';
+          if (errorDiv) {
+            errorDiv.textContent = message;
+            errorDiv.classList.remove('hidden');
+          }
+          addToast(message, 'error');
+        } finally {
+          // Reset button state
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = originalText;
+          }
+        }
+      });
+    });
+  }
+
+  // Initialize on DOM ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initSetBudgetModal);
+  } else {
+    initSetBudgetModal();
+  }
+
+  // Re-initialize on Astro page transitions
+  document.addEventListener('astro:page-load', initSetBudgetModal);
+</script>
