@@ -7,9 +7,10 @@ import { logError } from '@/lib/utils';
  * GET /api/transactions/export
  * Export transactions to CSV
  */
-export const GET: APIRoute = async ({ request, url }) => {
+export const GET: APIRoute = async (context) => {
   try {
-    const userId = await requireAuth({ request, url } as any);
+    const userId = await requireAuth(context);
+    const { url } = context;
 
     // Parse filter params (same as list endpoint)
     const filters: any = {

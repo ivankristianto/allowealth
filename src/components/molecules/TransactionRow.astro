@@ -150,7 +150,7 @@ const rowClasses = [
   .join(' ');
 ---
 
-<div class={rowClasses} data-transaction-row="true">
+<div class={rowClasses} data-transaction-row data-transaction-id={transaction.id}>
   <!-- Date -->
   <div class="flex-shrink-0 w-24 text-sm">
     <div class="font-medium">{formattedDate}</div>

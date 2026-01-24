@@ -1,0 +1,595 @@
+---
+/**
+ * Transaction Filters Bar
+ *
+ * Unified filter bar with type toggle, category dropdown, and search input.
+ * Matches POC design with pill-style buttons and clean rounded elements.
+ *
+ * @param {string} typeFilter - Current type filter (all/income/expense)
+ * @param {string} searchValue - Current search query
+ * @param {string} categoryId - Current category filter
+ * @param {Array} categories - Available categories
+ * @param {boolean} showCategoryFilter - Show category dropdown
+ */
+
+import {
+  Search,
+  ChevronLeft,
+  ChevronRight,
+  ChevronDown,
+  Calendar,
+  Tag,
+  Check,
+  RotateCcw,
+} from '@lucide/astro';
+
+export interface Props {
+  typeFilter?: 'income' | 'expense';
+  searchValue?: string;
+  categoryIds?: string[];
+  categories?: Array<{ id: string; name: string; type: string }>;
+  showCategoryFilter?: boolean;
+  monthSelector?: boolean;
+  availableMonths?: Array<{ key: string; label: string }>;
+  selectedMonth?: string;
+  currentMonth?: string;
+  baseUrl?: string;
+}
+
+const {
+  typeFilter = 'expense',
+  searchValue = '',
+  categoryIds = [],
+  categories = [],
+  showCategoryFilter = true,
+  monthSelector = true,
+  availableMonths = [],
+  selectedMonth = '',
+  currentMonth = '',
+  baseUrl = '/transactions',
+} = Astro.props;
+
+// Check if any filters are active (to show reset button)
+const hasActiveFilters =
+  typeFilter !== 'expense' ||
+  searchValue !== '' ||
+  categoryIds.length > 0 ||
+  (selectedMonth !== '' && selectedMonth !== currentMonth);
+
+// Get selected category names for display
+const getSelectedCategoriesLabel = () => {
+  if (categoryIds.length === 0) return 'All Categories';
+  if (categoryIds.length === 1) {
+    const cat = categories.find((c) => c.id === categoryIds[0]);
+    return cat?.name || 'All Categories';
+  }
+  return `${categoryIds.length} Categories`;
+};
+
+// Build URL with current filters
+const buildFilterUrl = (updates: Record<string, string>) => {
+  const params = new URLSearchParams();
+
+  // Add current filters
+  params.set('type', typeFilter);
+  if (searchValue) params.set('search', searchValue);
+  if (categoryIds.length > 0) params.set('category_ids', categoryIds.join(','));
+
+  // Add updates
+  Object.entries(updates).forEach(([key, value]) => {
+    if (value) {
+      params.set(key, value);
+    } else {
+      params.delete(key);
+    }
+  });
+
+  const queryString = params.toString();
+  return queryString ? `${baseUrl}?${queryString}` : baseUrl;
+};
+
+// Get month index for navigation
+const currentMonthIndex = availableMonths.findIndex((m) => m.key === selectedMonth);
+const hasPrevMonth = currentMonthIndex > 0;
+const hasNextMonth = currentMonthIndex < availableMonths.length - 1;
+
+// Get display label for selected month
+const selectedMonthData = availableMonths.find((m) => m.key === selectedMonth);
+const currentMonthLabel =
+  selectedMonthData?.label ||
+  availableMonths[availableMonths.length - 1]?.label ||
+  new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+---
+
+<!-- Filter Bar Container -->
+<form
+  action={baseUrl}
+  method="get"
+  class="flex flex-col xl:flex-row items-center gap-4 xl:gap-6 justify-between"
+  role="search"
+  aria-label="Filter transactions"
+  id="transaction-filters-form"
+  data-filter-form
+>
+  <div class="flex flex-wrap items-center gap-4 w-full xl:w-auto">
+    <!-- Type Filter (Tab-style) -->
+    <input type="hidden" name="type" value={typeFilter} id="type-filter-hidden" />
+    <div
+      class="flex bg-base-200 p-1 rounded-2xl"
+      role="group"
+      aria-label="Filter by transaction type"
+      id="type-filter-group"
+      data-filter-type-group
+    >
+      <a
+        href={buildFilterUrl({ type: 'expense' })}
+        class={`px-6 py-2.5 text-xs font-bold rounded-xl transition-all focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2 ${
+          typeFilter === 'expense'
+            ? 'bg-base-100 shadow text-primary'
+            : 'text-base-content/50 hover:text-base-content/70'
+        }`}
+        data-filter-type="expense"
+        aria-pressed={typeFilter === 'expense'}
+        role="button"
+      >
+        Expenses
+      </a>
+      <a
+        href={buildFilterUrl({ type: 'income' })}
+        class={`px-6 py-2.5 text-xs font-bold rounded-xl transition-all focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2 ${
+          typeFilter === 'income'
+            ? 'bg-base-100 shadow text-primary'
+            : 'text-base-content/50 hover:text-base-content/70'
+        }`}
+        data-filter-type="income"
+        aria-pressed={typeFilter === 'income'}
+        role="button"
+      >
+        Income
+      </a>
+    </div>
+
+    <!-- Category Filter (Multi-select with search) -->
+    {
+      showCategoryFilter && categories.length > 0 && (
+        <div class="dropdown" id="category-dropdown">
+          <input
+            type="hidden"
+            name="category_ids"
+            id="category-filter"
+            value={categoryIds.join(',')}
+          />
+          <button
+            type="button"
+            tabindex={0}
+            class="flex items-center gap-2 px-4 py-3 text-xs font-bold border border-base-300 bg-base-100 text-base-content rounded-2xl shadow-sm hover:border-base-content/30 transition-colors min-w-[160px]"
+            aria-label="Filter by category"
+            aria-haspopup="listbox"
+            aria-expanded="false"
+            data-category-trigger
+          >
+            <Tag size={16} class="stroke-current text-base-content/40" aria-hidden="true" />
+            <span class="flex-1 text-left truncate" data-category-label>
+              {getSelectedCategoriesLabel()}
+            </span>
+            <ChevronDown
+              size={14}
+              class="stroke-current text-base-content/40 shrink-0"
+              aria-hidden="true"
+            />
+          </button>
+          <div
+            tabindex={0}
+            class="dropdown-content z-50 p-3 shadow-lg bg-base-100 rounded-2xl w-72 border border-base-300 mt-2"
+            role="listbox"
+            aria-multiselectable="true"
+            aria-label="Select categories"
+          >
+            {/* Search input */}
+            <div class="relative mb-2">
+              <Search
+                size={14}
+                class="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/40 stroke-current pointer-events-none"
+                aria-hidden="true"
+              />
+              <input
+                type="text"
+                placeholder="Search categories..."
+                class="input input-sm w-full pl-8 pr-3 py-2 bg-base-200 border-0 rounded-xl text-xs placeholder:text-base-content/40 focus:outline-none focus:ring-1 focus:ring-accent"
+                data-category-search
+              />
+            </div>
+            {/* Clear All / Count */}
+            <div class="flex items-center justify-between pb-2 mb-2 border-b border-base-200">
+              <button
+                type="button"
+                class="text-xs font-medium text-accent hover:text-accent/80 transition-colors"
+                data-category-clear-all
+              >
+                Clear all
+              </button>
+              <span class="text-xs text-base-content/50" data-category-count>
+                {categoryIds.length} selected
+              </span>
+            </div>
+            {/* Category Options - filtered by current type */}
+            <div class="space-y-1 max-h-52 overflow-y-auto" data-category-list>
+              {categories
+                .filter((cat) => cat.type === typeFilter)
+                .map((cat) => {
+                  const isSelected = categoryIds.includes(cat.id);
+                  return (
+                    <label
+                      class={`flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-colors hover:bg-base-200 ${isSelected ? 'bg-accent/10' : ''}`}
+                      data-category-option={cat.id}
+                      data-category-name={cat.name.toLowerCase()}
+                    >
+                      <div
+                        class={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-colors ${isSelected ? 'bg-accent border-accent' : 'border-base-300'}`}
+                        data-checkbox-visual={cat.id}
+                      >
+                        {isSelected && (
+                          <Check size={12} class="stroke-white stroke-3" aria-hidden="true" />
+                        )}
+                      </div>
+                      <span class="text-sm font-medium text-base-content truncate">{cat.name}</span>
+                    </label>
+                  );
+                })}
+            </div>
+          </div>
+        </div>
+      )
+    }
+
+    <!-- Month Filter with Navigation -->
+    {
+      monthSelector && availableMonths.length > 0 && (
+        <div class="flex items-center gap-1" id="month-filter-group" data-month-filter-group>
+          <button
+            type="button"
+            class={`btn btn-ghost btn-square border border-base-300 bg-base-100 rounded-2xl transition-all active:scale-95 shadow-sm ${
+              !hasPrevMonth
+                ? 'opacity-30 cursor-not-allowed pointer-events-none'
+                : 'text-base-content/40 hover:text-primary hover:border-accent/30'
+            }`}
+            aria-label="Previous month"
+            aria-disabled={!hasPrevMonth}
+            data-month-nav="prev"
+            data-has-prev={hasPrevMonth ? 'true' : 'false'}
+          >
+            <ChevronLeft size={18} class="stroke-current" aria-hidden="true" />
+          </button>
+
+          <div class="dropdown" id="month-dropdown">
+            <input type="hidden" name="month" id="month-filter" value={selectedMonth} />
+            <button
+              type="button"
+              tabindex={0}
+              class="flex items-center gap-2 px-4 py-3 text-xs font-bold border border-base-300 bg-base-100 text-base-content rounded-2xl shadow-sm hover:border-base-content/30 transition-colors min-w-[120px]"
+              aria-label="Select month"
+              data-month-trigger
+            >
+              <Calendar size={16} class="stroke-current text-base-content/40" aria-hidden="true" />
+              <span class="flex-1 text-left" data-month-label>
+                {currentMonthLabel}
+              </span>
+              <ChevronDown
+                size={14}
+                class="stroke-current text-base-content/40"
+                aria-hidden="true"
+              />
+            </button>
+            <ul
+              tabindex={0}
+              class="dropdown-content z-50 menu p-2 shadow-lg bg-base-100 rounded-2xl w-52 border border-base-300 mt-2 max-h-64 overflow-y-auto"
+            >
+              {availableMonths.map((month) => (
+                <li>
+                  <button
+                    type="button"
+                    class={`text-xs font-medium ${month.key === selectedMonth ? 'bg-primary/10 text-primary' : ''}`}
+                    data-month-option={month.key}
+                    data-month-label={month.label}
+                  >
+                    {month.label}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <button
+            type="button"
+            class={`btn btn-ghost btn-square border border-base-300 bg-base-100 rounded-2xl transition-all active:scale-95 shadow-sm ${
+              !hasNextMonth
+                ? 'opacity-30 cursor-not-allowed pointer-events-none'
+                : 'text-base-content/40 hover:text-primary hover:border-accent/30'
+            }`}
+            aria-label="Next month"
+            aria-disabled={!hasNextMonth}
+            data-month-nav="next"
+            data-has-next={hasNextMonth ? 'true' : 'false'}
+          >
+            <ChevronRight size={18} class="stroke-current" aria-hidden="true" />
+          </button>
+        </div>
+      )
+    }
+  </div>
+
+  <div class="flex items-center gap-3 w-full xl:w-auto">
+    <!-- Search Input -->
+    <div class="relative flex-1 xl:w-64">
+      <Search
+        size={18}
+        class="absolute left-4 top-1/2 -translate-y-1/2 text-base-content/40 stroke-current pointer-events-none z-10"
+        aria-hidden="true"
+      />
+      <label for="search-input" class="sr-only">Search activity</label>
+      <input
+        id="search-input"
+        type="search"
+        name="search"
+        value={searchValue}
+        placeholder="Search activity..."
+        class="input w-full pl-11 pr-4 py-3 bg-base-100 border border-base-300 rounded-2xl text-sm font-medium shadow-sm placeholder:text-base-content/40 focus:outline-none focus:border-accent"
+        data-filter-search
+      />
+    </div>
+
+    <!-- Reset Filters Button (visibility controlled by JS) -->
+    <button
+      type="button"
+      class={`btn btn-ghost btn-sm gap-2 text-base-content/60 hover:text-primary hover:bg-primary/10 rounded-xl transition-colors shrink-0 ${hasActiveFilters ? '' : 'hidden'}`}
+      aria-label="Reset filters"
+      data-reset-filters
+      data-current-month={currentMonth}
+    >
+      <RotateCcw size={16} class="stroke-current" aria-hidden="true" />
+      <span class="hidden sm:inline">Reset</span>
+    </button>
+  </div>
+</form>
+
+<script>
+  // Track selected category IDs
+  let selectedCategoryIds: string[] = [];
+
+  // Get current month from reset button
+  function getCurrentMonth(): string {
+    const resetBtn = document.querySelector('[data-reset-filters]') as HTMLElement;
+    return resetBtn?.dataset.currentMonth || '';
+  }
+
+  // Check if filters are active and update reset button visibility
+  function updateResetButtonVisibility() {
+    const resetBtn = document.querySelector('[data-reset-filters]');
+    if (!resetBtn) return;
+
+    const searchInput = document.getElementById('search-input') as HTMLInputElement;
+    const monthInput = document.getElementById('month-filter') as HTMLInputElement;
+    const typeButtons = document.querySelectorAll('[data-filter-type]');
+    const currentMonth = getCurrentMonth();
+
+    // Check current type
+    let currentType = 'expense';
+    typeButtons.forEach((btn) => {
+      if (btn.getAttribute('aria-pressed') === 'true') {
+        currentType = btn.getAttribute('data-filter-type') || 'expense';
+      }
+    });
+
+    const hasFilters =
+      currentType !== 'expense' ||
+      (searchInput && searchInput.value.trim() !== '') ||
+      selectedCategoryIds.length > 0 ||
+      (monthInput && monthInput.value !== '' && monthInput.value !== currentMonth);
+
+    resetBtn.classList.toggle('hidden', !hasFilters);
+  }
+
+  // Initialize from hidden input
+  function initCategorySelection() {
+    const hiddenInput = document.getElementById('category-filter') as HTMLInputElement;
+    if (hiddenInput && hiddenInput.value) {
+      selectedCategoryIds = hiddenInput.value.split(',').filter(Boolean);
+    }
+    updateCategoryUI();
+    updateResetButtonVisibility();
+  }
+
+  // Update the UI to reflect current selection
+  function updateCategoryUI() {
+    const hiddenInput = document.getElementById('category-filter') as HTMLInputElement;
+    const label = document.querySelector('[data-category-label]');
+    const countEl = document.querySelector('[data-category-count]');
+
+    // Update hidden input
+    if (hiddenInput) {
+      hiddenInput.value = selectedCategoryIds.join(',');
+    }
+
+    // Update label
+    if (label) {
+      if (selectedCategoryIds.length === 0) {
+        label.textContent = 'All Categories';
+      } else if (selectedCategoryIds.length === 1) {
+        const option = document.querySelector(
+          `[data-category-option="${selectedCategoryIds[0]}"]`
+        ) as HTMLElement;
+        const name = option?.querySelector('span')?.textContent || 'All Categories';
+        label.textContent = name;
+      } else {
+        label.textContent = `${selectedCategoryIds.length} Categories`;
+      }
+    }
+
+    // Update count
+    if (countEl) {
+      countEl.textContent = `${selectedCategoryIds.length} selected`;
+    }
+
+    // Update checkbox visuals
+    document.querySelectorAll('[data-category-option]').forEach((option) => {
+      const optionEl = option as HTMLElement;
+      const catId = optionEl.dataset.categoryOption || '';
+      const isSelected = selectedCategoryIds.includes(catId);
+      const checkboxVisual = optionEl.querySelector(`[data-checkbox-visual="${catId}"]`);
+
+      // Update option background
+      optionEl.classList.toggle('bg-accent/10', isSelected);
+
+      // Update checkbox visual
+      if (checkboxVisual) {
+        checkboxVisual.classList.toggle('bg-accent', isSelected);
+        checkboxVisual.classList.toggle('border-accent', isSelected);
+        checkboxVisual.classList.toggle('border-base-300', !isSelected);
+
+        // Toggle check icon visibility
+        const checkIcon = checkboxVisual.querySelector('svg');
+        if (checkIcon) {
+          checkIcon.style.display = isSelected ? 'block' : 'none';
+        } else if (isSelected) {
+          // Create check icon if not present
+          checkboxVisual.innerHTML =
+            '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
+        }
+      }
+    });
+
+    // Update reset button visibility
+    updateResetButtonVisibility();
+  }
+
+  // Handle category search input
+  const categorySearch = document.querySelector('[data-category-search]') as HTMLInputElement;
+  if (categorySearch) {
+    categorySearch.addEventListener('input', () => {
+      const query = categorySearch.value.toLowerCase().trim();
+      document.querySelectorAll('[data-category-option]').forEach((option) => {
+        const optionEl = option as HTMLElement;
+        const name = optionEl.dataset.categoryName || '';
+        const matches = name.includes(query);
+        optionEl.style.display = matches ? '' : 'none';
+      });
+    });
+
+    // Prevent dropdown from closing when typing
+    categorySearch.addEventListener('click', (e) => {
+      e.stopPropagation();
+    });
+  }
+
+  // Handle keyboard navigation for type filter buttons
+  document.addEventListener('keydown', (e) => {
+    if (e.target instanceof HTMLElement && e.target.hasAttribute('data-filter-type')) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        e.target.click();
+      }
+    }
+  });
+
+  // Handle category option clicks (multi-select)
+  document.querySelectorAll('[data-category-option]').forEach((option) => {
+    option.addEventListener('click', (e: Event) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const optionEl = option as HTMLElement;
+      const catId = optionEl.dataset.categoryOption || '';
+
+      // Toggle selection
+      if (selectedCategoryIds.includes(catId)) {
+        selectedCategoryIds = selectedCategoryIds.filter((id) => id !== catId);
+      } else {
+        selectedCategoryIds.push(catId);
+      }
+
+      updateCategoryUI();
+
+      // Dispatch custom event for client-side handling
+      window.dispatchEvent(
+        new CustomEvent('filterChange', {
+          detail: { type: 'category_ids', value: [...selectedCategoryIds] },
+        })
+      );
+    });
+  });
+
+  // Handle clear all button
+  const clearAllBtn = document.querySelector('[data-category-clear-all]');
+  if (clearAllBtn) {
+    clearAllBtn.addEventListener('click', (e: Event) => {
+      e.preventDefault();
+      e.stopPropagation();
+      selectedCategoryIds = [];
+      updateCategoryUI();
+
+      // Dispatch custom event
+      window.dispatchEvent(
+        new CustomEvent('filterChange', {
+          detail: { type: 'category_ids', value: [] },
+        })
+      );
+    });
+  }
+
+  // Handle month dropdown selection
+  document.querySelectorAll('[data-month-option]').forEach((btn) => {
+    btn.addEventListener('click', (e: Event) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const el = btn as HTMLElement;
+      const value = el.dataset.monthOption || '';
+      const displayLabel = el.dataset.monthLabel || value;
+      const hiddenInput = document.getElementById('month-filter') as HTMLInputElement;
+      const labelEl = document.querySelector('[data-month-label]');
+
+      if (hiddenInput) hiddenInput.value = value;
+      if (labelEl) labelEl.textContent = displayLabel;
+
+      // Close dropdown by clicking outside
+      const dropdown = document.getElementById('month-dropdown');
+      if (dropdown) {
+        // Remove focus from dropdown elements to close it
+        (document.activeElement as HTMLElement)?.blur();
+      }
+
+      // Update reset button visibility
+      updateResetButtonVisibility();
+
+      // Dispatch custom event for client-side handling
+      window.dispatchEvent(new CustomEvent('filterChange', { detail: { type: 'month', value } }));
+    });
+  });
+
+  // Handle month navigation buttons
+  document.querySelectorAll('[data-month-nav]').forEach((btn) => {
+    btn.addEventListener('click', (e: Event) => {
+      e.preventDefault();
+      // This is handled by TransactionsPage.client.ts
+    });
+  });
+
+  // Listen for search input changes to update reset button
+  const searchInput = document.getElementById('search-input');
+  if (searchInput) {
+    searchInput.addEventListener('input', () => {
+      updateResetButtonVisibility();
+    });
+  }
+
+  // Listen for type filter changes to update reset button
+  document.querySelectorAll('[data-filter-type]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      // Small delay to let the UI update
+      setTimeout(updateResetButtonVisibility, 50);
+    });
+  });
+
+  // Initialize on load
+  initCategorySelection();
+</script>

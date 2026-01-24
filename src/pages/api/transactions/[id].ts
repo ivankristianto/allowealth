@@ -8,17 +8,17 @@ import {
   isValidationError,
 } from '@/lib/api-utils';
 import { updateTransactionAPISchema, transactionIdSchema } from '@/lib/validation/transactions';
-import { logError } from '@/lib/utils';
+import { logError, transformTransaction } from '@/lib/utils';
 import { ServiceError } from '@/services/service-errors';
 
 /**
  * GET /api/transactions/:id
  * Get a single transaction by ID
  */
-export const GET: APIRoute = async ({ params, request, url }) => {
+export const GET: APIRoute = async (context) => {
   try {
-    const userId = await requireAuth({ request, url } as any);
-    const { id } = params;
+    const userId = await requireAuth(context);
+    const { id } = context.params;
 
     // Validate transaction ID format
     const idValidation = transactionIdSchema.safeParse(id);
@@ -27,13 +27,13 @@ export const GET: APIRoute = async ({ params, request, url }) => {
     }
 
     // Now we know id is a valid string
-    const transaction = await transactionService.findById(idValidation.data, userId);
+    const rawTransaction = await transactionService.findById(idValidation.data, userId);
 
-    if (!transaction) {
+    if (!rawTransaction) {
       return errorResponse('Transaction not found', 404);
     }
 
-    return successResponse(transaction);
+    return successResponse(transformTransaction(rawTransaction));
   } catch (error) {
     if (error instanceof Error && error.message === 'Unauthorized') {
       return errorResponse('Unauthorized', 401);
@@ -50,10 +50,11 @@ export const GET: APIRoute = async ({ params, request, url }) => {
  * PUT /api/transactions/:id
  * Update a transaction
  */
-export const PUT: APIRoute = async ({ params, request, url }) => {
+export const PUT: APIRoute = async (context) => {
   try {
-    const userId = await requireAuth({ request, url } as any);
-    const { id } = params;
+    const userId = await requireAuth(context);
+    const { id } = context.params;
+    const { request } = context;
 
     // Validate transaction ID format
     const idValidation = transactionIdSchema.safeParse(id);
@@ -89,13 +90,13 @@ export const PUT: APIRoute = async ({ params, request, url }) => {
     if (validation.data.description !== undefined)
       updateData.description = validation.data.description;
 
-    const transaction = await transactionService.update(idValidation.data, userId, updateData);
+    const rawTransaction = await transactionService.update(idValidation.data, userId, updateData);
 
-    if (!transaction) {
+    if (!rawTransaction) {
       return errorResponse('Transaction not found', 404);
     }
 
-    return successResponse(transaction);
+    return successResponse(transformTransaction(rawTransaction));
   } catch (error) {
     if (error instanceof Error && error.message === 'Unauthorized') {
       return errorResponse('Unauthorized', 401);
@@ -112,10 +113,10 @@ export const PUT: APIRoute = async ({ params, request, url }) => {
  * DELETE /api/transactions/:id
  * Soft delete a transaction
  */
-export const DELETE: APIRoute = async ({ params, request, url }) => {
+export const DELETE: APIRoute = async (context) => {
   try {
-    const userId = await requireAuth({ request, url } as any);
-    const { id } = params;
+    const userId = await requireAuth(context);
+    const { id } = context.params;
 
     // Validate transaction ID format
     const idValidation = transactionIdSchema.safeParse(id);

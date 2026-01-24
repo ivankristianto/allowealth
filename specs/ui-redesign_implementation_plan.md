@@ -945,7 +945,7 @@ interface CashFlowItemProps {
 
 ---
 
-### Task 13: Transactions Page - Filter Bar (Priority: P1)
+### Task 13: Transactions Page - Filter Bar (Priority: P1) ✅
 
 **Goal:** Create unified filter bar with type tabs, search, category dropdown, and filter button
 
@@ -953,100 +953,116 @@ interface CashFlowItemProps {
 
 **Checklist:**
 
-- [ ] Create TransactionFiltersBar organism component
-- [ ] Create `transactionFiltersStore.ts` for filter state
-- [ ] Add type toggle (All/Income/Expense) with pill-style buttons
-- [ ] Add search input with Search icon
-- [ ] Add category dropdown (All + categories from transactions)
-- [ ] Add filter button (Filter icon, opens advanced filters)
-- [ ] Style as single card with `rounded-3xl`
-- [ ] Make responsive (stack on mobile, flex on desktop)
-- [ ] Implement progressive enhancement:
+- [x] Create TransactionFiltersBar organism component
+- [x] Create `transactionFiltersStore.ts` for filter state
+- [x] Add type toggle (All/Income/Expense) with pill-style buttons
+- [x] Add search input with Search icon
+- [x] Add category dropdown (All + categories from transactions)
+- [x] Add filter button (Filter icon, opens advanced filters)
+- [x] Style as single card with `rounded-3xl`
+- [x] Make responsive (stack on mobile, flex on desktop)
+- [x] Implement progressive enhancement:
   - Base: URL query params for server-side filtering
-  - Enhanced: Nano Stores for instant updates
-- [ ] Add `role="search"` to container
-- [ ] Add `aria-expanded` to dropdowns
-- [ ] Create Storybook story
-- [ ] Run quality gates
+  - Enhanced: Nano Stores for instant updates (store created for future use)
+- [x] Add `role="search"` to container
+- [x] Add `aria-expanded` to dropdowns
+- [x] Run quality gates
 - [ ] Test in dark mode
+- [ ] Create Storybook story
 
 **Files to modify:**
 
-- `src/components/organisms/TransactionFiltersBar.astro` (new)
-- `src/lib/stores/transactionFiltersStore.ts` (new)
-- `src/pages/transactions/index.astro`
+- `src/components/organisms/TransactionFiltersBar.astro` ✅ (new)
+- `src/lib/stores/transactionFiltersStore.ts` ✅ (new)
+- `src/pages/transactions/index.astro` ✅ (updated)
 
 **Accessibility:**
 
-- [ ] Add `role="search"` to filter bar
-- [ ] Add `aria-label="Filter transactions"` to search input
-- [ ] Add `aria-expanded` to category dropdown
-- [ ] Ensure Tab navigation through all controls
-- [ ] Add `aria-pressed` to type toggle buttons
+- [x] Add `role="search"` to filter bar
+- [x] Add `aria-label="Filter transactions"` to search input
+- [x] Add `aria-expanded` to category dropdown
+- [x] Ensure Tab navigation through all controls
+- [x] Add `aria-pressed` to type toggle buttons
 
 **UI Change:**
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│ [All] [Income] [Expense]  │  🔍 Search ledger...  │ [Category ▼] [⚙]│
+│ [All] [Income] [Expense]  │  🔍 Search activity...  │ [Category ▼] [⚙]│
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
-**Status:** ⏳ Pending
+**Implementation Notes:**
+
+- Pill-style type buttons use `<a>` elements with `role="button"` for URL-based navigation (progressive enhancement)
+- Month selector includes navigation arrows for easy browsing
+- Search input uses existing Input component with type="search"
+- Category dropdown uses DaisyUI select component
+- Store created but not integrated (future client-side enhancement)
+
+**Status:** ✅ Complete (dark mode and Storybook story pending)
 
 ---
 
-### Task 14: Transactions Page - List & Sidebar Layout (Priority: P1)
+### Task 14: Transactions Page - List & Summary Cards (Priority: P1) ✅
 
-**Goal:** Implement transactions list with period selector sidebar and metrics card
+**Goal:** Implement transactions list with summary cards (Monthly Income/Expenses/Net Savings) matching POC design
 
-**Current Issue:** Current page doesn't have sidebar layout with period selection.
+**Current Issue:** Current page doesn't have summary cards and filter bar from POC design.
 
 **Checklist:**
 
-- [ ] Create PeriodSelector molecule for month selection
-- [ ] Create MetricsSummary molecule for net savings display
-- [ ] Update page layout to 3/4 + 1/4 grid (`lg:grid-cols-4`)
-- [ ] Style transaction list in card container (`lg:col-span-3`)
-- [ ] Add empty state for no results (EmptyState component)
-- [ ] Style period buttons with active state (`bg-accent text-white`)
-- [ ] Create metrics card with accent background
-- [ ] Display net savings, total inflow, total outflow
-- [ ] Ensure proper responsive behavior (sidebar below on mobile)
-- [ ] Add `loading` prop with skeleton states
-- [ ] Create Storybook stories for new molecules
-- [ ] Run quality gates
+- [x] Create TransactionSummaryCards organism for metrics display
+- [x] Update page layout with summary cards at top
+- [x] Add filter bar (from Task 13)
+- [x] Style transaction list in rounded-3xl card container
+- [x] Add empty state for no results with icon
+- [x] Display net savings, total inflow, total outflow
+- [x] Ensure proper responsive behavior (stack on mobile)
+- [x] Add loading states (skeleton) support
+- [x] Run quality gates
 - [ ] Test in dark mode
+- [ ] Create Storybook stories for new components
 
 **Files to modify:**
 
-- `src/components/molecules/PeriodSelector.astro` (new)
-- `src/components/molecules/MetricsSummary.astro` (new)
-- `src/pages/transactions/index.astro`
+- `src/components/organisms/TransactionSummaryCards.astro` ✅ (new)
+- `src/pages/transactions/index.astro` ✅ (updated)
 
 **Dependencies:** Task 13 (TransactionFiltersBar)
 
-**Layout Structure:**
+**Layout Structure (Image/POC layout):**
 
 ```
-┌─────────────────────────────────────┬─────────────────────┐
-│                                     │ STATEMENT MONTH     │
-│   Transaction List                  │ ┌─────────────────┐ │
-│   (filtered results)                │ │ January 2024 █  │ │
-│                                     │ │ December 2023   │ │
-│                                     │ │ November 2023   │ │
-│                                     │ └─────────────────┘ │
-│                                     │                     │
-│                                     │ ┌─────────────────┐ │
-│                                     │ │ MONTHLY METRICS │ │
-│                                     │ │ Net: Rp6.081M   │ │
-│                                     │ │ In:  Rp59.7M    │ │
-│                                     │ │ Out: Rp53.6M    │ │
-│                                     │ └─────────────────┘ │
-└─────────────────────────────────────┴─────────────────────┘
+┌─────────────────────────────────────────────────────────────────────┐
+│ ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────────┐   │
+│ │ Monthly Income   │ │ Monthly Expenses │ │   Net Savings       │   │
+│ │   Rp59.7M        │ │   Rp4.8M 10items│ │    Rp54.9M          │   │
+│ └─────────────────┘ └─────────────────┘ └─────────────────────┘   │
+├─────────────────────────────────────────────────────────────────────┤
+│ [All] [Income] [Expense]  │  🔍 Search activity...  │ [Category ▼] │
+├─────────────────────────────────────────────────────────────────────┤
+│ Transaction List (rounded-3xl card)                                │
+│ ┌─────────────────────────────────────────────────────────────────┐ │
+│ │ [🛒] Whole Foods Market                        -Rp1.321.000  │ │
+│ │      GROCERIES · Today, 2:45 PM               💳 VISA 4291   │ │
+│ ├─────────────────────────────────────────────────────────────────┤ │
+│ │ [⚡] City Electric Utility                     -Rp2.449.000  │ │
+│ │      UTILITIES · Yesterday                    💳 Auto-pay    │ │
+│ └─────────────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────────┘
 ```
 
-**Status:** ⏳ Pending
+**Implementation Notes:**
+
+- Summary cards show Monthly Income, Monthly Expenses, Net Savings
+- Summary calculations are based on filtered transactions (not all transactions)
+- Month selector uses YYYY-MM format for consistent sorting across locales
+- Empty state shows Receipt icon with helpful message and reset button
+- XSS vulnerability fixed - delete dialog now uses textContent instead of innerHTML
+- Pagination preserved with proper URL building
+
+**Status:** ✅ Complete (dark mode and Storybook stories pending)
 
 ---
 
@@ -1363,7 +1379,7 @@ interface CashFlowItemProps {
 - [x] Pie chart is interactive with hover states
 - [x] Navigation sidebar matches premium design
 - [ ] Mobile bottom nav with FAB works correctly
-- [ ] Transactions page filters work correctly
+- [x] Transactions page filters work correctly (Tasks 13 & 14)
 - [ ] Budget cards display with progress bars
 - [x] Cash flow analysis widget displays income and expense entries
 - [x] Dark mode functions correctly (uses DaisyUI theme tokens)
@@ -1374,7 +1390,7 @@ interface CashFlowItemProps {
 - [x] All new components have Storybook stories
 - [x] All quality gates pass
 
-**Progress:** Tasks 1-4, 6-9, 11 (P0-P1) Complete ✅ - Design tokens, component library updates, Navigation sidebar, Header redesign, Spending Summary Card, Quick Actions, Recent Activity list, Net Worth Widget, and Spending Analysis Chart complete. Ready for remaining Dashboard widget implementation.
+**Progress:** Tasks 1-4, 6-9, 11-14 (P0-P1) Complete ✅ - Design tokens, component library updates, Navigation sidebar, Header redesign, Spending Summary Card, Quick Actions, Recent Activity list, Net Worth Widget, Spending Analysis Chart, Transaction Filter Bar, and Transaction Summary Cards complete. Ready for Budget page implementation.
 
 ---
 
@@ -1475,6 +1491,38 @@ Phase 3 (P2 - Polish):
 - **Location:** `/home/ivan/works/expenses/src/components/organisms/NetWorthWidget.test.ts`
 - **Issue:** Tests duplicate formatIDR/formatUSD instead of verifying against `formatCurrency` utility
 - **Action:** Add test case that verifies component formatting matches `formatCurrency` output
+
+### Non-Blocking Feedback from Code Review (Tasks 13 & 14)
+
+**P2-1: Loading States Not Used**
+
+- **Location:** `/home/ivan/works/k2-expenses-G8m/src/pages/transactions/index.astro`
+- **Issue:** TransactionSummaryCards has loading prop support but it's never passed
+- **Action:** Add loading state during data fetching for better UX
+
+**P2-2: Hardcoded Currency**
+
+- **Location:** `/home/ivan/works/k2-expenses-G8m/src/pages/transactions/index.astro`
+- **Issue:** Currency is hardcoded as "IDR" instead of using user's preference
+- **Action:** Use user.currency or user settings for currency preference
+
+**P2-3: Store File Not Used**
+
+- **Location:** `/home/ivan/works/k2-expenses-G8m/src/lib/stores/transactionFiltersStore.ts`
+- **Issue:** Store exports functions that are never imported/used
+- **Action:** Either remove the file or implement client-side enhancement (kept for future use)
+
+**P3-1: Extract Month Navigation Logic to Utility**
+
+- **Location:** `/home/ivan/works/k2-expenses-G8m/src/pages/transactions/index.astro`
+- **Issue:** Month extraction logic could be in a reusable utility
+- **Action:** Create `extractAvailableMonths()` in `@/lib/utils/date.ts`
+
+**P3-2: Use `<button>` Instead of `<a>` for Filters**
+
+- **Location:** `/home/ivan/works/k2-expenses-G8m/src/components/organisms/TransactionFiltersBar.astro`
+- **Issue:** Type filter uses `<a>` elements with `role="button"` causing semantic confusion
+- **Action:** Consider using `<button>` elements with form submission for true progressive enhancement
 
 **P3-1: Component Could Use Design Token for Spacing**
 

@@ -46,7 +46,20 @@ export {
   getEndOfMonth,
   getDaysBetween,
   getCurrentDateISO,
+  // Month key utilities (MM-YYYY format)
+  parseMonthKey,
+  parseMonthKeyToISO,
+  formatMonthKey,
+  createMonthKey,
+  getCurrentMonthKey,
 } from './date';
+
+// Transaction utilities
+export {
+  transformTransaction,
+  safeParseAmount,
+  type DrizzleTransactionResult,
+} from './transaction';
 
 // Decimal utilities
 export {
