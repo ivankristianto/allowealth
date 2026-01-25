@@ -50,7 +50,7 @@ const { title = 'Finance Manager', currentPath = '/', user } = Astro.props;
     </div>
 
     <!-- Sidebar navigation -->
-    <div class="drawer-side z-50 lg:overflow-visible h-screen">
+    <div class="drawer-side z-50 lg:overflow-visible lg:sticky lg:top-0 h-screen">
       <label for="drawer-toggle" aria-label="close sidebar" class="drawer-overlay"></label>
       <Navigation currentPath={currentPath} user={user} />
     </div>
