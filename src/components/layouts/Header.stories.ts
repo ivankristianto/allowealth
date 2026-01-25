@@ -139,7 +139,6 @@ const createHeader = (args: {
 
   currencyDiv.appendChild(currencyButton);
 
-  // Dropdown menu - matching UserContext style
   const currencyMenu = document.createElement('ul');
   currencyMenu.tabIndex = 0;
   currencyMenu.className =

@@ -7,15 +7,15 @@
  */
 
 import { Menu, Plus, Bell, Moon, Sun } from '@lucide/astro';
-import UserContext from '../organisms/UserContext.astro';
 import CurrencySelector from '../molecules/CurrencySelector.astro';
 import { formatMonthYear } from '@/lib/utils';
+import type { User } from '@/lib/auth/lucia';
 
 interface Props {
   title?: string;
   currentPath?: string;
   showMenuToggle?: boolean;
-  user?: any | null;
+  user?: User | null;
   subtitle?: string;
   // Optional data for dynamic subtitles
   transactionCount?: number;
@@ -149,10 +149,13 @@ const getPageTitle = (path: string) => {
 
   <!-- Right side: Currency selector + Notifications + New Entry button -->
   <div class="flex items-center gap-3 sm:gap-5">
-    <!-- Currency Selector -->
-    <div class="hidden sm:block">
-      <CurrencySelector />
-    </div>
+    {
+      user && (
+        <div class="hidden sm:block">
+          <CurrencySelector />
+        </div>
+      )
+    }
 
     <!-- Theme Toggle (mobile only) -->
     <button
@@ -166,103 +169,113 @@ const getPageTitle = (path: string) => {
       <Sun size={20} class="stroke-current header-theme-icon-dark hidden" aria-hidden="true" />
     </button>
 
-    <!-- Notifications -->
-    <div class="relative">
-      <button
-        id="notification-button"
-        class="p-3 rounded-full transition-all relative text-neutral hover:bg-base-100 shadow-sm border border-base-300"
-        aria-label="Notifications"
-        aria-expanded="false"
-        aria-haspopup="true"
-      >
-        <Bell size={20} class="stroke-current" aria-hidden="true" />
-        <span
-          class="absolute top-2 right-2 w-2.5 h-2.5 bg-error rounded-full border-2 border-base-100 animate-pulse"
-          aria-hidden="true"></span>
-      </button>
-
-      <!-- Notification Dropdown Panel -->
-      <div
-        id="notification-dropdown"
-        class="absolute right-0 mt-4 w-[calc(100vw-3rem)] sm:w-80 max-w-80 bg-base-100 rounded-2xl sm:rounded-3xl border border-base-300 shadow-premium z-50 overflow-hidden hidden"
-        role="menu"
-        aria-label="Notifications menu"
-      >
-        <!-- Header -->
-        <div class="p-5 border-b border-base-300 flex justify-between items-center bg-base-200/50">
-          <span class="font-bold text-base text-neutral">Notifications</span>
+    {
+      user && (
+        <div class="relative">
           <button
-            id="close-notifications"
-            class="text-sm font-bold text-accent hover:underline focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 rounded"
-            aria-label="Close notifications"
+            id="notification-button"
+            class="p-3 rounded-full transition-all relative text-neutral hover:bg-base-100 shadow-sm border border-base-300"
+            aria-label="Notifications"
+            aria-expanded="false"
+            aria-haspopup="true"
           >
-            Close
+            <Bell size={20} class="stroke-current" aria-hidden="true" />
+            <span
+              class="absolute top-2 right-2 w-2.5 h-2.5 bg-error rounded-full border-2 border-base-100 animate-pulse"
+              aria-hidden="true"
+            />
           </button>
-        </div>
 
-        <!-- Notification List -->
-        <div class="max-h-96 overflow-y-auto divide-y divide-base-300">
-          <div class="p-5 hover:bg-base-200/50 transition-colors cursor-pointer flex gap-5">
-            <div
-              class="w-12 h-12 shrink-0 rounded-2xl flex items-center justify-center bg-warning/10 text-warning shadow-sm"
-            >
-              <Bell size={20} class="shrink-0" aria-hidden="true" />
+          <div
+            id="notification-dropdown"
+            class="absolute right-0 mt-4 w-[calc(100vw-3rem)] sm:w-80 max-w-80 bg-base-100 rounded-2xl sm:rounded-3xl border border-base-300 shadow-premium z-50 overflow-hidden hidden"
+            role="menu"
+            aria-label="Notifications menu"
+          >
+            <div class="p-5 border-b border-base-300 flex justify-between items-center bg-base-200/50">
+              <span class="font-bold text-base text-neutral">Notifications</span>
+              <button
+                id="close-notifications"
+                class="text-sm font-bold text-accent hover:underline focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 rounded"
+                aria-label="Close notifications"
+              >
+                Close
+              </button>
             </div>
-            <div class="flex-1 min-w-0">
-              <div class="flex justify-between items-start mb-1.5 leading-none">
-                <p class="text-base font-bold text-base-content tracking-tight">Budget Alert</p>
-                <span class="text-[10px] font-bold text-neutral uppercase tracking-widest"
-                  >2m ago</span
-                >
+
+            <div class="max-h-96 overflow-y-auto divide-y divide-base-300">
+              <div class="p-5 hover:bg-base-200/50 transition-colors cursor-pointer flex gap-5">
+                <div class="w-12 h-12 shrink-0 rounded-2xl flex items-center justify-center bg-warning/10 text-warning shadow-sm">
+                  <Bell size={20} class="shrink-0" aria-hidden="true" />
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex justify-between items-start mb-1.5 leading-none">
+                    <p class="text-base font-bold text-base-content tracking-tight">Budget Alert</p>
+                    <span class="text-[10px] font-bold text-neutral uppercase tracking-widest">
+                      2m ago
+                    </span>
+                  </div>
+                  <p class="text-sm text-neutral leading-relaxed">
+                    Dining has reached 95% of its monthly limit.
+                  </p>
+                </div>
               </div>
-              <p class="text-sm text-neutral leading-relaxed">
-                Dining has reached 95% of its monthly limit.
-              </p>
-            </div>
-          </div>
-          <div class="p-5 hover:bg-base-200/50 transition-colors cursor-pointer flex gap-5">
-            <div
-              class="w-12 h-12 shrink-0 rounded-2xl flex items-center justify-center bg-success/10 text-success shadow-sm"
-            >
-              <Plus size={20} class="shrink-0" aria-hidden="true" />
-            </div>
-            <div class="flex-1 min-w-0">
-              <div class="flex justify-between items-start mb-1.5 leading-none">
-                <p class="text-base font-bold text-base-content tracking-tight">Salary Received</p>
-                <span class="text-[10px] font-bold text-neutral uppercase tracking-widest"
-                  >4h ago</span
-                >
+              <div class="p-5 hover:bg-base-200/50 transition-colors cursor-pointer flex gap-5">
+                <div class="w-12 h-12 shrink-0 rounded-2xl flex items-center justify-center bg-success/10 text-success shadow-sm">
+                  <Plus size={20} class="shrink-0" aria-hidden="true" />
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex justify-between items-start mb-1.5 leading-none">
+                    <p class="text-base font-bold text-base-content tracking-tight">
+                      Salary Received
+                    </p>
+                    <span class="text-[10px] font-bold text-neutral uppercase tracking-widest">
+                      4h ago
+                    </span>
+                  </div>
+                  <p class="text-sm text-neutral leading-relaxed">
+                    Acme Corp deposited Rp51.025.000.
+                  </p>
+                </div>
               </div>
-              <p class="text-sm text-neutral leading-relaxed">Acme Corp deposited Rp51.025.000.</p>
             </div>
+
+            <button
+              class="w-full py-4 text-sm font-bold text-neutral hover:bg-base-200 transition-colors tracking-wide focus:outline-none focus:ring-2 focus:ring-accent focus:ring-inset"
+              aria-label="View all notification history"
+            >
+              View all history
+            </button>
           </div>
         </div>
+      )
+    }
 
-        <!-- Footer -->
-        <button
-          class="w-full py-4 text-sm font-bold text-neutral hover:bg-base-200 transition-colors tracking-wide focus:outline-none focus:ring-2 focus:ring-accent focus:ring-inset"
-          aria-label="View all notification history"
+    {
+      !user && (
+        <a
+          href="/login"
+          class="px-4 sm:px-5 py-2.5 rounded-2xl border border-base-300 text-primary font-bold transition-colors hover:bg-base-200"
+          aria-label="Sign in"
         >
-          View all history
+          Sign in
+        </a>
+      )
+    }
+
+    {
+      user && (
+        <button
+          id="new-entry-button"
+          class="bg-accent hover:bg-accent-hover text-white px-4 sm:px-6 py-2.5 rounded-2xl flex items-center gap-2 font-bold shadow-xl shadow-accent/20 transition-all active:scale-95 text-base"
+          aria-label="Add new expense"
+          data-open-modal="expense"
+        >
+          <Plus size={20} class="stroke-current" aria-hidden="true" />
+          <span class="hidden sm:inline">New Entry</span>
         </button>
-      </div>
-    </div>
-
-    <!-- User Context (login/register or user menu) - hidden on mobile -->
-    <div class="hidden lg:block">
-      <UserContext user={user} />
-    </div>
-
-    <!-- New Entry Button -->
-    <button
-      id="new-entry-button"
-      class="bg-accent hover:bg-accent-hover text-white px-4 sm:px-6 py-2.5 rounded-2xl flex items-center gap-2 font-bold shadow-xl shadow-accent/20 transition-all active:scale-95 text-base"
-      aria-label="Add new expense"
-      data-open-modal="expense"
-    >
-      <Plus size={20} class="stroke-current" aria-hidden="true" />
-      <span class="hidden sm:inline">New Entry</span>
-    </button>
+      )
+    }
   </div>
 </header>
 

@@ -90,28 +90,41 @@ const getUserInitials = () => {
         <span class="text-sm font-bold text-base-content">Security</span>
       </a>
       <div class="h-px bg-base-300 my-1 mx-2" role="separator"></div>
-      <a
-        href="/auth/logout"
+      <button
+        type="button"
         class="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-error/10 text-left transition-colors text-error hover:text-error"
         role="menuitem"
         tabindex="-1"
+        data-logout-button
       >
         <LogOut size={18} aria-hidden="true" />
         <span class="text-sm font-bold">Sign out</span>
-      </a>
+      </button>
     </div>
   </div>
 </div>
 
 <script>
+  import { addToast } from '@lib/stores/toastStore';
+
   const profileDropdowns = document.querySelectorAll('[data-profile-dropdown]');
 
   profileDropdowns.forEach((container) => {
-    const button = container.querySelector('[data-profile-button]') as HTMLButtonElement;
-    const menu = container.querySelector('[data-profile-menu]') as HTMLElement;
-    const chevron = container.querySelector('[data-profile-chevron]') as HTMLElement;
+    const button = container.querySelector('[data-profile-button]');
+    const menu = container.querySelector('[data-profile-menu]');
+    const chevron = container.querySelector('[data-profile-chevron]');
+    const logoutButton = container.querySelector('[data-logout-button]');
 
-    if (!button || !menu || !chevron) return;
+    const chevronElement =
+      chevron instanceof HTMLElement || chevron instanceof SVGElement ? chevron : null;
+
+    if (
+      !(button instanceof HTMLButtonElement) ||
+      !(menu instanceof HTMLElement) ||
+      !chevronElement
+    ) {
+      return;
+    }
 
     let isOpen = false;
 
@@ -122,7 +135,7 @@ const getUserInitials = () => {
       menu.style.opacity = '1';
       menu.style.transform = 'translateY(0)';
       menu.style.pointerEvents = 'auto';
-      chevron.style.transform = 'rotate(180deg)';
+      chevronElement.style.transform = 'rotate(180deg)';
     };
 
     const closeMenu = () => {
@@ -132,7 +145,7 @@ const getUserInitials = () => {
       menu.style.opacity = '0';
       menu.style.transform = 'translateY(8px)';
       menu.style.pointerEvents = 'none';
-      chevron.style.transform = 'rotate(0deg)';
+      chevronElement.style.transform = 'rotate(0deg)';
     };
 
     const toggleMenu = () => {
@@ -144,20 +157,19 @@ const getUserInitials = () => {
     };
 
     // Store handler references for cleanup
-    const handleClick = (e: Event) => {
+    const handleClick = (e) => {
       e.stopPropagation();
       toggleMenu();
     };
 
-    const handleButtonKeydown = (e: Event) => {
-      const keyEvent = e as KeyboardEvent;
-      if (keyEvent.key === 'Enter' || keyEvent.key === ' ') {
+    const handleButtonKeydown = (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
         toggleMenu();
-      } else if (keyEvent.key === 'Escape') {
+      } else if (e.key === 'Escape') {
         closeMenu();
         button.focus();
-      } else if (keyEvent.key === 'Tab') {
+      } else if (e.key === 'Tab') {
         // Close menu on Tab navigation (focus trap)
         if (isOpen) {
           closeMenu();
@@ -165,9 +177,30 @@ const getUserInitials = () => {
       }
     };
 
-    const handleDocumentClick = (e: Event) => {
-      if (!container.contains(e.target as Node)) {
+    const handleDocumentClick = (e) => {
+      if (!(e.target instanceof Node) || !container.contains(e.target)) {
         closeMenu();
+      }
+    };
+
+    const handleLogoutClick = async () => {
+      try {
+        const response = await fetch('/api/auth/logout', {
+          method: 'POST',
+          credentials: 'include',
+        });
+
+        if (response.ok) {
+          addToast('Signed out successfully', 'success');
+          setTimeout(() => {
+            window.location.href = '/login';
+          }, 500);
+        } else {
+          addToast('Failed to sign out. Please try again.', 'error');
+        }
+      } catch (error) {
+        console.error('Logout error:', error);
+        addToast('An error occurred. Please try again.', 'error');
       }
     };
 
@@ -175,12 +208,18 @@ const getUserInitials = () => {
     button.addEventListener('click', handleClick);
     button.addEventListener('keydown', handleButtonKeydown);
     document.addEventListener('click', handleDocumentClick);
+    if (logoutButton instanceof HTMLButtonElement) {
+      logoutButton.addEventListener('click', handleLogoutClick);
+    }
 
     // Cleanup function
     const cleanup = () => {
       button.removeEventListener('click', handleClick);
       button.removeEventListener('keydown', handleButtonKeydown);
       document.removeEventListener('click', handleDocumentClick);
+      if (logoutButton instanceof HTMLButtonElement) {
+        logoutButton.removeEventListener('click', handleLogoutClick);
+      }
     };
 
     // Cleanup on Astro page navigation (View Transitions)
@@ -199,20 +238,24 @@ const getUserInitials = () => {
     // Keyboard support for menu items
     const menuItems = menu.querySelectorAll('[role="menuitem"]');
     menuItems.forEach((item, index) => {
-      item.addEventListener('keydown', (e: Event) => {
-        const keyEvent = e as KeyboardEvent;
-        if (keyEvent.key === 'ArrowDown') {
+      item.addEventListener('keydown', (e) => {
+        if (!(item instanceof HTMLElement)) return;
+        if (e.key === 'ArrowDown') {
           e.preventDefault();
           const nextItem = menuItems[index + 1] || menuItems[0];
-          (nextItem as HTMLElement).focus();
-        } else if (keyEvent.key === 'ArrowUp') {
+          if (nextItem instanceof HTMLElement) {
+            nextItem.focus();
+          }
+        } else if (e.key === 'ArrowUp') {
           e.preventDefault();
           const prevItem = menuItems[index - 1] || menuItems[menuItems.length - 1];
-          (prevItem as HTMLElement).focus();
-        } else if (keyEvent.key === 'Escape') {
+          if (prevItem instanceof HTMLElement) {
+            prevItem.focus();
+          }
+        } else if (e.key === 'Escape') {
           closeMenu();
           button.focus();
-        } else if (keyEvent.key === 'Tab') {
+        } else if (e.key === 'Tab') {
           // Close menu on Tab (focus trap)
           closeMenu();
         }
