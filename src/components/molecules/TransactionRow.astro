@@ -11,22 +11,9 @@
 
 import Currency from '../atoms/Currency.astro';
 import IconBadge from '../atoms/IconBadge.astro';
-import {
-  Banknote,
-  Briefcase,
-  Car,
-  CreditCard,
-  Film,
-  House,
-  Pencil,
-  Pill,
-  ShoppingBasket,
-  Trash2,
-  UtensilsCrossed,
-  Wallet,
-  Zap,
-} from '@lucide/astro';
+import { CreditCard, Pencil, Trash2 } from '@lucide/astro';
 import type { TransactionOutput } from '@/lib/types/transaction';
+import { getCategoryMeta } from '@/lib/utils/categoryMeta';
 
 export interface Props {
   transaction: TransactionOutput;
@@ -49,89 +36,12 @@ const formattedDate = date.toLocaleDateString('en-US', {
 
 const primaryText = transaction.description?.trim() || transaction.category.name;
 
-type CategoryIconComponent =
-  | typeof ShoppingBasket
-  | typeof Zap
-  | typeof Film
-  | typeof Car
-  | typeof Pill
-  | typeof UtensilsCrossed
-  | typeof House
-  | typeof Banknote
-  | typeof Briefcase
-  | typeof Wallet;
-
-type CategoryMeta = {
-  icon: CategoryIconComponent;
-  variant: 'primary' | 'accent' | 'success' | 'warning' | 'error' | 'info' | 'neutral';
-};
-
-const getCategoryMeta = (name: string, type: TransactionOutput['type']): CategoryMeta => {
-  const normalized = name.toLowerCase();
-
-  if (type === 'income') {
-    return { icon: Banknote, variant: 'success' as const };
-  }
-
-  if (
-    normalized.includes('grocery') ||
-    normalized.includes('market') ||
-    normalized.includes('food')
-  ) {
-    return { icon: ShoppingBasket, variant: 'warning' as const };
-  }
-  if (
-    normalized.includes('utility') ||
-    normalized.includes('electric') ||
-    normalized.includes('water') ||
-    normalized.includes('gas')
-  ) {
-    return { icon: Zap, variant: 'info' as const };
-  }
-  if (
-    normalized.includes('entertainment') ||
-    normalized.includes('movie') ||
-    normalized.includes('netflix')
-  ) {
-    return { icon: Film, variant: 'error' as const };
-  }
-  if (
-    normalized.includes('transport') ||
-    normalized.includes('uber') ||
-    normalized.includes('taxi') ||
-    normalized.includes('ride')
-  ) {
-    return { icon: Car, variant: 'accent' as const };
-  }
-  if (
-    normalized.includes('health') ||
-    normalized.includes('pharmacy') ||
-    normalized.includes('medical')
-  ) {
-    return { icon: Pill, variant: 'primary' as const };
-  }
-  if (normalized.includes('dining') || normalized.includes('restaurant')) {
-    return { icon: UtensilsCrossed, variant: 'warning' as const };
-  }
-  if (
-    normalized.includes('housing') ||
-    normalized.includes('rent') ||
-    normalized.includes('mortgage')
-  ) {
-    return { icon: House, variant: 'primary' as const };
-  }
-  if (normalized.includes('freelance') || normalized.includes('contract')) {
-    return { icon: Briefcase, variant: 'info' as const };
-  }
-
-  return { icon: Wallet, variant: type === 'expense' ? ('error' as const) : ('success' as const) };
-};
-
 const categoryMeta = getCategoryMeta(transaction.category.name, transaction.type);
 const CategoryIcon = categoryMeta.icon;
 
+// TransactionRow is optimized for desktop. Use TransactionCard for mobile.
 const rowClasses = [
-  'group flex items-center gap-5 p-5',
+  'group flex items-center gap-3 sm:gap-5 p-3 sm:p-5',
   'transition-all cursor-pointer',
   'border-l-4 border-transparent',
   isExpense ? 'hover:border-error/30' : 'hover:border-success/30',
@@ -143,8 +53,8 @@ const rowClasses = [
 ---
 
 <div class={rowClasses} data-transaction-row data-transaction-id={transaction.id}>
-  <!-- Date -->
-  <div class="flex-shrink-0 w-24 text-sm">
+  <!-- Date (hidden on mobile, visible on sm+) -->
+  <div class="hidden sm:block flex-shrink-0 w-20 lg:w-24 text-sm">
     <div class="font-medium">{formattedDate}</div>
   </div>
 
@@ -180,14 +90,14 @@ const rowClasses = [
   </div>
 
   <!-- Amount -->
-  <div class="flex-shrink-0 text-right min-w-[120px]">
+  <div class="flex-shrink-0 text-right">
     <Currency
       amount={amount}
       currency={transaction.currency}
       showSign={true}
       variant={isExpense ? 'negative' : 'positive'}
       size="md"
-      className="font-bold tracking-tight"
+      className="font-bold tracking-tight text-sm sm:text-base"
     />
   </div>
 
@@ -198,7 +108,7 @@ const rowClasses = [
         <button
           type="button"
           class="btn btn-ghost btn-sm"
-          aria-label="Edit transaction"
+          aria-label={`Edit transaction: ${primaryText}`}
           data-edit-transaction={transaction.id}
           data-transaction-data={JSON.stringify({
             id: transaction.id,
@@ -216,7 +126,7 @@ const rowClasses = [
         <button
           type="button"
           class="btn btn-ghost btn-sm text-error"
-          aria-label="Delete transaction"
+          aria-label={`Delete transaction: ${primaryText}`}
           data-delete-transaction={transaction.id}
           data-transaction-details={JSON.stringify(transaction)}
         >

@@ -131,7 +131,7 @@ const spendingCategories = [
 ---
 
 <ProtectedLayout title="Dashboard - Finance Manager" currentPath={currentPath}>
-  <div class="max-w-7xl mx-auto px-6 lg:px-10 py-8 space-y-8">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 py-6 sm:py-8 space-y-6 sm:space-y-8">
     <!-- Error State -->
     {
       error && (
@@ -150,7 +150,7 @@ const spendingCategories = [
           <QuickActions />
 
           {/* Spending Summary Card & Spending Analysis Chart (side by side) */}
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
             <SpendingCard
               spent={parseFloat(dashboardData?.monthlySpent.total ?? '0')}
               budget={parseFloat(dashboardData?.monthlySpent.budget ?? '0')}
@@ -173,7 +173,7 @@ const spendingCategories = [
           </div>
 
           {/* Recent Transactions & Net Worth Widget (side by side) */}
-          <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
+          <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 sm:gap-8">
             <div class="xl:col-span-2">
               <RecentTransactionsList
                 transactions={recentTransactions}
@@ -182,7 +182,7 @@ const spendingCategories = [
               />
             </div>
 
-            <div class="space-y-8">
+            <div class="space-y-6 sm:space-y-8">
               <NetWorthWidget
                 totalIDR={parseFloat(dashboardData?.totalAssets.idr ?? '0')}
                 totalUSD={parseFloat(dashboardData?.totalAssets.usd ?? '0')}

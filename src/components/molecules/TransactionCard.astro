@@ -1,0 +1,208 @@
+---
+/**
+ * Transaction Card Component (Mobile-optimized)
+ *
+ * Mobile-friendly transaction display with vertical stack layout.
+ * Designed for 375px viewport with proper touch targets.
+ *
+ * @param {Object} transaction - Transaction data
+ * @param {boolean} showActions - Show edit/delete actions
+ * @param {string} className - Additional CSS classes
+ */
+
+import Currency from '../atoms/Currency.astro';
+import IconBadge from '../atoms/IconBadge.astro';
+import { CreditCard, Ellipsis, Pencil, Trash2 } from '@lucide/astro';
+import type { TransactionOutput } from '@/lib/types/transaction';
+import { getCategoryMeta } from '@/lib/utils/categoryMeta';
+
+export interface Props {
+  transaction: TransactionOutput;
+  showActions?: boolean;
+  className?: string;
+}
+
+const { transaction, showActions = true, className = '' } = Astro.props;
+
+const amount = parseFloat(transaction.amount) || 0;
+const isExpense = transaction.type === 'expense';
+const date = new Date(transaction.transaction_date);
+
+// Format date with relative context
+const formatDate = (d: Date): string => {
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const startOfDate = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const diffDays = Math.round((startOfToday.getTime() - startOfDate.getTime()) / 86400000);
+
+  if (diffDays === 0) return 'Today';
+  if (diffDays === 1) return 'Yesterday';
+
+  // Include year if different from current year
+  if (d.getFullYear() !== now.getFullYear()) {
+    return d.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  }
+
+  return d.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+  });
+};
+
+const formattedDate = formatDate(date);
+const primaryText = transaction.description?.trim() || transaction.category.name;
+
+const categoryMeta = getCategoryMeta(transaction.category.name, transaction.type);
+const CategoryIcon = categoryMeta.icon;
+
+const cardClasses = [
+  'group p-4 transition-all',
+  'border-l-4 border-transparent',
+  isExpense ? 'active:border-error/30' : 'active:border-success/30',
+  'active:bg-base-200/40',
+  className,
+]
+  .filter(Boolean)
+  .join(' ');
+---
+
+<article
+  class={cardClasses}
+  data-transaction-card
+  data-transaction-id={transaction.id}
+  aria-label={`${transaction.type === 'income' ? 'Income' : 'Expense'}: ${primaryText}, ${isExpense ? '-' : '+'}${amount} ${transaction.currency}`}
+>
+  <!-- Top row: Icon + Description + Actions -->
+  <div class="flex items-start gap-3">
+    <IconBadge variant={categoryMeta.variant} size="sm" className="rounded-xl shrink-0">
+      <CategoryIcon size={18} class="stroke-current" aria-hidden="true" />
+    </IconBadge>
+
+    <div class="flex-1 min-w-0">
+      <div class="font-bold text-base tracking-tight truncate leading-tight">
+        {primaryText}
+      </div>
+      <div class="mt-1 flex items-center gap-2 text-xs text-base-content/60">
+        <span
+          class="font-bold tracking-widest uppercase text-[10px] bg-base-200 px-1.5 py-0.5 rounded"
+        >
+          {transaction.category.name}
+        </span>
+        <span class="text-base-content/40">·</span>
+        <time datetime={date.toISOString()} class="font-medium">
+          {formattedDate}
+        </time>
+      </div>
+    </div>
+
+    {
+      showActions && (
+        <div class="dropdown dropdown-end">
+          <button
+            type="button"
+            tabindex={0}
+            class="btn btn-ghost btn-sm btn-square min-h-[44px] min-w-[44px]"
+            aria-label="Transaction actions"
+            aria-haspopup="menu"
+          >
+            <Ellipsis size={18} class="stroke-current" aria-hidden="true" />
+          </button>
+          <ul
+            tabindex={0}
+            class="dropdown-content z-50 menu p-2 shadow-lg bg-base-100 rounded-xl w-40 border border-base-300"
+            role="menu"
+          >
+            <li role="none">
+              <button
+                type="button"
+                role="menuitem"
+                class="flex items-center gap-2"
+                aria-label={`Edit transaction: ${primaryText}`}
+                data-edit-transaction={transaction.id}
+                data-transaction-data={JSON.stringify({
+                  id: transaction.id,
+                  type: transaction.type,
+                  title: transaction.description,
+                  amount: transaction.amount,
+                  currency: transaction.currency,
+                  category_id: transaction.category.id,
+                  payment_method_id: transaction.payment_method.id,
+                  transaction_date: date.toISOString().split('T')[0],
+                })}
+              >
+                <Pencil size={16} class="stroke-current" aria-hidden="true" />
+                Edit
+              </button>
+            </li>
+            <li role="none">
+              <button
+                type="button"
+                role="menuitem"
+                class="flex items-center gap-2 text-error"
+                aria-label={`Delete transaction: ${primaryText}`}
+                data-delete-transaction={transaction.id}
+                data-transaction-details={JSON.stringify(transaction)}
+              >
+                <Trash2 size={16} class="stroke-current" aria-hidden="true" />
+                Delete
+              </button>
+            </li>
+          </ul>
+        </div>
+      )
+    }
+  </div>
+
+  <!-- Bottom row: Payment method + Amount -->
+  <div class="mt-3 flex items-center justify-between">
+    <div
+      class="flex items-center gap-1.5 text-[10px] uppercase tracking-widest text-base-content/50"
+    >
+      <CreditCard size={12} class="stroke-current" aria-hidden="true" />
+      <span>{transaction.payment_method.name}</span>
+    </div>
+
+    <Currency
+      amount={amount}
+      currency={transaction.currency}
+      showSign={true}
+      variant={isExpense ? 'negative' : 'positive'}
+      size="md"
+      className="font-bold tracking-tight"
+    />
+  </div>
+</article>
+
+<script>
+  // Keyboard navigation for dropdown menus
+  document.querySelectorAll('[data-transaction-card] .dropdown').forEach((dropdown) => {
+    const menu = dropdown.querySelector('[role="menu"]');
+    if (!menu) return;
+
+    const items = menu.querySelectorAll('[role="menuitem"]');
+
+    menu.addEventListener('keydown', (e: Event) => {
+      const event = e as KeyboardEvent;
+      const currentIndex = Array.from(items).indexOf(document.activeElement as Element);
+
+      if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        const nextIndex = currentIndex < items.length - 1 ? currentIndex + 1 : 0;
+        (items[nextIndex] as HTMLElement).focus();
+      } else if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        const prevIndex = currentIndex > 0 ? currentIndex - 1 : items.length - 1;
+        (items[prevIndex] as HTMLElement).focus();
+      } else if (event.key === 'Escape') {
+        event.preventDefault();
+        const trigger = dropdown.querySelector('button[aria-haspopup]') as HTMLElement;
+        trigger?.focus();
+        (document.activeElement as HTMLElement)?.blur();
+      }
+    });
+  });
+</script>

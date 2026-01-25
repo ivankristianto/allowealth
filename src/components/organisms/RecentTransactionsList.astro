@@ -15,19 +15,10 @@ import Card from '../atoms/Card.astro';
 import EmptyState from '../atoms/EmptyState.astro';
 import Currency from '../atoms/Currency.astro';
 import IconBadge from '../atoms/IconBadge.astro';
-import {
-  Banknote,
-  Briefcase,
-  Car,
-  CreditCard,
-  Film,
-  House,
-  ShoppingBasket,
-  UtensilsCrossed,
-  Wallet,
-  Zap,
-} from '@lucide/astro';
+import TransactionCard from '../molecules/TransactionCard.astro';
+import { CreditCard } from '@lucide/astro';
 import type { TransactionOutput } from '@/lib/types/transaction';
+import { getCategoryMeta } from '@/lib/utils/categoryMeta';
 
 export interface Props {
   transactions?: TransactionOutput[];
@@ -69,76 +60,6 @@ const formatActivityDate = (date: Date): string => {
     day: 'numeric',
     year: 'numeric',
   });
-};
-
-type CategoryIconComponent =
-  | typeof ShoppingBasket
-  | typeof Zap
-  | typeof Film
-  | typeof Car
-  | typeof House
-  | typeof UtensilsCrossed
-  | typeof Banknote
-  | typeof Briefcase
-  | typeof Wallet;
-
-type CategoryMeta = {
-  icon: CategoryIconComponent;
-  variant: 'primary' | 'accent' | 'success' | 'warning' | 'error' | 'info' | 'neutral';
-};
-
-const getCategoryMeta = (name: string, type: TransactionOutput['type']): CategoryMeta => {
-  const normalized = name.toLowerCase();
-
-  if (type === 'income') {
-    return { icon: Banknote, variant: 'success' as const };
-  }
-
-  if (
-    normalized.includes('grocery') ||
-    normalized.includes('market') ||
-    normalized.includes('food')
-  ) {
-    return { icon: ShoppingBasket, variant: 'warning' as const };
-  }
-  if (
-    normalized.includes('utility') ||
-    normalized.includes('electric') ||
-    normalized.includes('water') ||
-    normalized.includes('gas')
-  ) {
-    return { icon: Zap, variant: 'info' as const };
-  }
-  if (
-    normalized.includes('entertainment') ||
-    normalized.includes('movie') ||
-    normalized.includes('netflix')
-  ) {
-    return { icon: Film, variant: 'error' as const };
-  }
-  if (
-    normalized.includes('transport') ||
-    normalized.includes('uber') ||
-    normalized.includes('taxi') ||
-    normalized.includes('ride')
-  ) {
-    return { icon: Car, variant: 'accent' as const };
-  }
-  if (normalized.includes('dining') || normalized.includes('restaurant')) {
-    return { icon: UtensilsCrossed, variant: 'warning' as const };
-  }
-  if (
-    normalized.includes('housing') ||
-    normalized.includes('rent') ||
-    normalized.includes('mortgage')
-  ) {
-    return { icon: House, variant: 'primary' as const };
-  }
-  if (normalized.includes('freelance') || normalized.includes('contract')) {
-    return { icon: Briefcase, variant: 'info' as const };
-  }
-
-  return { icon: Wallet, variant: type === 'expense' ? ('error' as const) : ('success' as const) };
 };
 ---
 
@@ -193,64 +114,84 @@ const getCategoryMeta = (name: string, type: TransactionOutput['type']): Categor
           variant="compact"
         />
       ) : (
-        // Transactions list
-        <ul class="divide-y divide-base-200" role="list" aria-label="Recent transactions">
-          {displayTransactions.map((transaction) => {
-            const amount = parseFloat(transaction.amount) || 0;
-            const isExpense = transaction.type === 'expense';
-            const date = new Date(transaction.transaction_date);
-            const primaryText = primaryTextForTransaction(transaction);
-            const categoryMeta = getCategoryMeta(transaction.category.name, transaction.type);
-            const CategoryIcon = categoryMeta.icon;
+        // Transactions list - Mobile uses TransactionCard, Desktop uses inline layout
+        <>
+          {/* Mobile view: Stack layout with TransactionCard */}
+          <ul
+            class="lg:hidden divide-y divide-base-200"
+            role="list"
+            aria-label="Recent transactions"
+          >
+            {displayTransactions.map((transaction) => (
+              <li>
+                <TransactionCard transaction={transaction} showActions={false} />
+              </li>
+            ))}
+          </ul>
 
-            return (
-              <li
-                class={`group flex items-center gap-5 p-5 transition-all cursor-pointer border-l-4 border-transparent ${
-                  isExpense ? 'hover:border-error/30' : 'hover:border-success/30'
-                } hover:bg-base-200/40`}
-              >
-                <IconBadge
-                  variant={categoryMeta.variant}
-                  size="sm"
-                  className="rounded-2xl transition-transform group-hover:rotate-2"
+          {/* Desktop view: Inline layout */}
+          <ul
+            class="hidden lg:block divide-y divide-base-200"
+            role="list"
+            aria-label="Recent transactions"
+          >
+            {displayTransactions.map((transaction) => {
+              const amount = parseFloat(transaction.amount) || 0;
+              const isExpense = transaction.type === 'expense';
+              const date = new Date(transaction.transaction_date);
+              const primaryText = primaryTextForTransaction(transaction);
+              const categoryMeta = getCategoryMeta(transaction.category.name, transaction.type);
+              const CategoryIcon = categoryMeta.icon;
+
+              return (
+                <li
+                  class={`group flex items-center gap-5 p-5 transition-all cursor-pointer border-l-4 border-transparent ${
+                    isExpense ? 'hover:border-error/30' : 'hover:border-success/30'
+                  } hover:bg-base-200/40`}
                 >
-                  <CategoryIcon size={18} class="stroke-current" aria-hidden="true" />
-                </IconBadge>
+                  <IconBadge
+                    variant={categoryMeta.variant}
+                    size="sm"
+                    className="rounded-2xl transition-transform group-hover:rotate-2"
+                  >
+                    <CategoryIcon size={18} class="stroke-current" aria-hidden="true" />
+                  </IconBadge>
 
-                <div class="flex-1 min-w-0">
-                  <div class="flex items-start justify-between gap-4">
-                    <div class="min-w-0">
-                      <div class="font-bold tracking-tight truncate text-base leading-none">
-                        {primaryText}
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-start justify-between gap-4">
+                      <div class="min-w-0">
+                        <div class="font-bold tracking-tight truncate text-base leading-none">
+                          {primaryText}
+                        </div>
+                        <div class="mt-2 flex flex-wrap items-center gap-3 text-[11px] font-semibold text-base-content/60 tracking-wide leading-none">
+                          <span class="text-[10px] font-bold tracking-widest uppercase text-base-content/60 bg-base-200 px-2 py-0.5 rounded">
+                            {transaction.category.name}
+                          </span>
+                          <time datetime={date.toISOString()}>{formatActivityDate(date)}</time>
+                        </div>
                       </div>
-                      <div class="mt-2 flex flex-wrap items-center gap-3 text-[11px] font-semibold text-base-content/60 tracking-wide leading-none">
-                        <span class="text-[10px] font-bold tracking-widest uppercase text-base-content/60 bg-base-200 px-2 py-0.5 rounded">
-                          {transaction.category.name}
-                        </span>
-                        <time datetime={date.toISOString()}>{formatActivityDate(date)}</time>
-                      </div>
-                    </div>
 
-                    <div class="flex flex-col items-end gap-1 min-w-[120px]">
-                      <Currency
-                        amount={amount}
-                        currency={transaction.currency}
-                        showSign={true}
-                        variant={isExpense ? 'negative' : 'positive'}
-                        size="md"
-                        className="font-bold tracking-tight"
-                      />
-                      <div class="flex items-center gap-1.5 text-[10px] uppercase tracking-widest text-base-content/60">
-                        <CreditCard size={12} class="stroke-current" aria-hidden="true" />
-                        <span>{transaction.payment_method.name}</span>
+                      <div class="flex flex-col items-end gap-1 shrink-0">
+                        <Currency
+                          amount={amount}
+                          currency={transaction.currency}
+                          showSign={true}
+                          variant={isExpense ? 'negative' : 'positive'}
+                          size="md"
+                          className="font-bold tracking-tight"
+                        />
+                        <div class="flex items-center gap-1.5 text-[10px] uppercase tracking-widest text-base-content/60">
+                          <CreditCard size={12} class="stroke-current" aria-hidden="true" />
+                          <span>{transaction.payment_method.name}</span>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
+                </li>
+              );
+            })}
+          </ul>
+        </>
       )
     }
   </Card>
