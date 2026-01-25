@@ -15,7 +15,6 @@
  * @param {boolean} showFilters - Show filter panel
  */
 
-import TransactionRow from '../molecules/TransactionRow.astro';
 import TransactionCard from '../molecules/TransactionCard.astro';
 import TransactionFilters from '../molecules/TransactionFilters.astro';
 import EmptyState from '../atoms/EmptyState.astro';
@@ -157,26 +156,19 @@ const buildDirectExportUrl = () => {
       {
         transactions.length > 0 ? (
           <>
-            {/* Desktop Header - Hidden on mobile */}
-            <div class="hidden md:flex items-center gap-4 px-6 py-4 bg-base-200/50 text-sm font-medium text-base-content/60">
-              <div class="w-24">Date</div>
+            {/* Header - Hidden on mobile */}
+            <div class="hidden sm:flex items-center gap-4 px-6 py-4 bg-base-200/50 text-sm font-medium text-base-content/60">
+              <div class="w-20 lg:w-24">Date</div>
               <div class="flex-1">Description</div>
-              <div class="hidden sm:block">Payment</div>
+              <div>Payment</div>
               <div class="text-right">Amount</div>
               <div class="w-20" />
             </div>
 
-            {/* Mobile: TransactionCard layout */}
-            <div class="md:hidden divide-y divide-base-200">
+            {/* Transaction list using unified TransactionCard component */}
+            <div class="divide-y divide-base-200">
               {transactions.map((transaction) => (
                 <TransactionCard transaction={transaction} showActions={true} />
-              ))}
-            </div>
-
-            {/* Desktop: TransactionRow layout */}
-            <div class="hidden md:block divide-y divide-base-200">
-              {transactions.map((transaction) => (
-                <TransactionRow transaction={transaction} showActions={true} />
               ))}
             </div>
 

@@ -1,9 +1,10 @@
 ---
 /**
- * Transaction Card Component (Mobile-optimized)
+ * Transaction Card Component
  *
- * Mobile-friendly transaction display with vertical stack layout.
- * Designed for 375px viewport with proper touch targets.
+ * Unified transaction display component used across dashboard and transaction pages.
+ * - Mobile: Stacked layout with dropdown menu for actions
+ * - Desktop: Horizontal layout with inline edit/delete buttons
  *
  * @param {Object} transaction - Transaction data (optional when loading)
  * @param {boolean} showActions - Show edit/delete actions
@@ -64,11 +65,28 @@ const categoryMeta = transaction
   : { icon: CreditCard, variant: 'neutral' as const };
 const CategoryIcon = categoryMeta.icon;
 
+// Prepare transaction data for edit action (reused in both layouts)
+const transactionDataJson = transaction
+  ? JSON.stringify({
+      id: transaction.id,
+      type: transaction.type,
+      title: transaction.description,
+      amount: transaction.amount,
+      currency: transaction.currency,
+      category_id: transaction.category.id,
+      payment_method_id: transaction.payment_method.id,
+      transaction_date: date.toISOString().split('T')[0],
+    })
+  : '';
+
+const transactionDetailsJson = transaction ? JSON.stringify(transaction) : '';
+
 const cardClasses = [
-  'group p-4 transition-all',
+  'group p-3 sm:p-4 transition-all',
   'border-l-4 border-transparent',
-  !loading && (isExpense ? 'active:border-error/30' : 'active:border-success/30'),
-  !loading && 'active:bg-base-200/40',
+  !loading && isExpense && 'hover:border-error/30 active:border-error/30',
+  !loading && !isExpense && 'hover:border-success/30 active:border-success/30',
+  !loading && 'hover:bg-base-200/40 active:bg-base-200/40',
   loading && 'animate-pulse',
   className,
 ]
@@ -103,101 +121,170 @@ const cardClasses = [
       data-transaction-id={transaction?.id}
       aria-label={`${transaction?.type === 'income' ? 'Income' : 'Expense'}: ${primaryText}, ${isExpense ? '-' : '+'}${amount} ${transaction?.currency}`}
     >
-      <div class="flex items-start gap-3">
-        <IconBadge variant={categoryMeta.variant} size="sm" className="rounded-xl shrink-0">
-          <CategoryIcon size={18} class="stroke-current" aria-hidden="true" />
-        </IconBadge>
+      {/* Mobile Layout (stacked with dropdown) - shown below sm breakpoint */}
+      <div class="sm:hidden">
+        <div class="flex items-start gap-3">
+          <IconBadge variant={categoryMeta.variant} size="sm" className="rounded-xl shrink-0">
+            <CategoryIcon size={18} class="stroke-current" aria-hidden="true" />
+          </IconBadge>
 
-        <div class="flex-1 min-w-0">
-          <div class="font-bold text-base tracking-tight truncate leading-tight">{primaryText}</div>
-          <div class="mt-1 flex items-center gap-2 text-xs text-base-content/60">
-            <span class="font-bold tracking-widest uppercase text-[10px] bg-base-200 px-1.5 py-0.5 rounded">
-              {transaction?.category?.name}
-            </span>
-            <span class="text-base-content/40">·</span>
-            <time datetime={date.toISOString()} class="font-medium">
-              {formattedDate}
-            </time>
+          <div class="flex-1 min-w-0">
+            <div class="font-bold text-base tracking-tight truncate leading-tight">
+              {primaryText}
+            </div>
+            <div class="mt-1 flex items-center gap-2 text-xs text-base-content/60">
+              <span class="font-bold tracking-widest uppercase text-[10px] bg-base-200 px-1.5 py-0.5 rounded">
+                {transaction?.category?.name}
+              </span>
+              <span class="text-base-content/40">·</span>
+              <time datetime={date.toISOString()} class="font-medium">
+                {formattedDate}
+              </time>
+            </div>
           </div>
+
+          {showActions && transaction && (
+            <div class="dropdown dropdown-end">
+              <button
+                type="button"
+                tabindex={0}
+                class="btn btn-ghost btn-sm btn-square min-h-[44px] min-w-[44px]"
+                aria-label="Transaction actions"
+                aria-haspopup="menu"
+              >
+                <Ellipsis size={18} class="stroke-current" aria-hidden="true" />
+              </button>
+              <ul
+                tabindex={0}
+                class="dropdown-content z-50 menu p-2 shadow-lg bg-base-100 rounded-xl w-40 border border-base-300"
+                role="menu"
+              >
+                <li role="none">
+                  <button
+                    type="button"
+                    role="menuitem"
+                    class="flex items-center gap-2"
+                    aria-label={`Edit transaction: ${primaryText}`}
+                    data-edit-transaction={transaction.id}
+                    data-transaction-data={transactionDataJson}
+                  >
+                    <Pencil size={16} class="stroke-current" aria-hidden="true" />
+                    Edit
+                  </button>
+                </li>
+                <li role="none">
+                  <button
+                    type="button"
+                    role="menuitem"
+                    class="flex items-center gap-2 text-error"
+                    aria-label={`Delete transaction: ${primaryText}`}
+                    data-delete-transaction={transaction.id}
+                    data-transaction-details={transactionDetailsJson}
+                  >
+                    <Trash2 size={16} class="stroke-current" aria-hidden="true" />
+                    Delete
+                  </button>
+                </li>
+              </ul>
+            </div>
+          )}
         </div>
 
-        {showActions && transaction && (
-          <div class="dropdown dropdown-end">
-            <button
-              type="button"
-              tabindex={0}
-              class="btn btn-ghost btn-sm btn-square min-h-[44px] min-w-[44px]"
-              aria-label="Transaction actions"
-              aria-haspopup="menu"
-            >
-              <Ellipsis size={18} class="stroke-current" aria-hidden="true" />
-            </button>
-            <ul
-              tabindex={0}
-              class="dropdown-content z-50 menu p-2 shadow-lg bg-base-100 rounded-xl w-40 border border-base-300"
-              role="menu"
-            >
-              <li role="none">
-                <button
-                  type="button"
-                  role="menuitem"
-                  class="flex items-center gap-2"
-                  aria-label={`Edit transaction: ${primaryText}`}
-                  data-edit-transaction={transaction.id}
-                  data-transaction-data={JSON.stringify({
-                    id: transaction.id,
-                    type: transaction.type,
-                    title: transaction.description,
-                    amount: transaction.amount,
-                    currency: transaction.currency,
-                    category_id: transaction.category.id,
-                    payment_method_id: transaction.payment_method.id,
-                    transaction_date: date.toISOString().split('T')[0],
-                  })}
-                >
-                  <Pencil size={16} class="stroke-current" aria-hidden="true" />
-                  Edit
-                </button>
-              </li>
-              <li role="none">
-                <button
-                  type="button"
-                  role="menuitem"
-                  class="flex items-center gap-2 text-error"
-                  aria-label={`Delete transaction: ${primaryText}`}
-                  data-delete-transaction={transaction.id}
-                  data-transaction-details={JSON.stringify(transaction)}
-                >
-                  <Trash2 size={16} class="stroke-current" aria-hidden="true" />
-                  Delete
-                </button>
-              </li>
-            </ul>
+        <div class="mt-2.5 flex items-center justify-between pl-[52px]">
+          <div class="flex items-center gap-1.5 text-[10px] uppercase tracking-widest text-base-content/50">
+            <CreditCard size={12} class="stroke-current" aria-hidden="true" />
+            <span>{transaction?.payment_method?.name}</span>
           </div>
-        )}
+
+          <Currency
+            amount={amount}
+            currency={transaction?.currency || 'IDR'}
+            showSign={true}
+            variant={isExpense ? 'negative' : 'positive'}
+            size="md"
+            className="font-bold tracking-tight"
+          />
+        </div>
       </div>
 
-      <div class="mt-3 flex items-center justify-between">
-        <div class="flex items-center gap-1.5 text-[10px] uppercase tracking-widest text-base-content/50">
-          <CreditCard size={12} class="stroke-current" aria-hidden="true" />
-          <span>{transaction?.payment_method?.name}</span>
+      {/* Desktop Layout (horizontal with inline buttons) - shown at sm and above */}
+      <div class="hidden sm:flex items-center gap-4 lg:gap-5">
+        {/* Date */}
+        <div class="flex-shrink-0 w-20 lg:w-24 text-sm">
+          <div class="font-medium">{formattedDate}</div>
         </div>
 
-        <Currency
-          amount={amount}
-          currency={transaction?.currency || 'IDR'}
-          showSign={true}
-          variant={isExpense ? 'negative' : 'positive'}
-          size="md"
-          className="font-bold tracking-tight"
-        />
+        {/* Category & Description */}
+        <div class="flex-1 min-w-0 flex items-center gap-4">
+          <IconBadge
+            variant={categoryMeta.variant}
+            size="sm"
+            className="rounded-2xl transition-transform group-hover:rotate-2"
+          >
+            <CategoryIcon size={18} class="stroke-current" aria-hidden="true" />
+          </IconBadge>
+          <div class="min-w-0">
+            <div class="font-bold tracking-tight truncate text-base leading-none">
+              {primaryText}
+            </div>
+            <div class="mt-2 flex flex-wrap items-center gap-2 leading-none">
+              <span class="text-[10px] font-bold tracking-widest uppercase text-base-content/60 bg-base-200 px-2 py-0.5 rounded">
+                {transaction?.category?.name}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Payment Method */}
+        <div class="flex-shrink-0">
+          <div class="flex items-center gap-1.5 text-[10px] uppercase tracking-widest text-base-content/60">
+            <CreditCard size={12} class="stroke-current" aria-hidden="true" />
+            <span>{transaction?.payment_method?.name}</span>
+          </div>
+        </div>
+
+        {/* Amount */}
+        <div class="flex-shrink-0 text-right">
+          <Currency
+            amount={amount}
+            currency={transaction?.currency || 'IDR'}
+            showSign={true}
+            variant={isExpense ? 'negative' : 'positive'}
+            size="md"
+            className="font-bold tracking-tight"
+          />
+        </div>
+
+        {/* Actions (inline buttons on desktop) */}
+        {showActions && transaction && (
+          <div class="flex-shrink-0 flex gap-1">
+            <button
+              type="button"
+              class="btn btn-ghost btn-sm"
+              aria-label={`Edit transaction: ${primaryText}`}
+              data-edit-transaction={transaction.id}
+              data-transaction-data={transactionDataJson}
+            >
+              <Pencil size={16} class="stroke-current" aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              class="btn btn-ghost btn-sm text-error"
+              aria-label={`Delete transaction: ${primaryText}`}
+              data-delete-transaction={transaction.id}
+              data-transaction-details={transactionDetailsJson}
+            >
+              <Trash2 size={16} class="stroke-current" aria-hidden="true" />
+            </button>
+          </div>
+        )}
       </div>
     </article>
   )
 }
 
 <script>
-  // Keyboard navigation for dropdown menus
+  // Keyboard navigation for dropdown menus (mobile only)
   document.querySelectorAll('[data-transaction-card] .dropdown').forEach((dropdown) => {
     const menu = dropdown.querySelector('[role="menu"]');
     if (!menu) return;

@@ -13,12 +13,8 @@
 
 import Card from '../atoms/Card.astro';
 import EmptyState from '../atoms/EmptyState.astro';
-import Currency from '../atoms/Currency.astro';
-import IconBadge from '../atoms/IconBadge.astro';
 import TransactionCard from '../molecules/TransactionCard.astro';
-import { CreditCard } from '@lucide/astro';
 import type { TransactionOutput } from '@/lib/types/transaction';
-import { getCategoryMeta } from '@/lib/utils/categoryMeta';
 
 export interface Props {
   transactions?: TransactionOutput[];
@@ -36,31 +32,6 @@ const {
 
 const maxTransactions = 6;
 const displayTransactions = transactions.slice(0, maxTransactions);
-
-const primaryTextForTransaction = (transaction: TransactionOutput) =>
-  transaction.description?.trim() || transaction.category.name;
-
-// Format date for display with recent context
-const formatActivityDate = (date: Date): string => {
-  const now = new Date();
-  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const startOfDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-  const diffDays = Math.round((startOfToday.getTime() - startOfDate.getTime()) / 86400000);
-  const time = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-
-  if (diffDays === 0) {
-    return `Today, ${time}`;
-  }
-  if (diffDays === 1) {
-    return `Yesterday, ${time}`;
-  }
-
-  return date.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
-};
 ---
 
 <div class={`space-y-5 ${className}`} data-recent-transactions-list>
@@ -114,84 +85,14 @@ const formatActivityDate = (date: Date): string => {
           variant="compact"
         />
       ) : (
-        // Transactions list - Mobile uses TransactionCard, Desktop uses inline layout
-        <>
-          {/* Mobile view: Stack layout with TransactionCard */}
-          <ul
-            class="md:hidden divide-y divide-base-200"
-            role="list"
-            aria-label="Recent transactions"
-          >
-            {displayTransactions.map((transaction) => (
-              <li>
-                <TransactionCard transaction={transaction} showActions={false} />
-              </li>
-            ))}
-          </ul>
-
-          {/* Desktop view: Inline layout */}
-          <ul
-            class="hidden md:block divide-y divide-base-200"
-            role="list"
-            aria-label="Recent transactions"
-          >
-            {displayTransactions.map((transaction) => {
-              const amount = parseFloat(transaction.amount) || 0;
-              const isExpense = transaction.type === 'expense';
-              const date = new Date(transaction.transaction_date);
-              const primaryText = primaryTextForTransaction(transaction);
-              const categoryMeta = getCategoryMeta(transaction.category.name, transaction.type);
-              const CategoryIcon = categoryMeta.icon;
-
-              return (
-                <li
-                  class={`group flex items-center gap-5 p-5 transition-all cursor-pointer border-l-4 border-transparent ${
-                    isExpense ? 'hover:border-error/30' : 'hover:border-success/30'
-                  } hover:bg-base-200/40`}
-                >
-                  <IconBadge
-                    variant={categoryMeta.variant}
-                    size="sm"
-                    className="rounded-2xl transition-transform group-hover:rotate-2"
-                  >
-                    <CategoryIcon size={18} class="stroke-current" aria-hidden="true" />
-                  </IconBadge>
-
-                  <div class="flex-1 min-w-0">
-                    <div class="flex items-start justify-between gap-4">
-                      <div class="min-w-0">
-                        <div class="font-bold tracking-tight truncate text-base leading-none">
-                          {primaryText}
-                        </div>
-                        <div class="mt-2 flex flex-wrap items-center gap-3 text-[11px] font-semibold text-base-content/60 tracking-wide leading-none">
-                          <span class="text-[10px] font-bold tracking-widest uppercase text-base-content/60 bg-base-200 px-2 py-0.5 rounded">
-                            {transaction.category.name}
-                          </span>
-                          <time datetime={date.toISOString()}>{formatActivityDate(date)}</time>
-                        </div>
-                      </div>
-
-                      <div class="flex flex-col items-end gap-1 shrink-0">
-                        <Currency
-                          amount={amount}
-                          currency={transaction.currency}
-                          showSign={true}
-                          variant={isExpense ? 'negative' : 'positive'}
-                          size="md"
-                          className="font-bold tracking-tight"
-                        />
-                        <div class="flex items-center gap-1.5 text-[10px] uppercase tracking-widest text-base-content/60">
-                          <CreditCard size={12} class="stroke-current" aria-hidden="true" />
-                          <span>{transaction.payment_method.name}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        </>
+        // Transactions list using unified TransactionCard component
+        <ul class="divide-y divide-base-200" role="list" aria-label="Recent transactions">
+          {displayTransactions.map((transaction) => (
+            <li>
+              <TransactionCard transaction={transaction} showActions={false} />
+            </li>
+          ))}
+        </ul>
       )
     }
   </Card>
