@@ -68,7 +68,7 @@ const isActive = (href: string) => {
 ---
 
 <aside
-  class="bg-base-100 w-64 min-w-64 h-screen border-r border-base-300 flex flex-col transition-none group-data-[sidebar-ready=true]:transition-all group-data-[sidebar-ready=true]:duration-300 lg:group-data-[sidebar-collapsed=true]:w-20 lg:group-data-[sidebar-collapsed=true]:min-w-20 relative pb-24 lg:pb-0"
+  class="bg-base-100 w-64 min-w-64 h-full border-r border-base-300 flex flex-col transition-[width,min-width] duration-300 ease-out lg:group-data-[sidebar-collapsed=true]:w-20 lg:group-data-[sidebar-collapsed=true]:min-w-20 relative"
   role="navigation"
   aria-label="Main navigation"
 >
@@ -213,13 +213,6 @@ const isActive = (href: string) => {
     }
 
     applyCollapsedState();
-    if (root.getAttribute('data-sidebar-ready') !== 'true') {
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          root.setAttribute('data-sidebar-ready', 'true');
-        });
-      });
-    }
 
     toggles.forEach((toggle) => {
       if (!(toggle instanceof HTMLElement)) return;
