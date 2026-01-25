@@ -285,22 +285,12 @@ const cardClasses = [
 }
 
 <script>
-  // Keyboard navigation and focus management for dropdown menus (mobile only)
+  // Keyboard navigation for dropdown menus (mobile only)
   document.querySelectorAll('[data-transaction-card] .dropdown').forEach((dropdown) => {
-    const trigger = dropdown.querySelector('button[aria-haspopup]') as HTMLElement;
     const menu = dropdown.querySelector('[role="menu"]');
-    if (!menu || !trigger) return;
+    if (!menu) return;
 
     const items = menu.querySelectorAll('[role="menuitem"]');
-
-    // Focus first menu item when dropdown opens via click/keyboard
-    trigger.addEventListener('click', () => {
-      // Small delay to ensure dropdown is visible
-      setTimeout(() => {
-        const firstItem = items[0] as HTMLElement;
-        firstItem?.focus();
-      }, 10);
-    });
 
     menu.addEventListener('keydown', (e: Event) => {
       const event = e as KeyboardEvent;
@@ -316,7 +306,8 @@ const cardClasses = [
         (items[prevIndex] as HTMLElement).focus();
       } else if (event.key === 'Escape') {
         event.preventDefault();
-        trigger.focus();
+        const trigger = dropdown.querySelector('button[aria-haspopup]') as HTMLElement;
+        trigger?.focus();
         (document.activeElement as HTMLElement)?.blur();
       }
     });
