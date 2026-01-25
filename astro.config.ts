@@ -2,14 +2,20 @@ import { defineConfig } from 'astro/config';
 import node from '@astrojs/node';
 import tailwindcss from '@tailwindcss/vite';
 import { fileURLToPath } from 'node:url';
+import { loadEnv } from 'vite';
+
+// Load .env before config is parsed (Vite normally loads it too late)
+const { PORT, DEV_HOST } = loadEnv(process.env.NODE_ENV || 'development', process.cwd(), '');
 
 // DEV_HOST: Set custom hostname (e.g., "k2-expenses.local")
 // Falls back to listening on all interfaces if not set
-const devHost = process.env.DEV_HOST || true;
+const devHost = DEV_HOST || true;
+const port = parseInt(PORT || '4321', 10);
 
 export default defineConfig({
   server: {
     host: devHost,
+    port: port,
   },
   output: 'server',
   adapter: node({
