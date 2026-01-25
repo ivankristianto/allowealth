@@ -3,6 +3,10 @@
  *
  * Client-side API functions for fetching and managing transactions.
  * Includes AbortController support for request cancellation.
+ *
+ * Supports two response formats:
+ * - JSON (default): Returns structured data for client-side rendering
+ * - HTML (_render=html): Returns server-rendered HTML fragments (HTMX-style)
  */
 
 import type { TransactionOutput } from '@/lib/types/transaction';
@@ -24,9 +28,31 @@ export interface FetchTransactionsResponse {
   };
 }
 
+/** HTML response from _render=html requests */
+export interface FetchTransactionsHtmlResponse {
+  /** Raw HTML string containing rendered partials */
+  html: string;
+  /** Parsed partial sections (keyed by partial name) */
+  partials: {
+    summary?: string;
+    list?: string;
+    pagination?: string;
+  };
+}
+
 export interface ApiError {
   message: string;
   code?: string;
+}
+
+/** Options for fetch requests */
+export interface FetchOptions {
+  /** Response format: 'json' (default) or 'html' */
+  render?: 'json' | 'html';
+  /** Which partial(s) to render when using HTML: 'list', 'summary', 'pagination', or 'all' */
+  partial?: 'list' | 'summary' | 'pagination' | 'all';
+  /** Currency for HTML rendering */
+  currency?: 'IDR' | 'USD';
 }
 
 // Track active request for cancellation
@@ -45,7 +71,11 @@ export function cancelPendingRequest(): void {
 /**
  * Build query string from filters
  */
-function buildQueryString(filters: Partial<TransactionFilters>, pageSize: number): string {
+function buildQueryString(
+  filters: Partial<TransactionFilters>,
+  pageSize: number,
+  options: FetchOptions = {}
+): string {
   const params = new URLSearchParams();
 
   if (filters.type) {
@@ -98,11 +128,40 @@ function buildQueryString(filters: Partial<TransactionFilters>, pageSize: number
   params.set('limit', String(pageSize));
   params.set('offset', String(offset));
 
+  // HTML rendering options
+  if (options.render === 'html') {
+    params.set('_render', 'html');
+    if (options.partial) {
+      params.set('_partial', options.partial);
+    }
+    if (options.currency) {
+      params.set('_currency', options.currency);
+    }
+  }
+
   return params.toString();
 }
 
 /**
- * Fetch transactions from API with current filters
+ * Parse HTML response into partial sections
+ */
+function parseHtmlPartials(html: string): FetchTransactionsHtmlResponse['partials'] {
+  const partials: FetchTransactionsHtmlResponse['partials'] = {};
+
+  // Split by partial markers
+  const summaryMatch = html.match(/<!-- PARTIAL:summary -->\n([\s\S]*?)(?=<!-- PARTIAL:|$)/);
+  const listMatch = html.match(/<!-- PARTIAL:list -->\n([\s\S]*?)(?=<!-- PARTIAL:|$)/);
+  const paginationMatch = html.match(/<!-- PARTIAL:pagination -->\n([\s\S]*?)(?=<!-- PARTIAL:|$)/);
+
+  if (summaryMatch) partials.summary = summaryMatch[1].trim();
+  if (listMatch) partials.list = listMatch[1].trim();
+  if (paginationMatch) partials.pagination = paginationMatch[1].trim();
+
+  return partials;
+}
+
+/**
+ * Fetch transactions from API with current filters (JSON response)
  */
 export async function fetchTransactions(
   filters: Partial<TransactionFilters>,
@@ -150,6 +209,71 @@ export async function fetchTransactions(
       return {
         transactions: [],
         pagination: { total: 0, limit: pageSize, offset: 0 },
+      };
+    }
+
+    activeController = null;
+    throw error;
+  }
+}
+
+/**
+ * Fetch transactions as HTML fragments (HTMX-style)
+ *
+ * Returns server-rendered HTML that can be directly injected into the DOM.
+ * This eliminates the need for client-side DOM construction.
+ *
+ * @param filters - Transaction filters
+ * @param options - Fetch options including partial selection and currency
+ * @param pageSize - Number of items per page
+ */
+export async function fetchTransactionsHtml(
+  filters: Partial<TransactionFilters>,
+  options: Omit<FetchOptions, 'render'> = {},
+  pageSize = 50
+): Promise<FetchTransactionsHtmlResponse> {
+  // Cancel any pending request
+  cancelPendingRequest();
+
+  // Create new controller for this request
+  activeController = new AbortController();
+
+  const queryString = buildQueryString(filters, pageSize, {
+    render: 'html',
+    partial: options.partial || 'all',
+    currency: options.currency,
+  });
+  const url = `/api/transactions?${queryString}`;
+
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        Accept: 'text/html',
+      },
+      signal: activeController.signal,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => 'Unknown error');
+      throw new Error(errorText || `HTTP error ${response.status}`);
+    }
+
+    const html = await response.text();
+
+    // Clear the controller reference on success
+    activeController = null;
+
+    return {
+      html,
+      partials: parseHtmlPartials(html),
+    };
+  } catch (error) {
+    // Don't throw on abort - it's expected behavior
+    if (error instanceof Error && error.name === 'AbortError') {
+      return {
+        html: '',
+        partials: {},
       };
     }
 

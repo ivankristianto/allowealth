@@ -1,0 +1,114 @@
+---
+/**
+ * Transaction Summary Partial
+ *
+ * Renders summary cards (Income, Expenses, Net Savings) as an HTML fragment.
+ * Used for server-rendered HTML responses (HTMX-style).
+ *
+ * This partial outputs the complete summary grid with all three cards.
+ */
+
+import { TrendingUp, TrendingDown, Wallet } from '@lucide/astro';
+import { formatCurrency } from '@/lib/tokens';
+import StatLabel from '../atoms/StatLabel.astro';
+
+export interface Props {
+  monthlyIncome: number;
+  monthlyExpenses: number;
+  transactionCount: number;
+  periodLabel: string;
+  currency: 'IDR' | 'USD';
+}
+
+const { monthlyIncome, monthlyExpenses, transactionCount, periodLabel, currency } = Astro.props;
+
+const netSavings = monthlyIncome - monthlyExpenses;
+const netSavingsClass = netSavings >= 0 ? 'text-success' : 'text-error';
+
+const cardClasses = [
+  'card bg-base-100 border border-base-300 rounded-2xl sm:rounded-3xl shadow-sm relative overflow-hidden group',
+  'transition-all hover:shadow-md',
+].join(' ');
+
+const iconContainerClasses = [
+  'absolute top-0 right-0 p-2 sm:p-4 opacity-5 group-hover:opacity-10 transition-opacity',
+].join(' ');
+---
+
+<div
+  class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6"
+  id="summary-cards-container"
+  data-summary-container
+  data-currency={currency}
+>
+  <div class={cardClasses} data-summary-card="income">
+    <div class={iconContainerClasses}>
+      <TrendingUp size={48} class="stroke-current text-success" aria-hidden="true" />
+    </div>
+    <div class="card-body p-4 sm:p-6 lg:p-8">
+      <StatLabel>Monthly Income</StatLabel>
+      <h3
+        class="text-xl sm:text-2xl lg:text-3xl font-bold text-success mt-3 sm:mt-4 leading-none tracking-tight"
+        data-summary-income
+      >
+        {formatCurrency(monthlyIncome, currency)}
+      </h3>
+      {
+        periodLabel && (
+          <p
+            class="text-[10px] font-bold text-success/60 mt-2 sm:mt-3 uppercase tracking-wider"
+            data-summary-period
+          >
+            {periodLabel}
+          </p>
+        )
+      }
+    </div>
+  </div>
+
+  <div class={cardClasses} data-summary-card="expenses">
+    <div class={iconContainerClasses}>
+      <TrendingDown size={48} class="stroke-current text-error" aria-hidden="true" />
+    </div>
+    <div class="card-body p-4 sm:p-6 lg:p-8">
+      <StatLabel>Monthly Expenses</StatLabel>
+      <h3
+        class="text-xl sm:text-2xl lg:text-3xl font-bold text-error mt-3 sm:mt-4 leading-none tracking-tight"
+        data-summary-expense
+      >
+        {formatCurrency(monthlyExpenses, currency)}
+      </h3>
+      <p
+        class="text-[10px] font-bold text-error/60 mt-2 sm:mt-3 uppercase tracking-wider"
+        data-summary-count
+      >
+        {transactionCount} items
+      </p>
+    </div>
+  </div>
+
+  <div class={cardClasses} data-summary-card="savings">
+    <div class={iconContainerClasses}>
+      <Wallet size={48} class="stroke-current text-primary" aria-hidden="true" />
+    </div>
+    <div class="card-body p-4 sm:p-6 lg:p-8">
+      <StatLabel>Net Savings</StatLabel>
+      <h3
+        class={`text-xl sm:text-2xl lg:text-3xl font-bold mt-3 sm:mt-4 leading-none tracking-tight ${netSavingsClass}`}
+        data-summary-net
+      >
+        {formatCurrency(netSavings, currency)}
+      </h3>
+      {
+        periodLabel && (
+          <p
+            class="text-[10px] font-bold text-base-content/40 mt-2 sm:mt-3 uppercase tracking-wider"
+            data-summary-period
+          >
+            {periodLabel}
+          </p>
+        )
+      }
+    </div>
+  </div>
+</div>

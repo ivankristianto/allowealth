@@ -88,6 +88,47 @@ src/
     └── tokens.css        # CSS custom properties
 ```
 
+## Interactive Pages Architecture
+
+For pages that need client-side interactivity (filtering, pagination, dynamic updates), we use **server-rendered HTML fragments** instead of client-side DOM construction.
+
+**Read the full documentation:** `docs/architecture/interactive-pages.md`
+
+### Key Principles
+
+1. **Single Source of Truth**: All HTML rendering happens in Astro components
+2. **No DOM Construction**: Client-side code only injects pre-rendered HTML
+3. **API Dual Response**: Endpoints support both `?_render=json` and `?_render=html`
+
+### File Structure
+
+```
+src/components/
+├── partials/                    # Server-rendered fragments (no layout)
+│   ├── TransactionListPartial.astro
+│   └── PaginationPartial.astro
+└── organisms/
+    ├── MyRenderer.client.ts     # HTML injection + animations
+    └── MyPage.client.ts         # Event handling + orchestration
+```
+
+### Quick Example
+
+```typescript
+// ❌ DON'T: Construct DOM on the client
+function createRow(data) {
+  const div = document.createElement('div');
+  div.innerHTML = `<span>${data.name}</span>`; // Duplicates server logic
+  return div;
+}
+
+// ✅ DO: Inject server-rendered HTML
+async function fetchAndRender() {
+  const { html } = await fetch('/api/items?_render=html');
+  document.getElementById('list').innerHTML = html;
+}
+```
+
 ## API Documentation
 
 The project uses **OpenAPI 3.1.0** for API documentation with a modular file structure.

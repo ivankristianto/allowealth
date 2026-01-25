@@ -12,27 +12,19 @@ import {
   initializeFromSSR,
   setLoading,
   setError,
-  updateTransactions,
-  updateSummary,
   removeTransaction,
-  getCachedMonth,
-  setCachedMonth,
   invalidateAllCache,
-  filterCachedTransactions,
-  paginateTransactions,
 } from '@/lib/stores/transactionsDataStore';
 import {
-  fetchMonthTransactions,
+  fetchTransactionsHtml,
   deleteTransaction,
   cancelPendingRequest,
 } from '@/lib/api/transactionsApiClient';
 import { addToast } from '@/lib/stores/toastStore';
-import { formatMonthKey } from '@/lib/utils';
-import { PAGINATION } from '@/lib/constants/pagination';
 import {
-  renderTransactionList,
-  renderSummaryCards,
-  renderPagination,
+  renderTransactionListHtml,
+  renderSummaryCardsHtml,
+  renderPaginationHtml,
   showLoadingState,
   hideLoadingState,
   animateRowRemoval,
@@ -41,9 +33,6 @@ import {
 // Debounce timer for search
 let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 const SEARCH_DEBOUNCE_MS = 300;
-
-// Page size constant
-const PAGE_SIZE = PAGINATION.DEFAULT_PAGE_SIZE;
 
 // Track initialization to prevent duplicate event listeners
 let initialized = false;
@@ -142,50 +131,57 @@ function parseSSRData(): SSRData | null {
 }
 
 /**
- * Fetch and render transactions based on current filter state
- * Uses client-side cache when available to reduce API calls
+ * Fetch and render transactions using server-rendered HTML (HTMX-style)
+ *
+ * This approach uses server-rendered HTML fragments instead of client-side
+ * DOM construction. Benefits:
+ * - Single source of truth (Astro components)
+ * - No duplication between SSR and client rendering
+ * - Simpler client code
+ * - Consistent styling
  */
 async function fetchAndRender(): Promise<void> {
   const filters = transactionFiltersStore.get();
-  const currentMonth = filters.month;
+  const state = transactionsDataStore.get();
 
-  if (!currentMonth) {
+  if (!filters.month) {
     console.error('No month filter set');
     return;
   }
 
-  // Check cache first
-  const cached = getCachedMonth(currentMonth);
-
-  if (cached) {
-    // Use cached data - filter and paginate client-side
-    renderFromCache(cached.transactions, cached.summary, filters);
-    return;
-  }
-
-  // No cache - fetch from API
   setLoading(true);
   showLoadingState();
 
   try {
-    const response = await fetchMonthTransactions(currentMonth);
-
-    // Add periodLabel to summary
-    const periodLabel = formatMonthKey(currentMonth);
-    const summaryWithPeriod = {
-      ...(response.summary || { income: 0, expenses: 0, transactionCount: 0 }),
-      periodLabel,
-    };
-
-    // Cache the raw month data (before filtering)
-    if (response.transactions.length > 0) {
-      setCachedMonth(currentMonth, response.transactions, summaryWithPeriod);
-    }
+    const response = await fetchTransactionsHtml(
+      {
+        type: filters.type,
+        category_ids: filters.category_ids.length > 0 ? filters.category_ids : undefined,
+        search: filters.search || undefined,
+        month: filters.month,
+        page: filters.page,
+      },
+      {
+        partial: 'all',
+        currency: state.currency,
+      }
+    );
 
     hideLoadingState();
 
-    // Apply filters and render
-    renderFromCache(response.transactions, summaryWithPeriod, filters);
+    // Inject server-rendered HTML directly
+    if (response.partials.list) {
+      renderTransactionListHtml(response.partials.list);
+    }
+    if (response.partials.summary) {
+      renderSummaryCardsHtml(response.partials.summary);
+    }
+    if (response.partials.pagination) {
+      renderPaginationHtml(response.partials.pagination);
+    }
+
+    // Re-attach pagination event listeners after HTML replacement
+    reattachPaginationListeners();
   } catch (error) {
     hideLoadingState();
     if (error instanceof Error && error.name !== 'AbortError') {
@@ -196,41 +192,30 @@ async function fetchAndRender(): Promise<void> {
 }
 
 /**
- * Render transactions from cache (applies filters client-side)
+ * Re-attach pagination event listeners after HTML replacement
  */
-function renderFromCache(
-  allTransactions: import('@/lib/types/transaction').TransactionOutput[],
-  summary: import('@/lib/stores/transactionsDataStore').SummaryState,
-  filters: ReturnType<typeof transactionFiltersStore.get>
-): void {
-  // Apply filters client-side
-  const filtered = filterCachedTransactions(allTransactions, {
-    type: filters.type,
-    category_ids: filters.category_ids.length > 0 ? filters.category_ids : undefined,
-    search: filters.search || undefined,
-  });
+function reattachPaginationListeners(): void {
+  const prevBtn = document.querySelector('[data-pagination-prev]');
+  const nextBtn = document.querySelector('[data-pagination-next]');
 
-  // Paginate
-  const { transactions, total } = paginateTransactions(filtered, filters.page, PAGE_SIZE);
+  if (prevBtn) {
+    // Remove old listener by cloning
+    const newPrevBtn = prevBtn.cloneNode(true);
+    prevBtn.parentNode?.replaceChild(newPrevBtn, prevBtn);
+    newPrevBtn.addEventListener('click', () => {
+      const page = transactionFiltersStore.get().page;
+      handlePageChange(page - 1);
+    });
+  }
 
-  // Update store
-  updateTransactions({
-    transactions,
-    pagination: {
-      total,
-      limit: PAGE_SIZE,
-      offset: (filters.page - 1) * PAGE_SIZE,
-    },
-  });
-
-  // Summary is always from full month data (not filtered)
-  updateSummary(summary);
-
-  // Render
-  const state = transactionsDataStore.get();
-  renderTransactionList(state.transactions);
-  renderSummaryCards(state.summary, state.currency);
-  renderPagination(state.pagination);
+  if (nextBtn) {
+    const newNextBtn = nextBtn.cloneNode(true);
+    nextBtn.parentNode?.replaceChild(newNextBtn, nextBtn);
+    newNextBtn.addEventListener('click', () => {
+      const page = transactionFiltersStore.get().page;
+      handlePageChange(page + 1);
+    });
+  }
 }
 
 /**
@@ -461,21 +446,15 @@ async function executeDelete(confirmBtn: HTMLButtonElement): Promise<void> {
     // Update store
     removeTransaction(transactionId);
 
-    // Re-render summary and pagination
-    const state = transactionsDataStore.get();
-    renderSummaryCards(state.summary, state.currency);
-    renderPagination(state.pagination);
-
     // Close dialog
     dialog.close();
 
     // Show success toast
     addToast('Transaction deleted successfully', 'success');
 
-    // If no more transactions on this page, go to previous page
-    if (state.transactions.length === 0 && state.pagination.page > 1) {
-      handlePageChange(state.pagination.page - 1);
-    }
+    // Re-fetch and render using server HTML to update summary and pagination
+    // This ensures consistency without duplicating rendering logic
+    await fetchAndRender();
   } catch (error) {
     if (deleteError) {
       deleteError.textContent =
