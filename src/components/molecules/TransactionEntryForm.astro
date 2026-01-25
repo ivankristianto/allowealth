@@ -115,7 +115,7 @@ const formId = `transaction-entry-form-${type}`;
   </div>
 
   <!-- Amount and Date row -->
-  <div class="grid grid-cols-2 gap-4">
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
     <div class="form-control">
       <Label required htmlFor={`${formId}-amount`} id={`${formId}-amount-label`}>Amount</Label>
       <CurrencyInput
@@ -144,7 +144,7 @@ const formId = `transaction-entry-form-${type}`;
   </div>
 
   <!-- Category and Payment Method row -->
-  <div class="grid grid-cols-2 gap-4">
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
     <div class="form-control">
       <Label required htmlFor={`${formId}-category`} id={`${formId}-category-label`}>
         Category
