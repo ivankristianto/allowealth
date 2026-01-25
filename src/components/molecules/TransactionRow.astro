@@ -39,13 +39,15 @@ const primaryText = transaction.description?.trim() || transaction.category.name
 const categoryMeta = getCategoryMeta(transaction.category.name, transaction.type);
 const CategoryIcon = categoryMeta.icon;
 
-// TransactionRow is optimized for desktop. Use TransactionCard for mobile.
+// Responsive row: stacked on mobile, horizontal on desktop
 const rowClasses = [
-  'group flex items-center gap-3 sm:gap-5 p-3 sm:p-5',
+  'group p-3 sm:p-4',
   'transition-all cursor-pointer',
   'border-l-4 border-transparent',
-  isExpense ? 'hover:border-error/30' : 'hover:border-success/30',
-  'hover:bg-base-200/40',
+  isExpense
+    ? 'hover:border-error/30 active:border-error/30'
+    : 'hover:border-success/30 active:border-success/30',
+  'hover:bg-base-200/40 active:bg-base-200/40',
   className,
 ]
   .filter(Boolean)
@@ -53,86 +55,167 @@ const rowClasses = [
 ---
 
 <div class={rowClasses} data-transaction-row data-transaction-id={transaction.id}>
-  <!-- Date (hidden on mobile, visible on sm+) -->
-  <div class="hidden sm:block flex-shrink-0 w-20 lg:w-24 text-sm">
-    <div class="font-medium">{formattedDate}</div>
-  </div>
+  {/* Mobile Layout (stacked) - shown below sm breakpoint */}
+  <div class="sm:hidden">
+    {/* Top row: Icon + Description + Actions */}
+    <div class="flex items-start gap-3">
+      <IconBadge variant={categoryMeta.variant} size="sm" className="rounded-xl shrink-0">
+        <CategoryIcon size={18} class="stroke-current" aria-hidden="true" />
+      </IconBadge>
 
-  <!-- Category & Description -->
-  <div class="flex-1 min-w-0 flex items-center gap-4">
-    <IconBadge
-      variant={categoryMeta.variant}
-      size="sm"
-      className="rounded-2xl transition-transform group-hover:rotate-2"
-    >
-      <CategoryIcon size={18} class="stroke-current" aria-hidden="true" />
-    </IconBadge>
-    <div class="min-w-0">
-      <div class="font-bold tracking-tight truncate text-base leading-none">{primaryText}</div>
-      <div class="mt-2 flex flex-wrap items-center gap-2 leading-none">
-        <span
-          class="text-[10px] font-bold tracking-widest uppercase text-base-content/60 bg-base-200 px-2 py-0.5 rounded"
-        >
-          {transaction.category.name}
-        </span>
+      <div class="flex-1 min-w-0">
+        <div class="font-bold text-base tracking-tight truncate leading-tight">{primaryText}</div>
+        <div class="mt-1 flex items-center gap-2 text-xs text-base-content/60">
+          <span
+            class="font-bold tracking-widest uppercase text-[10px] bg-base-200 px-1.5 py-0.5 rounded"
+          >
+            {transaction.category.name}
+          </span>
+          <span class="text-base-content/40">·</span>
+          <time datetime={date.toISOString()} class="font-medium">
+            {formattedDate}
+          </time>
+        </div>
       </div>
+
+      {
+        showActions && (
+          <div class="flex gap-0.5 shrink-0">
+            <button
+              type="button"
+              class="btn btn-ghost btn-xs btn-square min-h-[36px] min-w-[36px]"
+              aria-label={`Edit transaction: ${primaryText}`}
+              data-edit-transaction={transaction.id}
+              data-transaction-data={JSON.stringify({
+                id: transaction.id,
+                type: transaction.type,
+                title: transaction.description,
+                amount: transaction.amount,
+                currency: transaction.currency,
+                category_id: transaction.category.id,
+                payment_method_id: transaction.payment_method.id,
+                transaction_date: date.toISOString().split('T')[0],
+              })}
+            >
+              <Pencil size={14} class="stroke-current" aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              class="btn btn-ghost btn-xs btn-square min-h-[36px] min-w-[36px] text-error"
+              aria-label={`Delete transaction: ${primaryText}`}
+              data-delete-transaction={transaction.id}
+              data-transaction-details={JSON.stringify(transaction)}
+            >
+              <Trash2 size={14} class="stroke-current" aria-hidden="true" />
+            </button>
+          </div>
+        )
+      }
+    </div>
+
+    {/* Bottom row: Payment method + Amount */}
+    <div class="mt-2.5 flex items-center justify-between pl-[52px]">
+      <div
+        class="flex items-center gap-1.5 text-[10px] uppercase tracking-widest text-base-content/50"
+      >
+        <CreditCard size={12} class="stroke-current" aria-hidden="true" />
+        <span>{transaction.payment_method.name}</span>
+      </div>
+
+      <Currency
+        amount={amount}
+        currency={transaction.currency}
+        showSign={true}
+        variant={isExpense ? 'negative' : 'positive'}
+        size="md"
+        className="font-bold tracking-tight"
+      />
     </div>
   </div>
 
-  <!-- Payment Method -->
-  <div class="flex-shrink-0 hidden sm:block">
-    <div
-      class="flex items-center gap-1.5 text-[10px] uppercase tracking-widest text-base-content/60"
-    >
-      <CreditCard size={12} class="stroke-current" aria-hidden="true" />
-      <span>{transaction.payment_method.name}</span>
+  {/* Desktop Layout (horizontal) - shown at sm and above */}
+  <div class="hidden sm:flex items-center gap-4 lg:gap-5">
+    {/* Date */}
+    <div class="flex-shrink-0 w-20 lg:w-24 text-sm">
+      <div class="font-medium">{formattedDate}</div>
     </div>
-  </div>
 
-  <!-- Amount -->
-  <div class="flex-shrink-0 text-right">
-    <Currency
-      amount={amount}
-      currency={transaction.currency}
-      showSign={true}
-      variant={isExpense ? 'negative' : 'positive'}
-      size="md"
-      className="font-bold tracking-tight text-sm sm:text-base"
-    />
-  </div>
-
-  <!-- Actions -->
-  {
-    showActions && (
-      <div class="flex-shrink-0 flex gap-1">
-        <button
-          type="button"
-          class="btn btn-ghost btn-sm"
-          aria-label={`Edit transaction: ${primaryText}`}
-          data-edit-transaction={transaction.id}
-          data-transaction-data={JSON.stringify({
-            id: transaction.id,
-            type: transaction.type,
-            title: transaction.description,
-            amount: transaction.amount,
-            currency: transaction.currency,
-            category_id: transaction.category.id,
-            payment_method_id: transaction.payment_method.id,
-            transaction_date: date.toISOString().split('T')[0],
-          })}
-        >
-          <Pencil size={16} class="stroke-current" aria-hidden="true" />
-        </button>
-        <button
-          type="button"
-          class="btn btn-ghost btn-sm text-error"
-          aria-label={`Delete transaction: ${primaryText}`}
-          data-delete-transaction={transaction.id}
-          data-transaction-details={JSON.stringify(transaction)}
-        >
-          <Trash2 size={16} class="stroke-current" aria-hidden="true" />
-        </button>
+    {/* Category & Description */}
+    <div class="flex-1 min-w-0 flex items-center gap-4">
+      <IconBadge
+        variant={categoryMeta.variant}
+        size="sm"
+        className="rounded-2xl transition-transform group-hover:rotate-2"
+      >
+        <CategoryIcon size={18} class="stroke-current" aria-hidden="true" />
+      </IconBadge>
+      <div class="min-w-0">
+        <div class="font-bold tracking-tight truncate text-base leading-none">{primaryText}</div>
+        <div class="mt-2 flex flex-wrap items-center gap-2 leading-none">
+          <span
+            class="text-[10px] font-bold tracking-widest uppercase text-base-content/60 bg-base-200 px-2 py-0.5 rounded"
+          >
+            {transaction.category.name}
+          </span>
+        </div>
       </div>
-    )
-  }
+    </div>
+
+    {/* Payment Method */}
+    <div class="flex-shrink-0">
+      <div
+        class="flex items-center gap-1.5 text-[10px] uppercase tracking-widest text-base-content/60"
+      >
+        <CreditCard size={12} class="stroke-current" aria-hidden="true" />
+        <span>{transaction.payment_method.name}</span>
+      </div>
+    </div>
+
+    {/* Amount */}
+    <div class="flex-shrink-0 text-right">
+      <Currency
+        amount={amount}
+        currency={transaction.currency}
+        showSign={true}
+        variant={isExpense ? 'negative' : 'positive'}
+        size="md"
+        className="font-bold tracking-tight"
+      />
+    </div>
+
+    {/* Actions */}
+    {
+      showActions && (
+        <div class="flex-shrink-0 flex gap-1">
+          <button
+            type="button"
+            class="btn btn-ghost btn-sm"
+            aria-label={`Edit transaction: ${primaryText}`}
+            data-edit-transaction={transaction.id}
+            data-transaction-data={JSON.stringify({
+              id: transaction.id,
+              type: transaction.type,
+              title: transaction.description,
+              amount: transaction.amount,
+              currency: transaction.currency,
+              category_id: transaction.category.id,
+              payment_method_id: transaction.payment_method.id,
+              transaction_date: date.toISOString().split('T')[0],
+            })}
+          >
+            <Pencil size={16} class="stroke-current" aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            class="btn btn-ghost btn-sm text-error"
+            aria-label={`Delete transaction: ${primaryText}`}
+            data-delete-transaction={transaction.id}
+            data-transaction-details={JSON.stringify(transaction)}
+          >
+            <Trash2 size={16} class="stroke-current" aria-hidden="true" />
+          </button>
+        </div>
+      )
+    }
+  </div>
 </div>
