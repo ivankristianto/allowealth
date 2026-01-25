@@ -2,7 +2,7 @@
 /**
  * Recent Transactions List Component (Organism)
  *
- * Displays the last 5 transactions with date, category, amount,
+ * Displays the last 10 transactions with date, category, amount,
  * and payment method. Shows income in green and expenses in red.
  *
  * @param {Array} transactions - Array of recent transactions
@@ -30,7 +30,7 @@ const {
   className = '',
 } = Astro.props;
 
-const maxTransactions = 6;
+const maxTransactions = 10;
 const displayTransactions = transactions.slice(0, maxTransactions);
 ---
 
@@ -60,7 +60,7 @@ const displayTransactions = transactions.slice(0, maxTransactions);
           aria-live="polite"
           aria-label="Loading recent transactions"
         >
-          {[1, 2, 3, 4, 5, 6].map(() => (
+          {Array.from({ length: 10 }).map(() => (
             <div class="flex items-center gap-5 p-5 animate-pulse">
               <div class="h-12 w-12 rounded-2xl bg-base-200" aria-hidden="true" />
               <div class="flex-1 space-y-2">
