@@ -124,7 +124,7 @@ const getPageTitle = (path: string) => {
 ---
 
 <header
-  class="fixed top-0 left-0 right-0 lg:left-64 lg:group-data-[sidebar-collapsed=true]:left-20 z-40 bg-base-100/80 backdrop-blur-xl px-4 sm:px-6 lg:px-10 py-4 sm:py-5 flex items-center justify-between gap-4 border-b border-base-300/50 transition-[left] duration-300 ease-out"
+  class="fixed top-0 left-0 right-0 lg:left-64 lg:group-data-[sidebar-collapsed=true]:left-20 z-40 bg-base-100/80 backdrop-blur-xl px-4 sm:px-6 lg:px-10 py-4 sm:py-5 min-h-16 sm:min-h-20 flex items-center justify-between gap-4 border-b border-base-300/50 transition-[left] duration-300 ease-out"
 >
   <!-- Left side: Menu toggle + Page title + Subtitle -->
   <div class="flex items-center gap-3">
@@ -272,21 +272,34 @@ const getPageTitle = (path: string) => {
   const notificationDropdown = document.getElementById('notification-dropdown');
   const closeNotificationsBtn = document.getElementById('close-notifications');
 
-  function toggleNotifications() {
-    if (notificationDropdown) {
-      const isHidden = notificationDropdown.classList.contains('hidden');
-      notificationDropdown.classList.toggle('hidden');
-      if (notificationButton) {
-        notificationButton.setAttribute('aria-expanded', isHidden ? 'true' : 'false');
-      }
+  function openNotifications() {
+    if (notificationDropdown && notificationButton) {
+      notificationDropdown.classList.remove('hidden');
+      notificationButton.setAttribute('aria-expanded', 'true');
+      // Move focus to first focusable element in dropdown for accessibility
+      const firstFocusable = notificationDropdown.querySelector(
+        'button, a, [tabindex]:not([tabindex="-1"])'
+      ) as HTMLElement;
+      setTimeout(() => firstFocusable?.focus(), 10);
     }
   }
 
   function closeNotifications() {
-    if (notificationDropdown) {
+    if (notificationDropdown && notificationButton) {
       notificationDropdown.classList.add('hidden');
-      if (notificationButton) {
-        notificationButton.setAttribute('aria-expanded', 'false');
+      notificationButton.setAttribute('aria-expanded', 'false');
+      // Return focus to trigger button
+      notificationButton.focus();
+    }
+  }
+
+  function toggleNotifications() {
+    if (notificationDropdown) {
+      const isHidden = notificationDropdown.classList.contains('hidden');
+      if (isHidden) {
+        openNotifications();
+      } else {
+        closeNotifications();
       }
     }
   }
