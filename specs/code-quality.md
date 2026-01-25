@@ -4,10 +4,29 @@
 
 **Task: Remove Deprecated Component Patterns**
 
-- [ ] Audit components for legacy patterns
-- [ ] Remove unused CSS classes
-- [ ] Consolidate duplicate styles
+- [x] Audit components for legacy patterns ✅ FIXED
+- [x] Remove unused CSS classes ✅ FIXED
+- [x] Consolidate duplicate styles ✅ FIXED
 - [x] Update any hardcoded values to use tokens ✅ FIXED
+
+**Implementation Notes (Audit for Legacy Patterns):**
+
+- Searched for `alert()`, `confirm()`, `prompt()` calls - none found in production code
+- Searched for `<div onclick>` non-semantic patterns - none found
+- Fixed TransactionFiltersBar.stories.ts: replaced `<a role="button">` with proper `<button>` elements
+- No deprecated HTML elements (`<center>`, `<font>`, `<marquee>`) found
+
+**Implementation Notes (Remove Unused CSS Classes):**
+
+- Removed `.font-compact` class from globals.css (defined but never used)
+- Animation utility classes (`.animate-*`, `.transition-*`) kept as part of design system
+
+**Implementation Notes (Consolidate Duplicate Styles):**
+
+- Created `ProgressBarStatus` type in tokens.ts for progress bar status values
+- Created `getProgressBarStatusColors()` utility function for shared color classes
+- Updated ProgressBar.astro, ProgressBar.stories.ts, ProgressBar.test.ts to use shared utility
+- Reduced duplication of status badge color mappings
 
 **Implementation Notes (Hardcoded Values to Tokens):**
 
@@ -55,10 +74,10 @@
 - Type-safe implementation with explicit literal type annotations
 - JSDoc documentation with @param, @returns, and @example
 
-**Additional P2 Suggestions from Code Review (Added for Future Work):**
+**Additional P2 Suggestions from Code Review (Completed):**
 
-- **Extract BudgetStatusType type alias** - Currently the status type union is duplicated in multiple places. Could create `export type BudgetStatusType = 'status-ok' | 'status-warning' | 'status-danger';` for DRY compliance.
-- **Standardize status type conventions** - Codebase has two different status conventions (`status-ok/warning/danger` vs `ok/warning/exceeded`). Consider standardizing.
+- [x] **Extract BudgetStatusType type alias** ✅ FIXED - Created `BudgetStatusClassName` type in `tokens.ts` for CSS status classes. Updated SpendingCard and related tests to use shared type.
+- [x] **Standardize status type conventions** ✅ FIXED - Added `toBudgetStatusClassName()` converter function in `tokens.ts`. Documented two-convention system (BudgetStatus for business logic vs BudgetStatusClassName for CSS). Added `ProgressBarStatus` type for progress bars.
 
 **P2-3: Animations Not Using Motion Library** ✅ FIXED
 

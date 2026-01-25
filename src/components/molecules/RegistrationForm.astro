@@ -306,7 +306,7 @@ const cspNonce = Astro.locals.cspNonce || '';
         // enhance this component by overriding the submit handler (see below).
         //
         // HOW TO OVERRIDE (page-level enhancement pattern):
-        // 1. In your page's <script> tag, use DOMContentLoaded listener
+        // 1. In your page's script tag, use DOMContentLoaded listener
         // 2. Get the form: document.querySelector('[data-registration-form]')
         // 3. Add submit listener with e.stopImmediatePropagation() to block this handler
         // 4. Implement your fetch() API call
