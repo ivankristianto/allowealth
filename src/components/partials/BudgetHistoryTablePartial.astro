@@ -99,7 +99,7 @@ const sortedHistory = [...history].sort((a, b) => {
                   <span class="text-base font-bold">{monthData.month_name}</span>
                   <span class="text-xs font-medium text-base-content/40">{monthData.year}</span>
                   {isCurrentMonth && (
-                    <span class="bg-primary text-primary-content text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
+                    <span class="bg-primary text-primary-content text-xs px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
                       Current
                     </span>
                   )}
@@ -119,19 +119,19 @@ const sortedHistory = [...history].sort((a, b) => {
                 <>
                   <div class="grid grid-cols-2 gap-4 text-sm">
                     <div>
-                      <div class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest mb-1">
+                      <div class="text-xs font-bold text-base-content/40 uppercase tracking-widest mb-1">
                         Budget
                       </div>
                       <div class="font-bold">{formatCurrency(budgetAmount, currency)}</div>
                     </div>
                     <div>
-                      <div class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest mb-1">
+                      <div class="text-xs font-bold text-base-content/40 uppercase tracking-widest mb-1">
                         Spent
                       </div>
                       <div class="font-bold">{formatCurrency(spentAmount, currency)}</div>
                     </div>
                     <div>
-                      <div class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest mb-1">
+                      <div class="text-xs font-bold text-base-content/40 uppercase tracking-widest mb-1">
                         Balance
                       </div>
                       <div class={`font-bold ${balance >= 0 ? 'text-success' : 'text-error'}`}>
@@ -139,7 +139,7 @@ const sortedHistory = [...history].sort((a, b) => {
                       </div>
                     </div>
                     <div>
-                      <div class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest mb-1">
+                      <div class="text-xs font-bold text-base-content/40 uppercase tracking-widest mb-1">
                         Change
                       </div>
                       <div class={changeIndicator.class}>{changeIndicator.value}</div>
@@ -168,12 +168,12 @@ const sortedHistory = [...history].sort((a, b) => {
                   {(monthData.categories_exceeded > 0 || monthData.categories_warning > 0) && (
                     <div class="flex items-center gap-3">
                       {monthData.categories_exceeded > 0 && (
-                        <span class="text-[10px] font-bold text-error uppercase tracking-wide">
+                        <span class="text-xs font-bold text-error uppercase tracking-wide">
                           {monthData.categories_exceeded} exceeded
                         </span>
                       )}
                       {monthData.categories_warning > 0 && (
-                        <span class="text-[10px] font-bold text-warning uppercase tracking-wide">
+                        <span class="text-xs font-bold text-warning uppercase tracking-wide">
                           {monthData.categories_warning} warning
                         </span>
                       )}
@@ -204,7 +204,7 @@ const sortedHistory = [...history].sort((a, b) => {
                   <span class="text-base font-bold">{monthData.month_name}</span>
                   <span class="text-xs font-medium text-base-content/40">{monthData.year}</span>
                   {isCurrentMonth && (
-                    <span class="bg-primary text-primary-content text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
+                    <span class="bg-primary text-primary-content text-xs px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
                       Current
                     </span>
                   )}
@@ -248,12 +248,12 @@ const sortedHistory = [...history].sort((a, b) => {
                     {(monthData.categories_exceeded > 0 || monthData.categories_warning > 0) && (
                       <div class="mt-2 flex gap-2 justify-center">
                         {monthData.categories_exceeded > 0 && (
-                          <span class="text-[10px] font-bold text-error uppercase leading-none whitespace-nowrap">
+                          <span class="text-xs font-bold text-error uppercase leading-none whitespace-nowrap">
                             {monthData.categories_exceeded} exceeded
                           </span>
                         )}
                         {monthData.categories_warning > 0 && (
-                          <span class="text-[10px] font-bold text-warning uppercase leading-none whitespace-nowrap">
+                          <span class="text-xs font-bold text-warning uppercase leading-none whitespace-nowrap">
                             {monthData.categories_warning} warning
                           </span>
                         )}
