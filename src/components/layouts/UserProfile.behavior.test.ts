@@ -27,7 +27,7 @@ const PROFILE_SPECS = {
   menuItems: {
     manage: '/settings',
     security: '/settings/security',
-    signout: '/auth/logout',
+    signout: '/api/auth/logout',
   },
   animationDuration: 'duration-200',
   animationTiming: 'cubic-bezier(0.4, 0, 0.2, 1)',
@@ -84,11 +84,11 @@ describe('UserProfile Component', () => {
        * Menu items:
        * 1. Manage account → /settings
        * 2. Security → /settings/security
-       * 3. Sign out → /auth/logout
+       * 3. Sign out → POST /api/auth/logout
        */
       expect(PROFILE_SPECS.menuItems.manage).toBe('/settings');
       expect(PROFILE_SPECS.menuItems.security).toBe('/settings/security');
-      expect(PROFILE_SPECS.menuItems.signout).toBe('/auth/logout');
+      expect(PROFILE_SPECS.menuItems.signout).toBe('/api/auth/logout');
     });
 
     it('should use smooth fade and slide animation', () => {
