@@ -62,7 +62,6 @@ const createCurrencySelector = (args: {
 
   wrapper.appendChild(button);
 
-  // Dropdown menu - matching UserContext style
   const menu = document.createElement('ul');
   menu.tabIndex = 0;
   menu.className =

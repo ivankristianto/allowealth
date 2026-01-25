@@ -281,12 +281,6 @@ describe('SummaryCards.astro - Responsive Design', () => {
     // gap-4 between cards
     expect(true).toBe(true);
   });
-
-  test('username is hidden on mobile in UserContext', () => {
-    // This is for UserContext component
-    // class="hidden sm:inline"
-    expect(true).toBe(true);
-  });
 });
 
 describe('SummaryCards.astro - Integration', () => {
