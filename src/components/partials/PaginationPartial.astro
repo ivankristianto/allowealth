@@ -1,0 +1,58 @@
+---
+/**
+ * Pagination Partial
+ *
+ * Renders pagination controls as an HTML fragment.
+ * Used for server-rendered HTML responses (HTMX-style).
+ */
+
+export interface Props {
+  total: number;
+  limit: number;
+  offset: number;
+  page: number;
+  totalPages: number;
+}
+
+const { total, limit, page, totalPages } = Astro.props;
+
+const start = (page - 1) * limit + 1;
+const end = Math.min(page * limit, total);
+const showPagination = total > limit;
+---
+
+<div
+  id="pagination-container"
+  class={`flex flex-col sm:flex-row items-center justify-between gap-3 px-4 sm:px-6 py-4 border-t border-base-200 ${!showPagination ? 'hidden' : ''}`}
+  data-pagination
+  data-total={total}
+  data-page-size={limit}
+  data-current-page={page}
+>
+  <div class="hidden sm:block text-sm text-base-content/60" data-pagination-info>
+    Showing {start} to {end} of {total} transactions
+  </div>
+  <div class="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+    <button
+      class="btn btn-sm btn-outline min-h-[44px] min-w-[44px] sm:min-w-0"
+      disabled={page <= 1}
+      data-pagination-prev
+      aria-label="Previous page"
+    >
+      Previous
+    </button>
+
+    <span class="btn btn-sm btn-ghost text-sm" data-pagination-current>
+      {page} / {totalPages}
+    </span>
+
+    <button
+      class="btn btn-sm btn-outline min-h-[44px] min-w-[44px] sm:min-w-0"
+      disabled={page >= totalPages}
+      data-pagination-next
+      aria-label="Next page"
+    >
+      Next
+    </button>
+  </div>
+</div>

@@ -402,14 +402,12 @@ describe('TransactionList - Component Behavior', () => {
   });
 
   describe('Transaction Display', () => {
-    it('should render TransactionRow for each transaction', () => {
+    it('should render TransactionCard for each transaction', () => {
       /**
-       * Transaction rows:
+       * Transaction cards:
        * {transactions.map((transaction) => (
-       *   <TransactionRow
+       *   <TransactionCard
        *     transaction={transaction}
-       *     editUrl={`/transactions/edit/${transaction.id}`}
-       *     deleteUrl={`/transactions/delete/${transaction.id}`}
        *     showActions={true}
        *   />
        * ))}

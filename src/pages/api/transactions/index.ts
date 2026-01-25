@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { experimental_AstroContainer as AstroContainer } from 'astro/container';
 import { transactionService } from '@/services';
 import {
   successResponse,
@@ -10,8 +11,14 @@ import {
   isValidationError,
 } from '@/lib/api-utils';
 import { createTransactionAPISchema } from '@/lib/validation';
-import { logError, transformTransaction, safeParseAmount } from '@/lib/utils';
+import { logError, transformTransaction, safeParseAmount, formatMonthKey } from '@/lib/utils';
 import { PAGINATION } from '@/lib/constants/pagination';
+import { createRenderHelper } from '@/lib/api/renderResponse';
+
+// Import partial components for HTML rendering
+import TransactionListPartial from '@/components/partials/TransactionListPartial.astro';
+import TransactionSummaryPartial from '@/components/partials/TransactionSummaryPartial.astro';
+import PaginationPartial from '@/components/partials/PaginationPartial.astro';
 
 /**
  * GET /api/transactions
@@ -118,6 +125,73 @@ export const GET: APIRoute = async (context) => {
       };
     }
 
+    // Check if HTML rendering is requested
+    const render = createRenderHelper(url);
+
+    if (render.wantsHtml()) {
+      // Render HTML fragments using Astro Container API
+      const container = await AstroContainer.create();
+
+      // Get the requested partial (_partial param: list, summary, pagination, or all)
+      const partial = url.searchParams.get('_partial') || 'list';
+      const page = Math.floor(offset / limit) + 1;
+      const totalPages = Math.ceil(total / limit);
+
+      // Get currency from user settings or default
+      const currencyParam = (url.searchParams.get('_currency') as 'IDR' | 'USD') || 'IDR';
+
+      // Generate period label from date range
+      let periodLabel = '';
+      if (filters.start_date) {
+        const monthKey = `${String(filters.start_date.getMonth() + 1).padStart(2, '0')}-${filters.start_date.getFullYear()}`;
+        periodLabel = formatMonthKey(monthKey);
+      }
+
+      const htmlParts: string[] = [];
+
+      // Render requested partial(s)
+      if (partial === 'all' || partial === 'summary') {
+        if (monthSummary) {
+          const summaryHtml = await container.renderToString(TransactionSummaryPartial, {
+            props: {
+              monthlyIncome: monthSummary.income,
+              monthlyExpenses: monthSummary.expenses,
+              transactionCount: monthSummary.transactionCount,
+              periodLabel,
+              currency: currencyParam,
+            },
+          });
+          htmlParts.push(`<!-- PARTIAL:summary -->\n${summaryHtml}`);
+        }
+      }
+
+      if (partial === 'all' || partial === 'list') {
+        const listHtml = await container.renderToString(TransactionListPartial, {
+          props: {
+            transactions,
+            showActions: true,
+          },
+        });
+        htmlParts.push(`<!-- PARTIAL:list -->\n${listHtml}`);
+      }
+
+      if (partial === 'all' || partial === 'pagination') {
+        const paginationHtml = await container.renderToString(PaginationPartial, {
+          props: {
+            total,
+            limit,
+            offset,
+            page,
+            totalPages,
+          },
+        });
+        htmlParts.push(`<!-- PARTIAL:pagination -->\n${paginationHtml}`);
+      }
+
+      return render.html(htmlParts.join('\n'));
+    }
+
+    // Default: Return JSON response
     return successResponse({
       transactions,
       pagination: {
@@ -128,11 +202,17 @@ export const GET: APIRoute = async (context) => {
       ...(monthSummary && { summary: monthSummary }),
     });
   } catch (error) {
+    const render = createRenderHelper(context.url);
+
     if (error instanceof Error && error.message === 'Unauthorized') {
-      return errorResponse('Unauthorized', 401);
+      return render.wantsHtml()
+        ? render.error('Unauthorized', 401)
+        : errorResponse('Unauthorized', 401);
     }
     logError('Error fetching transactions', error);
-    return errorResponse('Failed to fetch transactions', 500);
+    return render.wantsHtml()
+      ? render.error('Failed to fetch transactions', 500)
+      : errorResponse('Failed to fetch transactions', 500);
   }
 };
 

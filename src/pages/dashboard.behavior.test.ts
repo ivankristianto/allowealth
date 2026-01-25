@@ -9,8 +9,11 @@ import { describe, it, expect } from 'bun:test';
 
 describe('Dashboard Page - Assembly Layout', () => {
   describe('Container and Spacing', () => {
-    it('should use a max-width container with page padding', () => {
-      // Wrapper should include: max-w-7xl mx-auto px-6 lg:px-10 py-8
+    it('should use a max-width container with responsive padding', () => {
+      // Standard page container: max-w-7xl mx-auto sm:px-2 lg:px-6 space-y-6 sm:space-y-8
+      // Mobile: No extra horizontal padding (uses MainLayout's p-4)
+      // sm+: Adds minimal padding for visual separation
+      // lg+: Adds more padding for larger screens
       expect(true).toBe(true);
     });
 

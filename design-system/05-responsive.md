@@ -21,6 +21,45 @@ sm: 640px   md: 768px   lg: 1024px   xl: 1280px   2xl: 1536px
 </div>
 ```
 
+## Page Container Standard
+
+MainLayout provides base padding: `p-4 lg:p-6` (16px mobile, 24px desktop).
+
+**Do NOT add extra horizontal padding on mobile** - use only MainLayout's padding.
+
+### Full-Width Pages (dashboard, transactions, budget)
+
+```html
+<div class="max-w-7xl mx-auto sm:px-2 lg:px-6 space-y-6 sm:space-y-8">
+  <!-- Page content -->
+</div>
+```
+
+- **Mobile**: No extra padding (uses MainLayout's `p-4` = 16px)
+- **sm**: `px-2` adds 8px extra (24px total)
+- **lg**: `px-6` adds 24px extra (48px total)
+- **Vertical**: `space-y-6` mobile, `space-y-8` on sm+
+
+### Narrower Pages (forms, settings)
+
+```html
+<div class="space-y-6">
+  <div class="max-w-2xl">
+    <!-- Narrower content like forms -->
+  </div>
+</div>
+```
+
+No extra padding needed - container is already narrow.
+
+### Simple Pages
+
+```html
+<div class="space-y-6">
+  <!-- Content using MainLayout's padding -->
+</div>
+```
+
 ## Common Patterns
 
 ### Grid Layout

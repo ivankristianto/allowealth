@@ -107,17 +107,18 @@ const currentMonthLabel =
 <form
   action={baseUrl}
   method="get"
-  class="flex flex-col xl:flex-row items-center gap-4 xl:gap-6 justify-between"
+  class="flex flex-col gap-3 sm:gap-4"
   role="search"
   aria-label="Filter transactions"
   id="transaction-filters-form"
   data-filter-form
 >
-  <div class="flex flex-wrap items-center gap-4 w-full xl:w-auto">
+  {/* Row 1: Type filter + Category + Month (wraps on mobile) */}
+  <div class="flex flex-wrap items-center gap-2 sm:gap-4 w-full">
     <!-- Type Filter (Tab-style) -->
     <input type="hidden" name="type" value={typeFilter} id="type-filter-hidden" />
     <div
-      class="flex bg-base-200 p-1 rounded-2xl"
+      class="flex bg-base-200 p-1 rounded-xl sm:rounded-2xl shrink-0"
       role="group"
       aria-label="Filter by transaction type"
       id="type-filter-group"
@@ -125,7 +126,7 @@ const currentMonthLabel =
     >
       <button
         type="button"
-        class={`px-6 py-2.5 text-xs font-bold rounded-xl transition-all focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2 ${
+        class={`px-3 sm:px-6 py-2 sm:py-2.5 min-h-[44px] min-w-[44px] text-xs font-bold rounded-lg sm:rounded-xl transition-all focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2 ${
           typeFilter === 'expense'
             ? 'bg-base-100 shadow text-primary'
             : 'text-base-content/50 hover:text-base-content/70'
@@ -138,7 +139,7 @@ const currentMonthLabel =
       </button>
       <button
         type="button"
-        class={`px-6 py-2.5 text-xs font-bold rounded-xl transition-all focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2 ${
+        class={`px-3 sm:px-6 py-2 sm:py-2.5 min-h-[44px] min-w-[44px] text-xs font-bold rounded-lg sm:rounded-xl transition-all focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2 ${
           typeFilter === 'income'
             ? 'bg-base-100 shadow text-primary'
             : 'text-base-content/50 hover:text-base-content/70'
@@ -320,12 +321,13 @@ const currentMonthLabel =
     }
   </div>
 
-  <div class="flex items-center gap-3 w-full xl:w-auto">
+  {/* Row 2: Search + Reset */}
+  <div class="flex items-center gap-2 sm:gap-3 w-full">
     <!-- Search Input -->
-    <div class="relative flex-1 xl:w-64">
+    <div class="relative flex-1">
       <Search
         size={18}
-        class="absolute left-4 top-1/2 -translate-y-1/2 text-base-content/40 stroke-current pointer-events-none z-10"
+        class="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-base-content/40 stroke-current pointer-events-none z-10"
         aria-hidden="true"
       />
       <label for="search-input" class="sr-only">Search activity</label>
@@ -334,8 +336,8 @@ const currentMonthLabel =
         type="search"
         name="search"
         value={searchValue}
-        placeholder="Search activity..."
-        class="input w-full pl-11 pr-4 py-3 bg-base-100 border border-base-300 rounded-2xl text-sm font-medium shadow-sm placeholder:text-base-content/40 focus:outline-none focus:border-accent"
+        placeholder="Search..."
+        class="input w-full pl-10 sm:pl-11 pr-3 sm:pr-4 py-2.5 sm:py-3 bg-base-100 border border-base-300 rounded-xl sm:rounded-2xl text-sm font-medium shadow-sm placeholder:text-base-content/40 focus:outline-none focus:border-accent"
         data-filter-search
       />
     </div>
@@ -343,7 +345,7 @@ const currentMonthLabel =
     <!-- Reset Filters Button (visibility controlled by JS) -->
     <button
       type="button"
-      class={`btn btn-ghost btn-sm gap-2 text-base-content/60 hover:text-primary hover:bg-primary/10 rounded-xl transition-colors shrink-0 ${hasActiveFilters ? '' : 'hidden'}`}
+      class={`btn btn-ghost btn-sm gap-1 sm:gap-2 text-base-content/60 hover:text-primary hover:bg-primary/10 rounded-lg sm:rounded-xl transition-colors shrink-0 min-h-[44px] ${hasActiveFilters ? '' : 'hidden'}`}
       aria-label="Reset filters"
       data-reset-filters
       data-current-month={currentMonth}
@@ -487,7 +489,6 @@ const currentMonthLabel =
   document.querySelectorAll<HTMLButtonElement>('[data-filter-type]').forEach((btn) => {
     btn.addEventListener('click', () => {
       const filterType = btn.dataset.filterType;
-      const filterUrl = btn.dataset.filterUrl;
       const hiddenInput = document.getElementById('type-filter-hidden') as HTMLInputElement;
 
       // Update hidden input
@@ -511,16 +512,13 @@ const currentMonthLabel =
       });
 
       // Dispatch custom event for client-side handling
+      // Note: TransactionsPage.client.ts handles client-side filtering
+      // No page reload needed - removed window.location.href navigation
       window.dispatchEvent(
         new CustomEvent('filterChange', {
           detail: { type: 'type', value: filterType },
         })
       );
-
-      // Navigate to filtered URL for progressive enhancement
-      if (filterUrl) {
-        window.location.href = filterUrl;
-      }
     });
   });
 

@@ -124,7 +124,7 @@ const getPageTitle = (path: string) => {
 ---
 
 <header
-  class="sticky top-0 z-40 bg-base-100/80 backdrop-blur-md px-6 lg:px-10 py-5 flex items-center justify-between gap-4 border-b border-base-300/50"
+  class="fixed top-0 left-0 right-0 lg:left-64 lg:group-data-[sidebar-collapsed=true]:left-20 z-40 bg-base-100/80 backdrop-blur-xl px-4 sm:px-6 lg:px-10 py-4 sm:py-5 min-h-16 sm:min-h-20 flex items-center justify-between gap-4 border-b border-base-300/50 transition-[left] duration-300 ease-out"
 >
   <!-- Left side: Menu toggle + Page title + Subtitle -->
   <div class="flex items-center gap-3">
@@ -184,7 +184,7 @@ const getPageTitle = (path: string) => {
       <!-- Notification Dropdown Panel -->
       <div
         id="notification-dropdown"
-        class="absolute right-0 mt-4 w-80 bg-base-100 rounded-3xl border border-base-300 shadow-premium z-50 overflow-hidden hidden"
+        class="absolute right-0 mt-4 w-[calc(100vw-3rem)] sm:w-80 max-w-80 bg-base-100 rounded-2xl sm:rounded-3xl border border-base-300 shadow-premium z-50 overflow-hidden hidden"
         role="menu"
         aria-label="Notifications menu"
       >
