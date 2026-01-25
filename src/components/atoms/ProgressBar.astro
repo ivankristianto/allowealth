@@ -108,9 +108,14 @@ const progressBarId = `progress-bar-${Math.random().toString(36).slice(2, 11)}`;
   /* CSS transition for progress bar animation
    * Per design system guidelines, CSS transitions are appropriate for simple,
    * single-property animations. Motion library is reserved for complex animations.
+   *
+   * Uses design system animation tokens from tokens.css:
+   * - --anim-duration-slower (1s) for smooth progress fill
+   * - --anim-easing-default (ease-out curve) for natural deceleration
    */
   .progress-bar-fill {
-    transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: width var(--anim-duration-slower, 1s)
+      var(--anim-easing-default, cubic-bezier(0.4, 0, 0.2, 1));
   }
 
   /* Respect user's reduced motion preference - instant transition */

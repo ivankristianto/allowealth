@@ -14,10 +14,15 @@
  * @param {string} error - Error message
  */
 
-import StatLabel from '../atoms/StatLabel.astro';
+// External packages
 import { TrendingUp, TrendingDown, Wallet } from '@lucide/astro';
-import Skeleton from '../atoms/Skeleton.astro';
+
+// Internal aliases - lib
 import { formatCurrency } from '@/lib/tokens';
+
+// Relative imports - components
+import StatLabel from '../atoms/StatLabel.astro';
+import Skeleton from '../atoms/Skeleton.astro';
 
 export interface Props {
   monthlyIncome?: number;

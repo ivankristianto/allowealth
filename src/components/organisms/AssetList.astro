@@ -80,7 +80,7 @@ const getCurrencyClass = (currency: string): string => {
   <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
     <div>
       <h2 class="text-2xl font-bold">Assets</h2>
-      <p class="text-neutral-600">Track your assets across different types and currencies</p>
+      <p class="text-base-content/70">Track your assets across different types and currencies</p>
     </div>
     <div class="flex items-center gap-2">
       <a href={`${baseUrl}/add`} class="btn btn-primary gap-2">
@@ -98,7 +98,7 @@ const getCurrencyClass = (currency: string): string => {
           <div class="card bg-base-100 shadow border border-base-300">
             <div class="card-body py-4">
               <div class="flex items-center justify-between">
-                <span class="text-neutral-600">Total Assets ({curr})</span>
+                <span class="text-base-content/70">Total Assets ({curr})</span>
                 <span class={`text-2xl font-bold ${getCurrencyClass(curr)}`}>
                   {formatCurrency(parseFloat(total), curr as 'IDR' | 'USD')}
                 </span>
@@ -147,13 +147,13 @@ const getCurrencyClass = (currency: string): string => {
                             {formatCurrency(parseFloat(asset.balance), asset.currency)}
                           </span>
                         </div>
-                        <div class="flex items-center justify-between text-sm text-neutral-600">
+                        <div class="flex items-center justify-between text-sm text-base-content/70">
                           <span>Currency</span>
                           <span class={`font-medium ${getCurrencyClass(asset.currency)}`}>
                             {asset.currency}
                           </span>
                         </div>
-                        <div class="flex items-center justify-between text-sm text-neutral-600">
+                        <div class="flex items-center justify-between text-sm text-base-content/70">
                           <span>Last Updated</span>
                           <span>{new Date(asset.last_updated).toLocaleDateString()}</span>
                         </div>
@@ -197,7 +197,7 @@ const getCurrencyClass = (currency: string): string => {
                             {formatCurrency(parseFloat(asset.balance), asset.currency)}
                           </span>
                         </div>
-                        <div class="lg:col-span-2 text-right text-sm text-neutral-600">
+                        <div class="lg:col-span-2 text-right text-sm text-base-content/70">
                           {new Date(asset.last_updated).toLocaleDateString()}
                         </div>
                         <div class="lg:col-span-1">

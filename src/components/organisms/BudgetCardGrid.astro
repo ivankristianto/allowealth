@@ -12,8 +12,11 @@
  * @param {string} className - Additional CSS classes
  */
 
-import BudgetCard from '@components/organisms/BudgetCard.astro';
+// External packages
 import { CircleX, Wallet } from '@lucide/astro';
+
+// Internal aliases
+import BudgetCard from '@components/organisms/BudgetCard.astro';
 import { getIconForCategory } from '@/lib/utils/categoryIcons';
 
 export interface BudgetData {

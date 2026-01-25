@@ -17,11 +17,7 @@
  * @param {string} className - Additional CSS classes
  */
 
-import IconBadge from '@components/atoms/IconBadge.astro';
-import ProgressBar from '@components/atoms/ProgressBar.astro';
-import StatLabel from '@components/atoms/StatLabel.astro';
-import Skeleton from '@components/atoms/Skeleton.astro';
-import { formatCurrency } from '@/lib/tokens';
+// External packages
 import {
   Pencil,
   House,
@@ -38,7 +34,16 @@ import {
   Plane,
   CircleDollarSign,
 } from '@lucide/astro';
+
+// Internal aliases - lib
+import { formatCurrency } from '@/lib/tokens';
 import { getIconForCategory } from '@/lib/utils/categoryIcons';
+
+// Internal aliases - components
+import IconBadge from '@components/atoms/IconBadge.astro';
+import ProgressBar from '@components/atoms/ProgressBar.astro';
+import StatLabel from '@components/atoms/StatLabel.astro';
+import Skeleton from '@components/atoms/Skeleton.astro';
 
 export interface Props {
   categoryId?: string;

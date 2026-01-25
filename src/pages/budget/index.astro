@@ -270,7 +270,27 @@ const budgetCount =
     });
   }
 
-  // Format currency for display
+  /**
+   * Client-Side Helper Functions
+   *
+   * ARCHITECTURAL NOTE: These functions duplicate logic from @/lib/tokens.ts
+   * and @/lib/utils/budget.ts. This duplication is INTENTIONAL and NECESSARY because:
+   *
+   * 1. Astro's inline <script> tags run in the browser
+   * 2. Browser scripts cannot import from server-side TypeScript modules
+   * 3. These functions are needed for real-time DOM updates when budgets change
+   *
+   * The server-side equivalents are:
+   * - formatCurrencyClient → @/lib/tokens.ts:formatCurrency()
+   * - getStatus → @/lib/tokens.ts:getBudgetStatusClass() (returns different format)
+   * - getStatusBadgeClasses → @/lib/tokens.ts:getStatusBadgeClasses()
+   * - getProgressColorClass → Uses DaisyUI semantic colors
+   *
+   * Keep these in sync with server-side utilities when updating.
+   * See CLAUDE.md "Astro Files - DO NOT mix define:vars with npm imports"
+   */
+
+  // Format currency for display (mirrors @/lib/tokens.ts:formatCurrency)
   function formatCurrencyClient(amount: number, currency: string): string {
     if (currency === 'IDR') {
       return new Intl.NumberFormat('id-ID', {
@@ -288,14 +308,14 @@ const budgetCount =
     }).format(amount);
   }
 
-  // Get status based on percentage
+  // Get status based on percentage (mirrors @/lib/tokens.ts:getBudgetStatusClass logic)
   function getStatus(percentage: number): 'ok' | 'warning' | 'exceeded' {
     if (percentage >= 100) return 'exceeded';
     if (percentage >= 80) return 'warning';
     return 'ok';
   }
 
-  // Get status badge classes
+  // Get status badge classes (mirrors @/lib/tokens.ts:getStatusBadgeClasses pattern)
   function getStatusBadgeClasses(status: 'ok' | 'warning' | 'exceeded'): string {
     const statusMap: Record<string, string> = {
       ok: 'bg-success/10 text-success',
@@ -305,7 +325,7 @@ const budgetCount =
     return statusMap[status] || statusMap.ok;
   }
 
-  // Get progress bar status color class
+  // Get progress bar status color class (uses DaisyUI semantic colors)
   function getProgressColorClass(status: 'ok' | 'warning' | 'exceeded'): string {
     const colorMap: Record<string, string> = {
       ok: 'bg-success',

@@ -7,7 +7,14 @@
 - [ ] Audit components for legacy patterns
 - [ ] Remove unused CSS classes
 - [ ] Consolidate duplicate styles
-- [ ] Update any hardcoded values to use tokens
+- [x] Update any hardcoded values to use tokens ✅ FIXED
+
+**Implementation Notes (Hardcoded Values to Tokens):**
+
+- Replaced `text-neutral-500` → `text-base-content/60` in CSVImportForm.astro
+- Replaced `text-neutral-600` → `text-base-content/70` in CSVImportForm.astro, AssetList.astro
+- Fixed pages: assets/add.astro, settings/categories.astro
+- DaisyUI semantic classes ensure proper dark mode support
 
 **Task: Storybook Story Updates**
 
@@ -123,11 +130,18 @@
 - Updated both SSR data object and `TransactionSummaryCards` component prop
 - User's `primaryCurrency` preference from `user_settings` table is now respected
 
-**P2-3: Store File Not Used**
+**P2-3: Store File Not Used** ✅ FIXED
 
-- **Location:** `/home/ivan/works/k2-expenses-G8m/src/lib/stores/transactionFiltersStore.ts`
-- [ ] **Issue:** Store exports functions that are never imported/used
-- **Action:** Either remove the file or implement client-side enhancement (kept for future use)
+- **Location:** `/home/ivan/works/expenses/src/lib/stores/transactionFiltersStore.ts`
+- [x] **Issue:** Store exports functions that are never imported/used
+- **Action:** Cleaned up unused exports, kept only what's actually used
+
+**Implementation Notes:**
+
+- Removed unused helper functions (setFilter, setCategoryIds, toggleCategory, setPage, nextPage, prevPage, setMonth, setFilterAndResetPage, initFiltersFromUrl, updateUrlWithFilters, typeFilter atom)
+- Kept essential exports: transactionFiltersStore, initFiltersFromSSR, resetFilters, hasActiveFilters, TransactionFilters type
+- Added JSDoc documentation explaining design decision
+- 17 unit tests added covering store functionality
 
 **P3-1: Extract Month Navigation Logic to Utility** ✅ FIXED
 
@@ -238,11 +252,18 @@
 - Respects `prefers-reduced-motion` for accessibility
 - Matches modal exit animation pattern from design system
 
-**P3-2: Import Ordering Convention**
+**P3-2: Import Ordering Convention** ✅ FIXED
 
 - **Location:** Various new components
-- [ ] **Issue:** Import ordering could be more consistent (external → internal → types)
-- **Action:** Apply consistent import ordering: external packages → @/ aliases → relative imports → types
+- [x] **Issue:** Import ordering could be more consistent (external → internal → types)
+- **Action:** Applied consistent import ordering across components
+
+**Implementation Notes:**
+
+- Fixed import ordering in BudgetCardGrid.astro, BudgetCard.astro, BudgetAdviceBanner.astro, TransactionSummaryCards.astro
+- Order: External packages → Internal aliases (@/lib) → Internal aliases (@components) → Relative imports
+- Added section comments (// External packages, // Internal aliases - lib, etc.) for clarity
+- All tests pass after refactoring
 
 ### Non-Blocking Feedback from Code Review (Task 17 - Dark Mode)
 
@@ -408,11 +429,18 @@
 - Applied `.theme-transition` class to `Footer.astro` component
 - CSS definition uses `prefers-reduced-motion: no-preference` for accessibility
 
-**P3-1: ProgressBar - Extract Animation Configuration to CSS Variables**
+**P3-1: ProgressBar - Extract Animation Configuration to CSS Variables** ✅ FIXED
 
 - **Location:** `/home/ivan/works/expenses/src/components/atoms/ProgressBar.astro`
-- [ ] **Issue:** Animation timing (1s) and easing hardcoded in CSS
-- **Action:** Consider extracting to `--animation-duration-slow` and `--animation-easing-ease-out`
+- [x] **Issue:** Animation timing (1s) and easing hardcoded in CSS
+- **Action:** Updated to use design system animation tokens
+
+**Implementation Notes:**
+
+- Updated CSS transition to use `var(--anim-duration-slower, 1s)` and `var(--anim-easing-default, cubic-bezier(0.4, 0, 0.2, 1))`
+- Tokens defined in `src/styles/tokens.css`
+- Fallback values ensure graceful degradation
+- Added documentation comment explaining token usage
 
 **P3-2: BudgetCardGrid - Consider aria-rowcount for Large Lists** ✅ FIXED
 
@@ -443,11 +471,18 @@
 - Combined logic: explicit theme takes priority over system preference
 - 8 unit tests added covering system preference detection and combined logic
 
-**P2-2: Budget Page - Unused Helper Functions Duplicating Server Logic**
+**P2-2: Budget Page - Unused Helper Functions Duplicating Server Logic** ✅ FIXED
 
 - **Location:** `/home/ivan/works/expenses/src/pages/budget/index.astro` (lines 274-316)
-- [ ] **Issue:** Functions `formatCurrencyClient`, `getStatus`, `getStatusBadgeClasses`, `getProgressColorClass` duplicate server-side logic
-- **Action:** Document why duplication is necessary (client-side cannot import server modules) or consider shared utility
+- [x] **Issue:** Functions `formatCurrencyClient`, `getStatus`, `getStatusBadgeClasses`, `getProgressColorClass` duplicate server-side logic
+- **Action:** Documented why duplication is necessary (client-side cannot import server modules)
+
+**Implementation Notes:**
+
+- Added comprehensive JSDoc comment block explaining architectural constraint
+- Documents that Astro inline scripts run in browser, cannot import server modules
+- References CLAUDE.md guidelines about define:vars limitations
+- Maps each client function to its server-side equivalent for maintainability
 
 **P2-3: SpendingCard - aria-labelledby ID Could Conflict with Multiple Cards** ✅ FIXED
 

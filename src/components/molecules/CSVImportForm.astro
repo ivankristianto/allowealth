@@ -93,7 +93,7 @@ const cspNonce = Astro.locals.cspNonce || '';
         class="file-input file-input-bordered w-full"
         aria-describedby="file-error"
       />
-      <div class="text-sm text-neutral-500 mt-2">
+      <div class="text-sm text-base-content/60 mt-2">
         <p class="font-medium mb-1">Expected CSV format:</p>
         <ul class="list-disc list-inside space-y-0.5 text-xs">
           <li>date (YYYY-MM-DD format)</li>
@@ -114,7 +114,7 @@ const cspNonce = Astro.locals.cspNonce || '';
   <div id="loading-state" class="hidden" role="status" aria-live="polite">
     <div class="flex items-center gap-3">
       <span class="loading loading-spinner loading-primary"></span>
-      <span class="text-neutral-600">Parsing CSV file...</span>
+      <span class="text-base-content/70">Parsing CSV file...</span>
     </div>
   </div>
 
@@ -141,7 +141,7 @@ const cspNonce = Astro.locals.cspNonce || '';
           <tbody id="preview-body"></tbody>
         </table>
       </div>
-      <p id="row-count" class="text-sm text-neutral-500" aria-live="polite"></p>
+      <p id="row-count" class="text-sm text-base-content/60" aria-live="polite"></p>
     </div>
 
     <!-- Basic Validation Summary -->
