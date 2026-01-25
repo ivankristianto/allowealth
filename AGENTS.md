@@ -92,7 +92,7 @@ src/
 
 For pages that need client-side interactivity (filtering, pagination, dynamic updates), we use **server-rendered HTML fragments** instead of client-side DOM construction.
 
-**Read the full documentation:** `docs/architecture/interactive-pages.md`
+**Read the full documentation:** `docs/architecture/002-interactive-pages.md`
 
 ### Key Principles
 
