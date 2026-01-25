@@ -166,51 +166,15 @@ describe('TransactionCard', () => {
     });
   });
 
-  describe('Component Configuration', () => {
-    // Minimum touch target size requirement (44x44px)
-    const MIN_TOUCH_TARGET = 44;
-
-    it('should define minimum touch target of 44px', () => {
-      expect(MIN_TOUCH_TARGET).toBe(44);
-    });
-
-    // Action button configuration
-    const actionButtonClasses = ['min-h-[44px]', 'min-w-[44px]'];
-
-    it('should have touch-friendly action button classes', () => {
-      expect(actionButtonClasses).toContain('min-h-[44px]');
-      expect(actionButtonClasses).toContain('min-w-[44px]');
-    });
-  });
-
-  describe('Transaction Types', () => {
-    const transactionTypes = ['expense', 'income'] as const;
-
-    it('should support expense type', () => {
-      expect(transactionTypes).toContain('expense');
-    });
-
-    it('should support income type', () => {
-      expect(transactionTypes).toContain('income');
-    });
-
-    it('should only have two transaction types', () => {
-      expect(transactionTypes.length).toBe(2);
-    });
-  });
-
-  describe('showActions Configuration', () => {
-    // Test that the component respects showActions prop
-    const shouldShowDropdown = (showActions: boolean): boolean => {
-      return showActions;
-    };
-
-    it('should show dropdown when showActions is true', () => {
-      expect(shouldShowDropdown(true)).toBe(true);
-    });
-
-    it('should hide dropdown when showActions is false', () => {
-      expect(shouldShowDropdown(false)).toBe(false);
-    });
-  });
+  /**
+   * Design Requirements Documentation
+   *
+   * The following requirements are validated via Storybook stories and manual testing
+   * as they require a full rendering environment:
+   *
+   * - Minimum touch target: 44x44px (WCAG 2.5.5) via min-h-[44px] min-w-[44px]
+   * - Transaction types: 'expense' | 'income' with distinct border colors
+   * - showActions prop: controls dropdown menu visibility
+   * - loading prop: shows skeleton state when true
+   */
 });

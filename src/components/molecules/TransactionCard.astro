@@ -5,8 +5,9 @@
  * Mobile-friendly transaction display with vertical stack layout.
  * Designed for 375px viewport with proper touch targets.
  *
- * @param {Object} transaction - Transaction data
+ * @param {Object} transaction - Transaction data (optional when loading)
  * @param {boolean} showActions - Show edit/delete actions
+ * @param {boolean} loading - Show skeleton loading state
  * @param {string} className - Additional CSS classes
  */
 
@@ -17,16 +18,18 @@ import type { TransactionOutput } from '@/lib/types/transaction';
 import { getCategoryMeta } from '@/lib/utils/categoryMeta';
 
 export interface Props {
-  transaction: TransactionOutput;
+  transaction?: TransactionOutput;
   showActions?: boolean;
+  loading?: boolean;
   className?: string;
 }
 
-const { transaction, showActions = true, className = '' } = Astro.props;
+const { transaction, showActions = true, loading = false, className = '' } = Astro.props;
 
-const amount = parseFloat(transaction.amount) || 0;
-const isExpense = transaction.type === 'expense';
-const date = new Date(transaction.transaction_date);
+// Safely extract transaction data (only when not loading)
+const amount = transaction ? parseFloat(transaction.amount) || 0 : 0;
+const isExpense = transaction?.type === 'expense';
+const date = transaction ? new Date(transaction.transaction_date) : new Date();
 
 // Format date with relative context
 const formatDate = (d: Date): string => {
@@ -54,128 +57,144 @@ const formatDate = (d: Date): string => {
 };
 
 const formattedDate = formatDate(date);
-const primaryText = transaction.description?.trim() || transaction.category.name;
+const primaryText = transaction?.description?.trim() || transaction?.category?.name || '';
 
-const categoryMeta = getCategoryMeta(transaction.category.name, transaction.type);
+const categoryMeta = transaction
+  ? getCategoryMeta(transaction.category.name, transaction.type)
+  : { icon: CreditCard, variant: 'neutral' as const };
 const CategoryIcon = categoryMeta.icon;
 
 const cardClasses = [
   'group p-4 transition-all',
   'border-l-4 border-transparent',
-  isExpense ? 'active:border-error/30' : 'active:border-success/30',
-  'active:bg-base-200/40',
+  !loading && (isExpense ? 'active:border-error/30' : 'active:border-success/30'),
+  !loading && 'active:bg-base-200/40',
+  loading && 'animate-pulse',
   className,
 ]
   .filter(Boolean)
   .join(' ');
 ---
 
-<article
-  class={cardClasses}
-  data-transaction-card
-  data-transaction-id={transaction.id}
-  aria-label={`${transaction.type === 'income' ? 'Income' : 'Expense'}: ${primaryText}, ${isExpense ? '-' : '+'}${amount} ${transaction.currency}`}
->
-  <!-- Top row: Icon + Description + Actions -->
-  <div class="flex items-start gap-3">
-    <IconBadge variant={categoryMeta.variant} size="sm" className="rounded-xl shrink-0">
-      <CategoryIcon size={18} class="stroke-current" aria-hidden="true" />
-    </IconBadge>
-
-    <div class="flex-1 min-w-0">
-      <div class="font-bold text-base tracking-tight truncate leading-tight">
-        {primaryText}
-      </div>
-      <div class="mt-1 flex items-center gap-2 text-xs text-base-content/60">
-        <span
-          class="font-bold tracking-widest uppercase text-[10px] bg-base-200 px-1.5 py-0.5 rounded"
-        >
-          {transaction.category.name}
-        </span>
-        <span class="text-base-content/40">·</span>
-        <time datetime={date.toISOString()} class="font-medium">
-          {formattedDate}
-        </time>
-      </div>
-    </div>
-
-    {
-      showActions && (
-        <div class="dropdown dropdown-end">
-          <button
-            type="button"
-            tabindex={0}
-            class="btn btn-ghost btn-sm btn-square min-h-[44px] min-w-[44px]"
-            aria-label="Transaction actions"
-            aria-haspopup="menu"
-          >
-            <Ellipsis size={18} class="stroke-current" aria-hidden="true" />
-          </button>
-          <ul
-            tabindex={0}
-            class="dropdown-content z-50 menu p-2 shadow-lg bg-base-100 rounded-xl w-40 border border-base-300"
-            role="menu"
-          >
-            <li role="none">
-              <button
-                type="button"
-                role="menuitem"
-                class="flex items-center gap-2"
-                aria-label={`Edit transaction: ${primaryText}`}
-                data-edit-transaction={transaction.id}
-                data-transaction-data={JSON.stringify({
-                  id: transaction.id,
-                  type: transaction.type,
-                  title: transaction.description,
-                  amount: transaction.amount,
-                  currency: transaction.currency,
-                  category_id: transaction.category.id,
-                  payment_method_id: transaction.payment_method.id,
-                  transaction_date: date.toISOString().split('T')[0],
-                })}
-              >
-                <Pencil size={16} class="stroke-current" aria-hidden="true" />
-                Edit
-              </button>
-            </li>
-            <li role="none">
-              <button
-                type="button"
-                role="menuitem"
-                class="flex items-center gap-2 text-error"
-                aria-label={`Delete transaction: ${primaryText}`}
-                data-delete-transaction={transaction.id}
-                data-transaction-details={JSON.stringify(transaction)}
-              >
-                <Trash2 size={16} class="stroke-current" aria-hidden="true" />
-                Delete
-              </button>
-            </li>
-          </ul>
-        </div>
-      )
-    }
-  </div>
-
-  <!-- Bottom row: Payment method + Amount -->
-  <div class="mt-3 flex items-center justify-between">
+{
+  loading ? (
     <div
-      class="flex items-center gap-1.5 text-[10px] uppercase tracking-widest text-base-content/50"
+      class={`p-4 ${className}`}
+      role="status"
+      aria-label="Loading transaction"
+      data-transaction-card-skeleton
     >
-      <CreditCard size={12} class="stroke-current" aria-hidden="true" />
-      <span>{transaction.payment_method.name}</span>
+      <div class="flex items-start gap-3">
+        <div class="w-10 h-10 rounded-xl bg-base-200 shrink-0" aria-hidden="true" />
+        <div class="flex-1 min-w-0 space-y-2">
+          <div class="h-4 bg-base-200 rounded w-3/4" aria-hidden="true" />
+          <div class="h-3 bg-base-200 rounded w-1/2" aria-hidden="true" />
+        </div>
+      </div>
+      <div class="mt-3 flex items-center justify-between">
+        <div class="h-3 bg-base-200 rounded w-20" aria-hidden="true" />
+        <div class="h-4 bg-base-200 rounded w-24" aria-hidden="true" />
+      </div>
     </div>
+  ) : (
+    <article
+      class={cardClasses}
+      data-transaction-card
+      data-transaction-id={transaction?.id}
+      aria-label={`${transaction?.type === 'income' ? 'Income' : 'Expense'}: ${primaryText}, ${isExpense ? '-' : '+'}${amount} ${transaction?.currency}`}
+    >
+      <div class="flex items-start gap-3">
+        <IconBadge variant={categoryMeta.variant} size="sm" className="rounded-xl shrink-0">
+          <CategoryIcon size={18} class="stroke-current" aria-hidden="true" />
+        </IconBadge>
 
-    <Currency
-      amount={amount}
-      currency={transaction.currency}
-      showSign={true}
-      variant={isExpense ? 'negative' : 'positive'}
-      size="md"
-      className="font-bold tracking-tight"
-    />
-  </div>
-</article>
+        <div class="flex-1 min-w-0">
+          <div class="font-bold text-base tracking-tight truncate leading-tight">{primaryText}</div>
+          <div class="mt-1 flex items-center gap-2 text-xs text-base-content/60">
+            <span class="font-bold tracking-widest uppercase text-[10px] bg-base-200 px-1.5 py-0.5 rounded">
+              {transaction?.category?.name}
+            </span>
+            <span class="text-base-content/40">·</span>
+            <time datetime={date.toISOString()} class="font-medium">
+              {formattedDate}
+            </time>
+          </div>
+        </div>
+
+        {showActions && transaction && (
+          <div class="dropdown dropdown-end">
+            <button
+              type="button"
+              tabindex={0}
+              class="btn btn-ghost btn-sm btn-square min-h-[44px] min-w-[44px]"
+              aria-label="Transaction actions"
+              aria-haspopup="menu"
+            >
+              <Ellipsis size={18} class="stroke-current" aria-hidden="true" />
+            </button>
+            <ul
+              tabindex={0}
+              class="dropdown-content z-50 menu p-2 shadow-lg bg-base-100 rounded-xl w-40 border border-base-300"
+              role="menu"
+            >
+              <li role="none">
+                <button
+                  type="button"
+                  role="menuitem"
+                  class="flex items-center gap-2"
+                  aria-label={`Edit transaction: ${primaryText}`}
+                  data-edit-transaction={transaction.id}
+                  data-transaction-data={JSON.stringify({
+                    id: transaction.id,
+                    type: transaction.type,
+                    title: transaction.description,
+                    amount: transaction.amount,
+                    currency: transaction.currency,
+                    category_id: transaction.category.id,
+                    payment_method_id: transaction.payment_method.id,
+                    transaction_date: date.toISOString().split('T')[0],
+                  })}
+                >
+                  <Pencil size={16} class="stroke-current" aria-hidden="true" />
+                  Edit
+                </button>
+              </li>
+              <li role="none">
+                <button
+                  type="button"
+                  role="menuitem"
+                  class="flex items-center gap-2 text-error"
+                  aria-label={`Delete transaction: ${primaryText}`}
+                  data-delete-transaction={transaction.id}
+                  data-transaction-details={JSON.stringify(transaction)}
+                >
+                  <Trash2 size={16} class="stroke-current" aria-hidden="true" />
+                  Delete
+                </button>
+              </li>
+            </ul>
+          </div>
+        )}
+      </div>
+
+      <div class="mt-3 flex items-center justify-between">
+        <div class="flex items-center gap-1.5 text-[10px] uppercase tracking-widest text-base-content/50">
+          <CreditCard size={12} class="stroke-current" aria-hidden="true" />
+          <span>{transaction?.payment_method?.name}</span>
+        </div>
+
+        <Currency
+          amount={amount}
+          currency={transaction?.currency || 'IDR'}
+          showSign={true}
+          variant={isExpense ? 'negative' : 'positive'}
+          size="md"
+          className="font-bold tracking-tight"
+        />
+      </div>
+    </article>
+  )
+}
 
 <script>
   // Keyboard navigation for dropdown menus
