@@ -11,12 +11,14 @@ import BaseLayout from './BaseLayout.astro';
 import Navigation from '../components/layouts/Navigation.astro';
 import Header from '../components/layouts/Header.astro';
 import Footer from '../components/layouts/Footer.astro';
+import MobileNavigation from '../components/layouts/MobileNavigation.astro';
 import ThemeToggle from '../components/atoms/ThemeToggle.astro';
+import type { User } from '@/lib/auth/lucia';
 
 interface Props {
   title?: string;
   currentPath?: string;
-  user?: any | null;
+  user?: User | null;
 }
 
 const { title = 'Finance Manager', currentPath = '/', user } = Astro.props;
@@ -24,7 +26,7 @@ const { title = 'Finance Manager', currentPath = '/', user } = Astro.props;
 
 <BaseLayout title={title}>
   <div
-    class="drawer lg:drawer-open group transition-none data-[sidebar-ready=true]:transition-all data-[sidebar-ready=true]:duration-300"
+    class="drawer lg:drawer-open group transition-none data-[sidebar-ready=true]:transition-all data-[sidebar-ready=true]:duration-300 overflow-x-hidden"
     data-sidebar-root
     data-sidebar-collapsed="false"
     data-sidebar-ready="false"
@@ -39,7 +41,10 @@ const { title = 'Finance Manager', currentPath = '/', user } = Astro.props;
       <Header currentPath={currentPath} user={user} />
 
       <!-- Main content -->
-      <main class="flex-1 p-4 lg:p-6 bg-base-200 min-h-screen theme-transition">
+      <main
+        id="main-content"
+        class="flex-1 p-4 lg:p-6 pb-24 lg:pb-6 bg-base-200 min-h-screen theme-transition"
+      >
         <slot />
       </main>
 
@@ -48,12 +53,15 @@ const { title = 'Finance Manager', currentPath = '/', user } = Astro.props;
     </div>
 
     <!-- Sidebar navigation -->
-    <div class="drawer-side overflow-visible z-50">
+    <div class="drawer-side z-50 lg:overflow-visible">
       <label for="drawer-toggle" aria-label="close sidebar" class="drawer-overlay"></label>
       <Navigation currentPath={currentPath} user={user} />
     </div>
   </div>
 
-  <!-- Floating Theme Toggle - bottom right corner -->
-  <ThemeToggle className="fixed bottom-6 right-6 z-50" />
+  <!-- Mobile Bottom Navigation -->
+  <MobileNavigation currentPath={currentPath} />
+
+  <!-- Floating Theme Toggle - bottom right corner, desktop only (mobile toggle in header) -->
+  <ThemeToggle className="hidden lg:block fixed bottom-6 right-6 z-50" />
 </BaseLayout>

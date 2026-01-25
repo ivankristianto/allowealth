@@ -6,7 +6,7 @@
  * notifications, and new entry button. Displays user context when authenticated.
  */
 
-import { Menu, Plus, Bell } from '@lucide/astro';
+import { Menu, Plus, Bell, Moon, Sun } from '@lucide/astro';
 import UserContext from '../organisms/UserContext.astro';
 import CurrencySelector from '../molecules/CurrencySelector.astro';
 import { formatMonthYear } from '@/lib/utils';
@@ -154,6 +154,18 @@ const getPageTitle = (path: string) => {
       <CurrencySelector />
     </div>
 
+    <!-- Theme Toggle (mobile only) -->
+    <button
+      type="button"
+      id="header-theme-toggle"
+      class="lg:hidden p-3 rounded-full transition-all text-neutral hover:bg-base-100 shadow-sm border border-base-300"
+      aria-label="Toggle dark mode"
+      title="Toggle dark mode"
+    >
+      <Moon size={20} class="stroke-current header-theme-icon-light" aria-hidden="true" />
+      <Sun size={20} class="stroke-current header-theme-icon-dark hidden" aria-hidden="true" />
+    </button>
+
     <!-- Notifications -->
     <div class="relative">
       <button
@@ -236,8 +248,10 @@ const getPageTitle = (path: string) => {
       </div>
     </div>
 
-    <!-- User Context (login/register or user menu) -->
-    <UserContext user={user} />
+    <!-- User Context (login/register or user menu) - hidden on mobile -->
+    <div class="hidden lg:block">
+      <UserContext user={user} />
+    </div>
 
     <!-- New Entry Button -->
     <button
@@ -324,4 +338,44 @@ const getPageTitle = (path: string) => {
       );
     }
   });
+
+  // Header theme toggle (mobile)
+  const headerThemeToggle = document.getElementById('header-theme-toggle');
+
+  function updateHeaderThemeIcons() {
+    const theme = document.documentElement.getAttribute('data-theme');
+    const lightIcon = document.querySelector('.header-theme-icon-light');
+    const darkIcon = document.querySelector('.header-theme-icon-dark');
+
+    if (theme === 'dark') {
+      lightIcon?.classList.add('hidden');
+      darkIcon?.classList.remove('hidden');
+      headerThemeToggle?.setAttribute('aria-label', 'Switch to light mode');
+    } else {
+      lightIcon?.classList.remove('hidden');
+      darkIcon?.classList.add('hidden');
+      headerThemeToggle?.setAttribute('aria-label', 'Switch to dark mode');
+    }
+  }
+
+  headerThemeToggle?.addEventListener('click', () => {
+    const current = document.documentElement.getAttribute('data-theme') as 'light' | 'dark';
+    const next = current === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('theme', next);
+    updateHeaderThemeIcons();
+  });
+
+  // Initialize header theme icons
+  updateHeaderThemeIcons();
+
+  // Listen for theme changes from other toggles
+  const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      if (mutation.attributeName === 'data-theme') {
+        updateHeaderThemeIcons();
+      }
+    });
+  });
+  observer.observe(document.documentElement, { attributes: true });
 </script>

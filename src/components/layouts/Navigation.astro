@@ -68,7 +68,7 @@ const isActive = (href: string) => {
 ---
 
 <aside
-  class="bg-base-100 w-64 min-w-64 h-screen border-r border-base-300 hidden lg:flex flex-col transition-none group-data-[sidebar-ready=true]:transition-all group-data-[sidebar-ready=true]:duration-300 group-data-[sidebar-collapsed=true]:w-20 group-data-[sidebar-collapsed=true]:min-w-20 relative"
+  class="bg-base-100 w-64 min-w-64 h-screen border-r border-base-300 flex flex-col transition-none group-data-[sidebar-ready=true]:transition-all group-data-[sidebar-ready=true]:duration-300 lg:group-data-[sidebar-collapsed=true]:w-20 lg:group-data-[sidebar-collapsed=true]:min-w-20 relative pb-24 lg:pb-0"
   role="navigation"
   aria-label="Main navigation"
 >
@@ -80,9 +80,14 @@ const isActive = (href: string) => {
     Skip to main content
   </a>
 
-  <!-- Close button for mobile -->
-  <div class="lg:hidden p-4 border-b border-base-300 flex justify-between items-center">
-    <span class="font-bold text-lg text-base-content">Menu</span>
+  <!-- Mobile Header with Logo and Close button -->
+  <div class="lg:hidden p-6 flex justify-between items-center">
+    <a href="/" class="flex items-center gap-3" aria-label="FamilyFinance Home">
+      <div class="bg-accent text-accent-content rounded-2xl p-2 shadow-accent-glow">
+        <Wallet size={24} class="stroke-current" aria-hidden="true" />
+      </div>
+      <span class="text-xl font-bold tracking-tight text-base-content">FamilyFinan...</span>
+    </a>
     <label for="drawer-toggle" class="btn btn-sm btn-circle btn-ghost" aria-label="Close menu">
       <X size={22} class="stroke-current" />
     </label>
@@ -104,9 +109,9 @@ const isActive = (href: string) => {
     />
   </button>
 
-  <!-- Brand Logo Section -->
+  <!-- Brand Logo Section (desktop only - mobile has it in the header above) -->
   <div
-    class="p-8 flex items-center gap-3 group-data-[sidebar-collapsed=true]:p-4 group-data-[sidebar-collapsed=true]:justify-center group-data-[sidebar-collapsed=true]:gap-0"
+    class="hidden lg:flex p-8 items-center gap-3 group-data-[sidebar-collapsed=true]:p-4 group-data-[sidebar-collapsed=true]:justify-center group-data-[sidebar-collapsed=true]:gap-0"
   >
     <a
       href="/"
