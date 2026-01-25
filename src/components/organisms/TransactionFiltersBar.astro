@@ -489,7 +489,6 @@ const currentMonthLabel =
   document.querySelectorAll<HTMLButtonElement>('[data-filter-type]').forEach((btn) => {
     btn.addEventListener('click', () => {
       const filterType = btn.dataset.filterType;
-      const filterUrl = btn.dataset.filterUrl;
       const hiddenInput = document.getElementById('type-filter-hidden') as HTMLInputElement;
 
       // Update hidden input
@@ -513,16 +512,13 @@ const currentMonthLabel =
       });
 
       // Dispatch custom event for client-side handling
+      // Note: TransactionsPage.client.ts handles client-side filtering
+      // No page reload needed - removed window.location.href navigation
       window.dispatchEvent(
         new CustomEvent('filterChange', {
           detail: { type: 'type', value: filterType },
         })
       );
-
-      // Navigate to filtered URL for progressive enhancement
-      if (filterUrl) {
-        window.location.href = filterUrl;
-      }
     });
   });
 

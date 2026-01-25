@@ -117,109 +117,253 @@ function formatDate(dateString: string | Date): string {
 }
 
 /**
- * Create a transaction row element
+ * Create a transaction card element matching TransactionCard.astro structure
+ * with responsive mobile/desktop layouts
  */
 function createTransactionRow(transaction: TransactionOutput): HTMLElement {
   const amount = parseFloat(transaction.amount) || 0;
   const isExpense = transaction.type === 'expense';
   const primaryText = transaction.description?.trim() || transaction.category.name;
   const categoryMeta = getCategoryMeta(transaction.category.name, transaction.type);
+  const formattedDate = formatDate(transaction.transaction_date);
 
-  const row = document.createElement('div');
-  row.className = `group flex items-center gap-5 p-5 transition-all cursor-pointer border-l-4 border-transparent ${
-    isExpense ? 'hover:border-error/30' : 'hover:border-success/30'
-  } hover:bg-base-200/40`;
-  row.setAttribute('data-transaction-row', '');
-  row.setAttribute('data-transaction-id', transaction.id);
+  // Prepare transaction data for edit action
+  const transactionDataJson = JSON.stringify({
+    id: transaction.id,
+    type: transaction.type,
+    title: transaction.description,
+    amount: transaction.amount,
+    currency: transaction.currency,
+    category_id: transaction.category.id,
+    payment_method_id: transaction.payment_method.id,
+    transaction_date: new Date(transaction.transaction_date).toISOString().split('T')[0],
+  });
 
-  // Date
-  const dateDiv = document.createElement('div');
-  dateDiv.className = 'flex-shrink-0 w-24 text-sm';
-  const dateInner = document.createElement('div');
-  dateInner.className = 'font-medium';
-  dateInner.textContent = formatDate(transaction.transaction_date);
-  dateDiv.appendChild(dateInner);
+  const article = document.createElement('article');
+  article.className = `group p-3 sm:p-4 transition-all border-l-4 border-transparent ${
+    isExpense
+      ? 'hover:border-error/30 active:border-error/30'
+      : 'hover:border-success/30 active:border-success/30'
+  } hover:bg-base-200/40 active:bg-base-200/40`;
+  article.setAttribute('data-transaction-card', '');
+  article.setAttribute('data-transaction-id', transaction.id);
+  article.setAttribute(
+    'aria-label',
+    `${transaction.type === 'income' ? 'Income' : 'Expense'}: ${primaryText}, ${amount} ${transaction.currency}`
+  );
 
-  // Category & Description
-  const mainDiv = document.createElement('div');
-  mainDiv.className = 'flex-1 min-w-0 flex items-center gap-4';
+  // ===== MOBILE LAYOUT (shown below sm breakpoint) =====
+  const mobileLayout = document.createElement('div');
+  mobileLayout.className = 'sm:hidden';
 
-  const iconBadge = document.createElement('div');
-  iconBadge.className = `w-10 h-10 rounded-2xl flex items-center justify-center transition-transform group-hover:rotate-2 ${getVariantClasses(categoryMeta.variant)}`;
-  iconBadge.innerHTML = categoryMeta.iconSvg;
-  iconBadge.setAttribute('aria-hidden', 'true');
+  // Mobile: Top row with icon, title, category badge, and dropdown
+  const mobileTopRow = document.createElement('div');
+  mobileTopRow.className = 'flex items-start gap-3';
 
-  const textDiv = document.createElement('div');
-  textDiv.className = 'min-w-0';
+  const mobileIconBadge = document.createElement('div');
+  mobileIconBadge.className = `w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${getVariantClasses(categoryMeta.variant)}`;
+  mobileIconBadge.innerHTML = categoryMeta.iconSvg;
+  mobileIconBadge.setAttribute('aria-hidden', 'true');
 
-  const primaryTextEl = document.createElement('div');
-  primaryTextEl.className = 'font-bold tracking-tight truncate text-base leading-none';
-  primaryTextEl.textContent = primaryText;
+  const mobileTextContainer = document.createElement('div');
+  mobileTextContainer.className = 'flex-1 min-w-0';
 
-  const categoryBadgeWrapper = document.createElement('div');
-  categoryBadgeWrapper.className = 'mt-2 flex flex-wrap items-center gap-2 leading-none';
+  const mobilePrimaryText = document.createElement('div');
+  mobilePrimaryText.className = 'font-bold text-base tracking-tight leading-tight break-words';
+  mobilePrimaryText.textContent = primaryText;
 
-  const categoryBadge = document.createElement('span');
-  categoryBadge.className =
+  const mobileCategoryWrapper = document.createElement('div');
+  mobileCategoryWrapper.className = 'mt-1';
+
+  const mobileCategoryBadge = document.createElement('span');
+  mobileCategoryBadge.className =
+    'font-bold tracking-widest uppercase text-[10px] bg-base-200 px-1.5 py-0.5 rounded text-base-content/60';
+  mobileCategoryBadge.textContent = transaction.category.name;
+
+  mobileCategoryWrapper.appendChild(mobileCategoryBadge);
+  mobileTextContainer.appendChild(mobilePrimaryText);
+  mobileTextContainer.appendChild(mobileCategoryWrapper);
+
+  // Mobile dropdown menu
+  const mobileDropdown = document.createElement('div');
+  mobileDropdown.className = 'dropdown dropdown-end';
+
+  const mobileDropdownBtn = document.createElement('button');
+  mobileDropdownBtn.type = 'button';
+  mobileDropdownBtn.tabIndex = 0;
+  mobileDropdownBtn.className = 'btn btn-ghost btn-sm btn-square min-h-[44px] min-w-[44px]';
+  mobileDropdownBtn.setAttribute('aria-label', 'Transaction actions');
+  mobileDropdownBtn.setAttribute('aria-haspopup', 'menu');
+  mobileDropdownBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>`;
+
+  const mobileDropdownMenu = document.createElement('ul');
+  mobileDropdownMenu.tabIndex = 0;
+  mobileDropdownMenu.className =
+    'dropdown-content z-50 menu p-2 shadow-lg bg-base-100 rounded-xl w-40 border border-base-300';
+  mobileDropdownMenu.setAttribute('role', 'menu');
+
+  const mobileEditLi = document.createElement('li');
+  mobileEditLi.setAttribute('role', 'none');
+  const mobileEditBtn = document.createElement('button');
+  mobileEditBtn.type = 'button';
+  mobileEditBtn.setAttribute('role', 'menuitem');
+  mobileEditBtn.className = 'flex items-center gap-2';
+  mobileEditBtn.setAttribute('aria-label', `Edit transaction: ${primaryText}`);
+  mobileEditBtn.setAttribute('data-edit-transaction', transaction.id);
+  mobileEditBtn.setAttribute('data-transaction-data', transactionDataJson);
+  mobileEditBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg> Edit`;
+  mobileEditLi.appendChild(mobileEditBtn);
+
+  const mobileDeleteLi = document.createElement('li');
+  mobileDeleteLi.setAttribute('role', 'none');
+  const mobileDeleteBtn = document.createElement('button');
+  mobileDeleteBtn.type = 'button';
+  mobileDeleteBtn.setAttribute('role', 'menuitem');
+  mobileDeleteBtn.className = 'flex items-center gap-2 text-error';
+  mobileDeleteBtn.setAttribute('aria-label', `Delete transaction: ${primaryText}`);
+  mobileDeleteBtn.setAttribute('data-delete-transaction', transaction.id);
+  mobileDeleteBtn.setAttribute('data-transaction-details', JSON.stringify(transaction));
+  mobileDeleteBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg> Delete`;
+  mobileDeleteLi.appendChild(mobileDeleteBtn);
+
+  mobileDropdownMenu.appendChild(mobileEditLi);
+  mobileDropdownMenu.appendChild(mobileDeleteLi);
+  mobileDropdown.appendChild(mobileDropdownBtn);
+  mobileDropdown.appendChild(mobileDropdownMenu);
+
+  mobileTopRow.appendChild(mobileIconBadge);
+  mobileTopRow.appendChild(mobileTextContainer);
+  mobileTopRow.appendChild(mobileDropdown);
+
+  // Mobile: Bottom row with date, payment method, and amount
+  const mobileBottomRow = document.createElement('div');
+  mobileBottomRow.className = 'mt-2.5 flex items-end justify-between pl-[52px]';
+
+  const mobileMetaContainer = document.createElement('div');
+  mobileMetaContainer.className = 'text-[10px] text-base-content/50 space-y-1';
+
+  const mobileDateEl = document.createElement('time');
+  mobileDateEl.setAttribute('datetime', new Date(transaction.transaction_date).toISOString());
+  mobileDateEl.className = 'block font-medium uppercase tracking-widest';
+  mobileDateEl.textContent = formattedDate;
+
+  const mobilePaymentMethod = document.createElement('div');
+  mobilePaymentMethod.className = 'flex items-center gap-1.5 uppercase tracking-widest';
+  mobilePaymentMethod.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>`;
+  const mobilePaymentSpan = document.createElement('span');
+  mobilePaymentSpan.textContent = transaction.payment_method.name;
+  mobilePaymentMethod.appendChild(mobilePaymentSpan);
+
+  mobileMetaContainer.appendChild(mobileDateEl);
+  mobileMetaContainer.appendChild(mobilePaymentMethod);
+
+  const mobileAmount = document.createElement('span');
+  mobileAmount.className = `font-bold tracking-tight text-base ${isExpense ? 'text-error' : 'text-success'}`;
+  mobileAmount.textContent = formatCurrency(Math.abs(amount), transaction.currency);
+
+  mobileBottomRow.appendChild(mobileMetaContainer);
+  mobileBottomRow.appendChild(mobileAmount);
+
+  mobileLayout.appendChild(mobileTopRow);
+  mobileLayout.appendChild(mobileBottomRow);
+
+  // ===== DESKTOP LAYOUT (shown at sm and above) =====
+  const desktopLayout = document.createElement('div');
+  desktopLayout.className = 'hidden sm:flex items-center gap-4 lg:gap-5';
+
+  // Desktop: Date
+  const desktopDateDiv = document.createElement('div');
+  desktopDateDiv.className = 'flex-shrink-0 w-20 lg:w-24 text-sm';
+  const desktopDateInner = document.createElement('div');
+  desktopDateInner.className = 'font-medium';
+  desktopDateInner.textContent = formattedDate;
+  desktopDateDiv.appendChild(desktopDateInner);
+
+  // Desktop: Category & Description
+  const desktopMainDiv = document.createElement('div');
+  desktopMainDiv.className = 'flex-1 min-w-0 flex items-center gap-4';
+
+  const desktopIconBadge = document.createElement('div');
+  desktopIconBadge.className = `w-10 h-10 rounded-2xl flex items-center justify-center transition-transform group-hover:rotate-2 ${getVariantClasses(categoryMeta.variant)}`;
+  desktopIconBadge.innerHTML = categoryMeta.iconSvg;
+  desktopIconBadge.setAttribute('aria-hidden', 'true');
+
+  const desktopTextDiv = document.createElement('div');
+  desktopTextDiv.className = 'min-w-0';
+
+  const desktopPrimaryText = document.createElement('div');
+  desktopPrimaryText.className = 'font-bold tracking-tight truncate text-base leading-none';
+  desktopPrimaryText.textContent = primaryText;
+
+  const desktopCategoryWrapper = document.createElement('div');
+  desktopCategoryWrapper.className = 'mt-2 flex flex-wrap items-center gap-2 leading-none';
+
+  const desktopCategoryBadge = document.createElement('span');
+  desktopCategoryBadge.className =
     'text-[10px] font-bold tracking-widest uppercase text-base-content/60 bg-base-200 px-2 py-0.5 rounded';
-  categoryBadge.textContent = transaction.category.name;
+  desktopCategoryBadge.textContent = transaction.category.name;
 
-  categoryBadgeWrapper.appendChild(categoryBadge);
-  textDiv.appendChild(primaryTextEl);
-  textDiv.appendChild(categoryBadgeWrapper);
-  mainDiv.appendChild(iconBadge);
-  mainDiv.appendChild(textDiv);
+  desktopCategoryWrapper.appendChild(desktopCategoryBadge);
+  desktopTextDiv.appendChild(desktopPrimaryText);
+  desktopTextDiv.appendChild(desktopCategoryWrapper);
+  desktopMainDiv.appendChild(desktopIconBadge);
+  desktopMainDiv.appendChild(desktopTextDiv);
 
-  // Payment Method
-  const paymentDiv = document.createElement('div');
-  paymentDiv.className = 'flex-shrink-0 hidden sm:block';
-  const paymentInner = document.createElement('div');
-  paymentInner.className =
+  // Desktop: Payment Method
+  const desktopPaymentDiv = document.createElement('div');
+  desktopPaymentDiv.className = 'flex-shrink-0';
+  const desktopPaymentInner = document.createElement('div');
+  desktopPaymentInner.className =
     'flex items-center gap-1.5 text-[10px] uppercase tracking-widest text-base-content/60';
-  paymentInner.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>`;
-  const paymentSpan = document.createElement('span');
-  paymentSpan.textContent = transaction.payment_method.name;
-  paymentInner.appendChild(paymentSpan);
-  paymentDiv.appendChild(paymentInner);
+  desktopPaymentInner.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>`;
+  const desktopPaymentSpan = document.createElement('span');
+  desktopPaymentSpan.textContent = transaction.payment_method.name;
+  desktopPaymentInner.appendChild(desktopPaymentSpan);
+  desktopPaymentDiv.appendChild(desktopPaymentInner);
 
-  // Amount
-  const amountDiv = document.createElement('div');
-  amountDiv.className = 'flex-shrink-0 text-right min-w-[120px]';
-  const amountText = document.createElement('span');
-  amountText.className = `font-bold tracking-tight ${isExpense ? 'text-error' : 'text-success'}`;
-  const sign = isExpense ? '-' : '+';
-  amountText.textContent = `${sign}${formatCurrency(Math.abs(amount), transaction.currency)}`;
-  amountDiv.appendChild(amountText);
+  // Desktop: Amount
+  const desktopAmountDiv = document.createElement('div');
+  desktopAmountDiv.className = 'flex-shrink-0 text-right';
+  const desktopAmountText = document.createElement('span');
+  desktopAmountText.className = `font-bold tracking-tight text-base ${isExpense ? 'text-error' : 'text-success'}`;
+  desktopAmountText.textContent = formatCurrency(Math.abs(amount), transaction.currency);
+  desktopAmountDiv.appendChild(desktopAmountText);
 
-  // Actions
-  const actionsDiv = document.createElement('div');
-  actionsDiv.className = 'flex-shrink-0 flex gap-1';
+  // Desktop: Actions
+  const desktopActionsDiv = document.createElement('div');
+  desktopActionsDiv.className = 'flex-shrink-0 flex gap-1';
 
-  const editLink = document.createElement('a');
-  editLink.href = `/transactions/edit/${transaction.id}`;
-  editLink.className = 'btn btn-ghost btn-sm';
-  editLink.setAttribute('aria-label', 'Edit transaction');
-  editLink.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>`;
+  const desktopEditBtn = document.createElement('button');
+  desktopEditBtn.type = 'button';
+  desktopEditBtn.className = 'btn btn-ghost btn-sm';
+  desktopEditBtn.setAttribute('aria-label', `Edit transaction: ${primaryText}`);
+  desktopEditBtn.setAttribute('data-edit-transaction', transaction.id);
+  desktopEditBtn.setAttribute('data-transaction-data', transactionDataJson);
+  desktopEditBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>`;
 
-  const deleteBtn = document.createElement('button');
-  deleteBtn.type = 'button';
-  deleteBtn.className = 'btn btn-ghost btn-sm text-error';
-  deleteBtn.setAttribute('aria-label', 'Delete transaction');
-  deleteBtn.setAttribute('data-delete-transaction', transaction.id);
-  deleteBtn.setAttribute('data-transaction-details', JSON.stringify(transaction));
-  deleteBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>`;
+  const desktopDeleteBtn = document.createElement('button');
+  desktopDeleteBtn.type = 'button';
+  desktopDeleteBtn.className = 'btn btn-ghost btn-sm text-error';
+  desktopDeleteBtn.setAttribute('aria-label', `Delete transaction: ${primaryText}`);
+  desktopDeleteBtn.setAttribute('data-delete-transaction', transaction.id);
+  desktopDeleteBtn.setAttribute('data-transaction-details', JSON.stringify(transaction));
+  desktopDeleteBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>`;
 
-  actionsDiv.appendChild(editLink);
-  actionsDiv.appendChild(deleteBtn);
+  desktopActionsDiv.appendChild(desktopEditBtn);
+  desktopActionsDiv.appendChild(desktopDeleteBtn);
 
-  // Assemble row
-  row.appendChild(dateDiv);
-  row.appendChild(mainDiv);
-  row.appendChild(paymentDiv);
-  row.appendChild(amountDiv);
-  row.appendChild(actionsDiv);
+  // Assemble desktop layout
+  desktopLayout.appendChild(desktopDateDiv);
+  desktopLayout.appendChild(desktopMainDiv);
+  desktopLayout.appendChild(desktopPaymentDiv);
+  desktopLayout.appendChild(desktopAmountDiv);
+  desktopLayout.appendChild(desktopActionsDiv);
 
-  return row;
+  // Assemble article with both layouts
+  article.appendChild(mobileLayout);
+  article.appendChild(desktopLayout);
+
+  return article;
 }
 
 /**
