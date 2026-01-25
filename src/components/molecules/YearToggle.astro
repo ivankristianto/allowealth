@@ -1,0 +1,49 @@
+---
+/**
+ * Year Toggle Component (Molecule)
+ *
+ * Segmented pill-style control for filtering by year.
+ * Renders as a group of toggle buttons with active/inactive states.
+ *
+ * @param {number[]} years - Available years to display
+ * @param {number} selectedYear - Currently selected year
+ * @param {string} className - Additional CSS classes
+ */
+
+export interface Props {
+  years: number[];
+  selectedYear: number;
+  className?: string;
+}
+
+const { years, selectedYear, className = '' } = Astro.props;
+---
+
+<div
+  class:list={['flex bg-base-200 p-1 rounded-xl sm:rounded-2xl shrink-0', className]}
+  role="group"
+  aria-label="Filter by year"
+  data-year-toggle-group
+>
+  {
+    years.map((year) => {
+      const isActive = year === selectedYear;
+      return (
+        <button
+          type="button"
+          class:list={[
+            'px-3 sm:px-5 py-2 sm:py-2.5 min-h-[44px] min-w-[44px] text-xs font-bold rounded-lg sm:rounded-xl transition-all',
+            'focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2',
+            isActive
+              ? 'bg-base-100 shadow text-primary'
+              : 'text-base-content/50 hover:text-base-content/70',
+          ]}
+          data-year-option={year}
+          aria-pressed={isActive}
+        >
+          {year}
+        </button>
+      );
+    })
+  }
+</div>

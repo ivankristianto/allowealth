@@ -1,0 +1,306 @@
+---
+/**
+ * Budget History Table Partial
+ *
+ * Renders budget history table rows as an HTML fragment.
+ * Used for server-rendered HTML responses (HTMX-style).
+ *
+ * This partial outputs ONLY the table rows - no wrapper container.
+ * The client injects this directly into #budget-history-table-body.
+ */
+
+import { formatCurrency, formatPercentage } from '@/lib/tokens';
+import type { MonthlyBudgetHistory } from '@/services';
+import { Receipt, RotateCcw, Eye } from '@lucide/astro';
+
+export interface Props {
+  history: MonthlyBudgetHistory[];
+  currency: 'IDR' | 'USD';
+  currentMonth: number;
+  currentYear: number;
+}
+
+const { history, currency, currentMonth, currentYear } = Astro.props;
+
+// Check if month has data (budget > 0)
+const hasData = (budgetAmount: number): boolean => budgetAmount > 0;
+
+// Status helpers
+const getStatusBadgeClass = (percentage: number): string => {
+  if (percentage >= 100) return 'bg-error text-white';
+  return 'bg-success text-white';
+};
+
+const getChangeIndicator = (
+  current: number,
+  previous: number | null
+): { value: string; class: string } => {
+  if (previous === null || previous === 0) {
+    return { value: 'N/A', class: 'text-base-content/30 font-bold' };
+  }
+
+  const change = ((current - previous) / previous) * 100;
+  const absChange = Math.abs(change).toFixed(1);
+
+  if (change > 0) {
+    return {
+      value: `+${absChange}%`,
+      class: 'text-error font-bold', // Spending increased (bad)
+    };
+  } else if (change < 0) {
+    return {
+      value: `-${absChange}%`,
+      class: 'text-success font-bold', // Spending decreased (good)
+    };
+  }
+
+  return { value: '0%', class: 'text-base-content/60 font-bold' };
+};
+
+// Build URL for budget details
+const buildBudgetUrl = (year: number, month: number): string => {
+  return `/budget?year=${year}&month=${month}`;
+};
+
+// Sort history by date (newest first)
+const sortedHistory = [...history].sort((a, b) => {
+  if (a.year !== b.year) return b.year - a.year;
+  return b.month - a.month;
+});
+---
+
+{
+  sortedHistory.length > 0 ? (
+    <div class="divide-y divide-base-100">
+      {sortedHistory.map((monthData, index) => {
+        const budgetAmount = parseFloat(monthData.total_budget);
+        const spentAmount = parseFloat(monthData.total_spent);
+        const balance = parseFloat(monthData.total_balance);
+        const percentageUsed = monthData.percentage_used;
+        const monthHasData = hasData(budgetAmount);
+
+        // Get previous month for comparison
+        const previousMonth = sortedHistory[index + 1];
+        const previousSpent = previousMonth ? parseFloat(previousMonth.total_spent) : null;
+        const changeIndicator = getChangeIndicator(spentAmount, previousSpent);
+
+        // Check if this is current month
+        const isCurrentMonth = monthData.month === currentMonth && monthData.year === currentYear;
+
+        // Budget details URL
+        const budgetUrl = buildBudgetUrl(monthData.year, monthData.month);
+
+        return (
+          <div class="group hover:bg-base-200/30 transition-colors" data-history-row>
+            {/* Mobile View - Card Layout */}
+            <div class="md:hidden p-6 space-y-4">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <span class="text-base font-bold">{monthData.month_name}</span>
+                  <span class="text-xs font-medium text-base-content/40">{monthData.year}</span>
+                  {isCurrentMonth && (
+                    <span class="bg-primary text-primary-content text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
+                      Current
+                    </span>
+                  )}
+                </div>
+                {monthHasData ? (
+                  <div
+                    class={`px-4 py-1.5 rounded-full text-xs font-bold shadow-sm ${getStatusBadgeClass(percentageUsed)}`}
+                  >
+                    {percentageUsed.toFixed(2)}%
+                  </div>
+                ) : (
+                  <span class="text-xs font-bold text-base-content/30">No data</span>
+                )}
+              </div>
+
+              {monthHasData ? (
+                <>
+                  <div class="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <div class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest mb-1">
+                        Budget
+                      </div>
+                      <div class="font-bold">{formatCurrency(budgetAmount, currency)}</div>
+                    </div>
+                    <div>
+                      <div class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest mb-1">
+                        Spent
+                      </div>
+                      <div class="font-bold">{formatCurrency(spentAmount, currency)}</div>
+                    </div>
+                    <div>
+                      <div class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest mb-1">
+                        Balance
+                      </div>
+                      <div class={`font-bold ${balance >= 0 ? 'text-success' : 'text-error'}`}>
+                        {formatCurrency(balance, currency, true)}
+                      </div>
+                    </div>
+                    <div>
+                      <div class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest mb-1">
+                        Change
+                      </div>
+                      <div class={changeIndicator.class}>{changeIndicator.value}</div>
+                    </div>
+                  </div>
+
+                  {/* Progress bar */}
+                  <div class="pt-2">
+                    <div class="w-full bg-base-300 rounded-full h-2 overflow-hidden">
+                      <div
+                        class:list={[
+                          'h-full transition-all duration-300',
+                          percentageUsed >= 100 ? 'bg-error' : 'bg-success',
+                        ]}
+                        style={`width: ${Math.min(percentageUsed, 100)}%`}
+                        role="progressbar"
+                        aria-valuenow={percentageUsed}
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                        aria-label={`${monthData.month_name}: ${formatPercentage(percentageUsed)} of budget used`}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Alerts summary */}
+                  {(monthData.categories_exceeded > 0 || monthData.categories_warning > 0) && (
+                    <div class="flex items-center gap-3">
+                      {monthData.categories_exceeded > 0 && (
+                        <span class="text-[10px] font-bold text-error uppercase tracking-wide">
+                          {monthData.categories_exceeded} exceeded
+                        </span>
+                      )}
+                      {monthData.categories_warning > 0 && (
+                        <span class="text-[10px] font-bold text-warning uppercase tracking-wide">
+                          {monthData.categories_warning} warning
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div class="text-center py-4 text-base-content/40 text-sm">
+                  No budget data for this month
+                </div>
+              )}
+
+              {/* View button for mobile */}
+              <a
+                href={budgetUrl}
+                class="btn btn-outline btn-accent btn-sm w-full gap-2 rounded-lg"
+                aria-label={`View budget details for ${monthData.month_name} ${monthData.year}`}
+              >
+                <Eye size={16} class="stroke-current" aria-hidden="true" />
+                View Details
+              </a>
+            </div>
+
+            {/* Desktop View - Table Row */}
+            <div class="hidden md:grid grid-cols-7 items-center">
+              <div class="px-8 py-8">
+                <div class="flex items-center gap-3">
+                  <span class="text-base font-bold">{monthData.month_name}</span>
+                  <span class="text-xs font-medium text-base-content/40">{monthData.year}</span>
+                  {isCurrentMonth && (
+                    <span class="bg-primary text-primary-content text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
+                      Current
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div class="px-8 py-8 text-right">
+                {monthHasData ? (
+                  <span class="text-sm font-bold">{formatCurrency(budgetAmount, currency)}</span>
+                ) : (
+                  <span class="text-sm font-bold text-base-content/30">No data</span>
+                )}
+              </div>
+
+              <div class="px-8 py-8 text-right">
+                {monthHasData ? (
+                  <span class="text-sm font-bold">{formatCurrency(spentAmount, currency)}</span>
+                ) : (
+                  <span class="text-sm font-bold text-base-content/30">No data</span>
+                )}
+              </div>
+
+              <div class="px-8 py-8 text-right">
+                {monthHasData ? (
+                  <span class={`text-sm font-bold ${balance >= 0 ? 'text-success' : 'text-error'}`}>
+                    {formatCurrency(balance, currency, true)}
+                  </span>
+                ) : (
+                  <span class="text-sm font-bold text-base-content/30">No data</span>
+                )}
+              </div>
+
+              <div class="px-8 py-8 text-center">
+                {monthHasData ? (
+                  <div class="inline-flex flex-col items-center">
+                    <div
+                      class={`px-4 py-1.5 rounded-full text-xs font-bold shadow-sm ${getStatusBadgeClass(percentageUsed)}`}
+                    >
+                      {percentageUsed.toFixed(2)}%
+                    </div>
+                    {(monthData.categories_exceeded > 0 || monthData.categories_warning > 0) && (
+                      <div class="mt-2 flex gap-2 justify-center">
+                        {monthData.categories_exceeded > 0 && (
+                          <span class="text-[10px] font-bold text-error uppercase leading-none whitespace-nowrap">
+                            {monthData.categories_exceeded} exceeded
+                          </span>
+                        )}
+                        {monthData.categories_warning > 0 && (
+                          <span class="text-[10px] font-bold text-warning uppercase leading-none whitespace-nowrap">
+                            {monthData.categories_warning} warning
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <span class="text-sm font-bold text-base-content/30">—</span>
+                )}
+              </div>
+
+              <div class="px-8 py-8 text-right">
+                {monthHasData ? (
+                  <span class={`text-sm ${changeIndicator.class}`}>{changeIndicator.value}</span>
+                ) : (
+                  <span class="text-sm font-bold text-base-content/30">—</span>
+                )}
+              </div>
+
+              <div class="px-8 py-8 text-center">
+                <a
+                  href={budgetUrl}
+                  class="btn btn-ghost btn-sm btn-square hover:bg-base-200"
+                  aria-label={`View budget details for ${monthData.month_name} ${monthData.year}`}
+                  title="View budget details"
+                >
+                  <Eye size={18} class="stroke-current" aria-hidden="true" />
+                </a>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  ) : (
+    <div id="empty-state" class="py-24 text-center">
+      <div class="w-20 h-20 bg-base-200 mx-auto rounded-3xl flex items-center justify-center text-base-content/30 mb-6 shadow-inner">
+        <Receipt size={40} class="stroke-current" aria-hidden="true" />
+      </div>
+      <h4 class="text-lg font-bold mb-2">No budget history available</h4>
+      <p class="text-base-content/60 font-medium max-w-xs mx-auto mb-6">
+        Budget history will appear here as you track your spending over time.
+      </p>
+      <a href="/transactions/add" class="btn btn-outline btn-sm gap-2">
+        <RotateCcw size={16} class="stroke-current" aria-hidden="true" />
+        Start Tracking
+      </a>
+    </div>
+  )
+}
