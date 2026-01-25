@@ -129,7 +129,7 @@ const cardClasses = [
           </IconBadge>
 
           <div class="flex-1 min-w-0">
-            <div class="font-bold text-base tracking-tight truncate leading-tight">
+            <div class="font-bold text-base tracking-tight leading-tight break-words">
               {primaryText}
             </div>
             <div class="mt-1">
@@ -186,16 +186,15 @@ const cardClasses = [
           )}
         </div>
 
-        <div class="mt-2.5 flex items-center justify-between pl-[52px]">
-          <div class="flex items-center gap-3 text-[10px] text-base-content/50">
+        <div class="mt-2.5 flex items-end justify-between pl-[52px]">
+          <div class="text-[10px] text-base-content/50 space-y-1">
+            <time datetime={date.toISOString()} class="block font-medium uppercase tracking-widest">
+              {formattedDate}
+            </time>
             <div class="flex items-center gap-1.5 uppercase tracking-widest">
               <CreditCard size={12} class="stroke-current" aria-hidden="true" />
               <span>{transaction?.payment_method?.name}</span>
             </div>
-            <span class="text-base-content/30">·</span>
-            <time datetime={date.toISOString()} class="font-medium">
-              {formattedDate}
-            </time>
           </div>
 
           <Currency
