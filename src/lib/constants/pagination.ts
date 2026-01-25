@@ -6,7 +6,7 @@
 
 export const PAGINATION = {
   /** Default page size for transaction lists */
-  DEFAULT_PAGE_SIZE: 50,
+  DEFAULT_PAGE_SIZE: 25,
 
   /** Maximum limit for fetching all transactions in a month (for caching/summary) */
   MAX_MONTH_TRANSACTIONS: 10000,

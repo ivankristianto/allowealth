@@ -5,6 +5,11 @@
  * Primary application layout with sidebar navigation, header, and main content area.
  * Responsive: Sidebar is visible on desktop, collapsible drawer on mobile.
  * Passes user authentication context to Header and child components.
+ *
+ * @param title - Page title
+ * @param currentPath - Current route path for navigation highlighting
+ * @param user - Authenticated user object
+ * @param subtitle - Optional page subtitle displayed in header
  */
 
 import BaseLayout from './BaseLayout.astro';
@@ -19,9 +24,10 @@ interface Props {
   title?: string;
   currentPath?: string;
   user?: User | null;
+  subtitle?: string;
 }
 
-const { title = 'Finance Manager', currentPath = '/', user } = Astro.props;
+const { title = 'Finance Manager', currentPath = '/', user, subtitle } = Astro.props;
 ---
 
 <BaseLayout title={title}>
@@ -35,7 +41,7 @@ const { title = 'Finance Manager', currentPath = '/', user } = Astro.props;
     <!-- Page content -->
     <div class="drawer-content flex flex-col lg:h-screen lg:overflow-y-auto">
       <!-- Header -->
-      <Header currentPath={currentPath} user={user} />
+      <Header currentPath={currentPath} user={user} subtitle={subtitle} />
 
       <!-- Main content -->
       <main

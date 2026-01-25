@@ -23,6 +23,10 @@
  *
  * Note: This layout should only be used for pages under protected route prefixes:
  * /transactions, /budget, /assets, /reports, /forecast, /calculators, /settings
+ *
+ * @param title - Page title
+ * @param currentPath - Current route path for navigation highlighting
+ * @param subtitle - Optional page subtitle displayed in header
  */
 
 import MainLayout from './MainLayout.astro';
@@ -32,9 +36,10 @@ import { categoryService, paymentMethodService } from '@/services';
 interface Props {
   title?: string;
   currentPath?: string;
+  subtitle?: string;
 }
 
-const { title = 'Finance Manager', currentPath = '/' } = Astro.props;
+const { title = 'Finance Manager', currentPath = '/', subtitle } = Astro.props;
 
 // User is authenticated (enforced by middleware)
 const user = Astro.locals.user!;
@@ -54,7 +59,7 @@ try {
 }
 ---
 
-<MainLayout title={title} currentPath={currentPath} user={user}>
+<MainLayout title={title} currentPath={currentPath} user={user} subtitle={subtitle}>
   <slot />
 </MainLayout>
 

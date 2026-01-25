@@ -544,7 +544,7 @@ export class DashboardService {
         this.getMonthlySpent(userId, currentMonth, currentYear, currency),
         this.getBudgetHealth(userId, currentMonth, currentYear, currency),
         this.getAssetUpdateReminders(userId),
-        this.getRecentTransactions(userId, 5),
+        this.getRecentTransactions(userId, 10),
       ]);
 
     return {
