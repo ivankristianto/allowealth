@@ -16,7 +16,12 @@
  */
 
 import { ShoppingCart } from '@lucide/astro';
-import { formatCurrency, getBudgetStatusClass, getStatusBadgeClasses } from '@/lib/tokens';
+import {
+  formatCurrency,
+  getBudgetStatusClass,
+  getStatusBadgeClasses,
+  type BudgetStatusClassName,
+} from '@/lib/tokens';
 import ProgressBar from '@/components/atoms/ProgressBar.astro';
 import IconBadge from '@/components/atoms/IconBadge.astro';
 import StatLabel from '@/components/atoms/StatLabel.astro';
@@ -51,9 +56,7 @@ const remaining = budget - spent;
 const status = getBudgetStatusClass(percentage);
 
 // Map status class to progress bar status
-const getProgressBarStatus = (
-  statusClass: 'status-ok' | 'status-warning' | 'status-danger'
-): 'ok' | 'warning' | 'danger' => {
+const getProgressBarStatus = (statusClass: BudgetStatusClassName): 'ok' | 'warning' | 'danger' => {
   if (statusClass === 'status-ok') return 'ok';
   if (statusClass === 'status-warning') return 'warning';
   return 'danger';

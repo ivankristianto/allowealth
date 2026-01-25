@@ -13,6 +13,60 @@
  */
 
 /* ========================================
+ * STATUS TYPES
+ * ========================================
+ *
+ * Two status conventions exist in this codebase:
+ *
+ * 1. BudgetStatus ('ok' | 'warning' | 'exceeded')
+ *    - Business logic type for budget calculations
+ *    - Defined in '@/lib/utils/budget'
+ *    - Uses semantic naming: 'exceeded' = over 100%
+ *
+ * 2. BudgetStatusClassName ('status-ok' | 'status-warning' | 'status-danger')
+ *    - CSS class type for visual styling
+ *    - Defined here in tokens.ts
+ *    - Uses danger naming: 'status-danger' = over 100%
+ *
+ * Use `toBudgetStatusClassName()` to convert between them.
+ * ======================================== */
+
+/**
+ * Budget status type for CSS class-oriented naming.
+ * Use this for progress bars, badges, and visual indicators.
+ *
+ * Convention:
+ * - 'status-ok': Under 80% usage (green/success)
+ * - 'status-warning': 80-99% usage (amber/warning)
+ * - 'status-danger': 100%+ usage (red/error)
+ *
+ * @see BudgetStatus in '@/lib/utils/budget' for business logic status ('ok' | 'warning' | 'exceeded')
+ */
+export type BudgetStatusClassName = 'status-ok' | 'status-warning' | 'status-danger';
+
+/**
+ * Convert BudgetStatus (business logic) to BudgetStatusClassName (CSS styling)
+ *
+ * @param status - Business logic status from budget calculations
+ * @returns CSS class name for styling
+ *
+ * @example
+ * import { type BudgetStatus } from '@/lib/utils/budget';
+ * const status: BudgetStatus = 'exceeded';
+ * const cssClass = toBudgetStatusClassName(status); // 'status-danger'
+ */
+export function toBudgetStatusClassName(
+  status: 'ok' | 'warning' | 'exceeded'
+): BudgetStatusClassName {
+  const mapping: Record<'ok' | 'warning' | 'exceeded', BudgetStatusClassName> = {
+    ok: 'status-ok',
+    warning: 'status-warning',
+    exceeded: 'status-danger',
+  };
+  return mapping[status];
+}
+
+/* ========================================
  * COLORS
  * ======================================== */
 
@@ -235,32 +289,53 @@ export function formatPercentage(value: number, decimals: number = 2): string {
 }
 
 /**
- * Get budget status color class
+ * Get budget status class name based on percentage used
+ * @param percentage - Budget usage percentage (0-100+)
+ * @returns Status class name for styling
  */
-export function getBudgetStatusClass(
-  percentage: number
-): 'status-ok' | 'status-warning' | 'status-danger' {
+export function getBudgetStatusClass(percentage: number): BudgetStatusClassName {
   if (percentage >= 100) return 'status-danger';
   if (percentage >= 80) return 'status-warning';
   return 'status-ok';
 }
 
 /**
+ * Progress bar status type for visual indicators.
+ * Use this for progress bars and compact status badges.
+ */
+export type ProgressBarStatus = 'ok' | 'warning' | 'danger';
+
+/**
+ * Get status color classes for progress bars and compact badges.
+ * Returns just the color classes (text + background) without typography.
+ *
+ * @param status - Progress bar status
+ * @returns DaisyUI color classes for the status
+ * @example
+ * getProgressBarStatusColors('ok') // 'text-success bg-success/10'
+ */
+export function getProgressBarStatusColors(status: ProgressBarStatus): string {
+  const statusColors: Record<ProgressBarStatus, string> = {
+    ok: 'text-success bg-success/10',
+    warning: 'text-warning bg-warning/10',
+    danger: 'text-error bg-error/10',
+  };
+  return statusColors[status];
+}
+
+/**
  * Get status badge classes for spending/usage badges
  * Returns DaisyUI semantic color classes for theme compatibility
  *
- * @param status - The budget status category
+ * @param status - The budget status class name
  * @returns A string of CSS classes for styling the status badge
  * @example
  * getStatusBadgeClasses('status-ok') // 'text-xs font-bold tracking-wider uppercase px-3 py-1.5 rounded-full text-success bg-success/10'
  */
-export function getStatusBadgeClasses(
-  status: 'status-ok' | 'status-warning' | 'status-danger'
-): string {
+export function getStatusBadgeClasses(status: BudgetStatusClassName): string {
   const baseClasses = 'text-xs font-bold tracking-wider uppercase px-3 py-1.5 rounded-full';
 
-  // Explicit type annotation on Record for type safety
-  const statusClasses: Record<'status-ok' | 'status-warning' | 'status-danger', string> = {
+  const statusClasses: Record<BudgetStatusClassName, string> = {
     'status-ok': 'text-success bg-success/10',
     'status-warning': 'text-warning bg-warning/10',
     'status-danger': 'text-error bg-error/10',

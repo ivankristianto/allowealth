@@ -14,9 +14,11 @@
  * @param {string} className - Additional CSS classes
  */
 
+import { getProgressBarStatusColors, type ProgressBarStatus } from '@/lib/tokens';
+
 export interface Props {
   value: number;
-  status?: 'ok' | 'warning' | 'danger';
+  status?: ProgressBarStatus;
   size?: 'sm' | 'md' | 'lg';
   showLabel?: boolean;
   animate?: boolean;
@@ -45,17 +47,10 @@ const sizeClasses: Record<string, string> = {
 };
 
 // Status color classes using DaisyUI semantic colors
-const statusClasses: Record<string, string> = {
+const statusClasses: Record<ProgressBarStatus, string> = {
   ok: 'bg-success',
   warning: 'bg-warning',
   danger: 'bg-error',
-};
-
-// Status badge color classes
-const statusBadgeClasses: Record<string, string> = {
-  ok: 'text-success bg-success/10',
-  warning: 'text-warning bg-warning/10',
-  danger: 'text-error bg-error/10',
 };
 
 const barContainerClasses = [
@@ -96,7 +91,7 @@ const progressBarId = `progress-bar-${Math.random().toString(36).slice(2, 11)}`;
   {
     showLabel && (
       <span
-        class={`text-xs font-bold tracking-wider uppercase ${statusBadgeClasses[status]} px-2 py-1 rounded-full shrink-0`}
+        class={`text-xs font-bold tracking-wider uppercase ${getProgressBarStatusColors(status)} px-2 py-1 rounded-full shrink-0`}
       >
         {clampedValue}% used
       </span>

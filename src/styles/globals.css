@@ -183,13 +183,6 @@ body {
   color: var(--color-status-danger);
 }
 
-/* Compact number display (e.g., 1.5M, 2.3B) */
-.font-compact {
-  font-family: var(--font-mono);
-  font-feature-settings: 'tnum' 1;
-  letter-spacing: -0.02em;
-}
-
 /* Screen reader only content */
 .sr-only {
   position: absolute;

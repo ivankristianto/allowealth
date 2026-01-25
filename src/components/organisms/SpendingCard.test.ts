@@ -10,7 +10,11 @@
  */
 
 import { describe, it, expect } from 'bun:test';
-import { getBudgetStatusClass, getStatusBadgeClasses } from '@/lib/tokens';
+import {
+  getBudgetStatusClass,
+  getStatusBadgeClasses,
+  type BudgetStatusClassName,
+} from '@/lib/tokens';
 
 describe('SpendingCard - percentage calculation', () => {
   const calculatePercentage = (spent: number, budget: number): number => {
@@ -71,7 +75,7 @@ describe('SpendingCard - status mapping', () => {
 
 describe('SpendingCard - progress bar status mapping', () => {
   const getProgressBarStatus = (
-    statusClass: 'status-ok' | 'status-warning' | 'status-danger'
+    statusClass: BudgetStatusClassName
   ): 'ok' | 'warning' | 'danger' => {
     if (statusClass === 'status-ok') return 'ok';
     if (statusClass === 'status-warning') return 'warning';
@@ -254,8 +258,7 @@ describe('SpendingCard - alert message handling', () => {
   });
 
   it('should use warning variant when status is not danger', () => {
-    type StatusType = 'status-ok' | 'status-warning' | 'status-danger';
-    const getVariant = (status: StatusType): 'error' | 'warning' => {
+    const getVariant = (status: BudgetStatusClassName): 'error' | 'warning' => {
       return status === 'status-danger' ? 'error' : 'warning';
     };
     expect(getVariant('status-warning')).toBe('warning');
@@ -263,8 +266,7 @@ describe('SpendingCard - alert message handling', () => {
   });
 
   it('should use error variant when status is danger', () => {
-    type StatusType = 'status-ok' | 'status-warning' | 'status-danger';
-    const getVariant = (status: StatusType): 'error' | 'warning' => {
+    const getVariant = (status: BudgetStatusClassName): 'error' | 'warning' => {
       return status === 'status-danger' ? 'error' : 'warning';
     };
     expect(getVariant('status-danger')).toBe('error');

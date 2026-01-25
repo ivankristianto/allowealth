@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/html';
+import { getProgressBarStatusColors, type ProgressBarStatus } from '@/lib/tokens';
 
 const meta: Meta = {
   title: 'Atoms/ProgressBar',
@@ -32,20 +33,15 @@ const meta: Meta = {
 export default meta;
 
 const sizeClasses: Record<string, string> = { sm: 'h-2', md: 'h-3', lg: 'h-4' };
-const statusClasses: Record<string, string> = {
+const statusClasses: Record<ProgressBarStatus, string> = {
   ok: 'bg-success',
   warning: 'bg-warning',
   danger: 'bg-error',
 };
-const statusBadgeClasses: Record<string, string> = {
-  ok: 'text-success bg-success/10',
-  warning: 'text-warning bg-warning/10',
-  danger: 'text-error bg-error/10',
-};
 
 const createProgressBar = (args: {
   value?: number;
-  status?: 'ok' | 'warning' | 'danger';
+  status?: ProgressBarStatus;
   size?: 'sm' | 'md' | 'lg';
   showLabel?: boolean;
   animate?: boolean;
@@ -72,7 +68,7 @@ const createProgressBar = (args: {
 
   if (showLabel) {
     const label = document.createElement('span');
-    label.className = `text-xs font-bold tracking-wider uppercase ${statusBadgeClasses[status]} px-2 py-1 rounded-full shrink-0`;
+    label.className = `text-xs font-bold tracking-wider uppercase ${getProgressBarStatusColors(status)} px-2 py-1 rounded-full shrink-0`;
     label.textContent = `${clampedValue}% used`;
     container.appendChild(label);
   }

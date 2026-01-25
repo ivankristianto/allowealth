@@ -10,6 +10,7 @@
  */
 
 import { describe, it, expect } from 'bun:test';
+import { getProgressBarStatusColors, type ProgressBarStatus } from '@/lib/tokens';
 
 describe('ProgressBar - value clamping', () => {
   const clampValue = (value: number): number => {
@@ -76,23 +77,24 @@ describe('ProgressBar - size mapping', () => {
   });
 });
 
-describe('ProgressBar - badge classes', () => {
-  const statusBadgeClasses: Record<string, string> = {
-    ok: 'text-success bg-success/10',
-    warning: 'text-warning bg-warning/10',
-    danger: 'text-error bg-error/10',
-  };
-
+describe('ProgressBar - badge classes (using shared utility)', () => {
   it('should return correct badge class for ok status', () => {
-    expect(statusBadgeClasses['ok']).toBe('text-success bg-success/10');
+    expect(getProgressBarStatusColors('ok')).toBe('text-success bg-success/10');
   });
 
   it('should return correct badge class for warning status', () => {
-    expect(statusBadgeClasses['warning']).toBe('text-warning bg-warning/10');
+    expect(getProgressBarStatusColors('warning')).toBe('text-warning bg-warning/10');
   });
 
   it('should return correct badge class for danger status', () => {
-    expect(statusBadgeClasses['danger']).toBe('text-error bg-error/10');
+    expect(getProgressBarStatusColors('danger')).toBe('text-error bg-error/10');
+  });
+
+  it('should work with all ProgressBarStatus types', () => {
+    const statuses: ProgressBarStatus[] = ['ok', 'warning', 'danger'];
+    statuses.forEach((status) => {
+      expect(getProgressBarStatusColors(status)).toBeTruthy();
+    });
   });
 });
 

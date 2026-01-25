@@ -135,22 +135,22 @@ const createTransactionFiltersBar = (args: TransactionFiltersBarArgs): HTMLEleme
 
   container.innerHTML = `
     <div class="flex flex-wrap items-center gap-4 w-full xl:w-auto">
-      <!-- Type Filter -->
+      <!-- Type Filter (P3-2: Using button elements instead of a with role="button") -->
       <div class="flex bg-base-200 p-1 rounded-2xl" role="group" aria-label="Filter by transaction type">
-        <a href="#" class="px-6 py-2.5 text-xs font-bold rounded-xl transition-all focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2 ${
+        <button type="button" class="px-6 py-2.5 text-xs font-bold rounded-xl transition-all focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2 ${
           typeFilter === 'expense'
             ? 'bg-base-100 shadow text-primary'
             : 'text-base-content/50 hover:text-base-content/70'
-        }" aria-pressed="${typeFilter === 'expense'}" role="button">
+        }" aria-pressed="${typeFilter === 'expense'}">
           Expenses
-        </a>
-        <a href="#" class="px-6 py-2.5 text-xs font-bold rounded-xl transition-all focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2 ${
+        </button>
+        <button type="button" class="px-6 py-2.5 text-xs font-bold rounded-xl transition-all focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2 ${
           typeFilter === 'income'
             ? 'bg-base-100 shadow text-primary'
             : 'text-base-content/50 hover:text-base-content/70'
-        }" aria-pressed="${typeFilter === 'income'}" role="button">
+        }" aria-pressed="${typeFilter === 'income'}">
           Income
-        </a>
+        </button>
       </div>
 
       ${

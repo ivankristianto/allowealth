@@ -6,7 +6,90 @@
  */
 
 import { describe, it, expect } from 'bun:test';
-import { getStatusBadgeClasses, getBudgetStatusClass } from './tokens';
+import {
+  getStatusBadgeClasses,
+  getBudgetStatusClass,
+  toBudgetStatusClassName,
+  getProgressBarStatusColors,
+  type BudgetStatusClassName,
+  type ProgressBarStatus,
+} from './tokens';
+
+describe('BudgetStatusClassName type', () => {
+  it('should define exactly three status values', () => {
+    const allStatuses: BudgetStatusClassName[] = ['status-ok', 'status-warning', 'status-danger'];
+    expect(allStatuses).toHaveLength(3);
+  });
+
+  it('should be usable as function parameter type', () => {
+    const testFn = (status: BudgetStatusClassName): string => status;
+    expect(testFn('status-ok')).toBe('status-ok');
+    expect(testFn('status-warning')).toBe('status-warning');
+    expect(testFn('status-danger')).toBe('status-danger');
+  });
+});
+
+describe('toBudgetStatusClassName', () => {
+  it('should convert ok to status-ok', () => {
+    expect(toBudgetStatusClassName('ok')).toBe('status-ok');
+  });
+
+  it('should convert warning to status-warning', () => {
+    expect(toBudgetStatusClassName('warning')).toBe('status-warning');
+  });
+
+  it('should convert exceeded to status-danger', () => {
+    expect(toBudgetStatusClassName('exceeded')).toBe('status-danger');
+  });
+
+  it('should return correct types for all business status values', () => {
+    const businessStatuses: Array<'ok' | 'warning' | 'exceeded'> = ['ok', 'warning', 'exceeded'];
+    const cssClasses = businessStatuses.map(toBudgetStatusClassName);
+
+    expect(cssClasses).toEqual(['status-ok', 'status-warning', 'status-danger']);
+  });
+
+  it('should integrate with getStatusBadgeClasses', () => {
+    // Business logic flow: BudgetStatus → BudgetStatusClassName → CSS classes
+    const status = toBudgetStatusClassName('exceeded');
+    const classes = getStatusBadgeClasses(status);
+
+    expect(status).toBe('status-danger');
+    expect(classes).toContain('text-error');
+    expect(classes).toContain('bg-error/10');
+  });
+});
+
+describe('getProgressBarStatusColors', () => {
+  it('should return correct colors for ok status', () => {
+    expect(getProgressBarStatusColors('ok')).toBe('text-success bg-success/10');
+  });
+
+  it('should return correct colors for warning status', () => {
+    expect(getProgressBarStatusColors('warning')).toBe('text-warning bg-warning/10');
+  });
+
+  it('should return correct colors for danger status', () => {
+    expect(getProgressBarStatusColors('danger')).toBe('text-error bg-error/10');
+  });
+
+  it('should work with all ProgressBarStatus values', () => {
+    const statuses: ProgressBarStatus[] = ['ok', 'warning', 'danger'];
+    statuses.forEach((status) => {
+      const result = getProgressBarStatusColors(status);
+      expect(result).toContain('text-');
+      expect(result).toContain('bg-');
+    });
+  });
+
+  it('should return only color classes without typography', () => {
+    const result = getProgressBarStatusColors('ok');
+    // Should NOT contain typography classes (those are in getStatusBadgeClasses)
+    expect(result).not.toContain('text-xs');
+    expect(result).not.toContain('font-bold');
+    expect(result).not.toContain('uppercase');
+  });
+});
 
 describe('getStatusBadgeClasses', () => {
   it('should return correct classes for status-ok', () => {
@@ -84,11 +167,7 @@ describe('getStatusBadgeClasses', () => {
   it('should enforce type safety at compile time', () => {
     // TypeScript enforces valid status values - invalid values will cause compile error
     // This test verifies all three valid status types work correctly
-    const validStatuses: Array<'status-ok' | 'status-warning' | 'status-danger'> = [
-      'status-ok',
-      'status-warning',
-      'status-danger',
-    ];
+    const validStatuses: BudgetStatusClassName[] = ['status-ok', 'status-warning', 'status-danger'];
 
     validStatuses.forEach((status) => {
       const result = getStatusBadgeClasses(status);
