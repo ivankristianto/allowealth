@@ -103,6 +103,10 @@ export const GET: APIRoute = async (context) => {
 
     const { monthlyTopup, annualRate, years } = validation.data;
 
+    // @TODO: Mock data - Add development mode check to return mock forecast data when no real assets exist
+    // This would allow testing the forecast UI without seeding asset history data
+    // Example: if (isDev && assetsWithHistory.length === 0) return mockForecastResponse()
+
     // Fetch user's assets with history
     const assetsWithHistory = await assetService.findAllWithHistory(userId);
 

@@ -8,6 +8,10 @@
 import type { Meta, StoryObj } from '@storybook/html';
 import type { ForecastDataPoint } from '@/lib/forecast';
 
+// @TODO: Mock data - Extract mock data generators to shared test utilities
+// Location: src/lib/forecast/__mocks__/generators.ts or src/services/__tests__/mocks/forecast-mocks.ts
+// This would allow reusing mock data across stories, tests, and development mode
+
 // Mock forecast data for stories
 function generateMockForecastData(months: number): ForecastDataPoint[] {
   const data: ForecastDataPoint[] = [];

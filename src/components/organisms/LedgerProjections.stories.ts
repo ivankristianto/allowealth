@@ -8,6 +8,9 @@
 import type { Meta, StoryObj } from '@storybook/html';
 import type { ForecastDataPoint } from '@/lib/forecast';
 
+// @TODO: Mock data - Consolidate with WealthTrajectory mock generator into shared utility
+// Both components use nearly identical mock data generation logic
+
 // Mock forecast data for stories
 function generateMockProjectionData(months: number): ForecastDataPoint[] {
   const data: ForecastDataPoint[] = [];

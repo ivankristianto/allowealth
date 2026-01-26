@@ -10,6 +10,7 @@ import type { ForecastDataPoint, AssetWithHistory, MonthlyHistoricalData } from 
 
 // Exchange rate constant (IDR per USD)
 // @TODO: Wire with backend - fetch real exchange rates from database
+// @TODO: Mock data - Consider using environment variable or config for testing with different exchange rates
 const IDR_PER_USD = 15000;
 
 /**
