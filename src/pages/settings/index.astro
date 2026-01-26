@@ -1,44 +1,425 @@
 ---
 /**
- * Settings Page (Placeholder)
+ * System Settings Page
  *
- * Routes users to the new Manage Account and Security pages.
+ * Recreates the settings layout from the PoC.
  */
 
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
-import EmptyState from '@/components/atoms/EmptyState.astro';
+import Label from '@/components/atoms/Label.astro';
+import Card from '@/components/atoms/Card.astro';
+import Modal from '@/components/molecules/Modal.astro';
+import { Bell, Database, RotateCcw, Save, Settings, Trash2, UserPlus, Users } from '@lucide/astro';
 
 const currentPath = '/settings';
+
+// @TODO: Wire with backend
+const settingsData = {
+  general: {
+    currency: 'IDR',
+    weekStart: 'Monday',
+    compactNumbers: true,
+  },
+  family: {
+    members: [
+      { id: 'sarah-jenkins', name: 'Sarah Jenkins', role: 'CFO (Admin)', status: 'Active' },
+      { id: 'mark-jenkins', name: 'Mark Jenkins', role: 'Member', status: 'Active' },
+      { id: 'leo-jenkins', name: 'Leo Jenkins', role: 'Viewer (Junior)', status: 'Active' },
+    ],
+  },
+  notifications: [
+    {
+      id: 'budget-alerts',
+      label: 'Budget Threshold Alerts',
+      description: 'Notify when categories hit 80% usage.',
+      enabled: true,
+    },
+    {
+      id: 'large-expense',
+      label: 'Large Expense Monitoring',
+      description: 'Alert for any transaction over defined threshold.',
+      enabled: true,
+    },
+    {
+      id: 'bill-reminders',
+      label: 'Bill Due Reminders',
+      description: 'Get notified 48 hours before scheduled bills.',
+      enabled: true,
+    },
+    {
+      id: 'daily-digest',
+      label: 'Daily Financial Summary',
+      description: "Evening summary of today's total spending.",
+      enabled: false,
+    },
+  ],
+  dataActions: [
+    {
+      id: 'clear-history',
+      title: 'Clear Transaction History',
+      description: 'Archive 245 items',
+      icon: Trash2,
+    },
+    {
+      id: 'factory-reset',
+      title: 'Factory Reset App',
+      description: 'Delete all assets, members and settings',
+      icon: RotateCcw,
+    },
+  ],
+  options: {
+    currencies: [
+      { value: 'IDR', label: 'Indonesian Rupiah (IDR)' },
+      { value: 'USD', label: 'US Dollar (USD)' },
+      { value: 'EUR', label: 'Euro (EUR)' },
+      { value: 'GBP', label: 'British Pound (GBP)' },
+    ],
+    weekStarts: ['Monday', 'Sunday'],
+  },
+};
+
+const navItems = [
+  { id: 'general', label: 'General', icon: Settings },
+  { id: 'family', label: 'Family', icon: Users },
+  { id: 'notifications', label: 'Notifications', icon: Bell },
+  { id: 'data', label: 'Data', icon: Database },
+] as const;
+
+const activeSection = 'general';
 ---
 
 <ProtectedLayout title="Settings - Finance Manager" currentPath={currentPath}>
-  <div class="max-w-7xl mx-auto sm:px-2 lg:px-6 space-y-6 sm:space-y-8">
-    <div>
-      <h2 class="text-2xl font-bold">Settings</h2>
-      <p class="text-base-content/60">
-        Account settings are now organized by section for easier access.
-      </p>
-    </div>
-
-    <div class="tabs">
-      <a class="tab tab-active" href="/settings">Settings</a>
-      <a class="tab" href="/profile">Manage Account</a>
-      <a class="tab" href="/security">Security</a>
-      <a class="tab" href="/settings/categories">Categories</a>
-      <a class="tab" href="/settings/payment-methods">Payment Methods</a>
-    </div>
-
-    <div class="card bg-base-100 shadow border border-base-300">
-      <div class="card-body">
-        <EmptyState
-          title="Settings moved"
-          message="Visit Manage Account or Security to update your profile and protection settings."
-          iconName="info"
-          actionLabel="Go to Manage Account"
-          actionHref="/profile"
-          variant="centered"
-        />
+  <main
+    class="mx-auto max-w-5xl space-y-8 px-4 sm:px-6 lg:px-8"
+    data-settings-page
+    data-active-tab={activeSection}
+  >
+    <header class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div class="space-y-1">
+        <h1 class="text-2xl font-semibold text-base-content">System Settings</h1>
+        <p class="text-sm text-base-content/60">Configure global behavior and household access.</p>
       </div>
+      <button
+        type="button"
+        class="btn btn-accent h-14 rounded-full gap-2 font-bold shadow-sm"
+        data-cta-modal
+        data-cta-label="Save changes"
+      >
+        <Save size={18} class="stroke-current" aria-hidden="true" />
+        Save Changes
+      </button>
+    </header>
+
+    <section class="flex flex-col gap-6 lg:flex-row">
+      <nav class="w-full lg:w-64" aria-label="Settings sections">
+        <ul class="flex flex-col gap-2" role="tablist" aria-orientation="vertical">
+          {
+            navItems.map((item) => (
+              <li>
+                <button
+                  type="button"
+                  id={`settings-tab-${item.id}`}
+                  class={[
+                    'relative',
+                    'flex',
+                    'items-center',
+                    'gap-4',
+                    'py-4',
+                    'px-5',
+                    'w-full',
+                    'text-base',
+                    'rounded-xl',
+                    'transition-all',
+                    'duration-200',
+                    'border',
+                    item.id === activeSection
+                      ? 'bg-accent/10 text-accent font-bold border-accent/20'
+                      : 'text-base-content/60 hover:text-base-content font-medium border-transparent',
+                  ]
+                    .filter(Boolean)
+                    .join(' ')}
+                  data-settings-tab
+                  data-tab={item.id}
+                  role="tab"
+                  aria-controls={`settings-panel-${item.id}`}
+                  aria-selected={item.id === activeSection ? 'true' : 'false'}
+                >
+                  <item.icon size={20} class="stroke-current" aria-hidden="true" />
+                  <span>{item.label}</span>
+                  <span
+                    class={[
+                      'ml-auto',
+                      'w-2',
+                      'h-2',
+                      'bg-accent',
+                      'rounded-full',
+                      item.id === activeSection ? '' : 'hidden',
+                    ]
+                      .filter(Boolean)
+                      .join(' ')}
+                    data-active-dot
+                    aria-hidden="true"
+                  />
+                </button>
+              </li>
+            ))
+          }
+        </ul>
+      </nav>
+
+      <article class="flex-1">
+        <Card padding="lg" rounded="card-lg" className="w-full">
+          <div class="flex flex-col gap-8">
+            <section
+              id="settings-panel-general"
+              data-settings-panel
+              data-tab="general"
+              role="tabpanel"
+              aria-labelledby="settings-tab-general"
+            >
+              <div class="flex flex-col gap-6">
+                <header class="space-y-1">
+                  <h2 class="text-xl font-semibold text-base-content">General Configuration</h2>
+                  <p class="text-sm text-base-content/60">
+                    Manage preferences for your general workspace.
+                  </p>
+                </header>
+                <div class="divider my-0"></div>
+
+                <div class="flex flex-col gap-5">
+                  <div class="grid gap-4 md:grid-cols-2">
+                    <div class="form-control">
+                      <Label htmlFor="primary-currency">Primary Currency</Label>
+                      <select
+                        id="primary-currency"
+                        name="primary-currency"
+                        class="select select-bordered w-full h-14 py-4 pl-6 pr-10 text-base font-bold bg-base-200 rounded-full border-0 focus:ring-2 focus:ring-accent focus:ring-opacity-20 focus:outline-none focus:ring-offset-2"
+                        value={settingsData.general.currency}
+                      >
+                        {
+                          settingsData.options.currencies.map((currency) => (
+                            <option value={currency.value}>{currency.label}</option>
+                          ))
+                        }
+                      </select>
+                    </div>
+
+                    <div class="form-control">
+                      <Label htmlFor="week-starts">Week Starts On</Label>
+                      <select
+                        id="week-starts"
+                        name="week-starts"
+                        class="select select-bordered w-full h-14 py-4 pl-6 pr-10 text-base font-bold bg-base-200 rounded-full border-0 focus:ring-2 focus:ring-accent focus:ring-opacity-20 focus:outline-none focus:ring-offset-2"
+                        value={settingsData.general.weekStart}
+                      >
+                        {
+                          settingsData.options.weekStarts.map((weekday) => (
+                            <option value={weekday}>{weekday}</option>
+                          ))
+                        }
+                      </select>
+                    </div>
+                  </div>
+
+                  <div
+                    class="flex flex-col gap-4 rounded-box border border-base-300 bg-base-200 p-6 sm:flex-row sm:items-center sm:justify-between"
+                  >
+                    <div class="space-y-1">
+                      <h3 class="font-semibold text-base-content">Compact Number Display</h3>
+                      <p class="text-sm text-base-content/60">
+                        Show amounts as Rp 1.5M instead of Rp 1.500.000
+                      </p>
+                    </div>
+                    <input
+                      type="checkbox"
+                      class="toggle toggle-accent"
+                      name="compact-numbers"
+                      aria-label="Compact number display"
+                      checked={settingsData.general.compactNumbers}
+                    />
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section
+              id="settings-panel-family"
+              data-settings-panel
+              data-tab="family"
+              role="tabpanel"
+              aria-labelledby="settings-tab-family"
+              class="hidden"
+            >
+              <div class="flex flex-col gap-6">
+                <header class="space-y-1">
+                  <h2 class="text-xl font-semibold text-base-content">Family Configuration</h2>
+                  <p class="text-sm text-base-content/60">
+                    Manage household access and member roles.
+                  </p>
+                </header>
+                <div class="divider my-0"></div>
+
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <p class="text-xs font-semibold uppercase tracking-wide text-base-content/50">
+                    Active Household Members
+                  </p>
+                  <button
+                    type="button"
+                    class="btn btn-ghost btn-sm gap-2"
+                    data-cta-modal
+                    data-cta-label="Invite member"
+                  >
+                    <UserPlus size={16} class="stroke-current" aria-hidden="true" />
+                    Invite Member
+                  </button>
+                </div>
+
+                <ul class="divide-y divide-base-200 rounded-box border border-base-300 bg-base-100">
+                  {
+                    settingsData.family.members.map((member) => (
+                      <li class="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between transition-colors hover:bg-accent/10">
+                        <div class="flex items-center gap-4">
+                          <div class="flex h-10 w-10 items-center justify-center rounded-box bg-base-200 text-base-content font-semibold">
+                            {member.name
+                              .split(' ')
+                              .map((segment) => segment[0])
+                              .join('')
+                              .slice(0, 2)}
+                          </div>
+                          <div>
+                            <p class="font-semibold text-base-content">{member.name}</p>
+                            <p class="text-xs font-semibold uppercase tracking-wide text-base-content/50">
+                              {member.role}
+                            </p>
+                          </div>
+                        </div>
+                        <div class="flex items-center gap-3">
+                          <span class="badge badge-success">{member.status}</span>
+                          <button
+                            type="button"
+                            class="btn btn-ghost btn-sm btn-square"
+                            aria-label={`Manage ${member.name}`}
+                            data-cta-modal
+                            data-cta-label={`Manage ${member.name}`}
+                          >
+                            <Settings size={16} class="stroke-current" aria-hidden="true" />
+                          </button>
+                        </div>
+                      </li>
+                    ))
+                  }
+                </ul>
+              </div>
+            </section>
+
+            <section
+              id="settings-panel-notifications"
+              data-settings-panel
+              data-tab="notifications"
+              role="tabpanel"
+              aria-labelledby="settings-tab-notifications"
+              class="hidden"
+            >
+              <div class="flex flex-col gap-6">
+                <header class="space-y-1">
+                  <h2 class="text-xl font-semibold text-base-content">
+                    Notifications Configuration
+                  </h2>
+                  <p class="text-sm text-base-content/60">
+                    Choose how and when we should notify your household.
+                  </p>
+                </header>
+                <div class="divider my-0"></div>
+
+                <div class="flex flex-col gap-4">
+                  {
+                    settingsData.notifications.map((item) => (
+                      <div class="flex flex-col gap-4 rounded-box border border-base-300 bg-base-200 p-6 sm:flex-row sm:items-center sm:justify-between">
+                        <div class="space-y-1">
+                          <p class="font-semibold text-base-content">{item.label}</p>
+                          <p class="text-sm text-base-content/60">{item.description}</p>
+                        </div>
+                        <input
+                          type="checkbox"
+                          class="toggle toggle-accent"
+                          name={`notification-${item.id}`}
+                          aria-label={item.label}
+                          checked={item.enabled}
+                        />
+                      </div>
+                    ))
+                  }
+                </div>
+              </div>
+            </section>
+
+            <section
+              id="settings-panel-data"
+              data-settings-panel
+              data-tab="data"
+              role="tabpanel"
+              aria-labelledby="settings-tab-data"
+              class="hidden"
+            >
+              <div class="flex flex-col gap-6">
+                <header class="space-y-1">
+                  <h2 class="text-xl font-semibold text-base-content">Data Configuration</h2>
+                  <p class="text-sm text-base-content/60">
+                    Review critical maintenance actions for your ledger.
+                  </p>
+                </header>
+                <div class="divider my-0"></div>
+
+                <div class="flex flex-col gap-4 rounded-box border border-base-300 bg-base-200 p-6">
+                  <div class="space-y-1">
+                    <h3 class="text-base font-semibold text-error">Ledger Maintenance</h3>
+                    <p class="text-sm text-base-content/60">
+                      These actions are permanent and cannot be undone.
+                    </p>
+                  </div>
+                  <div class="flex flex-col gap-3">
+                    {
+                      settingsData.dataActions.map((action) => (
+                        <button
+                          type="button"
+                          class="flex w-full items-center justify-between rounded-box border border-base-300 bg-base-100 p-4 text-left hover:bg-base-200"
+                          data-cta-modal
+                          data-cta-label={action.title}
+                        >
+                          <div class="space-y-1">
+                            <p class="font-semibold text-base-content">{action.title}</p>
+                            <p class="text-xs font-semibold uppercase tracking-wide text-base-content/50">
+                              {action.description}
+                            </p>
+                          </div>
+                          <action.icon
+                            size={18}
+                            class="stroke-current text-error"
+                            aria-hidden="true"
+                          />
+                        </button>
+                      ))
+                    }
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+        </Card>
+      </article>
+    </section>
+  </main>
+
+  <Modal id="settings-cta-modal" title="Coming Soon" size="sm" closable={false}>
+    <p class="text-sm text-base-content/70" data-cta-modal-message>
+      This feature is not yet implemented.
+    </p>
+    <div slot="actions" class="flex justify-end">
+      <form method="dialog">
+        <button type="submit" class="btn btn-accent rounded-full"> Got it </button>
+      </form>
     </div>
-  </div>
+  </Modal>
+
+  <script src="./settings-client.ts"></script>
 </ProtectedLayout>
