@@ -5,7 +5,7 @@ import {
   successResponse,
   errorResponse,
   validateBody,
-  requireAuth,
+  getAuthenticatedUser,
   isValidationError,
 } from '@/lib/api-utils';
 import { logError } from '@/lib/utils';
@@ -22,9 +22,10 @@ const createAssetSchema = z.object({
  * GET /api/assets
  * List all assets for the user
  */
-export const GET: APIRoute = async ({ request, url }) => {
+export const GET: APIRoute = async (context) => {
   try {
-    const userId = await requireAuth({ request, url } as any);
+    const userId = getAuthenticatedUser(context);
+    const { url } = context;
 
     const type = url.searchParams.get('type');
     const currency = url.searchParams.get('currency');
@@ -56,11 +57,11 @@ export const GET: APIRoute = async ({ request, url }) => {
  * POST /api/assets
  * Create a new asset
  */
-export const POST: APIRoute = async ({ request, url }) => {
+export const POST: APIRoute = async (context) => {
   try {
-    const userId = await requireAuth({ request, url } as any);
+    const userId = getAuthenticatedUser(context);
 
-    const validation = await validateBody(request, createAssetSchema);
+    const validation = await validateBody(context.request, createAssetSchema);
 
     if (isValidationError(validation)) {
       return errorResponse('Validation failed', 400, 'VALIDATION_ERROR', validation.error.issues);

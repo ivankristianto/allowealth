@@ -9,6 +9,7 @@
  * Response:
  * - 200: Reset request processed successfully
  * - 400: Invalid input
+ * - 429: Too many requests (rate limited)
  * - 500: Server error
  *
  * Security note: This endpoint always returns success to prevent email enumeration attacks.
@@ -23,20 +24,46 @@ import {
 } from '@/services/password-reset.service';
 import { createErrorResponseResponse, STANDARD_RESPONSE_HEADERS } from '@/types/api';
 import { logError } from '@/lib/utils';
+import {
+  checkRateLimit,
+  createRateLimitResponse,
+  applyRateLimitHeaders,
+  RATE_LIMIT_PRESETS,
+} from '@/lib/rate-limit';
+import { logAuthEvent, getAuditContext, hashSensitiveValue } from '@/lib/audit-log';
 
 export const prerender = false;
 
-// TODO: Add rate limiting to prevent abuse
-// Consider implementing IP-based rate limiting for this endpoint
+export const POST: APIRoute = async (context) => {
+  const { request, clientAddress } = context;
+  const auditContext = getAuditContext(context);
 
-export const POST: APIRoute = async ({ request }) => {
+  // Parse request body first (before consuming rate limit)
+  let body: { email?: string };
   try {
-    // Parse request body
-    const body = await request.json();
-    const { email } = body;
+    body = await request.json();
+  } catch {
+    // JSON parse error - return 400 without consuming rate limit
+    return createErrorResponseResponse('INVALID_INPUT', 'Invalid JSON in request body', 400);
+  }
 
+  const { email } = body;
+
+  // Check rate limit (3 attempts per hour per IP)
+  // Pass clientAddress from Astro context for trusted IP (prevents spoofing)
+  const rateLimitResult = checkRateLimit(request, RATE_LIMIT_PRESETS.passwordReset, clientAddress);
+  if (!rateLimitResult.allowed) {
+    return createRateLimitResponse(rateLimitResult, RATE_LIMIT_PRESETS.passwordReset.message);
+  }
+
+  try {
     // Request password reset
     await requestPasswordReset(email);
+
+    // Log password reset request (hash email for privacy, userId is null to prevent enumeration)
+    await logAuthEvent('PASSWORD_RESET_REQUEST', null, auditContext, {
+      emailHash: hashSensitiveValue(email),
+    });
 
     // Always return success to prevent email enumeration
     const responseData = {
@@ -44,15 +71,23 @@ export const POST: APIRoute = async ({ request }) => {
         'If an account exists with this email, we have sent a password reset link. Please check your inbox.',
     };
 
-    return new Response(JSON.stringify({ success: true, data: responseData }), {
+    const response = new Response(JSON.stringify({ success: true, data: responseData }), {
       status: 200,
       headers: STANDARD_RESPONSE_HEADERS,
     });
+
+    // Add rate limit headers to successful response
+    return applyRateLimitHeaders(response, rateLimitResult);
   } catch (error) {
     // Handle validation errors
     if (error instanceof PasswordResetError) {
       if (error.code === PASSWORD_RESET_ERRORS.INVALID_INPUT) {
-        return createErrorResponseResponse(PASSWORD_RESET_ERRORS.INVALID_INPUT, error.message, 400);
+        const errorResponse = createErrorResponseResponse(
+          PASSWORD_RESET_ERRORS.INVALID_INPUT,
+          error.message,
+          400
+        );
+        return applyRateLimitHeaders(errorResponse, rateLimitResult);
       }
     }
 
@@ -66,9 +101,12 @@ export const POST: APIRoute = async ({ request }) => {
         'If an account exists with this email, we have sent a password reset link. Please check your inbox.',
     };
 
-    return new Response(JSON.stringify({ success: true, data: responseData }), {
+    const response = new Response(JSON.stringify({ success: true, data: responseData }), {
       status: 200,
       headers: STANDARD_RESPONSE_HEADERS,
     });
+
+    // Add rate limit headers even for error cases
+    return applyRateLimitHeaders(response, rateLimitResult);
   }
 };

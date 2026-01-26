@@ -51,6 +51,8 @@ tags:
     description: Asset tracking and management
   - name: Budget
     description: Budget overview and alerts
+  - name: Forecast
+    description: Wealth trajectory forecasting and projections
 
 paths:
   /api/auth/signup:
@@ -59,6 +61,8 @@ paths:
     $ref: './openapi/paths/auth.yml#/paths/~1api~1auth~1login'
   /api/auth/logout:
     $ref: './openapi/paths/auth.yml#/paths/~1api~1auth~1logout'
+  /api/auth/forgot-password:
+    $ref: './openapi/paths/auth.yml#/paths/~1api~1auth~1forgot-password'
 
   /api/user/profile:
     $ref: './openapi/paths/user.yml#/paths/~1api~1user~1profile'
@@ -110,6 +114,9 @@ paths:
   /api/budget/export:
     $ref: './openapi/paths/budget.yml#/paths/~1api~1budget~1export'
 
+  /api/forecast:
+    $ref: './openapi/paths/forecast.yml#/~1forecast'
+
 components:
   securitySchemes:
     sessionAuth:
@@ -145,6 +152,10 @@ components:
       $ref: './openapi/schemas/SignupRequest.yml#/SignupRequest'
     LoginRequest:
       $ref: './openapi/schemas/LoginRequest.yml#/LoginRequest'
+    ForgotPasswordRequest:
+      $ref: './openapi/schemas/ForgotPasswordRequest.yml#/ForgotPasswordRequest'
+    ForgotPasswordResponse:
+      $ref: './openapi/schemas/ForgotPasswordResponse.yml#/ForgotPasswordResponse'
     AuthSuccessResponse:
       $ref: './openapi/schemas/AuthSuccessResponse.yml#/AuthSuccessResponse'
 
@@ -233,3 +244,7 @@ components:
       $ref: './openapi/schemas/UpdateBudgetCategoryRequest.yml#/UpdateBudgetCategoryRequest'
     BudgetCategoryResponse:
       $ref: './openapi/schemas/BudgetCategoryResponse.yml#/BudgetCategoryResponse'
+
+    # Forecast Schemas
+    ForecastResponse:
+      $ref: './openapi/schemas/ForecastResponse.yml#/ForecastResponse'

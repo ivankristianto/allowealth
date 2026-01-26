@@ -135,6 +135,7 @@ const expenseCategories = categories.filter((c) => c.type === 'expense');
 
 <script>
   import { addToast } from '@lib/stores/toastStore';
+  import { getCsrfHeaders } from '@/lib/csrf-client';
 
   // Track initialized modals to avoid duplicate handlers
   const initializedModals = new WeakSet<Element>();
@@ -217,9 +218,9 @@ const expenseCategories = categories.filter((c) => c.type === 'expense');
         try {
           const response = await fetch(`/api/categories/${categoryId}`, {
             method: 'PUT',
-            headers: {
+            headers: getCsrfHeaders({
               'Content-Type': 'application/json',
-            },
+            }),
             body: JSON.stringify({
               budget_amount: String(budgetAmount),
               currency: String(currency),

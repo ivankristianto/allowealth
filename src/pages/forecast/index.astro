@@ -1,22 +1,91 @@
 ---
+/**
+ * Forecast Page
+ *
+ * Displays wealth trajectory forecasting with interactive area chart
+ * and detailed 120-month ledger projections table.
+ */
+
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
+import WealthTrajectory from '@/components/organisms/WealthTrajectory.astro';
+import LedgerProjections from '@/components/organisms/LedgerProjections.astro';
+import type { ForecastResult } from '@/lib/forecast';
 
 const currentPath = '/forecast';
+
+// Fetch initial forecast data from API
+let forecastData: ForecastResult | null = null;
+let error: string | null = null;
+
+try {
+  // Default parameters: 5M IDR monthly, 7% APY, 10 years
+  const apiUrl = `${Astro.url.origin}/api/forecast?monthlyTopup=5000000&annualRate=7&years=10`;
+
+  const response = await fetch(apiUrl, {
+    headers: {
+      cookie: Astro.request.headers.get('cookie') || '',
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch forecast data: ${response.statusText}`);
+  }
+
+  const result = await response.json();
+
+  if (!result.success || !result.data) {
+    throw new Error('Invalid API response format');
+  }
+
+  forecastData = result.data;
+} catch (err) {
+  console.error('Error fetching forecast data:', err);
+  error = err instanceof Error ? err.message : 'Failed to load forecast data';
+}
 ---
 
 <ProtectedLayout title="Forecast - Finance Manager" currentPath={currentPath}>
-  <div class="space-y-6">
-    <h2 class="text-2xl font-bold">Forecast</h2>
-
-    <div class="tabs">
-      <a class="tab tab-active" href="/forecast">Calculator</a>
-      <a class="tab" href="/forecast/comparison">Comparison</a>
+  <div class="max-w-7xl mx-auto sm:px-2 lg:px-6 space-y-6 sm:space-y-8">
+    {/* Page Header */}
+    <div>
+      <h1 class="text-2xl md:text-3xl font-bold text-base-content leading-none tracking-tight">
+        Forecast
+      </h1>
+      <p class="text-sm md:text-base text-base-content/60 mt-2">
+        Predict your financial future based on current assets and projected contributions.
+      </p>
     </div>
 
-    <div class="card bg-base-100 shadow border border-base-300">
-      <div class="card-body">
-        <p class="text-neutral-500">Forecast your financial future based on current trends.</p>
-      </div>
-    </div>
+    {/* Wealth Trajectory Section */}
+    {
+      forecastData ? (
+        <WealthTrajectory
+          data={forecastData.dataPoints}
+          summary={forecastData.summary}
+          input={forecastData.input}
+        />
+      ) : (
+        <WealthTrajectory
+          data={[]}
+          summary={{ year10Target: 0, totalInterest: 0, growthMultiple: 0, currentTotal: 0 }}
+          input={{ monthlyTopup: 5000000, annualRate: 7, years: 10 }}
+          error={error || 'Failed to load forecast data'}
+        />
+      )
+    }
+
+    {/* Ledger Projections Section */}
+    {
+      forecastData ? (
+        <LedgerProjections data={forecastData.dataPoints} />
+      ) : (
+        <LedgerProjections data={[]} error={error || 'Failed to load projection data'} />
+      )
+    }
   </div>
 </ProtectedLayout>
+
+<script>
+  // Import client-side script for WealthTrajectory input handling
+  import '@/components/organisms/WealthTrajectory.client';
+</script>

@@ -5,7 +5,7 @@ import {
   successResponse,
   errorResponse,
   validateBody,
-  requireAuth,
+  getAuthenticatedUser,
   isValidationError,
 } from '@/lib/api-utils';
 import { logError } from '@/lib/utils';
@@ -21,10 +21,10 @@ const updateAssetSchema = z.object({
  * GET /api/assets/:id
  * Get a single asset by ID
  */
-export const GET: APIRoute = async ({ params, request, url }) => {
+export const GET: APIRoute = async (context) => {
   try {
-    const userId = await requireAuth({ request, url } as any);
-    const { id } = params;
+    const userId = getAuthenticatedUser(context);
+    const { id } = context.params;
 
     if (!id) {
       return errorResponse('Asset ID is required', 400);
@@ -50,16 +50,16 @@ export const GET: APIRoute = async ({ params, request, url }) => {
  * PUT /api/assets/:id
  * Update an asset
  */
-export const PUT: APIRoute = async ({ params, request, url }) => {
+export const PUT: APIRoute = async (context) => {
   try {
-    const userId = await requireAuth({ request, url } as any);
-    const { id } = params;
+    const userId = getAuthenticatedUser(context);
+    const { id } = context.params;
 
     if (!id) {
       return errorResponse('Asset ID is required', 400);
     }
 
-    const validation = await validateBody(request, updateAssetSchema);
+    const validation = await validateBody(context.request, updateAssetSchema);
 
     if (isValidationError(validation)) {
       return errorResponse('Validation failed', 400, 'VALIDATION_ERROR', validation.error.issues);
@@ -85,10 +85,10 @@ export const PUT: APIRoute = async ({ params, request, url }) => {
  * DELETE /api/assets/:id
  * Soft delete an asset
  */
-export const DELETE: APIRoute = async ({ params, request, url }) => {
+export const DELETE: APIRoute = async (context) => {
   try {
-    const userId = await requireAuth({ request, url } as any);
-    const { id } = params;
+    const userId = getAuthenticatedUser(context);
+    const { id } = context.params;
 
     if (!id) {
       return errorResponse('Asset ID is required', 400);

@@ -4,7 +4,7 @@ import {
   successResponse,
   errorResponse,
   validateBody,
-  requireAuth,
+  getAuthenticatedUser,
   isValidationError,
 } from '@/lib/api-utils';
 import { updateTransactionAPISchema, transactionIdSchema } from '@/lib/validation/transactions';
@@ -17,7 +17,7 @@ import { ServiceError } from '@/services/service-errors';
  */
 export const GET: APIRoute = async (context) => {
   try {
-    const userId = await requireAuth(context);
+    const userId = getAuthenticatedUser(context);
     const { id } = context.params;
 
     // Validate transaction ID format
@@ -52,7 +52,7 @@ export const GET: APIRoute = async (context) => {
  */
 export const PUT: APIRoute = async (context) => {
   try {
-    const userId = await requireAuth(context);
+    const userId = getAuthenticatedUser(context);
     const { id } = context.params;
     const { request } = context;
 
@@ -115,7 +115,7 @@ export const PUT: APIRoute = async (context) => {
  */
 export const DELETE: APIRoute = async (context) => {
   try {
-    const userId = await requireAuth(context);
+    const userId = getAuthenticatedUser(context);
     const { id } = context.params;
 
     // Validate transaction ID format

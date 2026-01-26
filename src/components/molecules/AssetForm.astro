@@ -186,6 +186,8 @@ const currencyOptions: Array<{ value: Currency; label: string }> = [
 </form>
 
 <script>
+  import { getCsrfHeaders } from '@/lib/csrf-client';
+
   // Asset Form Client-side script
   // Handles form validation and submission
 
@@ -369,7 +371,7 @@ const currencyOptions: Array<{ value: Currency; label: string }> = [
         const url = assetId ? `/api/assets/${assetId}` : action;
         const response = await fetch(url, {
           method: assetId ? 'PUT' : method,
-          headers: { 'Content-Type': 'application/json' },
+          headers: getCsrfHeaders({ 'Content-Type': 'application/json' }),
           body: JSON.stringify(values),
         });
 

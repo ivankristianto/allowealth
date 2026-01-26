@@ -14,6 +14,15 @@
 import type { MiddlewareHandler } from 'astro';
 import { auth } from './lib/auth/lucia';
 import { logError } from './lib/utils/error-logger';
+import {
+  generateCsrfToken,
+  setCsrfCookie,
+  getCsrfTokenFromCookie,
+  getCsrfTokenFromHeader,
+  validateCsrfToken,
+  requiresCsrfProtection,
+  isCsrfExempt,
+} from './lib/csrf';
 
 /**
  * Session cookie name used by Lucia Auth
@@ -127,6 +136,12 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
 
   const sessionId = context.cookies.get(SESSION_COOKIE_NAME)?.value;
   const pathname = context.url.pathname;
+  const method = context.request.method;
+
+  // Check if this is an API request that requires CSRF protection
+  const isApiRequest = pathname.startsWith('/api/');
+  const needsCsrfValidation =
+    isApiRequest && requiresCsrfProtection(method) && !isCsrfExempt(pathname);
 
   // Check if this is a protected route
   const isProtectedRoute = PROTECTED_ROUTES.some((route) => pathname.startsWith(route));
@@ -153,6 +168,31 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
     return response;
   }
 
+  // Validate CSRF token for protected API requests
+  // This must happen after we verify there's a session but before processing the request
+  if (needsCsrfValidation) {
+    const cookieToken = getCsrfTokenFromCookie(context.cookies);
+    const headerToken = getCsrfTokenFromHeader(context.request);
+
+    if (!validateCsrfToken(cookieToken, headerToken)) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: {
+            message: 'CSRF token validation failed',
+            code: 'CSRF_VALIDATION_FAILED',
+          },
+        }),
+        {
+          status: 403,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+    }
+  }
+
   try {
     // Validate session using Lucia
     const { session, user } = await auth.validateSession(sessionId);
@@ -160,6 +200,21 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
     // Session is valid - attach user and session to locals
     (context.locals as any).session = session;
     (context.locals as any).user = user;
+
+    // Set CSRF token for authenticated users on page loads
+    // Only generate a new token if one doesn't exist (prevents multi-tab issues)
+    if (!isApiRequest) {
+      const existingToken = getCsrfTokenFromCookie(context.cookies);
+      if (existingToken) {
+        // Reuse existing token
+        (context.locals as any).csrfToken = existingToken;
+      } else {
+        // Generate new token only when needed
+        const csrfToken = generateCsrfToken();
+        setCsrfCookie(context.cookies, csrfToken);
+        (context.locals as any).csrfToken = csrfToken;
+      }
+    }
 
     // If session is not fresh (close to expiry), consider refreshing it
     // This is optional and depends on your security requirements

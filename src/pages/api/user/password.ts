@@ -4,7 +4,7 @@ import {
   successResponse,
   errorResponse,
   validateBody,
-  requireAuth,
+  getAuthenticatedUser,
   isValidationError,
 } from '@/lib/api-utils';
 import { updatePasswordSchema } from '@/services/user.service';
@@ -17,7 +17,7 @@ import { UserServiceError, ServiceErrorCode } from '@/services/service-errors';
  * Updates the current authenticated user's password after verifying the old password.
  * The user's session remains active after password change (no re-authentication required).
  *
- * @authentication Requires valid session cookie (handled by requireAuth)
+ * @authentication Requires valid session (validated by middleware, accessed via getAuthenticatedUser)
  * @param {Object} requestBody - Request body containing password change data
  * @param {string} requestBody.oldPassword - Current password (required)
  * @param {string} requestBody.newPassword - New password (required, min 12 chars, must contain letter + number/special)
@@ -68,7 +68,7 @@ import { UserServiceError, ServiceErrorCode } from '@/services/service-errors';
  */
 export const PUT: APIRoute = async (context) => {
   try {
-    const userId = await requireAuth(context);
+    const userId = getAuthenticatedUser(context);
 
     const validation = await validateBody(context.request, updatePasswordSchema);
 

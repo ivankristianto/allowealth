@@ -22,23 +22,33 @@ import {
   type ApiSuccessResponse,
 } from '@/types/api';
 import { logError } from '@/lib/utils';
+import { logAuthEvent, getAuditContext, hashSensitiveValue } from '@/lib/audit-log';
 
 export const prerender = false;
 
-export const POST: APIRoute = async ({ request }) => {
-  try {
-    // Get session ID from cookie
-    const cookies = request.headers.get('cookie') || '';
-    const sessionMatch = cookies.match(/sid=([^;]+)/);
+export const POST: APIRoute = async (context) => {
+  const auditContext = getAuditContext(context);
 
-    if (!sessionMatch || !sessionMatch[1]) {
+  try {
+    // Get session ID from cookie using Astro's cookie API
+    const sessionId = context.cookies.get('sid')?.value;
+
+    if (!sessionId) {
       return createErrorResponseResponse(AUTH_ERRORS.NOT_AUTHENTICATED, 'Not authenticated', 401);
     }
 
-    const sessionId = sessionMatch[1] as string;
+    // Get user ID from locals before logout (set by middleware)
+    const userId = context.locals.user?.id ?? null;
 
     // Invalidate session
     await logout(sessionId);
+
+    // Log successful logout (hash session ID for security)
+    if (userId) {
+      await logAuthEvent('LOGOUT', userId, auditContext, {
+        sessionHash: hashSensitiveValue(sessionId),
+      });
+    }
 
     // Create blank session cookie to clear the existing one
     const blankSessionCookie = auth.createBlankSessionCookie();
