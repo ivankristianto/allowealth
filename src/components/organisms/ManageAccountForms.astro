@@ -1,0 +1,180 @@
+---
+/**
+ * ManageAccountForms Component
+ *
+ * Aggregates profile, preferences, and password update forms
+ * for the Manage Account page.
+ */
+
+import Label from '@/components/atoms/Label.astro';
+import Input from '@/components/atoms/Input.astro';
+import Button from '@/components/atoms/Button.astro';
+import PasswordChangeForm from '@/components/molecules/PasswordChangeForm.astro';
+import { Loader, User, Phone, FileText } from '@lucide/astro';
+import type { User as UserType } from '@/lib/auth/lucia';
+import { CURRENCY_OPTIONS } from '@/lib/constants';
+import { patterns } from '@/lib/validation/patterns';
+
+export interface Props {
+  user: UserType;
+}
+
+const { user } = Astro.props;
+
+// @TODO: Wire with backend for additional profile details.
+const mockDetails = {
+  phone: '+62 812-3456-7890',
+  bio: 'Family CFO and tech enthusiast.',
+};
+---
+
+<div class="space-y-6">
+  <section class="card bg-base-100 shadow border border-base-300">
+    <div class="card-body p-6">
+      <div class="flex items-start gap-3">
+        <span class="rounded-xl bg-accent/10 text-accent p-2">
+          <User size={20} class="stroke-current" aria-hidden="true" />
+        </span>
+        <div>
+          <h3 class="card-title text-lg">Profile Information</h3>
+          <p class="text-sm text-base-content/70">
+            Update your personal information and contact details.
+          </p>
+        </div>
+      </div>
+
+      <form id="profile-form" class="space-y-5 mt-6" novalidate>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div class="form-control">
+            <Label htmlFor="displayName" required>Display Name</Label>
+            <Input
+              type="text"
+              id="displayName"
+              name="name"
+              placeholder="Your name"
+              value={user.name}
+              required
+            />
+          </div>
+
+          <div class="form-control">
+            <Label htmlFor="email" required>Email</Label>
+            <Input
+              type="email"
+              id="email"
+              name="email"
+              placeholder="your@email.com"
+              value={user.email}
+              pattern={patterns.email.html}
+              title={patterns.email.title}
+              required
+            />
+          </div>
+        </div>
+
+        <div class="pt-2">
+          <Button type="submit" variant="primary">Save Changes</Button>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <section class="card bg-base-100 shadow border border-base-300">
+    <div class="card-body p-6">
+      <div class="flex items-start gap-3">
+        <span class="rounded-xl bg-base-200 text-base-content/60 p-2">
+          <Phone size={20} class="stroke-current" aria-hidden="true" />
+        </span>
+        <div>
+          <h3 class="card-title text-lg">Personal Details</h3>
+          <p class="text-sm text-base-content/70">
+            Keep your contact details up to date for account recovery.
+          </p>
+        </div>
+      </div>
+
+      <form id="details-form" class="space-y-5 mt-6" novalidate>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div class="form-control">
+            <Label htmlFor="phone">Phone Number</Label>
+            <Input
+              type="text"
+              id="phone"
+              name="phone"
+              placeholder="+62 812-3456-7890"
+              value={mockDetails.phone}
+            />
+          </div>
+
+          <div class="form-control md:col-span-2">
+            <Label htmlFor="bio">Short Bio</Label>
+            <div class="relative">
+              <textarea
+                id="bio"
+                name="bio"
+                rows={3}
+                class="textarea textarea-bordered w-full bg-base-200 text-xs pt-2 pb-2 px-3 focus:ring-2 focus:ring-accent focus:ring-opacity-20 focus:outline-none"
+                placeholder="Tell us a bit about your role">{mockDetails.bio}</textarea
+              >
+              <FileText
+                size={16}
+                class="absolute right-3 top-3 text-base-content/40"
+                aria-hidden="true"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- @TODO: Implement profile details update logic. -->
+        <div class="pt-2">
+          <Button type="button" variant="secondary" disabled>Save Details</Button>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <section class="card bg-base-100 shadow border border-base-300">
+    <div class="card-body p-6">
+      <h3 class="card-title text-lg mb-2">Currency Preferences</h3>
+      <p class="text-sm text-base-content/70 mb-6">
+        Set your default currency for displaying financial data.
+      </p>
+
+      <form id="settings-form" class="space-y-5" novalidate>
+        <div class="form-control">
+          <Label htmlFor="currency" required>Default Currency</Label>
+          <div class="relative">
+            <select
+              id="currency"
+              name="primaryCurrency"
+              class="select select-bordered w-full h-10 pt-2 pb-2 pl-3 pr-10 text-xs bg-base-200 focus:ring-2 focus:ring-accent focus:ring-opacity-20 focus:outline-none focus:ring-offset-2"
+              required
+              disabled
+            >
+              <option value="">Loading...</option>
+              {
+                CURRENCY_OPTIONS.map((option) => (
+                  <option value={option.value}>{option.label}</option>
+                ))
+              }
+            </select>
+            <div id="currency-loading" class="absolute right-12 top-1/2 -translate-y-1/2">
+              <Loader size={18} class="animate-spin text-base-content/50" />
+            </div>
+          </div>
+          <label class="label">
+            <span class="label-text-alt text-base-content/60">
+              This currency will be used as the default when viewing reports and dashboards.
+            </span>
+          </label>
+        </div>
+
+        <div class="pt-2">
+          <Button type="submit" variant="primary">Save Changes</Button>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <PasswordChangeForm formId="password-change-form" />
+</div>

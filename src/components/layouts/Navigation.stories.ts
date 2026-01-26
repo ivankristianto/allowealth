@@ -15,6 +15,8 @@ const meta: Meta = {
         '/forecast',
         '/calculators',
         '/settings',
+        '/profile',
+        '/security',
       ],
     },
   },
@@ -94,6 +96,13 @@ const createNavigation = (args: { currentPath?: string }): HTMLElement => {
   ul.className = 'menu w-full flex-1 px-4 space-y-2';
 
   const isActive = (href: string) => {
+    if (href === '/settings') {
+      return (
+        currentPath === '/profile' ||
+        currentPath === '/security' ||
+        currentPath.startsWith('/settings')
+      );
+    }
     // Exact match for index routes
     if (currentPath === href) return true;
     // For nested routes (e.g., /assets/add), parent is active if path starts with href + '/'

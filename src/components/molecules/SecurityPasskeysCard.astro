@@ -1,0 +1,61 @@
+---
+/**
+ * SecurityPasskeysCard Component
+ *
+ * Displays registered passkeys and add/remove actions.
+ */
+
+import Button from '@/components/atoms/Button.astro';
+import { KeyRound, Plus, Trash2 } from '@lucide/astro';
+
+interface Passkey {
+  id: string;
+  name: string;
+  lastUsed: string;
+}
+
+export interface Props {
+  passkeys: Passkey[];
+}
+
+const { passkeys } = Astro.props;
+
+// @TODO: Implement passkey management actions.
+---
+
+<section class="card bg-base-100 shadow border border-base-300">
+  <div class="card-body p-6 space-y-6">
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <h3 class="card-title text-lg">Passkeys</h3>
+        <p class="text-sm text-base-content/70">Manage trusted devices and biometric sign-ins.</p>
+      </div>
+      <Button type="button" variant="primary" size="sm">
+        <Plus size={16} class="stroke-current" aria-hidden="true" />
+        Add Passkey
+      </Button>
+    </div>
+
+    <div class="space-y-3">
+      {
+        passkeys.map((passkey) => (
+          <div class="flex flex-col gap-4 rounded-2xl border border-base-300 bg-base-200/60 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div class="flex items-center gap-4">
+              <div class="rounded-xl bg-base-100 p-3 text-base-content/60">
+                <KeyRound size={20} class="stroke-current" aria-hidden="true" />
+              </div>
+              <div>
+                <p class="text-sm font-semibold">{passkey.name}</p>
+                <p class="text-xs text-base-content/60">Last used {passkey.lastUsed}</p>
+              </div>
+            </div>
+            <button type="button" class="btn btn-ghost btn-sm text-error">
+              <Trash2 size={16} class="stroke-current" aria-hidden="true" />
+              Remove
+            </button>
+          </div>
+        ))
+      }
+    </div>
+  </div>
+</section>

@@ -14,7 +14,7 @@
  *
  * Manual Testing Steps:
  * 1. Open the application in a browser
- * 2. Navigate to /settings
+ * 2. Navigate to /profile
  * 3. Test password change with various scenarios
  * 4. Verify toast notifications appear correctly
  * 5. Verify form behavior and validation
@@ -429,7 +429,7 @@ describe('PasswordChangeForm Behavior', () => {
  *
  * Pre-test Setup:
  * [ ] Ensure user is logged in
- * [ ] Navigate to /settings page
+ * [ ] Navigate to /profile page
  * [ ] Locate "Change Password" card
  *
  * Test 1: Empty Form Submission

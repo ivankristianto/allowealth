@@ -51,6 +51,15 @@ const navItems: NavItem[] = [
 ];
 
 const isActive = (href: string) => {
+  // Settings alias: treat /profile and /security as settings area
+  if (href === '/settings') {
+    return (
+      currentPath === '/profile' ||
+      currentPath === '/security' ||
+      currentPath.startsWith('/settings')
+    );
+  }
+
   // Exact match for index routes
   if (currentPath === href) return true;
   // For nested routes (e.g., /assets/add), parent is active if path starts with href + '/'

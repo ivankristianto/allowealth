@@ -1,0 +1,196 @@
+---
+/**
+ * Manage Account Page
+ *
+ * Allows users to update profile, preferences, and password settings.
+ */
+
+import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
+import ManageAccountForms from '@/components/organisms/ManageAccountForms.astro';
+import type { User } from '@/lib/auth/lucia';
+
+const currentPath = '/profile';
+
+// User is authenticated (enforced by ProtectedLayout)
+const user = Astro.locals.user! as User;
+---
+
+<ProtectedLayout title="Manage Account - Finance Manager" currentPath={currentPath}>
+  <div class="max-w-7xl mx-auto sm:px-2 lg:px-6 space-y-6 sm:space-y-8">
+    <div>
+      <h2 class="text-2xl font-bold">Manage Account</h2>
+      <p class="text-base-content/60">
+        Manage your personal information, preferences, and account security.
+      </p>
+    </div>
+
+    <div class="tabs">
+      <a class="tab tab-active" href="/profile">Manage Account</a>
+      <a class="tab" href="/security">Security</a>
+      <a class="tab" href="/settings/categories">Categories</a>
+      <a class="tab" href="/settings/payment-methods">Payment Methods</a>
+    </div>
+
+    <ManageAccountForms user={user} />
+  </div>
+</ProtectedLayout>
+
+<script>
+  import { addToast } from '@/lib/stores/toastStore';
+  import { setButtonLoading } from '@/lib/client-utils';
+
+  const API_PROFILE_URL = '/api/user/profile';
+  const API_SETTINGS_URL = '/api/user/settings';
+  const DEFAULT_CURRENCY = 'IDR';
+
+  // ==================== PROFILE FORM ====================
+  const profileForm = document.getElementById('profile-form');
+  const profileNameInput = document.getElementById('displayName');
+  const profileEmailInput = document.getElementById('email');
+  const profileSubmitButton = profileForm?.querySelector('button[type="submit"]');
+
+  if (
+    profileForm instanceof HTMLFormElement &&
+    profileNameInput instanceof HTMLInputElement &&
+    profileEmailInput instanceof HTMLInputElement &&
+    profileSubmitButton instanceof HTMLButtonElement
+  ) {
+    profileForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const errors = [];
+
+      if (!profileNameInput.value || !profileNameInput.value.trim()) {
+        errors.push('Please enter your name');
+      }
+
+      if (!profileEmailInput.value || !profileEmailInput.checkValidity()) {
+        errors.push('Please enter a valid email address');
+      }
+
+      if (errors.length > 0) {
+        addToast(errors.join('. '), 'error');
+        return;
+      }
+
+      setButtonLoading(profileSubmitButton, true);
+
+      try {
+        const formData = new FormData(profileForm);
+        const data = {
+          name: formData.get('name'),
+          email: formData.get('email'),
+        };
+
+        const response = await fetch(API_PROFILE_URL, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify(data),
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+          addToast('Profile updated successfully!', 'success');
+        } else {
+          const errorMessage =
+            result.error?.message || 'Failed to update profile. Please try again.';
+          addToast(errorMessage, 'error');
+        }
+      } catch (error) {
+        console.error('Profile update error:', error);
+        addToast('An error occurred. Please check your connection and try again.', 'error');
+      } finally {
+        setButtonLoading(profileSubmitButton, false);
+      }
+    });
+  }
+
+  // ==================== SETTINGS FORM ====================
+  const settingsForm = document.getElementById('settings-form');
+  const settingsCurrencyInput = document.getElementById('currency');
+  const currencyLoadingIndicator = document.getElementById('currency-loading');
+  const settingsSubmitButton = settingsForm?.querySelector('button[type="submit"]');
+
+  let isFetchingSettings = false;
+  const fetchCurrentSettings = async () => {
+    if (isFetchingSettings) return;
+    isFetchingSettings = true;
+    try {
+      const response = await fetch(API_SETTINGS_URL, {
+        method: 'GET',
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success && result.data && settingsCurrencyInput instanceof HTMLSelectElement) {
+          settingsCurrencyInput.value = result.data.primaryCurrency || DEFAULT_CURRENCY;
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching user settings:', error);
+    } finally {
+      if (currencyLoadingIndicator instanceof HTMLElement) {
+        currencyLoadingIndicator.classList.add('hidden');
+      }
+      if (settingsCurrencyInput instanceof HTMLSelectElement) {
+        settingsCurrencyInput.disabled = false;
+      }
+      isFetchingSettings = false;
+    }
+  };
+
+  fetchCurrentSettings();
+
+  if (
+    settingsForm instanceof HTMLFormElement &&
+    settingsCurrencyInput instanceof HTMLSelectElement &&
+    settingsSubmitButton instanceof HTMLButtonElement
+  ) {
+    settingsForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      if (!settingsCurrencyInput.value) {
+        addToast('Please select a currency', 'error');
+        return;
+      }
+
+      setButtonLoading(settingsSubmitButton, true);
+
+      try {
+        const formData = new FormData(settingsForm);
+        const data = {
+          primaryCurrency: formData.get('primaryCurrency'),
+        };
+
+        const response = await fetch(API_SETTINGS_URL, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify(data),
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+          addToast('Settings saved successfully!', 'success');
+        } else {
+          const errorMessage =
+            result.error?.message || 'Failed to save settings. Please try again.';
+          addToast(errorMessage, 'error');
+        }
+      } catch (error) {
+        console.error('Settings update error:', error);
+        addToast('An error occurred. Please check your connection and try again.', 'error');
+      } finally {
+        setButtonLoading(settingsSubmitButton, false);
+      }
+    });
+  }
+</script>

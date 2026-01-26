@@ -1,284 +1,44 @@
 ---
+/**
+ * Settings Page (Placeholder)
+ *
+ * Routes users to the new Manage Account and Security pages.
+ */
+
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
-import { patterns } from '@/lib/validation/patterns';
-import PasswordChangeForm from '@/components/molecules/PasswordChangeForm.astro';
-import Label from '@/components/atoms/Label.astro';
-import Input from '@/components/atoms/Input.astro';
-import Button from '@/components/atoms/Button.astro';
-import { Loader } from '@lucide/astro';
-import type { User } from '@/lib/auth/lucia';
-import { CURRENCY_OPTIONS } from '@/lib/constants';
+import EmptyState from '@/components/atoms/EmptyState.astro';
 
 const currentPath = '/settings';
-
-// User is authenticated (enforced by ProtectedLayout)
-const user = Astro.locals.user! as User;
 ---
 
 <ProtectedLayout title="Settings - Finance Manager" currentPath={currentPath}>
-  <div class="space-y-6">
-    <h2 class="text-2xl font-bold">Settings</h2>
+  <div class="max-w-7xl mx-auto sm:px-2 lg:px-6 space-y-6 sm:space-y-8">
+    <div>
+      <h2 class="text-2xl font-bold">Settings</h2>
+      <p class="text-base-content/60">
+        Account settings are now organized by section for easier access.
+      </p>
+    </div>
 
     <div class="tabs">
-      <a class="tab tab-active" href="/settings">Profile</a>
+      <a class="tab tab-active" href="/settings">Settings</a>
+      <a class="tab" href="/profile">Manage Account</a>
+      <a class="tab" href="/security">Security</a>
       <a class="tab" href="/settings/categories">Categories</a>
       <a class="tab" href="/settings/payment-methods">Payment Methods</a>
     </div>
 
-    <!-- Profile Information Form -->
-    <div class="card bg-base-100 shadow border border-base-300 max-w-2xl">
-      <div class="card-body p-6">
-        <h3 class="card-title text-lg mb-2">Profile Information</h3>
-        <p class="text-sm text-base-content/70 mb-6">
-          Update your personal information and preferences
-        </p>
-
-        <form id="profile-form" class="space-y-5" novalidate>
-          <div class="form-control">
-            <Label htmlFor="displayName" required>Display Name</Label>
-            <Input
-              type="text"
-              id="displayName"
-              name="name"
-              placeholder="Your name"
-              value={user.name}
-              required
-            />
-          </div>
-
-          <div class="form-control">
-            <Label htmlFor="email" required>Email</Label>
-            <Input
-              type="email"
-              id="email"
-              name="email"
-              placeholder="your@email.com"
-              value={user.email}
-              pattern={patterns.email.html}
-              title={patterns.email.title}
-              required
-            />
-          </div>
-
-          <div class="pt-2">
-            <Button type="submit" variant="primary" className="min-w-[140px]">Save Changes</Button>
-          </div>
-        </form>
+    <div class="card bg-base-100 shadow border border-base-300">
+      <div class="card-body">
+        <EmptyState
+          title="Settings moved"
+          message="Visit Manage Account or Security to update your profile and protection settings."
+          iconName="info"
+          actionLabel="Go to Manage Account"
+          actionHref="/profile"
+          variant="centered"
+        />
       </div>
     </div>
-
-    <!-- Currency Preferences Form -->
-    <div class="card bg-base-100 shadow border border-base-300 max-w-2xl">
-      <div class="card-body p-6">
-        <h3 class="card-title text-lg mb-2">Currency Preferences</h3>
-        <p class="text-sm text-base-content/70 mb-6">
-          Set your default currency for displaying financial data
-        </p>
-
-        <form id="settings-form" class="space-y-5" novalidate>
-          <div class="form-control">
-            <Label htmlFor="currency" required>Default Currency</Label>
-            <div class="relative">
-              <select
-                id="currency"
-                name="primaryCurrency"
-                class="select select-bordered w-full"
-                required
-                disabled
-              >
-                <option value="">Loading...</option>
-                {
-                  CURRENCY_OPTIONS.map((option) => (
-                    <option value={option.value}>{option.label}</option>
-                  ))
-                }
-              </select>
-              <div id="currency-loading" class="absolute right-12 top-1/2 -translate-y-1/2">
-                <Loader size={18} class="animate-spin text-base-content/50" />
-              </div>
-            </div>
-            <label class="label">
-              <span class="label-text-alt text-base-content/60">
-                This currency will be used as the default when viewing reports and dashboards.
-              </span>
-            </label>
-          </div>
-
-          <div class="pt-2">
-            <Button type="submit" variant="primary" className="min-w-[140px]">Save Changes</Button>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <!-- Password Change Form -->
-    <PasswordChangeForm formId="password-change-form" />
   </div>
 </ProtectedLayout>
-
-<script>
-  import { addToast } from '@/lib/stores/toastStore';
-  import { setButtonLoading } from '@/lib/client-utils';
-
-  const API_PROFILE_URL = '/api/user/profile';
-  const API_SETTINGS_URL = '/api/user/settings';
-  const DEFAULT_CURRENCY = 'IDR';
-
-  // ==================== PROFILE FORM ====================
-  const profileForm = document.getElementById('profile-form') as HTMLFormElement | null;
-  const profileNameInput = document.getElementById('displayName') as HTMLInputElement | null;
-  const profileEmailInput = document.getElementById('email') as HTMLInputElement | null;
-  const profileSubmitButton = profileForm?.querySelector(
-    'button[type="submit"]'
-  ) as HTMLButtonElement | null;
-
-  if (profileForm && profileNameInput && profileEmailInput && profileSubmitButton) {
-    // Profile form submission
-    profileForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-
-      // Client-side validation
-      const errors = [];
-
-      if (!profileNameInput.value || !profileNameInput.value.trim()) {
-        errors.push('Please enter your name');
-      }
-
-      if (!profileEmailInput.value || !profileEmailInput.checkValidity()) {
-        errors.push('Please enter a valid email address');
-      }
-
-      // Display validation errors
-      if (errors.length > 0) {
-        addToast(errors.join('. '), 'error');
-        return;
-      }
-
-      // Show loading state
-      setButtonLoading(profileSubmitButton, true);
-
-      try {
-        const formData = new FormData(profileForm);
-        const data = {
-          name: formData.get('name'),
-          email: formData.get('email'),
-        };
-
-        const response = await fetch(API_PROFILE_URL, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include',
-          body: JSON.stringify(data),
-        });
-
-        const result = await response.json();
-
-        if (response.ok && result.success) {
-          addToast('Profile updated successfully!', 'success');
-        } else {
-          const errorMessage =
-            result.error?.message || 'Failed to update profile. Please try again.';
-          addToast(errorMessage, 'error');
-        }
-      } catch (error) {
-        console.error('Profile update error:', error);
-        addToast('An error occurred. Please check your connection and try again.', 'error');
-      } finally {
-        // Reset loading state
-        setButtonLoading(profileSubmitButton, false);
-      }
-    });
-  }
-
-  // ==================== SETTINGS FORM ====================
-  const settingsForm = document.getElementById('settings-form') as HTMLFormElement | null;
-  const settingsCurrencyInput = document.getElementById('currency') as HTMLSelectElement | null;
-  const currencyLoadingIndicator = document.getElementById('currency-loading');
-  const settingsSubmitButton = settingsForm?.querySelector(
-    'button[type="submit"]'
-  ) as HTMLButtonElement | null;
-
-  // Fetch current settings and pre-fill currency with race condition guard
-  let isFetchingSettings = false;
-  const fetchCurrentSettings = async () => {
-    if (isFetchingSettings) return;
-    isFetchingSettings = true;
-    try {
-      const response = await fetch(API_SETTINGS_URL, {
-        method: 'GET',
-        credentials: 'include',
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        if (result.success && result.data && settingsCurrencyInput) {
-          settingsCurrencyInput.value = result.data.primaryCurrency || DEFAULT_CURRENCY;
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching user settings:', error);
-    } finally {
-      // Hide loading spinner and enable select
-      if (currencyLoadingIndicator) {
-        currencyLoadingIndicator.classList.add('hidden');
-      }
-      if (settingsCurrencyInput) {
-        settingsCurrencyInput.disabled = false;
-      }
-      isFetchingSettings = false;
-    }
-  };
-
-  // Fetch settings on page load
-  fetchCurrentSettings();
-
-  if (settingsForm && settingsCurrencyInput && settingsSubmitButton) {
-    // Settings form submission
-    settingsForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-
-      // Client-side validation
-      if (!settingsCurrencyInput.value) {
-        addToast('Please select a currency', 'error');
-        return;
-      }
-
-      // Show loading state
-      setButtonLoading(settingsSubmitButton, true);
-
-      try {
-        const formData = new FormData(settingsForm);
-        const data = {
-          primaryCurrency: formData.get('primaryCurrency'),
-        };
-
-        const response = await fetch(API_SETTINGS_URL, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include',
-          body: JSON.stringify(data),
-        });
-
-        const result = await response.json();
-
-        if (response.ok && result.success) {
-          addToast('Settings saved successfully!', 'success');
-        } else {
-          const errorMessage =
-            result.error?.message || 'Failed to save settings. Please try again.';
-          addToast(errorMessage, 'error');
-        }
-      } catch (error) {
-        console.error('Settings update error:', error);
-        addToast('An error occurred. Please check your connection and try again.', 'error');
-      } finally {
-        // Reset loading state
-        setButtonLoading(settingsSubmitButton, false);
-      }
-    });
-  }
-</script>

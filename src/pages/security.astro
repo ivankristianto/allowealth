@@ -1,0 +1,150 @@
+---
+/**
+ * Security Page
+ *
+ * Frontend-only security settings screen.
+ */
+
+import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
+import SecurityConnectedAccountsCard from '@/components/molecules/SecurityConnectedAccountsCard.astro';
+import SecurityMfaCard from '@/components/molecules/SecurityMfaCard.astro';
+import SecurityPasskeysCard from '@/components/molecules/SecurityPasskeysCard.astro';
+import { ShieldCheck } from '@lucide/astro';
+
+const currentPath = '/security';
+
+// @TODO: Wire with backend for security data.
+const connectedAccounts = [
+  {
+    id: 'google',
+    provider: 'Google',
+    email: 'sarah.j@familyfinance.com',
+    connected: true,
+  },
+  {
+    id: 'apple',
+    provider: 'Apple',
+    email: '',
+    connected: false,
+  },
+];
+
+// @TODO: Wire with backend for MFA preferences.
+const mfaMethods = [
+  {
+    id: 'authenticator',
+    label: 'Authenticator App',
+    description: 'Use an authenticator app like Google Authenticator or Authy.',
+    enabled: true,
+    recommended: true,
+  },
+  {
+    id: 'sms',
+    label: 'SMS Codes',
+    description: 'Receive verification codes via SMS.',
+    enabled: false,
+  },
+];
+
+// @TODO: Wire with backend for passkeys.
+const passkeys = [
+  {
+    id: 'pk-1',
+    name: 'MacBook Pro Touch ID',
+    lastUsed: 'Jan 12, 2026',
+  },
+  {
+    id: 'pk-2',
+    name: 'iPhone 15 Face ID',
+    lastUsed: 'Jan 02, 2026',
+  },
+];
+
+// @TODO: Wire with backend for security activity.
+const securityEvents = [
+  {
+    id: 'evt-1',
+    label: 'Successful login from New York, US',
+    timestamp: 'Today, 2:45 PM',
+    tone: 'success',
+  },
+  {
+    id: 'evt-2',
+    label: 'Passkey registered',
+    timestamp: 'Jan 15, 2026',
+    tone: 'info',
+  },
+  {
+    id: 'evt-3',
+    label: 'MFA setup initiated',
+    timestamp: 'Jan 12, 2026',
+    tone: 'warning',
+  },
+];
+
+const toneDotClasses: Record<string, string> = {
+  success: 'bg-success',
+  info: 'bg-info',
+  warning: 'bg-warning',
+};
+---
+
+<ProtectedLayout title="Security - Finance Manager" currentPath={currentPath}>
+  <div class="max-w-7xl mx-auto sm:px-2 lg:px-6 space-y-6 sm:space-y-8">
+    <div>
+      <h2 class="text-2xl font-bold">Security</h2>
+      <p class="text-base-content/60">
+        Keep your account secure with multi-factor authentication and trusted devices.
+      </p>
+    </div>
+
+    <div class="tabs">
+      <a class="tab" href="/profile">Manage Account</a>
+      <a class="tab tab-active" href="/security">Security</a>
+      <a class="tab" href="/settings/categories">Categories</a>
+      <a class="tab" href="/settings/payment-methods">Payment Methods</a>
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+      <SecurityConnectedAccountsCard accounts={connectedAccounts} />
+      <SecurityMfaCard methods={mfaMethods} />
+      <SecurityPasskeysCard passkeys={passkeys} />
+
+      <section class="card bg-base-100 shadow border border-base-300 xl:col-span-2">
+        <div class="card-body p-6 space-y-5">
+          <div class="flex items-start gap-3">
+            <span class="rounded-xl bg-base-200 text-base-content/60 p-2">
+              <ShieldCheck size={20} class="stroke-current" aria-hidden="true" />
+            </span>
+            <div>
+              <h3 class="card-title text-lg">Recent Security Activity</h3>
+              <p class="text-sm text-base-content/70">
+                Review recent events to ensure everything looks familiar.
+              </p>
+            </div>
+          </div>
+
+          <div class="space-y-4">
+            {
+              securityEvents.map((event) => (
+                <div class="flex items-center justify-between gap-4 text-sm">
+                  <div class="flex items-center gap-3">
+                    <span class={`w-2 h-2 rounded-full ${toneDotClasses[event.tone]}`} />
+                    <span class="text-base-content/70">{event.label}</span>
+                  </div>
+                  <span class="text-xs text-base-content/50 uppercase tracking-wide">
+                    {event.timestamp}
+                  </span>
+                </div>
+              ))
+            }
+          </div>
+
+          <div class="pt-2">
+            <button type="button" class="btn btn-outline btn-sm">Download Audit Log</button>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+</ProtectedLayout>
