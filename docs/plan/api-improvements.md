@@ -128,21 +128,23 @@ const userId = await requireAuth(context);
 
 ### 4.1 Missing Endpoint
 
-- [ ] Document `POST /api/auth/forgot-password` in `openapi/paths/auth.yml`
-  - [ ] Request body schema
-  - [ ] Response schemas (200, 400)
-  - [ ] Security note about email enumeration prevention
+- [x] Document `POST /api/auth/forgot-password` in `openapi/paths/auth.yml`
+  - [x] Request body schema (`ForgotPasswordRequest.yml`)
+  - [x] Response schemas (200, 400) (`ForgotPasswordResponse.yml`)
+  - [x] Security note about email enumeration prevention
 
 ### 4.2 Missing Query Parameters
 
-- [ ] Update `GET /api/transactions` in `openapi/paths/transactions.yml`
-  - [ ] Add `search` parameter
-  - [ ] Add `category_ids` parameter (comma-separated)
+- [x] Update `GET /api/transactions` in `openapi/paths/transactions.yml`
+  - [x] Add `search` parameter
+  - [x] Add `category_ids` parameter (comma-separated)
 
 ### 4.3 Validation
 
-- [ ] Run `npx @redocly/cli lint openapi.yml` after changes
-- [ ] Ensure all endpoints match implementation
+- [x] Run `npx @redocly/cli lint openapi.yml` after changes
+- [x] Ensure all endpoints match implementation
+
+**Completed:** 2026-01-26 via commit `65e9fee`
 
 ---
 
@@ -234,9 +236,9 @@ const userId = await requireAuth(context);
 | 1. requireAuth Fix   | 12     | 12        | 100%     |
 | 2. Middleware        | 5      | 0         | 0%       |
 | 3. Security          | 15     | 0         | 0%       |
-| 4. OpenAPI Docs      | 4      | 0         | 0%       |
+| 4. OpenAPI Docs      | 4      | 4         | 100%     |
 | 5. Integration Tests | 9      | 0         | 0%       |
-| **Total**            | **45** | **12**    | **27%**  |
+| **Total**            | **45** | **16**    | **36%**  |
 
 ---
 
