@@ -51,6 +51,8 @@ tags:
     description: Asset tracking and management
   - name: Budget
     description: Budget overview and alerts
+  - name: Forecast
+    description: Wealth trajectory forecasting and projections
 
 paths:
   /api/auth/signup:
@@ -109,6 +111,9 @@ paths:
     $ref: './openapi/paths/budget.yml#/paths/~1api~1budget~1category~1{id}'
   /api/budget/export:
     $ref: './openapi/paths/budget.yml#/paths/~1api~1budget~1export'
+
+  /api/forecast:
+    $ref: './openapi/paths/forecast.yml#/~1forecast'
 
 components:
   securitySchemes:
@@ -233,3 +238,7 @@ components:
       $ref: './openapi/schemas/UpdateBudgetCategoryRequest.yml#/UpdateBudgetCategoryRequest'
     BudgetCategoryResponse:
       $ref: './openapi/schemas/BudgetCategoryResponse.yml#/BudgetCategoryResponse'
+
+    # Forecast Schemas
+    ForecastResponse:
+      $ref: './openapi/schemas/ForecastResponse.yml#/ForecastResponse'

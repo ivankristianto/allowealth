@@ -1,0 +1,51 @@
+/forecast:
+  get:
+    summary: Get wealth trajectory forecast
+    description: Calculate wealth trajectory forecast based on user's current assets and projected monthly contributions with interest rates.
+    operationId: getForecast
+    tags:
+      - Forecast
+    parameters:
+      - name: monthlyTopup
+        in: query
+        description: Monthly contribution amount in IDR
+        required: false
+        schema:
+          type: number
+          default: 5000000
+          minimum: 0
+          maximum: 1000000000000
+          example: 5000000
+      - name: annualRate
+        in: query
+        description: Annual percentage yield (e.g., 7 for 7%)
+        required: false
+        schema:
+          type: number
+          default: 7
+          minimum: 0
+          maximum: 100
+          example: 7
+      - name: years
+        in: query
+        description: Number of years to forecast
+        required: false
+        schema:
+          type: integer
+          default: 10
+          minimum: 1
+          maximum: 30
+          example: 10
+    responses:
+      '200':
+        description: Forecast calculated successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/ForecastResponse.yml'
+      '400':
+        $ref: '../responses/common.yml#/BadRequest'
+      '401':
+        $ref: '../responses/common.yml#/Unauthorized'
+      '500':
+        $ref: '../responses/common.yml#/InternalServerError'

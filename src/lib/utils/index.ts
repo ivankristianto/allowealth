@@ -88,3 +88,6 @@ export {
 
 // Error logging utilities
 export { logError, sanitizeError, getSafeErrorMessage, type SanitizedError } from './error-logger';
+
+// Client-side utilities
+export { debounce, throttle } from './client';

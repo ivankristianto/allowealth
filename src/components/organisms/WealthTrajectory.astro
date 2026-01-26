@@ -1,0 +1,542 @@
+---
+/**
+ * WealthTrajectory Component
+ *
+ * Displays wealth trajectory forecast with interactive area chart showing
+ * forecasted balance vs real historical data. Includes input controls for
+ * monthly top-up and expected APY, plus summary statistics cards.
+ *
+ * @param {ForecastDataPoint[]} data - Array of monthly forecast data points
+ * @param {object} summary - Summary statistics (year10Target, totalInterest, growthMultiple)
+ * @param {object} input - Input parameters (monthlyTopup, annualRate, years)
+ * @param {boolean} loading - Show loading skeleton state
+ * @param {string} error - Error message to display
+ * @param {string} className - Additional CSS classes
+ */
+
+import Card from '@/components/atoms/Card.astro';
+import StatLabel from '@/components/atoms/StatLabel.astro';
+import { formatCurrency } from '@/lib/tokens';
+import type { ForecastDataPoint } from '@/lib/forecast';
+
+export interface Props {
+  data: ForecastDataPoint[];
+  summary: {
+    year10Target: number;
+    totalInterest: number;
+    growthMultiple: number;
+    currentTotal: number;
+  };
+  input: {
+    monthlyTopup: number;
+    annualRate: number;
+    years: number;
+  };
+  loading?: boolean;
+  error?: string;
+  className?: string;
+}
+
+const {
+  data = [],
+  summary = { year10Target: 0, totalInterest: 0, growthMultiple: 0, currentTotal: 0 },
+  input = { monthlyTopup: 5000000, annualRate: 7, years: 10 },
+  loading = false,
+  error,
+  className = '',
+} = Astro.props;
+
+// Generate unique ID for this chart instance
+const chartId = `wealth-trajectory-chart-${Math.random().toString(36).slice(2, 11)}`;
+
+// Serialize data for client-side script
+const serializedData = JSON.stringify(data);
+const serializedInput = JSON.stringify(input);
+---
+
+<Card
+  padding="lg"
+  rounded="card-lg"
+  className={className}
+  role="region"
+  aria-label="Wealth trajectory forecast"
+>
+  <div class="space-y-6 md:space-y-8">
+    {/* Header with title and input controls */}
+    <div
+      class="flex flex-col lg:flex-row justify-between items-start lg:items-start gap-6 lg:gap-8"
+    >
+      <div class="flex-shrink-0">
+        <h2 class="text-xl md:text-2xl font-bold text-base-content leading-none tracking-tight">
+          Wealth Trajectory
+        </h2>
+        <p class="text-sm text-base-content/60 mt-2 font-medium">
+          Predicting global asset growth over the next decade.
+        </p>
+        <div class="mt-3 px-3 py-2 bg-warning/10 border border-warning/20 rounded-lg">
+          <p class="text-xs text-warning font-medium">
+            ⓘ USD conversions use a fixed exchange rate (1 USD = 15,000 IDR)
+          </p>
+        </div>
+      </div>
+
+      {/* Input Controls */}
+      <div
+        class="flex flex-wrap gap-4 md:gap-6 items-end w-full lg:w-auto"
+        data-wealth-trajectory-controls
+      >
+        <div class="flex-1 min-w-[140px] space-y-2">
+          <label for={`${chartId}-topup`} class="block">
+            <StatLabel size="sm" color="neutral"> MONTHLY TOP-UP (IDR) </StatLabel>
+          </label>
+          <input
+            type="number"
+            id={`${chartId}-topup`}
+            name="monthlyTopup"
+            class="input input-bordered w-full bg-base-200 focus:ring-2 focus:ring-accent font-bold text-base-content"
+            value={input.monthlyTopup}
+            step="100000"
+            min="0"
+            max="1000000000000"
+            aria-label="Monthly top-up amount in IDR"
+          />
+        </div>
+
+        <div class="flex-1 min-w-[120px] space-y-2">
+          <label for={`${chartId}-apy`} class="block">
+            <StatLabel size="sm" color="neutral"> EXPECTED APY (%) </StatLabel>
+          </label>
+          <input
+            type="number"
+            id={`${chartId}-apy`}
+            name="annualRate"
+            class="input input-bordered w-full bg-base-200 focus:ring-2 focus:ring-accent font-bold text-base-content"
+            value={input.annualRate}
+            step="0.1"
+            min="0"
+            max="100"
+            aria-label="Expected annual percentage yield"
+          />
+        </div>
+      </div>
+    </div>
+
+    {/* Loading State */}
+    {
+      loading ? (
+        <div class="space-y-6">
+          <div class="h-[300px] md:h-[400px] bg-base-200/30 rounded-3xl animate-pulse" />
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {Array.from({ length: 3 }).map(() => (
+              <div class="p-6 bg-base-200/30 rounded-3xl animate-pulse">
+                <div class="h-3 bg-base-300 rounded w-1/2 mb-3" />
+                <div class="h-8 bg-base-300 rounded w-3/4" />
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : error ? (
+        /* Error State */
+        <div class="p-12 text-center">
+          <p class="text-error font-medium" role="alert">
+            {error}
+          </p>
+        </div>
+      ) : data.length === 0 ? (
+        /* Empty State */
+        <div class="p-12 text-center">
+          <p class="text-base-content/60 font-medium">No forecast data available.</p>
+        </div>
+      ) : (
+        /* Chart and Summary */
+        <>
+          {/* Chart Container */}
+          <div
+            class="h-[300px] md:h-[400px] w-full bg-base-200/20 rounded-3xl p-4 md:p-8 border border-base-300/50"
+            data-chart-data={serializedData}
+            data-chart-input={serializedInput}
+            data-chart-id={chartId}
+          >
+            <canvas
+              id={chartId}
+              aria-label="Wealth trajectory area chart showing forecasted balance and real history"
+              role="img"
+            />
+          </div>
+
+          {/* @TODO: P2 - Accessibility: Add ARIA live region for screen reader announcements on chart updates */}
+
+          {/* Summary Statistics Cards */}
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+            {/* Year 10 Target */}
+            <div class="p-5 md:p-6 bg-base-200/40 rounded-2xl md:rounded-3xl border border-base-300/50">
+              <StatLabel size="sm" color="neutral" className="mb-2">
+                YEAR {input.years} TARGET
+              </StatLabel>
+              <h3 class="text-xl md:text-2xl font-bold text-base-content">
+                {formatCurrency(summary.year10Target, 'IDR', true)}
+              </h3>
+            </div>
+
+            {/* Total Interest Earned */}
+            <div class="p-5 md:p-6 bg-base-200/40 rounded-2xl md:rounded-3xl border border-base-300/50">
+              <StatLabel size="sm" color="neutral" className="mb-2">
+                {' '}
+                TOTAL INTEREST EARNED{' '}
+              </StatLabel>
+              <h3 class="text-xl md:text-2xl font-bold text-accent">
+                {formatCurrency(summary.totalInterest, 'IDR', true)}
+              </h3>
+            </div>
+
+            {/* Growth Multiple */}
+            <div class="p-5 md:p-6 bg-base-200/40 rounded-2xl md:rounded-3xl border border-base-300/50">
+              <StatLabel size="sm" color="neutral" className="mb-2">
+                {' '}
+                GROWTH MULTIPLE{' '}
+              </StatLabel>
+              <h3 class="text-xl md:text-2xl font-bold text-success">
+                {summary.growthMultiple.toFixed(2)}x
+              </h3>
+            </div>
+          </div>
+        </>
+      )
+    }
+  </div>
+</Card>
+
+<script>
+  import Chart from 'chart.js/auto';
+  import type { ForecastDataPoint } from '@/lib/forecast';
+
+  interface ChartInstance {
+    chart: Chart<'line'>;
+    data: ForecastDataPoint[];
+  }
+
+  // Store chart instances globally for cleanup and expose to window for client-side updates
+  const charts: Record<string, ChartInstance> = {};
+  (window as any).wealthTrajectoryCharts = charts;
+
+  // Store observers for cleanup
+  let chartObserver: IntersectionObserver | null = null;
+  let themeObserver: MutationObserver | null = null;
+  let systemThemeMediaQuery: MediaQueryList | null = null;
+
+  /**
+   * Cleanup all chart instances and observers
+   */
+  function cleanupCharts(): void {
+    Object.values(charts).forEach(({ chart }) => {
+      try {
+        chart.destroy();
+      } catch (e) {
+        // Chart may already be destroyed
+      }
+    });
+
+    for (const key in charts) {
+      delete charts[key];
+    }
+
+    if (chartObserver) {
+      chartObserver.disconnect();
+      chartObserver = null;
+    }
+
+    if (themeObserver) {
+      themeObserver.disconnect();
+      themeObserver = null;
+    }
+
+    if (systemThemeMediaQuery) {
+      systemThemeMediaQuery.removeEventListener('change', handleSystemThemeChange);
+      systemThemeMediaQuery = null;
+    }
+  }
+
+  /**
+   * Check if current theme is dark
+   * @TODO: P3 - Add more detailed JSDoc explaining theme detection logic
+   */
+  function isDarkTheme(): boolean {
+    const theme = document.documentElement.getAttribute('data-theme');
+    if (theme) return theme === 'dark';
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  }
+
+  /**
+   * Handle system theme preference change
+   * @TODO: P3 - Add JSDoc explaining when and why this is called
+   */
+  function handleSystemThemeChange(): void {
+    const explicitTheme = document.documentElement.getAttribute('data-theme');
+    if (!explicitTheme) {
+      updateChartThemeColors();
+    }
+  }
+
+  /**
+   * Update chart colors based on current theme
+   */
+  function updateChartThemeColors(): void {
+    const dark = isDarkTheme();
+
+    Object.values(charts).forEach(({ chart }) => {
+      if (chart.options.plugins?.tooltip) {
+        chart.options.plugins.tooltip.backgroundColor = dark
+          ? 'rgba(248, 250, 252, 0.95)'
+          : 'rgba(15, 23, 42, 0.9)';
+        chart.options.plugins.tooltip.titleColor = dark ? '#0f172a' : '#fff';
+        chart.options.plugins.tooltip.bodyColor = dark ? '#0f172a' : '#fff';
+        chart.update('none');
+      }
+    });
+  }
+
+  /**
+   * Initialize theme observer
+   */
+  function initThemeObserver(): void {
+    if (themeObserver) {
+      themeObserver.disconnect();
+    }
+
+    themeObserver = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.type === 'attributes' && mutation.attributeName === 'data-theme') {
+          updateChartThemeColors();
+        }
+      });
+    });
+
+    themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme'],
+    });
+
+    if (window.matchMedia) {
+      systemThemeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      systemThemeMediaQuery.addEventListener('change', handleSystemThemeChange);
+    }
+  }
+
+  /**
+   * Initialize wealth trajectory chart
+   */
+  function initWealthTrajectoryChart(chartId: string, data: ForecastDataPoint[]): void {
+    const canvas = document.getElementById(chartId) as HTMLCanvasElement;
+    if (!canvas) return;
+
+    // Destroy existing chart if it exists
+    if (charts[chartId]?.chart) {
+      charts[chartId].chart.destroy();
+    }
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Prepare chart data
+    const labels = data.map((d) => d.dateLabel);
+    const forecastData = data.map((d) => d.forecastBalance);
+    const realData = data.map((d) => d.realBalance);
+
+    const dark = isDarkTheme();
+
+    // @TODO: P3 - Extract color and opacity values to design tokens or constants
+    // Color configuration
+    const forecastColor = '#6366f1'; // indigo-500 (accent)
+    const realColor = '#10b981'; // emerald-500 (success)
+    const gridColor = dark ? 'rgba(148, 163, 184, 0.1)' : 'rgba(148, 163, 184, 0.15)';
+    const textColor = dark ? '#94a3b8' : '#64748b';
+
+    const chart = new Chart<'line'>(ctx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'Forecast Balance',
+            data: forecastData,
+            borderColor: forecastColor,
+            backgroundColor: (context) => {
+              const chart = context.chart;
+              const { ctx, chartArea } = chart;
+              if (!chartArea) return forecastColor;
+
+              const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+              gradient.addColorStop(0, 'rgba(99, 102, 241, 0.3)');
+              gradient.addColorStop(1, 'rgba(99, 102, 241, 0)');
+              return gradient;
+            },
+            borderWidth: 3,
+            fill: true,
+            tension: 0.4,
+            pointRadius: 0,
+            pointHoverRadius: 6,
+            pointBackgroundColor: forecastColor,
+          },
+          {
+            label: 'Real History',
+            data: realData,
+            borderColor: realColor,
+            backgroundColor: (context) => {
+              const chart = context.chart;
+              const { ctx, chartArea } = chart;
+              if (!chartArea) return realColor;
+
+              const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+              gradient.addColorStop(0, 'rgba(16, 185, 129, 0.3)');
+              gradient.addColorStop(1, 'rgba(16, 185, 129, 0)');
+              return gradient;
+            },
+            borderWidth: 3,
+            fill: true,
+            tension: 0.4,
+            pointRadius: 0,
+            pointHoverRadius: 6,
+            pointBackgroundColor: realColor,
+            spanGaps: false, // Don't connect null values
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+          mode: 'index',
+          intersect: false,
+        },
+        plugins: {
+          legend: {
+            display: true,
+            position: 'top',
+            align: 'center',
+            labels: {
+              color: textColor,
+              font: {
+                size: 12,
+                weight: 600 as any,
+              },
+              usePointStyle: true,
+              pointStyle: 'circle',
+              padding: 16,
+            },
+          },
+          tooltip: {
+            backgroundColor: dark ? 'rgba(248, 250, 252, 0.95)' : 'rgba(15, 23, 42, 0.9)',
+            titleColor: dark ? '#0f172a' : '#fff',
+            bodyColor: dark ? '#0f172a' : '#fff',
+            padding: 12,
+            cornerRadius: 8,
+            displayColors: true,
+            callbacks: {
+              label: (context) => {
+                const label = context.dataset.label || '';
+                const value = context.parsed.y;
+                if (value === null) return '';
+                return `${label}: Rp ${(value / 1000000).toFixed(1)}M`;
+              },
+            },
+          },
+        },
+        scales: {
+          x: {
+            grid: {
+              display: false,
+            },
+            ticks: {
+              color: textColor,
+              font: {
+                size: 10,
+                weight: 600 as any,
+              },
+              maxRotation: 0,
+              autoSkip: true,
+              maxTicksLimit: 12,
+            },
+            border: {
+              display: false,
+            },
+          },
+          y: {
+            grid: {
+              color: gridColor,
+            },
+            ticks: {
+              color: textColor,
+              font: {
+                size: 10,
+                weight: 600 as any,
+              },
+              callback: (value) => {
+                return `Rp ${(Number(value) / 1000000).toFixed(0)}M`;
+              },
+            },
+            border: {
+              display: false,
+            },
+          },
+        },
+      },
+    });
+
+    // @TODO: P3 - Remove 'as any' type assertion by properly typing the chart variable
+    charts[chartId] = { chart: chart as any, data };
+  }
+
+  /**
+   * Initialize all charts with Intersection Observer
+   */
+  function initAllCharts(): void {
+    cleanupCharts();
+    initThemeObserver();
+
+    const chartContainers = document.querySelectorAll('[data-chart-id]');
+
+    chartObserver = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const container = entry.target as HTMLElement;
+            const chartId = container.getAttribute('data-chart-id');
+            const dataAttr = container.getAttribute('data-chart-data');
+            const inputAttr = container.getAttribute('data-chart-input');
+
+            if (chartId && dataAttr && inputAttr && !charts[chartId]) {
+              try {
+                const data = JSON.parse(dataAttr) as ForecastDataPoint[];
+                initWealthTrajectoryChart(chartId, data);
+              } catch (e) {
+                console.warn('Failed to parse chart data:', e);
+              }
+
+              chartObserver?.unobserve(container);
+            }
+          }
+        });
+      },
+      { rootMargin: '50px' }
+    );
+
+    chartContainers.forEach((container) => {
+      if (chartObserver) chartObserver.observe(container);
+    });
+  }
+
+  // Initialize when DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initAllCharts);
+  } else {
+    initAllCharts();
+  }
+
+  // Cleanup on page navigation/unload
+  window.addEventListener('beforeunload', cleanupCharts);
+
+  // For Astro View Transitions
+  // @TODO: P2 - Performance: Check if charts exist before reinitializing to avoid unnecessary work
+  document.addEventListener('astro:before-swap', cleanupCharts);
+  document.addEventListener('astro:after-swap', initAllCharts);
+</script>
