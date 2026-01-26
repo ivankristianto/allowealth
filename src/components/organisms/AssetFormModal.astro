@@ -41,7 +41,7 @@ const assetTypes: { value: AssetType; label: string }[] = Object.entries(ASSET_T
 ---
 
 <div data-asset-form-modal-container data-id={id} data-mode={mode}>
-  <Modal id={id} title="" size="md" closable={false} className="[&_.modal-box]:rounded-3xl">
+  <Modal id={id} title="" size="md" closable={true} className="[&_.modal-box]:rounded-3xl">
     <div class="space-y-6">
       {/* Header with icon */}
       <div class="flex items-center gap-4">
@@ -128,7 +128,7 @@ const assetTypes: { value: AssetType; label: string }[] = Object.entries(ASSET_T
         </div>
 
         {/* Currency and Balance */}
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Currency */}
           <div class="space-y-2">
             <label
@@ -279,15 +279,13 @@ const assetTypes: { value: AssetType; label: string }[] = Object.entries(ASSET_T
       // Listen for open-asset-form event to populate data
       // SECURITY: Use named handler for proper cleanup on page transitions
       const handleOpenForm = ((e: CustomEvent<AssetFormData>) => {
-        const targetModalId = e.detail.id ? `asset-edit-modal` : `asset-add-modal`;
-        if (id === targetModalId || id === 'asset-form-modal') {
-          if (e.detail.id) {
-            populateForm(e.detail);
-          } else {
-            resetForm();
-          }
-          modal.classList.add('modal-open');
+        // Populate form if editing (has id), otherwise reset for add mode
+        if (e.detail.id) {
+          populateForm(e.detail);
+        } else {
+          resetForm();
         }
+        modal.classList.add('modal-open');
       }) as EventListener;
 
       document.addEventListener('open-asset-form', handleOpenForm);

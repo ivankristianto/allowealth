@@ -21,7 +21,7 @@ const { id } = Astro.props;
 ---
 
 <div data-asset-history-modal-container data-id={id}>
-  <Modal id={id} title="" size="xl" closable={false} className="[&_.modal-box]:rounded-3xl">
+  <Modal id={id} title="" size="xl" closable={true} className="[&_.modal-box]:rounded-3xl">
     <div class="space-y-8">
       {/* Header with asset info */}
       <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
