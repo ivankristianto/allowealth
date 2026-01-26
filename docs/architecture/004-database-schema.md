@@ -27,18 +27,20 @@ This document describes the database schema design for the personal finance appl
 │  ┌──────┴─────────────────────────────────────────────┐            │
 │  │                                                     │            │
 │  │   ┌──────────────────┐    ┌──────────────────┐    │            │
-│  ├──▶│ CATEGORIES       │    │ PAYMENT_METHODS  │◀───┤            │
+│  ├──▶│ CATEGORIES       │    │ BUDGETS          │◀───┤            │
 │  │   └────────┬─────────┘    └────────┬─────────┘    │            │
 │  │            │                       │               │            │
 │  │            └───────┬───────────────┘               │            │
 │  │                    │                               │            │
 │  │            ┌───────▼────────┐                      │            │
 │  │            │ TRANSACTIONS   │                      │            │
-│  │            └────────────────┘                      │            │
-│  │                                                     │            │
-│  │   ┌──────────────────┐                             │            │
-│  ├──▶│ ASSETS           │◀────────────────────────────┤            │
-│  │   └────┬─────┬───────┘                             │            │
+│  │            └───────┬────────┘                      │            │
+│  │                    │                               │            │
+│  │   ┌────────────────▼──────────┐                   │            │
+│  ├──▶│ ASSETS & LIABILITIES       │                   │            │
+│  │   │ (cash, bank, e-wallet,     │                   │            │
+│  │   │  credit_card, loan, etc.)  │                   │            │
+│  │   └────┬─────┬─────────────────┘                   │            │
 │  │        │     │                                     │            │
 │  │   ┌────▼─────▼──────┐    ┌──────────────────────┐ │            │
 │  │   │ ASSET_HISTORY   │    │ ASSET_UPDATE         │◀┤            │
@@ -76,17 +78,19 @@ This document describes the database schema design for the personal finance appl
 erDiagram
     USERS ||--o{ USER_SETTINGS : "has"
     USERS ||--o{ CATEGORIES : "owns"
-    USERS ||--o{ PAYMENT_METHODS : "owns"
     USERS ||--o{ TRANSACTIONS : "creates"
     USERS ||--o{ ASSETS : "owns"
     USERS ||--o{ ASSET_UPDATE_REMINDERS : "has"
     USERS ||--o{ ASSET_SNAPSHOTS : "creates"
+    USERS ||--o{ BUDGETS : "creates"
     USERS ||--o{ SESSIONS : "has"
     USERS ||--o{ PASSWORD_RESET_TOKENS : "requests"
 
     CATEGORIES ||--o{ TRANSACTIONS : "categorizes"
-    PAYMENT_METHODS ||--o{ TRANSACTIONS : "used_in"
+    CATEGORIES ||--o{ BUDGETS : "allocates"
 
+    ASSETS ||--o{ TRANSACTIONS : "source_of"
+    ASSETS ||--o{ TRANSACTIONS : "destination_for"
     ASSETS ||--o{ ASSET_HISTORY : "tracks"
     ASSETS ||--o{ ASSET_UPDATE_REMINDERS : "has"
     ASSETS ||--o{ ASSET_SNAPSHOT_ITEMS : "included_in"
@@ -130,6 +134,8 @@ erDiagram
         text user_id FK
         text name
         text type
+        text icon
+        text color
         text percentage
         text budget_amount
         text currency
@@ -138,12 +144,16 @@ erDiagram
         timestamp updated_at
     }
 
-    PAYMENT_METHODS {
+    BUDGETS {
         text id PK
         text user_id FK
-        text name
-        text type
-        boolean is_active
+        text category_id FK
+        integer month
+        integer year
+        text budget_amount
+        text currency
+        boolean is_closed
+        text notes
         timestamp created_at
         timestamp updated_at
     }
@@ -152,7 +162,8 @@ erDiagram
         text id PK
         text user_id FK
         text category_id FK
-        text payment_method_id FK
+        text asset_id FK
+        text to_asset_id FK
         text type
         text amount
         text currency
@@ -170,6 +181,8 @@ erDiagram
         text type
         text balance
         text currency
+        text credit_limit
+        boolean is_cash_account
         timestamp last_updated
         timestamp deleted_at
         timestamp created_at
@@ -272,62 +285,78 @@ User preferences and display options.
 
 #### `categories`
 
-Income and expense categories with budget allocations.
+Income and expense categories for transaction organization.
 
 - **Primary Key**: `id` (text)
 - **Foreign Keys**: `user_id` → `users.id` (cascade delete)
 - **Key Fields**:
   - `type`: 'expense' | 'income'
+  - `icon`: Lucide icon name (default: 'tag')
+  - `color`: DaisyUI semantic color class (default: 'bg-neutral')
   - `percentage`: Budget allocation percentage (string for precision)
-  - `budget_amount`: Monthly budget limit (string for precision)
+  - `budget_amount`: Default monthly budget limit (string for precision)
   - `currency`: IDR | USD
   - `is_active`: Soft enable/disable
 - **Validation**: User can only see/use their own categories
+- **Note**: Budget amounts can be overridden per-period in the `budgets` table
 
-#### `payment_methods`
+#### `budgets`
 
-Payment instruments (cards, cash, wallets, etc.).
-
-- **Primary Key**: `id` (text)
-- **Foreign Keys**: `user_id` → `users.id` (cascade delete)
-- **Key Fields**:
-  - `type`: 'cash' | 'credit_card' | 'debit_card' | 'bank_transfer' | 'e_wallet'
-  - `is_active`: Soft enable/disable
-- **Validation**: User can only see/use their own payment methods
-
-#### `transactions`
-
-Financial transactions (income/expenses).
+Period-specific budget allocations for categories.
 
 - **Primary Key**: `id` (text)
 - **Foreign Keys**:
   - `user_id` → `users.id` (cascade delete)
-  - `category_id` → `categories.id`
-  - `payment_method_id` → `payment_methods.id`
+  - `category_id` → `categories.id` (cascade delete)
 - **Key Fields**:
-  - `type`: 'expense' | 'income'
+  - `month`: Month (1-12)
+  - `year`: Year (YYYY)
+  - `budget_amount`: Budget limit for this period (string for precision)
+  - `currency`: IDR | USD
+  - `is_closed`: Whether this budget period is closed (for book closing)
+  - `notes`: Optional notes for this budget period
+- **Unique Constraint**: (user_id, category_id, month, year)
+- **Use Case**: Allow flexible, period-specific budgeting overrides
+
+#### `transactions`
+
+Financial transactions (income/expenses/transfers).
+
+- **Primary Key**: `id` (text)
+- **Foreign Keys**:
+  - `user_id` → `users.id` (cascade delete)
+  - `category_id` → `categories.id` (nullable for transfers)
+  - `asset_id` → `assets.id` (source asset)
+  - `to_asset_id` → `assets.id` (destination asset for transfers)
+- **Key Fields**:
+  - `type`: 'expense' | 'income' | 'transfer'
   - `amount`: Transaction amount (string for precision)
   - `currency`: IDR | USD
   - `description`: Optional notes
   - `transaction_date`: When transaction occurred
   - `deleted_at`: Soft delete timestamp (for audit trail)
 - **Soft Delete**: Uses `deleted_at` to maintain history
+- **Transfer Handling**: For transfers, `category_id` is null, `asset_id` is the source, and `to_asset_id` is the destination
 
-### Asset Tracking
+### Asset & Liability Tracking
 
 #### `assets`
 
-Investment and savings accounts.
+Accounts representing both assets (what you own) and liabilities (what you owe).
 
 - **Primary Key**: `id` (text)
 - **Foreign Keys**: `user_id` → `users.id` (cascade delete)
 - **Key Fields**:
-  - `type`: 'bank_account' | 'mutual_fund' | 'bond' | 'crypto' | 'stock' | 'other'
-  - `balance`: Current value (string for precision)
+  - `type`: Asset type ('cash', 'bank_account', 'e_wallet', 'mutual_fund', 'bond', 'crypto', 'stock', 'other') or Liability type ('credit_card', 'loan')
+  - `balance`: Current value (positive for assets, positive for liabilities - represents amount owed) (string for precision)
   - `currency`: IDR | USD
+  - `credit_limit`: For credit cards only, the maximum credit limit (string for precision)
+  - `is_cash_account`: Flag for cash-type accounts (used for liquidity calculations)
   - `last_updated`: Last balance update timestamp
   - `deleted_at`: Soft delete timestamp
 - **Soft Delete**: Preserves historical data
+- **Asset Types**: cash, bank_account, e_wallet, mutual_fund, bond, crypto, stock, other
+- **Liability Types**: credit_card, loan
 
 #### `asset_history`
 
@@ -478,7 +507,7 @@ Configuration tables use `is_active` for enable/disable:
 is_active: integer('is_active', { mode: 'boolean' }).default(true).notNull();
 ```
 
-Allows users to temporarily disable categories/payment methods without deletion.
+Allows users to temporarily disable categories without deletion.
 
 ### Audit Timestamps
 
@@ -542,7 +571,8 @@ const txns = await db.query.transactions.findMany({
   where: eq(transactions.user_id, userId),
   with: {
     category: true,
-    paymentMethod: true,
+    asset: true,
+    toAsset: true,
   },
 });
 
@@ -639,7 +669,8 @@ const txns = await db.query.transactions.findMany({
   where: eq(transactions.user_id, userId),
   with: {
     category: true,
-    paymentMethod: true,
+    asset: true,
+    toAsset: true,
     user: true,
   },
 });
@@ -651,18 +682,20 @@ const txns = await db.query.transactions.findMany({
 src/db/schema/
 ├── index.ts                      # Export all schemas
 ├── base.ts                       # Common utilities
+├── relations.ts                  # Drizzle ORM relations
 ├── users.ts                      # User accounts
 ├── user-settings.ts              # User preferences
 ├── sessions.ts                   # Authentication sessions
 ├── password-reset-tokens.ts      # Password reset
 ├── categories.ts                 # Income/expense categories
-├── payment-methods.ts            # Payment instruments
+├── budgets.ts                    # Period-specific budget allocations
 ├── transactions.ts               # Financial transactions
-├── assets.ts                     # Investment accounts
+├── assets.ts                     # Assets & liabilities
 ├── asset-history.ts              # Balance tracking
 ├── asset-update-reminders.ts     # Update notifications
 ├── asset-snapshots.ts            # Monthly net worth
 ├── asset-snapshot-items.ts       # Snapshot details
+├── audit-logs.ts                 # Audit trail
 └── exchange-rates.ts             # Currency conversion
 ```
 
