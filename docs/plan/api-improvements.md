@@ -24,17 +24,20 @@ This plan addresses issues identified during the REST API audit:
 
 ### Checklist
 
-- [ ] `src/pages/api/assets/index.ts` - Lines 25, 61
-- [ ] `src/pages/api/assets/[id].ts` - Check and fix if needed
-- [ ] `src/pages/api/assets/[id]/balance.ts` - Check and fix if needed
-- [ ] `src/pages/api/assets/[id]/history.ts` - Check and fix if needed
-- [ ] `src/pages/api/assets/summary.ts` - Check and fix if needed
-- [ ] `src/pages/api/budget/overview.ts` - Line 13
-- [ ] `src/pages/api/budget/alerts.ts` - Check and fix if needed
-- [ ] `src/pages/api/budget/history.ts` - Check and fix if needed
-- [ ] `src/pages/api/budget/export.ts` - Check and fix if needed
-- [ ] `src/pages/api/payment-methods/index.ts` - Lines 17, 44
-- [ ] `src/pages/api/payment-methods/[id].ts` - Check and fix if needed
+- [x] `src/pages/api/assets/index.ts` - Fixed GET and POST handlers
+- [x] `src/pages/api/assets/[id].ts` - Fixed GET, PUT, DELETE handlers
+- [x] `src/pages/api/assets/[id]/balance.ts` - Fixed POST handler
+- [x] `src/pages/api/assets/[id]/history.ts` - Fixed GET handler
+- [x] `src/pages/api/assets/summary.ts` - Fixed GET handler
+- [x] `src/pages/api/budget/overview.ts` - Fixed GET handler
+- [x] `src/pages/api/budget/alerts.ts` - Fixed GET handler
+- [x] `src/pages/api/budget/history.ts` - Already correct (uses context)
+- [x] `src/pages/api/budget/export.ts` - Fixed GET handler
+- [x] `src/pages/api/budget/category/[id]/remaining.ts` - Fixed GET handler (found during review)
+- [x] `src/pages/api/payment-methods/index.ts` - Fixed GET and POST handlers
+- [x] `src/pages/api/payment-methods/[id].ts` - Fixed GET, PUT, DELETE handlers
+
+**Completed:** 2026-01-26 via commit `7ff8b27`
 
 **Change pattern:**
 
@@ -228,12 +231,12 @@ const userId = await requireAuth(context);
 
 | Section              | Items  | Completed | Progress |
 | -------------------- | ------ | --------- | -------- |
-| 1. requireAuth Fix   | 11     | 0         | 0%       |
+| 1. requireAuth Fix   | 12     | 12        | 100%     |
 | 2. Middleware        | 5      | 0         | 0%       |
 | 3. Security          | 15     | 0         | 0%       |
 | 4. OpenAPI Docs      | 4      | 0         | 0%       |
 | 5. Integration Tests | 9      | 0         | 0%       |
-| **Total**            | **44** | **0**     | **0%**   |
+| **Total**            | **45** | **12**    | **27%**  |
 
 ---
 
