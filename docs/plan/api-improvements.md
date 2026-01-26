@@ -79,16 +79,22 @@ const userId = await requireAuth(context);
 
 **Problem:** No rate limiting on authentication endpoints enables brute force attacks.
 
-- [ ] Research rate limiting options for Astro/Bun
-  - [ ] In-memory (development)
-  - [ ] Redis-based (production)
-- [ ] Implement rate limiter middleware or utility
-- [ ] Apply to endpoints:
-  - [ ] `POST /api/auth/login`
-  - [ ] `POST /api/auth/signup`
-  - [ ] `POST /api/auth/forgot-password`
-- [ ] Add rate limit headers to responses (`X-RateLimit-*`)
-- [ ] Write tests for rate limiting behavior
+- [x] Research rate limiting options for Astro/Bun
+  - [x] In-memory (development) - sliding window algorithm
+  - [ ] Redis-based (production) - future enhancement
+- [x] Implement rate limiter middleware or utility
+  - [x] Created `src/lib/rate-limit.ts` with sliding window algorithm
+  - [x] Memory-bounded store (100k max entries for DoS protection)
+  - [x] Uses trusted `clientAddress` from Astro context to prevent IP spoofing
+  - [x] Endpoint-specific rate limit buckets
+- [x] Apply to endpoints:
+  - [x] `POST /api/auth/login` (10 requests / 15 min)
+  - [x] `POST /api/auth/signup` (5 requests / hour)
+  - [x] `POST /api/auth/forgot-password` (3 requests / hour)
+- [x] Add rate limit headers to responses (`X-RateLimit-*`)
+- [x] Write tests for rate limiting behavior (22 tests)
+
+**Completed:** 2026-01-26 via commit `90defc1`
 
 ### 3.2 CSRF Protection (Medium Priority)
 
@@ -244,10 +250,10 @@ const userId = await requireAuth(context);
 | -------------------- | ------ | --------- | -------- |
 | 1. requireAuth Fix   | 12     | 12        | 100%     |
 | 2. Middleware        | 5      | 0         | 0%       |
-| 3. Security          | 15     | 4         | 27%      |
+| 3. Security          | 15     | 9         | 60%      |
 | 4. OpenAPI Docs      | 4      | 4         | 100%     |
 | 5. Integration Tests | 9      | 0         | 0%       |
-| **Total**            | **45** | **20**    | **44%**  |
+| **Total**            | **45** | **25**    | **56%**  |
 
 ---
 
