@@ -30,11 +30,8 @@ Agents must internalize:
 
 **DO:**
 
-- ✅ Read `docs/constitution.md` before starting any task
-- ✅ Read `design-system/START.md` for all UI work
 - ✅ Follow implementation order: UI → Service → API → CLI → Seeder
 - ✅ Run quality gates before committing (lint, stylelint, format, typecheck)
-- ✅ Check for `bun:` imports in middleware-imported code
 - ✅ Update OpenAPI docs when modifying API endpoints
 - ✅ Apply refactor checklist each loop, not at the end
 
@@ -42,8 +39,14 @@ Agents must internalize:
 
 - ❌ Start coding without a plan
 - ❌ Commit without running quality gates
-- ❌ Ignore failed quality gates (types, lint, stylelint are blocking)
-- ❌ Use `bun:` imports in middleware or middleware-imported files
+- ❌ Hardcode colors, spacing, or font sizes
+- ❌ Use non-semantic elements (`<div onclick>` instead of `<button>`)
+- ❌ Build desktop-first layouts
+- ❌ Remove focus outlines without replacement
+- ❌ Use placeholder text as labels
+- ❌ Rely on color alone to convey information
+- ❌ Use custom SVG icons or emojis (use Lucide icons)
+- ❌ Create non-semantic wrapper divs (use semantic HTML)
 
 ### Architectural Decisions (ADR Quick Reference)
 
@@ -77,18 +80,6 @@ Agents must internalize:
 - ✅ Use minimum touch targets of 44x44px for mobile
 - ✅ Include visible labels for all form inputs
 - ✅ Use icons with text labels (not color-only indicators)
-- ✅ Consult `design-system/daisyui-llm.md` for DaisyUI component reference
-
-**DON'T:**
-
-- ❌ Hardcode colors, spacing, or font sizes
-- ❌ Use non-semantic elements (`<div onclick>` instead of `<button>`)
-- ❌ Build desktop-first layouts
-- ❌ Remove focus outlines without replacement
-- ❌ Use placeholder text as labels
-- ❌ Rely on color alone to convey information
-- ❌ Use custom SVG icons or emojis (use Lucide icons)
-- ❌ Create non-semantic wrapper divs (use semantic HTML)
 
 ### Code Quality (Constitution)
 
@@ -402,17 +393,3 @@ export {};
 - Use `declare global { namespace App { ... } }` when the file has imports
 - Import custom types from project files (`@/lib/auth/lucia`), not from library packages directly
 - The `export {}` at the end ensures the file is treated as a module
-
-## Pre-Commit Quality Gates
-
-**Before committing ANY code**, you MUST run:
-
-```bash
-grep -r "bun:" src/ --exclude-dir=node_modules || echo "No bun: imports found"
-bun run lint:fix          # ESLint check
-bun run stylelint:fix          # ESLint check
-bun run format:fix    # Prettier auto-format
-bun run typecheck     # TypeScript type checking
-```
-
-**CRITICAL:** If `bun:` imports are found in files that are imported by middleware (src/middleware.ts), the code MUST be refactored. Astro middleware runs in Node.js and cannot load Bun-specific APIs.
