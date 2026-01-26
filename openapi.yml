@@ -59,6 +59,8 @@ paths:
     $ref: './openapi/paths/auth.yml#/paths/~1api~1auth~1login'
   /api/auth/logout:
     $ref: './openapi/paths/auth.yml#/paths/~1api~1auth~1logout'
+  /api/auth/forgot-password:
+    $ref: './openapi/paths/auth.yml#/paths/~1api~1auth~1forgot-password'
 
   /api/user/profile:
     $ref: './openapi/paths/user.yml#/paths/~1api~1user~1profile'
@@ -145,6 +147,10 @@ components:
       $ref: './openapi/schemas/SignupRequest.yml#/SignupRequest'
     LoginRequest:
       $ref: './openapi/schemas/LoginRequest.yml#/LoginRequest'
+    ForgotPasswordRequest:
+      $ref: './openapi/schemas/ForgotPasswordRequest.yml#/ForgotPasswordRequest'
+    ForgotPasswordResponse:
+      $ref: './openapi/schemas/ForgotPasswordResponse.yml#/ForgotPasswordResponse'
     AuthSuccessResponse:
       $ref: './openapi/schemas/AuthSuccessResponse.yml#/AuthSuccessResponse'
 

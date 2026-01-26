@@ -105,3 +105,40 @@ paths:
           $ref: '../responses/common.yml#/Unauthorized'
         '500':
           $ref: '../responses/common.yml#/InternalServerError'
+
+  /api/auth/forgot-password:
+    post:
+      tags: [Authentication]
+      summary: Request password reset
+      description: |
+        Request a password reset email. For security reasons, this endpoint
+        always returns a success response regardless of whether the email
+        exists in the system. This prevents email enumeration attacks.
+
+        If the email exists, a password reset link will be sent.
+        If the email does not exist, no email is sent but the response
+        is identical to prevent attackers from discovering valid emails.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/ForgotPasswordRequest.yml#/ForgotPasswordRequest'
+      responses:
+        '200':
+          description: |
+            Password reset request processed. This response is returned
+            regardless of whether the email exists in the system.
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ForgotPasswordResponse.yml#/ForgotPasswordResponse'
+        '400':
+          description: Invalid input (e.g., malformed email format)
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'
