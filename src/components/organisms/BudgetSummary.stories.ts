@@ -79,7 +79,17 @@ const createBudgetSummary = (args: BudgetSummaryArgs): HTMLElement => {
   const isDeficit = remaining < 0;
   const overallUsage = totalAllocated > 0 ? (totalSpent / totalAllocated) * 100 : 0;
   const sortedDistribution = [...distribution].sort((a, b) => b.weight - a.weight);
-  const displayDistribution = sortedDistribution.slice(0, 6);
+
+  // Take top 7 for legend display, combine rest as "Others"
+  const MAX_LEGEND_ITEMS = 7;
+  const OTHERS_COLOR = '#9ca3af';
+  const topCategories = sortedDistribution.slice(0, MAX_LEGEND_ITEMS);
+  const remainingCategories = sortedDistribution.slice(MAX_LEGEND_ITEMS);
+  const othersWeight = remainingCategories.reduce((sum, item) => sum + item.weight, 0);
+  const displayDistribution: DistributionItem[] =
+    othersWeight > 0
+      ? [...topCategories, { name: 'Others', weight: othersWeight, color: OTHERS_COLOR }]
+      : topCategories;
 
   // Loading state
   if (loading) {
@@ -87,7 +97,7 @@ const createBudgetSummary = (args: BudgetSummaryArgs): HTMLElement => {
       <section class="bg-base-100 rounded-card border border-base-300 shadow-sm p-6 lg:p-10 relative overflow-hidden" aria-busy="true" aria-label="Loading budget summary">
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10">
           <div class="lg:col-span-4 flex flex-col justify-center gap-6 lg:gap-8">
-            <div class="grid grid-cols-2 lg:grid-cols-1 gap-6">
+            <div class="grid flex flex-col gap-6">
               <div>
                 <div class="h-3 bg-base-300 rounded w-28 animate-pulse"></div>
                 <div class="h-8 bg-base-300 rounded w-44 mt-3 animate-pulse"></div>
@@ -108,7 +118,7 @@ const createBudgetSummary = (args: BudgetSummaryArgs): HTMLElement => {
               <div class="h-3 bg-base-300 rounded w-40 animate-pulse"></div>
             </div>
             <div class="h-6 bg-base-300 rounded-full animate-pulse"></div>
-            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
               ${Array(6)
                 .fill(0)
                 .map(
@@ -136,7 +146,7 @@ const createBudgetSummary = (args: BudgetSummaryArgs): HTMLElement => {
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 relative z-10">
         <!-- Left: Key Metrics -->
         <div class="lg:col-span-4 flex flex-col justify-center gap-6 lg:gap-8">
-          <div class="grid grid-cols-2 lg:grid-cols-1 gap-6">
+          <div class="grid flex flex-col gap-6">
             <!-- Total Monthly Pot -->
             <div>
               <span class="label-premium uppercase tracking-widest font-semibold text-[10px] text-base-content/60">Total Monthly Pot</span>
@@ -186,11 +196,11 @@ const createBudgetSummary = (args: BudgetSummaryArgs): HTMLElement => {
               .map(
                 (item) => `
               <div
-                class="h-full transition-all duration-500 relative group/segment"
+                class="h-full transition-all duration-500 relative group/segment tooltip tooltip-bottom"
                 style="width: ${item.weight}%; background-color: ${item.color};"
-                title="${item.name}: ${item.weight.toFixed(1)}%"
+                data-tip="${item.name}: ${item.weight.toFixed(1)}%"
               >
-                <div class="absolute inset-0 bg-white/10 opacity-0 group-hover/segment:opacity-100 transition-opacity"></div>
+                <div class="absolute inset-0 bg-white/10 opacity-0 group-hover/segment:opacity-100 transition-opacity cursor-pointer"></div>
               </div>
             `
               )
@@ -198,7 +208,7 @@ const createBudgetSummary = (args: BudgetSummaryArgs): HTMLElement => {
           </div>
 
           <!-- Legend -->
-          <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 lg:gap-4">
+          <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 lg:gap-4">
             ${displayDistribution
               .map(
                 (item) => `

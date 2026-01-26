@@ -200,7 +200,7 @@ describe('BudgetSummary - Overall usage calculation', () => {
 });
 
 describe('BudgetSummary - Display distribution limit', () => {
-  it('should limit legend display to top 6 categories', () => {
+  it('should limit legend display to top 7 categories plus Others', () => {
     const categories = [
       { name: 'Cat1', budget_amount: '10000000' },
       { name: 'Cat2', budget_amount: '9000000' },
@@ -210,14 +210,39 @@ describe('BudgetSummary - Display distribution limit', () => {
       { name: 'Cat6', budget_amount: '5000000' },
       { name: 'Cat7', budget_amount: '4000000' },
       { name: 'Cat8', budget_amount: '3000000' },
+      { name: 'Cat9', budget_amount: '2000000' },
     ];
 
     const distribution = calculateAllocationDistribution(categories);
-    const displayDistribution = distribution.slice(0, 6);
+    const MAX_LEGEND_ITEMS = 7;
 
-    expect(displayDistribution).toHaveLength(6);
-    expect(displayDistribution[0].name).toBe('Cat1'); // Largest
-    expect(displayDistribution[5].name).toBe('Cat6');
+    // Get top 7 categories
+    const topCategories = distribution.slice(0, MAX_LEGEND_ITEMS);
+    const remainingCategories = distribution.slice(MAX_LEGEND_ITEMS);
+    const othersWeight = remainingCategories.reduce((sum, item) => sum + item.weight, 0);
+
+    expect(topCategories).toHaveLength(7);
+    expect(topCategories[0].name).toBe('Cat1'); // Largest
+    expect(topCategories[6].name).toBe('Cat7');
+
+    // Remaining categories should be combined as "Others"
+    expect(remainingCategories).toHaveLength(2);
+    expect(othersWeight).toBeGreaterThan(0);
+  });
+
+  it('should not show Others when categories are 7 or fewer', () => {
+    const categories = [
+      { name: 'Cat1', budget_amount: '10000000' },
+      { name: 'Cat2', budget_amount: '9000000' },
+      { name: 'Cat3', budget_amount: '8000000' },
+    ];
+
+    const distribution = calculateAllocationDistribution(categories);
+    const MAX_LEGEND_ITEMS = 7;
+    const remainingCategories = distribution.slice(MAX_LEGEND_ITEMS);
+
+    expect(distribution).toHaveLength(3);
+    expect(remainingCategories).toHaveLength(0);
   });
 });
 
