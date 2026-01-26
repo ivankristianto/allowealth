@@ -16,6 +16,7 @@ import StatCard from '@/components/atoms/StatCard.astro';
 import ResourceAllocationChart from '@/components/organisms/ResourceAllocationChart.astro';
 import FinancialVelocityChart from '@/components/organisms/FinancialVelocityChart.astro';
 import CategoryIntelligenceTable from '@/components/organisms/CategoryIntelligenceTable.astro';
+import CategoryDrillDownModal from '@/components/organisms/CategoryDrillDownModal.astro';
 import ReportSelector from '@/components/molecules/ReportSelector.astro';
 
 const currentPath = '/reports';
@@ -174,7 +175,9 @@ function formatNumber(amount: number): string {
       subtitle="SORTED BY FUNCTIONAL VOLUME"
     />
 
-    {/* @TODO: Add CategoryDrillDownModal for detailed transaction view */}
+    {/* Category Drill-Down Modal */}
+    <CategoryDrillDownModal id="category-drilldown-modal" />
+
     {
       /* @TODO: Wire with backend API endpoints:
          - GET /api/reports/summary?period=monthly&date=2024-02
@@ -188,15 +191,46 @@ function formatNumber(amount: number): string {
 </ProtectedLayout>
 
 <script>
-  // @TODO: Wire with backend - Handle drill-down button clicks
-  document.addEventListener('click', (e) => {
-    const target = e.target as HTMLElement;
-    const drillDownBtn = target.closest('.category-drill-down-btn') as HTMLElement;
+  // Handle drill-down button clicks
+  function initDrillDownButtons() {
+    document.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement;
+      const drillDownBtn = target.closest('.category-drill-down-btn') as HTMLElement;
 
-    if (drillDownBtn) {
-      // @TODO: Wire with backend - Open modal with category details and fetch transactions
-      // const categoryName = drillDownBtn.getAttribute('data-category-name');
-      // console.log('Drill down clicked for category:', categoryName);
-    }
-  });
+      if (drillDownBtn) {
+        const categoryId = drillDownBtn.getAttribute('data-category-id');
+        const categoryName = drillDownBtn.getAttribute('data-category-name');
+        const categoryIcon = drillDownBtn.getAttribute('data-category-icon');
+        const categoryColor = drillDownBtn.getAttribute('data-category-color');
+        const spent = parseFloat(drillDownBtn.getAttribute('data-spent') || '0');
+        const budgetLimit = drillDownBtn.getAttribute('data-budget-limit');
+
+        if (categoryId && categoryName) {
+          // Dispatch custom event to open modal
+          const event = new CustomEvent('open-category-drilldown', {
+            detail: {
+              categoryId,
+              categoryName,
+              categoryIcon,
+              categoryColor,
+              spent,
+              budgetLimit: budgetLimit ? parseFloat(budgetLimit) : null,
+              period: 'February 2024', // @TODO: Wire with backend - Get from ReportSelector state
+            },
+          });
+          document.dispatchEvent(event);
+        }
+      }
+    });
+  }
+
+  // Initialize on DOM ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initDrillDownButtons);
+  } else {
+    initDrillDownButtons();
+  }
+
+  // Re-initialize on Astro page transitions
+  document.addEventListener('astro:page-load', initDrillDownButtons);
 </script>

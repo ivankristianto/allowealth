@@ -1,0 +1,447 @@
+---
+/**
+ * CategoryDrillDownModal Component
+ *
+ * Modal for viewing detailed transactions and spending analysis for a category.
+ * Shows transaction list, spending vs budget, and category insights.
+ *
+ * @param {string} id - Modal ID
+ */
+
+import Modal from '../molecules/Modal.astro';
+import { TrendingUp, TrendingDown, TriangleAlert } from '@lucide/astro';
+
+export interface Props {
+  id: string;
+}
+
+const { id } = Astro.props;
+---
+
+<div data-category-drilldown-modal-container data-id={id}>
+  <Modal id={id} size="xl" closable={false} backdropClose={true}>
+    <div slot="default" class="flex flex-col gap-6">
+      {/* Header with category info */}
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+        <div class="flex items-center gap-4">
+          <div class="w-12 h-12 rounded-2xl flex items-center justify-center" data-category-icon-bg>
+            <span class="text-lg font-bold" data-category-icon>U</span>
+          </div>
+          <div>
+            <h2
+              class="text-2xl font-bold tracking-tight text-primary leading-none"
+              data-category-name
+            >
+              Category Name
+            </h2>
+            <p
+              class="text-neutral text-sm mt-2 font-medium uppercase tracking-widest"
+              data-category-period
+            >
+              FEBRUARY 2024
+            </p>
+          </div>
+        </div>
+
+        <div class="flex flex-col items-start md:items-end">
+          <p
+            class="text-2xl md:text-3xl font-bold text-base-content tracking-tight"
+            data-category-spent
+          >
+            Rp 0
+          </p>
+          <div
+            class="flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest"
+            data-budget-badge
+          >
+            <span class="hidden" data-alert-icon>
+              <TriangleAlert size={12} class="stroke-current" aria-hidden="true" />
+            </span>
+            <span class="hidden" data-trending-up-icon>
+              <TrendingUp size={12} class="stroke-current" aria-hidden="true" />
+            </span>
+            <span class="hidden" data-trending-down-icon>
+              <TrendingDown size={12} class="stroke-current" aria-hidden="true" />
+            </span>
+            <span data-budget-text>NOT SET</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Budget Progress Section */}
+      <div class="bg-base-200/50 rounded-3xl p-6 border border-base-300/50">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-sm font-bold text-base-content/60 uppercase tracking-widest">
+            Budget Overview
+          </h3>
+        </div>
+
+        <div class="space-y-3">
+          <div class="flex justify-between items-center text-sm">
+            <span class="text-base-content/60">Spent</span>
+            <span class="font-bold" data-spent-amount>Rp 0</span>
+          </div>
+          <div class="flex justify-between items-center text-sm">
+            <span class="text-base-content/60">Budget Limit</span>
+            <span class="font-bold" data-budget-limit>Not Set</span>
+          </div>
+          <div class="flex justify-between items-center text-sm">
+            <span class="text-base-content/60">Remaining</span>
+            <span class="font-bold" data-remaining-amount>-</span>
+          </div>
+
+          {/* Progress Bar */}
+          <div class="w-full bg-base-300 rounded-full h-2 overflow-hidden" data-progress-container>
+            <div
+              class="h-full bg-accent transition-all duration-300"
+              style="width: 0%"
+              role="progressbar"
+              aria-valuenow="0"
+              aria-valuemin="0"
+              aria-valuemax="100"
+              data-progress-bar
+            >
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Transactions Section */}
+      <div class="bg-base-200/50 rounded-3xl p-6 border border-base-300/50">
+        <div class="flex justify-between items-center mb-6">
+          <h3 class="text-sm font-bold text-base-content/60 uppercase tracking-widest">
+            Transactions (<span data-transaction-count>0</span>)
+          </h3>
+        </div>
+
+        {/* Loading state */}
+        <div class="flex items-center justify-center py-8 hidden" data-transactions-loading>
+          <div class="loading loading-spinner loading-lg text-accent"></div>
+        </div>
+
+        {/* Empty state */}
+        <div
+          class="flex flex-col items-center justify-center py-8 hidden"
+          data-transactions-empty
+          role="status"
+          aria-live="polite"
+        >
+          <p class="text-base-content/50 text-sm">No transactions in this period</p>
+        </div>
+
+        {/* Transaction List */}
+        <div class="space-y-3 hidden" data-transactions-list></div>
+      </div>
+
+      {/* Close button */}
+      <div class="flex justify-end pt-2">
+        <form method="dialog">
+          <button
+            type="submit"
+            class="btn btn-outline btn-accent px-8 h-14 rounded-full font-bold text-base-content hover:bg-base-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent"
+            data-close-drilldown
+          >
+            Close
+          </button>
+        </form>
+      </div>
+    </div>
+  </Modal>
+</div>
+
+<script>
+  import { formatCurrency } from '@/lib/tokens';
+
+  // Track initialized modals to avoid duplicate handlers
+  const initializedModals = new WeakSet<Element>();
+
+  interface Transaction {
+    id: string;
+    title: string;
+    amount: number;
+    date: string;
+    paymentMethod: string;
+  }
+
+  interface CategoryDrillDownData {
+    categoryId: string;
+    categoryName: string;
+    categoryIcon?: string;
+    categoryColor?: string;
+    spent: number;
+    budgetLimit?: number | null;
+    period: string;
+    transactions?: Transaction[];
+  }
+
+  function initCategoryDrillDownModal() {
+    document.querySelectorAll('[data-category-drilldown-modal-container]').forEach((container) => {
+      // Skip if already initialized
+      if (initializedModals.has(container)) return;
+      initializedModals.add(container);
+
+      const id = container.getAttribute('data-id');
+      if (!id) return;
+
+      const modal = document.getElementById(id) as HTMLDialogElement | null;
+      if (!modal) return;
+
+      // Header elements
+      const categoryIconBg = container.querySelector('[data-category-icon-bg]') as HTMLElement;
+      const categoryIcon = container.querySelector('[data-category-icon]');
+      const categoryName = container.querySelector('[data-category-name]');
+      const categoryPeriod = container.querySelector('[data-category-period]');
+      const categorySpent = container.querySelector('[data-category-spent]');
+
+      // Badge elements
+      const budgetBadge = container.querySelector('[data-budget-badge]') as HTMLElement;
+      const budgetText = container.querySelector('[data-budget-text]');
+      const alertIcon = container.querySelector('[data-alert-icon]');
+      const trendingUpIcon = container.querySelector('[data-trending-up-icon]');
+      const trendingDownIcon = container.querySelector('[data-trending-down-icon]');
+
+      // Budget overview elements
+      const spentAmount = container.querySelector('[data-spent-amount]');
+      const budgetLimit = container.querySelector('[data-budget-limit]');
+      const remainingAmount = container.querySelector('[data-remaining-amount]');
+      const progressBar = container.querySelector('[data-progress-bar]') as HTMLElement;
+
+      // Transaction list elements
+      const transactionsLoading = container.querySelector('[data-transactions-loading]');
+      const transactionsEmpty = container.querySelector('[data-transactions-empty]');
+      const transactionsList = container.querySelector('[data-transactions-list]');
+      const transactionCount = container.querySelector('[data-transaction-count]');
+
+      let currentData: CategoryDrillDownData | null = null;
+
+      // Generate mock transactions
+      // @TODO: Wire with backend - Replace with actual API call to /api/reports/category-transactions
+      const generateMockTransactions = (
+        categoryName: string,
+        spent: number,
+        count: number = 5
+      ): Transaction[] => {
+        const transactions: Transaction[] = [];
+        const paymentMethods = ['BCA', 'Mandiri', 'Cash', 'GoPay', 'OVO'];
+        const today = new Date();
+
+        // Distribute the spent amount across transactions
+        let remaining = spent;
+
+        for (let i = 0; i < count; i++) {
+          const isLast = i === count - 1;
+          const amount = isLast
+            ? remaining
+            : Math.floor((remaining / (count - i)) * (0.5 + Math.random()));
+          remaining -= amount;
+
+          const date = new Date(today);
+          date.setDate(date.getDate() - Math.floor(Math.random() * 30));
+
+          transactions.push({
+            id: `txn-${i}`,
+            title: `${categoryName} expense ${i + 1}`,
+            amount,
+            date: date.toISOString().split('T')[0],
+            paymentMethod: paymentMethods[Math.floor(Math.random() * paymentMethods.length)],
+          });
+        }
+
+        // Sort by date descending
+        return transactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      };
+
+      // Render transaction list
+      const renderTransactions = (transactions: Transaction[]) => {
+        if (!transactionsList) return;
+
+        transactionsList.innerHTML = '';
+
+        transactions.forEach((txn) => {
+          const item = document.createElement('div');
+          item.className =
+            'flex items-center justify-between p-4 bg-base-100 rounded-2xl border border-base-300 hover:border-primary/30 transition-colors';
+
+          const leftSection = document.createElement('div');
+          leftSection.className = 'flex-1';
+
+          const title = document.createElement('div');
+          title.className = 'font-medium text-base-content';
+          title.textContent = txn.title;
+
+          const meta = document.createElement('div');
+          meta.className = 'text-xs text-base-content/60 mt-1';
+          const formattedDate = new Date(txn.date).toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+          });
+          meta.textContent = `${formattedDate} • ${txn.paymentMethod}`;
+
+          leftSection.appendChild(title);
+          leftSection.appendChild(meta);
+
+          const rightSection = document.createElement('div');
+          rightSection.className = 'font-bold text-error';
+          rightSection.textContent = formatCurrency(txn.amount, 'IDR');
+
+          item.appendChild(leftSection);
+          item.appendChild(rightSection);
+          transactionsList.appendChild(item);
+        });
+      };
+
+      // Update display with data
+      // SECURITY: Use textContent (not innerHTML) to prevent XSS from user data
+      const updateDisplay = (data: CategoryDrillDownData) => {
+        // Header
+        if (categoryIcon) {
+          categoryIcon.textContent = data.categoryIcon || data.categoryName.charAt(0).toUpperCase();
+        }
+        if (categoryIconBg) {
+          categoryIconBg.className = `w-12 h-12 rounded-2xl flex items-center justify-center ${data.categoryColor || 'bg-primary/10'}`;
+        }
+        if (categoryName) categoryName.textContent = data.categoryName;
+        if (categoryPeriod) categoryPeriod.textContent = data.period.toUpperCase();
+        if (categorySpent) categorySpent.textContent = formatCurrency(data.spent, 'IDR');
+
+        // Budget calculations
+        const hasBudget = data.budgetLimit !== null && data.budgetLimit !== undefined;
+        const percentage = hasBudget ? (data.spent / data.budgetLimit!) * 100 : 0;
+        const remaining = hasBudget ? data.budgetLimit! - data.spent : 0;
+        const isOverBudget = percentage > 100;
+
+        // Budget badge
+        if (budgetBadge && budgetText && alertIcon && trendingUpIcon && trendingDownIcon) {
+          if (!hasBudget) {
+            budgetBadge.className =
+              'flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest bg-base-300 text-base-content/60';
+            budgetText.textContent = 'NOT SET';
+            alertIcon.classList.add('hidden');
+            trendingUpIcon.classList.add('hidden');
+            trendingDownIcon.classList.add('hidden');
+          } else if (isOverBudget) {
+            budgetBadge.className =
+              'flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest bg-error/10 text-error';
+            budgetText.textContent = `OVER BY ${percentage.toFixed(1)}%`;
+            alertIcon.classList.remove('hidden');
+            trendingUpIcon.classList.add('hidden');
+            trendingDownIcon.classList.add('hidden');
+          } else if (percentage >= 80) {
+            budgetBadge.className =
+              'flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest bg-warning/10 text-warning';
+            budgetText.textContent = `${percentage.toFixed(1)}% USED`;
+            alertIcon.classList.add('hidden');
+            trendingUpIcon.classList.remove('hidden');
+            trendingDownIcon.classList.add('hidden');
+          } else {
+            budgetBadge.className =
+              'flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest bg-success/10 text-success';
+            budgetText.textContent = `${percentage.toFixed(1)}% USED`;
+            alertIcon.classList.add('hidden');
+            trendingUpIcon.classList.add('hidden');
+            trendingDownIcon.classList.remove('hidden');
+          }
+        }
+
+        // Budget overview
+        if (spentAmount) spentAmount.textContent = formatCurrency(data.spent, 'IDR');
+        if (budgetLimit) {
+          budgetLimit.textContent = hasBudget
+            ? formatCurrency(data.budgetLimit!, 'IDR')
+            : 'Not Set';
+        }
+        if (remainingAmount) {
+          if (!hasBudget) {
+            remainingAmount.textContent = '-';
+            remainingAmount.className = 'font-bold text-base-content/60';
+          } else {
+            remainingAmount.textContent = formatCurrency(Math.abs(remaining), 'IDR');
+            remainingAmount.className = `font-bold ${remaining >= 0 ? 'text-success' : 'text-error'}`;
+          }
+        }
+
+        // Progress bar
+        if (progressBar) {
+          const progressPercent = Math.min(percentage, 100);
+          progressBar.style.width = `${progressPercent}%`;
+          progressBar.setAttribute('aria-valuenow', percentage.toFixed(1));
+          progressBar.className = `h-full transition-all duration-300 ${
+            isOverBudget ? 'bg-error' : percentage >= 80 ? 'bg-warning' : 'bg-success'
+          }`;
+        }
+
+        // Transactions
+        const transactions =
+          data.transactions || generateMockTransactions(data.categoryName, data.spent);
+
+        if (transactionCount) transactionCount.textContent = String(transactions.length);
+
+        if (transactions.length === 0) {
+          transactionsList?.classList.add('hidden');
+          transactionsEmpty?.classList.remove('hidden');
+        } else {
+          transactionsList?.classList.remove('hidden');
+          transactionsEmpty?.classList.add('hidden');
+          renderTransactions(transactions);
+        }
+
+        transactionsLoading?.classList.add('hidden');
+      };
+
+      // Listen for open-category-drilldown event
+      const handleOpenDrillDown = ((e: CustomEvent<CategoryDrillDownData>) => {
+        currentData = e.detail;
+
+        // Show loading
+        transactionsLoading?.classList.remove('hidden');
+        transactionsList?.classList.add('hidden');
+        transactionsEmpty?.classList.add('hidden');
+
+        // @TODO: Wire with backend - Fetch transactions from API instead
+        // For now, generate mock data
+        if (!currentData.transactions) {
+          currentData.transactions = generateMockTransactions(
+            currentData.categoryName,
+            currentData.spent
+          );
+        }
+
+        modal.showModal();
+
+        // Delay to allow modal animation
+        setTimeout(() => {
+          if (currentData) {
+            updateDisplay(currentData);
+          }
+        }, 100);
+      }) as EventListener;
+
+      document.addEventListener('open-category-drilldown', handleOpenDrillDown);
+
+      // Clean up event listener on Astro page transitions to prevent memory leaks
+      document.addEventListener(
+        'astro:before-swap',
+        () => {
+          document.removeEventListener('open-category-drilldown', handleOpenDrillDown);
+        },
+        { once: true }
+      );
+
+      // Reset data when modal closes
+      modal.addEventListener('close', () => {
+        currentData = null;
+      });
+    });
+  }
+
+  // Initialize on DOM ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initCategoryDrillDownModal);
+  } else {
+    initCategoryDrillDownModal();
+  }
+
+  // Re-initialize on Astro page transitions
+  document.addEventListener('astro:page-load', initCategoryDrillDownModal);
+</script>
