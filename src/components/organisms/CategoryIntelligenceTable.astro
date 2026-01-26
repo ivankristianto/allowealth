@@ -1,0 +1,231 @@
+---
+/**
+ * CategoryIntelligenceTable Component
+ *
+ * Table displaying category intelligence data with spending, budget, status, and drill-down actions.
+ * Follows Oasis Finance v1.0.0 design system specifications.
+ *
+ * @param {CategoryIntelligence[]} categories - Array of category data
+ * @param {Function} onDrillDown - Callback for drill-down button clicks (category name)
+ * @param {string} subtitle - Subtitle text (e.g., "SORTED BY FUNCTIONAL VOLUME")
+ * @param {boolean} loading - Show loading skeleton state
+ * @param {string} error - Error message to display
+ * @param {string} className - Additional CSS classes
+ */
+
+import StatLabel from '@/components/atoms/StatLabel.astro';
+import Skeleton from '@/components/atoms/Skeleton.astro';
+import { formatCurrency } from '@/lib/tokens';
+
+// Category icon mapping (using Lucide icon names)
+const CATEGORY_ICON_MAP: Record<string, string> = {
+  Utilities: 'zap',
+  Dining: 'utensils',
+  Health: 'heart-pulse',
+  Transport: 'car',
+  Entertainment: 'music',
+  Groceries: 'shopping-basket',
+  Housing: 'home',
+};
+
+// Category color mapping
+const CATEGORY_COLOR_MAP: Record<string, string> = {
+  Utilities: 'bg-blue-600',
+  Dining: 'bg-orange-500',
+  Health: 'bg-cyan-500',
+  Transport: 'bg-purple-500',
+  Entertainment: 'bg-pink-500',
+  Groceries: 'bg-blue-500',
+  Housing: 'bg-red-500',
+};
+
+export interface CategoryIntelligence {
+  id: string;
+  name: string;
+  spent: number;
+  budgetLimit?: number | null; // null or undefined means "Not Set"
+  icon?: string; // Lucide icon name
+  color?: string; // Tailwind background color class
+}
+
+export interface Props {
+  categories: CategoryIntelligence[];
+  subtitle?: string;
+  loading?: boolean;
+  error?: string;
+  className?: string;
+}
+
+const {
+  categories = [],
+  subtitle = 'SORTED BY FUNCTIONAL VOLUME',
+  loading = false,
+  error,
+  className = '',
+} = Astro.props;
+
+// Calculate percentage for each category
+const categoriesWithPercentage = categories.map((cat) => {
+  const percentage =
+    cat.budgetLimit && cat.budgetLimit > 0 ? (cat.spent / cat.budgetLimit) * 100 : null;
+  return {
+    ...cat,
+    percentage,
+    icon: cat.icon || CATEGORY_ICON_MAP[cat.name] || 'tag',
+    color: cat.color || CATEGORY_COLOR_MAP[cat.name] || 'bg-accent',
+  };
+});
+---
+
+<div
+  class={`bg-base-100 rounded-3xl border border-base-300 shadow-sm ${className}`}
+  role="region"
+  aria-label="Category intelligence table"
+>
+  <div class="overflow-hidden">
+    {/* Header */}
+    <div class="p-6 md:p-8 border-b border-base-300">
+      <h4 class="font-bold text-base md:text-lg text-base-content tracking-tight">
+        Category Intelligence
+      </h4>
+      <StatLabel size="sm" color="neutral" className="mt-1">{subtitle}</StatLabel>
+    </div>
+
+    {/* Loading State */}
+    {
+      loading ? (
+        <div class="p-6 md:p-8 space-y-4">
+          {Array.from({ length: 7 }).map(() => (
+            <div class="flex items-center gap-4">
+              <Skeleton variant="circular" width="40" height="40" />
+              <Skeleton variant="text" width="120" height="20" />
+              <div class="flex-1" />
+              <Skeleton variant="text" width="100" height="20" />
+              <Skeleton variant="text" width="100" height="20" />
+              <Skeleton variant="text" width="80" height="20" />
+              <Skeleton variant="rectangular" width="100" height="32" className="rounded-xl" />
+            </div>
+          ))}
+        </div>
+      ) : error ? (
+        /* Error State */
+        <div class="p-12 text-center">
+          <p class="text-error font-medium" role="alert">
+            {error}
+          </p>
+        </div>
+      ) : categories.length === 0 ? (
+        /* Empty State */
+        <div class="p-12 text-center">
+          <p class="text-base-content/60 font-medium">No category data available.</p>
+        </div>
+      ) : (
+        /* Table */
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-base-200/50 border-b border-base-300">
+                <th class="px-6 md:px-8 py-4 md:py-5 text-[10px] font-bold text-base-content/40 uppercase tracking-widest">
+                  Category
+                </th>
+                <th class="px-6 md:px-8 py-4 md:py-5 text-[10px] font-bold text-base-content/40 uppercase tracking-widest text-right">
+                  Total Spent
+                </th>
+                <th class="px-6 md:px-8 py-4 md:py-5 text-[10px] font-bold text-base-content/40 uppercase tracking-widest text-right">
+                  Budget Quota
+                </th>
+                <th class="px-6 md:px-8 py-4 md:py-5 text-[10px] font-bold text-base-content/40 uppercase tracking-widest text-center">
+                  Status
+                </th>
+                <th class="px-6 md:px-8 py-4 md:py-5 text-[10px] font-bold text-base-content/40 uppercase tracking-widest text-right">
+                  Action
+                </th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-base-300">
+              {categoriesWithPercentage.map((cat) => (
+                <tr class="group hover:bg-base-200/30 transition-colors">
+                  {/* Category with Icon */}
+                  <td class="px-6 md:px-8 py-5 md:py-6">
+                    <div class="flex items-center gap-3 md:gap-4">
+                      <div
+                        class={`w-9 h-9 md:w-10 md:h-10 rounded-lg md:rounded-xl ${cat.color} flex items-center justify-center text-white shadow-sm`}
+                        aria-hidden="true"
+                      >
+                        <span class="text-lg font-bold">{cat.icon.charAt(0).toUpperCase()}</span>
+                      </div>
+                      <span class="text-sm font-bold text-base-content">{cat.name}</span>
+                    </div>
+                  </td>
+
+                  {/* Total Spent */}
+                  <td class="px-6 md:px-8 py-5 md:py-6 text-right">
+                    <span class="text-sm font-bold text-base-content">
+                      {formatCurrency(cat.spent, 'IDR')}
+                    </span>
+                  </td>
+
+                  {/* Budget Quota */}
+                  <td class="px-6 md:px-8 py-5 md:py-6 text-right">
+                    <span class="text-sm font-medium text-base-content/60">
+                      {cat.budgetLimit && cat.budgetLimit > 0
+                        ? formatCurrency(cat.budgetLimit, 'IDR')
+                        : 'Not Set'}
+                    </span>
+                  </td>
+
+                  {/* Status */}
+                  <td class="px-6 md:px-8 py-5 md:py-6 text-center">
+                    <div class="inline-flex items-center gap-2">
+                      {cat.percentage !== null ? (
+                        <>
+                          <div class="w-16 h-1.5 bg-base-200 rounded-full overflow-hidden">
+                            <div
+                              class={`h-full ${cat.percentage > 100 ? 'bg-error' : 'bg-accent'} transition-all duration-300`}
+                              style={`width: ${Math.min(cat.percentage, 100)}%`}
+                              role="progressbar"
+                              aria-valuenow={Math.round(cat.percentage)}
+                              aria-valuemin={0}
+                              aria-valuemax={100}
+                              aria-label={`${Math.round(cat.percentage)}% of budget used`}
+                            />
+                          </div>
+                          <span
+                            class={`text-[10px] font-bold ${cat.percentage > 100 ? 'text-error' : 'text-base-content/60'}`}
+                          >
+                            {Math.round(cat.percentage)}%
+                          </span>
+                        </>
+                      ) : (
+                        <span class="text-[10px] font-bold text-base-content/30 uppercase">
+                          Untracked
+                        </span>
+                      )}
+                    </div>
+                  </td>
+
+                  {/* Action */}
+                  <td class="px-6 md:px-8 py-5 md:py-6 text-right">
+                    <button
+                      type="button"
+                      data-category-id={cat.id}
+                      data-category-name={cat.name}
+                      data-category-icon={cat.icon}
+                      data-category-color={cat.color}
+                      data-spent={cat.spent}
+                      data-budget-limit={cat.budgetLimit}
+                      class="category-drill-down-btn text-accent hover:bg-accent/5 px-3 md:px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest border border-accent/10 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+                      aria-label={`View detailed breakdown for ${cat.name}`}
+                    >
+                      Drill Down
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )
+    }
+  </div>
+</div>

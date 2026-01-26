@@ -1,0 +1,345 @@
+---
+/**
+ * Report Selector Component
+ *
+ * Toggle between Monthly and Yearly reports with period selector dropdown.
+ * Dynamically switches between monthly and yearly period options.
+ * Follows TransactionFiltersBar month selector pattern for consistency.
+ *
+ * @param {string} selectedRange - Current range ('monthly' | 'yearly')
+ * @param {string} selectedPeriod - Current period (e.g., "2024-02" for monthly, "2024" for yearly)
+ * @param {Array} monthlyPeriods - Available monthly periods with key and label
+ * @param {Array} yearlyPeriods - Available yearly periods with key and label
+ * @param {string} className - Additional CSS classes
+ */
+
+import { Calendar, ChevronDown } from '@lucide/astro';
+
+export interface PeriodOption {
+  key: string;
+  label: string;
+}
+
+export interface Props {
+  selectedRange?: 'monthly' | 'yearly';
+  selectedPeriod?: string;
+  monthlyPeriods?: PeriodOption[];
+  yearlyPeriods?: PeriodOption[];
+  className?: string;
+}
+
+const {
+  selectedRange = 'monthly',
+  selectedPeriod = '',
+  monthlyPeriods = [],
+  yearlyPeriods = [],
+  className = '',
+} = Astro.props;
+
+// Get the appropriate periods based on current range
+const availablePeriods = selectedRange === 'monthly' ? monthlyPeriods : yearlyPeriods;
+
+// Get display label for selected period
+const selectedPeriodData = availablePeriods.find((p) => p.key === selectedPeriod);
+const currentPeriodLabel =
+  selectedPeriodData?.label ||
+  availablePeriods[availablePeriods.length - 1]?.label ||
+  (selectedRange === 'monthly'
+    ? new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+    : new Date().getFullYear().toString());
+---
+
+<div
+  class={`flex flex-wrap items-center gap-4 ${className}`}
+  data-report-selector
+  data-monthly-periods={JSON.stringify(monthlyPeriods)}
+  data-yearly-periods={JSON.stringify(yearlyPeriods)}
+>
+  <!-- Range Toggle (Monthly/Yearly) -->
+  <div
+    class="flex bg-base-200 p-1 rounded-xl sm:rounded-2xl shrink-0"
+    role="group"
+    aria-label="Select report range"
+    data-range-toggle-group
+  >
+    <button
+      type="button"
+      class={`px-4 sm:px-6 py-2 sm:py-2.5 min-h-[44px] min-w-[44px] text-xs font-bold rounded-lg sm:rounded-xl transition-all focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2 ${
+        selectedRange === 'monthly'
+          ? 'bg-base-100 shadow text-primary'
+          : 'text-base-content/50 hover:text-base-content/70'
+      }`}
+      data-range="monthly"
+      aria-pressed={selectedRange === 'monthly'}
+    >
+      Monthly
+    </button>
+    <button
+      type="button"
+      class={`px-4 sm:px-6 py-2 sm:py-2.5 min-h-[44px] min-w-[44px] text-xs font-bold rounded-lg sm:rounded-xl transition-all focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2 ${
+        selectedRange === 'yearly'
+          ? 'bg-base-100 shadow text-primary'
+          : 'text-base-content/50 hover:text-base-content/70'
+      }`}
+      data-range="yearly"
+      aria-pressed={selectedRange === 'yearly'}
+    >
+      Yearly
+    </button>
+  </div>
+
+  <!-- Period Selector Dropdown -->
+  {
+    availablePeriods.length > 0 && (
+      <div class="dropdown" id="report-period-dropdown" data-period-dropdown>
+        <input type="hidden" name="period" id="period-filter" value={selectedPeriod} />
+        <button
+          type="button"
+          tabindex={0}
+          class="flex items-center gap-2 px-4 py-3 text-xs font-bold border border-base-300 bg-base-100 text-base-content rounded-2xl shadow-sm hover:border-base-content/30 transition-colors min-w-[180px]"
+          aria-label="Select period"
+          data-period-trigger
+        >
+          <Calendar size={16} class="stroke-current text-base-content/40" aria-hidden="true" />
+          <span class="flex-1 text-left" data-period-label>
+            {currentPeriodLabel}
+          </span>
+          <ChevronDown size={14} class="stroke-current text-base-content/40" aria-hidden="true" />
+        </button>
+        <ul
+          tabindex={0}
+          class="dropdown-content z-50 menu p-2 shadow-lg bg-base-100 rounded-2xl w-52 border border-base-300 mt-2 max-h-64 overflow-y-auto"
+        >
+          {availablePeriods.map((period) => (
+            <li>
+              <button
+                type="button"
+                class={`text-xs font-medium ${period.key === selectedPeriod ? 'bg-primary/10 text-primary' : ''}`}
+                data-period-option={period.key}
+                data-period-label={period.label}
+              >
+                {period.label}
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
+    )
+  }
+</div>
+
+<script>
+  // Store references to event listeners for cleanup
+  const rangeClickHandlers = new Map<Element, () => void>();
+  const periodClickHandlers = new Map<Element, (e: Event) => void>();
+
+  interface PeriodOption {
+    key: string;
+    label: string;
+  }
+
+  // Get periods from data attributes
+  function getPeriods(): { monthly: PeriodOption[]; yearly: PeriodOption[] } {
+    const selector = document.querySelector('[data-report-selector]');
+    if (!selector) return { monthly: [], yearly: [] };
+
+    const monthlyData = selector.getAttribute('data-monthly-periods');
+    const yearlyData = selector.getAttribute('data-yearly-periods');
+
+    return {
+      monthly: monthlyData ? JSON.parse(monthlyData) : [],
+      yearly: yearlyData ? JSON.parse(yearlyData) : [],
+    };
+  }
+
+  // Update period dropdown options based on range
+  function updatePeriodDropdown(range: 'monthly' | 'yearly') {
+    const periods = getPeriods();
+    const options = range === 'monthly' ? periods.monthly : periods.yearly;
+    const dropdownList = document.querySelector('[data-period-dropdown] ul');
+    const hiddenInput = document.getElementById('period-filter') as HTMLInputElement;
+    const labelEl = document.querySelector('[data-period-label]');
+
+    if (!dropdownList || options.length === 0) return;
+
+    // Clear existing options and handlers
+    periodClickHandlers.forEach((handler, btn) => {
+      btn.removeEventListener('click', handler);
+    });
+    periodClickHandlers.clear();
+
+    // Rebuild options
+    dropdownList.innerHTML = '';
+    options.forEach((period) => {
+      const li = document.createElement('li');
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'text-xs font-medium';
+      btn.setAttribute('data-period-option', period.key);
+      btn.setAttribute('data-period-label', period.label);
+      btn.textContent = period.label;
+
+      // Add click handler
+      const handler = (e: Event) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const value = period.key;
+        const displayLabel = period.label;
+
+        if (hiddenInput) hiddenInput.value = value;
+        if (labelEl) labelEl.textContent = displayLabel;
+
+        // Update selected style
+        dropdownList.querySelectorAll('button').forEach((b) => {
+          b.classList.remove('bg-primary/10', 'text-primary');
+        });
+        btn.classList.add('bg-primary/10', 'text-primary');
+
+        // Close dropdown
+        (document.activeElement as HTMLElement)?.blur();
+
+        // Dispatch period change event
+        window.dispatchEvent(
+          new CustomEvent('reportPeriodChange', {
+            detail: { period: value, label: displayLabel },
+          })
+        );
+      };
+
+      btn.addEventListener('click', handler);
+      periodClickHandlers.set(btn, handler);
+
+      li.appendChild(btn);
+      dropdownList.appendChild(li);
+    });
+
+    // Set default period (last option) if current period doesn't match new range
+    const currentPeriod = hiddenInput?.value || '';
+    const currentPeriodExists = options.some((p) => p.key === currentPeriod);
+
+    if (!currentPeriodExists && options.length > 0) {
+      const defaultPeriod = options[options.length - 1];
+      if (hiddenInput) hiddenInput.value = defaultPeriod.key;
+      if (labelEl) labelEl.textContent = defaultPeriod.label;
+
+      // Highlight the default option
+      const defaultBtn = dropdownList.querySelector(`[data-period-option="${defaultPeriod.key}"]`);
+      if (defaultBtn) {
+        defaultBtn.classList.add('bg-primary/10', 'text-primary');
+      }
+
+      return defaultPeriod;
+    }
+
+    // Highlight current selection
+    const currentBtn = dropdownList.querySelector(`[data-period-option="${currentPeriod}"]`);
+    if (currentBtn) {
+      currentBtn.classList.add('bg-primary/10', 'text-primary');
+    }
+
+    return null;
+  }
+
+  // Initialize report selector
+  function initReportSelector() {
+    // Cleanup previous listeners first
+    cleanupReportSelector();
+
+    // Handle range toggle button clicks
+    document.querySelectorAll('[data-range]').forEach((btn) => {
+      const handler = () => {
+        const rangeButton = btn as HTMLElement;
+        const range = rangeButton.getAttribute('data-range') as 'monthly' | 'yearly';
+
+        // Update aria-pressed states on all buttons
+        document.querySelectorAll('[data-range]').forEach((b) => {
+          b.setAttribute('aria-pressed', b.getAttribute('data-range') === range ? 'true' : 'false');
+
+          // Update visual styles
+          const isActive = b.getAttribute('data-range') === range;
+          b.classList.toggle('bg-base-100', isActive);
+          b.classList.toggle('shadow', isActive);
+          b.classList.toggle('text-primary', isActive);
+          b.classList.toggle('text-base-content/50', !isActive);
+        });
+
+        // Update period dropdown options for new range
+        const newDefaultPeriod = updatePeriodDropdown(range);
+
+        // Dispatch custom event for range change with new default period if applicable
+        window.dispatchEvent(
+          new CustomEvent('reportRangeChange', {
+            detail: {
+              range,
+              newPeriod: newDefaultPeriod?.key || null,
+            },
+          })
+        );
+      };
+      btn.addEventListener('click', handler);
+      rangeClickHandlers.set(btn, handler);
+    });
+
+    // Initialize period dropdown handlers for existing options
+    document.querySelectorAll('[data-period-option]').forEach((btn) => {
+      const handler = (e: Event) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const el = btn as HTMLElement;
+        const value = el.dataset.periodOption || '';
+        const displayLabel = el.dataset.periodLabel || value;
+        const hiddenInput = document.getElementById('period-filter') as HTMLInputElement;
+        const labelEl = document.querySelector('[data-period-label]');
+
+        if (hiddenInput) hiddenInput.value = value;
+        if (labelEl) labelEl.textContent = displayLabel;
+
+        // Update selected style
+        document.querySelectorAll('[data-period-option]').forEach((b) => {
+          b.classList.remove('bg-primary/10', 'text-primary');
+        });
+        el.classList.add('bg-primary/10', 'text-primary');
+
+        // Close dropdown by removing focus
+        (document.activeElement as HTMLElement)?.blur();
+
+        // Dispatch custom event for period change
+        window.dispatchEvent(
+          new CustomEvent('reportPeriodChange', {
+            detail: { period: value, label: displayLabel },
+          })
+        );
+      };
+      btn.addEventListener('click', handler);
+      periodClickHandlers.set(btn, handler);
+    });
+  }
+
+  // Cleanup event listeners
+  function cleanupReportSelector() {
+    rangeClickHandlers.forEach((handler, btn) => {
+      btn.removeEventListener('click', handler);
+    });
+    rangeClickHandlers.clear();
+
+    periodClickHandlers.forEach((handler, btn) => {
+      btn.removeEventListener('click', handler);
+    });
+    periodClickHandlers.clear();
+  }
+
+  // Initialize on DOM ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initReportSelector);
+  } else {
+    initReportSelector();
+  }
+
+  // Re-initialize on Astro page transitions
+  document.addEventListener('astro:page-load', initReportSelector);
+
+  // Cleanup on page navigation
+  document.addEventListener('astro:before-swap', cleanupReportSelector);
+</script>

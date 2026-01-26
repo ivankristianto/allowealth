@@ -1,0 +1,461 @@
+---
+/**
+ * ResourceAllocationChart Component
+ *
+ * Interactive donut chart showing resource allocation (expense breakdown) by category.
+ * Uses Chart.js for rendering with custom legend component.
+ * Follows Oasis Finance v1.0.0 design system specifications.
+ *
+ * @param {ExpenseCategory[]} data - Array of expense categories with names and amounts
+ * @param {string} subtitle - Subtitle text (e.g., "EXPENSE MIX")
+ * @param {boolean} loading - Show loading skeleton state
+ * @param {string} error - Error message to display
+ * @param {string} className - Additional CSS classes
+ */
+
+import Card from '@/components/atoms/Card.astro';
+import StatLabel from '@/components/atoms/StatLabel.astro';
+import Skeleton from '@/components/atoms/Skeleton.astro';
+
+export interface ExpenseCategory {
+  name: string;
+  value: number;
+  color?: string; // Optional override color
+}
+
+export interface Props {
+  data: ExpenseCategory[];
+  subtitle?: string;
+  loading?: boolean;
+  error?: string;
+  className?: string;
+}
+
+const { data = [], subtitle = 'EXPENSE MIX', loading = false, error, className = '' } = Astro.props;
+
+// @TODO: P1 - Move chart colors to design tokens (@/lib/tokens)
+// Chart colors from design system
+const DEFAULT_COLORS = [
+  '#6366f1', // indigo - Utilities
+  '#3b82f6', // blue - Groceries/Dining
+  '#10b981', // emerald - Health
+  '#f59e0b', // amber - Transport
+  '#ef4444', // red - Entertainment
+  '#ec4899', // pink - Other categories
+  '#8b5cf6', // purple
+  '#06b6d4', // cyan
+];
+
+// Calculate total for percentages
+const total = data.reduce((sum, item) => sum + item.value, 0);
+
+// Add percentage to each item
+const dataWithPercentage = data.map((item, index) => ({
+  ...item,
+  percentage: total > 0 ? ((item.value / total) * 100).toFixed(1) : '0',
+  color: item.color || DEFAULT_COLORS[index % DEFAULT_COLORS.length],
+}));
+
+// Serialize data for client-side script with XSS prevention
+const serializedData = JSON.stringify(dataWithPercentage)
+  .replace(/</g, '\\u003c')
+  .replace(/>/g, '\\u003e')
+  .replace(/&/g, '\\u0026');
+const serializedColors = JSON.stringify(DEFAULT_COLORS)
+  .replace(/</g, '\\u003c')
+  .replace(/>/g, '\\u003e')
+  .replace(/&/g, '\\u0026');
+
+// Generate unique ID for this chart instance
+const chartId = `resource-allocation-chart-${Math.random().toString(36).slice(2, 11)}`;
+---
+
+<Card
+  padding="lg"
+  rounded="card-lg"
+  className={className}
+  role="region"
+  aria-label="Resource allocation by category"
+>
+  <div class="flex flex-col gap-6 md:gap-8">
+    {/* Header */}
+    <div class="flex justify-between items-center">
+      <h4 class="font-bold text-base md:text-lg text-base-content tracking-tight">
+        Resource Allocation
+      </h4>
+      <StatLabel size="sm" color="neutral">{subtitle}</StatLabel>
+    </div>
+
+    {/* Loading State */}
+    {
+      loading ? (
+        <div class="flex flex-col sm:flex-row items-center gap-8 py-6 min-h-[300px]">
+          <div class="h-[250px] w-full sm:w-[250px] shrink-0">
+            <Skeleton variant="circular" width="250" height="250" />
+          </div>
+          <div class="flex-1 w-full space-y-3">
+            {Array.from({ length: 6 }).map(() => (
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <div class="w-2 h-2 rounded-full bg-base-300 animate-pulse" />
+                  <div class="h-3 bg-base-300 rounded w-20 animate-pulse" />
+                </div>
+                <div class="h-3 bg-base-300 rounded w-10 animate-pulse" />
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : error ? (
+        /* Error State */
+        <div class="p-12 text-center">
+          <p class="text-error font-medium" role="alert">
+            {error}
+          </p>
+        </div>
+      ) : data.length === 0 ? (
+        /* Empty State */
+        <div class="p-12 text-center">
+          <p class="text-base-content/60 font-medium">No expense data available.</p>
+        </div>
+      ) : (
+        /* Chart and Legend */
+        <div
+          class="flex flex-col sm:flex-row items-center gap-8 py-2 min-h-[300px]"
+          data-chart-data={serializedData}
+          data-chart-colors={serializedColors}
+        >
+          {/* Chart Container */}
+          <div class="h-[250px] w-full sm:w-[250px] shrink-0 relative" id={`${chartId}-container`}>
+            <canvas
+              id={chartId}
+              aria-label={`Resource allocation chart showing ${data.length} expense categories`}
+              role="img"
+            />
+          </div>
+
+          {/* Legend */}
+          <div class="flex-1 space-y-3 w-full">
+            {dataWithPercentage.slice(0, 6).map((item) => (
+              <div class="flex items-center justify-between text-xs font-bold">
+                <div class="flex items-center gap-2">
+                  <div
+                    class="w-2 h-2 rounded-full"
+                    style={`background-color: ${item.color}`}
+                    aria-hidden="true"
+                  />
+                  <span class="text-base-content/60 uppercase tracking-tight text-[10px]">
+                    {item.name}
+                  </span>
+                </div>
+                <span class="text-base-content text-[10px]">{item.percentage}%</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )
+    }
+
+    {/* Screen Reader Data Table */}
+    {
+      !loading && !error && data.length > 0 && (
+        <table class="sr-only" aria-label="Resource allocation data table">
+          <thead>
+            <tr>
+              <th>Category</th>
+              <th>Amount</th>
+              <th>Percentage</th>
+            </tr>
+          </thead>
+          <tbody>
+            {dataWithPercentage.map((item) => (
+              <tr>
+                <td>{item.name}</td>
+                <td>{item.value}</td>
+                <td>{item.percentage}%</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )
+    }
+  </div>
+</Card>
+
+<style>
+  /* Visually hide but keep accessible for screen readers */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+</style>
+
+<script>
+  import Chart from 'chart.js/auto';
+
+  interface ExpenseCategory {
+    name: string;
+    value: number;
+    percentage: string;
+    color: string;
+  }
+
+  interface ChartData {
+    [chartId: string]: {
+      chart: Chart<'doughnut', number[], string>;
+      data: ExpenseCategory[];
+    };
+  }
+
+  // Store chart instances globally for cleanup
+  const charts: ChartData = {};
+
+  // Store observer reference for cleanup
+  let chartObserver: IntersectionObserver | null = null;
+  let themeObserver: MutationObserver | null = null;
+  let systemThemeMediaQuery: MediaQueryList | null = null;
+
+  /**
+   * Cleanup all chart instances and observers
+   */
+  function cleanupCharts(): void {
+    const chartIds = Object.keys(charts);
+    chartIds.forEach((chartId) => {
+      const entry = charts[chartId];
+      if (entry?.chart) {
+        try {
+          entry.chart.destroy();
+        } catch (e) {
+          console.warn('Failed to destroy chart:', chartId, e);
+        }
+      }
+      delete charts[chartId];
+    });
+
+    if (chartObserver) {
+      chartObserver.disconnect();
+      chartObserver = null;
+    }
+
+    if (themeObserver) {
+      themeObserver.disconnect();
+      themeObserver = null;
+    }
+
+    if (systemThemeMediaQuery) {
+      systemThemeMediaQuery.removeEventListener('change', handleSystemThemeChange);
+      systemThemeMediaQuery = null;
+    }
+  }
+
+  /**
+   * Check if current theme is dark
+   */
+  function isDarkTheme(): boolean {
+    const theme = document.documentElement.getAttribute('data-theme');
+    if (theme) return theme === 'dark';
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  }
+
+  /**
+   * Handle system theme preference change
+   */
+  function handleSystemThemeChange(): void {
+    const explicitTheme = document.documentElement.getAttribute('data-theme');
+    if (!explicitTheme) {
+      updateChartThemeColors();
+    }
+  }
+
+  /**
+   * Update chart tooltip colors based on current theme
+   */
+  function updateChartThemeColors(): void {
+    const dark = isDarkTheme();
+
+    Object.values(charts).forEach(({ chart }) => {
+      if (chart.options.plugins?.tooltip) {
+        chart.options.plugins.tooltip.backgroundColor = dark
+          ? 'rgba(248, 250, 252, 0.95)'
+          : 'rgba(15, 23, 42, 0.9)';
+        chart.options.plugins.tooltip.titleColor = dark ? '#0f172a' : '#fff';
+        chart.options.plugins.tooltip.bodyColor = dark ? '#0f172a' : '#fff';
+        chart.update('none');
+      }
+    });
+  }
+
+  /**
+   * Initialize theme observer
+   */
+  function initThemeObserver(): void {
+    if (themeObserver) {
+      themeObserver.disconnect();
+    }
+
+    themeObserver = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.type === 'attributes' && mutation.attributeName === 'data-theme') {
+          updateChartThemeColors();
+        }
+      });
+    });
+
+    themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme'],
+    });
+
+    if (window.matchMedia) {
+      systemThemeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      systemThemeMediaQuery.addEventListener('change', handleSystemThemeChange);
+    }
+  }
+
+  /**
+   * Initialize resource allocation chart with Chart.js
+   */
+  function initResourceAllocationChart(chartId: string, data: ExpenseCategory[]): void {
+    const canvas = document.getElementById(chartId) as HTMLCanvasElement;
+    if (!canvas) return;
+
+    // Destroy existing chart if it exists
+    if (charts[chartId]?.chart) {
+      charts[chartId].chart.destroy();
+    }
+
+    const chartValues = data.map((d) => d.value);
+    const chartLabels = data.map((d) => d.name);
+    const chartColors = data.map((d) => d.color);
+
+    const dark = isDarkTheme();
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const chart = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: chartLabels,
+        datasets: [
+          {
+            data: chartValues,
+            backgroundColor: chartColors,
+            borderWidth: 0,
+            spacing: 5,
+            hoverOffset: 0,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        cutout: '70%',
+        animation: {
+          animateScale: true,
+          animateRotate: true,
+        },
+        plugins: {
+          legend: {
+            display: false,
+          },
+          tooltip: {
+            backgroundColor: dark ? 'rgba(248, 250, 252, 0.95)' : 'rgba(15, 23, 42, 0.9)',
+            titleColor: dark ? '#0f172a' : '#fff',
+            bodyColor: dark ? '#0f172a' : '#fff',
+            padding: 12,
+            cornerRadius: 12,
+            displayColors: true,
+            callbacks: {
+              label: (context) => {
+                const label = context.label || '';
+                const percentage = data.find((d) => d.name === label)?.percentage || '0';
+                return `${label}: ${percentage}%`;
+              },
+            },
+          },
+        },
+      },
+    });
+
+    charts[chartId] = { chart, data };
+  }
+
+  /**
+   * Initialize all charts with Intersection Observer
+   */
+  function initAllCharts(): void {
+    cleanupCharts();
+    initThemeObserver();
+
+    const chartContainers = document.querySelectorAll(
+      '[id^="resource-allocation-chart-"][id$="-container"]'
+    );
+
+    chartObserver = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const container = entry.target as HTMLElement;
+            chartObserver?.unobserve(container); // Unobserve immediately to prevent memory leaks
+
+            const chartId = container.querySelector('canvas')?.id;
+            if (chartId && !charts[chartId]) {
+              try {
+                const dataAttr = container
+                  .closest('[data-chart-data]')
+                  ?.getAttribute('data-chart-data');
+                if (dataAttr) {
+                  const rawData = JSON.parse(dataAttr) as ExpenseCategory[];
+                  // Validate chart data to prevent security issues and rendering errors
+                  const validData = rawData.filter(
+                    (item) =>
+                      typeof item.value === 'number' &&
+                      isFinite(item.value) &&
+                      item.value >= 0 &&
+                      typeof item.name === 'string' &&
+                      item.name.length > 0 &&
+                      item.name.length <= 100
+                  );
+                  if (validData.length > 0) {
+                    initResourceAllocationChart(chartId, validData);
+                  }
+                }
+              } catch (e) {
+                console.warn('Failed to initialize chart:', chartId, e);
+              }
+            }
+          }
+        });
+      },
+      { rootMargin: '50px' }
+    );
+
+    chartContainers.forEach((container) => {
+      if (chartObserver) chartObserver.observe(container);
+    });
+  }
+
+  // Initialize when DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initAllCharts);
+  } else {
+    initAllCharts();
+  }
+
+  // Cleanup on page navigation/unload
+  window.addEventListener('beforeunload', cleanupCharts);
+
+  // For Astro View Transitions
+  document.addEventListener('astro:before-swap', cleanupCharts);
+  document.addEventListener('astro:after-swap', initAllCharts);
+
+  // For dynamic HTML injection (reports page interactive updates)
+  document.addEventListener('charts:reinit', initAllCharts);
+</script>
