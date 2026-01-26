@@ -254,6 +254,8 @@ const getCurrencyClass = (currency: string): string => {
 </div>
 
 <script>
+  import { getCsrfHeaders } from '@/lib/csrf-client';
+
   // Asset List Client-side script
   // Handles update balance functionality
 
@@ -393,7 +395,7 @@ const getCurrencyClass = (currency: string): string => {
       try {
         const response = await fetch(`/api/assets/${assetId}/balance`, {
           method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
+          headers: getCsrfHeaders({ 'Content-Type': 'application/json' }),
           body: JSON.stringify(data),
         });
 

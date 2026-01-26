@@ -106,6 +106,7 @@ const getUserInitials = () => {
 
 <script>
   import { addToast } from '@lib/stores/toastStore';
+  import { getCsrfHeaders } from '@/lib/csrf-client';
 
   const profileDropdowns = document.querySelectorAll('[data-profile-dropdown]');
 
@@ -187,6 +188,7 @@ const getUserInitials = () => {
       try {
         const response = await fetch('/api/auth/logout', {
           method: 'POST',
+          headers: getCsrfHeaders(),
           credentials: 'include',
         });
 

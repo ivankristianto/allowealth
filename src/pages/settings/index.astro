@@ -119,6 +119,7 @@ const user = Astro.locals.user! as User;
 <script>
   import { addToast } from '@/lib/stores/toastStore';
   import { setButtonLoading } from '@/lib/client-utils';
+  import { getCsrfHeaders } from '@/lib/csrf-client';
 
   const API_PROFILE_URL = '/api/user/profile';
   const API_SETTINGS_URL = '/api/user/settings';
@@ -166,9 +167,9 @@ const user = Astro.locals.user! as User;
 
         const response = await fetch(API_PROFILE_URL, {
           method: 'PUT',
-          headers: {
+          headers: getCsrfHeaders({
             'Content-Type': 'application/json',
-          },
+          }),
           credentials: 'include',
           body: JSON.stringify(data),
         });
@@ -256,9 +257,9 @@ const user = Astro.locals.user! as User;
 
         const response = await fetch(API_SETTINGS_URL, {
           method: 'PUT',
-          headers: {
+          headers: getCsrfHeaders({
             'Content-Type': 'application/json',
-          },
+          }),
           credentials: 'include',
           body: JSON.stringify(data),
         });

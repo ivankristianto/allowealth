@@ -1,3 +1,5 @@
+import { getCsrfHeaders } from '@/lib/csrf-client';
+
 document.addEventListener('DOMContentLoaded', () => {
   // Delete transaction handler using dialog
   let transactionToDelete: string | null = null;
@@ -94,6 +96,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const response = await fetch(`/api/transactions/${transactionToDelete}`, {
         method: 'DELETE',
         credentials: 'include',
+        headers: getCsrfHeaders(),
       });
 
       const data = await response.json();
