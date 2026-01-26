@@ -5,8 +5,8 @@
  * Presents multi-factor authentication options.
  */
 
-import Badge from '@/components/atoms/Badge.astro';
-import { Shield } from '@lucide/astro';
+import IconBadge from '@/components/atoms/IconBadge.astro';
+import { ShieldCheck, LayoutGrid } from '@lucide/astro';
 
 interface MfaMethod {
   id: string;
@@ -27,43 +27,37 @@ const { methods } = Astro.props;
 
 <section class="card bg-base-100 shadow border border-base-300">
   <div class="card-body p-6 space-y-6">
-    <div class="flex items-start gap-3">
-      <span class="rounded-xl bg-success/10 text-success p-2">
-        <Shield size={20} class="stroke-current" aria-hidden="true" />
-      </span>
+    <div class="flex items-center gap-4">
+      <IconBadge variant="success" size="sm">
+        <ShieldCheck size={20} class="stroke-current" aria-hidden="true" />
+      </IconBadge>
       <div>
-        <h3 class="card-title text-lg">Multi-Factor Authentication</h3>
-        <p class="text-sm text-base-content/70">
-          Add a second verification step to protect your account.
-        </p>
+        <h3 class="text-lg font-bold">Multi-Factor Authentication</h3>
+        <p class="text-xs uppercase tracking-widest text-base-content/50">2FA Protection</p>
       </div>
     </div>
 
     <div class="space-y-4">
       {
         methods.map((method) => (
-          <label
-            class="flex flex-col gap-4 rounded-2xl border border-base-300 bg-base-200/60 p-4 sm:flex-row sm:items-center sm:justify-between"
-            for={`mfa-${method.id}`}
-          >
-            <div>
-              <div class="flex items-center gap-2">
-                <span class="text-sm font-semibold">{method.label}</span>
-                {method.recommended && (
-                  <Badge variant="accent" size="sm">
-                    Recommended
-                  </Badge>
-                )}
+          <div class="flex items-center justify-between gap-4 rounded-2xl border border-base-300 bg-base-200/60 p-4">
+            <div class="flex items-center gap-4">
+              <div class="rounded-xl bg-success text-success-content p-2">
+                <LayoutGrid size={18} class="stroke-current" aria-hidden="true" />
               </div>
-              <p class="text-xs text-base-content/60 mt-1">{method.description}</p>
+              <div>
+                <p class="text-sm font-semibold">{method.label}</p>
+                <p class="text-xs text-base-content/60">{method.description}</p>
+              </div>
             </div>
             <input
               id={`mfa-${method.id}`}
               type="checkbox"
               class="toggle toggle-accent"
               checked={method.enabled}
+              aria-label={`Toggle ${method.label}`}
             />
-          </label>
+          </div>
         ))
       }
     </div>

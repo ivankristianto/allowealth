@@ -6,8 +6,8 @@
  */
 
 import Button from '@/components/atoms/Button.astro';
-import Badge from '@/components/atoms/Badge.astro';
-import { Globe } from '@lucide/astro';
+import IconBadge from '@/components/atoms/IconBadge.astro';
+import { Key, Globe } from '@lucide/astro';
 
 interface ConnectedAccount {
   id: string;
@@ -27,11 +27,14 @@ const { accounts } = Astro.props;
 
 <section class="card bg-base-100 shadow border border-base-300">
   <div class="card-body p-6 space-y-6">
-    <div>
-      <h3 class="card-title text-lg">Connected Accounts</h3>
-      <p class="text-sm text-base-content/70">
-        Link trusted providers to sign in faster and recover access.
-      </p>
+    <div class="flex items-center gap-4">
+      <IconBadge variant="accent" size="sm">
+        <Key size={20} class="stroke-current" aria-hidden="true" />
+      </IconBadge>
+      <div>
+        <h3 class="text-lg font-bold">Connected Accounts</h3>
+        <p class="text-xs uppercase tracking-widest text-base-content/50">Single Sign-On (SSO)</p>
+      </div>
     </div>
 
     <div class="space-y-4">
@@ -43,23 +46,18 @@ const { accounts } = Astro.props;
                 <Globe size={20} class="stroke-current" aria-hidden="true" />
               </div>
               <div>
-                <p class="text-sm font-semibold">{account.provider}</p>
+                <p class="text-sm font-semibold">{account.provider} SSO</p>
                 <p class="text-xs text-base-content/60">
                   {account.connected
                     ? `Connected as ${account.email || 'primary account'}`
-                    : 'Not connected'}
+                    : `Sign in using your ${account.provider} account`}
                 </p>
               </div>
             </div>
 
-            <div class="flex items-center gap-3">
-              <Badge variant={account.connected ? 'success' : 'neutral'} size="sm">
-                {account.connected ? 'Connected' : 'Not linked'}
-              </Badge>
-              <Button type="button" variant={account.connected ? 'outline' : 'primary'} size="sm">
-                {account.connected ? 'Disconnect' : 'Connect'}
-              </Button>
-            </div>
+            <Button type="button" variant={account.connected ? 'outline' : 'accent'} size="sm">
+              {account.connected ? 'Disconnect' : 'Connect Account'}
+            </Button>
           </div>
         ))
       }

@@ -9,7 +9,7 @@ import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import SecurityConnectedAccountsCard from '@/components/molecules/SecurityConnectedAccountsCard.astro';
 import SecurityMfaCard from '@/components/molecules/SecurityMfaCard.astro';
 import SecurityPasskeysCard from '@/components/molecules/SecurityPasskeysCard.astro';
-import { ShieldCheck } from '@lucide/astro';
+import { History } from '@lucide/astro';
 
 const currentPath = '/security';
 
@@ -19,12 +19,6 @@ const connectedAccounts = [
     id: 'google',
     provider: 'Google',
     email: 'sarah.j@familyfinance.com',
-    connected: true,
-  },
-  {
-    id: 'apple',
-    provider: 'Apple',
-    email: '',
     connected: false,
   },
 ];
@@ -34,14 +28,7 @@ const mfaMethods = [
   {
     id: 'authenticator',
     label: 'Authenticator App',
-    description: 'Use an authenticator app like Google Authenticator or Authy.',
-    enabled: true,
-    recommended: true,
-  },
-  {
-    id: 'sms',
-    label: 'SMS Codes',
-    description: 'Receive verification codes via SMS.',
+    description: 'Use apps like Google Authenticator or Authy',
     enabled: false,
   },
 ];
@@ -51,12 +38,7 @@ const passkeys = [
   {
     id: 'pk-1',
     name: 'MacBook Pro Touch ID',
-    lastUsed: 'Jan 12, 2026',
-  },
-  {
-    id: 'pk-2',
-    name: 'iPhone 15 Face ID',
-    lastUsed: 'Jan 02, 2026',
+    addedOn: 'Jan 15, 2024',
   },
 ];
 
@@ -71,13 +53,13 @@ const securityEvents = [
   {
     id: 'evt-2',
     label: 'Passkey registered',
-    timestamp: 'Jan 15, 2026',
+    timestamp: 'Jan 15, 2024',
     tone: 'info',
   },
   {
     id: 'evt-3',
     label: 'MFA setup initiated',
-    timestamp: 'Jan 12, 2026',
+    timestamp: 'Jan 12, 2024',
     tone: 'warning',
   },
 ];
@@ -89,39 +71,25 @@ const toneDotClasses: Record<string, string> = {
 };
 ---
 
-<ProtectedLayout title="Security - Finance Manager" currentPath={currentPath}>
-  <div class="max-w-7xl mx-auto sm:px-2 lg:px-6 space-y-6 sm:space-y-8">
+<ProtectedLayout title="Security Settings - Finance Manager" currentPath={currentPath}>
+  <div class="max-w-4xl mx-auto sm:px-2 lg:px-6 space-y-6 sm:space-y-8">
     <div>
-      <h2 class="text-2xl font-bold">Security</h2>
+      <h2 class="text-2xl font-bold">Security Settings</h2>
       <p class="text-base-content/60">
-        Keep your account secure with multi-factor authentication and trusted devices.
+        Keep your family's financial data safe with advanced protection.
       </p>
     </div>
 
-    <div class="tabs">
-      <a class="tab" href="/profile">Manage Account</a>
-      <a class="tab tab-active" href="/security">Security</a>
-      <a class="tab" href="/settings/categories">Categories</a>
-      <a class="tab" href="/settings/payment-methods">Payment Methods</a>
-    </div>
-
-    <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+    <div class="space-y-6">
       <SecurityConnectedAccountsCard accounts={connectedAccounts} />
       <SecurityMfaCard methods={mfaMethods} />
       <SecurityPasskeysCard passkeys={passkeys} />
 
-      <section class="card bg-base-100 shadow border border-base-300 xl:col-span-2">
+      <section class="card bg-base-200/60 border border-base-300 shadow">
         <div class="card-body p-6 space-y-5">
-          <div class="flex items-start gap-3">
-            <span class="rounded-xl bg-base-200 text-base-content/60 p-2">
-              <ShieldCheck size={20} class="stroke-current" aria-hidden="true" />
-            </span>
-            <div>
-              <h3 class="card-title text-lg">Recent Security Activity</h3>
-              <p class="text-sm text-base-content/70">
-                Review recent events to ensure everything looks familiar.
-              </p>
-            </div>
+          <div class="flex items-center gap-2 text-base-content/70">
+            <History size={18} class="stroke-current" aria-hidden="true" />
+            <h3 class="text-sm font-semibold">Recent Security Events</h3>
           </div>
 
           <div class="space-y-4">
@@ -140,9 +108,12 @@ const toneDotClasses: Record<string, string> = {
             }
           </div>
 
-          <div class="pt-2">
-            <button type="button" class="btn btn-outline btn-sm">Download Audit Log</button>
-          </div>
+          <button
+            type="button"
+            class="btn btn-outline btn-sm w-full text-xs uppercase tracking-widest"
+          >
+            Download Security Audit
+          </button>
         </div>
       </section>
     </div>
