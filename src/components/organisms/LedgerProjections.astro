@@ -14,6 +14,7 @@
 
 import Card from '@/components/atoms/Card.astro';
 import StatLabel from '@/components/atoms/StatLabel.astro';
+import Skeleton from '@/components/atoms/Skeleton.astro';
 import { formatCurrency } from '@/lib/tokens';
 import type { ForecastDataPoint } from '@/lib/forecast';
 
@@ -47,12 +48,12 @@ const { data = [], loading = false, error, className = '' } = Astro.props;
     loading ? (
       <div class="p-6 md:p-8 space-y-3">
         {Array.from({ length: 10 }).map(() => (
-          <div class="flex items-center justify-between p-4 bg-base-200/30 rounded-xl animate-pulse">
-            <div class="h-4 bg-base-300 rounded w-24" />
-            <div class="h-4 bg-base-300 rounded w-32" />
-            <div class="h-4 bg-base-300 rounded w-32" />
-            <div class="h-4 bg-base-300 rounded w-20" />
-            <div class="h-4 bg-base-300 rounded w-20" />
+          <div class="flex items-center justify-between gap-4 p-4 bg-base-200/30 rounded-xl">
+            <Skeleton variant="text" width="80px" height="16px" />
+            <Skeleton variant="text" width="100px" height="16px" />
+            <Skeleton variant="text" width="100px" height="16px" />
+            <Skeleton variant="text" width="80px" height="16px" />
+            <Skeleton variant="text" width="80px" height="16px" />
           </div>
         ))}
       </div>
