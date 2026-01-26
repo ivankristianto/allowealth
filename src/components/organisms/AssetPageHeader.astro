@@ -1,0 +1,54 @@
+---
+/**
+ * AssetPageHeader Component
+ *
+ * Header section for the Assets page with title, subtitle, and action button.
+ * Part of the Global Portfolio page redesign.
+ *
+ * @param {string} title - Main heading (default: "Global Portfolio")
+ * @param {string} subtitle - Description text
+ * @param {string} addAssetUrl - URL for add asset action
+ * @param {string} className - Additional CSS classes
+ */
+
+import { Plus } from '@lucide/astro';
+
+export interface Props {
+  title?: string;
+  subtitle?: string;
+  addAssetUrl?: string;
+  className?: string;
+}
+
+const {
+  title = 'Global Portfolio',
+  subtitle = 'Manage and track your distributed household wealth.',
+  addAssetUrl = '/assets/add',
+  className = '',
+} = Astro.props;
+
+const headerClasses = [
+  'flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4',
+  className,
+]
+  .filter(Boolean)
+  .join(' ');
+---
+
+<header class={headerClasses}>
+  {/* Title and subtitle */}
+  <div>
+    <h1 class="text-2xl font-bold text-base-content tracking-tight leading-none">{title}</h1>
+    <p class="text-sm text-base-content/60 mt-2 font-medium">{subtitle}</p>
+  </div>
+
+  {/* Add Asset Button */}
+  <a
+    href={addAssetUrl}
+    class="btn btn-accent gap-2 rounded-2xl shadow-md hover:shadow-lg transition-all"
+    aria-label="Add new asset"
+  >
+    <Plus size={18} class="stroke-current" aria-hidden="true" />
+    <span>Add Asset</span>
+  </a>
+</header>

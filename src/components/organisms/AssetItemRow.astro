@@ -1,0 +1,197 @@
+---
+/**
+ * AssetItemRow Component
+ *
+ * Individual asset row within an AssetGroupCard.
+ * Shows asset name, currency badge, updated date, balance, and action buttons.
+ *
+ * Part of the Global Portfolio page redesign.
+ *
+ * @param {string} id - Asset ID
+ * @param {string} name - Asset name
+ * @param {string} currency - Currency code (IDR or USD)
+ * @param {number} balance - Asset balance
+ * @param {Date} lastUpdated - Last updated date
+ * @param {string} baseUrl - Base URL for navigation links
+ * @param {string} className - Additional CSS classes
+ */
+
+import { TrendingUp, Pencil, Trash2 } from '@lucide/astro';
+import { formatCurrency } from '@/lib/tokens';
+
+export interface Props {
+  id: string;
+  name: string;
+  currency: 'IDR' | 'USD';
+  balance: number;
+  lastUpdated: Date;
+  baseUrl?: string;
+  className?: string;
+}
+
+const {
+  id,
+  name,
+  currency,
+  balance,
+  lastUpdated,
+  baseUrl = '/assets',
+  className = '',
+} = Astro.props;
+
+// Format date for display
+const formattedDate = new Date(lastUpdated).toLocaleDateString('en-US', {
+  month: 'numeric',
+  day: 'numeric',
+  year: 'numeric',
+});
+
+// Currency-specific classes
+const currencyBadgeClasses =
+  currency === 'IDR' ? 'bg-success/10 text-success' : 'bg-info/10 text-info';
+
+const currencyValueClasses = currency === 'IDR' ? 'text-success' : 'text-info';
+
+const rowClasses = [
+  'p-4 lg:px-8 lg:py-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4',
+  'hover:bg-base-100/50 transition-all group',
+  className,
+]
+  .filter(Boolean)
+  .join(' ');
+---
+
+<div class={rowClasses} data-asset-row={id}>
+  {/* Asset Info */}
+  <div class="flex-1 min-w-0">
+    <h4
+      class="text-base lg:text-lg font-bold text-base-content leading-none tracking-tight truncate"
+    >
+      {name}
+    </h4>
+    <div class="flex items-center gap-3 mt-2 lg:mt-3">
+      <span
+        class:list={[
+          'px-2 py-0.5 rounded-md text-[10px] font-bold tracking-wider uppercase',
+          currencyBadgeClasses,
+        ]}
+      >
+        {currency}
+      </span>
+      <span class="text-xs text-base-content/50 font-medium tracking-tight">
+        Updated: {formattedDate}
+      </span>
+    </div>
+  </div>
+
+  {/* Balance and Actions */}
+  <div class="flex items-center gap-6 lg:gap-10">
+    {/* Balance */}
+    <div class="text-right sm:min-w-[140px]">
+      <p
+        class:list={[
+          'text-lg lg:text-xl font-bold tracking-tight leading-none',
+          currencyValueClasses,
+        ]}
+      >
+        {formatCurrency(balance, currency)}
+      </p>
+    </div>
+
+    {/* Action Buttons */}
+    <div class="flex items-center gap-1 opacity-40 group-hover:opacity-100 transition-opacity">
+      {/* View History / Timeline */}
+      <a
+        href={`${baseUrl}/history/${id}`}
+        class="p-2 text-base-content/50 hover:text-accent transition-all rounded-xl hover:bg-accent/10"
+        title="View timeline"
+        aria-label={`View ${name} history`}
+      >
+        <TrendingUp size={18} class="stroke-current" aria-hidden="true" />
+      </a>
+
+      {/* Edit Asset */}
+      <a
+        href={`${baseUrl}/edit/${id}`}
+        class="p-2 text-base-content/50 hover:text-success transition-all rounded-xl hover:bg-success/10"
+        title="Edit asset"
+        aria-label={`Edit ${name}`}
+      >
+        <Pencil size={18} class="stroke-current" aria-hidden="true" />
+      </a>
+
+      {/* Delete Asset */}
+      <button
+        type="button"
+        class="p-2 text-base-content/50 hover:text-error transition-all rounded-xl hover:bg-error/10"
+        title="Delete asset"
+        aria-label={`Delete ${name}`}
+        data-delete-asset={id}
+        data-asset-name={name}
+      >
+        <Trash2 size={18} class="stroke-current" aria-hidden="true" />
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  import { addToast } from '@/lib/stores/toastStore';
+
+  // Track initialized elements to avoid duplicate listeners
+  const initializedDeleteButtons = new WeakSet<Element>();
+
+  function initAssetDeleteButtons() {
+    document.querySelectorAll('[data-delete-asset]').forEach((button) => {
+      // Skip if already initialized
+      if (initializedDeleteButtons.has(button)) return;
+      initializedDeleteButtons.add(button);
+
+      button.addEventListener('click', async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const assetId = (button as HTMLElement).getAttribute('data-delete-asset');
+        const assetName = (button as HTMLElement).getAttribute('data-asset-name') || 'this asset';
+
+        if (!assetId) return;
+
+        // P1: TODO - Replace window.confirm with a proper confirmation modal component
+        // Using confirm() temporarily until ConfirmModal component is available
+        const confirmed = window.confirm(
+          `Are you sure you want to delete "${assetName}"? This action cannot be undone.`
+        );
+
+        if (!confirmed) return;
+
+        try {
+          const response = await fetch(`/api/assets/${assetId}`, {
+            method: 'DELETE',
+          });
+
+          if (response.ok) {
+            addToast('Asset deleted successfully', 'success');
+            // Reload after short delay to show toast
+            setTimeout(() => window.location.reload(), 500);
+          } else {
+            const result = await response.json();
+            addToast(result.error?.message || 'Failed to delete asset', 'error');
+          }
+        } catch (err) {
+          console.error('Error deleting asset:', err);
+          addToast('Failed to delete asset. Please try again.', 'error');
+        }
+      });
+    });
+  }
+
+  // Initialize on DOM ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initAssetDeleteButtons);
+  } else {
+    initAssetDeleteButtons();
+  }
+
+  // Re-initialize on Astro page transitions
+  document.addEventListener('astro:page-load', initAssetDeleteButtons);
+</script>

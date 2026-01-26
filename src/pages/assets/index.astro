@@ -1,33 +1,57 @@
 ---
 /**
- * Assets List Page
+ * Assets List Page (Global Portfolio)
  *
- * Main page for viewing and managing assets with filtering.
+ * Main page for viewing and managing assets with portfolio summary.
+ * Redesigned as part of the Global Portfolio page update.
  */
 
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
-import AssetList from '@/components/organisms/AssetList.astro';
+import AssetPageHeader from '@components/organisms/AssetPageHeader.astro';
+import AssetPortfolioSummary from '@components/organisms/AssetPortfolioSummary.astro';
+import AssetGroupCard from '@components/organisms/AssetGroupCard.astro';
+import AssetItemRow from '@components/organisms/AssetItemRow.astro';
+import EmptyState from '@components/atoms/EmptyState.astro';
 import { assetService } from '@/services';
-import type { AssetOutput } from '@/lib/types/asset';
+import type { AssetOutput, AssetType } from '@/lib/types/asset';
+import { formatAssetType } from '@/lib/types/asset';
+import {
+  calculateAssetAllocation,
+  calculatePortfolioTotals,
+  groupAssetsByType,
+  calculateGroupTotals,
+  sortAssetTypes,
+} from '@/lib/utils/asset';
 
 const user = Astro.locals.user!;
 const currentPath = '/assets';
+
+// Valid asset types for filtering
+const VALID_ASSET_TYPES = [
+  'bank_account',
+  'mutual_fund',
+  'bond',
+  'crypto',
+  'stock',
+  'other',
+] as const;
 
 // Get query parameters for filtering
 const url = new URL(Astro.url);
 const searchParams = Object.fromEntries(url.searchParams.entries());
 
-// Build filters for service
+// Build filters for service with validation
 const filters: {
   user_id: string;
-  type?: 'bank_account' | 'mutual_fund' | 'bond' | 'crypto' | 'stock' | 'other';
+  type?: AssetType;
   currency?: 'IDR' | 'USD';
 } = {
   user_id: user.id,
 };
 
-if (searchParams.type) {
-  filters.type = searchParams.type as any;
+// Validate asset type parameter before assignment
+if (searchParams.type && VALID_ASSET_TYPES.includes(searchParams.type as AssetType)) {
+  filters.type = searchParams.type as AssetType;
 }
 if (searchParams.currency === 'IDR' || searchParams.currency === 'USD') {
   filters.currency = searchParams.currency;
@@ -47,13 +71,75 @@ const assets: AssetOutput[] = rawAssets.map((asset) => ({
   created_at: asset.created_at,
   updated_at: asset.updated_at,
 }));
+
+// Calculate portfolio totals and allocation
+// @TODO: Wire with backend - Consider moving calculations to service layer
+const portfolioTotals = calculatePortfolioTotals(assets);
+const assetAllocation = calculateAssetAllocation(assets);
+
+// Group assets by type for display
+const assetsByType = groupAssetsByType(assets);
+const sortedTypes = sortAssetTypes(Object.keys(assetsByType));
 ---
 
-<ProtectedLayout title="Assets - Finance Manager" currentPath={currentPath}>
-  <AssetList
-    assets={assets}
-    currency={filters.currency}
-    type={filters.type}
-    baseUrl={currentPath}
-  />
+<ProtectedLayout title="Global Portfolio - Finance Manager" currentPath={currentPath}>
+  <div class="max-w-7xl mx-auto sm:px-2 lg:px-6 space-y-6 sm:space-y-8">
+    {/* Page Header */}
+    <AssetPageHeader />
+
+    {
+      assets.length > 0 ? (
+        <>
+          {/* Portfolio Summary */}
+          <AssetPortfolioSummary
+            totalIdr={portfolioTotals.totalIdr}
+            totalUsd={portfolioTotals.totalUsd}
+            distribution={assetAllocation}
+            loading={false}
+          />
+
+          {/* Asset Groups */}
+          <div class="space-y-6">
+            {sortedTypes.map((assetType) => {
+              const typeAssets = assetsByType[assetType];
+              const groupTotals = calculateGroupTotals(typeAssets);
+
+              return (
+                <AssetGroupCard
+                  type={formatAssetType(assetType as AssetType)}
+                  count={typeAssets.length}
+                  totalIdr={groupTotals.idr}
+                  totalUsd={groupTotals.usd}
+                  groupId={assetType}
+                  defaultExpanded={true}
+                >
+                  {typeAssets.map((asset) => (
+                    <AssetItemRow
+                      id={asset.id}
+                      name={asset.name}
+                      currency={asset.currency}
+                      balance={parseFloat(asset.balance)}
+                      lastUpdated={asset.last_updated}
+                      baseUrl={currentPath}
+                    />
+                  ))}
+                </AssetGroupCard>
+              );
+            })}
+          </div>
+        </>
+      ) : (
+        <div class="card bg-base-100 shadow border border-base-300 rounded-3xl">
+          <div class="card-body">
+            <EmptyState
+              title="No assets tracked yet"
+              message="Add your first asset to start tracking your net worth across different types and currencies."
+              actionLabel="Add Your First Asset"
+              actionHref="/assets/add"
+            />
+          </div>
+        </div>
+      )
+    }
+  </div>
 </ProtectedLayout>
