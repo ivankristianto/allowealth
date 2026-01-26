@@ -113,9 +113,9 @@ const userId = await requireAuth(context);
 - [x] Update frontend to include CSRF tokens
   - [x] Updated all client-side fetch calls with `getCsrfHeaders()`
   - [x] CSVImportForm uses inline cookie reading (is:inline script)
-- [ ] Write tests for CSRF protection
+- [x] Write tests for CSRF protection (35 tests in `src/lib/csrf.test.ts`)
 
-**Completed:** 2026-01-26 via commit `133a969`
+**Completed:** 2026-01-26 via commit `133a969` (implementation), `ff1a9b7` (tests)
 
 ### 3.3 File Upload Limits (Medium Priority)
 
@@ -165,15 +165,18 @@ const userId = await requireAuth(context);
 
 ## 5. Integration Tests
 
-**Current coverage:** 3/26 endpoint files (12%)
+**Current coverage:** 4/26 endpoint files (15%)
 
 ### 5.1 Auth Endpoints
 
-- [ ] Create `src/pages/api/auth/auth.api.integration.test.ts`
-  - [ ] `POST /api/auth/signup` - success, duplicate email, validation
-  - [ ] `POST /api/auth/login` - success, invalid credentials, validation
-  - [ ] `POST /api/auth/logout` - success, not authenticated
-  - [ ] `POST /api/auth/forgot-password` - success, invalid email
+- [x] Create `src/pages/api/auth/auth.api.integration.test.ts` (30 tests)
+  - [x] `POST /api/auth/signup` - success, duplicate email, validation
+  - [x] `POST /api/auth/login` - success, invalid credentials, validation
+  - [x] `POST /api/auth/logout` - success, not authenticated
+  - [x] `POST /api/auth/forgot-password` - success, invalid email
+  - [x] Rate limiting tests for all auth endpoints
+
+**Completed:** 2026-01-26 via commit `ff1a9b7`
 
 ### 5.2 Transaction Endpoints
 
@@ -250,10 +253,10 @@ const userId = await requireAuth(context);
 | -------------------- | ------ | --------- | -------- |
 | 1. requireAuth Fix   | 12     | 12        | 100%     |
 | 2. Middleware        | 5      | 0         | 0%       |
-| 3. Security          | 15     | 9         | 60%      |
+| 3. Security          | 15     | 10        | 67%      |
 | 4. OpenAPI Docs      | 4      | 4         | 100%     |
-| 5. Integration Tests | 9      | 0         | 0%       |
-| **Total**            | **45** | **25**    | **56%**  |
+| 5. Integration Tests | 9      | 1         | 11%      |
+| **Total**            | **45** | **27**    | **60%**  |
 
 ---
 
