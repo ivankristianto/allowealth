@@ -649,7 +649,7 @@ function setupEventListeners(): void {
         search: '',
         category_id: '',
         category_ids: [],
-        payment_method_id: '',
+        asset_id: '',
         currency: '',
         start_date: '',
         end_date: '',

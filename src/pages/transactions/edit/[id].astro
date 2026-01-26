@@ -7,12 +7,7 @@
 
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import TransactionForm from '../../../components/molecules/TransactionForm.astro';
-import {
-  transactionService,
-  categoryService,
-  paymentMethodService,
-  budgetService,
-} from '@/services';
+import { transactionService, categoryService, assetService, budgetService } from '@/services';
 
 const user = Astro.locals.user!;
 const currentPath = '/transactions/edit';
@@ -32,9 +27,9 @@ if (!transaction) {
   return Astro.redirect('/404');
 }
 
-// Fetch categories and payment methods from database (only active ones)
+// Fetch categories and assets from database
 const categories = await categoryService.findAll(user.id, { is_active: true });
-const paymentMethods = await paymentMethodService.findAll(user.id, { is_active: true });
+const assets = await assetService.findAll(user.id);
 
 // Format transaction date to YYYY-MM-DD for input
 const formatDateForInput = (date: Date) => {
@@ -47,7 +42,8 @@ const formValues = {
   currency: transaction.currency,
   amount: transaction.amount,
   category_id: transaction.category_id,
-  payment_method_id: transaction.payment_method_id,
+  asset_id: transaction.asset_id,
+  to_asset_id: transaction.to_asset_id,
   transaction_date: formatDateForInput(transaction.transaction_date),
   description: transaction.description || '',
 };
@@ -96,7 +92,7 @@ if (transaction.type === 'expense' && transaction.category_id) {
           method="PUT"
           values={formValues}
           categories={categories}
-          paymentMethods={paymentMethods}
+          assets={assets}
           transactionType={transaction.type}
           submitLabel="Update Transaction"
           cancelUrl="/transactions"

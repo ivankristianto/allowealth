@@ -1,5 +1,4 @@
 import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
-import { relations } from 'drizzle-orm';
 import { sqliteTimestampNow } from './base';
 import { users } from './users';
 
@@ -19,10 +18,3 @@ export const userSettings = sqliteTable('user_settings', {
   created_at: integer('created_at', { mode: 'timestamp' }).default(sqliteTimestampNow).notNull(),
   updated_at: integer('updated_at', { mode: 'timestamp' }).default(sqliteTimestampNow).notNull(),
 });
-
-export const userSettingsRelations = relations(userSettings, ({ one }) => ({
-  user: one(users, {
-    fields: [userSettings.user_id],
-    references: [users.id],
-  }),
-}));

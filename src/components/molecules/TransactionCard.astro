@@ -73,8 +73,8 @@ const transactionDataJson = transaction
       title: transaction.description,
       amount: transaction.amount,
       currency: transaction.currency,
-      category_id: transaction.category.id,
-      payment_method_id: transaction.payment_method.id,
+      category_id: transaction.category?.id,
+      asset_id: transaction.asset.id,
       transaction_date: date.toISOString().split('T')[0],
     })
   : '';
@@ -193,7 +193,7 @@ const cardClasses = [
             </time>
             <div class="flex items-center gap-1.5 uppercase tracking-widest">
               <CreditCard size={12} class="stroke-current" aria-hidden="true" />
-              <span>{transaction?.payment_method?.name}</span>
+              <span>{transaction?.asset?.name}</span>
             </div>
           </div>
 
@@ -236,11 +236,11 @@ const cardClasses = [
           </div>
         </div>
 
-        {/* Payment Method */}
+        {/* Asset */}
         <div class="flex-shrink-0">
           <div class="flex items-center gap-1.5 text-[10px] uppercase tracking-widest text-base-content/60">
             <CreditCard size={12} class="stroke-current" aria-hidden="true" />
-            <span>{transaction?.payment_method?.name}</span>
+            <span>{transaction?.asset?.name}</span>
           </div>
         </div>
 

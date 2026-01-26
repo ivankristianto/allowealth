@@ -84,11 +84,11 @@ describe('transactions/export.astro - Page Structure', () => {
 
   describe('Service Imports', () => {
     it('should import categoryService', () => {
-      expect(true).toBe(true); // Documented: import { categoryService, paymentMethodService } from '@/services'
+      expect(true).toBe(true); // Documented: import { categoryService, assetService } from '@/services'
     });
 
-    it('should import paymentMethodService', () => {
-      expect(true).toBe(true); // Documented: import { categoryService, paymentMethodService } from '@/services'
+    it('should import assetService', () => {
+      expect(true).toBe(true); // Documented: import { categoryService, assetService } from '@/services'
     });
   });
 
@@ -101,8 +101,8 @@ describe('transactions/export.astro - Page Structure', () => {
       expect(true).toBe(true); // Documented: const categories = await categoryService.findAll(user.id, { is_active: true })
     });
 
-    it('should fetch payment methods for filters', () => {
-      expect(true).toBe(true); // Documented: const paymentMethods = await paymentMethodService.findAll(user.id, { is_active: true })
+    it('should fetch assets for filters', () => {
+      expect(true).toBe(true); // Documented: const assets = await assetService.findAll(user.id, { is_active: true })
     });
 
     it('should parse current filters from URL params', () => {
@@ -162,15 +162,15 @@ describe('transactions/export.astro - Page Structure', () => {
     });
 
     it('should include TransactionFilters component', () => {
-      expect(true).toBe(true); // Documented: <TransactionFilters action="/transactions/export" categories={categories} paymentMethods={paymentMethods} values={currentFilters} count={0} />
+      expect(true).toBe(true); // Documented: <TransactionFilters action="/transactions/export" categories={categories} assets={assets} values={currentFilters} count={0} />
     });
 
     it('should pass categories prop to TransactionFilters', () => {
       expect(true).toBe(true); // Documented: categories={categories}
     });
 
-    it('should pass paymentMethods prop to TransactionFilters', () => {
-      expect(true).toBe(true); // Documented: paymentMethods={paymentMethods}
+    it('should pass assets prop to TransactionFilters', () => {
+      expect(true).toBe(true); // Documented: assets={assets}
     });
 
     it('should pass currentFilters values prop', () => {
@@ -237,8 +237,8 @@ describe('transactions/export.astro - Filter Logic', () => {
       expect(true).toBe(true); // Documented: category_id: url.searchParams.get('category_id') || ''
     });
 
-    it('should extract payment_method_id from URL params', () => {
-      expect(true).toBe(true); // Documented: payment_method_id: url.searchParams.get('payment_method_id') || ''
+    it('should extract asset_id from URL params', () => {
+      expect(true).toBe(true); // Documented: asset_id: url.searchParams.get('asset_id') || ''
     });
 
     it('should extract start_date from URL params', () => {
@@ -353,8 +353,8 @@ describe('transactions/export.astro - Integration', () => {
       expect(true).toBe(true); // Documented: Fetches active categories for filters
     });
 
-    it('should integrate with paymentMethodService', () => {
-      expect(true).toBe(true); // Documented: Fetches active payment methods for filters
+    it('should integrate with assetService', () => {
+      expect(true).toBe(true); // Documented: Fetches active assets for filters
     });
 
     it('should integrate with Lucide icons', () => {

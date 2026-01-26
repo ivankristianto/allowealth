@@ -157,12 +157,12 @@ describe('TransactionForm Component', () => {
       expect(true).toBe(true);
     });
 
-    it('should have payment method select field', () => {
+    it('should have asset select field', () => {
       /**
-       * Payment Method field:
-       * - name="payment_method_id"
-       * - Uses PaymentMethodSelect atom component
-       * - Label: "Payment Method"
+       * Asset field:
+       * - name="asset_id"
+       * - Uses AssetSelect atom component
+       * - Label: "Asset"
        * - Required field
        */
       expect(true).toBe(true);
@@ -259,7 +259,7 @@ describe('TransactionForm Component', () => {
       /**
        * Values prop:
        * - Optional object with default values
-       * - Contains: type, amount, currency, category_id, payment_method_id,
+       * - Contains: type, amount, currency, category_id, asset_id,
        *             transaction_date, description
        * - Pre-populates form fields for edit mode
        */
@@ -268,7 +268,7 @@ describe('TransactionForm Component', () => {
         'amount',
         'currency',
         'category_id',
-        'payment_method_id',
+        'asset_id',
         'transaction_date',
         'description',
       ];
@@ -285,12 +285,12 @@ describe('TransactionForm Component', () => {
       expect(true).toBe(true);
     });
 
-    it('should accept paymentMethods array prop', () => {
+    it('should accept assets array prop', () => {
       /**
-       * PaymentMethods prop:
-       * - paymentMethods: Array<{ id: string; name: string; type: string }>
-       * - Passed to PaymentMethodSelect component
-       * - Serialized to data-payment-methods-json for client-side
+       * Assets prop:
+       * - assets: Array<{ id: string; name: string; type: string }>
+       * - Passed to AssetSelect component
+       * - Serialized to data-assets-json for client-side
        */
       expect(true).toBe(true);
     });
@@ -398,11 +398,11 @@ describe('TransactionForm Component', () => {
       expect(true).toBe(true);
     });
 
-    it('should validate payment_method_id is required', () => {
+    it('should validate asset_id is required', () => {
       /**
-       * Payment method validation:
+       * Asset validation:
        * - Required field
-       * - Error: "Payment method is required"
+       * - Error: "Asset is required"
        */
       expect(true).toBe(true);
     });
@@ -552,7 +552,7 @@ describe('TransactionForm Component', () => {
       /**
        * Save selections:
        * - Saves category_id by transaction type
-       * - Saves payment_method_id
+       * - Saves asset_id
        * - Uses namespaced keys (expensesApp.*)
        */
       expect(true).toBe(true);
@@ -613,7 +613,7 @@ describe('TransactionForm Component', () => {
     it('should migrate old localStorage keys to namespaced keys', () => {
       /**
        * Migration:
-       * - Old keys: lastExpenseCategory, lastIncomeCategory, lastPaymentMethod
+       * - Old keys: lastExpenseCategory, lastIncomeCategory, lastAsset
        * - New keys: expensesApp.lastExpenseCategory, etc.
        * - Validates ID format before migrating
        * - Sets migrated flag to prevent re-migration
@@ -650,7 +650,7 @@ describe('TransactionForm Component', () => {
        * - Date: id="date-label"
        * - Amount: id="amount-label"
        * - Category: id="category-label"
-       * - Payment Method: id="payment-label"
+       * - Asset: id="payment-label"
        * - Description: id="description-label"
        */
       const labelIds = [
@@ -752,7 +752,7 @@ describe('TransactionForm Component', () => {
        * 3. Date input
        * 4. Amount input
        * 5. Category select
-       * 6. Payment Method select
+       * 6. Asset select
        * 7. Description textarea
        * 8. Cancel link
        * 9. Submit button
@@ -819,10 +819,10 @@ describe('TransactionForm Component', () => {
       expect(true).toBe(true);
     });
 
-    it('should have optional paymentMethods array prop', () => {
+    it('should have optional assets array prop', () => {
       /**
-       * PaymentMethods prop:
-       * - paymentMethods?: Array<{ id: string; name: string; type: string }>
+       * Assets prop:
+       * - assets?: Array<{ id: string; name: string; type: string }>
        * - Default: []
        */
       expect(true).toBe(true);
@@ -894,11 +894,11 @@ describe('TransactionForm Component', () => {
       expect(true).toBe(true);
     });
 
-    it('should use PaymentMethodSelect atom component', () => {
+    it('should use AssetSelect atom component', () => {
       /**
-       * PaymentMethodSelect component:
-       * - Imported from '../atoms/PaymentMethodSelect.astro'
-       * - Provides payment method selection
+       * AssetSelect component:
+       * - Imported from '../atoms/AssetSelect.astro'
+       * - Provides asset selection
        */
       expect(true).toBe(true);
     });
@@ -948,7 +948,7 @@ describe('TransactionForm Component', () => {
        * - @param {string} method - Form method (POST or PUT)
        * - @param {Object} values - Default form values
        * - @param {Array} categories - Available categories
-       * - @param {Array} paymentMethods - Available payment methods
+       * - @param {Array} assets - Available assets
        * - @param {string} transactionType - Pre-selected type
        * - @param {Array} errors - Form errors
        * - @param {string} submitLabel - Submit button label
@@ -962,7 +962,7 @@ describe('TransactionForm Component', () => {
         'method',
         'values',
         'categories',
-        'paymentMethods',
+        'assets',
         'transactionType',
         'errors',
         'submitLabel',
@@ -1033,7 +1033,7 @@ describe('TransactionForm Component', () => {
  * [ ] Verify Date picker
  * [ ] Verify Amount currency input
  * [ ] Verify Category select
- * [ ] Verify Payment Method select
+ * [ ] Verify Asset select
  * [ ] Verify Description textarea
  *
  * Test 5: Type Switching
@@ -1073,7 +1073,7 @@ describe('TransactionForm Component', () => {
  * [ ] Add expense transaction
  * [ ] Navigate to add transaction
  * [ ] Verify category is pre-selected
- * [ ] Verify payment method is pre-selected
+ * [ ] Verify asset is pre-selected
  *
  * Test 11: Accessibility - Labels
  * [ ] Click each label

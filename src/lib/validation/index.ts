@@ -57,11 +57,9 @@ export {
   currencyEnum,
   transactionTypeEnum,
   categoryTypeEnum,
-  paymentMethodTypeEnum,
   type Currency,
   type TransactionType,
   type CategoryType,
-  type PaymentMethodType,
 } from '@/lib/enums';
 
 // Categories
@@ -75,18 +73,6 @@ export {
   type UpdateCategoryInput,
   type CategoryFilter,
 } from './categories';
-
-// Payment Methods
-export {
-  createPaymentMethodSchema,
-  updatePaymentMethodSchema,
-  createPaymentMethodAPISchema,
-  updatePaymentMethodAPISchema,
-  paymentMethodFilterSchema,
-  type CreatePaymentMethodInput,
-  type UpdatePaymentMethodInput,
-  type PaymentMethodFilter,
-} from './payment-methods';
 
 // Transactions
 export {

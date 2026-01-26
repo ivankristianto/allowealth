@@ -109,7 +109,7 @@ describe('TransactionFilters Component', () => {
        * 1. Type (expense/income select)
        * 2. Currency (IDR/USD select)
        * 3. Category (category select)
-       * 4. Payment Method (payment method select)
+       * 4. Asset (asset select)
        * 5. Start Date (date picker)
        * 6. End Date (date picker)
        */
@@ -117,7 +117,7 @@ describe('TransactionFilters Component', () => {
         'type',
         'currency',
         'category_id',
-        'payment_method_id',
+        'asset_id',
         'start_date',
         'end_date',
       ];
@@ -172,12 +172,12 @@ describe('TransactionFilters Component', () => {
       expect(true).toBe(true);
     });
 
-    it('should have Payment Method select field', () => {
+    it('should have Asset select field', () => {
       /**
-       * Payment Method field:
-       * - name="payment_method_id"
-       * - Uses PaymentMethodSelect atom component
-       * - Accepts paymentMethods array prop
+       * Asset field:
+       * - name="asset_id"
+       * - Uses AssetSelect atom component
+       * - Accepts assets array prop
        * - Optional field (required={false})
        */
       expect(true).toBe(true);
@@ -240,7 +240,7 @@ describe('TransactionFilters Component', () => {
       /**
        * Values prop:
        * - Optional object with current filter values
-       * - Contains: search, type, category_id, payment_method_id,
+       * - Contains: search, type, category_id, asset_id,
        *             currency, start_date, end_date
        * - Pre-populates form fields
        */
@@ -248,7 +248,7 @@ describe('TransactionFilters Component', () => {
         'search',
         'type',
         'category_id',
-        'payment_method_id',
+        'asset_id',
         'currency',
         'start_date',
         'end_date',
@@ -256,11 +256,11 @@ describe('TransactionFilters Component', () => {
       expect(valueKeys).toHaveLength(7);
     });
 
-    it('should accept categories and paymentMethods props', () => {
+    it('should accept categories and assets props', () => {
       /**
        * Select options props:
        * - categories: Array of category objects
-       * - paymentMethods: Array of payment method objects
+       * - assets: Array of asset objects
        * - Passed to respective select components
        * - Default to empty arrays
        */
@@ -286,7 +286,7 @@ describe('TransactionFilters Component', () => {
        * - Type: id="type-label"
        * - Currency: id="currency-label"
        * - Category: id="category-label"
-       * - Payment Method: id="payment-label"
+       * - Asset: id="payment-label"
        * - Start Date: id="start-label"
        * - End Date: id="end-label"
        */
@@ -455,12 +455,12 @@ describe('TransactionFilters Component', () => {
       expect(true).toBe(true);
     });
 
-    it('should have optional paymentMethods array prop', () => {
+    it('should have optional assets array prop', () => {
       /**
-       * PaymentMethods prop:
-       * - paymentMethods?: Array<{ id: string; name: string; type: string }>
+       * Assets prop:
+       * - assets?: Array<{ id: string; name: string; type: string }>
        * - Default: []
-       * - Used for payment method select options
+       * - Used for asset select options
        */
       expect(true).toBe(true);
     });
@@ -516,11 +516,11 @@ describe('TransactionFilters Component', () => {
       expect(true).toBe(true);
     });
 
-    it('should use PaymentMethodSelect atom component', () => {
+    it('should use AssetSelect atom component', () => {
       /**
-       * PaymentMethodSelect component:
-       * - Imported from '../atoms/PaymentMethodSelect.astro'
-       * - Provides payment method selection dropdown
+       * AssetSelect component:
+       * - Imported from '../atoms/AssetSelect.astro'
+       * - Provides asset selection dropdown
        */
       expect(true).toBe(true);
     });
@@ -561,11 +561,11 @@ describe('TransactionFilters Component', () => {
        * Props documentation:
        * - @param {string} action - Form action URL
        * - @param {Array} categories - Available categories
-       * - @param {Array} paymentMethods - Available payment methods
+       * - @param {Array} assets - Available assets
        * - @param {Object} values - Current filter values
        * - @param {number} count - Number of results
        */
-      const documentedProps = ['action', 'categories', 'paymentMethods', 'values', 'count'];
+      const documentedProps = ['action', 'categories', 'assets', 'values', 'count'];
       expect(documentedProps).toHaveLength(5);
     });
   });
@@ -592,7 +592,7 @@ describe('TransactionFilters Component', () => {
  * [ ] Verify Type select (All Types, Expense, Income)
  * [ ] Verify Currency select (All Currencies, IDR, USD)
  * [ ] Verify Category select with options
- * [ ] Verify Payment Method select with options
+ * [ ] Verify Asset select with options
  * [ ] Verify Start Date date picker
  * [ ] Verify End Date date picker
  *
@@ -616,7 +616,7 @@ describe('TransactionFilters Component', () => {
  * [ ] Verify filter is applied
  * [ ] Select category from dropdown
  * [ ] Verify filter is applied
- * [ ] Select payment method from dropdown
+ * [ ] Select asset from dropdown
  * [ ] Verify filter is applied
  * [ ] Set Start Date
  * [ ] Verify date filter is applied
@@ -660,7 +660,7 @@ describe('TransactionFilters Component', () => {
  * [ ] Click "Type" label, verify select focuses
  * [ ] Click "Currency" label, verify select focuses
  * [ ] Click "Category" label, verify select focuses
- * [ ] Click "Payment Method" label, verify select focuses
+ * [ ] Click "Asset" label, verify select focuses
  * [ ] Click "From Date" label, verify picker focuses
  * [ ] Click "To Date" label, verify picker focuses
  *
@@ -693,8 +693,8 @@ describe('TransactionFilters Component', () => {
  * Test 14: Component Props
  * [ ] Test with empty categories array
  * [ ] Test with populated categories array
- * [ ] Test with empty paymentMethods array
- * [ ] Test with populated paymentMethods array
+ * [ ] Test with empty assets array
+ * [ ] Test with populated assets array
  * [ ] Test with values prop (pre-filled filters)
  * [ ] Test with count prop (result display)
  * [ ] Test with different action URLs

@@ -8,11 +8,11 @@ import type { TransactionOutput } from '@/lib/types/transaction';
 
 /**
  * Raw transaction data from Drizzle ORM
- * Uses camelCase naming (paymentMethod) as per Drizzle conventions
+ * Uses the new asset-based schema
  */
 export interface DrizzleTransactionResult {
   id: string;
-  type: 'income' | 'expense';
+  type: 'income' | 'expense' | 'transfer';
   amount: string;
   currency: 'IDR' | 'USD';
   description: string | null;
@@ -24,18 +24,21 @@ export interface DrizzleTransactionResult {
     id: string;
     name: string;
     type: string;
-  };
-  paymentMethod: {
+  } | null;
+  asset: {
     id: string;
     name: string;
     type: string;
   };
+  toAsset?: {
+    id: string;
+    name: string;
+    type: string;
+  } | null;
 }
 
 /**
  * Transform Drizzle result to TransactionOutput format
- *
- * Drizzle uses camelCase (paymentMethod), API uses snake_case (payment_method)
  *
  * @param t - Raw transaction from Drizzle ORM
  * @returns Transformed transaction in API format
@@ -51,16 +54,25 @@ export function transformTransaction(t: DrizzleTransactionResult): TransactionOu
     deleted_at: t.deleted_at,
     created_at: t.created_at,
     updated_at: t.updated_at,
-    category: {
-      id: t.category.id,
-      name: t.category.name,
-      type: t.category.type as 'income' | 'expense',
+    category: t.category
+      ? {
+          id: t.category.id,
+          name: t.category.name,
+          type: t.category.type as 'income' | 'expense',
+        }
+      : null,
+    asset: {
+      id: t.asset.id,
+      name: t.asset.name,
+      type: t.asset.type,
     },
-    payment_method: {
-      id: t.paymentMethod.id,
-      name: t.paymentMethod.name,
-      type: t.paymentMethod.type,
-    },
+    toAsset: t.toAsset
+      ? {
+          id: t.toAsset.id,
+          name: t.toAsset.name,
+          type: t.toAsset.type,
+        }
+      : null,
   };
 }
 

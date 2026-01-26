@@ -226,9 +226,9 @@ describe('Transaction Export API Integration Tests', () => {
       });
     });
 
-    it('should filter by payment method', async () => {
+    it('should filter by asset', async () => {
       await skipIfNotReady(async () => {
-        const response = await makeRequest('/api/transactions/export?payment_method_id=some-id');
+        const response = await makeRequest('/api/transactions/export?asset_id=some-id');
 
         expect(response.status).toBe(200);
         const csv = await response.text();

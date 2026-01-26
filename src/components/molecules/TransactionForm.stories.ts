@@ -91,23 +91,23 @@ const createTransactionForm = (args: {
   `;
   form.appendChild(categoryGroup);
 
-  // Payment Method Field
-  const paymentGroup = document.createElement('div');
-  paymentGroup.className = 'form-control';
-  paymentGroup.innerHTML = `
+  // Asset Field
+  const assetGroup = document.createElement('div');
+  assetGroup.className = 'form-control';
+  assetGroup.innerHTML = `
     <label class="label">
-      <span class="label-text">Payment Method</span>
+      <span class="label-text">Asset</span>
       <span class="label-text-alt text-error">*</span>
     </label>
-    <select name="payment_method_id" class="select select-bordered w-full h-10 pt-2 pb-2 pl-3 pr-10 text-xs bg-base-200 focus:ring-2 focus:ring-accent focus:ring-opacity-20 focus:outline-none focus:ring-offset-2" required>
-      <option value="">Select payment method...</option>
+    <select name="asset_id" class="select select-bordered w-full h-10 pt-2 pb-2 pl-3 pr-10 text-xs bg-base-200 focus:ring-2 focus:ring-accent focus:ring-opacity-20 focus:outline-none focus:ring-offset-2" required>
+      <option value="">Select asset...</option>
       <option value="1">Cash</option>
-      <option value="2">Credit Card</option>
-      <option value="3">Debit Card</option>
-      <option value="4">Bank Transfer</option>
+      <option value="2">BCA Savings</option>
+      <option value="3">Mandiri Checking</option>
+      <option value="4">GoPay</option>
     </select>
   `;
-  form.appendChild(paymentGroup);
+  form.appendChild(assetGroup);
 
   // Date Field
   const dateGroup = document.createElement('div');

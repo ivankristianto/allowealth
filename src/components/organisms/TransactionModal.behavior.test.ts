@@ -72,8 +72,8 @@ describe('TransactionModal Component', () => {
       expect(componentContent).toContain('categories?: Array<');
     });
 
-    it('should accept paymentMethods prop', () => {
-      expect(componentContent).toContain('paymentMethods?: Array<');
+    it('should accept assets prop', () => {
+      expect(componentContent).toContain('assets?: Array<');
     });
 
     it('should accept errors prop', () => {
@@ -185,8 +185,8 @@ describe('TransactionModal Component', () => {
       expect(componentContent).toContain('categories={categories}');
     });
 
-    it('should pass paymentMethods to TransactionEntryForm', () => {
-      expect(componentContent).toContain('paymentMethods={paymentMethods}');
+    it('should pass assets to TransactionEntryForm', () => {
+      expect(componentContent).toContain('assets={assets}');
     });
 
     it('should pass modalId to TransactionEntryForm', () => {

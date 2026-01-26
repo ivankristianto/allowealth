@@ -1,11 +1,6 @@
 import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
-import { relations } from 'drizzle-orm';
 import { sqliteTimestampNow } from './base';
 import { users } from './users';
-import { assetHistory } from './asset-history';
-import { assetUpdateReminders } from './asset-update-reminders';
-import { assetSnapshotItems } from './asset-snapshot-items';
-import { transactions } from './transactions';
 
 export const assets = sqliteTable('assets', {
   id: text('id').primaryKey(),
@@ -40,15 +35,3 @@ export const assets = sqliteTable('assets', {
   created_at: integer('created_at', { mode: 'timestamp' }).default(sqliteTimestampNow).notNull(),
   updated_at: integer('updated_at', { mode: 'timestamp' }).default(sqliteTimestampNow).notNull(),
 });
-
-export const assetsRelations = relations(assets, ({ one, many }) => ({
-  user: one(users, {
-    fields: [assets.user_id],
-    references: [users.id],
-  }),
-  history: many(assetHistory),
-  reminders: many(assetUpdateReminders),
-  snapshotItems: many(assetSnapshotItems),
-  transactions: many(transactions, { relationName: 'transactionAsset' }),
-  incomingTransfers: many(transactions, { relationName: 'transactionToAsset' }),
-}));

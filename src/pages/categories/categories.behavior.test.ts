@@ -123,9 +123,9 @@ describe('Categories Page - Component Structure', () => {
       expect(tabText).toBe('Categories');
     });
 
-    it('should have Payment Methods tab', () => {
-      const tabText = 'Payment Methods';
-      expect(tabText).toBe('Payment Methods');
+    it('should have Assets tab', () => {
+      const tabText = 'Assets';
+      expect(tabText).toBe('Assets');
     });
   });
 

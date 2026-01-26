@@ -147,20 +147,6 @@ async function createTestDatabase() {
 
   await testDb.insert(categories).values(testCategory).onConflictDoNothing();
 
-  // Insert a test payment method (needed for transactions)
-  const { paymentMethods } = await import('@/db');
-  const testPaymentMethod = {
-    id: 'test-pm-runtime',
-    user_id: testUser.id,
-    name: 'Test Payment Method',
-    type: 'cash' as const,
-    is_active: true,
-    created_at: new Date(),
-    updated_at: new Date(),
-  };
-
-  await testDb.insert(paymentMethods).values(testPaymentMethod).onConflictDoNothing();
-
   // Insert a test asset
   const testAsset = {
     id: 'test-asset-runtime',
@@ -181,7 +167,7 @@ async function createTestDatabase() {
     id: 'test-tx-runtime',
     user_id: testUser.id,
     category_id: testCategory.id,
-    payment_method_id: testPaymentMethod.id,
+    asset_id: testAsset.id,
     type: 'expense' as const,
     amount: '50000',
     currency: 'IDR' as const,
@@ -193,7 +179,7 @@ async function createTestDatabase() {
 
   await testDb.insert(transactions).values(testTransaction).onConflictDoNothing();
 
-  return { testUser, testCategory, testAsset, testTransaction, testPaymentMethod };
+  return { testUser, testCategory, testAsset, testTransaction };
 }
 
 /**
@@ -432,7 +418,7 @@ describe('Database Runtime-Agnostic Integration Tests', () => {
     });
 
     it('should handle transaction operations correctly', async () => {
-      const { testUser, testCategory, testPaymentMethod } = await createTestDatabase();
+      const { testUser, testCategory, testAsset } = await createTestDatabase();
 
       // Test transaction
       const result = await db.transaction(async (tx: any) => {
@@ -443,7 +429,7 @@ describe('Database Runtime-Agnostic Integration Tests', () => {
             id: 'test-tx-transaction-test',
             user_id: testUser.id,
             category_id: testCategory.id,
-            payment_method_id: testPaymentMethod.id,
+            asset_id: testAsset.id,
             type: 'expense',
             amount: '100000',
             currency: 'IDR',
@@ -564,7 +550,6 @@ describe('Database Runtime-Agnostic Integration Tests', () => {
       // Verify all expected exports exist (from schema/index.ts exports)
       expect(schemaModule.users).toBeDefined();
       expect(schemaModule.categories).toBeDefined();
-      expect(schemaModule.paymentMethods).toBeDefined();
       expect(schemaModule.transactions).toBeDefined();
       expect(schemaModule.assets).toBeDefined();
       expect(schemaModule.assetHistory).toBeDefined();
@@ -583,7 +568,6 @@ describe('Database Runtime-Agnostic Integration Tests', () => {
       expect(dbModule.categories).toBeDefined();
       expect(dbModule.assets).toBeDefined();
       expect(dbModule.transactions).toBeDefined();
-      expect(dbModule.paymentMethods).toBeDefined();
     });
   });
 

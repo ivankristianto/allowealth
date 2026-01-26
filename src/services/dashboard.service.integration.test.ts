@@ -408,7 +408,7 @@ describe('DashboardService Integration Tests', () => {
           expect(tx).toHaveProperty('currency');
           expect(tx).toHaveProperty('transactionDate');
           expect(tx).toHaveProperty('category');
-          expect(tx).toHaveProperty('paymentMethod');
+          expect(tx).toHaveProperty('asset');
 
           expect(['expense', 'income']).toContain(tx.type);
           expect(['IDR', 'USD']).toContain(tx.currency);

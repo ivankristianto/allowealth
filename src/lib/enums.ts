@@ -16,13 +16,3 @@ export type TransactionType = z.infer<typeof transactionTypeEnum>;
 // Category type enum (same as transaction type)
 export const categoryTypeEnum = z.enum(['expense', 'income']);
 export type CategoryType = z.infer<typeof categoryTypeEnum>;
-
-// Payment method type enum
-export const paymentMethodTypeEnum = z.enum([
-  'cash',
-  'credit_card',
-  'debit_card',
-  'bank_transfer',
-  'e_wallet',
-]);
-export type PaymentMethodType = z.infer<typeof paymentMethodTypeEnum>;

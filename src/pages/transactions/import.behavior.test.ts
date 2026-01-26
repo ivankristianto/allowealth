@@ -120,7 +120,7 @@ describe('transactions/import.astro - Page Structure', () => {
     });
 
     it('should list all required CSV columns', () => {
-      expect(true).toBe(true); // Documented: date, type, amount, currency, category, payment_method, description
+      expect(true).toBe(true); // Documented: date, type, amount, currency, category, asset, description
     });
   });
 

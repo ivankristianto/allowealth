@@ -62,7 +62,7 @@ const filters = {
   type: typeFilter as 'expense' | 'income',
   category_id: categoryId || undefined,
   category_ids: categoryIds.length > 0 ? categoryIds : undefined,
-  payment_method_id: searchParams.payment_method_id,
+  asset_id: searchParams.asset_id,
   currency: searchParams.currency as 'IDR' | 'USD' | undefined,
   start_date: monthDateRange?.start,
   end_date: monthDateRange?.end,
@@ -85,16 +85,25 @@ const transactions: TransactionOutput[] = rawTransactions.map((t: any) => ({
   deleted_at: t.deleted_at,
   created_at: t.created_at,
   updated_at: t.updated_at,
-  category: {
-    id: t.category.id,
-    name: t.category.name,
-    type: t.category.type,
+  category: t.category
+    ? {
+        id: t.category.id,
+        name: t.category.name,
+        type: t.category.type,
+      }
+    : null,
+  asset: {
+    id: t.asset.id,
+    name: t.asset.name,
+    type: t.asset.type,
   },
-  payment_method: {
-    id: t.paymentMethod.id,
-    name: t.paymentMethod.name,
-    type: t.paymentMethod.type,
-  },
+  toAsset: t.toAsset
+    ? {
+        id: t.toAsset.id,
+        name: t.toAsset.name,
+        type: t.toAsset.type,
+      }
+    : null,
 }));
 
 // Get total count for pagination (without limit/offset)

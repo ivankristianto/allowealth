@@ -17,7 +17,6 @@ import {
   users,
   userSettings,
   categories,
-  paymentMethods, // Deprecated: kept for clearing old data
   transactions,
   assets,
   assetHistory,
@@ -537,7 +536,6 @@ async function clearAllTables() {
     await db.delete(transactions);
     await db.delete(budgets);
     await db.delete(assets);
-    await db.delete(paymentMethods); // Deprecated: kept for clearing old data
     await db.delete(categories);
     await db.delete(userSettings);
     await db.delete(users);
@@ -1067,7 +1065,7 @@ async function seed() {
     // Seed assets FIRST (transactions now depend on assets)
     const assetMap = await seedAssets(userId);
 
-    // Seed transactions for the 3 months (using assets instead of payment methods)
+    // Seed transactions for the 3 months
     await seedIncomeTransactions(userId, categoryMap, assetMap);
     await seedExpenseTransactions(userId, categoryMap, assetMap);
 

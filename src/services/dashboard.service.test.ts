@@ -332,7 +332,7 @@ describe('DashboardService', () => {
         expect(tx).toHaveProperty('currency');
         expect(tx).toHaveProperty('transactionDate');
         expect(tx).toHaveProperty('category');
-        expect(tx).toHaveProperty('paymentMethod');
+        expect(tx).toHaveProperty('asset');
 
         expect(typeof tx.amount).toBe('string');
         expect(['expense', 'income']).toContain(tx.type);
@@ -376,8 +376,8 @@ describe('DashboardService', () => {
         expect(tx.category).toHaveProperty('name');
         expect(tx.category).toHaveProperty('type');
 
-        expect(tx.paymentMethod).toHaveProperty('id');
-        expect(tx.paymentMethod).toHaveProperty('name');
+        expect(tx.asset).toHaveProperty('id');
+        expect(tx.asset).toHaveProperty('name');
       });
     });
 

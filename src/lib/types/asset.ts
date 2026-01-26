@@ -7,7 +7,17 @@
 /**
  * Asset type enum from database schema
  */
-export type AssetType = 'bank_account' | 'mutual_fund' | 'bond' | 'crypto' | 'stock' | 'other';
+export type AssetType =
+  | 'cash'
+  | 'bank_account'
+  | 'e_wallet'
+  | 'mutual_fund'
+  | 'bond'
+  | 'crypto'
+  | 'stock'
+  | 'other'
+  | 'credit_card'
+  | 'loan';
 
 /**
  * Currency type (same as in other modules)
@@ -24,6 +34,8 @@ export interface Asset {
   type: AssetType;
   balance: string;
   currency: Currency;
+  credit_limit: string | null;
+  is_cash_account: boolean;
   last_updated: Date;
   deleted_at: Date | null;
   created_at: Date;
@@ -39,6 +51,8 @@ export interface AssetOutput {
   type: AssetType;
   balance: string;
   currency: Currency;
+  credit_limit?: string | null;
+  is_cash_account?: boolean;
   last_updated: Date;
   created_at: Date;
   updated_at: Date;
@@ -88,12 +102,16 @@ export interface AssetSummaryByType {
  * Asset type display names
  */
 export const ASSET_TYPE_LABELS: Record<AssetType, string> = {
+  cash: 'Cash',
   bank_account: 'Bank Account',
+  e_wallet: 'E-Wallet',
   mutual_fund: 'Mutual Fund',
   bond: 'Bond',
   crypto: 'Cryptocurrency',
   stock: 'Stock',
   other: 'Other',
+  credit_card: 'Credit Card',
+  loan: 'Loan',
 };
 
 /**

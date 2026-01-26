@@ -157,19 +157,19 @@ const createTransactionModal = (args: {
     </select>
   `;
 
-  // Payment Method
-  const paymentGroup = document.createElement('div');
-  paymentGroup.className = 'form-control';
-  paymentGroup.innerHTML = `
-    <label class="label" for="payment-method">
-      <span class="label-text">Payment Method</span>
+  // Asset
+  const assetGroup = document.createElement('div');
+  assetGroup.className = 'form-control';
+  assetGroup.innerHTML = `
+    <label class="label" for="asset">
+      <span class="label-text">Asset</span>
     </label>
-    <select id="payment-method" name="payment_method_id" class="select select-bordered w-full" required aria-required="true">
-      <option value="">Select payment method</option>
+    <select id="asset" name="asset_id" class="select select-bordered w-full" required aria-required="true">
+      <option value="">Select asset</option>
       <option value="1">Cash</option>
-      <option value="2">Bank Transfer</option>
-      <option value="3">Credit Card</option>
-      <option value="4">E-Wallet</option>
+      <option value="2">BCA Savings</option>
+      <option value="3">Mandiri Checking</option>
+      <option value="4">GoPay</option>
     </select>
   `;
 
@@ -228,7 +228,7 @@ const createTransactionModal = (args: {
   submitButton.textContent = `${method === 'PUT' ? 'Update' : 'Save'} Transaction`;
   actions.appendChild(submitButton);
 
-  form.append(typeGroup, amountGroup, categoryGroup, paymentGroup, dateGroup, descGroup, actions);
+  form.append(typeGroup, amountGroup, categoryGroup, assetGroup, dateGroup, descGroup, actions);
   modalBox.append(header, form);
   modal.appendChild(modalBox);
 
@@ -280,7 +280,7 @@ export const Edit: StoryObj = {
       amount: '150000',
       currency: 'IDR',
       category_id: '1',
-      payment_method_id: '2',
+      asset_id: '2',
       transaction_date: '2026-01-10',
       description: 'Weekly grocery shopping',
     },

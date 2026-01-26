@@ -4,6 +4,10 @@ import { describe, it, expect } from 'bun:test';
  * TabToggle Component Unit Tests
  *
  * Tests the TabToggle component behavior, structure, and styling.
+ *
+ * TODO P2: These tests use hardcoded HTML strings instead of rendering the actual
+ * TabToggle.astro component. Consider using Astro's testing utilities or
+ * Storybook interaction tests to verify actual component output.
  */
 
 describe('TabToggle Component', () => {
@@ -60,11 +64,14 @@ describe('TabToggle Component', () => {
         </div>
       `;
 
-      // Check second button has active classes
-      const secondButtonMatch = html.match(
-        /data-tab-value="income".*?bg-base-100 shadow-md text-primary/s
-      );
-      expect(secondButtonMatch).toBeTruthy();
+      // Verify income button is marked as active
+      expect(html).toContain('data-tab-value="income" data-active="true"');
+      // Verify expense button is marked as inactive
+      expect(html).toContain('data-tab-value="expense" data-active="false"');
+      // Verify active styling classes are present
+      expect(html).toContain('bg-base-100');
+      expect(html).toContain('shadow-md');
+      expect(html).toContain('text-primary');
     });
   });
 

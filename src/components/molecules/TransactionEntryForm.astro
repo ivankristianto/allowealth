@@ -11,7 +11,7 @@
  * @param {string} action - Form action URL (API endpoint)
  * @param {Object} values - Default form values
  * @param {Array} categories - Available categories
- * @param {Array} paymentMethods - Available payment methods (liquid accounts)
+ * @param {Array} assets - Available assets (bank accounts, wallets)
  * @param {Object} errors - Form errors {field: message}
  * @param {string} modalId - Parent modal ID for closing on success
  */
@@ -20,7 +20,7 @@ import Label from '../atoms/Label.astro';
 import Input from '../atoms/Input.astro';
 import CurrencyInput from '../atoms/CurrencyInput.astro';
 import CategorySelect from '../atoms/CategorySelect.astro';
-import PaymentMethodSelect from '../atoms/PaymentMethodSelect.astro';
+import AssetSelect from '../atoms/AssetSelect.astro';
 import DatePicker from '../atoms/DatePicker.astro';
 import Button from '../atoms/Button.astro';
 
@@ -34,11 +34,11 @@ export interface Props {
     amount?: string;
     currency?: 'IDR' | 'USD';
     category_id?: string;
-    payment_method_id?: string;
+    asset_id?: string;
     transaction_date?: string;
   };
   categories: Array<{ id: string; name: string; type: string; currency?: string }>;
-  paymentMethods: Array<{ id: string; name: string; type: string }>;
+  assets: Array<{ id: string; name: string; type: string }>;
   errors?: Record<string, string>;
   modalId?: string;
 }
@@ -50,7 +50,7 @@ const {
   action,
   values = {},
   categories = [],
-  paymentMethods = [],
+  assets = [],
   errors = {},
   modalId = '',
 } = Astro.props;
@@ -71,9 +71,7 @@ const categoriesJson = JSON.stringify(
     currency: c.currency || 'IDR',
   }))
 );
-const paymentMethodsJson = JSON.stringify(
-  paymentMethods.map((pm) => ({ id: pm.id, name: pm.name, type: pm.type }))
-);
+const assetsJson = JSON.stringify(assets.map((a) => ({ id: a.id, name: a.name, type: a.type })));
 
 // Generate unique form ID
 const formId = `transaction-entry-form-${type}`;
@@ -88,7 +86,7 @@ const formId = `transaction-entry-form-${type}`;
   data-action={action}
   data-modal-id={modalId}
   data-categories-json={categoriesJson}
-  data-payment-methods-json={paymentMethodsJson}
+  data-assets-json={assetsJson}
   class="flex flex-col gap-5"
   novalidate
 >
@@ -143,7 +141,7 @@ const formId = `transaction-entry-form-${type}`;
     </div>
   </div>
 
-  <!-- Category and Payment Method row -->
+  <!-- Category and Account row -->
   <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
     <div class="form-control">
       <Label required htmlFor={`${formId}-category`} id={`${formId}-category-label`}>
@@ -161,16 +159,14 @@ const formId = `transaction-entry-form-${type}`;
     </div>
 
     <div class="form-control">
-      <Label required htmlFor={`${formId}-payment-method`} id={`${formId}-payment-label`}>
-        Account
-      </Label>
-      <PaymentMethodSelect
-        id={`${formId}-payment-method`}
-        paymentMethods={paymentMethods}
-        value={values.payment_method_id || ''}
+      <Label required htmlFor={`${formId}-asset`} id={`${formId}-asset-label`}> Account </Label>
+      <AssetSelect
+        id={`${formId}-asset`}
+        assets={assets}
+        value={values.asset_id || ''}
         required={true}
-        error={!!errors.payment_method_id}
-        errorMessage={errors.payment_method_id}
+        error={!!errors.asset_id}
+        errorMessage={errors.asset_id}
       />
     </div>
   </div>
@@ -252,9 +248,9 @@ const formId = `transaction-entry-form-${type}`;
           return null;
         },
       },
-      payment_method_id: {
+      asset_id: {
         validate: (value) => {
-          if (!value || value.trim() === '') return 'Payment method is required';
+          if (!value || value.trim() === '') return 'Account is required';
           return null;
         },
       },
@@ -325,13 +321,7 @@ const formId = `transaction-entry-form-${type}`;
     function updateSubmitButton() {
       if (!submitButton) return;
 
-      const requiredFields = [
-        'title',
-        'amount',
-        'transaction_date',
-        'category_id',
-        'payment_method_id',
-      ];
+      const requiredFields = ['title', 'amount', 'transaction_date', 'category_id', 'asset_id'];
       let allValid = true;
 
       for (const fieldName of requiredFields) {
@@ -402,9 +392,9 @@ const formId = `transaction-entry-form-${type}`;
         updateCurrencyForCategory();
       });
 
-      const paymentMethodSelect = form.querySelector('select[name="payment_method_id"]');
-      paymentMethodSelect?.addEventListener('change', (e: Event) => {
-        validateField('payment_method_id', (e.target as HTMLSelectElement).value);
+      const assetSelect = form.querySelector('select[name="asset_id"]');
+      assetSelect?.addEventListener('change', (e: Event) => {
+        validateField('asset_id', (e.target as HTMLSelectElement).value);
       });
     }
 
@@ -478,7 +468,7 @@ const formId = `transaction-entry-form-${type}`;
           amount: String(formData.get('amount') || '0').replace(/[^\d.-]/g, ''),
           currency: String(formData.get('currency') || 'IDR'),
           category_id: String(formData.get('category_id') || ''),
-          payment_method_id: String(formData.get('payment_method_id') || ''),
+          asset_id: String(formData.get('asset_id') || ''),
           transaction_date: String(
             formData.get('transaction_date') || new Date().toISOString().split('T')[0]
           ),

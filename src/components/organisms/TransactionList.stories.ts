@@ -28,8 +28,8 @@ const createMockTransaction = (
     name: 'Food & Dining',
     type: 'expense',
   },
-  payment_method: {
-    id: `pm_${id}`,
+  asset: {
+    id: `asset_${id}`,
     name: 'Cash',
     type: 'cash',
   },
@@ -76,7 +76,7 @@ const createTransactionRow = (transaction: TransactionOutput): HTMLElement => {
       ${transaction.description ? `<div class="text-sm text-base-content/60 truncate">${transaction.description}</div>` : ''}
     </div>
     <div class="flex-shrink-0 hidden sm:block">
-      <span class="badge badge-neutral badge-sm">${transaction.payment_method.name}</span>
+      <span class="badge badge-neutral badge-sm">${transaction.asset.name}</span>
     </div>
     <div class="flex-shrink-0 text-right">
       <span class="${isExpense ? 'text-error' : 'text-success'} font-medium">${formatCurrencyValue(amount, transaction.currency, true)}</span>

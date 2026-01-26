@@ -54,7 +54,7 @@ const mockTransaction = {
   currency: 'USD',
   description: 'Test transaction',
   category: { id: 'cat1', name: 'Groceries', type: 'expense' },
-  payment_method: { id: 'pm1', name: 'Credit Card', type: 'credit' },
+  asset: { id: 'pm1', name: 'Credit Card', type: 'credit' },
   notes: null,
   created_at: '2025-01-15T10:00:00Z',
   updated_at: '2025-01-15T10:00:00Z',
@@ -263,7 +263,7 @@ describe('TransactionList - Component Behavior', () => {
        *   pageSize: number;
        *   baseUrl: string;
        *   categories?: Array<{ id: string; name: string; type: string }>;
-       *   paymentMethods?: Array<{ id: string; name: string; type: string }>;
+       *   assets?: Array<{ id: string; name: string; type: string }>;
        *   filters?: Record<string, string>;
        *   showFilters?: boolean;
        * }
@@ -310,9 +310,9 @@ describe('TransactionList - Component Behavior', () => {
       expect(true).toBe(true);
     });
 
-    it('should accept optional paymentMethods prop for filters', () => {
+    it('should accept optional assets prop for filters', () => {
       /**
-       * PaymentMethods prop: Available payment methods for filter dropdown
+       * Assets prop: Available assets for filter dropdown
        * Optional: Yes
        */
       expect(true).toBe(true);
@@ -822,7 +822,7 @@ describe('TransactionList - Lucide Icon Components', () => {
  * [ ] Resize browser to mobile width (< 640px)
  * [ ] Verify action buttons stack vertically
  * [ ] Verify table header is hidden
- * [ ] Verify payment method column is hidden
+ * [ ] Verify asset column is hidden
  * [ ] Verify all buttons are tappable (≥44x44px)
  * [ ] Verify icon + text buttons are readable
  * [ ] Test pagination on mobile

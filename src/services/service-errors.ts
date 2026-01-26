@@ -16,16 +16,12 @@ export enum ServiceErrorCode {
   INVALID_TRANSACTION_ID = 'INVALID_TRANSACTION_ID',
   CATEGORY_NOT_FOUND = 'CATEGORY_NOT_FOUND',
   CATEGORY_INACTIVE = 'CATEGORY_INACTIVE',
-  PAYMENT_METHOD_NOT_FOUND = 'PAYMENT_METHOD_NOT_FOUND',
-  PAYMENT_METHOD_INACTIVE = 'PAYMENT_METHOD_INACTIVE',
+  ASSET_INACTIVE = 'ASSET_INACTIVE',
   DUPLICATE_TRANSACTION = 'DUPLICATE_TRANSACTION',
 
   // Category-specific errors
   CATEGORY_HAS_TRANSACTIONS = 'CATEGORY_HAS_TRANSACTIONS',
   INVALID_CATEGORY_TYPE = 'INVALID_CATEGORY_TYPE',
-
-  // Payment method-specific errors
-  PAYMENT_METHOD_HAS_TRANSACTIONS = 'PAYMENT_METHOD_HAS_TRANSACTIONS',
 
   // Budget-specific errors
   BUDGET_NOT_FOUND = 'BUDGET_NOT_FOUND',
@@ -66,13 +62,6 @@ export class CategoryServiceError extends ServiceError {
   constructor(code: ServiceErrorCode, message: string, statusCode: number = 400) {
     super(code, message, statusCode);
     this.name = 'CategoryServiceError';
-  }
-}
-
-export class PaymentMethodServiceError extends ServiceError {
-  constructor(code: ServiceErrorCode, message: string, statusCode: number = 400) {
-    super(code, message, statusCode);
-    this.name = 'PaymentMethodServiceError';
   }
 }
 

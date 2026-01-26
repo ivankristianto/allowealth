@@ -1,5 +1,4 @@
 import { sqliteTable, text, integer, index } from 'drizzle-orm/sqlite-core';
-import { relations } from 'drizzle-orm';
 import { users } from './users';
 
 /**
@@ -23,10 +22,3 @@ export const sessions = sqliteTable(
   },
   (table) => [index('sessions_expires_at_idx').on(table.expiresAt)]
 );
-
-export const sessionsRelations = relations(sessions, ({ one }) => ({
-  user: one(users, {
-    fields: [sessions.userId],
-    references: [users.id],
-  }),
-}));

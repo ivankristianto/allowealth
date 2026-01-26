@@ -16,7 +16,7 @@
 
 import { describe, it, expect, beforeAll, afterAll } from 'bun:test';
 import { db } from '@/db';
-import { users, categories, transactions, paymentMethods } from '@/db';
+import { users, categories, transactions, assets } from '@/db';
 import { eq, and } from 'drizzle-orm';
 import { auth } from '@/lib/auth/lucia';
 import { nanoid } from 'nanoid';
@@ -32,7 +32,7 @@ describe('Budget Remaining API Integration Tests', () => {
   let testUserId: string;
   let sessionId: string;
   let testCategoryId: string;
-  let testPaymentMethodId: string;
+  let testAssetId: string;
   let shouldSkip = false;
 
   beforeAll(async () => {
@@ -55,21 +55,22 @@ describe('Budget Remaining API Integration Tests', () => {
     const session = await auth.createSession(testUserId, {});
     sessionId = session.id;
 
-    // Create a test payment method
-    const [paymentMethod] = await db
-      .insert(paymentMethods)
+    // Create a test asset
+    const [asset] = await db
+      .insert(assets)
       .values({
         id: nanoid(),
         user_id: testUserId,
-        name: `Test Payment Method ${Date.now()}`,
+        name: `Test Asset ${Date.now()}`,
         type: 'cash',
-        is_active: true,
+        currency: 'IDR',
+        balance: '1000000',
         created_at: new Date(),
         updated_at: new Date(),
       })
       .returning();
 
-    testPaymentMethodId = paymentMethod.id;
+    testAssetId = asset.id;
 
     // Create a test category with budget
     const [category] = await db
@@ -132,7 +133,7 @@ describe('Budget Remaining API Integration Tests', () => {
       id: nanoid(),
       user_id: testUserId,
       category_id: testCategoryId,
-      payment_method_id: testPaymentMethodId,
+      asset_id: testAssetId,
       type: 'expense',
       amount,
       currency: 'IDR',
@@ -419,7 +420,7 @@ describe('Budget Remaining API Integration Tests', () => {
             id: nanoid(),
             user_id: testUserId,
             category_id: decimalCategoryId,
-            payment_method_id: testPaymentMethodId,
+            asset_id: testAssetId,
             type: 'expense',
             amount: '50000.25',
             currency: 'IDR',
@@ -466,7 +467,7 @@ describe('Budget Remaining API Integration Tests', () => {
           id: nanoid(),
           user_id: testUserId,
           category_id: testCategoryId,
-          payment_method_id: testPaymentMethodId,
+          asset_id: testAssetId,
           type: 'expense',
           amount: '100000',
           currency: 'IDR',
@@ -482,7 +483,7 @@ describe('Budget Remaining API Integration Tests', () => {
           id: nanoid(),
           user_id: testUserId,
           category_id: testCategoryId,
-          payment_method_id: testPaymentMethodId,
+          asset_id: testAssetId,
           type: 'expense',
           amount: '500000',
           currency: 'IDR',
@@ -517,7 +518,7 @@ describe('Budget Remaining API Integration Tests', () => {
           id: nanoid(),
           user_id: testUserId,
           category_id: testCategoryId,
-          payment_method_id: testPaymentMethodId,
+          asset_id: testAssetId,
           type: 'expense',
           amount: '200000',
           currency: 'IDR',
@@ -532,7 +533,7 @@ describe('Budget Remaining API Integration Tests', () => {
           id: nanoid(),
           user_id: testUserId,
           category_id: testCategoryId,
-          payment_method_id: testPaymentMethodId,
+          asset_id: testAssetId,
           type: 'expense',
           amount: '300000',
           currency: 'IDR',
@@ -575,11 +576,11 @@ describe('Budget Remaining API Integration Tests', () => {
         console.log(`Cleaned up test category: ${testCategoryId}`);
       }
 
-      // Note: Don't delete the payment method as it may have orphaned transactions
-      // from test runs or other sources. The test payment method can be cleaned
+      /// Note: Don't delete the asset as it may have orphaned transactions
+      // from test runs or other sources. The test asset can be cleaned
       // up manually or through a full database reset.
-      if (testPaymentMethodId) {
-        console.log(`Test payment method ${testPaymentMethodId} left in place`);
+      if (testAssetId) {
+        console.log(`Test asset ${testAssetId} left in place`);
       }
     }
   });

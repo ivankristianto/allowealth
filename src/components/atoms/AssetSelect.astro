@@ -2,15 +2,15 @@
 import Label from './Label.astro';
 
 /**
- * Payment Method Select Component
+ * Asset Select Component
  *
- * Dropdown for selecting payment methods.
+ * Dropdown for selecting assets (bank accounts, wallets, etc.).
  *
- * @param {Array} paymentMethods - Array of payment method objects {id, name, type}
+ * @param {Array} assets - Array of asset objects {id, name, type}
  * @param {string} label - Label text for the select (renders a <label> element)
  * @param {string} helpText - Optional help text displayed below the label
  * @param {string} name - Input name
- * @param {string} value - Selected payment method ID
+ * @param {string} value - Selected asset ID
  * @param {boolean} required - Whether the field is required
  * @param {boolean} error - Show error state
  * @param {string} errorMessage - Error message to display
@@ -21,7 +21,7 @@ import Label from './Label.astro';
  */
 
 export interface Props {
-  paymentMethods: Array<{ id: string; name: string; type: string }>;
+  assets: Array<{ id: string; name: string; type: string }>;
   /** Label text for the select (renders a <label> element) */
   label?: string;
   /** Optional help text displayed below the label */
@@ -42,10 +42,10 @@ export interface Props {
 }
 
 const {
-  paymentMethods = [],
+  assets = [],
   label = '',
   helpText = '',
-  name = 'payment_method_id',
+  name = 'asset_id',
   value = '',
   required = false,
   error = false,
@@ -98,9 +98,9 @@ const ariaDescribeIds = [error && errorMessage && inputId ? `${inputId}-error` :
   >
     <option value="">Select account...</option>
     {
-      paymentMethods.map((method) => (
-        <option value={method.id} selected={method.id === value}>
-          {method.name}
+      assets.map((asset) => (
+        <option value={asset.id} selected={asset.id === value}>
+          {asset.name}
         </option>
       ))
     }

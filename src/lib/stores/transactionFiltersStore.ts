@@ -12,14 +12,14 @@
 
 import { map } from 'nanostores';
 
-export type TransactionTypeFilter = 'income' | 'expense';
+export type TransactionTypeFilter = 'income' | 'expense' | 'transfer';
 
 export interface TransactionFilters {
   type: TransactionTypeFilter;
   search: string;
   category_id: string;
   category_ids: string[]; // Support multiple categories
-  payment_method_id: string;
+  asset_id: string;
   currency: 'IDR' | 'USD' | '';
   start_date: string;
   end_date: string;
@@ -33,7 +33,7 @@ const initialFilters: TransactionFilters = {
   search: '',
   category_id: '',
   category_ids: [],
-  payment_method_id: '',
+  asset_id: '',
   currency: '',
   start_date: '',
   end_date: '',
@@ -79,7 +79,7 @@ export function hasActiveFilters(): boolean {
     filters.search !== '' ||
     filters.category_id !== '' ||
     filters.category_ids.length > 0 ||
-    filters.payment_method_id !== '' ||
+    filters.asset_id !== '' ||
     filters.currency !== '' ||
     filters.start_date !== '' ||
     filters.end_date !== ''

@@ -27,9 +27,9 @@ export const GET: APIRoute = async (context) => {
       filters.category_id = categoryId;
     }
 
-    const paymentMethodId = url.searchParams.get('payment_method_id');
-    if (paymentMethodId) {
-      filters.payment_method_id = paymentMethodId;
+    const assetId = url.searchParams.get('asset_id');
+    if (assetId) {
+      filters.asset_id = assetId;
     }
 
     const currency = url.searchParams.get('currency');
