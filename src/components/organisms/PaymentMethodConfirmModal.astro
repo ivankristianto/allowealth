@@ -1,0 +1,199 @@
+---
+/**
+ * Payment Method Confirm Modal Component
+ *
+ * Modal for confirming deactivate/activate payment methods.
+ * Uses the same Modal pattern as other modals in the application.
+ *
+ * @param {string} id - Modal ID
+ * @param {'deactivate' | 'activate'} action - Action type
+ */
+
+import Modal from '../molecules/Modal.astro';
+import { Ban, RefreshCw } from '@lucide/astro';
+
+export interface Props {
+  id: string;
+  action: 'deactivate' | 'activate';
+}
+
+const { id, action } = Astro.props;
+
+const isDeactivate = action === 'deactivate';
+const title = isDeactivate ? 'Deactivate Payment Method' : 'Reactivate Payment Method';
+const description = isDeactivate
+  ? 'Are you sure you want to deactivate this payment method? It will no longer appear in transaction forms, but existing transactions will remain unchanged.'
+  : 'Are you sure you want to reactivate this payment method? It will become available for use in transaction forms again.';
+const confirmLabel = isDeactivate ? 'Deactivate' : 'Reactivate';
+const buttonClass = isDeactivate ? 'btn-warning' : 'btn-success';
+---
+
+<div data-payment-method-confirm-modal data-id={id} data-action={action}>
+  <Modal id={id} size="sm" closable={false} backdropClose={true}>
+    <div slot="default" class="flex flex-col gap-6">
+      <!-- Header section -->
+      <div class="flex items-center gap-4">
+        <!-- Icon -->
+        <div
+          class:list={[
+            'w-12 h-12 rounded-2xl flex items-center justify-center',
+            isDeactivate ? 'bg-warning/10' : 'bg-success/10',
+          ]}
+        >
+          {
+            isDeactivate ? (
+              <Ban size={24} class="stroke-current text-warning" aria-hidden="true" />
+            ) : (
+              <RefreshCw size={24} class="stroke-current text-success" aria-hidden="true" />
+            )
+          }
+        </div>
+
+        <!-- Title and description -->
+        <div class="flex-1">
+          <h2 class="text-2xl font-bold tracking-tight text-primary leading-none" data-modal-title>
+            {title}
+          </h2>
+          <p class="text-neutral text-sm mt-2 font-medium" data-modal-subtitle>
+            {description}
+          </p>
+        </div>
+      </div>
+
+      <!-- Error message -->
+      <div
+        id={`${id}-error`}
+        class="hidden alert alert-error text-sm rounded-2xl"
+        role="alert"
+        aria-live="polite"
+        data-confirm-error
+      >
+      </div>
+
+      <!-- Actions -->
+      <div class="flex gap-4 pt-2">
+        <button
+          type="button"
+          class="btn btn-ghost flex-1 h-14 rounded-full font-bold text-base-content hover:bg-base-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent"
+          data-close-modal
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          class:list={['btn flex-1 h-14 rounded-full font-bold', buttonClass]}
+          data-confirm-action
+        >
+          {confirmLabel}
+        </button>
+      </div>
+    </div>
+  </Modal>
+</div>
+
+<script>
+  import { addToast } from '@/lib/stores/toastStore';
+  import { getCsrfHeaders } from '@/lib/csrf-client';
+
+  // Track initialized containers
+  const initializedContainers = new WeakSet<Element>();
+
+  function initPaymentMethodConfirmModals() {
+    document.querySelectorAll('[data-payment-method-confirm-modal]').forEach((container) => {
+      if (initializedContainers.has(container)) return;
+      initializedContainers.add(container);
+
+      const id = container.getAttribute('data-id');
+      const actionType = container.getAttribute('data-action') as 'deactivate' | 'activate';
+      if (!id) return;
+
+      const modal = document.getElementById(id) as HTMLDialogElement | null;
+      const errorEl = container.querySelector('[data-confirm-error]');
+      const confirmBtn = container.querySelector('[data-confirm-action]') as HTMLButtonElement;
+
+      if (!modal || !confirmBtn) return;
+
+      let currentMethodId: string | null = null;
+
+      // Handle cancel button
+      const cancelBtn = container.querySelector('[data-close-modal]');
+      cancelBtn?.addEventListener('click', () => {
+        errorEl?.classList.add('hidden');
+        modal.classList.remove('modal-open');
+      });
+
+      // Handle confirm button
+      confirmBtn.addEventListener('click', async () => {
+        if (!currentMethodId) return;
+
+        const originalText = confirmBtn.textContent || 'Confirm';
+        const isDeactivate = actionType === 'deactivate';
+
+        // Clear errors
+        errorEl?.classList.add('hidden');
+
+        // Show loading state
+        confirmBtn.disabled = true;
+        confirmBtn.textContent = isDeactivate ? 'Deactivating...' : 'Reactivating...';
+
+        try {
+          const response = await fetch(`/api/payment-methods/${currentMethodId}`, {
+            method: 'PUT',
+            credentials: 'include',
+            headers: {
+              'Content-Type': 'application/json',
+              ...getCsrfHeaders(),
+            },
+            body: JSON.stringify({ is_active: !isDeactivate }),
+          });
+
+          const result = await response.json();
+
+          if (!response.ok || !result.success) {
+            throw new Error(result.error?.message || 'Operation failed');
+          }
+
+          // Success
+          addToast(
+            isDeactivate ? 'Payment method deactivated!' : 'Payment method reactivated!',
+            'success'
+          );
+          modal.classList.remove('modal-open');
+
+          // Reload page to show updated data
+          window.location.reload();
+        } catch (err) {
+          const message = err instanceof Error ? err.message : 'Operation failed';
+          if (errorEl) {
+            errorEl.textContent = message;
+            errorEl.classList.remove('hidden');
+          }
+          addToast(message, 'error');
+        } finally {
+          confirmBtn.disabled = false;
+          confirmBtn.textContent = originalText;
+        }
+      });
+
+      // TODO: P2 - Replace window global function with custom events pattern
+      // Example: document.addEventListener('payment-method-confirm:open', (e) => { ... })
+      // Expose function to open modal
+      const fnName = actionType === 'deactivate' ? 'openDeactivateModal' : 'openActivateModal';
+      (window as any)[fnName] = (methodId: string) => {
+        currentMethodId = methodId;
+        errorEl?.classList.add('hidden');
+        modal.classList.add('modal-open');
+      };
+    });
+  }
+
+  // Initialize on DOM ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initPaymentMethodConfirmModals);
+  } else {
+    initPaymentMethodConfirmModals();
+  }
+
+  // Re-initialize on Astro page transitions
+  document.addEventListener('astro:page-load', initPaymentMethodConfirmModals);
+</script>

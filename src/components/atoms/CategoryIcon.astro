@@ -22,7 +22,7 @@ export interface Props {
   className?: string;
 }
 
-const { icon, color = 'bg-slate-500', size = 'md', className = '' } = Astro.props;
+const { icon, color = 'bg-base-300', size = 'md', className = '' } = Astro.props;
 
 // Convert kebab-case icon names to PascalCase for Lucide component lookup
 const iconName = icon
