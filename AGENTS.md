@@ -24,6 +24,128 @@ Agents must internalize:
 
 **If constitution conflicts with task instructions, constitution wins.**
 
+## Do & Don't
+
+### Session Rules (Every Agent Session)
+
+**DO:**
+
+- ✅ Read `docs/constitution.md` before starting any task
+- ✅ Read `design-system/START.md` for all UI work
+- ✅ Follow implementation order: UI → Service → API → CLI → Seeder
+- ✅ Run quality gates before committing (lint, stylelint, format, typecheck)
+- ✅ Check for `bun:` imports in middleware-imported code
+- ✅ Update OpenAPI docs when modifying API endpoints
+- ✅ Apply refactor checklist each loop, not at the end
+
+**DON'T:**
+
+- ❌ Start coding without a plan
+- ❌ Commit without running quality gates
+- ❌ Ignore failed quality gates (types, lint, stylelint are blocking)
+- ❌ Use `bun:` imports in middleware or middleware-imported files
+
+### Architectural Decisions (ADR Quick Reference)
+
+| Category                | Use This ✅                              | Not This ❌                      | Reference                         |
+| ----------------------- | ---------------------------------------- | -------------------------------- | --------------------------------- |
+| **HTML Rendering**      | Server-rendered Astro components         | Client-side DOM construction     | `002-interactive-pages.md`        |
+| **Interactive Updates** | Fetch `?_render=html` from API           | Build HTML strings in JS         | `002-interactive-pages.md`        |
+| **Client Scripts**      | `.client.ts` files + `data-*` attributes | `define:vars` with npm imports   | `002-interactive-pages.md`        |
+| **Styling**             | DaisyUI classes (`bg-base-200`)          | Tailwind colors (`bg-slate-100`) | `design-system/START.md`          |
+| **Design Tokens**       | Import from `@/lib/tokens`               | Hardcoded values (`#10b981`)     | `design-system/01-foundations.md` |
+| **Icons**               | `@lucide/astro`                          | Custom SVG or emojis             | `design-system/START.md`          |
+| **Animations**          | Motion library                           | CSS transitions only             | `design-system/08-animations.md`  |
+| **State**               | Nano Stores                              | Local state scattered            | N/A                               |
+| **Feedback**            | Toast notifications                      | `alert()`, `confirm()`           | N/A                               |
+| **TypeScript**          | Separate `.ts` files                     | Types in `<script>` tags         | `AGENTS.md`                       |
+| **Database**            | `better-sqlite3` (shared code)           | `bun:sqlite` (middleware)        | `docs/constitution.md`            |
+| **Testing**             | `bun:test`                               | `vitest`                         | `docs/constitution.md`            |
+| **API Docs**            | Update OpenAPI files                     | Comments only                    | `openapi/README.md`               |
+
+### Design System Compliance
+
+**DO:**
+
+- ✅ Import design tokens from `@/lib/tokens` for colors, spacing, typography
+- ✅ Use DaisyUI classes first, then Tailwind utilities
+- ✅ Use semantic HTML elements (`<button>`, `<nav>`, `<main>`, `<section>`)
+- ✅ Follow mobile-first responsive design (base styles for mobile, `md:` for desktop)
+- ✅ Ensure keyboard navigation (Tab, Enter, Space, Esc)
+- ✅ Add ARIA labels and roles for accessibility
+- ✅ Maintain color contrast ratios (text ≥4.5:1, UI ≥3:1)
+- ✅ Use minimum touch targets of 44x44px for mobile
+- ✅ Include visible labels for all form inputs
+- ✅ Use icons with text labels (not color-only indicators)
+- ✅ Consult `design-system/daisyui-llm.md` for DaisyUI component reference
+
+**DON'T:**
+
+- ❌ Hardcode colors, spacing, or font sizes
+- ❌ Use non-semantic elements (`<div onclick>` instead of `<button>`)
+- ❌ Build desktop-first layouts
+- ❌ Remove focus outlines without replacement
+- ❌ Use placeholder text as labels
+- ❌ Rely on color alone to convey information
+- ❌ Use custom SVG icons or emojis (use Lucide icons)
+- ❌ Create non-semantic wrapper divs (use semantic HTML)
+
+### Code Quality (Constitution)
+
+**DO:**
+
+- ✅ Write clear, explicit code (clarity over cleverness)
+- ✅ Follow Single Responsibility Principle (one function = one responsibility)
+- ✅ Use descriptive variable names that explain purpose
+- ✅ Document _what_ and _why_ in commit messages
+- ✅ Write unit tests first (fail first, then implement)
+- ✅ Validate inputs at system boundaries (user input, external APIs)
+- ✅ Define performance targets upfront (e.g., <200ms p95)
+- ✅ Refactor each loop (not at the end)
+- ✅ Follow refactor checklist: Maintainability → Security → Performance → Consistency → Abstraction
+
+**DON'T:**
+
+- ❌ Create functions with multiple responsibilities
+- ❌ Use vague variable names (`data`, `temp`, `x`)
+- ❌ Skip tests or write tests after implementation
+- ❌ Add unnecessary error handling for impossible scenarios
+- ❌ Use backwards-compatibility hacks (delete unused code completely)
+
+### TypeScript Best Practices
+
+**DO:**
+
+- ✅ Use `declare global { namespace App { ... } }` when `env.d.ts` has imports
+- ✅ Import custom types from project files (`@/lib/auth/lucia`)
+- ✅ Add `export {}` at the end of module-scoped type files
+- ✅ Use TypeScript in separate `.ts` files for client-side code
+- ✅ Define component props with interfaces
+
+**DON'T:**
+
+- ❌ Add TypeScript types in Astro inline `<script>` tags
+- ❌ Import types directly from library packages in global declarations
+- ❌ Forget `export {}` in module-scoped declaration files
+- ❌ Mix type annotations with browser-executed scripts
+
+### Pre-Commit Checklist
+
+**Before every commit:**
+
+```bash
+# 1. Check for Bun-specific imports in shared code
+grep -r "bun:" src/ --exclude-dir=node_modules || echo "No bun: imports found"
+
+# 2. Run quality gates (all must pass)
+bun run lint:fix          # ESLint (blocking)
+bun run stylelint:fix     # Stylelint (blocking)
+bun run format:fix        # Prettier (blocking)
+bun run typecheck         # TypeScript (blocking)
+```
+
+**CRITICAL:** If `bun:` imports are found in middleware-imported files, REFACTOR before committing.
+
 ## Tech Stack
 
 - **Runtime:** Bun 1.x
