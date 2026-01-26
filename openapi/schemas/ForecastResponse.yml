@@ -1,0 +1,76 @@
+type: object
+properties:
+  success:
+    type: boolean
+    example: true
+  data:
+    type: object
+    properties:
+      dataPoints:
+        type: array
+        description: Array of monthly forecast data points
+        items:
+          type: object
+          properties:
+            key:
+              type: string
+              description: Month key in YYYY-MM format
+              example: '2026-01'
+            dateLabel:
+              type: string
+              description: Display label for the month
+              example: 'Jan 2026'
+            forecastBalance:
+              type: number
+              description: Forecasted balance for this month
+              example: 1054285
+            forecastInterest:
+              type: number
+              description: Forecasted interest earned this month
+              example: 6085
+            realBalance:
+              type: number
+              nullable: true
+              description: Actual balance from historical data (null if future month)
+              example: 1067579
+            realInterest:
+              type: number
+              nullable: true
+              description: Actual interest from historical data (null if future month)
+              example: 0
+      summary:
+        type: object
+        description: Summary statistics
+        properties:
+          year10Target:
+            type: number
+            description: Target balance at end of forecast period
+            example: 2984180552
+          totalInterest:
+            type: number
+            description: Total interest earned over forecast period
+            example: 1335980549
+          growthMultiple:
+            type: number
+            description: Growth multiple (final / initial)
+            example: 2.86
+          currentTotal:
+            type: number
+            description: Current total asset value in IDR
+            example: 1067579889
+      input:
+        type: object
+        description: Input parameters used for calculation
+        properties:
+          monthlyTopup:
+            type: number
+            description: Monthly contribution amount in IDR
+            example: 5000000
+          annualRate:
+            type: number
+            description: Annual percentage yield
+            example: 7
+          years:
+            type: number
+            description: Number of years forecasted
+            example: 10

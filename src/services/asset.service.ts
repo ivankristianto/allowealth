@@ -232,4 +232,30 @@ export class AssetService {
 
     return result;
   }
+
+  /**
+   * Get all assets with their history for forecast calculations
+   */
+  async findAllWithHistory(user_id: string) {
+    const allAssets = await this.findAll(user_id);
+
+    const assetsWithHistory = await Promise.all(
+      allAssets.map(async (asset) => {
+        const history = await this.db.query.assetHistory.findMany({
+          where: eq(assetHistory.asset_id, asset.id),
+          orderBy: (assetHistory: any, { asc }: any) => [asc(assetHistory.recorded_at)],
+        });
+
+        return {
+          ...asset,
+          history: history.map((h) => ({
+            date: h.recorded_at,
+            amount: parseFloat(h.balance),
+          })),
+        };
+      })
+    );
+
+    return assetsWithHistory;
+  }
 }
