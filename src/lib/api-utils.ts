@@ -160,13 +160,54 @@ export async function validateBody<T>(
 }
 
 /**
+ * Get authenticated user ID from middleware-validated session
+ *
+ * Uses the user data already validated and set by middleware in `context.locals.user`.
+ * This avoids redundant database calls since the middleware has already validated
+ * the session.
+ *
+ * @param context - Astro API context with locals set by middleware
+ * @returns User ID string
+ * @throws Error with message 'Unauthorized' if not authenticated
+ *
+ * @example
+ * ```typescript
+ * export const GET: APIRoute = async (context) => {
+ *   try {
+ *     const userId = getAuthenticatedUser(context);
+ *     // User is authenticated, proceed...
+ *   } catch (error) {
+ *     if (error instanceof Error && error.message === 'Unauthorized') {
+ *       return errorResponse('Unauthorized', 401);
+ *     }
+ *     throw error;
+ *   }
+ * }
+ * ```
+ */
+export function getAuthenticatedUser(context: APIContext): string {
+  const user = context.locals.user;
+
+  if (!user?.id) {
+    throw new Error('Unauthorized');
+  }
+
+  return user.id;
+}
+
+/**
  * Session cookie name used by Lucia Auth
  * Must match the cookie name configured in src/lib/auth/lucia.ts
+ * @deprecated Used only by deprecated getUserId function
  */
 const SESSION_COOKIE_NAME = 'sid';
 
 /**
  * Get user ID from Lucia session cookie
+ *
+ * @deprecated Use `getAuthenticatedUser(context)` instead. This function makes
+ * a redundant database call since the middleware already validates the session
+ * and sets `context.locals.user`.
  *
  * Extracts the session ID from the request cookies and validates it
  * using Lucia's validateSession method. Returns the user ID if the
@@ -174,17 +215,6 @@ const SESSION_COOKIE_NAME = 'sid';
  *
  * @param context - Astro API context containing request cookies
  * @returns User ID string if session is valid, null otherwise
- *
- * @example
- * ```typescript
- * export const GET: APIRoute = async (context) => {
- *   const userId = await getUserId(context);
- *   if (!userId) {
- *     return errorResponse('Unauthorized', 401);
- *   }
- *   // User is authenticated, proceed...
- * }
- * ```
  */
 export async function getUserId(context: APIContext): Promise<string | null> {
   // Extract session ID from cookies
@@ -215,6 +245,10 @@ export async function getUserId(context: APIContext): Promise<string | null> {
 /**
  * Require authentication for API routes
  *
+ * @deprecated Use `getAuthenticatedUser(context)` instead. This function makes
+ * a redundant database call since the middleware already validates the session
+ * and sets `context.locals.user`.
+ *
  * Validates the session and returns the user ID. Throws an error
  * if the user is not authenticated. This error should be caught
  * by the route handler and returned as a 401 response.
@@ -222,21 +256,6 @@ export async function getUserId(context: APIContext): Promise<string | null> {
  * @param context - Astro API context containing request cookies
  * @returns User ID string (never null for authenticated requests)
  * @throws Error with message 'Unauthorized' if not authenticated
- *
- * @example
- * ```typescript
- * export const GET: APIRoute = async (context) => {
- *   try {
- *     const userId = await requireAuth(context);
- *     // User is authenticated, proceed...
- *   } catch (error) {
- *     if (error instanceof Error && error.message === 'Unauthorized') {
- *       return errorResponse('Unauthorized', 401);
- *     }
- *     throw error;
- *   }
- * }
- * ```
  */
 export async function requireAuth(context: APIContext): Promise<string> {
   const userId = await getUserId(context);

@@ -59,17 +59,19 @@ const userId = await requireAuth(context);
 
 ### Checklist
 
-- [ ] **Option A: Create helper function** that uses `locals.user` directly
-  - [ ] Add `getAuthenticatedUser(context)` to `src/lib/api-utils.ts`
-  - [ ] Returns user ID from `context.locals.user` or throws
-  - [ ] No database call needed (middleware already validated)
+- [x] **Option A: Create helper function** that uses `locals.user` directly
+  - [x] Add `getAuthenticatedUser(context)` to `src/lib/api-utils.ts`
+  - [x] Returns user ID from `context.locals.user` or throws
+  - [x] No database call needed (middleware already validated)
+  - [x] Updated all 20 API route files to use `getAuthenticatedUser`
+  - [x] Added unit tests in `src/lib/api-utils.test.ts`
 
-- [ ] **Option B: Add API middleware** (alternative approach)
-  - [ ] Update `src/middleware.ts` to return 401 JSON for unauthenticated `/api/*` requests
-  - [ ] Exclude public endpoints: `/api/auth/login`, `/api/auth/signup`, `/api/auth/forgot-password`
+- [ ] ~~**Option B: Add API middleware**~~ (not implemented - Option A chosen)
 
-- [ ] **Documentation**
-  - [ ] Update `AGENTS.md` or create `docs/architecture/003-api-authentication.md`
+- [x] **Documentation**
+  - [x] Created `docs/architecture/003-api-authentication.md`
+
+**Completed:** 2026-01-26
 
 ---
 
@@ -252,11 +254,11 @@ const userId = await requireAuth(context);
 | Section              | Items  | Completed | Progress |
 | -------------------- | ------ | --------- | -------- |
 | 1. requireAuth Fix   | 12     | 12        | 100%     |
-| 2. Middleware        | 5      | 0         | 0%       |
+| 2. Middleware        | 5      | 5         | 100%     |
 | 3. Security          | 15     | 10        | 67%      |
 | 4. OpenAPI Docs      | 4      | 4         | 100%     |
 | 5. Integration Tests | 9      | 1         | 11%      |
-| **Total**            | **45** | **27**    | **60%**  |
+| **Total**            | **45** | **32**    | **71%**  |
 
 ---
 

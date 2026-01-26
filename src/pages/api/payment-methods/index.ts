@@ -4,7 +4,7 @@ import {
   successResponse,
   errorResponse,
   validateBody,
-  requireAuth,
+  getAuthenticatedUser,
   isValidationError,
 } from '@/lib/api-utils';
 import { createPaymentMethodAPISchema } from '@/lib/validation';
@@ -16,7 +16,7 @@ import { logError } from '@/lib/utils';
  */
 export const GET: APIRoute = async (context) => {
   try {
-    const userId = await requireAuth(context);
+    const userId = getAuthenticatedUser(context);
     const { url } = context;
 
     const isActiveParam = url.searchParams.get('is_active');
@@ -44,7 +44,7 @@ export const GET: APIRoute = async (context) => {
  */
 export const POST: APIRoute = async (context) => {
   try {
-    const userId = await requireAuth(context);
+    const userId = getAuthenticatedUser(context);
 
     const validation = await validateBody(context.request, createPaymentMethodAPISchema);
 

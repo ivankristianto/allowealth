@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import { assetService } from '@/services';
-import { successResponse, errorResponse, requireAuth } from '@/lib/api-utils';
+import { successResponse, errorResponse, getAuthenticatedUser } from '@/lib/api-utils';
 import { logError } from '@/lib/utils';
 
 /**
@@ -9,7 +9,7 @@ import { logError } from '@/lib/utils';
  */
 export const GET: APIRoute = async (context) => {
   try {
-    const userId = await requireAuth(context);
+    const userId = getAuthenticatedUser(context);
     const { id } = context.params;
 
     if (!id) {

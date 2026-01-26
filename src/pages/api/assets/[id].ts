@@ -5,7 +5,7 @@ import {
   successResponse,
   errorResponse,
   validateBody,
-  requireAuth,
+  getAuthenticatedUser,
   isValidationError,
 } from '@/lib/api-utils';
 import { logError } from '@/lib/utils';
@@ -23,7 +23,7 @@ const updateAssetSchema = z.object({
  */
 export const GET: APIRoute = async (context) => {
   try {
-    const userId = await requireAuth(context);
+    const userId = getAuthenticatedUser(context);
     const { id } = context.params;
 
     if (!id) {
@@ -52,7 +52,7 @@ export const GET: APIRoute = async (context) => {
  */
 export const PUT: APIRoute = async (context) => {
   try {
-    const userId = await requireAuth(context);
+    const userId = getAuthenticatedUser(context);
     const { id } = context.params;
 
     if (!id) {
@@ -87,7 +87,7 @@ export const PUT: APIRoute = async (context) => {
  */
 export const DELETE: APIRoute = async (context) => {
   try {
-    const userId = await requireAuth(context);
+    const userId = getAuthenticatedUser(context);
     const { id } = context.params;
 
     if (!id) {
