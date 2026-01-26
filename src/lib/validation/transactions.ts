@@ -38,12 +38,33 @@ export const createTransactionSchema = z
     type: transactionTypeEnum,
     amount: amountValidation,
     currency: currencyEnum,
-    category_id: z.string().min(1, 'Category ID is required'),
-    payment_method_id: z.string().min(1, 'Payment method ID is required'),
+    category_id: z.string().min(1, 'Category ID is required').optional(), // Optional for transfers
+    asset_id: z.string().min(1, 'Asset ID is required'),
+    to_asset_id: z.string().min(1, 'Destination asset ID is required').optional(), // For transfers
     transaction_date: transactionDateValidation.default(() => new Date()),
     description: z.string().max(500, 'Description must not exceed 500 characters').optional(),
   })
-  .strict();
+  .strict()
+  .refine(
+    (data) => {
+      // For transfers, to_asset_id is required
+      if (data.type === 'transfer') {
+        return !!data.to_asset_id;
+      }
+      return true;
+    },
+    { message: 'Destination asset is required for transfers', path: ['to_asset_id'] }
+  )
+  .refine(
+    (data) => {
+      // For expense/income, category_id is required
+      if (data.type !== 'transfer') {
+        return !!data.category_id;
+      }
+      return true;
+    },
+    { message: 'Category is required for expense/income transactions', path: ['category_id'] }
+  );
 
 export type CreateTransactionInput = z.infer<typeof createTransactionSchema>;
 
@@ -54,7 +75,8 @@ export const updateTransactionSchema = z
     amount: amountValidation.optional(),
     currency: currencyEnum.optional(),
     category_id: z.string().min(1, 'Category ID is required').optional(),
-    payment_method_id: z.string().min(1, 'Payment method ID is required').optional(),
+    asset_id: z.string().min(1, 'Asset ID is required').optional(),
+    to_asset_id: z.string().min(1, 'Destination asset ID is required').optional().nullable(),
     transaction_date: transactionDateValidation.optional(),
     description: z.string().max(500, 'Description must not exceed 500 characters').optional(),
   })
@@ -81,12 +103,31 @@ export const createTransactionAPISchema = z
     type: transactionTypeEnum,
     amount: amountValidation,
     currency: currencyEnum,
-    category_id: z.string().min(1, 'Category ID is required'),
-    payment_method_id: z.string().min(1, 'Payment method ID is required'),
+    category_id: z.string().min(1, 'Category ID is required').optional(),
+    asset_id: z.string().min(1, 'Asset ID is required'),
+    to_asset_id: z.string().min(1, 'Destination asset ID is required').optional(),
     transaction_date: dateStringValidation,
     description: z.string().max(500, 'Description must not exceed 500 characters').optional(),
   })
-  .strict();
+  .strict()
+  .refine(
+    (data) => {
+      if (data.type === 'transfer') {
+        return !!data.to_asset_id;
+      }
+      return true;
+    },
+    { message: 'Destination asset is required for transfers', path: ['to_asset_id'] }
+  )
+  .refine(
+    (data) => {
+      if (data.type !== 'transfer') {
+        return !!data.category_id;
+      }
+      return true;
+    },
+    { message: 'Category is required for expense/income transactions', path: ['category_id'] }
+  );
 
 export const updateTransactionAPISchema = z
   .object({
@@ -94,7 +135,8 @@ export const updateTransactionAPISchema = z
     amount: amountValidation.optional(),
     currency: currencyEnum.optional(),
     category_id: z.string().min(1, 'Category ID is required').optional(),
-    payment_method_id: z.string().min(1, 'Payment method ID is required').optional(),
+    asset_id: z.string().min(1, 'Asset ID is required').optional(),
+    to_asset_id: z.string().min(1, 'Destination asset ID is required').optional().nullable(),
     transaction_date: dateStringValidation.optional(),
     description: z.string().max(500, 'Description must not exceed 500 characters').optional(),
   })
@@ -105,7 +147,7 @@ export const transactionFilterSchema = z
   .object({
     type: transactionTypeEnum.optional(),
     category_id: z.string().optional(),
-    payment_method_id: z.string().optional(),
+    asset_id: z.string().optional(),
     currency: currencyEnum.optional(),
     start_date: z.coerce.date().optional(),
     end_date: z.coerce.date().optional(),

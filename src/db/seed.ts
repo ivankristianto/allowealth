@@ -17,7 +17,6 @@ import {
   users,
   userSettings,
   categories,
-  paymentMethods,
   transactions,
   assets,
   assetHistory,
@@ -27,6 +26,7 @@ import {
   exchangeRates,
   sessions,
   passwordResetTokens,
+  budgets,
 } from './schema';
 
 // ============================================================================
@@ -171,14 +171,51 @@ const INCOME_CATEGORIES = [
   { name: 'Other Income', budget: 0 },
 ];
 
-// Payment methods
-const PAYMENT_METHODS = [
-  { name: 'Cash', type: 'cash' as const },
-  { name: 'BCA Debit', type: 'debit_card' as const },
-  { name: 'BCA Credit Card', type: 'credit_card' as const },
-  { name: 'GoPay', type: 'e_wallet' as const },
-  { name: 'OVO', type: 'e_wallet' as const },
-  { name: 'Transfer', type: 'bank_transfer' as const },
+// Payment assets (used for daily transactions - cash, bank accounts, credit cards, e-wallets)
+const PAYMENT_ASSETS = [
+  {
+    name: 'Cash',
+    type: 'cash' as const,
+    balance: 2000000,
+    currency: 'IDR' as const,
+    is_cash_account: true,
+  },
+  {
+    name: 'BCA Debit',
+    type: 'bank_account' as const,
+    balance: 15000000,
+    currency: 'IDR' as const,
+    is_cash_account: true,
+  },
+  {
+    name: 'BCA Credit Card',
+    type: 'credit_card' as const,
+    balance: 5000000, // Outstanding debt
+    currency: 'IDR' as const,
+    is_cash_account: false,
+    credit_limit: 50000000,
+  },
+  {
+    name: 'GoPay',
+    type: 'e_wallet' as const,
+    balance: 500000,
+    currency: 'IDR' as const,
+    is_cash_account: true,
+  },
+  {
+    name: 'OVO',
+    type: 'e_wallet' as const,
+    balance: 300000,
+    currency: 'IDR' as const,
+    is_cash_account: true,
+  },
+  {
+    name: 'Transfer',
+    type: 'bank_account' as const,
+    balance: 10000000,
+    currency: 'IDR' as const,
+    is_cash_account: true,
+  },
 ];
 
 // Income transactions with amounts and dates
@@ -496,9 +533,9 @@ async function clearAllTables() {
     await db.delete(assetSnapshots);
     await db.delete(assetUpdateReminders);
     await db.delete(assetHistory);
-    await db.delete(assets);
     await db.delete(transactions);
-    await db.delete(paymentMethods);
+    await db.delete(budgets);
+    await db.delete(assets);
     await db.delete(categories);
     await db.delete(userSettings);
     await db.delete(users);
@@ -605,43 +642,18 @@ async function seedCategories(userId: string): Promise<Map<string, string>> {
 }
 
 /**
- * Seed payment methods
- */
-async function seedPaymentMethods(userId: string): Promise<Map<string, string>> {
-  console.log('💳 Seeding payment methods...');
-
-  const methodMap = new Map<string, string>();
-
-  for (const method of PAYMENT_METHODS) {
-    const id = nanoid();
-    await db.insert(paymentMethods).values({
-      id,
-      user_id: userId,
-      name: method.name,
-      type: method.type,
-      is_active: true,
-      created_at: new Date(),
-      updated_at: new Date(),
-    });
-    methodMap.set(method.name, id);
-  }
-
-  console.log(`✓ Created ${methodMap.size} payment methods`);
-  return methodMap;
-}
-
-/**
  * Seed income transactions for the 3 months
  */
 async function seedIncomeTransactions(
   userId: string,
   categoryMap: Map<string, string>,
-  methodMap: Map<string, string>
+  assetMap: Map<string, string>
 ): Promise<number> {
   console.log('💰 Seeding income transactions...');
 
   let count = 0;
-  const paymentMethodNames = Array.from(methodMap.keys());
+  // Use only payment assets for transactions (cash, bank accounts, e-wallets)
+  const paymentAssetNames = PAYMENT_ASSETS.map((a) => a.name);
 
   for (const income of INCOME_TRANSACTIONS) {
     const categoryId = categoryMap.get(income.description);
@@ -670,8 +682,9 @@ async function seedIncomeTransactions(
     }
 
     const finalCategoryId = categoryMap.get(income.description)!;
-    const paymentMethod = paymentMethodNames[Math.floor(Math.random() * paymentMethodNames.length)];
-    const paymentMethodId = methodMap.get(paymentMethod || 'Transfer')!;
+    // Pick a random payment asset (prefer bank accounts for income)
+    const assetName = paymentAssetNames[Math.floor(Math.random() * paymentAssetNames.length)];
+    const assetId = assetMap.get(assetName || 'Transfer')!;
 
     const transactionDate = specificDate(income.year, income.month, income.day);
     // Skip if date would be in the future
@@ -684,7 +697,7 @@ async function seedIncomeTransactions(
       id: nanoid(),
       user_id: userId,
       category_id: finalCategoryId,
-      payment_method_id: paymentMethodId,
+      asset_id: assetId,
       type: 'income',
       amount: amt(income.amount),
       currency: 'IDR',
@@ -706,7 +719,7 @@ async function seedIncomeTransactions(
 async function seedExpenseTransactions(
   userId: string,
   categoryMap: Map<string, string>,
-  methodMap: Map<string, string>
+  assetMap: Map<string, string>
 ): Promise<number> {
   console.log('💸 Seeding expense transactions...');
 
@@ -717,7 +730,8 @@ async function seedExpenseTransactions(
     { year: 2026, month: 1 }, // January 2026
   ];
 
-  const paymentMethodNames = Array.from(methodMap.keys());
+  // Use only payment assets for transactions
+  const paymentAssetNames = PAYMENT_ASSETS.map((a) => a.name);
 
   for (const { year, month } of monthsToSeed) {
     const daysInMonth = new Date(year, month, 0).getDate();
@@ -749,20 +763,20 @@ async function seedExpenseTransactions(
       // Add some random time variation
       transactionDate.setHours(SEED_TIME_HOUR + Math.floor(Math.random() * 10), 0, 0, 0);
 
-      // Select payment method (prefer debit/credit for larger amounts)
-      let methodName = paymentMethodNames[Math.floor(Math.random() * paymentMethodNames.length)];
+      // Select asset (prefer debit/credit card for larger amounts)
+      let assetName = paymentAssetNames[Math.floor(Math.random() * paymentAssetNames.length)];
       if (amount > 500000) {
-        methodName = Math.random() > 0.5 ? 'BCA Debit' : 'BCA Credit Card';
+        assetName = Math.random() > 0.5 ? 'BCA Debit' : 'BCA Credit Card';
       }
 
-      const paymentMethodId = methodMap.get(methodName || 'BCA Debit');
-      if (!paymentMethodId) continue;
+      const assetId = assetMap.get(assetName || 'BCA Debit');
+      if (!assetId) continue;
 
       await db.insert(transactions).values({
         id: nanoid(),
         user_id: userId,
         category_id: categoryId,
-        payment_method_id: paymentMethodId,
+        asset_id: assetId,
         type: 'expense',
         amount: amt(Math.round(amount)),
         currency: 'IDR',
@@ -794,16 +808,15 @@ async function seedExpenseTransactions(
 
         transactionDate.setHours(SEED_TIME_HOUR + Math.floor(Math.random() * 12), 0, 0, 0);
 
-        const methodName =
-          paymentMethodNames[Math.floor(Math.random() * paymentMethodNames.length)];
-        const paymentMethodId = methodMap.get(methodName || 'Cash');
-        if (!paymentMethodId) continue;
+        const assetName = paymentAssetNames[Math.floor(Math.random() * paymentAssetNames.length)];
+        const assetId = assetMap.get(assetName || 'Cash');
+        if (!assetId) continue;
 
         await db.insert(transactions).values({
           id: nanoid(),
           user_id: userId,
           category_id: categoryId,
-          payment_method_id: paymentMethodId,
+          asset_id: assetId,
           type: 'expense',
           amount,
           currency: 'IDR',
@@ -822,13 +835,33 @@ async function seedExpenseTransactions(
 }
 
 /**
- * Seed assets
+ * Seed assets (both payment assets and investment assets)
  */
 async function seedAssets(userId: string): Promise<Map<string, string>> {
   console.log('💰 Seeding assets...');
 
   const assetMap = new Map<string, string>();
 
+  // First, seed payment assets (cash, bank accounts, credit cards, e-wallets)
+  for (const asset of PAYMENT_ASSETS) {
+    const id = nanoid();
+    await db.insert(assets).values({
+      id,
+      user_id: userId,
+      name: asset.name,
+      type: asset.type,
+      balance: amt(asset.balance),
+      currency: asset.currency,
+      is_cash_account: asset.is_cash_account,
+      credit_limit: 'credit_limit' in asset ? amt(asset.credit_limit) : null,
+      last_updated: new Date(),
+      created_at: daysAgo(90),
+      updated_at: new Date(),
+    });
+    assetMap.set(asset.name, id);
+  }
+
+  // Then, seed investment assets
   for (const asset of ASSET_TYPES) {
     const id = nanoid();
     await db.insert(assets).values({
@@ -838,6 +871,7 @@ async function seedAssets(userId: string): Promise<Map<string, string>> {
       type: asset.type,
       balance: amt(asset.balance),
       currency: asset.currency,
+      is_cash_account: false, // Investment assets are not cash accounts
       last_updated: new Date(),
       created_at: daysAgo(90),
       updated_at: new Date(),
@@ -849,6 +883,9 @@ async function seedAssets(userId: string): Promise<Map<string, string>> {
   return assetMap;
 }
 
+// Combined list of all assets for lookup
+const ALL_ASSETS = [...PAYMENT_ASSETS, ...ASSET_TYPES];
+
 /**
  * Seed asset history (weekly updates for 12 weeks)
  */
@@ -858,12 +895,13 @@ async function seedAssetHistory(assetMap: Map<string, string>): Promise<void> {
   let historyCount = 0;
 
   for (const [assetName, assetId] of assetMap.entries()) {
+    const assetConfig = ALL_ASSETS.find((a) => a.name === assetName);
+    if (!assetConfig) continue; // Skip if asset not found
+
     // Generate weekly history for 12 weeks
     for (let week = 0; week < 12; week++) {
       const recordedAt = daysAgo(week * 7);
-      const baseBalance = parseFloat(
-        ASSET_TYPES.find((a) => a.name === assetName)!.balance.toString()
-      );
+      const baseBalance = parseFloat(assetConfig.balance.toString());
 
       // Add some variation to the balance
       const variation = (Math.random() - 0.5) * baseBalance * 0.1; // ±5% variation
@@ -893,8 +931,11 @@ async function seedAssetUpdateReminders(
   console.log('🔔 Seeding asset update reminders...');
 
   for (const [assetName, assetId] of assetMap.entries()) {
+    const assetConfig = ALL_ASSETS.find((a) => a.name === assetName);
+    if (!assetConfig) continue; // Skip if asset not found
+
     // Set different frequencies based on asset type
-    const assetType = ASSET_TYPES.find((a) => a.name === assetName)!.type;
+    const assetType = assetConfig.type;
     let frequency: 'weekly' | 'monthly' | 'quarterly' = 'monthly';
 
     if (assetType === 'crypto' || assetType === 'stock') {
@@ -950,8 +991,10 @@ async function seedAssetSnapshots(userId: string, assetMap: Map<string, string>)
 
     // Add snapshot items for each asset
     for (const [assetName, assetId] of assetMap.entries()) {
-      const asset = ASSET_TYPES.find((a) => a.name === assetName)!;
-      const baseBalance = parseFloat(asset.balance.toString());
+      const assetConfig = ALL_ASSETS.find((a) => a.name === assetName);
+      if (!assetConfig) continue; // Skip if asset not found
+
+      const baseBalance = parseFloat(assetConfig.balance.toString());
 
       // Add some historical variation
       const variation = (Math.random() - 0.5) * baseBalance * 0.15; // ±7.5% variation
@@ -962,7 +1005,7 @@ async function seedAssetSnapshots(userId: string, assetMap: Map<string, string>)
         snapshot_id: snapshotId,
         asset_id: assetId,
         balance,
-        currency: asset.currency,
+        currency: assetConfig.currency,
       });
     }
   }
@@ -1018,14 +1061,15 @@ async function seed() {
     // Seed in dependency order
     const userId = await seedUsers();
     const categoryMap = await seedCategories(userId);
-    const methodMap = await seedPaymentMethods(userId);
+
+    // Seed assets FIRST (transactions now depend on assets)
+    const assetMap = await seedAssets(userId);
 
     // Seed transactions for the 3 months
-    await seedIncomeTransactions(userId, categoryMap, methodMap);
-    await seedExpenseTransactions(userId, categoryMap, methodMap);
+    await seedIncomeTransactions(userId, categoryMap, assetMap);
+    await seedExpenseTransactions(userId, categoryMap, assetMap);
 
-    // Seed assets
-    const assetMap = await seedAssets(userId);
+    // Seed asset-related data
     await seedAssetHistory(assetMap);
     await seedAssetUpdateReminders(userId, assetMap);
     await seedAssetSnapshots(userId, assetMap);

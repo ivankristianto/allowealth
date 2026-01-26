@@ -31,7 +31,7 @@
 
 import MainLayout from './MainLayout.astro';
 import TransactionModal from '@/components/organisms/TransactionModal.astro';
-import { categoryService, paymentMethodService } from '@/services';
+import { categoryService, assetService } from '@/services';
 
 interface Props {
   title?: string;
@@ -44,14 +44,14 @@ const { title = 'Finance Manager', currentPath = '/', subtitle } = Astro.props;
 // User is authenticated (enforced by middleware)
 const user = Astro.locals.user!;
 
-// Fetch categories and payment methods for global transaction modal
+// Fetch categories and assets for global transaction modal
 let categories: Array<{ id: string; name: string; type: string; currency?: string }> = [];
-let paymentMethods: Array<{ id: string; name: string; type: string }> = [];
+let assets: Array<{ id: string; name: string; type: string }> = [];
 
 try {
-  [categories, paymentMethods] = await Promise.all([
+  [categories, assets] = await Promise.all([
     categoryService.findAll(user.id, { is_active: true }),
-    paymentMethodService.findAll(user.id, { is_active: true }),
+    assetService.findAll(user.id),
   ]);
 } catch (err) {
   console.error('Error loading transaction form data:', err);
@@ -71,7 +71,7 @@ try {
   open={false}
   action="/api/transactions"
   categories={categories}
-  paymentMethods={paymentMethods}
+  assets={assets}
 />
 <TransactionModal
   id="income-modal"
@@ -80,7 +80,7 @@ try {
   open={false}
   action="/api/transactions"
   categories={categories}
-  paymentMethods={paymentMethods}
+  assets={assets}
 />
 
 <!-- Edit Modal (dynamically populated) -->
@@ -91,7 +91,7 @@ try {
   open={false}
   action="/api/transactions"
   categories={categories}
-  paymentMethods={paymentMethods}
+  assets={assets}
 />
 
 <!-- Client-side script for edit modal handling -->
@@ -123,7 +123,7 @@ try {
     amount: string;
     currency: string;
     category_id: string;
-    payment_method_id: string;
+    asset_id: string;
     transaction_date: string;
   }) {
     const modal = document.getElementById('edit-transaction-modal') as HTMLDialogElement | null;
@@ -164,10 +164,8 @@ try {
     ) as HTMLSelectElement | null;
     if (categorySelect) categorySelect.value = data.category_id || '';
 
-    const paymentMethodSelect = form.querySelector(
-      'select[name="payment_method_id"]'
-    ) as HTMLSelectElement | null;
-    if (paymentMethodSelect) paymentMethodSelect.value = data.payment_method_id || '';
+    const assetSelect = form.querySelector('select[name="asset_id"]') as HTMLSelectElement | null;
+    if (assetSelect) assetSelect.value = data.asset_id || '';
 
     // Update modal header based on type
     const modalTitle = modal.querySelector('[data-modal-title]');

@@ -96,8 +96,8 @@ function buildQueryString(
     params.set('category_ids', filters.category_ids.join(','));
   }
 
-  if (filters.payment_method_id) {
-    params.set('payment_method_id', filters.payment_method_id);
+  if (filters.asset_id) {
+    params.set('asset_id', filters.asset_id);
   }
 
   if (filters.currency) {

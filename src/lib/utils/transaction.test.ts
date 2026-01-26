@@ -27,8 +27,8 @@ describe('transaction utilities', () => {
         name: 'Groceries',
         type: 'expense',
       },
-      paymentMethod: {
-        id: 'pm-1',
+      asset: {
+        id: 'asset-1',
         name: 'Cash',
         type: 'cash',
       },
@@ -52,13 +52,13 @@ describe('transaction utilities', () => {
       expect(result.category.type).toBe('expense');
     });
 
-    test('transforms paymentMethod to payment_method (snake_case)', () => {
+    test('transforms asset correctly', () => {
       const result = transformTransaction(mockDrizzleTransaction);
 
-      expect(result.payment_method).toBeDefined();
-      expect(result.payment_method.id).toBe('pm-1');
-      expect(result.payment_method.name).toBe('Cash');
-      expect(result.payment_method.type).toBe('cash');
+      expect(result.asset).toBeDefined();
+      expect(result.asset.id).toBe('asset-1');
+      expect(result.asset.name).toBe('Cash');
+      expect(result.asset.type).toBe('cash');
     });
 
     test('handles null description', () => {

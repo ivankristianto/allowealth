@@ -23,7 +23,7 @@ export const mockDb = {
       findFirst: () => mockDb,
       findMany: () => mockDb,
     },
-    paymentMethods: {
+    assets: {
       findFirst: () => mockDb,
       findMany: () => mockDb,
     },
@@ -69,22 +69,30 @@ export const mockCategories = [
   },
 ];
 
-export const mockPaymentMethods = [
+export const mockAssets = [
   {
-    id: 'pm-1',
+    id: 'asset-1',
     user_id: 'user-1',
     name: 'Cash',
     type: 'cash' as const,
+    currency: 'IDR',
+    balance: '1000000',
     is_active: true,
+    is_cash_account: true,
+    credit_limit: null,
     created_at: new Date('2026-01-01'),
     updated_at: new Date('2026-01-01'),
   },
   {
-    id: 'pm-2',
+    id: 'asset-2',
     user_id: 'user-1',
     name: 'BCA Bank',
-    type: 'bank_transfer' as const,
+    type: 'bank_account' as const,
+    currency: 'IDR',
+    balance: '10000000',
     is_active: true,
+    is_cash_account: true,
+    credit_limit: null,
     created_at: new Date('2026-01-01'),
     updated_at: new Date('2026-01-01'),
   },
@@ -95,7 +103,8 @@ export const mockTransactions = [
     id: 'txn-1',
     user_id: 'user-1',
     category_id: 'cat-1',
-    payment_method_id: 'pm-1',
+    asset_id: 'asset-1',
+    to_asset_id: null,
     type: 'expense' as const,
     amount: '50000',
     currency: 'IDR',
@@ -105,7 +114,7 @@ export const mockTransactions = [
     created_at: new Date('2026-01-05'),
     updated_at: new Date('2026-01-05'),
     category: mockCategories[0],
-    paymentMethod: mockPaymentMethods[0],
+    asset: mockAssets[0],
   },
 ];
 

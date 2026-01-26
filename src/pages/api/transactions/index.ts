@@ -54,9 +54,9 @@ export const GET: APIRoute = async (context) => {
       filters.category_ids = categoryIds.split(',').filter(Boolean);
     }
 
-    const paymentMethodId = url.searchParams.get('payment_method_id');
-    if (paymentMethodId) {
-      filters.payment_method_id = paymentMethodId;
+    const assetId = url.searchParams.get('asset_id');
+    if (assetId) {
+      filters.asset_id = assetId;
     }
 
     const currency = url.searchParams.get('currency');
@@ -90,7 +90,7 @@ export const GET: APIRoute = async (context) => {
     const rawTransactions = await transactionService.findAll(filters);
     const total = await transactionService.count(filters);
 
-    // Transform to TransactionOutput format (snake_case for payment_method)
+    // Transform to TransactionOutput format
     const transactions = rawTransactions.map(transformTransaction);
 
     // Calculate month-based summary (only uses date range, not other filters)
@@ -247,7 +247,8 @@ export const POST: APIRoute = async (context) => {
       amount: validation.data.amount,
       currency: validation.data.currency,
       category_id: validation.data.category_id,
-      payment_method_id: validation.data.payment_method_id,
+      asset_id: validation.data.asset_id,
+      to_asset_id: validation.data.to_asset_id,
       transaction_date: transactionDate,
       description: validation.data.description,
     });

@@ -51,8 +51,8 @@ export interface MockTransaction {
   userId: string;
   categoryId: string;
   categoryName: string;
-  paymentMethodId: string;
-  paymentMethodName: string;
+  assetId: string;
+  assetName: string;
   type: 'expense' | 'income';
   amount: string;
   currency: 'IDR' | 'USD';
@@ -298,11 +298,11 @@ function generateMockRecentTransactions(userId: string, rng: SeededRandom): Mock
     { id: 'cat-6', name: 'Freelance' },
   ];
 
-  const paymentMethods = [
-    { id: 'pm-1', name: 'BCA' },
-    { id: 'pm-2', name: 'Mandiri' },
-    { id: 'pm-3', name: 'GoPay' },
-    { id: 'pm-4', name: 'OVO' },
+  const assets = [
+    { id: 'asset-1', name: 'BCA Savings' },
+    { id: 'asset-2', name: 'Mandiri Checking' },
+    { id: 'asset-3', name: 'GoPay' },
+    { id: 'asset-4', name: 'OVO' },
   ];
 
   const expenseDescriptions = [
@@ -341,7 +341,7 @@ function generateMockRecentTransactions(userId: string, rng: SeededRandom): Mock
     const category = categories[categoryIndex];
     const descriptions = isExpense ? expenseDescriptions : incomeDescriptions;
     const descriptionIndex = rng.nextInt(0, descriptions.length - 1);
-    const paymentMethodIndex = rng.nextInt(0, paymentMethods.length - 1);
+    const assetIndex = rng.nextInt(0, assets.length - 1);
     const amount = isExpense
       ? rng.nextFloat(20_000, 2_000_000)
       : rng.nextFloat(5_000_000, 20_000_000);
@@ -353,8 +353,8 @@ function generateMockRecentTransactions(userId: string, rng: SeededRandom): Mock
         userId,
         categoryId: category.id,
         categoryName: category.name,
-        paymentMethodId: paymentMethods[paymentMethodIndex]?.id || 'pm-default',
-        paymentMethodName: paymentMethods[paymentMethodIndex]?.name || 'Default',
+        assetId: assets[assetIndex]?.id || 'asset-default',
+        assetName: assets[assetIndex]?.name || 'Default',
         type: isExpense ? 'expense' : 'income',
         amount: amount.toFixed(2),
         currency: 'IDR',

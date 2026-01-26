@@ -10,7 +10,7 @@
  * @param {number} pageSize - Number of transactions per page
  * @param {string} baseUrl - Base URL for pagination
  * @param {Array} categories - Available categories for filters
- * @param {Array} paymentMethods - Available payment methods for filters
+ * @param {Array} assets - Available assets for filters
  * @param {Object} filters - Current filter values
  * @param {boolean} showFilters - Show filter panel
  */
@@ -30,7 +30,7 @@ export interface Props {
   pageSize: number;
   baseUrl: string;
   categories?: Array<{ id: string; name: string; type: string }>;
-  paymentMethods?: Array<{ id: string; name: string; type: string }>;
+  assets?: Array<{ id: string; name: string; type: string }>;
   filters?: Record<string, string>;
   showFilters?: boolean;
 }
@@ -42,7 +42,7 @@ const {
   pageSize = 50,
   baseUrl,
   categories = [],
-  paymentMethods = [],
+  assets = [],
   filters = {},
   showFilters = true,
 } = Astro.props;
@@ -129,7 +129,7 @@ const buildDirectExportUrl = () => {
           <TransactionFilters
             action={baseUrl}
             categories={categories}
-            paymentMethods={paymentMethods}
+            assets={assets}
             values={filters}
             count={total}
           />

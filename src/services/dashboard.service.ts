@@ -99,7 +99,7 @@ export interface DashboardData {
   assetReminders: AssetReminder[];
   recentTransactions: Array<{
     id: string;
-    type: 'expense' | 'income';
+    type: 'expense' | 'income' | 'transfer';
     amount: string;
     currency: 'IDR' | 'USD';
     description: string | null;
@@ -109,9 +109,10 @@ export interface DashboardData {
       name: string;
       type: 'expense' | 'income';
     };
-    paymentMethod: {
+    asset: {
       id: string;
       name: string;
+      type: string;
     };
   }>;
 }
@@ -455,7 +456,7 @@ export class DashboardService {
   ): Promise<
     Array<{
       id: string;
-      type: 'expense' | 'income';
+      type: 'expense' | 'income' | 'transfer';
       amount: string;
       currency: 'IDR' | 'USD';
       description: string | null;
@@ -465,9 +466,10 @@ export class DashboardService {
         name: string;
         type: 'expense' | 'income';
       };
-      paymentMethod: {
+      asset: {
         id: string;
         name: string;
+        type: string;
       };
     }>
   > {
@@ -487,7 +489,7 @@ export class DashboardService {
         where: and(eq(transactions.user_id, userId), sql`${transactions.deleted_at} IS NULL`),
         with: {
           category: true,
-          paymentMethod: true,
+          asset: true,
         },
         orderBy: [desc(transactions.transaction_date), desc(transactions.created_at)],
         limit,
@@ -506,9 +508,10 @@ export class DashboardService {
           name: tx.category.name,
           type: tx.category.type,
         },
-        paymentMethod: {
-          id: tx.paymentMethod.id,
-          name: tx.paymentMethod.name,
+        asset: {
+          id: tx.asset.id,
+          name: tx.asset.name,
+          type: tx.asset.type,
         },
       }));
     } catch (error) {

@@ -62,7 +62,7 @@ const cspNonce = Astro.locals.cspNonce || '';
   <input type="hidden" name="map_amount" id="map-amount-hidden" />
   <input type="hidden" name="map_currency" id="map-currency-hidden" />
   <input type="hidden" name="map_category" id="map-category-hidden" />
-  <input type="hidden" name="map_payment_method" id="map-payment-method-hidden" />
+  <input type="hidden" name="map_asset" id="map-asset-hidden" />
   <input type="hidden" name="map_description" id="map-description-hidden" />
 </form>
 
@@ -101,7 +101,7 @@ const cspNonce = Astro.locals.cspNonce || '';
           <li>amount (numeric value)</li>
           <li>currency (IDR or USD)</li>
           <li>category (category name)</li>
-          <li>payment_method (payment method name)</li>
+          <li>asset (asset/account name)</li>
           <li>description (optional notes)</li>
         </ul>
       </div>
@@ -405,10 +405,10 @@ const cspNonce = Astro.locals.cspNonce || '';
       { key: 'currency', label: 'Currency', required: true, helpText: 'Currency code (IDR/USD)' },
       { key: 'category', label: 'Category', required: true, helpText: 'Category name' },
       {
-        key: 'payment_method',
-        label: 'Payment Method',
+        key: 'asset',
+        label: 'Account',
         required: true,
-        helpText: 'Payment method name',
+        helpText: 'Asset/account name',
       },
       { key: 'description', label: 'Description', required: false, helpText: 'Optional notes' },
     ];

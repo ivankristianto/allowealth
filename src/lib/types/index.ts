@@ -11,10 +11,6 @@
 export type { Category, CategoryOutput, CategoryBudgetStatus } from './category';
 export type { CategoryType, Currency } from './category';
 
-// Payment Methods
-export type { PaymentMethod, PaymentMethodOutput } from './payment-method';
-export type { PaymentMethodType } from './payment-method';
-
 // Transactions
 export type { Transaction, TransactionOutput, TransactionSummary } from './transaction';
 export type { TransactionType } from './transaction';
@@ -33,12 +29,6 @@ export { formatAssetType, getAssetTypeLabel, ASSET_TYPE_LABELS } from './asset';
 
 // Re-export Input/Update/Filter types from validation (single source of truth)
 export type { CreateCategoryInput, UpdateCategoryInput, CategoryFilter } from '@/lib/validation';
-
-export type {
-  CreatePaymentMethodInput,
-  UpdatePaymentMethodInput,
-  PaymentMethodFilter,
-} from '@/lib/validation';
 
 export type {
   CreateTransactionInput,

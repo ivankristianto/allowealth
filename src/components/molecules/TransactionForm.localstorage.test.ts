@@ -14,11 +14,11 @@
  * Manual Testing Steps:
  * 1. Open the application in a browser
  * 2. Navigate to /transactions/add
- * 3. Add a transaction with category "Food" and payment method "Cash"
+ * 3. Add a transaction with category "Food" and asset "Cash"
  * 4. Navigate away, then back to /transactions/add
  * 5. Verify "Food" and "Cash" are pre-selected
  * 6. Change transaction type to "income"
- * 7. Add an income transaction with category "Salary" and payment method "Bank Transfer"
+ * 7. Add an income transaction with category "Salary" and asset "Bank Transfer"
  * 8. Navigate away, then back to /transactions/add?type=income
  * 9. Verify "Salary" and "Bank Transfer" are pre-selected for income
  * 10. Change back to expense type - verify "Food" is still remembered (separate storage)
@@ -43,13 +43,13 @@ const STORAGE_PREFIX = 'expensesApp.';
 const OLD_STORAGE_KEYS = {
   lastExpenseCategory: 'lastExpenseCategory',
   lastIncomeCategory: 'lastIncomeCategory',
-  lastPaymentMethod: 'lastPaymentMethod',
+  lastAsset: 'lastAsset',
 } as const;
 
 const STORAGE_KEYS = {
   lastExpenseCategory: STORAGE_PREFIX + 'lastExpenseCategory',
   lastIncomeCategory: STORAGE_PREFIX + 'lastIncomeCategory',
-  lastPaymentMethod: STORAGE_PREFIX + 'lastPaymentMethod',
+  lastAsset: STORAGE_PREFIX + 'lastAsset',
 } as const;
 
 /**
@@ -67,12 +67,12 @@ const STORAGE_KEYS = {
  *   localStorage.setItem(key, categoryId);
  * }
  *
- * function getLastUsedPaymentMethod(): string | null {
- *   return localStorage.getItem(STORAGE_KEYS.lastPaymentMethod);
+ * function getLastUsedAsset(): string | null {
+ *   return localStorage.getItem(STORAGE_KEYS.lastAsset);
  * }
  *
- * function setLastUsedPaymentMethod(paymentMethodId: string): void {
- *   localStorage.setItem(STORAGE_KEYS.lastPaymentMethod, paymentMethodId);
+ * function setLastUsedAsset(assetId: string): void {
+ *   localStorage.setItem(STORAGE_KEYS.lastAsset, assetId);
  * }
  */
 
@@ -81,13 +81,13 @@ describe('TransactionForm localStorage Functionality', () => {
     it('should use namespaced storage keys', () => {
       expect(STORAGE_KEYS.lastExpenseCategory).toBe('expensesApp.lastExpenseCategory');
       expect(STORAGE_KEYS.lastIncomeCategory).toBe('expensesApp.lastIncomeCategory');
-      expect(STORAGE_KEYS.lastPaymentMethod).toBe('expensesApp.lastPaymentMethod');
+      expect(STORAGE_KEYS.lastAsset).toBe('expensesApp.lastAsset');
     });
 
     it('should have namespace prefix to prevent collisions', () => {
       expect(STORAGE_KEYS.lastExpenseCategory).toContain('.');
       expect(STORAGE_KEYS.lastIncomeCategory).toContain('.');
-      expect(STORAGE_KEYS.lastPaymentMethod).toContain('.');
+      expect(STORAGE_KEYS.lastAsset).toContain('.');
     });
   });
 
@@ -95,7 +95,7 @@ describe('TransactionForm localStorage Functionality', () => {
     it('should define old storage keys for migration', () => {
       expect(OLD_STORAGE_KEYS.lastExpenseCategory).toBe('lastExpenseCategory');
       expect(OLD_STORAGE_KEYS.lastIncomeCategory).toBe('lastIncomeCategory');
-      expect(OLD_STORAGE_KEYS.lastPaymentMethod).toBe('lastPaymentMethod');
+      expect(OLD_STORAGE_KEYS.lastAsset).toBe('lastAsset');
     });
 
     it('should migrate old keys to new namespaced keys', () => {
@@ -104,12 +104,12 @@ describe('TransactionForm localStorage Functionality', () => {
        * 1. User has old localStorage keys (without namespace):
        *    - lastExpenseCategory = 'food-id'
        *    - lastIncomeCategory = 'salary-id'
-       *    - lastPaymentMethod = 'cash-id'
+       *    - lastAsset = 'cash-id'
        * 2. On page load, migrateLocalStorageKeys() runs
        * 3. Old values are copied to new namespaced keys:
        *    - expensesApp.lastExpenseCategory = 'food-id'
        *    - expensesApp.lastIncomeCategory = 'salary-id'
-       *    - expensesApp.lastPaymentMethod = 'cash-id'
+       *    - expensesApp.lastAsset = 'cash-id'
        * 4. Old keys are removed
        * 5. Migration flag is set: expensesApp.migrated = 'true'
        * 6. Future page loads skip migration (flag already set)
@@ -176,13 +176,13 @@ describe('TransactionForm localStorage Functionality', () => {
       expect(true).toBe(true); // Documentation test
     });
 
-    it('should pre-select last used payment method on form load', () => {
+    it('should pre-select last used asset on form load', () => {
       /**
        * Scenario:
-       * 1. User has previously used "Cash" payment method
+       * 1. User has previously used "Cash" asset
        * 2. User navigates to /transactions/add
-       * 3. Payment method select should have "Cash" pre-selected
-       * Note: Payment method is shared between expense and income transactions
+       * 3. Asset select should have "Cash" pre-selected
+       * Note: Asset is shared between expense and income transactions
        */
       expect(true).toBe(true); // Documentation test
     });
@@ -190,12 +190,12 @@ describe('TransactionForm localStorage Functionality', () => {
     it('should save selections to localStorage after successful form submission', () => {
       /**
        * Scenario:
-       * 1. User fills form with category="Food", payment_method="Cash"
+       * 1. User fills form with category="Food", asset="Cash"
        * 2. User submits form
        * 3. API returns success response
        * 4. Before redirect, localStorage should be updated:
        *    - localStorage.setItem('lastExpenseCategory', 'food-id')
-       *    - localStorage.setItem('lastPaymentMethod', 'cash-id')
+       *    - localStorage.setItem('lastAsset', 'cash-id')
        * 5. Then redirect to /transactions
        */
       expect(true).toBe(true); // Documentation test
@@ -204,7 +204,7 @@ describe('TransactionForm localStorage Functionality', () => {
     it('should not override localStorage if form submission fails', () => {
       /**
        * Scenario:
-       * 1. User fills form with category="NewFood", payment_method="Card"
+       * 1. User fills form with category="NewFood", asset="Card"
        * 2. User submits form
        * 3. API returns error (validation or server error)
        * 4. localStorage should NOT be updated
@@ -319,12 +319,12 @@ describe('TransactionForm localStorage Functionality', () => {
  *
  * Pre-test Setup:
  * [ ] Clear browser localStorage (DevTools > Application > Local Storage > Clear)
- * [ ] Ensure test categories and payment methods exist in database
+ * [ ] Ensure test categories and assets exist in database
  *
  * Test 1: Expense Category Memory
  * [ ] Navigate to /transactions/add
  * [ ] Select "Food" category
- * [ ] Fill amount, date, and payment method
+ * [ ] Fill amount, date, and asset
  * [ ] Submit form
  * [ ] Verify redirect to /transactions
  * [ ] Navigate back to /transactions/add
@@ -334,17 +334,17 @@ describe('TransactionForm localStorage Functionality', () => {
  * Test 2: Income Category Memory (Separate from Expense)
  * [ ] On /transactions/add, click "Income" radio button
  * [ ] Select "Salary" category
- * [ ] Fill amount, date, and payment method
+ * [ ] Fill amount, date, and asset
  * [ ] Submit form
  * [ ] Navigate back to /transactions/add
  * [ ] Verify "Income" is selected and "Salary" category is pre-selected
  * [ ] Click "Expense" radio button
  * [ ] Verify "Food" category is still pre-selected (separate storage)
  *
- * Test 3: Payment Method Memory (Shared)
- * [ ] Add expense transaction with "Bank Transfer" payment method
+ * Test 3: Asset Memory (Shared)
+ * [ ] Add expense transaction with "Bank Transfer" asset
  * [ ] Navigate to /transactions/add?type=income
- * [ ] Verify "Bank Transfer" payment method is pre-selected
+ * [ ] Verify "Bank Transfer" asset is pre-selected
  *
  * Test 4: Category Type Change
  * [ ] On /transactions/add, note the pre-selected expense category
@@ -398,16 +398,16 @@ describe('TransactionForm localStorage Functionality', () => {
  * [ ] Manually set old keys (without namespace):
  *     [ ] localStorage.setItem('lastExpenseCategory', 'food-id')
  *     [ ] localStorage.setItem('lastIncomeCategory', 'salary-id')
- *     [ ] localStorage.setItem('lastPaymentMethod', 'cash-id')
+ *     [ ] localStorage.setItem('lastAsset', 'cash-id')
  * [ ] Navigate to /transactions/add
  * [ ] Verify new namespaced keys exist:
  *     [ ] localStorage.getItem('expensesApp.lastExpenseCategory') === 'food-id'
  *     [ ] localStorage.getItem('expensesApp.lastIncomeCategory') === 'salary-id'
- *     [ ] localStorage.getItem('expensesApp.lastPaymentMethod') === 'cash-id'
+ *     [ ] localStorage.getItem('expensesApp.lastAsset') === 'cash-id'
  * [ ] Verify old keys are removed:
  *     [ ] localStorage.getItem('lastExpenseCategory') === null
  *     [ ] localStorage.getItem('lastIncomeCategory') === null
- *     [ ] localStorage.getItem('lastPaymentMethod') === null
+ *     [ ] localStorage.getItem('lastAsset') === null
  * [ ] Verify migration flag is set:
  *     [ ] localStorage.getItem('expensesApp.migrated') === 'true'
  *
@@ -421,11 +421,11 @@ describe('TransactionForm localStorage Functionality', () => {
  *
  * Test 13: Namespace Prefix Prevents Collisions
  * [ ] Set a key that could collide without namespace:
- *     [ ] localStorage.setItem('lastPaymentMethod', 'external-value')
+ *     [ ] localStorage.setItem('lastAsset', 'external-value')
  * [ ] Navigate to /transactions/add
- * [ ] Verify the app uses namespaced key 'expensesApp.lastPaymentMethod'
+ * [ ] Verify the app uses namespaced key 'expensesApp.lastAsset'
  * [ ] Verify the non-namespaced key is not read by the app
- * [ ] Add a transaction with payment method "Card"
- * [ ] Verify only 'expensesApp.lastPaymentMethod' is updated
- * [ ] Verify 'lastPaymentMethod' still has 'external-value' (not touched)
+ * [ ] Add a transaction with asset "Card"
+ * [ ] Verify only 'expensesApp.lastAsset' is updated
+ * [ ] Verify 'lastAsset' still has 'external-value' (not touched)
  */

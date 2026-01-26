@@ -22,7 +22,7 @@
 
 import { describe, it, expect, beforeAll, afterAll, afterEach } from 'bun:test';
 import { db } from '@/db';
-import { users, transactions, categories, paymentMethods } from '@/db';
+import { users, transactions, categories, assets } from '@/db';
 import { eq, and } from 'drizzle-orm';
 import { auth } from '@/lib/auth/lucia';
 import { clearRateLimitStore } from '@/lib/rate-limit';
@@ -38,7 +38,7 @@ const TEST_USER = {
 let testUserId: string;
 let testSessionId: string;
 let testCategoryId: string;
-let testPaymentMethodId: string;
+let testAssetId: string;
 let shouldSkip = false;
 let serverNotRunning = false;
 
@@ -77,24 +77,24 @@ describe('Transaction API Integration Tests', () => {
 
     testUserId = user.id;
 
-    // Get a category and payment method for creating test transactions
+    // Get a category and asset for creating test transactions
     const category = await db.query.categories.findFirst({
       where: and(eq(categories.user_id, testUserId), eq(categories.type, 'expense')),
     });
 
-    const paymentMethod = await db.query.paymentMethods.findFirst({
-      where: eq(paymentMethods.user_id, testUserId),
+    const asset = await db.query.assets.findFirst({
+      where: eq(assets.user_id, testUserId),
     });
 
-    if (!category || !paymentMethod) {
-      console.warn(`\n⚠️  Skipping API integration tests: Categories/payment methods not found.`);
+    if (!category || !asset) {
+      console.warn(`\n⚠️  Skipping API integration tests: Categories/assets not found.`);
       console.warn(`   Run 'bun run db:seed' to create test data.\n`);
       shouldSkip = true;
       return;
     }
 
     testCategoryId = category.id;
-    testPaymentMethodId = paymentMethod.id;
+    testAssetId = asset.id;
 
     // Create a session for authenticated requests
     const session = await auth.createSession(testUserId, {});
@@ -305,11 +305,9 @@ describe('Transaction API Integration Tests', () => {
       });
     });
 
-    it('should filter by payment_method_id', async () => {
+    it('should filter by asset_id', async () => {
       await skipIfNotReady(async () => {
-        const response = await makeRequest(
-          `/api/transactions?payment_method_id=${testPaymentMethodId}`
-        );
+        const response = await makeRequest(`/api/transactions?asset_id=${testAssetId}`);
 
         expect(response.status).toBe(200);
 
@@ -317,9 +315,9 @@ describe('Transaction API Integration Tests', () => {
         expect(json.success).toBe(true);
         expect(Array.isArray(json.data.transactions)).toBe(true);
 
-        // All transactions should have the specified payment method
+        // All transactions should have the specified asset
         for (const transaction of json.data.transactions) {
-          expect(transaction.payment_method_id).toBe(testPaymentMethodId);
+          expect(transaction.asset_id).toBe(testAssetId);
         }
       });
     });
@@ -350,7 +348,7 @@ describe('Transaction API Integration Tests', () => {
           amount: '50000',
           currency: 'IDR',
           category_id: testCategoryId,
-          payment_method_id: testPaymentMethodId,
+          asset_id: testAssetId,
           transaction_date: getTodayDate(),
           description: uniqueDescription,
         });
@@ -461,7 +459,7 @@ describe('Transaction API Integration Tests', () => {
           amount: '150000',
           currency: 'IDR',
           category_id: testCategoryId,
-          payment_method_id: testPaymentMethodId,
+          asset_id: testAssetId,
           transaction_date: getTodayDate(),
           description: 'Test transaction creation',
         };
@@ -477,7 +475,7 @@ describe('Transaction API Integration Tests', () => {
         expect(json.data.amount).toBe('150000');
         expect(json.data.currency).toBe('IDR');
         expect(json.data.category_id).toBe(testCategoryId);
-        expect(json.data.payment_method_id).toBe(testPaymentMethodId);
+        expect(json.data.asset_id).toBe(testAssetId);
         expect(json.data.description).toBe('Test transaction creation');
 
         // Track for cleanup
@@ -502,7 +500,7 @@ describe('Transaction API Integration Tests', () => {
           amount: '5000000',
           currency: 'IDR',
           category_id: incomeCategory.id,
-          payment_method_id: testPaymentMethodId,
+          asset_id: testAssetId,
           transaction_date: getTodayDate(),
           description: 'Test income transaction',
         };
@@ -539,7 +537,7 @@ describe('Transaction API Integration Tests', () => {
           amount: '-50000',
           currency: 'IDR',
           category_id: testCategoryId,
-          payment_method_id: testPaymentMethodId,
+          asset_id: testAssetId,
           transaction_date: getTodayDate(),
         };
 
@@ -560,7 +558,7 @@ describe('Transaction API Integration Tests', () => {
           amount: '50000',
           currency: 'IDR',
           category_id: testCategoryId,
-          payment_method_id: testPaymentMethodId,
+          asset_id: testAssetId,
           transaction_date: 'invalid-date',
         };
 
@@ -585,7 +583,7 @@ describe('Transaction API Integration Tests', () => {
           amount: '50000',
           currency: 'IDR',
           category_id: testCategoryId,
-          payment_method_id: testPaymentMethodId,
+          asset_id: testAssetId,
           transaction_date: futureDateStr,
         };
 
@@ -606,7 +604,7 @@ describe('Transaction API Integration Tests', () => {
           amount: '50000',
           currency: 'IDR',
           category_id: testCategoryId,
-          payment_method_id: testPaymentMethodId,
+          asset_id: testAssetId,
           transaction_date: getTodayDate(),
         };
 
@@ -627,7 +625,7 @@ describe('Transaction API Integration Tests', () => {
           amount: '50000',
           currency: 'INVALID',
           category_id: testCategoryId,
-          payment_method_id: testPaymentMethodId,
+          asset_id: testAssetId,
           transaction_date: getTodayDate(),
         };
 
@@ -689,7 +687,7 @@ describe('Transaction API Integration Tests', () => {
           amount: '50000',
           currency: 'IDR',
           category_id: testCategoryId,
-          payment_method_id: testPaymentMethodId,
+          asset_id: testAssetId,
           transaction_date: getTodayDate(),
         };
 
@@ -713,7 +711,7 @@ describe('Transaction API Integration Tests', () => {
           amount: '50000',
           currency: 'IDR',
           category_id: testCategoryId,
-          payment_method_id: testPaymentMethodId,
+          asset_id: testAssetId,
           transaction_date: getTodayDate(),
           description: 'x'.repeat(501), // Max is 500
         };
@@ -738,7 +736,7 @@ describe('Transaction API Integration Tests', () => {
           amount: '75000',
           currency: 'IDR',
           category_id: testCategoryId,
-          payment_method_id: testPaymentMethodId,
+          asset_id: testAssetId,
           transaction_date: getTodayDate(),
           description: 'Test get by ID',
         });
@@ -798,10 +796,10 @@ describe('Transaction API Integration Tests', () => {
     it('should not return transactions from other users', async () => {
       await skipIfNotReady(async () => {
         // Create a transaction directly in the database with a different user ID
-        // Note: We use the test user's category/payment method IDs since the API
+        // Note: We use the test user's category/asset IDs since the API
         // only checks user_id on the transaction itself, not related entities.
         // In a real scenario, a malicious user wouldn't have access to
-        // another user's categories/payment methods anyway.
+        // another user's categories/assets anyway.
         const otherUserId = 'other-user-id-12345';
         const transactionId = `other-user-txn-${Date.now()}`;
 
@@ -809,7 +807,7 @@ describe('Transaction API Integration Tests', () => {
           id: transactionId,
           user_id: otherUserId,
           category_id: testCategoryId,
-          payment_method_id: testPaymentMethodId,
+          asset_id: testAssetId,
           type: 'expense',
           amount: '10000',
           currency: 'IDR',
@@ -839,7 +837,7 @@ describe('Transaction API Integration Tests', () => {
           amount: '100000',
           currency: 'IDR',
           category_id: testCategoryId,
-          payment_method_id: testPaymentMethodId,
+          asset_id: testAssetId,
           transaction_date: getTodayDate(),
           description: 'Original description',
         });
@@ -885,7 +883,7 @@ describe('Transaction API Integration Tests', () => {
           amount: '100000',
           currency: 'IDR',
           category_id: testCategoryId,
-          payment_method_id: testPaymentMethodId,
+          asset_id: testAssetId,
           transaction_date: getTodayDate(),
         });
 
@@ -942,7 +940,7 @@ describe('Transaction API Integration Tests', () => {
           amount: '100000',
           currency: 'IDR',
           category_id: testCategoryId,
-          payment_method_id: testPaymentMethodId,
+          asset_id: testAssetId,
           transaction_date: getTodayDate(),
         });
 
@@ -1006,7 +1004,7 @@ describe('Transaction API Integration Tests', () => {
           amount: '50000',
           currency: 'IDR',
           category_id: testCategoryId,
-          payment_method_id: testPaymentMethodId,
+          asset_id: testAssetId,
           transaction_date: getTodayDate(),
           description: 'Transaction to delete',
         });
@@ -1066,7 +1064,7 @@ describe('Transaction API Integration Tests', () => {
     it('should not delete transactions from other users', async () => {
       await skipIfNotReady(async () => {
         // Create a transaction directly in the database with a different user ID
-        // Note: See comment in GET tests about using shared category/payment method IDs
+        // Note: See comment in GET tests about using shared category/asset IDs
         const otherUserId = 'other-user-delete-test';
         const transactionId = `other-user-delete-${Date.now()}`;
 
@@ -1074,7 +1072,7 @@ describe('Transaction API Integration Tests', () => {
           id: transactionId,
           user_id: otherUserId,
           category_id: testCategoryId,
-          payment_method_id: testPaymentMethodId,
+          asset_id: testAssetId,
           type: 'expense',
           amount: '10000',
           currency: 'IDR',

@@ -24,7 +24,7 @@
 
 import { describe, it, expect, beforeAll, afterAll, afterEach } from 'bun:test';
 import { db } from '@/db';
-import { users, transactions, categories, paymentMethods } from '@/db';
+import { users, transactions, categories, assets } from '@/db';
 import { eq, and } from 'drizzle-orm';
 import { auth } from '@/lib/auth/lucia';
 import { clearRateLimitStore } from '@/lib/rate-limit';
@@ -40,7 +40,7 @@ const TEST_USER = {
 let testUserId: string;
 let testSessionId: string;
 let testCategoryName: string;
-let testPaymentMethodName: string;
+let testAssetName: string;
 let shouldSkip = false;
 let serverNotRunning = false;
 
@@ -79,24 +79,24 @@ describe('Transaction Import API Integration Tests', () => {
 
     testUserId = user.id;
 
-    // Get a category and payment method names for CSV data
+    // Get a category and asset names for CSV data
     const category = await db.query.categories.findFirst({
       where: and(eq(categories.user_id, testUserId), eq(categories.type, 'expense')),
     });
 
-    const paymentMethod = await db.query.paymentMethods.findFirst({
-      where: eq(paymentMethods.user_id, testUserId),
+    const asset = await db.query.assets.findFirst({
+      where: eq(assets.user_id, testUserId),
     });
 
-    if (!category || !paymentMethod) {
-      console.warn(`\n⚠️  Skipping API integration tests: Categories/payment methods not found.`);
+    if (!category || !asset) {
+      console.warn(`\n⚠️  Skipping API integration tests: Categories/assets not found.`);
       console.warn(`   Run 'bun run db:seed' to create test data.\n`);
       shouldSkip = true;
       return;
     }
 
     testCategoryName = category.name;
-    testPaymentMethodName = paymentMethod.name;
+    testAssetName = asset.name;
 
     // Create a session for authenticated requests
     const session = await auth.createSession(testUserId, {});
@@ -172,9 +172,9 @@ describe('Transaction Import API Integration Tests', () => {
   describe('POST /api/transactions/import', () => {
     it('should successfully import valid CSV file', async () => {
       await skipIfNotReady(async () => {
-        const csvContent = `date,type,amount,currency,category,payment_method,description
-2024-06-01,expense,50000,IDR,${testCategoryName},${testPaymentMethodName},Test import transaction
-2024-06-02,expense,75000,IDR,${testCategoryName},${testPaymentMethodName},Another test transaction`;
+        const csvContent = `date,type,amount,currency,category,asset,description
+2024-06-01,expense,50000,IDR,${testCategoryName},${testAssetName},Test import transaction
+2024-06-02,expense,75000,IDR,${testCategoryName},${testAssetName},Another test transaction`;
 
         const formData = new FormData();
         formData.append('csv_file', createCSVFile(csvContent));
@@ -227,8 +227,8 @@ describe('Transaction Import API Integration Tests', () => {
 
     it('should handle malicious filename safely (path traversal)', async () => {
       await skipIfNotReady(async () => {
-        const csvContent = `date,type,amount,currency,category,payment_method,description
-2024-06-01,expense,50000,IDR,${testCategoryName},${testPaymentMethodName},Test`;
+        const csvContent = `date,type,amount,currency,category,asset,description
+2024-06-01,expense,50000,IDR,${testCategoryName},${testAssetName},Test`;
 
         // Attempt path traversal in filename
         const formData = new FormData();
@@ -267,7 +267,7 @@ describe('Transaction Import API Integration Tests', () => {
     it('should return 413 when file size exceeds 5MB limit', async () => {
       await skipIfNotReady(async () => {
         // Create a large CSV (> 5MB)
-        const largeContent = 'date,type,amount,currency,category,payment_method,description\n';
+        const largeContent = 'date,type,amount,currency,category,asset,description\n';
         const rowContent = '2024-06-01,expense,50000,IDR,Food,Cash,Test\n';
         const requiredRows = Math.ceil((5 * 1024 * 1024) / rowContent.length) + 1000;
         const largeCsv = largeContent + rowContent.repeat(requiredRows);
@@ -286,7 +286,7 @@ describe('Transaction Import API Integration Tests', () => {
     it('should return 400 when CSV exceeds 500 row limit', async () => {
       await skipIfNotReady(async () => {
         // Create CSV with 501 data rows (+ 1 header = 502 lines)
-        const header = 'date,type,amount,currency,category,payment_method,description\n';
+        const header = 'date,type,amount,currency,category,asset,description\n';
         const row = '2024-06-01,expense,50000,IDR,Food,Cash,Test\n';
         const csvContent = header + row.repeat(501);
 
@@ -304,7 +304,7 @@ describe('Transaction Import API Integration Tests', () => {
 
     it('should return 400 when CSV is empty (no data rows)', async () => {
       await skipIfNotReady(async () => {
-        const csvContent = 'date,type,amount,currency,category,payment_method,description\n';
+        const csvContent = 'date,type,amount,currency,category,asset,description\n';
 
         const formData = new FormData();
         formData.append('csv_file', createCSVFile(csvContent));
@@ -335,7 +335,7 @@ describe('Transaction Import API Integration Tests', () => {
     it('should handle custom column mapping', async () => {
       await skipIfNotReady(async () => {
         const csvContent = `transaction_date,transaction_type,transaction_amount,transaction_currency,transaction_category,transaction_payment,transaction_note
-2024-06-01,expense,50000,IDR,${testCategoryName},${testPaymentMethodName},Custom columns test`;
+2024-06-01,expense,50000,IDR,${testCategoryName},${testAssetName},Custom columns test`;
 
         const formData = new FormData();
         formData.append('csv_file', createCSVFile(csvContent));
@@ -344,7 +344,7 @@ describe('Transaction Import API Integration Tests', () => {
         formData.append('map_amount', 'transaction_amount');
         formData.append('map_currency', 'transaction_currency');
         formData.append('map_category', 'transaction_category');
-        formData.append('map_payment_method', 'transaction_payment');
+        formData.append('map_asset', 'transaction_payment');
         formData.append('map_description', 'transaction_note');
 
         const response = await makeRequest(formData);
@@ -364,8 +364,8 @@ describe('Transaction Import API Integration Tests', () => {
 
     it('should handle CSV with quoted fields', async () => {
       await skipIfNotReady(async () => {
-        const csvContent = `date,type,amount,currency,category,payment_method,description
-2024-06-01,expense,50000,IDR,"${testCategoryName}","${testPaymentMethodName}","Description with, comma"`;
+        const csvContent = `date,type,amount,currency,category,asset,description
+2024-06-01,expense,50000,IDR,"${testCategoryName}","${testAssetName}","Description with, comma"`;
 
         const formData = new FormData();
         formData.append('csv_file', createCSVFile(csvContent));
@@ -387,7 +387,7 @@ describe('Transaction Import API Integration Tests', () => {
 
     it('should handle CSV with different line endings (CRLF)', async () => {
       await skipIfNotReady(async () => {
-        const csvContent = `date,type,amount,currency,category,payment_method,description\r\n2024-06-01,expense,50000,IDR,${testCategoryName},${testPaymentMethodName},Windows line endings`;
+        const csvContent = `date,type,amount,currency,category,asset,description\r\n2024-06-01,expense,50000,IDR,${testCategoryName},${testAssetName},Windows line endings`;
 
         const formData = new FormData();
         formData.append('csv_file', createCSVFile(csvContent));
@@ -409,7 +409,7 @@ describe('Transaction Import API Integration Tests', () => {
 
     it('should handle CSV with different line endings (CR)', async () => {
       await skipIfNotReady(async () => {
-        const csvContent = `date,type,amount,currency,category,payment_method,description\r2024-06-01,expense,50000,IDR,${testCategoryName},${testPaymentMethodName},Mac line endings`;
+        const csvContent = `date,type,amount,currency,category,asset,description\r2024-06-01,expense,50000,IDR,${testCategoryName},${testAssetName},Mac line endings`;
 
         const formData = new FormData();
         formData.append('csv_file', createCSVFile(csvContent));
@@ -431,7 +431,7 @@ describe('Transaction Import API Integration Tests', () => {
 
     it('should return 401 for unauthenticated requests', async () => {
       await skipIfNotReady(async () => {
-        const csvContent = `date,type,amount,currency,category,payment_method,description
+        const csvContent = `date,type,amount,currency,category,asset,description
 2024-06-01,expense,50000,IDR,Food,Cash,Test transaction`;
 
         const formData = new FormData();
@@ -447,8 +447,8 @@ describe('Transaction Import API Integration Tests', () => {
 
     it('should handle CSV with escaped quotes in quoted fields', async () => {
       await skipIfNotReady(async () => {
-        const csvContent = `date,type,amount,currency,category,payment_method,description
-2024-06-01,expense,50000,IDR,${testCategoryName},${testPaymentMethodName},"Description with ""quoted"" text"`;
+        const csvContent = `date,type,amount,currency,category,asset,description
+2024-06-01,expense,50000,IDR,${testCategoryName},${testAssetName},"Description with ""quoted"" text"`;
 
         const formData = new FormData();
         formData.append('csv_file', createCSVFile(csvContent));
@@ -471,8 +471,8 @@ describe('Transaction Import API Integration Tests', () => {
     it('should allow exactly 500 rows (boundary test)', async () => {
       await skipIfNotReady(async () => {
         // Create CSV with exactly 500 data rows (+ 1 header = 501 lines)
-        const header = 'date,type,amount,currency,category,payment_method,description\n';
-        const row = `2024-06-01,expense,50000,IDR,${testCategoryName},${testPaymentMethodName},Test\n`;
+        const header = 'date,type,amount,currency,category,asset,description\n';
+        const row = `2024-06-01,expense,50000,IDR,${testCategoryName},${testAssetName},Test\n`;
         const csvContent = header + row.repeat(500);
 
         const formData = new FormData();

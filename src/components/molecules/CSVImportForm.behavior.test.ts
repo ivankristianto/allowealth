@@ -246,7 +246,7 @@ describe('CSVImportForm Component', () => {
        * - amount (numeric)
        * - currency (IDR/USD)
        * - category
-       * - payment_method
+       * - asset
        * - description (optional)
        */
       expect(true).toBe(true);
@@ -356,7 +356,7 @@ describe('CSVImportForm Component', () => {
       /**
        * Mapping fields:
        * - date, type, amount, currency (required)
-       * - category, payment_method (required)
+       * - category, asset (required)
        * - description (optional)
        * - Each has select with CSV column options
        */

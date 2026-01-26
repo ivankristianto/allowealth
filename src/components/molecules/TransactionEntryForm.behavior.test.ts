@@ -55,9 +55,9 @@ describe('TransactionEntryForm Component', () => {
       expect(componentContent).toContain('id={`${formId}-category`}');
     });
 
-    it('should have Payment Method field using PaymentMethodSelect', () => {
-      expect(componentContent).toContain('<PaymentMethodSelect');
-      expect(componentContent).toContain('id={`${formId}-payment-method`}');
+    it('should have Account field using AssetSelect', () => {
+      expect(componentContent).toContain('<AssetSelect');
+      expect(componentContent).toContain('id={`${formId}-asset`}');
     });
 
     it('should have Cancel and Save Entry buttons', () => {
@@ -86,8 +86,8 @@ describe('TransactionEntryForm Component', () => {
       expect(componentContent).toContain('categories: Array<');
     });
 
-    it('should accept paymentMethods array prop', () => {
-      expect(componentContent).toContain('paymentMethods: Array<');
+    it('should accept assets array prop', () => {
+      expect(componentContent).toContain('assets: Array<');
     });
 
     it('should accept errors prop for validation errors', () => {
@@ -104,7 +104,7 @@ describe('TransactionEntryForm Component', () => {
       expect(componentContent).toContain('grid grid-cols-1 sm:grid-cols-2 gap-4');
     });
 
-    it('should have 2-column grid for Category and Payment Method', () => {
+    it('should have 2-column grid for Category and Account', () => {
       // Multiple grid sections
       const gridMatches = componentContent.match(/grid grid-cols-1 sm:grid-cols-2 gap-4/g);
       expect(gridMatches?.length).toBeGreaterThanOrEqual(2);
@@ -139,9 +139,9 @@ describe('TransactionEntryForm Component', () => {
       expect(componentContent).toContain('Category is required');
     });
 
-    it('should have payment_method_id validator', () => {
-      expect(componentContent).toContain('payment_method_id: {');
-      expect(componentContent).toContain('Payment method is required');
+    it('should have asset_id validator', () => {
+      expect(componentContent).toContain('asset_id: {');
+      expect(componentContent).toContain('Account is required');
     });
   });
 
@@ -253,10 +253,8 @@ describe('TransactionEntryForm Component', () => {
       );
     });
 
-    it('should import PaymentMethodSelect atom', () => {
-      expect(componentContent).toContain(
-        "import PaymentMethodSelect from '../atoms/PaymentMethodSelect.astro'"
-      );
+    it('should import AssetSelect atom', () => {
+      expect(componentContent).toContain("import AssetSelect from '../atoms/AssetSelect.astro'");
     });
 
     it('should import DatePicker atom', () => {
@@ -283,7 +281,7 @@ describe('TransactionEntryForm Component', () => {
  * [ ] Verify Amount field is present
  * [ ] Verify Date field defaults to today
  * [ ] Verify Category shows expense categories only
- * [ ] Verify Payment Method field is present
+ * [ ] Verify Account field is present
  *
  * Test 2: Income Form Display
  * [ ] Open income modal

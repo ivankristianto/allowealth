@@ -45,8 +45,6 @@ tags:
     description: Transaction management (income and expenses)
   - name: Categories
     description: Category management for budgeting
-  - name: Payment Methods
-    description: Payment method management
   - name: Assets
     description: Asset tracking and management
   - name: Budget
@@ -84,11 +82,6 @@ paths:
     $ref: './openapi/paths/categories.yml#/paths/~1api~1categories'
   /api/categories/{id}:
     $ref: './openapi/paths/categories.yml#/paths/~1api~1categories~1{id}'
-
-  /api/payment-methods:
-    $ref: './openapi/paths/payment-methods.yml#/paths/~1api~1payment-methods'
-  /api/payment-methods/{id}:
-    $ref: './openapi/paths/payment-methods.yml#/paths/~1api~1payment-methods~1{id}'
 
   /api/assets:
     $ref: './openapi/paths/assets.yml#/paths/~1api~1assets'
@@ -198,18 +191,6 @@ components:
       $ref: './openapi/schemas/CategoryResponse.yml#/CategoryResponse'
     CategoriesListResponse:
       $ref: './openapi/schemas/CategoriesListResponse.yml#/CategoriesListResponse'
-
-    # Payment Method Schemas
-    PaymentMethod:
-      $ref: './openapi/schemas/PaymentMethod.yml#/PaymentMethod'
-    CreatePaymentMethodRequest:
-      $ref: './openapi/schemas/CreatePaymentMethodRequest.yml#/CreatePaymentMethodRequest'
-    UpdatePaymentMethodRequest:
-      $ref: './openapi/schemas/UpdatePaymentMethodRequest.yml#/UpdatePaymentMethodRequest'
-    PaymentMethodResponse:
-      $ref: './openapi/schemas/PaymentMethodResponse.yml#/PaymentMethodResponse'
-    PaymentMethodsListResponse:
-      $ref: './openapi/schemas/PaymentMethodsListResponse.yml#/PaymentMethodsListResponse'
 
     # Asset Schemas
     Asset:

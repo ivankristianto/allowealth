@@ -299,7 +299,7 @@ const createRecentTransactionsList = (args: {
       paymentRow.appendChild(
         CreditCard.render({ size: 12, class: 'stroke-current' }, { 'aria-hidden': 'true' })
       );
-      paymentRow.appendChild(document.createTextNode(transaction.payment_method.name));
+      paymentRow.appendChild(document.createTextNode(transaction.asset.name));
       rightBlock.appendChild(paymentRow);
       topRow.appendChild(rightBlock);
 

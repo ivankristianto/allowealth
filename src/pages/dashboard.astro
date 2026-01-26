@@ -59,7 +59,7 @@ try {
   dashboardData = null;
 }
 
-// Categories and payment methods for transaction modals are provided by ProtectedLayout
+// Categories and assets for transaction modals are provided by ProtectedLayout
 
 // Get month name for remaining label
 const monthNames = [
@@ -95,10 +95,10 @@ const recentTransactions: TransactionOutput[] =
       name: tx.category.name,
       type: tx.category.type,
     },
-    payment_method: {
-      id: tx.paymentMethod.id,
-      name: tx.paymentMethod.name,
-      type: 'other', // Default type for now
+    asset: {
+      id: tx.asset.id,
+      name: tx.asset.name,
+      type: tx.asset.type,
     },
   })) || [];
 
@@ -109,15 +109,19 @@ const formatCashFlowDate = (date: Date): string =>
     year: 'numeric',
   });
 
+// Filter out transfer transactions for cash flow widget (only supports income/expense)
 const cashFlowItems: CashFlowEntry[] =
-  dashboardData?.recentTransactions.slice(0, 2).map((tx) => ({
-    name: tx.description?.trim() || tx.category.name,
-    date: formatCashFlowDate(tx.transactionDate),
-    amount: Number.isNaN(parseFloat(tx.amount)) ? 0 : parseFloat(tx.amount),
-    type: tx.type,
-    icon: (tx.type === 'income' ? 'trending-up' : 'calendar') as CashFlowIconName,
-    currency: tx.currency,
-  })) || [];
+  dashboardData?.recentTransactions
+    .filter((tx) => tx.type === 'income' || tx.type === 'expense')
+    .slice(0, 2)
+    .map((tx) => ({
+      name: tx.description?.trim() || tx.category.name,
+      date: formatCashFlowDate(tx.transactionDate),
+      amount: Number.isNaN(parseFloat(tx.amount)) ? 0 : parseFloat(tx.amount),
+      type: tx.type as 'income' | 'expense',
+      icon: (tx.type === 'income' ? 'trending-up' : 'calendar') as CashFlowIconName,
+      currency: tx.currency,
+    })) || [];
 
 // Mock spending categories data (from POC design)
 // TODO: Replace with actual data from service when available

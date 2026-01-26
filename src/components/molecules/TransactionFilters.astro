@@ -6,7 +6,7 @@
  *
  * @param {string} action - Form action URL
  * @param {Array} categories - Available categories
- * @param {Array} paymentMethods - Available payment methods
+ * @param {Array} assets - Available assets
  * @param {Object} values - Current filter values
  * @param {number} count - Number of results
  */
@@ -14,7 +14,7 @@
 import Label from '../atoms/Label.astro';
 import Input from '../atoms/Input.astro';
 import CategorySelect from '../atoms/CategorySelect.astro';
-import PaymentMethodSelect from '../atoms/PaymentMethodSelect.astro';
+import AssetSelect from '../atoms/AssetSelect.astro';
 import DatePicker from '../atoms/DatePicker.astro';
 import Button from '../atoms/Button.astro';
 import { Search } from '@lucide/astro';
@@ -22,12 +22,12 @@ import { Search } from '@lucide/astro';
 export interface Props {
   action: string;
   categories?: Array<{ id: string; name: string; type: string }>;
-  paymentMethods?: Array<{ id: string; name: string; type: string }>;
+  assets?: Array<{ id: string; name: string; type: string }>;
   values?: {
     search?: string;
     type?: 'expense' | 'income' | '';
     category_id?: string;
-    payment_method_id?: string;
+    asset_id?: string;
     currency?: 'IDR' | 'USD' | '';
     start_date?: string;
     end_date?: string;
@@ -35,7 +35,7 @@ export interface Props {
   count?: number;
 }
 
-const { action, categories = [], paymentMethods = [], values = {}, count = 0 } = Astro.props;
+const { action, categories = [], assets = [], values = {}, count = 0 } = Astro.props;
 ---
 
 <form action={action} method="GET" class="space-y-4">
@@ -89,15 +89,10 @@ const { action, categories = [], paymentMethods = [], values = {}, count = 0 } =
       />
     </div>
 
-    <!-- Payment Method -->
+    <!-- Asset -->
     <div class="form-control">
-      <Label htmlFor="payment_method_id" id="payment-label">Payment Method</Label>
-      <PaymentMethodSelect
-        id="payment_method_id"
-        paymentMethods={paymentMethods}
-        value={values.payment_method_id || ''}
-        required={false}
-      />
+      <Label htmlFor="asset_id" id="asset-label">Account</Label>
+      <AssetSelect id="asset_id" assets={assets} value={values.asset_id || ''} required={false} />
     </div>
 
     <!-- Start Date -->

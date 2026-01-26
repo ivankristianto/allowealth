@@ -8,7 +8,7 @@
  * @param {string} method - Form method (POST or PUT)
  * @param {Object} values - Default form values
  * @param {Array} categories - Available categories
- * @param {Array} paymentMethods - Available payment methods
+ * @param {Array} assets - Available assets (bank accounts, wallets, etc.)
  * @param {string} transactionType - Pre-selected type (expense/income)
  * @param {Array} errors - Form errors {field: message}
  * @param {string} submitLabel - Submit button label
@@ -21,7 +21,7 @@
 import Label from '../atoms/Label.astro';
 import CurrencyInput from '../atoms/CurrencyInput.astro';
 import CategorySelect from '../atoms/CategorySelect.astro';
-import PaymentMethodSelect from '../atoms/PaymentMethodSelect.astro';
+import AssetSelect from '../atoms/AssetSelect.astro';
 import DatePicker from '../atoms/DatePicker.astro';
 import Button from '../atoms/Button.astro';
 import Currency from '../atoms/Currency.astro';
@@ -35,12 +35,12 @@ export interface Props {
     amount?: string;
     currency?: 'IDR' | 'USD';
     category_id?: string;
-    payment_method_id?: string;
+    asset_id?: string;
     transaction_date?: string;
     description?: string;
   };
   categories: Array<{ id: string; name: string; type: string; currency?: string }>;
-  paymentMethods: Array<{ id: string; name: string; type: string }>;
+  assets: Array<{ id: string; name: string; type: string }>;
   transactionType?: 'expense' | 'income';
   errors?: Record<string, string>;
   submitLabel?: string;
@@ -61,7 +61,7 @@ const {
   method = 'POST',
   values = {},
   categories = [],
-  paymentMethods = [],
+  assets = [],
   transactionType,
   errors = {},
   submitLabel = 'Save Transaction',
@@ -85,13 +85,11 @@ const budgetInfoJson = budgetInfo
     })
   : 'null';
 
-// Serialize categories and payment methods for client-side JavaScript
+// Serialize categories and assets for client-side JavaScript
 const categoriesJson = JSON.stringify(
   categories.map((c) => ({ id: c.id, name: c.name, type: c.type, currency: c.currency || 'IDR' }))
 );
-const paymentMethodsJson = JSON.stringify(
-  paymentMethods.map((pm) => ({ id: pm.id, name: pm.name, type: pm.type }))
-);
+const assetsJson = JSON.stringify(assets.map((a) => ({ id: a.id, name: a.name, type: a.type })));
 ---
 
 <form
@@ -99,7 +97,7 @@ const paymentMethodsJson = JSON.stringify(
   data-action={action}
   data-method={method}
   data-categories-json={categoriesJson}
-  data-payment-methods-json={paymentMethodsJson}
+  data-assets-json={assetsJson}
   data-budget-info-json={budgetInfoJson}
   class="flex flex-col gap-4"
   novalidate
@@ -178,16 +176,16 @@ const paymentMethodsJson = JSON.stringify(
     />
   </div>
 
-  <!-- Payment Method -->
+  <!-- Asset -->
   <div class="form-control">
-    <Label required htmlFor="payment_method_id-select" id="payment-label">Payment Method</Label>
-    <PaymentMethodSelect
-      id="payment_method_id"
-      paymentMethods={paymentMethods}
-      value={values.payment_method_id || ''}
+    <Label required htmlFor="asset_id-select" id="asset-label">Account</Label>
+    <AssetSelect
+      id="asset_id"
+      assets={assets}
+      value={values.asset_id || ''}
       required={true}
-      error={!!errors.payment_method_id}
-      errorMessage={errors.payment_method_id}
+      error={!!errors.asset_id}
+      errorMessage={errors.asset_id}
     />
   </div>
 
@@ -238,7 +236,7 @@ const paymentMethodsJson = JSON.stringify(
 
   // Parse categories and budget info from data attributes (server-serialized JSON)
   const categories = JSON.parse(form?.dataset.categoriesJson || '[]');
-  const paymentMethods = JSON.parse(form?.dataset.paymentMethodsJson || '[]');
+  const assets = JSON.parse(form?.dataset.assetsJson || '[]');
   const action = form?.dataset.action || '/api/transactions';
   const method = form?.dataset.method || 'POST';
 
@@ -296,10 +294,10 @@ const paymentMethodsJson = JSON.stringify(
         return null;
       },
     },
-    payment_method_id: {
+    asset_id: {
       validate: (value) => {
         const strValue = String(value || '');
-        if (!strValue || strValue.trim() === '') return 'Payment method is required';
+        if (!strValue || strValue.trim() === '') return 'Account is required';
         return null;
       },
     },
@@ -386,7 +384,7 @@ const paymentMethodsJson = JSON.stringify(
     if (!submitButton) return;
 
     // Check required fields only (description is optional)
-    const requiredFields = ['amount', 'transaction_date', 'category_id', 'payment_method_id'];
+    const requiredFields = ['amount', 'transaction_date', 'category_id', 'asset_id'];
     let allValid = true;
 
     for (const fieldName of requiredFields) {
@@ -426,10 +424,10 @@ const paymentMethodsJson = JSON.stringify(
       validateField('category_id', (e.target as HTMLSelectElement).value);
     });
 
-    // Payment method select - validate on change
-    const paymentMethodSelect = form?.querySelector('select[name="payment_method_id"]');
-    paymentMethodSelect?.addEventListener('change', (e: Event) => {
-      validateField('payment_method_id', (e.target as HTMLSelectElement).value);
+    // Asset select - validate on change
+    const assetSelect = form?.querySelector('select[name="asset_id"]');
+    assetSelect?.addEventListener('change', (e: Event) => {
+      validateField('asset_id', (e.target as HTMLSelectElement).value);
     });
 
     // Description textarea - validate on input (for max length)
@@ -496,7 +494,7 @@ const paymentMethodsJson = JSON.stringify(
   const STORAGE_KEYS = {
     lastExpenseCategory: STORAGE_PREFIX + 'lastExpenseCategory',
     lastIncomeCategory: STORAGE_PREFIX + 'lastIncomeCategory',
-    lastPaymentMethod: STORAGE_PREFIX + 'lastPaymentMethod',
+    lastAsset: STORAGE_PREFIX + 'lastAsset',
   };
 
   const DEFAULT_TRANSACTION_TYPE = 'expense';
@@ -542,9 +540,9 @@ const paymentMethodsJson = JSON.stringify(
     }
   }
 
-  function getLastUsedPaymentMethod() {
+  function getLastUsedAsset() {
     try {
-      const value = localStorage.getItem(STORAGE_KEYS.lastPaymentMethod);
+      const value = localStorage.getItem(STORAGE_KEYS.lastAsset);
       // Sanitize: ensure it's a string matching expected ID format
       if (value && /^[a-zA-Z0-9\-]+$/.test(value)) {
         return value;
@@ -556,15 +554,15 @@ const paymentMethodsJson = JSON.stringify(
     }
   }
 
-  function setLastUsedPaymentMethod(paymentMethodId: string) {
+  function setLastUsedAsset(assetId: string) {
     try {
-      localStorage.setItem(STORAGE_KEYS.lastPaymentMethod, paymentMethodId);
+      localStorage.setItem(STORAGE_KEYS.lastAsset, assetId);
     } catch (e) {
-      console.warn('Failed to save payment method to localStorage:', e);
+      console.warn('Failed to save asset to localStorage:', e);
       // Try to clear old data and retry
       try {
         localStorage.clear();
-        localStorage.setItem(STORAGE_KEYS.lastPaymentMethod, paymentMethodId);
+        localStorage.setItem(STORAGE_KEYS.lastAsset, assetId);
       } catch (e2) {
         // Still failing - give up silently
       }
@@ -581,8 +579,8 @@ const paymentMethodsJson = JSON.stringify(
     const categorySelect = document.querySelector(
       'select[name="category_id"]'
     ) as HTMLSelectElement | null;
-    const paymentMethodSelect = document.querySelector(
-      'select[name="payment_method_id"]'
+    const assetSelect = document.querySelector(
+      'select[name="asset_id"]'
     ) as HTMLSelectElement | null;
     let categoryPreselected = false;
 
@@ -605,18 +603,16 @@ const paymentMethodsJson = JSON.stringify(
       }
     }
 
-    // Only pre-select payment method if the form doesn't already have a value
-    if (paymentMethodSelect && !paymentMethodSelect.value) {
-      const lastPaymentMethod = getLastUsedPaymentMethod();
-      if (lastPaymentMethod) {
-        // Validate payment method still exists
-        const paymentMethod = paymentMethods.find(
-          (pm: { id: string }) => pm.id === lastPaymentMethod
-        );
-        if (paymentMethod) {
-          paymentMethodSelect.value = lastPaymentMethod;
+    // Only pre-select asset if the form doesn't already have a value
+    if (assetSelect && !assetSelect.value) {
+      const lastAsset = getLastUsedAsset();
+      if (lastAsset) {
+        // Validate asset still exists
+        const asset = assets.find((a: { id: string }) => a.id === lastAsset);
+        if (asset) {
+          assetSelect.value = lastAsset;
         } else {
-          console.warn(`Last used payment method "${lastPaymentMethod}" no longer available`);
+          console.warn(`Last used asset "${lastAsset}" no longer available`);
         }
       }
     }
@@ -891,7 +887,7 @@ const paymentMethodsJson = JSON.stringify(
         amount: String(formData.get('amount') || '0'),
         currency: String(formData.get('currency') || 'IDR'),
         category_id: String(formData.get('category_id') || ''),
-        payment_method_id: String(formData.get('payment_method_id') || ''),
+        asset_id: String(formData.get('asset_id') || ''),
         transaction_date: String(
           formData.get('transaction_date') || new Date().toISOString().split('T')[0]
         ),
@@ -932,13 +928,13 @@ const paymentMethodsJson = JSON.stringify(
         // Success - save last used values to localStorage
         const formType = data.type;
         const categoryId = data.category_id;
-        const paymentMethodId = data.payment_method_id;
+        const assetId = data.asset_id;
 
         if (categoryId) {
           setLastUsedCategory(formType, categoryId);
         }
-        if (paymentMethodId) {
-          setLastUsedPaymentMethod(paymentMethodId);
+        if (assetId) {
+          setLastUsedAsset(assetId);
         }
 
         // Show success message before redirect

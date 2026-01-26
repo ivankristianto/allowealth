@@ -17,9 +17,10 @@ export type { TransactionType, Currency };
 export interface Transaction {
   id: string;
   user_id: string;
-  category_id: string;
-  payment_method_id: string;
-  type: TransactionType;
+  category_id: string | null; // Nullable for transfers
+  asset_id: string;
+  to_asset_id: string | null; // For transfers only
+  type: TransactionType | 'transfer';
   amount: string; // Stored as string for decimal precision
   currency: Currency;
   description: string | null;
@@ -32,18 +33,23 @@ export interface Transaction {
 // Output types (with relations for API responses)
 export interface TransactionOutput extends Omit<
   Transaction,
-  'user_id' | 'category_id' | 'payment_method_id'
+  'user_id' | 'category_id' | 'asset_id' | 'to_asset_id'
 > {
   category: {
     id: string;
     name: string;
     type: TransactionType;
-  };
-  payment_method: {
+  } | null;
+  asset: {
     id: string;
     name: string;
     type: string;
   };
+  toAsset?: {
+    id: string;
+    name: string;
+    type: string;
+  } | null;
 }
 
 // Summary types for dashboard
@@ -58,9 +64,9 @@ export interface TransactionSummary {
     amount: string;
     percentage: number;
   }>;
-  by_payment_method: Array<{
-    payment_method_id: string;
-    payment_method_name: string;
+  by_asset: Array<{
+    asset_id: string;
+    asset_name: string;
     amount: string;
     percentage: number;
   }>;

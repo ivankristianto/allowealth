@@ -13,7 +13,7 @@
  * @param {string} action - Form action URL
  * @param {Object} values - Default form values
  * @param {Array} categories - Available categories
- * @param {Array} paymentMethods - Available payment methods
+ * @param {Array} assets - Available assets
  * @param {Record<string, string>} errors - Form errors
  * @param {boolean} showScanButton - Show scan button (expense only, create mode only)
  */
@@ -34,11 +34,11 @@ export interface Props {
     amount?: string;
     currency?: 'IDR' | 'USD';
     category_id?: string;
-    payment_method_id?: string;
+    asset_id?: string;
     transaction_date?: string;
   };
   categories?: Array<{ id: string; name: string; type: string; currency?: string }>;
-  paymentMethods?: Array<{ id: string; name: string; type: string }>;
+  assets?: Array<{ id: string; name: string; type: string }>;
   errors?: Record<string, string>;
   showScanButton?: boolean;
 }
@@ -52,7 +52,7 @@ const {
   action,
   values = {},
   categories = [],
-  paymentMethods = [],
+  assets = [],
   errors = {},
   showScanButton = true,
 } = Astro.props;
@@ -143,7 +143,7 @@ const iconColorClass = isExpense ? 'text-error' : 'text-success';
         action={action}
         values={values}
         categories={categories}
-        paymentMethods={paymentMethods}
+        assets={assets}
         errors={errors}
         modalId={id}
       />

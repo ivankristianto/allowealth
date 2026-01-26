@@ -9,14 +9,14 @@
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import TransactionFilters from '../../components/molecules/TransactionFilters.astro';
 import { Info, Download } from '@lucide/astro';
-import { categoryService, paymentMethodService } from '@/services';
+import { categoryService, assetService } from '@/services';
 
 const user = Astro.locals.user!;
 const currentPath = '/transactions/export';
 
-// Fetch categories and payment methods for filters
+// Fetch categories and assets for filters
 const categories = await categoryService.findAll(user.id, { is_active: true });
-const paymentMethods = await paymentMethodService.findAll(user.id, { is_active: true });
+const assets = await assetService.findAll(user.id);
 
 // Get current filters from query params
 const url = new URL(Astro.url);
@@ -25,7 +25,7 @@ const currentFilters = {
   type: (url.searchParams.get('type') || '') as 'expense' | 'income' | '',
   currency: (url.searchParams.get('currency') || '') as 'IDR' | 'USD' | '',
   category_id: url.searchParams.get('category_id') || '',
-  payment_method_id: url.searchParams.get('payment_method_id') || '',
+  asset_id: url.searchParams.get('asset_id') || '',
   start_date: url.searchParams.get('start_date') || '',
   end_date: url.searchParams.get('end_date') || '',
 };
@@ -71,7 +71,7 @@ const exportUrl = buildExportUrl();
           <TransactionFilters
             action="/transactions/export"
             categories={categories}
-            paymentMethods={paymentMethods}
+            assets={assets}
             values={currentFilters}
             count={0}
           />
@@ -83,8 +83,8 @@ const exportUrl = buildExportUrl();
           <ul class="text-sm text-neutral-500 space-y-1 mb-4">
             <li>Filename format: <code>transactions_YYYY-MM-DD.csv</code></li>
             <li>
-              Includes all transaction fields: date, type, amount, currency, category, payment
-              method, description
+              Includes all transaction fields: date, type, amount, currency, category, asset,
+              description
             </li>
             <li>Uses current filters to select transactions</li>
           </ul>

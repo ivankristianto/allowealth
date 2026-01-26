@@ -160,7 +160,7 @@ const { id } = Astro.props;
     title: string;
     amount: number;
     date: string;
-    paymentMethod: string;
+    asset: string;
   }
 
   interface CategoryDrillDownData {
@@ -222,7 +222,7 @@ const { id } = Astro.props;
         count: number = 5
       ): Transaction[] => {
         const transactions: Transaction[] = [];
-        const paymentMethods = ['BCA', 'Mandiri', 'Cash', 'GoPay', 'OVO'];
+        const assets = ['BCA', 'Mandiri', 'Cash', 'GoPay', 'OVO'];
         const today = new Date();
 
         // Distribute the spent amount across transactions
@@ -243,7 +243,7 @@ const { id } = Astro.props;
             title: `${categoryName} expense ${i + 1}`,
             amount,
             date: date.toISOString().split('T')[0],
-            paymentMethod: paymentMethods[Math.floor(Math.random() * paymentMethods.length)],
+            asset: assets[Math.floor(Math.random() * assets.length)],
           });
         }
 
@@ -279,7 +279,7 @@ const { id } = Astro.props;
             day: 'numeric',
             year: 'numeric',
           });
-          meta.textContent = `${formattedDate} • ${txn.paymentMethod}`;
+          meta.textContent = `${formattedDate} • ${txn.asset}`;
 
           leftSection.appendChild(title);
           leftSection.appendChild(meta);

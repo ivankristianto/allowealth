@@ -7,7 +7,8 @@
 
 import { mock } from 'bun:test';
 import type { IDatabase } from '@/db';
-import type { Category, PaymentMethod, Transaction } from '@/lib/types';
+import type { Category, Transaction } from '@/lib/types';
+import type { Asset } from '@/lib/types/asset';
 
 /**
  * Creates a mock database object for testing services
@@ -40,10 +41,6 @@ export function createMockDatabase(): IDatabase {
         findMany: mock(() => Promise.resolve([])),
       },
       categories: {
-        findFirst: mock(() => Promise.resolve(undefined)),
-        findMany: mock(() => Promise.resolve([])),
-      },
-      paymentMethods: {
         findFirst: mock(() => Promise.resolve(undefined)),
         findMany: mock(() => Promise.resolve([])),
       },
@@ -108,15 +105,20 @@ export function createMockCategory(overrides: Partial<Category> = {}): Category 
 }
 
 /**
- * Creates a mock payment method for testing
+ * Creates a mock asset for testing
  */
-export function createMockPaymentMethod(overrides: Partial<PaymentMethod> = {}): PaymentMethod {
+export function createMockAsset(overrides: Partial<Asset> = {}): Asset {
   return {
-    id: 'pm-1',
+    id: 'asset-1',
     user_id: 'user-1',
-    name: 'Cash',
-    type: 'cash',
-    is_active: true,
+    name: 'BCA Savings',
+    type: 'bank_account',
+    currency: 'IDR',
+    balance: '1000000',
+    credit_limit: null,
+    is_cash_account: false,
+    last_updated: new Date('2026-01-01'),
+    deleted_at: null,
     created_at: new Date('2026-01-01'),
     updated_at: new Date('2026-01-01'),
     ...overrides,
@@ -131,7 +133,8 @@ export function createMockTransaction(overrides: Partial<Transaction> = {}): Tra
     id: 'txn-1',
     user_id: 'user-1',
     category_id: 'cat-1',
-    payment_method_id: 'pm-1',
+    asset_id: 'asset-1',
+    to_asset_id: null,
     type: 'expense',
     amount: '50000',
     currency: 'IDR',
@@ -150,16 +153,16 @@ export function createMockTransaction(overrides: Partial<Transaction> = {}): Tra
 export function createMockTransactionWithRelations(
   overrides: Partial<Transaction> = {},
   category?: Category,
-  paymentMethod?: PaymentMethod
-): Transaction & { category?: Category; paymentMethod?: PaymentMethod } {
+  asset?: Asset
+): Transaction & { category?: Category; asset?: Asset } {
   const mockCategory = category || createMockCategory();
-  const mockPaymentMethod = paymentMethod || createMockPaymentMethod();
+  const mockAsset = asset || createMockAsset();
 
   return {
     ...createMockTransaction(overrides),
     category: mockCategory,
-    paymentMethod: mockPaymentMethod,
-  } as Transaction & { category?: Category; paymentMethod?: PaymentMethod };
+    asset: mockAsset,
+  } as Transaction & { category?: Category; asset?: Asset };
 }
 
 /**
@@ -173,8 +176,8 @@ export function resetMockDatabase(mockDb: IDatabase): void {
   (mockDb.query.transactions.findMany as any).mockClear();
   (mockDb.query.categories.findFirst as any).mockClear();
   (mockDb.query.categories.findMany as any).mockClear();
-  (mockDb.query.paymentMethods.findFirst as any).mockClear();
-  (mockDb.query.paymentMethods.findMany as any).mockClear();
+  (mockDb.query.assets.findFirst as any).mockClear();
+  (mockDb.query.assets.findMany as any).mockClear();
   (mockDb.update as any).mockClear();
   (mockDb.select as any).mockClear();
   (mockDb.delete as any).mockClear();

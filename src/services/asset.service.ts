@@ -2,20 +2,25 @@ import { assets, assetHistory, type IDatabase } from '@/db';
 import { eq, and, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { AssetServiceError, ServiceErrorCode } from './service-errors';
+import type { AssetType, Currency } from '@/lib/types/asset';
 
 export interface CreateAssetInput {
   user_id: string;
   name: string;
-  type: 'bank_account' | 'mutual_fund' | 'bond' | 'crypto' | 'stock' | 'other';
+  type: AssetType;
   balance: string;
-  currency: 'IDR' | 'USD';
+  currency: Currency;
+  credit_limit?: string | null;
+  is_cash_account?: boolean;
 }
 
 export interface UpdateAssetInput {
   name?: string;
-  type?: 'bank_account' | 'mutual_fund' | 'bond' | 'crypto' | 'stock' | 'other';
+  type?: AssetType;
   balance?: string;
-  currency?: 'IDR' | 'USD';
+  currency?: Currency;
+  credit_limit?: string | null;
+  is_cash_account?: boolean;
 }
 
 export interface UpdateAssetBalanceInput {
@@ -82,8 +87,8 @@ export class AssetService {
   async findAll(
     user_id: string,
     filters?: {
-      type?: 'bank_account' | 'mutual_fund' | 'bond' | 'crypto' | 'stock' | 'other';
-      currency?: 'IDR' | 'USD';
+      type?: AssetType;
+      currency?: Currency;
     }
   ) {
     const conditions = [eq(assets.user_id, user_id), sql`${assets.deleted_at} IS NULL`];

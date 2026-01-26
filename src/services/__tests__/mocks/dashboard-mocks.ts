@@ -192,7 +192,7 @@ export const mockRecentTransactions: TransactionOutput[] = [
       name: 'Food & Groceries',
       type: 'expense',
     },
-    payment_method: {
+    asset: {
       id: 'pm1',
       name: 'Cash',
       type: 'cash',
@@ -213,7 +213,7 @@ export const mockRecentTransactions: TransactionOutput[] = [
       name: 'Reina Expenses',
       type: 'expense',
     },
-    payment_method: {
+    asset: {
       id: 'pm2',
       name: 'BCA',
       type: 'bank_transfer',
@@ -234,7 +234,7 @@ export const mockRecentTransactions: TransactionOutput[] = [
       name: 'Monthly Salary',
       type: 'income',
     },
-    payment_method: {
+    asset: {
       id: 'pm3',
       name: 'Bank Transfer',
       type: 'bank_transfer',
@@ -255,7 +255,7 @@ export const mockRecentTransactions: TransactionOutput[] = [
       name: 'Transportation',
       type: 'expense',
     },
-    payment_method: {
+    asset: {
       id: 'pm4',
       name: 'E-Wallet',
       type: 'e_wallet',
@@ -276,7 +276,7 @@ export const mockRecentTransactions: TransactionOutput[] = [
       name: 'Dine Out',
       type: 'expense',
     },
-    payment_method: {
+    asset: {
       id: 'pm5',
       name: 'Credit Card',
       type: 'credit_card',
