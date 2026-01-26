@@ -13,9 +13,15 @@ import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import BudgetCardGrid from '@components/organisms/BudgetCardGrid.astro';
 import BudgetPageHeader from '@components/organisms/BudgetPageHeader.astro';
 import BudgetAdviceBanner from '@components/organisms/BudgetAdviceBanner.astro';
+import BudgetSummary from '@components/organisms/BudgetSummary.astro';
 import SetNewBudgetModal from '@components/organisms/SetNewBudgetModal.astro';
-import { budgetService, categoryService, type BudgetSummary } from '@/services';
+import {
+  budgetService,
+  categoryService,
+  type BudgetSummary as BudgetSummaryType,
+} from '@/services';
 import { formatCurrency } from '@/lib/tokens';
+import { calculateAllocationDistribution } from '@/lib/utils/budget';
 import { CircleX } from '@lucide/astro';
 
 const user = Astro.locals.user;
@@ -40,7 +46,7 @@ const selectedMonth = monthParam ? parseInt(monthParam, 10) : now.getMonth() + 1
 const selectedCurrency = currencyParam || 'IDR';
 
 // Get budget data from service
-let budgetData: BudgetSummary | null = null;
+let budgetData: BudgetSummaryType | null = null;
 let error: string | null = null;
 
 try {
@@ -54,6 +60,18 @@ try {
   console.error('Error fetching budget data:', err);
   error = err instanceof Error ? err.message : 'Failed to fetch budget data';
 }
+
+// Calculate allocation distribution for BudgetSummary component
+// @TODO: Wire with backend - consider moving this calculation to the service layer
+const allocationDistribution = budgetData
+  ? calculateAllocationDistribution(
+      budgetData.categories.map((cat) => ({
+        name: cat.category_name,
+        budget_amount: cat.budget_amount,
+        spent_amount: cat.spent_amount,
+      }))
+    )
+  : [];
 
 // Month names for display
 const monthNames = [
@@ -190,6 +208,17 @@ const budgetCount =
         </div>
       ) : (
         <>
+          {/* Budget Summary Overview */}
+          {budgetData && (
+            <BudgetSummary
+              totalAllocated={parseFloat(budgetData.total_budget || '0')}
+              totalSpent={parseFloat(budgetData.total_spent || '0')}
+              distribution={allocationDistribution}
+              currency={selectedCurrency}
+              loading={false}
+            />
+          )}
+
           {/* Budget Card Grid */}
           <BudgetCardGrid
             budgets={budgetData?.categories || []}
