@@ -30,13 +30,10 @@ const { id } = Astro.props;
 
         {/* Title and description */}
         <div class="flex-1">
-          <h2
-            class="text-xl font-bold tracking-tight text-base-content leading-none"
-            data-modal-title
-          >
+          <h2 class="text-2xl font-bold tracking-tight text-primary leading-none" data-modal-title>
             Delete Asset
           </h2>
-          <p class="text-base-content/60 text-sm mt-2 font-medium" data-modal-subtitle>
+          <p class="text-neutral text-sm mt-2 font-medium" data-modal-subtitle>
             Are you sure you want to delete this asset?
           </p>
         </div>
@@ -78,13 +75,14 @@ const { id } = Astro.props;
 
       {/* Actions */}
       <div class="flex gap-4 pt-2">
-        <button
-          type="button"
-          class="btn btn-ghost flex-1 h-14 rounded-full font-bold text-base-content hover:bg-base-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent"
-          data-cancel-delete
-        >
-          Cancel
-        </button>
+        <form method="dialog" class="flex-1">
+          <button
+            type="submit"
+            class="btn btn-ghost w-full h-14 rounded-full font-bold text-base-content hover:bg-base-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent"
+          >
+            Cancel
+          </button>
+        </form>
         <button
           type="button"
           class="btn btn-error flex-1 h-14 rounded-full font-bold"
@@ -122,7 +120,6 @@ const { id } = Astro.props;
       if (!id) return;
 
       const modal = document.getElementById(id) as HTMLDialogElement | null;
-      const cancelBtn = container.querySelector('[data-cancel-delete]');
       const confirmBtn = container.querySelector('[data-confirm-delete]') as HTMLButtonElement;
       const errorDiv = document.getElementById(`${id}-error`);
 
@@ -175,7 +172,7 @@ const { id } = Astro.props;
       // Listen for open-asset-delete event
       const handleOpenDelete = ((e: CustomEvent<AssetDeleteData>) => {
         populateModal(e.detail);
-        modal.classList.add('modal-open');
+        modal.showModal();
       }) as EventListener;
 
       document.addEventListener('open-asset-delete', handleOpenDelete);
@@ -189,10 +186,9 @@ const { id } = Astro.props;
         { once: true }
       );
 
-      // Handle cancel button
-      cancelBtn?.addEventListener('click', () => {
+      // Reset modal when closed (form method="dialog" triggers this)
+      modal.addEventListener('close', () => {
         resetModal();
-        modal.close();
       });
 
       // Handle confirm delete
@@ -231,7 +227,6 @@ const { id } = Astro.props;
 
           // Success
           addToast('Asset deleted successfully', 'success');
-          resetModal();
           modal.close();
 
           // Dispatch event for page update

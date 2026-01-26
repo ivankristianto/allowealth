@@ -21,25 +21,22 @@ const { id } = Astro.props;
 ---
 
 <div data-asset-history-modal-container data-id={id}>
-  <Modal id={id} title="" size="xl" closable={false} className="[&_.modal-box]:rounded-3xl">
-    <div class="space-y-8">
+  <Modal id={id} size="xl" closable={false} backdropClose={true}>
+    <div slot="default" class="flex flex-col gap-6">
       {/* Header with asset info */}
       <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div class="flex items-center gap-4">
           <div
-            class="w-14 h-14 rounded-2xl flex items-center justify-center bg-accent/10 text-accent"
+            class="w-12 h-12 rounded-2xl flex items-center justify-center bg-accent/10 text-accent"
           >
-            <TrendingUp size={28} class="stroke-current" aria-hidden="true" />
+            <TrendingUp size={24} class="stroke-current" aria-hidden="true" />
           </div>
           <div>
-            <h2
-              class="text-2xl font-bold tracking-tight text-base-content leading-none"
-              data-asset-name
-            >
+            <h2 class="text-2xl font-bold tracking-tight text-primary leading-none" data-asset-name>
               Asset Name
             </h2>
             <p
-              class="text-xs font-bold text-base-content/40 uppercase tracking-widest mt-2"
+              class="text-neutral text-sm mt-2 font-medium uppercase tracking-widest"
               data-asset-meta
             >
               TYPE • CURRENCY Portfolio
@@ -105,11 +102,16 @@ const { id } = Astro.props;
           <div
             class="absolute inset-0 flex flex-col items-center justify-center hidden"
             data-chart-empty
+            role="status"
+            aria-live="polite"
           >
             <p class="text-base-content/50 text-sm">No history data available</p>
           </div>
 
           {/* SVG Chart */}
+          {
+            /* P2: TODO - Hardcoded accent color #6366f1 should use CSS variables for theme support */
+          }
           <svg
             class="w-full h-full hidden"
             viewBox="0 0 800 300"
@@ -198,14 +200,16 @@ const { id } = Astro.props;
       </div>
 
       {/* Close button */}
-      <div class="flex justify-end">
-        <button
-          type="button"
-          class="px-8 py-4 bg-neutral text-neutral-content rounded-2xl font-bold uppercase tracking-widest text-xs transition-all hover:scale-105 active:scale-95 shadow-lg"
-          data-close-history
-        >
-          Close Analysis
-        </button>
+      <div class="flex justify-end pt-2">
+        <form method="dialog">
+          <button
+            type="submit"
+            class="btn btn-outline btn-accent px-8 h-14 rounded-full font-bold text-base-content hover:bg-base-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent"
+            data-close-history
+          >
+            Close
+          </button>
+        </form>
       </div>
     </div>
   </Modal>
@@ -241,7 +245,6 @@ const { id } = Astro.props;
       if (!id) return;
 
       const modal = document.getElementById(id) as HTMLDialogElement | null;
-      const closeBtn = container.querySelector('[data-close-history]');
 
       // Elements
       const nameEl = container.querySelector('[data-asset-name]');
@@ -378,6 +381,7 @@ const { id } = Astro.props;
             }
             if (tooltip) {
               const rect = (e.target as Element).getBoundingClientRect();
+              // P4: TODO - Add viewport boundary checks to prevent tooltip overflow on mobile
               tooltip.style.left = `${rect.left - 40}px`;
               tooltip.style.top = `${rect.top - 60}px`;
               tooltip.style.opacity = '1';
@@ -471,7 +475,7 @@ const { id } = Astro.props;
         const days = 30;
         currentData.history = generateMockHistory(currentData.balance, days);
 
-        modal.classList.add('modal-open');
+        modal.showModal();
 
         // Delay to allow modal animation
         setTimeout(() => {
@@ -505,10 +509,9 @@ const { id } = Astro.props;
         }
       });
 
-      // Handle close button
-      closeBtn?.addEventListener('click', () => {
+      // Reset data when modal closes (form method="dialog" triggers this)
+      modal.addEventListener('close', () => {
         currentData = null;
-        modal.close();
       });
     });
   }

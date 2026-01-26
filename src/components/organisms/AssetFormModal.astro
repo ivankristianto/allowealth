@@ -41,8 +41,8 @@ const assetTypes: { value: AssetType; label: string }[] = Object.entries(ASSET_T
 ---
 
 <div data-asset-form-modal-container data-id={id} data-mode={mode}>
-  <Modal id={id} title="" size="md" closable={false} className="[&_.modal-box]:rounded-3xl">
-    <div class="space-y-6">
+  <Modal id={id} size="md" closable={false} backdropClose={true}>
+    <div slot="default" class="flex flex-col gap-6">
       {/* Header with icon */}
       <div class="flex items-center gap-4">
         <div
@@ -50,21 +50,18 @@ const assetTypes: { value: AssetType; label: string }[] = Object.entries(ASSET_T
         >
           <Store size={24} class="stroke-current" aria-hidden="true" />
         </div>
-        <div>
-          <h2
-            class="text-xl font-bold tracking-tight text-base-content leading-none"
-            data-modal-title
-          >
+        <div class="flex-1">
+          <h2 class="text-2xl font-bold tracking-tight text-primary leading-none" data-modal-title>
             {title}
           </h2>
-          <p class="text-base-content/60 text-sm mt-2 font-medium" data-modal-subtitle>
+          <p class="text-neutral text-sm mt-2 font-medium" data-modal-subtitle>
             {subtitle}
           </p>
         </div>
       </div>
 
       {/* Form */}
-      <form id={`${id}-form`} class="space-y-6" aria-describedby={`${id}-error`}>
+      <form id={`${id}-form`} class="flex flex-col gap-6" aria-describedby={`${id}-error`}>
         {/* Hidden field for asset ID (edit mode) */}
         <input type="hidden" name="asset_id" id={`${id}-asset-id`} value="" />
 
@@ -175,22 +172,21 @@ const assetTypes: { value: AssetType; label: string }[] = Object.entries(ASSET_T
           class="hidden alert alert-error text-sm rounded-xl"
           role="alert"
           aria-live="polite"
-          aria-describedby={`${id}-form`}
         >
         </div>
 
         {/* Actions */}
-        <div class="flex items-center gap-4 pt-4">
+        <div class="flex gap-4 pt-2">
           <button
             type="button"
-            class="flex-1 py-4 text-base-content/60 font-bold hover:bg-base-200 rounded-2xl transition-colors"
+            class="btn btn-ghost flex-1 h-14 rounded-full font-bold text-base-content hover:bg-base-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent"
             data-cancel-asset-form
           >
             Cancel
           </button>
           <button
             type="submit"
-            class="flex-[2] btn btn-accent py-4 rounded-full font-bold text-base shadow-lg shadow-accent/20 hover:shadow-xl transition-all"
+            class="btn btn-accent flex-1 h-14 rounded-full font-bold"
             data-submit-asset-form
           >
             {submitLabel}
@@ -285,7 +281,7 @@ const assetTypes: { value: AssetType; label: string }[] = Object.entries(ASSET_T
         } else {
           resetForm();
         }
-        modal.classList.add('modal-open');
+        modal.showModal();
       }) as EventListener;
 
       document.addEventListener('open-asset-form', handleOpenForm);
