@@ -920,9 +920,19 @@ const cspNonce = Astro.locals.cspNonce || '';
           formData.append(`map_${key}`, value);
         });
 
+        // Get CSRF token from cookie (inline since this is an is:inline script)
+        const csrfToken =
+          document.cookie
+            .split('; ')
+            .find((row) => row.startsWith('csrf_token='))
+            ?.split('=')[1] || '';
+
         // Send import request
         const response = await fetch(action, {
           method: 'POST',
+          headers: {
+            'X-CSRF-Token': csrfToken,
+          },
           body: formData,
         });
 

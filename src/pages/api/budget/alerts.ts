@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import { budgetService } from '@/services';
-import { successResponse, errorResponse, requireAuth } from '@/lib/api-utils';
+import { successResponse, errorResponse, getAuthenticatedUser } from '@/lib/api-utils';
 import { logError } from '@/lib/utils';
 
 /**
@@ -8,9 +8,10 @@ import { logError } from '@/lib/utils';
  * Get budget alerts for current month
  * Query params: currency
  */
-export const GET: APIRoute = async ({ request, url }) => {
+export const GET: APIRoute = async (context) => {
   try {
-    const userId = await requireAuth({ request, url } as any);
+    const userId = getAuthenticatedUser(context);
+    const { url } = context;
 
     const currency = (url.searchParams.get('currency') as 'IDR' | 'USD') || 'IDR';
 

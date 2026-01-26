@@ -5,7 +5,7 @@ import {
   successResponse,
   errorResponse,
   validateBody,
-  requireAuth,
+  getAuthenticatedUser,
   getPaginationParams,
   isValidDate,
   isValidationError,
@@ -26,7 +26,7 @@ import PaginationPartial from '@/components/partials/PaginationPartial.astro';
  */
 export const GET: APIRoute = async (context) => {
   try {
-    const userId = await requireAuth(context);
+    const userId = getAuthenticatedUser(context);
     const { url } = context;
 
     const { limit, offset } = getPaginationParams(url);
@@ -222,7 +222,7 @@ export const GET: APIRoute = async (context) => {
  */
 export const POST: APIRoute = async (context) => {
   try {
-    const userId = await requireAuth(context);
+    const userId = getAuthenticatedUser(context);
     const { request } = context;
 
     // Validate Content-Type header

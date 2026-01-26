@@ -4,7 +4,7 @@ import {
   successResponse,
   errorResponse,
   validateBody,
-  requireAuth,
+  getAuthenticatedUser,
   isValidationError,
 } from '@/lib/api-utils';
 import { updateSettingsSchema } from '@/services/user.service';
@@ -17,7 +17,7 @@ import { UserServiceError, ServiceErrorCode } from '@/services/service-errors';
  * Retrieves the current authenticated user's settings with defaults applied
  * for any missing values.
  *
- * @authentication Requires valid session cookie (handled by requireAuth)
+ * @authentication Requires valid session (validated by middleware, accessed via getAuthenticatedUser)
  *
  * @example
  * Response (200):
@@ -33,7 +33,7 @@ import { UserServiceError, ServiceErrorCode } from '@/services/service-errors';
  */
 export const GET: APIRoute = async (context) => {
   try {
-    const userId = await requireAuth(context);
+    const userId = getAuthenticatedUser(context);
     const settings = await userService.getSettings(userId);
     return successResponse(settings);
   } catch (error) {
@@ -56,7 +56,7 @@ export const GET: APIRoute = async (context) => {
  * Updates the current authenticated user's settings. Creates settings record
  * if it doesn't exist (upsert operation).
  *
- * @authentication Requires valid session cookie (handled by requireAuth)
+ * @authentication Requires valid session (validated by middleware, accessed via getAuthenticatedUser)
  * @param {Object} requestBody - Request body containing settings updates
  * @param {string} requestBody.primaryCurrency - Primary currency code (required, must be 'IDR' or 'USD')
  * @param {Object} [requestBody.preferences] - Optional user preferences object
@@ -102,7 +102,7 @@ export const GET: APIRoute = async (context) => {
  */
 export const PUT: APIRoute = async (context) => {
   try {
-    const userId = await requireAuth(context);
+    const userId = getAuthenticatedUser(context);
 
     const validation = await validateBody(context.request, updateSettingsSchema);
 

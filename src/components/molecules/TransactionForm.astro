@@ -228,6 +228,8 @@ const paymentMethodsJson = JSON.stringify(
 </form>
 
 <script>
+  import { getCsrfHeaders } from '@/lib/csrf-client';
+
   // Get data from form data attributes
   const form = document.getElementById('transaction-form') as HTMLFormElement | null;
   const formError = document.getElementById('form-error');
@@ -902,9 +904,9 @@ const paymentMethodsJson = JSON.stringify(
 
       const response = await fetch(action, {
         method: method,
-        headers: {
+        headers: getCsrfHeaders({
           'Content-Type': 'application/json',
-        },
+        }),
         body: JSON.stringify(data),
       });
 

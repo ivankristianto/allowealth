@@ -13,6 +13,7 @@ import type { TransactionOutput } from '@/lib/types/transaction';
 import type { TransactionFilters } from '@/lib/stores/transactionFiltersStore';
 import { parseMonthKeyToISO } from '@/lib/utils';
 import { PAGINATION } from '@/lib/constants/pagination';
+import { getCsrfHeaders } from '@/lib/csrf-client';
 
 export interface FetchTransactionsResponse {
   transactions: TransactionOutput[];
@@ -288,9 +289,9 @@ export async function fetchTransactionsHtml(
 export async function deleteTransaction(id: string): Promise<void> {
   const response = await fetch(`/api/transactions/${id}`, {
     method: 'DELETE',
-    headers: {
+    headers: getCsrfHeaders({
       Accept: 'application/json',
-    },
+    }),
   });
 
   if (!response.ok) {

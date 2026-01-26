@@ -192,6 +192,7 @@ const formId = `transaction-entry-form-${type}`;
 
 <script>
   import { addToast } from '@/lib/stores/toastStore';
+  import { getCsrfHeaders } from '@/lib/csrf-client';
 
   // Initialize all transaction entry forms on the page
   function initTransactionEntryForms() {
@@ -489,7 +490,7 @@ const formId = `transaction-entry-form-${type}`;
 
         const response = await fetch(apiUrl, {
           method,
-          headers: { 'Content-Type': 'application/json' },
+          headers: getCsrfHeaders({ 'Content-Type': 'application/json' }),
           body: JSON.stringify(data),
         });
 

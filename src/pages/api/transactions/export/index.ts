@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import { transactionService } from '@/services';
-import { errorResponse, requireAuth, isValidDate } from '@/lib/api-utils';
+import { errorResponse, getAuthenticatedUser, isValidDate } from '@/lib/api-utils';
 import { logError } from '@/lib/utils';
 
 /**
@@ -9,7 +9,7 @@ import { logError } from '@/lib/utils';
  */
 export const GET: APIRoute = async (context) => {
   try {
-    const userId = await requireAuth(context);
+    const userId = getAuthenticatedUser(context);
     const { url } = context;
 
     // Parse filter params (same as list endpoint)

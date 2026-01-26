@@ -1,4 +1,5 @@
 // Categories Management Client-side script
+import { getCsrfHeaders } from '@/lib/csrf-client';
 
 document.addEventListener('DOMContentLoaded', () => {
   const container = document.querySelector('[data-categories-container]');
@@ -126,7 +127,7 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const response = await fetch(`/api/categories/${currentCategoryId}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getCsrfHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ is_active: false }),
       });
 
@@ -148,7 +149,7 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const response = await fetch(`/api/categories/${currentCategoryId}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getCsrfHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ is_active: true }),
       });
 
@@ -190,7 +191,7 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const response = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
+        headers: getCsrfHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify(data),
       });
 

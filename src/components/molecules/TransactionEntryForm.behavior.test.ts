@@ -101,12 +101,12 @@ describe('TransactionEntryForm Component', () => {
 
   describe('Form Layout', () => {
     it('should have 2-column grid for Amount and Date', () => {
-      expect(componentContent).toContain('grid grid-cols-2 gap-4');
+      expect(componentContent).toContain('grid grid-cols-1 sm:grid-cols-2 gap-4');
     });
 
     it('should have 2-column grid for Category and Payment Method', () => {
       // Multiple grid sections
-      const gridMatches = componentContent.match(/grid grid-cols-2 gap-4/g);
+      const gridMatches = componentContent.match(/grid grid-cols-1 sm:grid-cols-2 gap-4/g);
       expect(gridMatches?.length).toBeGreaterThanOrEqual(2);
     });
 
@@ -187,7 +187,7 @@ describe('TransactionEntryForm Component', () => {
     });
 
     it('should send JSON body with form data', () => {
-      expect(componentContent).toContain("headers: { 'Content-Type': 'application/json' }");
+      expect(componentContent).toContain("getCsrfHeaders({ 'Content-Type': 'application/json' })");
       expect(componentContent).toContain('body: JSON.stringify(data)');
     });
 
