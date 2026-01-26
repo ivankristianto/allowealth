@@ -26,9 +26,14 @@ export {
   formatBudgetStatus,
   getBudgetProgressWidth,
   getBudgetProgressClass,
+  getCategoryColor,
+  calculateAllocationDistribution,
+  isValidHexColor,
+  sanitizeColor,
   type BudgetStatus,
   type BudgetStatusResult,
   type BudgetTotal,
+  type AllocationDistribution,
 } from './budget';
 
 // Date utilities

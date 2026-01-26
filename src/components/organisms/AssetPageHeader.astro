@@ -1,0 +1,91 @@
+---
+/**
+ * AssetPageHeader Component
+ *
+ * Header section for the Assets page with title, subtitle, and action button.
+ * Part of the Global Portfolio page redesign.
+ *
+ * The Add Asset button triggers a modal for adding new assets.
+ *
+ * @param {string} title - Main heading (default: "Global Portfolio")
+ * @param {string} subtitle - Description text
+ * @param {string} className - Additional CSS classes
+ */
+
+import { Plus } from '@lucide/astro';
+
+export interface Props {
+  title?: string;
+  subtitle?: string;
+  className?: string;
+}
+
+const {
+  title = 'Global Portfolio',
+  subtitle = 'Manage and track your distributed household wealth.',
+  className = '',
+} = Astro.props;
+
+const headerClasses = [
+  'flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4',
+  className,
+]
+  .filter(Boolean)
+  .join(' ');
+---
+
+<header class={headerClasses}>
+  {/* Title and subtitle */}
+  <div>
+    <h1 class="text-2xl font-bold text-base-content tracking-tight leading-none">{title}</h1>
+    <p class="text-sm text-base-content/60 mt-2 font-medium">{subtitle}</p>
+  </div>
+
+  {/* Add Asset Button */}
+  <button
+    type="button"
+    class="btn btn-accent gap-2 rounded-2xl shadow-md hover:shadow-lg transition-all"
+    aria-label="Add new asset"
+    data-add-asset-btn
+  >
+    <Plus size={18} class="stroke-current" aria-hidden="true" />
+    <span>Add Asset</span>
+  </button>
+</header>
+
+<script>
+  // Track initialized buttons to avoid duplicate listeners
+  const initializedAddButtons = new WeakSet<Element>();
+
+  function initAddAssetButton() {
+    document.querySelectorAll('[data-add-asset-btn]').forEach((button) => {
+      if (initializedAddButtons.has(button)) return;
+      initializedAddButtons.add(button);
+
+      button.addEventListener('click', () => {
+        // Dispatch event to open the asset form modal in add mode
+        document.dispatchEvent(
+          new CustomEvent('open-asset-form', {
+            detail: {
+              // No id means add mode
+              name: '',
+              type: 'bank_account',
+              currency: 'IDR',
+              balance: '',
+            },
+          })
+        );
+      });
+    });
+  }
+
+  // Initialize on DOM ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initAddAssetButton);
+  } else {
+    initAddAssetButton();
+  }
+
+  // Re-initialize on Astro page transitions
+  document.addEventListener('astro:page-load', initAddAssetButton);
+</script>
