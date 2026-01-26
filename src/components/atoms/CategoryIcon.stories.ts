@@ -42,20 +42,19 @@ const meta: Meta = {
     color: {
       control: 'select',
       options: [
-        'bg-red-500',
-        'bg-blue-500',
-        'bg-orange-500',
-        'bg-purple-500',
-        'bg-cyan-500',
-        'bg-pink-500',
-        'bg-emerald-500',
-        'bg-indigo-500',
-        'bg-slate-500',
+        'bg-primary',
+        'bg-secondary',
+        'bg-accent',
+        'bg-neutral',
+        'bg-success',
+        'bg-warning',
+        'bg-error',
+        'bg-info',
       ],
-      description: 'Tailwind background color class',
+      description: 'DaisyUI semantic background color class',
       table: {
         type: { summary: 'string' },
-        defaultValue: { summary: 'bg-slate-500' },
+        defaultValue: { summary: 'bg-neutral' },
       },
     },
     size: {
@@ -76,7 +75,7 @@ type Story = StoryObj;
 export const Default: Story = {
   args: {
     icon: 'home',
-    color: 'bg-red-500',
+    color: 'bg-error',
     size: 'md',
   },
   render: (args) => {
@@ -114,7 +113,7 @@ export const Default: Story = {
 export const Small: Story = {
   args: {
     icon: 'shopping-basket',
-    color: 'bg-blue-500',
+    color: 'bg-info',
     size: 'sm',
   },
   render: Default.render,
@@ -123,7 +122,7 @@ export const Small: Story = {
 export const Large: Story = {
   args: {
     icon: 'utensils',
-    color: 'bg-orange-500',
+    color: 'bg-warning',
     size: 'lg',
   },
   render: Default.render,
@@ -135,12 +134,12 @@ export const ExpenseCategories: Story = {
     container.className = 'flex gap-4 flex-wrap';
 
     const categories = [
-      { icon: 'home', color: 'bg-red-500', label: 'Housing' },
-      { icon: 'shopping-basket', color: 'bg-blue-500', label: 'Groceries' },
-      { icon: 'utensils', color: 'bg-orange-500', label: 'Dining' },
-      { icon: 'car', color: 'bg-purple-500', label: 'Transport' },
-      { icon: 'zap', color: 'bg-blue-600', label: 'Utilities' },
-      { icon: 'smile', color: 'bg-pink-500', label: 'Entertainment' },
+      { icon: 'home', color: 'bg-error', label: 'Housing' },
+      { icon: 'shopping-basket', color: 'bg-info', label: 'Groceries' },
+      { icon: 'utensils', color: 'bg-warning', label: 'Dining' },
+      { icon: 'car', color: 'bg-secondary', label: 'Transport' },
+      { icon: 'zap', color: 'bg-info', label: 'Utilities' },
+      { icon: 'smile', color: 'bg-secondary', label: 'Entertainment' },
     ];
 
     categories.forEach(({ icon, color, label }) => {
@@ -175,9 +174,9 @@ export const IncomeCategories: Story = {
     container.className = 'flex gap-4 flex-wrap';
 
     const categories = [
-      { icon: 'banknote', color: 'bg-emerald-500', label: 'Salary' },
-      { icon: 'trending-up', color: 'bg-emerald-400', label: 'Dividend' },
-      { icon: 'palette', color: 'bg-indigo-500', label: 'Freelance' },
+      { icon: 'banknote', color: 'bg-success', label: 'Salary' },
+      { icon: 'trending-up', color: 'bg-success', label: 'Dividend' },
+      { icon: 'palette', color: 'bg-primary', label: 'Freelance' },
     ];
 
     categories.forEach(({ icon, color, label }) => {

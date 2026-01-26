@@ -271,17 +271,15 @@ const getTypeBadgeClass = (type: string) => {
           <span class="label-text">Color</span>
           <span class="label-text-alt text-error">*</span>
         </label>
-        <!-- P2 TODO: Replace hardcoded Tailwind colors with DaisyUI semantic classes -->
         <select name="color" id="color" class="select select-bordered" required>
-          <option value="bg-red-500">Red</option>
-          <option value="bg-blue-500">Blue</option>
-          <option value="bg-orange-500">Orange</option>
-          <option value="bg-purple-500">Purple</option>
-          <option value="bg-cyan-500">Cyan</option>
-          <option value="bg-pink-500">Pink</option>
-          <option value="bg-emerald-500">Emerald</option>
-          <option value="bg-indigo-500">Indigo</option>
-          <option value="bg-slate-500">Slate</option>
+          <option value="bg-primary">Primary</option>
+          <option value="bg-secondary">Secondary</option>
+          <option value="bg-accent">Accent</option>
+          <option value="bg-neutral">Neutral</option>
+          <option value="bg-success">Success</option>
+          <option value="bg-warning">Warning</option>
+          <option value="bg-error">Error</option>
+          <option value="bg-info">Info</option>
         </select>
       </div>
 

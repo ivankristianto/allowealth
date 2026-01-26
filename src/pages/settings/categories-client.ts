@@ -115,7 +115,7 @@ document.addEventListener('DOMContentLoaded', () => {
         (form.querySelector('[name="type"]') as HTMLSelectElement).value = category.type;
         (form.querySelector('[name="icon"]') as HTMLInputElement).value = category.icon || 'tag';
         (form.querySelector('[name="color"]') as HTMLSelectElement).value =
-          category.color || 'bg-slate-500';
+          category.color || 'bg-neutral';
         (form.querySelector('[name="currency"]') as HTMLSelectElement).value = category.currency;
         (form.querySelector('[name="percentage"]') as HTMLInputElement).value =
           category.percentage || '0';

@@ -79,8 +79,8 @@ const colorValidation = z
   .string()
   .min(1, 'Color is required')
   .optional()
-  .default('bg-slate-500')
-  .transform((val) => val || 'bg-slate-500');
+  .default('bg-neutral')
+  .transform((val) => val || 'bg-neutral');
 
 // Schema for creating a category (for service layer)
 export const createCategorySchema = z.object({

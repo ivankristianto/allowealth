@@ -10,7 +10,7 @@ describe('CategoryIcon Component', () => {
   describe('Rendering', () => {
     it('should render with default props', () => {
       const html = `
-        <div class="w-10 h-10 rounded-xl bg-slate-500 flex items-center justify-center text-white shadow-lg transition-transform">
+        <div class="w-10 h-10 rounded-xl bg-neutral flex items-center justify-center text-white shadow-lg transition-transform">
           <svg width="20" height="20" class="stroke-current" aria-hidden="true">
             <title>tag</title>
           </svg>
@@ -20,39 +20,39 @@ describe('CategoryIcon Component', () => {
       // Test that container has correct default classes
       expect(html).toContain('w-10 h-10'); // md size
       expect(html).toContain('rounded-xl'); // circular shape
-      expect(html).toContain('bg-slate-500'); // default color
+      expect(html).toContain('bg-neutral'); // default color
       expect(html).toContain('shadow-lg'); // shadow for depth
     });
 
     it('should render with custom icon', () => {
       const html = `
-        <div class="w-10 h-10 rounded-xl bg-red-500 flex items-center justify-center text-white shadow-lg transition-transform">
+        <div class="w-10 h-10 rounded-xl bg-error flex items-center justify-center text-white shadow-lg transition-transform">
           <svg width="20" height="20" class="stroke-current" aria-hidden="true">
             <title>home</title>
           </svg>
         </div>
       `;
 
-      expect(html).toContain('bg-red-500');
+      expect(html).toContain('bg-error');
     });
 
     it('should render with custom color', () => {
       const html = `
-        <div class="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center text-white shadow-lg transition-transform">
+        <div class="w-10 h-10 rounded-xl bg-success flex items-center justify-center text-white shadow-lg transition-transform">
           <svg width="20" height="20" class="stroke-current" aria-hidden="true">
             <title>banknote</title>
           </svg>
         </div>
       `;
 
-      expect(html).toContain('bg-emerald-500');
+      expect(html).toContain('bg-success');
     });
   });
 
   describe('Size Variants', () => {
     it('should render small size correctly', () => {
       const html = `
-        <div class="w-8 h-8 rounded-xl bg-slate-500 flex items-center justify-center text-white shadow-lg transition-transform">
+        <div class="w-8 h-8 rounded-xl bg-neutral flex items-center justify-center text-white shadow-lg transition-transform">
           <svg width="16" height="16" class="stroke-current" aria-hidden="true"></svg>
         </div>
       `;
@@ -63,7 +63,7 @@ describe('CategoryIcon Component', () => {
 
     it('should render medium size correctly', () => {
       const html = `
-        <div class="w-10 h-10 rounded-xl bg-slate-500 flex items-center justify-center text-white shadow-lg transition-transform">
+        <div class="w-10 h-10 rounded-xl bg-neutral flex items-center justify-center text-white shadow-lg transition-transform">
           <svg width="20" height="20" class="stroke-current" aria-hidden="true"></svg>
         </div>
       `;
@@ -74,7 +74,7 @@ describe('CategoryIcon Component', () => {
 
     it('should render large size correctly', () => {
       const html = `
-        <div class="w-12 h-12 rounded-xl bg-slate-500 flex items-center justify-center text-white shadow-lg transition-transform">
+        <div class="w-12 h-12 rounded-xl bg-neutral flex items-center justify-center text-white shadow-lg transition-transform">
           <svg width="24" height="24" class="stroke-current" aria-hidden="true"></svg>
         </div>
       `;
@@ -86,14 +86,14 @@ describe('CategoryIcon Component', () => {
 
   describe('Color Variants', () => {
     const colors = [
-      'bg-red-500',
-      'bg-blue-500',
-      'bg-orange-500',
-      'bg-purple-500',
-      'bg-cyan-500',
-      'bg-pink-500',
-      'bg-emerald-500',
-      'bg-indigo-500',
+      'bg-primary',
+      'bg-secondary',
+      'bg-accent',
+      'bg-neutral',
+      'bg-success',
+      'bg-warning',
+      'bg-error',
+      'bg-info',
     ];
 
     colors.forEach((color) => {
@@ -112,7 +112,7 @@ describe('CategoryIcon Component', () => {
   describe('Accessibility', () => {
     it('should have aria-hidden on icon', () => {
       const html = `
-        <div class="w-10 h-10 rounded-xl bg-slate-500 flex items-center justify-center text-white shadow-lg transition-transform">
+        <div class="w-10 h-10 rounded-xl bg-neutral flex items-center justify-center text-white shadow-lg transition-transform">
           <svg width="20" height="20" class="stroke-current" aria-hidden="true"></svg>
         </div>
       `;
@@ -123,7 +123,7 @@ describe('CategoryIcon Component', () => {
     it('should be keyboard navigable when used in buttons', () => {
       const html = `
         <button class="p-0 border-0 bg-transparent cursor-pointer">
-          <div class="w-10 h-10 rounded-xl bg-slate-500 flex items-center justify-center text-white shadow-lg transition-transform">
+          <div class="w-10 h-10 rounded-xl bg-neutral flex items-center justify-center text-white shadow-lg transition-transform">
             <svg width="20" height="20" class="stroke-current" aria-hidden="true"></svg>
           </div>
         </button>
@@ -136,7 +136,7 @@ describe('CategoryIcon Component', () => {
   describe('Styling', () => {
     it('should have transition for hover effects', () => {
       const html = `
-        <div class="w-10 h-10 rounded-xl bg-slate-500 flex items-center justify-center text-white shadow-lg transition-transform">
+        <div class="w-10 h-10 rounded-xl bg-neutral flex items-center justify-center text-white shadow-lg transition-transform">
           <svg width="20" height="20" class="stroke-current" aria-hidden="true"></svg>
         </div>
       `;
@@ -146,7 +146,7 @@ describe('CategoryIcon Component', () => {
 
     it('should have shadow for depth', () => {
       const html = `
-        <div class="w-10 h-10 rounded-xl bg-slate-500 flex items-center justify-center text-white shadow-lg transition-transform">
+        <div class="w-10 h-10 rounded-xl bg-neutral flex items-center justify-center text-white shadow-lg transition-transform">
           <svg width="20" height="20" class="stroke-current" aria-hidden="true"></svg>
         </div>
       `;
@@ -156,7 +156,7 @@ describe('CategoryIcon Component', () => {
 
     it('should have white text color', () => {
       const html = `
-        <div class="w-10 h-10 rounded-xl bg-slate-500 flex items-center justify-center text-white shadow-lg transition-transform">
+        <div class="w-10 h-10 rounded-xl bg-neutral flex items-center justify-center text-white shadow-lg transition-transform">
           <svg width="20" height="20" class="stroke-current" aria-hidden="true"></svg>
         </div>
       `;
@@ -166,7 +166,7 @@ describe('CategoryIcon Component', () => {
 
     it('should use stroke-current for icon color', () => {
       const html = `
-        <div class="w-10 h-10 rounded-xl bg-slate-500 flex items-center justify-center text-white shadow-lg transition-transform">
+        <div class="w-10 h-10 rounded-xl bg-neutral flex items-center justify-center text-white shadow-lg transition-transform">
           <svg width="20" height="20" class="stroke-current" aria-hidden="true"></svg>
         </div>
       `;
