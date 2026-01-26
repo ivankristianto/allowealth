@@ -32,14 +32,20 @@ import {
   applyRateLimitHeaders,
   RATE_LIMIT_PRESETS,
 } from '@/lib/rate-limit';
+import { logAuthEvent, getAuditContext, hashSensitiveValue } from '@/lib/audit-log';
 
 export const prerender = false;
 
-export const POST: APIRoute = async ({ request, clientAddress }) => {
+export const POST: APIRoute = async (context) => {
+  const { request, clientAddress } = context;
+  const auditContext = getAuditContext(context);
+  let email: string | undefined;
+
   try {
     // Parse request body first (before consuming rate limit)
     const body = await request.json();
-    const { email, password } = body;
+    email = body.email;
+    const { password } = body;
 
     // Check rate limit (10 attempts per 15 minutes per IP)
     // Pass clientAddress from Astro context for trusted IP (prevents spoofing)
@@ -50,6 +56,11 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 
     // Login user
     const { user, session } = await login(email, password);
+
+    // Log successful login (hash session ID for security)
+    await logAuthEvent('LOGIN_SUCCESS', user.id, auditContext, {
+      sessionHash: hashSensitiveValue(session.id),
+    });
 
     // Create session cookie
     const sessionCookie = auth.createSessionCookie(session.id);
@@ -91,6 +102,11 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 
       switch (authError.code) {
         case AUTH_ERRORS.INVALID_CREDENTIALS:
+          // Log failed login attempt (hash email for privacy)
+          await logAuthEvent('LOGIN_FAILURE', null, auditContext, {
+            emailHash: hashSensitiveValue(email),
+            error: 'Invalid credentials',
+          });
           return createErrorResponseResponse(
             AUTH_ERRORS.INVALID_CREDENTIALS,
             'Invalid email or password',

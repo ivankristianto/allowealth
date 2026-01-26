@@ -4,6 +4,10 @@ import type { CSVRow } from '@/services/transaction.service';
 import { successResponse, errorResponse, getAuthenticatedUser } from '@/lib/api-utils';
 import { logError } from '@/lib/utils';
 
+// File upload limits
+const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
+const MAX_ROW_COUNT = 500;
+
 /**
  * POST /api/transactions/import
  * Import transactions from CSV file
@@ -25,13 +29,31 @@ export const POST: APIRoute = async (context) => {
       return errorResponse('File must be a CSV', 400);
     }
 
+    // Check file size
+    if (file.size > MAX_FILE_SIZE_BYTES) {
+      return errorResponse(
+        `File size exceeds maximum limit of ${MAX_FILE_SIZE_BYTES / (1024 * 1024)}MB`,
+        413
+      );
+    }
+
     // Read file content
     const text = await file.text();
 
-    // Parse CSV
-    const lines = text.trim().split('\n');
+    // Parse CSV (normalize line endings for cross-platform support)
+    const normalizedText = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    const lines = normalizedText.trim().split('\n');
     if (lines.length < 2) {
       return errorResponse('CSV file must contain at least a header row and one data row', 400);
+    }
+
+    // Check row count (excluding header)
+    const dataRowCount = lines.length - 1;
+    if (dataRowCount > MAX_ROW_COUNT) {
+      return errorResponse(
+        `CSV file exceeds maximum of ${MAX_ROW_COUNT} rows. Found ${dataRowCount} data rows.`,
+        400
+      );
     }
 
     // Parse header

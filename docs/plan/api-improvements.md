@@ -123,21 +123,28 @@ const userId = await requireAuth(context);
 
 **Problem:** CSV import has no file size validation.
 
-- [ ] Add file size limit to `src/pages/api/transactions/import/index.ts`
-  - [ ] Maximum file size: 5MB (configurable)
-  - [ ] Return 413 Payload Too Large if exceeded
-- [ ] Add row count limit for CSV processing
-- [ ] Write tests for file size limits
+- [x] Add file size limit to `src/pages/api/transactions/import/index.ts`
+  - [x] Maximum file size: 5MB
+  - [x] Return 413 Payload Too Large if exceeded
+- [x] Add row count limit for CSV processing (500 rows max)
+- [x] Write tests for file size limits (`src/pages/api/transactions/import/import.test.ts`)
+
+**Completed:** 2026-01-26
 
 ### 3.4 Minor Security Fixes (Low Priority)
 
-- [ ] Fix manual cookie parsing in `src/pages/api/auth/logout.ts`
-  - [ ] Use `context.cookies.get('sid')` instead of regex
-- [ ] Add audit logging for auth events
-  - [ ] Login attempts (success/failure)
-  - [ ] Logout events
-  - [ ] Password changes
-  - [ ] Failed authorization attempts
+- [x] Fix manual cookie parsing in `src/pages/api/auth/logout.ts`
+  - [x] Use `context.cookies.get('sid')` instead of regex
+- [x] Add audit logging for auth events
+  - [x] Created `src/db/schema/audit-logs.ts` schema
+  - [x] Created `src/lib/audit-log.ts` service
+  - [x] Login attempts (success/failure)
+  - [x] Logout events
+  - [x] Signup events
+  - [x] Password reset requests
+  - [x] Write tests (`src/lib/audit-log.test.ts`)
+
+**Completed:** 2026-01-26
 
 ---
 
@@ -182,12 +189,12 @@ const userId = await requireAuth(context);
 
 ### 5.2 Transaction Endpoints
 
-- [ ] Create `src/pages/api/transactions/transactions.api.integration.test.ts`
-  - [ ] `GET /api/transactions` - list, filters, pagination
-  - [ ] `POST /api/transactions` - create, validation
-  - [ ] `GET /api/transactions/:id` - success, not found, unauthorized
-  - [ ] `PUT /api/transactions/:id` - update, validation, not found
-  - [ ] `DELETE /api/transactions/:id` - success, not found
+- [x] Create `src/pages/api/transactions/transactions.api.integration.test.ts` (45 tests)
+  - [x] `GET /api/transactions` - list, filters, pagination, SQL injection protection
+  - [x] `POST /api/transactions` - create, validation
+  - [x] `GET /api/transactions/:id` - success, not found, unauthorized
+  - [x] `PUT /api/transactions/:id` - update, validation, not found
+  - [x] `DELETE /api/transactions/:id` - success, not found
 
 - [ ] Create `src/pages/api/transactions/transactions-export.api.integration.test.ts`
   - [ ] `GET /api/transactions/export` - CSV generation, filters
@@ -255,10 +262,10 @@ const userId = await requireAuth(context);
 | -------------------- | ------ | --------- | -------- |
 | 1. requireAuth Fix   | 12     | 12        | 100%     |
 | 2. Middleware        | 5      | 5         | 100%     |
-| 3. Security          | 15     | 10        | 67%      |
+| 3. Security          | 15     | 15        | 100%     |
 | 4. OpenAPI Docs      | 4      | 4         | 100%     |
-| 5. Integration Tests | 9      | 1         | 11%      |
-| **Total**            | **45** | **32**    | **71%**  |
+| 5. Integration Tests | 9      | 2         | 22%      |
+| **Total**            | **45** | **38**    | **84%**  |
 
 ---
 

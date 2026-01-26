@@ -30,10 +30,14 @@ import {
   applyRateLimitHeaders,
   RATE_LIMIT_PRESETS,
 } from '@/lib/rate-limit';
+import { logAuthEvent, getAuditContext, hashSensitiveValue } from '@/lib/audit-log';
 
 export const prerender = false;
 
-export const POST: APIRoute = async ({ request, clientAddress }) => {
+export const POST: APIRoute = async (context) => {
+  const { request, clientAddress } = context;
+  const auditContext = getAuditContext(context);
+
   // Parse request body first (before consuming rate limit)
   let body: { email?: string };
   try {
@@ -55,6 +59,11 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
   try {
     // Request password reset
     await requestPasswordReset(email);
+
+    // Log password reset request (hash email for privacy, userId is null to prevent enumeration)
+    await logAuthEvent('PASSWORD_RESET_REQUEST', null, auditContext, {
+      emailHash: hashSensitiveValue(email),
+    });
 
     // Always return success to prevent email enumeration
     const responseData = {
