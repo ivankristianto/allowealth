@@ -3,6 +3,7 @@ import { relations } from 'drizzle-orm';
 import { sqliteTimestampNow } from './base';
 import { users } from './users';
 import { transactions } from './transactions';
+import { budgets } from './budgets';
 
 export const categories = sqliteTable('categories', {
   id: text('id').primaryKey(),
@@ -27,4 +28,5 @@ export const categoriesRelations = relations(categories, ({ one, many }) => ({
     references: [users.id],
   }),
   transactions: many(transactions),
+  budgets: many(budgets),
 }));

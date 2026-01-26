@@ -3,20 +3,19 @@ import { relations } from 'drizzle-orm';
 import { sqliteTimestampNow } from './base';
 import { users } from './users';
 import { categories } from './categories';
-import { paymentMethods } from './payment-methods';
+import { assets } from './assets';
 
 export const transactions = sqliteTable('transactions', {
   id: text('id').primaryKey(),
   user_id: text('user_id')
     .notNull()
     .references(() => users.id, { onDelete: 'cascade' }),
-  category_id: text('category_id')
+  category_id: text('category_id').references(() => categories.id), // Nullable for transfers
+  asset_id: text('asset_id')
     .notNull()
-    .references(() => categories.id),
-  payment_method_id: text('payment_method_id')
-    .notNull()
-    .references(() => paymentMethods.id),
-  type: text('type', { enum: ['expense', 'income'] }).notNull(),
+    .references(() => assets.id), // Source asset (where money comes from)
+  to_asset_id: text('to_asset_id').references(() => assets.id), // Destination asset (for transfers only)
+  type: text('type', { enum: ['expense', 'income', 'transfer'] }).notNull(),
   amount: text('amount').notNull(), // Stored as string for decimal precision
   currency: text('currency', { enum: ['IDR', 'USD'] }).notNull(),
   description: text('description'),
@@ -35,8 +34,14 @@ export const transactionsRelations = relations(transactions, ({ one }) => ({
     fields: [transactions.category_id],
     references: [categories.id],
   }),
-  paymentMethod: one(paymentMethods, {
-    fields: [transactions.payment_method_id],
-    references: [paymentMethods.id],
+  asset: one(assets, {
+    fields: [transactions.asset_id],
+    references: [assets.id],
+    relationName: 'transactionAsset',
+  }),
+  toAsset: one(assets, {
+    fields: [transactions.to_asset_id],
+    references: [assets.id],
+    relationName: 'transactionToAsset',
   }),
 }));

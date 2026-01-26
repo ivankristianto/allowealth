@@ -10,7 +10,7 @@ export const currencyEnum = z.enum(['IDR', 'USD']);
 export type Currency = z.infer<typeof currencyEnum>;
 
 // Transaction type enum
-export const transactionTypeEnum = z.enum(['expense', 'income']);
+export const transactionTypeEnum = z.enum(['expense', 'income', 'transfer']);
 export type TransactionType = z.infer<typeof transactionTypeEnum>;
 
 // Category type enum (same as transaction type)

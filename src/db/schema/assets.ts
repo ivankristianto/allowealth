@@ -5,6 +5,7 @@ import { users } from './users';
 import { assetHistory } from './asset-history';
 import { assetUpdateReminders } from './asset-update-reminders';
 import { assetSnapshotItems } from './asset-snapshot-items';
+import { transactions } from './transactions';
 
 export const assets = sqliteTable('assets', {
   id: text('id').primaryKey(),
@@ -13,10 +14,25 @@ export const assets = sqliteTable('assets', {
     .references(() => users.id, { onDelete: 'cascade' }),
   name: text('name').notNull(),
   type: text('type', {
-    enum: ['bank_account', 'mutual_fund', 'bond', 'crypto', 'stock', 'other'],
+    enum: [
+      // Asset types (balance = what you HAVE)
+      'cash',
+      'bank_account',
+      'e_wallet',
+      'mutual_fund',
+      'bond',
+      'crypto',
+      'stock',
+      'other',
+      // Liability types (balance = what you OWE)
+      'credit_card',
+      'loan',
+    ],
   }).notNull(),
   balance: text('balance').notNull(), // Stored as string for decimal precision
   currency: text('currency', { enum: ['IDR', 'USD'] }).notNull(),
+  credit_limit: text('credit_limit'), // For credit cards only, stored as string for decimal precision
+  is_cash_account: integer('is_cash_account', { mode: 'boolean' }).default(false).notNull(), // Flag for cash-type accounts
   last_updated: integer('last_updated', { mode: 'timestamp' })
     .default(sqliteTimestampNow)
     .notNull(),
@@ -33,4 +49,6 @@ export const assetsRelations = relations(assets, ({ one, many }) => ({
   history: many(assetHistory),
   reminders: many(assetUpdateReminders),
   snapshotItems: many(assetSnapshotItems),
+  transactions: many(transactions, { relationName: 'transactionAsset' }),
+  incomingTransfers: many(transactions, { relationName: 'transactionToAsset' }),
 }));

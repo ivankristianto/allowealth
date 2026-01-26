@@ -4,7 +4,7 @@ export * from './user-settings';
 export * from './sessions';
 export * from './password-reset-tokens';
 export * from './categories';
-export * from './payment-methods';
+export * from './payment-methods'; // Deprecated: use assets instead
 export * from './transactions';
 export * from './assets';
 export * from './asset-history';
@@ -13,3 +13,4 @@ export * from './asset-snapshots';
 export * from './asset-snapshot-items';
 export * from './exchange-rates';
 export * from './audit-logs';
+export * from './budgets';
