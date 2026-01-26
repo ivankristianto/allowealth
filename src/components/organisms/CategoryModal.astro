@@ -1,0 +1,342 @@
+---
+/**
+ * Category Modal Component
+ *
+ * Modal for adding or editing categories.
+ * Features mode-specific icon and header styling.
+ *
+ * @param {string} id - Modal ID
+ * @param {'create' | 'edit'} mode - Modal mode
+ * @param {boolean} open - Whether modal is open
+ * @param {Object} values - Default form values
+ * @param {Record<string, string>} errors - Form errors
+ */
+
+import Modal from '../molecules/Modal.astro';
+import { Plus, Pencil } from '@lucide/astro';
+
+export interface Props {
+  id: string;
+  mode?: 'create' | 'edit';
+  open?: boolean;
+  values?: {
+    id?: string;
+    name?: string;
+    type?: 'expense' | 'income';
+    icon?: string;
+    color?: string;
+    currency?: 'IDR' | 'USD';
+  };
+  errors?: Record<string, string>;
+}
+
+const { id, mode = 'create', open = false, values = {}, errors = {} } = Astro.props;
+
+const isEditMode = mode === 'edit';
+const title = isEditMode ? 'Edit Category' : 'Add Category';
+const subtitle = isEditMode
+  ? 'Update the category details.'
+  : 'Create a new category for your transactions.';
+
+// Icon styling based on mode
+const iconBgClass = isEditMode ? 'bg-accent/10' : 'bg-accent/10';
+const iconColorClass = 'text-accent';
+---
+
+<div data-category-modal-container data-id={id} data-mode={mode}>
+  <Modal id={id} open={open} size="md" closable={false} backdropClose={true}>
+    <!-- Custom header with icon -->
+    <div slot="default" class="flex flex-col gap-6">
+      <!-- Header section -->
+      <div class="flex items-center gap-4">
+        <!-- Mode icon -->
+        <div
+          class:list={['w-12 h-12 rounded-2xl flex items-center justify-center', iconBgClass]}
+          data-modal-icon-container
+        >
+          {
+            isEditMode ? (
+              <Pencil
+                size={24}
+                class:list={['stroke-current', iconColorClass]}
+                aria-hidden="true"
+              />
+            ) : (
+              <Plus size={24} class:list={['stroke-current', iconColorClass]} aria-hidden="true" />
+            )
+          }
+        </div>
+
+        <!-- Title and subtitle -->
+        <div class="flex-1">
+          <h2 class="text-2xl font-bold tracking-tight text-primary leading-none" data-modal-title>
+            {title}
+          </h2>
+          <p class="text-neutral text-sm mt-2 font-medium" data-modal-subtitle>{subtitle}</p>
+        </div>
+      </div>
+
+      <!-- Form -->
+      <form id="category-form" data-category-form class="flex flex-col gap-5">
+        <input type="hidden" name="id" value={values.id || ''} />
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div class="form-control md:col-span-2">
+            <label class="label py-1" for="category-name">
+              <span class="text-xs uppercase tracking-widest text-base-content/50 font-medium">
+                Category Name
+                <span class="sr-only">(required)</span>
+              </span>
+            </label>
+            <input
+              type="text"
+              name="name"
+              id="category-name"
+              class="input input-bordered w-full h-10 text-xs bg-base-200 focus:ring-2 focus:ring-accent focus:ring-opacity-20 focus:outline-none focus:ring-offset-2"
+              required
+              placeholder="e.g., Food & Groceries"
+              value={values.name || ''}
+            />
+            {errors.name && <span class="text-error text-xs mt-1">{errors.name}</span>}
+          </div>
+
+          <div class="form-control">
+            <label class="label py-1" for="category-type">
+              <span class="text-xs uppercase tracking-widest text-base-content/50 font-medium">
+                Type
+                <span class="sr-only">(required)</span>
+              </span>
+            </label>
+            <select
+              name="type"
+              id="category-type"
+              class="select select-bordered w-full h-10 text-xs bg-base-200 focus:ring-2 focus:ring-accent focus:ring-opacity-20 focus:outline-none focus:ring-offset-2"
+              required
+            >
+              <option value="expense" selected={values.type === 'expense' || !values.type}>
+                Expense
+              </option>
+              <option value="income" selected={values.type === 'income'}>Income</option>
+            </select>
+            {errors.type && <span class="text-error text-xs mt-1">{errors.type}</span>}
+          </div>
+
+          <div class="form-control">
+            <label class="label py-1" for="category-currency">
+              <span class="text-xs uppercase tracking-widest text-base-content/50 font-medium">
+                Currency
+                <span class="sr-only">(required)</span>
+              </span>
+            </label>
+            <select
+              name="currency"
+              id="category-currency"
+              class="select select-bordered w-full h-10 text-xs bg-base-200 focus:ring-2 focus:ring-accent focus:ring-opacity-20 focus:outline-none focus:ring-offset-2"
+              required
+            >
+              <option value="IDR" selected={values.currency === 'IDR' || !values.currency}>
+                IDR
+              </option>
+              <option value="USD" selected={values.currency === 'USD'}>USD</option>
+            </select>
+            {errors.currency && <span class="text-error text-xs mt-1">{errors.currency}</span>}
+          </div>
+
+          <div class="form-control">
+            <label class="label py-1" for="category-icon">
+              <span class="text-xs uppercase tracking-widest text-base-content/50 font-medium">
+                Icon
+                <span class="sr-only">(required)</span>
+              </span>
+            </label>
+            <input
+              type="text"
+              name="icon"
+              id="category-icon"
+              class="input input-bordered w-full h-10 text-xs bg-base-200 focus:ring-2 focus:ring-accent focus:ring-opacity-20 focus:outline-none focus:ring-offset-2"
+              required
+              placeholder="e.g., home, car"
+              value={values.icon || ''}
+            />
+            <span class="text-xs text-base-content/60 mt-1">Lucide icon name</span>
+            {errors.icon && <span class="text-error text-xs mt-1">{errors.icon}</span>}
+          </div>
+
+          <div class="form-control">
+            <label class="label py-1" for="category-color">
+              <span class="text-xs uppercase tracking-widest text-base-content/50 font-medium">
+                Color
+                <span class="sr-only">(required)</span>
+              </span>
+            </label>
+            <select
+              name="color"
+              id="category-color"
+              class="select select-bordered w-full h-10 text-xs bg-base-200 focus:ring-2 focus:ring-accent focus:ring-opacity-20 focus:outline-none focus:ring-offset-2"
+              required
+            >
+              <option value="bg-primary" selected={values.color === 'bg-primary' || !values.color}>
+                Primary
+              </option>
+              <option value="bg-secondary" selected={values.color === 'bg-secondary'}>
+                Secondary
+              </option>
+              <option value="bg-accent" selected={values.color === 'bg-accent'}>Accent</option>
+              <option value="bg-neutral" selected={values.color === 'bg-neutral'}>Neutral</option>
+              <option value="bg-success" selected={values.color === 'bg-success'}>Success</option>
+              <option value="bg-warning" selected={values.color === 'bg-warning'}>Warning</option>
+              <option value="bg-error" selected={values.color === 'bg-error'}>Error</option>
+              <option value="bg-info" selected={values.color === 'bg-info'}>Info</option>
+            </select>
+            {errors.color && <span class="text-error text-xs mt-1">{errors.color}</span>}
+          </div>
+        </div>
+
+        <!-- Global error message -->
+        <div id="form-error" class="hidden alert alert-error text-sm" role="alert"></div>
+
+        <!-- Actions -->
+        <div class="flex gap-4 pt-4">
+          <button
+            type="button"
+            class="flex-1 btn btn-ghost h-14 rounded-full font-bold"
+            data-cancel
+          >
+            Cancel
+          </button>
+          <button type="submit" class="flex-[2] btn btn-accent h-14 rounded-full font-bold">
+            <span data-submit-text>{isEditMode ? 'Update Category' : 'Save Category'}</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </Modal>
+</div>
+
+<script>
+  import { addToast } from '@/lib/stores/toastStore';
+  import { getCsrfHeaders } from '@/lib/csrf-client';
+
+  // Track which modal containers have been initialized
+  const initializedContainers = new WeakSet<Element>();
+
+  // Initialize category modal containers
+  function initCategoryModals() {
+    document.querySelectorAll('[data-category-modal-container]').forEach((container) => {
+      // Skip if already initialized
+      if (initializedContainers.has(container)) return;
+      initializedContainers.add(container);
+
+      const id = container.getAttribute('data-id');
+      if (!id) return;
+
+      const modal = document.getElementById(id) as HTMLDialogElement;
+      const form = container.querySelector('[data-category-form]') as HTMLFormElement;
+      const cancelBtn = form?.querySelector('[data-cancel]');
+      const errorDiv = document.getElementById('form-error');
+
+      if (!modal || !form) return;
+
+      // Cancel button - reset and close
+      cancelBtn?.addEventListener('click', () => {
+        form.reset();
+        errorDiv?.classList.add('hidden');
+        modal.close();
+      });
+
+      // Form submission
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
+        const submitText = submitBtn?.querySelector('[data-submit-text]');
+        const originalText = submitText?.textContent || 'Save';
+
+        // Clear errors
+        errorDiv?.classList.add('hidden');
+
+        // Show loading state
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          if (submitText) submitText.textContent = 'Saving...';
+        }
+
+        try {
+          const formData = new FormData(form);
+          const categoryId = (formData.get('id') as string) || '';
+          const data = {
+            name: formData.get('name'),
+            type: formData.get('type'),
+            icon: formData.get('icon'),
+            color: formData.get('color'),
+            currency: formData.get('currency'),
+          };
+
+          // Validate required fields
+          if (!data.name || !data.type || !data.icon || !data.color || !data.currency) {
+            throw new Error('Please fill in all required fields');
+          }
+
+          const url = categoryId ? `/api/categories/${categoryId}` : '/api/categories';
+          const method = categoryId ? 'PUT' : 'POST';
+
+          const response = await fetch(url, {
+            method,
+            headers: getCsrfHeaders({ 'Content-Type': 'application/json' }),
+            body: JSON.stringify(data),
+          });
+
+          const result = await response.json();
+
+          if (!response.ok || !result.success) {
+            const errorMessage = result.error?.details
+              ? result.error.details.map((d: { message: string }) => d.message).join(', ')
+              : result.error?.message || 'Failed to save category';
+            throw new Error(errorMessage);
+          }
+
+          // Success
+          addToast(
+            categoryId ? 'Category updated successfully!' : 'Category created successfully!',
+            'success'
+          );
+          form.reset();
+          modal.close();
+
+          // Reload page to show updated categories
+          const urlParams = new URL(window.location.href);
+          window.location.href = urlParams.pathname + urlParams.search;
+        } catch (err) {
+          const message = err instanceof Error ? err.message : 'Failed to save category';
+          if (errorDiv) {
+            errorDiv.textContent = message;
+            errorDiv.classList.remove('hidden');
+          }
+          addToast(message, 'error');
+        } finally {
+          // Reset button state
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            if (submitText) submitText.textContent = originalText;
+          }
+        }
+      });
+
+      // Reset form when modal closes
+      modal.addEventListener('close', () => {
+        form.reset();
+        errorDiv?.classList.add('hidden');
+      });
+    });
+  }
+
+  // Initialize on DOM ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initCategoryModals);
+  } else {
+    initCategoryModals();
+  }
+
+  // Re-initialize on Astro page transitions
+  document.addEventListener('astro:page-load', initCategoryModals);
+</script>

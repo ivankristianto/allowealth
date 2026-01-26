@@ -1,0 +1,201 @@
+---
+/**
+ * Category Delete Confirmation Dialog
+ *
+ * Confirmation dialog for deleting categories.
+ * Features destructive action styling and category preview.
+ *
+ * @param {string} id - Dialog ID
+ * @param {boolean} open - Whether dialog is open
+ */
+
+import Modal from '../molecules/Modal.astro';
+import { Trash2 } from '@lucide/astro';
+
+export interface Props {
+  id: string;
+  open?: boolean;
+}
+
+const { id, open = false } = Astro.props;
+---
+
+<div data-category-delete-dialog-container data-id={id}>
+  <Modal id={id} open={open} size="sm" closable={false} backdropClose={true}>
+    <div slot="default" class="flex flex-col gap-6">
+      <!-- Header with icon -->
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 rounded-2xl flex items-center justify-center bg-error/10">
+          <Trash2 size={24} class="stroke-current text-error" aria-hidden="true" />
+        </div>
+        <div class="flex-1">
+          <h2 class="text-2xl font-bold tracking-tight text-error leading-none">Delete Category</h2>
+          <p class="text-neutral text-sm mt-2 font-medium">This action cannot be undone.</p>
+        </div>
+      </div>
+
+      <!-- Category Info -->
+      <div
+        id="delete-category-info"
+        class="p-4 bg-base-200/50 rounded-2xl border border-base-300"
+        data-category-info
+      >
+        <div class="flex items-center gap-3">
+          <div data-category-icon-container></div>
+          <div>
+            <p class="font-bold text-base-content" data-category-name></p>
+          </div>
+        </div>
+      </div>
+
+      <p class="text-base-content/70 text-sm">
+        Are you sure you want to delete this category? Existing transactions with this category will
+        remain unchanged.
+      </p>
+
+      <!-- Error message -->
+      <div id="delete-error" class="hidden alert alert-error text-sm" role="alert"></div>
+
+      <!-- Actions -->
+      <div class="flex gap-4 pt-4">
+        <button
+          type="button"
+          class="flex-1 btn btn-ghost h-14 rounded-full font-bold"
+          data-cancel-delete
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          class="flex-1 btn btn-error h-14 rounded-full font-bold"
+          data-confirm-delete
+        >
+          Delete
+        </button>
+      </div>
+    </div>
+  </Modal>
+</div>
+
+<script>
+  import { addToast } from '@/lib/stores/toastStore';
+  import { getCsrfHeaders } from '@/lib/csrf-client';
+
+  // Track which dialog containers have been initialized
+  const initializedContainers = new WeakSet<Element>();
+
+  // Store current category ID for deletion
+  let currentCategoryId = '';
+
+  // Initialize category delete dialog containers
+  function initCategoryDeleteDialogs() {
+    document.querySelectorAll('[data-category-delete-dialog-container]').forEach((container) => {
+      // Skip if already initialized
+      if (initializedContainers.has(container)) return;
+      initializedContainers.add(container);
+
+      const id = container.getAttribute('data-id');
+      if (!id) return;
+
+      const dialog = document.getElementById(id) as HTMLDialogElement;
+      const cancelBtn = container.querySelector('[data-cancel-delete]');
+      const confirmBtn = container.querySelector('[data-confirm-delete]');
+      const errorDiv = document.getElementById('delete-error');
+      const categoryNameEl = container.querySelector('[data-category-name]');
+      const categoryIconContainer = container.querySelector('[data-category-icon-container]');
+
+      if (!dialog) return;
+
+      // Cancel button - close dialog
+      cancelBtn?.addEventListener('click', () => {
+        errorDiv?.classList.add('hidden');
+        dialog.close();
+      });
+
+      // Confirm delete button
+      confirmBtn?.addEventListener('click', async () => {
+        if (!currentCategoryId) return;
+
+        const originalText = (confirmBtn as HTMLButtonElement).textContent;
+
+        // Clear errors
+        errorDiv?.classList.add('hidden');
+
+        // Show loading state
+        (confirmBtn as HTMLButtonElement).disabled = true;
+        (confirmBtn as HTMLButtonElement).textContent = 'Deleting...';
+
+        try {
+          const response = await fetch(`/api/categories/${currentCategoryId}`, {
+            method: 'DELETE',
+            headers: getCsrfHeaders(),
+          });
+
+          if (!response.ok) {
+            const result = await response.json();
+            throw new Error(result.error?.message || 'Failed to delete category');
+          }
+
+          // Success
+          addToast('Category deleted successfully!', 'success');
+          dialog.close();
+
+          // Reload page to show updated categories
+          const url = new URL(window.location.href);
+          window.location.href = url.pathname + url.search;
+        } catch (err) {
+          const message = err instanceof Error ? err.message : 'Failed to delete category';
+          if (errorDiv) {
+            errorDiv.textContent = message;
+            errorDiv.classList.remove('hidden');
+          }
+          addToast(message, 'error');
+        } finally {
+          // Reset button state
+          (confirmBtn as HTMLButtonElement).disabled = false;
+          (confirmBtn as HTMLButtonElement).textContent = originalText || 'Delete';
+        }
+      });
+
+      // Expose function to open dialog with category info
+      (window as any).openDeleteCategoryDialog = (
+        categoryId: string,
+        categoryName: string,
+        _categoryIcon: string,
+        categoryColor: string
+      ) => {
+        currentCategoryId = categoryId;
+        errorDiv?.classList.add('hidden');
+
+        // Populate category info
+        if (categoryNameEl) {
+          categoryNameEl.textContent = categoryName;
+        }
+
+        if (categoryIconContainer) {
+          const colorClass = categoryColor.replace('bg-', '');
+          categoryIconContainer.innerHTML = `
+            <div class="w-10 h-10 rounded-xl ${categoryColor} text-${colorClass}-content flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="stroke-current" aria-hidden="true">
+                <path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z"></path>
+                <path d="M7 7h.01"></path>
+              </svg>
+            </div>
+          `;
+        }
+
+        dialog.showModal();
+      };
+    });
+  }
+
+  // Initialize on DOM ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initCategoryDeleteDialogs);
+  } else {
+    initCategoryDeleteDialogs();
+  }
+
+  // Re-initialize on Astro page transitions
+  document.addEventListener('astro:page-load', initCategoryDeleteDialogs);
+</script>

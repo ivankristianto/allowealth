@@ -11,6 +11,8 @@ import { categoryService } from '@/services';
 import { Plus, Search, Pencil, Trash2 } from '@lucide/astro';
 import CategoryIcon from '@/components/atoms/CategoryIcon.astro';
 import TabToggle from '@/components/atoms/TabToggle.astro';
+import CategoryModal from '@/components/organisms/CategoryModal.astro';
+import CategoryDeleteDialog from '@/components/organisms/CategoryDeleteDialog.astro';
 
 const user = Astro.locals.user!;
 const currentPath = '/categories';
@@ -31,18 +33,6 @@ if (searchQuery) {
   const query = searchQuery.toLowerCase();
   filteredCategories = filteredCategories.filter((c) => c.name.toLowerCase().includes(query));
 }
-
-// Get type label for badge
-const getTypeLabel = (type: string) => {
-  return type.toUpperCase();
-};
-
-// Get type badge color
-const getTypeBadgeClass = (type: string) => {
-  return type === 'expense'
-    ? 'bg-red-50 text-red-500 dark:bg-red-900/20'
-    : 'bg-emerald-50 text-emerald-500 dark:bg-emerald-900/20';
-};
 ---
 
 <ProtectedLayout title="Manage Categories" currentPath={currentPath}>
@@ -58,8 +48,8 @@ const getTypeBadgeClass = (type: string) => {
         </p>
       </div>
       <button
-        onclick="categoryModal.showModal()"
-        class="bg-primary/10 hover:bg-primary/20 text-primary px-6 py-2.5 rounded-2xl font-bold text-sm transition-all border border-primary/10 flex items-center gap-2"
+        class="btn btn-accent rounded-2xl font-bold text-sm flex items-center gap-2"
+        data-action="create-category"
         data-type={typeFilter}
       >
         <Plus size={18} class="stroke-current" aria-hidden="true" />
@@ -125,7 +115,7 @@ const getTypeBadgeClass = (type: string) => {
                     scope="col"
                     class="px-8 py-5 text-[10px] font-bold text-base-content/40 uppercase tracking-widest text-center"
                   >
-                    Type
+                    Currency
                   </th>
                   <th
                     scope="col"
@@ -152,10 +142,8 @@ const getTypeBadgeClass = (type: string) => {
                       </span>
                     </td>
                     <td class="px-8 py-5 text-center">
-                      <span
-                        class={`inline-block px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-widest ${getTypeBadgeClass(category.type)}`}
-                      >
-                        {getTypeLabel(category.type)}
+                      <span class="inline-block px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-widest">
+                        {category.currency}
                       </span>
                     </td>
                     <td class="px-8 py-5 text-right">
@@ -212,216 +200,12 @@ const getTypeBadgeClass = (type: string) => {
       </div>
     </div>
   </div>
+
+  <!-- Category Modal -->
+  <CategoryModal id="category-modal" />
+
+  <!-- Delete Confirmation Dialog -->
+  <CategoryDeleteDialog id="delete-dialog" />
 </ProtectedLayout>
-
-<!-- Add/Edit Category Modal -->
-<dialog id="category-modal" class="modal" data-modal data-backdrop-close="true">
-  <form
-    method="dialog"
-    class="modal-backdrop backdrop-blur-md bg-base-content/20"
-    data-modal-backdrop
-  >
-    <button>Close</button>
-  </form>
-
-  <div class="modal-box max-w-lg rounded-3xl shadow-premium" data-modal-content>
-    <!-- Header with icon -->
-    <div class="flex items-center gap-4 mb-6">
-      <div
-        class="w-12 h-12 rounded-2xl flex items-center justify-center bg-accent/10"
-        id="modal-icon-container"
-      >
-        <Plus size={24} class="stroke-current text-accent" aria-hidden="true" />
-      </div>
-      <div class="flex-1">
-        <h2 id="modal-title" class="text-2xl font-bold tracking-tight text-primary leading-none">
-          Add Category
-        </h2>
-        <p class="text-neutral text-sm mt-2 font-medium" id="modal-subtitle">
-          Create a new category for your transactions.
-        </p>
-      </div>
-    </div>
-
-    <!-- Form -->
-    <form id="category-form" class="space-y-4">
-      <input type="hidden" name="id" value="" />
-
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div class="form-control md:col-span-2">
-          <label class="label" for="name">
-            <span class="label-text font-semibold">Category Name</span>
-            <span class="label-text-alt text-error">*</span>
-          </label>
-          <input
-            type="text"
-            name="name"
-            id="name"
-            class="input input-bordered w-full"
-            required
-            placeholder="e.g., Food & Groceries"
-          />
-        </div>
-
-        <div class="form-control">
-          <label class="label" for="type">
-            <span class="label-text font-semibold">Type</span>
-            <span class="label-text-alt text-error">*</span>
-          </label>
-          <select name="type" id="type" class="select select-bordered w-full" required>
-            <option value="expense">Expense</option>
-            <option value="income">Income</option>
-          </select>
-        </div>
-
-        <div class="form-control">
-          <label class="label" for="currency">
-            <span class="label-text font-semibold">Currency</span>
-            <span class="label-text-alt text-error">*</span>
-          </label>
-          <select name="currency" id="currency" class="select select-bordered w-full" required>
-            <option value="IDR">IDR</option>
-            <option value="USD">USD</option>
-          </select>
-        </div>
-
-        <div class="form-control">
-          <label class="label" for="icon">
-            <span class="label-text font-semibold">Icon</span>
-            <span class="label-text-alt text-error">*</span>
-          </label>
-          <input
-            type="text"
-            name="icon"
-            id="icon"
-            class="input input-bordered w-full"
-            required
-            placeholder="e.g., home, car"
-          />
-          <label class="label">
-            <span class="label-text-alt text-base-content/60">Lucide icon name</span>
-          </label>
-        </div>
-
-        <div class="form-control">
-          <label class="label" for="color">
-            <span class="label-text font-semibold">Color</span>
-            <span class="label-text-alt text-error">*</span>
-          </label>
-          <select name="color" id="color" class="select select-bordered w-full" required>
-            <option value="bg-primary">Primary</option>
-            <option value="bg-secondary">Secondary</option>
-            <option value="bg-accent">Accent</option>
-            <option value="bg-neutral">Neutral</option>
-            <option value="bg-success">Success</option>
-            <option value="bg-warning">Warning</option>
-            <option value="bg-error">Error</option>
-            <option value="bg-info">Info</option>
-          </select>
-        </div>
-
-        <div class="form-control">
-          <label class="label" for="percentage">
-            <span class="label-text font-semibold">Budget Allocation %</span>
-          </label>
-          <input
-            type="number"
-            name="percentage"
-            id="percentage"
-            class="input input-bordered w-full"
-            min="0"
-            max="100"
-            step="0.1"
-            value="0"
-            placeholder="e.g., 15"
-          />
-        </div>
-
-        <div class="form-control">
-          <label class="label" for="budget_amount">
-            <span class="label-text font-semibold">Monthly Budget</span>
-          </label>
-          <input
-            type="number"
-            name="budget_amount"
-            id="budget_amount"
-            class="input input-bordered w-full"
-            min="0"
-            step="0.01"
-            value="0"
-            placeholder="e.g., 1000000"
-          />
-        </div>
-      </div>
-
-      <div id="form-error" class="hidden alert alert-error text-sm" role="alert"></div>
-
-      <div class="flex gap-3 justify-end pt-4">
-        <button
-          type="button"
-          onclick="categoryModal.close()"
-          class="btn btn-ghost rounded-full min-w-24"
-        >
-          Cancel
-        </button>
-        <button type="submit" class="btn btn-primary rounded-full min-w-24">
-          <span id="submit-btn-text">Save</span>
-        </button>
-      </div>
-    </form>
-  </div>
-</dialog>
-
-<!-- Delete Confirmation Dialog -->
-<dialog id="delete-dialog" class="modal" data-modal data-backdrop-close="true">
-  <form
-    method="dialog"
-    class="modal-backdrop backdrop-blur-md bg-base-content/20"
-    data-modal-backdrop
-  >
-    <button>Close</button>
-  </form>
-
-  <div class="modal-box max-w-md rounded-3xl shadow-premium" data-modal-content>
-    <!-- Header with icon -->
-    <div class="flex items-center gap-4 mb-6">
-      <div class="w-12 h-12 rounded-2xl flex items-center justify-center bg-error/10">
-        <Trash2 size={24} class="stroke-current text-error" aria-hidden="true" />
-      </div>
-      <div class="flex-1">
-        <h2 class="text-2xl font-bold tracking-tight text-error leading-none">Delete Category</h2>
-        <p class="text-neutral text-sm mt-2 font-medium">This action cannot be undone.</p>
-      </div>
-    </div>
-
-    <!-- Category Info -->
-    <div
-      id="delete-category-info"
-      class="p-4 bg-base-200/50 rounded-2xl border border-base-300 mb-4"
-    >
-      <div class="flex items-center gap-3">
-        <div id="delete-category-icon-container"></div>
-        <div>
-          <p class="font-bold text-base-content" id="delete-category-name"></p>
-          <p class="text-sm text-base-content/60" id="delete-category-type"></p>
-        </div>
-      </div>
-    </div>
-
-    <p class="text-base-content/70 text-sm mb-4">
-      Are you sure you want to delete this category? Existing transactions with this category will
-      remain unchanged.
-    </p>
-
-    <div id="delete-error" class="hidden alert alert-error text-sm mb-4" role="alert"></div>
-
-    <div class="flex gap-3 justify-end pt-4">
-      <form method="dialog" class="contents">
-        <button class="btn btn-ghost rounded-full min-w-24">Cancel</button>
-      </form>
-      <button id="confirm-delete-btn" class="btn btn-error rounded-full min-w-24"> Delete </button>
-    </div>
-  </div>
-</dialog>
 
 <script src="./categories-client.ts"></script>
