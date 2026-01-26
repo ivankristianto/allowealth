@@ -4,6 +4,7 @@
  *
  * Main page for viewing and managing assets with portfolio summary.
  * Redesigned as part of the Global Portfolio page update.
+ * Includes modals for add, edit, delete, and history actions.
  */
 
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
@@ -11,6 +12,9 @@ import AssetPageHeader from '@components/organisms/AssetPageHeader.astro';
 import AssetPortfolioSummary from '@components/organisms/AssetPortfolioSummary.astro';
 import AssetGroupCard from '@components/organisms/AssetGroupCard.astro';
 import AssetItemRow from '@components/organisms/AssetItemRow.astro';
+import AssetFormModal from '@components/organisms/AssetFormModal.astro';
+import AssetDeleteConfirmModal from '@components/organisms/AssetDeleteConfirmModal.astro';
+import AssetHistoryModal from '@components/organisms/AssetHistoryModal.astro';
 import EmptyState from '@components/atoms/EmptyState.astro';
 import { assetService } from '@/services';
 import type { AssetOutput, AssetType } from '@/lib/types/asset';
@@ -117,10 +121,10 @@ const sortedTypes = sortAssetTypes(Object.keys(assetsByType));
                     <AssetItemRow
                       id={asset.id}
                       name={asset.name}
+                      type={asset.type}
                       currency={asset.currency}
                       balance={parseFloat(asset.balance)}
                       lastUpdated={asset.last_updated}
-                      baseUrl={currentPath}
                     />
                   ))}
                 </AssetGroupCard>
@@ -134,12 +138,20 @@ const sortedTypes = sortAssetTypes(Object.keys(assetsByType));
             <EmptyState
               title="No assets tracked yet"
               message="Add your first asset to start tracking your net worth across different types and currencies."
-              actionLabel="Add Your First Asset"
-              actionHref="/assets/add"
             />
+            <div class="flex justify-center mt-4">
+              <button type="button" class="btn btn-accent gap-2 rounded-2xl" data-add-asset-btn>
+                Add Your First Asset
+              </button>
+            </div>
           </div>
         </div>
       )
     }
   </div>
+
+  {/* Asset Modals */}
+  <AssetFormModal id="asset-form-modal" mode="add" />
+  <AssetDeleteConfirmModal id="asset-delete-modal" />
+  <AssetHistoryModal id="asset-history-modal" />
 </ProtectedLayout>

@@ -1,0 +1,445 @@
+---
+/**
+ * AssetFormModal Component
+ *
+ * Modal for adding or editing assets.
+ * Supports both create (POST /api/assets) and edit (PUT /api/assets/:id) modes.
+ *
+ * Based on the Global Portfolio PoC design with premium styling.
+ *
+ * @param {string} id - Modal ID
+ * @param {'add' | 'edit'} mode - Modal mode
+ * @param {string} currency - Default currency
+ */
+
+import Modal from '../molecules/Modal.astro';
+import { Store } from '@lucide/astro';
+import { ASSET_TYPE_LABELS, type AssetType } from '@/lib/types/asset';
+
+export interface Props {
+  id: string;
+  mode?: 'add' | 'edit';
+  currency?: 'IDR' | 'USD';
+}
+
+const { id, mode = 'add', currency = 'IDR' } = Astro.props;
+
+const isEditMode = mode === 'edit';
+const title = isEditMode ? 'Edit Asset' : 'Register Asset';
+const subtitle = isEditMode
+  ? 'Update the details of your asset.'
+  : 'Add a new account, fund or security to your portfolio.';
+const submitLabel = isEditMode ? 'Save Changes' : 'Register Asset';
+
+// Asset types for dropdown
+const assetTypes: { value: AssetType; label: string }[] = Object.entries(ASSET_TYPE_LABELS).map(
+  ([value, label]) => ({
+    value: value as AssetType,
+    label,
+  })
+);
+---
+
+<div data-asset-form-modal-container data-id={id} data-mode={mode}>
+  <Modal id={id} title="" size="md" closable={false} className="[&_.modal-box]:rounded-3xl">
+    <div class="space-y-6">
+      {/* Header with icon */}
+      <div class="flex items-center gap-4">
+        <div
+          class="w-12 h-12 rounded-2xl flex items-center justify-center bg-accent/10 text-accent"
+        >
+          <Store size={24} class="stroke-current" aria-hidden="true" />
+        </div>
+        <div>
+          <h2
+            class="text-xl font-bold tracking-tight text-base-content leading-none"
+            data-modal-title
+          >
+            {title}
+          </h2>
+          <p class="text-base-content/60 text-sm mt-2 font-medium" data-modal-subtitle>
+            {subtitle}
+          </p>
+        </div>
+      </div>
+
+      {/* Form */}
+      <form id={`${id}-form`} class="space-y-6" aria-describedby={`${id}-error`}>
+        {/* Hidden field for asset ID (edit mode) */}
+        <input type="hidden" name="asset_id" id={`${id}-asset-id`} value="" />
+
+        {/* Asset Name */}
+        <div class="space-y-2">
+          <label
+            for={`${id}-name`}
+            class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest ml-1"
+          >
+            Asset Name
+          </label>
+          <input
+            id={`${id}-name`}
+            name="name"
+            type="text"
+            required
+            placeholder="e.g. Mandiri Savings / AAPL Stock"
+            class="input input-lg w-full bg-base-200 border border-base-300 rounded-2xl font-bold text-base-content focus:ring-2 focus:ring-accent focus:outline-none focus:border-accent placeholder:text-base-content/30 placeholder:font-normal"
+          />
+        </div>
+
+        {/* Asset Category */}
+        <div class="space-y-2">
+          <div class="flex justify-between items-center">
+            <label
+              for={`${id}-type`}
+              class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest ml-1"
+            >
+              Asset Category
+            </label>
+            {/* P3: TODO - Implement custom category creation feature */}
+            <button
+              type="button"
+              class="text-[10px] font-bold text-accent uppercase tracking-widest hover:underline hidden"
+              data-toggle-custom-type
+            >
+              Create New Category
+            </button>
+          </div>
+
+          {/* Select dropdown (default) */}
+          <select
+            id={`${id}-type`}
+            name="type"
+            required
+            class="select select-lg w-full bg-base-200 border border-base-300 rounded-2xl font-bold text-base-content focus:ring-2 focus:ring-accent focus:outline-none focus:border-accent"
+            data-type-select
+          >
+            {assetTypes.map((type) => <option value={type.value}>{type.label}</option>)}
+          </select>
+
+          {/* Custom type input (hidden by default) */}
+          <input
+            id={`${id}-custom-type`}
+            name="custom_type"
+            type="text"
+            placeholder="Enter new category name..."
+            class="hidden input input-lg w-full bg-base-200 border border-base-300 rounded-2xl font-bold text-base-content focus:ring-2 focus:ring-accent focus:outline-none focus:border-accent placeholder:text-base-content/30 placeholder:font-normal"
+            data-custom-type-input
+          />
+        </div>
+
+        {/* Currency and Balance */}
+        <div class="grid grid-cols-2 gap-4">
+          {/* Currency */}
+          <div class="space-y-2">
+            <label
+              for={`${id}-currency`}
+              class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest ml-1"
+            >
+              Currency
+            </label>
+            <select
+              id={`${id}-currency`}
+              name="currency"
+              required
+              class="select select-lg w-full bg-base-200 border border-base-300 rounded-2xl font-bold text-base-content focus:ring-2 focus:ring-accent focus:outline-none focus:border-accent"
+            >
+              <option value="IDR" selected={currency === 'IDR'}>IDR</option>
+              <option value="USD" selected={currency === 'USD'}>USD</option>
+            </select>
+          </div>
+
+          {/* Balance */}
+          <div class="space-y-2">
+            <label
+              for={`${id}-balance`}
+              class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest ml-1"
+            >
+              {isEditMode ? 'Current Balance' : 'Initial Balance'}
+            </label>
+            <input
+              id={`${id}-balance`}
+              name="balance"
+              type="number"
+              required
+              min="0"
+              step="0.01"
+              placeholder="0"
+              class="input input-lg w-full bg-base-200 border border-base-300 rounded-2xl font-bold text-base-content focus:ring-2 focus:ring-accent focus:outline-none focus:border-accent placeholder:text-base-content/30 placeholder:font-normal"
+            />
+          </div>
+        </div>
+
+        {/* Error message container */}
+        <div
+          id={`${id}-error`}
+          class="hidden alert alert-error text-sm rounded-xl"
+          role="alert"
+          aria-live="polite"
+          aria-describedby={`${id}-form`}
+        >
+        </div>
+
+        {/* Actions */}
+        <div class="flex items-center gap-4 pt-4">
+          <button
+            type="button"
+            class="flex-1 py-4 text-base-content/60 font-bold hover:bg-base-200 rounded-2xl transition-colors"
+            data-cancel-asset-form
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            class="flex-[2] btn btn-accent py-4 rounded-full font-bold text-base shadow-lg shadow-accent/20 hover:shadow-xl transition-all"
+            data-submit-asset-form
+          >
+            {submitLabel}
+          </button>
+        </div>
+      </form>
+    </div>
+  </Modal>
+</div>
+
+<script>
+  import { addToast } from '@lib/stores/toastStore';
+
+  // Track initialized modals to avoid duplicate handlers
+  const initializedModals = new WeakSet<Element>();
+
+  interface AssetFormData {
+    id?: string;
+    name: string;
+    type: string;
+    currency: 'IDR' | 'USD';
+    balance: string;
+  }
+
+  function initAssetFormModal() {
+    document.querySelectorAll('[data-asset-form-modal-container]').forEach((container) => {
+      // Skip if already initialized
+      if (initializedModals.has(container)) return;
+      initializedModals.add(container);
+
+      const id = container.getAttribute('data-id');
+      if (!id) return;
+
+      const modal = document.getElementById(id) as HTMLDialogElement | null;
+      const form = document.getElementById(`${id}-form`) as HTMLFormElement | null;
+      const cancelBtn = container.querySelector('[data-cancel-asset-form]');
+      const submitBtn = container.querySelector('[data-submit-asset-form]') as HTMLButtonElement;
+      const errorDiv = document.getElementById(`${id}-error`);
+
+      // Form fields
+      const assetIdInput = document.getElementById(`${id}-asset-id`) as HTMLInputElement | null;
+      const nameInput = document.getElementById(`${id}-name`) as HTMLInputElement | null;
+      const typeSelect = document.getElementById(`${id}-type`) as HTMLSelectElement | null;
+      const currencySelect = document.getElementById(`${id}-currency`) as HTMLSelectElement | null;
+      const balanceInput = document.getElementById(`${id}-balance`) as HTMLInputElement | null;
+
+      // Title and subtitle for dynamic updates
+      const titleEl = container.querySelector('[data-modal-title]');
+      const subtitleEl = container.querySelector('[data-modal-subtitle]');
+
+      if (!modal || !form) return;
+
+      // Function to populate form for edit mode
+      const populateForm = (data: AssetFormData) => {
+        if (assetIdInput) assetIdInput.value = data.id || '';
+        if (nameInput) nameInput.value = data.name || '';
+        if (typeSelect) typeSelect.value = data.type || 'bank_account';
+        if (currencySelect) currencySelect.value = data.currency || 'IDR';
+        if (balanceInput) balanceInput.value = data.balance || '';
+
+        // Update title/subtitle for edit mode
+        if (data.id && titleEl && subtitleEl) {
+          titleEl.textContent = 'Edit Asset';
+          subtitleEl.textContent = 'Update the details of your asset.';
+          if (submitBtn) submitBtn.textContent = 'Save Changes';
+        }
+      };
+
+      // Function to reset form
+      const resetForm = () => {
+        form.reset();
+        if (assetIdInput) assetIdInput.value = '';
+        if (errorDiv) {
+          errorDiv.textContent = '';
+          errorDiv.classList.add('hidden');
+        }
+
+        // Reset title/subtitle for add mode
+        if (titleEl && subtitleEl) {
+          titleEl.textContent = 'Register Asset';
+          subtitleEl.textContent = 'Add a new account, fund or security to your portfolio.';
+          if (submitBtn) submitBtn.textContent = 'Register Asset';
+        }
+      };
+
+      // Listen for open-asset-form event to populate data
+      // SECURITY: Use named handler for proper cleanup on page transitions
+      const handleOpenForm = ((e: CustomEvent<AssetFormData>) => {
+        const targetModalId = e.detail.id ? `asset-edit-modal` : `asset-add-modal`;
+        if (id === targetModalId || id === 'asset-form-modal') {
+          if (e.detail.id) {
+            populateForm(e.detail);
+          } else {
+            resetForm();
+          }
+          modal.classList.add('modal-open');
+        }
+      }) as EventListener;
+
+      document.addEventListener('open-asset-form', handleOpenForm);
+
+      // Clean up event listener on Astro page transitions to prevent memory leaks
+      document.addEventListener(
+        'astro:before-swap',
+        () => {
+          document.removeEventListener('open-asset-form', handleOpenForm);
+        },
+        { once: true }
+      );
+
+      // Handle cancel button
+      cancelBtn?.addEventListener('click', () => {
+        resetForm();
+        modal.close();
+      });
+
+      // Handle form submission
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const formData = new FormData(form);
+        const assetId = formData.get('asset_id') as string;
+        const name = formData.get('name') as string;
+        const type = formData.get('type') as string;
+        const currency = formData.get('currency') as string;
+        const balance = formData.get('balance') as string;
+
+        // Clear previous errors
+        if (errorDiv) {
+          errorDiv.textContent = '';
+          errorDiv.classList.add('hidden');
+        }
+
+        // Validation
+        if (!name || !type || !currency || !balance) {
+          if (errorDiv) {
+            errorDiv.textContent = 'Please fill in all required fields.';
+            errorDiv.classList.remove('hidden');
+          }
+          return;
+        }
+
+        // Balance validation - reject commas and invalid numbers
+        const balanceNum = parseFloat(balance);
+        if (isNaN(balanceNum) || balanceNum < 0 || !isFinite(balanceNum) || balance.includes(',')) {
+          if (errorDiv) {
+            errorDiv.textContent = 'Please enter a valid positive number for balance.';
+            errorDiv.classList.remove('hidden');
+          }
+          return;
+        }
+
+        // Asset ID validation - ensure UUID format if editing
+        const uuidPattern = /^[a-f0-9-]{36}$/i;
+        if (assetId && !uuidPattern.test(assetId)) {
+          if (errorDiv) {
+            errorDiv.textContent = 'Invalid asset ID format.';
+            errorDiv.classList.remove('hidden');
+          }
+          return;
+        }
+
+        // Show loading state
+        const originalText = submitBtn?.textContent || 'Submit';
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.textContent = 'Saving...';
+        }
+
+        try {
+          const isEdit = Boolean(assetId);
+          const url = isEdit ? `/api/assets/${assetId}` : '/api/assets';
+          const method = isEdit ? 'PUT' : 'POST';
+
+          // For edit, we need to update balance separately if it changed
+          const payload: Record<string, string> = {
+            name,
+            type,
+            currency,
+          };
+
+          // For create, include balance; for update, use balance endpoint
+          if (!isEdit) {
+            payload.balance = balance;
+          }
+
+          const response = await fetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || `Failed to ${isEdit ? 'update' : 'create'} asset`);
+          }
+
+          // If editing and balance changed, update balance separately
+          if (isEdit) {
+            const balanceResponse = await fetch(`/api/assets/${assetId}/balance`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ balance }),
+            });
+
+            if (!balanceResponse.ok) {
+              const errorData = await balanceResponse.json();
+              throw new Error(errorData.message || 'Failed to update balance');
+            }
+          }
+
+          // Success
+          addToast(`Asset ${isEdit ? 'updated' : 'created'} successfully!`, 'success');
+          resetForm();
+          modal.close();
+
+          // Dispatch event for page refresh
+          document.dispatchEvent(
+            new CustomEvent('asset-saved', {
+              detail: { assetId, name, type, currency, balance, isEdit },
+            })
+          );
+
+          // Reload page to show updated data
+          setTimeout(() => window.location.reload(), 500);
+        } catch (err) {
+          const message = err instanceof Error ? err.message : 'An error occurred';
+          if (errorDiv) {
+            errorDiv.textContent = message;
+            errorDiv.classList.remove('hidden');
+          }
+          addToast(message, 'error');
+        } finally {
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = originalText;
+          }
+        }
+      });
+    });
+  }
+
+  // Initialize on DOM ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initAssetFormModal);
+  } else {
+    initAssetFormModal();
+  }
+
+  // Re-initialize on Astro page transitions
+  document.addEventListener('astro:page-load', initAssetFormModal);
+</script>

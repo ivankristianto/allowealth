@@ -6,38 +6,35 @@
  * Shows asset name, currency badge, updated date, balance, and action buttons.
  *
  * Part of the Global Portfolio page redesign.
+ * Uses modals for edit, delete, and history actions.
  *
  * @param {string} id - Asset ID
  * @param {string} name - Asset name
+ * @param {string} type - Asset type (bank_account, stock, etc.)
  * @param {string} currency - Currency code (IDR or USD)
  * @param {number} balance - Asset balance
  * @param {Date} lastUpdated - Last updated date
- * @param {string} baseUrl - Base URL for navigation links
  * @param {string} className - Additional CSS classes
  */
 
 import { TrendingUp, Pencil, Trash2 } from '@lucide/astro';
 import { formatCurrency } from '@/lib/tokens';
+import { ASSET_TYPE_LABELS, type AssetType } from '@/lib/types/asset';
 
 export interface Props {
   id: string;
   name: string;
+  type: AssetType;
   currency: 'IDR' | 'USD';
   balance: number;
   lastUpdated: Date;
-  baseUrl?: string;
   className?: string;
 }
 
-const {
-  id,
-  name,
-  currency,
-  balance,
-  lastUpdated,
-  baseUrl = '/assets',
-  className = '',
-} = Astro.props;
+const { id, name, type, currency, balance, lastUpdated, className = '' } = Astro.props;
+
+// Get display label for type
+const typeLabel = ASSET_TYPE_LABELS[type] || type;
 
 // Format date for display
 const formattedDate = new Date(lastUpdated).toLocaleDateString('en-US', {
@@ -101,24 +98,34 @@ const rowClasses = [
     {/* Action Buttons */}
     <div class="flex items-center gap-1 opacity-40 group-hover:opacity-100 transition-opacity">
       {/* View History / Timeline */}
-      <a
-        href={`${baseUrl}/history/${id}`}
+      <button
+        type="button"
         class="p-2 text-base-content/50 hover:text-accent transition-all rounded-xl hover:bg-accent/10"
         title="View timeline"
         aria-label={`View ${name} history`}
+        data-history-asset={id}
+        data-asset-name={name}
+        data-asset-type={typeLabel}
+        data-asset-currency={currency}
+        data-asset-balance={balance}
       >
         <TrendingUp size={18} class="stroke-current" aria-hidden="true" />
-      </a>
+      </button>
 
       {/* Edit Asset */}
-      <a
-        href={`${baseUrl}/edit/${id}`}
+      <button
+        type="button"
         class="p-2 text-base-content/50 hover:text-success transition-all rounded-xl hover:bg-success/10"
         title="Edit asset"
         aria-label={`Edit ${name}`}
+        data-edit-asset={id}
+        data-asset-name={name}
+        data-asset-type={type}
+        data-asset-currency={currency}
+        data-asset-balance={balance}
       >
         <Pencil size={18} class="stroke-current" aria-hidden="true" />
-      </a>
+      </button>
 
       {/* Delete Asset */}
       <button
@@ -128,6 +135,9 @@ const rowClasses = [
         aria-label={`Delete ${name}`}
         data-delete-asset={id}
         data-asset-name={name}
+        data-asset-type={typeLabel}
+        data-asset-currency={currency}
+        data-asset-balance={balance}
       >
         <Trash2 size={18} class="stroke-current" aria-hidden="true" />
       </button>
@@ -136,62 +146,119 @@ const rowClasses = [
 </div>
 
 <script>
-  import { addToast } from '@/lib/stores/toastStore';
-
   // Track initialized elements to avoid duplicate listeners
+  const initializedHistoryButtons = new WeakSet<Element>();
+  const initializedEditButtons = new WeakSet<Element>();
   const initializedDeleteButtons = new WeakSet<Element>();
 
-  function initAssetDeleteButtons() {
-    document.querySelectorAll('[data-delete-asset]').forEach((button) => {
-      // Skip if already initialized
-      if (initializedDeleteButtons.has(button)) return;
-      initializedDeleteButtons.add(button);
+  function initAssetRowButtons() {
+    // Initialize History buttons
+    document.querySelectorAll('[data-history-asset]').forEach((button) => {
+      if (initializedHistoryButtons.has(button)) return;
+      initializedHistoryButtons.add(button);
 
-      button.addEventListener('click', async (e) => {
+      button.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
 
-        const assetId = (button as HTMLElement).getAttribute('data-delete-asset');
-        const assetName = (button as HTMLElement).getAttribute('data-asset-name') || 'this asset';
+        const btn = button as HTMLElement;
+        const assetId = btn.getAttribute('data-history-asset');
+        const assetName = btn.getAttribute('data-asset-name') || 'Asset';
+        const assetType = btn.getAttribute('data-asset-type') || 'Unknown';
+        const assetCurrency = (btn.getAttribute('data-asset-currency') || 'IDR') as 'IDR' | 'USD';
+        const assetBalance = parseFloat(btn.getAttribute('data-asset-balance') || '0');
 
         if (!assetId) return;
 
-        // P1: TODO - Replace window.confirm with a proper confirmation modal component
-        // Using confirm() temporarily until ConfirmModal component is available
-        const confirmed = window.confirm(
-          `Are you sure you want to delete "${assetName}"? This action cannot be undone.`
+        // Dispatch event to open history modal
+        document.dispatchEvent(
+          new CustomEvent('open-asset-history', {
+            detail: {
+              id: assetId,
+              name: assetName,
+              type: assetType,
+              currency: assetCurrency,
+              balance: assetBalance,
+            },
+          })
         );
+      });
+    });
 
-        if (!confirmed) return;
+    // Initialize Edit buttons
+    document.querySelectorAll('[data-edit-asset]').forEach((button) => {
+      if (initializedEditButtons.has(button)) return;
+      initializedEditButtons.add(button);
 
-        try {
-          const response = await fetch(`/api/assets/${assetId}`, {
-            method: 'DELETE',
-          });
+      button.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
 
-          if (response.ok) {
-            addToast('Asset deleted successfully', 'success');
-            // Reload after short delay to show toast
-            setTimeout(() => window.location.reload(), 500);
-          } else {
-            const result = await response.json();
-            addToast(result.error?.message || 'Failed to delete asset', 'error');
-          }
-        } catch (err) {
-          console.error('Error deleting asset:', err);
-          addToast('Failed to delete asset. Please try again.', 'error');
-        }
+        const btn = button as HTMLElement;
+        const assetId = btn.getAttribute('data-edit-asset');
+        const assetName = btn.getAttribute('data-asset-name') || '';
+        const assetType = btn.getAttribute('data-asset-type') || 'bank_account';
+        const assetCurrency = (btn.getAttribute('data-asset-currency') || 'IDR') as 'IDR' | 'USD';
+        const assetBalance = btn.getAttribute('data-asset-balance') || '0';
+
+        if (!assetId) return;
+
+        // Dispatch event to open edit modal
+        document.dispatchEvent(
+          new CustomEvent('open-asset-form', {
+            detail: {
+              id: assetId,
+              name: assetName,
+              type: assetType,
+              currency: assetCurrency,
+              balance: assetBalance,
+            },
+          })
+        );
+      });
+    });
+
+    // Initialize Delete buttons
+    document.querySelectorAll('[data-delete-asset]').forEach((button) => {
+      if (initializedDeleteButtons.has(button)) return;
+      initializedDeleteButtons.add(button);
+
+      button.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const btn = button as HTMLElement;
+        const assetId = btn.getAttribute('data-delete-asset');
+        const assetName = btn.getAttribute('data-asset-name') || 'this asset';
+        const assetType = btn.getAttribute('data-asset-type') || 'Asset';
+        const assetCurrency = (btn.getAttribute('data-asset-currency') || 'IDR') as 'IDR' | 'USD';
+        const assetBalance = parseFloat(btn.getAttribute('data-asset-balance') || '0');
+
+        if (!assetId) return;
+
+        // Dispatch event to open delete confirmation modal
+        document.dispatchEvent(
+          new CustomEvent('open-asset-delete', {
+            detail: {
+              id: assetId,
+              name: assetName,
+              type: assetType,
+              currency: assetCurrency,
+              balance: assetBalance,
+            },
+          })
+        );
       });
     });
   }
 
   // Initialize on DOM ready
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initAssetDeleteButtons);
+    document.addEventListener('DOMContentLoaded', initAssetRowButtons);
   } else {
-    initAssetDeleteButtons();
+    initAssetRowButtons();
   }
 
   // Re-initialize on Astro page transitions
-  document.addEventListener('astro:page-load', initAssetDeleteButtons);
+  document.addEventListener('astro:page-load', initAssetRowButtons);
 </script>
