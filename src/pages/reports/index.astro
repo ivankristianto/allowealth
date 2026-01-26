@@ -1,23 +1,202 @@
 ---
+/**
+ * Financial Intelligence Page
+ *
+ * Deep analysis of family's resource velocity with:
+ * - Summary metrics (income, expenses, savings, budget health)
+ * - Resource allocation donut chart
+ * - Financial velocity bar chart
+ * - Category intelligence table with drill-down
+ *
+ * @TODO: Wire with backend API for real data
+ */
+
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
+import StatCard from '@/components/atoms/StatCard.astro';
+import ResourceAllocationChart from '@/components/organisms/ResourceAllocationChart.astro';
+import FinancialVelocityChart from '@/components/organisms/FinancialVelocityChart.astro';
+import CategoryIntelligenceTable from '@/components/organisms/CategoryIntelligenceTable.astro';
+import ReportSelector from '@/components/molecules/ReportSelector.astro';
 
 const currentPath = '/reports';
+
+// @TODO: Replace with API call to get actual data
+// Mock data based on screenshot and PoC
+const mockData = {
+  // Summary metrics
+  totalIncome: 9750000,
+  totalExpenses: 4735000,
+  netSavings: 5015000,
+  budgetHealth: 8, // percentage
+  expenseCategories: 6,
+
+  // Resource Allocation (Expense Mix)
+  expenseByCategory: [
+    { name: 'Utilities', value: 1850000 },
+    { name: 'Dining', value: 905000 },
+    { name: 'Health', value: 750000 },
+    { name: 'Transport', value: 595000 },
+    { name: 'Entertainment', value: 420000 },
+    { name: 'Groceries', value: 215000 },
+  ],
+
+  // Financial Velocity (Trailing 3 months)
+  trendData: [
+    { name: 'Dec', income: 25245000, expenses: 33719000 },
+    { name: 'Jan', income: 60525000, expenses: 41816000 },
+    { name: 'Feb', income: 9750000, expenses: 4735000 },
+  ],
+
+  // Category Intelligence
+  categoryIntelligence: [
+    {
+      id: '1',
+      name: 'Utilities',
+      spent: 1850000,
+      budgetLimit: 4000000,
+    },
+    {
+      id: '2',
+      name: 'Dining',
+      spent: 905000,
+      budgetLimit: 3000000,
+    },
+    {
+      id: '3',
+      name: 'Health',
+      spent: 750000,
+      budgetLimit: null, // Not Set
+    },
+    {
+      id: '4',
+      name: 'Transport',
+      spent: 595000,
+      budgetLimit: 2500000,
+    },
+    {
+      id: '5',
+      name: 'Entertainment',
+      spent: 420000,
+      budgetLimit: 1500000,
+    },
+    {
+      id: '6',
+      name: 'Groceries',
+      spent: 215000,
+      budgetLimit: 8000000,
+    },
+    {
+      id: '7',
+      name: 'Housing',
+      spent: 0,
+      budgetLimit: 40000000,
+    },
+  ],
+};
+
+// Format currency helper for display (without "Rp" prefix)
+function formatNumber(amount: number): string {
+  return new Intl.NumberFormat('id-ID', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount);
+}
 ---
 
-<ProtectedLayout title="Reports - Finance Manager" currentPath={currentPath}>
-  <div class="space-y-6">
-    <h2 class="text-2xl font-bold">Reports</h2>
-
-    <div class="tabs">
-      <a class="tab tab-active" href="/reports">Monthly</a>
-      <a class="tab" href="/reports/yearly">Yearly</a>
-      <a class="tab" href="/reports/custom">Custom</a>
-    </div>
-
-    <div class="card bg-base-100 shadow border border-base-300">
-      <div class="card-body">
-        <p class="text-neutral-500">Select a report type to view financial insights.</p>
+<ProtectedLayout title="Financial Intelligence - Finance Manager" currentPath={currentPath}>
+  <div class="space-y-6 md:space-y-8 pb-10">
+    {/* Page Header with Report Selector */}
+    <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+      <div>
+        <h2 class="text-2xl md:text-3xl font-bold text-base-content leading-none tracking-tight">
+          Financial Intelligence
+        </h2>
+        <p class="text-sm text-base-content/60 mt-2 font-medium">
+          Deep analysis of your family's resource velocity.
+        </p>
       </div>
+
+      <ReportSelector
+        selectedRange="monthly"
+        selectedPeriod="February 2024"
+        availablePeriods={['December 2023', 'January 2024', 'February 2024']}
+      />
     </div>
+
+    {/* Summary Metric Cards */}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+      <StatCard
+        title="TOTAL INCOME"
+        value={`Rp ${formatNumber(mockData.totalIncome)}`}
+        subtitle="PERIOD TOTAL"
+        subtitleIcon="trending-up"
+        valueColor="text-success"
+        subtitleColor="text-success/60"
+      />
+
+      <StatCard
+        title="TOTAL EXPENSES"
+        value={`Rp ${formatNumber(mockData.totalExpenses)}`}
+        subtitle={`${mockData.expenseCategories} CATEGORIES`}
+        valueColor="text-error"
+        subtitleColor="text-error/60"
+      />
+
+      <StatCard
+        title="NET SAVINGS"
+        value={`Rp ${formatNumber(mockData.netSavings)}`}
+        subtitle="RETAINED CAPITAL"
+        valueColor="text-accent"
+        subtitleColor="text-base-content/60"
+      />
+
+      <StatCard
+        title="BUDGET HEALTH"
+        value={`${mockData.budgetHealth}%`}
+        valueColor={mockData.budgetHealth > 100 ? 'text-error' : 'text-success'}
+        progress={mockData.budgetHealth}
+        progressColor={mockData.budgetHealth > 100 ? 'bg-error' : 'bg-success'}
+      />
+    </div>
+
+    {/* Charts Grid */}
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 md:gap-8">
+      {/* Resource Allocation Chart */}
+      <ResourceAllocationChart data={mockData.expenseByCategory} subtitle="EXPENSE MIX" />
+
+      {/* Financial Velocity Chart */}
+      <FinancialVelocityChart data={mockData.trendData} subtitle="TRAILING 3 MONTHS" />
+    </div>
+
+    {/* Category Intelligence Table */}
+    <CategoryIntelligenceTable
+      categories={mockData.categoryIntelligence}
+      subtitle="SORTED BY FUNCTIONAL VOLUME"
+    />
+
+    {/* @TODO: Add CategoryDrillDownModal for detailed transaction view */}
+    {
+      /* @TODO: Wire with backend API endpoints:
+         - GET /api/reports/summary?period=monthly&date=2024-02
+         - GET /api/reports/expenses?period=monthly&date=2024-02
+         - GET /api/reports/trends?period=monthly&date=2024-02
+         - GET /api/reports/categories?period=monthly&date=2024-02
+         - GET /api/reports/category-transactions?category=Utilities&period=monthly&date=2024-02
+    */
+    }
   </div>
 </ProtectedLayout>
+
+<script>
+  // @TODO: Wire with backend - Handle drill-down button clicks
+  document.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement;
+    const drillDownBtn = target.closest('.category-drill-down-btn') as HTMLElement;
+
+    if (drillDownBtn) {
+      // @TODO: Wire with backend - Open modal with category details and fetch transactions
+      // const categoryName = drillDownBtn.getAttribute('data-category-name');
+      // console.log('Drill down clicked for category:', categoryName);
+    }
+  });
+</script>

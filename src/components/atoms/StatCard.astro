@@ -1,0 +1,98 @@
+---
+/**
+ * StatCard Component
+ *
+ * Displays a statistic card with title, value, optional icon, subtitle, and progress indicator.
+ * Used for dashboard metrics like Total Income, Net Savings, Budget Health, etc.
+ * Follows Oasis Finance v1.0.0 design system specifications.
+ *
+ * @param {string} title - Card title (e.g., "TOTAL INCOME")
+ * @param {string} value - Main value to display (e.g., "Rp 9.750.000")
+ * @param {string} subtitle - Subtitle text (e.g., "PERIOD TOTAL")
+ * @param {string} subtitleIcon - Lucide icon name for subtitle (e.g., "trending-up")
+ * @param {string} valueColor - Text color class for value (default: "text-base-content")
+ * @param {string} subtitleColor - Text color class for subtitle (default: "text-base-content/60")
+ * @param {number} progress - Progress percentage (0-100) - only show progress bar if provided
+ * @param {string} progressColor - Progress bar color class (default: "bg-success")
+ * @param {string} className - Additional CSS classes
+ */
+
+import type { HTMLAttributes } from 'astro/types';
+import { TrendingUp } from '@lucide/astro';
+
+// Map of icon names to Lucide components
+const ICON_MAP: Record<string, any> = {
+  'trending-up': TrendingUp,
+};
+
+export interface Props extends Omit<HTMLAttributes<'div'>, 'class'> {
+  title: string;
+  value: string;
+  subtitle?: string;
+  subtitleIcon?: string;
+  valueColor?: string;
+  subtitleColor?: string;
+  progress?: number;
+  progressColor?: string;
+  className?: string;
+}
+
+const {
+  title,
+  value,
+  subtitle,
+  subtitleIcon,
+  valueColor = 'text-base-content',
+  subtitleColor = 'text-base-content/60',
+  progress,
+  progressColor = 'bg-success',
+  className = '',
+  ...attrs
+} = Astro.props;
+
+const IconComponent = subtitleIcon ? ICON_MAP[subtitleIcon] : null;
+---
+
+<div
+  class={`bg-base-100 p-5 md:p-6 rounded-2xl md:rounded-3xl border border-base-300 shadow-sm ${className}`}
+  role="region"
+  aria-label={title}
+  {...attrs}
+>
+  <!-- Title -->
+  <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest">
+    {title}
+  </p>
+
+  <!-- Value -->
+  <h3 class={`text-xl md:text-2xl font-bold mt-3 tracking-tight ${valueColor}`}>
+    {value}
+  </h3>
+
+  <!-- Subtitle with optional icon -->
+  {
+    subtitle && (
+      <div class={`flex items-center gap-1 mt-2 ${subtitleColor} text-[10px] font-bold uppercase`}>
+        {IconComponent && <IconComponent size={14} class="stroke-current" aria-hidden="true" />}
+        <span>{subtitle}</span>
+      </div>
+    )
+  }
+
+  <!-- Progress Bar (optional) -->
+  {
+    progress !== undefined && progress !== null && (
+      <div class="w-full bg-base-200 h-1.5 rounded-full mt-3 overflow-hidden">
+        <div
+          class={`h-full ${progressColor} transition-all duration-300`}
+          style={`width: ${Math.min(Math.max(progress, 0), 100)}%`}
+          role="progressbar"
+          aria-valuenow={progress}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label={`${Math.round(progress)}% progress`}
+        />
+      </div>
+    )
+  }
+</div>

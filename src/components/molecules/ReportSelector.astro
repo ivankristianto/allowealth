@@ -1,0 +1,131 @@
+---
+/**
+ * ReportSelector Component
+ *
+ * Toggle buttons for selecting report range (Monthly/Yearly) with date/period selector.
+ * Follows Oasis Finance v1.0.0 design system specifications.
+ *
+ * @param {string} selectedRange - Current selected range ("monthly" | "yearly")
+ * @param {string} selectedPeriod - Currently selected period (month or year)
+ * @param {string[]} availablePeriods - Array of available periods to select from
+ * @param {string} className - Additional CSS classes
+ */
+
+export interface Props {
+  selectedRange?: 'monthly' | 'yearly';
+  selectedPeriod?: string;
+  availablePeriods?: string[];
+  className?: string;
+}
+
+const {
+  selectedRange = 'monthly',
+  selectedPeriod = 'February 2024',
+  availablePeriods = ['December 2023', 'January 2024', 'February 2024'],
+  className = '',
+} = Astro.props;
+
+// Generate unique IDs for accessibility
+const rangeGroupId = `report-range-${Math.random().toString(36).slice(2, 11)}`;
+const periodSelectId = `report-period-${Math.random().toString(36).slice(2, 11)}`;
+---
+
+<div
+  class={`flex items-center gap-3 bg-base-100 p-1.5 rounded-2xl border border-base-300 shadow-sm ${className}`}
+  role="region"
+  aria-label="Report period selector"
+>
+  <!-- Range Toggle Buttons -->
+  <div role="group" aria-labelledby={rangeGroupId} class="flex gap-0.5">
+    <span id={rangeGroupId} class="sr-only">Select report range</span>
+
+    <button
+      type="button"
+      data-range="monthly"
+      class:list={[
+        'px-5 md:px-6 py-2 rounded-xl text-xs font-bold transition-all',
+        selectedRange === 'monthly'
+          ? 'bg-accent text-white shadow-lg'
+          : 'text-base-content/60 hover:text-base-content/80',
+      ]}
+      aria-pressed={selectedRange === 'monthly'}
+      aria-label="Show monthly reports"
+    >
+      Monthly
+    </button>
+
+    <button
+      type="button"
+      data-range="yearly"
+      class:list={[
+        'px-5 md:px-6 py-2 rounded-xl text-xs font-bold transition-all',
+        selectedRange === 'yearly'
+          ? 'bg-accent text-white shadow-lg'
+          : 'text-base-content/60 hover:text-base-content/80',
+      ]}
+      aria-pressed={selectedRange === 'yearly'}
+      aria-label="Show yearly reports"
+    >
+      Yearly
+    </button>
+  </div>
+
+  <!-- Divider -->
+  <div class="w-px h-6 bg-base-300" aria-hidden="true"></div>
+
+  <!-- Period Selector -->
+  <select
+    id={periodSelectId}
+    name="period"
+    class="bg-transparent border-none text-xs font-bold text-base-content focus:ring-0 cursor-pointer outline-none px-2"
+    aria-label={`Select ${selectedRange === 'monthly' ? 'month' : 'year'}`}
+  >
+    {
+      availablePeriods.map((period) => (
+        <option value={period} selected={period === selectedPeriod}>
+          {period}
+        </option>
+      ))
+    }
+  </select>
+</div>
+
+<style>
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+</style>
+
+<script>
+  // @TODO: Wire with backend - currently using mock data
+  // Handle range toggle clicks
+  document.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement;
+    const rangeButton = target.closest('[data-range]') as HTMLElement;
+
+    if (rangeButton) {
+      // @TODO: Wire with backend - Dispatch custom event or update store
+      // const range = rangeButton.getAttribute('data-range');
+      // console.log('Range changed to:', range);
+    }
+  });
+
+  // Handle period select change
+  document.addEventListener('change', (e) => {
+    const target = e.target as HTMLSelectElement;
+
+    if (target.matches('[name="period"]')) {
+      // @TODO: Wire with backend - Dispatch custom event or update store
+      // const period = target.value;
+      // console.log('Period changed to:', period);
+    }
+  });
+</script>
