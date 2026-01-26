@@ -1,0 +1,26 @@
+---
+/**
+ * Category Intelligence Table Partial
+ *
+ * Server-rendered partial for category intelligence table.
+ * Used for both SSR and HTML fragment responses (?_render=html).
+ * This is a wrapper that renders the CategoryIntelligenceTable component.
+ *
+ * @param {Array} categories - Category intelligence data
+ * @param {string} subtitle - Table subtitle
+ */
+
+import CategoryIntelligenceTable from '@/components/organisms/CategoryIntelligenceTable.astro';
+import type { CategoryIntelligence } from '@/components/organisms/CategoryIntelligenceTable.astro';
+
+export interface Props {
+  categories: CategoryIntelligence[];
+  subtitle?: string;
+}
+
+const { categories, subtitle = 'SORTED BY FUNCTIONAL VOLUME' } = Astro.props;
+---
+
+<div data-category-table>
+  <CategoryIntelligenceTable categories={categories} subtitle={subtitle} />
+</div>

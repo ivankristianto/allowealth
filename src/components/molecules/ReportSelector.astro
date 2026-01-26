@@ -1,131 +1,186 @@
 ---
 /**
- * ReportSelector Component
+ * Report Selector Component
  *
- * Toggle buttons for selecting report range (Monthly/Yearly) with date/period selector.
- * Follows Oasis Finance v1.0.0 design system specifications.
+ * Toggle between Monthly and Yearly reports with period selector dropdown.
+ * Follows TransactionFiltersBar month selector pattern for consistency.
  *
- * @param {string} selectedRange - Current selected range ("monthly" | "yearly")
- * @param {string} selectedPeriod - Currently selected period (month or year)
- * @param {string[]} availablePeriods - Array of available periods to select from
+ * @param {string} selectedRange - Current range ('monthly' | 'yearly')
+ * @param {string} selectedPeriod - Current period (e.g., "February 2024" or "2024")
+ * @param {Array} availablePeriods - Available periods with key and label
  * @param {string} className - Additional CSS classes
  */
+
+import { Calendar, ChevronDown } from '@lucide/astro';
+
+export interface PeriodOption {
+  key: string;
+  label: string;
+}
 
 export interface Props {
   selectedRange?: 'monthly' | 'yearly';
   selectedPeriod?: string;
-  availablePeriods?: string[];
+  availablePeriods?: PeriodOption[];
   className?: string;
 }
 
 const {
   selectedRange = 'monthly',
-  selectedPeriod = 'February 2024',
-  availablePeriods = ['December 2023', 'January 2024', 'February 2024'],
+  selectedPeriod = '',
+  availablePeriods = [],
   className = '',
 } = Astro.props;
 
-// Generate unique IDs for accessibility
-const rangeGroupId = `report-range-${Math.random().toString(36).slice(2, 11)}`;
-const periodSelectId = `report-period-${Math.random().toString(36).slice(2, 11)}`;
+// Get display label for selected period
+const selectedPeriodData = availablePeriods.find((p) => p.key === selectedPeriod);
+const currentPeriodLabel =
+  selectedPeriodData?.label ||
+  availablePeriods[availablePeriods.length - 1]?.label ||
+  (selectedRange === 'monthly'
+    ? new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+    : new Date().getFullYear().toString());
 ---
 
-<div
-  class={`flex items-center gap-3 bg-base-100 p-1.5 rounded-2xl border border-base-300 shadow-sm ${className}`}
-  role="region"
-  aria-label="Report period selector"
->
-  <!-- Range Toggle Buttons -->
-  <div role="group" aria-labelledby={rangeGroupId} class="flex gap-0.5">
-    <span id={rangeGroupId} class="sr-only">Select report range</span>
-
+<div class={`flex flex-wrap items-center gap-4 ${className}`} data-report-selector>
+  <!-- Range Toggle (Monthly/Yearly) -->
+  <div
+    class="flex bg-base-200 p-1 rounded-xl sm:rounded-2xl shrink-0"
+    role="group"
+    aria-label="Select report range"
+    data-range-toggle-group
+  >
     <button
       type="button"
-      data-range="monthly"
-      class:list={[
-        'px-5 md:px-6 py-2 rounded-xl text-xs font-bold transition-all',
+      class={`px-4 sm:px-6 py-2 sm:py-2.5 min-h-[44px] min-w-[44px] text-xs font-bold rounded-lg sm:rounded-xl transition-all focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2 ${
         selectedRange === 'monthly'
-          ? 'bg-accent text-white shadow-lg'
-          : 'text-base-content/60 hover:text-base-content/80',
-      ]}
+          ? 'bg-base-100 shadow text-primary'
+          : 'text-base-content/50 hover:text-base-content/70'
+      }`}
+      data-range="monthly"
       aria-pressed={selectedRange === 'monthly'}
-      aria-label="Show monthly reports"
     >
       Monthly
     </button>
-
     <button
       type="button"
-      data-range="yearly"
-      class:list={[
-        'px-5 md:px-6 py-2 rounded-xl text-xs font-bold transition-all',
+      class={`px-4 sm:px-6 py-2 sm:py-2.5 min-h-[44px] min-w-[44px] text-xs font-bold rounded-lg sm:rounded-xl transition-all focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2 ${
         selectedRange === 'yearly'
-          ? 'bg-accent text-white shadow-lg'
-          : 'text-base-content/60 hover:text-base-content/80',
-      ]}
+          ? 'bg-base-100 shadow text-primary'
+          : 'text-base-content/50 hover:text-base-content/70'
+      }`}
+      data-range="yearly"
       aria-pressed={selectedRange === 'yearly'}
-      aria-label="Show yearly reports"
     >
       Yearly
     </button>
   </div>
 
-  <!-- Divider -->
-  <div class="w-px h-6 bg-base-300" aria-hidden="true"></div>
-
-  <!-- Period Selector -->
-  <select
-    id={periodSelectId}
-    name="period"
-    class="bg-transparent border-none text-xs font-bold text-base-content focus:ring-0 cursor-pointer outline-none px-2"
-    aria-label={`Select ${selectedRange === 'monthly' ? 'month' : 'year'}`}
-  >
-    {
-      availablePeriods.map((period) => (
-        <option value={period} selected={period === selectedPeriod}>
-          {period}
-        </option>
-      ))
-    }
-  </select>
+  <!-- Period Selector Dropdown -->
+  {
+    availablePeriods.length > 0 && (
+      <div class="dropdown" id="report-period-dropdown" data-period-dropdown>
+        <input type="hidden" name="period" id="period-filter" value={selectedPeriod} />
+        <button
+          type="button"
+          tabindex={0}
+          class="flex items-center gap-2 px-4 py-3 text-xs font-bold border border-base-300 bg-base-100 text-base-content rounded-2xl shadow-sm hover:border-base-content/30 transition-colors min-w-[180px]"
+          aria-label="Select period"
+          data-period-trigger
+        >
+          <Calendar size={16} class="stroke-current text-base-content/40" aria-hidden="true" />
+          <span class="flex-1 text-left" data-period-label>
+            {currentPeriodLabel}
+          </span>
+          <ChevronDown size={14} class="stroke-current text-base-content/40" aria-hidden="true" />
+        </button>
+        <ul
+          tabindex={0}
+          class="dropdown-content z-50 menu p-2 shadow-lg bg-base-100 rounded-2xl w-52 border border-base-300 mt-2 max-h-64 overflow-y-auto"
+        >
+          {availablePeriods.map((period) => (
+            <li>
+              <button
+                type="button"
+                class={`text-xs font-medium ${period.key === selectedPeriod ? 'bg-primary/10 text-primary' : ''}`}
+                data-period-option={period.key}
+                data-period-label={period.label}
+              >
+                {period.label}
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
+    )
+  }
 </div>
 
-<style>
-  .sr-only {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border-width: 0;
-  }
-</style>
-
 <script>
-  // @TODO: Wire with backend - currently using mock data
-  // Handle range toggle clicks
-  document.addEventListener('click', (e) => {
-    const target = e.target as HTMLElement;
-    const rangeButton = target.closest('[data-range]') as HTMLElement;
+  // Initialize report selector
+  function initReportSelector() {
+    // Handle range toggle button clicks
+    document.querySelectorAll('[data-range]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const rangeButton = btn as HTMLElement;
+        const range = rangeButton.getAttribute('data-range') as 'monthly' | 'yearly';
 
-    if (rangeButton) {
-      // @TODO: Wire with backend - Dispatch custom event or update store
-      // const range = rangeButton.getAttribute('data-range');
-      // console.log('Range changed to:', range);
-    }
-  });
+        // Update aria-pressed states on all buttons
+        document.querySelectorAll('[data-range]').forEach((b) => {
+          b.setAttribute('aria-pressed', b.getAttribute('data-range') === range ? 'true' : 'false');
 
-  // Handle period select change
-  document.addEventListener('change', (e) => {
-    const target = e.target as HTMLSelectElement;
+          // Update visual styles
+          const isActive = b.getAttribute('data-range') === range;
+          b.classList.toggle('bg-base-100', isActive);
+          b.classList.toggle('shadow', isActive);
+          b.classList.toggle('text-primary', isActive);
+          b.classList.toggle('text-base-content/50', !isActive);
+        });
 
-    if (target.matches('[name="period"]')) {
-      // @TODO: Wire with backend - Dispatch custom event or update store
-      // const period = target.value;
-      // console.log('Period changed to:', period);
-    }
-  });
+        // Dispatch custom event for range change
+        window.dispatchEvent(
+          new CustomEvent('reportRangeChange', {
+            detail: { range },
+          })
+        );
+      });
+    });
+
+    // Handle period dropdown selection
+    document.querySelectorAll('[data-period-option]').forEach((btn) => {
+      btn.addEventListener('click', (e: Event) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const el = btn as HTMLElement;
+        const value = el.dataset.periodOption || '';
+        const displayLabel = el.dataset.periodLabel || value;
+        const hiddenInput = document.getElementById('period-filter') as HTMLInputElement;
+        const labelEl = document.querySelector('[data-period-label]');
+
+        if (hiddenInput) hiddenInput.value = value;
+        if (labelEl) labelEl.textContent = displayLabel;
+
+        // Close dropdown by removing focus
+        (document.activeElement as HTMLElement)?.blur();
+
+        // Dispatch custom event for period change
+        window.dispatchEvent(
+          new CustomEvent('reportPeriodChange', {
+            detail: { period: value, label: displayLabel },
+          })
+        );
+      });
+    });
+  }
+
+  // Initialize on DOM ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initReportSelector);
+  } else {
+    initReportSelector();
+  }
+
+  // Re-initialize on Astro page transitions
+  document.addEventListener('astro:page-load', initReportSelector);
 </script>

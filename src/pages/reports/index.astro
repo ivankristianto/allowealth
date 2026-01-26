@@ -2,27 +2,48 @@
 /**
  * Financial Intelligence Page
  *
+ * Interactive reports page with monthly and yearly views.
  * Deep analysis of family's resource velocity with:
  * - Summary metrics (income, expenses, savings, budget health)
  * - Resource allocation donut chart
  * - Financial velocity bar chart
  * - Category intelligence table with drill-down
  *
+ * Features:
+ * - Interactive range toggle (monthly/yearly)
+ * - Period selector dropdown
+ * - Dynamic data loading without page reload
+ * - Server-rendered HTML fragments for consistency
+ *
  * @TODO: Wire with backend API for real data
+ * @see docs/architecture/002-interactive-pages.md
  */
 
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
-import StatCard from '@/components/atoms/StatCard.astro';
-import ResourceAllocationChart from '@/components/organisms/ResourceAllocationChart.astro';
-import FinancialVelocityChart from '@/components/organisms/FinancialVelocityChart.astro';
-import CategoryIntelligenceTable from '@/components/organisms/CategoryIntelligenceTable.astro';
 import CategoryDrillDownModal from '@/components/organisms/CategoryDrillDownModal.astro';
 import ReportSelector from '@/components/molecules/ReportSelector.astro';
 
+// Import partials for SSR
+import ReportSummaryCardsPartial from '@/components/partials/ReportSummaryCardsPartial.astro';
+import ReportChartsPartial from '@/components/partials/ReportChartsPartial.astro';
+import CategoryTablePartial from '@/components/partials/CategoryTablePartial.astro';
+
 const currentPath = '/reports';
 
+// Default view configuration
+const defaultRange = 'monthly';
+const defaultPeriod = '2024-02'; // February 2024
+
+// Available periods for selector
+// @TODO: Dynamic period generation based on available data from backend
+const monthlyPeriods = [
+  { key: '2023-12', label: 'December 2023' },
+  { key: '2024-01', label: 'January 2024' },
+  { key: '2024-02', label: 'February 2024' },
+];
+
 // @TODO: Replace with API call to get actual data
-// Mock data based on screenshot and PoC
+// Mock data for SSR (February 2024 monthly view)
 const mockData = {
   // Summary metrics
   totalIncome: 9750000,
@@ -94,18 +115,10 @@ const mockData = {
     },
   ],
 };
-
-// Format currency helper for display (without "Rp" prefix)
-function formatNumber(amount: number): string {
-  return new Intl.NumberFormat('id-ID', {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
-}
 ---
 
 <ProtectedLayout title="Financial Intelligence - Finance Manager" currentPath={currentPath}>
-  <div class="space-y-6 md:space-y-8 pb-10">
+  <div class="max-w-7xl mx-auto sm:px-2 lg:px-6 space-y-6 md:space-y-8 pb-10">
     {/* Page Header with Report Selector */}
     <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
       <div>
@@ -118,119 +131,70 @@ function formatNumber(amount: number): string {
       </div>
 
       <ReportSelector
-        selectedRange="monthly"
-        selectedPeriod="February 2024"
-        availablePeriods={['December 2023', 'January 2024', 'February 2024']}
+        selectedRange={defaultRange}
+        selectedPeriod={defaultPeriod}
+        availablePeriods={monthlyPeriods}
       />
     </div>
 
-    {/* Summary Metric Cards */}
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-      <StatCard
-        title="TOTAL INCOME"
-        value={`Rp ${formatNumber(mockData.totalIncome)}`}
-        subtitle="PERIOD TOTAL"
-        subtitleIcon="trending-up"
-        valueColor="text-success"
-        subtitleColor="text-success/60"
-      />
-
-      <StatCard
-        title="TOTAL EXPENSES"
-        value={`Rp ${formatNumber(mockData.totalExpenses)}`}
-        subtitle={`${mockData.expenseCategories} CATEGORIES`}
-        valueColor="text-error"
-        subtitleColor="text-error/60"
-      />
-
-      <StatCard
-        title="NET SAVINGS"
-        value={`Rp ${formatNumber(mockData.netSavings)}`}
-        subtitle="RETAINED CAPITAL"
-        valueColor="text-accent"
-        subtitleColor="text-base-content/60"
-      />
-
-      <StatCard
-        title="BUDGET HEALTH"
-        value={`${mockData.budgetHealth}%`}
-        valueColor={mockData.budgetHealth > 100 ? 'text-error' : 'text-success'}
-        progress={mockData.budgetHealth}
-        progressColor={mockData.budgetHealth > 100 ? 'bg-error' : 'bg-success'}
+    {/* Summary Metric Cards Container */}
+    <div data-summary-container>
+      <ReportSummaryCardsPartial
+        totalIncome={mockData.totalIncome}
+        totalExpenses={mockData.totalExpenses}
+        netSavings={mockData.netSavings}
+        budgetHealth={mockData.budgetHealth}
+        expenseCategories={mockData.expenseCategories}
       />
     </div>
 
-    {/* Charts Grid */}
-    <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 md:gap-8">
-      {/* Resource Allocation Chart */}
-      <ResourceAllocationChart data={mockData.expenseByCategory} subtitle="EXPENSE MIX" />
-
-      {/* Financial Velocity Chart */}
-      <FinancialVelocityChart data={mockData.trendData} subtitle="TRAILING 3 MONTHS" />
+    {/* Charts Container */}
+    <div data-charts-container>
+      <ReportChartsPartial
+        expenseByCategory={mockData.expenseByCategory}
+        trendData={mockData.trendData}
+        resourceAllocationSubtitle="EXPENSE MIX"
+        financialVelocitySubtitle="TRAILING 3 MONTHS"
+      />
     </div>
 
-    {/* Category Intelligence Table */}
-    <CategoryIntelligenceTable
-      categories={mockData.categoryIntelligence}
-      subtitle="SORTED BY FUNCTIONAL VOLUME"
-    />
+    {/* Category Intelligence Table Container */}
+    <div data-table-container>
+      <CategoryTablePartial
+        categories={mockData.categoryIntelligence}
+        subtitle="SORTED BY FUNCTIONAL VOLUME"
+      />
+    </div>
 
     {/* Category Drill-Down Modal */}
     <CategoryDrillDownModal id="category-drilldown-modal" />
 
     {
       /* @TODO: Wire with backend API endpoints:
-         - GET /api/reports/summary?period=monthly&date=2024-02
-         - GET /api/reports/expenses?period=monthly&date=2024-02
-         - GET /api/reports/trends?period=monthly&date=2024-02
-         - GET /api/reports/categories?period=monthly&date=2024-02
-         - GET /api/reports/category-transactions?category=Utilities&period=monthly&date=2024-02
+         - GET /api/reports?range=monthly&period=2024-02&_render=html
+         - GET /api/reports?range=yearly&period=2024&_render=html
+         - GET /api/reports/category-transactions?category=Utilities&period=2024-02
     */
     }
   </div>
 </ProtectedLayout>
 
 <script>
-  // Handle drill-down button clicks
-  function initDrillDownButtons() {
-    document.addEventListener('click', (e) => {
-      const target = e.target as HTMLElement;
-      const drillDownBtn = target.closest('.category-drill-down-btn') as HTMLElement;
-
-      if (drillDownBtn) {
-        const categoryId = drillDownBtn.getAttribute('data-category-id');
-        const categoryName = drillDownBtn.getAttribute('data-category-name');
-        const categoryIcon = drillDownBtn.getAttribute('data-category-icon');
-        const categoryColor = drillDownBtn.getAttribute('data-category-color');
-        const spent = parseFloat(drillDownBtn.getAttribute('data-spent') || '0');
-        const budgetLimit = drillDownBtn.getAttribute('data-budget-limit');
-
-        if (categoryId && categoryName) {
-          // Dispatch custom event to open modal
-          const event = new CustomEvent('open-category-drilldown', {
-            detail: {
-              categoryId,
-              categoryName,
-              categoryIcon,
-              categoryColor,
-              spent,
-              budgetLimit: budgetLimit ? parseFloat(budgetLimit) : null,
-              period: 'February 2024', // @TODO: Wire with backend - Get from ReportSelector state
-            },
-          });
-          document.dispatchEvent(event);
-        }
-      }
-    });
-  }
-
-  // Initialize on DOM ready
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initDrillDownButtons);
-  } else {
-    initDrillDownButtons();
-  }
-
-  // Re-initialize on Astro page transitions
-  document.addEventListener('astro:page-load', initDrillDownButtons);
+  // Import and initialize reports page orchestrator
+  import '@/components/organisms/ReportsPage.client.ts';
 </script>
+
+<style>
+  /* Screen reader only class */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+</style>
