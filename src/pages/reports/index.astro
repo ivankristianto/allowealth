@@ -30,9 +30,14 @@ import CategoryTablePartial from '@/components/partials/CategoryTablePartial.ast
 
 const currentPath = '/reports';
 
+// Read from URL query params or use defaults
+const url = Astro.url;
+const urlRange = url.searchParams.get('range');
+const urlPeriod = url.searchParams.get('period');
+
 // Default view configuration
-const defaultRange = 'monthly';
-const defaultPeriod = '2024-02'; // February 2024
+const defaultRange: 'monthly' | 'yearly' =
+  urlRange === 'yearly' ? 'yearly' : urlRange === 'monthly' ? 'monthly' : 'monthly';
 
 // Available periods for selector
 // @TODO: Dynamic period generation based on available data from backend
@@ -41,6 +46,19 @@ const monthlyPeriods = [
   { key: '2024-01', label: 'January 2024' },
   { key: '2024-02', label: 'February 2024' },
 ];
+
+const yearlyPeriods = [
+  { key: '2022', label: '2022' },
+  { key: '2023', label: '2023' },
+  { key: '2024', label: '2024' },
+];
+
+// Set default period based on range and URL
+const defaultPeriod =
+  urlPeriod ||
+  (defaultRange === 'monthly'
+    ? monthlyPeriods[monthlyPeriods.length - 1].key
+    : yearlyPeriods[yearlyPeriods.length - 1].key);
 
 // @TODO: Replace with API call to get actual data
 // Mock data for SSR (February 2024 monthly view)
@@ -76,42 +94,56 @@ const mockData = {
       name: 'Utilities',
       spent: 1850000,
       budgetLimit: 4000000,
+      icon: 'zap',
+      color: 'bg-blue-600',
     },
     {
       id: '2',
       name: 'Dining',
       spent: 905000,
       budgetLimit: 3000000,
+      icon: 'utensils',
+      color: 'bg-orange-500',
     },
     {
       id: '3',
       name: 'Health',
       spent: 750000,
       budgetLimit: null, // Not Set
+      icon: 'heart-pulse',
+      color: 'bg-cyan-500',
     },
     {
       id: '4',
       name: 'Transport',
       spent: 595000,
       budgetLimit: 2500000,
+      icon: 'car',
+      color: 'bg-purple-500',
     },
     {
       id: '5',
       name: 'Entertainment',
       spent: 420000,
       budgetLimit: 1500000,
+      icon: 'music',
+      color: 'bg-pink-500',
     },
     {
       id: '6',
       name: 'Groceries',
       spent: 215000,
       budgetLimit: 8000000,
+      icon: 'shopping-basket',
+      color: 'bg-blue-500',
     },
     {
       id: '7',
       name: 'Housing',
       spent: 0,
       budgetLimit: 40000000,
+      icon: 'home',
+      color: 'bg-red-500',
     },
   ],
 };
@@ -133,7 +165,8 @@ const mockData = {
       <ReportSelector
         selectedRange={defaultRange}
         selectedPeriod={defaultPeriod}
-        availablePeriods={monthlyPeriods}
+        monthlyPeriods={monthlyPeriods}
+        yearlyPeriods={yearlyPeriods}
       />
     </div>
 

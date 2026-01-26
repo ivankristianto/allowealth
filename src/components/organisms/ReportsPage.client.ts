@@ -30,6 +30,37 @@ let currentState: ReportState = {
 };
 
 /**
+ * Update URL query params without page reload
+ */
+function updateUrl(range: 'monthly' | 'yearly', period: string): void {
+  const url = new URL(window.location.href);
+  url.searchParams.set('range', range);
+  url.searchParams.set('period', period);
+  window.history.replaceState({}, '', url.toString());
+}
+
+/**
+ * Read state from URL query params
+ */
+function readStateFromUrl(): Partial<ReportState> {
+  const url = new URL(window.location.href);
+  const range = url.searchParams.get('range');
+  const period = url.searchParams.get('period');
+
+  const state: Partial<ReportState> = {};
+
+  if (range === 'monthly' || range === 'yearly') {
+    state.range = range;
+  }
+
+  if (period) {
+    state.period = period;
+  }
+
+  return state;
+}
+
+/**
  * Fetch report data as HTML fragments
  */
 async function fetchReportHtml(
@@ -104,14 +135,21 @@ async function fetchAndRenderReports(): Promise<void> {
 /**
  * Handle report range change (monthly/yearly)
  */
-function handleRangeChange(event: CustomEvent<{ range: 'monthly' | 'yearly' }>): void {
+function handleRangeChange(
+  event: CustomEvent<{ range: 'monthly' | 'yearly'; newPeriod?: string | null }>
+): void {
   currentState.range = event.detail.range;
 
-  // Update period format based on range
-  // For yearly, extract year from period (e.g., '2024-02' -> '2024')
-  if (currentState.range === 'yearly') {
-    currentState.period = currentState.period.split('-')[0]; // Keep only year
+  // Use the new period from the event if provided (when dropdown was updated)
+  if (event.detail.newPeriod) {
+    currentState.period = event.detail.newPeriod;
+  } else if (currentState.range === 'yearly') {
+    // Fallback: extract year from period (e.g., '2024-02' -> '2024')
+    currentState.period = currentState.period.split('-')[0];
   }
+
+  // Update URL with new state
+  updateUrl(currentState.range, currentState.period);
 
   // Fetch and render new data
   fetchAndRenderReports();
@@ -122,6 +160,9 @@ function handleRangeChange(event: CustomEvent<{ range: 'monthly' | 'yearly' }>):
  */
 function handlePeriodChange(event: CustomEvent<{ period: string; label: string }>): void {
   currentState.period = event.detail.period;
+
+  // Update URL with new state
+  updateUrl(currentState.range, currentState.period);
 
   // Fetch and render new data
   fetchAndRenderReports();
@@ -172,18 +213,29 @@ function reinitializeDrillDownHandlers(): void {
  * Initialize reports page interactivity
  */
 export function initReportsPage(): void {
-  // Initialize state from current page
-  const periodInput = document.getElementById('period-filter') as HTMLInputElement;
-  if (periodInput && periodInput.value) {
-    currentState.period = periodInput.value;
+  // First, read state from URL params (takes precedence)
+  const urlState = readStateFromUrl();
+
+  // Initialize state from URL or fall back to page elements
+  if (urlState.range) {
+    currentState.range = urlState.range;
+  } else {
+    const rangeButtons = document.querySelectorAll('[data-range]');
+    rangeButtons.forEach((btn) => {
+      if (btn.getAttribute('aria-pressed') === 'true') {
+        currentState.range = btn.getAttribute('data-range') as 'monthly' | 'yearly';
+      }
+    });
   }
 
-  const rangeButtons = document.querySelectorAll('[data-range]');
-  rangeButtons.forEach((btn) => {
-    if (btn.getAttribute('aria-pressed') === 'true') {
-      currentState.range = btn.getAttribute('data-range') as 'monthly' | 'yearly';
+  if (urlState.period) {
+    currentState.period = urlState.period;
+  } else {
+    const periodInput = document.getElementById('period-filter') as HTMLInputElement;
+    if (periodInput && periodInput.value) {
+      currentState.period = periodInput.value;
     }
-  });
+  }
 
   // Listen for range change events from ReportSelector
   window.addEventListener('reportRangeChange', handleRangeChange as EventListener);
