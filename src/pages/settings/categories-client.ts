@@ -2,32 +2,12 @@
 import { getCsrfHeaders } from '@/lib/csrf-client';
 
 document.addEventListener('DOMContentLoaded', () => {
-  const container = document.querySelector('[data-categories-container]');
-  if (!container) return;
-
-  const allCategoriesRaw = container.getAttribute('data-categories');
-  const categories = allCategoriesRaw ? JSON.parse(allCategoriesRaw) : [];
-
-  // Handle hash-based deep linking for editing
-  function handleHashChange() {
-    const hash = window.location.hash;
-    if (hash.startsWith('#edit-')) {
-      const categoryId = hash.replace('#edit-', '');
-      const category = categories.find((c: any) => c.id === categoryId);
-      if (category && (window as any).editCategory) {
-        (window as any).editCategory(categoryId);
-      }
-    }
-  }
-
   const categoryModal = document.getElementById('category-modal') as HTMLDialogElement;
   const categoryForm = document.getElementById('category-form') as HTMLFormElement;
   const modalTitle = document.getElementById('modal-title');
   const formError = document.getElementById('form-error');
-  const deactivateDialog = document.getElementById('deactivate-dialog') as HTMLDialogElement;
-  const deactivateError = document.getElementById('deactivate-error');
-  const activateDialog = document.getElementById('activate-dialog') as HTMLDialogElement;
-  const activateError = document.getElementById('activate-error');
+  const deleteDialog = document.getElementById('delete-dialog') as HTMLDialogElement;
+  const deleteError = document.getElementById('delete-error');
 
   let currentCategoryId = '';
 
@@ -72,10 +52,9 @@ document.addEventListener('DOMContentLoaded', () => {
     clearFormError();
   }
 
-  // Add category button handler - use event delegation or direct selection
+  // Add category button handler
   document.querySelectorAll('[onclick="categoryModal.showModal()"]').forEach((btn) => {
     const button = btn as HTMLButtonElement;
-    // Remove the onclick attribute to use our listener
     button.removeAttribute('onclick');
     button.addEventListener('click', (e) => {
       e.preventDefault();
@@ -84,83 +63,99 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Edit category
-  (window as any).editCategory = (id: string) => {
-    const category = categories.find((c: any) => c.id === id);
-    if (!category) return;
+  // Search form submit handler
+  document.getElementById('search-form')?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target as HTMLFormElement);
+    const url = new URL(window.location.href);
+    url.searchParams.set('search', (formData.get('search') as string) || '');
+    url.searchParams.set('type', (formData.get('type') as string) || '');
+    window.location.href = url.toString();
+  });
 
+  // Event delegation for edit buttons
+  document.querySelectorAll('[data-action="edit"]').forEach((btn) => {
+    btn.addEventListener('click', (e: Event) => {
+      const id = (e.currentTarget as HTMLElement).dataset.categoryId;
+      if (id) editCategory(id);
+    });
+  });
+
+  // Event delegation for delete buttons
+  document.querySelectorAll('[data-action="delete"]').forEach((btn) => {
+    btn.addEventListener('click', (e: Event) => {
+      const id = (e.currentTarget as HTMLElement).dataset.categoryId;
+      if (id) deleteCategory(id);
+    });
+  });
+
+  // Edit category
+  async function editCategory(id: string) {
     currentCategoryId = id;
     if (modalTitle) modalTitle.textContent = 'Edit Category';
 
-    const form = categoryForm;
-    if (form) {
-      (form.querySelector('[name="id"]') as HTMLInputElement).value = id;
-      (form.querySelector('[name="name"]') as HTMLInputElement).value = category.name;
-      (form.querySelector('[name="type"]') as HTMLSelectElement).value = category.type;
-      (form.querySelector('[name="currency"]') as HTMLSelectElement).value = category.currency;
-      (form.querySelector('[name="percentage"]') as HTMLInputElement).value = category.percentage;
-      (form.querySelector('[name="budget_amount"]') as HTMLInputElement).value =
-        category.budget_amount;
+    try {
+      // Fetch category details from API
+      const response = await fetch(`/api/categories/${id}`, {
+        headers: getCsrfHeaders(),
+      });
+
+      if (!response.ok) {
+        showFormError('Failed to load category details');
+        return;
+      }
+
+      const result = await response.json();
+      const category = result.data;
+
+      const form = categoryForm;
+      if (form && category) {
+        (form.querySelector('[name="id"]') as HTMLInputElement).value = id;
+        (form.querySelector('[name="name"]') as HTMLInputElement).value = category.name;
+        (form.querySelector('[name="type"]') as HTMLSelectElement).value = category.type;
+        (form.querySelector('[name="icon"]') as HTMLInputElement).value = category.icon || 'tag';
+        (form.querySelector('[name="color"]') as HTMLSelectElement).value =
+          category.color || 'bg-slate-500';
+        (form.querySelector('[name="currency"]') as HTMLSelectElement).value = category.currency;
+        (form.querySelector('[name="percentage"]') as HTMLInputElement).value =
+          category.percentage || '0';
+        (form.querySelector('[name="budget_amount"]') as HTMLInputElement).value =
+          category.budget_amount || '0';
+      }
+
+      categoryModal?.showModal();
+    } catch (err) {
+      showFormError('Network error. Please try again.');
     }
+  }
 
-    categoryModal?.showModal();
-  };
-
-  // Deactivate category
-  (window as any).deactivateCategory = (id: string) => {
+  // Delete category
+  function deleteCategory(id: string) {
     currentCategoryId = id;
-    clearDialogError(deactivateError);
-    deactivateDialog?.showModal();
-  };
+    clearDialogError(deleteError);
+    deleteDialog?.showModal();
+  }
 
-  // Activate category
-  (window as any).activateCategory = (id: string) => {
-    currentCategoryId = id;
-    clearDialogError(activateError);
-    activateDialog?.showModal();
-  };
-
-  // Confirm deactivate
-  document.getElementById('confirm-deactivate-btn')?.addEventListener('click', async () => {
+  // Confirm delete
+  document.getElementById('confirm-delete-btn')?.addEventListener('click', async () => {
     if (!currentCategoryId) return;
 
     try {
       const response = await fetch(`/api/categories/${currentCategoryId}`, {
-        method: 'PUT',
-        headers: getCsrfHeaders({ 'Content-Type': 'application/json' }),
-        body: JSON.stringify({ is_active: false }),
+        method: 'DELETE',
+        headers: getCsrfHeaders(),
       });
 
       if (response.ok) {
-        window.location.href = '/settings/categories';
+        // Preserve current filters in URL
+        const url = new URL(window.location.href);
+        window.location.href = url.pathname + url.search;
       } else {
         const result = await response.json();
-        showDialogError(deactivateError, result.error?.message || 'Failed to deactivate category');
+        showDialogError(deleteError, result.error?.message || 'Failed to delete category');
       }
     } catch (err) {
-      showDialogError(deactivateError, 'Network error. Please try again.');
-    }
-  });
-
-  // Confirm activate
-  document.getElementById('confirm-activate-btn')?.addEventListener('click', async () => {
-    if (!currentCategoryId) return;
-
-    try {
-      const response = await fetch(`/api/categories/${currentCategoryId}`, {
-        method: 'PUT',
-        headers: getCsrfHeaders({ 'Content-Type': 'application/json' }),
-        body: JSON.stringify({ is_active: true }),
-      });
-
-      if (response.ok) {
-        window.location.href = '/settings/categories';
-      } else {
-        const result = await response.json();
-        showDialogError(activateError, result.error?.message || 'Failed to activate category');
-      }
-    } catch (err) {
-      showDialogError(activateError, 'Network error. Please try again.');
+      showDialogError(deleteError, 'Network error. Please try again.');
     }
   });
 
@@ -174,13 +169,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const data = {
       name: formData.get('name'),
       type: formData.get('type'),
+      icon: formData.get('icon'),
+      color: formData.get('color'),
       currency: formData.get('currency'),
-      percentage: parseFloat(formData.get('percentage') as string),
-      budget_amount: formData.get('budget_amount'),
+      percentage: formData.get('percentage') || '0',
+      budget_amount: formData.get('budget_amount') || '0',
     };
 
+    // Validate required fields
+    if (!data.name || !data.type || !data.icon || !data.color || !data.currency) {
+      showFormError('Please fill in all required fields');
+      return;
+    }
+
     // Validate budget amount is a number
-    if (isNaN(parseFloat(data.budget_amount as string))) {
+    if (data.budget_amount && isNaN(parseFloat(data.budget_amount as string))) {
       showFormError('Budget amount must be a valid number');
       return;
     }
@@ -204,7 +207,9 @@ document.addEventListener('DOMContentLoaded', () => {
           showFormError(result.error?.message || 'Failed to save category');
         }
       } else {
-        window.location.href = '/settings/categories';
+        // Preserve current filters in URL
+        const urlParams = new URL(window.location.href);
+        window.location.href = urlParams.pathname + urlParams.search;
       }
     } catch (err) {
       showFormError('Network error. Please try again.');
@@ -213,13 +218,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Reset form when modal closes without saving
   categoryModal?.addEventListener('close', (e) => {
-    // Only reset if the close was triggered by the backdrop or cancel button
     if ((e.target as HTMLDialogElement).returnValue === '') {
       resetForm();
     }
   });
-
-  // Check for hash on page load for deep linking
-  handleHashChange();
-  window.addEventListener('hashchange', handleHashChange);
 });

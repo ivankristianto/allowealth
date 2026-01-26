@@ -93,6 +93,44 @@ function randomAmount(min: number, max: number): string {
 // DATA TEMPLATES
 // ============================================================================
 
+// Icon and color mapping for categories (Lucide icons + Tailwind colors)
+const CATEGORY_STYLES: Record<string, { icon: string; color: string }> = {
+  // Expense categories
+  Holiday: { icon: 'plane', color: 'bg-purple-500' },
+  'Food & Groceries': { icon: 'shopping-basket', color: 'bg-blue-500' },
+  'Dine Out': { icon: 'utensils', color: 'bg-orange-500' },
+  'Vony Work Support': { icon: 'briefcase', color: 'bg-slate-500' },
+  "Vony's Pocket Money": { icon: 'wallet', color: 'bg-pink-400' },
+  'Mama Medan': { icon: 'heart', color: 'bg-rose-400' },
+  'Ivan Expenses': { icon: 'user', color: 'bg-indigo-500' },
+  'Reina Expenses': { icon: 'user', color: 'bg-violet-500' },
+  'Rex Expenses': { icon: 'user', color: 'bg-cyan-500' },
+  'Utility Bills': { icon: 'zap', color: 'bg-blue-600' },
+  'Misc. Cost': { icon: 'package', color: 'bg-gray-500' },
+  Entertainment: { icon: 'smile', color: 'bg-pink-500' },
+  'Expenses for Mom': { icon: 'heart', color: 'bg-red-400' },
+  'Maid Salary': { icon: 'users', color: 'bg-teal-500' },
+  Transportation: { icon: 'car', color: 'bg-purple-500' },
+  'Cicilan Properti': { icon: 'home', color: 'bg-red-500' },
+  'Belanja Rumah': { icon: 'shopping-cart', color: 'bg-green-500' },
+  'Renovasi Rumah': { icon: 'hammer', color: 'bg-amber-500' },
+  Insurance: { icon: 'shield', color: 'bg-blue-400' },
+  'Reimburse to HM': { icon: 'repeat', color: 'bg-slate-600' },
+  // Income categories
+  'HM + Reimburse': { icon: 'banknote', color: 'bg-emerald-500' },
+  QW: { icon: 'banknote', color: 'bg-emerald-500' },
+  Primaya: { icon: 'banknote', color: 'bg-emerald-500' },
+  'Premier Jatinegara': { icon: 'banknote', color: 'bg-emerald-500' },
+  'BCA Ivan - ST12T2': { icon: 'banknote', color: 'bg-emerald-500' },
+  'AKP Bintaro': { icon: 'banknote', color: 'bg-emerald-500' },
+  'INDON48 CIMB Ivan': { icon: 'banknote', color: 'bg-emerald-500' },
+  'FR 102 Vony': { icon: 'banknote', color: 'bg-emerald-500' },
+  'Div BBRI BMRI': { icon: 'trending-up', color: 'bg-emerald-400' },
+  'Div ADRO': { icon: 'trending-up', color: 'bg-emerald-400' },
+  'CIMB BRPT-Vony': { icon: 'banknote', color: 'bg-emerald-500' },
+  'Other Income': { icon: 'plus-circle', color: 'bg-indigo-500' },
+};
+
 // Expense categories with their budgets
 const EXPENSE_CATEGORIES = [
   { name: 'Holiday', budget: 3000000 },
@@ -523,11 +561,14 @@ async function seedCategories(userId: string): Promise<Map<string, string>> {
   // Income categories
   for (const cat of INCOME_CATEGORIES) {
     const id = nanoid();
+    const style = CATEGORY_STYLES[cat.name] || { icon: 'circle-dot', color: 'bg-slate-500' };
     await db.insert(categories).values({
       id,
       user_id: userId,
       name: cat.name,
       type: 'income',
+      icon: style.icon,
+      color: style.color,
       percentage: '0',
       budget_amount: amt(cat.budget),
       currency: 'IDR',
@@ -541,11 +582,14 @@ async function seedCategories(userId: string): Promise<Map<string, string>> {
   // Expense categories
   for (const cat of EXPENSE_CATEGORIES) {
     const id = nanoid();
+    const style = CATEGORY_STYLES[cat.name] || { icon: 'tag', color: 'bg-slate-500' };
     await db.insert(categories).values({
       id,
       user_id: userId,
       name: cat.name,
       type: 'expense',
+      icon: style.icon,
+      color: style.color,
       percentage: '0',
       budget_amount: amt(cat.budget),
       currency: 'IDR',
@@ -604,11 +648,17 @@ async function seedIncomeTransactions(
     if (!categoryId) {
       // Create category if it doesn't exist
       const newId = nanoid();
+      const style = CATEGORY_STYLES[income.description] || {
+        icon: 'circle-dot',
+        color: 'bg-slate-500',
+      };
       await db.insert(categories).values({
         id: newId,
         user_id: userId,
         name: income.description,
         type: 'income',
+        icon: style.icon,
+        color: style.color,
         percentage: '0',
         budget_amount: '0',
         currency: 'IDR',

@@ -11,6 +11,8 @@ export const categories = sqliteTable('categories', {
     .references(() => users.id, { onDelete: 'cascade' }),
   name: text('name').notNull(),
   type: text('type', { enum: ['expense', 'income'] }).notNull(),
+  icon: text('icon').default('tag').notNull(), // Lucide icon name
+  color: text('color').default('bg-slate-500').notNull(), // Tailwind/DaisyUI color class
   percentage: text('percentage').default('0').notNull(), // Stored as string for decimal precision
   budget_amount: text('budget_amount').default('0').notNull(), // Stored as string for decimal precision
   currency: text('currency', { enum: ['IDR', 'USD'] }).notNull(),

@@ -1,0 +1,82 @@
+---
+/**
+ * CategoryIcon Component
+ *
+ * Circular icon container for category display with colored background.
+ * Used in category lists, forms, and cards.
+ *
+ * Aligned with Oasis Finance v1.0.0 design system specifications.
+ *
+ * @param {string} icon - Lucide icon name
+ * @param {string} color - Tailwind background color class (e.g., 'bg-red-500')
+ * @param {string} size - Icon size: sm, md, lg
+ * @param {string} className - Additional CSS classes
+ */
+
+import * as LucideIcons from '@lucide/astro';
+
+export interface Props {
+  icon: string;
+  color?: string;
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+}
+
+const { icon, color = 'bg-slate-500', size = 'md', className = '' } = Astro.props;
+
+// Convert kebab-case icon names to PascalCase for Lucide component lookup
+const iconName = icon
+  .split('-')
+  .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+  .join('');
+
+// Get the Lucide icon component dynamically
+const IconComponent = (LucideIcons as Record<string, any>)[iconName];
+
+// Size classes for container
+const containerSizeClasses: Record<string, string> = {
+  sm: 'w-8 h-8', // 32px
+  md: 'w-10 h-10', // 40px
+  lg: 'w-12 h-12', // 48px
+};
+
+// Icon size in pixels
+const iconSizeMap: Record<string, number> = {
+  sm: 16,
+  md: 20,
+  lg: 24,
+};
+
+const iconSize = iconSizeMap[size];
+
+const containerClasses = [
+  // Size
+  containerSizeClasses[size],
+  // Shape
+  'rounded-xl',
+  // Background color
+  color,
+  // Layout
+  'flex items-center justify-center',
+  // Text color
+  'text-white',
+  // Shadow for depth
+  'shadow-lg',
+  // Transition for hover effects
+  'transition-transform',
+  // Additional classes
+  className,
+]
+  .filter(Boolean)
+  .join(' ');
+---
+
+<div class={containerClasses}>
+  {
+    IconComponent ? (
+      <IconComponent size={iconSize} class="stroke-current" aria-hidden="true" />
+    ) : (
+      <LucideIcons.Tag size={iconSize} class="stroke-current" aria-hidden="true" />
+    )
+  }
+</div>

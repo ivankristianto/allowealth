@@ -1,0 +1,90 @@
+---
+/**
+ * TabToggle Component
+ *
+ * Pill-style toggle button group for filtering between two options (e.g., Expense/Income).
+ * Features rounded container with active state highlighting.
+ *
+ * Aligned with Oasis Finance v1.0.0 design system specifications.
+ *
+ * @param {string} activeTab - Currently active tab value
+ * @param {string} option1Value - Value for first option
+ * @param {string} option1Label - Label for first option
+ * @param {string} option2Value - Value for second option
+ * @param {string} option2Label - Label for second option
+ * @param {string} name - Name attribute for form input
+ * @param {string} className - Additional CSS classes
+ */
+
+export interface Props {
+  activeTab: string;
+  option1Value: string;
+  option1Label: string;
+  option2Value: string;
+  option2Label: string;
+  name?: string;
+  className?: string;
+}
+
+const {
+  activeTab,
+  option1Value,
+  option1Label,
+  option2Value,
+  option2Label,
+  name = 'tab-toggle',
+  className = '',
+} = Astro.props;
+---
+
+<div
+  class={`flex bg-base-200 p-1.5 rounded-2xl w-full md:w-auto ${className}`}
+  data-tab-toggle
+  data-name={name}
+>
+  <button
+    type="button"
+    class={`flex-1 md:w-40 py-2.5 text-sm font-bold rounded-xl transition-all ${
+      activeTab === option1Value
+        ? 'bg-base-100 shadow-md text-primary'
+        : 'text-base-content/60 hover:text-base-content/80'
+    }`}
+    data-tab-value={option1Value}
+    data-active={activeTab === option1Value}
+  >
+    {option1Label}
+  </button>
+  <button
+    type="button"
+    class={`flex-1 md:w-40 py-2.5 text-sm font-bold rounded-xl transition-all ${
+      activeTab === option2Value
+        ? 'bg-base-100 shadow-md text-primary'
+        : 'text-base-content/60 hover:text-base-content/80'
+    }`}
+    data-tab-value={option2Value}
+    data-active={activeTab === option2Value}
+  >
+    {option2Label}
+  </button>
+</div>
+
+<script>
+  // Client-side tab toggle behavior
+  document.querySelectorAll('[data-tab-toggle]').forEach((container) => {
+    const buttons = container.querySelectorAll('button[data-tab-value]');
+
+    buttons.forEach((button) => {
+      button.addEventListener('click', () => {
+        const value = button.getAttribute('data-tab-value');
+        const name = container.getAttribute('data-name');
+
+        if (!value || !name) return;
+
+        // Update URL with new tab value
+        const url = new URL(window.location.href);
+        url.searchParams.set(name, value);
+        window.location.href = url.toString();
+      });
+    });
+  });
+</script>

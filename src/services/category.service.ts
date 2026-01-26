@@ -1,5 +1,5 @@
 import { categories, type IDatabase } from '@/db';
-import { eq, and, sql } from 'drizzle-orm';
+import { eq, and, ne } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import {
   createCategorySchema,
@@ -34,6 +34,8 @@ export class CategoryService {
         user_id: validated.user_id,
         name: validated.name,
         type: validated.type,
+        icon: validated.icon,
+        color: validated.color,
         currency: validated.currency,
         percentage: validated.percentage,
         budget_amount: validated.budget_amount,
@@ -92,6 +94,8 @@ export class CategoryService {
 
     if (validated.name !== undefined) updateData.name = validated.name;
     if (validated.type !== undefined) updateData.type = validated.type;
+    if (validated.icon !== undefined) updateData.icon = validated.icon;
+    if (validated.color !== undefined) updateData.color = validated.color;
     if (validated.currency !== undefined) updateData.currency = validated.currency;
     if (validated.percentage !== undefined) updateData.percentage = validated.percentage;
     if (validated.budget_amount !== undefined) updateData.budget_amount = validated.budget_amount;
@@ -141,11 +145,7 @@ export class CategoryService {
     ];
 
     if (excludeId) {
-      // Validate excludeId format to prevent SQL injection
-      if (!/^[a-zA-Z0-9_-]+$/.test(excludeId)) {
-        throw new Error('Invalid category ID format');
-      }
-      conditions.push(sql`${categories.id} != ${excludeId}`);
+      conditions.push(ne(categories.id, excludeId));
     }
 
     const result = await this.db.query.categories.findFirst({

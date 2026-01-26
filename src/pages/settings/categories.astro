@@ -3,36 +3,28 @@
  * Categories Management Page
  *
  * Full CRUD interface for managing expense/income categories.
- * Supports create, edit, deactivate (soft delete), and list with filtering.
+ * Features: expense/income filtering, search, create, edit, and delete actions.
  */
 
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import { categoryService } from '@/services';
-import { Plus, Search, X, Pencil, Ban, RefreshCw, Tag } from '@lucide/astro';
-import Badge from '@components/atoms/Badge.astro';
-import { formatCurrency } from '@/lib/tokens';
+import { Plus, Search, Pencil, Trash2 } from '@lucide/astro';
+import CategoryIcon from '@/components/atoms/CategoryIcon.astro';
+import TabToggle from '@/components/atoms/TabToggle.astro';
 
 const user = Astro.locals.user!;
 const currentPath = '/settings/categories';
 
-// Fetch all categories (both active and inactive)
-const activeCategories = await categoryService.findAll(user.id, { is_active: true });
-const inactiveCategories = await categoryService.findAll(user.id, { is_active: false });
+// Fetch active categories only
+const allCategories = await categoryService.findAll(user.id, { is_active: true });
 
-// Combine with status indicator
-const allCategories = [
-  ...activeCategories.map((c) => ({ ...c, status: 'active' })),
-  ...inactiveCategories.map((c) => ({ ...c, status: 'inactive' })),
-];
-
-// Get filter from query params
+// Get filters from query params
 const url = new URL(Astro.url);
-const showInactive = url.searchParams.get('show') === 'inactive';
+const typeFilter = (url.searchParams.get('type') as 'expense' | 'income') || 'expense';
 const searchQuery = url.searchParams.get('search') || '';
 
-let filteredCategories = showInactive
-  ? allCategories.filter((c) => c.status === 'inactive')
-  : allCategories.filter((c) => c.status === 'active');
+// Filter by type
+let filteredCategories = allCategories.filter((c) => c.type === typeFilter);
 
 // Apply search filter
 if (searchQuery) {
@@ -40,193 +32,181 @@ if (searchQuery) {
   filteredCategories = filteredCategories.filter((c) => c.name.toLowerCase().includes(query));
 }
 
-// Calculate total budget for expense categories
-const totalBudget = filteredCategories
-  .filter((c) => c.type === 'expense')
-  .reduce((sum, c) => sum + parseFloat(c.budget_amount || '0'), 0);
-
-// Get currency from first expense category
-const currency = filteredCategories.find((c) => c.type === 'expense')?.currency || 'IDR';
-
-// Type badges
-const getTypeBadgeVariant = (type: string): 'error' | 'success' => {
-  return type === 'expense' ? 'error' : 'success';
+// Get type label for badge
+const getTypeLabel = (type: string) => {
+  return type.toUpperCase();
 };
 
-const getTypeLabel = (type: string) => {
-  return type.charAt(0).toUpperCase() + type.slice(1);
+// Get type badge color
+const getTypeBadgeClass = (type: string) => {
+  return type === 'expense'
+    ? 'bg-red-50 text-red-500 dark:bg-red-900/20'
+    : 'bg-emerald-50 text-emerald-500 dark:bg-emerald-900/20';
 };
 ---
 
-<ProtectedLayout title="Categories - Settings" currentPath={currentPath}>
-  <div class="space-y-6" data-categories-container data-categories={JSON.stringify(allCategories)}>
-    <div class="flex justify-between items-center">
+<ProtectedLayout title="Manage Categories - Settings" currentPath={currentPath}>
+  <div class="space-y-10 animate-in fade-in duration-300">
+    <!-- View Header -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
       <div>
-        <h2 class="text-2xl font-bold">Categories</h2>
-        <p class="text-base-content/60">
-          Manage your expense and income categories for budget tracking
+        <h2 class="text-2xl font-bold dark:text-white tracking-tight leading-none">
+          Manage Categories
+        </h2>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mt-2 font-medium">
+          Organizing {allCategories.length} custom labels for your family ledger
         </p>
       </div>
-      <button onclick="categoryModal.showModal()" class="btn btn-primary gap-2" data-type="expense">
-        <Plus size={16} class="stroke-current" aria-hidden="true" />
-        Add Category
+      <button
+        onclick="categoryModal.showModal()"
+        class="bg-primary/10 hover:bg-primary/20 text-primary px-6 py-2.5 rounded-2xl font-bold text-sm transition-all border border-primary/10 flex items-center gap-2"
+        data-type={typeFilter}
+      >
+        <Plus size={18} class="stroke-current" aria-hidden="true" />
+        Create Category
       </button>
     </div>
 
-    <div class="tabs">
-      <a class="tab" href="/profile">Manage Account</a>
-      <a class="tab" href="/security">Security</a>
-      <a class="tab tab-active" href="/settings/categories">Categories</a>
-      <a class="tab" href="/settings/payment-methods">Payment Methods</a>
-    </div>
+    <!-- Search and Filters -->
+    <div class="flex flex-col md:flex-row justify-between items-center gap-6">
+      <!-- Type Filter Toggle -->
+      <TabToggle
+        activeTab={typeFilter}
+        option1Value="expense"
+        option1Label="Expense"
+        option2Value="income"
+        option2Label="Income"
+        name="type"
+      />
 
-    <!-- Status Filter Tabs and Search -->
-    <div class="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
-      <div class="tabs tabs-boxed bg-base-200 p-1">
-        <a href="/settings/categories" class={'tab '.concat(!showInactive ? 'tab-active' : '')}>
-          Active ({activeCategories.length})
-        </a>
-        <a
-          href={'/settings/categories?show=inactive' +
-            (searchQuery ? '&search=' + encodeURIComponent(searchQuery) : '')}
-          class={'tab '.concat(showInactive ? 'tab-active' : '')}
+      <!-- Search Bar -->
+      <form id="search-form" class="relative flex-1 w-full max-w-md">
+        <span
+          class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500"
+          aria-hidden="true"
         >
-          Inactive ({inactiveCategories.length})
-        </a>
-      </div>
-      <form id="search-form" class="join">
+          <Search size={20} />
+        </span>
         <input
           type="search"
           name="search"
           placeholder="Search categories..."
-          class="input input-bordered join-item"
           value={searchQuery}
+          class="w-full pl-12 pr-6 py-3.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:border-primary focus:ring-0 rounded-2xl text-base font-medium dark:text-white shadow-sm"
         />
-        <button type="submit" class="btn btn-neutral join-item" aria-label="Search categories">
-          <Search size={16} class="stroke-current" aria-hidden="true" />
-        </button>
-        {
-          searchQuery && (
-            <a
-              href="/settings/categories"
-              class="btn btn-ghost join-item"
-              aria-label="Clear search"
-            >
-              <X size={16} class="stroke-current" aria-hidden="true" />
-            </a>
-          )
-        }
+        <input type="hidden" name="type" value={typeFilter} />
       </form>
     </div>
 
-    <!-- Summary for active categories -->
-    {
-      !showInactive && (
-        <div class="stats stats-horizontal shadow bg-base-100">
-          <div class="stat">
-            <div class="stat-title">Total Budget</div>
-            <div class="stat-value text-primary">
-              {formatCurrency(totalBudget, currency as 'IDR' | 'USD')}
-            </div>
-            <div class="stat-desc">
-              Across {activeCategories.filter((c) => c.type === 'expense').length} expense
-              categories
-            </div>
-          </div>
-          <div class="stat">
-            <div class="stat-title">Categories</div>
-            <div class="stat-value">{activeCategories.length}</div>
-            <div class="stat-desc">
-              {activeCategories.filter((c) => c.type === 'expense').length} expense,{' '}
-              {activeCategories.filter((c) => c.type === 'income').length} income
-            </div>
-          </div>
-        </div>
-      )
-    }
-
-    <!-- Categories List -->
-    <div class="card bg-base-100 shadow border border-base-300">
-      <div class="card-body p-0">
+    <!-- Categories Table -->
+    <div
+      class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden"
+    >
+      <div class="overflow-x-auto">
         {
           filteredCategories.length > 0 ? (
-            <div class="overflow-x-auto">
-              <table class="table table-zebra">
-                <thead>
-                  <tr>
-                    <th>Name</th>
-                    <th>Type</th>
-                    <th>Currency</th>
-                    <th>Allocation</th>
-                    <th>Budget</th>
-                    <th>Actions</th>
+            <table class="w-full text-left border-collapse" role="table">
+              <caption class="sr-only">
+                Categories list with {filteredCategories.length} {typeFilter} categories
+              </caption>
+              <thead>
+                <tr class="border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30">
+                  <th
+                    scope="col"
+                    class="px-8 py-5 text-[10px] font-bold text-slate-400 uppercase tracking-widest"
+                  >
+                    Icon
+                  </th>
+                  <th
+                    scope="col"
+                    class="px-8 py-5 text-[10px] font-bold text-slate-400 uppercase tracking-widest"
+                  >
+                    Category Name
+                  </th>
+                  <th
+                    scope="col"
+                    class="px-8 py-5 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center"
+                  >
+                    Type
+                  </th>
+                  <th
+                    scope="col"
+                    class="px-8 py-5 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-right"
+                  >
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                {filteredCategories.map((category) => (
+                  <tr class="group hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+                    <td class="px-8 py-5">
+                      <CategoryIcon
+                        icon={category.icon}
+                        color={category.color}
+                        size="md"
+                        className="group-hover:scale-110"
+                      />
+                    </td>
+                    <td class="px-8 py-5">
+                      <span class="text-base font-bold dark:text-white tracking-tight leading-none">
+                        {category.name}
+                      </span>
+                    </td>
+                    <td class="px-8 py-5 text-center">
+                      <span
+                        class={`inline-block px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-widest ${getTypeBadgeClass(category.type)}`}
+                      >
+                        {getTypeLabel(category.type)}
+                      </span>
+                    </td>
+                    <td class="px-8 py-5 text-right">
+                      <div class="flex items-center justify-end gap-2">
+                        <button
+                          class="p-2 text-slate-300 hover:text-primary hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-xl transition-all"
+                          data-action="edit"
+                          data-category-id={category.id}
+                          aria-label={`Edit ${category.name} category`}
+                        >
+                          <Pencil size={18} class="stroke-current" aria-hidden="true" />
+                        </button>
+                        <button
+                          class="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all"
+                          data-action="delete"
+                          data-category-id={category.id}
+                          aria-label={`Delete ${category.name} category`}
+                        >
+                          <Trash2 size={18} class="stroke-current" aria-hidden="true" />
+                        </button>
+                      </div>
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {filteredCategories.map((category) => (
-                    <tr>
-                      <td>
-                        <div class="font-medium">{category.name}</div>
-                      </td>
-                      <td>
-                        <Badge variant={getTypeBadgeVariant(category.type)} size="sm">
-                          {getTypeLabel(category.type)}
-                        </Badge>
-                      </td>
-                      <td>{category.currency}</td>
-                      <td>{category.percentage}%</td>
-                      <td>
-                        {category.type === 'expense'
-                          ? formatCurrency(
-                              category.budget_amount || '0',
-                              category.currency as 'IDR' | 'USD'
-                            )
-                          : '-'}
-                      </td>
-                      <td>
-                        <div class="flex gap-1">
-                          {category.status === 'active' ? (
-                            <>
-                              <button
-                                class="btn btn-ghost btn-sm"
-                                onclick={'editCategory("' + category.id + '")'}
-                                aria-label="Edit category"
-                              >
-                                <Pencil size={16} class="stroke-current" aria-hidden="true" />
-                              </button>
-                              <button
-                                class="btn btn-ghost btn-sm text-warning"
-                                onclick={'deactivateCategory("' + category.id + '")'}
-                                aria-label="Deactivate category"
-                              >
-                                <Ban size={16} class="stroke-current" aria-hidden="true" />
-                              </button>
-                            </>
-                          ) : (
-                            <button
-                              class="btn btn-ghost btn-sm text-success"
-                              onclick={'activateCategory("' + category.id + '")'}
-                              aria-label="Reactivate category"
-                            >
-                              <RefreshCw size={16} class="stroke-current" aria-hidden="true" />
-                              Reactivate
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                ))}
+              </tbody>
+            </table>
           ) : (
-            <div class="py-12 text-center text-neutral-500">
-              <Tag size={24} class="mx-auto mb-2 opacity-50" aria-hidden="true" />
-              <p>
-                {showInactive
-                  ? 'No inactive categories'
-                  : 'No categories found. Create your first category to get started.'}
-              </p>
+            <div class="py-24 text-center">
+              <div class="w-20 h-20 bg-slate-50 dark:bg-slate-800/50 mx-auto rounded-3xl flex items-center justify-center text-slate-300 mb-6 shadow-inner">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="40"
+                  height="40"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <title>No categories</title>
+                  <path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z" />
+                  <path d="M7 7h.01" />
+                </svg>
+              </div>
+              <h4 class="text-lg font-bold text-slate-900 dark:text-white mb-2">
+                No categories found
+              </h4>
+              <p class="text-slate-400 font-medium">Try adjusting your search terms.</p>
             </div>
           )
         }
@@ -269,6 +249,43 @@ const getTypeLabel = (type: string) => {
       </div>
 
       <div class="form-control">
+        <label class="label" for="icon">
+          <span class="label-text">Icon</span>
+          <span class="label-text-alt text-error">*</span>
+        </label>
+        <input
+          type="text"
+          name="icon"
+          id="icon"
+          class="input input-bordered"
+          required
+          placeholder="e.g., home, shopping-basket, car"
+        />
+        <label class="label">
+          <span class="label-text-alt">Lucide icon name (kebab-case)</span>
+        </label>
+      </div>
+
+      <div class="form-control">
+        <label class="label" for="color">
+          <span class="label-text">Color</span>
+          <span class="label-text-alt text-error">*</span>
+        </label>
+        <!-- P2 TODO: Replace hardcoded Tailwind colors with DaisyUI semantic classes -->
+        <select name="color" id="color" class="select select-bordered" required>
+          <option value="bg-red-500">Red</option>
+          <option value="bg-blue-500">Blue</option>
+          <option value="bg-orange-500">Orange</option>
+          <option value="bg-purple-500">Purple</option>
+          <option value="bg-cyan-500">Cyan</option>
+          <option value="bg-pink-500">Pink</option>
+          <option value="bg-emerald-500">Emerald</option>
+          <option value="bg-indigo-500">Indigo</option>
+          <option value="bg-slate-500">Slate</option>
+        </select>
+      </div>
+
+      <div class="form-control">
         <label class="label" for="currency">
           <span class="label-text">Currency</span>
           <span class="label-text-alt text-error">*</span>
@@ -282,42 +299,34 @@ const getTypeLabel = (type: string) => {
       <div class="form-control">
         <label class="label" for="percentage">
           <span class="label-text">Budget Allocation %</span>
-          <span class="label-text-alt text-error">*</span>
         </label>
         <input
           type="number"
           name="percentage"
           id="percentage"
           class="input input-bordered"
-          required
           min="0"
           max="100"
           step="0.1"
+          value="0"
           placeholder="e.g., 15"
         />
-        <label class="label">
-          <span class="label-text-alt">Percentage of total budget allocation</span>
-        </label>
       </div>
 
       <div class="form-control">
         <label class="label" for="budget_amount">
           <span class="label-text">Monthly Budget Amount</span>
-          <span class="label-text-alt text-error">*</span>
         </label>
         <input
           type="number"
           name="budget_amount"
           id="budget_amount"
           class="input input-bordered"
-          required
           min="0"
           step="0.01"
+          value="0"
           placeholder="e.g., 1000000"
         />
-        <label class="label">
-          <span class="label-text-alt">For expense categories only</span>
-        </label>
       </div>
 
       <div id="form-error" class="hidden alert alert-error text-sm" role="alert"></div>
@@ -335,41 +344,20 @@ const getTypeLabel = (type: string) => {
   </form>
 </dialog>
 
-<!-- Deactivate Confirmation Dialog -->
-<dialog id="deactivate-dialog" class="modal">
+<!-- Delete Confirmation Dialog -->
+<dialog id="delete-dialog" class="modal">
   <div class="modal-box">
-    <h3 class="font-bold text-lg">Deactivate Category</h3>
+    <h3 class="font-bold text-lg">Delete Category</h3>
     <p class="py-4">
-      Are you sure you want to deactivate this category? It will no longer appear in transaction
-      forms, but existing transactions will remain unchanged.
+      Are you sure you want to delete this category? This action cannot be undone. Existing
+      transactions with this category will remain unchanged.
     </p>
-    <div id="deactivate-error" class="hidden alert alert-error text-sm mb-4" role="alert"></div>
+    <div id="delete-error" class="hidden alert alert-error text-sm mb-4" role="alert"></div>
     <div class="modal-action">
       <form method="dialog">
         <button class="btn btn-ghost">Cancel</button>
       </form>
-      <button id="confirm-deactivate-btn" class="btn btn-warning"> Deactivate </button>
-    </div>
-  </div>
-  <form method="dialog" class="modal-backdrop">
-    <button>close</button>
-  </form>
-</dialog>
-
-<!-- Reactivate Confirmation Dialog -->
-<dialog id="activate-dialog" class="modal">
-  <div class="modal-box">
-    <h3 class="font-bold text-lg">Reactivate Category</h3>
-    <p class="py-4">
-      Are you sure you want to reactivate this category? It will become available for use in
-      transaction forms again.
-    </p>
-    <div id="activate-error" class="hidden alert alert-error text-sm mb-4" role="alert"></div>
-    <div class="modal-action">
-      <form method="dialog">
-        <button class="btn btn-ghost">Cancel</button>
-      </form>
-      <button id="confirm-activate-btn" class="btn btn-success"> Reactivate </button>
+      <button id="confirm-delete-btn" class="btn btn-error"> Delete </button>
     </div>
   </div>
   <form method="dialog" class="modal-backdrop">
