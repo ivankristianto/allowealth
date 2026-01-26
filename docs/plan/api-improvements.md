@@ -94,13 +94,22 @@ const userId = await requireAuth(context);
 
 **Problem:** Session-based auth without CSRF tokens for state-changing requests.
 
-- [ ] Research CSRF protection approaches
-  - [ ] Double-submit cookie pattern
-  - [ ] Synchronizer token pattern
-- [ ] Implement CSRF token generation/validation
-- [ ] Apply to all POST/PUT/DELETE endpoints
-- [ ] Update frontend to include CSRF tokens
+- [x] Research CSRF protection approaches
+  - [x] Double-submit cookie pattern (selected)
+  - [ ] Synchronizer token pattern (not used)
+- [x] Implement CSRF token generation/validation
+  - [x] Created `src/lib/csrf.ts` with server-side utilities
+  - [x] Created `src/lib/csrf-client.ts` with client-side utilities
+  - [x] Added CSRF validation to middleware
+- [x] Apply to all POST/PUT/DELETE endpoints
+  - [x] Exempt auth endpoints (login, signup, forgot-password, logout)
+  - [x] Protected methods: POST, PUT, DELETE, PATCH
+- [x] Update frontend to include CSRF tokens
+  - [x] Updated all client-side fetch calls with `getCsrfHeaders()`
+  - [x] CSVImportForm uses inline cookie reading (is:inline script)
 - [ ] Write tests for CSRF protection
+
+**Completed:** 2026-01-26 via commit `133a969`
 
 ### 3.3 File Upload Limits (Medium Priority)
 
@@ -235,10 +244,10 @@ const userId = await requireAuth(context);
 | -------------------- | ------ | --------- | -------- |
 | 1. requireAuth Fix   | 12     | 12        | 100%     |
 | 2. Middleware        | 5      | 0         | 0%       |
-| 3. Security          | 15     | 0         | 0%       |
+| 3. Security          | 15     | 4         | 27%      |
 | 4. OpenAPI Docs      | 4      | 4         | 100%     |
 | 5. Integration Tests | 9      | 0         | 0%       |
-| **Total**            | **45** | **16**    | **36%**  |
+| **Total**            | **45** | **20**    | **44%**  |
 
 ---
 
