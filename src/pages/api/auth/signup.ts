@@ -12,6 +12,7 @@
  * - 201: User created successfully
  * - 400: Invalid input
  * - 409: Email already exists
+ * - 429: Too many requests (rate limited)
  * - 500: Server error
  */
 
@@ -25,17 +26,27 @@ import {
   type ApiSuccessResponse,
 } from '@/types/api';
 import { logError } from '@/lib/utils';
+import {
+  checkRateLimit,
+  createRateLimitResponse,
+  applyRateLimitHeaders,
+  RATE_LIMIT_PRESETS,
+} from '@/lib/rate-limit';
 
 export const prerender = false;
 
-// TODO: Add rate limiting to prevent abuse
-// Consider implementing IP-based rate limiting for signup endpoint
-
-export const POST: APIRoute = async ({ request }) => {
+export const POST: APIRoute = async ({ request, clientAddress }) => {
   try {
-    // Parse request body
+    // Parse request body first (before consuming rate limit)
     const body = await request.json();
     const { email, password, name } = body;
+
+    // Check rate limit (5 attempts per hour per IP)
+    // Pass clientAddress from Astro context for trusted IP (prevents spoofing)
+    const rateLimitResult = checkRateLimit(request, RATE_LIMIT_PRESETS.signup, clientAddress);
+    if (!rateLimitResult.allowed) {
+      return createRateLimitResponse(rateLimitResult, RATE_LIMIT_PRESETS.signup.message);
+    }
 
     // Register user
     const user = await register(email, password, name);
@@ -55,11 +66,19 @@ export const POST: APIRoute = async ({ request }) => {
       },
     });
 
-    return new Response(JSON.stringify(responseData), {
+    const response = new Response(JSON.stringify(responseData), {
       status: 201,
       headers: STANDARD_RESPONSE_HEADERS,
     });
+
+    // Add rate limit headers to successful response
+    return applyRateLimitHeaders(response, rateLimitResult);
   } catch (error) {
+    // Handle JSON parse errors (before rate limit was consumed)
+    if (error instanceof SyntaxError) {
+      return createErrorResponseResponse('INVALID_INPUT', 'Invalid JSON in request body', 400);
+    }
+
     // Handle auth errors
     if (error instanceof Error && 'code' in error) {
       const authError = error as AuthError;

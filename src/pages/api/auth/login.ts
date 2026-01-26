@@ -11,6 +11,7 @@
  * - 200: Login successful, sets session cookie
  * - 400: Invalid input
  * - 401: Invalid credentials
+ * - 429: Too many requests (rate limited)
  * - 500: Server error
  */
 
@@ -25,17 +26,27 @@ import {
   type ApiSuccessResponse,
 } from '@/types/api';
 import { logError } from '@/lib/utils';
+import {
+  checkRateLimit,
+  createRateLimitResponse,
+  applyRateLimitHeaders,
+  RATE_LIMIT_PRESETS,
+} from '@/lib/rate-limit';
 
 export const prerender = false;
 
-// TODO: Add rate limiting to prevent brute force attacks
-// Consider implementing IP-based rate limiting for login endpoint
-
-export const POST: APIRoute = async ({ request }) => {
+export const POST: APIRoute = async ({ request, clientAddress }) => {
   try {
-    // Parse request body
+    // Parse request body first (before consuming rate limit)
     const body = await request.json();
     const { email, password } = body;
+
+    // Check rate limit (10 attempts per 15 minutes per IP)
+    // Pass clientAddress from Astro context for trusted IP (prevents spoofing)
+    const rateLimitResult = checkRateLimit(request, RATE_LIMIT_PRESETS.login, clientAddress);
+    if (!rateLimitResult.allowed) {
+      return createRateLimitResponse(rateLimitResult, RATE_LIMIT_PRESETS.login.message);
+    }
 
     // Login user
     const { user, session } = await login(email, password);
@@ -58,14 +69,22 @@ export const POST: APIRoute = async ({ request }) => {
       },
     });
 
-    return new Response(JSON.stringify(responseData), {
+    const response = new Response(JSON.stringify(responseData), {
       status: 200,
       headers: {
         ...STANDARD_RESPONSE_HEADERS,
         'Set-Cookie': sessionCookie.serialize(),
       },
     });
+
+    // Add rate limit headers to successful response
+    return applyRateLimitHeaders(response, rateLimitResult);
   } catch (error) {
+    // Handle JSON parse errors (before rate limit was consumed)
+    if (error instanceof SyntaxError) {
+      return createErrorResponseResponse('INVALID_INPUT', 'Invalid JSON in request body', 400);
+    }
+
     // Handle auth errors
     if (error instanceof Error && 'code' in error) {
       const authError = error as AuthError;
