@@ -470,4 +470,7 @@ const chartId = `financial-velocity-chart-${Math.random().toString(36).slice(2, 
   // For Astro View Transitions
   document.addEventListener('astro:before-swap', cleanupCharts);
   document.addEventListener('astro:after-swap', initAllCharts);
+
+  // For dynamic HTML injection (reports page interactive updates)
+  document.addEventListener('charts:reinit', initAllCharts);
 </script>

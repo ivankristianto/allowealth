@@ -84,6 +84,12 @@ export function renderChartsHtml(html: string): void {
       // Fade in new content
       // @ts-expect-error - Motion library type definition issue
       animate(container, { opacity: [0, 1] }, { duration: 0.3, easing: 'ease-in' });
+
+      // Re-initialize charts after HTML injection
+      // Small delay to ensure DOM is fully updated
+      requestAnimationFrame(() => {
+        document.dispatchEvent(new CustomEvent('charts:reinit'));
+      });
     }
   );
 }
