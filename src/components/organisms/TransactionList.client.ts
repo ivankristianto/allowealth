@@ -1,26 +1,32 @@
 import { getCsrfHeaders } from '@/lib/csrf-client';
+import { addToast } from '@/lib/stores/toastStore';
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Delete transaction handler using dialog
+  // Delete transaction handler using DeleteConfirmationModal
   let transactionToDelete: string | null = null;
   let rowToDelete: HTMLElement | null = null;
 
-  const dialog = document.getElementById('delete-dialog') as HTMLDialogElement | null;
-  const confirmDeleteBtn = document.getElementById(
-    'confirm-delete-btn'
+  const modalContainer = document.querySelector(
+    '[data-delete-confirmation-modal][data-id="delete-transaction-modal"]'
+  );
+  const modal = document.getElementById('delete-transaction-modal') as HTMLDialogElement | null;
+  const confirmDeleteBtn = modalContainer?.querySelector(
+    '[data-confirm-delete]'
   ) as HTMLButtonElement | null;
-  const detailsDiv = document.getElementById('delete-dialog-details');
-  const errorDiv = document.getElementById('delete-error');
+  const detailsDiv = modalContainer?.querySelector('[data-delete-details]') as HTMLElement | null;
+  const errorDiv = modalContainer?.querySelector('[data-delete-error]') as HTMLElement | null;
 
-  if (!dialog || !confirmDeleteBtn || !detailsDiv || !errorDiv) return;
+  if (!modal || !confirmDeleteBtn) return;
 
   // Helper function to show inline error
-  function showDialogError(element: HTMLElement, message: string) {
+  function showDialogError(element: HTMLElement | null, message: string) {
+    if (!element) return;
     element.textContent = message;
     element.classList.remove('hidden');
   }
 
-  function hideDialogError(element: HTMLElement) {
+  function hideDialogError(element: HTMLElement | null) {
+    if (!element) return;
     element.classList.add('hidden');
     element.textContent = '';
   }
@@ -50,34 +56,46 @@ document.addEventListener('DOMContentLoaded', () => {
       // Hide any previous errors
       hideDialogError(errorDiv);
 
-      // Populate dialog with transaction details
-      const amount = parseFloat(transaction.amount) || 0;
-      const formattedAmount = new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: transaction.currency,
-      }).format(amount);
+      // Populate details section with transaction info (using DOM methods to prevent XSS)
+      if (detailsDiv) {
+        const amount = parseFloat(transaction.amount) || 0;
+        const formattedAmount = new Intl.NumberFormat('en-US', {
+          style: 'currency',
+          currency: transaction.currency,
+        }).format(amount);
 
-      detailsDiv.innerHTML = `
-        <div class="grid grid-cols-2 gap-2">
-          <div class="text-base-content/70">Category:</div>
-          <div class="font-medium">${transaction.category.name}</div>
-          <div class="text-base-content/70">Amount:</div>
-          <div class="font-medium">${formattedAmount}</div>
-          <div class="text-base-content/70">Date:</div>
-          <div class="font-medium">${new Date(transaction.transaction_date).toLocaleDateString()}</div>
-          ${
-            transaction.description
-              ? `
-            <div class="text-base-content/70">Description:</div>
-            <div class="font-medium">${transaction.description}</div>
-          `
-              : ''
-          }
-        </div>
-      `;
+        // Clear existing content
+        detailsDiv.innerHTML = '';
 
-      // Show dialog
-      dialog.showModal();
+        const grid = document.createElement('div');
+        grid.className = 'grid grid-cols-2 gap-2';
+
+        // Helper to add rows safely using textContent
+        const addRow = (label: string, value: string) => {
+          const labelDiv = document.createElement('div');
+          labelDiv.className = 'text-base-content/70';
+          labelDiv.textContent = label;
+          grid.appendChild(labelDiv);
+
+          const valueDiv = document.createElement('div');
+          valueDiv.className = 'font-medium';
+          valueDiv.textContent = value;
+          grid.appendChild(valueDiv);
+        };
+
+        addRow('Category:', transaction.category?.name || 'Unknown');
+        addRow('Amount:', formattedAmount);
+        addRow('Date:', new Date(transaction.transaction_date).toLocaleDateString());
+        if (transaction.description) {
+          addRow('Description:', transaction.description);
+        }
+
+        detailsDiv.appendChild(grid);
+        detailsDiv.classList.remove('hidden');
+      }
+
+      // Show modal using modal-open class (triggers animations)
+      modal.classList.add('modal-open');
     });
   });
 
@@ -90,6 +108,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Disable button during request
     confirmDeleteBtn.disabled = true;
+    const originalText = confirmDeleteBtn.textContent || 'Delete';
     confirmDeleteBtn.innerHTML = '<span class="loading loading-spinner"></span> Deleting...';
 
     try {
@@ -103,9 +122,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (response.ok && data.success) {
         // Show success toast
-        if ((window as any).showToast) {
-          (window as any).showToast('Transaction deleted successfully', 'success');
-        }
+        addToast('Transaction deleted successfully', 'success');
 
         // Remove row from DOM with animation
         if (rowToDelete) {
@@ -124,8 +141,8 @@ document.addEventListener('DOMContentLoaded', () => {
           }, 300);
         }
 
-        // Close dialog
-        dialog.close();
+        // Close modal using CSS class for consistency with Modal.astro pattern
+        modal.classList.remove('modal-open');
       } else {
         // Show inline error
         showDialogError(errorDiv, data.error?.message || 'Failed to delete transaction');
@@ -136,7 +153,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } finally {
       // Re-enable button
       confirmDeleteBtn.disabled = false;
-      confirmDeleteBtn.innerHTML = 'Delete Transaction';
+      confirmDeleteBtn.textContent = originalText;
       transactionToDelete = null;
       rowToDelete = null;
     }

@@ -66,7 +66,7 @@ const {
           showRetry && (
             <button
               type="button"
-              onclick="window.location.reload()"
+              data-action="reload-page"
               class="btn btn-accent flex items-center gap-2"
             >
               <RefreshCw size={16} class="stroke-current" aria-hidden="true" />
@@ -92,3 +92,24 @@ const {
     </div>
   </div>
 </Card>
+
+<script>
+  function initDashboardError() {
+    document.querySelectorAll('[data-dashboard-error]').forEach((container) => {
+      const reloadBtn = container.querySelector('[data-action="reload-page"]');
+      reloadBtn?.addEventListener('click', () => {
+        window.location.reload();
+      });
+    });
+  }
+
+  // Initialize on DOM ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initDashboardError);
+  } else {
+    initDashboardError();
+  }
+
+  // Re-initialize on Astro page transitions
+  document.addEventListener('astro:page-load', initDashboardError);
+</script>

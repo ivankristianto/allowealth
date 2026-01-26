@@ -131,7 +131,45 @@ export const colors = {
     warning: '#f59e0b', // 80-99%
     danger: '#f43f5e', // Over 100%
   },
+
+  /**
+   * Category colors - DaisyUI semantic classes for theme compatibility
+   * Use these for category icons and visual indicators
+   */
+  category: {
+    utilities: 'bg-info',
+    dining: 'bg-warning',
+    health: 'bg-accent',
+    transport: 'bg-secondary',
+    entertainment: 'bg-primary',
+    groceries: 'bg-success',
+    housing: 'bg-error',
+    default: 'bg-base-300',
+  },
 } as const;
+
+/**
+ * Category color map for chart/icon backgrounds
+ * Returns DaisyUI semantic class for theme compatibility
+ */
+export const categoryColors: Record<string, string> = {
+  Utilities: colors.category.utilities,
+  Dining: colors.category.dining,
+  Health: colors.category.health,
+  Transport: colors.category.transport,
+  Entertainment: colors.category.entertainment,
+  Groceries: colors.category.groceries,
+  Housing: colors.category.housing,
+};
+
+/**
+ * Get category color class (DaisyUI semantic)
+ * @param categoryName - Category name
+ * @returns DaisyUI background color class
+ */
+export function getCategoryColor(categoryName: string): string {
+  return categoryColors[categoryName] || colors.category.default;
+}
 
 /* ========================================
  * TYPOGRAPHY

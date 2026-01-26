@@ -18,16 +18,28 @@ const currentPath = '/reports/custom';
       <div class="card-body">
         <form class="space-y-4">
           <div class="form-control">
-            <label class="label"><span class="label-text">Start Date</span></label>
-            <input type="date" class="input input-bordered" />
+            <label class="label" for="start-date"><span class="label-text">Start Date</span></label>
+            <input
+              type="date"
+              id="start-date"
+              name="start_date"
+              class="input input-bordered"
+              required
+            />
           </div>
 
           <div class="form-control">
-            <label class="label"><span class="label-text">End Date</span></label>
-            <input type="date" class="input input-bordered" />
+            <label class="label" for="end-date"><span class="label-text">End Date</span></label>
+            <input
+              type="date"
+              id="end-date"
+              name="end_date"
+              class="input input-bordered"
+              required
+            />
           </div>
 
-          <button type="submit" class="btn btn-primary">Generate Report</button>
+          <button type="submit" class="btn btn-accent">Generate Report</button>
         </form>
       </div>
     </div>

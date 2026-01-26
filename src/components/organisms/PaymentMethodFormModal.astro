@@ -1,0 +1,243 @@
+---
+/**
+ * Payment Method Form Modal Component
+ *
+ * Modal for adding/editing payment methods.
+ * Uses the same Modal pattern as other modals in the application.
+ *
+ * @param {string} id - Modal ID
+ */
+
+import Modal from '../molecules/Modal.astro';
+import Input from '../atoms/Input.astro';
+import Label from '../atoms/Label.astro';
+import { CreditCard } from '@lucide/astro';
+
+export interface Props {
+  id: string;
+}
+
+const { id } = Astro.props;
+---
+
+<div data-payment-method-form-modal data-id={id}>
+  <Modal id={id} size="md" closable={false} backdropClose={true}>
+    <div slot="default" class="flex flex-col gap-6">
+      <!-- Header section -->
+      <div class="flex items-center gap-4">
+        <!-- Icon -->
+        <div class="w-12 h-12 rounded-2xl flex items-center justify-center bg-accent/10">
+          <CreditCard size={24} class="stroke-current text-accent" aria-hidden="true" />
+        </div>
+
+        <!-- Title and description -->
+        <div class="flex-1">
+          <h2
+            class="text-2xl font-bold tracking-tight text-primary leading-none"
+            data-modal-title
+            id={`${id}-title`}
+          >
+            Add Payment Method
+          </h2>
+          <p class="text-neutral text-sm mt-2 font-medium" data-modal-subtitle>
+            Create a new payment method for transactions.
+          </p>
+        </div>
+      </div>
+
+      <!-- Form -->
+      <form id={`${id}-form`} data-payment-method-form class="flex flex-col gap-5">
+        <input type="hidden" name="id" value="" data-method-id />
+
+        <div class="form-control">
+          <Label htmlFor={`${id}-name`} required>Name</Label>
+          <Input
+            id={`${id}-name`}
+            name="name"
+            type="text"
+            required
+            placeholder="e.g., BCA Account, GoPay, Cash Wallet"
+          />
+        </div>
+
+        <div class="form-control">
+          <Label htmlFor={`${id}-type`} required>Type</Label>
+          <select
+            name="type"
+            id={`${id}-type`}
+            class="select select-bordered bg-base-200 w-full h-10 text-xs focus:ring-2 focus:ring-accent focus:outline-none"
+            required
+          >
+            <option value="">Select type...</option>
+            <option value="cash">Cash</option>
+            <option value="credit_card">Credit Card</option>
+            <option value="debit_card">Debit Card</option>
+            <option value="bank_transfer">Bank Transfer</option>
+            <option value="e_wallet">E-Wallet</option>
+          </select>
+        </div>
+
+        <!-- Error message -->
+        <div
+          id={`${id}-error`}
+          class="hidden alert alert-error text-sm rounded-2xl"
+          role="alert"
+          aria-live="polite"
+          data-form-error
+        >
+        </div>
+
+        <!-- Actions -->
+        <div class="flex gap-4 pt-2">
+          <button
+            type="button"
+            class="btn btn-ghost flex-1 h-14 rounded-full font-bold text-base-content hover:bg-base-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent"
+            data-close-modal
+          >
+            Cancel
+          </button>
+          <button type="submit" class="btn btn-accent flex-[2] h-14 rounded-full font-bold">
+            Save Payment Method
+          </button>
+        </div>
+      </form>
+    </div>
+  </Modal>
+</div>
+
+<script>
+  import { addToast } from '@/lib/stores/toastStore';
+  import { getCsrfHeaders } from '@/lib/csrf-client';
+
+  // Track initialized containers
+  const initializedContainers = new WeakSet<Element>();
+
+  function initPaymentMethodFormModals() {
+    document.querySelectorAll('[data-payment-method-form-modal]').forEach((container) => {
+      if (initializedContainers.has(container)) return;
+      initializedContainers.add(container);
+
+      const id = container.getAttribute('data-id');
+      if (!id) return;
+
+      const modal = document.getElementById(id) as HTMLDialogElement | null;
+      const form = container.querySelector('[data-payment-method-form]') as HTMLFormElement | null;
+      const titleEl = container.querySelector('[data-modal-title]');
+      const subtitleEl = container.querySelector('[data-modal-subtitle]');
+      const errorEl = container.querySelector('[data-form-error]');
+      const methodIdInput = container.querySelector('[data-method-id]') as HTMLInputElement | null;
+      const nameInput = container.querySelector(`#${id}-name`) as HTMLInputElement | null;
+      const typeSelect = container.querySelector(`#${id}-type`) as HTMLSelectElement | null;
+
+      if (!modal || !form) return;
+
+      // Handle cancel button
+      const cancelBtn = container.querySelector('[data-close-modal]');
+      cancelBtn?.addEventListener('click', () => {
+        form.reset();
+        errorEl?.classList.add('hidden');
+        modal.close();
+      });
+
+      // Handle form submission
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
+        const originalText = submitBtn?.textContent || 'Save';
+        const isEdit = methodIdInput?.value ? true : false;
+
+        // Clear errors
+        errorEl?.classList.add('hidden');
+
+        // Show loading state
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.textContent = 'Saving...';
+        }
+
+        try {
+          const formData = new FormData(form);
+          const methodId = formData.get('id');
+          const url = isEdit ? `/api/payment-methods/${methodId}` : '/api/payment-methods';
+          const method = isEdit ? 'PUT' : 'POST';
+
+          const response = await fetch(url, {
+            method,
+            credentials: 'include',
+            headers: {
+              'Content-Type': 'application/json',
+              ...getCsrfHeaders(),
+            },
+            body: JSON.stringify({
+              name: formData.get('name'),
+              type: formData.get('type'),
+            }),
+          });
+
+          const result = await response.json();
+
+          if (!response.ok || !result.success) {
+            throw new Error(result.error?.message || 'Failed to save payment method');
+          }
+
+          // Success
+          addToast(isEdit ? 'Payment method updated!' : 'Payment method created!', 'success');
+          form.reset();
+          modal.classList.remove('modal-open');
+
+          // Reload page to show updated data
+          window.location.reload();
+        } catch (err) {
+          const message = err instanceof Error ? err.message : 'Failed to save';
+          if (errorEl) {
+            errorEl.textContent = message;
+            errorEl.classList.remove('hidden');
+          }
+          addToast(message, 'error');
+        } finally {
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = originalText;
+          }
+        }
+      });
+
+      // TODO: P2 - Replace window global function with custom events pattern
+      // Example: document.dispatchEvent(new CustomEvent('payment-method-modal:open', { detail: methodData }))
+      // Expose functions to open modal for add/edit
+      (window as any).openPaymentMethodModal = (methodData?: {
+        id: string;
+        name: string;
+        type: string;
+      }) => {
+        if (methodData) {
+          // Edit mode
+          if (titleEl) titleEl.textContent = 'Edit Payment Method';
+          if (subtitleEl) subtitleEl.textContent = 'Update the payment method details.';
+          if (methodIdInput) methodIdInput.value = methodData.id;
+          if (nameInput) nameInput.value = methodData.name;
+          if (typeSelect) typeSelect.value = methodData.type;
+        } else {
+          // Add mode
+          if (titleEl) titleEl.textContent = 'Add Payment Method';
+          if (subtitleEl) subtitleEl.textContent = 'Create a new payment method for transactions.';
+          form.reset();
+        }
+
+        errorEl?.classList.add('hidden');
+        modal.classList.add('modal-open');
+      };
+    });
+  }
+
+  // Initialize on DOM ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initPaymentMethodFormModals);
+  } else {
+    initPaymentMethodFormModals();
+  }
+
+  // Re-initialize on Astro page transitions
+  document.addEventListener('astro:page-load', initPaymentMethodFormModals);
+</script>
