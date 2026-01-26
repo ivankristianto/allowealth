@@ -93,6 +93,44 @@ function randomAmount(min: number, max: number): string {
 // DATA TEMPLATES
 // ============================================================================
 
+// Icon and color mapping for categories (Lucide icons + DaisyUI semantic colors)
+const CATEGORY_STYLES: Record<string, { icon: string; color: string }> = {
+  // Expense categories
+  Holiday: { icon: 'plane', color: 'bg-secondary' },
+  'Food & Groceries': { icon: 'shopping-basket', color: 'bg-info' },
+  'Dine Out': { icon: 'utensils', color: 'bg-warning' },
+  'Vony Work Support': { icon: 'briefcase', color: 'bg-neutral' },
+  "Vony's Pocket Money": { icon: 'wallet', color: 'bg-secondary' },
+  'Mama Medan': { icon: 'heart', color: 'bg-error' },
+  'Ivan Expenses': { icon: 'user', color: 'bg-primary' },
+  'Reina Expenses': { icon: 'user', color: 'bg-secondary' },
+  'Rex Expenses': { icon: 'user', color: 'bg-accent' },
+  'Utility Bills': { icon: 'zap', color: 'bg-info' },
+  'Misc. Cost': { icon: 'package', color: 'bg-neutral' },
+  Entertainment: { icon: 'smile', color: 'bg-secondary' },
+  'Expenses for Mom': { icon: 'heart', color: 'bg-error' },
+  'Maid Salary': { icon: 'users', color: 'bg-accent' },
+  Transportation: { icon: 'car', color: 'bg-secondary' },
+  'Cicilan Properti': { icon: 'home', color: 'bg-error' },
+  'Belanja Rumah': { icon: 'shopping-cart', color: 'bg-success' },
+  'Renovasi Rumah': { icon: 'hammer', color: 'bg-warning' },
+  Insurance: { icon: 'shield', color: 'bg-info' },
+  'Reimburse to HM': { icon: 'repeat', color: 'bg-neutral' },
+  // Income categories
+  'HM + Reimburse': { icon: 'banknote', color: 'bg-success' },
+  QW: { icon: 'banknote', color: 'bg-success' },
+  Primaya: { icon: 'banknote', color: 'bg-success' },
+  'Premier Jatinegara': { icon: 'banknote', color: 'bg-success' },
+  'BCA Ivan - ST12T2': { icon: 'banknote', color: 'bg-success' },
+  'AKP Bintaro': { icon: 'banknote', color: 'bg-success' },
+  'INDON48 CIMB Ivan': { icon: 'banknote', color: 'bg-success' },
+  'FR 102 Vony': { icon: 'banknote', color: 'bg-success' },
+  'Div BBRI BMRI': { icon: 'trending-up', color: 'bg-success' },
+  'Div ADRO': { icon: 'trending-up', color: 'bg-success' },
+  'CIMB BRPT-Vony': { icon: 'banknote', color: 'bg-success' },
+  'Other Income': { icon: 'circle-dot', color: 'bg-primary' },
+};
+
 // Expense categories with their budgets
 const EXPENSE_CATEGORIES = [
   { name: 'Holiday', budget: 3000000 },
@@ -523,11 +561,14 @@ async function seedCategories(userId: string): Promise<Map<string, string>> {
   // Income categories
   for (const cat of INCOME_CATEGORIES) {
     const id = nanoid();
+    const style = CATEGORY_STYLES[cat.name] || { icon: 'circle-dot', color: 'bg-slate-500' };
     await db.insert(categories).values({
       id,
       user_id: userId,
       name: cat.name,
       type: 'income',
+      icon: style.icon,
+      color: style.color,
       percentage: '0',
       budget_amount: amt(cat.budget),
       currency: 'IDR',
@@ -541,11 +582,14 @@ async function seedCategories(userId: string): Promise<Map<string, string>> {
   // Expense categories
   for (const cat of EXPENSE_CATEGORIES) {
     const id = nanoid();
+    const style = CATEGORY_STYLES[cat.name] || { icon: 'tag', color: 'bg-slate-500' };
     await db.insert(categories).values({
       id,
       user_id: userId,
       name: cat.name,
       type: 'expense',
+      icon: style.icon,
+      color: style.color,
       percentage: '0',
       budget_amount: amt(cat.budget),
       currency: 'IDR',
@@ -604,11 +648,17 @@ async function seedIncomeTransactions(
     if (!categoryId) {
       // Create category if it doesn't exist
       const newId = nanoid();
+      const style = CATEGORY_STYLES[income.description] || {
+        icon: 'circle-dot',
+        color: 'bg-slate-500',
+      };
       await db.insert(categories).values({
         id: newId,
         user_id: userId,
         name: income.description,
         type: 'income',
+        icon: style.icon,
+        color: style.color,
         percentage: '0',
         budget_amount: '0',
         currency: 'IDR',
