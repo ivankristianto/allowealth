@@ -1,0 +1,49 @@
+---
+/**
+ * Report Charts Partial
+ *
+ * Server-rendered partial for report charts (Resource Allocation + Financial Velocity).
+ * Used for both SSR and HTML fragment responses (?_render=html).
+ *
+ * @param {Array} expenseByCategory - Expense breakdown by category
+ * @param {Array} trendData - Income vs expenses trend data
+ * @param {string} chartSubtitle - Subtitle for charts (e.g., "EXPENSE MIX", "2023 FLOW")
+ */
+
+import ResourceAllocationChart from '@/components/organisms/ResourceAllocationChart.astro';
+import FinancialVelocityChart from '@/components/organisms/FinancialVelocityChart.astro';
+
+export interface ExpenseCategory {
+  name: string;
+  value: number;
+}
+
+export interface TrendData {
+  name: string;
+  income: number;
+  expenses: number;
+}
+
+export interface Props {
+  expenseByCategory: ExpenseCategory[];
+  trendData: TrendData[];
+  resourceAllocationSubtitle?: string;
+  financialVelocitySubtitle?: string;
+}
+
+const {
+  expenseByCategory,
+  trendData,
+  resourceAllocationSubtitle = 'EXPENSE MIX',
+  financialVelocitySubtitle = 'TRAILING 3 MONTHS',
+} = Astro.props;
+---
+
+<!-- Charts Grid -->
+<div class="grid grid-cols-1 xl:grid-cols-2 gap-6 md:gap-8" data-report-charts>
+  <!-- Resource Allocation Chart -->
+  <ResourceAllocationChart data={expenseByCategory} subtitle={resourceAllocationSubtitle} />
+
+  <!-- Financial Velocity Chart -->
+  <FinancialVelocityChart data={trendData} subtitle={financialVelocitySubtitle} />
+</div>

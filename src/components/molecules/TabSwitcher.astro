@@ -1,0 +1,119 @@
+---
+/**
+ * Tab Switcher Component
+ *
+ * Tab navigation for switching between different calculator views.
+ * Supports mobile-first responsive design with icons.
+ *
+ * @param {string} activeTab - Currently active tab ID
+ * @param {Array<Tab>} tabs - Array of tab objects with id, label, and icon
+ * @param {string} className - Additional CSS classes
+ */
+
+import { TrendingUp, House, PiggyBank } from '@lucide/astro';
+
+// Icon mapping for tab icons
+const iconMap: Record<string, typeof TrendingUp> = {
+  trending_up: TrendingUp,
+  home: House,
+  piggy_bank: PiggyBank,
+};
+
+export interface Tab {
+  id: string;
+  label: string;
+  icon: keyof typeof iconMap;
+}
+
+export interface Props {
+  activeTab: string;
+  tabs: Tab[];
+  className?: string;
+}
+
+const { activeTab, tabs, className = '' } = Astro.props;
+
+// Function to get icon component
+function getIcon(iconName: keyof typeof iconMap) {
+  return iconMap[iconName] || TrendingUp;
+}
+---
+
+<div
+  class={['tabs bg-base-200 p-1.5 rounded-2xl max-w-2xl', className].join(' ')}
+  role="tablist"
+  data-tabs
+>
+  {
+    tabs.map((tab) => {
+      const IconComponent = getIcon(tab.icon);
+      return (
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === tab.id ? 'true' : 'false'}
+          aria-controls={`${tab.id}-panel`}
+          id={`${tab.id}-tab`}
+          class={[
+            'tab flex-1 flex items-center justify-center gap-2 py-3 text-xs font-bold rounded-xl transition-all',
+            activeTab === tab.id
+              ? 'bg-base-100 shadow-md text-primary tab-active'
+              : 'text-neutral hover:text-primary',
+          ].join(' ')}
+          data-tab-id={tab.id}
+        >
+          <IconComponent size={18} class="stroke-current shrink-0" aria-hidden="true" />
+          <span class="hidden sm:inline">{tab.label}</span>
+        </button>
+      );
+    })
+  }
+</div>
+
+<script>
+  // Tab switching logic
+  const tabsContainer = document.querySelector('[data-tabs]');
+  const tabs = tabsContainer?.querySelectorAll('[data-tab-id]');
+
+  tabs?.forEach((tab) => {
+    tab.addEventListener('click', () => {
+      const tabId = tab.getAttribute('data-tab-id');
+      if (!tabId) return;
+
+      // Update tab styles
+      tabs.forEach((t) => {
+        const isActive = t === tab;
+        t.setAttribute('aria-selected', isActive ? 'true' : 'false');
+        if (isActive) {
+          t.classList.add('bg-base-100', 'shadow-md', 'text-primary', 'tab-active');
+          t.classList.remove('text-neutral', 'hover:text-primary');
+        } else {
+          t.classList.remove('bg-base-100', 'shadow-md', 'text-primary', 'tab-active');
+          t.classList.add('text-neutral', 'hover:text-primary');
+        }
+      });
+
+      // Emit custom event for panel updates
+      tabsContainer?.dispatchEvent(
+        new CustomEvent('tab-change', {
+          detail: { tabId },
+          bubbles: true,
+        })
+      );
+    });
+  });
+</script>
+
+<style>
+  /* Active tab indicator styles */
+  .tab-active {
+    font-weight: 700;
+  }
+
+  /* Mobile responsive: show only icons on small screens */
+  @media (max-width: 640px) {
+    [data-tabs] .tab span:not(:first-child) {
+      display: none;
+    }
+  }
+</style>
