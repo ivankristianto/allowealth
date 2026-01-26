@@ -9,7 +9,17 @@ const meta: Meta = {
   argTypes: {
     currentPath: {
       control: 'select',
-      options: ['/', '/dashboard', '/transactions', '/budget', '/assets', '/reports', '/settings'],
+      options: [
+        '/',
+        '/dashboard',
+        '/transactions',
+        '/budget',
+        '/assets',
+        '/reports',
+        '/settings',
+        '/profile',
+        '/security',
+      ],
     },
     showMenuToggle: { control: 'boolean' },
     subtitle: {
@@ -47,6 +57,8 @@ function getDynamicSubtitle(path: string, customSubtitle?: string): string {
     '/forecast': 'Based on your spending patterns',
     '/calculators': 'Financial planning tools',
     '/settings': 'Manage your preferences',
+    '/profile': 'Manage your account details',
+    '/security': 'Protect your account and devices',
   };
 
   return subtitles[path] || getCurrentMonthYear();
@@ -69,6 +81,8 @@ const createHeader = (args: {
       '/assets': 'Assets',
       '/reports': 'Reports',
       '/settings': 'Settings',
+      '/profile': 'Manage Account',
+      '/security': 'Security',
     };
     return titles[path] || 'Finance Manager';
   };

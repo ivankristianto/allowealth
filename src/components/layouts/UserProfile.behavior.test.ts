@@ -25,8 +25,8 @@ const PROFILE_SPECS = {
   avatarText: 'text-accent',
   accountType: 'Pro Account',
   menuItems: {
-    manage: '/settings',
-    security: '/settings/security',
+    manage: '/profile',
+    security: '/security',
     signout: '/api/auth/logout',
   },
   animationDuration: 'duration-200',
@@ -82,12 +82,12 @@ describe('UserProfile Component', () => {
     it('should have three menu items', () => {
       /**
        * Menu items:
-       * 1. Manage account → /settings
-       * 2. Security → /settings/security
+       * 1. Manage account → /profile
+       * 2. Security → /security
        * 3. Sign out → POST /api/auth/logout
        */
-      expect(PROFILE_SPECS.menuItems.manage).toBe('/settings');
-      expect(PROFILE_SPECS.menuItems.security).toBe('/settings/security');
+      expect(PROFILE_SPECS.menuItems.manage).toBe('/profile');
+      expect(PROFILE_SPECS.menuItems.security).toBe('/security');
       expect(PROFILE_SPECS.menuItems.signout).toBe('/api/auth/logout');
     });
 
@@ -314,8 +314,8 @@ describe('UserProfile Component', () => {
  * [ ] Verify "Security" is second item
  * [ ] Verify visual separator between items 2 and 3
  * [ ] Verify "Sign out" is third item (red/error color)
- * [ ] Click "Manage account" → navigates to /settings
- * [ ] Click "Security" → navigates to /settings/security
+ * [ ] Click "Manage account" → navigates to /profile
+ * [ ] Click "Security" → navigates to /security
  *
  * Test 4: Click Outside to Close
  * [ ] Open dropdown menu

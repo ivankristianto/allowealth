@@ -1,0 +1,160 @@
+---
+/**
+ * ManageAccountForms Component
+ *
+ * Aggregates profile, preferences, and password update forms
+ * for the Manage Account page.
+ */
+
+import Label from '@/components/atoms/Label.astro';
+import Input from '@/components/atoms/Input.astro';
+import Button from '@/components/atoms/Button.astro';
+import IconBadge from '@/components/atoms/IconBadge.astro';
+import PasswordChangeForm from '@/components/molecules/PasswordChangeForm.astro';
+import { User } from '@lucide/astro';
+import type { User as UserType } from '@/lib/auth/lucia';
+import { AVAILABLE_CURRENCIES, CURRENCY_META, DEFAULT_CURRENCY } from '@/lib/constants';
+import { patterns } from '@/lib/validation/patterns';
+
+export interface Props {
+  user: UserType;
+}
+
+const { user } = Astro.props;
+
+const displayName = user?.name?.trim() || 'Sarah Jenkins';
+const displayEmail = user?.email?.trim() || 'sarah.j@familyfinance.com';
+const profileInitial = displayName ? displayName.charAt(0).toUpperCase() : 'S';
+
+// @TODO: Wire with backend for phone, bio, and currency values.
+const mockProfileDetails = {
+  phone: '+62 812-3456-7890',
+  bio: 'Family CFO and tech enthusiast.',
+  currency: DEFAULT_CURRENCY,
+};
+
+const currencyOptions = AVAILABLE_CURRENCIES.map((code) => ({
+  value: code,
+  label: `${CURRENCY_META[code].name} (${code})`,
+}));
+---
+
+<div class="space-y-8">
+  <section class="card bg-base-100 shadow border border-base-300">
+    <div class="card-body p-6 space-y-6">
+      <div class="flex items-center gap-4">
+        <IconBadge variant="accent" size="sm">
+          <User size={20} class="stroke-current" aria-hidden="true" />
+        </IconBadge>
+        <div>
+          <h3 class="text-lg font-bold">Public Profile</h3>
+          <p class="text-xs uppercase tracking-widest text-base-content/50">General Information</p>
+        </div>
+      </div>
+
+      <form id="profile-form" class="space-y-6" novalidate>
+        <div class="flex flex-col gap-6 lg:flex-row">
+          <div class="flex flex-col items-center gap-3 lg:w-40">
+            <div class="avatar placeholder">
+              <div class="bg-base-200 text-primary rounded-2xl w-20 h-20 text-2xl font-semibold">
+                {profileInitial}
+              </div>
+            </div>
+            <button type="button" class="link link-accent text-xs font-semibold"
+              >Change Photo</button
+            >
+          </div>
+
+          <div class="flex-1 grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div class="form-control">
+              <Label htmlFor="full-name" required>Full Name</Label>
+              <Input
+                type="text"
+                id="full-name"
+                name="name"
+                placeholder="Your name"
+                value={displayName}
+                required
+              />
+            </div>
+
+            <div class="form-control">
+              <Label htmlFor="email" required>Email Address</Label>
+              <Input
+                type="email"
+                id="email"
+                name="email"
+                placeholder="your@email.com"
+                value={displayEmail}
+                pattern={patterns.email.html}
+                title={patterns.email.title}
+                required
+              />
+            </div>
+
+            <div class="form-control">
+              <Label htmlFor="phone">Phone Number</Label>
+              <Input
+                type="text"
+                id="phone"
+                name="phone"
+                placeholder="+62 812-3456-7890"
+                value={mockProfileDetails.phone}
+              />
+            </div>
+
+            <div class="form-control">
+              <Label htmlFor="currency" required>Default Currency</Label>
+              <select
+                id="currency"
+                name="primaryCurrency"
+                class="select select-bordered w-full h-10 pt-2 pb-2 pl-3 pr-10 text-xs bg-base-200 focus:ring-2 focus:ring-accent focus:ring-opacity-20 focus:outline-none focus:ring-offset-2"
+                required
+              >
+                {
+                  currencyOptions.map((option) => (
+                    <option
+                      value={option.value}
+                      selected={option.value === mockProfileDetails.currency}
+                    >
+                      {option.label}
+                    </option>
+                  ))
+                }
+              </select>
+            </div>
+
+            <div class="form-control md:col-span-2">
+              <Label htmlFor="bio">Short Bio</Label>
+              <textarea
+                id="bio"
+                name="bio"
+                rows={3}
+                class="textarea textarea-bordered w-full bg-base-200 text-xs pt-2 pb-2 px-3 focus:ring-2 focus:ring-accent focus:ring-opacity-20 focus:outline-none"
+                placeholder="Tell us a bit about your role">{mockProfileDetails.bio}</textarea
+              >
+            </div>
+          </div>
+        </div>
+
+        <div class="flex justify-end">
+          <Button type="submit" variant="accent">Save Profile Changes</Button>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <PasswordChangeForm formId="password-change-form" />
+
+  <section class="card bg-error/5 border border-error/20 shadow">
+    <div class="card-body p-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <h3 class="text-lg font-bold text-error">Danger Zone</h3>
+        <p class="text-sm text-base-content/70">
+          Permanently delete your account and all associated data.
+        </p>
+      </div>
+      <Button type="button" variant="danger" size="sm">Delete Account</Button>
+    </div>
+  </section>
+</div>

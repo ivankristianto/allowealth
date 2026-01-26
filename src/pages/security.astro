@@ -1,0 +1,121 @@
+---
+/**
+ * Security Page
+ *
+ * Frontend-only security settings screen.
+ */
+
+import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
+import SecurityConnectedAccountsCard from '@/components/molecules/SecurityConnectedAccountsCard.astro';
+import SecurityMfaCard from '@/components/molecules/SecurityMfaCard.astro';
+import SecurityPasskeysCard from '@/components/molecules/SecurityPasskeysCard.astro';
+import { History } from '@lucide/astro';
+
+const currentPath = '/security';
+
+// @TODO: Wire with backend for security data.
+const connectedAccounts = [
+  {
+    id: 'google',
+    provider: 'Google',
+    email: 'sarah.j@familyfinance.com',
+    connected: false,
+  },
+];
+
+// @TODO: Wire with backend for MFA preferences.
+const mfaMethods = [
+  {
+    id: 'authenticator',
+    label: 'Authenticator App',
+    description: 'Use apps like Google Authenticator or Authy',
+    enabled: false,
+  },
+];
+
+// @TODO: Wire with backend for passkeys.
+const passkeys = [
+  {
+    id: 'pk-1',
+    name: 'MacBook Pro Touch ID',
+    addedOn: 'Jan 15, 2024',
+  },
+];
+
+// @TODO: Wire with backend for security activity.
+const securityEvents = [
+  {
+    id: 'evt-1',
+    label: 'Successful login from New York, US',
+    timestamp: 'Today, 2:45 PM',
+    tone: 'success',
+  },
+  {
+    id: 'evt-2',
+    label: 'Passkey registered',
+    timestamp: 'Jan 15, 2024',
+    tone: 'info',
+  },
+  {
+    id: 'evt-3',
+    label: 'MFA setup initiated',
+    timestamp: 'Jan 12, 2024',
+    tone: 'warning',
+  },
+];
+
+const toneDotClasses: Record<string, string> = {
+  success: 'bg-success',
+  info: 'bg-info',
+  warning: 'bg-warning',
+};
+---
+
+<ProtectedLayout title="Security Settings - Finance Manager" currentPath={currentPath}>
+  <div class="max-w-4xl mx-auto sm:px-2 lg:px-6 space-y-6 sm:space-y-8">
+    <div>
+      <h2 class="text-2xl font-bold">Security Settings</h2>
+      <p class="text-base-content/60">
+        Keep your family's financial data safe with advanced protection.
+      </p>
+    </div>
+
+    <div class="space-y-6">
+      <SecurityConnectedAccountsCard accounts={connectedAccounts} />
+      <SecurityMfaCard methods={mfaMethods} />
+      <SecurityPasskeysCard passkeys={passkeys} />
+
+      <section class="card bg-base-200/60 border border-base-300 shadow">
+        <div class="card-body p-6 space-y-5">
+          <div class="flex items-center gap-2 text-base-content/70">
+            <History size={18} class="stroke-current" aria-hidden="true" />
+            <h3 class="text-sm font-semibold">Recent Security Events</h3>
+          </div>
+
+          <div class="space-y-4">
+            {
+              securityEvents.map((event) => (
+                <div class="flex items-center justify-between gap-4 text-sm">
+                  <div class="flex items-center gap-3">
+                    <span class={`w-2 h-2 rounded-full ${toneDotClasses[event.tone]}`} />
+                    <span class="text-base-content/70">{event.label}</span>
+                  </div>
+                  <span class="text-xs text-base-content/50 uppercase tracking-wide">
+                    {event.timestamp}
+                  </span>
+                </div>
+              ))
+            }
+          </div>
+
+          <button
+            type="button"
+            class="btn btn-outline btn-sm w-full text-xs uppercase tracking-widest"
+          >
+            Download Security Audit
+          </button>
+        </div>
+      </section>
+    </div>
+  </div>
+</ProtectedLayout>
