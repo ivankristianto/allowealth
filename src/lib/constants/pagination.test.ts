@@ -31,7 +31,7 @@ describe('pagination constants', () => {
   test('constants are readonly', () => {
     // TypeScript's 'as const' ensures these are readonly at compile time
     // We can verify the values haven't been accidentally changed
-    expect(PAGINATION.DEFAULT_PAGE_SIZE).toBe(50);
+    expect(PAGINATION.DEFAULT_PAGE_SIZE).toBe(25);
     expect(PAGINATION.MAX_MONTH_TRANSACTIONS).toBe(10000);
     expect(PAGINATION.DEFAULT_OFFSET).toBe(0);
     expect(PAGINATION.MAX_PAGE_SIZE).toBe(100);

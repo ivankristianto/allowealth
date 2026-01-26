@@ -196,13 +196,6 @@ export function getAuthenticatedUser(context: APIContext): string {
 }
 
 /**
- * Session cookie name used by Lucia Auth
- * Must match the cookie name configured in src/lib/auth/lucia.ts
- * @deprecated Used only by deprecated getUserId function
- */
-const SESSION_COOKIE_NAME = 'sid';
-
-/**
  * Get user ID from Lucia session cookie
  *
  * @deprecated Use `getAuthenticatedUser(context)` instead. This function makes
@@ -217,8 +210,8 @@ const SESSION_COOKIE_NAME = 'sid';
  * @returns User ID string if session is valid, null otherwise
  */
 export async function getUserId(context: APIContext): Promise<string | null> {
-  // Extract session ID from cookies
-  const sessionId = context.cookies.get(SESSION_COOKIE_NAME)?.value;
+  // Extract session ID from cookies using Lucia's cookie name
+  const sessionId = context.cookies.get(auth.sessionCookieName)?.value;
 
   // No session cookie found
   if (!sessionId) {
@@ -258,13 +251,8 @@ export async function getUserId(context: APIContext): Promise<string | null> {
  * @throws Error with message 'Unauthorized' if not authenticated
  */
 export async function requireAuth(context: APIContext): Promise<string> {
-  const userId = await getUserId(context);
-
-  if (!userId) {
-    throw new Error('Unauthorized');
-  }
-
-  return userId;
+  // Use getAuthenticatedUser to avoid redundant database call
+  return getAuthenticatedUser(context);
 }
 
 /**

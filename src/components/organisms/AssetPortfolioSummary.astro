@@ -234,7 +234,7 @@ const cardClasses = [
       const segments = bar.querySelectorAll('[data-segment-type]');
 
       segments.forEach((segment) => {
-        segment.addEventListener('mouseenter', (e) => {
+        segment.addEventListener('mouseenter', (e: MouseEvent) => {
           const target = e.currentTarget as HTMLElement;
           const type = target.dataset.segmentType || '';
           const percentage = target.dataset.segmentPercentage || '0';

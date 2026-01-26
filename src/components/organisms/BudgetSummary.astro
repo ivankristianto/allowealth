@@ -288,7 +288,7 @@ const cardClasses = [
       const segments = bar.querySelectorAll('[data-segment-name]');
 
       segments.forEach((segment) => {
-        segment.addEventListener('mouseenter', (e) => {
+        segment.addEventListener('mouseenter', (e: MouseEvent) => {
           const target = e.currentTarget as HTMLElement;
           const name = target.dataset.segmentName || '';
           const weight = target.dataset.segmentWeight || '0';
