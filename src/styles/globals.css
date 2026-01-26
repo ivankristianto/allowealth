@@ -3,7 +3,10 @@
 @import './animations.css';
 
 @plugin "@tailwindcss/typography";
-@plugin "daisyui";
+
+@plugin "daisyui" {
+  exclude: properties;
+}
 
 /* ========================================
    DAISYUI THEME CONFIGURATION (v5 @plugin syntax)

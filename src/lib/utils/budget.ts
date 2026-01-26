@@ -179,3 +179,125 @@ export function getBudgetProgressClass(status: BudgetStatus): string {
 // Re-export formatCurrency from currency module for convenience
 import { formatCurrency } from './currency';
 export { formatCurrency };
+
+/**
+ * Predefined color palette for budget allocation visualization.
+ * Colors are chosen for accessibility and visual distinction.
+ * Uses HSL colors that work well in both light and dark themes.
+ */
+const ALLOCATION_COLORS = [
+  '#ea580c', // orange-600 - Housing typically largest
+  '#3b82f6', // blue-500 - Groceries
+  '#6366f1', // indigo-500 - Utilities
+  '#8b5cf6', // violet-500 - Dining
+  '#a855f7', // purple-500 - Transport
+  '#ec4899', // pink-500 - Entertainment
+  '#14b8a6', // teal-500 - Healthcare
+  '#f59e0b', // amber-500 - Education
+  '#10b981', // emerald-500 - Personal
+  '#ef4444', // red-500 - Other
+] as const;
+
+/**
+ * Regex pattern for validating hex color strings.
+ * Matches 6-character hex colors (e.g., #ea580c).
+ */
+const HEX_COLOR_REGEX = /^#[0-9a-fA-F]{6}$/;
+
+/**
+ * Default fallback color when validation fails.
+ */
+const DEFAULT_COLOR = '#6b7280'; // gray-500
+
+/**
+ * Validate a hex color string.
+ * Used to prevent potential XSS via inline style injection.
+ *
+ * @param color - Color string to validate
+ * @returns True if valid 6-character hex color
+ */
+export function isValidHexColor(color: string): boolean {
+  return HEX_COLOR_REGEX.test(color);
+}
+
+/**
+ * Sanitize a color value for safe use in inline styles.
+ * Returns default gray if color is invalid.
+ *
+ * @param color - Color string to sanitize
+ * @returns Validated hex color or default fallback
+ */
+export function sanitizeColor(color: string): string {
+  return isValidHexColor(color) ? color : DEFAULT_COLOR;
+}
+
+/**
+ * Generate a consistent color for a category based on its name.
+ * Uses a hash function to ensure the same category always gets the same color.
+ *
+ * @param categoryName - The category name
+ * @param index - Optional index for fallback ordering
+ * @returns A hex color string
+ */
+export function getCategoryColor(categoryName: string, index?: number): string {
+  // Simple hash function to generate consistent colors
+  const hash = categoryName.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  const colorIndex = index !== undefined ? index : hash % ALLOCATION_COLORS.length;
+  return ALLOCATION_COLORS[colorIndex % ALLOCATION_COLORS.length];
+}
+
+/**
+ * Distribution item for allocation mix visualization
+ */
+export interface AllocationDistribution {
+  name: string;
+  weight: number;
+  limit: number;
+  color: string;
+}
+
+/**
+ * Calculate allocation distribution for budget categories.
+ * Used for the allocation mix bar in BudgetSummary.
+ *
+ * @param categories - Array of budget categories with name, budget_amount, and spent_amount
+ * @returns Array of distribution items sorted by weight (largest first)
+ */
+export function calculateAllocationDistribution(
+  categories: Array<{
+    name: string;
+    budget_amount: string;
+    spent_amount?: string;
+  }>
+): AllocationDistribution[] {
+  // Filter to only positive budget amounts first
+  const validCategories = categories.filter((cat) => {
+    const amount = parseFloat(cat.budget_amount || '0');
+    return !isNaN(amount) && amount > 0;
+  });
+
+  // Calculate total from valid categories only
+  const totalAllocated = validCategories.reduce(
+    (sum, cat) => sum + parseFloat(cat.budget_amount || '0'),
+    0
+  );
+
+  if (totalAllocated === 0) {
+    return [];
+  }
+
+  // Calculate distribution with weights
+  const distribution = validCategories
+    .map((cat, index) => {
+      const limit = parseFloat(cat.budget_amount || '0');
+      return {
+        name: cat.name,
+        weight: (limit / totalAllocated) * 100,
+        limit,
+        color: getCategoryColor(cat.name, index),
+      };
+    })
+    .sort((a, b) => b.weight - a.weight);
+
+  return distribution;
+}

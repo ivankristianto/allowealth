@@ -1,0 +1,528 @@
+---
+/**
+ * AssetHistoryModal Component
+ *
+ * Modal for viewing asset performance history with an area chart.
+ * Shows balance trends over 7 or 30 days with percentage change.
+ *
+ * Based on the Global Portfolio PoC design.
+ *
+ * @param {string} id - Modal ID
+ */
+
+import Modal from '../molecules/Modal.astro';
+import { TrendingUp, ArrowUp, ArrowDown } from '@lucide/astro';
+
+export interface Props {
+  id: string;
+}
+
+const { id } = Astro.props;
+---
+
+<div data-asset-history-modal-container data-id={id}>
+  <Modal id={id} size="xl" closable={false} backdropClose={true}>
+    <div slot="default" class="flex flex-col gap-6">
+      {/* Header with asset info */}
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+        <div class="flex items-center gap-4">
+          <div
+            class="w-12 h-12 rounded-2xl flex items-center justify-center bg-accent/10 text-accent"
+          >
+            <TrendingUp size={24} class="stroke-current" aria-hidden="true" />
+          </div>
+          <div>
+            <h2 class="text-2xl font-bold tracking-tight text-primary leading-none" data-asset-name>
+              Asset Name
+            </h2>
+            <p
+              class="text-neutral text-sm mt-2 font-medium uppercase tracking-widest"
+              data-asset-meta
+            >
+              TYPE • CURRENCY Portfolio
+            </p>
+          </div>
+        </div>
+
+        <div class="flex flex-col items-start md:items-end">
+          <p
+            class="text-2xl md:text-3xl font-bold text-base-content tracking-tight"
+            data-current-balance
+          >
+            Rp 0
+          </p>
+          <div
+            class="flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest"
+            data-change-badge
+          >
+            <span class="hidden" data-arrow-up>
+              <ArrowUp size={12} class="stroke-current" aria-hidden="true" />
+            </span>
+            <span class="hidden" data-arrow-down>
+              <ArrowDown size={12} class="stroke-current" aria-hidden="true" />
+            </span>
+            <span data-change-text>0% (monthly)</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Chart section */}
+      <div class="bg-base-200/50 rounded-3xl p-6 md:p-8 border border-base-300/50">
+        {/* Chart header */}
+        <div class="flex justify-between items-center mb-8">
+          <h3 class="text-sm font-bold text-base-content/60 uppercase tracking-widest">
+            Performance History
+          </h3>
+          <div class="flex bg-base-100 p-1 rounded-xl shadow-sm border border-base-300/50">
+            <button
+              type="button"
+              class="px-4 py-2 text-[10px] font-bold rounded-lg uppercase tracking-widest transition-all text-base-content/50"
+              data-timeframe="weekly"
+            >
+              7 Days
+            </button>
+            <button
+              type="button"
+              class="px-4 py-2 text-[10px] font-bold rounded-lg uppercase tracking-widest transition-all bg-accent text-white shadow-sm"
+              data-timeframe="monthly"
+            >
+              30 Days
+            </button>
+          </div>
+        </div>
+
+        {/* Chart container */}
+        <div class="relative h-[250px] md:h-[300px] w-full" data-chart-container>
+          {/* Loading state */}
+          <div class="absolute inset-0 flex items-center justify-center" data-chart-loading>
+            <div class="loading loading-spinner loading-lg text-accent"></div>
+          </div>
+
+          {/* Empty state */}
+          <div
+            class="absolute inset-0 flex flex-col items-center justify-center hidden"
+            data-chart-empty
+            role="status"
+            aria-live="polite"
+          >
+            <p class="text-base-content/50 text-sm">No history data available</p>
+          </div>
+
+          {/* SVG Chart */}
+          {
+            /* P2: TODO - Hardcoded accent color #6366f1 should use CSS variables for theme support */
+          }
+          <svg
+            class="w-full h-full hidden"
+            viewBox="0 0 800 300"
+            preserveAspectRatio="none"
+            data-chart-svg
+          >
+            <defs>
+              <linearGradient id={`${id}-gradient`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#6366f1" stop-opacity="0.3"></stop>
+                <stop offset="100%" stop-color="#6366f1" stop-opacity="0"></stop>
+              </linearGradient>
+            </defs>
+
+            {/* Grid lines */}
+            <g data-grid-lines class="text-base-300">
+              <line
+                x1="0"
+                y1="60"
+                x2="800"
+                y2="60"
+                stroke="currentColor"
+                stroke-dasharray="4 4"
+                opacity="0.3"></line>
+              <line
+                x1="0"
+                y1="120"
+                x2="800"
+                y2="120"
+                stroke="currentColor"
+                stroke-dasharray="4 4"
+                opacity="0.3"></line>
+              <line
+                x1="0"
+                y1="180"
+                x2="800"
+                y2="180"
+                stroke="currentColor"
+                stroke-dasharray="4 4"
+                opacity="0.3"></line>
+              <line
+                x1="0"
+                y1="240"
+                x2="800"
+                y2="240"
+                stroke="currentColor"
+                stroke-dasharray="4 4"
+                opacity="0.3"></line>
+            </g>
+
+            {/* Area fill */}
+            <path data-chart-area fill={`url(#${id}-gradient)`}></path>
+
+            {/* Line */}
+            <path
+              data-chart-line
+              fill="none"
+              stroke="#6366f1"
+              stroke-width="3"
+              stroke-linecap="round"
+              stroke-linejoin="round"></path>
+
+            {/* Data points */}
+            <g data-chart-points></g>
+          </svg>
+
+          {/* X-axis labels */}
+          <div
+            class="absolute bottom-0 left-0 right-0 flex justify-between px-2 text-[10px] font-bold text-base-content/40 uppercase tracking-wider hidden"
+            data-x-labels
+          >
+          </div>
+        </div>
+
+        {/* Tooltip (positioned absolutely) */}
+        <div
+          class="fixed z-50 px-3 py-2 bg-neutral text-neutral-content text-xs font-medium rounded-lg shadow-lg pointer-events-none opacity-0 transition-opacity"
+          data-chart-tooltip
+        >
+          <div
+            data-tooltip-date
+            class="text-[10px] text-neutral-content/60 uppercase tracking-wider mb-1"
+          >
+          </div>
+          <div data-tooltip-value class="font-bold"></div>
+        </div>
+      </div>
+
+      {/* Close button */}
+      <div class="flex justify-end pt-2">
+        <form method="dialog">
+          <button
+            type="submit"
+            class="btn btn-outline btn-accent px-8 h-14 rounded-full font-bold text-base-content hover:bg-base-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent"
+            data-close-history
+          >
+            Close
+          </button>
+        </form>
+      </div>
+    </div>
+  </Modal>
+</div>
+
+<script>
+  import { formatCurrency } from '@/lib/tokens';
+
+  // Track initialized modals to avoid duplicate handlers
+  const initializedModals = new WeakSet<Element>();
+
+  interface HistoryPoint {
+    date: string;
+    balance: number;
+  }
+
+  interface AssetHistoryData {
+    id: string;
+    name: string;
+    type: string;
+    currency: 'IDR' | 'USD';
+    balance: number;
+    history?: HistoryPoint[];
+  }
+
+  function initAssetHistoryModal() {
+    document.querySelectorAll('[data-asset-history-modal-container]').forEach((container) => {
+      // Skip if already initialized
+      if (initializedModals.has(container)) return;
+      initializedModals.add(container);
+
+      const id = container.getAttribute('data-id');
+      if (!id) return;
+
+      const modal = document.getElementById(id) as HTMLDialogElement | null;
+
+      // Elements
+      const nameEl = container.querySelector('[data-asset-name]');
+      const metaEl = container.querySelector('[data-asset-meta]');
+      const balanceEl = container.querySelector('[data-current-balance]');
+      const changeBadge = container.querySelector('[data-change-badge]') as HTMLElement;
+      const changeText = container.querySelector('[data-change-text]');
+      const arrowUp = container.querySelector('[data-arrow-up]');
+      const arrowDown = container.querySelector('[data-arrow-down]');
+
+      // Chart elements
+      const chartLoading = container.querySelector('[data-chart-loading]');
+      const chartEmpty = container.querySelector('[data-chart-empty]');
+      const chartSvg = container.querySelector('[data-chart-svg]') as SVGElement;
+      const chartArea = container.querySelector('[data-chart-area]') as SVGPathElement;
+      const chartLine = container.querySelector('[data-chart-line]') as SVGPathElement;
+      const chartPoints = container.querySelector('[data-chart-points]');
+      const xLabels = container.querySelector('[data-x-labels]');
+      const tooltip = container.querySelector('[data-chart-tooltip]') as HTMLElement;
+      const tooltipDate = container.querySelector('[data-tooltip-date]');
+      const tooltipValue = container.querySelector('[data-tooltip-value]');
+
+      // Timeframe buttons
+      const weeklyBtn = container.querySelector('[data-timeframe="weekly"]') as HTMLButtonElement;
+      const monthlyBtn = container.querySelector('[data-timeframe="monthly"]') as HTMLButtonElement;
+
+      if (!modal) return;
+
+      let currentData: AssetHistoryData | null = null;
+      let currentTimeframe: 'weekly' | 'monthly' = 'monthly';
+
+      // Generate mock history data
+      // @TODO: Wire with backend - Replace with actual API call to /api/assets/:id/history
+      const generateMockHistory = (currentBalance: number, days: number): HistoryPoint[] => {
+        const history: HistoryPoint[] = [];
+        const today = new Date();
+        let balance = currentBalance * (0.85 + Math.random() * 0.1); // Start 5-15% lower
+
+        for (let i = days - 1; i >= 0; i--) {
+          const date = new Date(today);
+          date.setDate(date.getDate() - i);
+
+          // Random daily change between -2% and +3%
+          const changePercent = (Math.random() * 5 - 2) / 100;
+          balance = balance * (1 + changePercent);
+
+          // Ensure we trend towards current balance on last day
+          if (i === 0) {
+            balance = currentBalance;
+          }
+
+          history.push({
+            date: date.toISOString().split('T')[0],
+            balance: Math.round(balance * 100) / 100,
+          });
+        }
+
+        return history;
+      };
+
+      // Draw chart
+      const drawChart = (data: HistoryPoint[], currency: 'IDR' | 'USD') => {
+        if (!chartSvg || !chartArea || !chartLine || !chartPoints || !xLabels) return;
+
+        if (data.length === 0) {
+          chartSvg.classList.add('hidden');
+          chartEmpty?.classList.remove('hidden');
+          xLabels.classList.add('hidden');
+          return;
+        }
+
+        chartSvg.classList.remove('hidden');
+        chartEmpty?.classList.add('hidden');
+        xLabels.classList.remove('hidden');
+
+        const width = 800;
+        const height = 280;
+        const padding = { top: 20, bottom: 40, left: 10, right: 10 };
+
+        const chartWidth = width - padding.left - padding.right;
+        const chartHeight = height - padding.top - padding.bottom;
+
+        // Find min/max
+        const balances = data.map((d) => d.balance);
+        const minBalance = Math.min(...balances) * 0.95;
+        const maxBalance = Math.max(...balances) * 1.05;
+        const range = maxBalance - minBalance || 1;
+
+        // Calculate points
+        const points = data.map((d, i) => {
+          const x = padding.left + (i / (data.length - 1)) * chartWidth;
+          const y = padding.top + chartHeight - ((d.balance - minBalance) / range) * chartHeight;
+          return { x, y, ...d };
+        });
+
+        // Create line path
+        const linePath = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
+
+        // Create area path (closed)
+        const areaPath =
+          linePath +
+          ` L ${points[points.length - 1].x} ${height - padding.bottom}` +
+          ` L ${points[0].x} ${height - padding.bottom} Z`;
+
+        chartLine.setAttribute('d', linePath);
+        chartArea.setAttribute('d', areaPath);
+
+        // Clear and add points
+        chartPoints.innerHTML = '';
+        points.forEach((p, i) => {
+          const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+          circle.setAttribute('cx', String(p.x));
+          circle.setAttribute('cy', String(p.y));
+          circle.setAttribute('r', '4');
+          circle.setAttribute('fill', '#6366f1');
+          circle.setAttribute(
+            'class',
+            'opacity-0 hover:opacity-100 transition-opacity cursor-pointer'
+          );
+          circle.setAttribute('data-point-index', String(i));
+
+          // Tooltip events
+          circle.addEventListener('mouseenter', (e) => {
+            const point = points[i];
+            if (tooltipDate) {
+              tooltipDate.textContent = new Date(point.date).toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+              });
+            }
+            if (tooltipValue) {
+              tooltipValue.textContent = formatCurrency(point.balance, currency);
+            }
+            if (tooltip) {
+              const rect = (e.target as Element).getBoundingClientRect();
+              // P4: TODO - Add viewport boundary checks to prevent tooltip overflow on mobile
+              tooltip.style.left = `${rect.left - 40}px`;
+              tooltip.style.top = `${rect.top - 60}px`;
+              tooltip.style.opacity = '1';
+            }
+          });
+
+          circle.addEventListener('mouseleave', () => {
+            if (tooltip) {
+              tooltip.style.opacity = '0';
+            }
+          });
+
+          chartPoints.appendChild(circle);
+        });
+
+        // Update x-axis labels
+        xLabels.innerHTML = '';
+        const labelCount = Math.min(data.length, 8);
+        const step = Math.floor(data.length / labelCount);
+
+        for (let i = 0; i < data.length; i += step) {
+          const point = data[i];
+          const label = document.createElement('span');
+          label.textContent = new Date(point.date).toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+          });
+          xLabels.appendChild(label);
+        }
+      };
+
+      // Update display with data
+      // SECURITY: Use textContent (not innerHTML) to prevent XSS from user data
+      const updateDisplay = (data: AssetHistoryData, timeframe: 'weekly' | 'monthly') => {
+        if (nameEl) nameEl.textContent = data.name;
+        if (metaEl) metaEl.textContent = `${data.type} • ${data.currency} Portfolio`;
+        if (balanceEl) balanceEl.textContent = formatCurrency(data.balance, data.currency);
+
+        // Get history for timeframe
+        const days = timeframe === 'weekly' ? 7 : 30;
+        const history = data.history || generateMockHistory(data.balance, days);
+        const displayHistory = timeframe === 'weekly' ? history.slice(-7) : history;
+
+        // Calculate change
+        const startBalance = displayHistory[0]?.balance || data.balance;
+        const changePercent =
+          startBalance !== 0 ? ((data.balance - startBalance) / startBalance) * 100 : 0;
+        const isPositive = changePercent >= 0;
+
+        if (changeBadge) {
+          changeBadge.className = `flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${
+            isPositive ? 'bg-success/10 text-success' : 'bg-error/10 text-error'
+          }`;
+        }
+        if (arrowUp) arrowUp.classList.toggle('hidden', !isPositive);
+        if (arrowDown) arrowDown.classList.toggle('hidden', isPositive);
+        if (changeText) {
+          changeText.textContent = `${Math.abs(changePercent).toFixed(2)}% (${timeframe === 'weekly' ? 'weekly' : 'monthly'})`;
+        }
+
+        // Update timeframe buttons
+        if (weeklyBtn && monthlyBtn) {
+          const activeClasses = 'bg-accent text-white shadow-sm';
+          const inactiveClasses = 'text-base-content/50';
+
+          weeklyBtn.className = `px-4 py-2 text-[10px] font-bold rounded-lg uppercase tracking-widest transition-all ${
+            timeframe === 'weekly' ? activeClasses : inactiveClasses
+          }`;
+          monthlyBtn.className = `px-4 py-2 text-[10px] font-bold rounded-lg uppercase tracking-widest transition-all ${
+            timeframe === 'monthly' ? activeClasses : inactiveClasses
+          }`;
+        }
+
+        // Hide loading, draw chart
+        chartLoading?.classList.add('hidden');
+        drawChart(displayHistory, data.currency);
+      };
+
+      // Listen for open-asset-history event
+      const handleOpenHistory = ((e: CustomEvent<AssetHistoryData>) => {
+        currentData = e.detail;
+        currentTimeframe = 'monthly';
+
+        // Show loading
+        chartLoading?.classList.remove('hidden');
+        chartSvg?.classList.add('hidden');
+        chartEmpty?.classList.add('hidden');
+
+        // Generate mock history data
+        // @TODO: Wire with backend - Fetch from API instead
+        const days = 30;
+        currentData.history = generateMockHistory(currentData.balance, days);
+
+        modal.showModal();
+
+        // Delay to allow modal animation
+        setTimeout(() => {
+          updateDisplay(currentData!, currentTimeframe);
+        }, 100);
+      }) as EventListener;
+
+      document.addEventListener('open-asset-history', handleOpenHistory);
+
+      // Clean up event listener on Astro page transitions to prevent memory leaks
+      document.addEventListener(
+        'astro:before-swap',
+        () => {
+          document.removeEventListener('open-asset-history', handleOpenHistory);
+        },
+        { once: true }
+      );
+
+      // Handle timeframe buttons
+      weeklyBtn?.addEventListener('click', () => {
+        if (currentData) {
+          currentTimeframe = 'weekly';
+          updateDisplay(currentData, currentTimeframe);
+        }
+      });
+
+      monthlyBtn?.addEventListener('click', () => {
+        if (currentData) {
+          currentTimeframe = 'monthly';
+          updateDisplay(currentData, currentTimeframe);
+        }
+      });
+
+      // Reset data when modal closes (form method="dialog" triggers this)
+      modal.addEventListener('close', () => {
+        currentData = null;
+      });
+    });
+  }
+
+  // Initialize on DOM ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initAssetHistoryModal);
+  } else {
+    initAssetHistoryModal();
+  }
+
+  // Re-initialize on Astro page transitions
+  document.addEventListener('astro:page-load', initAssetHistoryModal);
+</script>

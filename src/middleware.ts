@@ -5,7 +5,7 @@
  * This middleware runs on every request to provide authentication context to pages.
  *
  * Route Protection:
- * - Routes under /dashboard, /transactions, /budget, /assets, /reports, /forecast, /calculators, /settings
+ * - Routes under /dashboard, /transactions, /budget, /assets, /reports, /forecast, /calculators, /settings, /profile, /security
  *   require authentication and will redirect to /login if not authenticated.
  *
  * @see https://docs.astro.build/en/reference/middleware-reference/
@@ -44,6 +44,8 @@ const PROTECTED_ROUTES = [
   '/forecast',
   '/calculators',
   '/settings',
+  '/profile',
+  '/security',
 ] as const;
 
 /**

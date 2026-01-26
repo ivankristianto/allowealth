@@ -1,0 +1,265 @@
+---
+/**
+ * AssetDeleteConfirmModal Component
+ *
+ * Modal for confirming asset deletion.
+ * Based on the existing DeleteConfirmationModal pattern.
+ *
+ * @param {string} id - Modal ID
+ */
+
+import Modal from '../molecules/Modal.astro';
+import { Trash2 } from '@lucide/astro';
+
+export interface Props {
+  id: string;
+}
+
+const { id } = Astro.props;
+---
+
+<div data-asset-delete-modal-container data-id={id}>
+  <Modal id={id} size="sm" closable={false} backdropClose={true}>
+    <div slot="default" class="flex flex-col gap-6">
+      {/* Header section */}
+      <div class="flex items-center gap-4">
+        {/* Icon */}
+        <div class="w-12 h-12 rounded-2xl flex items-center justify-center bg-error/10">
+          <Trash2 size={24} class="stroke-current text-error" aria-hidden="true" />
+        </div>
+
+        {/* Title and description */}
+        <div class="flex-1">
+          <h2 class="text-2xl font-bold tracking-tight text-primary leading-none" data-modal-title>
+            Delete Asset
+          </h2>
+          <p class="text-neutral text-sm mt-2 font-medium" data-modal-subtitle>
+            Are you sure you want to delete this asset?
+          </p>
+        </div>
+      </div>
+
+      {/* Asset details section */}
+      <div class="bg-base-200 rounded-2xl p-4" data-asset-details>
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="font-bold text-base-content" data-asset-name>Asset Name</p>
+            <p class="text-xs text-base-content/50 mt-1" data-asset-type>Type</p>
+          </div>
+          <div class="text-right">
+            <p class="font-bold" data-asset-balance>Balance</p>
+            <span
+              class="inline-block px-2 py-0.5 rounded-md text-[10px] font-bold tracking-wider uppercase bg-base-300 text-base-content/60"
+              data-asset-currency
+            >
+              Currency
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Warning message */}
+      <div class="text-sm text-error/80 bg-error/5 p-3 rounded-xl">
+        This action cannot be undone. All balance history for this asset will also be deleted.
+      </div>
+
+      {/* Error message */}
+      <div
+        id={`${id}-error`}
+        class="hidden alert alert-error text-sm rounded-xl"
+        role="alert"
+        aria-live="polite"
+        data-delete-error
+      >
+      </div>
+
+      {/* Actions */}
+      <div class="flex gap-4 pt-2">
+        <form method="dialog" class="flex-1">
+          <button
+            type="submit"
+            class="btn btn-ghost w-full h-14 rounded-full font-bold text-base-content hover:bg-base-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent"
+          >
+            Cancel
+          </button>
+        </form>
+        <button
+          type="button"
+          class="btn btn-error flex-1 h-14 rounded-full font-bold"
+          data-confirm-delete
+        >
+          Delete Asset
+        </button>
+      </div>
+    </div>
+  </Modal>
+</div>
+
+<script>
+  import { addToast } from '@lib/stores/toastStore';
+  import { formatCurrency } from '@/lib/tokens';
+
+  // Track initialized modals to avoid duplicate handlers
+  const initializedModals = new WeakSet<Element>();
+
+  interface AssetDeleteData {
+    id: string;
+    name: string;
+    type: string;
+    balance: number;
+    currency: 'IDR' | 'USD';
+  }
+
+  function initAssetDeleteModal() {
+    document.querySelectorAll('[data-asset-delete-modal-container]').forEach((container) => {
+      // Skip if already initialized
+      if (initializedModals.has(container)) return;
+      initializedModals.add(container);
+
+      const id = container.getAttribute('data-id');
+      if (!id) return;
+
+      const modal = document.getElementById(id) as HTMLDialogElement | null;
+      const confirmBtn = container.querySelector('[data-confirm-delete]') as HTMLButtonElement;
+      const errorDiv = document.getElementById(`${id}-error`);
+
+      // Detail elements
+      const nameEl = container.querySelector('[data-asset-name]');
+      const typeEl = container.querySelector('[data-asset-type]');
+      const balanceEl = container.querySelector('[data-asset-balance]');
+      const currencyEl = container.querySelector('[data-asset-currency]');
+
+      if (!modal) return;
+
+      // Store current asset ID for deletion
+      let currentAssetId: string | null = null;
+
+      // Function to populate modal with asset data
+      // SECURITY: Use textContent (not innerHTML) to prevent XSS from user data
+      const populateModal = (data: AssetDeleteData) => {
+        currentAssetId = data.id;
+        if (nameEl) nameEl.textContent = data.name;
+        if (typeEl) typeEl.textContent = data.type;
+        if (balanceEl) {
+          balanceEl.textContent = formatCurrency(data.balance, data.currency);
+          // Apply currency color
+          balanceEl.classList.remove('text-success', 'text-info');
+          balanceEl.classList.add(data.currency === 'IDR' ? 'text-success' : 'text-info');
+        }
+        if (currencyEl) {
+          currencyEl.textContent = data.currency;
+          currencyEl.classList.remove('bg-success/10', 'text-success', 'bg-info/10', 'text-info');
+          currencyEl.classList.add(
+            data.currency === 'IDR' ? 'bg-success/10' : 'bg-info/10',
+            data.currency === 'IDR' ? 'text-success' : 'text-info'
+          );
+        }
+      };
+
+      // Function to reset modal
+      const resetModal = () => {
+        currentAssetId = null;
+        if (errorDiv) {
+          errorDiv.textContent = '';
+          errorDiv.classList.add('hidden');
+        }
+        if (confirmBtn) {
+          confirmBtn.disabled = false;
+          confirmBtn.textContent = 'Delete Asset';
+        }
+      };
+
+      // Listen for open-asset-delete event
+      const handleOpenDelete = ((e: CustomEvent<AssetDeleteData>) => {
+        populateModal(e.detail);
+        modal.showModal();
+      }) as EventListener;
+
+      document.addEventListener('open-asset-delete', handleOpenDelete);
+
+      // Clean up event listener on Astro page transitions to prevent memory leaks
+      document.addEventListener(
+        'astro:before-swap',
+        () => {
+          document.removeEventListener('open-asset-delete', handleOpenDelete);
+        },
+        { once: true }
+      );
+
+      // Reset modal when closed (form method="dialog" triggers this)
+      modal.addEventListener('close', () => {
+        resetModal();
+      });
+
+      // Handle confirm delete
+      confirmBtn?.addEventListener('click', async () => {
+        if (!currentAssetId) return;
+
+        // Validate asset ID format (UUID)
+        const uuidPattern = /^[a-f0-9-]{36}$/i;
+        if (!uuidPattern.test(currentAssetId)) {
+          if (errorDiv) {
+            errorDiv.textContent = 'Invalid asset ID format.';
+            errorDiv.classList.remove('hidden');
+          }
+          return;
+        }
+
+        // Clear previous errors
+        if (errorDiv) {
+          errorDiv.textContent = '';
+          errorDiv.classList.add('hidden');
+        }
+
+        // Show loading state
+        confirmBtn.disabled = true;
+        confirmBtn.textContent = 'Deleting...';
+
+        try {
+          const response = await fetch(`/api/assets/${currentAssetId}`, {
+            method: 'DELETE',
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to delete asset');
+          }
+
+          // Success
+          addToast('Asset deleted successfully', 'success');
+          modal.close();
+
+          // Dispatch event for page update
+          document.dispatchEvent(
+            new CustomEvent('asset-deleted', {
+              detail: { assetId: currentAssetId },
+            })
+          );
+
+          // Reload page to show updated data
+          setTimeout(() => window.location.reload(), 500);
+        } catch (err) {
+          const message = err instanceof Error ? err.message : 'Failed to delete asset';
+          if (errorDiv) {
+            errorDiv.textContent = message;
+            errorDiv.classList.remove('hidden');
+          }
+          addToast(message, 'error');
+        } finally {
+          confirmBtn.disabled = false;
+          confirmBtn.textContent = 'Delete Asset';
+        }
+      });
+    });
+  }
+
+  // Initialize on DOM ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initAssetDeleteModal);
+  } else {
+    initAssetDeleteModal();
+  }
+
+  // Re-initialize on Astro page transitions
+  document.addEventListener('astro:page-load', initAssetDeleteModal);
+</script>

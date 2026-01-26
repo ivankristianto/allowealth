@@ -1,0 +1,322 @@
+---
+/**
+ * BudgetSummary Component
+ *
+ * Overview section showing total budget allocation, aggregate spending,
+ * surplus/deficit status, and allocation mix distribution bar.
+ *
+ * Part of the Budget page redesign.
+ *
+ * @param {number} totalAllocated - Total monthly budget pot
+ * @param {number} totalSpent - Aggregate spending amount
+ * @param {Array} distribution - Category distribution for allocation bar
+ * @param {string} currency - Currency code (IDR or USD)
+ * @param {boolean} loading - Show loading skeleton state
+ * @param {string} className - Additional CSS classes
+ */
+
+// External packages
+import { Landmark, TriangleAlert } from '@lucide/astro';
+
+// Internal aliases - lib
+import { formatCurrency } from '@/lib/tokens';
+import { sanitizeColor } from '@/lib/utils/budget';
+
+// Internal aliases - components
+import StatLabel from '@components/atoms/StatLabel.astro';
+import Skeleton from '@components/atoms/Skeleton.astro';
+
+// P2: TODO - Consider importing AllocationDistribution type from budget utils
+// and aligning with DistributionItem interface
+export interface DistributionItem {
+  name: string;
+  weight: number;
+  color: string;
+}
+
+// Maximum number of individual categories to show before grouping the rest as "Others"
+const MAX_LEGEND_ITEMS = 7;
+const OTHERS_COLOR = '#9ca3af'; // gray-400 for "Others" category
+
+export interface Props {
+  totalAllocated: number;
+  totalSpent: number;
+  distribution: DistributionItem[];
+  currency?: 'IDR' | 'USD';
+  loading?: boolean;
+  className?: string;
+}
+
+const {
+  totalAllocated,
+  totalSpent,
+  distribution,
+  currency = 'IDR',
+  loading = false,
+  className = '',
+} = Astro.props;
+
+// Calculate derived values
+const remaining = totalAllocated - totalSpent;
+const isDeficit = remaining < 0;
+const overallUsage = totalAllocated > 0 ? (totalSpent / totalAllocated) * 100 : 0;
+
+// Sort distribution by weight (largest first)
+const sortedDistribution = [...distribution].sort((a, b) => b.weight - a.weight);
+
+// Take top N for legend display, combine rest as "Others"
+const topCategories = sortedDistribution.slice(0, MAX_LEGEND_ITEMS);
+const remainingCategories = sortedDistribution.slice(MAX_LEGEND_ITEMS);
+const othersWeight = remainingCategories.reduce((sum, item) => sum + item.weight, 0);
+
+// Build display distribution with "Others" if there are remaining categories
+const displayDistribution: DistributionItem[] =
+  othersWeight > 0
+    ? [...topCategories, { name: 'Others', weight: othersWeight, color: OTHERS_COLOR }]
+    : topCategories;
+
+// Generate accessible description for screen readers (P1: Accessibility fix)
+const allocationDescription = sortedDistribution
+  .map((item) => `${item.name} ${item.weight.toFixed(1)}%`)
+  .join(', ');
+
+const cardClasses = [
+  // Base card styling
+  'bg-base-100 rounded-card border border-base-300',
+  // Premium shadow
+  'shadow-sm',
+  // Padding - responsive
+  'p-6 lg:p-10',
+  // Relative for overflow
+  'relative overflow-hidden',
+  // Additional classes
+  className,
+]
+  .filter(Boolean)
+  .join(' ');
+---
+
+{
+  loading ? (
+    <section class={cardClasses} aria-busy="true" aria-label="Loading budget summary">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10">
+        {/* Left: Key Metrics Skeleton */}
+        <div class="lg:col-span-4 flex flex-col justify-center gap-6 lg:gap-8">
+          <div class="flex flex-col gap-6">
+            <div>
+              <Skeleton variant="text" width="120px" height="12px" />
+              <Skeleton variant="text" width="180px" height="32px" className="mt-3" />
+            </div>
+            <div>
+              <Skeleton variant="text" width="140px" height="12px" />
+              <div class="flex items-baseline gap-2 mt-3">
+                <Skeleton variant="text" width="160px" height="32px" />
+                <Skeleton variant="text" width="50px" height="16px" />
+              </div>
+            </div>
+          </div>
+          <Skeleton variant="rectangular" width="100%" height="56px" className="rounded-2xl" />
+        </div>
+
+        {/* Right: Allocation Bar Skeleton */}
+        <div class="lg:col-span-8 flex flex-col justify-center gap-6 lg:gap-8">
+          <div class="flex justify-between items-end mb-2">
+            <Skeleton variant="text" width="120px" height="20px" />
+            <Skeleton variant="text" width="160px" height="12px" />
+          </div>
+          <Skeleton variant="rectangular" width="100%" height="24px" className="rounded-full" />
+          {/* Legend skeleton - up to 8 items (7 categories + Others) */}
+          <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 lg:gap-4">
+            {Array(8)
+              .fill(0)
+              .map(() => (
+                <div class="flex flex-col gap-1.5">
+                  <div class="flex items-center gap-2">
+                    <Skeleton variant="circular" width="8px" height="8px" />
+                    <Skeleton variant="text" width="60px" height="10px" />
+                  </div>
+                  <Skeleton variant="text" width="40px" height="12px" className="ml-4" />
+                </div>
+              ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  ) : (
+    <section class={cardClasses} aria-label="Budget overview summary">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 relative z-10">
+        {/* Left: Key Metrics */}
+        <div class="lg:col-span-4 flex flex-col justify-center gap-6 lg:gap-8">
+          <div class="flex flex-col gap-6">
+            {/* Total Monthly Pot */}
+            <div>
+              <StatLabel size="sm" className="uppercase tracking-widest">
+                Total Monthly Pot
+              </StatLabel>
+              <p class="text-2xl lg:text-3xl font-bold mt-2 lg:mt-3 text-base-content tracking-tight leading-none">
+                {formatCurrency(totalAllocated, currency)}
+              </p>
+            </div>
+
+            {/* Aggregate Spending */}
+            <div>
+              <StatLabel size="sm" color="warning" className="uppercase tracking-widest">
+                Aggregate Spending
+              </StatLabel>
+              <div class="flex items-baseline gap-2 mt-2 lg:mt-3">
+                <p
+                  class:list={[
+                    'text-2xl lg:text-3xl font-bold tracking-tight leading-none',
+                    totalSpent > totalAllocated ? 'text-error' : 'text-base-content',
+                  ]}
+                >
+                  {formatCurrency(totalSpent, currency)}
+                </p>
+                <span class="text-xs font-bold text-base-content/40">
+                  / {overallUsage.toFixed(1)}%
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Surplus/Deficit Indicator */}
+          <div
+            class:list={[
+              'p-4 rounded-2xl border flex items-center gap-3',
+              isDeficit ? 'bg-error/5 border-error/20' : 'bg-success/5 border-success/20',
+            ]}
+          >
+            {isDeficit ? (
+              <TriangleAlert size={20} class="text-error shrink-0" aria-hidden="true" />
+            ) : (
+              <Landmark size={20} class="text-success shrink-0" aria-hidden="true" />
+            )}
+            <p
+              class:list={[
+                'text-xs font-bold uppercase tracking-wide',
+                isDeficit ? 'text-error' : 'text-success',
+              ]}
+            >
+              {isDeficit
+                ? `Deficit of ${formatCurrency(Math.abs(remaining), currency)}`
+                : `Surplus of ${formatCurrency(remaining, currency)}`}
+            </p>
+          </div>
+        </div>
+
+        {/* Right: Allocation Mix */}
+        <div class="lg:col-span-8 flex flex-col justify-center gap-6 lg:gap-8">
+          {/* Header */}
+          <div class="flex justify-between items-end">
+            <h3 class="font-bold text-base-content tracking-tight text-base lg:text-lg leading-none">
+              Allocation Mix
+            </h3>
+            <StatLabel size="sm" className="uppercase tracking-widest hidden sm:block">
+              Total Share Distribution
+            </StatLabel>
+          </div>
+
+          {/* Stacked Bar - P0: Colors sanitized, P1: Accessible description */}
+          {/* Uses displayDistribution to match legend (top 7 + Others) */}
+          <div class="relative" data-allocation-bar>
+            <div
+              class="h-6 w-full bg-base-300 rounded-full overflow-hidden flex shadow-inner"
+              role="img"
+              aria-label={`Budget allocation: ${allocationDescription}`}
+            >
+              {displayDistribution.map((item) => {
+                const safeColor = sanitizeColor(item.color);
+                const safeWeight = Math.min(Math.max(item.weight, 0), 100);
+                return (
+                  <div
+                    class="h-full transition-all duration-500 relative group/segment cursor-pointer"
+                    style={`width: ${safeWeight}%; background-color: ${safeColor};`}
+                    data-segment-name={item.name}
+                    data-segment-weight={item.weight.toFixed(1)}
+                  >
+                    <div class="absolute inset-0 bg-white/10 opacity-0 group-hover/segment:opacity-100 transition-opacity" />
+                  </div>
+                );
+              })}
+            </div>
+            {/* Custom tooltip - positioned outside overflow-hidden */}
+            <div
+              class="absolute -top-10 left-1/2 -translate-x-1/2 px-3 py-1.5 bg-neutral text-neutral-content text-xs font-medium rounded-lg shadow-lg opacity-0 pointer-events-none transition-opacity z-50 whitespace-nowrap"
+              data-allocation-tooltip
+            >
+              <span data-tooltip-text />
+              <div class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-neutral rotate-45" />
+            </div>
+          </div>
+
+          {/* Legend - P0: Colors sanitized, shows top 7 + Others */}
+          <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 lg:gap-4">
+            {displayDistribution.map((item) => {
+              const safeColor = sanitizeColor(item.color);
+              return (
+                <div class="flex flex-col gap-1">
+                  <div class="flex items-center gap-2">
+                    <div
+                      class="w-2 h-2 rounded-full shrink-0"
+                      style={`background-color: ${safeColor};`}
+                      aria-hidden="true"
+                    />
+                    <span class="text-[10px] font-bold text-base-content/60 uppercase tracking-tight truncate">
+                      {item.name}
+                    </span>
+                  </div>
+                  <p class="text-xs font-bold text-base-content leading-none ml-4">
+                    {item.weight.toFixed(1)}%
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+<script>
+  function initAllocationTooltips() {
+    document.querySelectorAll('[data-allocation-bar]').forEach((bar) => {
+      const tooltip = bar.querySelector('[data-allocation-tooltip]') as HTMLElement;
+      const tooltipText = bar.querySelector('[data-tooltip-text]') as HTMLElement;
+      if (!tooltip || !tooltipText) return;
+
+      const segments = bar.querySelectorAll('[data-segment-name]');
+
+      segments.forEach((segment) => {
+        segment.addEventListener('mouseenter', (e) => {
+          const target = e.currentTarget as HTMLElement;
+          const name = target.dataset.segmentName || '';
+          const weight = target.dataset.segmentWeight || '0';
+          tooltipText.textContent = `${name}: ${weight}%`;
+
+          // Position tooltip above the hovered segment
+          const barRect = bar.getBoundingClientRect();
+          const segmentRect = target.getBoundingClientRect();
+          const segmentCenter = segmentRect.left + segmentRect.width / 2 - barRect.left;
+
+          tooltip.style.left = `${segmentCenter}px`;
+          tooltip.style.opacity = '1';
+        });
+
+        segment.addEventListener('mouseleave', () => {
+          tooltip.style.opacity = '0';
+        });
+      });
+    });
+  }
+
+  // Initialize on DOM ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initAllocationTooltips);
+  } else {
+    initAllocationTooltips();
+  }
+
+  // Re-initialize on Astro page transitions
+  document.addEventListener('astro:page-load', initAllocationTooltips);
+</script>
