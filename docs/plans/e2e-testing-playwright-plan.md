@@ -52,6 +52,102 @@ Based on research from [Astro Testing Docs](https://docs.astro.build/en/guides/t
 
 ---
 
+## Environment Setup
+
+### E2E Environment Configuration
+
+E2E tests run in an isolated environment to avoid affecting development data.
+
+#### Environment File Setup
+
+Create `.env.e2e` from `.env.example` with E2E-specific configuration:
+
+```bash
+# .env.e2e - E2E Testing Environment
+NODE_ENV=development
+
+# API Configuration
+PUBLIC_API_URL=/api
+
+# Database - Separate E2E database to isolate test data
+DATABASE_URL=db/.e2e.db
+
+# Session Secret
+SESSION_SECRET=e2e-testing-secret-key
+
+# Server - Use different port to avoid conflicts with dev server
+PORT=4320
+
+# E2E Test User Credentials (used by global-setup.ts)
+E2E_USER_EMAIL=demo@example.com
+E2E_USER_PASSWORD=demodemo123
+```
+
+#### Setup Script Integration
+
+Before running E2E tests, the environment must be initialized using `scripts/setup.sh`:
+
+```bash
+# scripts/setup-e2e.sh
+#!/usr/bin/env bash
+set -e
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
+echo -e "${YELLOW}=== E2E Environment Setup ===${NC}\n"
+
+# 1. Copy .env.example to .env if .env.e2e doesn't exist
+if [ ! -f ".env.e2e" ]; then
+    echo -e "${YELLOW}Creating .env.e2e from .env.example...${NC}"
+    cp .env.example .env.e2e
+
+    # Update DATABASE_URL for E2E
+    sed -i 's|DATABASE_URL=db/.dev.db|DATABASE_URL=db/.e2e.db|g' .env.e2e
+
+    # Update PORT for E2E
+    sed -i 's|PORT=4321|PORT=4320|g' .env.e2e
+
+    # Add E2E test user credentials
+    echo "" >> .env.e2e
+    echo "# E2E Test User Credentials" >> .env.e2e
+    echo "E2E_USER_EMAIL=demo@example.com" >> .env.e2e
+    echo "E2E_USER_PASSWORD=demodemo123" >> .env.e2e
+
+    echo -e "${GREEN}✓ .env.e2e created${NC}\n"
+fi
+
+# 2. Switch to E2E environment
+echo -e "${YELLOW}Switching to E2E environment...${NC}"
+cp .env.e2e .env
+echo -e "${GREEN}✓ Environment switched to E2E${NC}\n"
+
+# 3. Run the standard setup script (installs deps + resets DB)
+echo -e "${YELLOW}Running setup script...${NC}"
+./scripts/setup.sh
+
+echo -e "${GREEN}=== E2E Environment Ready ===${NC}"
+echo -e "Server will run on: ${YELLOW}http://localhost:4320${NC}"
+```
+
+#### Files to Add to .gitignore
+
+```gitignore
+# E2E Testing
+db/.e2e.db
+db/.e2e.db-wal
+db/.e2e.db-shm
+e2e/.auth/
+playwright-report/
+test-results/
+.env.e2e
+```
+
+---
+
 ## Technical Architecture
 
 ### Directory Structure
@@ -93,6 +189,10 @@ e2e/
 // e2e/playwright.config.ts
 import { defineConfig, devices } from '@playwright/test';
 
+// E2E tests run on port 4320 to avoid conflicts with dev server (4321)
+const E2E_PORT = 4320;
+const E2E_BASE_URL = `http://localhost:${E2E_PORT}`;
+
 export default defineConfig({
   testDir: './tests',
   fullyParallel: true,
@@ -104,17 +204,18 @@ export default defineConfig({
     ['json', { outputFile: 'test-results/results.json' }],
   ],
   use: {
-    baseURL: 'http://localhost:4321',
+    baseURL: E2E_BASE_URL,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
   },
 
-  // Start dev server before tests
+  // Start dev server before tests using E2E environment
   webServer: {
     command: 'bun run dev',
-    url: 'http://localhost:4321',
+    url: E2E_BASE_URL,
     reuseExistingServer: !process.env.CI,
     timeout: 120 * 1000,
+    // Environment is already configured via .env (copied from .env.e2e)
   },
 
   projects: [
@@ -153,14 +254,18 @@ Based on [Playwright Authentication Best Practices](https://playwright.dev/docs/
 // e2e/global-setup.ts
 import { chromium, FullConfig } from '@playwright/test';
 
+const E2E_PORT = 4320;
+const E2E_BASE_URL = `http://localhost:${E2E_PORT}`;
+
 async function globalSetup(config: FullConfig) {
   const browser = await chromium.launch();
   const page = await browser.newPage();
 
-  // Navigate to login
-  await page.goto('http://localhost:4321/login');
+  // Navigate to login (E2E server runs on port 4320)
+  await page.goto(`${E2E_BASE_URL}/login`);
 
-  // Fill login form
+  // Fill login form using seeded demo user credentials
+  // These are set in .env.e2e and loaded into process.env
   await page.fill('[data-testid="email-input"]', process.env.E2E_USER_EMAIL!);
   await page.fill('[data-testid="password-input"]', process.env.E2E_USER_PASSWORD!);
   await page.click('[data-testid="login-button"]');
@@ -719,18 +824,24 @@ export class ApiHelpers {
 
 ### Test User Requirements
 
-Create a dedicated E2E test user with:
-- Email: `e2e-test@example.com`
-- Pre-configured categories (both expense and income types)
-- Pre-configured payment methods
-- Some initial budgets set
+The E2E tests use the **demo user** that is created by `db:seed` (run via `scripts/setup.sh`):
 
-Store credentials in environment variables:
+- **Email:** `demo@example.com`
+- **Password:** `demodemo123`
+- **Pre-configured:** Categories, payment methods, sample transactions, and budgets
+
+The demo user credentials are configured in `.env.e2e`:
 ```bash
-# .env.test
-E2E_USER_EMAIL=e2e-test@example.com
-E2E_USER_PASSWORD=SecureTestPassword123!
+# .env.e2e (auto-generated by setup-e2e.sh)
+E2E_USER_EMAIL=demo@example.com
+E2E_USER_PASSWORD=demodemo123
 ```
+
+**Important:** The `scripts/setup-e2e.sh` script runs `scripts/setup.sh` which:
+1. Installs Bun dependencies (`bun install`)
+2. Resets and seeds the database (`bun run db:reset`)
+
+This ensures a clean, consistent test environment with the demo user available.
 
 ---
 
@@ -741,9 +852,16 @@ E2E_USER_PASSWORD=SecureTestPassword123!
 1. Install Playwright: `bun add -D @playwright/test`
 2. Install browsers: `bun playwright install`
 3. Create directory structure
-4. Configure `playwright.config.ts`
-5. Implement global auth setup
-6. Add test scripts to `package.json`
+4. **Create E2E environment setup:**
+   - Create `scripts/setup-e2e.sh` script
+   - Copy `.env.example` → `.env.e2e`
+   - Configure `DATABASE_URL=db/.e2e.db`
+   - Configure `PORT=4320`
+   - Add E2E test user credentials
+5. Configure `playwright.config.ts` (use port 4320)
+6. Implement global auth setup
+7. Add test scripts to `package.json`
+8. Update `.gitignore` for E2E artifacts
 
 ### Phase 2: Add Test Locators
 
@@ -779,6 +897,7 @@ E2E_USER_PASSWORD=SecureTestPassword123!
 ```json
 {
   "scripts": {
+    "test:e2e:setup": "./scripts/setup-e2e.sh",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",
@@ -786,6 +905,22 @@ E2E_USER_PASSWORD=SecureTestPassword123!
     "test:e2e:report": "playwright show-report"
   }
 }
+```
+
+### Running E2E Tests
+
+```bash
+# First time setup (creates .env.e2e, installs deps, seeds E2E database)
+bun run test:e2e:setup
+
+# Run all E2E tests
+bun run test:e2e
+
+# Run with UI mode for debugging
+bun run test:e2e:ui
+
+# Run specific test file
+bun playwright test tests/transactions/add-expense.spec.ts
 ```
 
 ---
