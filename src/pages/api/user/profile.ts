@@ -4,7 +4,7 @@ import {
   successResponse,
   errorResponse,
   validateBody,
-  requireAuth,
+  getAuthenticatedUser,
   isValidationError,
 } from '@/lib/api-utils';
 import { updateProfileSchema } from '@/services/user.service';
@@ -17,7 +17,7 @@ import { db } from '@/db';
  *
  * Retrieves the current authenticated user's profile data.
  *
- * @authentication Requires valid session cookie (handled by requireAuth)
+ * @authentication Requires valid session (validated by middleware, accessed via getAuthenticatedUser)
  *
  * @example
  * Response (200):
@@ -46,7 +46,7 @@ import { db } from '@/db';
  */
 export const GET: APIRoute = async (context) => {
   try {
-    const userId = await requireAuth(context);
+    const userId = getAuthenticatedUser(context);
     const user = await db.query.users.findFirst({
       where: (users, { eq }) => eq(users.id, userId),
     });
@@ -74,7 +74,7 @@ export const GET: APIRoute = async (context) => {
  *
  * Updates the current authenticated user's profile information.
  *
- * @authentication Requires valid session cookie (handled by requireAuth)
+ * @authentication Requires valid session (validated by middleware, accessed via getAuthenticatedUser)
  * @param {Object} requestBody - Request body containing profile updates
  * @param {string} requestBody.name - User's display name (required, max 100 chars)
  * @param {string} requestBody.email - User's email address (required, must be valid email format)
@@ -133,7 +133,7 @@ export const GET: APIRoute = async (context) => {
  */
 export const PUT: APIRoute = async (context) => {
   try {
-    const userId = await requireAuth(context);
+    const userId = getAuthenticatedUser(context);
 
     const validation = await validateBody(context.request, updateProfileSchema);
 

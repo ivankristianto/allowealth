@@ -157,7 +157,7 @@ const rowClasses = [
       if (initializedHistoryButtons.has(button)) return;
       initializedHistoryButtons.add(button);
 
-      button.addEventListener('click', (e) => {
+      button.addEventListener('click', (e: MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
 
@@ -190,7 +190,7 @@ const rowClasses = [
       if (initializedEditButtons.has(button)) return;
       initializedEditButtons.add(button);
 
-      button.addEventListener('click', (e) => {
+      button.addEventListener('click', (e: MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
 
@@ -223,7 +223,7 @@ const rowClasses = [
       if (initializedDeleteButtons.has(button)) return;
       initializedDeleteButtons.add(button);
 
-      button.addEventListener('click', (e) => {
+      button.addEventListener('click', (e: MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
 

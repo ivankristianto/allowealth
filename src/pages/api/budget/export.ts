@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import { budgetService } from '@/services';
-import { errorResponse, requireAuth } from '@/lib/api-utils';
+import { errorResponse, getAuthenticatedUser } from '@/lib/api-utils';
 import { logError } from '@/lib/utils';
 
 /**
@@ -8,9 +8,10 @@ import { logError } from '@/lib/utils';
  * Export budget overview to CSV
  * Query params: year, month, currency, sort, order
  */
-export const GET: APIRoute = async ({ request, url }) => {
+export const GET: APIRoute = async (context) => {
   try {
-    const userId = await requireAuth({ request, url } as any);
+    const userId = getAuthenticatedUser(context);
+    const { url } = context;
 
     const yearParam = url.searchParams.get('year');
     const monthParam = url.searchParams.get('month');

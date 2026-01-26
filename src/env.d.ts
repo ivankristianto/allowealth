@@ -8,6 +8,7 @@ declare global {
       user?: User | null;
       session?: Session | null;
       cspNonce?: string;
+      csrfToken?: string;
     }
   }
 

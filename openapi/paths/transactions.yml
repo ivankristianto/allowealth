@@ -42,6 +42,19 @@ paths:
           schema:
             type: string
             format: date
+        - name: search
+          in: query
+          description: Search in transaction description
+          schema:
+            type: string
+        - name: category_ids
+          in: query
+          description: |
+            Filter by multiple category IDs (comma-separated).
+            Example: `category_ids=cat1,cat2,cat3`
+          schema:
+            type: string
+            example: cat1,cat2,cat3
         - name: limit
           in: query
           description: Number of results per page (1-100)

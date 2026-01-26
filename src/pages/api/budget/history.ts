@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 import { experimental_AstroContainer as AstroContainer } from 'astro/container';
 import { budgetService } from '@/services';
-import { successResponse, errorResponse, requireAuth } from '@/lib/api-utils';
+import { successResponse, errorResponse, getAuthenticatedUser } from '@/lib/api-utils';
 import { logError } from '@/lib/utils';
 import { createRenderHelper } from '@/lib/api/renderResponse';
 
@@ -23,7 +23,7 @@ export const GET: APIRoute = async (context) => {
   const render = createRenderHelper(url);
 
   try {
-    const userId = await requireAuth(context);
+    const userId = getAuthenticatedUser(context);
 
     const currency = (url.searchParams.get('currency') as 'IDR' | 'USD') || 'IDR';
     const monthsParam = url.searchParams.get('months');

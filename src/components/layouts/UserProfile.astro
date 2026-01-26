@@ -106,6 +106,7 @@ const getUserInitials = () => {
 
 <script>
   import { addToast } from '@lib/stores/toastStore';
+  import { getCsrfHeaders } from '@/lib/csrf-client';
 
   const profileDropdowns = document.querySelectorAll('[data-profile-dropdown]');
 
@@ -157,12 +158,12 @@ const getUserInitials = () => {
     };
 
     // Store handler references for cleanup
-    const handleClick = (e) => {
+    const handleClick = (e: MouseEvent) => {
       e.stopPropagation();
       toggleMenu();
     };
 
-    const handleButtonKeydown = (e) => {
+    const handleButtonKeydown = (e: KeyboardEvent) => {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
         toggleMenu();
@@ -177,7 +178,7 @@ const getUserInitials = () => {
       }
     };
 
-    const handleDocumentClick = (e) => {
+    const handleDocumentClick = (e: MouseEvent) => {
       if (!(e.target instanceof Node) || !container.contains(e.target)) {
         closeMenu();
       }
@@ -187,6 +188,7 @@ const getUserInitials = () => {
       try {
         const response = await fetch('/api/auth/logout', {
           method: 'POST',
+          headers: getCsrfHeaders(),
           credentials: 'include',
         });
 
@@ -238,7 +240,7 @@ const getUserInitials = () => {
     // Keyboard support for menu items
     const menuItems = menu.querySelectorAll('[role="menuitem"]');
     menuItems.forEach((item, index) => {
-      item.addEventListener('keydown', (e) => {
+      item.addEventListener('keydown', (e: KeyboardEvent) => {
         if (!(item instanceof HTMLElement)) return;
         if (e.key === 'ArrowDown') {
           e.preventDefault();

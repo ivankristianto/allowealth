@@ -4,7 +4,7 @@ import {
   successResponse,
   errorResponse,
   validateBody,
-  requireAuth,
+  getAuthenticatedUser,
   isValidationError,
 } from '@/lib/api-utils';
 import { createPaymentMethodAPISchema } from '@/lib/validation';
@@ -14,9 +14,10 @@ import { logError } from '@/lib/utils';
  * GET /api/payment-methods
  * List all payment methods for the user
  */
-export const GET: APIRoute = async ({ request, url }) => {
+export const GET: APIRoute = async (context) => {
   try {
-    const userId = await requireAuth({ request, url } as any);
+    const userId = getAuthenticatedUser(context);
+    const { url } = context;
 
     const isActiveParam = url.searchParams.get('is_active');
 
@@ -41,11 +42,11 @@ export const GET: APIRoute = async ({ request, url }) => {
  * POST /api/payment-methods
  * Create a new payment method
  */
-export const POST: APIRoute = async ({ request, url }) => {
+export const POST: APIRoute = async (context) => {
   try {
-    const userId = await requireAuth({ request, url } as any);
+    const userId = getAuthenticatedUser(context);
 
-    const validation = await validateBody(request, createPaymentMethodAPISchema);
+    const validation = await validateBody(context.request, createPaymentMethodAPISchema);
 
     if (isValidationError(validation)) {
       return errorResponse('Validation failed', 400, 'VALIDATION_ERROR', validation.error.issues);

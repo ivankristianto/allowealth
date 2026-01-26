@@ -4,7 +4,7 @@ import {
   successResponse,
   errorResponse,
   validateBody,
-  requireAuth,
+  getAuthenticatedUser,
   isValidationError,
 } from '@/lib/api-utils';
 import { logError } from '@/lib/utils';
@@ -58,7 +58,7 @@ type UpdateBudgetInput = z.infer<typeof updateBudgetSchema>;
  */
 export const PATCH: APIRoute = async (context) => {
   try {
-    const userId = await requireAuth(context);
+    const userId = getAuthenticatedUser(context);
     const { id } = context.params;
 
     if (!id) {
