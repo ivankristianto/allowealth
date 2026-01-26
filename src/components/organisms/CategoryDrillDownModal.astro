@@ -252,6 +252,9 @@ const { id } = Astro.props;
       };
 
       // Render transaction list
+      // @TODO: P2 - Refactor to use server-rendered HTML partial per ADR-002
+      // Instead of client-side DOM construction, create TransactionListPartial.astro
+      // and fetch rendered HTML from the server
       const renderTransactions = (transactions: Transaction[]) => {
         if (!transactionsList) return;
 

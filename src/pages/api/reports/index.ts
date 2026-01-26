@@ -104,11 +104,24 @@ function getMockReportData(range: 'monthly' | 'yearly', period: string) {
 }
 
 export const GET: APIRoute = async ({ url }) => {
-  // Parse query parameters
-  const render = url.searchParams.get('_render') || 'json';
-  const partial = url.searchParams.get('_partial') || 'all';
-  const range = (url.searchParams.get('range') || 'monthly') as 'monthly' | 'yearly';
-  const period = url.searchParams.get('period') || '2024-02';
+  // Parse and validate query parameters
+  const renderParam = url.searchParams.get('_render');
+  const render = renderParam === 'html' ? 'html' : 'json';
+
+  const partialParam = url.searchParams.get('_partial');
+  const validPartials = ['all', 'summary', 'charts', 'table'];
+  const partial = validPartials.includes(partialParam || '') ? partialParam! : 'all';
+
+  const rangeParam = url.searchParams.get('range');
+  const range: 'monthly' | 'yearly' = rangeParam === 'yearly' ? 'yearly' : 'monthly';
+
+  // Validate period format (YYYY-MM for monthly, YYYY for yearly)
+  const periodParam = url.searchParams.get('period') || '';
+  const monthlyRegex = /^\d{4}-(0[1-9]|1[0-2])$/;
+  const yearlyRegex = /^\d{4}$/;
+  const isValidPeriod =
+    range === 'monthly' ? monthlyRegex.test(periodParam) : yearlyRegex.test(periodParam);
+  const period = isValidPeriod ? periodParam : range === 'monthly' ? '2024-02' : '2024';
 
   // @TODO: Wire with backend - Replace with actual data fetching
   // Example: const data = await reportsService.getReportData(userId, range, period);

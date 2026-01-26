@@ -117,11 +117,18 @@ const currentPeriodLabel =
 </div>
 
 <script>
+  // Store references to event listeners for cleanup
+  const rangeClickHandlers = new Map<Element, () => void>();
+  const periodClickHandlers = new Map<Element, (e: Event) => void>();
+
   // Initialize report selector
   function initReportSelector() {
+    // Cleanup previous listeners first
+    cleanupReportSelector();
+
     // Handle range toggle button clicks
     document.querySelectorAll('[data-range]').forEach((btn) => {
-      btn.addEventListener('click', () => {
+      const handler = () => {
         const rangeButton = btn as HTMLElement;
         const range = rangeButton.getAttribute('data-range') as 'monthly' | 'yearly';
 
@@ -143,12 +150,14 @@ const currentPeriodLabel =
             detail: { range },
           })
         );
-      });
+      };
+      btn.addEventListener('click', handler);
+      rangeClickHandlers.set(btn, handler);
     });
 
     // Handle period dropdown selection
     document.querySelectorAll('[data-period-option]').forEach((btn) => {
-      btn.addEventListener('click', (e: Event) => {
+      const handler = (e: Event) => {
         e.preventDefault();
         e.stopPropagation();
 
@@ -170,8 +179,23 @@ const currentPeriodLabel =
             detail: { period: value, label: displayLabel },
           })
         );
-      });
+      };
+      btn.addEventListener('click', handler);
+      periodClickHandlers.set(btn, handler);
     });
+  }
+
+  // Cleanup event listeners
+  function cleanupReportSelector() {
+    rangeClickHandlers.forEach((handler, btn) => {
+      btn.removeEventListener('click', handler);
+    });
+    rangeClickHandlers.clear();
+
+    periodClickHandlers.forEach((handler, btn) => {
+      btn.removeEventListener('click', handler);
+    });
+    periodClickHandlers.clear();
   }
 
   // Initialize on DOM ready
@@ -183,4 +207,7 @@ const currentPeriodLabel =
 
   // Re-initialize on Astro page transitions
   document.addEventListener('astro:page-load', initReportSelector);
+
+  // Cleanup on page navigation
+  document.addEventListener('astro:before-swap', cleanupReportSelector);
 </script>

@@ -16,6 +16,7 @@ import {
   hideLoadingState,
   announceToScreenReader,
 } from './ReportsRenderer.client';
+import { addToast } from '@/lib/stores/toastStore';
 
 // Current report state
 interface ReportState {
@@ -95,9 +96,8 @@ async function fetchAndRenderReports(): Promise<void> {
     hideLoadingState('[data-charts-container]');
     hideLoadingState('[data-table-container]');
 
-    // Show error message
-    // @TODO: Implement proper error UI
-    alert('Failed to load report data. Please try again.');
+    // Show error toast
+    addToast('Failed to load report data. Please try again.', 'error');
   }
 }
 

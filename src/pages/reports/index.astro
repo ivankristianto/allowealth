@@ -185,7 +185,11 @@ const mockData = {
 </script>
 
 <style>
-  /* Screen reader only class */
+  /* Screen reader only class
+   * @TODO: P2 - Use Tailwind's built-in sr-only utility class instead
+   * This CSS is duplicated across multiple chart components. Consider removing
+   * and using `class="sr-only"` directly from Tailwind.
+   */
   .sr-only {
     position: absolute;
     width: 1px;
