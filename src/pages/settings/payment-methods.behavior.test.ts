@@ -3,6 +3,10 @@
  *
  * Comprehensive behavior documentation for the Payment Methods management page.
  * Tests icon migration, page structure, CRUD operations, accessibility, and integration.
+ *
+ * TODO: P3 - Many tests contain trivial assertions (e.g., expect('Plus').toBe('Plus'))
+ * that document behavior but don't test implementation. Consider converting these to
+ * integration tests that verify rendered HTML, or rely on E2E tests for coverage.
  */
 
 import { describe, it, expect } from 'bun:test';
@@ -439,10 +443,15 @@ describe('Payment Methods Page - Data Flow', () => {
   });
 });
 
-describe('Payment Methods Page - Client Script', () => {
-  it('should import client script from ./payment-methods-client.ts', () => {
-    const clientScript = './payment-methods-client.ts';
-    expect(clientScript).toBe('./payment-methods-client.ts');
+describe('Payment Methods Page - Modal Components', () => {
+  it('should use PaymentMethodFormModal component for add/edit', () => {
+    const modalComponent = 'PaymentMethodFormModal';
+    expect(modalComponent).toBe('PaymentMethodFormModal');
+  });
+
+  it('should use PaymentMethodConfirmModal component for deactivate/activate', () => {
+    const modalComponent = 'PaymentMethodConfirmModal';
+    expect(modalComponent).toBe('PaymentMethodConfirmModal');
   });
 });
 

@@ -15,7 +15,7 @@
 
 import StatLabel from '@/components/atoms/StatLabel.astro';
 import Skeleton from '@/components/atoms/Skeleton.astro';
-import { formatCurrency } from '@/lib/tokens';
+import { formatCurrency, getCategoryColor } from '@/lib/tokens';
 
 // Category icon mapping (using Lucide icon names)
 const CATEGORY_ICON_MAP: Record<string, string> = {
@@ -26,17 +26,6 @@ const CATEGORY_ICON_MAP: Record<string, string> = {
   Entertainment: 'music',
   Groceries: 'shopping-basket',
   Housing: 'home',
-};
-
-// Category color mapping
-const CATEGORY_COLOR_MAP: Record<string, string> = {
-  Utilities: 'bg-blue-600',
-  Dining: 'bg-orange-500',
-  Health: 'bg-cyan-500',
-  Transport: 'bg-purple-500',
-  Entertainment: 'bg-pink-500',
-  Groceries: 'bg-blue-500',
-  Housing: 'bg-red-500',
 };
 
 export interface CategoryIntelligence {
@@ -72,7 +61,7 @@ const categoriesWithPercentage = categories.map((cat) => {
     ...cat,
     percentage,
     icon: cat.icon || CATEGORY_ICON_MAP[cat.name] || 'tag',
-    color: cat.color || CATEGORY_COLOR_MAP[cat.name] || 'bg-accent',
+    color: cat.color || getCategoryColor(cat.name),
   };
 });
 ---

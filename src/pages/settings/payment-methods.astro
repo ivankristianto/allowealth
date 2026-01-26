@@ -19,6 +19,8 @@ import {
   Wallet,
 } from '@lucide/astro';
 import Badge from '@components/atoms/Badge.astro';
+import PaymentMethodFormModal from '@components/organisms/PaymentMethodFormModal.astro';
+import PaymentMethodConfirmModal from '@components/organisms/PaymentMethodConfirmModal.astro';
 
 const user = Astro.locals.user!;
 const currentPath = '/settings/payment-methods';
@@ -62,7 +64,7 @@ const getTypeLabel = (type: string) => {
           Manage your payment methods (cash, cards, bank accounts, e-wallets)
         </p>
       </div>
-      <button onclick="methodModal.showModal()" class="btn btn-primary gap-2">
+      <button data-action="add-method" class="btn btn-accent gap-2">
         <Plus size={16} class="stroke-current" aria-hidden="true" />
         Add Method
       </button>
@@ -133,11 +135,14 @@ const getTypeLabel = (type: string) => {
                               aria-hidden="true"
                             />
                           ) : method.type === 'bank_transfer' ? (
-                            <ArrowLeft
-                              size={16}
-                              class="opacity-50 stroke-current"
-                              aria-hidden="true"
-                            />
+                            <>
+                              {/* TODO: P2 - Replace ArrowLeft with Building2 or Landmark icon for better semantic meaning */}
+                              <ArrowLeft
+                                size={16}
+                                class="opacity-50 stroke-current"
+                                aria-hidden="true"
+                              />
+                            </>
                           ) : method.type === 'e_wallet' ? (
                             <Wallet
                               size={16}
@@ -165,14 +170,18 @@ const getTypeLabel = (type: string) => {
                             <>
                               <button
                                 class="btn btn-ghost btn-sm"
-                                onclick={'editMethod("' + method.id + '")'}
+                                data-action="edit"
+                                data-method-id={method.id}
+                                data-method-name={method.name}
+                                data-method-type={method.type}
                                 aria-label="Edit payment method"
                               >
                                 <Pencil size={16} class="stroke-current" aria-hidden="true" />
                               </button>
                               <button
                                 class="btn btn-ghost btn-sm text-warning"
-                                onclick={'deactivateMethod("' + method.id + '")'}
+                                data-action="deactivate"
+                                data-method-id={method.id}
                                 aria-label="Deactivate payment method"
                               >
                                 <Ban size={16} class="stroke-current" aria-hidden="true" />
@@ -181,7 +190,8 @@ const getTypeLabel = (type: string) => {
                           ) : (
                             <button
                               class="btn btn-ghost btn-sm text-success"
-                              onclick={'activateMethod("' + method.id + '")'}
+                              data-action="activate"
+                              data-method-id={method.id}
                               aria-label="Reactivate payment method"
                             >
                               <RefreshCw size={16} class="stroke-current" aria-hidden="true" />
@@ -211,96 +221,75 @@ const getTypeLabel = (type: string) => {
   </div>
 </ProtectedLayout>
 
-<!-- Add/Edit Payment Method Modal -->
-<dialog id="method-modal" class="modal">
-  <div class="modal-box max-w-md">
-    <h3 id="modal-title" class="font-bold text-lg">Add Payment Method</h3>
-    <form id="method-form" class="py-4 space-y-4">
-      <input type="hidden" name="id" value="" />
+<!-- Modals using Modal.astro component pattern -->
+<PaymentMethodFormModal id="payment-method-form-modal" />
+<PaymentMethodConfirmModal id="deactivate-modal" action="deactivate" />
+<PaymentMethodConfirmModal id="activate-modal" action="activate" />
 
-      <div class="form-control">
-        <label class="label" for="name">
-          <span class="label-text">Name</span>
-          <span class="label-text-alt text-error">*</span>
-        </label>
-        <input
-          type="text"
-          name="name"
-          id="name"
-          class="input input-bordered"
-          required
-          placeholder="e.g., BCA Account, GoPay, Cash Wallet"
-        />
-      </div>
+<script>
+  // Initialize page event handlers
+  function initPaymentMethodsPage() {
+    const container = document.querySelector('[data-methods-container]');
+    if (!container) return;
 
-      <div class="form-control">
-        <label class="label" for="type">
-          <span class="label-text">Type</span>
-          <span class="label-text-alt text-error">*</span>
-        </label>
-        <select name="type" id="type" class="select select-bordered" required>
-          <option value="">Select type...</option>
-          <option value="cash">Cash</option>
-          <option value="credit_card">Credit Card</option>
-          <option value="debit_card">Debit Card</option>
-          <option value="bank_transfer">Bank Transfer</option>
-          <option value="e_wallet">E-Wallet</option>
-        </select>
-      </div>
+    // Prevent duplicate initialization
+    if ((container as HTMLElement).dataset.initialized === 'true') return;
+    (container as HTMLElement).dataset.initialized = 'true';
 
-      <div id="form-error" class="hidden alert alert-error text-sm" role="alert"></div>
+    // Handle Add button
+    const addBtn = container.querySelector('[data-action="add-method"]');
+    addBtn?.addEventListener('click', () => {
+      if (typeof (window as any).openPaymentMethodModal === 'function') {
+        (window as any).openPaymentMethodModal();
+      }
+    });
 
-      <div class="modal-action">
-        <button type="button" onclick="methodModal.close()" class="btn btn-ghost"> Cancel </button>
-        <button type="submit" class="btn btn-primary"> Save Payment Method </button>
-      </div>
-    </form>
-  </div>
-  <form method="dialog" class="modal-backdrop">
-    <button>close</button>
-  </form>
-</dialog>
+    // Handle Edit buttons
+    // TODO: P2 - Add defensive checks for missing data attributes and log errors
+    container.querySelectorAll('[data-action="edit"]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const el = btn as HTMLElement;
+        const methodData = {
+          id: el.dataset.methodId || '',
+          name: el.dataset.methodName || '',
+          type: el.dataset.methodType || '',
+        };
+        if (typeof (window as any).openPaymentMethodModal === 'function') {
+          (window as any).openPaymentMethodModal(methodData);
+        }
+      });
+    });
 
-<!-- Deactivate Confirmation Dialog -->
-<dialog id="deactivate-dialog" class="modal">
-  <div class="modal-box">
-    <h3 class="font-bold text-lg">Deactivate Payment Method</h3>
-    <p class="py-4">
-      Are you sure you want to deactivate this payment method? It will no longer appear in
-      transaction forms, but existing transactions will remain unchanged.
-    </p>
-    <div id="deactivate-error" class="hidden alert alert-error text-sm mb-4" role="alert"></div>
-    <div class="modal-action">
-      <form method="dialog">
-        <button class="btn btn-ghost">Cancel</button>
-      </form>
-      <button id="confirm-deactivate-btn" class="btn btn-warning"> Deactivate </button>
-    </div>
-  </div>
-  <form method="dialog" class="modal-backdrop">
-    <button>close</button>
-  </form>
-</dialog>
+    // Handle Deactivate buttons
+    container.querySelectorAll('[data-action="deactivate"]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const el = btn as HTMLElement;
+        const methodId = el.dataset.methodId;
+        if (methodId && typeof (window as any).openDeactivateModal === 'function') {
+          (window as any).openDeactivateModal(methodId);
+        }
+      });
+    });
 
-<!-- Reactivate Confirmation Dialog -->
-<dialog id="activate-dialog" class="modal">
-  <div class="modal-box">
-    <h3 class="font-bold text-lg">Reactivate Payment Method</h3>
-    <p class="py-4">
-      Are you sure you want to reactivate this payment method? It will become available for use in
-      transaction forms again.
-    </p>
-    <div id="activate-error" class="hidden alert alert-error text-sm mb-4" role="alert"></div>
-    <div class="modal-action">
-      <form method="dialog">
-        <button class="btn btn-ghost">Cancel</button>
-      </form>
-      <button id="confirm-activate-btn" class="btn btn-success"> Reactivate </button>
-    </div>
-  </div>
-  <form method="dialog" class="modal-backdrop">
-    <button>close</button>
-  </form>
-</dialog>
+    // Handle Activate buttons
+    container.querySelectorAll('[data-action="activate"]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const el = btn as HTMLElement;
+        const methodId = el.dataset.methodId;
+        if (methodId && typeof (window as any).openActivateModal === 'function') {
+          (window as any).openActivateModal(methodId);
+        }
+      });
+    });
+  }
 
-<script src="./payment-methods-client.ts"></script>
+  // Initialize on DOM ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initPaymentMethodsPage);
+  } else {
+    initPaymentMethodsPage();
+  }
+
+  // Re-initialize on Astro page transitions
+  document.addEventListener('astro:page-load', initPaymentMethodsPage);
+</script>
