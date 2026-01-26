@@ -19,7 +19,7 @@ const { id } = Astro.props;
 ---
 
 <div data-asset-delete-modal-container data-id={id}>
-  <Modal id={id} size="sm" closable={true} backdropClose={true}>
+  <Modal id={id} size="sm" closable={false} backdropClose={true}>
     <div slot="default" class="flex flex-col gap-6">
       {/* Header section */}
       <div class="flex items-center gap-4">
