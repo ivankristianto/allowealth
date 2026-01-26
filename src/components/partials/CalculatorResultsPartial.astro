@@ -1,0 +1,51 @@
+---
+/**
+ * Calculator Results Partial Component
+ *
+ * Server-rendered fragment for calculator results.
+ * Displays summary cards and growth schedule table.
+ *
+ * @param {number} totalInterest - Total interest earned
+ * @param {number} finalBalance - Final balance after interest
+ * @param {Array<YearlyData>} yearlyData - Yearly breakdown data
+ * @param {string} currency - Currency code for formatting (IDR or USD)
+ */
+
+import CalculatorResultCard from '@/components/molecules/CalculatorResultCard.astro';
+import GrowthScheduleTable, {
+  type YearlyData,
+} from '@/components/molecules/GrowthScheduleTable.astro';
+
+export interface Props {
+  totalInterest: number;
+  finalBalance: number;
+  yearlyData: YearlyData[];
+  currency?: 'IDR' | 'USD';
+}
+
+const { totalInterest, finalBalance, yearlyData, currency = 'IDR' } = Astro.props;
+---
+
+<!-- PARTIAL:results -->
+<div id="calculator-results" class="space-y-8">
+  <!-- Summary Cards -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+    <CalculatorResultCard
+      label="Total Interest"
+      value={totalInterest}
+      variant="success"
+      currency={currency}
+      id="total-interest-card"
+    />
+    <CalculatorResultCard
+      label="Final Balance"
+      value={finalBalance}
+      variant="primary"
+      currency={currency}
+      id="final-balance-card"
+    />
+  </div>
+
+  <!-- Growth Schedule Table -->
+  <GrowthScheduleTable data={yearlyData} currency={currency} id="growth-schedule-table" />
+</div>
