@@ -204,12 +204,14 @@ const userId = await requireAuth(context);
 
 ### 5.3 Category Endpoints
 
-- [ ] Create `src/pages/api/categories/categories.api.integration.test.ts`
-  - [ ] `GET /api/categories` - list, filters
-  - [ ] `POST /api/categories` - create, duplicate name, validation
-  - [ ] `GET /api/categories/:id` - success, not found
-  - [ ] `PUT /api/categories/:id` - update, validation
-  - [ ] `DELETE /api/categories/:id` - success, not found
+- [x] Create `src/pages/api/categories/categories.api.integration.test.ts` (38 tests)
+  - [x] `GET /api/categories` - list, filters (type, is_active), combined filters, auth
+  - [x] `POST /api/categories` - create, validation, duplicate name, SQL injection protection
+  - [x] `GET /api/categories/:id` - success, not found, user isolation
+  - [x] `PUT /api/categories/:id` - update, validation, duplicate name, empty body
+  - [x] `DELETE /api/categories/:id` - success, user isolation verification
+
+**Completed:** 2026-01-26 via commit `588f2c2`
 
 ### 5.4 Payment Method Endpoints
 
@@ -264,8 +266,8 @@ const userId = await requireAuth(context);
 | 2. Middleware        | 5      | 5         | 100%     |
 | 3. Security          | 15     | 15        | 100%     |
 | 4. OpenAPI Docs      | 4      | 4         | 100%     |
-| 5. Integration Tests | 9      | 2         | 22%      |
-| **Total**            | **45** | **38**    | **84%**  |
+| 5. Integration Tests | 9      | 3         | 33%      |
+| **Total**            | **45** | **39**    | **87%**  |
 
 ---
 
