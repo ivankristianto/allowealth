@@ -5,9 +5,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const categoryModal = document.getElementById('category-modal') as HTMLDialogElement;
   const categoryForm = document.getElementById('category-form') as HTMLFormElement;
   const modalTitle = document.getElementById('modal-title');
+  const modalSubtitle = document.getElementById('modal-subtitle');
+  const modalIconContainer = document.getElementById('modal-icon-container');
+  const submitBtnText = document.getElementById('submit-btn-text');
   const formError = document.getElementById('form-error');
   const deleteDialog = document.getElementById('delete-dialog') as HTMLDialogElement;
   const deleteError = document.getElementById('delete-error');
+  const deleteCategoryName = document.getElementById('delete-category-name');
+  const deleteCategoryType = document.getElementById('delete-category-type');
+  const deleteCategoryIconContainer = document.getElementById('delete-category-icon-container');
 
   let currentCategoryId = '';
 
@@ -49,6 +55,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const idInput = categoryForm?.querySelector('[name="id"]') as HTMLInputElement;
     if (idInput) idInput.value = '';
     if (modalTitle) modalTitle.textContent = 'Add Category';
+    if (modalSubtitle) modalSubtitle.textContent = 'Create a new category for your transactions.';
+    if (submitBtnText) submitBtnText.textContent = 'Save';
+    if (modalIconContainer) {
+      modalIconContainer.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="stroke-current text-accent" aria-hidden="true">
+          <path d="M5 12h14"></path>
+          <path d="M12 5v14"></path>
+        </svg>
+      `;
+      modalIconContainer.className =
+        'w-12 h-12 rounded-2xl flex items-center justify-center bg-accent/10';
+    }
     clearFormError();
   }
 
@@ -93,6 +111,18 @@ document.addEventListener('DOMContentLoaded', () => {
   async function editCategory(id: string) {
     currentCategoryId = id;
     if (modalTitle) modalTitle.textContent = 'Edit Category';
+    if (modalSubtitle) modalSubtitle.textContent = 'Update the category details.';
+    if (submitBtnText) submitBtnText.textContent = 'Update';
+    if (modalIconContainer) {
+      modalIconContainer.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="stroke-current text-accent" aria-hidden="true">
+          <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path>
+          <path d="m15 5 4 4"></path>
+        </svg>
+      `;
+      modalIconContainer.className =
+        'w-12 h-12 rounded-2xl flex items-center justify-center bg-accent/10';
+    }
 
     try {
       // Fetch category details from API
@@ -133,6 +163,36 @@ document.addEventListener('DOMContentLoaded', () => {
   function deleteCategory(id: string) {
     currentCategoryId = id;
     clearDialogError(deleteError);
+
+    // Get category info from the delete button's data attributes
+    const deleteBtn = document.querySelector(`[data-action="delete"][data-category-id="${id}"]`);
+    if (deleteBtn) {
+      const name = deleteBtn.getAttribute('data-category-name') || '';
+      const color = deleteBtn.getAttribute('data-category-color') || 'bg-neutral';
+      const type =
+        deleteBtn
+          .closest('tr')
+          ?.querySelector('[class*="uppercase"]')
+          ?.textContent?.toLowerCase() || 'expense';
+
+      // Populate delete modal with category info
+      if (deleteCategoryName) deleteCategoryName.textContent = name;
+      if (deleteCategoryType)
+        deleteCategoryType.textContent = type.charAt(0).toUpperCase() + type.slice(1);
+      if (deleteCategoryIconContainer) {
+        // Create a CategoryIcon-like element
+        const colorClass = color.replace('bg-', '');
+        deleteCategoryIconContainer.innerHTML = `
+          <div class="w-10 h-10 rounded-xl ${color} text-${colorClass}-content flex items-center justify-center">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="stroke-current" aria-hidden="true">
+              <path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z"></path>
+              <path d="M7 7h.01"></path>
+            </svg>
+          </div>
+        `;
+      }
+    }
+
     deleteDialog?.showModal();
   }
 

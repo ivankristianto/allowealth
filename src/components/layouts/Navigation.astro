@@ -48,28 +48,22 @@ const navItems: NavItem[] = [
   { href: '/reports', label: 'Reports', icon: ChartBar },
   { href: '/forecast', label: 'Forecast', icon: TrendingUp },
   { href: '/calculators', label: 'Calculators', icon: Calculator },
-  { href: '/settings/categories', label: 'Categories', icon: Tags },
+  { href: '/categories', label: 'Categories', icon: Tags },
   { href: '/settings', label: 'Settings', icon: Settings },
 ];
 
 const isActive = (href: string) => {
-  // Exact match first
-  if (currentPath === href) return true;
-
-  // Categories: active when on /settings/categories or sub-routes
-  if (href === '/settings/categories') {
-    return currentPath.startsWith('/settings/categories');
-  }
-
-  // Settings: active when on /settings but NOT on /settings/categories or /settings/payment-methods
+  // Settings alias: treat /profile and /security as settings area
   if (href === '/settings') {
     return (
-      (currentPath === '/profile' || currentPath === '/security' || currentPath === '/settings') &&
-      !currentPath.startsWith('/settings/categories') &&
-      !currentPath.startsWith('/settings/payment-methods')
+      currentPath === '/profile' ||
+      currentPath === '/security' ||
+      currentPath.startsWith('/settings')
     );
   }
 
+  // Exact match for index routes
+  if (currentPath === href) return true;
   // For nested routes (e.g., /assets/add), parent is active if path starts with href + '/'
   return currentPath.startsWith(href + '/');
 };

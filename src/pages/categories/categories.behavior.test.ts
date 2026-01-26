@@ -494,8 +494,8 @@ describe('Categories Page - Integration Points', () => {
   });
 
   it('should pass currentPath prop to layout', () => {
-    const currentPath = '/settings/categories';
-    expect(currentPath).toBe('/settings/categories');
+    const currentPath = '/categories';
+    expect(currentPath).toBe('/categories');
   });
 
   it('should pass title prop to layout', () => {
