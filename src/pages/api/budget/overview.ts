@@ -8,9 +8,10 @@ import { logError } from '@/lib/utils';
  * Get budget overview for a specific month
  * Query params: year, month, currency
  */
-export const GET: APIRoute = async ({ request, url }) => {
+export const GET: APIRoute = async (context) => {
   try {
-    const userId = await requireAuth({ request, url } as any);
+    const userId = await requireAuth(context);
+    const { url } = context;
 
     const yearParam = url.searchParams.get('year');
     const monthParam = url.searchParams.get('month');

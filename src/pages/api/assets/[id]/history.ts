@@ -7,10 +7,10 @@ import { logError } from '@/lib/utils';
  * GET /api/assets/:id/history
  * Get asset balance history
  */
-export const GET: APIRoute = async ({ params, request, url }) => {
+export const GET: APIRoute = async (context) => {
   try {
-    const userId = await requireAuth({ request, url } as any);
-    const { id } = params;
+    const userId = await requireAuth(context);
+    const { id } = context.params;
 
     if (!id) {
       return errorResponse('Asset ID is required', 400);

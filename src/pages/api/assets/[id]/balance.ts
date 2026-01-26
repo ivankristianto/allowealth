@@ -20,16 +20,16 @@ const updateBalanceSchema = z.object({
  * POST /api/assets/:id/balance
  * Update asset balance (creates history entry)
  */
-export const POST: APIRoute = async ({ params, request, url }) => {
+export const POST: APIRoute = async (context) => {
   try {
-    const userId = await requireAuth({ request, url } as any);
-    const { id } = params;
+    const userId = await requireAuth(context);
+    const { id } = context.params;
 
     if (!id) {
       return errorResponse('Asset ID is required', 400);
     }
 
-    const validation = await validateBody(request, updateBalanceSchema);
+    const validation = await validateBody(context.request, updateBalanceSchema);
 
     if (isValidationError(validation)) {
       return errorResponse('Validation failed', 400, 'VALIDATION_ERROR', validation.error.issues);

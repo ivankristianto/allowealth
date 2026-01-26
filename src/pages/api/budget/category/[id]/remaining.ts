@@ -7,10 +7,10 @@ import { logError } from '@/lib/utils';
  * GET /api/budget/category/:id/remaining
  * Get remaining budget for a specific category in current month
  */
-export const GET: APIRoute = async ({ params, request, url }) => {
+export const GET: APIRoute = async (context) => {
   try {
-    const userId = await requireAuth({ request, url } as any);
-    const { id } = params;
+    const userId = await requireAuth(context);
+    const { id } = context.params;
 
     if (!id) {
       return errorResponse('Category ID is required', 400);

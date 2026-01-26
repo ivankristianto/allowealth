@@ -7,9 +7,9 @@ import { logError } from '@/lib/utils';
  * GET /api/assets/summary
  * Get asset totals by currency and type
  */
-export const GET: APIRoute = async ({ request, url }) => {
+export const GET: APIRoute = async (context) => {
   try {
-    const userId = await requireAuth({ request, url } as any);
+    const userId = await requireAuth(context);
 
     const [totalByCurrency, totalByType] = await Promise.all([
       assetService.getTotalByCurrency(userId),

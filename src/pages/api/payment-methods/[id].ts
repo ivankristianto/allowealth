@@ -14,10 +14,10 @@ import { logError } from '@/lib/utils';
  * GET /api/payment-methods/:id
  * Get a single payment method by ID
  */
-export const GET: APIRoute = async ({ params, request, url }) => {
+export const GET: APIRoute = async (context) => {
   try {
-    const userId = await requireAuth({ request, url } as any);
-    const { id } = params;
+    const userId = await requireAuth(context);
+    const { id } = context.params;
 
     if (!id) {
       return errorResponse('Payment method ID is required', 400);
@@ -43,16 +43,16 @@ export const GET: APIRoute = async ({ params, request, url }) => {
  * PUT /api/payment-methods/:id
  * Update a payment method
  */
-export const PUT: APIRoute = async ({ params, request, url }) => {
+export const PUT: APIRoute = async (context) => {
   try {
-    const userId = await requireAuth({ request, url } as any);
-    const { id } = params;
+    const userId = await requireAuth(context);
+    const { id } = context.params;
 
     if (!id) {
       return errorResponse('Payment method ID is required', 400);
     }
 
-    const validation = await validateBody(request, updatePaymentMethodAPISchema);
+    const validation = await validateBody(context.request, updatePaymentMethodAPISchema);
 
     if (isValidationError(validation)) {
       return errorResponse('Validation failed', 400, 'VALIDATION_ERROR', validation.error.issues);
@@ -78,10 +78,10 @@ export const PUT: APIRoute = async ({ params, request, url }) => {
  * DELETE /api/payment-methods/:id
  * Soft delete a payment method (mark as inactive)
  */
-export const DELETE: APIRoute = async ({ params, request, url }) => {
+export const DELETE: APIRoute = async (context) => {
   try {
-    const userId = await requireAuth({ request, url } as any);
-    const { id } = params;
+    const userId = await requireAuth(context);
+    const { id } = context.params;
 
     if (!id) {
       return errorResponse('Payment method ID is required', 400);
