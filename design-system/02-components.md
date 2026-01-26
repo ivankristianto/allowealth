@@ -205,21 +205,419 @@ Lucide icons use a default stroke-width of 2, which provides good visual clarity
 
 ### Modal (`src/components/molecules/Modal.astro`)
 
+**Modal dialogs for focused user interactions.** Use for forms, confirmations, or detailed views that require user attention.
+
+**Key Features:**
+
+- Native HTML `<dialog>` element with enhanced UX
+- Smooth Motion animations (respects prefers-reduced-motion)
+- Backdrop blur with click-to-close
+- Keyboard accessible (Esc to close, Tab navigation)
+- ARIA-compliant with proper labels
+- Responsive with mobile-first design
+
+**Reference Implementation:** `src/components/organisms/TransactionModal.astro` - Best practice example
+
+#### Basic Usage
+
 ```astro
-<Modal id="confirm-delete" title="Confirm">
-  <p>Are you sure?</p>
+<Modal id="example-modal" title="Modal Title" size="md">
+  <p>Modal content goes here.</p>
+
   <div slot="actions">
-    <Button variant="danger">Delete</Button>
+    <Button variant="ghost">Cancel</Button>
+    <Button variant="primary">Confirm</Button>
   </div>
 </Modal>
 
 <script>
-  document.getElementById('modal-id')?.showModal();
-  document.getElementById('modal-id')?.close();
+  const modal = document.getElementById('example-modal') as HTMLDialogElement;
+
+  // Open modal
+  modal?.classList.add('modal-open');
+
+  // Close modal
+  modal?.close();
 </script>
 ```
 
-**Sizes:** `sm` | `md` | `lg` | `xl`
+#### Props
+
+| Prop            | Type                           | Default | Description                           |
+| --------------- | ------------------------------ | ------- | ------------------------------------- |
+| `id`            | `string`                       | -       | **Required.** Unique modal identifier |
+| `title`         | `string`                       | `''`    | Modal title (optional)                |
+| `open`          | `boolean`                      | `false` | Initial open state                    |
+| `size`          | `'sm' \| 'md' \| 'lg' \| 'xl'` | `'md'`  | Modal width                           |
+| `closable`      | `boolean`                      | `true`  | Show close button in header           |
+| `backdropClose` | `boolean`                      | `true`  | Allow closing by clicking backdrop    |
+| `className`     | `string`                       | `''`    | Additional CSS classes                |
+
+#### Sizes
+
+```typescript
+sm: 'max-w-md'; // ~448px - Confirmations, small forms
+md: 'max-w-lg'; // ~512px - Standard forms
+lg: 'max-w-2xl'; // ~672px - Multi-section forms
+xl: 'max-w-4xl'; // ~896px - Complex layouts, data tables
+```
+
+#### Pattern 1: Simple Confirmation Modal
+
+```astro
+---
+import Modal from '@/components/molecules/Modal.astro';
+import { Trash2 } from '@lucide/astro';
+---
+
+<Modal id="delete-modal" size="sm" closable={false}>
+  <div class="flex flex-col gap-6">
+    <!-- Header with icon -->
+    <div class="flex items-center gap-4">
+      <div class="w-12 h-12 rounded-2xl flex items-center justify-center bg-error/10">
+        <Trash2 size={24} class="stroke-current text-error" aria-hidden="true" />
+      </div>
+      <div class="flex-1">
+        <h2 class="text-2xl font-bold tracking-tight text-primary leading-none">Delete Item</h2>
+        <p class="text-neutral text-sm mt-2 font-medium">This action cannot be undone.</p>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="flex gap-4">
+      <button
+        type="button"
+        class="btn btn-ghost flex-1 h-14 rounded-full font-bold"
+        data-close-modal
+      >
+        Cancel
+      </button>
+      <button
+        type="button"
+        class="btn btn-error flex-1 h-14 rounded-full font-bold"
+        data-confirm-delete
+      >
+        Delete
+      </button>
+    </div>
+  </div>
+</Modal>
+
+<script>
+  const modal = document.getElementById('delete-modal') as HTMLDialogElement;
+  const closeBtn = modal?.querySelector('[data-close-modal]');
+  const confirmBtn = modal?.querySelector('[data-confirm-delete]');
+
+  closeBtn?.addEventListener('click', () => modal?.close());
+
+  confirmBtn?.addEventListener('click', async () => {
+    // Handle deletion
+    await deleteItem();
+    modal?.close();
+  });
+</script>
+```
+
+#### Pattern 2: Form Modal (TransactionModal Pattern)
+
+**Best Practice:** Use custom header with icon, type-specific styling, and form integration.
+
+```astro
+---
+import Modal from '@/components/molecules/Modal.astro';
+import { CirclePlus, Sparkles } from '@lucide/astro';
+---
+
+<div data-form-modal-container data-id="add-transaction">
+  <Modal id="add-transaction" size="md" closable={false} backdropClose={true}>
+    <div class="flex flex-col gap-6">
+      <!-- Header section -->
+      <div class="flex items-center gap-4">
+        <!-- Icon with semantic background -->
+        <div class="w-12 h-12 rounded-2xl flex items-center justify-center bg-success/10">
+          <CirclePlus size={24} class="stroke-current text-success" aria-hidden="true" />
+        </div>
+
+        <!-- Title and subtitle -->
+        <div class="flex-1">
+          <h2 class="text-2xl font-bold tracking-tight text-primary leading-none">
+            Add Transaction
+          </h2>
+          <p class="text-neutral text-sm mt-2 font-medium">Log a new transaction to your ledger.</p>
+        </div>
+
+        <!-- Optional action button -->
+        <button
+          type="button"
+          class="flex items-center gap-2 px-4 py-2.5 bg-accent/10 text-accent rounded-xl text-xs font-bold"
+          data-scan-button
+        >
+          <Sparkles size={16} class="stroke-current" aria-hidden="true" />
+          <span>Scan</span>
+        </button>
+      </div>
+
+      <!-- Form -->
+      <form id="transaction-form" data-transaction-form class="flex flex-col gap-5">
+        <!-- Form fields go here -->
+
+        <!-- Global error message -->
+        <div id="form-error" class="hidden alert alert-error text-sm" role="alert"></div>
+
+        <!-- Actions -->
+        <div class="flex gap-4 pt-4">
+          <button
+            type="button"
+            class="flex-1 btn btn-ghost h-14 rounded-full font-bold"
+            data-cancel
+          >
+            Cancel
+          </button>
+          <button type="submit" class="flex-[2] btn btn-accent h-14 rounded-full font-bold">
+            Save Transaction
+          </button>
+        </div>
+      </form>
+    </div>
+  </Modal>
+</div>
+
+<script>
+  import { addToast } from '@/lib/stores/toastStore';
+
+  const container = document.querySelector('[data-form-modal-container]');
+  const modal = document.getElementById('add-transaction') as HTMLDialogElement;
+  const form = document.getElementById('transaction-form') as HTMLFormElement;
+  const cancelBtn = form?.querySelector('[data-cancel]');
+  const errorDiv = document.getElementById('form-error');
+
+  // Cancel button - reset and close
+  cancelBtn?.addEventListener('click', () => {
+    form?.reset();
+    errorDiv?.classList.add('hidden');
+    modal?.close();
+  });
+
+  // Form submission
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
+    const originalText = submitBtn?.textContent || 'Save';
+
+    // Clear errors
+    errorDiv?.classList.add('hidden');
+
+    // Show loading state
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Saving...';
+    }
+
+    try {
+      const formData = new FormData(form);
+      const response = await fetch('/api/transactions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(Object.fromEntries(formData)),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to save');
+      }
+
+      // Success
+      addToast('Transaction saved!', 'success');
+      form.reset();
+      modal.close();
+
+      // Dispatch custom event for page updates
+      document.dispatchEvent(new CustomEvent('transaction-added'));
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to save';
+      if (errorDiv) {
+        errorDiv.textContent = message;
+        errorDiv.classList.remove('hidden');
+      }
+      addToast(message, 'error');
+    } finally {
+      // Reset button state
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalText;
+      }
+    }
+  });
+</script>
+```
+
+#### Pattern 3: Multi-Step Modal
+
+```astro
+<Modal id="wizard-modal" size="lg">
+  <div class="flex flex-col gap-6">
+    <!-- Progress indicator -->
+    <div class="flex gap-2">
+      <div class="flex-1 h-1 bg-accent rounded"></div>
+      <div class="flex-1 h-1 bg-base-300 rounded"></div>
+      <div class="flex-1 h-1 bg-base-300 rounded"></div>
+    </div>
+
+    <!-- Step content (dynamically rendered) -->
+    <div id="step-content">
+      <!-- Step 1, 2, 3... -->
+    </div>
+
+    <!-- Actions -->
+    <div class="flex justify-between gap-4">
+      <button class="btn btn-ghost" data-prev>Back</button>
+      <button class="btn btn-accent" data-next>Next</button>
+    </div>
+  </div>
+</Modal>
+```
+
+#### Accessibility Checklist
+
+- ✅ **ID required:** Every modal must have a unique `id`
+- ✅ **Title linking:** Modal uses `aria-labelledby` to link to title element
+- ✅ **Close button:** Include `aria-label="Close modal"` on close button
+- ✅ **Keyboard navigation:**
+  - `Esc` closes modal (automatic via `<dialog>`)
+  - `Tab` cycles through focusable elements
+  - Focus trap within modal when open
+- ✅ **Screen reader:**
+  - Title announced when modal opens
+  - Error messages use `role="alert"` with `aria-live="polite"`
+- ✅ **Focus management:**
+  - Focus moves to modal when opened
+  - Focus returns to trigger element when closed
+
+#### Responsive Design
+
+**Mobile-first approach:**
+
+```astro
+<!-- Modal automatically adapts -->
+<Modal id="responsive" size="md">
+  <!-- Mobile: Full-width with padding -->
+  <!-- Tablet+: Fixed max-width with centered layout -->
+</Modal>
+```
+
+**Custom responsive content:**
+
+```html
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+  <!-- Single column on mobile, two columns on desktop -->
+</div>
+```
+
+#### Animation Details
+
+**Powered by Motion library** with automatic fallback for `prefers-reduced-motion`.
+
+**Enter animation:**
+
+- Backdrop: Fade in (opacity 0 → 1, 200ms)
+- Content: Scale up + slide up (scale 0.95 → 1, y 20px → 0, 300ms)
+
+**Exit animation:**
+
+- Content: Scale down + slide down (scale 1 → 0.95, y 0 → 20px, 300ms)
+- Backdrop: Instant (no fade out for better UX)
+
+**Configuration:** `src/lib/animations/modal.ts`
+
+#### Best Practices
+
+**DO:**
+
+- ✅ Use semantic HTML (`<dialog>`, `<button>`, `<form>`)
+- ✅ Provide clear, action-oriented titles
+- ✅ Include icon with colored background for context
+- ✅ Use subtitle to explain purpose or consequences
+- ✅ Display loading states during async operations
+- ✅ Show error messages inline with `role="alert"`
+- ✅ Reset form state when closing modal
+- ✅ Use toast notifications for success feedback
+- ✅ Dispatch custom events for page updates
+- ✅ Prevent duplicate initialization with `WeakSet`
+
+**DON'T:**
+
+- ❌ Create modal without unique `id`
+- ❌ Use `<div>` instead of `<button>` for close action
+- ❌ Forget to disable submit button during loading
+- ❌ Navigate away without user confirmation
+- ❌ Use modal for non-critical information (use toast instead)
+- ❌ Stack multiple modals (use multi-step pattern)
+- ❌ Create giant modals (break into steps or use full page)
+
+#### Common Patterns Summary
+
+| Pattern      | Size | Use Case                        | Example                 |
+| ------------ | ---- | ------------------------------- | ----------------------- |
+| Confirmation | `sm` | Delete, logout, discard changes | DeleteConfirmationModal |
+| Form         | `md` | Add/edit items, settings        | TransactionModal        |
+| Details      | `lg` | View details with actions       | TransactionDetailsModal |
+| Complex Form | `xl` | Multi-field forms, data entry   | BudgetPlanningModal     |
+| Multi-Step   | `lg` | Wizards, onboarding             | SetupWizardModal        |
+
+#### TypeScript Interface
+
+```typescript
+export interface Props {
+  id: string; // Required: Unique modal identifier
+  title?: string; // Optional: Modal title
+  open?: boolean; // Initial open state (default: false)
+  size?: 'sm' | 'md' | 'lg' | 'xl'; // Modal width (default: 'md')
+  closable?: boolean; // Show close button (default: true)
+  backdropClose?: boolean; // Close on backdrop click (default: true)
+  className?: string; // Additional CSS classes
+}
+```
+
+#### Client-Side Utilities
+
+**Opening and closing:**
+
+```typescript
+// Open modal by adding class (triggers animation)
+const modal = document.getElementById('modal-id') as HTMLDialogElement;
+modal?.classList.add('modal-open');
+
+// Close modal (triggers exit animation)
+modal?.close();
+```
+
+**Prevent duplicate initialization:**
+
+```typescript
+const initializedModals = new WeakSet<Element>();
+
+function initModal(container: Element) {
+  if (initializedModals.has(container)) return;
+  initializedModals.add(container);
+
+  // Setup event listeners...
+}
+```
+
+**Form integration:**
+
+```typescript
+form?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  // 1. Show loading state
+  // 2. Submit to API
+  // 3. Handle success/error
+  // 4. Reset form and close modal
+  // 5. Dispatch custom event for page updates
+});
+```
 
 ### Badge (`src/components/atoms/Badge.astro`)
 
