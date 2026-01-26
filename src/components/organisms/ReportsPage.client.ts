@@ -24,6 +24,8 @@ interface ReportState {
   period: string;
 }
 
+// @TODO: P3 - Consider removing hardcoded default period
+// Default period should be dynamically determined from available data or current date
 let currentState: ReportState = {
   range: 'monthly',
   period: '2024-02', // Default to February 2024

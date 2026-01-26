@@ -39,8 +39,9 @@ const urlPeriod = url.searchParams.get('period');
 const defaultRange: 'monthly' | 'yearly' =
   urlRange === 'yearly' ? 'yearly' : urlRange === 'monthly' ? 'monthly' : 'monthly';
 
-// Available periods for selector
-// @TODO: Dynamic period generation based on available data from backend
+// @TODO: P2 - Wire with backend - Replace hardcoded periods with dynamic data from API
+// Available periods should be fetched from backend based on user's transaction date range
+// Example: const { monthlyPeriods, yearlyPeriods } = await reportsService.getAvailablePeriods(userId);
 const monthlyPeriods = [
   { key: '2023-12', label: 'December 2023' },
   { key: '2024-01', label: 'January 2024' },
@@ -60,8 +61,9 @@ const defaultPeriod =
     ? monthlyPeriods[monthlyPeriods.length - 1].key
     : yearlyPeriods[yearlyPeriods.length - 1].key);
 
-// @TODO: Replace with API call to get actual data
-// Mock data for SSR (February 2024 monthly view)
+// @TODO: P2 - Wire with backend - Replace mock data with actual API call
+// This mock data should be replaced with a fetch to /api/reports endpoint
+// Example: const reportData = await fetch(`/api/reports?range=${defaultRange}&period=${defaultPeriod}`).then(r => r.json());
 const mockData = {
   // Summary metrics
   totalIncome: 9750000,

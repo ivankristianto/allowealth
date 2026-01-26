@@ -18,7 +18,9 @@ import ReportSummaryCardsPartial from '@/components/partials/ReportSummaryCardsP
 import ReportChartsPartial from '@/components/partials/ReportChartsPartial.astro';
 import CategoryTablePartial from '@/components/partials/CategoryTablePartial.astro';
 
-// Mock data generation based on range and period
+// @TODO: P2 - Wire with backend - Remove mock data function and replace with ReportsService
+// This function should be replaced with actual database queries via a service layer
+// Example: reportsService.getReportData(userId, range, period)
 function getMockReportData(range: 'monthly' | 'yearly', period: string) {
   if (range === 'yearly') {
     // Yearly mock data (aggregated for full year)
