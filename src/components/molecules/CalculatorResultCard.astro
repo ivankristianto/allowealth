@@ -1,0 +1,57 @@
+---
+/**
+ * Calculator Result Card Component
+ *
+ * Displays calculator summary results with color-coded variants.
+ * Used for Total Interest (success/green) and Final Balance (primary/blue).
+ *
+ * @param {string} label - Card label (e.g., "Total Interest", "Final Balance")
+ * @param {number|string} value - The value to display
+ * @param {'success'|'primary'|'warning'|'error'} variant - Color variant
+ * @param {string} currency - Currency code for formatting (IDR or USD)
+ * @param {string} className - Additional CSS classes
+ */
+
+import Currency from '@/components/atoms/Currency.astro';
+
+export interface Props {
+  label: string;
+  value: number | string;
+  variant?: 'success' | 'primary' | 'warning' | 'error';
+  currency?: 'IDR' | 'USD';
+  className?: string;
+  id?: string;
+}
+
+const {
+  label,
+  value,
+  variant = 'primary',
+  currency = 'IDR',
+  className = '',
+  id = '',
+} = Astro.props;
+
+const variantStyles: Record<string, string> = {
+  success: 'bg-success/10 border-success/20 text-success',
+  primary: 'bg-primary/10 border-primary/20 text-primary',
+  warning: 'bg-warning/10 border-warning/20 text-warning',
+  error: 'bg-error/10 border-error/20 text-error',
+};
+
+const cardClass = [variantStyles[variant], className].filter(Boolean).join(' ');
+
+const numericValue = typeof value === 'string' ? parseFloat(value) : value;
+---
+
+<div id={id} class={['p-6 rounded-3xl border', cardClass].join(' ')}>
+  <p class="text-[10px] font-bold uppercase tracking-widest mb-2 opacity-80">{label}</p>
+  <h4 class="text-2xl font-bold">
+    <Currency
+      amount={numericValue}
+      currency={currency}
+      size="xl"
+      variant={variant === 'success' ? 'positive' : 'default'}
+    />
+  </h4>
+</div>

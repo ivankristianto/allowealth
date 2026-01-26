@@ -1,0 +1,109 @@
+---
+/**
+ * Growth Schedule Table Component
+ *
+ * Displays yearly breakdown of compound interest calculations.
+ * Shows Year, Opening Balance, Interest Earned, and Closing Balance.
+ *
+ * @param {Array<YearlyData>} data - Array of yearly calculation results
+ * @param {string} currency - Currency code for formatting (IDR or USD)
+ * @param {string} className - Additional CSS classes
+ */
+
+import Currency from '@/components/atoms/Currency.astro';
+
+export interface YearlyData {
+  year: number;
+  openingBalance: number;
+  interest: number;
+  closingBalance: number;
+}
+
+export interface Props {
+  data: YearlyData[];
+  currency?: 'IDR' | 'USD';
+  className?: string;
+  id?: string;
+}
+
+const { data, currency = 'IDR', className = '', id = '' } = Astro.props;
+---
+
+<div
+  id={id}
+  class={['bg-base-100 rounded-card border border-base-300 overflow-hidden', className].join(' ')}
+>
+  <div class="p-6 border-b border-base-300">
+    <h4 class="font-bold text-base-content tracking-tight">Growth Schedule</h4>
+    <p class="text-[10px] font-bold uppercase tracking-widest text-base-content/50 mt-1">
+      Yearly breakdown of interest compounding
+    </p>
+  </div>
+
+  <div class="overflow-x-auto">
+    <table class="table table-zebra w-full text-left">
+      <thead>
+        <tr class="bg-base-200">
+          <th
+            class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-base-content/50"
+          >
+            Year
+          </th>
+          <th
+            class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-base-content/50 text-right"
+          >
+            Opening Balance
+          </th>
+          <th
+            class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-success text-right"
+          >
+            Interest Earned
+          </th>
+          <th
+            class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-base-content text-right"
+          >
+            Closing Balance
+          </th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-base-300">
+        {
+          data.map((row) => (
+            <tr class="hover:bg-base-200/50 transition-colors">
+              <td class="px-6 py-4">
+                <span class="text-sm font-bold text-base-content">Year {row.year}</span>
+              </td>
+              <td class="px-6 py-4 text-right">
+                <span class="text-sm font-medium text-base-content/60">
+                  <Currency
+                    amount={row.openingBalance}
+                    currency={currency}
+                    size="sm"
+                    variant="neutral"
+                  />
+                </span>
+              </td>
+              <td class="px-6 py-4 text-right">
+                <span class="text-sm font-bold text-success">+</span>
+                <span class="text-sm font-bold text-success ml-1">
+                  <Currency
+                    amount={row.interest}
+                    currency={currency}
+                    size="sm"
+                    variant="positive"
+                    showSign={false}
+                  />
+                </span>
+              </td>
+              <td class="px-6 py-4 text-right">
+                <span class="text-sm font-bold text-base-content">
+                  <Currency amount={row.closingBalance} currency={currency} size="sm" />
+                </span>
+              </td>
+            </tr>
+          ))
+        }
+      </tbody>
+    </table>
+  </div>
+</div>
