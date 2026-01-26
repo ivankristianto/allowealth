@@ -190,21 +190,32 @@ const createBudgetSummary = (args: BudgetSummaryArgs): HTMLElement => {
             <span class="label-premium uppercase tracking-widest font-semibold text-[10px] text-base-content/60 hidden sm:block">Total Share Distribution</span>
           </div>
 
-          <!-- Stacked Bar -->
-          <div class="h-6 w-full bg-base-300 rounded-full overflow-hidden flex shadow-inner" role="img" aria-label="Budget allocation distribution">
-            ${sortedDistribution
-              .map(
-                (item) => `
-              <div
-                class="h-full transition-all duration-500 relative group/segment tooltip tooltip-bottom"
-                style="width: ${item.weight}%; background-color: ${item.color};"
-                data-tip="${item.name}: ${item.weight.toFixed(1)}%"
-              >
-                <div class="absolute inset-0 bg-white/10 opacity-0 group-hover/segment:opacity-100 transition-opacity cursor-pointer"></div>
-              </div>
-            `
-              )
-              .join('')}
+          <!-- Stacked Bar with Custom Tooltip -->
+          <div class="relative" data-allocation-bar>
+            <div class="h-6 w-full bg-base-300 rounded-full overflow-hidden flex shadow-inner" role="img" aria-label="Budget allocation distribution">
+              ${displayDistribution
+                .map(
+                  (item) => `
+                <div
+                  class="h-full transition-all duration-500 relative group/segment cursor-pointer"
+                  style="width: ${item.weight}%; background-color: ${item.color};"
+                  data-segment-name="${item.name}"
+                  data-segment-weight="${item.weight.toFixed(1)}"
+                >
+                  <div class="absolute inset-0 bg-white/10 opacity-0 group-hover/segment:opacity-100 transition-opacity"></div>
+                </div>
+              `
+                )
+                .join('')}
+            </div>
+            <!-- Custom tooltip - positioned outside overflow-hidden -->
+            <div
+              class="absolute -top-10 left-1/2 -translate-x-1/2 px-3 py-1.5 bg-neutral text-neutral-content text-xs font-medium rounded-lg shadow-lg opacity-0 pointer-events-none transition-opacity z-50 whitespace-nowrap"
+              data-allocation-tooltip
+            >
+              <span data-tooltip-text></span>
+              <div class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-neutral rotate-45"></div>
+            </div>
           </div>
 
           <!-- Legend -->
