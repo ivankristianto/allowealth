@@ -253,9 +253,18 @@ Note: After schema changes, run `bun run db:push` to sync schema to database (de
 
 #### Progress Checklist
 
-- [ ] Update `src/services/dashboard.service.ts`
-- [ ] Update `src/lib/utils/budget.ts`
-- [ ] Verify `src/lib/budget/alerts.ts` works
+- [x] Update `src/services/dashboard.service.ts` (verified - already queries budgets table)
+- [x] Update `src/lib/utils/budget.ts` (removed unused functions)
+- [x] Verify `src/lib/budget/alerts.ts` works (confirmed - uses spent/budget pairs)
+
+**Completed:** 2026-01-27
+
+**Key changes:**
+
+- Verified dashboard service already queries budgets table (getMonthlySpent, getBudgetHealth)
+- Removed unused `calculateTotalBudget` and `shouldWarnBudgetAllocation` functions
+- Removed unused `BudgetTotal` type
+- Cleaned up unused `addCurrency` import
 
 ---
 

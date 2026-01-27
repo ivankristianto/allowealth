@@ -21,8 +21,6 @@ export {
   calculateBudgetStatus,
   getBudgetStatusClass,
   getBudgetStatusIcon,
-  calculateTotalBudget,
-  shouldWarnBudgetAllocation,
   formatBudgetStatus,
   getBudgetProgressWidth,
   getBudgetProgressClass,
@@ -32,7 +30,6 @@ export {
   sanitizeColor,
   type BudgetStatus,
   type BudgetStatusResult,
-  type BudgetTotal,
   type AllocationDistribution,
 } from './budget';
 
