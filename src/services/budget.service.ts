@@ -1,5 +1,6 @@
-import { transactions, categories, type IDatabase } from '@/db';
+import { transactions, categories, budgets, type IDatabase } from '@/db';
 import { eq, and, gte, lte, sql } from 'drizzle-orm';
+import { nanoid } from 'nanoid';
 import {
   decimalSubtract,
   decimalDivide,
@@ -8,6 +9,16 @@ import {
   decimalSum,
   decimalIsZero,
 } from '@/lib/utils/decimal';
+import {
+  createBudgetSchema,
+  updateBudgetSchema,
+  copyBudgetsSchema,
+  type CreateBudgetInput,
+  type UpdateBudgetInput,
+  type CopyBudgetsInput,
+} from '@/lib/validation/budgets';
+import type { Budget, BudgetWithCategory, CopyBudgetsResult } from '@/lib/types/budget';
+import { BudgetServiceError, ServiceErrorCode } from './service-errors';
 
 export interface BudgetOverview {
   category_id: string;
@@ -409,5 +420,290 @@ export class BudgetService {
           .join(',')
       )
       .join('\n');
+  }
+
+  // ============================================
+  // CRUD Methods for Budgets Table
+  // ============================================
+
+  /**
+   * Create a new budget record
+   */
+  async createBudget(input: CreateBudgetInput): Promise<Budget> {
+    const validated = createBudgetSchema.parse(input);
+
+    // Check if category exists and belongs to user
+    const category = await this.db.query.categories.findFirst({
+      where: and(
+        eq(categories.id, validated.category_id),
+        eq(categories.user_id, validated.user_id),
+        eq(categories.is_active, true)
+      ),
+    });
+
+    if (!category) {
+      throw new BudgetServiceError(
+        ServiceErrorCode.CATEGORY_NOT_FOUND,
+        'Category not found or inactive',
+        404
+      );
+    }
+
+    // Validate currency matches category currency
+    if (category.currency !== validated.currency) {
+      throw new BudgetServiceError(
+        ServiceErrorCode.VALIDATION_ERROR,
+        `Budget currency (${validated.currency}) must match category currency (${category.currency})`,
+        400
+      );
+    }
+
+    // Check if budget already exists for this category/month/year
+    const existingBudget = await this.db.query.budgets.findFirst({
+      where: and(
+        eq(budgets.user_id, validated.user_id),
+        eq(budgets.category_id, validated.category_id),
+        eq(budgets.month, validated.month),
+        eq(budgets.year, validated.year)
+      ),
+    });
+
+    if (existingBudget) {
+      throw new BudgetServiceError(
+        ServiceErrorCode.BUDGET_ALREADY_EXISTS,
+        `Budget already exists for this category in ${validated.month}/${validated.year}`,
+        409
+      );
+    }
+
+    const id = nanoid();
+    const [budget] = await this.db
+      .insert(budgets)
+      .values({
+        id,
+        user_id: validated.user_id,
+        category_id: validated.category_id,
+        month: validated.month,
+        year: validated.year,
+        budget_amount: validated.budget_amount,
+        currency: validated.currency,
+        notes: validated.notes,
+      })
+      .returning();
+
+    return budget as Budget;
+  }
+
+  /**
+   * Update an existing budget record
+   */
+  async updateBudget(id: string, user_id: string, input: UpdateBudgetInput): Promise<Budget> {
+    const validated = updateBudgetSchema.parse(input);
+
+    // Check if budget exists and belongs to user
+    const existingBudget = await this.getBudgetById(id, user_id);
+    if (!existingBudget) {
+      throw new BudgetServiceError(ServiceErrorCode.BUDGET_NOT_FOUND, 'Budget not found', 404);
+    }
+
+    // Check if budget is closed
+    if (existingBudget.is_closed) {
+      throw new BudgetServiceError(
+        ServiceErrorCode.BUDGET_CLOSED,
+        'Cannot modify a closed budget',
+        400
+      );
+    }
+
+    // Check that at least one field is being updated
+    if (
+      validated.budget_amount === undefined &&
+      validated.notes === undefined &&
+      validated.is_closed === undefined
+    ) {
+      throw new BudgetServiceError(
+        ServiceErrorCode.VALIDATION_ERROR,
+        'At least one field must be provided for update',
+        400
+      );
+    }
+
+    // Build update data
+    const updateData: Record<string, unknown> = {
+      updated_at: new Date(),
+    };
+
+    if (validated.budget_amount !== undefined) {
+      updateData.budget_amount = validated.budget_amount;
+    }
+    if (validated.notes !== undefined) {
+      updateData.notes = validated.notes;
+    }
+    if (validated.is_closed !== undefined) {
+      updateData.is_closed = validated.is_closed;
+    }
+
+    await this.db
+      .update(budgets)
+      .set(updateData)
+      .where(and(eq(budgets.id, id), eq(budgets.user_id, user_id)));
+
+    const updatedBudget = await this.getBudgetById(id, user_id);
+    return updatedBudget as Budget;
+  }
+
+  /**
+   * Delete a budget record
+   * P2: TODO - Consider returning the deleted budget for UI confirmation/undo
+   */
+  async deleteBudget(id: string, user_id: string): Promise<{ success: boolean }> {
+    const existingBudget = await this.getBudgetById(id, user_id);
+    if (!existingBudget) {
+      throw new BudgetServiceError(ServiceErrorCode.BUDGET_NOT_FOUND, 'Budget not found', 404);
+    }
+
+    // Check if budget is closed
+    if (existingBudget.is_closed) {
+      throw new BudgetServiceError(
+        ServiceErrorCode.BUDGET_CLOSED,
+        'Cannot delete a closed budget',
+        400
+      );
+    }
+
+    await this.db.delete(budgets).where(and(eq(budgets.id, id), eq(budgets.user_id, user_id)));
+
+    return { success: true };
+  }
+
+  /**
+   * Get a single budget by ID
+   */
+  async getBudgetById(id: string, user_id: string): Promise<Budget | null> {
+    const budget = await this.db.query.budgets.findFirst({
+      where: and(eq(budgets.id, id), eq(budgets.user_id, user_id)),
+    });
+
+    return budget as Budget | null;
+  }
+
+  /**
+   * Get a budget by category, month, and year
+   */
+  async getBudgetByCategory(
+    category_id: string,
+    user_id: string,
+    month: number,
+    year: number
+  ): Promise<Budget | null> {
+    const budget = await this.db.query.budgets.findFirst({
+      where: and(
+        eq(budgets.category_id, category_id),
+        eq(budgets.user_id, user_id),
+        eq(budgets.month, month),
+        eq(budgets.year, year)
+      ),
+    });
+
+    return budget as Budget | null;
+  }
+
+  /**
+   * Find all budgets for a user with optional filters
+   */
+  async findAllBudgets(
+    user_id: string,
+    month: number,
+    year: number,
+    currency?: 'IDR' | 'USD'
+  ): Promise<BudgetWithCategory[]> {
+    const conditions = [
+      eq(budgets.user_id, user_id),
+      eq(budgets.month, month),
+      eq(budgets.year, year),
+    ];
+
+    if (currency) {
+      conditions.push(eq(budgets.currency, currency));
+    }
+
+    const result = await this.db.query.budgets.findMany({
+      where: and(...conditions),
+      with: {
+        category: true,
+      },
+    });
+
+    return result as BudgetWithCategory[];
+  }
+
+  /**
+   * Copy all budgets from source month to target month
+   */
+  async copyBudgetsToMonth(input: CopyBudgetsInput): Promise<CopyBudgetsResult> {
+    const validated = copyBudgetsSchema.parse(input);
+
+    // Get all budgets from source month
+    const sourceBudgets = await this.db.query.budgets.findMany({
+      where: and(
+        eq(budgets.user_id, validated.user_id),
+        eq(budgets.month, validated.source_month),
+        eq(budgets.year, validated.source_year)
+      ),
+    });
+
+    if (sourceBudgets.length === 0) {
+      throw new BudgetServiceError(
+        ServiceErrorCode.NO_BUDGETS_TO_COPY,
+        'No budgets found in source month to copy',
+        404
+      );
+    }
+
+    // Get existing budgets in target month to avoid duplicates
+    const existingTargetBudgets = await this.db.query.budgets.findMany({
+      where: and(
+        eq(budgets.user_id, validated.user_id),
+        eq(budgets.month, validated.target_month),
+        eq(budgets.year, validated.target_year)
+      ),
+    });
+
+    const existingCategoryIds = new Set(existingTargetBudgets.map((b: Budget) => b.category_id));
+
+    // Filter out budgets that already exist in target month
+    const budgetsToCopy = sourceBudgets.filter(
+      (b: Budget) => !existingCategoryIds.has(b.category_id)
+    );
+
+    const skippedCount = sourceBudgets.length - budgetsToCopy.length;
+
+    // Copy budgets to target month (in a transaction for atomicity)
+    if (budgetsToCopy.length > 0) {
+      const newBudgets = budgetsToCopy.map((b: Budget) => ({
+        id: nanoid(),
+        user_id: validated.user_id,
+        category_id: b.category_id,
+        month: validated.target_month,
+        year: validated.target_year,
+        budget_amount: b.budget_amount,
+        currency: b.currency,
+        notes: b.notes,
+        is_closed: false,
+      }));
+
+      await this.db.transaction(async (tx) => {
+        for (const budget of newBudgets) {
+          await tx.insert(budgets).values(budget);
+        }
+      });
+    }
+
+    return {
+      copied_count: budgetsToCopy.length,
+      skipped_count: skippedCount,
+      target_month: validated.target_month,
+      target_year: validated.target_year,
+    };
   }
 }
