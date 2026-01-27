@@ -9,7 +9,7 @@
 
 /* eslint-disable no-console -- Console output is intentional for seeder progress feedback */
 
-import { db } from './index';
+import { db, getDatabaseConfig } from './index';
 import { nanoid } from 'nanoid';
 import { hashPassword } from '@/lib/auth/password';
 import { sql } from 'drizzle-orm';
@@ -541,9 +541,12 @@ async function clearAllTables() {
     await db.delete(users);
     await db.delete(exchangeRates);
 
-    // Run VACUUM to clean up the database and reclaim space
-    console.log('🧹 Vacuuming database...');
-    db.run(sql`VACUUM`);
+    // Run VACUUM to clean up the database and reclaim space (SQLite only)
+    const { dialect } = getDatabaseConfig();
+    if (dialect === 'sqlite') {
+      console.log('🧹 Vacuuming database...');
+      db.run(sql`VACUUM`);
+    }
 
     console.log('✓ All tables cleared');
   } catch (error) {
