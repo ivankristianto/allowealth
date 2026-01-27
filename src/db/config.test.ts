@@ -26,10 +26,10 @@ describe('detectDialect', () => {
     expect(detectDialect('postgresql://user:pass!@#$@localhost:5432/db')).toBe('postgresql');
   });
 
-  test('is case sensitive - uppercase protocol returns sqlite', () => {
-    // P3: TODO - Consider making protocol detection case-insensitive
-    expect(detectDialect('POSTGRES://user:pass@localhost/db')).toBe('sqlite');
-    expect(detectDialect('PostgreSQL://user:pass@localhost/db')).toBe('sqlite');
+  test('is case insensitive for protocol detection', () => {
+    expect(detectDialect('POSTGRES://user:pass@localhost/db')).toBe('postgresql');
+    expect(detectDialect('PostgreSQL://user:pass@localhost/db')).toBe('postgresql');
+    expect(detectDialect('Postgres://user:pass@localhost/db')).toBe('postgresql');
   });
 });
 
@@ -72,5 +72,18 @@ describe('getDatabaseConfig', () => {
     expect(config.dialect).toBe('postgresql');
     expect(config.isSupabase).toBe(true);
     expect(config.poolConfig).toEqual({ max: 10, idleTimeout: 30 });
+  });
+
+  test('detects Supabase URLs with .supabase.co domain', () => {
+    process.env.DATABASE_URL = 'postgresql://user:pass@db.abc123.supabase.co:5432/postgres';
+    const config = getDatabaseConfig();
+    expect(config.isSupabase).toBe(true);
+  });
+
+  test('does not falsely detect supabase in non-Supabase URLs', () => {
+    // URL with "supabase" in the path but not a Supabase domain
+    process.env.DATABASE_URL = 'postgresql://user:pass@myserver.example.com:5432/supabase-clone';
+    const config = getDatabaseConfig();
+    expect(config.isSupabase).toBe(false);
   });
 });

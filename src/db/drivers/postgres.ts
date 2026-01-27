@@ -63,8 +63,9 @@ export function createPostgresDriver(url: string): ReturnType<typeof postgres> {
 
   // Close existing client if URL changed
   if (client && clientUrl !== url) {
-    client.end().catch(() => {
-      // Ignore close errors during URL switch
+    client.end().catch((error) => {
+      console.error('[PostgreSQL] Error closing existing connection during URL switch:', error);
+      // Continue with new connection despite close error
     });
   }
 

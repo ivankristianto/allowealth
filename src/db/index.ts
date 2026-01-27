@@ -2,50 +2,67 @@
  * Database connection configuration
  *
  * Provides a database abstraction layer that works across different
- * JavaScript runtimes (Bun and Node.js).
+ * JavaScript runtimes (Bun and Node.js) and database dialects (SQLite, PostgreSQL).
  *
+ * SQLite:
  * - In Bun runtime: Uses bun:sqlite with drizzle-orm/bun-sqlite
  * - In Node.js runtime: Uses better-sqlite3 with drizzle-orm/better-sqlite3
  *
- * The driver is selected automatically based on the detected runtime.
+ * PostgreSQL:
+ * - Uses postgres.js with drizzle-orm/postgres-js
+ * - Supports Supabase with automatic SSL configuration
+ *
+ * The driver is selected automatically based on the DATABASE_URL format:
+ * - postgres:// or postgresql:// → PostgreSQL
+ * - Otherwise → SQLite
  *
  * @see https://bun.sh/docs/api/sqlite
  * @see https://github.com/WiseLibs/better-sqlite3
+ * @see https://github.com/porsager/postgres
  */
 import { createRequire } from 'node:module';
+import { getDatabaseConfig } from './config';
 import { detectRuntime } from './driver';
 import { createBunDriver } from './drivers/bun';
 import { createNodeDriver } from './drivers/node';
-import * as schema from './schema';
+import { createPostgresDatabase, closePostgres } from './drivers/postgres';
 import type { BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
+import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 
-// Re-export schema
+// Import schemas for type inference (SQLite schema is structurally compatible)
+import * as sqliteSchema from './schema/sqlite';
+
+// Re-export schema (uses SQLite schema for types, runtime selects correct dialect)
 export * from './schema';
 
 // Re-export driver types for dependency injection
 export type { DatabaseDriver, PreparedStatement, RunResult } from './driver';
 
-/**
- * Get the database URL from environment
- * Reads from process.env each time to support test database switching
- */
-function getDbUrl(): string {
-  const url = process.env.DATABASE_URL;
-  if (url) return url;
-
-  // In production, DATABASE_URL should be set
-  if (process.env.NODE_ENV === 'production') {
-    console.warn('Warning: DATABASE_URL not set in production, using default db/.dev.db');
-  }
-
-  return 'db/.dev.db';
-}
+// Re-export config utilities
+export { getDatabaseConfig, detectDialect } from './config';
+export type { DatabaseConfig, DatabaseDialect } from './config';
 
 /**
- * Database type that works across both runtimes
+ * Database type for type inference
+ *
+ * Uses SQLite database type for compile-time type checking since:
+ * 1. Both SQLite and PostgreSQL schemas are structurally compatible
+ * 2. Union types cause method signature incompatibilities in TypeScript
+ * 3. Runtime correctly selects the appropriate driver based on DATABASE_URL
+ *
+ * This approach provides correct IntelliSense and type checking while
+ * allowing runtime flexibility between database dialects.
  */
-export type Database = BunSQLiteDatabase<typeof schema> | BetterSQLite3Database<typeof schema>;
+export type Database =
+  | BunSQLiteDatabase<typeof sqliteSchema>
+  | BetterSQLite3Database<typeof sqliteSchema>;
+
+/**
+ * PostgreSQL database type (for internal use when dialect is known)
+ * @internal
+ */
+export type PostgresDatabase = PostgresJsDatabase<typeof sqliteSchema>;
 
 /**
  * Database interface for dependency injection
@@ -164,25 +181,52 @@ function getRequire() {
 
 /**
  * Create the Drizzle database instance
+ *
+ * Automatically selects the correct driver based on DATABASE_URL:
+ * - PostgreSQL URLs → postgres.js driver
+ * - SQLite paths → bun:sqlite or better-sqlite3 based on runtime
+ *
+ * @throws Error if database connection fails
  */
 function createDatabase(): Database {
-  const runtime = detectRuntime();
-  const dynamicRequire = getRequire();
-  const dbUrl = getDbUrl();
+  const config = getDatabaseConfig();
 
-  // Create the native SQLite driver
-  const driver = runtime === 'bun' ? createBunDriver(dbUrl) : createNodeDriver(dbUrl);
+  try {
+    // PostgreSQL path
+    if (config.dialect === 'postgresql') {
+      // Dynamic import of PostgreSQL schema
+      // Note: We use require here to avoid top-level await complexity
+      // The schema is loaded synchronously at database creation time
+      const pgSchema = require('./schema/postgresql');
+      // Cast to Database type for type compatibility
+      // Runtime behavior is correct; this is only for TypeScript inference
+      return createPostgresDatabase(config.url, pgSchema) as unknown as Database;
+    }
 
-  // Apply performance optimizations
-  applyPragmas(driver);
+    // SQLite path
+    const runtime = detectRuntime();
+    const dynamicRequire = getRequire();
 
-  // Create Drizzle ORM instance
-  const { drizzle } =
-    runtime === 'bun'
-      ? dynamicRequire('drizzle-orm/bun-sqlite')
-      : dynamicRequire('drizzle-orm/better-sqlite3');
+    // Create the native SQLite driver
+    const driver = runtime === 'bun' ? createBunDriver(config.url) : createNodeDriver(config.url);
 
-  return drizzle(driver._raw, { schema });
+    // Apply performance optimizations
+    applyPragmas(driver);
+
+    // Create Drizzle ORM instance with SQLite schema
+    const sqliteSchemaModule = require('./schema/sqlite');
+    const { drizzle } =
+      runtime === 'bun'
+        ? dynamicRequire('drizzle-orm/bun-sqlite')
+        : dynamicRequire('drizzle-orm/better-sqlite3');
+
+    return drizzle(driver._raw, { schema: sqliteSchemaModule });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(
+      `Failed to create database connection (dialect: ${config.dialect}): ${message}`
+    );
+  }
 }
 
 /**
@@ -191,9 +235,19 @@ function createDatabase(): Database {
 let dbInstance: Database | null = null;
 
 /**
+ * Flag to prevent new connections during close
+ */
+let isClosing = false;
+
+/**
  * Get the database instance (singleton pattern)
+ *
+ * @throws Error if database is being closed
  */
 export function getDb(): Database {
+  if (isClosing) {
+    throw new Error('Database is being closed. Cannot acquire new connection.');
+  }
   if (!dbInstance) {
     dbInstance = createDatabase();
   }
@@ -213,6 +267,32 @@ export function getDb(): Database {
  */
 export function resetDb(): void {
   dbInstance = null;
+}
+
+/**
+ * Close database connections
+ *
+ * Should be called when shutting down the application to properly
+ * release database connections. This is especially important for
+ * PostgreSQL which uses connection pooling.
+ *
+ * For SQLite, this is a no-op as connections are file-based.
+ *
+ * @returns Promise that resolves when the database is closed
+ */
+export async function closeDatabase(): Promise<void> {
+  if (isClosing) return;
+  isClosing = true;
+
+  try {
+    const config = getDatabaseConfig();
+    if (config.dialect === 'postgresql') {
+      await closePostgres();
+    }
+    dbInstance = null;
+  } finally {
+    isClosing = false;
+  }
 }
 
 /**
