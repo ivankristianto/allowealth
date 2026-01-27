@@ -64,16 +64,27 @@ Remove `percentage`, `budget_amount`, and `currency` from the Categories table. 
 
 #### Progress Checklist
 
-- [ ] Create `src/lib/validation/budgets.ts`
-- [ ] Create `src/lib/types/budget.ts`
-- [ ] Create `src/pages/api/budgets/index.ts` (GET list, POST create)
-- [ ] Create `src/pages/api/budgets/[id].ts` (GET, PUT, DELETE)
-- [ ] Create `src/pages/api/budgets/copy.ts` (POST copy)
-- [ ] Add `createBudget()` to BudgetService
-- [ ] Add `updateBudget()` to BudgetService
-- [ ] Add `deleteBudget()` to BudgetService
-- [ ] Add `getBudgetByCategory()` to BudgetService
-- [ ] Add `copyBudgetsToMonth()` to BudgetService
+- [x] Create `src/lib/validation/budgets.ts`
+- [x] Create `src/lib/types/budget.ts`
+- [x] Create `src/pages/api/budgets/index.ts` (GET list, POST create)
+- [x] Create `src/pages/api/budgets/[id].ts` (GET, PUT, DELETE)
+- [x] Create `src/pages/api/budgets/copy.ts` (POST copy)
+- [x] Add `createBudget()` to BudgetService
+- [x] Add `updateBudget()` to BudgetService
+- [x] Add `deleteBudget()` to BudgetService
+- [x] Add `getBudgetById()` to BudgetService
+- [x] Add `getBudgetByCategory()` to BudgetService
+- [x] Add `findAllBudgets()` to BudgetService
+- [x] Add `copyBudgetsToMonth()` to BudgetService
+
+**Completed:** 2026-01-27 | **Commit:** `bc88c5a`
+
+**Additional changes made:**
+
+- Added currency validation (budget currency must match category currency)
+- Added empty update payload validation
+- Copy operation wrapped in transaction for atomicity
+- Closed budgets cannot be modified (permanent lock by design)
 
 ---
 
