@@ -3,7 +3,7 @@
  * BudgetPageHeader Component
  *
  * Header section for the Budget page with title, month navigation,
- * and action buttons.
+ * and action buttons row.
  * Part of the premium Budget page redesign (Task 16).
  *
  * @param {string} title - Main heading (default: "Family Spending Targets")
@@ -18,7 +18,9 @@
  * @param {string} className - Additional CSS classes
  */
 
-import { Sparkles, ChevronLeft, ChevronRight, History, Plus, Copy } from '@lucide/astro';
+import { ChevronLeft, ChevronRight, CalendarDays } from '@lucide/astro';
+
+import BudgetActions from '@components/organisms/BudgetActions.astro';
 
 export interface Props {
   title?: string;
@@ -30,6 +32,7 @@ export interface Props {
   isNextDisabled?: boolean;
   showAiRebalancer?: boolean;
   showCopyButton?: boolean;
+  currentMonthResetUrl?: string;
   className?: string;
 }
 
@@ -43,6 +46,7 @@ const {
   isNextDisabled = false,
   showAiRebalancer = true,
   showCopyButton = false,
+  currentMonthResetUrl,
   className = '',
 } = Astro.props;
 
@@ -53,63 +57,17 @@ const displaySubtitle =
     ? `Monitoring ${budgetCount} critical expense ${budgetCount === 1 ? 'category' : 'categories'} for our household.`
     : 'Set up spending limits to track your budget.');
 
-const headerClasses = [
-  'flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6',
-  className,
-]
-  .filter(Boolean)
-  .join(' ');
+const headerClasses = ['flex flex-col gap-4', className].filter(Boolean).join(' ');
 ---
 
 <header class={headerClasses}>
-  {/* Title and subtitle */}
-  <div>
-    <h1 class="text-2xl font-bold text-base-content tracking-tight leading-none">{title}</h1>
-    <p class="text-sm text-base-content/60 mt-2 font-medium">{displaySubtitle}</p>
-  </div>
-
-  {/* Actions: View History, AI Rebalancer, Month Navigation, Set New Budget */}
-  <div class="flex flex-wrap items-center gap-3">
-    {/* View History Button */}
-    <a
-      href="/budget/history"
-      class="btn btn-outline gap-2 rounded-2xl border border-base-300 hover:border-accent/30 hover:text-accent hover:bg-transparent"
-      aria-label="View budget history"
-    >
-      <History size={18} class="stroke-current" aria-hidden="true" />
-      <span>View History</span>
-    </a>
-
-    {/* AI Rebalancer Button */}
-    {
-      showAiRebalancer && (
-        <button
-          type="button"
-          class="btn btn-outline btn-accent gap-2 rounded-2xl shadow-md hover:shadow-lg transition-all"
-          data-ai-rebalancer
-          aria-label="AI budget rebalancer"
-        >
-          <Sparkles size={18} class="stroke-current" aria-hidden="true" />
-          <span>AI Rebalancer</span>
-        </button>
-      )
-    }
-
-    {/* Copy to Next Month Button */}
-    {
-      showCopyButton && (
-        <button
-          type="button"
-          class="btn btn-outline gap-2 rounded-2xl border border-base-300 hover:border-accent/30 hover:text-accent hover:bg-transparent"
-          id="copy-budgets-btn"
-          data-target-modal="copy-budget-modal"
-          aria-label="Copy budgets to next month"
-        >
-          <Copy size={18} class="stroke-current" aria-hidden="true" />
-          <span>Copy to Next Month</span>
-        </button>
-      )
-    }
+  {/* First row: Title, subtitle, and month navigation */}
+  <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+    {/* Title and subtitle */}
+    <div>
+      <h1 class="text-2xl font-bold text-base-content tracking-tight leading-none">{title}</h1>
+      <p class="text-sm text-base-content/60 mt-2 font-medium">{displaySubtitle}</p>
+    </div>
 
     {/* Month Navigation */}
     <div class="flex items-center gap-1">
@@ -147,52 +105,23 @@ const headerClasses = [
           </button>
         )
       }
-    </div>
 
-    {/* Set New Budget Button */}
-    <button
-      type="button"
-      class="btn btn-accent rounded-2xl font-bold text-sm flex items-center gap-2"
-      id="set-new-budget-btn"
-      data-target-modal="set-new-budget-modal"
-      aria-label="Set new budget"
-    >
-      <Plus size={18} class="stroke-current" aria-hidden="true" />
-      <span>Set New Budget</span>
-    </button>
-  </div>
-</header>
-
-<script>
-  // P1: Use data-target-modal attribute to decouple from hardcoded modal IDs
-  function initModalTriggerButton(buttonId: string) {
-    const btn = document.getElementById(buttonId);
-    if (!btn) return;
-
-    // Remove any existing listeners by cloning
-    const newBtn = btn.cloneNode(true) as HTMLButtonElement;
-    btn.parentNode?.replaceChild(newBtn, btn);
-
-    newBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      const targetId = newBtn.getAttribute('data-target-modal');
-      if (!targetId) return;
-      const modal = document.getElementById(targetId) as HTMLDialogElement;
-      if (modal) {
-        modal.showModal();
+      {/* Current Month Reset Button - shown only when viewing a different month */}
+      {
+        currentMonthResetUrl && (
+          <a
+            href={currentMonthResetUrl}
+            class="btn btn-sm bg-base-100 border border-base-300 hover:border-accent/30 hover:text-accent rounded-xl transition-all gap-1 ml-1"
+            aria-label="Go to current month"
+          >
+            <CalendarDays size={16} class="stroke-current" aria-hidden="true" />
+            <span class="text-xs">Today</span>
+          </a>
+        )
       }
-    });
-  }
+    </div>
+  </div>
 
-  function initHeaderButtons() {
-    initModalTriggerButton('set-new-budget-btn');
-    initModalTriggerButton('copy-budgets-btn');
-  }
-
-  // Initialize
-  initHeaderButtons();
-
-  // Re-initialize on Astro page transitions
-  document.addEventListener('astro:page-load', initHeaderButtons);
-</script>
+  {/* Second row: Action buttons */}
+  <BudgetActions showAiRebalancer={showAiRebalancer} showCopyButton={showCopyButton} />
+</header>

@@ -111,12 +111,34 @@ const prevMonth = prevMonthDate.getMonth() + 1;
 const nextMonthYear = nextMonthDate.getFullYear();
 const nextMonth = nextMonthDate.getMonth() + 1;
 
-// Don't allow navigating to future months
+// Check if we're viewing the current month (for showing "Current Month" button)
 const nowDate = new Date();
-const maxYear = nowDate.getFullYear();
-const maxMonth = nowDate.getMonth() + 1;
+const currentYear = nowDate.getFullYear();
+const currentMonth = nowDate.getMonth() + 1;
+const isViewingCurrentMonth = selectedYear === currentYear && selectedMonth === currentMonth;
+
+// Check if next month is in the future
 const isNextMonthInFuture =
-  nextMonthYear > maxYear || (nextMonthYear === maxYear && nextMonth > maxMonth);
+  nextMonthYear > currentYear || (nextMonthYear === currentYear && nextMonth > currentMonth);
+
+// If next month is in the future, check if it has budget data
+// Allow navigation to future months if they have existing budget data
+let allowNextMonthNavigation = !isNextMonthInFuture;
+if (isNextMonthInFuture) {
+  try {
+    const hasNextMonthBudgets = await budgetService.hasBudgetsForMonth(
+      user.id,
+      nextMonthYear,
+      nextMonth,
+      selectedCurrency
+    );
+    allowNextMonthNavigation = hasNextMonthBudgets;
+  } catch (err) {
+    console.error('Error checking next month budgets:', err);
+    // Default to not allowing navigation on error
+    allowNextMonthNavigation = false;
+  }
+}
 
 // Get budget alerts for generating advice
 let alerts: Awaited<ReturnType<typeof budgetService.getAlerts>> = [];
@@ -192,6 +214,17 @@ const budgetsForModal = existingBudgets.map((b) => ({
   budget_amount: b.budget_amount,
 }));
 
+// Create a map of budget amounts by category_id for easy lookup
+const budgetAmountsByCategory = new Map(
+  existingBudgets.map((b) => [b.category_id, b.budget_amount])
+);
+
+// Merge budget amounts into expense categories for the edit handler
+const expenseCategoriesWithBudgets = expenseCategories.map((cat) => ({
+  ...cat,
+  budget_amount: budgetAmountsByCategory.get(cat.id) || '0',
+}));
+
 // Count budgets with actual limits set
 const budgetCount =
   budgetData?.categories.filter((c) => parseFloat(c.budget_amount) > 0).length || 0;
@@ -201,7 +234,7 @@ const budgetCount =
   <div
     class="max-w-7xl mx-auto sm:px-2 lg:px-6 space-y-6 sm:space-y-8"
     data-budget-container
-    data-expense-categories={JSON.stringify(expenseCategories)}
+    data-expense-categories={JSON.stringify(expenseCategoriesWithBudgets)}
     data-currency={selectedCurrency}
   >
     {/* Premium Header with Month Navigation and Actions */}
@@ -210,10 +243,13 @@ const budgetCount =
       budgetCount={budgetCount}
       currentMonth={currentMonthDisplay}
       prevMonthUrl={buildMonthUrl(prevMonthYear, prevMonth)}
-      nextMonthUrl={!isNextMonthInFuture ? buildMonthUrl(nextMonthYear, nextMonth) : undefined}
-      isNextDisabled={isNextMonthInFuture}
+      nextMonthUrl={allowNextMonthNavigation ? buildMonthUrl(nextMonthYear, nextMonth) : undefined}
+      isNextDisabled={!allowNextMonthNavigation}
       showAiRebalancer={budgetCount > 0}
       showCopyButton={budgetCount > 0}
+      currentMonthResetUrl={!isViewingCurrentMonth
+        ? buildMonthUrl(currentYear, currentMonth)
+        : undefined}
     />
 
     {/* Error State */}

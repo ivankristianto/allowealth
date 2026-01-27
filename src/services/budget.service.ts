@@ -20,10 +20,25 @@ import {
 import type { Budget, BudgetWithCategory, CopyBudgetsResult } from '@/lib/types/budget';
 import { BudgetServiceError, ServiceErrorCode } from './service-errors';
 
+/**
+ * Validate and sanitize hex color values to prevent XSS
+ * @param color - Color value from database (potentially untrusted)
+ * @param fallback - Safe fallback color
+ * @returns Validated hex color or fallback
+ */
+const sanitizeHexColor = (color: string | null | undefined, fallback: string): string => {
+  if (!color || !/^#[0-9A-Fa-f]{3,8}$/.test(color)) {
+    return fallback;
+  }
+  return color;
+};
+
 export interface BudgetOverview {
   category_id: string;
   category_name: string;
   category_type: 'expense' | 'income';
+  category_icon: string;
+  category_color: string;
   percentage: string;
   budget_amount: string;
   spent_amount: string;
@@ -158,6 +173,8 @@ export class BudgetService {
         category_id: budget.category_id,
         category_name: budget.category?.name ?? 'Unknown',
         category_type: (budget.category?.type ?? 'expense') as 'expense' | 'income',
+        category_icon: budget.category?.icon ?? 'CircleDollarSign',
+        category_color: sanitizeHexColor(budget.category?.color, '#6b7280'),
         percentage: calculatedPercentage.toFixed(2),
         budget_amount: budgetAmount,
         spent_amount: spentAmount,
@@ -657,6 +674,42 @@ export class BudgetService {
     });
 
     return result as BudgetWithCategory[];
+  }
+
+  /**
+   * Check if any budgets exist for a given month/year
+   * Used to determine if month navigation should be enabled for future months
+   */
+  async hasBudgetsForMonth(
+    user_id: string,
+    year: number,
+    month: number,
+    currency?: 'IDR' | 'USD'
+  ): Promise<boolean> {
+    // Validate inputs (consistent with other service methods)
+    if (!Number.isInteger(year) || year < 2000 || year > 2100) {
+      throw new Error('Invalid year parameter');
+    }
+    if (!Number.isInteger(month) || month < 1 || month > 12) {
+      throw new Error('Invalid month parameter');
+    }
+
+    const conditions = [
+      eq(budgets.user_id, user_id),
+      eq(budgets.month, month),
+      eq(budgets.year, year),
+    ];
+
+    if (currency) {
+      conditions.push(eq(budgets.currency, currency));
+    }
+
+    const result = await this.db.query.budgets.findFirst({
+      where: and(...conditions),
+      columns: { id: true },
+    });
+
+    return result !== undefined;
   }
 
   /**

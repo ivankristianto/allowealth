@@ -320,6 +320,42 @@ describe('BudgetService', () => {
       expect(summary.total_spent).toBe('3000000');
     });
 
+    it('should include category icon and color in budget overview', async () => {
+      const userId = 'user-1';
+      const year = 2026;
+      const month = 1;
+      const currency = 'IDR';
+
+      const mockBudgets = [
+        createMockBudgetWithCategory(
+          { id: 'budget-1', category_id: 'cat-1', budget_amount: '6000000', month, year },
+          {
+            id: 'cat-1',
+            name: 'Food',
+            type: 'expense',
+            is_active: true,
+            icon: 'Utensils',
+            color: '#10b981',
+          }
+        ),
+      ];
+
+      (mockDb.query.budgets.findMany as any).mockResolvedValue(mockBudgets);
+
+      (mockDb.select as any).mockReturnValue({
+        from: mock(() => ({
+          where: mock(() => ({
+            groupBy: mock(() => Promise.resolve([{ category_id: 'cat-1', total: '3000000' }])),
+          })),
+        })),
+      });
+
+      const summary = await budgetService.getMonthlyOverview(userId, year, month, currency);
+
+      expect(summary.categories[0].category_icon).toBe('Utensils');
+      expect(summary.categories[0].category_color).toBe('#10b981');
+    });
+
     it('should validate year parameter', async () => {
       await expect(budgetService.getMonthlyOverview('user-1', 1999, 1, 'IDR')).rejects.toThrow(
         'Invalid year parameter'
@@ -636,6 +672,84 @@ describe('BudgetService', () => {
       await expect(
         budgetService.getCategoryRemaining('non-existent', 'user-1', 'IDR')
       ).rejects.toThrow('Category not found');
+    });
+  });
+
+  describe('hasBudgetsForMonth', () => {
+    it('should return true when budgets exist for the month', async () => {
+      const mockBudget = createMockBudget({
+        id: 'budget-1',
+        month: 2,
+        year: 2026,
+      });
+      (mockDb.query.budgets.findFirst as any).mockResolvedValue(mockBudget);
+
+      const result = await budgetService.hasBudgetsForMonth('user-1', 2026, 2);
+
+      expect(result).toBe(true);
+    });
+
+    it('should return false when no budgets exist for the month', async () => {
+      (mockDb.query.budgets.findFirst as any).mockResolvedValue(undefined);
+
+      const result = await budgetService.hasBudgetsForMonth('user-1', 2026, 2);
+
+      expect(result).toBe(false);
+    });
+
+    it('should filter by currency when provided', async () => {
+      (mockDb.query.budgets.findFirst as any).mockResolvedValue(undefined);
+
+      await budgetService.hasBudgetsForMonth('user-1', 2026, 2, 'USD');
+
+      // Verify findFirst was called (currency filter applied internally)
+      expect(mockDb.query.budgets.findFirst).toHaveBeenCalled();
+    });
+
+    it('should return true when budgets exist with matching currency', async () => {
+      const mockBudget = createMockBudget({
+        id: 'budget-1',
+        month: 2,
+        year: 2026,
+        currency: 'USD',
+      });
+      (mockDb.query.budgets.findFirst as any).mockResolvedValue(mockBudget);
+
+      const result = await budgetService.hasBudgetsForMonth('user-1', 2026, 2, 'USD');
+
+      expect(result).toBe(true);
+    });
+
+    it('should validate year parameter', async () => {
+      await expect(budgetService.hasBudgetsForMonth('user-1', 1999, 1)).rejects.toThrow(
+        'Invalid year parameter'
+      );
+
+      await expect(budgetService.hasBudgetsForMonth('user-1', 2101, 1)).rejects.toThrow(
+        'Invalid year parameter'
+      );
+    });
+
+    it('should validate month parameter', async () => {
+      await expect(budgetService.hasBudgetsForMonth('user-1', 2026, 0)).rejects.toThrow(
+        'Invalid month parameter'
+      );
+
+      await expect(budgetService.hasBudgetsForMonth('user-1', 2026, 13)).rejects.toThrow(
+        'Invalid month parameter'
+      );
+    });
+
+    it('should reject non-integer year', async () => {
+      await expect(budgetService.hasBudgetsForMonth('user-1', 2026.5, 1)).rejects.toThrow(
+        'Invalid year parameter'
+      );
+    });
+
+    it('should reject non-integer month', async () => {
+      await expect(budgetService.hasBudgetsForMonth('user-1', 2026, 1.5)).rejects.toThrow(
+        'Invalid month parameter'
+      );
     });
   });
 });
