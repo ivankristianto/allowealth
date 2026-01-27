@@ -367,8 +367,18 @@ Note: After schema changes, run `bun run db:push` to sync schema to database (de
 
 #### Progress Checklist
 
-- [ ] Update `src/db/seed.ts` - remove budget fields from categories
-- [ ] Add budget seed data for recent months
+- [x] Update `src/db/seed.ts` - remove budget fields from categories (already done - seedCategories doesn't insert budget fields)
+- [x] Add budget seed data for recent months
+
+**Completed:** 2026-01-27
+
+**Key changes:**
+
+- Added `seedBudgets()` function to seed budget records for expense categories
+- Seeds budgets for 3 months: November 2025, December 2025, January 2026
+- Uses batch insert for better performance (P1 improvement from code review)
+- Uses existing `EXPENSE_CATEGORIES` budget amounts as seed data
+- Categories already don't have budget fields in `seedCategories()` (no change needed)
 
 ---
 
