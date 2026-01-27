@@ -172,11 +172,22 @@ const monthBudgets = await this.db
 
 #### Progress Checklist
 
-- [ ] Update `SetNewBudgetModal.astro` to use new API endpoints
-- [ ] Add month/year context to SetNewBudgetModal
-- [ ] Create `CopyBudgetModal.astro`
-- [ ] Add "Copy to Next Month" button to `BudgetPageHeader.astro`
-- [ ] Update `budget/index.astro` with copy functionality
+- [x] Update `SetNewBudgetModal.astro` to use new API endpoints
+- [x] Add month/year context to SetNewBudgetModal
+- [x] Create `CopyBudgetModal.astro`
+- [x] Add "Copy to Next Month" button to `BudgetPageHeader.astro`
+- [x] Update `budget/index.astro` with copy functionality
+
+**Completed:** 2026-01-27
+
+**Key changes:**
+
+- SetNewBudgetModal now calls POST /api/budgets (create) or PUT /api/budgets/:id (update)
+- Added month/year props to track budget period context
+- Created CopyBudgetModal with validation and screen reader accessibility
+- BudgetPageHeader shows "Copy to Next Month" button when budgets exist
+- Added ARIA live regions for loading state announcements (accessibility)
+- Added client-side validation for budget amounts and month/year ranges
 
 ---
 
