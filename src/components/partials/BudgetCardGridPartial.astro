@@ -1,0 +1,25 @@
+---
+/**
+ * BudgetCardGridPartial
+ *
+ * Server-rendered partial for budget cards grid.
+ * Used by both initial page render and API HTML responses.
+ *
+ * Part of the Interactive Page Architecture pattern.
+ * See: docs/architecture/002-interactive-pages.md
+ *
+ * @param {BudgetCategorySummary[]} budgets - Array of budget data
+ * @param {string} currency - Currency code (IDR or USD)
+ */
+
+import BudgetCardGrid, { type BudgetData } from '@components/organisms/BudgetCardGrid.astro';
+
+export interface Props {
+  budgets: BudgetData[];
+  currency: 'IDR' | 'USD';
+}
+
+const { budgets, currency } = Astro.props;
+---
+
+<BudgetCardGrid budgets={budgets} currency={currency} loading={false} />

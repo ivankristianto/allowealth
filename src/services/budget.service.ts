@@ -19,19 +19,7 @@ import {
 } from '@/lib/validation/budgets';
 import type { Budget, BudgetWithCategory, CopyBudgetsResult } from '@/lib/types/budget';
 import { BudgetServiceError, ServiceErrorCode } from './service-errors';
-
-/**
- * Validate and sanitize hex color values to prevent XSS
- * @param color - Color value from database (potentially untrusted)
- * @param fallback - Safe fallback color
- * @returns Validated hex color or fallback
- */
-const sanitizeHexColor = (color: string | null | undefined, fallback: string): string => {
-  if (!color || !/^#[0-9A-Fa-f]{3,8}$/.test(color)) {
-    return fallback;
-  }
-  return color;
-};
+import { toHexColor } from '@/lib/utils/colorUtils';
 
 export interface BudgetOverview {
   category_id: string;
@@ -174,7 +162,7 @@ export class BudgetService {
         category_name: budget.category?.name ?? 'Unknown',
         category_type: (budget.category?.type ?? 'expense') as 'expense' | 'income',
         category_icon: budget.category?.icon ?? 'CircleDollarSign',
-        category_color: sanitizeHexColor(budget.category?.color, '#6b7280'),
+        category_color: toHexColor(budget.category?.color, '#6b7280'),
         percentage: calculatedPercentage.toFixed(2),
         budget_amount: budgetAmount,
         spent_amount: spentAmount,
@@ -714,6 +702,9 @@ export class BudgetService {
 
   /**
    * Copy all budgets from source month to target month
+   *
+   * Duplicate detection uses both category_id AND currency as composite key
+   * to properly handle multi-currency budgets.
    */
   async copyBudgetsToMonth(input: CopyBudgetsInput): Promise<CopyBudgetsResult> {
     const validated = copyBudgetsSchema.parse(input);
@@ -744,16 +735,22 @@ export class BudgetService {
       ),
     });
 
-    const existingCategoryIds = new Set(existingTargetBudgets.map((b: Budget) => b.category_id));
+    // Create composite key (category_id + currency) for duplicate detection
+    // This ensures budgets for the same category but different currencies are handled separately
+    const createBudgetKey = (categoryId: string, currency: string) => `${categoryId}:${currency}`;
 
-    // Filter out budgets that already exist in target month
+    const existingBudgetKeys = new Set(
+      existingTargetBudgets.map((b: Budget) => createBudgetKey(b.category_id, b.currency))
+    );
+
+    // Filter out budgets that already exist in target month (same category AND currency)
     const budgetsToCopy = sourceBudgets.filter(
-      (b: Budget) => !existingCategoryIds.has(b.category_id)
+      (b: Budget) => !existingBudgetKeys.has(createBudgetKey(b.category_id, b.currency))
     );
 
     const skippedCount = sourceBudgets.length - budgetsToCopy.length;
 
-    // Copy budgets to target month (in a transaction for atomicity)
+    // Copy budgets to target month using bulk insert for atomicity
     if (budgetsToCopy.length > 0) {
       const newBudgets = budgetsToCopy.map((b: Budget) => ({
         id: nanoid(),
@@ -767,11 +764,9 @@ export class BudgetService {
         is_closed: false,
       }));
 
-      await this.db.transaction(async (tx) => {
-        for (const budget of newBudgets) {
-          await tx.insert(budgets).values(budget);
-        }
-      });
+      // Bulk insert for better performance and atomicity
+      // Drizzle ORM handles the array insert appropriately for each database driver
+      await this.db.insert(budgets).values(newBudgets);
     }
 
     return {

@@ -33,6 +33,20 @@ import {
   Gift,
   Plane,
   CircleDollarSign,
+  // Additional icons used by categories
+  ShoppingBasket,
+  Wallet,
+  User,
+  Users,
+  Package,
+  Smile,
+  Hammer,
+  Shield,
+  Repeat,
+  Banknote,
+  TrendingUp,
+  CircleDot,
+  Tag,
 } from '@lucide/astro';
 
 // Internal aliases - lib
@@ -107,8 +121,13 @@ const getIconBadgeVariant = (
 // Resolve icon name from category name if not explicitly provided
 const iconName = icon || getIconForCategory(categoryName, 'CircleDollarSign');
 
-// Category icon component mapping
+// Category icon component mapping (supports both PascalCase and kebab-case)
+// IMPORTANT: Keep this map in sync with:
+// - src/lib/utils/categoryIcons.ts (PascalCase names returned by getIconForCategory)
+// - src/db/seed.ts CATEGORY_STYLES (kebab-case names stored in database)
+// When adding new icons, update all three locations.
 const iconMap: Record<string, typeof House> = {
+  // PascalCase names (from categoryIcons utility)
   House,
   ShoppingCart,
   Utensils,
@@ -122,18 +141,57 @@ const iconMap: Record<string, typeof House> = {
   Gift,
   Plane,
   CircleDollarSign,
+  // Additional icons
+  ShoppingBasket,
+  Wallet,
+  User,
+  Users,
+  Package,
+  Smile,
+  Hammer,
+  Shield,
+  Repeat,
+  Banknote,
+  TrendingUp,
+  CircleDot,
+  Tag,
+  // kebab-case aliases (from database seed data)
+  'shopping-basket': ShoppingBasket,
+  'shopping-cart': ShoppingCart,
+  'trending-up': TrendingUp,
+  'circle-dot': CircleDot,
+  home: House,
+  plane: Plane,
+  utensils: Utensils,
+  briefcase: Briefcase,
+  wallet: Wallet,
+  heart: Heart,
+  user: User,
+  zap: Zap,
+  package: Package,
+  smile: Smile,
+  users: Users,
+  car: Car,
+  hammer: Hammer,
+  shield: Shield,
+  repeat: Repeat,
+  banknote: Banknote,
+  tag: Tag,
 };
 
 // Get the icon component, fallback to CircleDollarSign
-const IconComponent = iconMap[iconName] || CircleDollarSign;
+// P3 TODO: Consider logging missing icons in dev mode for easier debugging
+const IconComponent = iconMap[iconName] || iconMap[iconName.toLowerCase()] || CircleDollarSign;
 
 const cardClasses = [
   // Base card styling
   'bg-base-100 rounded-card border border-base-300',
   // Premium shadow and hover effect
   'shadow-sm hover:shadow-xl transition-all duration-300',
-  // Padding
-  'p-6 lg:p-8',
+  // Responsive padding - compact on mobile, spacious on desktop
+  'p-4 md:p-6 lg:p-8',
+  // Full height with flex column for equal row heights
+  'h-full flex flex-col',
   // Group for hover effects
   'group',
   // Additional classes
@@ -179,20 +237,23 @@ const cardClasses = [
       data-spent={spent}
     >
       {/* Header: Icon, Name, Status Badge, Edit Button */}
-      <div class="flex justify-between items-start mb-6 lg:mb-8">
-        <div class="flex items-center gap-3 lg:gap-4">
+      <div class="flex justify-between items-start mb-3 md:mb-6 lg:mb-8">
+        <div class="flex items-center gap-2 md:gap-3 lg:gap-4">
           <IconBadge
             variant={getIconBadgeVariant(status)}
-            size="md"
+            size="sm"
             customColor={color}
-            className="group-hover:scale-110 transition-transform"
+            className="group-hover:scale-110 transition-transform md:!p-4"
           >
-            <IconComponent size={24} class="stroke-current" aria-hidden="true" />
+            <IconComponent size={20} class="stroke-current md:hidden" aria-hidden="true" />
+            <IconComponent size={24} class="stroke-current hidden md:block" aria-hidden="true" />
           </IconBadge>
           <div>
-            <h3 class="font-bold text-base-content tracking-tight leading-none">{categoryName}</h3>
+            <h3 class="font-bold text-sm md:text-base text-base-content tracking-tight leading-none">
+              {categoryName}
+            </h3>
             <span
-              class={`inline-block mt-2 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${getStatusBadgeClasses(status)}`}
+              class={`inline-block mt-1 md:mt-2 px-2 py-0.5 rounded-md text-[9px] md:text-[10px] font-bold uppercase tracking-wider ${getStatusBadgeClasses(status)}`}
               data-status-badge
             >
               {Math.round(percentageUsed)}% Used
@@ -205,22 +266,30 @@ const cardClasses = [
           aria-label={`Edit ${categoryName} budget`}
           data-edit-budget={categoryId}
         >
-          <Pencil size={18} class="stroke-current" aria-hidden="true" />
+          <Pencil size={16} class="stroke-current md:hidden" aria-hidden="true" />
+          <Pencil size={18} class="stroke-current hidden md:block" aria-hidden="true" />
         </button>
       </div>
 
       {/* Body: Spent/Budget amounts and Progress bar */}
-      <div class="space-y-4">
+      <div class="space-y-2 md:space-y-4 flex-grow flex flex-col">
         <div class="flex justify-between items-end">
           <div>
-            <StatLabel size="sm">Spent</StatLabel>
-            <p class="text-lg font-bold mt-1 text-base-content leading-none">
+            <StatLabel size="sm" className="text-[10px] md:text-xs">
+              Spent
+            </StatLabel>
+            <p class="text-base md:text-lg font-bold mt-0.5 md:mt-1 text-base-content leading-none">
               {formatCurrency(spent, currency)}
             </p>
           </div>
           <div class="text-right">
-            <StatLabel size="sm">Budget</StatLabel>
-            <p class="text-sm font-bold mt-1 text-base-content/60 leading-none" data-budget-amount>
+            <StatLabel size="sm" className="text-[10px] md:text-xs">
+              Budget
+            </StatLabel>
+            <p
+              class="text-xs md:text-sm font-bold mt-0.5 md:mt-1 text-base-content/60 leading-none"
+              data-budget-amount
+            >
               {formatCurrency(budget, currency)}
             </p>
           </div>
@@ -230,29 +299,37 @@ const cardClasses = [
           <ProgressBar
             value={Math.min(percentageUsed, 100)}
             status={progressStatus}
-            size="md"
+            size="sm"
             animate={true}
+            className="md:h-3"
           />
         </div>
 
-        {/* Footer: Remaining/Over amount */}
-        <div
-          class={`p-4 rounded-2xl border ${
-            isOver
-              ? 'bg-error/5 border-error/10 text-error'
-              : 'bg-base-200/50 border-base-300 text-base-content/60'
-          }`}
-          data-footer
-        >
-          <div class="flex justify-between items-center text-xs font-bold leading-none">
-            <span class="uppercase tracking-widest" data-footer-label>
-              {isOver ? 'Over budget by' : 'Left to spend'}
-            </span>
-            <span class={isOver ? 'text-error' : 'text-base-content'} data-footer-amount>
-              {formatCurrency(Math.abs(remaining), currency)}
-            </span>
+        {/* Footer: Only show warning when over budget or nearly exceeded */}
+        {(status === 'exceeded' || status === 'warning') && (
+          <div
+            class={`mt-auto p-2.5 md:p-4 rounded-xl md:rounded-2xl border ${
+              status === 'exceeded'
+                ? 'bg-error/5 border-error/10 text-error'
+                : 'bg-warning/5 border-warning/10 text-warning'
+            }`}
+            data-footer
+          >
+            <div class="flex justify-between items-center text-[10px] md:text-xs font-bold leading-none">
+              <span class="uppercase tracking-widest" data-footer-label>
+                {status === 'exceeded' ? 'Over budget' : 'Almost exceeded'}
+              </span>
+              <span
+                class={status === 'exceeded' ? 'text-error' : 'text-warning'}
+                data-footer-amount
+              >
+                {status === 'exceeded'
+                  ? formatCurrency(Math.abs(remaining), currency)
+                  : `${Math.round(percentageUsed)}%`}
+              </span>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </article>
   )

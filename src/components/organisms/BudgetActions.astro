@@ -12,6 +12,7 @@
  */
 
 import { Sparkles, History, Plus, Copy, Tags } from '@lucide/astro';
+import Modal from '@components/molecules/Modal.astro';
 
 export interface Props {
   showAiRebalancer?: boolean;
@@ -24,10 +25,10 @@ const { showAiRebalancer = true, showCopyButton = false, className = '' } = Astr
 const containerClasses = [
   // Card styling
   'bg-base-100 rounded-card border border-base-300 shadow-sm',
-  // Padding
-  'p-4 lg:p-6',
-  // Layout
-  'flex flex-wrap items-center gap-3',
+  // Responsive padding - compact on mobile
+  'p-2 md:p-4 lg:p-6',
+  // Layout - nowrap on mobile for single row, wrap on larger screens
+  'flex items-center gap-1 md:gap-3 md:flex-wrap',
   // Additional classes
   className,
 ]
@@ -37,26 +38,30 @@ const containerClasses = [
 
 {/* P2 TODO: Consider using <nav aria-label="Budget actions"> for better semantics */}
 <div class={containerClasses}>
-  {/* Secondary Actions - Ghost style */}
-  <div class="flex flex-wrap items-center gap-2">
+  {/* Secondary Actions - Ghost style, icon-only on mobile */}
+  <div class="flex items-center gap-1 md:gap-2">
     {/* View History */}
     <a
       href="/budget/history"
-      class="btn btn-ghost gap-2 rounded-xl text-base-content/70 hover:text-base-content hover:bg-base-200"
+      class="btn btn-ghost btn-sm md:btn-md gap-1 md:gap-2 rounded-lg md:rounded-xl text-base-content/70 hover:text-base-content hover:bg-base-200 px-2 md:px-4"
       aria-label="View budget history"
+      title="History"
     >
-      <History size={18} class="stroke-current" aria-hidden="true" />
-      <span>History</span>
+      <History size={16} class="stroke-current md:hidden" aria-hidden="true" />
+      <History size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+      <span class="hidden md:inline">History</span>
     </a>
 
     {/* Categories */}
     <a
       href="/categories"
-      class="btn btn-ghost gap-2 rounded-xl text-base-content/70 hover:text-base-content hover:bg-base-200"
+      class="btn btn-ghost btn-sm md:btn-md gap-1 md:gap-2 rounded-lg md:rounded-xl text-base-content/70 hover:text-base-content hover:bg-base-200 px-2 md:px-4"
       aria-label="Manage categories"
+      title="Categories"
     >
-      <Tags size={18} class="stroke-current" aria-hidden="true" />
-      <span>Categories</span>
+      <Tags size={16} class="stroke-current md:hidden" aria-hidden="true" />
+      <Tags size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+      <span class="hidden md:inline">Categories</span>
     </a>
 
     {/* AI Rebalancer */}
@@ -64,13 +69,15 @@ const containerClasses = [
       showAiRebalancer && (
         <button
           type="button"
-          class="btn btn-ghost gap-2 rounded-xl text-accent hover:text-accent hover:bg-accent/10"
+          class="btn btn-ghost btn-sm md:btn-md gap-1 md:gap-2 rounded-lg md:rounded-xl text-accent hover:text-accent hover:bg-accent/10 px-2 md:px-4"
           id="ai-rebalancer-btn"
           data-target-modal="ai-rebalancer-modal"
           aria-label="AI budget rebalancer"
+          title="AI Rebalancer"
         >
-          <Sparkles size={18} class="stroke-current" aria-hidden="true" />
-          <span>AI Rebalancer</span>
+          <Sparkles size={16} class="stroke-current md:hidden" aria-hidden="true" />
+          <Sparkles size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+          <span class="hidden md:inline">AI Rebalancer</span>
         </button>
       )
     }
@@ -80,13 +87,15 @@ const containerClasses = [
       showCopyButton && (
         <button
           type="button"
-          class="btn btn-ghost gap-2 rounded-xl text-base-content/70 hover:text-base-content hover:bg-base-200"
+          class="btn btn-ghost btn-sm md:btn-md gap-1 md:gap-2 rounded-lg md:rounded-xl text-base-content/70 hover:text-base-content hover:bg-base-200 px-2 md:px-4"
           id="copy-budgets-btn"
           data-target-modal="copy-budget-modal"
           aria-label="Copy budgets to next month"
+          title="Copy to Next Month"
         >
-          <Copy size={18} class="stroke-current" aria-hidden="true" />
-          <span>Copy</span>
+          <Copy size={16} class="stroke-current md:hidden" aria-hidden="true" />
+          <Copy size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+          <span class="hidden md:inline">Copy</span>
         </button>
       )
     }
@@ -95,48 +104,46 @@ const containerClasses = [
   {/* Primary Action - Pushed to right */}
   <button
     type="button"
-    class="btn btn-accent ml-auto gap-2 rounded-xl font-semibold"
+    class="btn btn-accent btn-sm md:btn-md ml-auto gap-1 md:gap-2 rounded-lg md:rounded-xl font-semibold px-3 md:px-4"
     id="set-new-budget-btn"
     data-target-modal="set-new-budget-modal"
     aria-label="Set new budget"
   >
-    <Plus size={18} class="stroke-current" aria-hidden="true" />
-    <span>New Budget</span>
+    <Plus size={16} class="stroke-current md:hidden" aria-hidden="true" />
+    <Plus size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+    <span class="hidden sm:inline">New Budget</span>
+    <span class="sm:hidden">New</span>
   </button>
 </div>
 
-{/* AI Rebalancer Coming Soon Modal */}
+{/* AI Rebalancer Coming Soon Modal - Using Modal Component */}
 {
   showAiRebalancer && (
-    <dialog
+    <Modal
       id="ai-rebalancer-modal"
-      class="modal modal-bottom sm:modal-middle"
-      aria-labelledby="ai-rebalancer-modal-title"
+      title="AI Rebalancer"
+      size="sm"
+      closable={true}
+      backdropClose={true}
     >
-      <div class="modal-box text-center">
+      <div class="text-center">
         <div class="flex justify-center mb-4">
           <div class="w-16 h-16 rounded-full bg-accent/10 flex items-center justify-center">
             <Sparkles size={32} class="text-accent" aria-hidden="true" />
           </div>
         </div>
-        <h3 id="ai-rebalancer-modal-title" class="font-bold text-xl mb-2">
-          AI Rebalancer
-        </h3>
         <p class="text-base-content/70 mb-4">
           Smart budget optimization powered by AI is coming soon. This feature will analyze your
           spending patterns and suggest optimal budget allocations.
         </p>
         <div class="badge badge-accent badge-outline">Coming Soon</div>
-        <div class="modal-action justify-center">
-          <form method="dialog">
-            <button class="btn btn-ghost rounded-xl">Close</button>
-          </form>
-        </div>
       </div>
-      <form method="dialog" class="modal-backdrop">
-        <button>close</button>
-      </form>
-    </dialog>
+      <div slot="actions" class="modal-action justify-center">
+        <form method="dialog">
+          <button class="btn btn-ghost rounded-xl">Close</button>
+        </form>
+      </div>
+    </Modal>
   )
 }
 

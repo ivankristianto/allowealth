@@ -40,7 +40,7 @@ const currencyLabels: Record<string, string> = {
         <li>
           <button
             class="flex items-center gap-2 w-full text-left hover:bg-base-200 rounded-btn"
-            data-currency={currency}
+            data-currency-selector={currency}
             type="button"
           >
             <span class="text-base-content">{currencyLabels[currency]}</span>
@@ -54,11 +54,11 @@ const currencyLabels: Record<string, string> = {
 
 <script>
   // Client-side script to handle currency selection
-  const currencyButtons = document.querySelectorAll('[data-currency]');
+  const currencyButtons = document.querySelectorAll('[data-currency-selector]');
 
   currencyButtons.forEach((button) => {
     button.addEventListener('click', (e: Event) => {
-      const selected = (e.currentTarget as HTMLElement).dataset.currency;
+      const selected = (e.currentTarget as HTMLElement).dataset.currencySelector;
       if (selected) {
         // Store in localStorage for persistence
         localStorage.setItem('selectedCurrency', selected);
@@ -78,9 +78,9 @@ const currencyLabels: Record<string, string> = {
   }
 
   // Update checkmark visibility based on saved currency
-  const allButtons = document.querySelectorAll('[data-currency]');
+  const allButtons = document.querySelectorAll('[data-currency-selector]');
   allButtons.forEach((btn) => {
-    const currency = btn.getAttribute('data-currency');
+    const currency = btn.getAttribute('data-currency-selector');
     const checkmark = btn.querySelector('.text-accent');
     if (currency === savedCurrency && checkmark) {
       checkmark.classList.remove('hidden');

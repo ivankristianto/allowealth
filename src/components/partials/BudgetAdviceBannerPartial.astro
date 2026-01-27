@@ -1,0 +1,43 @@
+---
+/**
+ * BudgetAdviceBannerPartial
+ *
+ * Server-rendered partial for budget advice banner.
+ * Used by both initial page render and API HTML responses.
+ *
+ * Part of the Interactive Page Architecture pattern.
+ * See: docs/architecture/002-interactive-pages.md
+ *
+ * @param {AdviceData | null} adviceData - Structured advice data for the banner
+ */
+
+import BudgetAdviceBanner from '@components/organisms/BudgetAdviceBanner.astro';
+
+export interface AdviceData {
+  categoryName: string;
+  status: 'exceeded' | 'warning';
+  amount: string;
+  percentageUsed?: number;
+}
+
+export interface Props {
+  adviceData: AdviceData | null;
+}
+
+const { adviceData } = Astro.props;
+---
+
+{
+  adviceData && (
+    <BudgetAdviceBanner
+      categoryName={adviceData.categoryName}
+      status={adviceData.status}
+      amount={adviceData.amount}
+      percentageUsed={adviceData.percentageUsed}
+      ctaText="Review spending"
+      ctaUrl="/transactions"
+      show={true}
+      dismissible={true}
+    />
+  )
+}

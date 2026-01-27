@@ -72,7 +72,7 @@ const createCurrencySelector = (args: {
 
     const itemButton = document.createElement('button');
     itemButton.className = 'flex items-center gap-2 w-full text-left hover:bg-base-200 rounded-btn';
-    itemButton.setAttribute('data-currency', currency);
+    itemButton.setAttribute('data-currency-selector', currency);
     itemButton.type = 'button';
 
     const itemSpan = document.createElement('span');

@@ -14,6 +14,11 @@
 
 import Modal from '../molecules/Modal.astro';
 import { Plus, Pencil } from '@lucide/astro';
+import CategoryIcon from '../atoms/CategoryIcon.astro';
+import {
+  SUPPORTED_CATEGORY_ICONS,
+  getDefaultIconForType,
+} from '@/lib/utils/supportedCategoryIcons';
 
 export interface Props {
   id: string;
@@ -127,16 +132,52 @@ const iconColorClass = 'text-accent';
                 <span class="sr-only">(required)</span>
               </span>
             </label>
-            <input
-              type="text"
-              name="icon"
-              id="category-icon"
-              class="input input-bordered w-full h-10 text-xs bg-base-200 focus:ring-2 focus:ring-accent focus:ring-opacity-20 focus:outline-none focus:ring-offset-2"
-              required
-              placeholder="e.g., home, car"
-              value={values.icon || ''}
-            />
-            <span class="text-xs text-base-content/60 mt-1">Lucide icon name</span>
+            <div class="flex items-center gap-3">
+              {/* Icon preview */}
+              <div id="icon-preview" class="shrink-0">
+                <CategoryIcon
+                  icon={values.icon || getDefaultIconForType(values.type || 'expense')}
+                  color={values.color || 'bg-primary'}
+                  size="md"
+                />
+              </div>
+              {/* Icon dropdown */}
+              <select
+                name="icon"
+                id="category-icon"
+                class="select select-bordered flex-1 h-10 text-xs bg-base-200 focus:ring-2 focus:ring-accent focus:ring-opacity-20 focus:outline-none focus:ring-offset-2"
+                required
+                data-icon-select
+              >
+                <optgroup label="Expense Icons">
+                  {
+                    SUPPORTED_CATEGORY_ICONS.filter((i) => i.group === 'expense').map((icon) => (
+                      <option value={icon.value} selected={values.icon === icon.value}>
+                        {icon.label}
+                      </option>
+                    ))
+                  }
+                </optgroup>
+                <optgroup label="Income Icons">
+                  {
+                    SUPPORTED_CATEGORY_ICONS.filter((i) => i.group === 'income').map((icon) => (
+                      <option value={icon.value} selected={values.icon === icon.value}>
+                        {icon.label}
+                      </option>
+                    ))
+                  }
+                </optgroup>
+                <optgroup label="General Icons">
+                  {
+                    SUPPORTED_CATEGORY_ICONS.filter((i) => i.group === 'general').map((icon) => (
+                      <option value={icon.value} selected={values.icon === icon.value}>
+                        {icon.label}
+                      </option>
+                    ))
+                  }
+                </optgroup>
+              </select>
+            </div>
             {errors.icon && <span class="text-error text-xs mt-1">{errors.icon}</span>}
           </div>
 
@@ -304,6 +345,53 @@ const iconColorClass = 'text-accent';
         form.reset();
         errorDiv?.classList.add('hidden');
       });
+
+      // Update icon preview when icon or color changes
+      const iconSelect = form.querySelector('[data-icon-select]') as HTMLSelectElement;
+      const colorSelect = form.querySelector('#category-color') as HTMLSelectElement;
+      const iconPreview = container.querySelector('#icon-preview');
+
+      function updateIconPreview() {
+        if (!iconPreview || !iconSelect || !colorSelect) return;
+
+        const selectedIcon = iconSelect.value;
+        const selectedColor = colorSelect.value;
+
+        // Fetch the updated icon preview from server
+        // Using a simple approach: update the background color and re-render
+        const iconContainer = iconPreview.querySelector('div');
+        if (iconContainer) {
+          // Update color class
+          const colorClasses = [
+            'bg-primary',
+            'bg-secondary',
+            'bg-accent',
+            'bg-neutral',
+            'bg-success',
+            'bg-warning',
+            'bg-error',
+            'bg-info',
+          ];
+          colorClasses.forEach((c) => iconContainer.classList.remove(c));
+          iconContainer.classList.add(selectedColor);
+        }
+
+        // For icon changes, we need to re-fetch the HTML
+        // This is a simple solution - for a more dynamic approach, consider a client-side icon component
+        fetch(
+          `/api/categories/icon-preview?icon=${encodeURIComponent(selectedIcon)}&color=${encodeURIComponent(selectedColor)}`
+        )
+          .then((res) => res.text())
+          .then((html) => {
+            if (iconPreview) iconPreview.innerHTML = html;
+          })
+          .catch(() => {
+            // Silently fail - icon preview is not critical
+          });
+      }
+
+      iconSelect?.addEventListener('change', updateIconPreview);
+      colorSelect?.addEventListener('change', updateIconPreview);
     });
   }
 
