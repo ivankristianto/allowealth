@@ -167,16 +167,14 @@ function applyPragmas(driver: ReturnType<typeof createBunDriver | typeof createN
 
 /**
  * Get a require function that works in both CommonJS and ESM
+ *
+ * Note: We always use createRequire(import.meta.url) because:
+ * 1. When Astro/Vite bundles the code, the global `require` is not available
+ *    even in Bun runtime context
+ * 2. createRequire works in both Node.js and Bun environments
  */
 function getRequire() {
-  if (detectRuntime() === 'bun') {
-    // Bun has require available globally
-    // @ts-ignore - Bun provides require
-    return require;
-  } else {
-    // Node.js ESM - use createRequire
-    return createRequire(import.meta.url);
-  }
+  return createRequire(import.meta.url);
 }
 
 /**
@@ -190,14 +188,15 @@ function getRequire() {
  */
 function createDatabase(): Database {
   const config = getDatabaseConfig();
+  const dynamicRequire = getRequire();
 
   try {
     // PostgreSQL path
     if (config.dialect === 'postgresql') {
-      // Dynamic import of PostgreSQL schema
-      // Note: We use require here to avoid top-level await complexity
-      // The schema is loaded synchronously at database creation time
-      const pgSchema = require('./schema/postgresql');
+      // Dynamic import of PostgreSQL schema using createRequire
+      // Note: We use dynamicRequire here because bare require is not available
+      // when bundled by Vite/Astro
+      const pgSchema = dynamicRequire('./schema/postgresql');
       // Cast to Database type for type compatibility
       // Runtime behavior is correct; this is only for TypeScript inference
       return createPostgresDatabase(config.url, pgSchema) as unknown as Database;
@@ -205,7 +204,6 @@ function createDatabase(): Database {
 
     // SQLite path
     const runtime = detectRuntime();
-    const dynamicRequire = getRequire();
 
     // Create the native SQLite driver
     const driver = runtime === 'bun' ? createBunDriver(config.url) : createNodeDriver(config.url);
@@ -214,13 +212,13 @@ function createDatabase(): Database {
     applyPragmas(driver);
 
     // Create Drizzle ORM instance with SQLite schema
-    const sqliteSchemaModule = require('./schema/sqlite');
+    // Use the already-imported sqliteSchema module
     const { drizzle } =
       runtime === 'bun'
         ? dynamicRequire('drizzle-orm/bun-sqlite')
         : dynamicRequire('drizzle-orm/better-sqlite3');
 
-    return drizzle(driver._raw, { schema: sqliteSchemaModule });
+    return drizzle(driver._raw, { schema: sqliteSchema });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     throw new Error(
