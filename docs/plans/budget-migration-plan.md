@@ -293,15 +293,27 @@ Note: After schema changes, run `bun run db:push` to sync schema to database (de
 
 #### Progress Checklist
 
-- [ ] Update `openapi/schemas/Category.yml`
-- [ ] Update `openapi/schemas/CreateCategoryRequest.yml`
-- [ ] Update `openapi/schemas/UpdateCategoryRequest.yml`
-- [ ] Create `openapi/schemas/Budget.yml`
-- [ ] Create `openapi/schemas/CreateBudgetRequest.yml`
-- [ ] Create `openapi/schemas/UpdateBudgetRequest.yml`
-- [ ] Create `openapi/schemas/CopyBudgetsRequest.yml`
-- [ ] Create `openapi/paths/budgets.yml`
-- [ ] Update `openapi.yml` with new references
+- [x] Update `openapi/schemas/Category.yml`
+- [x] Update `openapi/schemas/CreateCategoryRequest.yml`
+- [x] Update `openapi/schemas/UpdateCategoryRequest.yml`
+- [x] Create `openapi/schemas/Budget.yml`
+- [x] Create `openapi/schemas/CreateBudgetRequest.yml`
+- [x] Create `openapi/schemas/UpdateBudgetRequest.yml`
+- [x] Create `openapi/schemas/CopyBudgetsRequest.yml`
+- [x] Create `openapi/paths/budgets.yml`
+- [x] Update `openapi.yml` with new references
+
+**Completed:** 2026-01-27
+
+**Key changes:**
+
+- Removed percentage, budget_amount, currency from Category schemas
+- Created Budget, CreateBudgetRequest, UpdateBudgetRequest, CopyBudgetsRequest schemas
+- Created CopyBudgetsResponse, BudgetResponse, BudgetsListResponse response schemas
+- Created budgets.yml with full CRUD endpoints (/api/budgets)
+- Removed deprecated /api/budget/category/{id} endpoint
+- Deleted unused BudgetCategoryResponse and UpdateBudgetCategoryRequest schemas
+- Added required field specifications to response schemas
 
 ---
 
