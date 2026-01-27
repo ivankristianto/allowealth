@@ -1,0 +1,234 @@
+# Budget CRUD endpoint paths
+paths:
+  /api/budgets:
+    get:
+      tags: [Budget]
+      summary: List budgets for a month
+      description: Retrieve all budgets for the authenticated user for a specific month/year
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: month
+          in: query
+          required: true
+          description: Month (1-12)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 12
+        - name: year
+          in: query
+          required: true
+          description: Year (2000-2100)
+          schema:
+            type: integer
+            minimum: 2000
+            maximum: 2100
+        - name: currency
+          in: query
+          description: Filter by currency (optional)
+          schema:
+            type: string
+            enum: [IDR, USD]
+      responses:
+        '200':
+          description: List of budgets
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/BudgetsListResponse.yml#/BudgetsListResponse'
+        '400':
+          $ref: '../responses/common.yml#/BadRequest'
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'
+
+    post:
+      tags: [Budget]
+      summary: Create a budget
+      description: |
+        Create a new budget record for a category in a specific month/year.
+        The currency must match the category's currency.
+        Only one budget per category per month/year is allowed.
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/CreateBudgetRequest.yml#/CreateBudgetRequest'
+      responses:
+        '201':
+          description: Budget created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/BudgetResponse.yml#/BudgetResponse'
+        '400':
+          description: Validation error or budget already exists
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '404':
+          description: Category not found
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'
+
+  /api/budgets/{id}:
+    get:
+      tags: [Budget]
+      summary: Get a budget by ID
+      description: Retrieve a single budget record by its ID
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: '../parameters/common.yml#/IdParameter'
+      responses:
+        '200':
+          description: Budget found
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/BudgetResponse.yml#/BudgetResponse'
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '404':
+          description: Budget not found
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'
+
+    put:
+      tags: [Budget]
+      summary: Update a budget
+      description: |
+        Update an existing budget record.
+        Closed budgets cannot be modified.
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: '../parameters/common.yml#/IdParameter'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/UpdateBudgetRequest.yml#/UpdateBudgetRequest'
+      responses:
+        '200':
+          description: Budget updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/BudgetResponse.yml#/BudgetResponse'
+        '400':
+          description: Validation error or budget is closed
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '404':
+          description: Budget not found
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'
+
+    delete:
+      tags: [Budget]
+      summary: Delete a budget
+      description: |
+        Delete a budget record.
+        Closed budgets cannot be deleted.
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: '../parameters/common.yml#/IdParameter'
+      responses:
+        '200':
+          description: Budget deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        example: Budget deleted successfully
+        '400':
+          description: Budget is closed
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '404':
+          description: Budget not found
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'
+
+  /api/budgets/copy:
+    post:
+      tags: [Budget]
+      summary: Copy budgets to another month
+      description: |
+        Copy all budgets from one month/year to another.
+        Existing budgets in the target month are skipped (not overwritten).
+        The operation is atomic - all or nothing.
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/CopyBudgetsRequest.yml#/CopyBudgetsRequest'
+      responses:
+        '201':
+          description: Budgets copied successfully
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/CopyBudgetsResponse.yml#/CopyBudgetsResponse'
+        '400':
+          description: Validation error or same source/target
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '404':
+          description: No budgets found in source month
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'

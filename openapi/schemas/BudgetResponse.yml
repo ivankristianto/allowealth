@@ -1,0 +1,11 @@
+# Budget Response Schema
+BudgetResponse:
+  type: object
+  required:
+    - success
+    - data
+  properties:
+    success:
+      type: boolean
+    data:
+      $ref: './Budget.yml#/Budget'

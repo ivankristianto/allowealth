@@ -1,0 +1,29 @@
+# Copy Budgets Response Schema
+CopyBudgetsResponse:
+  type: object
+  required:
+    - success
+    - data
+  properties:
+    success:
+      type: boolean
+    data:
+      type: object
+      required:
+        - copied_count
+        - skipped_count
+        - target_month
+        - target_year
+      properties:
+        copied_count:
+          type: integer
+          description: Number of budgets successfully copied
+        skipped_count:
+          type: integer
+          description: Number of budgets skipped (already exist in target)
+        target_month:
+          type: integer
+          minimum: 1
+          maximum: 12
+        target_year:
+          type: integer

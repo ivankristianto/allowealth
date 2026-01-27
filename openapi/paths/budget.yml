@@ -138,54 +138,6 @@ paths:
         '500':
           $ref: '../responses/common.yml#/InternalServerError'
 
-  /api/budget/category/{id}:
-    patch:
-      tags: [Budget]
-      summary: Update category budget allocation
-      description: |
-        Update budget allocation for a specific category by providing the budget amount.
-        The percentage is automatically calculated from the budget amount relative to the total budget.
-        Category must belong to the authenticated user.
-      security:
-        - sessionAuth: []
-      parameters:
-        - $ref: '../parameters/common.yml#/IdParameter'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '../schemas/UpdateBudgetCategoryRequest.yml#/UpdateBudgetCategoryRequest'
-      responses:
-        '200':
-          description: Category budget updated successfully
-          content:
-            application/json:
-              schema:
-                $ref: '../schemas/BudgetCategoryResponse.yml#/BudgetCategoryResponse'
-        '400':
-          description: Validation error or invalid input
-          content:
-            application/json:
-              schema:
-                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
-        '401':
-          $ref: '../responses/common.yml#/Unauthorized'
-        '403':
-          description: User does not own this category
-          content:
-            application/json:
-              schema:
-                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
-        '404':
-          description: Category not found
-          content:
-            application/json:
-              schema:
-                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
-        '500':
-          $ref: '../responses/common.yml#/InternalServerError'
-
   /api/budget/export:
     get:
       tags: [Budget]
