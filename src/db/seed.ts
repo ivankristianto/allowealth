@@ -636,6 +636,64 @@ async function seedCategories(userId: string): Promise<Map<string, string>> {
 }
 
 /**
+ * Seed budgets for expense categories (last 3 months)
+ *
+ * P2 TODO: Consider extracting monthsToSeed to a shared constant (SEED_MONTHS)
+ * to synchronize with INCOME_TRANSACTIONS and expense seeding months
+ */
+async function seedBudgets(userId: string, categoryMap: Map<string, string>): Promise<void> {
+  console.log('📊 Seeding budgets...');
+
+  const monthsToSeed = [
+    { year: 2025, month: 11 }, // November 2025
+    { year: 2025, month: 12 }, // December 2025
+    { year: 2026, month: 1 }, // January 2026
+  ];
+
+  // P2 TODO: Consider using schema-derived type for currency (e.g., 'IDR' as const)
+  const budgetRecords: Array<{
+    id: string;
+    user_id: string;
+    category_id: string;
+    month: number;
+    year: number;
+    budget_amount: string;
+    currency: 'IDR' | 'USD';
+    is_closed: boolean;
+    notes: string | null;
+    created_at: Date;
+    updated_at: Date;
+  }> = [];
+
+  for (const { year, month } of monthsToSeed) {
+    for (const cat of EXPENSE_CATEGORIES) {
+      const categoryId = categoryMap.get(cat.name);
+      if (!categoryId || cat.budget === 0) continue;
+
+      budgetRecords.push({
+        id: nanoid(),
+        user_id: userId,
+        category_id: categoryId,
+        month,
+        year,
+        budget_amount: amt(cat.budget),
+        currency: 'IDR',
+        is_closed: false,
+        notes: null,
+        created_at: new Date(),
+        updated_at: new Date(),
+      });
+    }
+  }
+
+  if (budgetRecords.length > 0) {
+    await db.insert(budgets).values(budgetRecords);
+  }
+
+  console.log(`✓ Created ${budgetRecords.length} budget records`);
+}
+
+/**
  * Seed income transactions for the 3 months
  */
 async function seedIncomeTransactions(
@@ -1052,6 +1110,9 @@ async function seed() {
     // Seed in dependency order
     const userId = await seedUsers();
     const categoryMap = await seedCategories(userId);
+
+    // Seed budgets for expense categories (must be after categories)
+    await seedBudgets(userId, categoryMap);
 
     // Seed assets FIRST (transactions now depend on assets)
     const assetMap = await seedAssets(userId);
