@@ -773,7 +773,7 @@ We do:
 **Day 5: Deployment Preparation**
 
 - [ ] Production environment setup
-- [ ] MySQL database setup
+- [ ] PostgreSQL/Supabase database setup
 - [ ] Environment variable configuration
 - [ ] SSL certificate setup
 - [ ] Deployment scripts
@@ -981,7 +981,7 @@ bun run db:migrate
 bun run db:seed
 ```
 
-**Production (MySQL):**
+**Production (PostgreSQL/Supabase):**
 
 ```bash
 # Backup before migration
@@ -1155,14 +1155,38 @@ PORT=4321
 
 **Server Requirements:**
 
-- VPS or dedicated server
-- Ubuntu 22.04 LTS or later
+- VPS or dedicated server (self-hosted PostgreSQL) OR Supabase (managed)
+- Ubuntu 22.04 LTS or later (for self-hosted)
 - Minimum 2GB RAM, 2 CPU cores
 - 20GB storage (expandable)
 - Nginx or Caddy reverse proxy
-- MySQL 8.x
+- PostgreSQL 15.x or Supabase
 
-**Production Setup:**
+**Production Setup (Option A: Supabase - Recommended):**
+
+1. **Create Supabase Project:**
+   - Go to [supabase.com](https://supabase.com) and create a new project
+   - Copy the connection string from Project Settings > Database
+
+2. **Clone Repository:**
+
+   ```bash
+   git clone <repository-url>
+   cd finance-app
+   bun install --production
+   ```
+
+3. **Environment Variables (.env.production):**
+
+   ```
+   NODE_ENV=production
+   DATABASE_URL=postgresql://postgres.[ref]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres
+   SESSION_SECRET=<generate-secure-random-string>
+   PORT=3000
+   DOMAIN=finance.yourdomain.com
+   ```
+
+**Production Setup (Option B: Self-hosted PostgreSQL):**
 
 1. **Install Dependencies:**
 
@@ -1170,8 +1194,8 @@ PORT=4321
    # Install Bun
    curl -fsSL https://bun.sh/install | bash
 
-   # Install MySQL
-   sudo apt install mysql-server
+   # Install PostgreSQL
+   sudo apt install postgresql postgresql-contrib
 
    # Install Nginx
    sudo apt install nginx
@@ -1188,17 +1212,17 @@ PORT=4321
 3. **Configure Database:**
 
    ```bash
-   mysql -u root -p
+   sudo -u postgres psql
    CREATE DATABASE finance_app;
-   CREATE USER 'finance_user'@'localhost' IDENTIFIED BY 'secure_password';
-   GRANT ALL ON finance_app.* TO 'finance_user'@'localhost';
+   CREATE USER finance_user WITH ENCRYPTED PASSWORD 'secure_password';
+   GRANT ALL PRIVILEGES ON DATABASE finance_app TO finance_user;
    ```
 
 4. **Environment Variables (.env.production):**
 
    ```
    NODE_ENV=production
-   DATABASE_URL=mysql://finance_user:secure_password@localhost:3306/finance_app
+   DATABASE_URL=postgresql://finance_user:secure_password@localhost:5432/finance_app
    SESSION_SECRET=<generate-secure-random-string>
    PORT=3000
    DOMAIN=finance.yourdomain.com
@@ -1266,11 +1290,13 @@ PORT=4321
 # Daily automated backup
 0 2 * * * /usr/local/bin/backup-db.sh
 
-# backup-db.sh:
+# backup-db.sh (for self-hosted PostgreSQL):
 #!/bin/bash
 DATE=$(date +%Y%m%d_%H%M%S)
-mysqldump -u finance_user -p finance_app > /backups/db_$DATE.sql
+PGPASSWORD=secure_password pg_dump -U finance_user -h localhost finance_app > /backups/db_$DATE.sql
 find /backups -name "db_*.sql" -mtime +7 -delete  # Keep 7 days
+
+# Note: For Supabase, use the built-in backup features in the dashboard
 ```
 
 **File Backups:**
@@ -1779,7 +1805,7 @@ find /backups -name "db_*.sql" -mtime +7 -delete  # Keep 7 days
 - Day 4: Create user docs
 - Day 5: Create admin docs
 - Day 6: Production environment setup
-- Day 7: Database migration to MySQL
+- Day 7: Database migration to PostgreSQL/Supabase
 - Day 8: Deploy to server
 - Day 9: SSL setup & monitoring
 - Day 10: Final verification & launch

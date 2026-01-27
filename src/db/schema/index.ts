@@ -1,18 +1,17 @@
-// Export all schema tables
-export * from './users';
-export * from './user-settings';
-export * from './sessions';
-export * from './password-reset-tokens';
-export * from './categories';
-export * from './transactions';
-export * from './assets';
-export * from './asset-history';
-export * from './asset-update-reminders';
-export * from './asset-snapshots';
-export * from './asset-snapshot-items';
-export * from './exchange-rates';
-export * from './audit-logs';
-export * from './budgets';
+/**
+ * Schema exports
+ *
+ * This file exports SQLite schema by default for TypeScript type inference.
+ * At runtime, the correct schema (SQLite or PostgreSQL) is selected dynamically
+ * in src/db/index.ts based on DATABASE_URL format.
+ *
+ * Both schemas are structurally compatible, so types work correctly across dialects.
+ *
+ * Directory structure:
+ * - ./sqlite/     SQLite-specific schemas (integer timestamps, sqliteTable)
+ * - ./postgresql/ PostgreSQL-specific schemas (native timestamps, pgTable)
+ */
 
-// Export all relations (centralized to avoid circular imports)
-export * from './relations';
+// Export SQLite schema by default for type inference during development
+// Runtime selection happens in src/db/index.ts
+export * from './sqlite';
