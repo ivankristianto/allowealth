@@ -1,5 +1,5 @@
 import type { Currency } from '@/lib/enums';
-import { subtractCurrency, multiplyCurrency, addCurrency } from './currency';
+import { subtractCurrency, multiplyCurrency } from './currency';
 import { decimalCompare, decimalIsZero, decimalDivide } from './decimal';
 
 /**
@@ -91,46 +91,6 @@ export function getBudgetStatusIcon(status: BudgetStatus): string {
     default:
       return '⚪';
   }
-}
-
-/**
- * Calculate total budget for all categories
- * @param categories - Array of category budgets
- * @returns Total budget amount and percentage allocation
- */
-export interface BudgetTotal {
-  total_budget: string;
-  total_percentage: number;
-  is_over_allocated: boolean; // Total percentage > 100%
-}
-
-export function calculateTotalBudget(
-  categories: Array<{ budget_amount: string; percentage: string }>
-): BudgetTotal {
-  let totalBudget = '0';
-  let totalPercentage = '0';
-
-  for (const category of categories) {
-    totalBudget = addCurrency(totalBudget, category.budget_amount);
-    totalPercentage = addCurrency(totalPercentage, category.percentage);
-  }
-
-  const totalPercentageNum = parseFloat(totalPercentage);
-
-  return {
-    total_budget: totalBudget,
-    total_percentage: Math.round(totalPercentageNum),
-    is_over_allocated: totalPercentageNum > 100,
-  };
-}
-
-/**
- * Check if user should be warned about budget allocation
- * @param totalPercentage - Total percentage allocated
- * @returns True if warning should be shown
- */
-export function shouldWarnBudgetAllocation(totalPercentage: number): boolean {
-  return totalPercentage > 100;
 }
 
 /**

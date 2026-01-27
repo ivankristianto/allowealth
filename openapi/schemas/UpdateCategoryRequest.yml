@@ -9,14 +9,11 @@ UpdateCategoryRequest:
     type:
       type: string
       enum: [expense, income]
-    currency:
+    icon:
       type: string
-      enum: [IDR, USD]
-    percentage:
+      description: Lucide icon name for the category
+    color:
       type: string
-      pattern: '^\d+(\.\d{1,2})?$'
-    budget_amount:
-      type: string
-      pattern: '^\d+(\.\d{1,2})?$'
+      description: Hex color code for the category
     is_active:
       type: boolean

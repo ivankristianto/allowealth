@@ -15,10 +15,26 @@ export interface Props {
   variant?: 'primary' | 'accent' | 'success' | 'warning' | 'error' | 'info' | 'neutral';
   size?: 'sm' | 'md' | 'lg';
   outlined?: boolean;
+  /** Custom color hex value (e.g., '#10b981'). Takes precedence over variant for background tint. */
+  customColor?: string;
   className?: string;
 }
 
-const { variant = 'primary', size = 'md', outlined = false, className = '' } = Astro.props;
+const {
+  variant = 'primary',
+  size = 'md',
+  outlined = false,
+  customColor,
+  className = '',
+} = Astro.props;
+
+// Validate hex color to prevent XSS attacks via style injection
+const isValidHexColor = (color: string): boolean => {
+  return /^#[0-9A-Fa-f]{3,8}$/.test(color);
+};
+
+// Only use customColor if it's a valid hex color
+const safeCustomColor = customColor && isValidHexColor(customColor) ? customColor : undefined;
 
 // Size classes: sm (p-3), md (p-4), lg (p-5)
 const sizeClasses: Record<string, string> = {
@@ -70,8 +86,21 @@ const badgeClasses = [
   .join(' ');
 ---
 
-<div class={badgeClasses}>
-  <span class={iconSizeClasses[size] + ' block'}>
-    <slot />
-  </span>
-</div>
+{
+  safeCustomColor ? (
+    <div
+      class={badgeClasses}
+      style={`background-color: ${safeCustomColor}15; color: ${safeCustomColor};`}
+    >
+      <span class={iconSizeClasses[size] + ' block'}>
+        <slot />
+      </span>
+    </div>
+  ) : (
+    <div class={badgeClasses}>
+      <span class={iconSizeClasses[size] + ' block'}>
+        <slot />
+      </span>
+    </div>
+  )
+}

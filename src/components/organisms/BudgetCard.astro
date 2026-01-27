@@ -49,6 +49,8 @@ export interface Props {
   categoryId?: string;
   categoryName: string;
   icon?: string;
+  /** Category color (hex value) for the icon badge */
+  color?: string;
   spent: number;
   budget: number;
   percentageUsed: number;
@@ -62,6 +64,7 @@ const {
   categoryId,
   categoryName,
   icon = 'CircleDollarSign',
+  color,
   spent,
   budget,
   percentageUsed,
@@ -181,6 +184,7 @@ const cardClasses = [
           <IconBadge
             variant={getIconBadgeVariant(status)}
             size="md"
+            customColor={color}
             className="group-hover:scale-110 transition-transform"
           >
             <IconComponent size={24} class="stroke-current" aria-hidden="true" />

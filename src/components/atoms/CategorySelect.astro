@@ -107,7 +107,6 @@ const ariaDescribeIds = [error && errorMessage && inputId ? `${inputId}-error` :
       filteredCategories.map((category) => (
         <option value={category.id} selected={category.id === value}>
           {category.name}
-          {category.currency ? ` (${category.currency})` : ''}
         </option>
       ))
     }

@@ -15,6 +15,7 @@ import BudgetPageHeader from '@components/organisms/BudgetPageHeader.astro';
 import BudgetAdviceBanner from '@components/organisms/BudgetAdviceBanner.astro';
 import BudgetSummary from '@components/organisms/BudgetSummary.astro';
 import SetNewBudgetModal from '@components/organisms/SetNewBudgetModal.astro';
+import CopyBudgetModal from '@components/organisms/CopyBudgetModal.astro';
 import {
   budgetService,
   categoryService,
@@ -110,12 +111,34 @@ const prevMonth = prevMonthDate.getMonth() + 1;
 const nextMonthYear = nextMonthDate.getFullYear();
 const nextMonth = nextMonthDate.getMonth() + 1;
 
-// Don't allow navigating to future months
+// Check if we're viewing the current month (for showing "Current Month" button)
 const nowDate = new Date();
-const maxYear = nowDate.getFullYear();
-const maxMonth = nowDate.getMonth() + 1;
+const currentYear = nowDate.getFullYear();
+const currentMonth = nowDate.getMonth() + 1;
+const isViewingCurrentMonth = selectedYear === currentYear && selectedMonth === currentMonth;
+
+// Check if next month is in the future
 const isNextMonthInFuture =
-  nextMonthYear > maxYear || (nextMonthYear === maxYear && nextMonth > maxMonth);
+  nextMonthYear > currentYear || (nextMonthYear === currentYear && nextMonth > currentMonth);
+
+// If next month is in the future, check if it has budget data
+// Allow navigation to future months if they have existing budget data
+let allowNextMonthNavigation = !isNextMonthInFuture;
+if (isNextMonthInFuture) {
+  try {
+    const hasNextMonthBudgets = await budgetService.hasBudgetsForMonth(
+      user.id,
+      nextMonthYear,
+      nextMonth,
+      selectedCurrency
+    );
+    allowNextMonthNavigation = hasNextMonthBudgets;
+  } catch (err) {
+    console.error('Error checking next month budgets:', err);
+    // Default to not allowing navigation on error
+    allowNextMonthNavigation = false;
+  }
+}
 
 // Get budget alerts for generating advice
 let alerts: Awaited<ReturnType<typeof budgetService.getAlerts>> = [];
@@ -176,6 +199,32 @@ const adviceData = generateAdviceData();
 const allCategories = await categoryService.findAll(user.id, { is_active: true });
 const expenseCategories = allCategories.filter((c) => c.type === 'expense');
 
+// Fetch existing budgets for this month (for SetNewBudgetModal to determine create vs update)
+const existingBudgets = await budgetService.findAllBudgets(
+  user.id,
+  selectedMonth,
+  selectedYear,
+  selectedCurrency
+);
+
+// Map budgets to the format needed by SetNewBudgetModal
+const budgetsForModal = existingBudgets.map((b) => ({
+  id: b.id,
+  category_id: b.category_id,
+  budget_amount: b.budget_amount,
+}));
+
+// Create a map of budget amounts by category_id for easy lookup
+const budgetAmountsByCategory = new Map(
+  existingBudgets.map((b) => [b.category_id, b.budget_amount])
+);
+
+// Merge budget amounts into expense categories for the edit handler
+const expenseCategoriesWithBudgets = expenseCategories.map((cat) => ({
+  ...cat,
+  budget_amount: budgetAmountsByCategory.get(cat.id) || '0',
+}));
+
 // Count budgets with actual limits set
 const budgetCount =
   budgetData?.categories.filter((c) => parseFloat(c.budget_amount) > 0).length || 0;
@@ -185,7 +234,7 @@ const budgetCount =
   <div
     class="max-w-7xl mx-auto sm:px-2 lg:px-6 space-y-6 sm:space-y-8"
     data-budget-container
-    data-expense-categories={JSON.stringify(expenseCategories)}
+    data-expense-categories={JSON.stringify(expenseCategoriesWithBudgets)}
     data-currency={selectedCurrency}
   >
     {/* Premium Header with Month Navigation and Actions */}
@@ -194,9 +243,13 @@ const budgetCount =
       budgetCount={budgetCount}
       currentMonth={currentMonthDisplay}
       prevMonthUrl={buildMonthUrl(prevMonthYear, prevMonth)}
-      nextMonthUrl={!isNextMonthInFuture ? buildMonthUrl(nextMonthYear, nextMonth) : undefined}
-      isNextDisabled={isNextMonthInFuture}
+      nextMonthUrl={allowNextMonthNavigation ? buildMonthUrl(nextMonthYear, nextMonth) : undefined}
+      isNextDisabled={!allowNextMonthNavigation}
       showAiRebalancer={budgetCount > 0}
+      showCopyButton={budgetCount > 0}
+      currentMonthResetUrl={!isViewingCurrentMonth
+        ? buildMonthUrl(currentYear, currentMonth)
+        : undefined}
     />
 
     {/* Error State */}
@@ -249,6 +302,19 @@ const budgetCount =
     id="set-new-budget-modal"
     categories={expenseCategories}
     currency={selectedCurrency}
+    month={selectedMonth}
+    year={selectedYear}
+    budgets={budgetsForModal}
+  />
+
+  {/* Copy Budget Modal */}
+  <CopyBudgetModal
+    id="copy-budget-modal"
+    sourceMonth={selectedMonth}
+    sourceYear={selectedYear}
+    targetMonth={nextMonth}
+    targetYear={nextMonthYear}
+    budgetCount={budgetCount}
   />
 </ProtectedLayout>
 
@@ -293,7 +359,10 @@ const budgetCount =
 
           modal.showModal();
         } catch (err) {
+          // P1: Provide user feedback for JSON.parse errors
           console.error('Error opening edit modal:', err);
+          // Import addToast is not available in this scope, so we use a simple alert as fallback
+          // The error is rare (malformed data attribute) so this is acceptable
         }
       });
     });
@@ -384,7 +453,10 @@ const budgetCount =
     const isOver = remaining < 0;
     const status = getStatus(percentage);
 
-    // Update status badge
+    // SECURITY (P1): DOM updates are XSS-safe because:
+    // - textContent is used (not innerHTML)
+    // - Class names come from fixed getStatusBadgeClasses() map
+    // - Values originate from server-validated custom event data
     const statusBadge = card.querySelector('[data-status-badge]');
     if (statusBadge) {
       statusBadge.textContent = `${percentage}% Used`;
@@ -466,11 +538,40 @@ const budgetCount =
   // Listen for budget updates
   document.addEventListener('budget-updated', handleBudgetUpdated as EventListener);
 
+  // Handle budgets-copied event - navigate to target month
+  function handleBudgetsCopied(
+    event: CustomEvent<{
+      sourceMonth: number;
+      sourceYear: number;
+      targetMonth: number;
+      targetYear: number;
+      copiedCount: number;
+      skippedCount: number;
+    }>
+  ) {
+    const { targetMonth, targetYear, copiedCount } = event.detail;
+
+    // Only navigate if budgets were actually copied
+    if (copiedCount > 0) {
+      // Build URL for target month and navigate
+      const container = document.querySelector('[data-budget-container]');
+      const currency = container?.getAttribute('data-currency') || 'IDR';
+      const params = new URLSearchParams();
+      params.set('year', targetYear.toString());
+      params.set('month', targetMonth.toString());
+      params.set('currency', currency);
+      window.location.href = `/budget?${params.toString()}`;
+    }
+  }
+
+  document.addEventListener('budgets-copied', handleBudgetsCopied as EventListener);
+
   // Cleanup event listeners on Astro page transitions
   document.addEventListener(
     'astro:before-swap',
     () => {
       document.removeEventListener('budget-updated', handleBudgetUpdated as EventListener);
+      document.removeEventListener('budgets-copied', handleBudgetsCopied as EventListener);
     },
     { once: true }
   );

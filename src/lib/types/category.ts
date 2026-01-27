@@ -8,20 +8,20 @@
  * Import Input types from: @/lib/validation
  */
 
-import type { CategoryType, Currency } from '@/lib/enums';
+import type { CategoryType } from '@/lib/enums';
 
 // Re-export enums from validation for convenience
-export type { CategoryType, Currency };
+export type { CategoryType };
 
 // Database model (from schema)
+// Note: Budget-related fields (percentage, budget_amount, currency) are now in the budgets table
 export interface Category {
   id: string;
   user_id: string;
   name: string;
   type: CategoryType;
-  percentage: string; // Stored as string for decimal precision
-  budget_amount: string; // Stored as string for decimal precision
-  currency: Currency;
+  icon: string;
+  color: string;
   is_active: boolean;
   created_at: Date;
   updated_at: Date;

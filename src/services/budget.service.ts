@@ -1,5 +1,6 @@
-import { transactions, categories, type IDatabase } from '@/db';
+import { transactions, categories, budgets, type IDatabase } from '@/db';
 import { eq, and, gte, lte, sql } from 'drizzle-orm';
+import { nanoid } from 'nanoid';
 import {
   decimalSubtract,
   decimalDivide,
@@ -8,11 +9,36 @@ import {
   decimalSum,
   decimalIsZero,
 } from '@/lib/utils/decimal';
+import {
+  createBudgetSchema,
+  updateBudgetSchema,
+  copyBudgetsSchema,
+  type CreateBudgetInput,
+  type UpdateBudgetInput,
+  type CopyBudgetsInput,
+} from '@/lib/validation/budgets';
+import type { Budget, BudgetWithCategory, CopyBudgetsResult } from '@/lib/types/budget';
+import { BudgetServiceError, ServiceErrorCode } from './service-errors';
+
+/**
+ * Validate and sanitize hex color values to prevent XSS
+ * @param color - Color value from database (potentially untrusted)
+ * @param fallback - Safe fallback color
+ * @returns Validated hex color or fallback
+ */
+const sanitizeHexColor = (color: string | null | undefined, fallback: string): string => {
+  if (!color || !/^#[0-9A-Fa-f]{3,8}$/.test(color)) {
+    return fallback;
+  }
+  return color;
+};
 
 export interface BudgetOverview {
   category_id: string;
   category_name: string;
   category_type: 'expense' | 'income';
+  category_icon: string;
+  category_color: string;
   percentage: string;
   budget_amount: string;
   spent_amount: string;
@@ -52,6 +78,7 @@ export class BudgetService {
 
   /**
    * Get budget overview for a specific month
+   * Queries the budgets table (not categories) for budget amounts
    */
   async getMonthlyOverview(
     user_id: string,
@@ -71,15 +98,23 @@ export class BudgetService {
     const startDate = new Date(year, month - 1, 1);
     const endDate = new Date(year, month, 0, 23, 59, 59);
 
-    // Get all expense categories for user with given currency
-    const userCategories = await this.db.query.categories.findMany({
+    // Get all budgets for this month/year with category info
+    const monthBudgets = await this.db.query.budgets.findMany({
       where: and(
-        eq(categories.user_id, user_id),
-        eq(categories.type, 'expense'),
-        eq(categories.currency, currency),
-        eq(categories.is_active, true)
+        eq(budgets.user_id, user_id),
+        eq(budgets.month, month),
+        eq(budgets.year, year),
+        eq(budgets.currency, currency)
       ),
+      with: {
+        category: true,
+      },
     });
+
+    // Filter to only expense categories that are active
+    const expenseBudgets = monthBudgets.filter(
+      (b) => b.category?.type === 'expense' && b.category?.is_active === true
+    );
 
     // Get transactions for the month grouped by category
     const monthTransactions = await (this.db as any)
@@ -106,23 +141,23 @@ export class BudgetService {
       spentByCategory.set(tx.category_id, tx.total || '0');
     }
 
-    // Calculate budget overview for each category
-    // First, calculate total budget for percentage calculation
-    const totalBudgetAmount = userCategories.reduce(
-      (sum, cat) => sum + parseFloat(cat.budget_amount || '0'),
+    // Calculate total budget for percentage calculation
+    const totalBudgetAmount = expenseBudgets.reduce(
+      (sum, b) => sum + parseFloat(b.budget_amount || '0'),
       0
     );
 
-    const categoryOverviews: BudgetOverview[] = userCategories.map((category) => {
-      const budgetAmount = category.budget_amount;
-      const spentAmount = spentByCategory.get(category.id) || '0';
+    // Build category overviews from budgets
+    const categoryOverviews: BudgetOverview[] = expenseBudgets.map((budget) => {
+      const budgetAmount = budget.budget_amount;
+      const spentAmount = spentByCategory.get(budget.category_id) || '0';
       const balance = decimalSubtract(budgetAmount, spentAmount);
       const percentageUsed = !decimalIsZero(budgetAmount)
         ? parseFloat(decimalDivide(decimalMultiply(spentAmount, 100), budgetAmount))
         : 0;
 
       // Calculate percentage dynamically from budget amount
-      // percentage = (category_budget_amount / total_budget_amount) * 100
+      // percentage = (budget_amount / total_budget_amount) * 100
       const budgetAmountNum = parseFloat(budgetAmount || '0');
       const calculatedPercentage =
         totalBudgetAmount > 0 ? (budgetAmountNum / totalBudgetAmount) * 100 : 0;
@@ -135,9 +170,11 @@ export class BudgetService {
       }
 
       return {
-        category_id: category.id,
-        category_name: category.name,
-        category_type: category.type,
+        category_id: budget.category_id,
+        category_name: budget.category?.name ?? 'Unknown',
+        category_type: (budget.category?.type ?? 'expense') as 'expense' | 'income',
+        category_icon: budget.category?.icon ?? 'CircleDollarSign',
+        category_color: sanitizeHexColor(budget.category?.color, '#6b7280'),
         percentage: calculatedPercentage.toFixed(2),
         budget_amount: budgetAmount,
         spent_amount: spentAmount,
@@ -264,8 +301,12 @@ export class BudgetService {
 
   /**
    * Get budget remaining for a category in current month
+   * Queries the budgets table for budget_amount
+   * @param category_id - Category ID
+   * @param user_id - User ID
+   * @param currency - Currency to use for budget lookup (required since categories no longer have currency)
    */
-  async getCategoryRemaining(category_id: string, user_id: string) {
+  async getCategoryRemaining(category_id: string, user_id: string, currency: 'IDR' | 'USD') {
     const category = await this.db.query.categories.findFirst({
       where: and(eq(categories.id, category_id), eq(categories.user_id, user_id)),
     });
@@ -275,8 +316,24 @@ export class BudgetService {
     }
 
     const now = new Date();
-    const startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-    const endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+    const currentMonth = now.getMonth() + 1;
+    const currentYear = now.getFullYear();
+    const startDate = new Date(currentYear, now.getMonth(), 1);
+    const endDate = new Date(currentYear, now.getMonth() + 1, 0, 23, 59, 59);
+
+    // Get budget for current month from budgets table
+    const budget = await this.db.query.budgets.findFirst({
+      where: and(
+        eq(budgets.category_id, category_id),
+        eq(budgets.user_id, user_id),
+        eq(budgets.month, currentMonth),
+        eq(budgets.year, currentYear),
+        eq(budgets.currency, currency)
+      ),
+    });
+
+    // If no budget set for this month, return zero budget
+    const budgetAmount = budget?.budget_amount ?? '0';
 
     const [result] = await (this.db as any)
       .select({
@@ -288,13 +345,13 @@ export class BudgetService {
           eq(transactions.user_id, user_id),
           eq(transactions.category_id, category_id),
           eq(transactions.type, 'expense'),
+          eq(transactions.currency, currency),
           gte(transactions.transaction_date, startDate),
           lte(transactions.transaction_date, endDate),
           sql`${transactions.deleted_at} IS NULL`
         )
       );
 
-    const budgetAmount = category.budget_amount;
     const spentAmount = result?.total || '0';
     const remaining = decimalSubtract(budgetAmount, spentAmount);
     const percentageUsed = !decimalIsZero(budgetAmount)
@@ -409,5 +466,319 @@ export class BudgetService {
           .join(',')
       )
       .join('\n');
+  }
+
+  // ============================================
+  // CRUD Methods for Budgets Table
+  // ============================================
+
+  /**
+   * Create a new budget record
+   * Note: Currency is now specified directly on the budget, no longer validated against category
+   */
+  async createBudget(input: CreateBudgetInput): Promise<Budget> {
+    const validated = createBudgetSchema.parse(input);
+
+    // Check if category exists and belongs to user
+    const category = await this.db.query.categories.findFirst({
+      where: and(
+        eq(categories.id, validated.category_id),
+        eq(categories.user_id, validated.user_id),
+        eq(categories.is_active, true)
+      ),
+    });
+
+    if (!category) {
+      throw new BudgetServiceError(
+        ServiceErrorCode.CATEGORY_NOT_FOUND,
+        'Category not found or inactive',
+        404
+      );
+    }
+
+    // Check if budget already exists for this category/month/year/currency combination
+    const existingBudget = await this.db.query.budgets.findFirst({
+      where: and(
+        eq(budgets.user_id, validated.user_id),
+        eq(budgets.category_id, validated.category_id),
+        eq(budgets.month, validated.month),
+        eq(budgets.year, validated.year),
+        eq(budgets.currency, validated.currency)
+      ),
+    });
+
+    if (existingBudget) {
+      throw new BudgetServiceError(
+        ServiceErrorCode.BUDGET_ALREADY_EXISTS,
+        `Budget already exists for this category in ${validated.month}/${validated.year} with currency ${validated.currency}`,
+        409
+      );
+    }
+
+    const id = nanoid();
+    const [budget] = await this.db
+      .insert(budgets)
+      .values({
+        id,
+        user_id: validated.user_id,
+        category_id: validated.category_id,
+        month: validated.month,
+        year: validated.year,
+        budget_amount: validated.budget_amount,
+        currency: validated.currency,
+        notes: validated.notes,
+      })
+      .returning();
+
+    return budget as Budget;
+  }
+
+  /**
+   * Update an existing budget record
+   */
+  async updateBudget(id: string, user_id: string, input: UpdateBudgetInput): Promise<Budget> {
+    const validated = updateBudgetSchema.parse(input);
+
+    // Check if budget exists and belongs to user
+    const existingBudget = await this.getBudgetById(id, user_id);
+    if (!existingBudget) {
+      throw new BudgetServiceError(ServiceErrorCode.BUDGET_NOT_FOUND, 'Budget not found', 404);
+    }
+
+    // Check if budget is closed
+    if (existingBudget.is_closed) {
+      throw new BudgetServiceError(
+        ServiceErrorCode.BUDGET_CLOSED,
+        'Cannot modify a closed budget',
+        400
+      );
+    }
+
+    // Check that at least one field is being updated
+    if (
+      validated.budget_amount === undefined &&
+      validated.notes === undefined &&
+      validated.is_closed === undefined
+    ) {
+      throw new BudgetServiceError(
+        ServiceErrorCode.VALIDATION_ERROR,
+        'At least one field must be provided for update',
+        400
+      );
+    }
+
+    // Build update data
+    const updateData: Record<string, unknown> = {
+      updated_at: new Date(),
+    };
+
+    if (validated.budget_amount !== undefined) {
+      updateData.budget_amount = validated.budget_amount;
+    }
+    if (validated.notes !== undefined) {
+      updateData.notes = validated.notes;
+    }
+    if (validated.is_closed !== undefined) {
+      updateData.is_closed = validated.is_closed;
+    }
+
+    await this.db
+      .update(budgets)
+      .set(updateData)
+      .where(and(eq(budgets.id, id), eq(budgets.user_id, user_id)));
+
+    const updatedBudget = await this.getBudgetById(id, user_id);
+    return updatedBudget as Budget;
+  }
+
+  /**
+   * Delete a budget record
+   * P2: TODO - Consider returning the deleted budget for UI confirmation/undo
+   */
+  async deleteBudget(id: string, user_id: string): Promise<{ success: boolean }> {
+    const existingBudget = await this.getBudgetById(id, user_id);
+    if (!existingBudget) {
+      throw new BudgetServiceError(ServiceErrorCode.BUDGET_NOT_FOUND, 'Budget not found', 404);
+    }
+
+    // Check if budget is closed
+    if (existingBudget.is_closed) {
+      throw new BudgetServiceError(
+        ServiceErrorCode.BUDGET_CLOSED,
+        'Cannot delete a closed budget',
+        400
+      );
+    }
+
+    await this.db.delete(budgets).where(and(eq(budgets.id, id), eq(budgets.user_id, user_id)));
+
+    return { success: true };
+  }
+
+  /**
+   * Get a single budget by ID
+   */
+  async getBudgetById(id: string, user_id: string): Promise<Budget | null> {
+    const budget = await this.db.query.budgets.findFirst({
+      where: and(eq(budgets.id, id), eq(budgets.user_id, user_id)),
+    });
+
+    return budget as Budget | null;
+  }
+
+  /**
+   * Get a budget by category, month, and year
+   */
+  async getBudgetByCategory(
+    category_id: string,
+    user_id: string,
+    month: number,
+    year: number
+  ): Promise<Budget | null> {
+    const budget = await this.db.query.budgets.findFirst({
+      where: and(
+        eq(budgets.category_id, category_id),
+        eq(budgets.user_id, user_id),
+        eq(budgets.month, month),
+        eq(budgets.year, year)
+      ),
+    });
+
+    return budget as Budget | null;
+  }
+
+  /**
+   * Find all budgets for a user with optional filters
+   */
+  async findAllBudgets(
+    user_id: string,
+    month: number,
+    year: number,
+    currency?: 'IDR' | 'USD'
+  ): Promise<BudgetWithCategory[]> {
+    const conditions = [
+      eq(budgets.user_id, user_id),
+      eq(budgets.month, month),
+      eq(budgets.year, year),
+    ];
+
+    if (currency) {
+      conditions.push(eq(budgets.currency, currency));
+    }
+
+    const result = await this.db.query.budgets.findMany({
+      where: and(...conditions),
+      with: {
+        category: true,
+      },
+    });
+
+    return result as BudgetWithCategory[];
+  }
+
+  /**
+   * Check if any budgets exist for a given month/year
+   * Used to determine if month navigation should be enabled for future months
+   */
+  async hasBudgetsForMonth(
+    user_id: string,
+    year: number,
+    month: number,
+    currency?: 'IDR' | 'USD'
+  ): Promise<boolean> {
+    // Validate inputs (consistent with other service methods)
+    if (!Number.isInteger(year) || year < 2000 || year > 2100) {
+      throw new Error('Invalid year parameter');
+    }
+    if (!Number.isInteger(month) || month < 1 || month > 12) {
+      throw new Error('Invalid month parameter');
+    }
+
+    const conditions = [
+      eq(budgets.user_id, user_id),
+      eq(budgets.month, month),
+      eq(budgets.year, year),
+    ];
+
+    if (currency) {
+      conditions.push(eq(budgets.currency, currency));
+    }
+
+    const result = await this.db.query.budgets.findFirst({
+      where: and(...conditions),
+      columns: { id: true },
+    });
+
+    return result !== undefined;
+  }
+
+  /**
+   * Copy all budgets from source month to target month
+   */
+  async copyBudgetsToMonth(input: CopyBudgetsInput): Promise<CopyBudgetsResult> {
+    const validated = copyBudgetsSchema.parse(input);
+
+    // Get all budgets from source month
+    const sourceBudgets = await this.db.query.budgets.findMany({
+      where: and(
+        eq(budgets.user_id, validated.user_id),
+        eq(budgets.month, validated.source_month),
+        eq(budgets.year, validated.source_year)
+      ),
+    });
+
+    if (sourceBudgets.length === 0) {
+      throw new BudgetServiceError(
+        ServiceErrorCode.NO_BUDGETS_TO_COPY,
+        'No budgets found in source month to copy',
+        404
+      );
+    }
+
+    // Get existing budgets in target month to avoid duplicates
+    const existingTargetBudgets = await this.db.query.budgets.findMany({
+      where: and(
+        eq(budgets.user_id, validated.user_id),
+        eq(budgets.month, validated.target_month),
+        eq(budgets.year, validated.target_year)
+      ),
+    });
+
+    const existingCategoryIds = new Set(existingTargetBudgets.map((b: Budget) => b.category_id));
+
+    // Filter out budgets that already exist in target month
+    const budgetsToCopy = sourceBudgets.filter(
+      (b: Budget) => !existingCategoryIds.has(b.category_id)
+    );
+
+    const skippedCount = sourceBudgets.length - budgetsToCopy.length;
+
+    // Copy budgets to target month (in a transaction for atomicity)
+    if (budgetsToCopy.length > 0) {
+      const newBudgets = budgetsToCopy.map((b: Budget) => ({
+        id: nanoid(),
+        user_id: validated.user_id,
+        category_id: b.category_id,
+        month: validated.target_month,
+        year: validated.target_year,
+        budget_amount: b.budget_amount,
+        currency: b.currency,
+        notes: b.notes,
+        is_closed: false,
+      }));
+
+      await this.db.transaction(async (tx) => {
+        for (const budget of newBudgets) {
+          await tx.insert(budgets).values(budget);
+        }
+      });
+    }
+
+    return {
+      copied_count: budgetsToCopy.length,
+      skipped_count: skippedCount,
+      target_month: validated.target_month,
+      target_year: validated.target_year,
+    };
   }
 }

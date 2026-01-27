@@ -94,6 +94,15 @@ paths:
   /api/assets/summary:
     $ref: './openapi/paths/assets.yml#/paths/~1api~1assets~1summary'
 
+  # Budget CRUD endpoints (new)
+  /api/budgets:
+    $ref: './openapi/paths/budgets.yml#/paths/~1api~1budgets'
+  /api/budgets/{id}:
+    $ref: './openapi/paths/budgets.yml#/paths/~1api~1budgets~1{id}'
+  /api/budgets/copy:
+    $ref: './openapi/paths/budgets.yml#/paths/~1api~1budgets~1copy'
+
+  # Budget overview endpoints
   /api/budget/overview:
     $ref: './openapi/paths/budget.yml#/paths/~1api~1budget~1overview'
   /api/budget/alerts:
@@ -102,8 +111,6 @@ paths:
     $ref: './openapi/paths/budget.yml#/paths/~1api~1budget~1history'
   /api/budget/category/{id}/remaining:
     $ref: './openapi/paths/budget.yml#/paths/~1api~1budget~1category~1{id}~1remaining'
-  /api/budget/category/{id}:
-    $ref: './openapi/paths/budget.yml#/paths/~1api~1budget~1category~1{id}'
   /api/budget/export:
     $ref: './openapi/paths/budget.yml#/paths/~1api~1budget~1export'
 
@@ -213,6 +220,20 @@ components:
       $ref: './openapi/schemas/AssetSummaryResponse.yml#/AssetSummaryResponse'
 
     # Budget Schemas
+    Budget:
+      $ref: './openapi/schemas/Budget.yml#/Budget'
+    CreateBudgetRequest:
+      $ref: './openapi/schemas/CreateBudgetRequest.yml#/CreateBudgetRequest'
+    UpdateBudgetRequest:
+      $ref: './openapi/schemas/UpdateBudgetRequest.yml#/UpdateBudgetRequest'
+    CopyBudgetsRequest:
+      $ref: './openapi/schemas/CopyBudgetsRequest.yml#/CopyBudgetsRequest'
+    CopyBudgetsResponse:
+      $ref: './openapi/schemas/CopyBudgetsResponse.yml#/CopyBudgetsResponse'
+    BudgetResponse:
+      $ref: './openapi/schemas/BudgetResponse.yml#/BudgetResponse'
+    BudgetsListResponse:
+      $ref: './openapi/schemas/BudgetsListResponse.yml#/BudgetsListResponse'
     BudgetOverviewResponse:
       $ref: './openapi/schemas/BudgetOverviewResponse.yml#/BudgetOverviewResponse'
     BudgetAlertsResponse:
@@ -221,10 +242,6 @@ components:
       $ref: './openapi/schemas/CategoryRemainingResponse.yml#/CategoryRemainingResponse'
     BudgetHistoryResponse:
       $ref: './openapi/schemas/BudgetHistoryResponse.yml#/BudgetHistoryResponse'
-    UpdateBudgetCategoryRequest:
-      $ref: './openapi/schemas/UpdateBudgetCategoryRequest.yml#/UpdateBudgetCategoryRequest'
-    BudgetCategoryResponse:
-      $ref: './openapi/schemas/BudgetCategoryResponse.yml#/BudgetCategoryResponse'
 
     # Forecast Schemas
     ForecastResponse:
