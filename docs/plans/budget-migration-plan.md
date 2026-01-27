@@ -336,15 +336,25 @@ Note: After schema changes, run `bun run db:push` to sync schema to database (de
 
 #### Progress Checklist
 
-- [ ] Update `src/services/budget.service.test.ts`
-- [ ] Update `src/services/category.service.test.ts`
-- [ ] Update `src/services/dashboard.service.test.ts`
-- [ ] Update/remove `budget-category.api.integration.test.ts`
-- [ ] Update `categories.api.integration.test.ts`
-- [ ] Update `SetNewBudgetModal.test.ts`
-- [ ] Update `BudgetCard.test.ts`
-- [ ] Update `BudgetCardGrid.test.ts`
-- [ ] Update `src/services/test-helpers/mocks.ts`
+- [x] Update `src/services/budget.service.test.ts` (already uses budgets table mocks)
+- [x] Update `src/services/category.service.test.ts` (already clean - no budget fields)
+- [x] Update `src/services/dashboard.service.test.ts` (already uses correct queries)
+- [x] Update/remove `budget-category.api.integration.test.ts` (already uses budgets table)
+- [x] Update `categories.api.integration.test.ts` (already clean - no budget assertions)
+- [x] Update `SetNewBudgetModal.test.ts` (updated API endpoints to POST/PUT /api/budgets)
+- [x] Update `BudgetCard.test.ts` (already uses correct BudgetData interface)
+- [x] Update `BudgetCardGrid.test.ts` (already uses correct BudgetData interface)
+- [x] Update `src/services/test-helpers/mocks.ts` (already has createMockBudget helpers)
+
+**Completed:** 2026-01-27
+
+**Key changes:**
+
+- Verified most test files were already migrated in earlier phases
+- Updated SetNewBudgetModal.test.ts to use new API endpoints (POST/PUT /api/budgets)
+- Removed budget_amount from mock Category interface
+- Added P1 TODO for schema validation improvement
+- All 3375 tests pass
 
 ---
 
