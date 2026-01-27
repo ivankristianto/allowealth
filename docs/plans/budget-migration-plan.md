@@ -225,13 +225,21 @@ Note: After schema changes, run `bun run db:push` to sync schema to database (de
 
 #### Progress Checklist
 
-- [ ] Remove columns from `src/db/schema/categories.ts`
-- [ ] Update `src/lib/types/category.ts`
-- [ ] Update `src/lib/validation/categories.ts`
-- [ ] Update `src/services/category.service.ts`
-- [ ] Update `src/pages/api/categories/index.ts`
-- [ ] Update `src/pages/api/categories/[id].ts`
-- [ ] Remove/deprecate `src/pages/api/budget/category/[id].ts`
+- [x] Remove columns from `src/db/schema/categories.ts`
+- [x] Update `src/lib/types/category.ts`
+- [x] Update `src/lib/validation/categories.ts`
+- [x] Update `src/services/category.service.ts`
+- [x] Update `src/pages/api/categories/index.ts`
+- [x] Update `src/pages/api/categories/[id].ts`
+- [x] Remove/deprecate `src/pages/api/budget/category/[id].ts`
+- [x] Update `src/services/budget.service.ts` (getCategoryRemaining now takes currency param)
+- [x] Update `src/services/dashboard.service.ts` (queries budgets table instead of categories)
+- [x] Update UI components (CategoryModal, categories page, CategorySelect)
+- [x] Update transaction pages to use transaction currency for budget lookup
+- [x] Update integration tests to remove budget fields from categories
+- [x] Update unit tests and mocks
+
+**Status: COMPLETE**
 
 ---
 

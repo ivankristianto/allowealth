@@ -285,8 +285,11 @@ export class BudgetService {
   /**
    * Get budget remaining for a category in current month
    * Queries the budgets table for budget_amount
+   * @param category_id - Category ID
+   * @param user_id - User ID
+   * @param currency - Currency to use for budget lookup (required since categories no longer have currency)
    */
-  async getCategoryRemaining(category_id: string, user_id: string) {
+  async getCategoryRemaining(category_id: string, user_id: string, currency: 'IDR' | 'USD') {
     const category = await this.db.query.categories.findFirst({
       where: and(eq(categories.id, category_id), eq(categories.user_id, user_id)),
     });
@@ -302,14 +305,13 @@ export class BudgetService {
     const endDate = new Date(currentYear, now.getMonth() + 1, 0, 23, 59, 59);
 
     // Get budget for current month from budgets table
-    // Use category's currency to ensure correct budget is retrieved
     const budget = await this.db.query.budgets.findFirst({
       where: and(
         eq(budgets.category_id, category_id),
         eq(budgets.user_id, user_id),
         eq(budgets.month, currentMonth),
         eq(budgets.year, currentYear),
-        eq(budgets.currency, category.currency)
+        eq(budgets.currency, currency)
       ),
     });
 
@@ -326,6 +328,7 @@ export class BudgetService {
           eq(transactions.user_id, user_id),
           eq(transactions.category_id, category_id),
           eq(transactions.type, 'expense'),
+          eq(transactions.currency, currency),
           gte(transactions.transaction_date, startDate),
           lte(transactions.transaction_date, endDate),
           sql`${transactions.deleted_at} IS NULL`
@@ -454,6 +457,7 @@ export class BudgetService {
 
   /**
    * Create a new budget record
+   * Note: Currency is now specified directly on the budget, no longer validated against category
    */
   async createBudget(input: CreateBudgetInput): Promise<Budget> {
     const validated = createBudgetSchema.parse(input);
@@ -475,29 +479,21 @@ export class BudgetService {
       );
     }
 
-    // Validate currency matches category currency
-    if (category.currency !== validated.currency) {
-      throw new BudgetServiceError(
-        ServiceErrorCode.VALIDATION_ERROR,
-        `Budget currency (${validated.currency}) must match category currency (${category.currency})`,
-        400
-      );
-    }
-
-    // Check if budget already exists for this category/month/year
+    // Check if budget already exists for this category/month/year/currency combination
     const existingBudget = await this.db.query.budgets.findFirst({
       where: and(
         eq(budgets.user_id, validated.user_id),
         eq(budgets.category_id, validated.category_id),
         eq(budgets.month, validated.month),
-        eq(budgets.year, validated.year)
+        eq(budgets.year, validated.year),
+        eq(budgets.currency, validated.currency)
       ),
     });
 
     if (existingBudget) {
       throw new BudgetServiceError(
         ServiceErrorCode.BUDGET_ALREADY_EXISTS,
-        `Budget already exists for this category in ${validated.month}/${validated.year}`,
+        `Budget already exists for this category in ${validated.month}/${validated.year} with currency ${validated.currency}`,
         409
       );
     }

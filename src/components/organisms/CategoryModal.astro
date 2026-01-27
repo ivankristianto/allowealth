@@ -25,7 +25,6 @@ export interface Props {
     type?: 'expense' | 'income';
     icon?: string;
     color?: string;
-    currency?: 'IDR' | 'USD';
   };
   errors?: Record<string, string>;
 }
@@ -119,27 +118,6 @@ const iconColorClass = 'text-accent';
               <option value="income" selected={values.type === 'income'}>Income</option>
             </select>
             {errors.type && <span class="text-error text-xs mt-1">{errors.type}</span>}
-          </div>
-
-          <div class="form-control">
-            <label class="label py-1" for="category-currency">
-              <span class="text-xs uppercase tracking-widest text-base-content/50 font-medium">
-                Currency
-                <span class="sr-only">(required)</span>
-              </span>
-            </label>
-            <select
-              name="currency"
-              id="category-currency"
-              class="select select-bordered w-full h-10 text-xs bg-base-200 focus:ring-2 focus:ring-accent focus:ring-opacity-20 focus:outline-none focus:ring-offset-2"
-              required
-            >
-              <option value="IDR" selected={values.currency === 'IDR' || !values.currency}>
-                IDR
-              </option>
-              <option value="USD" selected={values.currency === 'USD'}>USD</option>
-            </select>
-            {errors.currency && <span class="text-error text-xs mt-1">{errors.currency}</span>}
           </div>
 
           <div class="form-control">
@@ -269,11 +247,10 @@ const iconColorClass = 'text-accent';
             type: formData.get('type'),
             icon: formData.get('icon'),
             color: formData.get('color'),
-            currency: formData.get('currency'),
           };
 
           // Validate required fields
-          if (!data.name || !data.type || !data.icon || !data.color || !data.currency) {
+          if (!data.name || !data.type || !data.icon || !data.color) {
             throw new Error('Please fill in all required fields');
           }
 

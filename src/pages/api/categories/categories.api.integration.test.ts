@@ -234,7 +234,8 @@ describe('Category API Integration Tests', () => {
         const createResponse = await makeRequest('/api/categories', 'POST', {
           name: `Inactive Category ${Date.now()}`,
           type: 'expense',
-          currency: 'IDR',
+          icon: 'tag',
+          color: 'bg-neutral',
         });
 
         expect(createResponse.status).toBe(201);
@@ -312,9 +313,8 @@ describe('Category API Integration Tests', () => {
         const categoryData = {
           name: `Test Expense ${Date.now()}`,
           type: 'expense',
-          currency: 'IDR',
-          percentage: '10',
-          budget_amount: '1000000',
+          icon: 'wallet',
+          color: 'bg-primary',
         };
 
         const response = await makeRequest('/api/categories', 'POST', categoryData);
@@ -326,7 +326,7 @@ describe('Category API Integration Tests', () => {
         expect(json.data).toHaveProperty('id');
         expect(json.data.name).toBe(categoryData.name);
         expect(json.data.type).toBe('expense');
-        expect(json.data.currency).toBe('IDR');
+        expect(json.data.icon).toBe('wallet');
         expect(json.data.is_active).toBe(true);
 
         // Track for cleanup
@@ -339,7 +339,8 @@ describe('Category API Integration Tests', () => {
         const categoryData = {
           name: `Test Income ${Date.now()}`,
           type: 'income',
-          currency: 'USD',
+          icon: 'banknote',
+          color: 'bg-success',
         };
 
         const response = await makeRequest('/api/categories', 'POST', categoryData);
@@ -349,7 +350,7 @@ describe('Category API Integration Tests', () => {
         const json = await response.json();
         expect(json.success).toBe(true);
         expect(json.data.type).toBe('income');
-        expect(json.data.currency).toBe('USD');
+        expect(json.data.icon).toBe('banknote');
 
         createdCategoryIds.push(json.data.id);
       });
@@ -372,7 +373,8 @@ describe('Category API Integration Tests', () => {
         const categoryData = {
           name: 'AB', // Too short (min 3)
           type: 'expense',
-          currency: 'IDR',
+          icon: 'tag',
+          color: 'bg-neutral',
         };
 
         const response = await makeRequest('/api/categories', 'POST', categoryData);
@@ -390,7 +392,8 @@ describe('Category API Integration Tests', () => {
         const categoryData = {
           name: 'x'.repeat(101), // Too long (max 100)
           type: 'expense',
-          currency: 'IDR',
+          icon: 'tag',
+          color: 'bg-neutral',
         };
 
         const response = await makeRequest('/api/categories', 'POST', categoryData);
@@ -408,63 +411,8 @@ describe('Category API Integration Tests', () => {
         const categoryData = {
           name: `Invalid Type ${Date.now()}`,
           type: 'invalid-type',
-          currency: 'IDR',
-        };
-
-        const response = await makeRequest('/api/categories', 'POST', categoryData);
-
-        expect(response.status).toBe(400);
-
-        const json = await response.json();
-        expect(json.success).toBe(false);
-        expect(json.error.code).toBe('VALIDATION_ERROR');
-      });
-    });
-
-    it('should validate currency enum values', async () => {
-      await skipIfNotReady(async () => {
-        const categoryData = {
-          name: `Invalid Currency ${Date.now()}`,
-          type: 'expense',
-          currency: 'INVALID',
-        };
-
-        const response = await makeRequest('/api/categories', 'POST', categoryData);
-
-        expect(response.status).toBe(400);
-
-        const json = await response.json();
-        expect(json.success).toBe(false);
-        expect(json.error.code).toBe('VALIDATION_ERROR');
-      });
-    });
-
-    it('should validate percentage range (0-100)', async () => {
-      await skipIfNotReady(async () => {
-        const categoryData = {
-          name: `Invalid Percentage ${Date.now()}`,
-          type: 'expense',
-          currency: 'IDR',
-          percentage: '150', // Invalid: above 100
-        };
-
-        const response = await makeRequest('/api/categories', 'POST', categoryData);
-
-        expect(response.status).toBe(400);
-
-        const json = await response.json();
-        expect(json.success).toBe(false);
-        expect(json.error.code).toBe('VALIDATION_ERROR');
-      });
-    });
-
-    it('should validate budget_amount must be positive', async () => {
-      await skipIfNotReady(async () => {
-        const categoryData = {
-          name: `Negative Budget ${Date.now()}`,
-          type: 'expense',
-          currency: 'IDR',
-          budget_amount: '-1000',
+          icon: 'tag',
+          color: 'bg-neutral',
         };
 
         const response = await makeRequest('/api/categories', 'POST', categoryData);
@@ -485,7 +433,8 @@ describe('Category API Integration Tests', () => {
         const firstResponse = await makeRequest('/api/categories', 'POST', {
           name: uniqueName,
           type: 'expense',
-          currency: 'IDR',
+          icon: 'tag',
+          color: 'bg-neutral',
         });
 
         expect(firstResponse.status).toBe(201);
@@ -496,7 +445,8 @@ describe('Category API Integration Tests', () => {
         const duplicateResponse = await makeRequest('/api/categories', 'POST', {
           name: uniqueName,
           type: 'expense',
-          currency: 'IDR',
+          icon: 'tag',
+          color: 'bg-neutral',
         });
 
         expect(duplicateResponse.status).toBe(409);
@@ -553,7 +503,8 @@ describe('Category API Integration Tests', () => {
         const categoryData = {
           name: `Unauthenticated ${Date.now()}`,
           type: 'expense',
-          currency: 'IDR',
+          icon: 'tag',
+          color: 'bg-neutral',
         };
 
         const response = await makeUnauthenticatedRequest('/api/categories', 'POST', categoryData);
@@ -571,7 +522,8 @@ describe('Category API Integration Tests', () => {
         const response = await makeRequest('/api/categories', 'POST', {
           name: maliciousName,
           type: 'expense',
-          currency: 'IDR',
+          icon: 'tag',
+          color: 'bg-neutral',
         });
 
         // Should either create successfully or fail validation, not crash
@@ -597,9 +549,8 @@ describe('Category API Integration Tests', () => {
         const createResponse = await makeRequest('/api/categories', 'POST', {
           name: `Get By ID ${Date.now()}`,
           type: 'expense',
-          currency: 'IDR',
-          percentage: '15',
-          budget_amount: '500000',
+          icon: 'wallet',
+          color: 'bg-primary',
         });
 
         expect(createResponse.status).toBe(201);
@@ -616,7 +567,7 @@ describe('Category API Integration Tests', () => {
         expect(getJson.success).toBe(true);
         expect(getJson.data.id).toBe(categoryId);
         expect(getJson.data.type).toBe('expense');
-        expect(getJson.data.currency).toBe('IDR');
+        expect(getJson.data.icon).toBe('wallet');
       });
     });
 
@@ -653,9 +604,8 @@ describe('Category API Integration Tests', () => {
           user_id: otherUserId,
           name: 'Other User Category',
           type: 'expense',
-          currency: 'IDR',
-          percentage: '0',
-          budget_amount: '0',
+          icon: 'tag',
+          color: 'bg-neutral',
           is_active: true,
           created_at: new Date(),
           updated_at: new Date(),
@@ -680,7 +630,8 @@ describe('Category API Integration Tests', () => {
         const createResponse = await makeRequest('/api/categories', 'POST', {
           name: `Original Name ${Date.now()}`,
           type: 'expense',
-          currency: 'IDR',
+          icon: 'tag',
+          color: 'bg-neutral',
         });
 
         expect(createResponse.status).toBe(201);
@@ -701,7 +652,7 @@ describe('Category API Integration Tests', () => {
         expect(updateJson.data.name).toBe(newName);
         // Other fields should remain unchanged
         expect(updateJson.data.type).toBe('expense');
-        expect(updateJson.data.currency).toBe('IDR');
+        expect(updateJson.data.icon).toBe('tag');
       });
     });
 
@@ -711,9 +662,8 @@ describe('Category API Integration Tests', () => {
         const createResponse = await makeRequest('/api/categories', 'POST', {
           name: `Multi Field ${Date.now()}`,
           type: 'expense',
-          currency: 'IDR',
-          percentage: '10',
-          budget_amount: '100000',
+          icon: 'tag',
+          color: 'bg-neutral',
         });
 
         expect(createResponse.status).toBe(201);
@@ -723,8 +673,8 @@ describe('Category API Integration Tests', () => {
 
         // Update multiple fields
         const updateResponse = await makeRequest(`/api/categories/${categoryId}`, 'PUT', {
-          percentage: '25',
-          budget_amount: '500000',
+          icon: 'wallet',
+          color: 'bg-primary',
           is_active: false,
         });
 
@@ -732,8 +682,8 @@ describe('Category API Integration Tests', () => {
 
         const updateJson = await updateResponse.json();
         expect(updateJson.success).toBe(true);
-        expect(updateJson.data.percentage).toBe('25');
-        expect(updateJson.data.budget_amount).toBe('500000');
+        expect(updateJson.data.icon).toBe('wallet');
+        expect(updateJson.data.color).toBe('bg-primary');
         expect(updateJson.data.is_active).toBe(false);
       });
     });
@@ -751,32 +701,6 @@ describe('Category API Integration Tests', () => {
       });
     });
 
-    it('should validate update data', async () => {
-      await skipIfNotReady(async () => {
-        // Create a category first
-        const createResponse = await makeRequest('/api/categories', 'POST', {
-          name: `Validate Update ${Date.now()}`,
-          type: 'expense',
-          currency: 'IDR',
-        });
-
-        const createJson = await createResponse.json();
-        const categoryId = createJson.data.id;
-        createdCategoryIds.push(categoryId);
-
-        // Try to update with invalid data
-        const response = await makeRequest(`/api/categories/${categoryId}`, 'PUT', {
-          percentage: '150', // Invalid: above 100
-        });
-
-        expect(response.status).toBe(400);
-
-        const json = await response.json();
-        expect(json.success).toBe(false);
-        expect(json.error.code).toBe('VALIDATION_ERROR');
-      });
-    });
-
     it('should reject duplicate name on update', async () => {
       await skipIfNotReady(async () => {
         // Create two categories
@@ -786,7 +710,8 @@ describe('Category API Integration Tests', () => {
         const firstResponse = await makeRequest('/api/categories', 'POST', {
           name: name1,
           type: 'expense',
-          currency: 'IDR',
+          icon: 'tag',
+          color: 'bg-neutral',
         });
         const firstJson = await firstResponse.json();
         createdCategoryIds.push(firstJson.data.id);
@@ -794,7 +719,8 @@ describe('Category API Integration Tests', () => {
         const secondResponse = await makeRequest('/api/categories', 'POST', {
           name: name2,
           type: 'expense',
-          currency: 'IDR',
+          icon: 'tag',
+          color: 'bg-neutral',
         });
         const secondJson = await secondResponse.json();
         createdCategoryIds.push(secondJson.data.id);
@@ -851,7 +777,8 @@ describe('Category API Integration Tests', () => {
         const createResponse = await makeRequest('/api/categories', 'POST', {
           name: `Empty Update Test ${Date.now()}`,
           type: 'expense',
-          currency: 'IDR',
+          icon: 'tag',
+          color: 'bg-neutral',
         });
 
         const createJson = await createResponse.json();
@@ -874,7 +801,8 @@ describe('Category API Integration Tests', () => {
         const createResponse = await makeRequest('/api/categories', 'POST', {
           name: `To Delete ${Date.now()}`,
           type: 'expense',
-          currency: 'IDR',
+          icon: 'tag',
+          color: 'bg-neutral',
         });
 
         expect(createResponse.status).toBe(201);
@@ -932,9 +860,8 @@ describe('Category API Integration Tests', () => {
           user_id: otherUserId,
           name: 'Other User Delete Test',
           type: 'expense',
-          currency: 'IDR',
-          percentage: '0',
-          budget_amount: '0',
+          icon: 'tag',
+          color: 'bg-neutral',
           is_active: true,
           created_at: new Date(),
           updated_at: new Date(),

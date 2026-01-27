@@ -232,7 +232,7 @@ describe('BudgetService', () => {
             month,
             year,
           },
-          { id: 'cat-1', name: 'Groceries', type: 'expense', currency: 'USD', is_active: true }
+          { id: 'cat-1', name: 'Groceries', type: 'expense', is_active: true }
         ),
       ];
 
@@ -595,7 +595,7 @@ describe('BudgetService', () => {
         })),
       });
 
-      const result = await budgetService.getCategoryRemaining(categoryId, userId);
+      const result = await budgetService.getCategoryRemaining(categoryId, userId, 'IDR');
 
       expect(result.category_name).toBe('Food');
       expect(result.budget_amount).toBe('6000000');
@@ -622,7 +622,7 @@ describe('BudgetService', () => {
         })),
       });
 
-      const result = await budgetService.getCategoryRemaining(categoryId, userId);
+      const result = await budgetService.getCategoryRemaining(categoryId, userId, 'IDR');
 
       expect(result.category_name).toBe('Food');
       expect(result.budget_amount).toBe('0');
@@ -633,9 +633,9 @@ describe('BudgetService', () => {
     it('should throw error if category not found', async () => {
       (mockDb.query.categories.findFirst as any).mockResolvedValue(undefined);
 
-      await expect(budgetService.getCategoryRemaining('non-existent', 'user-1')).rejects.toThrow(
-        'Category not found'
-      );
+      await expect(
+        budgetService.getCategoryRemaining('non-existent', 'user-1', 'IDR')
+      ).rejects.toThrow('Category not found');
     });
   });
 });

@@ -89,15 +89,16 @@ export function createMockDatabase(): IDatabase {
 /**
  * Creates a mock category for testing
  */
-export function createMockCategory(overrides: Partial<Category> = {}): Category {
+export function createMockCategory(
+  overrides: Partial<Category> & { icon?: string; color?: string } = {}
+): Category {
   return {
     id: 'cat-1',
     user_id: 'user-1',
     name: 'Food & Groceries',
     type: 'expense',
-    percentage: '5.00',
-    budget_amount: '6000000',
-    currency: 'IDR',
+    icon: 'utensils',
+    color: 'bg-primary',
     is_active: true,
     created_at: new Date('2026-01-01'),
     updated_at: new Date('2026-01-01'),

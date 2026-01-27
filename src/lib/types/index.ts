@@ -8,8 +8,10 @@
  */
 
 // Categories
-export type { Category, CategoryOutput, CategoryBudgetStatus } from './category';
-export type { CategoryType, Currency } from './category';
+export type { Category, CategoryOutput, CategoryBudgetStatus, CategoryType } from './category';
+
+// Shared enums
+export type { Currency } from '@/lib/enums';
 
 // Transactions
 export type { Transaction, TransactionOutput, TransactionSummary } from './transaction';

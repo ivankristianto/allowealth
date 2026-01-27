@@ -6,6 +6,9 @@ import { logError } from '@/lib/utils';
 /**
  * GET /api/budget/category/:id/remaining
  * Get remaining budget for a specific category in current month
+ *
+ * Query params:
+ * - currency: 'IDR' | 'USD' (required) - Currency to use for budget lookup
  */
 export const GET: APIRoute = async (context) => {
   try {
@@ -16,7 +19,13 @@ export const GET: APIRoute = async (context) => {
       return errorResponse('Category ID is required', 400);
     }
 
-    const remaining = await budgetService.getCategoryRemaining(id, userId);
+    // Get currency from query param (required since categories no longer have currency)
+    const currency = context.url.searchParams.get('currency');
+    if (!currency || (currency !== 'IDR' && currency !== 'USD')) {
+      return errorResponse('Currency is required and must be IDR or USD', 400);
+    }
+
+    const remaining = await budgetService.getCategoryRemaining(id, userId, currency);
 
     return successResponse(remaining);
   } catch (error) {

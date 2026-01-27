@@ -60,11 +60,14 @@ let budgetInfo: {
 
 if (transaction.type === 'expense' && transaction.category_id) {
   try {
-    const budgetData = await budgetService.getCategoryRemaining(transaction.category_id, user.id);
+    // Use transaction currency for budget lookup since categories no longer have currency
+    const budgetData = await budgetService.getCategoryRemaining(
+      transaction.category_id,
+      user.id,
+      transaction.currency
+    );
     budgetRemaining = budgetData.remaining;
-    const categoryCurrency = categories.find((c) => c.id === transaction.category_id)?.currency;
-    budgetRemainingCurrency =
-      categoryCurrency === 'IDR' || categoryCurrency === 'USD' ? categoryCurrency : 'IDR';
+    budgetRemainingCurrency = transaction.currency;
     budgetInfo = {
       category_id: budgetData.category_id,
       remaining: budgetData.remaining,
