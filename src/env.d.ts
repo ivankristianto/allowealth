@@ -1,12 +1,14 @@
 /// <reference types="astro/client" />
 
 import type { User, Session } from '@/lib/auth/lucia';
+import type { UserSettings } from '@/services/user.service';
 
 declare global {
   namespace App {
     interface Locals {
       user?: User | null;
       session?: Session | null;
+      userSettings?: UserSettings;
       cspNonce?: string;
       csrfToken?: string;
     }

@@ -31,6 +31,10 @@ import type { CashFlowEntry, CashFlowIconName } from '@/lib/cash-flow';
 
 const currentPath = '/dashboard';
 const user = Astro.locals.user;
+const userSettings = Astro.locals.userSettings;
+
+// Get user's preferred currency (from ProtectedLayout)
+const primaryCurrency = userSettings?.primaryCurrency ?? 'IDR';
 
 // Get current month and year
 const now = new Date();
@@ -51,7 +55,7 @@ try {
     user.id,
     currentMonth,
     currentYear,
-    'IDR' // Primary currency
+    primaryCurrency
   );
 } catch (err) {
   console.error('Error loading dashboard data:', err);
@@ -109,6 +113,12 @@ const formatCashFlowDate = (date: Date): string =>
     year: 'numeric',
   });
 
+// Safe parseFloat helper to prevent NaN propagation
+const safeParseFloat = (value: string | undefined | null): number => {
+  const parsed = parseFloat(value ?? '0');
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
 // Filter out transfer transactions for cash flow widget (only supports income/expense)
 const cashFlowItems: CashFlowEntry[] =
   dashboardData?.recentTransactions
@@ -117,21 +127,19 @@ const cashFlowItems: CashFlowEntry[] =
     .map((tx) => ({
       name: tx.description?.trim() || tx.category.name,
       date: formatCashFlowDate(tx.transactionDate),
-      amount: Number.isNaN(parseFloat(tx.amount)) ? 0 : parseFloat(tx.amount),
+      amount: safeParseFloat(tx.amount),
       type: tx.type as 'income' | 'expense',
       icon: (tx.type === 'income' ? 'trending-up' : 'calendar') as CashFlowIconName,
       currency: tx.currency,
     })) || [];
 
-// Mock spending categories data (from POC design)
-// TODO: Replace with actual data from service when available
-const spendingCategories = [
-  { category: 'Housing', percentage: 45, color: '#ef4444' },
-  { category: 'Groceries', percentage: 22, color: '#3b82f6' },
-  { category: 'Dining', percentage: 12, color: '#f59e0b' },
-  { category: 'Transport', percentage: 8, color: '#8b5cf6' },
-  { category: 'Savings', percentage: 13, color: '#10b981' },
-];
+// Get spending categories from dashboard data (top 4 + Other)
+const spendingCategories =
+  dashboardData?.topCategoryExpenses.map((cat) => ({
+    category: cat.category,
+    percentage: cat.percentage,
+    color: cat.color,
+  })) ?? [];
 ---
 
 <ProtectedLayout title="Dashboard - Finance Manager" currentPath={currentPath}>
@@ -156,10 +164,11 @@ const spendingCategories = [
           {/* Spending Summary Card & Spending Analysis Chart (side by side) */}
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
             <SpendingCard
-              spent={parseFloat(dashboardData?.monthlySpent.total ?? '0')}
-              budget={parseFloat(dashboardData?.monthlySpent.budget ?? '0')}
-              currency="IDR"
-              remainingLabel={`Remaining for ${currentMonthName}`}
+              spent={safeParseFloat(dashboardData?.monthlySpent.total)}
+              budget={safeParseFloat(dashboardData?.monthlySpent.budget)}
+              income={safeParseFloat(dashboardData?.monthlyIncome.total)}
+              currency={primaryCurrency}
+              remainingLabel={`Budget Remaining for ${currentMonthName}`}
               alertMessage={
                 dashboardData?.monthlySpent.percentage &&
                 dashboardData.monthlySpent.percentage >= 80
@@ -170,8 +179,8 @@ const spendingCategories = [
             />
             <SpendingChart
               data={spendingCategories}
-              totalSpent={parseFloat(dashboardData?.monthlySpent.total ?? '0')}
-              totalBudget={parseFloat(dashboardData?.monthlySpent.budget ?? '0')}
+              totalSpent={safeParseFloat(dashboardData?.monthlySpent.total)}
+              totalBudget={safeParseFloat(dashboardData?.monthlySpent.budget)}
               loading={!dashboardData}
             />
           </div>
@@ -188,10 +197,10 @@ const spendingCategories = [
 
             <div class="space-y-6 sm:space-y-8">
               <NetWorthWidget
-                totalIDR={parseFloat(dashboardData?.totalAssets.idr ?? '0')}
-                totalUSD={parseFloat(dashboardData?.totalAssets.usd ?? '0')}
-                localAssets={parseFloat(dashboardData?.totalAssets.idr ?? '0')}
-                globalAssets={parseFloat(dashboardData?.totalAssets.usd ?? '0')}
+                totalIDR={safeParseFloat(dashboardData?.totalAssets.idr)}
+                totalUSD={safeParseFloat(dashboardData?.totalAssets.usd)}
+                localAssets={safeParseFloat(dashboardData?.totalAssets.idr)}
+                globalAssets={safeParseFloat(dashboardData?.totalAssets.usd)}
                 growthPercentage={0}
                 loading={!dashboardData}
               />

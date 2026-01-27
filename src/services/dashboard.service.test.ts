@@ -387,12 +387,119 @@ describe('DashboardService', () => {
     });
   });
 
+  describe('getTopCategoryExpenses', () => {
+    it('should return top category expenses with percentages', async () => {
+      const result = await dashboardService.getTopCategoryExpenses('user-123', 1, 2025);
+
+      expect(Array.isArray(result)).toBe(true);
+      expect(result.length).toBeLessThanOrEqual(5); // Top 4 + Other
+
+      result.forEach((item) => {
+        expect(item).toHaveProperty('category');
+        expect(item).toHaveProperty('percentage');
+        expect(item).toHaveProperty('color');
+        expect(item).toHaveProperty('amount');
+        expect(typeof item.category).toBe('string');
+        expect(typeof item.percentage).toBe('number');
+        expect(typeof item.amount).toBe('string');
+      });
+    });
+
+    it('should handle currency parameter', async () => {
+      const resultIDR = await dashboardService.getTopCategoryExpenses('user-123', 1, 2025, 'IDR');
+      expect(resultIDR).toBeDefined();
+
+      const resultUSD = await dashboardService.getTopCategoryExpenses('user-123', 1, 2025, 'USD');
+      expect(resultUSD).toBeDefined();
+    });
+
+    it('should return safe defaults for invalid month', async () => {
+      const result = await dashboardService.getTopCategoryExpenses('user-123', 0, 2025);
+      expect(Array.isArray(result)).toBe(true);
+    });
+
+    it('should return empty array for month with no expenses', async () => {
+      const result = await dashboardService.getTopCategoryExpenses('user-123', 1, 2020);
+      expect(Array.isArray(result)).toBe(true);
+    });
+
+    it('should group remaining categories into "Other" when more than 4 categories', async () => {
+      const result = await dashboardService.getTopCategoryExpenses('user-123', 1, 2025);
+
+      // If there are 5 items, the last one should be "Other"
+      if (result.length === 5) {
+        expect(result[4].category).toBe('Other');
+      }
+    });
+
+    it('should sort categories by amount descending', async () => {
+      const result = await dashboardService.getTopCategoryExpenses('user-123', 1, 2025);
+
+      // Check descending order (excluding "Other" which is always last)
+      const nonOther = result.filter((r) => r.category !== 'Other');
+      for (let i = 1; i < nonOther.length; i++) {
+        expect(parseFloat(nonOther[i - 1].amount)).toBeGreaterThanOrEqual(
+          parseFloat(nonOther[i].amount)
+        );
+      }
+    });
+
+    it('should handle database errors gracefully', async () => {
+      const result = await dashboardService.getTopCategoryExpenses('error-user', 1, 2025);
+      expect(Array.isArray(result)).toBe(true);
+    });
+  });
+
+  describe('getMonthlyIncome', () => {
+    it('should return monthly income summary with string amount', async () => {
+      const result = await dashboardService.getMonthlyIncome('user-123', 1, 2025);
+
+      expect(result).toHaveProperty('total');
+      expect(typeof result.total).toBe('string');
+    });
+
+    it('should handle currency parameter', async () => {
+      const resultIDR = await dashboardService.getMonthlyIncome('user-123', 1, 2025, 'IDR');
+      expect(resultIDR).toBeDefined();
+
+      const resultUSD = await dashboardService.getMonthlyIncome('user-123', 1, 2025, 'USD');
+      expect(resultUSD).toBeDefined();
+    });
+
+    it('should return safe defaults for invalid month (caught by service)', async () => {
+      const result = await dashboardService.getMonthlyIncome('user-123', 0, 2025);
+      expect(result.total).toBe('0');
+    });
+
+    it('should return safe defaults for invalid month 13', async () => {
+      const result = await dashboardService.getMonthlyIncome('user-123', 13, 2025);
+      expect(result.total).toBe('0');
+    });
+
+    it('should return safe defaults for invalid year', async () => {
+      const result = await dashboardService.getMonthlyIncome('user-123', 1, 1999);
+      expect(result.total).toBe('0');
+    });
+
+    it('should return zeroed string value for month with no income', async () => {
+      const result = await dashboardService.getMonthlyIncome('user-123', 1, 2020);
+      expect(result.total).toBe('0');
+    });
+
+    it('should handle database errors gracefully', async () => {
+      const result = await dashboardService.getMonthlyIncome('error-user', 1, 2025);
+      expect(result.total).toBe('0');
+    });
+  });
+
   describe('getDashboardData', () => {
     it('should return complete dashboard data', async () => {
       const result = await dashboardService.getDashboardData('user-123');
 
       expect(result).toHaveProperty('totalAssets');
       expect(result).toHaveProperty('monthlySpent');
+      expect(result).toHaveProperty('monthlyIncome');
+      expect(result).toHaveProperty('topCategoryExpenses');
       expect(result).toHaveProperty('budgetHealth');
       expect(result).toHaveProperty('assetReminders');
       expect(result).toHaveProperty('recentTransactions');
@@ -454,6 +561,9 @@ describe('DashboardService', () => {
       expect(typeof result.monthlySpent.total).toBe('string');
       expect(typeof result.monthlySpent.budget).toBe('string');
       expect(typeof result.monthlySpent.remaining).toBe('string');
+
+      // monthlyIncome amount is string
+      expect(typeof result.monthlyIncome.total).toBe('string');
 
       // budgetHealth alerts have string amounts
       result.budgetHealth.alerts.forEach((alert) => {

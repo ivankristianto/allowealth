@@ -32,6 +32,7 @@ import {
   decimalSum,
   decimalIsZero,
 } from '@/lib/utils/decimal';
+import { toHexColor } from '@/lib/utils/colorUtils';
 
 /**
  * Total assets by currency
@@ -51,6 +52,23 @@ export interface MonthlySpent {
   budget: string;
   percentage: number;
   remaining: string;
+}
+
+/**
+ * Monthly income summary
+ */
+export interface MonthlyIncome {
+  total: string;
+}
+
+/**
+ * Top category expense for spending chart
+ */
+export interface TopCategoryExpense {
+  category: string;
+  percentage: number;
+  color: string;
+  amount: string;
 }
 
 /**
@@ -95,6 +113,8 @@ export interface AssetReminder {
 export interface DashboardData {
   totalAssets: TotalAssets;
   monthlySpent: MonthlySpent;
+  monthlyIncome: MonthlyIncome;
+  topCategoryExpenses: TopCategoryExpense[];
   budgetHealth: BudgetHealth;
   assetReminders: AssetReminder[];
   recentTransactions: Array<{
@@ -283,6 +303,180 @@ export class DashboardService {
         percentage: 0,
         remaining: '0',
       };
+    }
+  }
+
+  /**
+   * Get total income for a specific month
+   *
+   * @param userId - User ID
+   * @param month - Month (1-12)
+   * @param year - Year
+   * @param currency - Currency to aggregate (default: IDR)
+   * @returns Monthly income summary
+   */
+  async getMonthlyIncome(
+    userId: string,
+    month: number,
+    year: number,
+    currency: 'IDR' | 'USD' = 'IDR'
+  ): Promise<MonthlyIncome> {
+    try {
+      // Validate inputs
+      if (month < 1 || month > 12) {
+        throw new Error(`Invalid month: ${month}. Must be between 1 and 12.`);
+      }
+      if (year < 2000 || year > 2100) {
+        throw new Error(`Invalid year: ${year}. Must be between 2000 and 2100.`);
+      }
+
+      // Check if db methods exist (for unit tests with mock db)
+      if (typeof (this.db as any).select !== 'function') {
+        throw new Error('Database select not available');
+      }
+
+      // Calculate date range for the month
+      const startDate = new Date(year, month - 1, 1);
+      const endDate = new Date(year, month, 0, 23, 59, 59);
+
+      // Get total income for the month
+      const [incomeResult] = await (this.db as any)
+        .select({
+          total: sql<string>`COALESCE(SUM(CAST(${transactions.amount} AS REAL)), 0)`,
+        })
+        .from(transactions)
+        .where(
+          and(
+            eq(transactions.user_id, userId),
+            eq(transactions.type, 'income'),
+            eq(transactions.currency, currency),
+            gte(transactions.transaction_date, startDate),
+            lte(transactions.transaction_date, endDate),
+            sql`${transactions.deleted_at} IS NULL`
+          )
+        );
+
+      const totalIncome = incomeResult?.total || '0';
+
+      return {
+        total: totalIncome,
+      };
+    } catch (error) {
+      console.error('Error getting monthly income:', error);
+      // Return zeroed values on error
+      return {
+        total: '0',
+      };
+    }
+  }
+
+  /**
+   * Get top category expenses for spending chart
+   *
+   * Returns top 4 categories by spending amount, with remaining categories
+   * grouped into "Other". Includes category colors for chart display.
+   *
+   * @param userId - User ID
+   * @param month - Month (1-12)
+   * @param year - Year
+   * @param currency - Currency to aggregate (default: IDR)
+   * @returns Array of top category expenses (max 5: top 4 + Other)
+   */
+  async getTopCategoryExpenses(
+    userId: string,
+    month: number,
+    year: number,
+    currency: 'IDR' | 'USD' = 'IDR'
+  ): Promise<TopCategoryExpense[]> {
+    try {
+      // Validate inputs
+      if (month < 1 || month > 12) {
+        throw new Error(`Invalid month: ${month}. Must be between 1 and 12.`);
+      }
+      if (year < 2000 || year > 2100) {
+        throw new Error(`Invalid year: ${year}. Must be between 2000 and 2100.`);
+      }
+
+      // Check if db methods exist (for unit tests with mock db)
+      if (typeof (this.db as any).select !== 'function') {
+        throw new Error('Database select not available');
+      }
+
+      // Calculate date range for the month
+      const startDate = new Date(year, month - 1, 1);
+      const endDate = new Date(year, month, 0, 23, 59, 59);
+
+      // Get expenses grouped by category
+      const categoryExpenses = await (this.db as any)
+        .select({
+          category_id: transactions.category_id,
+          category_name: categories.name,
+          category_color: categories.color,
+          total: sql<string>`COALESCE(SUM(CAST(${transactions.amount} AS REAL)), 0)`,
+        })
+        .from(transactions)
+        .innerJoin(categories, eq(transactions.category_id, categories.id))
+        .where(
+          and(
+            eq(transactions.user_id, userId),
+            eq(transactions.type, 'expense'),
+            eq(transactions.currency, currency),
+            gte(transactions.transaction_date, startDate),
+            lte(transactions.transaction_date, endDate),
+            sql`${transactions.deleted_at} IS NULL`
+          )
+        )
+        .groupBy(transactions.category_id, categories.name, categories.color)
+        .orderBy(sql`SUM(CAST(${transactions.amount} AS REAL)) DESC`);
+
+      if (categoryExpenses.length === 0) {
+        return [];
+      }
+
+      // Calculate total spent for percentage calculation
+      const totalSpent = categoryExpenses.reduce(
+        (sum: number, cat: any) => sum + parseFloat(cat.total || '0'),
+        0
+      );
+
+      if (totalSpent === 0) {
+        return [];
+      }
+
+      // Default colors for fallback (used when category has no color or invalid color)
+      const defaultColors = ['#ef4444', '#3b82f6', '#f59e0b', '#8b5cf6', '#10b981'];
+
+      // Take top 4 categories
+      const top4 = categoryExpenses.slice(0, 4);
+      const result: TopCategoryExpense[] = top4.map((cat: any, index: number) => ({
+        category: cat.category_name,
+        percentage: Math.round((parseFloat(cat.total) / totalSpent) * 100),
+        // Convert DaisyUI class names (e.g., 'bg-neutral') to hex colors
+        color: toHexColor(cat.category_color, defaultColors[index % defaultColors.length]),
+        amount: cat.total,
+      }));
+
+      // If there are more than 4 categories, group the rest as "Other"
+      if (categoryExpenses.length > 4) {
+        const otherCategories = categoryExpenses.slice(4);
+        const otherTotal = otherCategories.reduce(
+          (sum: number, cat: any) => sum + parseFloat(cat.total || '0'),
+          0
+        );
+        const otherPercentage = Math.round((otherTotal / totalSpent) * 100);
+
+        result.push({
+          category: 'Other',
+          percentage: otherPercentage,
+          color: '#6b7280', // gray for Other
+          amount: otherTotal.toString(),
+        });
+      }
+
+      return result;
+    } catch (error) {
+      console.error('Error getting top category expenses:', error);
+      return [];
     }
   }
 
@@ -553,18 +747,29 @@ export class DashboardService {
     const currentYear = year ?? now.getFullYear();
 
     // Get all dashboard data in parallel
-    const [totalAssets, monthlySpent, budgetHealth, assetReminders, recentTransactions] =
-      await Promise.all([
-        this.getTotalAssets(userId, currency),
-        this.getMonthlySpent(userId, currentMonth, currentYear, currency),
-        this.getBudgetHealth(userId, currentMonth, currentYear, currency),
-        this.getAssetUpdateReminders(userId),
-        this.getRecentTransactions(userId, 10),
-      ]);
+    const [
+      totalAssets,
+      monthlySpent,
+      monthlyIncome,
+      topCategoryExpenses,
+      budgetHealth,
+      assetReminders,
+      recentTransactions,
+    ] = await Promise.all([
+      this.getTotalAssets(userId, currency),
+      this.getMonthlySpent(userId, currentMonth, currentYear, currency),
+      this.getMonthlyIncome(userId, currentMonth, currentYear, currency),
+      this.getTopCategoryExpenses(userId, currentMonth, currentYear, currency),
+      this.getBudgetHealth(userId, currentMonth, currentYear, currency),
+      this.getAssetUpdateReminders(userId),
+      this.getRecentTransactions(userId, 10),
+    ]);
 
     return {
       totalAssets,
       monthlySpent,
+      monthlyIncome,
+      topCategoryExpenses,
       budgetHealth,
       assetReminders,
       recentTransactions,

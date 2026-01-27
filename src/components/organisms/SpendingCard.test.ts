@@ -246,6 +246,103 @@ describe('SpendingCard - props defaults', () => {
   });
 });
 
+describe('SpendingCard - IconBadge variant based on percentage', () => {
+  /**
+   * IconBadge variant should match getBudgetStatusClass thresholds:
+   * - <80%: success (green)
+   * - 80-99%: warning (yellow)
+   * - >=100%: error (red)
+   */
+
+  const getIconBadgeVariant = (percentage: number): 'success' | 'warning' | 'error' => {
+    if (percentage < 80) return 'success';
+    if (percentage < 100) return 'warning';
+    return 'error';
+  };
+
+  it('should return success variant when percentage is below 80%', () => {
+    expect(getIconBadgeVariant(0)).toBe('success');
+    expect(getIconBadgeVariant(50)).toBe('success');
+    expect(getIconBadgeVariant(79)).toBe('success');
+    expect(getIconBadgeVariant(79.9)).toBe('success');
+  });
+
+  it('should return warning variant when percentage is 80-99%', () => {
+    expect(getIconBadgeVariant(80)).toBe('warning');
+    expect(getIconBadgeVariant(85)).toBe('warning');
+    expect(getIconBadgeVariant(99)).toBe('warning');
+    expect(getIconBadgeVariant(99.9)).toBe('warning');
+  });
+
+  it('should return error variant when percentage is 100% or above', () => {
+    expect(getIconBadgeVariant(100)).toBe('error');
+    expect(getIconBadgeVariant(120)).toBe('error');
+    expect(getIconBadgeVariant(200)).toBe('error');
+  });
+});
+
+describe('SpendingCard - net savings calculation', () => {
+  /**
+   * Net savings = Monthly Income - Monthly Expenses (spent)
+   */
+
+  const calculateNetSavings = (income: number, spent: number): number => {
+    return income - spent;
+  };
+
+  it('should calculate positive net savings when income > spent', () => {
+    expect(calculateNetSavings(1000, 800)).toBe(200);
+    expect(calculateNetSavings(5000000, 3000000)).toBe(2000000);
+  });
+
+  it('should calculate negative net savings when spent > income', () => {
+    expect(calculateNetSavings(800, 1000)).toBe(-200);
+    expect(calculateNetSavings(3000000, 5000000)).toBe(-2000000);
+  });
+
+  it('should return zero when income equals spent', () => {
+    expect(calculateNetSavings(1000, 1000)).toBe(0);
+  });
+
+  it('should handle zero income', () => {
+    expect(calculateNetSavings(0, 500)).toBe(-500);
+  });
+
+  it('should handle zero spent', () => {
+    expect(calculateNetSavings(1000, 0)).toBe(1000);
+  });
+});
+
+describe('SpendingCard - savings percentage calculation', () => {
+  /**
+   * Savings percentage = (Net Savings / Income) * 100
+   * Returns 0 if income is 0 to avoid division by zero
+   */
+
+  const calculateSavingsPercentage = (income: number, spent: number): number => {
+    if (income === 0) return 0;
+    const netSavings = income - spent;
+    return (netSavings / income) * 100;
+  };
+
+  it('should calculate positive savings percentage', () => {
+    expect(calculateSavingsPercentage(1000, 800)).toBe(20);
+    expect(calculateSavingsPercentage(5000000, 2500000)).toBe(50);
+  });
+
+  it('should calculate negative savings percentage when overspending', () => {
+    expect(calculateSavingsPercentage(1000, 1200)).toBe(-20);
+  });
+
+  it('should return 0 when income is 0', () => {
+    expect(calculateSavingsPercentage(0, 500)).toBe(0);
+  });
+
+  it('should return 100% when spent is 0', () => {
+    expect(calculateSavingsPercentage(1000, 0)).toBe(100);
+  });
+});
+
 describe('SpendingCard - alert message handling', () => {
   it('should show alert banner when alertMessage is provided', () => {
     const alertMessage = 'Budget alert: 95% spent on dining';

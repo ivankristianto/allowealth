@@ -21,9 +21,9 @@ const { size = 'md', color = 'neutral', className = '' } = Astro.props;
 // Size classes: small (0.625rem/10px), medium (0.75rem/12px), large (0.875rem/14px)
 // Note: 10px is below WCAG AA minimum for body text, use only for decorative labels
 const sizeClasses: Record<string, string> = {
-  sm: 'text-[10px]', // Use sparingly, only for decorative elements
-  md: 'text-xs', // 0.75rem (12px) - minimum accessible size
-  lg: 'text-sm', // 0.875rem (14px)
+  sm: 'text-xs', // 0.75rem (12px) - minimum accessible size
+  md: 'text-sm', // 0.875rem (14px)
+  lg: 'text-lg', // 1rem (16px)
 };
 
 // Color classes using DaisyUI semantic colors for theme compatibility

@@ -230,11 +230,10 @@ body {
 }
 
 /* Typography utilities - premium label styles */
-/* Note: For decorative/supplementary labels only. For standalone labels, ensure minimum 12px (0.75rem) for WCAG AA compliance */
 .label-premium {
   text-transform: uppercase;
   letter-spacing: var(--tracking-widest);
-  font-size: 0.625rem; /* 10px */
+  font-size: 0.75rem; /* 12px */
 }
 
 /* Active navigation gradient - using pattern token */
