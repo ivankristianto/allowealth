@@ -63,6 +63,7 @@ export class BudgetService {
 
   /**
    * Get budget overview for a specific month
+   * Queries the budgets table (not categories) for budget amounts
    */
   async getMonthlyOverview(
     user_id: string,
@@ -82,15 +83,23 @@ export class BudgetService {
     const startDate = new Date(year, month - 1, 1);
     const endDate = new Date(year, month, 0, 23, 59, 59);
 
-    // Get all expense categories for user with given currency
-    const userCategories = await this.db.query.categories.findMany({
+    // Get all budgets for this month/year with category info
+    const monthBudgets = await this.db.query.budgets.findMany({
       where: and(
-        eq(categories.user_id, user_id),
-        eq(categories.type, 'expense'),
-        eq(categories.currency, currency),
-        eq(categories.is_active, true)
+        eq(budgets.user_id, user_id),
+        eq(budgets.month, month),
+        eq(budgets.year, year),
+        eq(budgets.currency, currency)
       ),
+      with: {
+        category: true,
+      },
     });
+
+    // Filter to only expense categories that are active
+    const expenseBudgets = monthBudgets.filter(
+      (b) => b.category?.type === 'expense' && b.category?.is_active === true
+    );
 
     // Get transactions for the month grouped by category
     const monthTransactions = await (this.db as any)
@@ -117,23 +126,23 @@ export class BudgetService {
       spentByCategory.set(tx.category_id, tx.total || '0');
     }
 
-    // Calculate budget overview for each category
-    // First, calculate total budget for percentage calculation
-    const totalBudgetAmount = userCategories.reduce(
-      (sum, cat) => sum + parseFloat(cat.budget_amount || '0'),
+    // Calculate total budget for percentage calculation
+    const totalBudgetAmount = expenseBudgets.reduce(
+      (sum, b) => sum + parseFloat(b.budget_amount || '0'),
       0
     );
 
-    const categoryOverviews: BudgetOverview[] = userCategories.map((category) => {
-      const budgetAmount = category.budget_amount;
-      const spentAmount = spentByCategory.get(category.id) || '0';
+    // Build category overviews from budgets
+    const categoryOverviews: BudgetOverview[] = expenseBudgets.map((budget) => {
+      const budgetAmount = budget.budget_amount;
+      const spentAmount = spentByCategory.get(budget.category_id) || '0';
       const balance = decimalSubtract(budgetAmount, spentAmount);
       const percentageUsed = !decimalIsZero(budgetAmount)
         ? parseFloat(decimalDivide(decimalMultiply(spentAmount, 100), budgetAmount))
         : 0;
 
       // Calculate percentage dynamically from budget amount
-      // percentage = (category_budget_amount / total_budget_amount) * 100
+      // percentage = (budget_amount / total_budget_amount) * 100
       const budgetAmountNum = parseFloat(budgetAmount || '0');
       const calculatedPercentage =
         totalBudgetAmount > 0 ? (budgetAmountNum / totalBudgetAmount) * 100 : 0;
@@ -146,9 +155,9 @@ export class BudgetService {
       }
 
       return {
-        category_id: category.id,
-        category_name: category.name,
-        category_type: category.type,
+        category_id: budget.category_id,
+        category_name: budget.category?.name ?? 'Unknown',
+        category_type: (budget.category?.type ?? 'expense') as 'expense' | 'income',
         percentage: calculatedPercentage.toFixed(2),
         budget_amount: budgetAmount,
         spent_amount: spentAmount,
@@ -275,6 +284,7 @@ export class BudgetService {
 
   /**
    * Get budget remaining for a category in current month
+   * Queries the budgets table for budget_amount
    */
   async getCategoryRemaining(category_id: string, user_id: string) {
     const category = await this.db.query.categories.findFirst({
@@ -286,8 +296,25 @@ export class BudgetService {
     }
 
     const now = new Date();
-    const startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-    const endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+    const currentMonth = now.getMonth() + 1;
+    const currentYear = now.getFullYear();
+    const startDate = new Date(currentYear, now.getMonth(), 1);
+    const endDate = new Date(currentYear, now.getMonth() + 1, 0, 23, 59, 59);
+
+    // Get budget for current month from budgets table
+    // Use category's currency to ensure correct budget is retrieved
+    const budget = await this.db.query.budgets.findFirst({
+      where: and(
+        eq(budgets.category_id, category_id),
+        eq(budgets.user_id, user_id),
+        eq(budgets.month, currentMonth),
+        eq(budgets.year, currentYear),
+        eq(budgets.currency, category.currency)
+      ),
+    });
+
+    // If no budget set for this month, return zero budget
+    const budgetAmount = budget?.budget_amount ?? '0';
 
     const [result] = await (this.db as any)
       .select({
@@ -305,7 +332,6 @@ export class BudgetService {
         )
       );
 
-    const budgetAmount = category.budget_amount;
     const spentAmount = result?.total || '0';
     const remaining = decimalSubtract(budgetAmount, spentAmount);
     const percentageUsed = !decimalIsZero(budgetAmount)

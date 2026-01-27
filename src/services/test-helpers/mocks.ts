@@ -9,6 +9,7 @@ import { mock } from 'bun:test';
 import type { IDatabase } from '@/db';
 import type { Category, Transaction } from '@/lib/types';
 import type { Asset } from '@/lib/types/asset';
+import type { Budget, BudgetWithCategory } from '@/lib/types/budget';
 
 /**
  * Creates a mock database object for testing services
@@ -105,6 +106,53 @@ export function createMockCategory(overrides: Partial<Category> = {}): Category 
 }
 
 /**
+ * Creates a mock budget for testing
+ */
+export function createMockBudget(overrides: Partial<Budget> = {}): Budget {
+  return {
+    id: 'budget-1',
+    user_id: 'user-1',
+    category_id: 'cat-1',
+    month: 1,
+    year: 2026,
+    budget_amount: '6000000',
+    currency: 'IDR',
+    is_closed: false,
+    notes: null,
+    created_at: new Date('2026-01-01'),
+    updated_at: new Date('2026-01-01'),
+    ...overrides,
+  };
+}
+
+/**
+ * Creates a mock budget with category relation for testing
+ * Note: icon and color can be passed in categoryOverrides even though they're not in Category type
+ */
+export function createMockBudgetWithCategory(
+  budgetOverrides: Partial<Budget> = {},
+  categoryOverrides: Partial<Category> & { icon?: string; color?: string } = {}
+): BudgetWithCategory {
+  const category = createMockCategory(categoryOverrides);
+  const budget = createMockBudget({
+    category_id: category.id,
+    ...budgetOverrides,
+  });
+
+  return {
+    ...budget,
+    category: {
+      id: category.id,
+      name: category.name,
+      type: category.type,
+      icon: categoryOverrides.icon ?? 'tag',
+      color: categoryOverrides.color ?? 'bg-neutral',
+      is_active: category.is_active,
+    },
+  };
+}
+
+/**
  * Creates a mock asset for testing
  */
 export function createMockAsset(overrides: Partial<Asset> = {}): Asset {
@@ -176,6 +224,8 @@ export function resetMockDatabase(mockDb: IDatabase): void {
   (mockDb.query.transactions.findMany as any).mockClear();
   (mockDb.query.categories.findFirst as any).mockClear();
   (mockDb.query.categories.findMany as any).mockClear();
+  (mockDb.query.budgets.findFirst as any).mockClear();
+  (mockDb.query.budgets.findMany as any).mockClear();
   (mockDb.query.assets.findFirst as any).mockClear();
   (mockDb.query.assets.findMany as any).mockClear();
   (mockDb.update as any).mockClear();

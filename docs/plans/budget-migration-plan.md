@@ -132,9 +132,20 @@ const monthBudgets = await this.db
 
 #### Progress Checklist
 
-- [ ] Refactor `getMonthlyOverview()` to query budgets table
-- [ ] Refactor `getCategoryRemaining()` to query budgets table
-- [ ] Verify `getBudgetHistory()` works with new queries
+- [x] Refactor `getMonthlyOverview()` to query budgets table
+- [x] Refactor `getCategoryRemaining()` to query budgets table
+- [x] Verify `getBudgetHistory()` works with new queries
+- [x] Update test mocks to use budgets table
+- [x] Add tests for inactive/income category filtering
+
+**Completed:** 2026-01-27
+
+**Key changes:**
+
+- `getMonthlyOverview()` now queries `budgets` table with category relation
+- `getCategoryRemaining()` queries budgets table using category's currency
+- Added `createMockBudget()` and `createMockBudgetWithCategory()` test helpers
+- Added test cases for inactive category and income category exclusion
 
 ---
 
