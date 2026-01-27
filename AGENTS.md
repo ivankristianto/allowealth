@@ -146,7 +146,7 @@ bun run typecheck         # TypeScript (blocking)
 - **State Management:** Nano Stores (client-side reactive state)
 - **Animations:** Motion (client-side animations)
 - **Storybook:** 8.x with HTML framework
-- **Database:** Drizzle ORM + SQLite (dev) / MySQL (prod)
+- **Database:** Drizzle ORM + SQLite (dev) / PostgreSQL/Supabase (prod)
 - **Auth:** Lucia Auth
 
 ## Routes

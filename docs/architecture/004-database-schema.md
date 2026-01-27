@@ -1,6 +1,6 @@
 # Database Schema Architecture
 
-This document describes the database schema design for the personal finance application. We use **Drizzle ORM** with **SQLite** (development) and **MySQL** (production) with a focus on data integrity, precision, and multi-tenancy.
+This document describes the database schema design for the personal finance application. We use **Drizzle ORM** with **SQLite** (development) and **PostgreSQL/Supabase** (production) with a focus on data integrity, precision, and multi-tenancy.
 
 ## Core Principles
 

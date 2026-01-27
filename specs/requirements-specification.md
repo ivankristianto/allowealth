@@ -1163,7 +1163,7 @@ Errors: 1 (invalid category)
 **Backend:**
 
 - Runtime: Bun 1.x
-- Database: SQLite (development) / MySQL 8.x (production)
+- Database: SQLite (development) / PostgreSQL/Supabase (production)
 - ORM: Drizzle ORM
 - Authentication: Lucia Auth
 - Password Hashing: Argon2id
@@ -1181,7 +1181,7 @@ Errors: 1 (invalid category)
 **Deployment:**
 
 - Hosting: Self-hosted (VPS/Docker)
-- Database: MySQL on same server or managed service
+- Database: PostgreSQL (self-hosted) or Supabase (managed)
 - Reverse Proxy: Nginx or Caddy
 - SSL: Let's Encrypt
 
@@ -1223,7 +1223,7 @@ Errors: 1 (invalid category)
 **Database Strategy:**
 
 - Development: SQLite (single file, no setup)
-- Production: MySQL 8.x (better performance, scalability)
+- Production: PostgreSQL/Supabase (better performance, scalability)
 - Use Drizzle ORM for database-agnostic queries
 - Environment variable switches between databases
 
@@ -1361,7 +1361,7 @@ See detailed database schema in [Data Models](#data-models) section below.
 #### Users Table
 
 ```typescript
-export const users = mysqlTable('users', {
+export const users = pgTable('users', {
   id: varchar('id', { length: 36 }).primaryKey(),
   email: varchar('email', { length: 255 }).notNull().unique(),
   password_hash: varchar('password_hash', { length: 255 }).notNull(),
@@ -1374,11 +1374,11 @@ export const users = mysqlTable('users', {
 #### User Settings Table
 
 ```typescript
-export const userSettings = mysqlTable('user_settings', {
+export const userSettings = pgTable('user_settings', {
   user_id: varchar('user_id', { length: 36 })
     .primaryKey()
     .references(() => users.id, { onDelete: 'cascade' }),
-  primary_currency: mysqlEnum('primary_currency', ['IDR', 'USD']).default('IDR').notNull(),
+  primary_currency: pgEnum('primary_currency', ['IDR', 'USD']).default('IDR').notNull(),
   show_converted_totals: boolean('show_converted_totals').default(true).notNull(),
   show_individual_currencies: boolean('show_individual_currencies').default(true).notNull(),
   created_at: timestamp('created_at').defaultNow().notNull(),
@@ -1389,7 +1389,7 @@ export const userSettings = mysqlTable('user_settings', {
 #### Categories Table
 
 ```typescript
-export const categories = mysqlTable(
+export const categories = pgTable(
   'categories',
   {
     id: varchar('id', { length: 36 }).primaryKey(),
@@ -1397,10 +1397,10 @@ export const categories = mysqlTable(
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
     name: varchar('name', { length: 255 }).notNull(),
-    type: mysqlEnum('type', ['expense', 'income']).notNull(),
+    type: pgEnum('type', ['expense', 'income']).notNull(),
     percentage: decimal('percentage', { precision: 5, scale: 2 }).default('0').notNull(),
     budget_amount: decimal('budget_amount', { precision: 15, scale: 2 }).default('0').notNull(),
-    currency: mysqlEnum('currency', ['IDR', 'USD']).notNull(),
+    currency: pgEnum('currency', ['IDR', 'USD']).notNull(),
     is_active: boolean('is_active').default(true).notNull(),
     created_at: timestamp('created_at').defaultNow().notNull(),
     updated_at: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
@@ -1415,7 +1415,7 @@ export const categories = mysqlTable(
 #### Payment Methods Table
 
 ```typescript
-export const paymentMethods = mysqlTable(
+export const paymentMethods = pgTable(
   'payment_methods',
   {
     id: varchar('id', { length: 36 }).primaryKey(),
@@ -1423,7 +1423,7 @@ export const paymentMethods = mysqlTable(
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
     name: varchar('name', { length: 255 }).notNull(),
-    type: mysqlEnum('type', [
+    type: pgEnum('type', [
       'cash',
       'credit_card',
       'debit_card',
@@ -1443,7 +1443,7 @@ export const paymentMethods = mysqlTable(
 #### Transactions Table
 
 ```typescript
-export const transactions = mysqlTable(
+export const transactions = pgTable(
   'transactions',
   {
     id: varchar('id', { length: 36 }).primaryKey(),
@@ -1456,9 +1456,9 @@ export const transactions = mysqlTable(
     payment_method_id: varchar('payment_method_id', { length: 36 })
       .notNull()
       .references(() => paymentMethods.id),
-    type: mysqlEnum('type', ['expense', 'income']).notNull(),
+    type: pgEnum('type', ['expense', 'income']).notNull(),
     amount: decimal('amount', { precision: 15, scale: 2 }).notNull(),
-    currency: mysqlEnum('currency', ['IDR', 'USD']).notNull(),
+    currency: pgEnum('currency', ['IDR', 'USD']).notNull(),
     description: text('description'),
     transaction_date: date('transaction_date').notNull(),
     deleted_at: timestamp('deleted_at'),
@@ -1477,7 +1477,7 @@ export const transactions = mysqlTable(
 #### Assets Table
 
 ```typescript
-export const assets = mysqlTable(
+export const assets = pgTable(
   'assets',
   {
     id: varchar('id', { length: 36 }).primaryKey(),
@@ -1485,7 +1485,7 @@ export const assets = mysqlTable(
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
     name: varchar('name', { length: 255 }).notNull(),
-    type: mysqlEnum('type', [
+    type: pgEnum('type', [
       'bank_account',
       'mutual_fund',
       'bond',
@@ -1494,7 +1494,7 @@ export const assets = mysqlTable(
       'other',
     ]).notNull(),
     balance: decimal('balance', { precision: 15, scale: 2 }).notNull(),
-    currency: mysqlEnum('currency', ['IDR', 'USD']).notNull(),
+    currency: pgEnum('currency', ['IDR', 'USD']).notNull(),
     last_updated: timestamp('last_updated').defaultNow().notNull(),
     deleted_at: timestamp('deleted_at'),
     created_at: timestamp('created_at').defaultNow().notNull(),
@@ -1510,7 +1510,7 @@ export const assets = mysqlTable(
 #### Asset History Table
 
 ```typescript
-export const assetHistory = mysqlTable(
+export const assetHistory = pgTable(
   'asset_history',
   {
     id: varchar('id', { length: 36 }).primaryKey(),
@@ -1531,7 +1531,7 @@ export const assetHistory = mysqlTable(
 #### Asset Update Reminders Table
 
 ```typescript
-export const assetUpdateReminders = mysqlTable(
+export const assetUpdateReminders = pgTable(
   'asset_update_reminders',
   {
     id: varchar('id', { length: 36 }).primaryKey(),
@@ -1541,9 +1541,7 @@ export const assetUpdateReminders = mysqlTable(
     asset_id: varchar('asset_id', { length: 36 })
       .notNull()
       .references(() => assets.id, { onDelete: 'cascade' }),
-    frequency: mysqlEnum('frequency', ['weekly', 'monthly', 'quarterly'])
-      .default('monthly')
-      .notNull(),
+    frequency: pgEnum('frequency', ['weekly', 'monthly', 'quarterly']).default('monthly').notNull(),
     last_updated: timestamp('last_updated'),
     next_reminder: date('next_reminder'),
     is_dismissed: boolean('is_dismissed').default(false).notNull(),
@@ -1560,7 +1558,7 @@ export const assetUpdateReminders = mysqlTable(
 #### Asset Snapshots Table
 
 ```typescript
-export const assetSnapshots = mysqlTable(
+export const assetSnapshots = pgTable(
   'asset_snapshots',
   {
     id: varchar('id', { length: 36 }).primaryKey(),
@@ -1583,7 +1581,7 @@ export const assetSnapshots = mysqlTable(
 #### Asset Snapshot Items Table
 
 ```typescript
-export const assetSnapshotItems = mysqlTable(
+export const assetSnapshotItems = pgTable(
   'asset_snapshot_items',
   {
     id: varchar('id', { length: 36 }).primaryKey(),
@@ -1594,7 +1592,7 @@ export const assetSnapshotItems = mysqlTable(
       .notNull()
       .references(() => assets.id),
     balance: decimal('balance', { precision: 15, scale: 2 }).notNull(),
-    currency: mysqlEnum('currency', ['IDR', 'USD']).notNull(),
+    currency: pgEnum('currency', ['IDR', 'USD']).notNull(),
   },
   (table) => ({
     snapshotIdIdx: index('snapshot_id_idx').on(table.snapshot_id),
@@ -1605,12 +1603,12 @@ export const assetSnapshotItems = mysqlTable(
 #### Exchange Rates Table
 
 ```typescript
-export const exchangeRates = mysqlTable(
+export const exchangeRates = pgTable(
   'exchange_rates',
   {
     id: varchar('id', { length: 36 }).primaryKey(),
-    from_currency: mysqlEnum('from_currency', ['IDR', 'USD']).notNull(),
-    to_currency: mysqlEnum('to_currency', ['IDR', 'USD']).notNull(),
+    from_currency: pgEnum('from_currency', ['IDR', 'USD']).notNull(),
+    to_currency: pgEnum('to_currency', ['IDR', 'USD']).notNull(),
     rate: decimal('rate', { precision: 15, scale: 4 }).notNull(),
     effective_date: date('effective_date').notNull(),
     created_at: timestamp('created_at').defaultNow().notNull(),
@@ -1629,7 +1627,7 @@ export const exchangeRates = mysqlTable(
 #### Sessions Table (for Lucia Auth)
 
 ```typescript
-export const sessions = mysqlTable(
+export const sessions = pgTable(
   'sessions',
   {
     id: varchar('id', { length: 255 }).primaryKey(),
