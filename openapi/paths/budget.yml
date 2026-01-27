@@ -4,7 +4,12 @@ paths:
     get:
       tags: [Budget]
       summary: Get budget overview
-      description: Retrieve budget overview for a specific month
+      description: |
+        Retrieve budget overview for a specific month.
+
+        Supports both JSON (default) and HTML response formats for the Interactive Page Architecture pattern.
+        When requesting HTML (`_render=html`), the response contains server-rendered HTML fragments
+        that can be injected directly into the DOM.
       security:
         - sessionAuth: []
       parameters:
@@ -29,6 +34,26 @@ paths:
             type: string
             enum: [IDR, USD]
             default: IDR
+        - name: _render
+          in: query
+          description: Response format (json or html)
+          schema:
+            type: string
+            enum: [json, html]
+            default: json
+        - name: _partial
+          in: query
+          description: |
+            Which partial(s) to render when using HTML format.
+            Only applicable when _render=html.
+            - summary: Budget summary section
+            - cards: Budget cards grid
+            - advice: AI advice banner
+            - all: All partials (default)
+          schema:
+            type: string
+            enum: [summary, cards, advice, all]
+            default: all
       responses:
         '200':
           description: Successful response
@@ -36,6 +61,21 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/BudgetOverviewResponse.yml#/BudgetOverviewResponse'
+            text/html:
+              schema:
+                type: string
+                description: |
+                  Server-rendered HTML fragments with PARTIAL markers.
+                  Each partial is prefixed with a comment marker (e.g., `<!-- PARTIAL:summary -->`).
+                example: |
+                  <!-- PARTIAL:summary -->
+                  <section class="bg-base-100 rounded-card...">...</section>
+
+                  <!-- PARTIAL:cards -->
+                  <div class="grid grid-cols-1 md:grid-cols-2...">...</div>
+
+                  <!-- PARTIAL:advice -->
+                  <aside class="bg-info/5 border...">...</aside>
         '400':
           $ref: '../responses/common.yml#/BadRequest'
         '401':

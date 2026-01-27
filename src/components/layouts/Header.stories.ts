@@ -168,7 +168,7 @@ const createHeader = (args: {
 
     const itemButton = document.createElement('button');
     itemButton.className = 'flex items-center gap-2 w-full text-left hover:bg-base-200 rounded-btn';
-    itemButton.setAttribute('data-currency', item.value);
+    itemButton.setAttribute('data-currency-selector', item.value);
     itemButton.type = 'button';
 
     const itemLabel = document.createElement('span');

@@ -148,13 +148,22 @@ const progressBarId = `progress-bar-${Math.random().toString(36).slice(2, 11)}`;
     });
   }
 
-  // Initialize on DOM ready
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initProgressBar);
-  } else {
-    initProgressBar();
-  }
+  // Guard against duplicate event listener registration in SPA sessions
+  const INITIALIZED_KEY = '__progressBarInitialized';
+  if (!(window as unknown as Record<string, boolean>)[INITIALIZED_KEY]) {
+    (window as unknown as Record<string, boolean>)[INITIALIZED_KEY] = true;
 
-  // Re-initialize on Astro page transitions
-  document.addEventListener('astro:after-swap', initProgressBar);
+    // Initialize on DOM ready
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initProgressBar);
+    } else {
+      initProgressBar();
+    }
+
+    // Re-initialize on Astro page transitions
+    document.addEventListener('astro:after-swap', initProgressBar);
+
+    // Re-initialize when budget content is dynamically updated (Interactive Page Architecture)
+    document.addEventListener('budget-content-updated', initProgressBar);
+  }
 </script>

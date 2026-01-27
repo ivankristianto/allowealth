@@ -1,0 +1,43 @@
+---
+/**
+ * BudgetSummaryPartial
+ *
+ * Server-rendered partial for budget summary section.
+ * Used by both initial page render and API HTML responses.
+ *
+ * Part of the Interactive Page Architecture pattern.
+ * See: docs/architecture/002-interactive-pages.md
+ *
+ * @param {number} totalAllocated - Total monthly budget pot
+ * @param {number} totalSpent - Aggregate spending amount
+ * @param {Array} distribution - Category distribution for allocation bar
+ * @param {string} currency - Currency code (IDR or USD)
+ */
+
+import BudgetSummary from '@components/organisms/BudgetSummary.astro';
+import type { AllocationDistribution } from '@/lib/utils/budget';
+
+// Re-export the distribution item interface from the organism for external use
+export interface DistributionItem {
+  name: string;
+  weight: number;
+  color: string;
+}
+
+export interface Props {
+  totalAllocated: number;
+  totalSpent: number;
+  distribution: DistributionItem[] | AllocationDistribution[];
+  currency: 'IDR' | 'USD';
+}
+
+const { totalAllocated, totalSpent, distribution, currency } = Astro.props;
+---
+
+<BudgetSummary
+  totalAllocated={totalAllocated}
+  totalSpent={totalSpent}
+  distribution={distribution}
+  currency={currency}
+  loading={false}
+/>
