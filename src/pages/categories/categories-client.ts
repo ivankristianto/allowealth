@@ -98,8 +98,6 @@ document.addEventListener('DOMContentLoaded', () => {
         values.icon || 'tag';
       (categoryForm.querySelector('[name="color"]') as HTMLSelectElement).value =
         values.color || 'bg-neutral';
-      (categoryForm.querySelector('[name="currency"]') as HTMLSelectElement).value =
-        values.currency || 'IDR';
 
       // Update icon to Pencil
       if (modalIconContainer) {
@@ -139,7 +137,6 @@ document.addEventListener('DOMContentLoaded', () => {
           type: category.type,
           icon: category.icon,
           color: category.color,
-          currency: category.currency,
         });
       }
     } catch (err) {

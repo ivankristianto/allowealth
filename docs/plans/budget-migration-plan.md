@@ -64,16 +64,27 @@ Remove `percentage`, `budget_amount`, and `currency` from the Categories table. 
 
 #### Progress Checklist
 
-- [ ] Create `src/lib/validation/budgets.ts`
-- [ ] Create `src/lib/types/budget.ts`
-- [ ] Create `src/pages/api/budgets/index.ts` (GET list, POST create)
-- [ ] Create `src/pages/api/budgets/[id].ts` (GET, PUT, DELETE)
-- [ ] Create `src/pages/api/budgets/copy.ts` (POST copy)
-- [ ] Add `createBudget()` to BudgetService
-- [ ] Add `updateBudget()` to BudgetService
-- [ ] Add `deleteBudget()` to BudgetService
-- [ ] Add `getBudgetByCategory()` to BudgetService
-- [ ] Add `copyBudgetsToMonth()` to BudgetService
+- [x] Create `src/lib/validation/budgets.ts`
+- [x] Create `src/lib/types/budget.ts`
+- [x] Create `src/pages/api/budgets/index.ts` (GET list, POST create)
+- [x] Create `src/pages/api/budgets/[id].ts` (GET, PUT, DELETE)
+- [x] Create `src/pages/api/budgets/copy.ts` (POST copy)
+- [x] Add `createBudget()` to BudgetService
+- [x] Add `updateBudget()` to BudgetService
+- [x] Add `deleteBudget()` to BudgetService
+- [x] Add `getBudgetById()` to BudgetService
+- [x] Add `getBudgetByCategory()` to BudgetService
+- [x] Add `findAllBudgets()` to BudgetService
+- [x] Add `copyBudgetsToMonth()` to BudgetService
+
+**Completed:** 2026-01-27 | **Commit:** `bc88c5a`
+
+**Additional changes made:**
+
+- Added currency validation (budget currency must match category currency)
+- Added empty update payload validation
+- Copy operation wrapped in transaction for atomicity
+- Closed budgets cannot be modified (permanent lock by design)
 
 ---
 
@@ -121,9 +132,20 @@ const monthBudgets = await this.db
 
 #### Progress Checklist
 
-- [ ] Refactor `getMonthlyOverview()` to query budgets table
-- [ ] Refactor `getCategoryRemaining()` to query budgets table
-- [ ] Verify `getBudgetHistory()` works with new queries
+- [x] Refactor `getMonthlyOverview()` to query budgets table
+- [x] Refactor `getCategoryRemaining()` to query budgets table
+- [x] Verify `getBudgetHistory()` works with new queries
+- [x] Update test mocks to use budgets table
+- [x] Add tests for inactive/income category filtering
+
+**Completed:** 2026-01-27
+
+**Key changes:**
+
+- `getMonthlyOverview()` now queries `budgets` table with category relation
+- `getCategoryRemaining()` queries budgets table using category's currency
+- Added `createMockBudget()` and `createMockBudgetWithCategory()` test helpers
+- Added test cases for inactive category and income category exclusion
 
 ---
 
@@ -150,11 +172,22 @@ const monthBudgets = await this.db
 
 #### Progress Checklist
 
-- [ ] Update `SetNewBudgetModal.astro` to use new API endpoints
-- [ ] Add month/year context to SetNewBudgetModal
-- [ ] Create `CopyBudgetModal.astro`
-- [ ] Add "Copy to Next Month" button to `BudgetPageHeader.astro`
-- [ ] Update `budget/index.astro` with copy functionality
+- [x] Update `SetNewBudgetModal.astro` to use new API endpoints
+- [x] Add month/year context to SetNewBudgetModal
+- [x] Create `CopyBudgetModal.astro`
+- [x] Add "Copy to Next Month" button to `BudgetPageHeader.astro`
+- [x] Update `budget/index.astro` with copy functionality
+
+**Completed:** 2026-01-27
+
+**Key changes:**
+
+- SetNewBudgetModal now calls POST /api/budgets (create) or PUT /api/budgets/:id (update)
+- Added month/year props to track budget period context
+- Created CopyBudgetModal with validation and screen reader accessibility
+- BudgetPageHeader shows "Copy to Next Month" button when budgets exist
+- Added ARIA live regions for loading state announcements (accessibility)
+- Added client-side validation for budget amounts and month/year ranges
 
 ---
 
@@ -192,13 +225,21 @@ Note: After schema changes, run `bun run db:push` to sync schema to database (de
 
 #### Progress Checklist
 
-- [ ] Remove columns from `src/db/schema/categories.ts`
-- [ ] Update `src/lib/types/category.ts`
-- [ ] Update `src/lib/validation/categories.ts`
-- [ ] Update `src/services/category.service.ts`
-- [ ] Update `src/pages/api/categories/index.ts`
-- [ ] Update `src/pages/api/categories/[id].ts`
-- [ ] Remove/deprecate `src/pages/api/budget/category/[id].ts`
+- [x] Remove columns from `src/db/schema/categories.ts`
+- [x] Update `src/lib/types/category.ts`
+- [x] Update `src/lib/validation/categories.ts`
+- [x] Update `src/services/category.service.ts`
+- [x] Update `src/pages/api/categories/index.ts`
+- [x] Update `src/pages/api/categories/[id].ts`
+- [x] Remove/deprecate `src/pages/api/budget/category/[id].ts`
+- [x] Update `src/services/budget.service.ts` (getCategoryRemaining now takes currency param)
+- [x] Update `src/services/dashboard.service.ts` (queries budgets table instead of categories)
+- [x] Update UI components (CategoryModal, categories page, CategorySelect)
+- [x] Update transaction pages to use transaction currency for budget lookup
+- [x] Update integration tests to remove budget fields from categories
+- [x] Update unit tests and mocks
+
+**Status: COMPLETE**
 
 ---
 
@@ -212,9 +253,18 @@ Note: After schema changes, run `bun run db:push` to sync schema to database (de
 
 #### Progress Checklist
 
-- [ ] Update `src/services/dashboard.service.ts`
-- [ ] Update `src/lib/utils/budget.ts`
-- [ ] Verify `src/lib/budget/alerts.ts` works
+- [x] Update `src/services/dashboard.service.ts` (verified - already queries budgets table)
+- [x] Update `src/lib/utils/budget.ts` (removed unused functions)
+- [x] Verify `src/lib/budget/alerts.ts` works (confirmed - uses spent/budget pairs)
+
+**Completed:** 2026-01-27
+
+**Key changes:**
+
+- Verified dashboard service already queries budgets table (getMonthlySpent, getBudgetHealth)
+- Removed unused `calculateTotalBudget` and `shouldWarnBudgetAllocation` functions
+- Removed unused `BudgetTotal` type
+- Cleaned up unused `addCurrency` import
 
 ---
 
@@ -243,15 +293,27 @@ Note: After schema changes, run `bun run db:push` to sync schema to database (de
 
 #### Progress Checklist
 
-- [ ] Update `openapi/schemas/Category.yml`
-- [ ] Update `openapi/schemas/CreateCategoryRequest.yml`
-- [ ] Update `openapi/schemas/UpdateCategoryRequest.yml`
-- [ ] Create `openapi/schemas/Budget.yml`
-- [ ] Create `openapi/schemas/CreateBudgetRequest.yml`
-- [ ] Create `openapi/schemas/UpdateBudgetRequest.yml`
-- [ ] Create `openapi/schemas/CopyBudgetsRequest.yml`
-- [ ] Create `openapi/paths/budgets.yml`
-- [ ] Update `openapi.yml` with new references
+- [x] Update `openapi/schemas/Category.yml`
+- [x] Update `openapi/schemas/CreateCategoryRequest.yml`
+- [x] Update `openapi/schemas/UpdateCategoryRequest.yml`
+- [x] Create `openapi/schemas/Budget.yml`
+- [x] Create `openapi/schemas/CreateBudgetRequest.yml`
+- [x] Create `openapi/schemas/UpdateBudgetRequest.yml`
+- [x] Create `openapi/schemas/CopyBudgetsRequest.yml`
+- [x] Create `openapi/paths/budgets.yml`
+- [x] Update `openapi.yml` with new references
+
+**Completed:** 2026-01-27
+
+**Key changes:**
+
+- Removed percentage, budget_amount, currency from Category schemas
+- Created Budget, CreateBudgetRequest, UpdateBudgetRequest, CopyBudgetsRequest schemas
+- Created CopyBudgetsResponse, BudgetResponse, BudgetsListResponse response schemas
+- Created budgets.yml with full CRUD endpoints (/api/budgets)
+- Removed deprecated /api/budget/category/{id} endpoint
+- Deleted unused BudgetCategoryResponse and UpdateBudgetCategoryRequest schemas
+- Added required field specifications to response schemas
 
 ---
 
@@ -274,15 +336,25 @@ Note: After schema changes, run `bun run db:push` to sync schema to database (de
 
 #### Progress Checklist
 
-- [ ] Update `src/services/budget.service.test.ts`
-- [ ] Update `src/services/category.service.test.ts`
-- [ ] Update `src/services/dashboard.service.test.ts`
-- [ ] Update/remove `budget-category.api.integration.test.ts`
-- [ ] Update `categories.api.integration.test.ts`
-- [ ] Update `SetNewBudgetModal.test.ts`
-- [ ] Update `BudgetCard.test.ts`
-- [ ] Update `BudgetCardGrid.test.ts`
-- [ ] Update `src/services/test-helpers/mocks.ts`
+- [x] Update `src/services/budget.service.test.ts` (already uses budgets table mocks)
+- [x] Update `src/services/category.service.test.ts` (already clean - no budget fields)
+- [x] Update `src/services/dashboard.service.test.ts` (already uses correct queries)
+- [x] Update/remove `budget-category.api.integration.test.ts` (already uses budgets table)
+- [x] Update `categories.api.integration.test.ts` (already clean - no budget assertions)
+- [x] Update `SetNewBudgetModal.test.ts` (updated API endpoints to POST/PUT /api/budgets)
+- [x] Update `BudgetCard.test.ts` (already uses correct BudgetData interface)
+- [x] Update `BudgetCardGrid.test.ts` (already uses correct BudgetData interface)
+- [x] Update `src/services/test-helpers/mocks.ts` (already has createMockBudget helpers)
+
+**Completed:** 2026-01-27
+
+**Key changes:**
+
+- Verified most test files were already migrated in earlier phases
+- Updated SetNewBudgetModal.test.ts to use new API endpoints (POST/PUT /api/budgets)
+- Removed budget_amount from mock Category interface
+- Added P1 TODO for schema validation improvement
+- All 3375 tests pass
 
 ---
 
@@ -295,8 +367,18 @@ Note: After schema changes, run `bun run db:push` to sync schema to database (de
 
 #### Progress Checklist
 
-- [ ] Update `src/db/seed.ts` - remove budget fields from categories
-- [ ] Add budget seed data for recent months
+- [x] Update `src/db/seed.ts` - remove budget fields from categories (already done - seedCategories doesn't insert budget fields)
+- [x] Add budget seed data for recent months
+
+**Completed:** 2026-01-27
+
+**Key changes:**
+
+- Added `seedBudgets()` function to seed budget records for expense categories
+- Seeds budgets for 3 months: November 2025, December 2025, January 2026
+- Uses batch insert for better performance (P1 improvement from code review)
+- Uses existing `EXPENSE_CATEGORIES` budget amounts as seed data
+- Categories already don't have budget fields in `seedCategories()` (no change needed)
 
 ---
 

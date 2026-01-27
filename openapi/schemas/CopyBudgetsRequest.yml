@@ -1,0 +1,29 @@
+# Copy Budgets Request Schema
+CopyBudgetsRequest:
+  type: object
+  required: [source_month, source_year, target_month, target_year]
+  properties:
+    source_month:
+      type: integer
+      minimum: 1
+      maximum: 12
+      description: Source month (1-12)
+    source_year:
+      type: integer
+      minimum: 2000
+      maximum: 2100
+      description: Source year
+    target_month:
+      type: integer
+      minimum: 1
+      maximum: 12
+      description: Target month (1-12)
+    target_year:
+      type: integer
+      minimum: 2000
+      maximum: 2100
+      description: Target year
+  description: |
+    Copy all budgets from one month/year to another.
+    Target month/year must be different from source.
+    Existing budgets in target month are skipped.

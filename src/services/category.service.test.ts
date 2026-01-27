@@ -15,9 +15,8 @@ describe('CategoryService', () => {
         user_id: 'user-1',
         name: 'Food & Groceries',
         type: 'expense',
-        percentage: '5.00',
-        budget_amount: '6000000',
-        currency: 'IDR',
+        icon: 'utensils',
+        color: 'bg-primary',
         is_active: true,
         created_at: new Date(),
         updated_at: new Date(),
@@ -50,9 +49,8 @@ describe('CategoryService', () => {
         user_id: 'user-1',
         name: 'Food & Groceries',
         type: 'expense' as const,
-        currency: 'IDR' as const,
-        percentage: '5.00',
-        budget_amount: '6000000',
+        icon: 'utensils',
+        color: 'bg-primary',
       };
 
       const result = await categoryService.create(input);
@@ -69,9 +67,8 @@ describe('CategoryService', () => {
         user_id: 'user-1',
         name: 'Salary',
         type: 'income',
-        percentage: '0',
-        budget_amount: '0',
-        currency: 'IDR',
+        icon: 'tag',
+        color: 'bg-neutral',
         is_active: true,
         created_at: new Date(),
         updated_at: new Date(),
@@ -104,15 +101,12 @@ describe('CategoryService', () => {
         user_id: 'user-1',
         name: 'Salary',
         type: 'income' as const,
-        currency: 'IDR' as const,
-        percentage: '0',
-        budget_amount: '0',
       };
 
       const result = await categoryService.create(input);
 
-      expect(result?.percentage).toBe('0');
-      expect(result?.budget_amount).toBe('0');
+      expect(result?.icon).toBe('tag');
+      expect(result?.color).toBe('bg-neutral');
     });
   });
 
@@ -123,9 +117,8 @@ describe('CategoryService', () => {
         user_id: 'user-1',
         name: 'Food & Groceries',
         type: 'expense',
-        percentage: '5.00',
-        budget_amount: '6000000',
-        currency: 'IDR',
+        icon: 'utensils',
+        color: 'bg-primary',
         is_active: true,
         created_at: new Date(),
         updated_at: new Date(),
@@ -195,9 +188,8 @@ describe('CategoryService', () => {
           user_id: 'user-1',
           name: 'Food & Groceries',
           type: 'expense',
-          percentage: '5.00',
-          budget_amount: '6000000',
-          currency: 'IDR',
+          icon: 'utensils',
+          color: 'bg-primary',
           is_active: true,
           created_at: new Date(),
           updated_at: new Date(),
@@ -207,9 +199,8 @@ describe('CategoryService', () => {
           user_id: 'user-1',
           name: 'Salary',
           type: 'income',
-          percentage: '0',
-          budget_amount: '0',
-          currency: 'IDR',
+          icon: 'banknote',
+          color: 'bg-success',
           is_active: true,
           created_at: new Date(),
           updated_at: new Date(),
@@ -250,9 +241,8 @@ describe('CategoryService', () => {
           user_id: 'user-1',
           name: 'Food & Groceries',
           type: 'expense',
-          percentage: '5.00',
-          budget_amount: '6000000',
-          currency: 'IDR',
+          icon: 'utensils',
+          color: 'bg-primary',
           is_active: true,
           created_at: new Date(),
           updated_at: new Date(),
@@ -293,9 +283,8 @@ describe('CategoryService', () => {
           user_id: 'user-1',
           name: 'Food & Groceries',
           type: 'expense',
-          percentage: '5.00',
-          budget_amount: '6000000',
-          currency: 'IDR',
+          icon: 'utensils',
+          color: 'bg-primary',
           is_active: true,
           created_at: new Date(),
           updated_at: new Date(),
@@ -337,9 +326,8 @@ describe('CategoryService', () => {
         user_id: 'user-1',
         name: 'Food & Groceries Updated',
         type: 'expense',
-        percentage: '10.00',
-        budget_amount: '7000000',
-        currency: 'IDR',
+        icon: 'utensils',
+        color: 'bg-secondary',
         is_active: true,
         created_at: new Date(),
         updated_at: new Date(),
@@ -368,7 +356,7 @@ describe('CategoryService', () => {
 
       const result = await categoryService.update('cat-1', 'user-1', {
         name: 'Food & Groceries Updated',
-        percentage: '10.00',
+        color: 'bg-secondary',
       });
 
       if (result) expect(result.name).toBe('Food & Groceries Updated');
@@ -381,9 +369,8 @@ describe('CategoryService', () => {
         user_id: 'user-1',
         name: 'Food & Groceries',
         type: 'expense',
-        percentage: '5.00',
-        budget_amount: '8000000',
-        currency: 'IDR',
+        icon: 'shopping-cart',
+        color: 'bg-primary',
         is_active: true,
         created_at: new Date(),
         updated_at: new Date(),
@@ -411,10 +398,10 @@ describe('CategoryService', () => {
       const categoryService = new CategoryService(mockDb);
 
       const result = await categoryService.update('cat-1', 'user-1', {
-        budget_amount: '8000000',
+        icon: 'shopping-cart',
       });
 
-      if (result) expect(result.budget_amount).toBe('8000000');
+      if (result) expect(result.icon).toBe('shopping-cart');
     });
   });
 
@@ -425,9 +412,8 @@ describe('CategoryService', () => {
         user_id: 'user-1',
         name: 'Food & Groceries',
         type: 'expense',
-        percentage: '5.00',
-        budget_amount: '6000000',
-        currency: 'IDR',
+        icon: 'utensils',
+        color: 'bg-primary',
         is_active: true,
         created_at: new Date(),
         updated_at: new Date(),

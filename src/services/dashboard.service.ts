@@ -19,7 +19,7 @@
  * path, which logs to console and returns safe defaults.
  */
 
-import { assets, transactions, categories, type IDatabase } from '@/db';
+import { assets, transactions, categories, budgets, type IDatabase } from '@/db';
 import { eq, and, gte, lte, desc, sql } from 'drizzle-orm';
 import { getLatestExchangeRate } from '@/lib/currency/conversion';
 import { calculateBudgetAlert } from '@/lib/budget/alerts';
@@ -223,17 +223,20 @@ export class DashboardService {
       const startDate = new Date(year, month - 1, 1);
       const endDate = new Date(year, month, 0, 23, 59, 59);
 
-      // Get total budget for the month (sum of all expense category budgets)
+      // Get total budget for the month from budgets table
       const [budgetResult] = await (this.db as any)
         .select({
-          total: sql<string>`COALESCE(SUM(CAST(${categories.budget_amount} AS REAL)), 0)`,
+          total: sql<string>`COALESCE(SUM(CAST(${budgets.budget_amount} AS REAL)), 0)`,
         })
-        .from(categories)
+        .from(budgets)
+        .innerJoin(categories, eq(budgets.category_id, categories.id))
         .where(
           and(
-            eq(categories.user_id, userId),
+            eq(budgets.user_id, userId),
+            eq(budgets.month, month),
+            eq(budgets.year, year),
+            eq(budgets.currency, currency),
             eq(categories.type, 'expense'),
-            eq(categories.currency, currency),
             eq(categories.is_active, true)
           )
         );
@@ -308,7 +311,7 @@ export class DashboardService {
       }
 
       // Check if db methods exist (for unit tests with mock db)
-      if (!this.db?.query?.categories || typeof (this.db as any).select !== 'function') {
+      if (!this.db?.query?.budgets || typeof (this.db as any).select !== 'function') {
         throw new Error('Database query not available');
       }
 
@@ -316,15 +319,23 @@ export class DashboardService {
       const startDate = new Date(year, month - 1, 1);
       const endDate = new Date(year, month, 0, 23, 59, 59);
 
-      // Get all expense categories for user
-      const userCategories = await this.db.query.categories.findMany({
+      // Get all budgets for the month with their category info
+      const monthBudgets = await this.db.query.budgets.findMany({
         where: and(
-          eq(categories.user_id, userId),
-          eq(categories.type, 'expense'),
-          eq(categories.currency, currency),
-          eq(categories.is_active, true)
+          eq(budgets.user_id, userId),
+          eq(budgets.month, month),
+          eq(budgets.year, year),
+          eq(budgets.currency, currency)
         ),
+        with: {
+          category: true,
+        },
       });
+
+      // Filter to only active expense categories
+      const expenseBudgets = monthBudgets.filter(
+        (b: any) => b.category?.type === 'expense' && b.category?.is_active === true
+      );
 
       // Get total spent per category for the month
       const categorySpending = await (this.db as any)
@@ -351,14 +362,15 @@ export class DashboardService {
         spendingByCategory.set(spending.category_id, spending.total);
       }
 
-      // Calculate alerts for each category
+      // Calculate alerts for each budget
       const alerts: BudgetAlert[] = [];
 
-      for (const category of userCategories) {
-        const budget = category.budget_amount;
-        const spent = spendingByCategory.get(category.id) || '0';
+      for (const budget of expenseBudgets) {
+        const budgetAmount = budget.budget_amount;
+        const spent = spendingByCategory.get(budget.category_id) || '0';
+        const categoryName = budget.category?.name || 'Unknown';
 
-        const alert = calculateBudgetAlert(category.name, budget, spent);
+        const alert = calculateBudgetAlert(categoryName, budgetAmount, spent);
         if (alert) {
           alerts.push(alert);
         }

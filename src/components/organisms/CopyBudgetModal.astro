@@ -1,0 +1,286 @@
+---
+/**
+ * CopyBudgetModal Component
+ *
+ * Confirmation modal for copying budgets from the current month to the next month.
+ * Uses POST /api/budgets/copy endpoint.
+ *
+ * @param {string} id - Modal ID
+ * @param {number} sourceMonth - Source month (1-12)
+ * @param {number} sourceYear - Source year
+ * @param {number} targetMonth - Target month (1-12)
+ * @param {number} targetYear - Target year
+ * @param {number} budgetCount - Number of budgets to copy (for display)
+ */
+
+import Modal from '../molecules/Modal.astro';
+import { Copy, ArrowRight } from '@lucide/astro';
+
+export interface Props {
+  id: string;
+  sourceMonth: number;
+  sourceYear: number;
+  targetMonth: number;
+  targetYear: number;
+  budgetCount: number;
+}
+
+const { id, sourceMonth, sourceYear, targetMonth, targetYear, budgetCount } = Astro.props;
+
+// Month names for display
+const monthNames = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+];
+
+const sourceMonthName = monthNames[sourceMonth - 1] || `Month ${sourceMonth}`;
+const targetMonthName = monthNames[targetMonth - 1] || `Month ${targetMonth}`;
+---
+
+<div
+  data-copy-budget-modal-container
+  data-id={id}
+  data-source-month={sourceMonth}
+  data-source-year={sourceYear}
+  data-target-month={targetMonth}
+  data-target-year={targetYear}
+>
+  <Modal id={id} title="" size="md" closable={false} className="[&_.modal-box]:rounded-3xl">
+    <div class="space-y-6">
+      {/* Header with icon */}
+      <div class="flex items-center gap-4">
+        <div
+          class="w-12 h-12 rounded-2xl flex items-center justify-center bg-accent/10 text-accent"
+        >
+          <Copy size={24} class="stroke-current" aria-hidden="true" />
+        </div>
+        <div>
+          <h2 class="text-xl font-bold tracking-tight text-base-content leading-none">
+            Copy Budgets
+          </h2>
+          <p class="text-base-content/60 text-sm mt-2 font-medium">
+            Copy your budget allocations to the next month.
+          </p>
+        </div>
+      </div>
+
+      {/* Copy visualization */}
+      <div
+        class="flex items-center justify-center gap-4 py-6 bg-base-200/50 rounded-2xl border border-base-300"
+      >
+        <div class="text-center">
+          <p class="text-base-content/60 text-xs font-medium uppercase tracking-wider mb-1">From</p>
+          <p class="text-base-content font-bold text-lg">
+            {sourceMonthName}
+            <span class="text-base-content/60">{sourceYear}</span>
+          </p>
+        </div>
+        <ArrowRight size={24} class="stroke-current text-accent" aria-hidden="true" />
+        <div class="text-center">
+          <p class="text-base-content/60 text-xs font-medium uppercase tracking-wider mb-1">To</p>
+          <p class="text-base-content font-bold text-lg">
+            {targetMonthName}
+            <span class="text-base-content/60">{targetYear}</span>
+          </p>
+        </div>
+      </div>
+
+      {/* Info message */}
+      <div class="text-sm text-base-content/70 bg-info/5 border border-info/10 rounded-xl p-4">
+        <p>
+          This will copy <span class="font-bold text-base-content">{budgetCount}</span>
+          {budgetCount === 1 ? 'budget' : 'budgets'} to {targetMonthName}
+          {targetYear}.
+        </p>
+        <p class="mt-2 text-base-content/50">
+          Existing budgets in the target month will not be overwritten.
+        </p>
+      </div>
+
+      {/* Error message container */}
+      <div id={`${id}-error`} class="hidden alert alert-error text-sm rounded-xl" role="alert">
+      </div>
+
+      {/* ARIA live region for screen reader announcements (P1 accessibility) */}
+      <div id={`${id}-status`} class="sr-only" role="status" aria-live="polite"></div>
+
+      {/* Actions */}
+      <div class="flex items-center gap-4 pt-4">
+        <button
+          type="button"
+          class="flex-1 py-4 text-base-content/60 font-bold hover:bg-base-200 rounded-2xl transition-colors"
+          data-cancel-copy
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          class="flex-[2] btn btn-accent py-4 rounded-full font-bold text-base shadow-lg shadow-accent/20 hover:shadow-xl transition-all"
+          data-confirm-copy
+          disabled={budgetCount === 0}
+        >
+          Copy Budgets
+        </button>
+      </div>
+    </div>
+  </Modal>
+</div>
+
+<script>
+  import { addToast } from '@lib/stores/toastStore';
+  import { getCsrfHeaders } from '@/lib/csrf-client';
+
+  // Track initialized modals to avoid duplicate handlers
+  const initializedModals = new WeakSet<Element>();
+
+  function initCopyBudgetModal() {
+    document.querySelectorAll('[data-copy-budget-modal-container]').forEach((container) => {
+      // Skip if already initialized
+      if (initializedModals.has(container)) return;
+      initializedModals.add(container);
+
+      const id = container.getAttribute('data-id');
+      if (!id) return;
+
+      const modal = document.getElementById(id) as HTMLDialogElement | null;
+      const cancelBtn = container.querySelector('[data-cancel-copy]');
+      const confirmBtn = container.querySelector('[data-confirm-copy]') as HTMLButtonElement | null;
+      const errorDiv = document.getElementById(`${id}-error`);
+      const statusDiv = document.getElementById(`${id}-status`);
+
+      // Get month/year data from container attributes
+      const sourceMonth = parseInt(container.getAttribute('data-source-month') || '0', 10);
+      const sourceYear = parseInt(container.getAttribute('data-source-year') || '0', 10);
+      const targetMonth = parseInt(container.getAttribute('data-target-month') || '0', 10);
+      const targetYear = parseInt(container.getAttribute('data-target-year') || '0', 10);
+
+      if (!modal || !confirmBtn) return;
+
+      // Validate month/year ranges (P0: prevent invalid API calls)
+      const isValidMonth = (m: number) => m >= 1 && m <= 12;
+      const isValidYear = (y: number) => y >= 2000 && y <= 2100;
+
+      if (
+        !isValidMonth(sourceMonth) ||
+        !isValidMonth(targetMonth) ||
+        !isValidYear(sourceYear) ||
+        !isValidYear(targetYear)
+      ) {
+        console.error('Invalid month/year values in CopyBudgetModal');
+        confirmBtn.disabled = true;
+        return;
+      }
+
+      // Handle cancel button
+      cancelBtn?.addEventListener('click', () => {
+        if (errorDiv) {
+          errorDiv.textContent = '';
+          errorDiv.classList.add('hidden');
+        }
+        modal.close();
+      });
+
+      // Handle confirm button
+      confirmBtn.addEventListener('click', async () => {
+        const originalText = confirmBtn.textContent || 'Copy Budgets';
+
+        // Clear previous errors
+        if (errorDiv) {
+          errorDiv.textContent = '';
+          errorDiv.classList.add('hidden');
+        }
+
+        // Show loading state and announce to screen readers (P1 accessibility)
+        confirmBtn.disabled = true;
+        confirmBtn.textContent = 'Copying...';
+        if (statusDiv) {
+          statusDiv.textContent = 'Copying budgets...';
+        }
+
+        try {
+          const response = await fetch('/api/budgets/copy', {
+            method: 'POST',
+            headers: getCsrfHeaders({
+              'Content-Type': 'application/json',
+            }),
+            body: JSON.stringify({
+              source_month: sourceMonth,
+              source_year: sourceYear,
+              target_month: targetMonth,
+              target_year: targetYear,
+            }),
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to copy budgets');
+          }
+
+          const data = await response.json();
+          const result = data.data;
+
+          // Success message with details
+          const copiedCount = result.copied_count || 0;
+          const skippedCount = result.skipped_count || 0;
+
+          let successMessage = `${copiedCount} ${copiedCount === 1 ? 'budget' : 'budgets'} copied successfully!`;
+          if (skippedCount > 0) {
+            successMessage += ` (${skippedCount} already existed)`;
+          }
+
+          // Announce to screen readers
+          if (statusDiv) {
+            statusDiv.textContent = successMessage;
+          }
+          addToast(successMessage, 'success');
+          modal.close();
+
+          // Dispatch custom event so page can update if needed
+          document.dispatchEvent(
+            new CustomEvent('budgets-copied', {
+              detail: {
+                sourceMonth,
+                sourceYear,
+                targetMonth,
+                targetYear,
+                copiedCount,
+                skippedCount,
+              },
+            })
+          );
+        } catch (err) {
+          const message = err instanceof Error ? err.message : 'Failed to copy budgets';
+          if (errorDiv) {
+            errorDiv.textContent = message;
+            errorDiv.classList.remove('hidden');
+          }
+          addToast(message, 'error');
+        } finally {
+          // Reset button state
+          confirmBtn.disabled = false;
+          confirmBtn.textContent = originalText;
+        }
+      });
+    });
+  }
+
+  // Initialize on DOM ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initCopyBudgetModal);
+  } else {
+    initCopyBudgetModal();
+  }
+
+  // Re-initialize on Astro page transitions
+  document.addEventListener('astro:page-load', initCopyBudgetModal);
+</script>

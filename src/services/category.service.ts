@@ -20,6 +20,7 @@ export class CategoryService {
 
   /**
    * Create a new category
+   * Note: Budget-related fields are now managed via the budgets table
    */
   async create(input: CreateCategoryInput) {
     // Validate input using Zod schema
@@ -36,9 +37,6 @@ export class CategoryService {
         type: validated.type,
         icon: validated.icon,
         color: validated.color,
-        currency: validated.currency,
-        percentage: validated.percentage,
-        budget_amount: validated.budget_amount,
         is_active: true,
         created_at: new Date(),
         updated_at: new Date(),
@@ -83,6 +81,7 @@ export class CategoryService {
 
   /**
    * Update category
+   * Note: Budget-related fields are now managed via the budgets table
    */
   async update(id: string, user_id: string, input: UpdateCategoryInput) {
     // Validate input using Zod schema
@@ -96,9 +95,6 @@ export class CategoryService {
     if (validated.type !== undefined) updateData.type = validated.type;
     if (validated.icon !== undefined) updateData.icon = validated.icon;
     if (validated.color !== undefined) updateData.color = validated.color;
-    if (validated.currency !== undefined) updateData.currency = validated.currency;
-    if (validated.percentage !== undefined) updateData.percentage = validated.percentage;
-    if (validated.budget_amount !== undefined) updateData.budget_amount = validated.budget_amount;
     if (validated.is_active !== undefined) updateData.is_active = validated.is_active;
 
     await this.db

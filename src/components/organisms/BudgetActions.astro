@@ -1,0 +1,204 @@
+---
+/**
+ * BudgetActions Component
+ *
+ * Action buttons row for the Budget page containing View History,
+ * AI Rebalancer, Copy to Next Month, and Set New Budget buttons.
+ * Extracted from BudgetPageHeader for better separation of concerns.
+ *
+ * @param {boolean} showAiRebalancer - Show AI Rebalancer button
+ * @param {boolean} showCopyButton - Show Copy to Next Month button
+ * @param {string} className - Additional CSS classes
+ */
+
+import { Sparkles, History, Plus, Copy, Tags } from '@lucide/astro';
+
+export interface Props {
+  showAiRebalancer?: boolean;
+  showCopyButton?: boolean;
+  className?: string;
+}
+
+const { showAiRebalancer = true, showCopyButton = false, className = '' } = Astro.props;
+
+const containerClasses = [
+  // Card styling
+  'bg-base-100 rounded-card border border-base-300 shadow-sm',
+  // Padding
+  'p-4 lg:p-6',
+  // Layout
+  'flex flex-wrap items-center gap-3',
+  // Additional classes
+  className,
+]
+  .filter(Boolean)
+  .join(' ');
+---
+
+{/* P2 TODO: Consider using <nav aria-label="Budget actions"> for better semantics */}
+<div class={containerClasses}>
+  {/* Secondary Actions - Ghost style */}
+  <div class="flex flex-wrap items-center gap-2">
+    {/* View History */}
+    <a
+      href="/budget/history"
+      class="btn btn-ghost gap-2 rounded-xl text-base-content/70 hover:text-base-content hover:bg-base-200"
+      aria-label="View budget history"
+    >
+      <History size={18} class="stroke-current" aria-hidden="true" />
+      <span>History</span>
+    </a>
+
+    {/* Categories */}
+    <a
+      href="/categories"
+      class="btn btn-ghost gap-2 rounded-xl text-base-content/70 hover:text-base-content hover:bg-base-200"
+      aria-label="Manage categories"
+    >
+      <Tags size={18} class="stroke-current" aria-hidden="true" />
+      <span>Categories</span>
+    </a>
+
+    {/* AI Rebalancer */}
+    {
+      showAiRebalancer && (
+        <button
+          type="button"
+          class="btn btn-ghost gap-2 rounded-xl text-accent hover:text-accent hover:bg-accent/10"
+          id="ai-rebalancer-btn"
+          data-target-modal="ai-rebalancer-modal"
+          aria-label="AI budget rebalancer"
+        >
+          <Sparkles size={18} class="stroke-current" aria-hidden="true" />
+          <span>AI Rebalancer</span>
+        </button>
+      )
+    }
+
+    {/* Copy to Next Month */}
+    {
+      showCopyButton && (
+        <button
+          type="button"
+          class="btn btn-ghost gap-2 rounded-xl text-base-content/70 hover:text-base-content hover:bg-base-200"
+          id="copy-budgets-btn"
+          data-target-modal="copy-budget-modal"
+          aria-label="Copy budgets to next month"
+        >
+          <Copy size={18} class="stroke-current" aria-hidden="true" />
+          <span>Copy</span>
+        </button>
+      )
+    }
+  </div>
+
+  {/* Primary Action - Pushed to right */}
+  <button
+    type="button"
+    class="btn btn-accent ml-auto gap-2 rounded-xl font-semibold"
+    id="set-new-budget-btn"
+    data-target-modal="set-new-budget-modal"
+    aria-label="Set new budget"
+  >
+    <Plus size={18} class="stroke-current" aria-hidden="true" />
+    <span>New Budget</span>
+  </button>
+</div>
+
+{/* AI Rebalancer Coming Soon Modal */}
+{
+  showAiRebalancer && (
+    <dialog
+      id="ai-rebalancer-modal"
+      class="modal modal-bottom sm:modal-middle"
+      aria-labelledby="ai-rebalancer-modal-title"
+    >
+      <div class="modal-box text-center">
+        <div class="flex justify-center mb-4">
+          <div class="w-16 h-16 rounded-full bg-accent/10 flex items-center justify-center">
+            <Sparkles size={32} class="text-accent" aria-hidden="true" />
+          </div>
+        </div>
+        <h3 id="ai-rebalancer-modal-title" class="font-bold text-xl mb-2">
+          AI Rebalancer
+        </h3>
+        <p class="text-base-content/70 mb-4">
+          Smart budget optimization powered by AI is coming soon. This feature will analyze your
+          spending patterns and suggest optimal budget allocations.
+        </p>
+        <div class="badge badge-accent badge-outline">Coming Soon</div>
+        <div class="modal-action justify-center">
+          <form method="dialog">
+            <button class="btn btn-ghost rounded-xl">Close</button>
+          </form>
+        </div>
+      </div>
+      <form method="dialog" class="modal-backdrop">
+        <button>close</button>
+      </form>
+    </dialog>
+  )
+}
+
+<script>
+  // P3 TODO: Consider moving this script to a separate .client.ts file for better TypeScript support
+  // P1: Use data-target-modal attribute to decouple from hardcoded modal IDs
+  // Store handler references for cleanup to prevent memory leaks
+  const handlerMap = new WeakMap<HTMLElement, (e: Event) => void>();
+
+  function initModalTriggerButton(buttonId: string) {
+    const btn = document.getElementById(buttonId);
+    if (!btn) return;
+
+    // Skip if already initialized
+    if (handlerMap.has(btn)) return;
+
+    const handler = (e: Event) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const targetId = btn.getAttribute('data-target-modal');
+      if (!targetId) return;
+      const modal = document.getElementById(targetId) as HTMLDialogElement;
+      if (modal) {
+        modal.showModal();
+      }
+    };
+
+    handlerMap.set(btn, handler);
+    btn.addEventListener('click', handler);
+  }
+
+  function cleanupBudgetActionButtons() {
+    ['set-new-budget-btn', 'copy-budgets-btn', 'ai-rebalancer-btn'].forEach((buttonId) => {
+      const btn = document.getElementById(buttonId);
+      if (btn) {
+        const handler = handlerMap.get(btn);
+        if (handler) {
+          btn.removeEventListener('click', handler);
+          handlerMap.delete(btn);
+        }
+      }
+    });
+  }
+
+  function initBudgetActionButtons() {
+    initModalTriggerButton('set-new-budget-btn');
+    initModalTriggerButton('copy-budgets-btn');
+    initModalTriggerButton('ai-rebalancer-btn');
+  }
+
+  // Register cleanup handler (must re-register after each page load since it's once)
+  function registerCleanup() {
+    document.addEventListener('astro:before-swap', cleanupBudgetActionButtons, { once: true });
+  }
+
+  // Initialize
+  initBudgetActionButtons();
+  registerCleanup();
+
+  // Re-initialize on Astro page transitions
+  document.addEventListener('astro:page-load', () => {
+    initBudgetActionButtons();
+    registerCleanup();
+  });
+</script>

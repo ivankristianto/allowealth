@@ -1,0 +1,31 @@
+# Create Budget Request Schema
+CreateBudgetRequest:
+  type: object
+  required: [category_id, month, year, budget_amount, currency]
+  properties:
+    category_id:
+      type: string
+      format: uuid
+      description: ID of the category to create budget for
+    month:
+      type: integer
+      minimum: 1
+      maximum: 12
+      description: Month (1-12)
+    year:
+      type: integer
+      minimum: 2000
+      maximum: 2100
+      description: Year (e.g., 2025, 2026)
+    budget_amount:
+      type: string
+      pattern: '^\d+(\.\d{1,2})?$'
+      description: Budget amount as positive decimal string
+    currency:
+      type: string
+      enum: [IDR, USD]
+      description: Currency must match the category's default currency
+    notes:
+      type: string
+      maxLength: 500
+      description: Optional notes for this budget

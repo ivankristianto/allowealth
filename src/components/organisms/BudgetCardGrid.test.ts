@@ -259,6 +259,97 @@ describe('BudgetCardGrid - sorting by percentage', () => {
   });
 });
 
+describe('BudgetCardGrid - sorting by budget amount (highest first)', () => {
+  it('should sort by budget_amount descending (highest budget first)', () => {
+    const sorted = [...sampleBudgets].sort((a, b) => {
+      const amountA =
+        typeof a.budget_amount === 'string' ? parseFloat(a.budget_amount) : a.budget_amount;
+      const amountB =
+        typeof b.budget_amount === 'string' ? parseFloat(b.budget_amount) : b.budget_amount;
+      return amountB - amountA;
+    });
+
+    expect(sorted[0].category_name).toBe('Housing'); // 40,000,000
+    expect(sorted[1].category_name).toBe('Groceries'); // 8,000,000
+    expect(sorted[2].category_name).toBe('Dining'); // 3,000,000
+  });
+
+  it('should handle string and number budget amounts', () => {
+    const mixedBudgets: BudgetData[] = [
+      {
+        category_id: '1',
+        category_name: 'Small',
+        spent_amount: 500,
+        budget_amount: 1000, // number
+        percentage_used: 50,
+        status: 'ok',
+      },
+      {
+        category_id: '2',
+        category_name: 'Large',
+        spent_amount: '2500',
+        budget_amount: '5000', // string
+        percentage_used: 50,
+        status: 'ok',
+      },
+      {
+        category_id: '3',
+        category_name: 'Medium',
+        spent_amount: 1500,
+        budget_amount: '3000', // string
+        percentage_used: 50,
+        status: 'ok',
+      },
+    ];
+
+    const sorted = [...mixedBudgets].sort((a, b) => {
+      const amountA =
+        typeof a.budget_amount === 'string' ? parseFloat(a.budget_amount) : a.budget_amount;
+      const amountB =
+        typeof b.budget_amount === 'string' ? parseFloat(b.budget_amount) : b.budget_amount;
+      return amountB - amountA;
+    });
+
+    expect(sorted[0].category_name).toBe('Large'); // 5000
+    expect(sorted[1].category_name).toBe('Medium'); // 3000
+    expect(sorted[2].category_name).toBe('Small'); // 1000
+  });
+
+  it('should handle equal budget amounts (stable sort)', () => {
+    const equalBudgets: BudgetData[] = [
+      {
+        category_id: '1',
+        category_name: 'First',
+        spent_amount: 500,
+        budget_amount: '2000',
+        percentage_used: 25,
+        status: 'ok',
+      },
+      {
+        category_id: '2',
+        category_name: 'Second',
+        spent_amount: 1000,
+        budget_amount: '2000',
+        percentage_used: 50,
+        status: 'ok',
+      },
+    ];
+
+    const sorted = [...equalBudgets].sort((a, b) => {
+      const amountA =
+        typeof a.budget_amount === 'string' ? parseFloat(a.budget_amount) : a.budget_amount;
+      const amountB =
+        typeof b.budget_amount === 'string' ? parseFloat(b.budget_amount) : b.budget_amount;
+      return amountB - amountA;
+    });
+
+    // Both have same budget, should maintain relative order
+    expect(sorted.length).toBe(2);
+    expect(sorted[0].budget_amount).toBe('2000');
+    expect(sorted[1].budget_amount).toBe('2000');
+  });
+});
+
 describe('BudgetCardGrid - filtering', () => {
   it('should filter to show only exceeded budgets', () => {
     const exceeded = sampleBudgets.filter((b) => b.status === 'exceeded');

@@ -10,19 +10,12 @@ Category:
     type:
       type: string
       enum: [expense, income]
-    percentage:
-      oneOf:
-        - type: string
-          pattern: '^\d+(\.\d{1,2})?$'
-        - type: 'null'
-    budget_amount:
-      oneOf:
-        - type: string
-          pattern: '^\d+(\.\d{1,2})?$'
-        - type: 'null'
-    currency:
+    icon:
       type: string
-      enum: [IDR, USD]
+      description: Lucide icon name for the category
+    color:
+      type: string
+      description: Hex color code for the category
     is_active:
       type: boolean
     created_at:

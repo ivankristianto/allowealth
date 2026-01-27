@@ -1,0 +1,17 @@
+# Update Budget Request Schema
+UpdateBudgetRequest:
+  type: object
+  properties:
+    budget_amount:
+      type: string
+      pattern: '^\d+(\.\d{1,2})?$'
+      description: Budget amount as positive decimal string
+    notes:
+      oneOf:
+        - type: string
+          maxLength: 500
+        - type: 'null'
+      description: Optional notes for this budget
+    is_closed:
+      type: boolean
+      description: Set to true to close/lock the budget period

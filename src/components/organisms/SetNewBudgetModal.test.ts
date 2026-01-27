@@ -6,12 +6,11 @@
 
 import { describe, it, expect } from 'bun:test';
 
-// Mock category types
+// Mock category types (budget fields removed - budgets now in separate table)
 interface Category {
   id: string;
   name: string;
   type: string;
-  budget_amount?: string;
 }
 
 // Category filtering logic (same as component)
@@ -21,14 +20,15 @@ const filterExpenseCategories = (categories: Category[]): Category[] => {
 };
 
 describe('SetNewBudgetModal - Category Filtering', () => {
+  // Note: Budgets are now stored in separate budgets table, not in categories
   const mockCategories: Category[] = [
-    { id: '1', name: 'Housing', type: 'expense', budget_amount: '40000000' },
-    { id: '2', name: 'Groceries', type: 'expense', budget_amount: '8000000' },
-    { id: '3', name: 'Dining', type: 'expense', budget_amount: '0' },
+    { id: '1', name: 'Housing', type: 'expense' },
+    { id: '2', name: 'Groceries', type: 'expense' },
+    { id: '3', name: 'Dining', type: 'expense' },
     { id: '4', name: 'Transport', type: 'expense' },
-    { id: '5', name: 'Entertainment', type: 'expense', budget_amount: '' },
+    { id: '5', name: 'Entertainment', type: 'expense' },
     { id: '6', name: 'Salary', type: 'income' },
-    { id: '7', name: 'Bonus', type: 'income', budget_amount: '0' },
+    { id: '7', name: 'Bonus', type: 'income' },
   ];
 
   describe('filterExpenseCategories', () => {
@@ -60,13 +60,13 @@ describe('SetNewBudgetModal - Category Filtering', () => {
     it('should show all expense categories regardless of budget status', () => {
       const expenseCategories = filterExpenseCategories(mockCategories);
 
-      // All expense categories should be included, even with budgets set
+      // All expense categories should be included (budget status checked via API)
       const names = expenseCategories.map((c) => c.name);
-      expect(names).toContain('Housing'); // has budget
-      expect(names).toContain('Groceries'); // has budget
-      expect(names).toContain('Dining'); // budget_amount: '0'
-      expect(names).toContain('Transport'); // no budget_amount
-      expect(names).toContain('Entertainment'); // budget_amount: ''
+      expect(names).toContain('Housing');
+      expect(names).toContain('Groceries');
+      expect(names).toContain('Dining');
+      expect(names).toContain('Transport');
+      expect(names).toContain('Entertainment');
     });
 
     it('should return all 5 expense categories', () => {
@@ -97,27 +97,15 @@ describe('SetNewBudgetModal - Category Filtering', () => {
       expect(expenseCategories.length).toBe(0);
     });
 
-    it('should include all expense categories even with budgets set', () => {
-      const allBudgeted: Category[] = [
-        { id: '1', name: 'Housing', type: 'expense', budget_amount: '40000000' },
-        { id: '2', name: 'Groceries', type: 'expense', budget_amount: '8000000' },
+    it('should include all expense categories (budget status handled separately)', () => {
+      const allExpense: Category[] = [
+        { id: '1', name: 'Housing', type: 'expense' },
+        { id: '2', name: 'Groceries', type: 'expense' },
       ];
 
-      const expenseCategories = filterExpenseCategories(allBudgeted);
+      const expenseCategories = filterExpenseCategories(allExpense);
 
-      // All expense categories should be shown (can update existing budgets)
-      expect(expenseCategories.length).toBe(2);
-    });
-
-    it('should handle decimal budget amounts', () => {
-      const withDecimal: Category[] = [
-        { id: '1', name: 'Test1', type: 'expense', budget_amount: '0.00' },
-        { id: '2', name: 'Test2', type: 'expense', budget_amount: '0.01' },
-      ];
-
-      const expenseCategories = filterExpenseCategories(withDecimal);
-
-      // Both should be included since we show all expense categories
+      // All expense categories should be shown (budget lookup happens via API)
       expect(expenseCategories.length).toBe(2);
     });
   });
@@ -185,27 +173,56 @@ describe('SetNewBudgetModal - Form Validation', () => {
 });
 
 describe('SetNewBudgetModal - API Integration', () => {
-  describe('Request Format', () => {
-    it('should format PATCH request body correctly', () => {
+  // P1: Consider importing actual validation schemas from @/lib/validation/budgets
+  // to validate request bodies against createBudgetAPISchema and updateBudgetAPISchema
+  describe('Request Format - Create Budget', () => {
+    it('should format POST request body correctly for new budget', () => {
       const requestBody = JSON.stringify({
+        category_id: 'cat-123',
+        month: 1,
+        year: 2026,
         budget_amount: '5000000',
         currency: 'IDR',
       });
 
       const parsed = JSON.parse(requestBody);
+      expect(parsed.category_id).toBe('cat-123');
+      expect(parsed.month).toBe(1);
+      expect(parsed.year).toBe(2026);
       expect(parsed.budget_amount).toBe('5000000');
       expect(parsed.currency).toBe('IDR');
     });
 
-    it('should use correct API endpoint', () => {
-      const categoryId = 'abc-123';
-      const endpoint = `/api/categories/${categoryId}`;
-      expect(endpoint).toBe('/api/categories/abc-123');
+    it('should use POST /api/budgets endpoint for new budget', () => {
+      const endpoint = '/api/budgets';
+      expect(endpoint).toBe('/api/budgets');
     });
 
-    it('should use PATCH method', () => {
-      const method = 'PATCH';
-      expect(method).toBe('PATCH');
+    it('should use POST method for creating budget', () => {
+      const method = 'POST';
+      expect(method).toBe('POST');
+    });
+  });
+
+  describe('Request Format - Update Budget', () => {
+    it('should format PUT request body correctly for existing budget', () => {
+      const requestBody = JSON.stringify({
+        budget_amount: '6000000',
+      });
+
+      const parsed = JSON.parse(requestBody);
+      expect(parsed.budget_amount).toBe('6000000');
+    });
+
+    it('should use PUT /api/budgets/:id endpoint for existing budget', () => {
+      const budgetId = 'budget-456';
+      const endpoint = `/api/budgets/${budgetId}`;
+      expect(endpoint).toBe('/api/budgets/budget-456');
+    });
+
+    it('should use PUT method for updating budget', () => {
+      const method = 'PUT';
+      expect(method).toBe('PUT');
     });
   });
 

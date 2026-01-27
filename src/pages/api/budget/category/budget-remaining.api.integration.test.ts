@@ -16,7 +16,7 @@
 
 import { describe, it, expect, beforeAll, afterAll } from 'bun:test';
 import { db } from '@/db';
-import { users, categories, transactions, assets } from '@/db';
+import { users, categories, transactions, assets, budgets } from '@/db';
 import { eq, and } from 'drizzle-orm';
 import { auth } from '@/lib/auth/lucia';
 import { nanoid } from 'nanoid';
@@ -72,7 +72,7 @@ describe('Budget Remaining API Integration Tests', () => {
 
     testAssetId = asset.id;
 
-    // Create a test category with budget
+    // Create a test category
     const [category] = await db
       .insert(categories)
       .values({
@@ -80,9 +80,8 @@ describe('Budget Remaining API Integration Tests', () => {
         user_id: testUserId,
         name: `Test Budget Remaining ${Date.now()}`,
         type: 'expense',
-        currency: 'IDR',
-        percentage: '5.00',
-        budget_amount: '1000000', // 1 million IDR
+        icon: 'tag',
+        color: 'bg-neutral',
         is_active: true,
         created_at: new Date(),
         updated_at: new Date(),
@@ -90,6 +89,22 @@ describe('Budget Remaining API Integration Tests', () => {
       .returning();
 
     testCategoryId = category.id;
+
+    // Create a budget for this category in current month
+    const now = new Date();
+    await db.insert(budgets).values({
+      id: nanoid(),
+      user_id: testUserId,
+      category_id: testCategoryId,
+      month: now.getMonth() + 1,
+      year: now.getFullYear(),
+      budget_amount: '1000000', // 1 million IDR
+      currency: 'IDR',
+      is_closed: false,
+      created_at: new Date(),
+      updated_at: new Date(),
+    });
+
     console.log(`Created test category: ${category.name} (ID: ${category.id})`);
   });
 
@@ -159,7 +174,7 @@ describe('Budget Remaining API Integration Tests', () => {
         await cleanupTransactions();
 
         const response = await makeRequest(
-          `/api/budget/category/${testCategoryId}/remaining`,
+          `/api/budget/category/${testCategoryId}/remaining?currency=IDR`,
           'GET'
         );
 
@@ -183,7 +198,7 @@ describe('Budget Remaining API Integration Tests', () => {
         await createTransaction('500000'); // 50% of 1 million
 
         const response = await makeRequest(
-          `/api/budget/category/${testCategoryId}/remaining`,
+          `/api/budget/category/${testCategoryId}/remaining?currency=IDR`,
           'GET'
         );
 
@@ -204,7 +219,7 @@ describe('Budget Remaining API Integration Tests', () => {
         await createTransaction('800000'); // 80% of 1 million
 
         const response = await makeRequest(
-          `/api/budget/category/${testCategoryId}/remaining`,
+          `/api/budget/category/${testCategoryId}/remaining?currency=IDR`,
           'GET'
         );
 
@@ -224,7 +239,7 @@ describe('Budget Remaining API Integration Tests', () => {
         await createTransaction('1200000'); // 120% of 1 million
 
         const response = await makeRequest(
-          `/api/budget/category/${testCategoryId}/remaining`,
+          `/api/budget/category/${testCategoryId}/remaining?currency=IDR`,
           'GET'
         );
 
@@ -243,7 +258,7 @@ describe('Budget Remaining API Integration Tests', () => {
         await cleanupTransactions();
 
         const response = await makeRequest(
-          `/api/budget/category/${testCategoryId}/remaining`,
+          `/api/budget/category/${testCategoryId}/remaining?currency=IDR`,
           'GET'
         );
 
@@ -264,7 +279,7 @@ describe('Budget Remaining API Integration Tests', () => {
         await createTransaction('150000');
 
         const response = await makeRequest(
-          `/api/budget/category/${testCategoryId}/remaining`,
+          `/api/budget/category/${testCategoryId}/remaining?currency=IDR`,
           'GET'
         );
 
@@ -281,7 +296,7 @@ describe('Budget Remaining API Integration Tests', () => {
     it('should reject requests without authentication', async () => {
       skipIfNoUser(async () => {
         const url = new URL(
-          `/api/budget/category/${testCategoryId}/remaining`,
+          `/api/budget/category/${testCategoryId}/remaining?currency=IDR`,
           'http://localhost:4321'
         );
 
@@ -298,7 +313,10 @@ describe('Budget Remaining API Integration Tests', () => {
 
     it('should return 404 for non-existent category', async () => {
       skipIfNoUser(async () => {
-        const response = await makeRequest(`/api/budget/category/nonexistent-id/remaining`, 'GET');
+        const response = await makeRequest(
+          `/api/budget/category/nonexistent-id/remaining?currency=IDR`,
+          'GET'
+        );
 
         expect(response.status).toBe(404);
 
@@ -328,9 +346,8 @@ describe('Budget Remaining API Integration Tests', () => {
           user_id: otherUserId,
           name: "Other User's Category",
           type: 'expense',
-          currency: 'IDR',
-          percentage: '5.00',
-          budget_amount: '1000000',
+          icon: 'tag',
+          color: 'bg-neutral',
           is_active: true,
           created_at: new Date(),
           updated_at: new Date(),
@@ -339,7 +356,7 @@ describe('Budget Remaining API Integration Tests', () => {
         try {
           // Try to get other user's category remaining budget
           const response = await makeRequest(
-            `/api/budget/category/${otherCategoryId}/remaining`,
+            `/api/budget/category/${otherCategoryId}/remaining?currency=IDR`,
             'GET'
           );
 
@@ -357,7 +374,7 @@ describe('Budget Remaining API Integration Tests', () => {
 
     it('should handle category with zero budget amount', async () => {
       skipIfNoUser(async () => {
-        // Create a category with zero budget
+        // Create a category with zero budget (no budget record = zero budget)
         const [zeroBudgetCategory] = await db
           .insert(categories)
           .values({
@@ -365,9 +382,8 @@ describe('Budget Remaining API Integration Tests', () => {
             user_id: testUserId,
             name: `Zero Budget Category ${Date.now()}`,
             type: 'expense',
-            currency: 'IDR',
-            percentage: '0.00',
-            budget_amount: '0',
+            icon: 'tag',
+            color: 'bg-neutral',
             is_active: true,
             created_at: new Date(),
             updated_at: new Date(),
@@ -376,7 +392,7 @@ describe('Budget Remaining API Integration Tests', () => {
 
         try {
           const response = await makeRequest(
-            `/api/budget/category/${zeroBudgetCategory.id}/remaining`,
+            `/api/budget/category/${zeroBudgetCategory.id}/remaining?currency=IDR`,
             'GET'
           );
 
@@ -404,18 +420,33 @@ describe('Budget Remaining API Integration Tests', () => {
             user_id: testUserId,
             name: `Decimal Budget Category ${Date.now()}`,
             type: 'expense',
-            currency: 'IDR',
-            percentage: '5.00',
-            budget_amount: '100000.50',
+            icon: 'tag',
+            color: 'bg-neutral',
             is_active: true,
             created_at: new Date(),
             updated_at: new Date(),
           })
           .returning();
 
+        const decimalCategoryId = decimalCategory.id;
+
+        // Create budget for this category
+        const now = new Date();
+        await db.insert(budgets).values({
+          id: nanoid(),
+          user_id: testUserId,
+          category_id: decimalCategoryId,
+          month: now.getMonth() + 1,
+          year: now.getFullYear(),
+          budget_amount: '100000.50',
+          currency: 'IDR',
+          is_closed: false,
+          created_at: new Date(),
+          updated_at: new Date(),
+        });
+
         try {
           // Create transaction with decimal amount
-          const decimalCategoryId = decimalCategory.id;
           await db.insert(transactions).values({
             id: nanoid(),
             user_id: testUserId,
@@ -431,7 +462,7 @@ describe('Budget Remaining API Integration Tests', () => {
           });
 
           const response = await makeRequest(
-            `/api/budget/category/${decimalCategoryId}/remaining`,
+            `/api/budget/category/${decimalCategoryId}/remaining?currency=IDR`,
             'GET'
           );
 
@@ -494,7 +525,7 @@ describe('Budget Remaining API Integration Tests', () => {
         });
 
         const response = await makeRequest(
-          `/api/budget/category/${testCategoryId}/remaining`,
+          `/api/budget/category/${testCategoryId}/remaining?currency=IDR`,
           'GET'
         );
 
@@ -545,7 +576,7 @@ describe('Budget Remaining API Integration Tests', () => {
         });
 
         const response = await makeRequest(
-          `/api/budget/category/${testCategoryId}/remaining`,
+          `/api/budget/category/${testCategoryId}/remaining?currency=IDR`,
           'GET'
         );
 

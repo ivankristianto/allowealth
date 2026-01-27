@@ -22,6 +22,8 @@ import { getIconForCategory } from '@/lib/utils/categoryIcons';
 export interface BudgetData {
   category_id: string;
   category_name: string;
+  category_icon?: string;
+  category_color?: string;
   icon?: string;
   spent_amount: string | number;
   budget_amount: string | number;
@@ -47,6 +49,15 @@ const {
   error,
   className = '',
 } = Astro.props;
+
+// Sort budgets by budget_amount in descending order (highest first)
+const sortedBudgets = [...budgets].sort((a, b) => {
+  const amountA =
+    typeof a.budget_amount === 'string' ? parseFloat(a.budget_amount) : a.budget_amount;
+  const amountB =
+    typeof b.budget_amount === 'string' ? parseFloat(b.budget_amount) : b.budget_amount;
+  return amountB - amountA;
+});
 
 const gridClasses = [
   // Responsive grid: 1 col on mobile, 2 on tablet, 3 on desktop
@@ -96,21 +107,22 @@ const gridClasses = [
   )
 }
 
-{/* Budget grid */}
+{/* Budget grid - sorted by highest budget amount first */}
 {
-  !error && !loading && budgets.length > 0 && (
+  !error && !loading && sortedBudgets.length > 0 && (
     <div
       class={gridClasses}
       role="list"
       aria-label="Budget categories"
-      aria-rowcount={budgets.length}
+      aria-rowcount={sortedBudgets.length}
     >
-      {budgets.map((budget) => (
+      {sortedBudgets.map((budget) => (
         <div role="listitem">
           <BudgetCard
             categoryId={budget.category_id}
             categoryName={budget.category_name}
-            icon={getIconForCategory(budget.category_name, budget.icon)}
+            icon={budget.category_icon || getIconForCategory(budget.category_name, budget.icon)}
+            color={budget.category_color}
             spent={
               typeof budget.spent_amount === 'string'
                 ? parseFloat(budget.spent_amount)
