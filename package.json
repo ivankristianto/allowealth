@@ -44,6 +44,7 @@
     "nanostores": "^1.1.0",
     "oslo": "^1.2.1",
     "tailwindcss": "^4.1.18",
+    "postgres": "^3.4.4",
     "zod": "^4.3.5"
   },
   "devDependencies": {
@@ -69,7 +70,6 @@
     "eslint-plugin-astro": "^1.5.0",
     "eslint-plugin-prettier": "^5.5.4",
     "husky": "^8.0.0",
-    "mysql2": "^3.16.0",
     "prettier": "^3.7.4",
     "prettier-plugin-astro": "^0.14.1",
     "storybook": "^8.0.0",
