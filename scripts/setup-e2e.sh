@@ -68,10 +68,16 @@ echo -e "${GREEN}Environment switched to E2E${NC}\n"
 # 4. Create E2E database directory if it doesn't exist
 mkdir -p db
 
-# 5. Run database setup (push schema and seed)
+# 5. Delete old E2E database to ensure clean schema
 echo -e "${YELLOW}WARNING: This will reset the E2E database (db/.e2e.db)${NC}"
-echo -e "${YELLOW}Setting up E2E database...${NC}"
+echo -e "${YELLOW}Removing old E2E database...${NC}"
+rm -f db/.e2e.db db/.e2e.db-wal db/.e2e.db-shm
+echo -e "${GREEN}Old database removed${NC}\n"
+
+# 6. Push schema and seed database
+echo -e "${YELLOW}Pushing schema to E2E database...${NC}"
 bun run db:push --force
+echo -e "${YELLOW}Seeding E2E database...${NC}"
 bun run db:seed
 echo -e "${GREEN}E2E database ready${NC}\n"
 
