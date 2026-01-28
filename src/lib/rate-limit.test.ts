@@ -8,7 +8,7 @@
  * - Response generation
  */
 
-import { describe, test, expect, beforeEach, afterEach } from 'bun:test';
+import { describe, test, expect, beforeEach, afterEach, vi } from 'bun:test';
 import {
   checkRateLimit,
   clearRateLimitStore,
@@ -26,10 +26,14 @@ describe('rate-limit', () => {
     clearRateLimitStore();
     // Stop any running cleanup
     stopCleanup();
+    // Enable fake timers for deterministic timing tests
+    vi.useFakeTimers();
   });
 
   afterEach(() => {
     stopCleanup();
+    // Restore real timers
+    vi.useRealTimers();
   });
 
   describe('getClientIp', () => {
@@ -250,7 +254,7 @@ describe('rate-limit', () => {
       expect(checkRateLimit(request2, config).allowed).toBe(true);
     });
 
-    test('allows requests after window expires (sliding window)', async () => {
+    test('allows requests after window expires (sliding window)', () => {
       const shortConfig: RateLimitConfig = {
         maxRequests: 2,
         windowMs: 100, // 100ms window for testing
@@ -265,8 +269,8 @@ describe('rate-limit', () => {
       checkRateLimit(request, shortConfig);
       expect(checkRateLimit(request, shortConfig).allowed).toBe(false);
 
-      // Wait for window to expire
-      await new Promise((resolve) => setTimeout(resolve, 150));
+      // Advance time by 150ms to expire the window
+      vi.advanceTimersByTime(150);
 
       // Should be allowed again
       expect(checkRateLimit(request, shortConfig).allowed).toBe(true);

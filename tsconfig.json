@@ -46,5 +46,5 @@
     ]
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "src/**/*.stories.ts", "src/**/*.behavior.test.ts"]
+  "exclude": ["node_modules", "dist", "src/**/*.stories.ts"]
 }
