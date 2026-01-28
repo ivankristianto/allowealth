@@ -41,6 +41,7 @@ export interface Props {
    * Used to associate select with external description elements like form-level error containers
    */
   describedBy?: string;
+  'data-testid'?: string;
 }
 
 const {
@@ -57,6 +58,7 @@ const {
   id = '',
   disabled = false,
   describedBy = '',
+  'data-testid': dataTestId,
 } = Astro.props;
 
 const inputId = id || `${name}-select`;
@@ -101,6 +103,7 @@ const ariaDescribeIds = [error && errorMessage && inputId ? `${inputId}-error` :
     aria-invalid={error}
     aria-describedby={ariaDescribeIds || undefined}
     aria-required={required}
+    data-testid={dataTestId}
   >
     <option value="">Select category...</option>
     {

@@ -94,6 +94,7 @@ const assetsJson = JSON.stringify(assets.map((a) => ({ id: a.id, name: a.name, t
 
 <form
   id="transaction-form"
+  data-testid="transaction-form"
   data-action={action}
   data-method={method}
   data-categories-json={categoriesJson}
@@ -103,7 +104,13 @@ const assetsJson = JSON.stringify(assets.map((a) => ({ id: a.id, name: a.name, t
   novalidate
 >
   <!-- Global error message container -->
-  <div id="form-error" class="hidden alert alert-error" role="alert"></div>
+  <div
+    id="form-error"
+    data-testid="transaction-form-error"
+    class="hidden alert alert-error"
+    role="alert"
+  >
+  </div>
   <!-- Transaction Type -->
   <div class="form-control">
     <Label required htmlFor="type" id="type-label">Type</Label>
@@ -113,6 +120,7 @@ const assetsJson = JSON.stringify(assets.map((a) => ({ id: a.id, name: a.name, t
         name="type"
         value="expense"
         id="type-expense"
+        data-testid="transaction-type-expense"
         aria-labelledby="type-label"
         class="join-item btn btn-sm flex-1"
         checked={formType === 'expense'}
@@ -124,6 +132,7 @@ const assetsJson = JSON.stringify(assets.map((a) => ({ id: a.id, name: a.name, t
         name="type"
         value="income"
         id="type-income"
+        data-testid="transaction-type-income"
         aria-labelledby="type-label"
         class="join-item btn btn-sm flex-1"
         checked={formType === 'income'}
@@ -145,6 +154,7 @@ const assetsJson = JSON.stringify(assets.map((a) => ({ id: a.id, name: a.name, t
       required={true}
       error={!!errors.transaction_date}
       errorMessage={errors.transaction_date}
+      data-testid="transaction-date-input"
     />
   </div>
 
@@ -159,6 +169,7 @@ const assetsJson = JSON.stringify(assets.map((a) => ({ id: a.id, name: a.name, t
       required={true}
       error={!!errors.amount}
       errorMessage={errors.amount}
+      data-testid="transaction-amount-input"
     />
   </div>
 
@@ -173,6 +184,7 @@ const assetsJson = JSON.stringify(assets.map((a) => ({ id: a.id, name: a.name, t
       required={true}
       error={!!errors.category_id}
       errorMessage={errors.category_id}
+      data-testid="transaction-category-select"
     />
   </div>
 
@@ -186,6 +198,7 @@ const assetsJson = JSON.stringify(assets.map((a) => ({ id: a.id, name: a.name, t
       required={true}
       error={!!errors.asset_id}
       errorMessage={errors.asset_id}
+      data-testid="transaction-asset-select"
     />
   </div>
 
@@ -195,6 +208,7 @@ const assetsJson = JSON.stringify(assets.map((a) => ({ id: a.id, name: a.name, t
     <textarea
       id="description"
       name="description"
+      data-testid="transaction-description-input"
       class="textarea textarea-bordered w-full bg-base-200 text-xs pt-2 pb-2 px-3 focus:ring-2 focus:ring-accent focus:ring-opacity-20 focus:outline-none"
       placeholder="Optional notes..."
       rows="3"
@@ -218,8 +232,8 @@ const assetsJson = JSON.stringify(assets.map((a) => ({ id: a.id, name: a.name, t
 
   <!-- Actions -->
   <div class="card-actions justify-end gap-2 mt-6">
-    <Button href={cancelUrl} variant="ghost">Cancel</Button>
-    <Button type="submit" variant="primary">
+    <Button href={cancelUrl} variant="ghost" data-testid="transaction-cancel-btn">Cancel</Button>
+    <Button type="submit" variant="primary" data-testid="transaction-submit-btn">
       {submitLabel}
     </Button>
   </div>

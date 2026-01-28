@@ -50,7 +50,12 @@ const cardClasses = [
   .join(' ');
 ---
 
-<div class={cardClasses} data-asset-group={groupId}>
+<div
+  class={cardClasses}
+  data-asset-group={groupId}
+  data-testid="asset-group"
+  data-asset-type={groupId}
+>
   {/* Collapsible Header Button */}
   <button
     type="button"

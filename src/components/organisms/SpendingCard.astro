@@ -106,6 +106,7 @@ const uniqueId = `spending-card-${Math.random().toString(36).slice(2, 11)}`;
   aria-busy={loading}
   aria-label={loading ? 'Loading spending data...' : undefined}
   aria-labelledby={!loading && !error ? uniqueId : undefined}
+  data-testid="dashboard-spending-card"
 >
   <div class="flex flex-col gap-6">
     {/* Loading State */}
@@ -169,6 +170,7 @@ const uniqueId = `spending-card-${Math.random().toString(36).slice(2, 11)}`;
                 <h3
                   id={uniqueId}
                   class="text-2xl sm:text-3xl font-bold mt-1.5 tracking-tight leading-none"
+                  data-testid="dashboard-total-expenses"
                 >
                   {spentFormatted}
                   <span class="text-sm sm:text-base text-base-content/60 font-medium tracking-normal">
@@ -211,7 +213,9 @@ const uniqueId = `spending-card-${Math.random().toString(36).slice(2, 11)}`;
                 <StatLabel size="sm" color="neutral">
                   INCOME
                 </StatLabel>
-                <p class="text-lg font-bold text-success mt-1">{incomeFormatted}</p>
+                <p class="text-lg font-bold text-success mt-1" data-testid="dashboard-total-income">
+                  {incomeFormatted}
+                </p>
               </div>
               <div>
                 <StatLabel size="sm" color="neutral">
