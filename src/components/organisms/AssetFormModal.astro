@@ -203,6 +203,7 @@ const assetTypes: { value: AssetType; label: string }[] = Object.entries(ASSET_T
 
 <script>
   import { addToast } from '@lib/stores/toastStore';
+  import { csrfFetch } from '@/lib/csrf-client';
 
   // Track initialized modals to avoid duplicate handlers
   const initializedModals = new WeakSet<Element>();
@@ -375,7 +376,7 @@ const assetTypes: { value: AssetType; label: string }[] = Object.entries(ASSET_T
             payload.balance = balance;
           }
 
-          const response = await fetch(url, {
+          const response = await csrfFetch(url, {
             method,
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload),
@@ -383,12 +384,16 @@ const assetTypes: { value: AssetType; label: string }[] = Object.entries(ASSET_T
 
           if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.message || `Failed to ${isEdit ? 'update' : 'create'} asset`);
+            throw new Error(
+              errorData.error?.message ||
+                errorData.message ||
+                `Failed to ${isEdit ? 'update' : 'create'} asset`
+            );
           }
 
           // If editing and balance changed, update balance separately
           if (isEdit) {
-            const balanceResponse = await fetch(`/api/assets/${assetId}/balance`, {
+            const balanceResponse = await csrfFetch(`/api/assets/${assetId}/balance`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ balance }),
@@ -396,7 +401,9 @@ const assetTypes: { value: AssetType; label: string }[] = Object.entries(ASSET_T
 
             if (!balanceResponse.ok) {
               const errorData = await balanceResponse.json();
-              throw new Error(errorData.message || 'Failed to update balance');
+              throw new Error(
+                errorData.error?.message || errorData.message || 'Failed to update balance'
+              );
             }
           }
 

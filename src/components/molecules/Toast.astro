@@ -46,6 +46,7 @@ const positionClasses: Record<string, string> = {
   id={id}
   data-type={type}
   data-duration={duration}
+  data-testid={`toast-${type}`}
   class:list={['alert shadow-lg', typeClasses[type], positionClasses[position]]}
 >
   <span>{message}</span>

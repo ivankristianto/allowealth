@@ -96,11 +96,27 @@ export function generateIncomeCategoryData(
 }
 
 /**
+ * Valid asset types matching the database schema.
+ * These are the actual values used in the asset form.
+ */
+export type ValidAssetType =
+  | 'cash'
+  | 'bank_account'
+  | 'e_wallet'
+  | 'mutual_fund'
+  | 'bond'
+  | 'crypto'
+  | 'stock'
+  | 'other'
+  | 'credit_card'
+  | 'loan';
+
+/**
  * Asset test data factory.
  */
 export interface AssetTestData {
   name: string;
-  type: 'cash' | 'bank' | 'investment' | 'other';
+  type: ValidAssetType;
   balance: number;
   currency: string;
 }
@@ -112,7 +128,7 @@ export interface AssetTestData {
 export function generateAssetData(overrides: Partial<AssetTestData> = {}): AssetTestData {
   return {
     name: `E2E Asset ${generateTestId()}`,
-    type: 'bank',
+    type: 'bank_account',
     balance: Math.floor(Math.random() * 10000000) + 1000000, // 1M-11M IDR
     currency: 'IDR',
     ...overrides,

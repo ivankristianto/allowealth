@@ -9,11 +9,15 @@ import {
   isValidationError,
 } from '@/lib/api-utils';
 import { logError } from '@/lib/utils';
+import { ASSET_TYPE_LABELS, type AssetType } from '@/lib/types/asset';
 
-// Validation schemas
+// Valid asset types derived from the canonical source of truth
+const VALID_ASSET_TYPES = Object.keys(ASSET_TYPE_LABELS) as [AssetType, ...AssetType[]];
+
+// Validation schemas using the shared asset types
 const createAssetSchema = z.object({
   name: z.string().min(1).max(255),
-  type: z.enum(['bank_account', 'mutual_fund', 'bond', 'crypto', 'stock', 'other']),
+  type: z.enum(VALID_ASSET_TYPES),
   balance: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Balance must be a valid number'),
   currency: z.enum(['IDR', 'USD']),
 });
@@ -31,10 +35,7 @@ export const GET: APIRoute = async (context) => {
     const currency = url.searchParams.get('currency');
 
     const filters: any = {};
-    if (
-      type &&
-      ['bank_account', 'mutual_fund', 'bond', 'crypto', 'stock', 'other'].includes(type)
-    ) {
+    if (type && VALID_ASSET_TYPES.includes(type as AssetType)) {
       filters.type = type;
     }
     if (currency && (currency === 'IDR' || currency === 'USD')) {
