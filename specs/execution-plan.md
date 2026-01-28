@@ -172,7 +172,7 @@ This execution plan outlines a **UI/UX-first development approach** for building
 - Profile management page
 - Currency preferences
 - Settings persistence
-- Settings pages at /settings/categories and /settings/payment-methods
+- Settings pages at /categories
 
 ### What Needs Work 🔧
 

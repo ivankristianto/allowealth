@@ -167,7 +167,7 @@ bun run typecheck         # TypeScript (blocking)
 /forecast/comparison       # Scenario comparison
 /calculators               # Compound interest calculator
 /settings                  # Profile settings
-/settings/categories       # Category management
+/categories                # Category management
 /settings/payment-methods  # Payment methods
 ```
 

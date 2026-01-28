@@ -35,7 +35,7 @@ export class CategoriesPage extends BasePage {
    * Navigate to the categories settings page.
    */
   async gotoCategories(): Promise<void> {
-    await this.navigateTo('/settings/categories');
+    await this.navigateTo('/categories');
     await expect(this.createCategoryBtn).toBeVisible();
   }
 
