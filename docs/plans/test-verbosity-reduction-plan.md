@@ -2,7 +2,7 @@
 
 **Version:** 2.1.0
 **Date:** 2026-01-28
-**Status:** Wave 1 Complete - Ready for Wave 2
+**Status:** ✅ Complete - All Waves Executed Successfully
 
 ## Executive Summary
 
@@ -349,6 +349,47 @@ ls src/__tests__/mocks/browser.ts  # Should exist
 
 ## Execution Progress
 
+### Wave 2 Results (Completed 2026-01-28)
+
+| Agent | Task                        | Status      | Output                                    |
+| ----- | --------------------------- | ----------- | ----------------------------------------- |
+| F     | Delete behavior files       | ✅ Complete | 39 files deleted (~17,100 lines removed)  |
+| G     | Refactor toastStore.test.ts | ✅ Complete | Fake timers with `vi.useFakeTimers()`     |
+| H     | Refactor timing tests       | ✅ Complete | `rate-limit.test.ts` refactored with `vi` |
+
+**Quality Gates:**
+
+- ESLint: ✅ Pass
+- Stylelint: ✅ Pass
+- Prettier: ✅ Pass
+- TypeScript: ✅ 0 errors
+- Tests: ✅ 1,656 pass, 0 fail (2.61s execution time)
+
+**Code Review Findings (Resolved):**
+
+- P1: Inconsistent fake timer API usage - Fixed (standardized on `vi`)
+- P1: Plan deviation - Documented (`vi.useFakeTimers()` preferred over `mock.setSystemTime()`)
+
+**Remaining TODOs (P2/P3):**
+
+- toastStore.test.ts: Add `mockCrypto.uninstall()` to `afterEach` (minor cleanup)
+
+### Wave 3 Results (Completed 2026-01-28)
+
+| Agent | Task             | Status      | Output                                 |
+| ----- | ---------------- | ----------- | -------------------------------------- |
+| I     | Verification     | ✅ Complete | All metrics meet targets               |
+| I     | tsconfig cleanup | ✅ Complete | Removed `*.behavior.test.ts` exclusion |
+
+**Final Metrics:**
+
+| Metric                     | Before | After  | Target | Status |
+| -------------------------- | ------ | ------ | ------ | ------ |
+| `*.behavior.test.ts` files | 39     | 0      | 0      | ✅     |
+| Tests passing              | -      | 1,656  | All    | ✅     |
+| Test execution time        | ~5s    | 2.61s  | <3s    | ✅     |
+| Lines removed              | -      | 17,100 | -      | ✅     |
+
 ### Wave 1 Results (Completed 2026-01-28)
 
 | Agent | Task                       | Status      | Output                                                            |
@@ -394,13 +435,13 @@ ls src/__tests__/mocks/browser.ts  # Should exist
 
 ### Wave 2
 
-- [ ] [F] Delete all 39 `.behavior.test.ts` files
-- [ ] [G] Refactor `toastStore.test.ts` with fake timers
-- [ ] [H] Refactor other timing-based tests
+- [x] [F] Delete all 39 `.behavior.test.ts` files
+- [x] [G] Refactor `toastStore.test.ts` with fake timers
+- [x] [H] Refactor other timing-based tests
 
 ### Wave 3
 
-- [ ] [I] Run `bun test` - all tests pass
-- [ ] [I] Verify metrics meet targets
-- [ ] [I] Remove `*.behavior.test.ts` from tsconfig exclude
-- [ ] [I] Commit changes
+- [x] [I] Run `bun test` - all tests pass
+- [x] [I] Verify metrics meet targets
+- [x] [I] Remove `*.behavior.test.ts` from tsconfig exclude
+- [x] [I] Commit changes
