@@ -31,6 +31,12 @@ export default defineConfig({
     url: E2E_BASE_URL,
     reuseExistingServer: !process.env.CI,
     timeout: 120 * 1000,
+    env: {
+      DATABASE_URL: 'db/.e2e.db',
+      PORT: String(E2E_PORT),
+      E2E_USER_EMAIL: 'demo@example.com',
+      E2E_USER_PASSWORD: 'demo123456789',
+    },
   },
 
   projects: [
@@ -40,6 +46,7 @@ export default defineConfig({
     },
     {
       name: 'chromium',
+      testMatch: /\.spec\.ts$/,
       use: {
         ...devices['Desktop Chrome'],
         storageState: 'e2e/.auth/user.json',
@@ -48,6 +55,7 @@ export default defineConfig({
     },
     {
       name: 'mobile-chrome',
+      testMatch: /\.spec\.ts$/,
       use: {
         ...devices['Pixel 5'],
         storageState: 'e2e/.auth/user.json',

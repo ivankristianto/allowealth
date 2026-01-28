@@ -6,21 +6,9 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m'
 
-# Cleanup function to restore environment on failure
-cleanup() {
-    local exit_code=$?
-    if [ $exit_code -ne 0 ] && [ -f ".env.backup" ]; then
-        echo -e "${RED}Setup failed. Restoring original .env...${NC}"
-        cp .env.backup .env
-        echo -e "${GREEN}Environment restored${NC}"
-    fi
-    exit $exit_code
-}
-trap cleanup EXIT
-
 echo -e "${YELLOW}=== E2E Environment Setup ===${NC}\n"
 
-# 1. Create .env.e2e if it doesn't exist
+# 1. Create .env.e2e if it doesn't exist (for E2E credentials reference)
 if [ ! -f ".env.e2e" ]; then
     echo -e "${YELLOW}Creating .env.e2e from .env.example...${NC}"
     if [ ! -f ".env.example" ]; then
@@ -53,35 +41,23 @@ else
     echo -e "${GREEN}.env.e2e already exists, skipping creation${NC}\n"
 fi
 
-# 2. Backup current .env if exists
-if [ -f ".env" ]; then
-    echo -e "${YELLOW}Backing up current .env to .env.backup...${NC}"
-    cp .env .env.backup
-    echo -e "${GREEN}Backup created${NC}\n"
-fi
-
-# 3. Switch to E2E environment
-echo -e "${YELLOW}Switching to E2E environment...${NC}"
-cp .env.e2e .env
-echo -e "${GREEN}Environment switched to E2E${NC}\n"
-
-# 4. Create E2E database directory if it doesn't exist
+# 2. Create E2E database directory if it doesn't exist
 mkdir -p db
 
-# 5. Delete old E2E database to ensure clean schema
+# 3. Delete old E2E database to ensure clean schema
 echo -e "${YELLOW}WARNING: This will reset the E2E database (db/.e2e.db)${NC}"
 echo -e "${YELLOW}Removing old E2E database...${NC}"
 rm -f db/.e2e.db db/.e2e.db-wal db/.e2e.db-shm
 echo -e "${GREEN}Old database removed${NC}\n"
 
-# 6. Push schema and seed database
+# 4. Push schema and seed database using E2E database
 echo -e "${YELLOW}Pushing schema to E2E database...${NC}"
-bun run db:push --force
+DATABASE_URL=db/.e2e.db bun run db:push --force
 echo -e "${YELLOW}Seeding E2E database...${NC}"
-bun run db:seed
+DATABASE_URL=db/.e2e.db bun run db:seed
 echo -e "${GREEN}E2E database ready${NC}\n"
 
 echo -e "${GREEN}=== E2E Environment Ready ===${NC}"
+echo -e "E2E tests will use: ${YELLOW}db/.e2e.db${NC}"
 echo -e "Server will run on: ${YELLOW}http://localhost:4320${NC}"
-echo -e "\nTo restore your dev environment, run:"
-echo -e "  ${YELLOW}cp .env.backup .env${NC}"
+echo -e "\nYour .env file was NOT modified."
