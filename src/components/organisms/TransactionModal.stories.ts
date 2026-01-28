@@ -3,6 +3,63 @@ import type { Meta, StoryObj } from '@storybook/html';
 const meta: Meta = {
   title: 'Organisms/TransactionModal',
   tags: ['autodocs'],
+  parameters: {
+    docs: {
+      description: {
+        component: `
+### Design System Alignment
+| Property | Value | Class |
+|----------|-------|-------|
+| Expense Icon | CircleMinus | size={24}, text-error |
+| Income Icon | CirclePlus | size={24}, text-success |
+| Edit Mode Icon | Pencil | size={24} |
+| Scan Button Icon | Sparkles | size={16}, group-hover:animate-pulse |
+
+### Layout
+- Modal container with data-transaction-modal-container
+- Uses Modal component wrapper (size="md")
+- Header with type-specific icon and title
+- TransactionEntryForm for form fields
+- Scan button (expense only, create mode)
+
+### Type-Specific Styling
+| Type | Icon Background | Icon Color | Title |
+|------|-----------------|------------|-------|
+| Expense (Create) | bg-error/10 | text-error | New Expense |
+| Expense (Edit) | bg-error/10 | text-error | Edit Expense |
+| Income (Create) | bg-success/10 | text-success | New Income |
+| Income (Edit) | bg-success/10 | text-success | Edit Income |
+
+### Header Section
+- Icon container: w-12 h-12 rounded-2xl
+- Title: h2 with font-semibold
+- Subtitle: "Log a manual transaction..." (create) or "Update the transaction details." (edit)
+
+### Scan Button (Expense Only)
+- Shown only for expense type in create mode
+- Uses Sparkles icon with hover animation
+- Shows toast: "Receipt scanning coming soon!"
+- Has data-scan-button attribute
+
+### Modal Configuration
+- closable={false} (uses custom header)
+- backdropClose={true}
+- size="md"
+
+### Accessibility
+- h2 for modal title
+- Icons have aria-hidden="true"
+- Scan button has aria-label="Scan receipt"
+- Form fields passed to TransactionEntryForm
+
+### Client-Side Behavior
+- Imports addToast from toastStore
+- Initializes on DOMContentLoaded
+- Re-initializes on astro:page-load
+        `,
+      },
+    },
+  },
   argTypes: {
     id: {
       control: 'text',

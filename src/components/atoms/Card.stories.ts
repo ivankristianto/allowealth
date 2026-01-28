@@ -3,6 +3,51 @@ import type { Meta, StoryObj } from '@storybook/html';
 const meta: Meta = {
   title: 'Atoms/Card',
   tags: ['autodocs'],
+  parameters: {
+    docs: {
+      description: {
+        component: `
+### Design System Alignment
+
+Aligned with Oasis Finance v1.0.0 design system (Task 2.2).
+
+| Property | Value | Class |
+|----------|-------|-------|
+| Default Padding | 28px (1.75rem) | \`p-7\` |
+| Compact Padding | 16px (1rem) | \`p-4\` + \`card-compact\` |
+| Large Padding | 32px (2rem) | \`p-8\` (premium) |
+| Border Radius | DaisyUI tokenized | \`--radius-box\` (0.5rem default) |
+| Shadow | Premium utility | \`shadow-premium\` |
+| Border Color | Theme-aware | \`border-base-300\` |
+| Background | Theme-aware | \`bg-base-100\` |
+
+### Hover Animation (hoverable variant)
+
+| Property | Value | Class |
+|----------|-------|-------|
+| Transform | y: -4px lift | \`hover:-translate-y-1\` |
+| Shadow | Enhanced depth | \`hover:shadow-lg\` |
+| Transition | Smooth 200ms | \`transition-all duration-200\` |
+
+### Variants
+
+| Variant | Description | Classes |
+|---------|-------------|---------|
+| Default | Standard card with border | \`card card-bordered border-base-300 p-7 shadow-premium\` |
+| Compact | Smaller padding | \`card-compact p-4\` |
+| Hoverable | Interactive lift effect | \`hover:-translate-y-1 hover:shadow-lg transition-all\` |
+| No Border | Borderless style | Remove \`card-bordered border-base-300\` |
+
+### Accessibility
+
+- **ARIA Support**: \`role\` attribute for semantic meaning (article, section, etc.)
+- **Labeling**: \`aria-labelledby\` links to heading element
+- **Keyboard**: Interactive content inside is keyboard accessible
+- **Theme**: Automatically adapts to light/dark via DaisyUI tokens
+        `,
+      },
+    },
+  },
   argTypes: {
     bordered: { control: 'boolean' },
     compact: { control: 'boolean' },

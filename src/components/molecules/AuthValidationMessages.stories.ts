@@ -6,6 +6,50 @@ const { TriangleAlert, CircleX, Lock, CircleOff, CircleCheck, X } = IconRenderer
 const meta: Meta = {
   title: 'Molecules/AuthValidationMessages',
   tags: ['autodocs'],
+  parameters: {
+    docs: {
+      description: {
+        component: `
+### Design System Alignment
+
+| Property | Value | Class |
+|----------|-------|-------|
+| Main Icon Size | 24px | \`size={24}\` |
+| Dismiss Icon Size | 16px | \`size={16}\` |
+| Icon Class | stroke-current | Inherits text color |
+| Container | DaisyUI alert | \`alert alert-{type}\` |
+| Dismiss Button | Circle ghost | \`btn btn-sm btn-circle btn-ghost\` |
+
+### Icon Mapping
+
+| Message Type | Icon | Alert Class |
+|--------------|------|-------------|
+| email-format | TriangleAlert | alert-warning |
+| password-mismatch | CircleX | alert-error |
+| password-requirements | TriangleAlert | alert-warning |
+| email-exists | CircleX | alert-error |
+| invalid-credentials | Lock | alert-error |
+| network-error | CircleOff | alert-error |
+| success | CircleCheck | alert-success |
+
+### Accessibility
+- \`role="alert"\` on container div for screen reader announcements
+- \`aria-hidden="true"\` on decorative icons
+- \`aria-label="Dismiss message"\` on dismiss button
+- Minimum height of 3rem for accessibility
+
+### Props
+- **type**: Message type (email-format, password-mismatch, etc.)
+- **message**: Optional custom message (overrides default)
+- **dismissible**: Show dismiss button (default: false)
+
+### Security
+- Uses Lucide icon components instead of inline SVG strings
+- No \`set:html\` directive, preventing XSS attacks
+        `,
+      },
+    },
+  },
   argTypes: {
     type: {
       control: 'select',

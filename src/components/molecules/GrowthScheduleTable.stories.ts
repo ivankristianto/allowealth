@@ -3,6 +3,58 @@ import type { Meta, StoryObj } from '@storybook/html';
 const meta: Meta = {
   title: 'Molecules/GrowthScheduleTable',
   tags: ['autodocs'],
+  parameters: {
+    docs: {
+      description: {
+        component: `
+### Design System Alignment
+
+| Property | Value | Class |
+|----------|-------|-------|
+| Container | Card with border | \`bg-base-100 rounded-card border border-base-300 overflow-hidden\` |
+| Header Padding | 24px | \`p-6 border-b border-base-300\` |
+| Cell Padding | 24px x 16px | \`px-6 py-4\` |
+| Header Font | 10px bold uppercase | \`text-[10px] font-bold uppercase tracking-widest\` |
+| Table Style | DaisyUI zebra | \`table table-zebra w-full text-left\` |
+
+### Table Columns
+
+| Column | Alignment | Header Color | Content Style |
+|--------|-----------|--------------|---------------|
+| Year | Left | text-base-content/50 | "Year N" bold |
+| Opening Balance | Right | text-base-content/50 | Currency (medium) |
+| Interest Earned | Right | text-success | "+" prefix, Currency (bold, green) |
+| Closing Balance | Right | text-base-content | Currency (bold) |
+
+### Header Section
+- Title: "Growth Schedule" (\`font-bold text-base-content tracking-tight\`)
+- Subtitle: "Yearly breakdown..." (\`text-[10px] uppercase tracking-widest text-base-content/50\`)
+
+### Interactive States
+- Row hover: \`hover:bg-base-200/50 transition-colors\`
+- Zebra striping via DaisyUI \`table-zebra\`
+- Row dividers: \`divide-y divide-base-300\`
+
+### Accessibility
+- Semantic \`<table>\`, \`<thead>\`, \`<tbody>\`, \`<tr>\`, \`<th>\`, \`<td>\`
+- Right-aligned numeric columns (standard practice)
+- Currency symbols included in formatted amounts
+- Meets WCAG AA contrast requirements
+
+### Responsive Design
+- \`overflow-x-auto\` enables horizontal scroll on mobile
+- All 4 columns always present (no hiding)
+- Table structure maintained on all screen sizes
+
+### Props
+- **data**: YearlyData[] (year, openingBalance, interest, closingBalance)
+- **currency**: IDR | USD (default: IDR)
+- **className**: Additional CSS classes
+- **id**: Optional element ID
+        `,
+      },
+    },
+  },
   argTypes: {
     currency: {
       control: 'select',

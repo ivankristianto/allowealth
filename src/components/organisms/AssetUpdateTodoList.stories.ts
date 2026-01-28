@@ -11,6 +11,55 @@ const { Calendar, Pencil, X, RefreshCw, Check } = IconRenderers;
 const meta: Meta = {
   title: 'Organisms/AssetUpdateTodoList',
   tags: ['autodocs'],
+  parameters: {
+    docs: {
+      description: {
+        component: `
+### Design System Alignment
+| Property | Value | Class |
+|----------|-------|-------|
+| Header Icon | Calendar | size={20}, text-warning |
+| Edit Button Icon | Pencil | size={16}, stroke-current |
+| Dismiss Button Icon | X | size={16}, stroke-current |
+| Update All Icon | RefreshCw | size={16}, stroke-current |
+| Empty State Icon | Check | size={48}, text-success |
+
+### Layout
+- Card container with border and rounded corners
+- Header with Calendar icon and count badge
+- Scrollable list with priority-sorted items
+- "Update All Assets" button at bottom with divider
+
+### Priority System
+| Priority | Background | Border | Icon |
+|----------|------------|--------|------|
+| High | bg-error/10 | border-error/20 | Badge error |
+| Medium | bg-warning/10 | border-warning/20 | Badge warning |
+| Low | bg-success/10 | border-success/20 | Badge success |
+| None | bg-base-200 | border-base-300 | Badge neutral |
+
+### Accessibility
+- All icons have aria-hidden="true" (decorative)
+- Action buttons have aria-label for screen readers
+- Priority indicator has role="img" with aria-label
+- List has role="list" with aria-label="Assets needing updates"
+- Loading skeleton has role="status", aria-live="polite"
+
+### Data Display
+- Asset name with truncate for overflow
+- Asset type badge (Bank Account, Mutual Fund, etc.)
+- Balance formatted with formatCurrency()
+- Days since update with singular/plural handling
+- High priority items show "X days ago" in text-error
+
+### Responsive Design
+- Full-width card layout on mobile
+- Touch targets minimum 44x44px (btn-sm)
+- Stacked asset info in single column
+        `,
+      },
+    },
+  },
   argTypes: {
     assets: {
       control: 'object',

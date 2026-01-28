@@ -4,6 +4,57 @@ import { TrendingUp, House, PiggyBank } from '@lucide/astro';
 const meta: Meta = {
   title: 'Molecules/TabSwitcher',
   tags: ['autodocs'],
+  parameters: {
+    docs: {
+      description: {
+        component: `
+### Design System Alignment
+
+| Property | Value | Class |
+|----------|-------|-------|
+| Icon Size | 18px | \`size={18}\` |
+| Icon Class | stroke-current | Inherits text color |
+| Container | DaisyUI tabs | \`tabs bg-base-200 p-1.5 rounded-2xl\` |
+| Tab Padding | 12px vertical | \`py-3\` |
+| Tab Font | text-xs font-bold | Small, bold text |
+| Tab Radius | rounded-xl | Rounded corners |
+| Gap | 8px | \`gap-2\` between icon and label |
+
+### Icon Mapping
+
+| Tab ID | Icon | Label |
+|--------|------|-------|
+| compound | TrendingUp | Compound Interest |
+| loan | House | Loan & Mortgage |
+| savings | PiggyBank | Savings Goal |
+
+### Tab States
+
+| State | Classes |
+|-------|---------|
+| Active | \`bg-base-100 shadow-md text-primary tab-active\` |
+| Inactive | \`text-neutral hover:text-primary\` |
+
+### Accessibility
+- \`role="tablist"\` on container
+- \`role="tab"\` on each button
+- \`aria-selected="true|false"\` based on active state
+- \`aria-controls="{id}-panel"\` links to content
+- \`id="{id}-tab"\` for programmatic reference
+- \`aria-hidden="true"\` on decorative icons
+
+### Responsive Behavior
+- Icon always visible (\`shrink-0\`)
+- Label hidden on mobile: \`hidden sm:inline\`
+- Full-width tabs: \`flex-1\`
+
+### Props
+- **activeTab**: Currently active tab ID (compound | loan | savings)
+- **className**: Additional CSS classes
+        `,
+      },
+    },
+  },
   argTypes: {
     activeTab: {
       control: 'select',

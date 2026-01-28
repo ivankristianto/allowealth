@@ -20,6 +20,58 @@ import {
 const meta: Meta = {
   title: 'Molecules/BudgetHealthWidget',
   tags: ['autodocs'],
+  parameters: {
+    docs: {
+      description: {
+        component: `
+### Design System Alignment
+
+| Property | Value | Class |
+|----------|-------|-------|
+| Status Icon Size | 22px | \`size={22}\` (md) |
+| Large Icon Size | 24px | \`size={24}\` (lg) |
+| Arrow Icon Size | 16px | \`size={16}\` (xs) |
+| Icon Class | stroke-current | Inherits status color |
+| Container | Rounded card | \`p-4 rounded-lg border\` |
+
+### Icon Mapping
+
+| Context | Icon | Usage |
+|---------|------|-------|
+| Healthy Status | Check | Header icon, no alerts state |
+| Warning/Exceeded | TriangleAlert | Budget alerts |
+| View Budget Link | ArrowRight | Action link with hover animation |
+
+### Status Colors
+
+| Status | Text Color | Background | Border |
+|--------|-----------|------------|--------|
+| healthy | text-success | bg-success/10 | border-success/20 |
+| warning | text-warning | bg-warning/10 | border-warning/20 |
+| exceeded | text-error | bg-error/10 | border-error/20 |
+
+### Badge Labels
+
+| Status | Label |
+|--------|-------|
+| healthy | All Good |
+| warning | Review |
+| exceeded | Action Needed |
+
+### Accessibility
+- \`aria-hidden="true"\` on all decorative icons
+- \`aria-label="View detailed budget breakdown"\` on action link
+- \`role="progressbar"\` with aria-valuenow/min/max on progress bars
+- \`data-budget-health-widget\` attribute for testing
+
+### Props
+- **data**: Budget health data object (alertCount, status, alerts)
+- **viewBudgetUrl**: Custom URL for action link (default: /budget)
+- **className**: Additional CSS classes
+        `,
+      },
+    },
+  },
   argTypes: {
     data: {
       control: 'object',

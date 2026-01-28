@@ -6,6 +6,48 @@ const { Menu, Plus, Bell, ChevronDown } = IconRenderers;
 const meta: Meta = {
   title: 'Layouts/Header',
   tags: ['autodocs'],
+  parameters: {
+    docs: {
+      description: {
+        component: `
+### Design System Alignment (Oasis Finance v1.0.0)
+
+| Property | Value | Class/Token |
+|----------|-------|-------------|
+| Height | 5rem (80px) | \`h-20\` |
+| Padding | 1.25rem | \`p-5\` |
+| Background | Glass effect | \`glass-effect\` |
+| Border | Theme-aware | \`border-base-300\` |
+| Icon Size | 22px | \`size={22}\` (md) |
+
+### CTA Button Styling
+
+| Property | Value | Class |
+|----------|-------|-------|
+| Style | Accent color | \`btn-accent\` |
+| Size | Small | \`btn-sm\` |
+| Shadow | Accent glow | \`shadow-accent-glow\` |
+
+### Responsive Behavior
+- **Mobile**: Menu toggle visible, "New Entry" text hidden (icon only)
+- **Desktop (lg+)**: Menu toggle hidden, full "New Entry" button with text
+- **Subtitle**: Hidden on mobile, visible on sm+ breakpoint
+
+### Glass Effect Properties
+- Backdrop filter: \`blur(12px)\`
+- Background: \`rgba(255, 255, 255, 0.8)\`
+- Applied via \`.glass-effect\` utility class
+
+### Accessibility
+- Menu toggle: \`aria-label="Toggle menu"\`
+- Add new button: \`aria-label="Add new item"\`
+- Notifications button: \`aria-label="Notifications"\`, \`aria-haspopup="true"\`, \`aria-expanded\`
+- Semantic \`<header>\` element with proper landmark
+- All icons have \`aria-hidden="true"\`
+        `,
+      },
+    },
+  },
   argTypes: {
     currentPath: {
       control: 'select',

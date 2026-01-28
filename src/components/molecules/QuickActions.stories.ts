@@ -6,6 +6,57 @@ const { ShoppingCart, CircleDollarSign, Plus } = IconRenderers;
 const meta: Meta = {
   title: 'Molecules/QuickActions',
   tags: ['autodocs'],
+  parameters: {
+    docs: {
+      description: {
+        component: `
+### Design System Alignment
+
+| Property | Value | Class |
+|----------|-------|-------|
+| Icon Size | 24px | \`size={24}\` (IconBadge md) |
+| Icon Class | stroke-current | Inherits badge color |
+| Card Background | White | \`bg-base-100\` |
+| Card Border | Base 300 | \`border border-base-300\` |
+| Card Padding | 32px x 28px | \`px-8 py-7\` |
+| Border Radius | Large | \`rounded-2xl\` |
+| Gap | 24px | \`gap-6\` (increased from gap-3) |
+
+### Icon Mapping
+
+| Action | Icon | Badge Variant |
+|--------|------|---------------|
+| Add Expense | ShoppingCart | accent (indigo) |
+| Log Income | CircleDollarSign | success (emerald) |
+| Add Asset | Plus | success (emerald) |
+
+### Interactive States
+
+| State | Effect |
+|-------|--------|
+| Hover | \`scale-[1.02]\`, \`shadow-md\`, \`bg-base-200\` |
+| Active | \`scale-95\` (press feedback) |
+| IconBadge Hover | \`scale-110\` via group-hover |
+
+### Responsive Layout
+- Mobile: \`flex-col\` (vertical stacking)
+- Desktop (>=640px): \`sm:flex-row\` (horizontal)
+- Buttons use \`flex-1\` for equal widths
+
+### Accessibility
+- \`role="group"\` on container
+- \`aria-label="Quick actions"\` on container
+- \`aria-label\` on each action link (e.g., "Add new expense transaction")
+- \`aria-hidden="true"\` on decorative icons
+- \`focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2\`
+
+### Props
+- **actions**: Array of QuickAction objects (optional, uses defaults)
+- **className**: Additional CSS classes
+        `,
+      },
+    },
+  },
   argTypes: {
     actions: {
       control: 'object',

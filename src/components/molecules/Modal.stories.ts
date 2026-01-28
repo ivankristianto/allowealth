@@ -6,6 +6,61 @@ const { X } = IconRenderers;
 const meta: Meta = {
   title: 'Molecules/Modal',
   tags: ['autodocs'],
+  parameters: {
+    docs: {
+      description: {
+        component: `
+### Design System Alignment
+
+| Property | Value | Class |
+|----------|-------|-------|
+| Close Icon Size | 16px | \`size={16}\` |
+| Icon Class | stroke-current | Inherits text color |
+| Close Button | Circle ghost | \`btn btn-sm btn-circle btn-ghost\` |
+| Container | DaisyUI dialog | \`modal\` |
+
+### Size Variants
+
+| Size | Max Width | Class |
+|------|-----------|-------|
+| sm | 448px | \`max-w-md\` |
+| md | 512px | \`max-w-lg\` |
+| lg | 672px | \`max-w-2xl\` |
+| xl | 896px | \`max-w-4xl\` |
+
+### Accessibility
+- Native \`<dialog>\` element provides built-in accessibility
+- \`aria-label="Close modal"\` on close button
+- \`aria-hidden="true"\` on decorative X icon
+- Focus trap is native to dialog element
+- ESC key closes modal automatically
+
+### Props
+- **id**: Required, unique identifier for dialog
+- **title**: Optional modal title
+- **open**: Controls visibility (default: false)
+- **size**: sm | md | lg | xl (default: md)
+- **closable**: Show close button (default: true)
+- **backdropClose**: Close on backdrop click (default: true)
+- **className**: Additional CSS classes
+
+### Slots
+- **default**: Main content area
+- **actions**: Footer buttons (Cancel, Confirm, etc.)
+
+### Keyboard Navigation
+- ESC: Closes modal
+- Tab: Cycles focus within modal
+- Enter: Activates focused buttons
+
+### Motion Preference
+- Respects \`prefers-reduced-motion\` OS setting
+- Animations disabled when reduced motion enabled
+- Uses Motion library for enter/exit animations
+        `,
+      },
+    },
+  },
   argTypes: {
     size: {
       control: 'select',
@@ -92,6 +147,7 @@ const createModal = (args: {
   modalBox.appendChild(content);
 
   // Actions
+  // TODO: P2 - Replace inline onclick with event listener for consistency
   const actions = document.createElement('div');
   actions.className = 'modal-action';
   actions.innerHTML = `

@@ -3,6 +3,60 @@ import type { Meta, StoryObj } from '@storybook/html';
 const meta: Meta = {
   title: 'Molecules/TransactionForm',
   tags: ['autodocs'],
+  parameters: {
+    docs: {
+      description: {
+        component: `
+### Design System Alignment
+
+| Property | Value | Class |
+|----------|-------|-------|
+| Warning Icon | 16px | \`TriangleAlert size={16}\` |
+| Success Icon | 24px | \`Check size={24}\` |
+| Form Gap | 16px | \`flex flex-col gap-4\` |
+| Input Height | 40px | \`h-10\` |
+| Input Padding | 8px 12px | \`pt-2 pb-2 pl-3 pr-10\` |
+| Font Size | text-xs | Small text in inputs |
+| Background | bg-base-200 | Input background |
+| Focus Ring | ring-accent | \`focus:ring-2 focus:ring-accent focus:ring-opacity-20\` |
+
+### Form Fields
+
+| Field | Type | Required | Validation |
+|-------|------|----------|------------|
+| Type | Radio toggle | Yes | expense or income |
+| Amount | Number input | Yes | min=0, step=0.01 |
+| Category | Select | Yes | Must select |
+| Asset | Select | Yes | Must select |
+| Date | Date picker | Yes | max=today |
+| Description | Textarea | No | maxlength=500 |
+
+### Client-Side Features
+- Validation on blur
+- Visual feedback with TriangleAlert icon for errors
+- Character counter for description
+- Loading states for submit button
+
+### Action Buttons
+- Cancel: \`btn btn-ghost text-accent hover:bg-accent/5\`
+- Submit: \`btn btn-accent shadow-accent-glow\`
+- Button height: \`h-10 px-5 py-2.5 text-sm\`
+- Focus: \`focus:ring-2 focus:ring-offset-2 focus:ring-accent\`
+
+### Accessibility
+- \`role="radiogroup"\` on type toggle
+- Labels with required indicators
+- \`aria-describedby\` for field descriptions
+- Error messages associated with inputs
+
+### Props
+- **mode**: create | edit (changes submit button text)
+- **type**: expense | income (default type selection)
+- **transaction**: Optional transaction data for edit mode
+        `,
+      },
+    },
+  },
   argTypes: {
     mode: {
       control: 'select',

@@ -3,6 +3,69 @@ import type { Meta, StoryObj } from '@storybook/html';
 const meta: Meta = {
   title: 'Molecules/RegistrationForm',
   tags: ['autodocs'],
+  parameters: {
+    docs: {
+      description: {
+        component: `
+### Design System Alignment
+
+| Property | Value | Class |
+|----------|-------|-------|
+| Form Width | 400px max | \`max-width: 400px\` |
+| Field Gap | 24px | \`space-y-6\` |
+| Input Style | DaisyUI bordered | \`input input-bordered w-full\` |
+| Submit Button | Accent | \`btn btn-accent w-full\` |
+| Toggle Button | Circle ghost | \`btn btn-ghost btn-circle btn-sm\` |
+
+### Form Fields
+
+| Field | Type | Required | Autocomplete |
+|-------|------|----------|--------------|
+| Full Name | text | Yes | name |
+| Email Address | email | Yes | email |
+| Password | password | Yes | new-password |
+| Confirm Password | password | Yes | new-password |
+
+### Password Requirements (3 requirements)
+- At least 12 characters
+- At least one letter (A-Z or a-z)
+- At least one number or special character
+
+### Password Strength Meter
+- 4 bars visual indicator
+- 0 requirements: gray bars, "Not entered"
+- 1 requirement: 1 red bar, "Weak"
+- 2 requirements: 2 orange bars, "Medium"
+- 3 requirements: 4 green bars, "Strong"
+
+### Validation Messages
+- Name: minimum 2 characters
+- Email: valid format required
+- Password: must meet all 3 requirements
+- Confirm: must match password
+
+### Accessibility
+- \`data-registration-form\` attribute for testing
+- \`aria-live="polite"\` on messages container
+- \`aria-atomic="true"\` for complete updates
+- \`aria-label="required"\` on required indicators
+- \`novalidate\` for custom validation
+- Password toggle: \`aria-label="Toggle password visibility"\`
+
+### Interactive States
+- Loading: spinner + "Creating account..."
+- Success: green alert, "Account created!"
+- Error: red alert with error list
+
+### Props
+- **action**: Form submission URL (default: /api/auth/register)
+- **method**: HTTP method (default: POST)
+- **submitText**: Button text (default: Create Account)
+- **loginLink**: Existing account link (default: /login)
+        `,
+      },
+    },
+  },
 };
 
 export default meta;

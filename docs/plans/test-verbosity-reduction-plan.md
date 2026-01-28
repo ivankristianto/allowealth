@@ -1,8 +1,8 @@
 # Test Verbosity Reduction Plan
 
-**Version:** 2.0.0
+**Version:** 2.1.0
 **Date:** 2026-01-28
-**Status:** Ready for Execution
+**Status:** Wave 1 Complete - Ready for Wave 2
 
 ## Executive Summary
 
@@ -120,86 +120,33 @@ CREATE: 1 file (browser.ts)
 
 ### Agent A: Create Browser Mocks
 
-Create `src/__tests__/mocks/browser.ts`:
+Created `src/__tests__/mocks/browser.ts` with consistent API across all mocks:
+
+- `install()` - Install the mock (preserves original)
+- `reset()` - Reset internal state
+- `uninstall()` - Restore original global
 
 ```typescript
-/**
- * Browser API Mocks
- * Shared mock utilities for testing code that depends on browser APIs.
- */
+// See actual implementation in src/__tests__/mocks/browser.ts
+// Key exports:
+export function createMockCrypto(): {
+  install: () => void;
+  reset: () => void;
+  uninstall: () => void;
+};
 
-/**
- * Creates a deterministic UUID generator for testing.
- */
-export function createMockCrypto() {
-  let counter = 0;
+export function createMockLocalStorage(): {
+  install: () => void;
+  reset: () => void;
+  uninstall: () => void;
+  getStore: () => Record<string, string>;
+};
 
-  const mockRandomUUID = (): `${string}-${string}-${string}-${string}-${string}` => {
-    const id = String(counter++).padStart(12, '0');
-    return `00000000-0000-0000-0000-${id}`;
-  };
-
-  return {
-    install: () => {
-      globalThis.crypto = { ...globalThis.crypto, randomUUID: mockRandomUUID } as Crypto;
-    },
-    reset: () => {
-      counter = 0;
-    },
-  };
-}
-
-/**
- * Creates an in-memory localStorage mock.
- */
-export function createMockLocalStorage() {
-  let store: Record<string, string> = {};
-
-  return {
-    install: () => {
-      globalThis.localStorage = {
-        getItem: (key: string) => store[key] ?? null,
-        setItem: (key: string, value: string) => {
-          store[key] = value;
-        },
-        removeItem: (key: string) => {
-          delete store[key];
-        },
-        clear: () => {
-          store = {};
-        },
-        get length() {
-          return Object.keys(store).length;
-        },
-        key: (index: number) => Object.keys(store)[index] ?? null,
-      };
-    },
-    reset: () => {
-      store = {};
-    },
-    getStore: () => ({ ...store }),
-  };
-}
-
-/**
- * Creates a matchMedia mock for theme testing.
- */
-export function createMockMatchMedia(prefersDark = false) {
-  return {
-    install: () => {
-      globalThis.matchMedia = (query: string) => ({
-        matches: query === '(prefers-color-scheme: dark)' ? prefersDark : false,
-        media: query,
-        onchange: null,
-        addListener: () => {},
-        removeListener: () => {},
-        addEventListener: () => {},
-        removeEventListener: () => {},
-        dispatchEvent: () => true,
-      });
-    },
-  };
-}
+export function createMockMatchMedia(prefersDark?: boolean): {
+  install: () => void;
+  reset: () => void;
+  uninstall: () => void;
+};
 ```
 
 ### Agents B-E: Extract Documentation to Storybook
@@ -400,15 +347,50 @@ ls src/__tests__/mocks/browser.ts  # Should exist
 | `@/__tests__` path alias | tsconfig        | Works via `@/*` |
 | Storybook autodocs       | Already enabled | Available       |
 
+## Execution Progress
+
+### Wave 1 Results (Completed 2026-01-28)
+
+| Agent | Task                       | Status      | Output                                                            |
+| ----- | -------------------------- | ----------- | ----------------------------------------------------------------- |
+| A     | Create browser mocks       | ✅ Complete | 1 file created with `install()`, `reset()`, `uninstall()` methods |
+| B     | Extract atoms docs         | ✅ Complete | 5 files modified                                                  |
+| C     | Extract molecules docs     | ✅ Complete | 9 files modified, 7 files created                                 |
+| D     | Extract organisms docs     | ✅ Complete | 5 files modified, 2 files created                                 |
+| E     | Extract layouts+pages docs | ✅ Complete | 2 files modified, 8 files created                                 |
+
+**Quality Gates:**
+
+- ESLint: ✅ Pass
+- Stylelint: ✅ Pass
+- Prettier: ✅ Pass
+- TypeScript: ✅ 0 errors
+- Tests: ✅ 3,459 pass, 0 fail
+
+**Code Review Findings (Resolved):**
+
+- P0: Input.stories.ts aria-describedby linkage - Fixed
+- P0: TransactionList.stories.ts XSS pattern - Fixed (textContent)
+- P1: browser.ts missing reset/uninstall - Fixed
+- P1: Label-input association - Fixed
+- P1: alert() usage - Fixed (console.log)
+
+**Remaining TODOs (P2/P3):**
+
+- Badge.stories.ts: Consolidate duplicate stories
+- Modal.stories.ts: Replace inline onclick
+- DashboardPage.stories.ts: Add more story variants
+- browser.ts: Bounds check for key() method
+
 ## Execution Checklist
 
 ### Wave 1
 
-- [ ] [A] Create `src/__tests__/mocks/browser.ts`
-- [ ] [B] Extract atoms docs to stories (5 files)
-- [ ] [C] Extract molecules docs to stories (16 files)
-- [ ] [D] Extract organisms docs to stories (7 files)
-- [ ] [E] Extract layouts+pages docs to stories (9 files)
+- [x] [A] Create `src/__tests__/mocks/browser.ts`
+- [x] [B] Extract atoms docs to stories (5 files)
+- [x] [C] Extract molecules docs to stories (16 files)
+- [x] [D] Extract organisms docs to stories (7 files)
+- [x] [E] Extract layouts+pages docs to stories (10 files)
 
 ### Wave 2
 
