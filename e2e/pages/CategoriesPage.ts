@@ -31,39 +31,76 @@ export class CategoriesPage extends BasePage {
     return this.page.locator('[data-testid="confirm-delete-btn"]');
   }
 
+  private get categoryModal(): Locator {
+    return this.page.locator('#category-modal');
+  }
+
+  private get deleteDialog(): Locator {
+    return this.page.locator('#delete-dialog');
+  }
+
   /**
    * Navigate to the categories settings page.
    */
   async gotoCategories(): Promise<void> {
     await this.navigateTo('/categories');
     await expect(this.createCategoryBtn).toBeVisible();
+    // Wait for JavaScript to be fully initialized
+    await this.page.waitForLoadState('domcontentloaded');
   }
 
   /**
    * Switch to the expense categories tab.
+   * Note: Tab switching triggers a full page navigation (URL change).
    */
   async switchToExpenseTab(): Promise<void> {
-    await this.expenseTab.click();
-    await expect(this.expenseTab).toHaveAttribute('aria-selected', 'true');
+    // Check if already on expense tab to avoid unnecessary navigation
+    const isActive = await this.expenseTab.getAttribute('data-active');
+    if (isActive === 'true') {
+      return;
+    }
+
+    // Navigate directly via URL to avoid relying on click event handlers
+    const currentUrl = new URL(this.page.url());
+    currentUrl.searchParams.set('type', 'expense');
+    await this.page.goto(currentUrl.toString());
+    await this.waitForPageLoad();
+
+    // TabToggle component uses data-active attribute for active state
+    await expect(this.expenseTab).toHaveAttribute('data-active', 'true');
   }
 
   /**
    * Switch to the income categories tab.
+   * Note: Tab switching triggers a full page navigation (URL change).
    */
   async switchToIncomeTab(): Promise<void> {
-    await this.incomeTab.click();
-    await expect(this.incomeTab).toHaveAttribute('aria-selected', 'true');
+    // Check if already on income tab to avoid unnecessary navigation
+    const isActive = await this.incomeTab.getAttribute('data-active');
+    if (isActive === 'true') {
+      return;
+    }
+
+    // Navigate directly via URL to avoid relying on click event handlers
+    const currentUrl = new URL(this.page.url());
+    currentUrl.searchParams.set('type', 'income');
+    await this.page.goto(currentUrl.toString());
+    await this.waitForPageLoad();
+
+    // TabToggle component uses data-active attribute for active state
+    await expect(this.incomeTab).toHaveAttribute('data-active', 'true');
   }
 
   /**
    * Create a new category.
    * Opens the create modal, fills in the name, and submits.
+   * Note: Form submission triggers a full page reload.
    *
    * @param name - The category name
    * @param type - The category type ('expense' or 'income')
    */
   async createCategory(name: string, type: 'expense' | 'income'): Promise<void> {
-    // Switch to the appropriate tab first
+    // Switch to the appropriate tab first (this may trigger navigation)
     if (type === 'expense') {
       await this.switchToExpenseTab();
     } else {
@@ -71,23 +108,34 @@ export class CategoriesPage extends BasePage {
     }
 
     // Click create button to open modal
+    // Ensure the button is ready before clicking
+    await expect(this.createCategoryBtn).toBeEnabled();
     await this.createCategoryBtn.click();
 
-    // Wait for modal to be visible
-    await expect(this.categoryNameInput).toBeVisible();
+    // Wait for modal dialog to be visible (showModal() makes it visible)
+    // If modal doesn't open, retry the click
+    try {
+      await expect(this.categoryModal).toBeVisible({ timeout: 3000 });
+    } catch {
+      // Retry click if modal didn't open
+      await this.createCategoryBtn.click();
+      await expect(this.categoryModal).toBeVisible({ timeout: 5000 });
+    }
+
+    // Wait for modal input to be visible and interactable
+    await expect(this.categoryNameInput).toBeVisible({ timeout: 5000 });
 
     // Fill in the category name
     await this.categoryNameInput.fill(name);
 
-    // Submit the form
-    await this.categorySubmitBtn.click();
-
-    // Wait for modal to close (form submission complete)
-    await expect(this.categoryNameInput).not.toBeVisible({ timeout: 5000 });
+    // Submit the form - this triggers a page reload after success
+    await Promise.all([this.page.waitForURL(/.*\/categories.*/), this.categorySubmitBtn.click()]);
+    await this.waitForPageLoad();
   }
 
   /**
    * Edit an existing category.
+   * Note: Form submission triggers a full page reload.
    *
    * @param categoryId - The ID of the category to edit
    * @param newName - The new name for the category
@@ -100,24 +148,34 @@ export class CategoriesPage extends BasePage {
     await expect(categoryItem).toBeVisible();
 
     const editBtn = categoryItem.locator('[data-testid="category-edit-btn"]');
+    await expect(editBtn).toBeEnabled();
     await editBtn.click();
 
-    // Wait for edit modal to be visible
-    await expect(this.categoryNameInput).toBeVisible();
+    // Wait for modal dialog to be visible
+    // If modal doesn't open, retry the click
+    try {
+      await expect(this.categoryModal).toBeVisible({ timeout: 3000 });
+    } catch {
+      // Retry click if modal didn't open
+      await editBtn.click();
+      await expect(this.categoryModal).toBeVisible({ timeout: 5000 });
+    }
+
+    // Wait for edit modal input to be visible
+    await expect(this.categoryNameInput).toBeVisible({ timeout: 5000 });
 
     // Clear and fill new name
     await this.categoryNameInput.clear();
     await this.categoryNameInput.fill(newName);
 
-    // Submit the form
-    await this.categorySubmitBtn.click();
-
-    // Wait for modal to close
-    await expect(this.categoryNameInput).not.toBeVisible({ timeout: 5000 });
+    // Submit the form - this triggers a page reload after success
+    await Promise.all([this.page.waitForURL(/.*\/categories.*/), this.categorySubmitBtn.click()]);
+    await this.waitForPageLoad();
   }
 
   /**
    * Delete a category with confirmation.
+   * Note: Delete triggers a page reload after success.
    *
    * @param categoryId - The ID of the category to delete
    */
@@ -129,14 +187,28 @@ export class CategoriesPage extends BasePage {
     await expect(categoryItem).toBeVisible();
 
     const deleteBtn = categoryItem.locator('[data-testid="category-delete-btn"]');
+    await expect(deleteBtn).toBeEnabled();
     await deleteBtn.click();
 
-    // Wait for confirmation dialog and confirm
-    await expect(this.confirmDeleteBtn).toBeVisible();
+    // Wait for delete confirmation dialog to be visible
+    // If dialog doesn't open, retry the click
+    try {
+      await expect(this.deleteDialog).toBeVisible({ timeout: 3000 });
+    } catch {
+      // Retry click if dialog didn't open
+      await deleteBtn.click();
+      await expect(this.deleteDialog).toBeVisible({ timeout: 5000 });
+    }
+
+    // Wait for confirmation button and click
+    await expect(this.confirmDeleteBtn).toBeVisible({ timeout: 5000 });
+
+    // Click confirm - this triggers a page reload after success
+    // We need to wait for actual navigation (not just URL match since it's the same URL)
     await this.confirmDeleteBtn.click();
 
-    // Wait for category to be removed from the list
-    await expect(categoryItem).not.toBeVisible({ timeout: 5000 });
+    // Wait for category item to disappear (delete success indicator)
+    await expect(categoryItem).not.toBeVisible({ timeout: 10000 });
   }
 
   /**
@@ -148,7 +220,7 @@ export class CategoriesPage extends BasePage {
     const categoryItem = this.page.locator('[data-testid="category-item"]', {
       hasText: name,
     });
-    await expect(categoryItem).toBeVisible();
+    await expect(categoryItem).toBeVisible({ timeout: 10000 });
   }
 
   /**

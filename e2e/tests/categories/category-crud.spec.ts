@@ -10,8 +10,12 @@ import { generateTestId, generateExpenseCategoryData } from '../../helpers';
  * - Verify edit is saved
  * - Delete category
  * - Verify category is removed
+ *
+ * Note: Tests run serially to avoid database state conflicts.
  */
 test.describe('Category CRUD Operations', () => {
+  // Run tests serially - categories share database state
+  test.describe.configure({ mode: 'serial' });
   test('should create, edit, and delete expense category', async ({ categoriesPage }) => {
     // Generate unique test data
     const categoryData = generateExpenseCategoryData();
@@ -63,9 +67,9 @@ test.describe('Category CRUD Operations', () => {
     // Verify category exists
     await categoriesPage.expectCategoryExists(categoryData.name);
 
-    // Verify expense tab is still selected
+    // Verify expense tab is still selected (TabToggle uses data-active attribute)
     const expenseTab = categoriesPage.getByTestId('type-filter-expense');
-    await expect(expenseTab).toHaveAttribute('aria-selected', 'true');
+    await expect(expenseTab).toHaveAttribute('data-active', 'true');
 
     // Clean up: Delete the created category
     const categoryId = await categoriesPage.getCategoryIdByName(categoryData.name);
