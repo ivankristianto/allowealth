@@ -1,4 +1,6 @@
 import { Page, APIRequestContext } from '@playwright/test';
+import * as fs from 'fs';
+import * as path from 'path';
 
 /**
  * API helper functions for E2E test setup and teardown.
@@ -11,13 +13,72 @@ import { Page, APIRequestContext } from '@playwright/test';
  * a standalone `request` fixture. The global-setup.ts saves auth state to
  * e2e/.auth/user.json which is loaded by test projects.
  *
+ * CSRF Protection:
+ * ----------------
+ * All state-changing requests (POST, PUT, DELETE) require a CSRF token header.
+ * The token is extracted from the storage state file and included automatically.
+ *
  * Example usage in tests:
  *   const { id } = await createTransactionViaAPI(page.request, {...});
- *
- * @TODO: P2 - Consider adding explicit auth token parameter for standalone API testing
  */
 
 const E2E_BASE_URL = process.env.E2E_BASE_URL || 'http://localhost:4320';
+const AUTH_STATE_PATH = path.resolve(process.cwd(), 'e2e/.auth/user.json');
+
+/**
+ * CSRF token header name (must match src/lib/csrf.ts)
+ */
+const CSRF_HEADER_NAME = 'X-CSRF-Token';
+
+/**
+ * CSRF cookie name (must match src/lib/csrf.ts)
+ */
+const CSRF_COOKIE_NAME = 'csrf_token';
+
+/**
+ * Cache for the CSRF token to avoid repeated file reads
+ */
+let cachedCsrfToken: string | null = null;
+
+/**
+ * Get the CSRF token from the storage state file.
+ * The token is cached after first read for performance.
+ * @returns CSRF token string
+ */
+function getCsrfToken(): string {
+  if (cachedCsrfToken) {
+    return cachedCsrfToken;
+  }
+
+  try {
+    const storageState = JSON.parse(fs.readFileSync(AUTH_STATE_PATH, 'utf-8'));
+    const csrfCookie = storageState.cookies?.find(
+      (cookie: { name: string; value: string }) => cookie.name === CSRF_COOKIE_NAME
+    );
+
+    if (!csrfCookie?.value) {
+      throw new Error(`CSRF cookie not found in storage state file: ${AUTH_STATE_PATH}`);
+    }
+
+    // Decode URL-encoded token
+    cachedCsrfToken = decodeURIComponent(csrfCookie.value);
+    return cachedCsrfToken;
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('CSRF cookie not found')) {
+      throw error;
+    }
+    throw new Error(
+      `Failed to read CSRF token from storage state: ${error instanceof Error ? error.message : 'Unknown error'}`
+    );
+  }
+}
+
+/**
+ * Clear the cached CSRF token (useful for tests that need fresh state)
+ */
+export function clearCsrfTokenCache(): void {
+  cachedCsrfToken = null;
+}
 
 /**
  * Create a transaction via API for test setup.
@@ -32,25 +93,35 @@ export async function createTransactionViaAPI(
     categoryId: string;
     assetId: string;
     date?: string;
+    currency?: 'IDR' | 'USD';
     description?: string;
   }
 ): Promise<{ id: string }> {
   const response = await request.post(`${E2E_BASE_URL}/api/transactions`, {
+    headers: {
+      [CSRF_HEADER_NAME]: getCsrfToken(),
+    },
     data: {
       type: data.type,
-      amount: data.amount,
-      categoryId: data.categoryId,
-      assetId: data.assetId,
-      date: data.date || new Date().toISOString().split('T')[0],
+      // API expects amount as string
+      amount: data.amount.toString(),
+      currency: data.currency || 'IDR',
+      // API uses snake_case field names
+      category_id: data.categoryId,
+      asset_id: data.assetId,
+      transaction_date: data.date || new Date().toISOString().split('T')[0],
       description: data.description || 'E2E Test Transaction',
     },
   });
 
   if (!response.ok()) {
-    throw new Error(`Failed to create transaction: ${response.status()}`);
+    const errorBody = await response.text();
+    throw new Error(`Failed to create transaction: ${response.status()} - ${errorBody}`);
   }
 
-  return response.json();
+  // API returns { success: true, data: {...} }, extract the data
+  const result = await response.json();
+  return result.data;
 }
 
 /**
@@ -68,6 +139,9 @@ export async function createCategoryViaAPI(
   }
 ): Promise<{ id: string }> {
   const response = await request.post(`${E2E_BASE_URL}/api/categories`, {
+    headers: {
+      [CSRF_HEADER_NAME]: getCsrfToken(),
+    },
     data: {
       name: data.name,
       type: data.type,
@@ -77,10 +151,13 @@ export async function createCategoryViaAPI(
   });
 
   if (!response.ok()) {
-    throw new Error(`Failed to create category: ${response.status()}`);
+    const errorBody = await response.text();
+    throw new Error(`Failed to create category: ${response.status()} - ${errorBody}`);
   }
 
-  return response.json();
+  // API returns { success: true, data: {...} }, extract the data
+  const result = await response.json();
+  return result.data;
 }
 
 /**
@@ -88,29 +165,51 @@ export async function createCategoryViaAPI(
  * @param request - Playwright API request context
  * @param data - Asset data to create
  */
+/**
+ * Valid asset types (must match src/lib/types/asset.ts AssetType)
+ */
+type AssetType =
+  | 'cash'
+  | 'bank_account'
+  | 'e_wallet'
+  | 'mutual_fund'
+  | 'bond'
+  | 'crypto'
+  | 'stock'
+  | 'other'
+  | 'credit_card'
+  | 'loan';
+
 export async function createAssetViaAPI(
   request: APIRequestContext,
   data: {
     name: string;
-    type: 'cash' | 'bank' | 'investment' | 'other';
+    type: AssetType;
     balance: number;
-    currency?: string;
+    currency?: 'IDR' | 'USD';
   }
 ): Promise<{ id: string }> {
   const response = await request.post(`${E2E_BASE_URL}/api/assets`, {
+    headers: {
+      [CSRF_HEADER_NAME]: getCsrfToken(),
+    },
     data: {
       name: data.name,
       type: data.type,
-      balance: data.balance,
+      // API expects balance as string with optional decimal places
+      balance: data.balance.toString(),
       currency: data.currency || 'IDR',
     },
   });
 
   if (!response.ok()) {
-    throw new Error(`Failed to create asset: ${response.status()}`);
+    const errorBody = await response.text();
+    throw new Error(`Failed to create asset: ${response.status()} - ${errorBody}`);
   }
 
-  return response.json();
+  // API returns { success: true, data: {...} }, extract the data
+  const result = await response.json();
+  return result.data;
 }
 
 /**
@@ -129,6 +228,9 @@ export async function setBudgetViaAPI(
   const currentMonth = month || new Date().toISOString().slice(0, 7);
 
   const response = await request.post(`${E2E_BASE_URL}/api/budget`, {
+    headers: {
+      [CSRF_HEADER_NAME]: getCsrfToken(),
+    },
     data: {
       categoryId,
       amount,
@@ -150,7 +252,11 @@ export async function deleteTransactionViaAPI(
   request: APIRequestContext,
   transactionId: string
 ): Promise<void> {
-  const response = await request.delete(`${E2E_BASE_URL}/api/transactions/${transactionId}`);
+  const response = await request.delete(`${E2E_BASE_URL}/api/transactions/${transactionId}`, {
+    headers: {
+      [CSRF_HEADER_NAME]: getCsrfToken(),
+    },
+  });
 
   if (!response.ok()) {
     throw new Error(`Failed to delete transaction: ${response.status()}`);
@@ -166,7 +272,11 @@ export async function deleteCategoryViaAPI(
   request: APIRequestContext,
   categoryId: string
 ): Promise<void> {
-  const response = await request.delete(`${E2E_BASE_URL}/api/categories/${categoryId}`);
+  const response = await request.delete(`${E2E_BASE_URL}/api/categories/${categoryId}`, {
+    headers: {
+      [CSRF_HEADER_NAME]: getCsrfToken(),
+    },
+  });
 
   if (!response.ok()) {
     throw new Error(`Failed to delete category: ${response.status()}`);
@@ -192,7 +302,9 @@ export async function getCategoriesViaAPI(
     throw new Error(`Failed to get categories: ${response.status()}`);
   }
 
-  return response.json();
+  // API returns { success: true, data: [...] }, extract the data
+  const result = await response.json();
+  return result.data;
 }
 
 /**
@@ -208,7 +320,9 @@ export async function getAssetsViaAPI(
     throw new Error(`Failed to get assets: ${response.status()}`);
   }
 
-  return response.json();
+  // API returns { success: true, data: [...] }, extract the data
+  const result = await response.json();
+  return result.data;
 }
 
 /**

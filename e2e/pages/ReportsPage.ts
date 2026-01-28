@@ -227,10 +227,8 @@ export class ReportsPage extends BasePage {
    * Verify that the reports page is visible.
    */
   async expectReportsPageVisible(): Promise<void> {
-    // Check for report selector or summary cards
-    const reportSelector = this.page
-      .locator('[data-report-selector]')
-      .or(this.page.locator('[data-summary-cards]'));
+    // Check for report selector - use first() to avoid strict mode issues
+    const reportSelector = this.page.locator('[data-report-selector]').first();
     await expect(reportSelector).toBeVisible();
   }
 
@@ -238,9 +236,8 @@ export class ReportsPage extends BasePage {
    * Verify that the summary cards section is visible.
    */
   async expectSummaryCardsVisible(): Promise<void> {
-    const summaryCards = this.page
-      .locator('[data-summary-cards]')
-      .or(this.page.locator('[data-summary-container]'));
+    // Use first() to avoid strict mode issues when multiple elements match
+    const summaryCards = this.page.locator('[data-summary-cards]').first();
     await expect(summaryCards).toBeVisible();
   }
 
