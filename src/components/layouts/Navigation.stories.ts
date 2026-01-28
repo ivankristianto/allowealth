@@ -3,6 +3,68 @@ import type { Meta, StoryObj } from '@storybook/html';
 const meta: Meta = {
   title: 'Layouts/Navigation',
   tags: ['autodocs'],
+  parameters: {
+    docs: {
+      description: {
+        component: `
+### Design System Alignment (Oasis Finance v1.0.0)
+
+| Property | Value | Class/Token |
+|----------|-------|-------------|
+| Sidebar Width (Expanded) | 16rem (256px) | \`w-64\` |
+| Sidebar Width (Collapsed) | 5rem (80px) | \`w-20\` |
+| Nav Item Padding | 0.625rem 1rem | \`py-2.5 px-4\` |
+| Icon-Text Gap | 0.75rem | \`gap-3\` |
+| Icon Size | 22px | \`size={22}\` (md) |
+
+### Active State Styling
+
+| Property | Value | Applied Via |
+|----------|-------|-------------|
+| Gradient | \`linear-gradient(90deg, rgba(99,102,241,0.1) 0%, rgba(99,102,241,0) 100%)\` | \`.nav-active\` |
+| Left Border | 2px solid #6366f1 | \`.nav-active\` |
+| ARIA | Current page indicator | \`aria-current="page"\` |
+
+### Navigation Items (8 total)
+
+| Route | Label | Icon |
+|-------|-------|------|
+| /dashboard | Dashboard | LayoutDashboard |
+| /transactions | Transactions | Search |
+| /budget | Budget | Calendar |
+| /assets | Assets | DollarSign |
+| /reports | Reports | Info |
+| /forecast | Forecast | TriangleAlert |
+| /calculators | Calculators | Plus |
+| /settings | Settings | Settings |
+
+### Color Semantics (Theme-Aware)
+- User name: \`text-base-content\` (adapts to theme)
+- User email: \`text-neutral\` (adapts to theme)
+- Borders: \`border-base-300\` (adapts to theme)
+- Badges: \`badge-accent\` (indigo-500)
+
+### Collapse State
+- Storage key: \`ff.sidebar.collapsed\`
+- Collapsed padding: \`px-0\`
+- Width transition: smooth animation between states
+
+### Responsive Behavior
+- **Mobile (<1024px)**: Sidebar hidden, drawer-based navigation
+- **Desktop (>=1024px)**: Sidebar visible, fixed position
+- Close button: X icon with \`size={22}\`, \`aria-label="Close menu"\`
+
+### Accessibility
+- Container: \`<aside role="navigation" aria-label="Main navigation">\`
+- Active links: \`aria-current="page"\`
+- Mobile close: \`aria-label="Close menu"\`
+- Icons: \`class="stroke-current"\` for color inheritance
+- Semantic list structure: \`ul > li > a\`
+- Keyboard navigable with visible focus indicators
+        `,
+      },
+    },
+  },
   argTypes: {
     currentPath: {
       control: 'select',

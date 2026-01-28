@@ -3,6 +3,54 @@ import type { Meta, StoryObj } from '@storybook/html';
 const meta: Meta = {
   title: 'Atoms/Input',
   tags: ['autodocs'],
+  parameters: {
+    docs: {
+      description: {
+        component: `
+### Design System Alignment
+
+Aligned with Oasis Finance v1.0.0 design system (Task 2.3).
+
+| Property | Value | Class |
+|----------|-------|-------|
+| Height | 40px (2.5rem) | \`h-10\` |
+| Padding Top/Bottom | 8px (0.5rem) | \`pt-2 pb-2\` |
+| Padding Left | 12px (0.75rem) | \`pl-3\` |
+| Padding Right | 40px (2.5rem) | \`pr-10\` (space for trailing icon) |
+| Font Size | 12px (0.75rem) | \`text-xs\` |
+| Border Radius | DaisyUI tokenized | \`--radius-field\` (no custom rounded) |
+| Background | Theme-aware | \`bg-base-200\` |
+| Focus Ring | 2px accent with opacity | \`focus:ring-2 focus:ring-accent focus:ring-opacity-20\` |
+| Error Border | Semantic error color | \`border-error\` / \`input-error\` |
+
+### States
+
+| State | Classes |
+|-------|---------|
+| Default | \`input input-bordered bg-base-200\` |
+| Error | \`input-error border-error\` + \`aria-invalid="true"\` |
+| Disabled | \`opacity-50 cursor-not-allowed\` |
+
+### Accessibility
+
+- **ARIA Support**: \`aria-invalid\` for error state, \`aria-describedby\` for descriptions
+- **Label Association**: Proper \`htmlFor\` linking via \`id\` attribute
+- **Error Announcement**: Error message with \`role="alert"\` and linked via \`aria-describedby\`
+- **Keyboard Navigation**: Standard input keyboard interaction
+- **Screen Reader**: Announces input type, placeholder, and current value
+
+### Supported Types
+
+- \`text\` (default)
+- \`number\` (with min/max/step attributes)
+- \`email\`
+- \`date\`
+- \`password\`
+- \`select\` (renders as dropdown)
+        `,
+      },
+    },
+  },
   argTypes: {
     type: {
       control: 'select',
@@ -37,14 +85,23 @@ const createInput = (args: {
   const container = document.createElement('div');
   container.className = 'form-control w-full';
 
+  // Generate unique IDs for accessibility linkage
+  const inputId = `input-${Math.random().toString(36).substring(2, 11)}`;
+  const errorId = `${inputId}-error`;
+
   if (label) {
     const labelEl = document.createElement('label');
     labelEl.className = 'label';
-    labelEl.innerHTML = `<span class="label-text">${label}</span>`;
+    labelEl.htmlFor = inputId;
+    const labelText = document.createElement('span');
+    labelText.className = 'label-text';
+    labelText.textContent = label;
+    labelEl.appendChild(labelText);
     container.appendChild(labelEl);
   }
 
   const input = document.createElement('input');
+  input.id = inputId;
   input.type = type;
   input.placeholder = placeholder;
   input.value = value;
@@ -55,12 +112,14 @@ const createInput = (args: {
   input.className = `input input-bordered w-full h-10 pt-2 pb-2 pl-3 pr-10 text-xs bg-base-200 focus:ring-2 focus:ring-accent focus:ring-opacity-20 focus:outline-none focus:ring-offset-2 ${error ? 'input-error border-error' : ''} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`;
   if (error) {
     input.setAttribute('aria-invalid', 'true');
+    input.setAttribute('aria-describedby', errorId);
   }
 
   container.appendChild(input);
 
   if (error && errorMessage) {
     const errorSpan = document.createElement('span');
+    errorSpan.id = errorId;
     errorSpan.className = 'text-error text-sm mt-1';
     errorSpan.textContent = errorMessage;
     errorSpan.setAttribute('role', 'alert');

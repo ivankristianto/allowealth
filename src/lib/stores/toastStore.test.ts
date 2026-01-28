@@ -4,35 +4,26 @@
  * Unit tests for toast notification state management
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'bun:test';
+import { createMockCrypto } from '@/__tests__/mocks/browser';
 import { toasts, addToast, removeToast, type ToastType } from './toastStore';
 
-// Mock crypto.randomUUID for test environment
-const mockUuid = '00000000-0000-0000-0000-000000000000';
-let uuidCounter = 0;
-
-function mockRandomUUID(): string {
-  const parts = mockUuid.split('-');
-  const counter = String(uuidCounter++).padStart(12, '0');
-  return `${parts[0]}-${parts[1]}-${parts[2]}-${parts[3]}-${counter}`;
-}
+const mockCrypto = createMockCrypto();
 
 describe('toastStore', () => {
   beforeEach(() => {
     // Reset store state before each test
     toasts.set([]);
-    uuidCounter = 0;
-
-    // Mock crypto.randomUUID
-    globalThis.crypto = {
-      ...globalThis.crypto,
-      randomUUID: mockRandomUUID,
-    } as Crypto;
+    mockCrypto.reset();
+    mockCrypto.install();
+    vi.useFakeTimers();
   });
 
   afterEach(() => {
     // Clean up store after each test
     toasts.set([]);
+    mockCrypto.uninstall();
+    vi.useRealTimers();
   });
 
   describe('addToast', () => {
@@ -106,28 +97,28 @@ describe('toastStore', () => {
       expect(currentToasts[4]?.message).toBe('Toast 6');
     });
 
-    it('should auto-dismiss toasts with duration > 0', async () => {
+    it('should auto-dismiss toasts with duration > 0', () => {
       const shortDuration = 100;
       addToast('Auto-dismiss', 'success', { duration: shortDuration });
 
       const currentToasts = toasts.get();
       expect(currentToasts).toHaveLength(1);
 
-      // Wait for auto-dismiss
-      await new Promise((resolve) => setTimeout(resolve, shortDuration + 50));
+      // Advance time past the auto-dismiss threshold
+      vi.advanceTimersByTime(shortDuration + 50);
 
       const afterToasts = toasts.get();
       expect(afterToasts).toHaveLength(0);
     });
 
-    it('should not auto-dismiss persistent toasts (duration = 0)', async () => {
+    it('should not auto-dismiss persistent toasts (duration = 0)', () => {
       addToast('Persistent error', 'error'); // Error has default duration 0
 
       const currentToasts = toasts.get();
       expect(currentToasts).toHaveLength(1);
 
-      // Wait longer than typical auto-dismiss
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      // Advance time - persistent toasts should not be dismissed
+      vi.advanceTimersByTime(1000);
 
       const afterToasts = toasts.get();
       expect(afterToasts).toHaveLength(1); // Still there

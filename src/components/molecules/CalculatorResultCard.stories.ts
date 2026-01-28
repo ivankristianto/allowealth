@@ -4,6 +4,61 @@ import Currency from './Currency.astro';
 const meta: Meta = {
   title: 'Molecules/CalculatorResultCard',
   tags: ['autodocs'],
+  parameters: {
+    docs: {
+      description: {
+        component: `
+### Design System Alignment
+
+| Property | Value | Class |
+|----------|-------|-------|
+| Container Padding | 24px | \`p-6\` |
+| Border Radius | 24px | \`rounded-3xl\` |
+| Label Font | 10px bold uppercase | \`text-[10px] font-bold uppercase tracking-widest\` |
+| Label Opacity | 80% | \`opacity-80\` |
+| Label Margin | 8px bottom | \`mb-2\` |
+| Value Font | 1.5rem bold | \`text-2xl font-bold\` |
+
+### Variant Colors
+
+| Variant | Background | Border | Text |
+|---------|------------|--------|------|
+| success | bg-success/10 | border-success/20 | text-success |
+| primary | bg-primary/10 | border-primary/20 | text-primary |
+| warning | bg-warning/10 | border-warning/20 | text-warning |
+| error | bg-error/10 | border-error/20 | text-error |
+
+### Currency Support
+
+| Currency | Symbol | Decimals | Locale | Example |
+|----------|--------|----------|--------|---------|
+| IDR | Rp | 0 | id-ID | Rp150.000 |
+| USD | $ | 2 | en-US | $1,234.56 |
+
+### Accessibility
+- \`<p>\` for label (decoration)
+- \`<h4>\` for value (subheading)
+- Sufficient color contrast (label 80% opacity, value full)
+- Uses Currency component for proper formatting
+- Meets WCAG AA contrast requirements
+
+### Props
+- **label**: Card title (e.g., "Total Interest", "Final Balance")
+- **value**: Number or string amount to display
+- **variant**: success | primary | warning | error (default: primary)
+- **currency**: IDR | USD (default: IDR)
+- **className**: Additional CSS classes
+- **id**: Optional element ID
+
+### Use Cases
+- Total Interest: success variant
+- Final Balance: primary variant
+- Budget Alert: warning variant
+- Over Budget: error variant
+        `,
+      },
+    },
+  },
   argTypes: {
     label: {
       control: 'text',

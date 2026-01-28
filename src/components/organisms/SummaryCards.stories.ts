@@ -10,6 +10,65 @@ import { formatCurrency, formatPercentage } from '@/lib/tokens';
 const meta: Meta = {
   title: 'Organisms/SummaryCards',
   tags: ['autodocs'],
+  parameters: {
+    docs: {
+      description: {
+        component: `
+### Design System Alignment
+| Property | Value | Class |
+|----------|-------|-------|
+| Error Icon | CircleAlert | size={24}, shrink-0, text-error |
+| Empty State Icon | TrendingUp | size={48}, mx-auto mb-4 text-neutral-400 |
+| Total Assets Icon | DollarSign | size={20}, stroke-current shrink-0 text-success |
+| Monthly Spent Icon | Calendar | size={20}, stroke-current shrink-0 text-info |
+| Budget Health Icon | ShieldCheck | size={20}, stroke-current shrink-0 text-warning |
+| View Budget Chevron | ChevronRight | size={16}, group-hover:translate-x-1 |
+
+### Layout
+- Responsive grid: grid-cols-1 on mobile, md:grid-cols-3 on desktop
+- gap-4 between cards
+- Each card uses Card component with hoverable prop
+- Icon backgrounds with hover effects (e.g., bg-success/10 -> bg-success/20)
+
+### Card States
+| State | Display |
+|-------|---------|
+| Loading | 5 animated pulse skeleton cards |
+| Error | Single card with border-error, CircleAlert icon |
+| Empty | Centered TrendingUp icon with "No data yet" message |
+| Normal | 3 data cards (Assets, Spent, Health) |
+
+### Total Assets Card
+- IDR amount in text-success (green)
+- USD amount in text-info (blue)
+- Converted total in bold text-success
+
+### Monthly Spent Card
+- Progress bar with color coding: success (<80%), warning (80-99%), error (>=100%)
+- Percentage display with matching color
+- Shows "X remaining" or "X over budget" message
+
+### Budget Health Card
+- Alert count with semantic color (success/warning/error)
+- Status badge: "On Track", "Review", or "Action Needed"
+- View Budget link with animated chevron
+
+### Accessibility
+- Wrapper has role="region" aria-label="Financial summary"
+- Error state: role="alert" aria-live="assertive"
+- Loading state: role="status" aria-live="polite" aria-label="Loading financial summary"
+- All icons have aria-hidden="true"
+- Card headers have id attributes for aria-describedby
+- Progress bar has aria-label="Budget progress: X% used"
+
+### Data Display
+- Currency formatting via formatCurrency() utility
+- Percentage formatting via formatPercentage() utility
+- Budget calculations use decimalSubtract for accuracy
+        `,
+      },
+    },
+  },
   argTypes: {
     loading: {
       control: 'boolean',

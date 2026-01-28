@@ -12,6 +12,60 @@ import type { Meta, StoryObj } from '@storybook/html';
 const meta: Meta = {
   title: 'Atoms/Badge',
   tags: ['autodocs'],
+  parameters: {
+    docs: {
+      description: {
+        component: `
+### Design System Alignment
+
+Aligned with Oasis Finance v1.0.0 design system.
+
+| Property | Value | Class |
+|----------|-------|-------|
+| Padding X | 10px (0.625rem) | \`px-2.5\` |
+| Padding Y | 4px (0.25rem) | \`py-1\` |
+| Font Size | 12px (0.75rem) | \`text-badge\` utility |
+| Font Weight | 700 (bold) | \`font-bold\` |
+| Border Radius | DaisyUI tokenized | \`--radius-selector\` (1rem) |
+
+### Color Semantic Model
+
+| Variant | Semantic Use | Color |
+|---------|--------------|-------|
+| primary | Headings, primary text | slate-900 |
+| accent | CTAs, interactive elements, active states | indigo-500 |
+| success | Positive status, confirmations | emerald-500 |
+| warning | Budget alerts, caution states | amber-500 |
+| error | Over budget, destructive actions | rose-500 |
+| info | Informational messages | indigo-500 |
+| neutral | Default neutral gray | neutral |
+
+### Budget Status Variants
+
+| Variant | Display | Maps To |
+|---------|---------|---------|
+| optimal | "On Track" | \`badge-success\` |
+| review | "Review Needed" | \`badge-warning\` |
+| exceeded | "Over Budget" | \`badge-error\` |
+
+### Size Variants
+
+| Size | Class |
+|------|-------|
+| sm | \`badge-sm\` |
+| md | (default, no class) |
+| lg | \`badge-lg\` |
+
+### Accessibility
+
+- **Font Size**: 12px minimum for WCAG AA compliance
+- **Font Weight**: Bold (700) for improved readability
+- **Theme**: Automatically adapts to light/dark via DaisyUI semantic colors
+- **No manual dark: variants needed** - DaisyUI handles theme switching
+        `,
+      },
+    },
+  },
   argTypes: {
     variant: {
       control: 'select',
@@ -153,6 +207,7 @@ export const AllVariants: StoryObj = {
 };
 
 // Budget status variant stories
+// TODO: P2 - Consider consolidating Optimal/Review/Exceeded stories with AllBudgetStatuses to reduce duplication
 
 export const Optimal: StoryObj = {
   args: { variant: 'optimal', text: 'On Track' },

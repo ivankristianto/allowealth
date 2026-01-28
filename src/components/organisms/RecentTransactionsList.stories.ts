@@ -22,6 +22,66 @@ const {
 const meta: Meta = {
   title: 'Organisms/RecentTransactionsList',
   tags: ['autodocs'],
+  parameters: {
+    docs: {
+      description: {
+        component: `
+### Design System Alignment
+| Property | Value | Class |
+|----------|-------|-------|
+| Empty State Icon | Plus | size={48}, text-base-content/40 |
+| Category Icons | Various | size={18}, stroke-current |
+| Payment Method Icon | CreditCard | size={12}, stroke-current |
+
+### Layout
+- Header with "Recent activity" title and "View all" link
+- Card container with rounded-2xl, shadow-sm, overflow-hidden
+- List with divide-y divide-base-200
+- Maximum 10 transactions displayed (maxTransactions = 10)
+
+### Category Icon Mapping
+| Category | Icon | Variant |
+|----------|------|---------|
+| Income | Banknote | success |
+| Grocery/Food | ShoppingBasket | warning |
+| Utilities | Zap | info |
+| Entertainment | Film | error |
+| Transport | Car | accent |
+| Dining | UtensilsCrossed | warning |
+| Housing | House | primary |
+| Freelance | Briefcase | info |
+| Other Expense | Wallet | error |
+| Other Income | Wallet | success |
+
+### Transaction Item Structure
+- Icon badge: rounded-2xl p-3 with category color
+- Primary text: description or category name (font-bold truncate)
+- Category badge: uppercase tracking-widest
+- Timestamp: formatted relative date
+- Amount: text-error (expense) or text-success (income)
+- Payment method: CreditCard icon + asset name
+
+### States
+| State | Display |
+|-------|---------|
+| Loading | 6 skeleton rows with animate-pulse |
+| Empty | Plus icon + "No transactions yet" message + Add button |
+| Normal | Transaction list with category icons |
+
+### Accessibility
+- List has role="list" aria-label="Recent transactions"
+- View all link has aria-label="View all transactions"
+- Loading skeleton has appropriate ARIA attributes
+- Icons have aria-hidden="true"
+
+### Responsive Design
+- Full-width card on mobile
+- Hover effects: border-l-4 with expense/income color
+- Icon badge rotates slightly on hover (group-hover:rotate-2)
+        `,
+      },
+    },
+  },
   argTypes: {
     transactions: {
       control: 'object',

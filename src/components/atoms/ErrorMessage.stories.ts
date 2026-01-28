@@ -6,6 +6,61 @@ const { CircleX, X } = IconRenderers;
 const meta: Meta = {
   title: 'Atoms/ErrorMessage',
   tags: ['autodocs'],
+  parameters: {
+    docs: {
+      description: {
+        component: `
+### Icon Migration
+
+Uses Lucide icons instead of inline SVGs for consistency:
+
+| Icon | Lucide Component | Size | Purpose |
+|------|------------------|------|---------|
+| Error Icon | \`CircleX\` | 24px (h-6 w-6) | Visual error indicator |
+| Dismiss Icon | \`X\` | 16px (h-4 w-4) | Close button icon |
+
+### Variants
+
+| Variant | Classes | Use Case |
+|---------|---------|----------|
+| alert | \`alert alert-error\` | Standard form/page errors |
+| banner | \`alert alert-error shadow-lg\` | Prominent error banners |
+| inline | \`text-error text-sm\` | Field-level validation errors |
+
+### Structure
+
+**Alert/Banner variants:**
+- Container: \`div\` with \`role="alert"\`
+- Icon: \`CircleX\` with \`shrink-0\` class
+- Content: \`div\` containing optional title (\`font-bold\`) and message (\`text-xs\`)
+- Dismiss: Optional \`button\` with \`X\` icon
+
+**Inline variant:**
+- Container: \`span\` with \`role="alert"\`
+- No icon, no dismiss button
+
+### Accessibility
+
+| Feature | Implementation |
+|---------|----------------|
+| Role | \`role="alert"\` on container (all variants) |
+| Dismiss Button | \`aria-label="Dismiss"\` |
+| Icons | \`aria-hidden="true"\` (decorative) |
+| Button Type | \`type="button"\` (prevents form submission) |
+| Color Contrast | DaisyUI \`alert-error\` ensures WCAG compliance |
+
+### Typography
+
+| Element | Class |
+|---------|-------|
+| Title | \`font-bold\` |
+| Message (alert/banner) | \`text-xs\` |
+| Message (inline) | \`text-sm\` |
+| Dismiss Button | \`btn btn-sm btn-ghost\` |
+        `,
+      },
+    },
+  },
   argTypes: {
     variant: {
       control: 'select',

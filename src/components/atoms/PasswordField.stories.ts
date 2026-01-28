@@ -3,6 +3,67 @@ import type { Meta, StoryObj } from '@storybook/html';
 const meta: Meta = {
   title: 'Atoms/PasswordField',
   tags: ['autodocs'],
+  parameters: {
+    docs: {
+      description: {
+        component: `
+### Accessibility
+
+All decorative icons use \`aria-hidden="true"\` to prevent screen reader announcement.
+
+#### Visibility Toggle Icons
+
+| Icon | Component | Size | Attribute |
+|------|-----------|------|-----------|
+| Show password | \`Eye\` | 20px | \`aria-hidden="true"\` |
+| Hide password | \`EyeOff\` | 20px | \`aria-hidden="true"\` |
+
+The toggle button provides the accessible name via \`aria-label\`:
+- Initial: "Toggle password visibility"
+- After toggle: "Show password" / "Hide password"
+
+#### Requirements List Icons
+
+| Icon | Component | Size | Attribute |
+|------|-----------|------|-----------|
+| Requirement met | \`Check\` | 16px | \`aria-hidden="true"\` |
+| Requirement not met | \`X\` | 16px | \`aria-hidden="true"\` |
+
+The requirements list is labeled with \`aria-label="Password requirements"\`.
+
+### Password Requirements
+
+The component validates against 3 requirements:
+
+| Requirement | Key | Validation |
+|-------------|-----|------------|
+| Length | \`length\` | >= 12 characters |
+| Letter | \`letter\` | Contains A-Z or a-z |
+| Number/Special | \`numberOrSpecial\` | Contains 0-9 or special character |
+
+### Strength Meter
+
+Strength is calculated based on requirements passed:
+
+| Passed | Strength | Color |
+|--------|----------|-------|
+| 0-1 | Weak | \`bg-error\` |
+| 2-3 | Medium | \`bg-warning\` |
+| 4+ | Strong | \`bg-success\` |
+
+### Features
+
+| Feature | Prop | Description |
+|---------|------|-------------|
+| Visibility Toggle | Built-in | Eye/EyeOff icon button |
+| Strength Meter | \`showStrength\` | 4-bar visual indicator |
+| Requirements List | \`showRequirements\` | Checklist with icons |
+| Error State | \`error\` + \`errorMessage\` | Red border and message |
+| Disabled | \`disabled\` | Non-interactive state |
+        `,
+      },
+    },
+  },
   argTypes: {
     placeholder: {
       control: 'text',
