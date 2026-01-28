@@ -55,8 +55,11 @@ export function createMockLocalStorage() {
         get length() {
           return Object.keys(store).length;
         },
-        // TODO: P3 - Add bounds check for index parameter for defensive coding
-        key: (index: number) => Object.keys(store)[index] ?? null,
+        key: (index: number) => {
+          // Bounds check: ensure index is a non-negative integer
+          if (!Number.isInteger(index) || index < 0) return null;
+          return Object.keys(store)[index] ?? null;
+        },
       };
     },
     reset: () => {

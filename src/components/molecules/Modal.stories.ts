@@ -147,13 +147,20 @@ const createModal = (args: {
   modalBox.appendChild(content);
 
   // Actions
-  // TODO: P2 - Replace inline onclick with event listener for consistency
   const actions = document.createElement('div');
   actions.className = 'modal-action';
-  actions.innerHTML = `
-    <button class="btn btn-ghost" onclick="document.getElementById('demo-modal').close()">Cancel</button>
-    <button class="btn btn-primary">Confirm</button>
-  `;
+
+  const cancelBtn = document.createElement('button');
+  cancelBtn.className = 'btn btn-ghost';
+  cancelBtn.textContent = 'Cancel';
+  cancelBtn.onclick = () => modal.close();
+  actions.appendChild(cancelBtn);
+
+  const confirmBtn = document.createElement('button');
+  confirmBtn.className = 'btn btn-primary';
+  confirmBtn.textContent = 'Confirm';
+  actions.appendChild(confirmBtn);
+
   modalBox.appendChild(actions);
 
   modal.appendChild(modalBox);

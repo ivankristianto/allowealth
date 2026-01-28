@@ -22,6 +22,7 @@ describe('toastStore', () => {
   afterEach(() => {
     // Clean up store after each test
     toasts.set([]);
+    mockCrypto.uninstall();
     vi.useRealTimers();
   });
 
