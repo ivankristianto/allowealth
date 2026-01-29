@@ -113,6 +113,7 @@
     toastEl.className = `alert shadow-lg ${getAlertClass(toast.type)}`;
     toastEl.id = `toast-${toast.id}`;
     toastEl.setAttribute('role', 'alert');
+    toastEl.setAttribute('data-testid', `toast-${toast.type}`);
 
     // Set initial state for enter animation (using shared config from @/lib/animations/toast.ts)
     // Skip animation if user prefers reduced motion - show toast immediately

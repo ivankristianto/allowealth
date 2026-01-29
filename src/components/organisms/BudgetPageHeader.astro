@@ -70,11 +70,12 @@ const headerClasses = ['flex flex-col gap-4', className].filter(Boolean).join(' 
     </div>
 
     {/* Month Navigation */}
-    <div class="flex items-center gap-1">
+    <div class="flex items-center gap-1" data-testid="budget-month-selector">
       <a
         href={prevMonthUrl}
         class="btn btn-sm btn-square bg-base-100 border border-base-300 hover:border-accent/30 hover:text-accent rounded-xl transition-all"
         aria-label="Previous month"
+        data-testid="budget-prev-month-btn"
       >
         <ChevronLeft size={18} class="stroke-current" aria-hidden="true" />
       </a>
@@ -91,6 +92,7 @@ const headerClasses = ['flex flex-col gap-4', className].filter(Boolean).join(' 
             href={nextMonthUrl}
             class="btn btn-sm btn-square bg-base-100 border border-base-300 hover:border-accent/30 hover:text-accent rounded-xl transition-all"
             aria-label="Next month"
+            data-testid="budget-next-month-btn"
           >
             <ChevronRight size={18} class="stroke-current" aria-hidden="true" />
           </a>
@@ -100,6 +102,7 @@ const headerClasses = ['flex flex-col gap-4', className].filter(Boolean).join(' 
             class="btn btn-sm btn-square bg-base-100 border border-base-300 rounded-xl opacity-30 cursor-not-allowed"
             disabled
             aria-label="Next month (disabled)"
+            data-testid="budget-next-month-btn"
           >
             <ChevronRight size={18} class="stroke-current" aria-hidden="true" />
           </button>
@@ -113,6 +116,7 @@ const headerClasses = ['flex flex-col gap-4', className].filter(Boolean).join(' 
             href={currentMonthResetUrl}
             class="btn btn-sm bg-base-100 border border-base-300 hover:border-accent/30 hover:text-accent rounded-xl transition-all gap-1 ml-1"
             aria-label="Go to current month"
+            data-testid="budget-current-month-btn"
           >
             <CalendarDays size={16} class="stroke-current" aria-hidden="true" />
             <span class="text-xs">Today</span>

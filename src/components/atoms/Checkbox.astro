@@ -19,6 +19,10 @@ export interface Props {
   disabled?: boolean;
   className?: string;
   value?: string;
+  /**
+   * Test ID for E2E testing
+   */
+  'data-testid'?: string;
 }
 
 const {
@@ -28,6 +32,7 @@ const {
   disabled = false,
   className = '',
   value = '',
+  'data-testid': dataTestId = '',
 } = Astro.props;
 
 const uniqueId = id || `checkbox-${Math.random().toString(36).substring(2, 9)}`;
@@ -43,6 +48,7 @@ const uniqueId = id || `checkbox-${Math.random().toString(36).substring(2, 9)}`;
       checked={checked}
       disabled={disabled}
       class="checkbox checkbox-accent"
+      data-testid={dataTestId || undefined}
     />
     <span class="label-text">
       <slot />

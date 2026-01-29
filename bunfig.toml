@@ -1,0 +1,4 @@
+[test]
+# Limit test discovery to src/ directory only
+# This excludes e2e/ directory - those tests run with Playwright, not bun test
+root = "./src"

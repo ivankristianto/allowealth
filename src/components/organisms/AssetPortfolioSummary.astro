@@ -123,12 +123,16 @@ const cardClasses = [
       </div>
     </section>
   ) : (
-    <section class={cardClasses} aria-label="Portfolio overview summary">
+    <section
+      class={cardClasses}
+      aria-label="Portfolio overview summary"
+      data-testid="portfolio-total"
+    >
       <div class="space-y-8">
         {/* Total Values */}
         <div class="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
           {/* Total Value (IDR) */}
-          <div class="flex items-center justify-between">
+          <div class="flex items-center justify-between" data-testid="portfolio-total-idr">
             <div>
               <StatLabel size="sm" className="uppercase tracking-widest">
                 Total Value (IDR)
@@ -143,7 +147,7 @@ const cardClasses = [
           </div>
 
           {/* Total Value (USD) */}
-          <div class="flex items-center justify-between">
+          <div class="flex items-center justify-between" data-testid="portfolio-total-usd">
             <div>
               <StatLabel size="sm" className="uppercase tracking-widest">
                 Total Value (USD)

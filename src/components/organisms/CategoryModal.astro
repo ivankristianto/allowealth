@@ -47,7 +47,7 @@ const iconBgClass = isEditMode ? 'bg-accent/10' : 'bg-accent/10';
 const iconColorClass = 'text-accent';
 ---
 
-<div data-category-modal-container data-id={id} data-mode={mode}>
+<div data-category-modal-container data-id={id} data-mode={mode} data-testid="category-modal">
   <Modal id={id} open={open} size="md" closable={false} backdropClose={true}>
     <!-- Custom header with icon -->
     <div slot="default" class="flex flex-col gap-6">
@@ -100,6 +100,7 @@ const iconColorClass = 'text-accent';
               required
               placeholder="e.g., Food & Groceries"
               value={values.name || ''}
+              data-testid="category-name-input"
             />
             {errors.name && <span class="text-error text-xs mt-1">{errors.name}</span>}
           </div>
@@ -116,6 +117,7 @@ const iconColorClass = 'text-accent';
               id="category-type"
               class="select select-bordered w-full h-10 text-xs bg-base-200 focus:ring-2 focus:ring-accent focus:ring-opacity-20 focus:outline-none focus:ring-offset-2"
               required
+              data-testid="category-type-select"
             >
               <option value="expense" selected={values.type === 'expense' || !values.type}>
                 Expense
@@ -223,7 +225,11 @@ const iconColorClass = 'text-accent';
           >
             Cancel
           </button>
-          <button type="submit" class="flex-[2] btn btn-accent h-14 rounded-full font-bold">
+          <button
+            type="submit"
+            class="flex-[2] btn btn-accent h-14 rounded-full font-bold"
+            data-testid="category-submit-btn"
+          >
             <span data-submit-text>{isEditMode ? 'Update Category' : 'Save Category'}</span>
           </button>
         </div>

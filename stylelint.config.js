@@ -1,5 +1,12 @@
 export default {
-  ignoreFiles: ['dist/**', '**/*.astro', 'node_modules/**', 'storybook-static/**'],
+  ignoreFiles: [
+    'dist/**',
+    '**/*.astro',
+    'node_modules/**',
+    'storybook-static/**',
+    'e2e/playwright-report/**',
+    'test-results/**',
+  ],
   extends: ['stylelint-config-standard', 'stylelint-config-recommended'],
   rules: {
     // Allow Tailwind CSS imports

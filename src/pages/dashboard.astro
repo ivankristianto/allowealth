@@ -143,7 +143,10 @@ const spendingCategories =
 ---
 
 <ProtectedLayout title="Dashboard - Finance Manager" currentPath={currentPath}>
-  <div class="max-w-7xl mx-auto sm:px-2 lg:px-6 space-y-6 sm:space-y-8">
+  <div
+    class="max-w-7xl mx-auto sm:px-2 lg:px-6 space-y-6 sm:space-y-8"
+    data-testid="dashboard-page"
+  >
     <!-- Error State -->
     {
       error && (

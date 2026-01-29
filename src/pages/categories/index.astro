@@ -36,7 +36,10 @@ if (searchQuery) {
 ---
 
 <ProtectedLayout title="Manage Categories" currentPath={currentPath}>
-  <div class="max-w-7xl mx-auto sm:px-2 lg:px-6 space-y-6 sm:space-y-8">
+  <div
+    class="max-w-7xl mx-auto sm:px-2 lg:px-6 space-y-6 sm:space-y-8"
+    data-testid="categories-page"
+  >
     <!-- View Header -->
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
       <div>
@@ -51,6 +54,7 @@ if (searchQuery) {
         class="btn btn-accent rounded-2xl font-bold text-sm flex items-center gap-2"
         data-action="create-category"
         data-type={typeFilter}
+        data-testid="create-category-btn"
       >
         <Plus size={18} class="stroke-current" aria-hidden="true" />
         Create Category
@@ -83,6 +87,7 @@ if (searchQuery) {
           placeholder="Search categories..."
           value={searchQuery}
           class="w-full pl-12 pr-6 py-3.5 bg-base-100 border border-base-300 focus:border-primary focus:ring-0 rounded-2xl text-base font-medium text-base-content shadow-sm"
+          data-testid="category-search-input"
         />
         <input type="hidden" name="type" value={typeFilter} />
       </form>
@@ -93,7 +98,11 @@ if (searchQuery) {
       <div class="overflow-x-auto">
         {
           filteredCategories.length > 0 ? (
-            <table class="w-full text-left border-collapse" role="table">
+            <table
+              class="w-full text-left border-collapse"
+              role="table"
+              data-testid="categories-table"
+            >
               <caption class="sr-only">
                 Categories list with {filteredCategories.length} {typeFilter} categories
               </caption>
@@ -121,7 +130,11 @@ if (searchQuery) {
               </thead>
               <tbody class="divide-y divide-base-200">
                 {filteredCategories.map((category) => (
-                  <tr class="group hover:bg-base-200/50 transition-colors">
+                  <tr
+                    class="group hover:bg-base-200/50 transition-colors"
+                    data-testid="category-item"
+                    data-category-id={category.id}
+                  >
                     <td class="px-8 py-5">
                       <CategoryIcon
                         icon={category.icon}
@@ -131,7 +144,10 @@ if (searchQuery) {
                       />
                     </td>
                     <td class="px-8 py-5">
-                      <span class="text-base font-bold text-base-content tracking-tight leading-none">
+                      <span
+                        class="text-base font-bold text-base-content tracking-tight leading-none"
+                        data-testid="category-name"
+                      >
                         {category.name}
                       </span>
                     </td>
@@ -142,6 +158,7 @@ if (searchQuery) {
                           data-action="edit"
                           data-category-id={category.id}
                           aria-label={`Edit ${category.name} category`}
+                          data-testid="category-edit-btn"
                         >
                           <Pencil size={18} class="stroke-current" aria-hidden="true" />
                         </button>
@@ -153,6 +170,7 @@ if (searchQuery) {
                           data-category-icon={category.icon}
                           data-category-color={category.color}
                           aria-label={`Delete ${category.name} category`}
+                          data-testid="category-delete-btn"
                         >
                           <Trash2 size={18} class="stroke-current" aria-hidden="true" />
                         </button>

@@ -25,6 +25,7 @@ export interface Props {
   errorMessage?: string;
   className?: string;
   id?: string;
+  'data-testid'?: string;
 }
 
 const {
@@ -37,6 +38,7 @@ const {
   errorMessage = '',
   className = '',
   id = '',
+  'data-testid': dataTestId,
 } = Astro.props;
 ---
 
@@ -58,6 +60,7 @@ const {
     aria-invalid={error}
     aria-describedby={error ? `${id}-error` : undefined}
     aria-required={required}
+    data-testid={dataTestId}
   />
   {
     error && errorMessage && (

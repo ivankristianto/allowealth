@@ -1,7 +1,8 @@
 // Categories Management Client-side script
 import { getCsrfHeaders } from '@/lib/csrf-client';
 
-document.addEventListener('DOMContentLoaded', () => {
+// Initialize when DOM is ready
+function initCategories() {
   const categoryModal = document.getElementById('category-modal') as HTMLDialogElement;
   const categoryForm = document.querySelector('[data-category-form]') as HTMLFormElement;
 
@@ -143,4 +144,12 @@ document.addEventListener('DOMContentLoaded', () => {
       console.error('Network error:', err);
     }
   }
-});
+}
+
+// Run initialization when DOM is ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initCategories);
+} else {
+  // DOM is already loaded, run immediately
+  initCategories();
+}

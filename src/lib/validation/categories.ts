@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { categoryTypeEnum } from '@/lib/enums';
+import { SUPPORTED_CATEGORY_ICONS } from '@/lib/utils/supportedCategoryIcons';
 
 /**
  * Validation schemas for Category operations
@@ -17,35 +18,13 @@ const nameValidation = z
   .min(3, 'Category name must be at least 3 characters')
   .max(100, 'Category name must not exceed 100 characters');
 
-// Allowed Lucide icon names for security
-const ALLOWED_ICONS = [
-  'home',
-  'shopping-basket',
-  'shopping-cart',
-  'utensils',
-  'car',
-  'plane',
-  'zap',
-  'heart',
-  'smile',
-  'banknote',
-  'trending-up',
-  'tag',
-  'briefcase',
-  'wallet',
-  'user',
-  'users',
-  'package',
-  'hammer',
-  'shield',
-  'repeat',
-  'circle-dot',
-] as const;
+// Derive allowed icons from the single source of truth
+const ALLOWED_ICONS = SUPPORTED_CATEGORY_ICONS.map((icon) => icon.value);
 
 const iconValidation = z
   .string()
   .min(1, 'Icon is required')
-  .refine((val) => ALLOWED_ICONS.includes(val as any), {
+  .refine((val) => ALLOWED_ICONS.includes(val), {
     message: `Icon must be one of: ${ALLOWED_ICONS.join(', ')}`,
   })
   .optional()

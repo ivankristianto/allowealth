@@ -44,6 +44,10 @@ export interface Props {
    * Use with <slot name="icon"> in the component usage
    */
   icon?: boolean;
+  /**
+   * Test ID for E2E testing
+   */
+  'data-testid'?: string;
 }
 
 const {
@@ -65,6 +69,7 @@ const {
   describedBy = '',
   required = false,
   icon = false,
+  'data-testid': dataTestId = '',
 } = Astro.props;
 
 // Check if input has an icon slot
@@ -118,6 +123,7 @@ const selectOptions = type === 'select' ? options : [];
         aria-invalid={error}
         aria-describedby={ariaDescribeIds || undefined}
         aria-required={required}
+        data-testid={dataTestId || undefined}
       >
         <option value="">{placeholder || 'Select...'}</option>
         {selectOptions.map((opt) => (
@@ -142,6 +148,7 @@ const selectOptions = type === 'select' ? options : [];
         aria-invalid={error}
         aria-describedby={ariaDescribeIds || undefined}
         aria-required={required}
+        data-testid={dataTestId || undefined}
       />
     )
   }

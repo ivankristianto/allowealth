@@ -30,6 +30,7 @@ export interface Props {
   amountName?: string;
   currencyName?: string;
   disabled?: boolean;
+  'data-testid'?: string;
 }
 
 const {
@@ -44,6 +45,7 @@ const {
   amountName = 'amount',
   currencyName = 'currency',
   disabled = false,
+  'data-testid': dataTestId,
 } = Astro.props;
 
 const inputId = id || `${name}-input`;
@@ -90,6 +92,7 @@ const errorId = `${name}-error`;
     aria-invalid={error}
     aria-describedby={error ? errorId : undefined}
     aria-required={required}
+    data-testid={dataTestId}
   />
 </div>
 

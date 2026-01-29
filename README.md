@@ -79,3 +79,96 @@ The dashboard seeder creates focused test data:
 **Issue:** Database becomes corrupted or has invalid data
 
 **Solution:** Run `bun run db:reset` to start fresh with a clean database.
+
+## E2E Testing
+
+End-to-end tests use Playwright with a Page Object Model pattern.
+
+### Prerequisites
+
+```bash
+# Install Playwright browsers (first time only)
+npx playwright install chromium --with-deps
+```
+
+### Running E2E Tests
+
+```bash
+# Setup E2E environment (creates .env.e2e and seeds test database)
+bun run test:e2e:setup
+
+# Run all E2E tests
+bun run test:e2e
+
+# Run tests with browser visible
+bun run test:e2e:headed
+
+# Run tests in UI mode (interactive debugging)
+bun run test:e2e:ui
+
+# Run tests in debug mode (step through)
+bun run test:e2e:debug
+
+# Run only critical business flow tests
+bun run test:e2e:critical
+
+# View HTML test report
+bun run test:e2e:report
+```
+
+### E2E Test Structure
+
+```
+e2e/
+├── playwright.config.ts     # Playwright configuration
+├── tests/
+│   ├── global-setup.ts      # Authentication setup
+│   ├── test.fixture.ts      # Custom test fixtures
+│   ├── business-flow.spec.ts # Critical path tests
+│   ├── add-expense.spec.ts  # Expense transaction tests
+│   ├── add-income.spec.ts   # Income transaction tests
+│   ├── assets/              # Asset management tests
+│   ├── budget/              # Budget management tests
+│   ├── categories/          # Category CRUD tests
+│   └── stats-verification/  # Cross-page data consistency
+├── pages/                   # Page Object Models
+│   ├── BasePage.ts          # Base class with utilities
+│   ├── LoginPage.ts
+│   ├── DashboardPage.ts
+│   └── ... (other page objects)
+└── helpers/                 # Test utilities
+    ├── api-helpers.ts       # API interaction helpers
+    ├── test-data.ts         # Test data generators
+    └── assertions.ts        # Custom assertions
+```
+
+### Test Credentials
+
+E2E tests use the demo user from the seed data:
+
+- **Email:** `demo@example.com`
+- **Password:** `demo123456789`
+
+### Writing New Tests
+
+Tests use custom fixtures that provide pre-initialized page objects:
+
+```typescript
+import { test, expect } from './test.fixture';
+
+test('example test', async ({ dashboardPage, transactionsPage }) => {
+  await dashboardPage.goto();
+  const total = await dashboardPage.getTotalExpenses();
+  expect(total).toBeGreaterThan(0);
+});
+```
+
+### CI/CD
+
+E2E tests run automatically on:
+
+- Pull requests to main branch
+- Pushes to main branch
+- Manual workflow dispatch
+
+See `.github/workflows/e2e-tests.yml` for the full CI configuration.
