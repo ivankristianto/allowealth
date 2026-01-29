@@ -1,21 +1,44 @@
 # E2E Testing Plan with Playwright
 
-**Version:** 2.0.0
-**Date:** 2026-01-28
+**Version:** 2.1.0
+**Date:** 2026-01-29
 **Status:** ✅ IMPLEMENTED - Complete
 
 ---
 
 ## Implementation Progress
 
-| Phase                   | Status      | Completion Date | Notes                        |
-| ----------------------- | ----------- | --------------- | ---------------------------- |
-| Phase 1: Infrastructure | ✅ Complete | 2026-01-28      | Pre-existing from prior work |
-| Phase 2: Page Objects   | ✅ Complete | 2026-01-28      | 10 page object files         |
-| Phase 2: Data-testid    | ✅ Complete | 2026-01-28      | 15+ components updated       |
-| Phase 3: Test Helpers   | ✅ Complete | 2026-01-28      | 4 helper files               |
-| Phase 3: Test Specs     | ✅ Complete | 2026-01-28      | 7 spec files, 40+ tests      |
-| Phase 4: CI/CD          | ✅ Complete | 2026-01-28      | GitHub Actions workflow      |
+| Phase                   | Status      | Completion Date | Notes                           |
+| ----------------------- | ----------- | --------------- | ------------------------------- |
+| Phase 1: Infrastructure | ✅ Complete | 2026-01-28      | Pre-existing from prior work    |
+| Phase 2: Page Objects   | ✅ Complete | 2026-01-28      | 10 page object files            |
+| Phase 2: Data-testid    | ✅ Complete | 2026-01-28      | 15+ components updated          |
+| Phase 3: Test Helpers   | ✅ Complete | 2026-01-28      | 4 helper files                  |
+| Phase 3: Test Specs     | ✅ Complete | 2026-01-28      | 7 spec files, 40+ tests         |
+| Phase 4: CI/CD          | ✅ Complete | 2026-01-28      | GitHub Actions workflow         |
+| Phase 5: Improvements   | ✅ Complete | 2026-01-29      | DB reset, dynamic data, cleanup |
+
+### v2.1.0 Improvements (2026-01-29)
+
+**1. Test Results Consolidation**
+
+- All test artifacts now stored in root `test-results/` folder
+- HTML report: `test-results/playwright-report/`
+- JSON results: `test-results/e2e-results.json`
+- Artifacts (screenshots, traces): `test-results/artifacts/`
+
+**2. Automatic Database Reset/Seed**
+
+- Database is automatically reset and seeded before each test run
+- Ensures test idempotency (tests can run multiple times with same results)
+- Added in `global-setup.ts` before authentication step
+
+**3. Dynamic Test Data**
+
+- Transaction tests now query database for available categories/assets
+- Uses `getSeededTestData()` helper to fetch categories and assets
+- No more hardcoded category/asset names that must match seeder
+- Tests are resilient to seeder changes
 
 ### Implementation Summary
 
@@ -872,10 +895,10 @@ test.describe('Cross-Page Stats Consistency', () => {
 All phases have been implemented. To run the E2E tests:
 
 ```bash
-# One-time setup (creates .env.e2e, seeds database)
+# One-time setup (creates .env.e2e only - database reset is now automatic)
 bun run test:e2e:setup
 
-# Run all E2E tests
+# Run all E2E tests (database auto-resets before each run)
 bun run test:e2e
 
 # Run critical path tests only
@@ -884,9 +907,22 @@ bun run test:e2e:critical
 # Run with interactive UI
 bun run test:e2e:ui
 
-# View HTML report
+# View HTML report (now at test-results/playwright-report)
 bun run test:e2e:report
 ```
+
+### Key Behaviors
+
+1. **Automatic Database Reset**: The database is automatically reset and seeded in `global-setup.ts` before authentication. No need to manually reset between test runs.
+
+2. **Idempotent Tests**: Tests can run multiple times with the same results because the database starts fresh each run.
+
+3. **Dynamic Test Data**: Transaction tests fetch available categories/assets from the seeded database instead of using hardcoded values.
+
+4. **Test Results Location**: All test artifacts are stored in `test-results/` at the project root:
+   - HTML report: `test-results/playwright-report/`
+   - JSON results: `test-results/e2e-results.json`
+   - Screenshots/traces: `test-results/artifacts/`
 
 ### Post-Implementation Tasks
 

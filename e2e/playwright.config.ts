@@ -18,9 +18,12 @@ export default defineConfig({
   // Local: 2 workers, CI: 1 worker for stability
   workers: process.env.CI ? 1 : 2,
   reporter: [
-    ['html', { outputFolder: 'playwright-report' }],
-    ['json', { outputFile: 'test-results/results.json' }],
+    ['html', { outputFolder: '../test-results/playwright-report' }],
+    ['json', { outputFile: '../test-results/e2e-results.json' }],
   ],
+
+  // Store test artifacts (screenshots, traces) in root test-results
+  outputDir: '../test-results/artifacts',
 
   use: {
     baseURL: E2E_BASE_URL,

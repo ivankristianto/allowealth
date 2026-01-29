@@ -1,7 +1,52 @@
 import { test, expect } from '../test.fixture';
-import { TEST_AMOUNTS, generateTestId, generateExpenseData } from '../../helpers';
+import {
+  TEST_AMOUNTS,
+  generateTestId,
+  getSeededTestData,
+  TestCategory,
+  TestAsset,
+} from '../../helpers';
+
+/**
+ * Test data fetched from the seeded database.
+ * Populated in beforeAll hook to avoid hardcoded values.
+ */
+let expenseCategories: TestCategory[] = [];
+let assets: TestAsset[] = [];
 
 test.describe('Add Expense Transaction', () => {
+  /**
+   * Fetch seeded test data before running tests.
+   * This ensures tests use actual database data instead of hardcoded values.
+   */
+  test.beforeAll(async ({ request }) => {
+    const testData = await getSeededTestData(request);
+    expenseCategories = testData.expenseCategories;
+    assets = testData.assets;
+
+    // Ensure we have test data
+    if (expenseCategories.length === 0) {
+      throw new Error('No expense categories found in seeded database');
+    }
+    if (assets.length === 0) {
+      throw new Error('No assets found in seeded database');
+    }
+  });
+
+  /**
+   * Helper to get a category by index, with fallback to first available.
+   */
+  function getCategory(index: number): TestCategory {
+    return expenseCategories[index % expenseCategories.length];
+  }
+
+  /**
+   * Helper to get an asset by index, with fallback to first available.
+   */
+  function getAsset(index: number): TestAsset {
+    return assets[index % assets.length];
+  }
+
   /**
    * Successfully add an expense with all fields filled.
    *
@@ -23,6 +68,10 @@ test.describe('Add Expense Transaction', () => {
     const expenseDescription = `E2E Expense Test ${expenseId}`;
     const expenseAmount = TEST_AMOUNTS.MEDIUM_EXPENSE; // 250,000 IDR
 
+    // Use seeded data
+    const category = getCategory(0);
+    const asset = getAsset(0);
+
     // Navigate to add transaction page with expense type pre-selected
     await addTransactionPage.gotoAddTransaction('expense');
 
@@ -30,8 +79,8 @@ test.describe('Add Expense Transaction', () => {
     await addTransactionPage.fillForm({
       type: 'expense',
       amount: expenseAmount,
-      categoryName: 'Food & Groceries',
-      assetName: 'Cash',
+      categoryName: category.name,
+      assetName: asset.name,
       description: expenseDescription,
       date: new Date().toISOString().split('T')[0], // Today's date
     });
@@ -62,6 +111,10 @@ test.describe('Add Expense Transaction', () => {
     const expenseDescription = `E2E Expense ${expenseId}`;
     const expenseAmount = TEST_AMOUNTS.SMALL_EXPENSE; // 50,000 IDR
 
+    // Use seeded data
+    const category = getCategory(0);
+    const asset = getAsset(0);
+
     // Navigate to add transaction page
     await addTransactionPage.gotoAddTransaction('expense');
 
@@ -69,8 +122,8 @@ test.describe('Add Expense Transaction', () => {
     await addTransactionPage.fillForm({
       type: 'expense',
       amount: expenseAmount,
-      categoryName: 'Food & Groceries',
-      assetName: 'Cash',
+      categoryName: category.name,
+      assetName: asset.name,
       description: expenseDescription, // Title is a required field
     });
 
@@ -97,6 +150,10 @@ test.describe('Add Expense Transaction', () => {
     const expenseDescription = `Large Expense ${expenseId}`;
     const expenseAmount = TEST_AMOUNTS.LARGE_EXPENSE; // 1,000,000 IDR
 
+    // Use seeded data
+    const category = getCategory(1);
+    const asset = getAsset(1);
+
     // Navigate to add transaction page
     await addTransactionPage.gotoAddTransaction('expense');
 
@@ -104,8 +161,8 @@ test.describe('Add Expense Transaction', () => {
     await addTransactionPage.fillForm({
       type: 'expense',
       amount: expenseAmount,
-      categoryName: 'Misc. Cost',
-      assetName: 'BCA Debit',
+      categoryName: category.name,
+      assetName: asset.name,
       description: expenseDescription,
     });
 
@@ -139,6 +196,10 @@ test.describe('Add Expense Transaction', () => {
     const expenseDescription = `Past Expense ${expenseId}`;
     const expenseAmount = TEST_AMOUNTS.MEDIUM_EXPENSE;
 
+    // Use seeded data
+    const category = getCategory(2);
+    const asset = getAsset(0);
+
     // Navigate to add transaction page
     await addTransactionPage.gotoAddTransaction('expense');
 
@@ -146,8 +207,8 @@ test.describe('Add Expense Transaction', () => {
     await addTransactionPage.fillForm({
       type: 'expense',
       amount: expenseAmount,
-      categoryName: 'Transportation',
-      assetName: 'Cash',
+      categoryName: category.name,
+      assetName: asset.name,
       description: expenseDescription,
       date: formattedDate,
     });
@@ -179,6 +240,10 @@ test.describe('Add Expense Transaction', () => {
     const expenseDescription = `Type Test Expense ${expenseId}`;
     const expenseAmount = TEST_AMOUNTS.MEDIUM_EXPENSE;
 
+    // Use seeded data
+    const category = getCategory(0);
+    const asset = getAsset(0);
+
     // Navigate to add transaction page with expense pre-selected
     await addTransactionPage.gotoAddTransaction('expense');
 
@@ -186,8 +251,8 @@ test.describe('Add Expense Transaction', () => {
     await addTransactionPage.fillForm({
       type: 'expense',
       amount: expenseAmount,
-      categoryName: 'Food & Groceries',
-      assetName: 'Cash',
+      categoryName: category.name,
+      assetName: asset.name,
       description: expenseDescription,
     });
 
@@ -217,25 +282,28 @@ test.describe('Add Expense Transaction', () => {
     transactionsPage,
     page,
   }) => {
-    const expenses = [
+    // Use dynamic categories from seeded data
+    const testExpenses = [
       {
         id: generateTestId(),
         amount: TEST_AMOUNTS.SMALL_EXPENSE,
-        category: 'Food & Groceries',
+        categoryIndex: 0,
       },
       {
         id: generateTestId(),
         amount: TEST_AMOUNTS.MEDIUM_EXPENSE,
-        category: 'Transportation',
+        categoryIndex: 1,
       },
       {
         id: generateTestId(),
         amount: TEST_AMOUNTS.LARGE_EXPENSE,
-        category: 'Misc. Cost',
+        categoryIndex: 2,
       },
     ];
 
-    for (const expense of expenses) {
+    const defaultAsset = getAsset(0);
+
+    for (const expense of testExpenses) {
       // Navigate to add transaction page
       await addTransactionPage.gotoAddTransaction('expense');
 
@@ -244,8 +312,8 @@ test.describe('Add Expense Transaction', () => {
       await addTransactionPage.fillForm({
         type: 'expense',
         amount: expense.amount,
-        categoryName: expense.category,
-        assetName: 'Cash',
+        categoryName: getCategory(expense.categoryIndex).name,
+        assetName: defaultAsset.name,
         description,
       });
 
@@ -264,6 +332,10 @@ test.describe('Add Expense Transaction', () => {
    * Tests that form state is cleared after successful submission.
    */
   test('verify form is reset after expense submission', async ({ addTransactionPage }) => {
+    // Use seeded data
+    const category = getCategory(0);
+    const asset = getAsset(0);
+
     // Navigate to add transaction
     await addTransactionPage.gotoAddTransaction('expense');
 
@@ -271,8 +343,8 @@ test.describe('Add Expense Transaction', () => {
     await addTransactionPage.fillForm({
       type: 'expense',
       amount: TEST_AMOUNTS.MEDIUM_EXPENSE,
-      categoryName: 'Food & Groceries',
-      assetName: 'Cash',
+      categoryName: category.name,
+      assetName: asset.name,
       description: 'Test Expense',
     });
 

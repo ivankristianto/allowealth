@@ -1,7 +1,52 @@
 import { test, expect } from '../test.fixture';
-import { TEST_AMOUNTS, generateTestId } from '../../helpers';
+import {
+  TEST_AMOUNTS,
+  generateTestId,
+  getSeededTestData,
+  TestCategory,
+  TestAsset,
+} from '../../helpers';
+
+/**
+ * Test data fetched from the seeded database.
+ * Populated in beforeAll hook to avoid hardcoded values.
+ */
+let incomeCategories: TestCategory[] = [];
+let assets: TestAsset[] = [];
 
 test.describe('Add Income Transaction', () => {
+  /**
+   * Fetch seeded test data before running tests.
+   * This ensures tests use actual database data instead of hardcoded values.
+   */
+  test.beforeAll(async ({ request }) => {
+    const testData = await getSeededTestData(request);
+    incomeCategories = testData.incomeCategories;
+    assets = testData.assets;
+
+    // Ensure we have test data
+    if (incomeCategories.length === 0) {
+      throw new Error('No income categories found in seeded database');
+    }
+    if (assets.length === 0) {
+      throw new Error('No assets found in seeded database');
+    }
+  });
+
+  /**
+   * Helper to get a category by index, with fallback to first available.
+   */
+  function getCategory(index: number): TestCategory {
+    return incomeCategories[index % incomeCategories.length];
+  }
+
+  /**
+   * Helper to get an asset by index, with fallback to first available.
+   */
+  function getAsset(index: number): TestAsset {
+    return assets[index % assets.length];
+  }
+
   /**
    * Successfully add an income with all fields filled.
    *
@@ -23,6 +68,10 @@ test.describe('Add Income Transaction', () => {
     const incomeDescription = `E2E Income Test ${incomeId}`;
     const incomeAmount = TEST_AMOUNTS.MEDIUM_INCOME; // 5,000,000 IDR
 
+    // Use seeded data
+    const category = getCategory(0);
+    const asset = getAsset(0);
+
     // Navigate to add transaction page with income type pre-selected
     await addTransactionPage.gotoAddTransaction('income');
 
@@ -30,8 +79,8 @@ test.describe('Add Income Transaction', () => {
     await addTransactionPage.fillForm({
       type: 'income',
       amount: incomeAmount,
-      categoryName: 'Other Income',
-      assetName: 'BCA Debit',
+      categoryName: category.name,
+      assetName: asset.name,
       description: incomeDescription,
       date: new Date().toISOString().split('T')[0], // Today's date
     });
@@ -61,6 +110,10 @@ test.describe('Add Income Transaction', () => {
     const incomeDescription = `E2E Income ${incomeId}`;
     const incomeAmount = TEST_AMOUNTS.SMALL_INCOME; // 1,000,000 IDR
 
+    // Use seeded data
+    const category = getCategory(1);
+    const asset = getAsset(1);
+
     // Navigate to add transaction page
     await addTransactionPage.gotoAddTransaction('income');
 
@@ -68,8 +121,8 @@ test.describe('Add Income Transaction', () => {
     await addTransactionPage.fillForm({
       type: 'income',
       amount: incomeAmount,
-      categoryName: 'QW',
-      assetName: 'Transfer',
+      categoryName: category.name,
+      assetName: asset.name,
       description: incomeDescription,
       // date is optional and defaults to today
     });
@@ -96,6 +149,10 @@ test.describe('Add Income Transaction', () => {
     const incomeDescription = `Large Income ${incomeId}`;
     const incomeAmount = TEST_AMOUNTS.LARGE_INCOME; // 15,000,000 IDR
 
+    // Use seeded data
+    const category = getCategory(2);
+    const asset = getAsset(0);
+
     // Navigate to add transaction page
     await addTransactionPage.gotoAddTransaction('income');
 
@@ -103,8 +160,8 @@ test.describe('Add Income Transaction', () => {
     await addTransactionPage.fillForm({
       type: 'income',
       amount: incomeAmount,
-      categoryName: 'Div BBRI BMRI',
-      assetName: 'BCA Debit',
+      categoryName: category.name,
+      assetName: asset.name,
       description: incomeDescription,
     });
 
@@ -135,6 +192,10 @@ test.describe('Add Income Transaction', () => {
     const incomeDescription = `Custom Date Income ${incomeId}`;
     const incomeAmount = TEST_AMOUNTS.MEDIUM_INCOME;
 
+    // Use seeded data
+    const category = getCategory(3);
+    const asset = getAsset(1);
+
     // Navigate to add transaction page
     await addTransactionPage.gotoAddTransaction('income');
 
@@ -142,8 +203,8 @@ test.describe('Add Income Transaction', () => {
     await addTransactionPage.fillForm({
       type: 'income',
       amount: incomeAmount,
-      categoryName: 'Primaya',
-      assetName: 'Transfer',
+      categoryName: category.name,
+      assetName: asset.name,
       description: incomeDescription,
       date: todayDate,
     });
@@ -173,6 +234,10 @@ test.describe('Add Income Transaction', () => {
     const incomeDescription = `Type Test Income ${incomeId}`;
     const incomeAmount = TEST_AMOUNTS.MEDIUM_INCOME;
 
+    // Use seeded data
+    const category = getCategory(4);
+    const asset = getAsset(0);
+
     // Navigate to add transaction page with income pre-selected
     await addTransactionPage.gotoAddTransaction('income');
 
@@ -180,8 +245,8 @@ test.describe('Add Income Transaction', () => {
     await addTransactionPage.fillForm({
       type: 'income',
       amount: incomeAmount,
-      categoryName: 'HM + Reimburse',
-      assetName: 'BCA Debit',
+      categoryName: category.name,
+      assetName: asset.name,
       description: incomeDescription,
     });
 
@@ -210,25 +275,28 @@ test.describe('Add Income Transaction', () => {
     transactionsPage,
     page,
   }) => {
-    const incomes = [
+    // Use dynamic categories from seeded data
+    const testIncomes = [
       {
         id: generateTestId(),
         amount: TEST_AMOUNTS.SMALL_INCOME,
-        category: 'QW',
+        categoryIndex: 0,
       },
       {
         id: generateTestId(),
         amount: TEST_AMOUNTS.MEDIUM_INCOME,
-        category: 'HM + Reimburse',
+        categoryIndex: 1,
       },
       {
         id: generateTestId(),
         amount: TEST_AMOUNTS.LARGE_INCOME,
-        category: 'Div BBRI BMRI',
+        categoryIndex: 2,
       },
     ];
 
-    for (const income of incomes) {
+    const defaultAsset = getAsset(0);
+
+    for (const income of testIncomes) {
       // Navigate to add transaction page
       await addTransactionPage.gotoAddTransaction('income');
 
@@ -237,8 +305,8 @@ test.describe('Add Income Transaction', () => {
       await addTransactionPage.fillForm({
         type: 'income',
         amount: income.amount,
-        categoryName: income.category,
-        assetName: 'BCA Debit',
+        categoryName: getCategory(income.categoryIndex).name,
+        assetName: defaultAsset.name,
         description,
       });
 
@@ -256,6 +324,10 @@ test.describe('Add Income Transaction', () => {
    * Tests that form state is cleared after successful submission.
    */
   test('verify form is reset after income submission', async ({ addTransactionPage }) => {
+    // Use seeded data
+    const category = getCategory(0);
+    const asset = getAsset(0);
+
     // Navigate to add transaction
     await addTransactionPage.gotoAddTransaction('income');
 
@@ -263,8 +335,8 @@ test.describe('Add Income Transaction', () => {
     await addTransactionPage.fillForm({
       type: 'income',
       amount: TEST_AMOUNTS.MEDIUM_INCOME,
-      categoryName: 'Other Income',
-      assetName: 'BCA Debit',
+      categoryName: category.name,
+      assetName: asset.name,
       description: 'Test Income',
     });
 
@@ -298,11 +370,13 @@ test.describe('Add Income Transaction', () => {
     transactionsPage,
     page,
   }) => {
-    const assets = ['BCA Debit', 'Cash'];
+    // Use up to 2 assets from seeded data
+    const testAssets = assets.slice(0, Math.min(2, assets.length));
+    const category = getCategory(0);
 
-    for (const assetName of assets) {
+    for (const asset of testAssets) {
       const incomeId = generateTestId();
-      const incomeDescription = `Income to ${assetName} ${incomeId}`;
+      const incomeDescription = `Income to ${asset.name} ${incomeId}`;
       const incomeAmount = TEST_AMOUNTS.MEDIUM_INCOME;
 
       // Navigate to add transaction page
@@ -312,8 +386,8 @@ test.describe('Add Income Transaction', () => {
       await addTransactionPage.fillForm({
         type: 'income',
         amount: incomeAmount,
-        categoryName: 'Other Income',
-        assetName,
+        categoryName: category.name,
+        assetName: asset.name,
         description: incomeDescription,
       });
 

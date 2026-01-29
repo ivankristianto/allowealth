@@ -1,7 +1,50 @@
 import { test as setup, expect } from '@playwright/test';
+import { execSync } from 'child_process';
+import * as fs from 'fs';
+import * as path from 'path';
 
 const E2E_PORT = 4320;
 const E2E_BASE_URL = `http://localhost:${E2E_PORT}`;
+const PROJECT_ROOT = path.resolve(__dirname, '../..');
+const E2E_DB_PATH = path.join(PROJECT_ROOT, 'db', '.e2e.db');
+
+/**
+ * Reset and seed the E2E database before running tests.
+ * This ensures tests start with a clean, consistent database state.
+ */
+setup('reset database', async () => {
+  // eslint-disable-next-line no-console -- Informational output for test setup
+  console.info('🗑️  Resetting E2E database...');
+
+  // Delete old database files
+  const dbFiles = [E2E_DB_PATH, `${E2E_DB_PATH}-wal`, `${E2E_DB_PATH}-shm`];
+  for (const file of dbFiles) {
+    if (fs.existsSync(file)) {
+      fs.unlinkSync(file);
+    }
+  }
+
+  // Push schema to create fresh database
+  // eslint-disable-next-line no-console -- Informational output for test setup
+  console.info('📦 Pushing database schema...');
+  execSync('bun run db:push --force', {
+    cwd: PROJECT_ROOT,
+    env: { ...process.env, DATABASE_URL: 'db/.e2e.db' },
+    stdio: 'inherit',
+  });
+
+  // Seed the database with test data
+  // eslint-disable-next-line no-console -- Informational output for test setup
+  console.info('🌱 Seeding database...');
+  execSync('bun run db:seed', {
+    cwd: PROJECT_ROOT,
+    env: { ...process.env, DATABASE_URL: 'db/.e2e.db' },
+    stdio: 'inherit',
+  });
+
+  // eslint-disable-next-line no-console -- Informational output for test setup
+  console.info('✅ Database reset complete');
+});
 
 /**
  * Global setup for E2E tests.

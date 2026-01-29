@@ -396,3 +396,105 @@ export async function waitForAPIReady(page: Page, timeout: number = 30000): Prom
 
   throw new Error(`API not ready after ${timeout}ms`);
 }
+
+/**
+ * Category and Asset type definitions for test data helpers
+ */
+export interface TestCategory {
+  id: string;
+  name: string;
+  type: 'income' | 'expense';
+}
+
+export interface TestAsset {
+  id: string;
+  name: string;
+  type: string;
+  balance: number;
+}
+
+/**
+ * Get seeded test data from the database.
+ * Returns categories and assets that were created by the seeder.
+ * This ensures tests use actual database data instead of hardcoded values.
+ *
+ * @param request - Playwright API request context
+ * @returns Object containing arrays of income categories, expense categories, and assets
+ */
+export async function getSeededTestData(request: APIRequestContext): Promise<{
+  incomeCategories: TestCategory[];
+  expenseCategories: TestCategory[];
+  assets: TestAsset[];
+}> {
+  const [incomeCategories, expenseCategories, assets] = await Promise.all([
+    getCategoriesViaAPI(request, 'income'),
+    getCategoriesViaAPI(request, 'expense'),
+    getAssetsViaAPI(request),
+  ]);
+
+  return {
+    incomeCategories: incomeCategories as TestCategory[],
+    expenseCategories: expenseCategories as TestCategory[],
+    assets: assets as TestAsset[],
+  };
+}
+
+/**
+ * Get a random item from an array.
+ * Useful for selecting random categories/assets in tests.
+ */
+export function getRandomItem<T>(items: T[]): T {
+  if (items.length === 0) {
+    throw new Error('Cannot get random item from empty array');
+  }
+  return items[Math.floor(Math.random() * items.length)];
+}
+
+/**
+ * Get the first category of a specific type.
+ * Falls back to creating one if none exists.
+ *
+ * @param request - Playwright API request context
+ * @param type - Category type ('income' or 'expense')
+ * @returns Category object with id and name
+ */
+export async function getFirstCategory(
+  request: APIRequestContext,
+  type: 'income' | 'expense'
+): Promise<TestCategory> {
+  const categories = await getCategoriesViaAPI(request, type);
+
+  if (categories.length === 0) {
+    // Create a default category if none exists
+    const created = await createCategoryViaAPI(request, {
+      name: `E2E-${type}-${Date.now()}`,
+      type,
+    });
+    return { id: created.id, name: `E2E-${type}-${Date.now()}`, type };
+  }
+
+  return categories[0] as TestCategory;
+}
+
+/**
+ * Get the first asset.
+ * Falls back to creating one if none exists.
+ *
+ * @param request - Playwright API request context
+ * @returns Asset object with id and name
+ */
+export async function getFirstAsset(request: APIRequestContext): Promise<TestAsset> {
+  const assets = await getAssetsViaAPI(request);
+
+  if (assets.length === 0) {
+    // Create a default asset if none exists
+    const created = await createAssetViaAPI(request, {
+      name: `E2E-Cash-${Date.now()}`,
+      type: 'cash',
+      balance: 10000000,
+    });
+    return { id: created.id, name: `E2E-Cash-${Date.now()}`, type: 'cash', balance: 10000000 };
+  }
+
+  return assets[0] as TestAsset;
+}
