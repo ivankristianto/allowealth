@@ -7,24 +7,14 @@
 
 import { csrfFetch } from '@/lib/csrf-client';
 
+import { formatCurrencyFromNumber } from '@/lib/utils/currency';
+
 // DOM Elements
 const form = document.getElementById('compound-calculator-form') as HTMLFormElement;
 const resultsContainer = document.getElementById('results-container');
 
-// Format currency for display
-function formatCurrency(amount: number, currency: 'IDR' | 'USD'): string {
-  const config = {
-    IDR: { code: 'IDR', symbol: 'Rp', decimals: 0, locale: 'id-ID' },
-    USD: { code: 'USD', symbol: '$', decimals: 2, locale: 'en-US' },
-  };
-  const cfg = config[currency];
-  return new Intl.NumberFormat(cfg.locale, {
-    style: 'currency',
-    currency: cfg.code,
-    minimumFractionDigits: cfg.decimals,
-    maximumFractionDigits: cfg.decimals,
-  }).format(amount);
-}
+// Re-export for convenience in this file
+const formatCurrency = formatCurrencyFromNumber;
 
 // Render results HTML
 function renderResults(data: {

@@ -51,6 +51,8 @@ tags:
     description: Budget overview and alerts
   - name: Forecast
     description: Wealth trajectory forecasting and projections
+  - name: Reports
+    description: Financial intelligence reports (monthly and yearly aggregations)
 
 paths:
   /api/auth/signup:
@@ -116,6 +118,11 @@ paths:
 
   /api/forecast:
     $ref: './openapi/paths/forecast.yml#/~1forecast'
+
+  /api/reports:
+    $ref: './openapi/paths/reports.yml#/paths/~1api~1reports'
+  /api/reports/category-transactions:
+    $ref: './openapi/paths/reports.yml#/paths/~1api~1reports~1category-transactions'
 
 components:
   securitySchemes:
@@ -246,3 +253,21 @@ components:
     # Forecast Schemas
     ForecastResponse:
       $ref: './openapi/schemas/ForecastResponse.yml#/ForecastResponse'
+
+    # Reports Schemas
+    ReportData:
+      $ref: './openapi/schemas/ReportData.yml#/ReportData'
+    ReportResponse:
+      $ref: './openapi/schemas/ReportResponse.yml#/ReportResponse'
+    CategoryExpense:
+      $ref: './openapi/schemas/CategoryExpense.yml#/CategoryExpense'
+    TrendDataPoint:
+      $ref: './openapi/schemas/TrendDataPoint.yml#/TrendDataPoint'
+    CategoryIntelligence:
+      $ref: './openapi/schemas/CategoryIntelligence.yml#/CategoryIntelligence'
+    CategoryTransaction:
+      $ref: './openapi/schemas/CategoryTransaction.yml#/CategoryTransaction'
+    CategoryTransactionsData:
+      $ref: './openapi/schemas/CategoryTransactionsData.yml#/CategoryTransactionsData'
+    CategoryTransactionsResponse:
+      $ref: './openapi/schemas/CategoryTransactionsResponse.yml#/CategoryTransactionsResponse'

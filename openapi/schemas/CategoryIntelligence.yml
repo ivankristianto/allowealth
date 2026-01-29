@@ -1,0 +1,31 @@
+# Category intelligence row for table
+CategoryIntelligence:
+  type: object
+  properties:
+    id:
+      type: string
+      description: Category ID
+      example: "cat_123"
+    name:
+      type: string
+      description: Category name
+      example: "Utilities"
+    spent:
+      type: string
+      description: Amount spent in this category (decimal string for precision)
+      example: "1850000"
+    budgetLimit:
+      type: string
+      nullable: true
+      description: Budget limit for this category, null if not set
+      example: "4000000"
+    icon:
+      type: string
+      description: Lucide icon name for this category
+      example: "zap"
+  required:
+    - id
+    - name
+    - spent
+    - budgetLimit
+    - icon

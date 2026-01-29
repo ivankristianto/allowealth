@@ -1,0 +1,33 @@
+---
+/**
+ * Category Transaction List Partial
+ *
+ * Server-rendered partial for displaying transactions in category drill-down modal.
+ * Renders TransactionCard components for each transaction without layout wrapper.
+ *
+ * @param {Array} transactions - Array of transaction data
+ */
+
+import TransactionCard from '@/components/molecules/TransactionCard.astro';
+import type { TransactionOutput } from '@/lib/types/transaction';
+
+export interface Props {
+  transactions: TransactionOutput[];
+}
+
+const { transactions = [] } = Astro.props;
+---
+
+{
+  transactions.length > 0 ? (
+    <div class="space-y-3">
+      {transactions.map((transaction) => (
+        <TransactionCard transaction={transaction} showActions={false} />
+      ))}
+    </div>
+  ) : (
+    <div class="flex flex-col items-center justify-center py-8" role="status" aria-live="polite">
+      <p class="text-base-content/50 text-sm">No transactions in this period</p>
+    </div>
+  )
+}

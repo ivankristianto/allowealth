@@ -58,6 +58,19 @@ export function formatCurrency(amount: string, currency: Currency): string {
 }
 
 /**
+ * Format a currency amount from number (for stories/tests/client code)
+ * @param amount - The amount as a number
+ * @param currency - The currency code (IDR or USD)
+ * @returns Formatted currency string (e.g., "Rp 1.000.000" or "$1,000.00")
+ */
+export function formatCurrencyFromNumber(amount: number, currency: Currency): string {
+  if (!Number.isFinite(amount)) {
+    return `${currency === 'IDR' ? 'Rp' : '$'} 0`;
+  }
+  return formatters[currency].format(amount);
+}
+
+/**
  * Format currency without symbol (for tables/calculations)
  * @param amount - The amount as a string
  * @param currency - The currency code
@@ -226,4 +239,31 @@ export function divideCurrency(amount: string, divisor: number): string {
   const num = safeDecimal(amount);
   if (num === null || divisor === 0) return '0';
   return num.dividedBy(divisor).toString();
+}
+
+/**
+ * Format currency in compact notation (e.g., "Rp1.5M", "$1.2K")
+ * Useful for charts and compact displays
+ * @param amount - The amount as a number
+ * @param currency - The currency code (IDR or USD)
+ * @returns Compact formatted string (e.g., "Rp1.5M" or "$1.2K")
+ */
+export function formatCurrencyCompact(amount: number, currency: Currency = 'IDR'): string {
+  if (!Number.isFinite(amount)) {
+    return `${currency === 'IDR' ? 'Rp' : '$'}0`;
+  }
+
+  const absAmount = Math.abs(amount);
+  const symbol = currency === 'IDR' ? 'Rp' : '$';
+
+  if (absAmount >= 1_000_000_000) {
+    return `${symbol}${(amount / 1_000_000_000).toFixed(1)}B`;
+  } else if (absAmount >= 1_000_000) {
+    return `${symbol}${(amount / 1_000_000).toFixed(1)}M`;
+  } else if (absAmount >= 1_000) {
+    return `${symbol}${(amount / 1_000).toFixed(1)}K`;
+  } else {
+    const locale = currency === 'IDR' ? 'id-ID' : 'en-US';
+    return `${symbol}${amount.toLocaleString(locale)}`;
+  }
 }

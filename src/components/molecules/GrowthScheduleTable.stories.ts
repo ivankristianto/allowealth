@@ -66,22 +66,10 @@ const meta: Meta = {
 
 export default meta;
 
-/**
- * Helper function to format currency
- */
-function formatCurrency(amount: number, currency: 'IDR' | 'USD'): string {
-  const config = {
-    IDR: { code: 'IDR', symbol: 'Rp', decimals: 0, locale: 'id-ID' },
-    USD: { code: 'USD', symbol: '$', decimals: 2, locale: 'en-US' },
-  };
-  const cfg = config[currency];
-  return new Intl.NumberFormat(cfg.locale, {
-    style: 'currency',
-    currency: cfg.code,
-    minimumFractionDigits: cfg.decimals,
-    maximumFractionDigits: cfg.decimals,
-  }).format(amount);
-}
+import { formatCurrencyFromNumber } from '@/lib/utils/currency';
+
+// Re-export for convenience in this file
+const formatCurrency = formatCurrencyFromNumber;
 
 /**
  * Mock data for different scenarios

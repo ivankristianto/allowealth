@@ -1,0 +1,20 @@
+# Trend data point for financial velocity bar chart
+TrendDataPoint:
+  type: object
+  properties:
+    name:
+      type: string
+      description: Period label (e.g., "Jan", "Feb" for monthly or "2024" for yearly)
+      example: "Feb"
+    income:
+      type: string
+      description: Total income for the period (decimal string for precision)
+      example: "9750000"
+    expenses:
+      type: string
+      description: Total expenses for the period (decimal string for precision)
+      example: "4735000"
+  required:
+    - name
+    - income
+    - expenses

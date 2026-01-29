@@ -1,0 +1,831 @@
+/**
+ * Report Service
+ * ==============
+ * Provides aggregated financial intelligence data for reports including:
+ * - Monthly and yearly income/expense summaries
+ * - Budget health metrics
+ * - Category spending analysis with donut chart data
+ * - Financial velocity trends (trailing periods)
+ * - Category intelligence table with budget limits
+ * - Category transaction drill-down
+ *
+ * Security:
+ * - All methods require userId parameter and filter queries by user_id
+ * - Category access control enforced via join + user_id filter
+ * - Input validation for dates (month 1-12, year 2000-2100)
+ * - Decimal precision for all currency calculations
+ *
+ * Error Handling:
+ * Methods catch errors and return safe default values (empty arrays, zeroed values).
+ * This ensures the service gracefully handles missing database connections or
+ * invalid input parameters without throwing exceptions.
+ *
+ * P2: TODO - Improve date precision (add milliseconds to end date: 23:59:59.999)
+ * P2: TODO - Extract MONTH_NAMES array to class constant (used in 2 places)
+ */
+
+import { transactions, categories, budgets, type IDatabase } from '@/db';
+import { eq, and, gte, lte, sql } from 'drizzle-orm';
+import {
+  decimalAdd,
+  decimalSubtract,
+  decimalDivide,
+  decimalMultiply,
+  decimalSum,
+  decimalIsZero,
+} from '@/lib/utils/decimal';
+import { validatePeriod } from '@/lib/utils/period-validation';
+import { BudgetServiceError, ServiceErrorCode } from './service-errors';
+
+/**
+ * Summary metric for expense/income categories
+ */
+export interface CategoryExpense {
+  name: string;
+  value: string; // Decimal string for precision
+}
+
+/**
+ * Trend data point for bar chart
+ */
+export interface TrendDataPoint {
+  name: string; // Month name or period label
+  income: string; // Decimal string
+  expenses: string; // Decimal string
+}
+
+/**
+ * Category intelligence row for table
+ */
+export interface CategoryIntelligence {
+  id: string;
+  name: string;
+  spent: string; // Decimal string
+  budgetLimit: string | null; // null if not set
+  icon: string;
+  color: string; // DaisyUI semantic color class from database
+}
+
+/**
+ * Monthly or yearly report data
+ */
+export interface ReportData {
+  totalIncome: string;
+  totalExpenses: string;
+  netSavings: string;
+  budgetHealth: number; // Percentage (0-100+)
+  expenseCategories: number; // Count of categories with expenses
+  expenseByCategory: CategoryExpense[]; // For donut chart
+  trendData: TrendDataPoint[]; // For bar chart
+  categoryIntelligence: CategoryIntelligence[]; // For table
+}
+
+/**
+ * Category transaction with details
+ */
+export interface CategoryTransaction {
+  id: string;
+  amount: string;
+  currency: 'IDR' | 'USD';
+  description: string | null;
+  transactionDate: Date;
+  assetName: string;
+}
+
+/**
+ * Category transactions response
+ */
+export interface CategoryTransactionsData {
+  transactions: CategoryTransaction[];
+  total: string; // Sum of transactions
+  categoryName: string;
+}
+
+/**
+ * Report data aggregation service
+ */
+export class ReportService {
+  /**
+   * Create a new ReportService with database injection
+   * @param db - Database instance (injected for testability)
+   */
+  constructor(private db: IDatabase) {}
+
+  /**
+   * Validate userId parameter
+   * @private
+   * @throws Error if userId is invalid
+   */
+  private validateUserId(userId: string): void {
+    if (!userId || typeof userId !== 'string' || userId.trim() === '') {
+      throw new Error('Invalid userId: must be a non-empty string');
+    }
+  }
+
+  /**
+   * Validate currency parameter
+   * @private
+   * @throws Error if currency is invalid
+   */
+  private validateCurrency(currency: string): void {
+    if (!['IDR', 'USD'].includes(currency)) {
+      throw new Error(`Invalid currency: ${currency}. Must be IDR or USD.`);
+    }
+  }
+
+  /**
+   * Get monthly report data
+   *
+   * Aggregates data for a specific month including income, expenses, budget health,
+   * category breakdown, and trailing 3-month trend.
+   *
+   * @param userId - User ID (from auth context)
+   * @param period - Period in format 'YYYY-MM' (e.g., '2024-02')
+   * @param currency - Currency to aggregate (default: IDR)
+   * @returns Monthly report data
+   */
+  async getMonthlyReport(
+    userId: string,
+    period: string,
+    currency: 'IDR' | 'USD' = 'IDR'
+  ): Promise<ReportData> {
+    try {
+      // Validate inputs
+      this.validateUserId(userId);
+      this.validateCurrency(currency);
+
+      // Validate and parse period format (YYYY-MM)
+      const { year, month } = validatePeriod(period, 'monthly');
+      if (!month) {
+        throw new Error(`Invalid monthly period: ${period}`);
+      }
+
+      // Calculate date range for the month
+      const startDate = new Date(year, month - 1, 1);
+      const endDate = new Date(year, month, 0, 23, 59, 59);
+
+      // Get all data in parallel for performance
+      const [
+        totalIncome,
+        totalExpenses,
+        budgetHealthData,
+        expenseByCategory,
+        categoryIntelligence,
+        trendData,
+      ] = await Promise.all([
+        this.getTotalIncome(userId, startDate, endDate, currency),
+        this.getTotalExpenses(userId, startDate, endDate, currency),
+        this.getBudgetHealth(userId, year, month, currency),
+        this.getExpenseByCategory(userId, startDate, endDate, currency),
+        this.getCategoryIntelligence(userId, year, month, currency),
+        this.getTrendData(userId, year, month, currency, 3), // Trailing 3 months
+      ]);
+
+      // Calculate net savings
+      const netSavings = decimalSubtract(totalIncome, totalExpenses);
+
+      // Count unique expense categories
+      const expenseCategories = expenseByCategory.length;
+
+      return {
+        totalIncome,
+        totalExpenses,
+        netSavings,
+        budgetHealth: budgetHealthData,
+        expenseCategories,
+        expenseByCategory,
+        trendData,
+        categoryIntelligence,
+      };
+    } catch (error) {
+      console.error('Error getting monthly report:', error);
+      // Return safe defaults on error
+      return this.getEmptyReport();
+    }
+  }
+
+  /**
+   * Get yearly report data
+   *
+   * Aggregates data for an entire year including income, expenses, budget health,
+   * category breakdown, and 12-month trend.
+   *
+   * @param userId - User ID (from auth context)
+   * @param year - Year (e.g., 2024)
+   * @param currency - Currency to aggregate (default: IDR)
+   * @returns Yearly report data
+   */
+  async getYearlyReport(
+    userId: string,
+    year: number,
+    currency: 'IDR' | 'USD' = 'IDR'
+  ): Promise<ReportData> {
+    try {
+      // Validate inputs
+      this.validateUserId(userId);
+      this.validateCurrency(currency);
+
+      // Validate year
+      validatePeriod(year.toString(), 'yearly');
+
+      // Calculate date range for the year
+      const startDate = new Date(year, 0, 1);
+      const endDate = new Date(year, 11, 31, 23, 59, 59);
+
+      // Get all data in parallel for performance
+      const [
+        totalIncome,
+        totalExpenses,
+        budgetHealthData,
+        expenseByCategory,
+        categoryIntelligence,
+        trendData,
+      ] = await Promise.all([
+        this.getTotalIncome(userId, startDate, endDate, currency),
+        this.getTotalExpenses(userId, startDate, endDate, currency),
+        this.getYearlyBudgetHealth(userId, year, currency),
+        this.getExpenseByCategory(userId, startDate, endDate, currency),
+        this.getYearlyCategoryIntelligence(userId, year, currency),
+        this.getYearlyTrendData(userId, year, currency), // 12 months
+      ]);
+
+      // Calculate net savings
+      const netSavings = decimalSubtract(totalIncome, totalExpenses);
+
+      // Count unique expense categories
+      const expenseCategories = expenseByCategory.length;
+
+      return {
+        totalIncome,
+        totalExpenses,
+        netSavings,
+        budgetHealth: budgetHealthData,
+        expenseCategories,
+        expenseByCategory,
+        trendData,
+        categoryIntelligence,
+      };
+    } catch (error) {
+      console.error('Error getting yearly report:', error);
+      // Return safe defaults on error
+      return this.getEmptyReport();
+    }
+  }
+
+  /**
+   * Get category transactions for drill-down
+   *
+   * Returns all transactions for a specific category within a period.
+   * Verifies category belongs to user for access control.
+   *
+   * @param userId - User ID (from auth context)
+   * @param categoryId - Category ID
+   * @param period - Period string ('YYYY-MM' for monthly, 'YYYY' for yearly)
+   * @param range - Report range type
+   * @returns Category transactions data
+   */
+  async getCategoryTransactions(
+    userId: string,
+    categoryId: string,
+    period: string,
+    range: 'monthly' | 'yearly'
+  ): Promise<CategoryTransactionsData> {
+    // Validate inputs
+    this.validateUserId(userId);
+
+    // Verify category exists and belongs to user (access control)
+    const category = await this.db.query.categories.findFirst({
+      where: and(eq(categories.id, categoryId), eq(categories.user_id, userId)),
+    });
+
+    if (!category) {
+      throw new BudgetServiceError(
+        ServiceErrorCode.CATEGORY_NOT_FOUND,
+        'Category not found or access denied',
+        404
+      );
+    }
+
+    try {
+      // Parse and validate period
+      const { year, month } = validatePeriod(period, range);
+
+      // Calculate date range based on range type
+      let startDate: Date;
+      let endDate: Date;
+
+      if (range === 'monthly' && month) {
+        startDate = new Date(year, month - 1, 1);
+        endDate = new Date(year, month, 0, 23, 59, 59);
+      } else {
+        // yearly
+        startDate = new Date(year, 0, 1);
+        endDate = new Date(year, 11, 31, 23, 59, 59);
+      }
+
+      // Get transactions for category in period
+      const categoryTransactions = await this.db.query.transactions.findMany({
+        where: and(
+          eq(transactions.user_id, userId),
+          eq(transactions.category_id, categoryId),
+          eq(transactions.type, 'expense'),
+          gte(transactions.transaction_date, startDate),
+          lte(transactions.transaction_date, endDate),
+          sql`${transactions.deleted_at} IS NULL`
+        ),
+        with: {
+          asset: true,
+        },
+        orderBy: [sql`${transactions.transaction_date} DESC`],
+      });
+
+      // Calculate total
+      const amounts = categoryTransactions.map((tx) => tx.amount);
+      const total = decimalSum(amounts);
+
+      // Map to response format
+      const transactionsData: CategoryTransaction[] = categoryTransactions.map((tx) => ({
+        id: tx.id,
+        amount: tx.amount,
+        currency: tx.currency,
+        description: tx.description,
+        transactionDate: tx.transaction_date,
+        assetName: tx.asset?.name || 'Unknown',
+      }));
+
+      return {
+        transactions: transactionsData,
+        total,
+        categoryName: category.name,
+      };
+    } catch (error) {
+      // Re-throw BudgetServiceError instances (category not found)
+      if (error instanceof BudgetServiceError) {
+        throw error;
+      }
+      // Log and re-throw unexpected errors
+      console.error('Error getting category transactions:', error);
+      throw new Error('Failed to retrieve category transactions');
+    }
+  }
+
+  // ============================================
+  // Private Helper Methods
+  // ============================================
+
+  /**
+   * Get total income for a date range
+   * @private
+   */
+  private async getTotalIncome(
+    userId: string,
+    startDate: Date,
+    endDate: Date,
+    currency: 'IDR' | 'USD'
+  ): Promise<string> {
+    const [result] = await (this.db as any)
+      .select({
+        total: sql<string>`COALESCE(SUM(CAST(${transactions.amount} AS REAL)), 0)`,
+      })
+      .from(transactions)
+      .where(
+        and(
+          eq(transactions.user_id, userId),
+          eq(transactions.type, 'income'),
+          eq(transactions.currency, currency),
+          gte(transactions.transaction_date, startDate),
+          lte(transactions.transaction_date, endDate),
+          sql`${transactions.deleted_at} IS NULL`
+        )
+      );
+
+    // Convert to string (SQL returns number even with sql<string> type annotation)
+    return result?.total?.toString() || '0';
+  }
+
+  /**
+   * Get total expenses for a date range
+   * @private
+   */
+  private async getTotalExpenses(
+    userId: string,
+    startDate: Date,
+    endDate: Date,
+    currency: 'IDR' | 'USD'
+  ): Promise<string> {
+    const [result] = await (this.db as any)
+      .select({
+        total: sql<string>`COALESCE(SUM(CAST(${transactions.amount} AS REAL)), 0)`,
+      })
+      .from(transactions)
+      .where(
+        and(
+          eq(transactions.user_id, userId),
+          eq(transactions.type, 'expense'),
+          eq(transactions.currency, currency),
+          gte(transactions.transaction_date, startDate),
+          lte(transactions.transaction_date, endDate),
+          sql`${transactions.deleted_at} IS NULL`
+        )
+      );
+
+    // Convert to string (SQL returns number even with sql<string> type annotation)
+    return result?.total?.toString() || '0';
+  }
+
+  /**
+   * Get budget health percentage for a specific month
+   * @private
+   */
+  private async getBudgetHealth(
+    userId: string,
+    year: number,
+    month: number,
+    currency: 'IDR' | 'USD'
+  ): Promise<number> {
+    // Get total budget for the month
+    const [budgetResult] = await (this.db as any)
+      .select({
+        total: sql<string>`COALESCE(SUM(CAST(${budgets.budget_amount} AS REAL)), 0)`,
+      })
+      .from(budgets)
+      .innerJoin(categories, eq(budgets.category_id, categories.id))
+      .where(
+        and(
+          eq(budgets.user_id, userId),
+          eq(budgets.month, month),
+          eq(budgets.year, year),
+          eq(budgets.currency, currency),
+          eq(categories.type, 'expense'),
+          eq(categories.is_active, true)
+        )
+      );
+
+    const totalBudget = budgetResult?.total || '0';
+
+    // Get total spent
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month, 0, 23, 59, 59);
+    const totalExpenses = await this.getTotalExpenses(userId, startDate, endDate, currency);
+
+    // Calculate percentage
+    if (decimalIsZero(totalBudget)) {
+      return 0;
+    }
+
+    const percentage = parseFloat(
+      decimalDivide(decimalMultiply(totalExpenses, '100'), totalBudget)
+    );
+    return Math.round(percentage * 10) / 10; // Round to 1 decimal
+  }
+
+  /**
+   * Get budget health percentage for entire year
+   * @private
+   */
+  private async getYearlyBudgetHealth(
+    userId: string,
+    year: number,
+    currency: 'IDR' | 'USD'
+  ): Promise<number> {
+    // Get total budget for all months in the year
+    const [budgetResult] = await (this.db as any)
+      .select({
+        total: sql<string>`COALESCE(SUM(CAST(${budgets.budget_amount} AS REAL)), 0)`,
+      })
+      .from(budgets)
+      .innerJoin(categories, eq(budgets.category_id, categories.id))
+      .where(
+        and(
+          eq(budgets.user_id, userId),
+          eq(budgets.year, year),
+          eq(budgets.currency, currency),
+          eq(categories.type, 'expense'),
+          eq(categories.is_active, true)
+        )
+      );
+
+    const totalBudget = budgetResult?.total || '0';
+
+    // Get total spent for year
+    const startDate = new Date(year, 0, 1);
+    const endDate = new Date(year, 11, 31, 23, 59, 59);
+    const totalExpenses = await this.getTotalExpenses(userId, startDate, endDate, currency);
+
+    // Calculate percentage
+    if (decimalIsZero(totalBudget)) {
+      return 0;
+    }
+
+    const percentage = parseFloat(
+      decimalDivide(decimalMultiply(totalExpenses, '100'), totalBudget)
+    );
+    return Math.round(percentage * 10) / 10; // Round to 1 decimal
+  }
+
+  /**
+   * Get expense breakdown by category for donut chart
+   * @private
+   */
+  private async getExpenseByCategory(
+    userId: string,
+    startDate: Date,
+    endDate: Date,
+    currency: 'IDR' | 'USD'
+  ): Promise<CategoryExpense[]> {
+    const categoryExpenses = await (this.db as any)
+      .select({
+        category_name: categories.name,
+        total: sql<string>`COALESCE(SUM(CAST(${transactions.amount} AS REAL)), 0)`,
+      })
+      .from(transactions)
+      .innerJoin(categories, eq(transactions.category_id, categories.id))
+      .where(
+        and(
+          eq(transactions.user_id, userId),
+          eq(transactions.type, 'expense'),
+          eq(transactions.currency, currency),
+          gte(transactions.transaction_date, startDate),
+          lte(transactions.transaction_date, endDate),
+          sql`${transactions.deleted_at} IS NULL`
+        )
+      )
+      .groupBy(categories.name)
+      .orderBy(sql`SUM(CAST(${transactions.amount} AS REAL)) DESC`);
+
+    if (categoryExpenses.length === 0) {
+      return [];
+    }
+
+    return categoryExpenses.map((cat: any) => ({
+      name: cat.category_name,
+      value: cat.total?.toString() || '0', // Convert to string
+    }));
+  }
+
+  /**
+   * Get category intelligence table data for a specific month
+   * @private
+   */
+  private async getCategoryIntelligence(
+    userId: string,
+    year: number,
+    month: number,
+    currency: 'IDR' | 'USD'
+  ): Promise<CategoryIntelligence[]> {
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month, 0, 23, 59, 59);
+
+    // Get all budgets for the month with category info
+    const monthBudgets = await this.db.query.budgets.findMany({
+      where: and(
+        eq(budgets.user_id, userId),
+        eq(budgets.month, month),
+        eq(budgets.year, year),
+        eq(budgets.currency, currency)
+      ),
+      with: {
+        category: true,
+      },
+    });
+
+    // Filter to only active expense categories
+    const expenseBudgets = monthBudgets.filter(
+      (b: any) => b.category?.type === 'expense' && b.category?.is_active === true
+    );
+
+    // Get spending by category
+    const categorySpending = await (this.db as any)
+      .select({
+        category_id: transactions.category_id,
+        total: sql<string>`COALESCE(SUM(CAST(${transactions.amount} AS REAL)), 0)`,
+      })
+      .from(transactions)
+      .where(
+        and(
+          eq(transactions.user_id, userId),
+          eq(transactions.type, 'expense'),
+          eq(transactions.currency, currency),
+          gte(transactions.transaction_date, startDate),
+          lte(transactions.transaction_date, endDate),
+          sql`${transactions.deleted_at} IS NULL`
+        )
+      )
+      .groupBy(transactions.category_id);
+
+    // Create spending map
+    const spendingByCategory = new Map<string, string>();
+    for (const spending of categorySpending) {
+      spendingByCategory.set(spending.category_id, spending.total?.toString() || '0');
+    }
+
+    // Build intelligence rows
+    const intelligence: CategoryIntelligence[] = expenseBudgets.map((budget: any) => ({
+      id: budget.category_id,
+      name: budget.category?.name ?? 'Unknown',
+      spent: spendingByCategory.get(budget.category_id) || '0',
+      budgetLimit: budget.budget_amount,
+      icon: budget.category?.icon ?? 'CircleDollarSign',
+      color: budget.category?.color ?? 'bg-neutral',
+    }));
+
+    return intelligence;
+  }
+
+  /**
+   * Get category intelligence for entire year
+   * @private
+   */
+  private async getYearlyCategoryIntelligence(
+    userId: string,
+    year: number,
+    currency: 'IDR' | 'USD'
+  ): Promise<CategoryIntelligence[]> {
+    const startDate = new Date(year, 0, 1);
+    const endDate = new Date(year, 11, 31, 23, 59, 59);
+
+    // Get all budgets for the year with category info (summed)
+    const yearlyBudgets = await (this.db as any)
+      .select({
+        category_id: budgets.category_id,
+        total_budget: sql<string>`COALESCE(SUM(CAST(${budgets.budget_amount} AS REAL)), 0)`,
+      })
+      .from(budgets)
+      .where(
+        and(eq(budgets.user_id, userId), eq(budgets.year, year), eq(budgets.currency, currency))
+      )
+      .groupBy(budgets.category_id);
+
+    // Get category details
+    const budgetMap = new Map<string, string>();
+    const categoryIds: string[] = [];
+    for (const budget of yearlyBudgets) {
+      budgetMap.set(budget.category_id, budget.total_budget?.toString() || '0');
+      categoryIds.push(budget.category_id);
+    }
+
+    if (categoryIds.length === 0) {
+      return [];
+    }
+
+    // Get category info for all budget categories
+    const categoriesData = await this.db.query.categories.findMany({
+      where: and(eq(categories.user_id, userId), eq(categories.type, 'expense')),
+    });
+
+    // Filter to only categories with budgets
+    const relevantCategories = categoriesData.filter((cat) => categoryIds.includes(cat.id));
+
+    // Get spending by category for the year
+    const categorySpending = await (this.db as any)
+      .select({
+        category_id: transactions.category_id,
+        total: sql<string>`COALESCE(SUM(CAST(${transactions.amount} AS REAL)), 0)`,
+      })
+      .from(transactions)
+      .where(
+        and(
+          eq(transactions.user_id, userId),
+          eq(transactions.type, 'expense'),
+          eq(transactions.currency, currency),
+          gte(transactions.transaction_date, startDate),
+          lte(transactions.transaction_date, endDate),
+          sql`${transactions.deleted_at} IS NULL`
+        )
+      )
+      .groupBy(transactions.category_id);
+
+    // Create spending map
+    const spendingByCategory = new Map<string, string>();
+    for (const spending of categorySpending) {
+      spendingByCategory.set(spending.category_id, spending.total?.toString() || '0');
+    }
+
+    // Build intelligence rows
+    const intelligence: CategoryIntelligence[] = relevantCategories.map((category) => ({
+      id: category.id,
+      name: category.name,
+      spent: spendingByCategory.get(category.id) || '0',
+      budgetLimit: budgetMap.get(category.id) || null,
+      icon: category.icon ?? 'CircleDollarSign',
+      color: category.color ?? 'bg-neutral',
+    }));
+
+    return intelligence;
+  }
+
+  /**
+   * Get trend data for trailing periods (monthly view shows 3 months)
+   * @private
+   */
+  private async getTrendData(
+    userId: string,
+    year: number,
+    month: number,
+    currency: 'IDR' | 'USD',
+    trailingMonths: number
+  ): Promise<TrendDataPoint[]> {
+    const monthNames = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+
+    const trendData: TrendDataPoint[] = [];
+
+    // Get data for each trailing month
+    for (let i = trailingMonths - 1; i >= 0; i--) {
+      const date = new Date(year, month - 1 - i, 1);
+      const trendYear = date.getFullYear();
+      const trendMonth = date.getMonth() + 1;
+
+      const startDate = new Date(trendYear, trendMonth - 1, 1);
+      const endDate = new Date(trendYear, trendMonth, 0, 23, 59, 59);
+
+      const [income, expenses] = await Promise.all([
+        this.getTotalIncome(userId, startDate, endDate, currency),
+        this.getTotalExpenses(userId, startDate, endDate, currency),
+      ]);
+
+      trendData.push({
+        name: monthNames[trendMonth - 1],
+        income,
+        expenses,
+      });
+    }
+
+    return trendData;
+  }
+
+  /**
+   * Get trend data for 12 months (yearly view)
+   * @private
+   */
+  private async getYearlyTrendData(
+    userId: string,
+    year: number,
+    currency: 'IDR' | 'USD'
+  ): Promise<TrendDataPoint[]> {
+    const monthNames = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+
+    const trendData: TrendDataPoint[] = [];
+
+    // Get data for each month of the year
+    for (let month = 1; month <= 12; month++) {
+      const startDate = new Date(year, month - 1, 1);
+      const endDate = new Date(year, month, 0, 23, 59, 59);
+
+      const [income, expenses] = await Promise.all([
+        this.getTotalIncome(userId, startDate, endDate, currency),
+        this.getTotalExpenses(userId, startDate, endDate, currency),
+      ]);
+
+      trendData.push({
+        name: monthNames[month - 1],
+        income,
+        expenses,
+      });
+    }
+
+    return trendData;
+  }
+
+  /**
+   * Get empty report data (safe defaults)
+   * @private
+   */
+  private getEmptyReport(): ReportData {
+    return {
+      totalIncome: '0',
+      totalExpenses: '0',
+      netSavings: '0',
+      budgetHealth: 0,
+      expenseCategories: 0,
+      expenseByCategory: [],
+      trendData: [],
+      categoryIntelligence: [],
+    };
+  }
+}

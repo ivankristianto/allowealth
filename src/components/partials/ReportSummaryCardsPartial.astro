@@ -5,39 +5,36 @@
  * Server-rendered partial for report summary stat cards.
  * Used for both SSR and HTML fragment responses (?_render=html).
  *
- * @param {number} totalIncome - Total income for period
- * @param {number} totalExpenses - Total expenses for period
- * @param {number} netSavings - Net savings for period
+ * @param {string} totalIncome - Total income for period (decimal string)
+ * @param {string} totalExpenses - Total expenses for period (decimal string)
+ * @param {string} netSavings - Net savings for period (decimal string)
  * @param {number} budgetHealth - Budget health percentage
  * @param {number} expenseCategories - Number of expense categories
+ * @param {Currency} currency - Currency to display (IDR or USD)
  */
 
 import StatCard from '@/components/atoms/StatCard.astro';
+import { formatCurrency } from '@/lib/utils/currency';
+import type { Currency } from '@/lib/enums';
 
 export interface Props {
-  totalIncome: number;
-  totalExpenses: number;
-  netSavings: number;
+  totalIncome: string;
+  totalExpenses: string;
+  netSavings: string;
   budgetHealth: number;
   expenseCategories: number;
+  currency: Currency;
 }
 
-const { totalIncome, totalExpenses, netSavings, budgetHealth, expenseCategories } = Astro.props;
-
-// Format currency helper for display
-function formatNumber(amount: number): string {
-  return new Intl.NumberFormat('id-ID', {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
-}
+const { totalIncome, totalExpenses, netSavings, budgetHealth, expenseCategories, currency } =
+  Astro.props;
 ---
 
 <!-- Summary Metric Cards -->
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6" data-summary-cards>
   <StatCard
     title="TOTAL INCOME"
-    value={`Rp ${formatNumber(totalIncome)}`}
+    value={formatCurrency(totalIncome, currency)}
     subtitle="PERIOD TOTAL"
     subtitleIcon="trending-up"
     valueColor="text-success"
@@ -46,7 +43,7 @@ function formatNumber(amount: number): string {
 
   <StatCard
     title="TOTAL EXPENSES"
-    value={`Rp ${formatNumber(totalExpenses)}`}
+    value={formatCurrency(totalExpenses, currency)}
     subtitle={`${expenseCategories} CATEGORIES`}
     valueColor="text-error"
     subtitleColor="text-error/60"
@@ -54,7 +51,7 @@ function formatNumber(amount: number): string {
 
   <StatCard
     title="NET SAVINGS"
-    value={`Rp ${formatNumber(netSavings)}`}
+    value={formatCurrency(netSavings, currency)}
     subtitle="RETAINED CAPITAL"
     valueColor="text-accent"
     subtitleColor="text-base-content/60"

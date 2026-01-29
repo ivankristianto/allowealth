@@ -208,23 +208,7 @@ function updateSummaryCards(
   }
 }
 
-/**
- * Format currency to compact format (e.g., "Rp1.5M")
- * @TODO: P2 - Code duplication: Import and use formatCurrency from @/lib/tokens or extend it to support compact format
- */
-function formatCurrencyCompact(amount: number): string {
-  const absAmount = Math.abs(amount);
-
-  if (absAmount >= 1_000_000_000) {
-    return `Rp${(amount / 1_000_000_000).toFixed(1)}B`;
-  } else if (absAmount >= 1_000_000) {
-    return `Rp${(amount / 1_000_000).toFixed(1)}M`;
-  } else if (absAmount >= 1_000) {
-    return `Rp${(amount / 1_000).toFixed(1)}K`;
-  } else {
-    return `Rp${amount.toLocaleString('id-ID')}`;
-  }
-}
+import { formatCurrencyCompact } from '@/lib/utils/currency';
 
 // Initialize on page load
 if (document.readyState === 'loading') {

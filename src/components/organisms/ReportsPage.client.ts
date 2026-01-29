@@ -12,6 +12,7 @@ import {
   renderSummaryHtml,
   renderChartsHtml,
   renderTableHtml,
+  renderSelectorHtml,
   showLoadingState,
   hideLoadingState,
   announceToScreenReader,
@@ -24,11 +25,29 @@ interface ReportState {
   period: string;
 }
 
-// @TODO: P3 - Consider removing hardcoded default period
-// Default period should be dynamically determined from available data or current date
+// Track if listeners are already attached to prevent duplicates
+let listenersAttached = false;
+
+/**
+ * Generate default period based on current date
+ * This is only used as a fallback if URL params and DOM elements don't provide values
+ */
+function getDefaultPeriod(range: 'monthly' | 'yearly'): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth() + 1; // 0-indexed to 1-indexed
+
+  if (range === 'monthly') {
+    const monthStr = month.toString().padStart(2, '0');
+    return `${year}-${monthStr}`;
+  } else {
+    return year.toString();
+  }
+}
+
 let currentState: ReportState = {
   range: 'monthly',
-  period: '2024-02', // Default to February 2024
+  period: getDefaultPeriod('monthly'),
 };
 
 /**
@@ -117,10 +136,6 @@ async function fetchAndRenderReports(): Promise<void> {
     // Accessibility announcement
     const rangeLabel = currentState.range === 'monthly' ? 'Monthly' : 'Yearly';
     announceToScreenReader(`${rangeLabel} report data updated`);
-
-    // Re-initialize drill-down button event handlers
-    // @TODO: This might need to be revisited if drill-down is moved to a separate module
-    reinitializeDrillDownHandlers();
   } catch (error) {
     console.error('Error fetching report data:', error);
 
@@ -135,26 +150,57 @@ async function fetchAndRenderReports(): Promise<void> {
 }
 
 /**
+ * Fetch and render selector HTML
+ */
+async function fetchAndRenderSelector(): Promise<void> {
+  try {
+    const params = new URLSearchParams();
+    params.set('_render', 'html');
+    params.set('_partial', 'selector');
+    params.set('range', currentState.range);
+    params.set('period', currentState.period);
+
+    const response = await fetch(`/api/reports?${params.toString()}`);
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch selector: ${response.statusText}`);
+    }
+
+    const html = await response.text();
+    const partials = parseHtmlPartials(html);
+
+    if (partials.selector) {
+      renderSelectorHtml(partials.selector);
+    }
+  } catch (error) {
+    console.error('Error fetching selector:', error);
+  }
+}
+
+/**
  * Handle report range change (monthly/yearly)
  */
-function handleRangeChange(
-  event: CustomEvent<{ range: 'monthly' | 'yearly'; newPeriod?: string | null }>
-): void {
+function handleRangeChange(event: CustomEvent<{ range: 'monthly' | 'yearly' }>): void {
   currentState.range = event.detail.range;
 
-  // Use the new period from the event if provided (when dropdown was updated)
-  if (event.detail.newPeriod) {
-    currentState.period = event.detail.newPeriod;
-  } else if (currentState.range === 'yearly') {
-    // Fallback: extract year from period (e.g., '2024-02' -> '2024')
+  // Fallback: convert period format to match new range
+  if (currentState.range === 'yearly') {
+    // Extract year from monthly period (e.g., '2024-02' -> '2024')
     currentState.period = currentState.period.split('-')[0];
+  } else {
+    // Convert yearly to monthly: append current month (e.g., '2024' -> '2024-01')
+    const now = new Date();
+    const month = (now.getMonth() + 1).toString().padStart(2, '0');
+    currentState.period = `${currentState.period}-${month}`;
   }
 
   // Update URL with new state
   updateUrl(currentState.range, currentState.period);
 
-  // Fetch and render new data
-  fetchAndRenderReports();
+  // Fetch and render selector first, then data
+  fetchAndRenderSelector().then(() => {
+    fetchAndRenderReports();
+  });
 }
 
 /**
@@ -171,44 +217,38 @@ function handlePeriodChange(event: CustomEvent<{ period: string; label: string }
 }
 
 /**
- * Re-initialize drill-down button handlers after HTML injection
- * This is needed because the buttons are replaced when HTML is injected
+ * Handle drill-down button clicks using event delegation
+ * This eliminates memory leaks from re-attaching listeners after HTML injection
+ * P1 fix: Use delegation pattern instead of per-button listeners (Issue #3 from code review)
  */
-function reinitializeDrillDownHandlers(): void {
-  // Find all drill-down buttons and re-attach event listeners
-  document.querySelectorAll('.category-drill-down-btn').forEach((btn) => {
-    const buttonEl = btn as HTMLElement;
+function handleDrillDownClick(event: MouseEvent): void {
+  const target = event.target as HTMLElement;
+  const btn = target.closest('.category-drill-down-btn') as HTMLElement;
 
-    // Remove existing listeners by cloning the node
-    const newBtn = buttonEl.cloneNode(true) as HTMLElement;
-    buttonEl.parentNode?.replaceChild(newBtn, buttonEl);
+  if (!btn) return;
 
-    // Add fresh listener
-    newBtn.addEventListener('click', () => {
-      const categoryId = newBtn.getAttribute('data-category-id');
-      const categoryName = newBtn.getAttribute('data-category-name');
-      const categoryIcon = newBtn.getAttribute('data-category-icon');
-      const categoryColor = newBtn.getAttribute('data-category-color');
-      const spent = parseFloat(newBtn.getAttribute('data-spent') || '0');
-      const budgetLimit = newBtn.getAttribute('data-budget-limit');
+  const categoryId = btn.getAttribute('data-category-id');
+  const categoryName = btn.getAttribute('data-category-name');
+  const categoryIcon = btn.getAttribute('data-category-icon');
+  const categoryColor = btn.getAttribute('data-category-color');
+  const spent = parseFloat(btn.getAttribute('data-spent') || '0');
+  const budgetLimit = btn.getAttribute('data-budget-limit');
 
-      if (categoryId && categoryName) {
-        // Dispatch custom event to open modal
-        const event = new CustomEvent('open-category-drilldown', {
-          detail: {
-            categoryId,
-            categoryName,
-            categoryIcon,
-            categoryColor,
-            spent,
-            budgetLimit: budgetLimit ? parseFloat(budgetLimit) : null,
-            period: currentState.period, // Use current period
-          },
-        });
-        document.dispatchEvent(event);
-      }
+  if (categoryId && categoryName) {
+    // Dispatch custom event to open modal
+    const customEvent = new CustomEvent('open-category-drilldown', {
+      detail: {
+        categoryId,
+        categoryName,
+        categoryIcon,
+        categoryColor,
+        spent,
+        budgetLimit: budgetLimit ? parseFloat(budgetLimit) : null,
+        period: currentState.period, // Use current period
+      },
     });
-  });
+    document.dispatchEvent(customEvent);
+  }
 }
 
 /**
@@ -233,20 +273,29 @@ export function initReportsPage(): void {
   if (urlState.period) {
     currentState.period = urlState.period;
   } else {
-    const periodInput = document.getElementById('period-filter') as HTMLInputElement;
+    // Try to read from MonthNavigator or YearNavigator
+    const monthInput = document.querySelector('[data-month-input]') as HTMLInputElement;
+    const yearInput = document.querySelector('[data-year-input]') as HTMLInputElement;
+    const periodInput = monthInput || yearInput;
+
     if (periodInput && periodInput.value) {
       currentState.period = periodInput.value;
     }
   }
 
-  // Listen for range change events from ReportSelector
-  window.addEventListener('reportRangeChange', handleRangeChange as EventListener);
+  // Only attach event listeners once to prevent duplicates
+  if (!listenersAttached) {
+    // Listen for range change events from ReportSelector
+    window.addEventListener('reportRangeChange', handleRangeChange as EventListener);
 
-  // Listen for period change events from ReportSelector
-  window.addEventListener('reportPeriodChange', handlePeriodChange as EventListener);
+    // Listen for period change events from ReportSelector
+    window.addEventListener('reportPeriodChange', handlePeriodChange as EventListener);
 
-  // Initialize drill-down handlers for SSR content
-  reinitializeDrillDownHandlers();
+    // Set up drill-down click delegation (once, at document level)
+    document.addEventListener('click', handleDrillDownClick);
+
+    listenersAttached = true;
+  }
 }
 
 // Auto-initialize on page load
@@ -263,4 +312,6 @@ document.addEventListener('astro:page-load', initReportsPage);
 document.addEventListener('astro:before-swap', () => {
   window.removeEventListener('reportRangeChange', handleRangeChange as EventListener);
   window.removeEventListener('reportPeriodChange', handlePeriodChange as EventListener);
+  document.removeEventListener('click', handleDrillDownClick);
+  listenersAttached = false;
 });

@@ -1,289 +1,262 @@
-/**
- * Reports API Endpoint
- *
- * Supports both JSON and HTML responses for interactive reports page.
- *
- * Query Parameters:
- * - _render: 'json' | 'html' (default: 'json')
- * - _partial: 'all' | 'summary' | 'charts' | 'table' (default: 'all')
- * - range: 'monthly' | 'yearly' (default: 'monthly')
- * - period: Period key (e.g., '2024-02' for monthly, '2024' for yearly)
- *
- * @TODO: Wire with backend - Replace mock data with actual database queries
- */
-
 import type { APIRoute } from 'astro';
 import { experimental_AstroContainer as AstroContainer } from 'astro/container';
+import { reportService } from '@/services';
+import type { ReportData } from '@/services/report.service';
+import { successResponse, errorResponse, getAuthenticatedUser } from '@/lib/api-utils';
+import { logError } from '@/lib/utils';
+import { createRenderHelper } from '@/lib/api/renderResponse';
+import { safeParseDecimal } from '@/lib/utils/decimal';
+import { validatePeriod } from '@/lib/utils/period-validation';
+
+// Import partial components for HTML rendering
 import ReportSummaryCardsPartial from '@/components/partials/ReportSummaryCardsPartial.astro';
 import ReportChartsPartial from '@/components/partials/ReportChartsPartial.astro';
 import CategoryTablePartial from '@/components/partials/CategoryTablePartial.astro';
+import ReportSelectorPartial from '@/components/partials/ReportSelectorPartial.astro';
 
-// @TODO: P2 - Wire with backend - Remove mock data function and replace with ReportsService
-// This function should be replaced with actual database queries via a service layer
-// Example: reportsService.getReportData(userId, range, period)
-function getMockReportData(range: 'monthly' | 'yearly', period: string) {
-  if (range === 'yearly') {
-    // Yearly mock data (aggregated for full year)
-    return {
-      summary: {
-        totalIncome: 95700000, // Sum of 12 months
-        totalExpenses: 80070000, // Sum of 12 months
-        netSavings: 15630000,
-        budgetHealth: 53, // percentage
-        expenseCategories: 7,
-      },
-      expenseByCategory: [
-        { name: 'Housing', value: 33600000 },
-        { name: 'Transport', value: 21600000 },
-        { name: 'Dining', value: 9360000 },
-        { name: 'Utilities', value: 7200000 },
-        { name: 'Groceries', value: 4320000 },
-        { name: 'Entertainment', value: 2880000 },
-        { name: 'Health', value: 1110000 },
-      ],
-      trendData: [
-        { name: 'Jan', income: 9750000, expenses: 8500000 },
-        { name: 'Feb', income: 9750000, expenses: 4735000 },
-        { name: 'Mar', income: 7500000, expenses: 6200000 },
-        { name: 'Apr', income: 8200000, expenses: 7100000 },
-        { name: 'May', income: 7800000, expenses: 6800000 },
-        { name: 'Jun', income: 8100000, expenses: 7000000 },
-        { name: 'Jul', income: 7900000, expenses: 6500000 },
-        { name: 'Aug', income: 8300000, expenses: 6900000 },
-        { name: 'Sep', income: 7700000, expenses: 6300000 },
-        { name: 'Oct', income: 8200000, expenses: 6900000 },
-        { name: 'Nov', income: 8000000, expenses: 6500000 },
-        { name: 'Dec', income: 4500000, expenses: 6635000 },
-      ],
-      categoryIntelligence: [
-        {
-          id: '1',
-          name: 'Housing',
-          spent: 33600000,
-          budgetLimit: 40000000,
-          icon: 'home',
-          color: 'bg-red-500',
-        },
-        {
-          id: '2',
-          name: 'Transport',
-          spent: 21600000,
-          budgetLimit: 30000000,
-          icon: 'car',
-          color: 'bg-purple-500',
-        },
-        {
-          id: '3',
-          name: 'Dining',
-          spent: 9360000,
-          budgetLimit: 36000000,
-          icon: 'utensils',
-          color: 'bg-orange-500',
-        },
-        {
-          id: '4',
-          name: 'Utilities',
-          spent: 7200000,
-          budgetLimit: 48000000,
-          icon: 'zap',
-          color: 'bg-blue-600',
-        },
-        {
-          id: '5',
-          name: 'Groceries',
-          spent: 4320000,
-          budgetLimit: 96000000,
-          icon: 'shopping-basket',
-          color: 'bg-blue-500',
-        },
-        {
-          id: '6',
-          name: 'Entertainment',
-          spent: 2880000,
-          budgetLimit: 18000000,
-          icon: 'music',
-          color: 'bg-pink-500',
-        },
-        {
-          id: '7',
-          name: 'Health',
-          spent: 1110000,
-          budgetLimit: null,
-          icon: 'heart-pulse',
-          color: 'bg-cyan-500',
-        },
-      ],
-      resourceAllocationSubtitle: 'YEARLY EXPENSE BREAKDOWN',
-      financialVelocitySubtitle: `${period} FLOW`,
-    };
-  }
+/**
+ * GET /api/reports
+ * Get report data for monthly or yearly periods
+ *
+ * Query params:
+ *   - range: 'monthly' | 'yearly' (required)
+ *   - period: string (required) - 'YYYY-MM' for monthly, 'YYYY' for yearly
+ *   - currency: 'IDR' | 'USD' (optional, defaults to 'IDR')
+ *   - _render: 'html' | 'json' (optional, defaults to 'json')
+ *   - _partial: 'summary' | 'charts' | 'table' | 'all' (optional, defaults to 'all')
+ *
+ * Security:
+ *   - Requires authentication (validates userId from session)
+ *   - Validates period format to prevent SQL injection
+ *   - Validates date ranges (month 1-12, year 2000-2100)
+ *   - All queries filtered by authenticated userId
+ */
+export const GET: APIRoute = async (context) => {
+  const { url } = context;
+  const render = createRenderHelper(url);
 
-  // Monthly mock data (default: February 2024)
-  return {
-    summary: {
-      totalIncome: 9750000,
-      totalExpenses: 4735000,
-      netSavings: 5015000,
-      budgetHealth: 8, // percentage
-      expenseCategories: 6,
-    },
-    expenseByCategory: [
-      { name: 'Utilities', value: 1850000 },
-      { name: 'Dining', value: 905000 },
-      { name: 'Health', value: 750000 },
-      { name: 'Transport', value: 595000 },
-      { name: 'Entertainment', value: 420000 },
-      { name: 'Groceries', value: 215000 },
-    ],
-    trendData: [
-      { name: 'Dec', income: 25245000, expenses: 33719000 },
-      { name: 'Jan', income: 60525000, expenses: 41816000 },
-      { name: 'Feb', income: 9750000, expenses: 4735000 },
-    ],
-    categoryIntelligence: [
-      {
-        id: '1',
-        name: 'Utilities',
-        spent: 1850000,
-        budgetLimit: 4000000,
-        icon: 'zap',
-        color: 'bg-blue-600',
-      },
-      {
-        id: '2',
-        name: 'Dining',
-        spent: 905000,
-        budgetLimit: 3000000,
-        icon: 'utensils',
-        color: 'bg-orange-500',
-      },
-      {
-        id: '3',
-        name: 'Health',
-        spent: 750000,
-        budgetLimit: null,
-        icon: 'heart-pulse',
-        color: 'bg-cyan-500',
-      },
-      {
-        id: '4',
-        name: 'Transport',
-        spent: 595000,
-        budgetLimit: 2500000,
-        icon: 'car',
-        color: 'bg-purple-500',
-      },
-      {
-        id: '5',
-        name: 'Entertainment',
-        spent: 420000,
-        budgetLimit: 1500000,
-        icon: 'music',
-        color: 'bg-pink-500',
-      },
-      {
-        id: '6',
-        name: 'Groceries',
-        spent: 215000,
-        budgetLimit: 8000000,
-        icon: 'shopping-basket',
-        color: 'bg-blue-500',
-      },
-      {
-        id: '7',
-        name: 'Housing',
-        spent: 0,
-        budgetLimit: 40000000,
-        icon: 'home',
-        color: 'bg-red-500',
-      },
-    ],
-    resourceAllocationSubtitle: 'EXPENSE MIX',
-    financialVelocitySubtitle: 'TRAILING 3 MONTHS',
-  };
-}
+  try {
+    // 1. Authenticate user
+    const userId = getAuthenticatedUser(context);
 
-export const GET: APIRoute = async ({ url }) => {
-  // Parse and validate query parameters
-  const renderParam = url.searchParams.get('_render');
-  const render = renderParam === 'html' ? 'html' : 'json';
+    // 2. Extract and validate query parameters
+    const range = url.searchParams.get('range') as 'monthly' | 'yearly' | null;
+    const period = url.searchParams.get('period');
+    const currency = (url.searchParams.get('currency') as 'IDR' | 'USD' | null) || 'IDR';
 
-  const partialParam = url.searchParams.get('_partial');
-  const validPartials = ['all', 'summary', 'charts', 'table'];
-  const partial = validPartials.includes(partialParam || '') ? partialParam! : 'all';
+    // Validate _partial parameter
+    const VALID_PARTIALS = ['summary', 'charts', 'table', 'selector', 'all'] as const;
+    type PartialType = (typeof VALID_PARTIALS)[number];
+    const partialParam = url.searchParams.get('_partial') || 'all';
+    if (!VALID_PARTIALS.includes(partialParam as PartialType)) {
+      const errorMsg = `Invalid _partial parameter. Must be one of: ${VALID_PARTIALS.join(', ')}.`;
+      return render.wantsHtml()
+        ? render.error(errorMsg, 400)
+        : errorResponse(errorMsg, 400, 'INVALID_PARTIAL');
+    }
+    const partial = partialParam as PartialType;
 
-  const rangeParam = url.searchParams.get('range');
-  const range: 'monthly' | 'yearly' = rangeParam === 'yearly' ? 'yearly' : 'monthly';
+    // Validate range
+    if (!range || (range !== 'monthly' && range !== 'yearly')) {
+      const errorMsg = "Invalid range parameter. Must be 'monthly' or 'yearly'.";
+      return render.wantsHtml()
+        ? render.error(errorMsg, 400)
+        : errorResponse(errorMsg, 400, 'INVALID_RANGE');
+    }
 
-  // Validate period format (YYYY-MM for monthly, YYYY for yearly)
-  const periodParam = url.searchParams.get('period') || '';
-  const monthlyRegex = /^\d{4}-(0[1-9]|1[0-2])$/;
-  const yearlyRegex = /^\d{4}$/;
-  const isValidPeriod =
-    range === 'monthly' ? monthlyRegex.test(periodParam) : yearlyRegex.test(periodParam);
-  const period = isValidPeriod ? periodParam : range === 'monthly' ? '2024-02' : '2024';
+    // Validate period
+    if (!period || typeof period !== 'string' || period.trim() === '') {
+      const errorMsg = 'Period parameter is required.';
+      return render.wantsHtml()
+        ? render.error(errorMsg, 400)
+        : errorResponse(errorMsg, 400, 'MISSING_PERIOD');
+    }
 
-  // @TODO: Wire with backend - Replace with actual data fetching
-  // Example: const data = await reportsService.getReportData(userId, range, period);
-  const data = getMockReportData(range, period);
-
-  // Return JSON response
-  if (render === 'json') {
-    return new Response(JSON.stringify(data), {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-  }
-
-  // Return HTML response
-  if (render === 'html') {
+    // Validate period format and ranges
     try {
-      const container = await AstroContainer.create();
-      let html = '';
+      validatePeriod(period, range);
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Invalid period format.';
+      // Map error message to appropriate error code
+      let errorCode = 'INVALID_PERIOD';
+      if (errorMsg.includes('format')) {
+        errorCode = 'INVALID_PERIOD_FORMAT';
+      } else if (errorMsg.includes('month')) {
+        errorCode = 'INVALID_MONTH';
+      } else if (errorMsg.includes('year')) {
+        errorCode = 'INVALID_YEAR';
+      }
+      return render.wantsHtml()
+        ? render.error(errorMsg, 400)
+        : errorResponse(errorMsg, 400, errorCode);
+    }
 
-      // Render requested partials
+    // Validate currency
+    if (currency !== 'IDR' && currency !== 'USD') {
+      const errorMsg = "Invalid currency parameter. Must be 'IDR' or 'USD'.";
+      return render.wantsHtml()
+        ? render.error(errorMsg, 400)
+        : errorResponse(errorMsg, 400, 'INVALID_CURRENCY');
+    }
+
+    // 3. Call service with userId to fetch report data
+    let reportData: ReportData;
+    if (range === 'monthly') {
+      reportData = await reportService.getMonthlyReport(userId, period, currency);
+    } else {
+      const year = parseInt(period, 10);
+      reportData = await reportService.getYearlyReport(userId, year, currency);
+    }
+
+    // 4. Return response based on requested format
+    if (render.wantsHtml()) {
+      const container = await AstroContainer.create();
+      const htmlParts: string[] = [];
+
+      // Keep summary data as strings for formatCurrency utility
+      const totalIncome = reportData.totalIncome;
+      const totalExpenses = reportData.totalExpenses;
+      const netSavings = reportData.netSavings;
+      const budgetHealth = reportData.budgetHealth;
+      const expenseCategories = reportData.expenseCategories;
+
+      // Convert expenseByCategory (decimal strings to numbers)
+      const expenseByCategory = reportData.expenseByCategory.map((cat) => ({
+        name: cat.name,
+        value: safeParseDecimal(cat.value),
+      }));
+
+      // Convert trendData (decimal strings to numbers)
+      const trendData = reportData.trendData.map((trend) => ({
+        name: trend.name,
+        income: safeParseDecimal(trend.income),
+        expenses: safeParseDecimal(trend.expenses),
+      }));
+
+      // Convert categoryIntelligence (decimal strings to numbers)
+      const categories = reportData.categoryIntelligence.map((cat) => ({
+        id: cat.id,
+        name: cat.name,
+        spent: safeParseDecimal(cat.spent),
+        budgetLimit: cat.budgetLimit ? safeParseDecimal(cat.budgetLimit) : null,
+        icon: cat.icon,
+        color: cat.color,
+      }));
+
+      // Render summary partial
       if (partial === 'all' || partial === 'summary') {
         const summaryHtml = await container.renderToString(ReportSummaryCardsPartial, {
-          props: data.summary,
+          props: {
+            totalIncome,
+            totalExpenses,
+            netSavings,
+            budgetHealth,
+            expenseCategories,
+            currency,
+          },
         });
-        html += `<!-- PARTIAL:summary -->\n${summaryHtml}\n`;
+        htmlParts.push(`<!-- PARTIAL:summary -->\n${summaryHtml}`);
       }
 
+      // Render charts partial
       if (partial === 'all' || partial === 'charts') {
         const chartsHtml = await container.renderToString(ReportChartsPartial, {
           props: {
-            expenseByCategory: data.expenseByCategory,
-            trendData: data.trendData,
-            resourceAllocationSubtitle: data.resourceAllocationSubtitle,
-            financialVelocitySubtitle: data.financialVelocitySubtitle,
+            expenseByCategory,
+            trendData,
+            resourceAllocationSubtitle: range === 'monthly' ? 'EXPENSE MIX' : 'YEARLY EXPENSE MIX',
+            financialVelocitySubtitle: range === 'monthly' ? 'TRAILING 3 MONTHS' : 'YEARLY FLOW',
           },
         });
-        html += `<!-- PARTIAL:charts -->\n${chartsHtml}\n`;
+        htmlParts.push(`<!-- PARTIAL:charts -->\n${chartsHtml}`);
       }
 
+      // Render table partial
       if (partial === 'all' || partial === 'table') {
         const tableHtml = await container.renderToString(CategoryTablePartial, {
           props: {
-            categories: data.categoryIntelligence,
+            categories,
             subtitle: 'SORTED BY FUNCTIONAL VOLUME',
+            range,
           },
         });
-        html += `<!-- PARTIAL:table -->\n${tableHtml}\n`;
+        htmlParts.push(`<!-- PARTIAL:table -->\n${tableHtml}`);
       }
 
-      return new Response(html, {
-        status: 200,
-        headers: {
-          'Content-Type': 'text/html; charset=utf-8',
-        },
-      });
-    } catch (error) {
-      console.error('Error rendering partials:', error);
-      return new Response('Internal Server Error', { status: 500 });
-    }
-  }
+      // Render selector partial
+      if (partial === 'selector') {
+        // Generate monthly and yearly periods
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        const currentMonth = now.getMonth() + 1;
 
-  return new Response('Bad Request: Invalid _render parameter', { status: 400 });
+        // Generate monthly periods (last 12 months)
+        const monthlyPeriods = Array.from({ length: 12 }, (_, i) => {
+          const monthsBack = 11 - i;
+          const date = new Date(currentYear, currentMonth - 1 - monthsBack, 1);
+          const year = date.getFullYear();
+          const month = date.getMonth() + 1;
+          const monthStr = month.toString().padStart(2, '0');
+
+          const monthNames = [
+            'Jan',
+            'Feb',
+            'Mar',
+            'Apr',
+            'May',
+            'Jun',
+            'Jul',
+            'Aug',
+            'Sep',
+            'Oct',
+            'Nov',
+            'Dec',
+          ];
+          const label = `${monthNames[month - 1]} ${year}`;
+
+          return {
+            key: `${year}-${monthStr}`,
+            label,
+          };
+        });
+
+        // Generate yearly periods (last 3 years + current year)
+        const yearlyPeriods = Array.from({ length: 4 }, (_, i) => {
+          const year = currentYear - (3 - i);
+          return {
+            key: year.toString(),
+            label: year.toString(),
+          };
+        });
+
+        const selectorHtml = await container.renderToString(ReportSelectorPartial, {
+          props: {
+            selectedRange: range,
+            selectedPeriod: period || '',
+            monthlyPeriods,
+            yearlyPeriods,
+          },
+        });
+        htmlParts.push(`<!-- PARTIAL:selector -->\n${selectorHtml}`);
+      }
+
+      return render.html(htmlParts.join('\n\n'));
+    }
+
+    // Default: JSON response
+    return successResponse(reportData);
+  } catch (error) {
+    // Handle authentication errors
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return render.wantsHtml()
+        ? render.error('Unauthorized', 401)
+        : errorResponse('Unauthorized', 401, 'UNAUTHORIZED');
+    }
+
+    // Log and return generic error
+    logError('Error fetching report data', error);
+    return render.wantsHtml()
+      ? render.error('Failed to fetch report data', 500)
+      : errorResponse('Failed to fetch report data', 500, 'INTERNAL_ERROR');
+  }
 };

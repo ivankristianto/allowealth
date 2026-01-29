@@ -13,7 +13,8 @@
  * @param {string} className - Additional CSS classes
  */
 
-import { Calendar, ChevronDown } from '@lucide/astro';
+import MonthNavigator from '@/components/molecules/MonthNavigator.astro';
+import YearNavigator from '@/components/molecules/YearNavigator.astro';
 
 export interface PeriodOption {
   key: string;
@@ -88,163 +89,56 @@ const currentPeriodLabel =
     </button>
   </div>
 
-  <!-- Period Selector Dropdown -->
+  <!-- Period Selector: MonthNavigator for monthly, YearNavigator for yearly -->
   {
-    availablePeriods.length > 0 && (
-      <div class="dropdown" id="report-period-dropdown" data-period-dropdown>
-        <input type="hidden" name="period" id="period-filter" value={selectedPeriod} />
-        <button
-          type="button"
-          tabindex={0}
-          class="flex items-center gap-2 px-4 py-3 text-xs font-bold border border-base-300 bg-base-100 text-base-content rounded-2xl shadow-sm hover:border-base-content/30 transition-colors min-w-[180px]"
-          aria-label="Select period"
-          data-period-trigger
-        >
-          <Calendar size={16} class="stroke-current text-base-content/40" aria-hidden="true" />
-          <span class="flex-1 text-left" data-period-label>
-            {currentPeriodLabel}
-          </span>
-          <ChevronDown size={14} class="stroke-current text-base-content/40" aria-hidden="true" />
-        </button>
-        <ul
-          tabindex={0}
-          class="dropdown-content z-50 menu p-2 shadow-lg bg-base-100 rounded-2xl w-52 border border-base-300 mt-2 max-h-64 overflow-y-auto"
-        >
-          {availablePeriods.map((period) => (
-            <li>
-              <button
-                type="button"
-                class={`text-xs font-medium ${period.key === selectedPeriod ? 'bg-primary/10 text-primary' : ''}`}
-                data-period-option={period.key}
-                data-period-label={period.label}
-              >
-                {period.label}
-              </button>
-            </li>
-          ))}
-        </ul>
-      </div>
-    )
+    selectedRange === 'monthly' && monthlyPeriods.length > 0 ? (
+      <MonthNavigator availableMonths={monthlyPeriods} selectedMonth={selectedPeriod} />
+    ) : selectedRange === 'yearly' && yearlyPeriods.length > 0 ? (
+      <YearNavigator availableYears={yearlyPeriods} selectedYear={selectedPeriod} />
+    ) : null
   }
 </div>
 
 <script>
   // Store references to event listeners for cleanup
   const rangeClickHandlers = new Map<Element, () => void>();
-  const periodClickHandlers = new Map<Element, (e: Event) => void>();
 
-  interface PeriodOption {
-    key: string;
-    label: string;
+  // Listen for month changes from MonthNavigator component
+  function handleMonthChange(e: Event) {
+    const customEvent = e as CustomEvent;
+    const { month, label } = customEvent.detail;
+
+    // Dispatch period change event
+    window.dispatchEvent(
+      new CustomEvent('reportPeriodChange', {
+        detail: { period: month, label },
+      })
+    );
   }
 
-  // Get periods from data attributes
-  function getPeriods(): { monthly: PeriodOption[]; yearly: PeriodOption[] } {
-    const selector = document.querySelector('[data-report-selector]');
-    if (!selector) return { monthly: [], yearly: [] };
+  // Listen for year changes from YearNavigator component
+  function handleYearChange(e: Event) {
+    const customEvent = e as CustomEvent;
+    const { year, label } = customEvent.detail;
 
-    const monthlyData = selector.getAttribute('data-monthly-periods');
-    const yearlyData = selector.getAttribute('data-yearly-periods');
-
-    return {
-      monthly: monthlyData ? JSON.parse(monthlyData) : [],
-      yearly: yearlyData ? JSON.parse(yearlyData) : [],
-    };
-  }
-
-  // Update period dropdown options based on range
-  function updatePeriodDropdown(range: 'monthly' | 'yearly') {
-    const periods = getPeriods();
-    const options = range === 'monthly' ? periods.monthly : periods.yearly;
-    const dropdownList = document.querySelector('[data-period-dropdown] ul');
-    const hiddenInput = document.getElementById('period-filter') as HTMLInputElement;
-    const labelEl = document.querySelector('[data-period-label]');
-
-    if (!dropdownList || options.length === 0) return;
-
-    // Clear existing options and handlers
-    periodClickHandlers.forEach((handler, btn) => {
-      btn.removeEventListener('click', handler);
-    });
-    periodClickHandlers.clear();
-
-    // Rebuild options
-    dropdownList.innerHTML = '';
-    options.forEach((period) => {
-      const li = document.createElement('li');
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'text-xs font-medium';
-      btn.setAttribute('data-period-option', period.key);
-      btn.setAttribute('data-period-label', period.label);
-      btn.textContent = period.label;
-
-      // Add click handler
-      const handler = (e: Event) => {
-        e.preventDefault();
-        e.stopPropagation();
-
-        const value = period.key;
-        const displayLabel = period.label;
-
-        if (hiddenInput) hiddenInput.value = value;
-        if (labelEl) labelEl.textContent = displayLabel;
-
-        // Update selected style
-        dropdownList.querySelectorAll('button').forEach((b) => {
-          b.classList.remove('bg-primary/10', 'text-primary');
-        });
-        btn.classList.add('bg-primary/10', 'text-primary');
-
-        // Close dropdown
-        (document.activeElement as HTMLElement)?.blur();
-
-        // Dispatch period change event
-        window.dispatchEvent(
-          new CustomEvent('reportPeriodChange', {
-            detail: { period: value, label: displayLabel },
-          })
-        );
-      };
-
-      btn.addEventListener('click', handler);
-      periodClickHandlers.set(btn, handler);
-
-      li.appendChild(btn);
-      dropdownList.appendChild(li);
-    });
-
-    // Set default period (last option) if current period doesn't match new range
-    const currentPeriod = hiddenInput?.value || '';
-    const currentPeriodExists = options.some((p) => p.key === currentPeriod);
-
-    if (!currentPeriodExists && options.length > 0) {
-      const defaultPeriod = options[options.length - 1];
-      if (hiddenInput) hiddenInput.value = defaultPeriod.key;
-      if (labelEl) labelEl.textContent = defaultPeriod.label;
-
-      // Highlight the default option
-      const defaultBtn = dropdownList.querySelector(`[data-period-option="${defaultPeriod.key}"]`);
-      if (defaultBtn) {
-        defaultBtn.classList.add('bg-primary/10', 'text-primary');
-      }
-
-      return defaultPeriod;
-    }
-
-    // Highlight current selection
-    const currentBtn = dropdownList.querySelector(`[data-period-option="${currentPeriod}"]`);
-    if (currentBtn) {
-      currentBtn.classList.add('bg-primary/10', 'text-primary');
-    }
-
-    return null;
+    // Dispatch period change event
+    window.dispatchEvent(
+      new CustomEvent('reportPeriodChange', {
+        detail: { period: year, label },
+      })
+    );
   }
 
   // Initialize report selector
   function initReportSelector() {
     // Cleanup previous listeners first
     cleanupReportSelector();
+
+    // Listen for month changes from MonthNavigator
+    window.addEventListener('monthChange', handleMonthChange);
+
+    // Listen for year changes from YearNavigator
+    window.addEventListener('yearChange', handleYearChange);
 
     // Handle range toggle button clicks
     document.querySelectorAll('[data-range]').forEach((btn) => {
@@ -264,56 +158,15 @@ const currentPeriodLabel =
           b.classList.toggle('text-base-content/50', !isActive);
         });
 
-        // Update period dropdown options for new range
-        const newDefaultPeriod = updatePeriodDropdown(range);
-
-        // Dispatch custom event for range change with new default period if applicable
+        // Dispatch custom event for range change
         window.dispatchEvent(
           new CustomEvent('reportRangeChange', {
-            detail: {
-              range,
-              newPeriod: newDefaultPeriod?.key || null,
-            },
+            detail: { range },
           })
         );
       };
       btn.addEventListener('click', handler);
       rangeClickHandlers.set(btn, handler);
-    });
-
-    // Initialize period dropdown handlers for existing options
-    document.querySelectorAll('[data-period-option]').forEach((btn) => {
-      const handler = (e: Event) => {
-        e.preventDefault();
-        e.stopPropagation();
-
-        const el = btn as HTMLElement;
-        const value = el.dataset.periodOption || '';
-        const displayLabel = el.dataset.periodLabel || value;
-        const hiddenInput = document.getElementById('period-filter') as HTMLInputElement;
-        const labelEl = document.querySelector('[data-period-label]');
-
-        if (hiddenInput) hiddenInput.value = value;
-        if (labelEl) labelEl.textContent = displayLabel;
-
-        // Update selected style
-        document.querySelectorAll('[data-period-option]').forEach((b) => {
-          b.classList.remove('bg-primary/10', 'text-primary');
-        });
-        el.classList.add('bg-primary/10', 'text-primary');
-
-        // Close dropdown by removing focus
-        (document.activeElement as HTMLElement)?.blur();
-
-        // Dispatch custom event for period change
-        window.dispatchEvent(
-          new CustomEvent('reportPeriodChange', {
-            detail: { period: value, label: displayLabel },
-          })
-        );
-      };
-      btn.addEventListener('click', handler);
-      periodClickHandlers.set(btn, handler);
     });
   }
 
@@ -324,10 +177,9 @@ const currentPeriodLabel =
     });
     rangeClickHandlers.clear();
 
-    periodClickHandlers.forEach((handler, btn) => {
-      btn.removeEventListener('click', handler);
-    });
-    periodClickHandlers.clear();
+    // Remove change listeners
+    window.removeEventListener('monthChange', handleMonthChange);
+    window.removeEventListener('yearChange', handleYearChange);
   }
 
   // Initialize on DOM ready

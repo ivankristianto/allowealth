@@ -1,0 +1,48 @@
+# Monthly or yearly report data
+ReportData:
+  type: object
+  properties:
+    totalIncome:
+      type: string
+      description: Total income for the period (decimal string for precision)
+      example: "9750000"
+    totalExpenses:
+      type: string
+      description: Total expenses for the period (decimal string for precision)
+      example: "4735000"
+    netSavings:
+      type: string
+      description: Net savings (income - expenses) (decimal string for precision)
+      example: "5015000"
+    budgetHealth:
+      type: number
+      description: Budget health percentage (0-100+, >100 means over budget)
+      example: 85.5
+    expenseCategories:
+      type: integer
+      description: Count of categories with expenses
+      example: 6
+    expenseByCategory:
+      type: array
+      description: Top expense categories for donut chart
+      items:
+        $ref: "./CategoryExpense.yml#/CategoryExpense"
+    trendData:
+      type: array
+      description: Financial velocity trend data for bar chart (3 months for monthly, 12 for yearly)
+      items:
+        $ref: "./TrendDataPoint.yml#/TrendDataPoint"
+    categoryIntelligence:
+      type: array
+      description: Category spending intelligence with budget limits
+      items:
+        $ref: "./CategoryIntelligence.yml#/CategoryIntelligence"
+  required:
+    - totalIncome
+    - totalExpenses
+    - netSavings
+    - budgetHealth
+    - expenseCategories
+    - expenseByCategory
+    - trendData
+    - categoryIntelligence
