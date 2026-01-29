@@ -3,13 +3,12 @@
  * CategoryDrillDownModal Component
  *
  * Modal for viewing detailed transactions and spending analysis for a category.
- * Shows transaction list, spending vs budget, and category insights.
+ * Fetches server-rendered HTML content from the API (following Interactive Pages Architecture).
  *
  * @param {string} id - Modal ID
  */
 
 import Modal from '../molecules/Modal.astro';
-import { TrendingUp, TrendingDown, TriangleAlert } from '@lucide/astro';
 
 export interface Props {
   id: string;
@@ -21,140 +20,18 @@ const { id } = Astro.props;
 <div data-category-drilldown-modal-container data-id={id}>
   <Modal id={id} size="xl" closable={false} backdropClose={true}>
     <div slot="default" class="flex flex-col gap-6">
-      {/* Header with category info */}
-      <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-        <div class="flex items-center gap-4">
-          <div
-            class="w-12 h-12 rounded-xl flex items-center justify-center text-white shadow-lg transition-transform bg-base-300"
-            data-category-icon-container
-          >
-          </div>
-          <div>
-            <h2
-              class="text-2xl font-bold tracking-tight text-primary leading-none"
-              data-category-name
-            >
-              Category Name
-            </h2>
-            <p
-              class="text-neutral text-sm mt-2 font-medium uppercase tracking-widest"
-              data-category-period
-            >
-              FEBRUARY 2024
-            </p>
-          </div>
-        </div>
-
-        <div class="flex flex-col items-start md:items-end">
-          <p
-            class="text-2xl md:text-3xl font-bold text-base-content tracking-tight"
-            data-category-spent
-          >
-            Rp 0
-          </p>
-          <div
-            class="flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest"
-            data-budget-badge
-          >
-            <span class="hidden" data-alert-icon>
-              <TriangleAlert size={12} class="stroke-current" aria-hidden="true" />
-            </span>
-            <span class="hidden" data-trending-up-icon>
-              <TrendingUp size={12} class="stroke-current" aria-hidden="true" />
-            </span>
-            <span class="hidden" data-trending-down-icon>
-              <TrendingDown size={12} class="stroke-current" aria-hidden="true" />
-            </span>
-            <span data-budget-text>NOT SET</span>
-          </div>
-        </div>
+      {/* Loading state */}
+      <div class="flex items-center justify-center py-8" data-modal-loading>
+        <div class="loading loading-spinner loading-lg text-accent"></div>
       </div>
 
-      {/* Budget Progress Section */}
-      <div class="bg-base-200/50 rounded-3xl p-6 border border-base-300/50">
-        <div class="flex justify-between items-center mb-4">
-          <h3 class="text-sm font-bold text-base-content/60 uppercase tracking-widest">
-            Budget Overview
-          </h3>
-        </div>
-
-        <div class="space-y-3">
-          <div class="flex justify-between items-center text-sm">
-            <span class="text-base-content/60">Spent</span>
-            <span class="font-bold" data-spent-amount>Rp 0</span>
-          </div>
-          <div class="flex justify-between items-center text-sm">
-            <span class="text-base-content/60">Budget Limit</span>
-            <span class="font-bold" data-budget-limit>Not Set</span>
-          </div>
-          <div class="flex justify-between items-center text-sm">
-            <span class="text-base-content/60">Remaining</span>
-            <span class="font-bold" data-remaining-amount>-</span>
-          </div>
-
-          {/* Progress Bar */}
-          <div class="w-full bg-base-300 rounded-full h-2 overflow-hidden" data-progress-container>
-            <div
-              class="h-full bg-accent transition-all duration-300"
-              style="width: 0%"
-              role="progressbar"
-              aria-valuenow="0"
-              aria-valuemin="0"
-              aria-valuemax="100"
-              data-progress-bar
-            >
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Transactions Section */}
-      <div class="bg-base-200/50 rounded-3xl p-6 border border-base-300/50">
-        <div class="flex justify-between items-center mb-6">
-          <h3 class="text-sm font-bold text-base-content/60 uppercase tracking-widest">
-            Transactions (<span data-transaction-count>0</span>)
-          </h3>
-        </div>
-
-        {/* Loading state */}
-        <div class="flex items-center justify-center py-8 hidden" data-transactions-loading>
-          <div class="loading loading-spinner loading-lg text-accent"></div>
-        </div>
-
-        {/* Empty state */}
-        <div
-          class="flex flex-col items-center justify-center py-8 hidden"
-          data-transactions-empty
-          role="status"
-          aria-live="polite"
-        >
-          <p class="text-base-content/50 text-sm">No transactions in this period</p>
-        </div>
-
-        {/* Transaction List */}
-        <div class="space-y-3 hidden" data-transactions-list></div>
-      </div>
-
-      {/* Close button */}
-      <div class="flex justify-end pt-2">
-        <form method="dialog">
-          <button
-            type="submit"
-            class="btn btn-outline btn-accent px-8 h-14 rounded-full font-bold text-base-content hover:bg-base-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent"
-            data-close-drilldown
-          >
-            Close
-          </button>
-        </form>
-      </div>
+      {/* Content container - will be populated with server-rendered HTML */}
+      <div data-modal-content class="hidden"></div>
     </div>
   </Modal>
 </div>
 
 <script>
-  import { formatCurrency } from '@/lib/tokens';
-  import { createIcons, icons } from 'lucide';
-
   // Track initialized modals to avoid duplicate handlers
   const initializedModals = new WeakSet<Element>();
 
@@ -166,42 +43,6 @@ const { id } = Astro.props;
     spent: number;
     budgetLimit?: number | null;
     period: string;
-  }
-
-  /**
-   * Render Lucide icon dynamically (client-side version of CategoryIcon)
-   * @param container - Container element to render icon into
-   * @param iconName - Lucide icon name (kebab-case)
-   * @param color - Tailwind background color class
-   */
-  function renderCategoryIcon(
-    container: HTMLElement,
-    iconName: string,
-    color: string = 'bg-base-300'
-  ) {
-    // Clear container
-    container.innerHTML = '';
-
-    // Update background color
-    container.className = `w-12 h-12 rounded-xl flex items-center justify-center text-white shadow-lg transition-transform ${color}`;
-
-    // Create icon element with data-lucide attribute
-    const iconElement = document.createElement('i');
-    iconElement.setAttribute('data-lucide', iconName);
-    iconElement.setAttribute('aria-hidden', 'true');
-    container.appendChild(iconElement);
-
-    // Use createIcons to replace the i element with actual SVG
-    createIcons({
-      icons,
-      attrs: {
-        width: '24',
-        height: '24',
-        'stroke-width': '2',
-        class: 'stroke-current',
-      },
-      nameAttr: 'data-lucide',
-    });
   }
 
   function initCategoryDrillDownModal() {
@@ -216,213 +57,84 @@ const { id } = Astro.props;
       const modal = document.getElementById(id) as HTMLDialogElement | null;
       if (!modal) return;
 
-      // Header elements
-      const categoryIconContainer = container.querySelector(
-        '[data-category-icon-container]'
-      ) as HTMLElement;
-      const categoryName = container.querySelector('[data-category-name]');
-      const categoryPeriod = container.querySelector('[data-category-period]');
-      const categorySpent = container.querySelector('[data-category-spent]');
-
-      // Badge elements
-      const budgetBadge = container.querySelector('[data-budget-badge]') as HTMLElement;
-      const budgetText = container.querySelector('[data-budget-text]');
-      const alertIcon = container.querySelector('[data-alert-icon]');
-      const trendingUpIcon = container.querySelector('[data-trending-up-icon]');
-      const trendingDownIcon = container.querySelector('[data-trending-down-icon]');
-
-      // Budget overview elements
-      const spentAmount = container.querySelector('[data-spent-amount]');
-      const budgetLimit = container.querySelector('[data-budget-limit]');
-      const remainingAmount = container.querySelector('[data-remaining-amount]');
-      const progressBar = container.querySelector('[data-progress-bar]') as HTMLElement;
-
-      // Transaction list elements
-      const transactionsLoading = container.querySelector('[data-transactions-loading]');
-      const transactionsEmpty = container.querySelector('[data-transactions-empty]');
-      const transactionsList = container.querySelector('[data-transactions-list]');
-      const transactionCount = container.querySelector('[data-transaction-count]');
+      // Loading and content containers
+      const loadingContainer = container.querySelector('[data-modal-loading]');
+      const contentContainer = container.querySelector('[data-modal-content]');
 
       let currentData: CategoryDrillDownData | null = null;
 
       /**
-       * Fetch category transactions HTML from backend API
-       * @param categoryId - Category ID
-       * @param period - Period string (YYYY-MM for monthly, YYYY for yearly)
-       * @param range - Range type (monthly or yearly)
-       * @returns Promise with HTML string and transaction count
+       * Fetch complete drilldown modal content as HTML from backend API
+       * @param data - Category drilldown data
+       * @returns Promise with HTML string
        */
-      async function fetchCategoryTransactionsHTML(
-        categoryId: string,
-        period: string,
-        range: 'monthly' | 'yearly'
-      ): Promise<{ html: string; count: number }> {
-        const params = new URLSearchParams({ categoryId, period, range, _render: 'html' });
-        const response = await fetch(`/api/reports/category-transactions?${params.toString()}`);
+      async function fetchDrilldownHTML(data: CategoryDrillDownData): Promise<string> {
+        // Determine range from period format (YYYY-MM = monthly, YYYY = yearly)
+        const range = data.period.includes('-') ? 'monthly' : 'yearly';
+
+        const params = new URLSearchParams({
+          categoryId: data.categoryId,
+          categoryName: data.categoryName,
+          categoryIcon: data.categoryIcon || 'tag',
+          categoryColor: data.categoryColor || 'bg-base-300',
+          spent: String(data.spent),
+          period: data.period,
+          range,
+          _render: 'html',
+        });
+
+        // Add budgetLimit if present
+        if (data.budgetLimit !== null && data.budgetLimit !== undefined) {
+          params.set('budgetLimit', String(data.budgetLimit));
+        }
+
+        const response = await fetch(`/api/reports/category-drilldown?${params.toString()}`);
 
         if (!response.ok) {
-          throw new Error(`Failed to fetch transactions: ${response.statusText}`);
+          throw new Error(`Failed to fetch drilldown content: ${response.statusText}`);
         }
 
-        const html = await response.text();
-
-        // Parse HTML to count transactions
-        // Create a temporary element to parse the HTML
-        const temp = document.createElement('div');
-        temp.innerHTML = html;
-        const transactionCards = temp.querySelectorAll('[data-transaction-card]');
-        const count = transactionCards.length;
-
-        return {
-          html,
-          count,
-        };
+        return await response.text();
       }
-
-      // Inject server-rendered transaction HTML into the modal
-      const injectTransactionHTML = (html: string) => {
-        if (!transactionsList) return;
-        transactionsList.innerHTML = html;
-      };
-
-      // Update display with data
-      // SECURITY: Use textContent (not innerHTML) to prevent XSS from user data in header
-      // Transaction list HTML is server-rendered and already sanitized
-      const updateDisplay = (data: CategoryDrillDownData, transactionHTML?: string) => {
-        // Header - render category icon
-        if (categoryIconContainer) {
-          const iconName = data.categoryIcon || 'tag';
-          const color = data.categoryColor || 'bg-base-300';
-          renderCategoryIcon(categoryIconContainer, iconName, color);
-        }
-        if (categoryName) categoryName.textContent = data.categoryName;
-        if (categoryPeriod) categoryPeriod.textContent = data.period.toUpperCase();
-        if (categorySpent) categorySpent.textContent = formatCurrency(data.spent, 'IDR');
-
-        // Budget calculations
-        const hasBudget = data.budgetLimit !== null && data.budgetLimit !== undefined;
-        const percentage = hasBudget ? (data.spent / data.budgetLimit!) * 100 : 0;
-        const remaining = hasBudget ? data.budgetLimit! - data.spent : 0;
-        const isOverBudget = percentage > 100;
-
-        // Budget badge
-        if (budgetBadge && budgetText && alertIcon && trendingUpIcon && trendingDownIcon) {
-          if (!hasBudget) {
-            budgetBadge.className =
-              'flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest bg-base-300 text-base-content/60';
-            budgetText.textContent = 'NOT SET';
-            alertIcon.classList.add('hidden');
-            trendingUpIcon.classList.add('hidden');
-            trendingDownIcon.classList.add('hidden');
-          } else if (isOverBudget) {
-            budgetBadge.className =
-              'flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest bg-error/10 text-error';
-            budgetText.textContent = `OVER BY ${percentage.toFixed(1)}%`;
-            alertIcon.classList.remove('hidden');
-            trendingUpIcon.classList.add('hidden');
-            trendingDownIcon.classList.add('hidden');
-          } else if (percentage >= 80) {
-            budgetBadge.className =
-              'flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest bg-warning/10 text-warning';
-            budgetText.textContent = `${percentage.toFixed(1)}% USED`;
-            alertIcon.classList.add('hidden');
-            trendingUpIcon.classList.remove('hidden');
-            trendingDownIcon.classList.add('hidden');
-          } else {
-            budgetBadge.className =
-              'flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest bg-success/10 text-success';
-            budgetText.textContent = `${percentage.toFixed(1)}% USED`;
-            alertIcon.classList.add('hidden');
-            trendingUpIcon.classList.add('hidden');
-            trendingDownIcon.classList.remove('hidden');
-          }
-        }
-
-        // Budget overview
-        if (spentAmount) spentAmount.textContent = formatCurrency(data.spent, 'IDR');
-        if (budgetLimit) {
-          budgetLimit.textContent = hasBudget
-            ? formatCurrency(data.budgetLimit!, 'IDR')
-            : 'Not Set';
-        }
-        if (remainingAmount) {
-          if (!hasBudget) {
-            remainingAmount.textContent = '-';
-            remainingAmount.className = 'font-bold text-base-content/60';
-          } else {
-            remainingAmount.textContent = formatCurrency(Math.abs(remaining), 'IDR');
-            remainingAmount.className = `font-bold ${remaining >= 0 ? 'text-success' : 'text-error'}`;
-          }
-        }
-
-        // Progress bar
-        if (progressBar) {
-          const progressPercent = Math.min(percentage, 100);
-          progressBar.style.width = `${progressPercent}%`;
-          progressBar.setAttribute('aria-valuenow', percentage.toFixed(1));
-          progressBar.className = `h-full transition-all duration-300 ${
-            isOverBudget ? 'bg-error' : percentage >= 80 ? 'bg-warning' : 'bg-success'
-          }`;
-        }
-
-        // Transactions - inject server-rendered HTML
-        if (transactionHTML) {
-          if (transactionHTML.trim() === '' || transactionHTML.includes('No transactions')) {
-            transactionsList?.classList.add('hidden');
-            transactionsEmpty?.classList.remove('hidden');
-            if (transactionCount) transactionCount.textContent = '0';
-          } else {
-            transactionsList?.classList.remove('hidden');
-            transactionsEmpty?.classList.add('hidden');
-            injectTransactionHTML(transactionHTML);
-
-            // Count transactions from HTML
-            const temp = document.createElement('div');
-            temp.innerHTML = transactionHTML;
-            const count = temp.querySelectorAll('[data-transaction-card]').length;
-            if (transactionCount) transactionCount.textContent = String(count);
-          }
-        }
-
-        transactionsLoading?.classList.add('hidden');
-      };
 
       // Listen for open-category-drilldown event
       const handleOpenDrillDown = (async (e: CustomEvent<CategoryDrillDownData>) => {
         currentData = e.detail;
 
-        // Show loading
-        transactionsLoading?.classList.remove('hidden');
-        transactionsList?.classList.add('hidden');
-        transactionsEmpty?.classList.add('hidden');
-
+        // Show modal with loading state
+        loadingContainer?.classList.remove('hidden');
+        contentContainer?.classList.add('hidden');
         modal.showModal();
 
-        // Fetch transaction HTML from backend
-        let transactionHTML = '';
         try {
-          // Determine range from period format (YYYY-MM = monthly, YYYY = yearly)
-          const range = currentData.period.includes('-') ? 'monthly' : 'yearly';
+          // Fetch server-rendered HTML
+          const html = await fetchDrilldownHTML(currentData);
 
-          const data = await fetchCategoryTransactionsHTML(
-            currentData.categoryId,
-            currentData.period,
-            range
-          );
+          // Inject HTML into content container
+          if (contentContainer) {
+            contentContainer.innerHTML = html;
+          }
 
-          transactionHTML = data.html;
+          // Hide loading, show content
+          loadingContainer?.classList.add('hidden');
+          contentContainer?.classList.remove('hidden');
         } catch (error) {
-          console.error('Error fetching category transactions:', error);
-          // Show error state
-          transactionsLoading?.classList.add('hidden');
-          transactionsEmpty?.classList.remove('hidden');
-          if (transactionsList) transactionsList.innerHTML = '';
-          return;
-        }
+          console.error('Error fetching category drilldown:', error);
 
-        // Update display with fetched data
-        if (currentData) {
-          updateDisplay(currentData, transactionHTML);
+          // Show error state
+          if (contentContainer) {
+            contentContainer.innerHTML = `
+              <div class="flex flex-col items-center justify-center py-12 text-center">
+                <p class="text-error text-base font-semibold mb-2">Failed to load category details</p>
+                <p class="text-base-content/60 text-sm mb-4">Please try again later</p>
+                <form method="dialog">
+                  <button type="submit" class="btn btn-outline btn-accent">Close</button>
+                </form>
+              </div>
+            `;
+          }
+          loadingContainer?.classList.add('hidden');
+          contentContainer?.classList.remove('hidden');
         }
       }) as EventListener;
 
@@ -440,6 +152,10 @@ const { id } = Astro.props;
       // Reset data when modal closes
       modal.addEventListener('close', () => {
         currentData = null;
+        // Clear content to free memory
+        if (contentContainer) {
+          contentContainer.innerHTML = '';
+        }
       });
     });
   }
