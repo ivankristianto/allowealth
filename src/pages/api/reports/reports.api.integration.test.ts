@@ -494,6 +494,24 @@ describe('Reports API Integration Tests', () => {
         expect(data.error.message).toContain('Category ID is required');
       }));
 
+    it('should return 400 with invalid categoryId format', () =>
+      skipIfNotReady(async () => {
+        const response = await fetch(
+          `${API_BASE_URL}/api/reports/category-transactions?categoryId=invalid@id&period=2024-02&range=monthly`,
+          {
+            headers: {
+              Cookie: `auth_session=${testSessionId}`,
+            },
+          }
+        );
+
+        expect(response.status).toBe(400);
+
+        const data = await response.json();
+        expect(data.error.message).toContain('Invalid category ID format');
+        expect(data.error.code).toBe('INVALID_CATEGORY_ID');
+      }));
+
     it('should calculate correct total for category transactions', () =>
       skipIfNotReady(async () => {
         // First get a monthly report

@@ -112,10 +112,10 @@ export const GET: APIRoute = async (context) => {
       const container = await AstroContainer.create();
       const htmlParts: string[] = [];
 
-      // Convert decimal strings to numbers for partial props
-      const totalIncome = safeParseDecimal(reportData.totalIncome);
-      const totalExpenses = safeParseDecimal(reportData.totalExpenses);
-      const netSavings = safeParseDecimal(reportData.netSavings);
+      // Keep summary data as strings for formatCurrency utility
+      const totalIncome = reportData.totalIncome;
+      const totalExpenses = reportData.totalExpenses;
+      const netSavings = reportData.netSavings;
       const budgetHealth = reportData.budgetHealth;
       const expenseCategories = reportData.expenseCategories;
 
@@ -139,6 +139,7 @@ export const GET: APIRoute = async (context) => {
         spent: safeParseDecimal(cat.spent),
         budgetLimit: cat.budgetLimit ? safeParseDecimal(cat.budgetLimit) : null,
         icon: cat.icon,
+        color: cat.color,
       }));
 
       // Render summary partial
@@ -150,6 +151,7 @@ export const GET: APIRoute = async (context) => {
             netSavings,
             budgetHealth,
             expenseCategories,
+            currency,
           },
         });
         htmlParts.push(`<!-- PARTIAL:summary -->\n${summaryHtml}`);

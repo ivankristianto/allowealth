@@ -12,16 +12,8 @@
  * @param {boolean} showCategoryFilter - Show category dropdown
  */
 
-import {
-  Search,
-  ChevronLeft,
-  ChevronRight,
-  ChevronDown,
-  Calendar,
-  Tag,
-  Check,
-  RotateCcw,
-} from '@lucide/astro';
+import { Search, ChevronDown, Tag, Check, RotateCcw } from '@lucide/astro';
+import MonthNavigator from '@/components/molecules/MonthNavigator.astro';
 
 export interface Props {
   typeFilter?: 'income' | 'expense';
@@ -90,17 +82,7 @@ const buildFilterUrl = (updates: Record<string, string>) => {
   return queryString ? `${basePath}?${queryString}` : basePath;
 };
 
-// Get month index for navigation
-const currentMonthIndex = availableMonths.findIndex((m) => m.key === selectedMonth);
-const hasPrevMonth = currentMonthIndex > 0;
-const hasNextMonth = currentMonthIndex < availableMonths.length - 1;
-
-// Get display label for selected month
-const selectedMonthData = availableMonths.find((m) => m.key === selectedMonth);
-const currentMonthLabel =
-  selectedMonthData?.label ||
-  availableMonths[availableMonths.length - 1]?.label ||
-  new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+// Month navigator logic moved to MonthNavigator component
 ---
 
 <!-- Filter Bar Container -->
@@ -247,76 +229,8 @@ const currentMonthLabel =
 
     <!-- Month Filter with Navigation -->
     {
-      monthSelector && availableMonths.length > 0 && (
-        <div class="flex items-center gap-1" id="month-filter-group" data-month-filter-group>
-          <button
-            type="button"
-            class={`btn btn-ghost btn-square border border-base-300 bg-base-100 rounded-2xl transition-all active:scale-95 shadow-sm ${
-              !hasPrevMonth
-                ? 'opacity-30 cursor-not-allowed pointer-events-none'
-                : 'text-base-content/40 hover:text-primary hover:border-accent/30'
-            }`}
-            aria-label="Previous month"
-            aria-disabled={!hasPrevMonth}
-            data-month-nav="prev"
-            data-has-prev={hasPrevMonth ? 'true' : 'false'}
-          >
-            <ChevronLeft size={18} class="stroke-current" aria-hidden="true" />
-          </button>
-
-          <div class="dropdown" id="month-dropdown">
-            <input type="hidden" name="month" id="month-filter" value={selectedMonth} />
-            <button
-              type="button"
-              tabindex={0}
-              class="flex items-center gap-2 px-4 py-3 text-xs font-bold border border-base-300 bg-base-100 text-base-content rounded-2xl shadow-sm hover:border-base-content/30 transition-colors min-w-[120px]"
-              aria-label="Select month"
-              data-month-trigger
-            >
-              <Calendar size={16} class="stroke-current text-base-content/40" aria-hidden="true" />
-              <span class="flex-1 text-left" data-month-label>
-                {currentMonthLabel}
-              </span>
-              <ChevronDown
-                size={14}
-                class="stroke-current text-base-content/40"
-                aria-hidden="true"
-              />
-            </button>
-            <ul
-              tabindex={0}
-              class="dropdown-content z-50 menu p-2 shadow-lg bg-base-100 rounded-2xl w-52 border border-base-300 mt-2 max-h-64 overflow-y-auto"
-            >
-              {availableMonths.map((month) => (
-                <li>
-                  <button
-                    type="button"
-                    class={`text-xs font-medium ${month.key === selectedMonth ? 'bg-primary/10 text-primary' : ''}`}
-                    data-month-option={month.key}
-                    data-month-label={month.label}
-                  >
-                    {month.label}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <button
-            type="button"
-            class={`btn btn-ghost btn-square border border-base-300 bg-base-100 rounded-2xl transition-all active:scale-95 shadow-sm ${
-              !hasNextMonth
-                ? 'opacity-30 cursor-not-allowed pointer-events-none'
-                : 'text-base-content/40 hover:text-primary hover:border-accent/30'
-            }`}
-            aria-label="Next month"
-            aria-disabled={!hasNextMonth}
-            data-month-nav="next"
-            data-has-next={hasNextMonth ? 'true' : 'false'}
-          >
-            <ChevronRight size={18} class="stroke-current" aria-hidden="true" />
-          </button>
-        </div>
+      monthSelector && (
+        <MonthNavigator availableMonths={availableMonths} selectedMonth={selectedMonth} />
       )
     }
   </div>
@@ -372,7 +286,7 @@ const currentMonthLabel =
     if (!resetBtn) return;
 
     const searchInput = document.getElementById('search-input') as HTMLInputElement;
-    const monthInput = document.getElementById('month-filter') as HTMLInputElement;
+    const monthInput = document.querySelector('[data-month-input]') as HTMLInputElement;
     const typeButtons = document.querySelectorAll('[data-filter-type]');
     const currentMonth = getCurrentMonth();
 
@@ -567,42 +481,18 @@ const currentMonthLabel =
     });
   }
 
-  // Handle month dropdown selection
-  document.querySelectorAll('[data-month-option]').forEach((btn) => {
-    btn.addEventListener('click', (e: Event) => {
-      e.preventDefault();
-      e.stopPropagation();
+  // Listen for month changes from MonthNavigator component
+  window.addEventListener('monthChange', (e: Event) => {
+    const customEvent = e as CustomEvent;
+    const { month } = customEvent.detail;
 
-      const el = btn as HTMLElement;
-      const value = el.dataset.monthOption || '';
-      const displayLabel = el.dataset.monthLabel || value;
-      const hiddenInput = document.getElementById('month-filter') as HTMLInputElement;
-      const labelEl = document.querySelector('[data-month-label]');
+    // Update reset button visibility
+    updateResetButtonVisibility();
 
-      if (hiddenInput) hiddenInput.value = value;
-      if (labelEl) labelEl.textContent = displayLabel;
-
-      // Close dropdown by clicking outside
-      const dropdown = document.getElementById('month-dropdown');
-      if (dropdown) {
-        // Remove focus from dropdown elements to close it
-        (document.activeElement as HTMLElement)?.blur();
-      }
-
-      // Update reset button visibility
-      updateResetButtonVisibility();
-
-      // Dispatch custom event for client-side handling
-      window.dispatchEvent(new CustomEvent('filterChange', { detail: { type: 'month', value } }));
-    });
-  });
-
-  // Handle month navigation buttons
-  document.querySelectorAll('[data-month-nav]').forEach((btn) => {
-    btn.addEventListener('click', (e: Event) => {
-      e.preventDefault();
-      // This is handled by TransactionsPage.client.ts
-    });
+    // Dispatch filterChange event for compatibility with existing page handlers
+    window.dispatchEvent(
+      new CustomEvent('filterChange', { detail: { type: 'month', value: month } })
+    );
   });
 
   // Listen for search input changes to update reset button

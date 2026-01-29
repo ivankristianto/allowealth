@@ -156,9 +156,17 @@ function handleRangeChange(
   // Use the new period from the event if provided (when dropdown was updated)
   if (event.detail.newPeriod) {
     currentState.period = event.detail.newPeriod;
-  } else if (currentState.range === 'yearly') {
-    // Fallback: extract year from period (e.g., '2024-02' -> '2024')
-    currentState.period = currentState.period.split('-')[0];
+  } else {
+    // Fallback: convert period format to match new range
+    if (currentState.range === 'yearly') {
+      // Extract year from monthly period (e.g., '2024-02' -> '2024')
+      currentState.period = currentState.period.split('-')[0];
+    } else {
+      // Convert yearly to monthly: append current month (e.g., '2024' -> '2024-01')
+      const now = new Date();
+      const month = (now.getMonth() + 1).toString().padStart(2, '0');
+      currentState.period = `${currentState.period}-${month}`;
+    }
   }
 
   // Update URL with new state

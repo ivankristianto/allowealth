@@ -13,7 +13,7 @@
  * @param {string} className - Additional CSS classes
  */
 
-import { Calendar, ChevronDown } from '@lucide/astro';
+import MonthNavigator from '@/components/molecules/MonthNavigator.astro';
 
 export interface PeriodOption {
   key: string;
@@ -88,23 +88,23 @@ const currentPeriodLabel =
     </button>
   </div>
 
-  <!-- Period Selector Dropdown -->
+  <!-- Period Selector: MonthNavigator for monthly, dropdown for yearly -->
   {
-    availablePeriods.length > 0 && (
+    selectedRange === 'monthly' && monthlyPeriods.length > 0 ? (
+      <MonthNavigator availableMonths={monthlyPeriods} selectedMonth={selectedPeriod} />
+    ) : selectedRange === 'yearly' && yearlyPeriods.length > 0 ? (
       <div class="dropdown" id="report-period-dropdown" data-period-dropdown>
         <input type="hidden" name="period" id="period-filter" value={selectedPeriod} />
         <button
           type="button"
           tabindex={0}
           class="flex items-center gap-2 px-4 py-3 text-xs font-bold border border-base-300 bg-base-100 text-base-content rounded-2xl shadow-sm hover:border-base-content/30 transition-colors min-w-[180px]"
-          aria-label="Select period"
+          aria-label="Select year"
           data-period-trigger
         >
-          <Calendar size={16} class="stroke-current text-base-content/40" aria-hidden="true" />
           <span class="flex-1 text-left" data-period-label>
             {currentPeriodLabel}
           </span>
-          <ChevronDown size={14} class="stroke-current text-base-content/40" aria-hidden="true" />
         </button>
         <ul
           tabindex={0}
@@ -124,7 +124,7 @@ const currentPeriodLabel =
           ))}
         </ul>
       </div>
-    )
+    ) : null
   }
 </div>
 
@@ -241,10 +241,33 @@ const currentPeriodLabel =
     return null;
   }
 
+  // Listen for month changes from MonthNavigator component
+  function handleMonthChange(e: Event) {
+    const customEvent = e as CustomEvent;
+    const { month, label } = customEvent.detail;
+
+    // Update hidden input and label for yearly dropdown if it exists
+    const hiddenInput = document.getElementById('period-filter') as HTMLInputElement;
+    const labelEl = document.querySelector('[data-period-label]');
+
+    if (hiddenInput) hiddenInput.value = month;
+    if (labelEl) labelEl.textContent = label;
+
+    // Dispatch period change event
+    window.dispatchEvent(
+      new CustomEvent('reportPeriodChange', {
+        detail: { period: month, label },
+      })
+    );
+  }
+
   // Initialize report selector
   function initReportSelector() {
     // Cleanup previous listeners first
     cleanupReportSelector();
+
+    // Listen for month changes from MonthNavigator
+    window.addEventListener('monthChange', handleMonthChange);
 
     // Handle range toggle button clicks
     document.querySelectorAll('[data-range]').forEach((btn) => {
@@ -328,6 +351,9 @@ const currentPeriodLabel =
       btn.removeEventListener('click', handler);
     });
     periodClickHandlers.clear();
+
+    // Remove month change listener
+    window.removeEventListener('monthChange', handleMonthChange);
   }
 
   // Initialize on DOM ready

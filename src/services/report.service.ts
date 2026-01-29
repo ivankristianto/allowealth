@@ -63,6 +63,7 @@ export interface CategoryIntelligence {
   spent: string; // Decimal string
   budgetLimit: string | null; // null if not set
   icon: string;
+  color: string; // DaisyUI semantic color class from database
 }
 
 /**
@@ -398,7 +399,8 @@ export class ReportService {
         )
       );
 
-    return result?.total || '0';
+    // Convert to string (SQL returns number even with sql<string> type annotation)
+    return result?.total?.toString() || '0';
   }
 
   /**
@@ -427,7 +429,8 @@ export class ReportService {
         )
       );
 
-    return result?.total || '0';
+    // Convert to string (SQL returns number even with sql<string> type annotation)
+    return result?.total?.toString() || '0';
   }
 
   /**
@@ -556,7 +559,7 @@ export class ReportService {
 
     return categoryExpenses.map((cat: any) => ({
       name: cat.category_name,
-      value: cat.total,
+      value: cat.total?.toString() || '0', // Convert to string
     }));
   }
 
@@ -613,7 +616,7 @@ export class ReportService {
     // Create spending map
     const spendingByCategory = new Map<string, string>();
     for (const spending of categorySpending) {
-      spendingByCategory.set(spending.category_id, spending.total);
+      spendingByCategory.set(spending.category_id, spending.total?.toString() || '0');
     }
 
     // Build intelligence rows
@@ -623,6 +626,7 @@ export class ReportService {
       spent: spendingByCategory.get(budget.category_id) || '0',
       budgetLimit: budget.budget_amount,
       icon: budget.category?.icon ?? 'CircleDollarSign',
+      color: budget.category?.color ?? 'bg-neutral',
     }));
 
     return intelligence;
@@ -656,7 +660,7 @@ export class ReportService {
     const budgetMap = new Map<string, string>();
     const categoryIds: string[] = [];
     for (const budget of yearlyBudgets) {
-      budgetMap.set(budget.category_id, budget.total_budget);
+      budgetMap.set(budget.category_id, budget.total_budget?.toString() || '0');
       categoryIds.push(budget.category_id);
     }
 
@@ -694,7 +698,7 @@ export class ReportService {
     // Create spending map
     const spendingByCategory = new Map<string, string>();
     for (const spending of categorySpending) {
-      spendingByCategory.set(spending.category_id, spending.total);
+      spendingByCategory.set(spending.category_id, spending.total?.toString() || '0');
     }
 
     // Build intelligence rows
@@ -704,6 +708,7 @@ export class ReportService {
       spent: spendingByCategory.get(category.id) || '0',
       budgetLimit: budgetMap.get(category.id) || null,
       icon: category.icon ?? 'CircleDollarSign',
+      color: category.color ?? 'bg-neutral',
     }));
 
     return intelligence;

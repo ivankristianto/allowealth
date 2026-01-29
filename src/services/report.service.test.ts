@@ -149,6 +149,18 @@ function createMockDatabase(): IDatabase {
       updated_at: new Date('2024-01-01'),
       deleted_at: null,
     },
+    {
+      id: 'cat-other-user',
+      user_id: otherUserId,
+      name: 'Other User Category',
+      type: 'expense' as const,
+      icon: 'shopping-bag',
+      color: 'bg-red-500',
+      is_active: true,
+      created_at: new Date('2024-01-01'),
+      updated_at: new Date('2024-01-01'),
+      deleted_at: null,
+    },
   ];
 
   // Mock budgets data
@@ -213,10 +225,62 @@ function createMockDatabase(): IDatabase {
 
           if (config?.where) {
             // Mock filtering logic - simplified for tests
-            // In real tests, this would evaluate Drizzle conditions
-            // For now, filter by user_id if it's in the query
+            // Extract filter values from Drizzle WHERE conditions
+            // Note: This is a simplified mock that extracts common filters
+
+            // Debug: Log the structure to understand Drizzle's format
+            // Drizzle uses SQL objects with queryChunks - too complex to parse
+            // For unit tests, we'll use a simpler approach
+            // console.log('WHERE clause structure:', config.where);
+            // console.log('WHERE keys:', Object.keys(config.where || {}));
+
             filtered = filtered.filter((tx) => {
-              return tx.deleted_at === null;
+              // Always filter deleted records
+              if (tx.deleted_at !== null) return false;
+
+              // Extract filter values from Drizzle SQL queryChunks
+              // Drizzle stores parameters in queryChunks as Param objects
+              const extractParamValues = (sql: any): any[] => {
+                const values: any[] = [];
+                try {
+                  if (sql && Array.isArray(sql.queryChunks)) {
+                    const findParams = (chunks: any[]): void => {
+                      for (const chunk of chunks) {
+                        // Check if this is a Param object with a value
+                        if (
+                          chunk &&
+                          chunk.value !== undefined &&
+                          chunk.constructor?.name === 'Param'
+                        ) {
+                          values.push(chunk.value);
+                        }
+                        // Recursively check nested SQL objects
+                        if (chunk && Array.isArray(chunk.queryChunks)) {
+                          findParams(chunk.queryChunks);
+                        }
+                      }
+                    };
+                    findParams(sql.queryChunks);
+                  }
+                } catch (e) {
+                  // Safely handle errors
+                }
+                return values;
+              };
+
+              // Extract parameter values from WHERE clause
+              const params = extractParamValues(config.where);
+
+              // For getCategoryTransactions, the first param is typically userId
+              // This is a simplified assumption for our mock
+              if (params.length > 0) {
+                const userIdParam = params[0]; // First param is usually userId in our queries
+                if (typeof userIdParam === 'string' && tx.user_id !== userIdParam) {
+                  return false;
+                }
+              }
+
+              return true;
             });
           }
 
@@ -234,8 +298,56 @@ function createMockDatabase(): IDatabase {
       categories: {
         findFirst: async (config: any) => {
           return mockCategories.find((cat) => {
-            // Simplified mock - in real tests would evaluate conditions
-            return cat.is_active && cat.deleted_at === null;
+            // Filter by active and not deleted
+            if (!cat.is_active || cat.deleted_at !== null) return false;
+
+            // Extract filter values from Drizzle SQL queryChunks
+            const extractParamValues = (sql: any): any[] => {
+              const values: any[] = [];
+              try {
+                if (sql && Array.isArray(sql.queryChunks)) {
+                  const findParams = (chunks: any[]): void => {
+                    for (const chunk of chunks) {
+                      if (
+                        chunk &&
+                        chunk.value !== undefined &&
+                        chunk.constructor?.name === 'Param'
+                      ) {
+                        values.push(chunk.value);
+                      }
+                      if (chunk && Array.isArray(chunk.queryChunks)) {
+                        findParams(chunk.queryChunks);
+                      }
+                    }
+                  };
+                  findParams(sql.queryChunks);
+                }
+              } catch (e) {
+                // Safely handle errors
+              }
+              return values;
+            };
+
+            // Extract and apply filters if present
+            if (config?.where) {
+              const params = extractParamValues(config.where);
+
+              // For category access control: WHERE id = ? AND user_id = ?
+              // Params are [categoryId, userId]
+              if (params.length >= 2) {
+                const [categoryIdParam, userIdParam] = params;
+
+                if (typeof categoryIdParam === 'string' && cat.id !== categoryIdParam) {
+                  return false;
+                }
+
+                if (typeof userIdParam === 'string' && cat.user_id !== userIdParam) {
+                  return false;
+                }
+              }
+            }
+
+            return true;
           });
         },
         findMany: async (config: any) => {
@@ -508,16 +620,10 @@ describe('ReportService', () => {
       const period = '2024-02';
       const range = 'monthly';
 
-      const result = await service.getCategoryTransactions(
-        userId,
-        otherUserCategoryId,
-        period,
-        range
-      );
-
-      // Should return empty result or error
-      expect(result.transactions).toEqual([]);
-      expect(result.total).toBe('0');
+      // Should throw BudgetServiceError for unauthorized access
+      await expect(
+        service.getCategoryTransactions(userId, otherUserCategoryId, period, range)
+      ).rejects.toThrow('Category not found or access denied');
     });
 
     test('should handle yearly range', async () => {
@@ -538,15 +644,10 @@ describe('ReportService', () => {
       const invalidPeriod = '2024/02';
       const range = 'monthly';
 
-      const result = await service.getCategoryTransactions(
-        userId,
-        categoryId,
-        invalidPeriod,
-        range
-      );
-
-      // Should return empty result
-      expect(result.total).toBe('0');
+      // Should throw error (validation errors are wrapped in generic message)
+      await expect(
+        service.getCategoryTransactions(userId, categoryId, invalidPeriod, range)
+      ).rejects.toThrow('Failed to retrieve category transactions');
     });
 
     test('should use decimal precision for total', async () => {

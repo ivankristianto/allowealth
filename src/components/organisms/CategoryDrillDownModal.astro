@@ -155,14 +155,6 @@ const { id } = Astro.props;
   // Track initialized modals to avoid duplicate handlers
   const initializedModals = new WeakSet<Element>();
 
-  interface Transaction {
-    id: string;
-    title: string;
-    amount: number;
-    date: string;
-    asset: string;
-  }
-
   interface CategoryDrillDownData {
     categoryId: string;
     categoryName: string;
@@ -171,7 +163,6 @@ const { id } = Astro.props;
     spent: number;
     budgetLimit?: number | null;
     period: string;
-    transactions?: Transaction[];
   }
 
   function initCategoryDrillDownModal() {
@@ -214,89 +205,50 @@ const { id } = Astro.props;
 
       let currentData: CategoryDrillDownData | null = null;
 
-      // Generate mock transactions
-      // @TODO: Wire with backend - Replace with actual API call to /api/reports/category-transactions
-      const generateMockTransactions = (
-        categoryName: string,
-        spent: number,
-        count: number = 5
-      ): Transaction[] => {
-        const transactions: Transaction[] = [];
-        const assets = ['BCA', 'Mandiri', 'Cash', 'GoPay', 'OVO'];
-        const today = new Date();
+      /**
+       * Fetch category transactions HTML from backend API
+       * @param categoryId - Category ID
+       * @param period - Period string (YYYY-MM for monthly, YYYY for yearly)
+       * @param range - Range type (monthly or yearly)
+       * @returns Promise with HTML string and transaction count
+       */
+      async function fetchCategoryTransactionsHTML(
+        categoryId: string,
+        period: string,
+        range: 'monthly' | 'yearly'
+      ): Promise<{ html: string; count: number }> {
+        const params = new URLSearchParams({ categoryId, period, range, _render: 'html' });
+        const response = await fetch(`/api/reports/category-transactions?${params.toString()}`);
 
-        // Distribute the spent amount across transactions
-        let remaining = spent;
-
-        for (let i = 0; i < count; i++) {
-          const isLast = i === count - 1;
-          const amount = isLast
-            ? remaining
-            : Math.floor((remaining / (count - i)) * (0.5 + Math.random()));
-          remaining -= amount;
-
-          const date = new Date(today);
-          date.setDate(date.getDate() - Math.floor(Math.random() * 30));
-
-          transactions.push({
-            id: `txn-${i}`,
-            title: `${categoryName} expense ${i + 1}`,
-            amount,
-            date: date.toISOString().split('T')[0],
-            asset: assets[Math.floor(Math.random() * assets.length)],
-          });
+        if (!response.ok) {
+          throw new Error(`Failed to fetch transactions: ${response.statusText}`);
         }
 
-        // Sort by date descending
-        return transactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-      };
+        const html = await response.text();
 
-      // Render transaction list
-      // @TODO: P2 - Refactor to use server-rendered HTML partial per ADR-002
-      // Instead of client-side DOM construction, create TransactionListPartial.astro
-      // and fetch rendered HTML from the server
-      const renderTransactions = (transactions: Transaction[]) => {
+        // Parse HTML to count transactions
+        // Create a temporary element to parse the HTML
+        const temp = document.createElement('div');
+        temp.innerHTML = html;
+        const transactionCards = temp.querySelectorAll('[data-transaction-card]');
+        const count = transactionCards.length;
+
+        return {
+          html,
+          count,
+        };
+      }
+
+      // Inject server-rendered transaction HTML into the modal
+      const injectTransactionHTML = (html: string) => {
         if (!transactionsList) return;
-
-        transactionsList.innerHTML = '';
-
-        transactions.forEach((txn) => {
-          const item = document.createElement('div');
-          item.className =
-            'flex items-center justify-between p-4 bg-base-100 rounded-2xl border border-base-300 hover:border-primary/30 transition-colors';
-
-          const leftSection = document.createElement('div');
-          leftSection.className = 'flex-1';
-
-          const title = document.createElement('div');
-          title.className = 'font-medium text-base-content';
-          title.textContent = txn.title;
-
-          const meta = document.createElement('div');
-          meta.className = 'text-xs text-base-content/60 mt-1';
-          const formattedDate = new Date(txn.date).toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric',
-          });
-          meta.textContent = `${formattedDate} • ${txn.asset}`;
-
-          leftSection.appendChild(title);
-          leftSection.appendChild(meta);
-
-          const rightSection = document.createElement('div');
-          rightSection.className = 'font-bold text-error';
-          rightSection.textContent = formatCurrency(txn.amount, 'IDR');
-
-          item.appendChild(leftSection);
-          item.appendChild(rightSection);
-          transactionsList.appendChild(item);
-        });
+        transactionsList.innerHTML = html;
       };
 
       // Update display with data
-      // SECURITY: Use textContent (not innerHTML) to prevent XSS from user data
-      const updateDisplay = (data: CategoryDrillDownData) => {
+      // SECURITY: Use textContent (not innerHTML) to prevent XSS from user data in header
+      // Transaction list HTML is server-rendered and already sanitized
+      const updateDisplay = (data: CategoryDrillDownData, transactionHTML?: string) => {
         // Header
         if (categoryIcon) {
           categoryIcon.textContent = data.categoryIcon || data.categoryName.charAt(0).toUpperCase();
@@ -374,26 +326,30 @@ const { id } = Astro.props;
           }`;
         }
 
-        // Transactions
-        const transactions =
-          data.transactions || generateMockTransactions(data.categoryName, data.spent);
+        // Transactions - inject server-rendered HTML
+        if (transactionHTML) {
+          if (transactionHTML.trim() === '' || transactionHTML.includes('No transactions')) {
+            transactionsList?.classList.add('hidden');
+            transactionsEmpty?.classList.remove('hidden');
+            if (transactionCount) transactionCount.textContent = '0';
+          } else {
+            transactionsList?.classList.remove('hidden');
+            transactionsEmpty?.classList.add('hidden');
+            injectTransactionHTML(transactionHTML);
 
-        if (transactionCount) transactionCount.textContent = String(transactions.length);
-
-        if (transactions.length === 0) {
-          transactionsList?.classList.add('hidden');
-          transactionsEmpty?.classList.remove('hidden');
-        } else {
-          transactionsList?.classList.remove('hidden');
-          transactionsEmpty?.classList.add('hidden');
-          renderTransactions(transactions);
+            // Count transactions from HTML
+            const temp = document.createElement('div');
+            temp.innerHTML = transactionHTML;
+            const count = temp.querySelectorAll('[data-transaction-card]').length;
+            if (transactionCount) transactionCount.textContent = String(count);
+          }
         }
 
         transactionsLoading?.classList.add('hidden');
       };
 
       // Listen for open-category-drilldown event
-      const handleOpenDrillDown = ((e: CustomEvent<CategoryDrillDownData>) => {
+      const handleOpenDrillDown = (async (e: CustomEvent<CategoryDrillDownData>) => {
         currentData = e.detail;
 
         // Show loading
@@ -401,23 +357,34 @@ const { id } = Astro.props;
         transactionsList?.classList.add('hidden');
         transactionsEmpty?.classList.add('hidden');
 
-        // @TODO: Wire with backend - Fetch transactions from API instead
-        // For now, generate mock data
-        if (!currentData.transactions) {
-          currentData.transactions = generateMockTransactions(
-            currentData.categoryName,
-            currentData.spent
-          );
-        }
-
         modal.showModal();
 
-        // Delay to allow modal animation
-        setTimeout(() => {
-          if (currentData) {
-            updateDisplay(currentData);
-          }
-        }, 100);
+        // Fetch transaction HTML from backend
+        let transactionHTML = '';
+        try {
+          // Determine range from period format (YYYY-MM = monthly, YYYY = yearly)
+          const range = currentData.period.includes('-') ? 'monthly' : 'yearly';
+
+          const data = await fetchCategoryTransactionsHTML(
+            currentData.categoryId,
+            currentData.period,
+            range
+          );
+
+          transactionHTML = data.html;
+        } catch (error) {
+          console.error('Error fetching category transactions:', error);
+          // Show error state
+          transactionsLoading?.classList.add('hidden');
+          transactionsEmpty?.classList.remove('hidden');
+          if (transactionsList) transactionsList.innerHTML = '';
+          return;
+        }
+
+        // Update display with fetched data
+        if (currentData) {
+          updateDisplay(currentData, transactionHTML);
+        }
       }) as EventListener;
 
       document.addEventListener('open-category-drilldown', handleOpenDrillDown);

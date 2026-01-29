@@ -237,18 +237,13 @@ const assetsJson = JSON.stringify(assets.map((a) => ({ id: a.id, name: a.name, t
   // Parse categories and budget info from data attributes (server-serialized JSON)
   const categories = JSON.parse(form?.dataset.categoriesJson || '[]');
   const assets = JSON.parse(form?.dataset.assetsJson || '[]');
+  import { formatCurrencyFromNumber } from '@/lib/utils/currency';
+
   const action = form?.dataset.action || '/api/transactions';
   const method = form?.dataset.method || 'POST';
 
-  // Format currency for display
-  function formatCurrency(amount: number, currency: string) {
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: currency,
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  }
+  // Re-export for convenience
+  const formatCurrency = formatCurrencyFromNumber;
 
   // === Form Validation ===
 

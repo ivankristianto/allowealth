@@ -1,9 +1,14 @@
 import type { APIRoute } from 'astro';
+import { experimental_AstroContainer as AstroContainer } from 'astro/container';
 import { reportService } from '@/services';
 import { successResponse, errorResponse, getAuthenticatedUser } from '@/lib/api-utils';
 import { logError } from '@/lib/utils';
 import { BudgetServiceError } from '@/services/service-errors';
 import { validatePeriod } from '@/lib/utils/period-validation';
+import { isValidNanoid } from '@/lib/validation/nanoid';
+import { createRenderHelper } from '@/lib/api/renderResponse';
+import CategoryTransactionListPartial from '@/components/partials/CategoryTransactionListPartial.astro';
+import type { TransactionOutput } from '@/lib/types/transaction';
 
 /**
  * GET /api/reports/category-transactions
@@ -32,6 +37,7 @@ import { validatePeriod } from '@/lib/utils/period-validation';
  */
 export const GET: APIRoute = async (context) => {
   const { url } = context;
+  const render = createRenderHelper(url);
 
   try {
     // 1. Authenticate user
@@ -42,10 +48,18 @@ export const GET: APIRoute = async (context) => {
     const period = url.searchParams.get('period');
     const range = url.searchParams.get('range') as 'monthly' | 'yearly' | null;
 
-    // P2: TODO - Add UUID format validation for categoryId if using UUIDs
-    // Validate categoryId
+    // Validate categoryId existence
     if (!categoryId || typeof categoryId !== 'string' || categoryId.trim() === '') {
       return errorResponse('Category ID is required.', 400, 'MISSING_CATEGORY_ID');
+    }
+
+    // Validate categoryId format (nanoid)
+    if (!isValidNanoid(categoryId)) {
+      return errorResponse(
+        'Invalid category ID format. Expected 21-character nanoid.',
+        400,
+        'INVALID_CATEGORY_ID'
+      );
     }
 
     // Validate range
@@ -90,7 +104,50 @@ export const GET: APIRoute = async (context) => {
       range
     );
 
-    // 4. Return successful JSON response
+    // 4. Check if HTML rendering is requested
+    const renderFormat = url.searchParams.get('_render');
+
+    if (renderFormat === 'html') {
+      // Create Astro container for server-side rendering
+      const container = await AstroContainer.create();
+
+      // Transform transactions to match TransactionOutput interface
+      const transactions: TransactionOutput[] = categoryTransactionsData.transactions.map(
+        (txn) => ({
+          id: txn.id,
+          amount: String(txn.amount),
+          currency: txn.currency,
+          type: 'expense' as const,
+          transaction_date: txn.transactionDate,
+          description: txn.description || '',
+          category: {
+            id: categoryId,
+            name: categoryTransactionsData.categoryName,
+            type: 'expense',
+          },
+          asset: {
+            id: '', // Asset ID not available in CategoryTransaction
+            name: txn.assetName,
+            type: 'bank',
+            currency: txn.currency,
+          },
+          created_at: txn.transactionDate,
+          updated_at: txn.transactionDate,
+          deleted_at: null,
+        })
+      );
+
+      // Render partial with TransactionCard components
+      const html = await container.renderToString(CategoryTransactionListPartial, {
+        props: {
+          transactions,
+        },
+      });
+
+      return render.html(html);
+    }
+
+    // 5. Return successful JSON response
     return successResponse(categoryTransactionsData);
   } catch (error) {
     // Handle authentication errors

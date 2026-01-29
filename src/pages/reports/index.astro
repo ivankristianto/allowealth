@@ -96,14 +96,34 @@ const yearlyPeriods = Array.from({ length: 4 }, (_, i) => {
 });
 
 // Set default period based on range and URL
-const defaultPeriod =
-  urlPeriod ||
-  (defaultRange === 'monthly'
-    ? monthlyPeriods[monthlyPeriods.length - 1].key
-    : yearlyPeriods[yearlyPeriods.length - 1].key);
+// Validate that period format matches the range (prevent format mismatches)
+let defaultPeriod: string;
+if (urlPeriod) {
+  const isMonthlyFormat = /^\d{4}-\d{2}$/.test(urlPeriod); // YYYY-MM
+  const isYearlyFormat = /^\d{4}$/.test(urlPeriod); // YYYY
+
+  // Use urlPeriod only if format matches the range
+  if (defaultRange === 'monthly' && isMonthlyFormat) {
+    defaultPeriod = urlPeriod;
+  } else if (defaultRange === 'yearly' && isYearlyFormat) {
+    defaultPeriod = urlPeriod;
+  } else {
+    // Format mismatch - fall back to default for current range
+    defaultPeriod =
+      defaultRange === 'monthly'
+        ? monthlyPeriods[monthlyPeriods.length - 1].key
+        : yearlyPeriods[yearlyPeriods.length - 1].key;
+  }
+} else {
+  // No URL period - use default for current range
+  defaultPeriod =
+    defaultRange === 'monthly'
+      ? monthlyPeriods[monthlyPeriods.length - 1].key
+      : yearlyPeriods[yearlyPeriods.length - 1].key;
+}
 
 // Fetch report data from backend service
-const currency = 'IDR'; // P2: TODO - Support currency from user preferences (Issue #5 from code review)
+const currency: 'IDR' | 'USD' = 'IDR'; // P2: TODO - Support currency from user preferences (Issue #5 from code review)
 let reportData: ReportData;
 
 try {
@@ -119,13 +139,17 @@ try {
   return Astro.redirect('/reports?error=failed-to-load');
 }
 
-// Convert decimal strings to numbers for partial props
+// Keep data as strings for formatCurrency utility
+// Only convert to numbers for chart rendering (handled by chart components)
 const reportDataForPartials = {
-  totalIncome: safeParseDecimal(reportData.totalIncome),
-  totalExpenses: safeParseDecimal(reportData.totalExpenses),
-  netSavings: safeParseDecimal(reportData.netSavings),
+  // Summary cards - keep as strings for formatCurrency
+  totalIncome: reportData.totalIncome,
+  totalExpenses: reportData.totalExpenses,
+  netSavings: reportData.netSavings,
   budgetHealth: reportData.budgetHealth,
   expenseCategories: reportData.expenseCategories,
+  currency: currency, // Pass currency for formatting
+  // Charts - convert to numbers for Chart.js
   expenseByCategory: reportData.expenseByCategory.map((cat: { name: string; value: string }) => ({
     name: cat.name,
     value: safeParseDecimal(cat.value),
@@ -137,6 +161,7 @@ const reportDataForPartials = {
       expenses: safeParseDecimal(trend.expenses),
     })
   ),
+  // Category intelligence - convert to numbers for table display
   categoryIntelligence: reportData.categoryIntelligence.map(
     (cat: {
       id: string;
@@ -144,12 +169,14 @@ const reportDataForPartials = {
       spent: string;
       budgetLimit: string | null;
       icon: string;
+      color: string;
     }) => ({
       id: cat.id,
       name: cat.name,
       spent: safeParseDecimal(cat.spent),
       budgetLimit: cat.budgetLimit ? safeParseDecimal(cat.budgetLimit) : null,
       icon: cat.icon,
+      color: cat.color,
     })
   ),
 };
@@ -184,6 +211,7 @@ const reportDataForPartials = {
         netSavings={reportDataForPartials.netSavings}
         budgetHealth={reportDataForPartials.budgetHealth}
         expenseCategories={reportDataForPartials.expenseCategories}
+        currency={reportDataForPartials.currency}
       />
     </div>
 

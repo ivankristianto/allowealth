@@ -1,4 +1,7 @@
 # Reports endpoint paths
+# P2: TODO - Add description notes about dynamic error message values (e.g., "Invalid month: {value}")
+# P2: TODO - Add separate example for yearly period format validation error
+# P3: TODO - Consider adding rate limiting documentation to security section
 paths:
   /api/reports:
     get:
@@ -133,6 +136,12 @@ paths:
                     error:
                       message: "Invalid range parameter. Must be 'monthly' or 'yearly'."
                       code: "INVALID_RANGE"
+                missingPeriod:
+                  value:
+                    success: false
+                    error:
+                      message: "Period parameter is required."
+                      code: "MISSING_PERIOD"
                 invalidPeriod:
                   value:
                     success: false
@@ -151,6 +160,18 @@ paths:
                     error:
                       message: "Invalid year: 1999. Must be between 2000 and 2100."
                       code: "INVALID_YEAR"
+                invalidCurrency:
+                  value:
+                    success: false
+                    error:
+                      message: "Invalid currency parameter. Must be 'IDR' or 'USD'."
+                      code: "INVALID_CURRENCY"
+                invalidPartial:
+                  value:
+                    success: false
+                    error:
+                      message: "Invalid _partial parameter. Must be one of: summary, charts, table, all."
+                      code: "INVALID_PARTIAL"
             text/html:
               schema:
                 type: string
@@ -179,10 +200,13 @@ paths:
         - name: categoryId
           in: query
           required: true
-          description: Category ID to drill down into
+          description: |
+            Category ID to drill down into.
+            Must be a valid 21-character nanoid (alphanumeric + underscore + hyphen).
           schema:
             type: string
-          example: "cat_123"
+            pattern: '^[A-Za-z0-9_-]{21}$'
+          example: "V1StGXR8_Z5jdHi6B-myT"
         - name: period
           in: query
           required: true
@@ -240,18 +264,42 @@ paths:
                     error:
                       message: "Category ID is required."
                       code: "MISSING_CATEGORY_ID"
-                invalidPeriod:
+                invalidCategoryId:
                   value:
                     success: false
                     error:
-                      message: "Invalid monthly period format. Expected 'YYYY-MM' (e.g., '2024-02')."
-                      code: "INVALID_PERIOD_FORMAT"
+                      message: "Invalid category ID format. Expected 21-character nanoid."
+                      code: "INVALID_CATEGORY_ID"
                 invalidRange:
                   value:
                     success: false
                     error:
                       message: "Invalid range parameter. Must be 'monthly' or 'yearly'."
                       code: "INVALID_RANGE"
+                missingPeriod:
+                  value:
+                    success: false
+                    error:
+                      message: "Period parameter is required."
+                      code: "MISSING_PERIOD"
+                invalidPeriod:
+                  value:
+                    success: false
+                    error:
+                      message: "Invalid monthly period format. Expected 'YYYY-MM' (e.g., '2024-02')."
+                      code: "INVALID_PERIOD_FORMAT"
+                invalidMonth:
+                  value:
+                    success: false
+                    error:
+                      message: "Invalid month: 13. Must be between 1 and 12."
+                      code: "INVALID_MONTH"
+                invalidYear:
+                  value:
+                    success: false
+                    error:
+                      message: "Invalid year: 1999. Must be between 2000 and 2100."
+                      code: "INVALID_YEAR"
         '401':
           $ref: '../responses/common.yml#/Unauthorized'
         '404':
@@ -263,7 +311,7 @@ paths:
               example:
                 success: false
                 error:
-                  message: "Category not found or you don't have permission to access it."
+                  message: "Category not found or access denied"
                   code: "CATEGORY_NOT_FOUND"
         '500':
           $ref: '../responses/common.yml#/InternalServerError'
