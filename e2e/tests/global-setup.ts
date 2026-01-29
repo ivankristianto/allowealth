@@ -2,9 +2,14 @@ import { test as setup, expect } from '@playwright/test';
 import { execSync } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
+import { fileURLToPath } from 'url';
 
 const E2E_PORT = 4320;
 const E2E_BASE_URL = `http://localhost:${E2E_PORT}`;
+
+// Get directory name in ES module context
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 const PROJECT_ROOT = path.resolve(__dirname, '../..');
 const E2E_DB_PATH = path.join(PROJECT_ROOT, 'db', '.e2e.db');
 
