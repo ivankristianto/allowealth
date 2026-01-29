@@ -177,6 +177,7 @@ export const GET: APIRoute = async (context) => {
           props: {
             categories,
             subtitle: 'SORTED BY FUNCTIONAL VOLUME',
+            range,
           },
         });
         htmlParts.push(`<!-- PARTIAL:table -->\n${tableHtml}`);

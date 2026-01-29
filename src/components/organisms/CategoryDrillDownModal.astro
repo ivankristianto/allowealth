@@ -24,8 +24,10 @@ const { id } = Astro.props;
       {/* Header with category info */}
       <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div class="flex items-center gap-4">
-          <div class="w-12 h-12 rounded-2xl flex items-center justify-center" data-category-icon-bg>
-            <span class="text-lg font-bold" data-category-icon>U</span>
+          <div
+            class="w-12 h-12 rounded-xl flex items-center justify-center text-white shadow-lg transition-transform bg-base-300"
+            data-category-icon-container
+          >
           </div>
           <div>
             <h2
@@ -151,6 +153,7 @@ const { id } = Astro.props;
 
 <script>
   import { formatCurrency } from '@/lib/tokens';
+  import { createIcons, icons } from 'lucide';
 
   // Track initialized modals to avoid duplicate handlers
   const initializedModals = new WeakSet<Element>();
@@ -163,6 +166,42 @@ const { id } = Astro.props;
     spent: number;
     budgetLimit?: number | null;
     period: string;
+  }
+
+  /**
+   * Render Lucide icon dynamically (client-side version of CategoryIcon)
+   * @param container - Container element to render icon into
+   * @param iconName - Lucide icon name (kebab-case)
+   * @param color - Tailwind background color class
+   */
+  function renderCategoryIcon(
+    container: HTMLElement,
+    iconName: string,
+    color: string = 'bg-base-300'
+  ) {
+    // Clear container
+    container.innerHTML = '';
+
+    // Update background color
+    container.className = `w-12 h-12 rounded-xl flex items-center justify-center text-white shadow-lg transition-transform ${color}`;
+
+    // Create icon element with data-lucide attribute
+    const iconElement = document.createElement('i');
+    iconElement.setAttribute('data-lucide', iconName);
+    iconElement.setAttribute('aria-hidden', 'true');
+    container.appendChild(iconElement);
+
+    // Use createIcons to replace the i element with actual SVG
+    createIcons({
+      icons,
+      attrs: {
+        width: '24',
+        height: '24',
+        'stroke-width': '2',
+        class: 'stroke-current',
+      },
+      nameAttr: 'data-lucide',
+    });
   }
 
   function initCategoryDrillDownModal() {
@@ -178,8 +217,9 @@ const { id } = Astro.props;
       if (!modal) return;
 
       // Header elements
-      const categoryIconBg = container.querySelector('[data-category-icon-bg]') as HTMLElement;
-      const categoryIcon = container.querySelector('[data-category-icon]');
+      const categoryIconContainer = container.querySelector(
+        '[data-category-icon-container]'
+      ) as HTMLElement;
       const categoryName = container.querySelector('[data-category-name]');
       const categoryPeriod = container.querySelector('[data-category-period]');
       const categorySpent = container.querySelector('[data-category-spent]');
@@ -249,12 +289,11 @@ const { id } = Astro.props;
       // SECURITY: Use textContent (not innerHTML) to prevent XSS from user data in header
       // Transaction list HTML is server-rendered and already sanitized
       const updateDisplay = (data: CategoryDrillDownData, transactionHTML?: string) => {
-        // Header
-        if (categoryIcon) {
-          categoryIcon.textContent = data.categoryIcon || data.categoryName.charAt(0).toUpperCase();
-        }
-        if (categoryIconBg) {
-          categoryIconBg.className = `w-12 h-12 rounded-2xl flex items-center justify-center ${data.categoryColor || 'bg-primary/10'}`;
+        // Header - render category icon
+        if (categoryIconContainer) {
+          const iconName = data.categoryIcon || 'tag';
+          const color = data.categoryColor || 'bg-base-300';
+          renderCategoryIcon(categoryIconContainer, iconName, color);
         }
         if (categoryName) categoryName.textContent = data.categoryName;
         if (categoryPeriod) categoryPeriod.textContent = data.period.toUpperCase();

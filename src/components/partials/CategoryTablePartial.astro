@@ -16,11 +16,12 @@ import type { CategoryIntelligence } from '@/components/organisms/CategoryIntell
 export interface Props {
   categories: CategoryIntelligence[];
   subtitle?: string;
+  range?: 'monthly' | 'yearly';
 }
 
-const { categories, subtitle = 'SORTED BY FUNCTIONAL VOLUME' } = Astro.props;
+const { categories, subtitle = 'SORTED BY FUNCTIONAL VOLUME', range = 'monthly' } = Astro.props;
 ---
 
 <div data-category-table>
-  <CategoryIntelligenceTable categories={categories} subtitle={subtitle} />
+  <CategoryIntelligenceTable categories={categories} subtitle={subtitle} range={range} />
 </div>
