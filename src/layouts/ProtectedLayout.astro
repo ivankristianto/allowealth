@@ -106,40 +106,58 @@ Astro.locals.userSettings = Object.freeze({ ...userSettings });
 
 <!-- Client-side script for edit modal handling -->
 <script>
-  // Handle edit transaction button clicks
+  import type { TransactionFormData } from '@/lib/types/transaction';
+
+  // AbortController for proper event listener lifecycle management
+  let abortController: AbortController | null = null;
+
+  /**
+   * Handle click events for edit transaction buttons.
+   * Uses event delegation to catch clicks on [data-edit-transaction] elements.
+   */
+  function handleEditClick(e: Event) {
+    const target = e.target as HTMLElement;
+    const editBtn = target.closest('[data-edit-transaction]') as HTMLElement | null;
+    if (!editBtn) return;
+
+    e.preventDefault();
+    const transactionData = editBtn.dataset.transactionData;
+    if (!transactionData) return;
+
+    try {
+      const data = JSON.parse(transactionData) as TransactionFormData;
+      openEditModal(data);
+    } catch (err) {
+      console.error('Failed to parse transaction data:', err);
+    }
+  }
+
+  /**
+   * Initialize edit transaction click handlers with proper cleanup.
+   * Uses scoped event delegation on <main> element for better performance.
+   * Uses AbortController to prevent event listener accumulation across
+   * Astro View Transitions page navigations.
+   */
   function initEditTransactionHandlers() {
-    document.addEventListener('click', (e) => {
-      const target = e.target as HTMLElement;
-      const editBtn = target.closest('[data-edit-transaction]') as HTMLElement | null;
-      if (!editBtn) return;
+    const main = document.querySelector('main');
+    if (!main) return;
 
-      e.preventDefault();
-      const transactionData = editBtn.dataset.transactionData;
-      if (!transactionData) return;
+    // Cleanup previous listener before adding new one
+    abortController?.abort();
+    abortController = new AbortController();
 
-      try {
-        const data = JSON.parse(transactionData);
-        openEditModal(data);
-      } catch (err) {
-        console.error('Failed to parse transaction data:', err);
-      }
+    main.addEventListener('click', handleEditClick, {
+      signal: abortController.signal,
     });
   }
 
-  function openEditModal(data: {
-    id: string;
-    type: 'expense' | 'income';
-    title: string;
-    amount: string;
-    currency: string;
-    category_id: string;
-    asset_id: string;
-    transaction_date: string;
-  }) {
+  /**
+   * Opens the edit transaction modal and populates it with existing data.
+   */
+  function openEditModal(data: TransactionFormData) {
     const modal = document.getElementById('edit-transaction-modal') as HTMLDialogElement | null;
     if (!modal) return;
 
-    // Find the form inside the modal
     const form = modal.querySelector('[data-transaction-form]') as HTMLFormElement | null;
     if (!form) return;
 
@@ -184,17 +202,51 @@ Astro.locals.userSettings = Object.freeze({ ...userSettings });
       modalTitle.textContent = data.type === 'expense' ? 'Edit Expense' : 'Edit Income';
     if (modalSubtitle) modalSubtitle.textContent = 'Update the transaction details.';
 
-    // Show the modal
     modal.showModal();
   }
 
-  // Initialize on DOM ready
+  // Window flag to prevent astro:page-load listener accumulation
+  const LISTENER_KEY = '__protectedLayoutEditHandlerRegistered';
+  const win = window as unknown as Record<string, boolean>;
+
+  /**
+   * Register cleanup handler for Astro page swap.
+   * Uses { once: true } since cleanup only needs to fire once per page lifecycle.
+   * Resets window flag to allow re-registration on next protected page visit.
+   */
+  function registerCleanupHandler() {
+    document.addEventListener(
+      'astro:before-swap',
+      () => {
+        abortController?.abort();
+        abortController = null;
+        // Reset flag so listener can be re-registered on next page load
+        win[LISTENER_KEY] = false;
+      },
+      { once: true }
+    );
+  }
+
+  // Initialize on DOM ready (use once: true since DOMContentLoaded fires once per document)
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initEditTransactionHandlers);
+    document.addEventListener('DOMContentLoaded', initEditTransactionHandlers, { once: true });
   } else {
     initEditTransactionHandlers();
   }
 
-  // Re-initialize on Astro page transitions
-  document.addEventListener('astro:page-load', initEditTransactionHandlers);
+  // Register initial cleanup handler
+  registerCleanupHandler();
+
+  // Re-initialize on Astro page transitions - only register listener once per session
+  if (!win[LISTENER_KEY]) {
+    win[LISTENER_KEY] = true;
+    document.addEventListener('astro:page-load', () => {
+      // Only initialize on protected pages (check for modal existence)
+      if (!document.getElementById('edit-transaction-modal')) return;
+
+      initEditTransactionHandlers();
+      // Re-register the one-time cleanup handler for this new page
+      registerCleanupHandler();
+    });
+  }
 </script>

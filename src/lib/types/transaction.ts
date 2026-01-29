@@ -52,6 +52,21 @@ export interface TransactionOutput extends Omit<
   } | null;
 }
 
+/**
+ * Data structure for edit transaction modal form population.
+ * Represents the serialized transaction data passed via data-transaction-data attribute.
+ */
+export interface TransactionFormData {
+  id: string;
+  type: 'expense' | 'income';
+  title: string;
+  amount: string;
+  currency: string;
+  category_id: string;
+  asset_id: string;
+  transaction_date: string;
+}
+
 // Summary types for dashboard
 export interface TransactionSummary {
   total_income: string;
