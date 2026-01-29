@@ -65,6 +65,9 @@ Agents must internalize:
 | **Database**            | `better-sqlite3` (shared code)           | `bun:sqlite` (middleware)        | `docs/constitution.md`            |
 | **Testing**             | `bun:test`                               | `vitest`                         | `docs/constitution.md`            |
 | **API Docs**            | Update OpenAPI files                     | Comments only                    | `openapi/README.md`               |
+| **Bundle Size**         | Specific imports (`@/lib/utils/client`)  | Barrel exports (`@/lib/utils`)   | `005-bundle-performance.md`       |
+| **Chart.js**            | `@/lib/chart-setup` (tree-shaken)        | `chart.js/auto`                  | `005-bundle-performance.md`       |
+| **Server Libraries**    | Type-only imports (`import type`)        | Runtime imports in client        | `005-bundle-performance.md`       |
 
 ### Design System Compliance
 
