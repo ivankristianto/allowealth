@@ -37,37 +37,50 @@ export class AssetService {
 
   /**
    * Create a new asset
+   *
+   * Note: Using sequential inserts instead of transaction because
+   * better-sqlite3 with Drizzle doesn't support async transaction callbacks.
+   * Includes compensating transaction on failure to maintain data integrity.
    */
   async create(input: CreateAssetInput) {
     const id = nanoid();
     const now = new Date();
 
-    return await this.db.transaction(async (tx: any) => {
-      const [asset] = await tx
-        .insert(assets)
-        .values({
-          id,
-          user_id: input.user_id,
-          name: input.name,
-          type: input.type,
-          balance: input.balance,
-          currency: input.currency,
-          last_updated: now,
-          created_at: now,
-          updated_at: now,
-        })
-        .returning();
+    // Insert the asset
+    const [asset] = await (this.db as any)
+      .insert(assets)
+      .values({
+        id,
+        user_id: input.user_id,
+        name: input.name,
+        type: input.type,
+        balance: input.balance,
+        currency: input.currency,
+        last_updated: now,
+        created_at: now,
+        updated_at: now,
+      })
+      .returning();
 
-      // Create initial history entry
-      await tx.insert(assetHistory).values({
+    // Create initial history entry with compensating transaction on failure
+    try {
+      await (this.db as any).insert(assetHistory).values({
         id: nanoid(),
         asset_id: id,
         balance: input.balance,
         recorded_at: now,
       });
+    } catch (historyError) {
+      // Compensating transaction: delete the orphaned asset to maintain data integrity
+      await this.db.delete(assets).where(eq(assets.id, id));
+      throw new AssetServiceError(
+        ServiceErrorCode.ASSET_NOT_FOUND,
+        'Failed to create asset: could not create history entry',
+        500
+      );
+    }
 
-      return asset;
-    });
+    return asset;
   }
 
   /**
@@ -137,30 +150,58 @@ export class AssetService {
 
   /**
    * Update asset balance and create history entry
+   *
+   * Note: Using sequential operations instead of transaction because
+   * better-sqlite3 with Drizzle doesn't support async transaction callbacks.
+   * Includes compensating transaction on failure to maintain data integrity.
    */
   async updateBalance(id: string, user_id: string, input: UpdateAssetBalanceInput) {
     const now = new Date();
 
-    await this.db.transaction(async (tx: any) => {
-      // Update asset
-      await tx
-        .update(assets)
-        .set({
-          balance: input.balance,
-          last_updated: now,
-          updated_at: now,
-        })
-        .where(and(eq(assets.id, id), eq(assets.user_id, user_id)));
+    // Get current balance for potential rollback
+    const currentAsset = await this.findById(id, user_id);
+    if (!currentAsset) {
+      throw new AssetServiceError(ServiceErrorCode.ASSET_NOT_FOUND, 'Asset not found', 404);
+    }
+    const previousBalance = currentAsset.balance;
+    const previousLastUpdated = currentAsset.last_updated;
+    const previousUpdatedAt = currentAsset.updated_at;
 
-      // Create history entry
-      await tx.insert(assetHistory).values({
+    // Update asset
+    await this.db
+      .update(assets)
+      .set({
+        balance: input.balance,
+        last_updated: now,
+        updated_at: now,
+      })
+      .where(and(eq(assets.id, id), eq(assets.user_id, user_id)));
+
+    // Create history entry with compensating transaction on failure
+    try {
+      await (this.db as any).insert(assetHistory).values({
         id: nanoid(),
         asset_id: id,
         balance: input.balance,
         notes: input.notes,
         recorded_at: now,
       });
-    });
+    } catch (historyError) {
+      // Compensating transaction: rollback the balance update
+      await this.db
+        .update(assets)
+        .set({
+          balance: previousBalance,
+          last_updated: previousLastUpdated,
+          updated_at: previousUpdatedAt,
+        })
+        .where(and(eq(assets.id, id), eq(assets.user_id, user_id)));
+      throw new AssetServiceError(
+        ServiceErrorCode.ASSET_NOT_FOUND,
+        'Failed to update balance: could not create history entry',
+        500
+      );
+    }
 
     return this.findById(id, user_id);
   }

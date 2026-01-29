@@ -92,6 +92,9 @@ const { actions = defaultActions, className = '' } = Astro.props;
         <button
           type="button"
           data-quick-action={action.variant}
+          data-testid={
+            action.variant === 'expense' ? 'quick-action-expense' : 'quick-action-income'
+          }
           class="flex-1 px-8 py-7 min-h-[44px] bg-base-100 text-base-content font-bold rounded-card-lg border border-base-300 hover:bg-base-200 transition-all shadow-sm hover:shadow-md flex items-center justify-center gap-5 active:scale-95 hover:scale-[1.02] group relative overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 cursor-pointer text-left"
           aria-label={action.ariaLabel}
         >

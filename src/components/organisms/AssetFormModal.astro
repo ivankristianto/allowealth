@@ -40,7 +40,7 @@ const assetTypes: { value: AssetType; label: string }[] = Object.entries(ASSET_T
 );
 ---
 
-<div data-asset-form-modal-container data-id={id} data-mode={mode}>
+<div data-asset-form-modal-container data-id={id} data-mode={mode} data-testid="asset-form-modal">
   <Modal id={id} size="md" closable={false} backdropClose={true}>
     <div slot="default" class="flex flex-col gap-6">
       {/* Header with icon */}
@@ -80,6 +80,7 @@ const assetTypes: { value: AssetType; label: string }[] = Object.entries(ASSET_T
             required
             placeholder="e.g. Mandiri Savings / AAPL Stock"
             class="input input-lg w-full bg-base-200 border border-base-300 rounded-2xl font-bold text-base-content focus:ring-2 focus:ring-accent focus:outline-none focus:border-accent placeholder:text-base-content/30 placeholder:font-normal"
+            data-testid="asset-name-input"
           />
         </div>
 
@@ -109,6 +110,7 @@ const assetTypes: { value: AssetType; label: string }[] = Object.entries(ASSET_T
             required
             class="select select-lg w-full bg-base-200 border border-base-300 rounded-2xl font-bold text-base-content focus:ring-2 focus:ring-accent focus:outline-none focus:border-accent"
             data-type-select
+            data-testid="asset-type-select"
           >
             {assetTypes.map((type) => <option value={type.value}>{type.label}</option>)}
           </select>
@@ -139,6 +141,7 @@ const assetTypes: { value: AssetType; label: string }[] = Object.entries(ASSET_T
               name="currency"
               required
               class="select select-lg w-full bg-base-200 border border-base-300 rounded-2xl font-bold text-base-content focus:ring-2 focus:ring-accent focus:outline-none focus:border-accent"
+              data-testid="asset-currency-select"
             >
               <option value="IDR" selected={currency === 'IDR'}>IDR</option>
               <option value="USD" selected={currency === 'USD'}>USD</option>
@@ -188,6 +191,7 @@ const assetTypes: { value: AssetType; label: string }[] = Object.entries(ASSET_T
             type="submit"
             class="btn btn-accent flex-1 h-14 rounded-full font-bold"
             data-submit-asset-form
+            data-testid="asset-submit-btn"
           >
             {submitLabel}
           </button>
@@ -199,6 +203,7 @@ const assetTypes: { value: AssetType; label: string }[] = Object.entries(ASSET_T
 
 <script>
   import { addToast } from '@lib/stores/toastStore';
+  import { csrfFetch } from '@/lib/csrf-client';
 
   // Track initialized modals to avoid duplicate handlers
   const initializedModals = new WeakSet<Element>();
@@ -371,7 +376,7 @@ const assetTypes: { value: AssetType; label: string }[] = Object.entries(ASSET_T
             payload.balance = balance;
           }
 
-          const response = await fetch(url, {
+          const response = await csrfFetch(url, {
             method,
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload),
@@ -379,12 +384,16 @@ const assetTypes: { value: AssetType; label: string }[] = Object.entries(ASSET_T
 
           if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.message || `Failed to ${isEdit ? 'update' : 'create'} asset`);
+            throw new Error(
+              errorData.error?.message ||
+                errorData.message ||
+                `Failed to ${isEdit ? 'update' : 'create'} asset`
+            );
           }
 
           // If editing and balance changed, update balance separately
           if (isEdit) {
-            const balanceResponse = await fetch(`/api/assets/${assetId}/balance`, {
+            const balanceResponse = await csrfFetch(`/api/assets/${assetId}/balance`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ balance }),
@@ -392,7 +401,9 @@ const assetTypes: { value: AssetType; label: string }[] = Object.entries(ASSET_T
 
             if (!balanceResponse.ok) {
               const errorData = await balanceResponse.json();
-              throw new Error(errorData.message || 'Failed to update balance');
+              throw new Error(
+                errorData.error?.message || errorData.message || 'Failed to update balance'
+              );
             }
           }
 

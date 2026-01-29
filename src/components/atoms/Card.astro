@@ -22,6 +22,10 @@ export interface Props {
   className?: string;
   role?: string;
   'aria-labelledby'?: string;
+  'aria-label'?: string;
+  'aria-live'?: 'polite' | 'assertive' | 'off';
+  'aria-busy'?: boolean | 'true' | 'false';
+  'data-testid'?: string;
 }
 
 const {
@@ -33,6 +37,10 @@ const {
   className = '',
   role,
   'aria-labelledby': ariaLabelledby,
+  'aria-label': ariaLabel,
+  'aria-live': ariaLive,
+  'aria-busy': ariaBusy,
+  'data-testid': dataTestId,
 } = Astro.props;
 
 // Padding classes: sm (1rem), md (1.75rem), lg (2rem/premium card padding)
@@ -74,6 +82,14 @@ const cardClasses = [
   .join(' ');
 ---
 
-<div class={cardClasses} role={role as any} aria-labelledby={ariaLabelledby}>
+<div
+  class={cardClasses}
+  role={role as any}
+  aria-labelledby={ariaLabelledby}
+  aria-label={ariaLabel}
+  aria-live={ariaLive}
+  aria-busy={ariaBusy}
+  data-testid={dataTestId}
+>
   <slot />
 </div>

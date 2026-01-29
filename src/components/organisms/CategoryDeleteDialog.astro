@@ -20,7 +20,7 @@ export interface Props {
 const { id, open = false } = Astro.props;
 ---
 
-<div data-category-delete-dialog-container data-id={id}>
+<div data-category-delete-dialog-container data-id={id} data-testid="category-delete-dialog">
   <Modal id={id} open={open} size="sm" closable={false} backdropClose={true}>
     <div slot="default" class="flex flex-col gap-6">
       <!-- Header with icon -->
@@ -69,6 +69,7 @@ const { id, open = false } = Astro.props;
           type="button"
           class="flex-1 btn btn-error h-14 rounded-full font-bold"
           data-confirm-delete
+          data-testid="confirm-delete-btn"
         >
           Delete
         </button>

@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/html';
 
 const meta: Meta = {
-  title: 'Pages/Settings/Categories',
+  title: 'Pages/Categories',
   tags: ['autodocs'],
   parameters: {
     docs: {

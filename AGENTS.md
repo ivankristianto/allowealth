@@ -156,8 +156,7 @@ bun run typecheck         # TypeScript (blocking)
 
 ```
 /                          # Dashboard
-/transactions              # Transaction list
-/transactions/add          # Add transaction
+/transactions              # Transaction list (add/edit via TransactionModal)
 /budget                    # Budget overview
 /budget/history            # Budget history
 /assets                    # Asset list
@@ -170,9 +169,11 @@ bun run typecheck         # TypeScript (blocking)
 /forecast/comparison       # Scenario comparison
 /calculators               # Compound interest calculator
 /settings                  # Profile settings
-/settings/categories       # Category management
+/categories                # Category management
 /settings/payment-methods  # Payment methods
 ```
+
+**Note:** Transaction creation and editing is handled via TransactionModal (expense-modal, income-modal, edit-transaction-modal) available globally in ProtectedLayout, not via dedicated pages.
 
 ## Project Structure
 

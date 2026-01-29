@@ -34,7 +34,11 @@ const maxTransactions = 10;
 const displayTransactions = transactions.slice(0, maxTransactions);
 ---
 
-<div class={`space-y-5 ${className}`} data-recent-transactions-list>
+<div
+  class={`space-y-5 ${className}`}
+  data-recent-transactions-list
+  data-testid="recent-transactions"
+>
   <div class="flex items-center justify-between px-2">
     <h2 class="text-lg font-bold tracking-tight leading-none">Recent activity</h2>
     {

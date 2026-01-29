@@ -18,7 +18,7 @@ export interface Props {
 const { id } = Astro.props;
 ---
 
-<div data-asset-delete-modal-container data-id={id}>
+<div data-asset-delete-modal-container data-id={id} data-testid="asset-delete-modal">
   <Modal id={id} size="sm" closable={false} backdropClose={true}>
     <div slot="default" class="flex flex-col gap-6">
       {/* Header section */}

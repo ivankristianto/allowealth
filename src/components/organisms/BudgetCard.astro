@@ -234,6 +234,8 @@ const cardClasses = [
       class={cardClasses}
       aria-label={`Budget for ${categoryName}`}
       data-budget-card={categoryId}
+      data-testid="budget-card"
+      data-category-id={categoryId}
       data-spent={spent}
     >
       {/* Header: Icon, Name, Status Badge, Edit Button */}
@@ -255,6 +257,7 @@ const cardClasses = [
             <span
               class={`inline-block mt-1 md:mt-2 px-2 py-0.5 rounded-md text-[9px] md:text-[10px] font-bold uppercase tracking-wider ${getStatusBadgeClasses(status)}`}
               data-status-badge
+              data-testid="budget-percentage"
             >
               {Math.round(percentageUsed)}% Used
             </span>
@@ -278,7 +281,10 @@ const cardClasses = [
             <StatLabel size="sm" className="text-[10px] md:text-xs">
               Spent
             </StatLabel>
-            <p class="text-base md:text-lg font-bold mt-0.5 md:mt-1 text-base-content leading-none">
+            <p
+              class="text-base md:text-lg font-bold mt-0.5 md:mt-1 text-base-content leading-none"
+              data-testid="budget-spent"
+            >
               {formatCurrency(spent, currency)}
             </p>
           </div>
@@ -289,6 +295,7 @@ const cardClasses = [
             <p
               class="text-xs md:text-sm font-bold mt-0.5 md:mt-1 text-base-content/60 leading-none"
               data-budget-amount
+              data-testid="budget-amount"
             >
               {formatCurrency(budget, currency)}
             </p>

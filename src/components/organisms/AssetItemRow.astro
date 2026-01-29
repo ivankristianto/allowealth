@@ -58,11 +58,12 @@ const rowClasses = [
   .join(' ');
 ---
 
-<div class={rowClasses} data-asset-row={id}>
+<div class={rowClasses} data-asset-row={id} data-testid="asset-item" data-asset-id={id}>
   {/* Asset Info */}
   <div class="flex-1 min-w-0">
     <h4
       class="text-base lg:text-lg font-bold text-base-content leading-none tracking-tight truncate"
+      data-testid="asset-name"
     >
       {name}
     </h4>
@@ -90,6 +91,7 @@ const rowClasses = [
           'text-lg lg:text-xl font-bold tracking-tight leading-none',
           currencyValueClasses,
         ]}
+        data-testid="asset-balance"
       >
         {formatCurrency(balance, currency)}
       </p>
@@ -108,6 +110,7 @@ const rowClasses = [
         data-asset-type={typeLabel}
         data-asset-currency={currency}
         data-asset-balance={balance}
+        data-testid="asset-history-btn"
       >
         <TrendingUp size={18} class="stroke-current" aria-hidden="true" />
       </button>
@@ -123,6 +126,7 @@ const rowClasses = [
         data-asset-type={type}
         data-asset-currency={currency}
         data-asset-balance={balance}
+        data-testid="asset-edit-btn"
       >
         <Pencil size={18} class="stroke-current" aria-hidden="true" />
       </button>
@@ -138,6 +142,7 @@ const rowClasses = [
         data-asset-type={typeLabel}
         data-asset-currency={currency}
         data-asset-balance={balance}
+        data-testid="asset-delete-btn"
       >
         <Trash2 size={18} class="stroke-current" aria-hidden="true" />
       </button>
