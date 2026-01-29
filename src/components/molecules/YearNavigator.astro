@@ -1,0 +1,266 @@
+---
+/**
+ * Year Navigator Component
+ *
+ * Reusable year filter with navigation buttons and dropdown selector.
+ * Used in ReportSelector for consistent year navigation.
+ *
+ * @param {Array} availableYears - Array of year options with key and label
+ * @param {string} selectedYear - Currently selected year key (e.g., "2024")
+ * @param {string} className - Additional CSS classes
+ */
+
+import { ChevronLeft, ChevronRight, Calendar, ChevronDown } from '@lucide/astro';
+
+export interface YearOption {
+  key: string;
+  label: string;
+}
+
+export interface Props {
+  availableYears?: YearOption[];
+  selectedYear?: string;
+  className?: string;
+}
+
+const { availableYears = [], selectedYear = '', className = '' } = Astro.props;
+
+// Get year index for navigation
+const currentYearIndex = availableYears.findIndex((y) => y.key === selectedYear);
+const hasPrevYear = currentYearIndex > 0;
+const hasNextYear = currentYearIndex < availableYears.length - 1;
+
+// Get display label for selected year
+const selectedYearData = availableYears.find((y) => y.key === selectedYear);
+const currentYearLabel =
+  selectedYearData?.label ||
+  availableYears[availableYears.length - 1]?.label ||
+  new Date().getFullYear().toString();
+---
+
+{
+  availableYears.length > 0 && (
+    <div
+      class={`flex items-center gap-1 ${className}`}
+      data-year-navigator
+      data-available-years={JSON.stringify(availableYears)}
+    >
+      <button
+        type="button"
+        class={`btn btn-ghost btn-square border border-base-300 bg-base-100 rounded-2xl transition-all active:scale-95 shadow-sm ${
+          !hasPrevYear
+            ? 'opacity-30 cursor-not-allowed pointer-events-none'
+            : 'text-base-content/40 hover:text-primary hover:border-accent/30'
+        }`}
+        aria-label="Previous year"
+        aria-disabled={!hasPrevYear}
+        data-year-nav="prev"
+        data-has-prev={hasPrevYear ? 'true' : 'false'}
+      >
+        <ChevronLeft size={18} class="stroke-current" aria-hidden="true" />
+      </button>
+
+      <div class="dropdown" data-year-dropdown>
+        <input type="hidden" name="year" data-year-input value={selectedYear} />
+        <button
+          type="button"
+          tabindex={0}
+          class="flex items-center gap-2 px-4 py-3 text-xs font-bold border border-base-300 bg-base-100 text-base-content rounded-2xl shadow-sm hover:border-base-content/30 transition-colors min-w-[120px]"
+          aria-label="Select year"
+          data-year-trigger
+        >
+          <Calendar size={16} class="stroke-current text-base-content/40" aria-hidden="true" />
+          <span class="flex-1 text-left" data-year-label>
+            {currentYearLabel}
+          </span>
+          <ChevronDown size={14} class="stroke-current text-base-content/40" aria-hidden="true" />
+        </button>
+        <ul
+          tabindex={0}
+          class="dropdown-content z-50 menu p-2 shadow-lg bg-base-100 rounded-2xl w-52 border border-base-300 mt-2 max-h-64 overflow-y-auto"
+        >
+          {availableYears.map((year) => (
+            <li>
+              <button
+                type="button"
+                class={`text-xs font-medium ${year.key === selectedYear ? 'bg-primary/10 text-primary' : ''}`}
+                data-year-option={year.key}
+                data-year-label={year.label}
+              >
+                {year.label}
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <button
+        type="button"
+        class={`btn btn-ghost btn-square border border-base-300 bg-base-100 rounded-2xl transition-all active:scale-95 shadow-sm ${
+          !hasNextYear
+            ? 'opacity-30 cursor-not-allowed pointer-events-none'
+            : 'text-base-content/40 hover:text-primary hover:border-accent/30'
+        }`}
+        aria-label="Next year"
+        aria-disabled={!hasNextYear}
+        data-year-nav="next"
+        data-has-next={hasNextYear ? 'true' : 'false'}
+      >
+        <ChevronRight size={18} class="stroke-current" aria-hidden="true" />
+      </button>
+    </div>
+  )
+}
+
+<script>
+  interface YearOption {
+    key: string;
+    label: string;
+  }
+
+  // Track initialized navigators to avoid duplicate handlers
+  const initializedNavigators = new WeakSet<Element>();
+
+  function initYearNavigator() {
+    document.querySelectorAll('[data-year-navigator]').forEach((navigator) => {
+      // Skip if already initialized
+      if (initializedNavigators.has(navigator)) return;
+      initializedNavigators.add(navigator);
+
+      const yearInput = navigator.querySelector('[data-year-input]') as HTMLInputElement;
+      const yearLabel = navigator.querySelector('[data-year-label]');
+      const prevBtn = navigator.querySelector('[data-year-nav="prev"]') as HTMLButtonElement;
+      const nextBtn = navigator.querySelector('[data-year-nav="next"]') as HTMLButtonElement;
+
+      if (!yearInput || !yearLabel) return;
+
+      // Get available years from data attribute
+      const yearsData = navigator.getAttribute('data-available-years');
+      const availableYears: YearOption[] = yearsData ? JSON.parse(yearsData) : [];
+
+      // Update navigation button states
+      function updateNavButtons() {
+        const currentYear = yearInput.value;
+        const currentIndex = availableYears.findIndex((y) => y.key === currentYear);
+
+        if (prevBtn) {
+          const hasPrev = currentIndex > 0;
+          prevBtn.disabled = !hasPrev;
+          prevBtn.setAttribute('aria-disabled', hasPrev ? 'false' : 'true');
+          prevBtn.setAttribute('data-has-prev', hasPrev ? 'true' : 'false');
+
+          if (hasPrev) {
+            prevBtn.classList.remove('opacity-30', 'cursor-not-allowed', 'pointer-events-none');
+          } else {
+            prevBtn.classList.add('opacity-30', 'cursor-not-allowed', 'pointer-events-none');
+          }
+        }
+
+        if (nextBtn) {
+          const hasNext = currentIndex < availableYears.length - 1;
+          nextBtn.disabled = !hasNext;
+          nextBtn.setAttribute('aria-disabled', hasNext ? 'false' : 'true');
+          nextBtn.setAttribute('data-has-next', hasNext ? 'true' : 'false');
+
+          if (hasNext) {
+            nextBtn.classList.remove('opacity-30', 'cursor-not-allowed', 'pointer-events-none');
+          } else {
+            nextBtn.classList.add('opacity-30', 'cursor-not-allowed', 'pointer-events-none');
+          }
+        }
+      }
+
+      // Handle year dropdown selection
+      navigator.querySelectorAll('[data-year-option]').forEach((btn) => {
+        btn.addEventListener('click', (e: Event) => {
+          e.preventDefault();
+          e.stopPropagation();
+
+          const el = btn as HTMLElement;
+          const value = el.dataset.yearOption || '';
+          const displayLabel = el.dataset.yearLabel || value;
+
+          yearInput.value = value;
+          yearLabel.textContent = displayLabel;
+
+          // Close dropdown
+          (document.activeElement as HTMLElement)?.blur();
+
+          // Update nav button states
+          updateNavButtons();
+
+          // Dispatch custom event
+          window.dispatchEvent(
+            new CustomEvent('yearChange', {
+              detail: { year: value, label: displayLabel },
+            })
+          );
+        });
+      });
+
+      // Handle navigation buttons
+      if (prevBtn) {
+        prevBtn.addEventListener('click', (e: Event) => {
+          e.preventDefault();
+
+          const currentYear = yearInput.value;
+          const currentIndex = availableYears.findIndex((y) => y.key === currentYear);
+
+          if (currentIndex > 0) {
+            const prevYear = availableYears[currentIndex - 1];
+            yearInput.value = prevYear.key;
+            yearLabel.textContent = prevYear.label;
+
+            // Update nav button states
+            updateNavButtons();
+
+            // Dispatch custom event
+            window.dispatchEvent(
+              new CustomEvent('yearChange', {
+                detail: { year: prevYear.key, label: prevYear.label },
+              })
+            );
+          }
+        });
+      }
+
+      if (nextBtn) {
+        nextBtn.addEventListener('click', (e: Event) => {
+          e.preventDefault();
+
+          const currentYear = yearInput.value;
+          const currentIndex = availableYears.findIndex((y) => y.key === currentYear);
+
+          if (currentIndex < availableYears.length - 1) {
+            const nextYear = availableYears[currentIndex + 1];
+            yearInput.value = nextYear.key;
+            yearLabel.textContent = nextYear.label;
+
+            // Update nav button states
+            updateNavButtons();
+
+            // Dispatch custom event
+            window.dispatchEvent(
+              new CustomEvent('yearChange', {
+                detail: { year: nextYear.key, label: nextYear.label },
+              })
+            );
+          }
+        });
+      }
+
+      // Initialize button states
+      updateNavButtons();
+    });
+  }
+
+  // Initialize on DOM ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initYearNavigator);
+  } else {
+    initYearNavigator();
+  }
+
+  // Re-initialize on Astro page transitions
+  document.addEventListener('astro:page-load', initYearNavigator);
+</script>

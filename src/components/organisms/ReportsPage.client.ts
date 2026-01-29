@@ -12,6 +12,7 @@ import {
   renderSummaryHtml,
   renderChartsHtml,
   renderTableHtml,
+  renderSelectorHtml,
   showLoadingState,
   hideLoadingState,
   announceToScreenReader,
@@ -23,6 +24,9 @@ interface ReportState {
   range: 'monthly' | 'yearly';
   period: string;
 }
+
+// Track if listeners are already attached to prevent duplicates
+let listenersAttached = false;
 
 /**
  * Generate default period based on current date
@@ -146,34 +150,57 @@ async function fetchAndRenderReports(): Promise<void> {
 }
 
 /**
+ * Fetch and render selector HTML
+ */
+async function fetchAndRenderSelector(): Promise<void> {
+  try {
+    const params = new URLSearchParams();
+    params.set('_render', 'html');
+    params.set('_partial', 'selector');
+    params.set('range', currentState.range);
+    params.set('period', currentState.period);
+
+    const response = await fetch(`/api/reports?${params.toString()}`);
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch selector: ${response.statusText}`);
+    }
+
+    const html = await response.text();
+    const partials = parseHtmlPartials(html);
+
+    if (partials.selector) {
+      renderSelectorHtml(partials.selector);
+    }
+  } catch (error) {
+    console.error('Error fetching selector:', error);
+  }
+}
+
+/**
  * Handle report range change (monthly/yearly)
  */
-function handleRangeChange(
-  event: CustomEvent<{ range: 'monthly' | 'yearly'; newPeriod?: string | null }>
-): void {
+function handleRangeChange(event: CustomEvent<{ range: 'monthly' | 'yearly' }>): void {
   currentState.range = event.detail.range;
 
-  // Use the new period from the event if provided (when dropdown was updated)
-  if (event.detail.newPeriod) {
-    currentState.period = event.detail.newPeriod;
+  // Fallback: convert period format to match new range
+  if (currentState.range === 'yearly') {
+    // Extract year from monthly period (e.g., '2024-02' -> '2024')
+    currentState.period = currentState.period.split('-')[0];
   } else {
-    // Fallback: convert period format to match new range
-    if (currentState.range === 'yearly') {
-      // Extract year from monthly period (e.g., '2024-02' -> '2024')
-      currentState.period = currentState.period.split('-')[0];
-    } else {
-      // Convert yearly to monthly: append current month (e.g., '2024' -> '2024-01')
-      const now = new Date();
-      const month = (now.getMonth() + 1).toString().padStart(2, '0');
-      currentState.period = `${currentState.period}-${month}`;
-    }
+    // Convert yearly to monthly: append current month (e.g., '2024' -> '2024-01')
+    const now = new Date();
+    const month = (now.getMonth() + 1).toString().padStart(2, '0');
+    currentState.period = `${currentState.period}-${month}`;
   }
 
   // Update URL with new state
   updateUrl(currentState.range, currentState.period);
 
-  // Fetch and render new data
-  fetchAndRenderReports();
+  // Fetch and render selector first, then data
+  fetchAndRenderSelector().then(() => {
+    fetchAndRenderReports();
+  });
 }
 
 /**
@@ -246,20 +273,29 @@ export function initReportsPage(): void {
   if (urlState.period) {
     currentState.period = urlState.period;
   } else {
-    const periodInput = document.getElementById('period-filter') as HTMLInputElement;
+    // Try to read from MonthNavigator or YearNavigator
+    const monthInput = document.querySelector('[data-month-input]') as HTMLInputElement;
+    const yearInput = document.querySelector('[data-year-input]') as HTMLInputElement;
+    const periodInput = monthInput || yearInput;
+
     if (periodInput && periodInput.value) {
       currentState.period = periodInput.value;
     }
   }
 
-  // Listen for range change events from ReportSelector
-  window.addEventListener('reportRangeChange', handleRangeChange as EventListener);
+  // Only attach event listeners once to prevent duplicates
+  if (!listenersAttached) {
+    // Listen for range change events from ReportSelector
+    window.addEventListener('reportRangeChange', handleRangeChange as EventListener);
 
-  // Listen for period change events from ReportSelector
-  window.addEventListener('reportPeriodChange', handlePeriodChange as EventListener);
+    // Listen for period change events from ReportSelector
+    window.addEventListener('reportPeriodChange', handlePeriodChange as EventListener);
 
-  // Set up drill-down click delegation (once, at document level)
-  document.addEventListener('click', handleDrillDownClick);
+    // Set up drill-down click delegation (once, at document level)
+    document.addEventListener('click', handleDrillDownClick);
+
+    listenersAttached = true;
+  }
 }
 
 // Auto-initialize on page load
@@ -277,4 +313,5 @@ document.addEventListener('astro:before-swap', () => {
   window.removeEventListener('reportRangeChange', handleRangeChange as EventListener);
   window.removeEventListener('reportPeriodChange', handlePeriodChange as EventListener);
   document.removeEventListener('click', handleDrillDownClick);
+  listenersAttached = false;
 });

@@ -195,12 +195,14 @@ const reportDataForPartials = {
         </p>
       </div>
 
-      <ReportSelector
-        selectedRange={defaultRange}
-        selectedPeriod={defaultPeriod}
-        monthlyPeriods={monthlyPeriods}
-        yearlyPeriods={yearlyPeriods}
-      />
+      <div data-selector-container>
+        <ReportSelector
+          selectedRange={defaultRange}
+          selectedPeriod={defaultPeriod}
+          monthlyPeriods={monthlyPeriods}
+          yearlyPeriods={yearlyPeriods}
+        />
+      </div>
     </div>
 
     {/* Summary Metric Cards Container */}

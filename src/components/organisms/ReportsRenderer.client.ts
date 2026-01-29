@@ -17,8 +17,9 @@ export function parseHtmlPartials(html: string): {
   summary?: string;
   charts?: string;
   table?: string;
+  selector?: string;
 } {
-  const partials: { summary?: string; charts?: string; table?: string } = {};
+  const partials: { summary?: string; charts?: string; table?: string; selector?: string } = {};
 
   // Extract summary partial
   const summaryMatch = html.match(/<!-- PARTIAL:summary -->\n([\s\S]*?)(?=<!-- PARTIAL:|$)/);
@@ -31,6 +32,10 @@ export function parseHtmlPartials(html: string): {
   // Extract table partial
   const tableMatch = html.match(/<!-- PARTIAL:table -->\n([\s\S]*?)(?=<!-- PARTIAL:|$)/);
   if (tableMatch) partials.table = tableMatch[1].trim();
+
+  // Extract selector partial
+  const selectorMatch = html.match(/<!-- PARTIAL:selector -->\n([\s\S]*?)(?=<!-- PARTIAL:|$)/);
+  if (selectorMatch) partials.selector = selectorMatch[1].trim();
 
   return partials;
 }
@@ -111,6 +116,32 @@ export function renderTableHtml(html: string): void {
       // Fade in new content
       // @ts-expect-error - Motion library type definition issue
       animate(container, { opacity: [0, 1] }, { duration: 0.3, easing: 'ease-in' });
+    }
+  );
+}
+
+/**
+ * Render report selector with fade-in animation
+ */
+export function renderSelectorHtml(html: string): void {
+  const container = document.querySelector('[data-selector-container]') as HTMLElement;
+  if (!container) return;
+
+  // Fade out existing content
+  // @ts-expect-error - Motion library type definition issue
+  animate(container, { opacity: [1, 0] }, { duration: 0.2, easing: 'ease-out' }).finished.then(
+    () => {
+      // Inject new HTML
+      container.innerHTML = html;
+
+      // Fade in new content
+      // @ts-expect-error - Motion library type definition issue
+      animate(container, { opacity: [0, 1] }, { duration: 0.3, easing: 'ease-in' });
+
+      // Re-initialize selector after HTML injection
+      requestAnimationFrame(() => {
+        document.dispatchEvent(new CustomEvent('astro:page-load'));
+      });
     }
   );
 }

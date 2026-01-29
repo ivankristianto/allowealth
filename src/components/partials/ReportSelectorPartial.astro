@@ -1,0 +1,31 @@
+---
+/**
+ * Report Selector Partial
+ *
+ * Server-rendered fragment for report selector that can be updated dynamically.
+ * Used by /api/reports endpoint with ?_render=html&_partial=selector.
+ */
+
+import ReportSelector from '@/components/molecules/ReportSelector.astro';
+
+export interface PeriodOption {
+  key: string;
+  label: string;
+}
+
+export interface Props {
+  selectedRange: 'monthly' | 'yearly';
+  selectedPeriod: string;
+  monthlyPeriods: PeriodOption[];
+  yearlyPeriods: PeriodOption[];
+}
+
+const { selectedRange, selectedPeriod, monthlyPeriods, yearlyPeriods } = Astro.props;
+---
+
+<ReportSelector
+  selectedRange={selectedRange}
+  selectedPeriod={selectedPeriod}
+  monthlyPeriods={monthlyPeriods}
+  yearlyPeriods={yearlyPeriods}
+/>

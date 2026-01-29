@@ -12,6 +12,7 @@ import { validatePeriod } from '@/lib/utils/period-validation';
 import ReportSummaryCardsPartial from '@/components/partials/ReportSummaryCardsPartial.astro';
 import ReportChartsPartial from '@/components/partials/ReportChartsPartial.astro';
 import CategoryTablePartial from '@/components/partials/CategoryTablePartial.astro';
+import ReportSelectorPartial from '@/components/partials/ReportSelectorPartial.astro';
 
 /**
  * GET /api/reports
@@ -44,7 +45,7 @@ export const GET: APIRoute = async (context) => {
     const currency = (url.searchParams.get('currency') as 'IDR' | 'USD' | null) || 'IDR';
 
     // Validate _partial parameter
-    const VALID_PARTIALS = ['summary', 'charts', 'table', 'all'] as const;
+    const VALID_PARTIALS = ['summary', 'charts', 'table', 'selector', 'all'] as const;
     type PartialType = (typeof VALID_PARTIALS)[number];
     const partialParam = url.searchParams.get('_partial') || 'all';
     if (!VALID_PARTIALS.includes(partialParam as PartialType)) {
@@ -179,6 +180,63 @@ export const GET: APIRoute = async (context) => {
           },
         });
         htmlParts.push(`<!-- PARTIAL:table -->\n${tableHtml}`);
+      }
+
+      // Render selector partial
+      if (partial === 'selector') {
+        // Generate monthly and yearly periods
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        const currentMonth = now.getMonth() + 1;
+
+        // Generate monthly periods (last 12 months)
+        const monthlyPeriods = Array.from({ length: 12 }, (_, i) => {
+          const monthsBack = 11 - i;
+          const date = new Date(currentYear, currentMonth - 1 - monthsBack, 1);
+          const year = date.getFullYear();
+          const month = date.getMonth() + 1;
+          const monthStr = month.toString().padStart(2, '0');
+
+          const monthNames = [
+            'Jan',
+            'Feb',
+            'Mar',
+            'Apr',
+            'May',
+            'Jun',
+            'Jul',
+            'Aug',
+            'Sep',
+            'Oct',
+            'Nov',
+            'Dec',
+          ];
+          const label = `${monthNames[month - 1]} ${year}`;
+
+          return {
+            key: `${year}-${monthStr}`,
+            label,
+          };
+        });
+
+        // Generate yearly periods (last 3 years + current year)
+        const yearlyPeriods = Array.from({ length: 4 }, (_, i) => {
+          const year = currentYear - (3 - i);
+          return {
+            key: year.toString(),
+            label: year.toString(),
+          };
+        });
+
+        const selectorHtml = await container.renderToString(ReportSelectorPartial, {
+          props: {
+            selectedRange: range,
+            selectedPeriod: period || '',
+            monthlyPeriods,
+            yearlyPeriods,
+          },
+        });
+        htmlParts.push(`<!-- PARTIAL:selector -->\n${selectorHtml}`);
       }
 
       return render.html(htmlParts.join('\n\n'));
