@@ -1,5 +1,5 @@
-import { test, expect } from './test.fixture';
-import { TEST_AMOUNTS, generateTestId } from '../helpers';
+import { test, expect } from '../test.fixture';
+import { TEST_AMOUNTS, generateTestId } from '../../helpers';
 
 test.describe('Add Income Transaction', () => {
   /**

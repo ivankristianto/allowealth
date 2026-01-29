@@ -1,6 +1,6 @@
-import { test, expect } from './test.fixture';
-import { TEST_AMOUNTS, generateTestId, generateExpenseData, getCurrentMonth } from '../helpers';
-import { getCategoriesViaAPI, getAssetsViaAPI, expectSuccessToast } from '../helpers';
+import { test, expect } from '../test.fixture';
+import { TEST_AMOUNTS, generateTestId, generateExpenseData, getCurrentMonth } from '../../helpers';
+import { getCategoriesViaAPI, getAssetsViaAPI, expectSuccessToast } from '../../helpers';
 
 /**
  * Critical Business Flow E2E Test
