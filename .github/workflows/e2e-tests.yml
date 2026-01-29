@@ -125,7 +125,7 @@ jobs:
           bun run db:seed
 
       - name: Run critical path tests
-        run: npx playwright test --config=e2e/playwright.config.ts e2e/tests/business-flow.spec.ts
+        run: npx playwright test --config=e2e/playwright.config.ts e2e/tests/business-critical/business-flow.spec.ts
         env:
           CI: true
 
