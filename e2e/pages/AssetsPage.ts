@@ -71,9 +71,15 @@ export class AssetsPage extends BasePage {
     await addBtn.first().waitFor({ state: 'visible' });
     await addBtn.first().click();
 
-    // Wait for modal dialog to have the 'open' attribute (native dialog API)
+    // Wait for modal dialog to be visible (not just attached)
     const modal = this.page.locator('dialog#asset-form-modal[open]');
-    await modal.waitFor({ state: 'attached', timeout: 10000 });
+    await modal.waitFor({ state: 'visible', timeout: 10000 });
+
+    // Wait for form to be ready inside the modal
+    const nameInput = modal
+      .locator('[data-testid="asset-name-input"]')
+      .or(modal.locator('[name="name"]').first());
+    await nameInput.waitFor({ state: 'visible', timeout: 5000 });
   }
 
   /**
@@ -122,6 +128,9 @@ export class AssetsPage extends BasePage {
     const submitBtn = modal
       .locator('[data-testid="asset-submit-btn"]')
       .or(modal.locator('button[type="submit"]'));
+
+    // Wait for submit button to be visible and stable before clicking
+    await submitBtn.waitFor({ state: 'visible', timeout: 5000 });
     await submitBtn.click();
 
     // Wait for modal to close (form triggers reload after 500ms)
@@ -286,10 +295,14 @@ export class AssetsPage extends BasePage {
    * @returns The asset ID or null if not found
    */
   async getAssetIdByName(name: string): Promise<string | null> {
-    const assetItem = this.getAssetItemByName(name);
-    const count = await assetItem.count();
+    // Wait for at least one asset item to exist
+    const assetItem = this.getAssetItemByName(name).first();
 
-    if (count === 0) {
+    // Wait for the element to be visible (with a reasonable timeout)
+    try {
+      await assetItem.waitFor({ state: 'visible', timeout: 5000 });
+    } catch {
+      // Element not found or not visible
       return null;
     }
 
