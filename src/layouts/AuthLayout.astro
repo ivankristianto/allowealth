@@ -7,13 +7,12 @@
  */
 
 import BaseLayout from './BaseLayout.astro';
-import { Wallet } from '@lucide/astro';
 
 interface Props {
   title?: string;
 }
 
-const { title = 'FamilyFinance - Login' } = Astro.props;
+const { title = 'allowealth - Login' } = Astro.props;
 ---
 
 <BaseLayout title={title}>
@@ -24,17 +23,18 @@ const { title = 'FamilyFinance - Login' } = Astro.props;
         <a
           href="/"
           class="flex items-center justify-center gap-3 mb-2 group"
-          aria-label="FamilyFinance Home"
+          aria-label="allowealth Home"
         >
-          <div
-            class="bg-accent text-accent-content rounded-2xl p-2 shadow-accent-glow transition-transform duration-200 group-hover:scale-105"
-          >
-            <Wallet size={32} class="stroke-current" aria-hidden="true" />
-          </div>
-          <h1 class="text-2xl font-bold tracking-tight text-base-content">FamilyFinance</h1>
+          <img
+            src="/favicon.svg"
+            alt=""
+            class="w-10 h-10 transition-transform duration-200 group-hover:scale-105"
+            aria-hidden="true"
+          />
+          <h1 class="text-2xl font-bold tracking-tight text-base-content">allowealth</h1>
         </a>
         <p class="text-sm text-base-content/60 mt-2 font-medium">
-          Manage your family finances in one place
+          Manage your finances in one place
         </p>
       </div>
 
@@ -43,7 +43,7 @@ const { title = 'FamilyFinance - Login' } = Astro.props;
 
       <!-- Footer -->
       <p class="text-center text-xs text-base-content/60 mt-8">
-        &copy; {new Date().getFullYear()} FamilyFinance. All rights reserved.
+        &copy; {new Date().getFullYear()} allowealth. All rights reserved.
       </p>
     </div>
   </div>

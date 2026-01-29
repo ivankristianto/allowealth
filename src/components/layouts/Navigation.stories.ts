@@ -131,12 +131,12 @@ const createNavigation = (args: { currentPath?: string }): HTMLElement => {
   const brandSection = document.createElement('div');
   brandSection.className = 'p-8';
   brandSection.innerHTML = `
-    <a href="/" class="flex items-center gap-3 group" aria-label="FamilyFinance Home">
+    <a href="/" class="flex items-center gap-3 group" aria-label="allowealth Home">
       <div class="bg-accent text-accent-content rounded-2xl p-2 shadow-accent-glow transition-transform duration-200 group-hover:scale-105">
         ${icons.wallet}
       </div>
       <span class="text-xl font-bold tracking-tight text-base-content">
-        FamilyFinance
+        allowealth
       </span>
     </a>
   `;

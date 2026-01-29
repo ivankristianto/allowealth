@@ -93,11 +93,9 @@ const isActive = (href: string) => {
 
   <!-- Mobile Header with Logo and Close button -->
   <div class="lg:hidden p-6 flex justify-between items-center">
-    <a href="/" class="flex items-center gap-3" aria-label="FamilyFinance Home">
-      <div class="bg-accent text-accent-content rounded-2xl p-2 shadow-accent-glow">
-        <Wallet size={24} class="stroke-current" aria-hidden="true" />
-      </div>
-      <span class="text-xl font-bold tracking-tight text-base-content">FamilyFinan...</span>
+    <a href="/" class="flex items-center gap-3" aria-label="allowealth Home">
+      <img src="/favicon.svg" alt="" class="w-8 h-8" aria-hidden="true" />
+      <span class="text-xl font-bold tracking-tight text-base-content">allowealth</span>
     </a>
     <label for="drawer-toggle" class="btn btn-sm btn-circle btn-ghost" aria-label="Close menu">
       <X size={22} class="stroke-current" />
@@ -127,17 +125,18 @@ const isActive = (href: string) => {
     <a
       href="/"
       class="flex items-center gap-3 group-data-[sidebar-collapsed=true]:gap-0"
-      aria-label="FamilyFinance Home"
+      aria-label="allowealth Home"
     >
-      <div
-        class="bg-accent text-accent-content rounded-2xl p-2 shadow-accent-glow transition-transform duration-200 group-hover:scale-105"
-      >
-        <Wallet size={24} class="stroke-current" aria-hidden="true" />
-      </div>
+      <img
+        src="/favicon.svg"
+        alt=""
+        class="w-8 h-8 transition-transform duration-200 group-hover:scale-105"
+        aria-hidden="true"
+      />
       <span
         class="text-xl font-bold tracking-tight text-base-content group-data-[sidebar-collapsed=true]:hidden"
       >
-        FamilyFinance
+        allowealth
       </span>
     </a>
   </div>

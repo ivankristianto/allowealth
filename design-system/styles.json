@@ -1,8 +1,8 @@
 {
   "design": {
-    "name": "Family Finance - Modern Family Finance Dashboard",
+    "name": "allowealth - Modern Finance Dashboard",
     "version": "1.0.0",
-    "description": "Premium design system for family finance application with light/dark mode support"
+    "description": "Premium design system for allowealth finance application with light/dark mode support"
   },
   "colors": {
     "light": {
