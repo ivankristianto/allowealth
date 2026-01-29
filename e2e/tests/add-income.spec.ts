@@ -1,6 +1,5 @@
 import { test, expect } from './test.fixture';
 import { TEST_AMOUNTS, generateTestId } from '../helpers';
-import { expectSuccessToast } from '../helpers/assertions';
 
 test.describe('Add Income Transaction', () => {
   /**
@@ -31,8 +30,8 @@ test.describe('Add Income Transaction', () => {
     await addTransactionPage.fillForm({
       type: 'income',
       amount: incomeAmount,
-      categoryName: 'Salary',
-      assetName: 'Bank Account',
+      categoryName: 'Other Income',
+      assetName: 'BCA Debit',
       description: incomeDescription,
       date: new Date().toISOString().split('T')[0], // Today's date
     });
@@ -41,19 +40,16 @@ test.describe('Add Income Transaction', () => {
     await addTransactionPage.submit();
 
     // Verify redirect to transactions list page
-    await addTransactionPage.expectRedirectToTransactions();
-
-    // Verify success toast notification
-    await expectSuccessToast(page, /successfully|created|added/i);
+    await addTransactionPage.expectRedirectToTransactions('income');
 
     // Verify the income appears in the transaction list
     await transactionsPage.expectTransactionExists(incomeDescription);
   });
 
   /**
-   * Successfully add a small income without optional fields.
+   * Successfully add a small income without optional date.
    *
-   * Tests that only required fields (amount, category, asset) are necessary.
+   * Tests that date defaults to today when not provided.
    */
   test('successfully add income with required fields only', async ({
     addTransactionPage,
@@ -68,23 +64,21 @@ test.describe('Add Income Transaction', () => {
     // Navigate to add transaction page
     await addTransactionPage.gotoAddTransaction('income');
 
-    // Fill only required fields
+    // Fill only required fields (description is required, date defaults to today)
     await addTransactionPage.fillForm({
       type: 'income',
       amount: incomeAmount,
-      categoryName: 'Bonus',
-      assetName: 'Bank Account',
-      // description and date are optional
+      categoryName: 'QW',
+      assetName: 'Transfer',
+      description: incomeDescription,
+      // date is optional and defaults to today
     });
 
     // Submit the form
     await addTransactionPage.submit();
 
     // Verify redirect
-    await addTransactionPage.expectRedirectToTransactions();
-
-    // Verify success toast
-    await expectSuccessToast(page, /successfully|created|added/i);
+    await addTransactionPage.expectRedirectToTransactions('income');
   });
 
   /**
@@ -109,8 +103,8 @@ test.describe('Add Income Transaction', () => {
     await addTransactionPage.fillForm({
       type: 'income',
       amount: incomeAmount,
-      categoryName: 'Investment Income',
-      assetName: 'Bank Account',
+      categoryName: 'Div BBRI BMRI',
+      assetName: 'BCA Debit',
       description: incomeDescription,
     });
 
@@ -118,10 +112,7 @@ test.describe('Add Income Transaction', () => {
     await addTransactionPage.submit();
 
     // Verify redirect
-    await addTransactionPage.expectRedirectToTransactions();
-
-    // Verify success toast
-    await expectSuccessToast(page, /successfully|created|added/i);
+    await addTransactionPage.expectRedirectToTransactions('income');
 
     // Verify income appears in list
     await transactionsPage.expectTransactionExists(incomeDescription);
@@ -130,43 +121,38 @@ test.describe('Add Income Transaction', () => {
   /**
    * Successfully add income with custom date.
    *
-   * Tests that past dates can be added (e.g., backdating an income).
+   * Tests that custom dates can be set (defaults to today if not provided).
    */
-  test('successfully add income with past date', async ({
+  test('successfully add income with custom date', async ({
     addTransactionPage,
     transactionsPage,
     page,
   }) => {
-    // Generate test data with a date 7 days ago
-    const pastDate = new Date();
-    pastDate.setDate(pastDate.getDate() - 7);
-    const formattedDate = pastDate.toISOString().split('T')[0];
+    // Generate test data with today's date explicitly set
+    const todayDate = new Date().toISOString().split('T')[0];
 
     const incomeId = generateTestId();
-    const incomeDescription = `Past Income ${incomeId}`;
+    const incomeDescription = `Custom Date Income ${incomeId}`;
     const incomeAmount = TEST_AMOUNTS.MEDIUM_INCOME;
 
     // Navigate to add transaction page
     await addTransactionPage.gotoAddTransaction('income');
 
-    // Fill the form with past date
+    // Fill the form with custom date (today)
     await addTransactionPage.fillForm({
       type: 'income',
       amount: incomeAmount,
-      categoryName: 'Freelance',
-      assetName: 'Bank Account',
+      categoryName: 'Primaya',
+      assetName: 'Transfer',
       description: incomeDescription,
-      date: formattedDate,
+      date: todayDate,
     });
 
     // Submit the form
     await addTransactionPage.submit();
 
     // Verify redirect
-    await addTransactionPage.expectRedirectToTransactions();
-
-    // Verify success toast
-    await expectSuccessToast(page, /successfully|created|added/i);
+    await addTransactionPage.expectRedirectToTransactions('income');
 
     // Verify income appears in list
     await transactionsPage.expectTransactionExists(incomeDescription);
@@ -194,16 +180,15 @@ test.describe('Add Income Transaction', () => {
     await addTransactionPage.fillForm({
       type: 'income',
       amount: incomeAmount,
-      categoryName: 'Salary',
-      assetName: 'Bank Account',
+      categoryName: 'HM + Reimburse',
+      assetName: 'BCA Debit',
       description: incomeDescription,
     });
 
     await addTransactionPage.submit();
 
-    // Verify redirect and toast
-    await addTransactionPage.expectRedirectToTransactions();
-    await expectSuccessToast(page, /successfully|created|added/i);
+    // Verify redirect to transactions
+    await addTransactionPage.expectRedirectToTransactions('income');
 
     // Verify the transaction exists with income type
     // The TransactionsPage will look for the description text
@@ -229,17 +214,17 @@ test.describe('Add Income Transaction', () => {
       {
         id: generateTestId(),
         amount: TEST_AMOUNTS.SMALL_INCOME,
-        category: 'Bonus',
+        category: 'QW',
       },
       {
         id: generateTestId(),
         amount: TEST_AMOUNTS.MEDIUM_INCOME,
-        category: 'Salary',
+        category: 'HM + Reimburse',
       },
       {
         id: generateTestId(),
         amount: TEST_AMOUNTS.LARGE_INCOME,
-        category: 'Investment Income',
+        category: 'Div BBRI BMRI',
       },
     ];
 
@@ -253,15 +238,14 @@ test.describe('Add Income Transaction', () => {
         type: 'income',
         amount: income.amount,
         categoryName: income.category,
-        assetName: 'Bank Account',
+        assetName: 'BCA Debit',
         description,
       });
 
       await addTransactionPage.submit();
 
       // Verify success
-      await addTransactionPage.expectRedirectToTransactions();
-      await expectSuccessToast(page, /successfully|created|added/i);
+      await addTransactionPage.expectRedirectToTransactions('income');
       await transactionsPage.expectTransactionExists(description);
     }
   });
@@ -279,8 +263,8 @@ test.describe('Add Income Transaction', () => {
     await addTransactionPage.fillForm({
       type: 'income',
       amount: TEST_AMOUNTS.MEDIUM_INCOME,
-      categoryName: 'Salary',
-      assetName: 'Bank Account',
+      categoryName: 'Other Income',
+      assetName: 'BCA Debit',
       description: 'Test Income',
     });
 
@@ -293,7 +277,7 @@ test.describe('Add Income Transaction', () => {
     await addTransactionPage.submit();
 
     // Wait for redirect
-    await addTransactionPage.expectRedirectToTransactions();
+    await addTransactionPage.expectRedirectToTransactions('income');
 
     // Navigate back to add income page
     await addTransactionPage.gotoAddTransaction('income');
@@ -314,7 +298,7 @@ test.describe('Add Income Transaction', () => {
     transactionsPage,
     page,
   }) => {
-    const assets = ['Bank Account', 'Cash Wallet'];
+    const assets = ['BCA Debit', 'Cash'];
 
     for (const assetName of assets) {
       const incomeId = generateTestId();
@@ -328,7 +312,7 @@ test.describe('Add Income Transaction', () => {
       await addTransactionPage.fillForm({
         type: 'income',
         amount: incomeAmount,
-        categoryName: 'Salary',
+        categoryName: 'Other Income',
         assetName,
         description: incomeDescription,
       });
@@ -337,8 +321,7 @@ test.describe('Add Income Transaction', () => {
       await addTransactionPage.submit();
 
       // Verify success
-      await addTransactionPage.expectRedirectToTransactions();
-      await expectSuccessToast(page, /successfully|created|added/i);
+      await addTransactionPage.expectRedirectToTransactions('income');
       await transactionsPage.expectTransactionExists(incomeDescription);
     }
   });

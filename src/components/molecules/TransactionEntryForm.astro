@@ -80,6 +80,7 @@ const formId = `transaction-entry-form-${type}`;
 <form
   id={formId}
   data-transaction-form
+  data-testid="transaction-form"
   data-type={type}
   data-mode={mode}
   data-transaction-id={transactionId}
@@ -90,6 +91,7 @@ const formId = `transaction-entry-form-${type}`;
   class="flex flex-col gap-5"
   novalidate
 >
+  <!-- @TODO P2: Consider stripping data-testid attributes in production builds for smaller bundle size -->
   <!-- Hidden type field -->
   <input type="hidden" name="type" value={type} />
 
@@ -109,6 +111,7 @@ const formId = `transaction-entry-form-${type}`;
       error={!!errors.title}
       errorMessage={errors.title}
       className="rounded-full py-4 px-6 h-14 text-base font-bold border-0"
+      data-testid="transaction-description-input"
     />
   </div>
 
@@ -124,6 +127,7 @@ const formId = `transaction-entry-form-${type}`;
         required={true}
         error={!!errors.amount}
         errorMessage={errors.amount}
+        data-testid="transaction-amount-input"
       />
     </div>
 
@@ -137,6 +141,7 @@ const formId = `transaction-entry-form-${type}`;
         required={true}
         error={!!errors.transaction_date}
         errorMessage={errors.transaction_date}
+        data-testid="transaction-date-input"
       />
     </div>
   </div>
@@ -155,6 +160,7 @@ const formId = `transaction-entry-form-${type}`;
         required={true}
         error={!!errors.category_id}
         errorMessage={errors.category_id}
+        data-testid="transaction-category-select"
       />
     </div>
 
@@ -167,6 +173,7 @@ const formId = `transaction-entry-form-${type}`;
         required={true}
         error={!!errors.asset_id}
         errorMessage={errors.asset_id}
+        data-testid="transaction-asset-select"
       />
     </div>
   </div>
@@ -180,7 +187,12 @@ const formId = `transaction-entry-form-${type}`;
     >
       Cancel
     </button>
-    <Button type="submit" variant="accent" className="flex-[2] h-14 rounded-full font-bold">
+    <Button
+      type="submit"
+      variant="accent"
+      className="flex-[2] h-14 rounded-full font-bold"
+      data-testid="transaction-submit-btn"
+    >
       {isEditMode ? 'Save Changes' : 'Save Entry'}
     </Button>
   </div>
@@ -271,6 +283,7 @@ const formId = `transaction-entry-form-${type}`;
       const existingError = fieldContainer.querySelector('.field-error');
       if (existingError) existingError.remove();
 
+      // @TODO P2: Extract error ID construction to prevent collisions if form IDs aren't unique
       const errorDivId = `${formId}-${fieldName}-error`;
 
       if (errorMessage) {
@@ -327,9 +340,12 @@ const formId = `transaction-entry-form-${type}`;
       for (const fieldName of requiredFields) {
         const field = form.querySelector(`[name="${fieldName}"]`) as HTMLInputElement | null;
         const value = field?.value || '';
-        const error = fieldErrors[fieldName];
 
-        if (error || !value || value.trim() === '') {
+        // Only consider it invalid if there's an explicit error
+        // Missing from fieldErrors means it hasn't been validated yet
+        const hasError = fieldErrors[fieldName] !== null && fieldErrors[fieldName] !== undefined;
+
+        if (hasError || !value || value.trim() === '') {
           allValid = false;
           break;
         }
