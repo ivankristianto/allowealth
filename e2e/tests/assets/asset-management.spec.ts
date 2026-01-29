@@ -96,17 +96,25 @@ test.describe('Asset Management', () => {
       initialBalance: assetBalance,
     });
 
-    // Wait for page to load
+    // Wait for page to fully reload and data to update
+    await assetsPage.waitForPageLoad();
+
+    // Force a page refresh to ensure we get the latest data
+    await page.reload();
     await assetsPage.waitForPageLoad();
 
     // Get updated portfolio total
     const updatedPortfolioTotal = await assetsPage.getPortfolioTotal();
     const updatedBalance = parseInt(updatedPortfolioTotal.replace(/[^\d]/g, ''), 10);
 
-    // Verify portfolio total increased by asset balance
-    // (at least the new asset balance is included)
+    // Verify portfolio total includes at least the new asset balance
     expect(updatedBalance).toBeGreaterThanOrEqual(assetBalance);
-    expect(updatedBalance).toBeGreaterThan(initialBalance);
+
+    // Verify portfolio total increased by approximately the asset balance
+    // Allow for some variance due to other tests potentially running in parallel
+    // or existing seeded data
+    const expectedMinBalance = initialBalance + assetBalance;
+    expect(updatedBalance).toBeGreaterThanOrEqual(expectedMinBalance);
   });
 
   /**
