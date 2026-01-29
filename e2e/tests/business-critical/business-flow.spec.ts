@@ -1,6 +1,11 @@
 import { test, expect } from '../test.fixture';
 import { TEST_AMOUNTS, generateTestId, generateExpenseData, getCurrentMonth } from '../../helpers';
-import { getCategoriesViaAPI, getAssetsViaAPI, expectSuccessToast } from '../../helpers';
+import {
+  getCategoriesViaAPI,
+  getAssetsViaAPI,
+  expectSuccessToast,
+  setBudgetViaAPI,
+} from '../../helpers';
 
 /**
  * Critical Business Flow E2E Test
@@ -157,44 +162,41 @@ test.describe('Business Flow: Monthly Expense Tracking', () => {
 
   /**
    * Alternative test: Verify budget updates when expense is added
-   * (conditional test - only runs if budget is set)
-   *
-   * TODO: Fix budget page navigation error (net::ERR_ABORTED)
-   * Temporarily skipped until budget page routing issue is resolved
+   * Tests the budget page shows updated spending after adding an expense transaction.
    */
-  test.skip('budget spending updates when expense is added', async ({
+  test('budget spending updates when expense is added', async ({
+    request,
     page,
     dashboardPage,
     addTransactionPage,
     transactionsPage,
     budgetPage,
   }) => {
-    // Navigate to budget page
-    await budgetPage.gotoBudget();
-
-    // Verify budget page is visible
-    await expect(page.locator('[data-testid="budget-card"]').first())
-      .toBeVisible({
-        timeout: 5000,
-      })
-      .catch(() => {
-        // If no budget is set, skip this test
-        test.skip();
-      });
-
-    // Set a budget for the category if not already set
+    // =====================================================================
+    // SETUP: Set a budget for the category using API
+    // =====================================================================
     const budgetAmount = TEST_AMOUNTS.BUDGET_MEDIUM; // 1.5M IDR
 
-    try {
-      await budgetPage.setBudget(categoryId, budgetAmount);
-    } catch {
-      // Budget might already be set, that's ok
-    }
+    // Set budget via API to ensure it exists before navigating
+    await setBudgetViaAPI(request, categoryId, budgetAmount);
+
+    // =====================================================================
+    // STEP 1: Navigate to budget page and verify it loads
+    // =====================================================================
+    await budgetPage.gotoBudget();
+
+    // Verify budget page loaded successfully
+    await expect(page.getByTestId('budget-page')).toBeVisible({ timeout: 10000 });
+
+    // Verify the budget card for our category exists
+    await budgetPage.expectBudgetCardVisible(categoryId);
 
     // Get initial spent amount for the category
-    const initialSpent = await budgetPage.getCategorySpent(categoryId).catch(() => 0);
+    const initialSpent = await budgetPage.getCategorySpent(categoryId);
 
-    // Add an expense using the fetched category and asset names
+    // =====================================================================
+    // STEP 2: Add an expense transaction
+    // =====================================================================
     await addTransactionPage.gotoAddTransaction('expense');
     await addTransactionPage.fillAndSubmit({
       type: 'expense',
@@ -205,16 +207,35 @@ test.describe('Business Flow: Monthly Expense Tracking', () => {
       date: new Date().toISOString().split('T')[0],
     });
 
-    // Navigate back to budget page
+    // Verify redirect to transactions page
+    await addTransactionPage.expectRedirectToTransactions('expense');
+
+    // =====================================================================
+    // STEP 3: Navigate back to budget page and verify spending updated
+    // =====================================================================
     await budgetPage.gotoBudget();
 
-    // Verify the spent amount increased
+    // Wait for page to fully load
+    await budgetPage.waitForPageLoad();
+
+    // Verify the spent amount increased by the transaction amount
     const updatedSpent = await budgetPage.getCategorySpent(categoryId);
     expect(updatedSpent).toBeGreaterThanOrEqual(initialSpent + TEST_AMOUNTS.SMALL_EXPENSE);
 
     // Verify percentage is calculated correctly
+    // Note: The percentage can exceed 100% if spending exceeds the budget,
+    // which is expected in a test environment with existing seeded data
     const percentage = await budgetPage.getCategoryPercentage(categoryId);
     expect(percentage).toBeGreaterThan(0);
-    expect(percentage).toBeLessThanOrEqual(100);
+
+    // Verify the percentage reflects the updated spending
+    // Calculate expected percentage: (updatedSpent / budgetAmount) * 100
+    const expectedPercentage = Math.round((updatedSpent / budgetAmount) * 100);
+    expect(percentage).toBe(expectedPercentage);
+
+    // =====================================================================
+    // STEP 4: Verify budget amount remained the same (only spent changed)
+    // =====================================================================
+    await budgetPage.expectBudgetSet(categoryId, budgetAmount);
   });
 });

@@ -214,32 +214,80 @@ export async function createAssetViaAPI(
 
 /**
  * Set a budget for a category via API.
+ * If a budget already exists for the category/month/year/currency, it will be updated.
+ * Otherwise, a new budget will be created.
  * @param request - Playwright API request context
  * @param categoryId - Category ID to set budget for
  * @param amount - Budget amount
- * @param month - Month in YYYY-MM format (defaults to current month)
+ * @param currency - Currency code (IDR or USD), defaults to IDR
+ * @param month - Month (1-12), defaults to current month
+ * @param year - Year (2000-2100), defaults to current year
  */
 export async function setBudgetViaAPI(
   request: APIRequestContext,
   categoryId: string,
   amount: number,
-  month?: string
+  currency: 'IDR' | 'USD' = 'IDR',
+  month?: number,
+  year?: number
 ): Promise<void> {
-  const currentMonth = month || new Date().toISOString().slice(0, 7);
+  const now = new Date();
+  const currentMonth = month ?? now.getMonth() + 1; // getMonth() is 0-indexed
+  const currentYear = year ?? now.getFullYear();
 
-  const response = await request.post(`${E2E_BASE_URL}/api/budget`, {
+  const budgetData = {
+    category_id: categoryId,
+    budget_amount: amount.toString(),
+    month: currentMonth,
+    year: currentYear,
+    currency: currency,
+    notes: '',
+  };
+
+  // First, try to get existing budgets for this month/year
+  const getBudgetsResponse = await request.get(
+    `${E2E_BASE_URL}/api/budgets?month=${currentMonth}&year=${currentYear}&currency=${currency}`,
+    {
+      headers: {
+        [CSRF_HEADER_NAME]: getCsrfToken(),
+      },
+    }
+  );
+
+  if (getBudgetsResponse.ok()) {
+    const result = await getBudgetsResponse.json();
+    const budgets = result.data;
+    // Find if there's an existing budget for this category
+    const existingBudget = budgets.find((b: any) => b.category_id === categoryId);
+
+    if (existingBudget) {
+      // Update existing budget
+      const updateResponse = await request.put(`${E2E_BASE_URL}/api/budgets/${existingBudget.id}`, {
+        headers: {
+          [CSRF_HEADER_NAME]: getCsrfToken(),
+        },
+        data: budgetData,
+      });
+
+      if (!updateResponse.ok()) {
+        const errorText = await updateResponse.text();
+        throw new Error(`Failed to update budget: ${updateResponse.status()} - ${errorText}`);
+      }
+      return;
+    }
+  }
+
+  // Create new budget if none exists
+  const createResponse = await request.post(`${E2E_BASE_URL}/api/budgets`, {
     headers: {
       [CSRF_HEADER_NAME]: getCsrfToken(),
     },
-    data: {
-      categoryId,
-      amount,
-      month: currentMonth,
-    },
+    data: budgetData,
   });
 
-  if (!response.ok()) {
-    throw new Error(`Failed to set budget: ${response.status()}`);
+  if (!createResponse.ok()) {
+    const errorText = await createResponse.text();
+    throw new Error(`Failed to create budget: ${createResponse.status()} - ${errorText}`);
   }
 }
 
