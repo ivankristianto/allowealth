@@ -38,6 +38,8 @@ export function calculateForecast(
 
   for (let i = 0; i <= months; i++) {
     const currentDate = new Date(today);
+    // Always use the 1st day to avoid date overflow issues (e.g., Jan 31 + 1 month = Mar 3)
+    currentDate.setDate(1);
     currentDate.setMonth(today.getMonth() + i);
 
     const key = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;

@@ -141,7 +141,7 @@ const chartId = `financial-velocity-chart-${Math.random().toString(36).slice(2, 
 </style>
 
 <script>
-  import Chart from 'chart.js/auto';
+  import { Chart } from '@/lib/chart-setup';
 
   interface TrendDataPoint {
     name: string;

@@ -11,7 +11,7 @@
 
 import type { TransactionOutput } from '@/lib/types/transaction';
 import type { TransactionFilters } from '@/lib/stores/transactionFiltersStore';
-import { parseMonthKeyToISO } from '@/lib/utils';
+import { parseMonthKeyToISO } from '@/lib/utils/date';
 import { PAGINATION } from '@/lib/constants/pagination';
 import { getCsrfHeaders } from '@/lib/csrf-client';
 

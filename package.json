@@ -5,6 +5,8 @@
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
+    "build:analyze": "bun run build && echo '\n📊 Bundle analysis available at dist/stats.html'",
+    "bundle:report": "bun run build && bun run scripts/analyze-bundle.ts",
     "preview": "astro preview",
     "astro": "astro",
     "storybook": "storybook dev -p 6006",
@@ -72,6 +74,7 @@
     "husky": "^8.0.0",
     "prettier": "^3.7.4",
     "prettier-plugin-astro": "^0.14.1",
+    "rollup-plugin-visualizer": "^6.0.5",
     "storybook": "^8.0.0",
     "stylelint": "^16.26.1",
     "stylelint-config-recommended": "^17.0.0",

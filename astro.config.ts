@@ -3,6 +3,7 @@ import node from '@astrojs/node';
 import tailwindcss from '@tailwindcss/vite';
 import { fileURLToPath } from 'node:url';
 import { loadEnv } from 'vite';
+import { visualizer } from 'rollup-plugin-visualizer';
 
 // Load .env before config is parsed (Vite normally loads it too late)
 const { PORT, DEV_HOST } = loadEnv(process.env.NODE_ENV || 'development', process.cwd(), '');
@@ -22,9 +23,35 @@ export default defineConfig({
     mode: 'standalone',
   }),
   vite: {
-    plugins: [tailwindcss()],
+    plugins: [
+      tailwindcss(),
+      visualizer({
+        filename: 'dist/stats.html',
+        gzipSize: true,
+        brotliSize: true,
+        template: 'treemap', // Options: 'treemap', 'sunburst', 'network'
+      }),
+      visualizer({
+        filename: 'dist/stats.json',
+        gzipSize: true,
+        brotliSize: true,
+        json: true,
+      }),
+    ],
     server: {
       allowedHosts: ['.local'],
+    },
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            // Separate chart.js into its own chunk for better caching
+            chartjs: ['chart.js'],
+            // Separate motion library into its own chunk
+            motion: ['motion'],
+          },
+        },
+      },
     },
     resolve: {
       alias: {
