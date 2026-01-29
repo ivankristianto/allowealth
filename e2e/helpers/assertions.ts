@@ -50,12 +50,12 @@ export async function expectPercentage(
  * Assert that a toast notification appears with the expected message.
  *
  * @param page - Playwright page
- * @param message - Expected message content
+ * @param message - Expected message content (string or regex)
  * @param type - Toast type (success or error)
  */
 export async function expectToast(
   page: Page,
-  message: string,
+  message: string | RegExp,
   type: 'success' | 'error' = 'success'
 ): Promise<void> {
   const toast = page.locator(`[data-testid="toast-${type}"]`);
@@ -66,9 +66,9 @@ export async function expectToast(
  * Assert that a success toast appears.
  *
  * @param page - Playwright page
- * @param message - Expected message content
+ * @param message - Expected message content (string or regex)
  */
-export async function expectSuccessToast(page: Page, message: string): Promise<void> {
+export async function expectSuccessToast(page: Page, message: string | RegExp): Promise<void> {
   await expectToast(page, message, 'success');
 }
 
@@ -76,9 +76,9 @@ export async function expectSuccessToast(page: Page, message: string): Promise<v
  * Assert that an error toast appears.
  *
  * @param page - Playwright page
- * @param message - Expected message content
+ * @param message - Expected message content (string or regex)
  */
-export async function expectErrorToast(page: Page, message: string): Promise<void> {
+export async function expectErrorToast(page: Page, message: string | RegExp): Promise<void> {
   await expectToast(page, message, 'error');
 }
 
