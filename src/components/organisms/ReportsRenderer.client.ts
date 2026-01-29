@@ -8,6 +8,8 @@
  */
 
 import { animate } from 'motion';
+import { initMonthNavigator } from '@/components/molecules/MonthNavigator.client';
+import { initYearNavigator } from '@/components/molecules/YearNavigator.client';
 
 /**
  * Parse HTML partials from API response
@@ -138,8 +140,21 @@ export function renderSelectorHtml(html: string): void {
       // @ts-expect-error - Motion library type definition issue
       animate(container, { opacity: [0, 1] }, { duration: 0.3, easing: 'ease-in' });
 
-      // Re-initialize selector after HTML injection
+      // Re-initialize navigators after HTML injection
+      // Check which navigator is present and initialize it
       requestAnimationFrame(() => {
+        const hasMonthNavigator = container.querySelector('[data-month-navigator]');
+        const hasYearNavigator = container.querySelector('[data-year-navigator]');
+
+        if (hasMonthNavigator) {
+          initMonthNavigator();
+        }
+
+        if (hasYearNavigator) {
+          initYearNavigator();
+        }
+
+        // Re-initialize ReportSelector script
         document.dispatchEvent(new CustomEvent('astro:page-load'));
       });
     }
