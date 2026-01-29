@@ -141,7 +141,7 @@ bun run build | grep "chart-setup"  # Should be <180 kB
 
 **Manual:** Check bundle size in code review
 **Automated:** Run `bun run build:analyze` before merging
-**Future:** CI bundle size check (optional)
+**CI:** Automated bundle size report posted to every PR (see `.github/workflows/quality-gates.yml`)
 
 ---
 

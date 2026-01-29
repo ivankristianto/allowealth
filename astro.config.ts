@@ -31,6 +31,12 @@ export default defineConfig({
         brotliSize: true,
         template: 'treemap', // Options: 'treemap', 'sunburst', 'network'
       }),
+      visualizer({
+        filename: 'dist/stats.json',
+        gzipSize: true,
+        brotliSize: true,
+        json: true,
+      }),
     ],
     server: {
       allowedHosts: ['.local'],
