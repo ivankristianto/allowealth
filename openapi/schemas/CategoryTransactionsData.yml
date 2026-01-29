@@ -1,0 +1,21 @@
+# Category transactions drill-down data
+CategoryTransactionsData:
+  type: object
+  properties:
+    transactions:
+      type: array
+      description: List of transactions in this category
+      items:
+        $ref: "./CategoryTransaction.yml#/CategoryTransaction"
+    total:
+      type: string
+      description: Sum of all transaction amounts (decimal string for precision)
+      example: "1850000"
+    categoryName:
+      type: string
+      description: Name of the category
+      example: "Utilities"
+  required:
+    - transactions
+    - total
+    - categoryName

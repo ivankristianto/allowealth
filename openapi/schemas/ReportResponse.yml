@@ -1,0 +1,12 @@
+# Report API success response
+ReportResponse:
+  type: object
+  properties:
+    success:
+      type: boolean
+      example: true
+    data:
+      $ref: "./ReportData.yml#/ReportData"
+  required:
+    - success
+    - data

@@ -24,11 +24,26 @@ interface ReportState {
   period: string;
 }
 
-// @TODO: P3 - Consider removing hardcoded default period
-// Default period should be dynamically determined from available data or current date
+/**
+ * Generate default period based on current date
+ * This is only used as a fallback if URL params and DOM elements don't provide values
+ */
+function getDefaultPeriod(range: 'monthly' | 'yearly'): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth() + 1; // 0-indexed to 1-indexed
+
+  if (range === 'monthly') {
+    const monthStr = month.toString().padStart(2, '0');
+    return `${year}-${monthStr}`;
+  } else {
+    return year.toString();
+  }
+}
+
 let currentState: ReportState = {
   range: 'monthly',
-  period: '2024-02', // Default to February 2024
+  period: getDefaultPeriod('monthly'),
 };
 
 /**
@@ -117,10 +132,6 @@ async function fetchAndRenderReports(): Promise<void> {
     // Accessibility announcement
     const rangeLabel = currentState.range === 'monthly' ? 'Monthly' : 'Yearly';
     announceToScreenReader(`${rangeLabel} report data updated`);
-
-    // Re-initialize drill-down button event handlers
-    // @TODO: This might need to be revisited if drill-down is moved to a separate module
-    reinitializeDrillDownHandlers();
   } catch (error) {
     console.error('Error fetching report data:', error);
 
@@ -171,44 +182,38 @@ function handlePeriodChange(event: CustomEvent<{ period: string; label: string }
 }
 
 /**
- * Re-initialize drill-down button handlers after HTML injection
- * This is needed because the buttons are replaced when HTML is injected
+ * Handle drill-down button clicks using event delegation
+ * This eliminates memory leaks from re-attaching listeners after HTML injection
+ * P1 fix: Use delegation pattern instead of per-button listeners (Issue #3 from code review)
  */
-function reinitializeDrillDownHandlers(): void {
-  // Find all drill-down buttons and re-attach event listeners
-  document.querySelectorAll('.category-drill-down-btn').forEach((btn) => {
-    const buttonEl = btn as HTMLElement;
+function handleDrillDownClick(event: MouseEvent): void {
+  const target = event.target as HTMLElement;
+  const btn = target.closest('.category-drill-down-btn') as HTMLElement;
 
-    // Remove existing listeners by cloning the node
-    const newBtn = buttonEl.cloneNode(true) as HTMLElement;
-    buttonEl.parentNode?.replaceChild(newBtn, buttonEl);
+  if (!btn) return;
 
-    // Add fresh listener
-    newBtn.addEventListener('click', () => {
-      const categoryId = newBtn.getAttribute('data-category-id');
-      const categoryName = newBtn.getAttribute('data-category-name');
-      const categoryIcon = newBtn.getAttribute('data-category-icon');
-      const categoryColor = newBtn.getAttribute('data-category-color');
-      const spent = parseFloat(newBtn.getAttribute('data-spent') || '0');
-      const budgetLimit = newBtn.getAttribute('data-budget-limit');
+  const categoryId = btn.getAttribute('data-category-id');
+  const categoryName = btn.getAttribute('data-category-name');
+  const categoryIcon = btn.getAttribute('data-category-icon');
+  const categoryColor = btn.getAttribute('data-category-color');
+  const spent = parseFloat(btn.getAttribute('data-spent') || '0');
+  const budgetLimit = btn.getAttribute('data-budget-limit');
 
-      if (categoryId && categoryName) {
-        // Dispatch custom event to open modal
-        const event = new CustomEvent('open-category-drilldown', {
-          detail: {
-            categoryId,
-            categoryName,
-            categoryIcon,
-            categoryColor,
-            spent,
-            budgetLimit: budgetLimit ? parseFloat(budgetLimit) : null,
-            period: currentState.period, // Use current period
-          },
-        });
-        document.dispatchEvent(event);
-      }
+  if (categoryId && categoryName) {
+    // Dispatch custom event to open modal
+    const customEvent = new CustomEvent('open-category-drilldown', {
+      detail: {
+        categoryId,
+        categoryName,
+        categoryIcon,
+        categoryColor,
+        spent,
+        budgetLimit: budgetLimit ? parseFloat(budgetLimit) : null,
+        period: currentState.period, // Use current period
+      },
     });
-  });
+    document.dispatchEvent(customEvent);
+  }
 }
 
 /**
@@ -245,8 +250,8 @@ export function initReportsPage(): void {
   // Listen for period change events from ReportSelector
   window.addEventListener('reportPeriodChange', handlePeriodChange as EventListener);
 
-  // Initialize drill-down handlers for SSR content
-  reinitializeDrillDownHandlers();
+  // Set up drill-down click delegation (once, at document level)
+  document.addEventListener('click', handleDrillDownClick);
 }
 
 // Auto-initialize on page load
@@ -263,4 +268,5 @@ document.addEventListener('astro:page-load', initReportsPage);
 document.addEventListener('astro:before-swap', () => {
   window.removeEventListener('reportRangeChange', handleRangeChange as EventListener);
   window.removeEventListener('reportPeriodChange', handlePeriodChange as EventListener);
+  document.removeEventListener('click', handleDrillDownClick);
 });

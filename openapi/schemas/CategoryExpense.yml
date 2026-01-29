@@ -1,0 +1,15 @@
+# Category expense for donut chart
+CategoryExpense:
+  type: object
+  properties:
+    name:
+      type: string
+      description: Category name
+      example: "Utilities"
+    value:
+      type: string
+      description: Total spent in this category (decimal string for precision)
+      example: "1850000"
+  required:
+    - name
+    - value

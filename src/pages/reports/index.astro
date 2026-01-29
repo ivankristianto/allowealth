@@ -14,8 +14,8 @@
  * - Period selector dropdown
  * - Dynamic data loading without page reload
  * - Server-rendered HTML fragments for consistency
+ * - Real-time data from backend via ReportService
  *
- * @TODO: Wire with backend API for real data
  * @see docs/architecture/002-interactive-pages.md
  */
 
@@ -28,7 +28,18 @@ import ReportSummaryCardsPartial from '@/components/partials/ReportSummaryCardsP
 import ReportChartsPartial from '@/components/partials/ReportChartsPartial.astro';
 import CategoryTablePartial from '@/components/partials/CategoryTablePartial.astro';
 
+// Import report service and types
+import { reportService } from '@/services';
+import type { ReportData } from '@/services/report.service';
+import { safeParseDecimal } from '@/lib/utils/decimal';
+
 const currentPath = '/reports';
+
+// Ensure user is authenticated
+const userId = Astro.locals.user?.id;
+if (!userId) {
+  return Astro.redirect('/login');
+}
 
 // Read from URL query params or use defaults
 const url = Astro.url;
@@ -39,20 +50,50 @@ const urlPeriod = url.searchParams.get('period');
 const defaultRange: 'monthly' | 'yearly' =
   urlRange === 'yearly' ? 'yearly' : urlRange === 'monthly' ? 'monthly' : 'monthly';
 
-// @TODO: P2 - Wire with backend - Replace hardcoded periods with dynamic data from API
-// Available periods should be fetched from backend based on user's transaction date range
-// Example: const { monthlyPeriods, yearlyPeriods } = await reportsService.getAvailablePeriods(userId);
-const monthlyPeriods = [
-  { key: '2023-12', label: 'December 2023' },
-  { key: '2024-01', label: 'January 2024' },
-  { key: '2024-02', label: 'February 2024' },
-];
+// P2: TODO - Generate available periods dynamically based on user's transaction history
+// For now, generate periods based on current date and last 12 months/3 years
+const now = new Date();
+const currentYear = now.getFullYear();
+const currentMonth = now.getMonth() + 1; // 0-indexed to 1-indexed
 
-const yearlyPeriods = [
-  { key: '2022', label: '2022' },
-  { key: '2023', label: '2023' },
-  { key: '2024', label: '2024' },
-];
+// Generate monthly periods (last 12 months)
+const monthlyPeriods = Array.from({ length: 12 }, (_, i) => {
+  const monthsBack = 11 - i;
+  const date = new Date(currentYear, currentMonth - 1 - monthsBack, 1);
+  const year = date.getFullYear();
+  const month = date.getMonth() + 1;
+  const monthStr = month.toString().padStart(2, '0');
+
+  const monthNames = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+  const label = `${monthNames[month - 1]} ${year}`;
+
+  return {
+    key: `${year}-${monthStr}`,
+    label,
+  };
+});
+
+// Generate yearly periods (last 3 years + current year)
+const yearlyPeriods = Array.from({ length: 4 }, (_, i) => {
+  const year = currentYear - (3 - i);
+  return {
+    key: year.toString(),
+    label: year.toString(),
+  };
+});
 
 // Set default period based on range and URL
 const defaultPeriod =
@@ -61,86 +102,56 @@ const defaultPeriod =
     ? monthlyPeriods[monthlyPeriods.length - 1].key
     : yearlyPeriods[yearlyPeriods.length - 1].key);
 
-// @TODO: P2 - Wire with backend - Replace mock data with actual API call
-// This mock data should be replaced with a fetch to /api/reports endpoint
-// Example: const reportData = await fetch(`/api/reports?range=${defaultRange}&period=${defaultPeriod}`).then(r => r.json());
-const mockData = {
-  // Summary metrics
-  totalIncome: 9750000,
-  totalExpenses: 4735000,
-  netSavings: 5015000,
-  budgetHealth: 8, // percentage
-  expenseCategories: 6,
+// Fetch report data from backend service
+const currency = 'IDR'; // P2: TODO - Support currency from user preferences (Issue #5 from code review)
+let reportData: ReportData;
 
-  // Resource Allocation (Expense Mix)
-  expenseByCategory: [
-    { name: 'Utilities', value: 1850000 },
-    { name: 'Dining', value: 905000 },
-    { name: 'Health', value: 750000 },
-    { name: 'Transport', value: 595000 },
-    { name: 'Entertainment', value: 420000 },
-    { name: 'Groceries', value: 215000 },
-  ],
+try {
+  if (defaultRange === 'monthly') {
+    reportData = await reportService.getMonthlyReport(userId, defaultPeriod, currency);
+  } else {
+    const year = parseInt(defaultPeriod, 10);
+    reportData = await reportService.getYearlyReport(userId, year, currency);
+  }
+} catch (error) {
+  console.error('Error fetching report data:', error);
+  // P2: TODO - Show error page instead of redirecting (Issue #6 from code review)
+  return Astro.redirect('/reports?error=failed-to-load');
+}
 
-  // Financial Velocity (Trailing 3 months)
-  trendData: [
-    { name: 'Dec', income: 25245000, expenses: 33719000 },
-    { name: 'Jan', income: 60525000, expenses: 41816000 },
-    { name: 'Feb', income: 9750000, expenses: 4735000 },
-  ],
-
-  // Category Intelligence - colors now handled by getCategoryColor() in tokens.ts
-  categoryIntelligence: [
-    {
-      id: '1',
-      name: 'Utilities',
-      spent: 1850000,
-      budgetLimit: 4000000,
-      icon: 'zap',
-    },
-    {
-      id: '2',
-      name: 'Dining',
-      spent: 905000,
-      budgetLimit: 3000000,
-      icon: 'utensils',
-    },
-    {
-      id: '3',
-      name: 'Health',
-      spent: 750000,
-      budgetLimit: null, // Not Set
-      icon: 'heart-pulse',
-    },
-    {
-      id: '4',
-      name: 'Transport',
-      spent: 595000,
-      budgetLimit: 2500000,
-      icon: 'car',
-    },
-    {
-      id: '5',
-      name: 'Entertainment',
-      spent: 420000,
-      budgetLimit: 1500000,
-      icon: 'music',
-    },
-    {
-      id: '6',
-      name: 'Groceries',
-      spent: 215000,
-      budgetLimit: 8000000,
-      icon: 'shopping-basket',
-    },
-    {
-      id: '7',
-      name: 'Housing',
-      spent: 0,
-      budgetLimit: 40000000,
-      icon: 'home',
-    },
-  ],
+// Convert decimal strings to numbers for partial props
+const reportDataForPartials = {
+  totalIncome: safeParseDecimal(reportData.totalIncome),
+  totalExpenses: safeParseDecimal(reportData.totalExpenses),
+  netSavings: safeParseDecimal(reportData.netSavings),
+  budgetHealth: reportData.budgetHealth,
+  expenseCategories: reportData.expenseCategories,
+  expenseByCategory: reportData.expenseByCategory.map((cat: { name: string; value: string }) => ({
+    name: cat.name,
+    value: safeParseDecimal(cat.value),
+  })),
+  trendData: reportData.trendData.map(
+    (trend: { name: string; income: string; expenses: string }) => ({
+      name: trend.name,
+      income: safeParseDecimal(trend.income),
+      expenses: safeParseDecimal(trend.expenses),
+    })
+  ),
+  categoryIntelligence: reportData.categoryIntelligence.map(
+    (cat: {
+      id: string;
+      name: string;
+      spent: string;
+      budgetLimit: string | null;
+      icon: string;
+    }) => ({
+      id: cat.id,
+      name: cat.name,
+      spent: safeParseDecimal(cat.spent),
+      budgetLimit: cat.budgetLimit ? safeParseDecimal(cat.budgetLimit) : null,
+      icon: cat.icon,
+    })
+  ),
 };
 ---
 
@@ -168,42 +179,36 @@ const mockData = {
     {/* Summary Metric Cards Container */}
     <div data-summary-container>
       <ReportSummaryCardsPartial
-        totalIncome={mockData.totalIncome}
-        totalExpenses={mockData.totalExpenses}
-        netSavings={mockData.netSavings}
-        budgetHealth={mockData.budgetHealth}
-        expenseCategories={mockData.expenseCategories}
+        totalIncome={reportDataForPartials.totalIncome}
+        totalExpenses={reportDataForPartials.totalExpenses}
+        netSavings={reportDataForPartials.netSavings}
+        budgetHealth={reportDataForPartials.budgetHealth}
+        expenseCategories={reportDataForPartials.expenseCategories}
       />
     </div>
 
     {/* Charts Container */}
     <div data-charts-container>
       <ReportChartsPartial
-        expenseByCategory={mockData.expenseByCategory}
-        trendData={mockData.trendData}
-        resourceAllocationSubtitle="EXPENSE MIX"
-        financialVelocitySubtitle="TRAILING 3 MONTHS"
+        expenseByCategory={reportDataForPartials.expenseByCategory}
+        trendData={reportDataForPartials.trendData}
+        resourceAllocationSubtitle={defaultRange === 'monthly'
+          ? 'EXPENSE MIX'
+          : 'YEARLY EXPENSE MIX'}
+        financialVelocitySubtitle={defaultRange === 'monthly' ? 'TRAILING 3 MONTHS' : 'YEARLY FLOW'}
       />
     </div>
 
     {/* Category Intelligence Table Container */}
     <div data-table-container>
       <CategoryTablePartial
-        categories={mockData.categoryIntelligence}
+        categories={reportDataForPartials.categoryIntelligence}
         subtitle="SORTED BY FUNCTIONAL VOLUME"
       />
     </div>
 
     {/* Category Drill-Down Modal */}
     <CategoryDrillDownModal id="category-drilldown-modal" />
-
-    {
-      /* @TODO: Wire with backend API endpoints:
-         - GET /api/reports?range=monthly&period=2024-02&_render=html
-         - GET /api/reports?range=yearly&period=2024&_render=html
-         - GET /api/reports/category-transactions?category=Utilities&period=2024-02
-    */
-    }
   </div>
 </ProtectedLayout>
 
@@ -211,22 +216,3 @@ const mockData = {
   // Import and initialize reports page orchestrator
   import '@/components/organisms/ReportsPage.client.ts';
 </script>
-
-<style>
-  /* Screen reader only class
-   * @TODO: P2 - Use Tailwind's built-in sr-only utility class instead
-   * This CSS is duplicated across multiple chart components. Consider removing
-   * and using `class="sr-only"` directly from Tailwind.
-   */
-  .sr-only {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border-width: 0;
-  }
-</style>

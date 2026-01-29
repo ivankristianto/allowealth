@@ -209,3 +209,18 @@ export function decimalClamp(num: string, min: string, max: string): string {
   if (value.gt(maxVal)) return maxVal.toString();
   return value.toString();
 }
+
+/**
+ * Safely parse a decimal string to a JavaScript number
+ * Used for chart rendering and display where float precision is acceptable
+ * @param value - Decimal string value
+ * @param defaultValue - Default value if parsing fails (default: 0)
+ * @returns Parsed number or default value
+ */
+export function safeParseDecimal(value: string, defaultValue: number = 0): number {
+  if (typeof value !== 'string' || value.trim() === '') {
+    return defaultValue;
+  }
+  const parsed = parseFloat(value);
+  return isNaN(parsed) ? defaultValue : parsed;
+}

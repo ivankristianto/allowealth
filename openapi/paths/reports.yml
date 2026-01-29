@@ -1,0 +1,269 @@
+# Reports endpoint paths
+paths:
+  /api/reports:
+    get:
+      tags: [Reports]
+      summary: Get financial intelligence report
+      description: |
+        Retrieve monthly or yearly financial intelligence report with aggregated data.
+
+        Supports both JSON (default) and HTML response formats for the Interactive Page Architecture pattern.
+        When requesting HTML (`_render=html`), the response contains server-rendered HTML fragments
+        that can be injected directly into the DOM.
+
+        **Security:**
+        - Requires authentication (session cookie)
+        - All data filtered by authenticated user's ID
+        - Period format validated to prevent SQL injection
+        - Date ranges validated (month 1-12, year 2000-2100)
+
+        **Report Types:**
+        - Monthly: Aggregates data for a specific month (YYYY-MM format)
+        - Yearly: Aggregates data for a full year (YYYY format)
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: range
+          in: query
+          required: true
+          description: Report range type
+          schema:
+            type: string
+            enum: [monthly, yearly]
+          example: monthly
+        - name: period
+          in: query
+          required: true
+          description: |
+            Period to report on.
+            - For monthly: YYYY-MM format (e.g., "2024-02")
+            - For yearly: YYYY format (e.g., "2024")
+          schema:
+            type: string
+            pattern: '^\d{4}(-\d{2})?$'
+          example: "2024-02"
+        - name: currency
+          in: query
+          description: Currency (defaults to IDR)
+          schema:
+            type: string
+            enum: [IDR, USD]
+            default: IDR
+        - name: _render
+          in: query
+          description: Response format (json or html)
+          schema:
+            type: string
+            enum: [json, html]
+            default: json
+        - name: _partial
+          in: query
+          description: |
+            Which partial(s) to render when using HTML format.
+            Only applicable when _render=html.
+            - summary: Summary metrics cards (income, expenses, savings, budget health)
+            - charts: Resource allocation donut chart and financial velocity bar chart
+            - table: Category intelligence table with spending details
+            - all: All partials (default)
+          schema:
+            type: string
+            enum: [summary, charts, table, all]
+            default: all
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ReportResponse.yml#/ReportResponse'
+              example:
+                success: true
+                data:
+                  totalIncome: "9750000"
+                  totalExpenses: "4735000"
+                  netSavings: "5015000"
+                  budgetHealth: 85.5
+                  expenseCategories: 6
+                  expenseByCategory:
+                    - name: "Utilities"
+                      value: "1850000"
+                    - name: "Dining"
+                      value: "905000"
+                  trendData:
+                    - name: "Dec"
+                      income: "25245000"
+                      expenses: "33719000"
+                    - name: "Jan"
+                      income: "60525000"
+                      expenses: "41816000"
+                    - name: "Feb"
+                      income: "9750000"
+                      expenses: "4735000"
+                  categoryIntelligence:
+                    - id: "cat_123"
+                      name: "Utilities"
+                      spent: "1850000"
+                      budgetLimit: "4000000"
+                      icon: "zap"
+            text/html:
+              schema:
+                type: string
+                description: |
+                  Server-rendered HTML fragments with PARTIAL markers.
+                  Each partial is prefixed with a comment marker (e.g., `<!-- PARTIAL:summary -->`).
+              example: |
+                <!-- PARTIAL:summary -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">...</div>
+
+                <!-- PARTIAL:charts -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">...</div>
+
+                <!-- PARTIAL:table -->
+                <div class="card bg-base-100 shadow border">...</div>
+        '400':
+          description: Bad request - invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ApiErrorResponse.yml#/ApiResponse'
+              examples:
+                invalidRange:
+                  value:
+                    success: false
+                    error:
+                      message: "Invalid range parameter. Must be 'monthly' or 'yearly'."
+                      code: "INVALID_RANGE"
+                invalidPeriod:
+                  value:
+                    success: false
+                    error:
+                      message: "Invalid monthly period format. Expected 'YYYY-MM' (e.g., '2024-02')."
+                      code: "INVALID_PERIOD_FORMAT"
+                invalidMonth:
+                  value:
+                    success: false
+                    error:
+                      message: "Invalid month: 13. Must be between 1 and 12."
+                      code: "INVALID_MONTH"
+                invalidYear:
+                  value:
+                    success: false
+                    error:
+                      message: "Invalid year: 1999. Must be between 2000 and 2100."
+                      code: "INVALID_YEAR"
+            text/html:
+              schema:
+                type: string
+                description: Error message rendered as HTML
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'
+
+  /api/reports/category-transactions:
+    get:
+      tags: [Reports]
+      summary: Get category transaction drill-down
+      description: |
+        Retrieve all transactions for a specific category within a given period.
+        Used for category drill-down modal to show transaction details.
+
+        **Security:**
+        - Requires authentication (session cookie)
+        - Category ownership validated (must belong to authenticated user)
+        - All transactions filtered by authenticated user's ID
+        - Returns 404 if category not found or not owned by user
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: categoryId
+          in: query
+          required: true
+          description: Category ID to drill down into
+          schema:
+            type: string
+          example: "cat_123"
+        - name: period
+          in: query
+          required: true
+          description: |
+            Period to filter transactions.
+            - For monthly: YYYY-MM format (e.g., "2024-02")
+            - For yearly: YYYY format (e.g., "2024")
+          schema:
+            type: string
+            pattern: '^\d{4}(-\d{2})?$'
+          example: "2024-02"
+        - name: range
+          in: query
+          required: true
+          description: Report range type
+          schema:
+            type: string
+            enum: [monthly, yearly]
+          example: monthly
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/CategoryTransactionsResponse.yml#/CategoryTransactionsResponse'
+              example:
+                success: true
+                data:
+                  transactions:
+                    - id: "txn_123"
+                      amount: "150000"
+                      currency: "IDR"
+                      description: "Electricity bill"
+                      transactionDate: "2024-02-15T10:30:00Z"
+                      assetName: "BCA Savings"
+                    - id: "txn_124"
+                      amount: "85000"
+                      currency: "IDR"
+                      description: "Water bill"
+                      transactionDate: "2024-02-20T14:20:00Z"
+                      assetName: "BCA Savings"
+                  total: "235000"
+                  categoryName: "Utilities"
+        '400':
+          description: Bad request - invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ApiErrorResponse.yml#/ApiResponse'
+              examples:
+                missingCategoryId:
+                  value:
+                    success: false
+                    error:
+                      message: "Category ID is required."
+                      code: "MISSING_CATEGORY_ID"
+                invalidPeriod:
+                  value:
+                    success: false
+                    error:
+                      message: "Invalid monthly period format. Expected 'YYYY-MM' (e.g., '2024-02')."
+                      code: "INVALID_PERIOD_FORMAT"
+                invalidRange:
+                  value:
+                    success: false
+                    error:
+                      message: "Invalid range parameter. Must be 'monthly' or 'yearly'."
+                      code: "INVALID_RANGE"
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '404':
+          description: Category not found or not owned by user
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ApiErrorResponse.yml#/ApiResponse'
+              example:
+                success: false
+                error:
+                  message: "Category not found or you don't have permission to access it."
+                  code: "CATEGORY_NOT_FOUND"
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'
