@@ -47,7 +47,7 @@ const cspNonce = Astro.locals.cspNonce || '';
           name="email"
           placeholder="you@example.com"
           value={email}
-          className="w-full"
+          className="w-full rounded-full py-4 px-6 h-14 text-base font-bold border border-base-300"
           data-testid="email-input"
         />
       </div>
@@ -58,6 +58,7 @@ const cspNonce = Astro.locals.cspNonce || '';
         name="password"
         placeholder="Enter your password"
         required
+        inputClassName="rounded-full py-4 pl-6 h-14 text-base font-bold border border-base-300"
         data-testid="password-input"
       />
 
@@ -81,7 +82,7 @@ const cspNonce = Astro.locals.cspNonce || '';
           id="login-submit-button"
           type="submit"
           variant="accent"
-          className="w-full"
+          className="w-full h-14 rounded-full"
           data-testid="login-btn"
         >
           <span data-button-text>Sign In</span>

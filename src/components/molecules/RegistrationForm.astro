@@ -79,12 +79,26 @@ const cspNonce = Astro.locals.cspNonce || '';
 
       <div class="form-control">
         <Label htmlFor="name" required>Full Name</Label>
-        <Input type="text" id="name" name="name" placeholder="Enter your full name" required />
+        <Input
+          type="text"
+          id="name"
+          name="name"
+          placeholder="Enter your full name"
+          required
+          className="rounded-full py-4 px-6 h-14 text-base font-bold border border-base-300"
+        />
       </div>
 
       <div class="form-control">
         <Label htmlFor="email" required>Email Address</Label>
-        <Input type="email" id="email" name="email" placeholder="your.email@example.com" required />
+        <Input
+          type="email"
+          id="email"
+          name="email"
+          placeholder="your.email@example.com"
+          required
+          className="rounded-full py-4 px-6 h-14 text-base font-bold border border-base-300"
+        />
       </div>
 
       <PasswordField
@@ -95,6 +109,7 @@ const cspNonce = Astro.locals.cspNonce || '';
         required={true}
         showStrength={true}
         showRequirements={true}
+        inputClassName="rounded-full py-4 pl-6 h-14 text-base font-bold border border-base-300"
       />
 
       <div class="form-control">
@@ -106,7 +121,7 @@ const cspNonce = Astro.locals.cspNonce || '';
             name="confirm-password"
             placeholder="Re-enter your password"
             required
-            className="pr-12"
+            className="rounded-full py-4 pl-6 h-14 text-base font-bold border border-base-300 pr-12"
           />
           <button
             type="button"
@@ -122,7 +137,12 @@ const cspNonce = Astro.locals.cspNonce || '';
       </div>
 
       <div class="pt-2">
-        <Button type="submit" variant="accent" className="w-full" data-submit-button>
+        <Button
+          type="submit"
+          variant="accent"
+          className="w-full h-14 rounded-full"
+          data-submit-button
+        >
           <span data-button-text>{submitText}</span>
           <span data-loading-spinner class="hidden">
             <span class="loading loading-spinner"></span>

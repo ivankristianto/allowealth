@@ -56,8 +56,10 @@ const currencyOptions = AVAILABLE_CURRENCIES.map((code) => ({
         <div class="flex flex-col gap-6 lg:flex-row">
           <div class="flex flex-col items-center gap-3 lg:w-40">
             <div class="avatar placeholder">
-              <div class="bg-base-200 text-primary rounded-2xl w-20 h-20 text-2xl font-semibold">
-                {profileInitial}
+              <div
+                class="bg-accent/20 text-accent rounded-full w-20 h-20 flex items-center justify-center"
+              >
+                <span class="text-2xl font-bold">{profileInitial}</span>
               </div>
             </div>
             <button type="button" class="link link-accent text-xs font-semibold"
@@ -75,6 +77,7 @@ const currencyOptions = AVAILABLE_CURRENCIES.map((code) => ({
                 placeholder="Your name"
                 value={displayName}
                 required
+                className="rounded-full py-4 px-6 h-14 text-base font-bold border border-base-300"
               />
             </div>
 
@@ -89,6 +92,7 @@ const currencyOptions = AVAILABLE_CURRENCIES.map((code) => ({
                 pattern={patterns.email.html}
                 title={patterns.email.title}
                 required
+                className="rounded-full py-4 px-6 h-14 text-base font-bold border border-base-300"
               />
             </div>
 
@@ -100,6 +104,7 @@ const currencyOptions = AVAILABLE_CURRENCIES.map((code) => ({
                 name="phone"
                 placeholder="+62 812-3456-7890"
                 value={mockProfileDetails.phone}
+                className="rounded-full py-4 px-6 h-14 text-base font-bold border border-base-300"
               />
             </div>
 
@@ -108,7 +113,7 @@ const currencyOptions = AVAILABLE_CURRENCIES.map((code) => ({
               <select
                 id="currency"
                 name="primaryCurrency"
-                class="select select-bordered w-full h-10 pt-2 pb-2 pl-3 pr-10 text-xs bg-base-200 focus:ring-2 focus:ring-accent focus:ring-opacity-20 focus:outline-none focus:ring-offset-2"
+                class="select select-bordered w-full h-14 rounded-full py-4 pl-6 pr-10 text-base font-bold border border-base-300 bg-base-200 focus:ring-2 focus:ring-accent focus:ring-opacity-20 focus:outline-none focus:ring-offset-2"
                 required
               >
                 {
@@ -130,7 +135,7 @@ const currencyOptions = AVAILABLE_CURRENCIES.map((code) => ({
                 id="bio"
                 name="bio"
                 rows={3}
-                class="textarea textarea-bordered w-full bg-base-200 text-xs pt-2 pb-2 px-3 focus:ring-2 focus:ring-accent focus:ring-opacity-20 focus:outline-none"
+                class="textarea textarea-bordered w-full bg-base-200 rounded-2xl py-4 px-6 text-base border border-base-300 focus:ring-2 focus:ring-accent focus:ring-opacity-20 focus:outline-none"
                 placeholder="Tell us a bit about your role">{mockProfileDetails.bio}</textarea
               >
             </div>
@@ -138,7 +143,9 @@ const currencyOptions = AVAILABLE_CURRENCIES.map((code) => ({
         </div>
 
         <div class="flex justify-end">
-          <Button type="submit" variant="accent">Save Profile Changes</Button>
+          <Button type="submit" variant="accent" className="h-14 rounded-full"
+            >Save Profile Changes</Button
+          >
         </div>
       </form>
     </div>

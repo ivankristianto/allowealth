@@ -143,13 +143,13 @@ const isActive = (href: string) => {
 
   <!-- Navigation -->
   <ul
-    class="menu w-full flex-1 px-4 space-y-2 overflow-y-auto group-data-[sidebar-collapsed=true]:px-2"
+    class="menu w-full flex-1 px-4 space-y-2 overflow-y-auto flex flex-col flex-nowrap group-data-[sidebar-collapsed=true]:px-2"
   >
     {
       navItems.map((item) => {
         const active = isActive(item.href);
         return (
-          <li>
+          <li class="shrink-0">
             <a
               href={item.href}
               title={item.label}
