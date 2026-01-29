@@ -36,18 +36,6 @@ const {
   yearlyPeriods = [],
   className = '',
 } = Astro.props;
-
-// Get the appropriate periods based on current range
-const availablePeriods = selectedRange === 'monthly' ? monthlyPeriods : yearlyPeriods;
-
-// Get display label for selected period
-const selectedPeriodData = availablePeriods.find((p) => p.key === selectedPeriod);
-const currentPeriodLabel =
-  selectedPeriodData?.label ||
-  availablePeriods[availablePeriods.length - 1]?.label ||
-  (selectedRange === 'monthly'
-    ? new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
-    : new Date().getFullYear().toString());
 ---
 
 <div

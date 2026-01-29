@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 import { experimental_AstroContainer as AstroContainer } from 'astro/container';
 import { reportService } from '@/services';
-import { successResponse, errorResponse, requireAuth } from '@/lib/api-utils';
+import { successResponse, errorResponse, getAuthenticatedUser } from '@/lib/api-utils';
 import { logError } from '@/lib/utils';
 import { BudgetServiceError } from '@/services/service-errors';
 import { validatePeriod } from '@/lib/utils/period-validation';
@@ -37,7 +37,7 @@ export const GET: APIRoute = async (context) => {
 
   try {
     // 1. Authenticate user
-    const userId = await requireAuth(context);
+    const userId = getAuthenticatedUser(context);
 
     // 2. Extract and validate query parameters
     const categoryId = url.searchParams.get('categoryId');

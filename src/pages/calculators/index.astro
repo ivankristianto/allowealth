@@ -12,17 +12,11 @@ import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import TabSwitcher from '@/components/molecules/TabSwitcher.astro';
 import Label from '@/components/atoms/Label.astro';
 import Input from '@/components/atoms/Input.astro';
-import { userService } from '@/services';
 import type { Tab } from '@/components/molecules/TabSwitcher.astro';
 
 const currentPath = '/calculators';
 
-// Get authenticated user
-const user = Astro.locals.user!;
-
-// Get user settings to determine primary currency (default: IDR)
-const userSettings = await userService.getSettings(user.id);
-// const primaryCurrency: 'IDR' | 'USD' = userSettings.primaryCurrency || 'IDR'; // @TODO: Use for API currency selection
+// const primaryCurrency: 'IDR' | 'USD' = 'IDR'; // @TODO: Use user settings for API currency selection
 
 // Tab configuration - icons must match the keys in TabSwitcher's iconMap
 const tabs: Tab[] = [

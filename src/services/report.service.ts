@@ -27,7 +27,6 @@
 import { transactions, categories, budgets, type IDatabase } from '@/db';
 import { eq, and, gte, lte, sql } from 'drizzle-orm';
 import {
-  decimalAdd,
   decimalSubtract,
   decimalDivide,
   decimalMultiply,

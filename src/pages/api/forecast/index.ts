@@ -9,7 +9,7 @@
 import type { APIRoute } from 'astro';
 import { z } from 'zod';
 import { assetService } from '@/services';
-import { successResponse, errorResponse, requireAuth } from '@/lib/api-utils';
+import { successResponse, errorResponse, getAuthenticatedUser } from '@/lib/api-utils';
 import { logError } from '@/lib/utils';
 import {
   calculateForecast,
@@ -80,7 +80,7 @@ export const GET: APIRoute = async (context) => {
   const { url } = context;
 
   try {
-    const userId = await requireAuth(context);
+    const userId = getAuthenticatedUser(context);
 
     // Validate and parse query parameters
     const queryParams = {

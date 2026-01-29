@@ -212,9 +212,9 @@ function createMockDatabase(): IDatabase {
   return {
     query: {
       transactions: {
-        findFirst: async (config: any) => {
+        findFirst: async (_config: any) => {
           // Mock implementation for findFirst
-          return mockTransactions.find((tx) => {
+          return mockTransactions.find(() => {
             // Simple mock filter logic
             return true;
           });
@@ -350,13 +350,13 @@ function createMockDatabase(): IDatabase {
             return true;
           });
         },
-        findMany: async (config: any) => {
+        findMany: async (_config: any) => {
           return mockCategories.filter((cat) => cat.is_active && cat.deleted_at === null);
         },
       },
       budgets: {
-        findFirst: async (config: any) => {
-          return mockBudgets.find((b) => {
+        findFirst: async (_config: any) => {
+          return mockBudgets.find(() => {
             // Simplified mock
             return true;
           });
@@ -374,10 +374,10 @@ function createMockDatabase(): IDatabase {
       },
     },
     // Mock select method for aggregation queries
-    select: (columns: any) => ({
+    select: (_columns: any) => ({
       from: (table: any) => ({
-        where: (condition: any) => ({
-          groupBy: async (column: any) => {
+        where: (_condition: any) => ({
+          groupBy: async (_column: any) => {
             // Mock grouped query result
             if (table === mockTransactions) {
               // Return category-grouped expenses
@@ -388,19 +388,19 @@ function createMockDatabase(): IDatabase {
             }
             return [];
           },
-          orderBy: async (config: any) => {
+          orderBy: async (_config: any) => {
             // Mock ordered result
             return [];
           },
         }),
-        groupBy: (column: any) => ({
-          where: async (condition: any) => {
+        groupBy: (_column: any) => ({
+          where: async (_condition: any) => {
             // Mock grouped result
             return [];
           },
         }),
-        innerJoin: (joinTable: any, on: any) => ({
-          where: async (condition: any) => {
+        innerJoin: (joinTable: any, _on: any) => ({
+          where: async (_condition: any) => {
             // Mock join result - return aggregated budget
             if (joinTable === mockCategories) {
               return [{ total: '7000000' }]; // Sum of budgets
@@ -409,8 +409,8 @@ function createMockDatabase(): IDatabase {
           },
         }),
       }),
-      where: (condition: any) => ({
-        groupBy: async (column: any) => {
+      where: (_condition: any) => ({
+        groupBy: async (_column: any) => {
           // Mock spending by category
           return [
             { category_id: 'cat-utilities', total: '1850000' },

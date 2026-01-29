@@ -766,7 +766,7 @@ export class BudgetService {
 
       // Bulk insert for better performance and atomicity
       // Drizzle ORM handles the array insert appropriately for each database driver
-      await this.db.insert(budgets).values(newBudgets);
+      await Promise.resolve(this.db.insert(budgets).values(newBudgets));
     }
 
     return {
