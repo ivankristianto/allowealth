@@ -5,7 +5,7 @@
  * and updates the chart dynamically with debouncing for performance.
  */
 
-import { debounce } from '@/lib/utils';
+import { debounce } from '@/lib/utils/client';
 import { addToast } from '@/lib/stores/toastStore';
 import type { ForecastResult } from '@/lib/forecast';
 

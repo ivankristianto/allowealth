@@ -227,7 +227,7 @@ const chartId = `spending-chart-${Math.random().toString(36).slice(2, 11)}`;
 </style>
 
 <script>
-  import Chart from 'chart.js/auto';
+  import { Chart } from '@/lib/chart-setup';
 
   interface SpendingCategory {
     category: string;
