@@ -7,6 +7,9 @@ interface Props {
 }
 
 const { title = 'allowealth' } = Astro.props;
+
+// Construct browser title: "Page Title | allowealth" or just "allowealth" for home
+const browserTitle = title && title !== 'allowealth' ? `${title} | allowealth` : 'allowealth';
 ---
 
 <!doctype html>
@@ -14,7 +17,7 @@ const { title = 'allowealth' } = Astro.props;
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>{title}</title>
+    <title>{browserTitle}</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <!-- Prevent flash of wrong theme by setting data-theme early -->
     <script is:inline>

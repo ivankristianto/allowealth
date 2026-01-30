@@ -98,6 +98,7 @@ const { id } = Astro.props;
 <script>
   import { addToast } from '@lib/stores/toastStore';
   import { formatCurrency } from '@/lib/tokens';
+  import { getCsrfHeaders } from '@/lib/csrf-client';
 
   // Track initialized modals to avoid duplicate handlers
   const initializedModals = new WeakSet<Element>();
@@ -195,9 +196,9 @@ const { id } = Astro.props;
       confirmBtn?.addEventListener('click', async () => {
         if (!currentAssetId) return;
 
-        // Validate asset ID format (UUID)
-        const uuidPattern = /^[a-f0-9-]{36}$/i;
-        if (!uuidPattern.test(currentAssetId)) {
+        // Validate asset ID format (nanoid)
+        const nanoidPattern = /^[A-Za-z0-9_-]{21}$/;
+        if (!nanoidPattern.test(currentAssetId)) {
           if (errorDiv) {
             errorDiv.textContent = 'Invalid asset ID format.';
             errorDiv.classList.remove('hidden');
@@ -218,6 +219,7 @@ const { id } = Astro.props;
         try {
           const response = await fetch(`/api/assets/${currentAssetId}`, {
             method: 'DELETE',
+            headers: getCsrfHeaders(),
           });
 
           if (!response.ok) {

@@ -24,6 +24,8 @@ export interface DrizzleTransactionResult {
     id: string;
     name: string;
     type: string;
+    icon: string;
+    color: string;
   } | null;
   asset: {
     id: string;
@@ -58,7 +60,9 @@ export function transformTransaction(t: DrizzleTransactionResult): TransactionOu
       ? {
           id: t.category.id,
           name: t.category.name,
-          type: t.category.type as 'income' | 'expense',
+          type: t.category.type as 'income' | 'expense' | 'transfer',
+          icon: t.category.icon,
+          color: t.category.color,
         }
       : null,
     asset: {

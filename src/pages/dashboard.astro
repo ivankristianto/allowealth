@@ -98,6 +98,8 @@ const recentTransactions: TransactionOutput[] =
       id: tx.category.id,
       name: tx.category.name,
       type: tx.category.type,
+      icon: tx.category.icon,
+      color: tx.category.color,
     },
     asset: {
       id: tx.asset.id,
@@ -142,7 +144,11 @@ const spendingCategories =
   })) ?? [];
 ---
 
-<ProtectedLayout title="Dashboard - Finance Manager" currentPath={currentPath}>
+<ProtectedLayout
+  title="Dashboard"
+  currentPath={currentPath}
+  subtitle={`Welcome back! ${currentMonthName} ${currentYear}`}
+>
   <div
     class="max-w-7xl mx-auto sm:px-2 lg:px-6 space-y-6 sm:space-y-8"
     data-testid="dashboard-page"

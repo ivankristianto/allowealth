@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/html';
 
 const meta: Meta = {
-  title: 'Pages/Categories',
+  title: 'Pages/Budget/Categories',
   tags: ['autodocs'],
   parameters: {
     docs: {
@@ -32,7 +32,7 @@ Category management page for expense and income categories with CRUD operations.
 | Tab | Route |
 |-----|-------|
 | Profile | /profile |
-| Categories | /categories (active) |
+| Categories | /budget/categories (active) |
 | Assets | /assets |
 
 ### Status Filter Tabs
@@ -128,7 +128,7 @@ Category management page for expense and income categories with CRUD operations.
 
 ### Integration
 - Layout: ProtectedLayout
-- currentPath: "/categories"
+- currentPath: "/budget/categories"
 - title: "Categories - Settings"
 - Client script: ./categories-client.ts
         `,
@@ -178,7 +178,7 @@ const createCategoriesPage = (args: {
   navTabs.className = 'tabs tabs-bordered';
   navTabs.innerHTML = `
     <a href="/profile" class="tab">Profile</a>
-    <a href="/categories" class="tab tab-active">Categories</a>
+    <a href="/budget/categories" class="tab tab-active">Categories</a>
     <a href="/assets" class="tab">Assets</a>
   `;
   container.appendChild(navTabs);
@@ -188,10 +188,10 @@ const createCategoriesPage = (args: {
   controls.className = 'flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4';
   controls.innerHTML = `
     <div class="tabs tabs-boxed">
-      <a href="/categories?show=active" class="tab ${!showInactive ? 'tab-active' : ''}">Active (${hasCategories ? 5 : 0})</a>
-      <a href="/categories?show=inactive" class="tab ${showInactive ? 'tab-active' : ''}">Inactive (${hasCategories ? 2 : 0})</a>
+      <a href="/budget/categories?show=active" class="tab ${!showInactive ? 'tab-active' : ''}">Active (${hasCategories ? 5 : 0})</a>
+      <a href="/budget/categories?show=inactive" class="tab ${showInactive ? 'tab-active' : ''}">Inactive (${hasCategories ? 2 : 0})</a>
     </div>
-    <form action="/categories" class="join">
+    <form action="/budget/categories" class="join">
       <input type="text" name="search" placeholder="Search categories..." class="input input-bordered input-sm join-item" value="${searchQuery}" />
       <button type="submit" class="btn btn-sm join-item" aria-label="Search categories">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="stroke-current" aria-hidden="true">
@@ -202,7 +202,7 @@ const createCategoriesPage = (args: {
       ${
         searchQuery
           ? `
-        <a href="/categories" class="btn btn-sm join-item" aria-label="Clear search">
+        <a href="/budget/categories" class="btn btn-sm join-item" aria-label="Clear search">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="stroke-current" aria-hidden="true">
             <path d="M18 6 6 18"/>
             <path d="m6 6 12 12"/>

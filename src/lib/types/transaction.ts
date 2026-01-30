@@ -39,6 +39,8 @@ export interface TransactionOutput extends Omit<
     id: string;
     name: string;
     type: TransactionType;
+    icon: string;
+    color: string;
   } | null;
   asset: {
     id: string;

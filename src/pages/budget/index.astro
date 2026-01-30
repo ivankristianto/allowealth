@@ -232,7 +232,11 @@ const budgetCount =
   budgetData?.categories.filter((c) => parseFloat(c.budget_amount) > 0).length || 0;
 ---
 
-<ProtectedLayout title={`Budget - ${currentMonthName} ${selectedYear}`} currentPath={currentPath}>
+<ProtectedLayout
+  title="Budget"
+  currentPath={currentPath}
+  subtitle={`${currentMonthName} ${selectedYear} overview`}
+>
   <div
     class="max-w-7xl mx-auto sm:px-2 lg:px-6 space-y-6 sm:space-y-8"
     data-budget-page
