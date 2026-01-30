@@ -127,6 +127,7 @@ const chartId = `financial-velocity-chart-${Math.random().toString(36).slice(2, 
 
 <script>
   import { Chart } from '@/lib/chart-setup';
+  import { formatCurrency } from '@/lib/formatting/currency-client';
 
   interface TrendDataPoint {
     name: string;
@@ -343,12 +344,7 @@ const chartId = `financial-velocity-chart-${Math.random().toString(36).slice(2, 
               label: (context) => {
                 const label = context.dataset.label || '';
                 const value = context.parsed.y;
-                // Format value as currency
-                const formatted = new Intl.NumberFormat('id-ID', {
-                  minimumFractionDigits: 0,
-                  maximumFractionDigits: 0,
-                }).format(value);
-                return `${label}: Rp ${formatted}`;
+                return `${label}: ${formatCurrency(value, 'IDR')}`;
               },
             },
           },

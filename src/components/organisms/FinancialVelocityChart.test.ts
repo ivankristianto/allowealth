@@ -5,6 +5,7 @@
  */
 
 import { describe, it, expect } from 'bun:test';
+import { formatCurrency } from '@/lib/formatting';
 
 describe('FinancialVelocityChart', () => {
   describe('Data Structure', () => {
@@ -166,27 +167,13 @@ describe('FinancialVelocityChart', () => {
 
   describe('Currency Formatting', () => {
     it('should format large numbers with proper locale', () => {
-      const formatter = new Intl.NumberFormat('id-ID', {
-        style: 'currency',
-        currency: 'IDR',
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0,
-      });
-
-      expect(formatter.format(25245000)).toBe('Rp\u00a025.245.000');
-      expect(formatter.format(60525000)).toBe('Rp\u00a060.525.000');
-      expect(formatter.format(9750000)).toBe('Rp\u00a09.750.000');
+      expect(formatCurrency(25245000, 'IDR')).toBe('Rp25.245.000');
+      expect(formatCurrency(60525000, 'IDR')).toBe('Rp60.525.000');
+      expect(formatCurrency(9750000, 'IDR')).toBe('Rp9.750.000');
     });
 
     it('should handle zero values', () => {
-      const formatter = new Intl.NumberFormat('id-ID', {
-        style: 'currency',
-        currency: 'IDR',
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0,
-      });
-
-      expect(formatter.format(0)).toBe('Rp\u00a00');
+      expect(formatCurrency(0, 'IDR')).toBe('Rp0');
     });
   });
 });

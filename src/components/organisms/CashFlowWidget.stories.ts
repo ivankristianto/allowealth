@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/html';
-import { formatCurrencyFromNumber } from '@/lib/utils/currency';
+import { formatCurrency } from '@/lib/formatting/currency-client';
 
 const meta: Meta = {
   title: 'Organisms/CashFlowWidget',
@@ -61,7 +61,7 @@ const renderItem = (item: CashFlowItem): string => {
   const amountClass = isIncome ? 'text-success' : 'text-error';
   const badgeClass = isIncome ? 'bg-success/10 text-success' : 'bg-error/10 text-error';
   const sign = item.amount === 0 ? '' : isIncome ? '+' : '-';
-  const formatted = formatCurrencyFromNumber(Math.abs(item.amount), item.currency);
+  const formatted = formatCurrency(Math.abs(item.amount), item.currency);
 
   return `
     <div class="group flex items-center justify-between gap-4 p-6 rounded-3xl border shadow-sm transition-all hover:scale-[1.03] hover:shadow-md ${containerClass}">

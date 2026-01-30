@@ -6,8 +6,6 @@
 
 // Currency utilities
 export {
-  formatCurrency,
-  formatCurrencyNumber,
   parseCurrencyInput,
   convertCurrency,
   addCurrency,

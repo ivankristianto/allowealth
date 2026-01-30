@@ -16,7 +16,7 @@
  * @param {string} currencyName - Name attribute for currency select
  */
 
-import { currencyFormats } from '@/lib/tokens';
+import { AVAILABLE_CURRENCIES } from '@/lib/constants/currency';
 
 export interface Props {
   name?: string;
@@ -63,7 +63,7 @@ const errorId = `${name}-error`;
     aria-label="Currency"
   >
     {
-      Object.entries(currencyFormats).map(([code]) => (
+      AVAILABLE_CURRENCIES.map((code) => (
         <option value={code} selected={code === currency}>
           {code}
         </option>

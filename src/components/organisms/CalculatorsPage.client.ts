@@ -7,7 +7,7 @@
 
 import { csrfFetch } from '@/lib/csrf-client';
 // @TODO: P2 - Use import alias syntax instead of re-export
-import { formatCurrencyFromNumber as formatCurrency } from '@/lib/utils/currency-client';
+import { formatCurrency } from '@/lib/formatting/currency-client';
 
 // DOM Elements
 const form = document.getElementById('compound-calculator-form') as HTMLFormElement;

@@ -20,6 +20,7 @@ import {
   deleteTransaction,
   cancelPendingRequest,
 } from '@/lib/api/transactionsApiClient';
+import { formatCurrency } from '@/lib/formatting/currency-client';
 import { addToast } from '@/lib/stores/toastStore';
 import {
   renderTransactionListHtml,
@@ -376,8 +377,7 @@ async function handleDelete(transactionId: string, transactionDetails: string): 
     try {
       const tx = JSON.parse(transactionDetails);
       const description = tx.description || tx.category?.name || '';
-      const amount = parseFloat(tx.amount).toLocaleString();
-      const currency = tx.currency || '';
+      const formattedAmount = formatCurrency(Number.parseFloat(tx.amount), tx.currency || 'IDR');
       const date = new Date(tx.transaction_date).toLocaleDateString();
 
       deleteDetails.innerHTML = '';
@@ -386,7 +386,7 @@ async function handleDelete(transactionId: string, transactionDetails: string): 
 
       const items = [
         { label: 'Description:', value: description },
-        { label: 'Amount:', value: `${currency} ${amount}` },
+        { label: 'Amount:', value: formattedAmount },
         { label: 'Date:', value: date },
       ];
 

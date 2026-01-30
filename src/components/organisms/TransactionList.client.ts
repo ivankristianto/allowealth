@@ -1,4 +1,5 @@
 import { getCsrfHeaders } from '@/lib/csrf-client';
+import { formatCurrency } from '@/lib/formatting/currency-client';
 import { addToast } from '@/lib/stores/toastStore';
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -59,10 +60,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // Populate details section with transaction info (using DOM methods to prevent XSS)
       if (detailsDiv) {
         const amount = parseFloat(transaction.amount) || 0;
-        const formattedAmount = new Intl.NumberFormat('en-US', {
-          style: 'currency',
-          currency: transaction.currency,
-        }).format(amount);
+        const formattedAmount = formatCurrency(amount, transaction.currency);
 
         // Clear existing content
         detailsDiv.innerHTML = '';

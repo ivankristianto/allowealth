@@ -7,7 +7,7 @@
 
 import { debounce } from '@/lib/utils/client';
 import { addToast } from '@/lib/stores/toastStore';
-import { formatCurrencyCompact } from '@/lib/utils/currency-client';
+import { formatCurrencyCompact } from '@/lib/formatting/currency-client';
 import type { ForecastResult } from '@/lib/forecast';
 
 // Track in-flight requests per chart ID to prevent race conditions

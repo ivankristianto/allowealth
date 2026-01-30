@@ -39,7 +39,13 @@ See `styles.json` for complete token definitions and theme configurations.
 ### Import Tokens
 
 ```typescript
-import { colors, fontSizes, spacing, formatCurrency } from '@/lib/tokens';
+import { colors, fontSizes, spacing } from '@/lib/tokens';
+import {
+  formatCurrency,
+  formatCurrencyCompact,
+  formatPercentage,
+  formatCompactNumber,
+} from '@/lib/formatting';
 ```
 
 ### Import Icons
@@ -140,7 +146,7 @@ sm: 640px   md: 768px   lg: 1024px   xl: 1280px   2xl: 1536px
 
 ```typescript
 formatCurrency(150000, 'IDR'); // "Rp150.000"
-formatCurrency(1500000, 'IDR', true); // "Rp1.5M"
+formatCurrencyCompact(1500000, 'IDR'); // "Rp1.5M"
 formatPercentage(85.5, 2); // "85.50%"
 formatCompactNumber(1500000); // "1.5M"
 getBudgetStatusClass(percentage); // 'status-ok' | 'status-warning' | 'status-danger'

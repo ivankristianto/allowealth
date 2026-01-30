@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/html';
+import { formatCurrency, formatCurrencyCompact } from '@/lib/formatting/currency-client';
 
 const meta: Meta = {
   title: 'Organisms/SpendingCard',
@@ -37,27 +38,6 @@ const meta: Meta = {
 };
 
 export default meta;
-
-// Format currency helper
-const formatCurrency = (amount: string | number, curr: string, compact = false): string => {
-  const numericAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
-  const config: Record<string, { symbol: string; decimals: number; locale: string }> = {
-    IDR: { symbol: 'Rp', decimals: 0, locale: 'id-ID' },
-    USD: { symbol: '$', decimals: 2, locale: 'en-US' },
-  };
-  const currConfig = config[curr] || { symbol: curr, decimals: 0, locale: 'en-US' };
-
-  if (compact && numericAmount >= 1_000_000) {
-    return `${currConfig.symbol}${(numericAmount / 1_000_000).toFixed(1)}M`;
-  }
-
-  return new Intl.NumberFormat(currConfig.locale, {
-    style: 'currency',
-    currency: curr,
-    minimumFractionDigits: compact ? 0 : currConfig.decimals,
-    maximumFractionDigits: compact ? 0 : currConfig.decimals,
-  }).format(numericAmount);
-};
 
 const getStatusClass = (percentage: number): string => {
   if (percentage >= 100) return 'danger';
@@ -136,9 +116,9 @@ const createSpendingCard = (args: {
 
   const statusStyle = statusClasses[status];
 
-  const spentFormatted = formatCurrency(String(spent), currency);
-  const budgetFormatted = formatCurrency(String(budget), currency, true);
-  const remainingFormatted = formatCurrency(String(remaining), currency);
+  const spentFormatted = formatCurrency(spent, currency);
+  const budgetFormatted = formatCurrencyCompact(budget, currency);
+  const remainingFormatted = formatCurrency(remaining, currency);
 
   container.innerHTML = `
     <div class="bg-base-100 rounded-2xl border border-base-300 shadow-premium p-8">

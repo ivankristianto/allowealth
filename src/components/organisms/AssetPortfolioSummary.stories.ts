@@ -8,6 +8,7 @@
  * @see src/components/organisms/AssetPortfolioSummary.astro
  */
 import type { Meta, StoryObj } from '@storybook/html';
+import { formatCurrency } from '@/lib/formatting/currency-client';
 
 const meta: Meta = {
   title: 'Organisms/AssetPortfolioSummary',
@@ -29,20 +30,6 @@ const meta: Meta = {
 };
 
 export default meta;
-
-const formatCurrency = (amount: number, currency: string): string => {
-  const config = {
-    IDR: { decimals: 0, locale: 'id-ID' },
-    USD: { decimals: 2, locale: 'en-US' },
-  }[currency] || { decimals: 0, locale: 'en-US' };
-
-  return new Intl.NumberFormat(config.locale, {
-    style: 'currency',
-    currency,
-    minimumFractionDigits: config.decimals,
-    maximumFractionDigits: config.decimals,
-  }).format(amount);
-};
 
 interface AllocationItem {
   type: string;

@@ -5,6 +5,7 @@
  */
 
 import { describe, it, expect } from 'bun:test';
+import { formatCurrency } from '@/lib/formatting';
 import { getIconForCategory } from '@/lib/utils/categoryIcons';
 
 // Status badge styling logic (same as used in component)
@@ -22,21 +23,6 @@ const getProgressStatus = (status: 'ok' | 'warning' | 'exceeded'): 'ok' | 'warni
   if (status === 'exceeded') return 'danger';
   if (status === 'warning') return 'warning';
   return 'ok';
-};
-
-// Currency formatting helper (same as in lib/tokens)
-const formatCurrency = (amount: number, currency: string): string => {
-  const config = {
-    IDR: { symbol: 'Rp', decimals: 0, locale: 'id-ID' },
-    USD: { symbol: '$', decimals: 2, locale: 'en-US' },
-  }[currency] || { symbol: currency, decimals: 0, locale: 'en-US' };
-
-  return new Intl.NumberFormat(config.locale, {
-    style: 'currency',
-    currency: currency,
-    minimumFractionDigits: config.decimals,
-    maximumFractionDigits: config.decimals,
-  }).format(amount);
 };
 
 describe('BudgetCard - getStatusBadgeClasses', () => {
@@ -119,7 +105,6 @@ describe('BudgetCard - percentage used calculation', () => {
 
 describe('BudgetCard - currency formatting IDR', () => {
   it('should format IDR amounts correctly', () => {
-    // Note: Intl.NumberFormat uses non-breaking space (U+00A0) between symbol and amount
     expect(formatCurrency(37680000, 'IDR')).toContain('37.680.000');
     expect(formatCurrency(40000000, 'IDR')).toContain('40.000.000');
     expect(formatCurrency(2320000, 'IDR')).toContain('2.320.000');

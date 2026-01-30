@@ -8,6 +8,7 @@
  * @see src/components/organisms/BudgetSummary.astro
  */
 import type { Meta, StoryObj } from '@storybook/html';
+import { formatCurrency } from '@/lib/formatting/currency-client';
 
 const meta: Meta = {
   title: 'Organisms/BudgetSummary',
@@ -34,20 +35,6 @@ const meta: Meta = {
 };
 
 export default meta;
-
-const formatCurrency = (amount: number, curr: string): string => {
-  const config = {
-    IDR: { symbol: 'Rp', decimals: 0, locale: 'id-ID' },
-    USD: { symbol: '$', decimals: 2, locale: 'en-US' },
-  }[curr] || { symbol: curr, decimals: 0, locale: 'en-US' };
-
-  return new Intl.NumberFormat(config.locale, {
-    style: 'currency',
-    currency: curr,
-    minimumFractionDigits: config.decimals,
-    maximumFractionDigits: config.decimals,
-  }).format(amount);
-};
 
 interface DistributionItem {
   name: string;

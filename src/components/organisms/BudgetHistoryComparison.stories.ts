@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/html';
 import type { MonthlyBudgetData } from './BudgetHistoryComparison.astro';
-import { formatCurrency, formatPercentage } from '@/lib/tokens';
+import { formatCurrency } from '@/lib/formatting/currency-client';
+import { formatPercentage } from '@/lib/formatting/percentage';
 import { IconRenderers } from '../../../.storybook/lucide-icons';
 
 const { Download } = IconRenderers;

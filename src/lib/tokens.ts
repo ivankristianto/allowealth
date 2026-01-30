@@ -270,62 +270,6 @@ export const transitions = {
   slow: 300,
 } as const;
 
-/* ========================================
- * CURRENCY FORMATTING
- * ======================================== */
-
-export const currencyFormats = {
-  IDR: {
-    code: 'IDR',
-    symbol: 'Rp',
-    decimals: 0,
-    locale: 'id-ID',
-  },
-  USD: {
-    code: 'USD',
-    symbol: '$',
-    decimals: 2,
-    locale: 'en-US',
-  },
-} as const;
-
-/**
- * Format currency amount
- * @param amount - Amount as string or number (string preferred for decimal precision)
- * @param currency - Currency code (IDR or USD)
- * @param compact - Use compact notation for large numbers
- */
-export function formatCurrency(
-  amount: string | number,
-  currency: string = 'IDR',
-  compact: boolean = false
-): string {
-  const config = currencyFormats[currency as keyof typeof currencyFormats] || currencyFormats.IDR;
-  const options: Intl.NumberFormatOptions = {
-    style: 'currency',
-    currency: config.code,
-    minimumFractionDigits: compact ? 0 : config.decimals,
-    maximumFractionDigits: compact ? 0 : config.decimals,
-  };
-
-  // Convert string to number for Intl.NumberFormat
-  const numericAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
-
-  if (compact && numericAmount >= 1_000_000) {
-    const millions = numericAmount / 1_000_000;
-    return `${config.symbol}${millions.toFixed(1)}M`;
-  }
-
-  return new Intl.NumberFormat(config.locale, options).format(numericAmount);
-}
-
-/**
- * Format percentage
- */
-export function formatPercentage(value: number, decimals: number = 2): string {
-  return `${value.toFixed(decimals)}%`;
-}
-
 /**
  * Get budget status class name based on percentage used
  * @param percentage - Budget usage percentage (0-100+)
@@ -394,18 +338,6 @@ export function getAssetUpdatePriority(
   if (daysSinceUpdate > 14) return 'medium';
   if (daysSinceUpdate > 7) return 'low';
   return 'none';
-}
-
-/**
- * Format number with compact notation
- */
-export function formatCompactNumber(value: number): string {
-  const formatter = new Intl.NumberFormat('en-US', {
-    notation: 'compact',
-    compactDisplay: 'short',
-    maximumFractionDigits: 1,
-  });
-  return formatter.format(value);
 }
 
 /**

@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/html';
+import { formatCurrency } from '@/lib/formatting/currency-client';
 import {
   mockRecentTransactions,
   mockRecentTransactionsEmpty,
@@ -119,20 +120,6 @@ const formatActivityDate = (date: Date): string => {
     day: 'numeric',
     year: 'numeric',
   });
-};
-
-const formatCurrency = (amount: number, currency: 'IDR' | 'USD'): string => {
-  const config =
-    currency === 'IDR'
-      ? { locale: 'id-ID', symbol: 'Rp', decimals: 0 }
-      : { locale: 'en-US', symbol: '$', decimals: 2 };
-
-  return new Intl.NumberFormat(config.locale, {
-    style: 'currency',
-    currency: currency,
-    minimumFractionDigits: config.decimals,
-    maximumFractionDigits: config.decimals,
-  }).format(amount);
 };
 
 const iconVariants: Record<string, { bg: string; text: string }> = {

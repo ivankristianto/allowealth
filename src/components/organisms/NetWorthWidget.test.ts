@@ -5,66 +5,48 @@
  */
 
 import { describe, it, expect } from 'bun:test';
-
-// Currency formatting helpers (same as used in component)
-const formatIDR = (amount: number): string => {
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
-};
-
-const formatUSD = (amount: number): string => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  }).format(amount);
-};
+import { formatCurrency } from '@/lib/formatting';
 
 describe('NetWorthWidget - formatIDR', () => {
   it('should format positive IDR amounts correctly', () => {
-    expect(formatIDR(1956063000)).toBe('Rp 1.956.063.000');
-    expect(formatIDR(1000000)).toBe('Rp 1.000.000');
-    expect(formatIDR(50000)).toBe('Rp 50.000');
+    expect(formatCurrency(1956063000, 'IDR')).toBe('Rp1.956.063.000');
+    expect(formatCurrency(1000000, 'IDR')).toBe('Rp1.000.000');
+    expect(formatCurrency(50000, 'IDR')).toBe('Rp50.000');
   });
 
   it('should format zero correctly', () => {
-    expect(formatIDR(0)).toBe('Rp 0');
+    expect(formatCurrency(0, 'IDR')).toBe('Rp0');
   });
 
   it('should handle large numbers', () => {
-    expect(formatIDR(5000000000)).toBe('Rp 5.000.000.000');
-    expect(formatIDR(999999999999)).toBe('Rp 999.999.999.999');
+    expect(formatCurrency(5000000000, 'IDR')).toBe('Rp5.000.000.000');
+    expect(formatCurrency(999999999999)).toBe('Rp999.999.999.999');
   });
 
   it('should not show decimal places', () => {
-    expect(formatIDR(1234.56)).toBe('Rp 1.235'); // rounded, not truncated
+    expect(formatCurrency(1234.56, 'IDR')).toBe('Rp1.235'); // rounded, not truncated
   });
 });
 
 describe('NetWorthWidget - formatUSD', () => {
   it('should format positive USD amounts correctly', () => {
-    expect(formatUSD(130404.2)).toBe('$130,404.2');
-    expect(formatUSD(1000)).toBe('$1,000');
-    expect(formatUSD(100.5)).toBe('$100.5');
+    expect(formatCurrency(130404.2, 'USD')).toBe('$130,404.20');
+    expect(formatCurrency(1000, 'USD')).toBe('$1,000.00');
+    expect(formatCurrency(100.5, 'USD')).toBe('$100.50');
   });
 
   it('should format zero correctly', () => {
-    expect(formatUSD(0)).toBe('$0');
+    expect(formatCurrency(0, 'USD')).toBe('$0.00');
   });
 
   it('should handle whole numbers', () => {
-    expect(formatUSD(50000)).toBe('$50,000');
-    expect(formatUSD(250000)).toBe('$250,000');
+    expect(formatCurrency(50000, 'USD')).toBe('$50,000.00');
+    expect(formatCurrency(250000, 'USD')).toBe('$250,000.00');
   });
 
   it('should handle large numbers', () => {
-    expect(formatUSD(333333.33)).toBe('$333,333.33');
-    expect(formatUSD(1000000)).toBe('$1,000,000');
+    expect(formatCurrency(333333.33, 'USD')).toBe('$333,333.33');
+    expect(formatCurrency(1000000, 'USD')).toBe('$1,000,000.00');
   });
 });
 

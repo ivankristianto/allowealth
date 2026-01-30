@@ -7,7 +7,8 @@
 
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import { assetService } from '@/services';
-import { formatCurrency, formatAssetType } from '@/lib/tokens';
+import { formatCurrency } from '@/lib/formatting';
+import { formatAssetType } from '@/lib/tokens';
 import EmptyState from '@/components/atoms/EmptyState.astro';
 import { ArrowLeft, TrendingUp } from '@lucide/astro';
 import type { AssetHistoryOutput } from '@/lib/types/asset';
@@ -65,7 +66,7 @@ const historyEntries: AssetHistoryOutput[] = history.map((entry) => ({
           <span
             class={`text-3xl font-bold ${asset.currency === 'IDR' ? 'text-success' : 'text-info'}`}
           >
-            {formatCurrency(parseFloat(asset.balance), asset.currency)}
+            {formatCurrency(asset.balance, asset.currency)}
           </span>
         </div>
         <div class="text-sm text-neutral-500 mt-2">
@@ -97,7 +98,7 @@ const historyEntries: AssetHistoryOutput[] = history.map((entry) => ({
                     <span
                       class={`font-semibold ${asset.currency === 'IDR' ? 'text-success' : 'text-info'}`}
                     >
-                      {formatCurrency(parseFloat(entry.balance), asset.currency)}
+                      {formatCurrency(entry.balance, asset.currency)}
                     </span>
                   </div>
                   <div class="flex items-center justify-between text-sm">
@@ -133,7 +134,7 @@ const historyEntries: AssetHistoryOutput[] = history.map((entry) => ({
                       <td
                         class={`font-semibold ${asset.currency === 'IDR' ? 'text-success' : 'text-info'}`}
                       >
-                        {formatCurrency(parseFloat(entry.balance), asset.currency)}
+                        {formatCurrency(entry.balance, asset.currency)}
                       </td>
                       <td class="text-neutral-600">{entry.notes || '-'}</td>
                     </tr>

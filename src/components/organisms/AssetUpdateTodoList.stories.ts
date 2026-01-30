@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/html';
+import { formatCurrency } from '@/lib/formatting/currency-client';
 import {
   mockAssetUpdateTodos,
   mockAssetUpdateTodosEmpty,
@@ -99,20 +100,6 @@ const getPriorityBackground = (priority: string): string => {
     default:
       return 'bg-base-200 border-base-300 hover:bg-base-100';
   }
-};
-
-const formatCurrency = (amount: number, currency: 'IDR' | 'USD'): string => {
-  const config =
-    currency === 'IDR'
-      ? { locale: 'id-ID', symbol: 'Rp', decimals: 0 }
-      : { locale: 'en-US', symbol: '$', decimals: 2 };
-
-  return new Intl.NumberFormat(config.locale, {
-    style: 'currency',
-    currency: currency,
-    minimumFractionDigits: config.decimals,
-    maximumFractionDigits: config.decimals,
-  }).format(amount);
 };
 
 const getAssetTypeLabel = (type: string): string => {

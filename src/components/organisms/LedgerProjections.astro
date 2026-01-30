@@ -15,7 +15,7 @@
 import Card from '@/components/atoms/Card.astro';
 import StatLabel from '@/components/atoms/StatLabel.astro';
 import Skeleton from '@/components/atoms/Skeleton.astro';
-import { formatCurrency } from '@/lib/tokens';
+import { formatCurrencyCompact } from '@/lib/formatting';
 import type { ForecastDataPoint } from '@/lib/forecast';
 
 export interface Props {
@@ -118,14 +118,14 @@ const { data = [], loading = false, error, className = '' } = Astro.props;
                 {/* Forecast Interest */}
                 <td class="px-6 md:px-8 py-3 md:py-4 text-right">
                   <span class="text-sm font-medium text-base-content/60">
-                    +{formatCurrency(row.forecastInterest, 'IDR', true)}
+                    +{formatCurrencyCompact(row.forecastInterest, 'IDR')}
                   </span>
                 </td>
 
                 {/* Forecast Balance */}
                 <td class="px-6 md:px-8 py-3 md:py-4 text-right">
                   <span class="text-sm font-bold text-accent">
-                    {formatCurrency(row.forecastBalance, 'IDR', true)}
+                    {formatCurrencyCompact(row.forecastBalance, 'IDR')}
                   </span>
                 </td>
 
@@ -133,7 +133,7 @@ const { data = [], loading = false, error, className = '' } = Astro.props;
                 <td class="px-6 md:px-8 py-3 md:py-4 text-right">
                   <span class="text-sm font-medium text-base-content/40">
                     {row.realInterest !== null
-                      ? `+${formatCurrency(row.realInterest, 'IDR', true)}`
+                      ? `+${formatCurrencyCompact(row.realInterest, 'IDR')}`
                       : '—'}
                   </span>
                 </td>
@@ -141,7 +141,7 @@ const { data = [], loading = false, error, className = '' } = Astro.props;
                 {/* Real Balance */}
                 <td class="px-6 md:px-8 py-3 md:py-4 text-right">
                   <span class="text-sm font-bold text-success">
-                    {row.realBalance !== null ? formatCurrency(row.realBalance, 'IDR', true) : '—'}
+                    {row.realBalance !== null ? formatCurrencyCompact(row.realBalance, 'IDR') : '—'}
                   </span>
                 </td>
               </tr>

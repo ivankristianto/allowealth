@@ -7,6 +7,7 @@
  * @see src/components/organisms/CategoryDrillDownModal.astro
  */
 import type { Meta, StoryObj } from '@storybook/html';
+import { formatCurrency } from '@/lib/formatting/currency-client';
 
 const meta: Meta = {
   title: 'Organisms/CategoryDrillDownModal',
@@ -22,15 +23,6 @@ const meta: Meta = {
 };
 
 export default meta;
-
-const formatCurrency = (amount: number): string => {
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
-};
 
 // Helper to create trigger button
 const createTriggerButton = (data: {

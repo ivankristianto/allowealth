@@ -5,7 +5,7 @@
  */
 
 import { describe, expect, it } from 'bun:test';
-import { formatCurrency } from '@/lib/tokens';
+import { formatCurrency } from '@/lib/formatting';
 import {
   formatCashFlowAmount,
   getCashFlowSignedAmount,

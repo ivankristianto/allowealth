@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/html';
+import { formatCurrency } from '@/lib/formatting/currency-client';
 
 interface TransactionSummaryCardsArgs {
   monthlyIncome?: number;
@@ -56,22 +57,6 @@ const escapeHtml = (str: string): string => {
   const div = document.createElement('div');
   div.textContent = str;
   return div.innerHTML;
-};
-
-// Format currency helper
-const formatCurrency = (amount: number, curr: string): string => {
-  const config: Record<string, { symbol: string; decimals: number; locale: string }> = {
-    IDR: { symbol: 'Rp', decimals: 0, locale: 'id-ID' },
-    USD: { symbol: '$', decimals: 2, locale: 'en-US' },
-  };
-  const currConfig = config[curr] || { symbol: curr, decimals: 0, locale: 'en-US' };
-
-  return new Intl.NumberFormat(currConfig.locale, {
-    style: 'currency',
-    currency: curr,
-    minimumFractionDigits: currConfig.decimals,
-    maximumFractionDigits: currConfig.decimals,
-  }).format(amount);
 };
 
 // SVG icons (aria-hidden for decorative icons per design system accessibility guidelines)

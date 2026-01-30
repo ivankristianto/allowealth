@@ -5,6 +5,7 @@
  */
 
 import { describe, it, expect } from 'bun:test';
+import { formatCurrency } from '@/lib/formatting';
 
 describe('CategoryIntelligenceTable', () => {
   describe('Data Structure', () => {
@@ -134,33 +135,18 @@ describe('CategoryIntelligenceTable', () => {
 
   describe('Currency Formatting', () => {
     it('should format spent amount correctly', () => {
-      const formatter = new Intl.NumberFormat('id-ID', {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0,
-      });
-
-      expect(formatter.format(1850000)).toBe('1.850.000');
-      expect(formatter.format(905000)).toBe('905.000');
-      expect(formatter.format(750000)).toBe('750.000');
+      expect(formatCurrency(1850000, 'IDR')).toBe('Rp1.850.000');
+      expect(formatCurrency(905000, 'IDR')).toBe('Rp905.000');
+      expect(formatCurrency(750000, 'IDR')).toBe('Rp750.000');
     });
 
     it('should format budget limit correctly', () => {
-      const formatter = new Intl.NumberFormat('id-ID', {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0,
-      });
-
-      expect(formatter.format(4000000)).toBe('4.000.000');
-      expect(formatter.format(40000000)).toBe('40.000.000');
+      expect(formatCurrency(4000000, 'IDR')).toBe('Rp4.000.000');
+      expect(formatCurrency(40000000, 'IDR')).toBe('Rp40.000.000');
     });
 
     it('should handle zero values', () => {
-      const formatter = new Intl.NumberFormat('id-ID', {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0,
-      });
-
-      expect(formatter.format(0)).toBe('0');
+      expect(formatCurrency(0, 'IDR')).toBe('Rp0');
     });
   });
 

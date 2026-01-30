@@ -1,4 +1,5 @@
 import type { Currency } from '@/lib/enums';
+import { formatCurrency } from '@/lib/formatting/currency';
 import { subtractCurrency, multiplyCurrency } from './currency';
 import { decimalCompare, decimalIsZero, decimalDivide } from './decimal';
 
@@ -135,10 +136,6 @@ export function getBudgetProgressClass(status: BudgetStatus): string {
       return 'bg-neutral';
   }
 }
-
-// Re-export formatCurrency from currency module for convenience
-import { formatCurrency } from './currency';
-export { formatCurrency };
 
 /**
  * Predefined color palette for budget allocation visualization.
