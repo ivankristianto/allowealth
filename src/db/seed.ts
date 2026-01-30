@@ -15,7 +15,7 @@ import { hashPassword } from '@/lib/auth/password';
 import { sql } from 'drizzle-orm';
 import {
   users,
-  userSettings,
+  userMeta,
   categories,
   transactions,
   assets,
@@ -28,6 +28,7 @@ import {
   passwordResetTokens,
   budgets,
 } from './schema';
+import { USER_META_KEYS } from '@/lib/constants/user-meta-keys';
 
 // ============================================================================
 // CONFIGURATION
@@ -535,7 +536,7 @@ async function clearAllTables() {
     await db.delete(budgets);
     await db.delete(assets);
     await db.delete(categories);
-    await db.delete(userSettings);
+    await db.delete(userMeta);
     await db.delete(users);
     await db.delete(exchangeRates);
 
@@ -575,14 +576,34 @@ async function seedUsers(): Promise<string> {
     updated_at: new Date(),
   });
 
-  await db.insert(userSettings).values({
-    user_id: userId,
-    primary_currency: 'IDR',
-    show_converted_totals: true,
-    show_individual_currencies: true,
-    created_at: new Date(),
-    updated_at: new Date(),
-  });
+  // Insert user meta values
+  const now = new Date();
+  await db.insert(userMeta).values([
+    {
+      meta_id: nanoid(),
+      user_id: userId,
+      meta_key: USER_META_KEYS.CURRENCY,
+      meta_value: 'IDR',
+      created_at: now,
+      updated_at: now,
+    },
+    {
+      meta_id: nanoid(),
+      user_id: userId,
+      meta_key: USER_META_KEYS.SHOW_CONVERTED_TOTALS,
+      meta_value: 'true',
+      created_at: now,
+      updated_at: now,
+    },
+    {
+      meta_id: nanoid(),
+      user_id: userId,
+      meta_key: USER_META_KEYS.SHOW_INDIVIDUAL_CURRENCIES,
+      meta_value: 'true',
+      created_at: now,
+      updated_at: now,
+    },
+  ]);
 
   console.log(`✓ Created user: ${DEMO_USER.email}`);
   return userId;

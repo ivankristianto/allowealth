@@ -68,8 +68,10 @@ paths:
     $ref: './openapi/paths/user.yml#/paths/~1api~1user~1profile'
   /api/user/password:
     $ref: './openapi/paths/user.yml#/paths/~1api~1user~1password'
-  /api/user/settings:
-    $ref: './openapi/paths/user.yml#/paths/~1api~1user~1settings'
+  /api/user/meta:
+    $ref: './openapi/paths/user-meta.yml#/paths/~1api~1user~1meta'
+  /api/user/meta/{key}:
+    $ref: './openapi/paths/user-meta.yml#/paths/~1api~1user~1meta~1{key}'
 
   /api/transactions:
     $ref: './openapi/paths/transactions.yml#/paths/~1api~1transactions'
@@ -175,10 +177,16 @@ components:
       $ref: './openapi/schemas/UpdatePasswordRequest.yml#/UpdatePasswordRequest'
     PasswordUpdateResponse:
       $ref: './openapi/schemas/PasswordUpdateResponse.yml#/PasswordUpdateResponse'
-    UpdateUserSettingsRequest:
-      $ref: './openapi/schemas/UpdateUserSettingsRequest.yml#/UpdateUserSettingsRequest'
-    UserSettingsResponse:
-      $ref: './openapi/schemas/UserSettingsResponse.yml#/UserSettingsResponse'
+
+    # User Meta Schemas
+    UserMetaListResponse:
+      $ref: './openapi/schemas/UserMetaListResponse.yml#/UserMetaListResponse'
+    UserMetaResponse:
+      $ref: './openapi/schemas/UserMetaResponse.yml#/UserMetaResponse'
+    UpdateUserMetaRequest:
+      $ref: './openapi/schemas/UpdateUserMetaRequest.yml#/UpdateUserMetaRequest'
+    DeleteUserMetaResponse:
+      $ref: './openapi/schemas/DeleteUserMetaResponse.yml#/DeleteUserMetaResponse'
 
     # Transaction Schemas
     Transaction:

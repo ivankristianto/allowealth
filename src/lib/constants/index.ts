@@ -7,3 +7,4 @@
  */
 
 export * from './currency';
+export * from './user-meta-keys';

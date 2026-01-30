@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { userService } from '@/services';
+import { userService, userMetaService } from '@/services';
 import {
   successResponse,
   errorResponse,
@@ -7,42 +7,27 @@ import {
   getAuthenticatedUser,
   isValidationError,
 } from '@/lib/api-utils';
-import { updateProfileSchema } from '@/services/user.service';
 import { logError } from '@/lib/utils';
-import { UserServiceError, ServiceErrorCode } from '@/services/service-errors';
+import { UserServiceError, UserMetaServiceError } from '@/services/service-errors';
 import { db } from '@/db';
+import { z } from 'zod';
+import { SUPPORTED_CURRENCIES } from '@/lib/constants/user-meta-keys';
+
+/**
+ * Schema for PUT request body - all profile fields in one request
+ */
+const updateFullProfileSchema = z.object({
+  name: z.string().min(1, 'Name is required').max(100, 'Name must be at most 100 characters'),
+  email: z.string().email('Invalid email format'),
+  phone: z.string().max(50, 'Phone must be at most 50 characters').optional().default(''),
+  bio: z.string().max(500, 'Bio must be at most 500 characters').optional().default(''),
+  currency: z.enum(SUPPORTED_CURRENCIES).optional(),
+});
 
 /**
  * GET /api/user/profile
  *
- * Retrieves the current authenticated user's profile data.
- *
- * @authentication Requires valid session (validated by middleware, accessed via getAuthenticatedUser)
- *
- * @example
- * Response (200):
- * ```json
- * {
- *   "success": true,
- *   "data": {
- *     "id": "abc123",
- *     "name": "John Doe",
- *     "email": "john@example.com"
- *   }
- * }
- * ```
- *
- * @example
- * Response (401):
- * ```json
- * {
- *   "success": false,
- *   "error": {
- *     "message": "Unauthorized",
- *     "code": "UNAUTHORIZED"
- *   }
- * }
- * ```
+ * Retrieves the current authenticated user's profile data including meta.
  */
 export const GET: APIRoute = async (context) => {
   try {
@@ -55,10 +40,16 @@ export const GET: APIRoute = async (context) => {
       return errorResponse('User not found', 404, 'USER_NOT_FOUND');
     }
 
+    // Get user settings from meta
+    const settings = await userMetaService.getUserSettings(userId);
+
     return successResponse({
       id: user.id,
       name: user.name,
       email: user.email,
+      phone: settings.phone,
+      bio: settings.bio,
+      currency: settings.currency,
     });
   } catch (error) {
     if (error instanceof Error && error.message === 'Unauthorized') {
@@ -72,62 +63,19 @@ export const GET: APIRoute = async (context) => {
 /**
  * PUT /api/user/profile
  *
- * Updates the current authenticated user's profile information.
- *
- * @authentication Requires valid session (validated by middleware, accessed via getAuthenticatedUser)
- * @param {Object} requestBody - Request body containing profile updates
- * @param {string} requestBody.name - User's display name (required, max 100 chars)
- * @param {string} requestBody.email - User's email address (required, must be valid email format)
+ * Updates all profile fields in one request:
+ * - name, email -> users table
+ * - phone, bio, currency -> user_meta table
  *
  * @example
  * Request:
  * ```json
  * {
  *   "name": "John Doe",
- *   "email": "john.doe@example.com"
- * }
- * ```
- *
- * @example
- * Response (200):
- * ```json
- * {
- *   "success": true,
- *   "data": {
- *     "id": "abc123",
- *     "name": "John Doe",
- *     "email": "john.doe@example.com"
- *   }
- * }
- * ```
- *
- * @example
- * Response (400) - Validation Error:
- * ```json
- * {
- *   "success": false,
- *   "error": {
- *     "message": "Validation failed",
- *     "code": "VALIDATION_ERROR",
- *     "details": [
- *       {
- *         "path": ["email"],
- *         "message": "Invalid email format"
- *       }
- *     ]
- *   }
- * }
- * ```
- *
- * @example
- * Response (409) - Email Already Exists:
- * ```json
- * {
- *   "success": false,
- *   "error": {
- *     "message": "Email already exists",
- *     "code": "EMAIL_ALREADY_EXISTS"
- *   }
+ *   "email": "john@example.com",
+ *   "phone": "+1234567890",
+ *   "bio": "Developer",
+ *   "currency": "USD"
  * }
  * ```
  */
@@ -135,29 +83,54 @@ export const PUT: APIRoute = async (context) => {
   try {
     const userId = getAuthenticatedUser(context);
 
-    const validation = await validateBody(context.request, updateProfileSchema);
+    const validation = await validateBody(context.request, updateFullProfileSchema);
 
     if (isValidationError(validation)) {
       return errorResponse('Validation failed', 400, 'VALIDATION_ERROR', validation.error.issues);
     }
 
-    const user = await userService.updateProfile(userId, validation.data);
+    const { name, email, phone, bio, currency } = validation.data;
 
-    return successResponse(user);
+    // Update user table (name, email)
+    const user = await userService.updateProfile(userId, { name, email });
+
+    // Update meta values (phone, bio, currency)
+    const metaPromises: Promise<void>[] = [];
+
+    if (phone !== undefined) {
+      metaPromises.push(userMetaService.setUserMeta(userId, 'phone', phone));
+    }
+    if (bio !== undefined) {
+      metaPromises.push(userMetaService.setUserMeta(userId, 'bio', bio));
+    }
+    if (currency !== undefined) {
+      metaPromises.push(userMetaService.setUserMeta(userId, 'currency', currency));
+    }
+
+    await Promise.all(metaPromises);
+
+    // Get updated settings
+    const settings = await userMetaService.getUserSettings(userId);
+
+    return successResponse({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      phone: settings.phone,
+      bio: settings.bio,
+      currency: settings.currency,
+    });
   } catch (error) {
     if (error instanceof Error && error.message === 'Unauthorized') {
       return errorResponse('Unauthorized', 401);
     }
 
     if (error instanceof UserServiceError) {
-      switch (error.code) {
-        case ServiceErrorCode.USER_NOT_FOUND:
-          return errorResponse(error.message, error.statusCode, error.code);
-        case ServiceErrorCode.EMAIL_ALREADY_EXISTS:
-          return errorResponse(error.message, error.statusCode, error.code);
-        case ServiceErrorCode.VALIDATION_ERROR:
-          return errorResponse(error.message, error.statusCode, error.code);
-      }
+      return errorResponse(error.message, error.statusCode, error.code);
+    }
+
+    if (error instanceof UserMetaServiceError) {
+      return errorResponse(error.message, error.statusCode, error.code);
     }
 
     logError('Error updating user profile', error);

@@ -41,6 +41,12 @@ export enum ServiceErrorCode {
   EMAIL_ALREADY_EXISTS = 'EMAIL_ALREADY_EXISTS',
   INVALID_PASSWORD = 'INVALID_PASSWORD',
   WEAK_PASSWORD = 'WEAK_PASSWORD',
+
+  // User meta-specific errors
+  INVALID_META_KEY = 'INVALID_META_KEY',
+  INVALID_META_VALUE = 'INVALID_META_VALUE',
+  VALUE_TOO_LARGE = 'VALUE_TOO_LARGE',
+  META_NOT_FOUND = 'META_NOT_FOUND',
 }
 
 export class ServiceError extends Error {
@@ -93,5 +99,12 @@ export class UserServiceError extends ServiceError {
   constructor(code: ServiceErrorCode, message: string, statusCode: number = 400) {
     super(code, message, statusCode);
     this.name = 'UserServiceError';
+  }
+}
+
+export class UserMetaServiceError extends ServiceError {
+  constructor(code: ServiceErrorCode, message: string, statusCode: number = 400) {
+    super(code, message, statusCode);
+    this.name = 'UserMetaServiceError';
   }
 }
