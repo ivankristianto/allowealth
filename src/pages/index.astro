@@ -1,17 +1,24 @@
 ---
-import MainLayout from '../layouts/MainLayout.astro';
+/**
+ * Landing Page
+ *
+ * Public homepage for all users (guest and authenticated).
+ * Showcases features, pricing, and CTAs for the allowealth platform.
+ */
 
-const currentPath = '/';
+import PublicLayout from '@/layouts/PublicLayout.astro';
+import HeroSection from '@/components/organisms/landing/HeroSection.astro';
+import ShowcaseSection from '@/components/organisms/landing/ShowcaseSection.astro';
+import FeaturesGrid from '@/components/organisms/landing/FeaturesGrid.astro';
+import PricingSection from '@/components/organisms/landing/PricingSection.astro';
+
+// Get user from Astro.locals (set by auth middleware)
+const user = Astro.locals.user;
 ---
 
-<MainLayout title="Finance Manager" currentPath={currentPath}>
-  <div class="hero min-h-screen bg-base-200">
-    <div class="hero-content text-center">
-      <div class="max-w-md">
-        <h1 class="text-5xl font-bold">Finance Manager</h1>
-        <p class="py-6">Track expenses, manage budgets, and monitor your assets with ease.</p>
-        <a href="/dashboard" class="btn btn-accent">Go to Dashboard</a>
-      </div>
-    </div>
-  </div>
-</MainLayout>
+<PublicLayout title="allowealth - Master the Family Ledger" user={user}>
+  <HeroSection user={user} />
+  <ShowcaseSection />
+  <FeaturesGrid />
+  <PricingSection user={user} />
+</PublicLayout>

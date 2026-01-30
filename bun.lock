@@ -21,6 +21,7 @@
         "nanostores": "^1.1.0",
         "oslo": "^1.2.1",
         "postgres": "^3.4.8",
+        "simple-icons": "^16.6.1",
         "tailwindcss": "^4.1.18",
         "zod": "^4.3.6",
       },
@@ -41,7 +42,7 @@
         "@typescript-eslint/eslint-plugin": "^8.54.0",
         "@typescript-eslint/parser": "^8.54.0",
         "better-sqlite3": "^12.6.2",
-        "bun-types": "^1.3.7",
+        "bun-types": "^1.3.8",
         "drizzle-kit": "^0.31.8",
         "eslint": "^9.39.2",
         "eslint-config-prettier": "^10.1.8",
@@ -1517,6 +1518,8 @@
     "simple-concat": ["simple-concat@1.0.1", "", {}, "sha512-cSFtAPtRhljv69IK0hTVZQ+OfE9nePi/rtJmw5UjHeVyVroEqJXP1sFztKUy1qU+xvz3u/sfYJLa947b7nAN2Q=="],
 
     "simple-get": ["simple-get@4.0.1", "", { "dependencies": { "decompress-response": "^6.0.0", "once": "^1.3.1", "simple-concat": "^1.0.0" } }, "sha512-brv7p5WgH0jmQJr1ZDDfKDOSeWWg+OVypG99A/5vYGPqJ6pxiaHLy8nxtFjBA7oMa01ebA9gfh1uMCFqOuXxvA=="],
+
+    "simple-icons": ["simple-icons@16.6.1", "", {}, "sha512-zg3g5RCnc3cJfxCclOvElfow2rtpeB+Ow/dj1uvGG3MkpT7OjPBrE2hotqW2Hmt2ZYbuXCx2u+Oh4yi5N+yg5Q=="],
 
     "sisteransi": ["sisteransi@1.0.5", "", {}, "sha512-bLGGlR1QxBcynn2d5YmDX4MGjlZvy2MRBDRNHLJ8VI6l6+9FUiyTFNJ0IveOSP0bcXgVDPRcfGqA0pjaqUpfVg=="],
 

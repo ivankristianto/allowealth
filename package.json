@@ -53,6 +53,7 @@
     "nanostores": "^1.1.0",
     "oslo": "^1.2.1",
     "postgres": "^3.4.8",
+    "simple-icons": "^16.6.1",
     "tailwindcss": "^4.1.18",
     "zod": "^4.3.6"
   },
