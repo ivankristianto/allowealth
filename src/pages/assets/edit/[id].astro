@@ -7,7 +7,8 @@
 
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import AssetForm from '../../../components/molecules/AssetForm.astro';
-import { assetService } from '@/services';
+import { assetService, assetCategoryService } from '@/services';
+import { DEFAULT_ASSET_CATEGORIES } from '@/lib/constants';
 
 const user = Astro.locals.user!;
 const currentPath = '/assets/edit';
@@ -27,10 +28,19 @@ if (!asset) {
   return Astro.redirect('/404');
 }
 
+const categories = await assetCategoryService.findAll(user.id);
+const legacyTypeToName = new Map(
+  DEFAULT_ASSET_CATEGORIES.map((category) => [category.legacyType, category.name])
+);
+const categoryName = legacyTypeToName.get(asset.type);
+const categoryIdFromType = categoryName
+  ? categories.find((category) => category.name === categoryName)?.id
+  : undefined;
+
 // Pre-fill form with existing asset data
 const formValues = {
   name: asset.name,
-  type: asset.type,
+  categoryId: asset.category_id || categoryIdFromType,
   balance: asset.balance,
   currency: asset.currency,
 };
@@ -49,6 +59,7 @@ const formValues = {
           action={`/api/assets/${id}`}
           method="PUT"
           values={formValues}
+          categories={categories}
           assetId={id}
           submitLabel="Update Asset"
           cancelUrl="/assets"

@@ -74,6 +74,18 @@ export {
   type CategoryFilter,
 } from './categories';
 
+// Asset Categories
+export {
+  createAssetCategorySchema,
+  updateAssetCategorySchema,
+  createAssetCategoryAPISchema,
+  updateAssetCategoryAPISchema,
+  assetCategoryFilterSchema,
+  type CreateAssetCategoryInput,
+  type UpdateAssetCategoryInput,
+  type AssetCategoryFilter,
+} from './asset-categories';
+
 // Transactions
 export {
   createTransactionSchema,

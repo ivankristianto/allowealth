@@ -12,18 +12,20 @@
  * @param {string} className - Additional CSS classes
  */
 
-import { Plus } from '@lucide/astro';
+import { Plus, Settings } from '@lucide/astro';
 
 export interface Props {
   title?: string;
   subtitle?: string;
   className?: string;
+  defaultCategoryId?: string;
 }
 
 const {
   title = 'Global Portfolio',
   subtitle = 'Manage and track your distributed household wealth.',
   className = '',
+  defaultCategoryId = '',
 } = Astro.props;
 
 const headerClasses = [
@@ -41,17 +43,29 @@ const headerClasses = [
     <p class="text-sm text-base-content/60 mt-2 font-medium">{subtitle}</p>
   </div>
 
-  {/* Add Asset Button */}
-  <button
-    type="button"
-    class="btn btn-accent gap-2 rounded-2xl shadow-md hover:shadow-lg transition-all"
-    aria-label="Add new asset"
-    data-add-asset-btn
-    data-testid="add-asset-btn"
-  >
-    <Plus size={18} class="stroke-current" aria-hidden="true" />
-    <span>Add Asset</span>
-  </button>
+  {/* Actions */}
+  <div class="flex items-center gap-2">
+    <a
+      href="/assets/categories"
+      class="btn btn-ghost btn-sm gap-2 rounded-2xl"
+      aria-label="Manage asset categories"
+      data-testid="manage-asset-categories-btn"
+    >
+      <Settings size={16} class="stroke-current" aria-hidden="true" />
+      <span>Categories</span>
+    </a>
+    <button
+      type="button"
+      class="btn btn-accent gap-2 rounded-2xl shadow-md hover:shadow-lg transition-all"
+      aria-label="Add new asset"
+      data-add-asset-btn
+      data-default-category-id={defaultCategoryId}
+      data-testid="add-asset-btn"
+    >
+      <Plus size={18} class="stroke-current" aria-hidden="true" />
+      <span>Add Asset</span>
+    </button>
+  </div>
 </header>
 
 <script>
@@ -64,13 +78,14 @@ const headerClasses = [
       initializedAddButtons.add(button);
 
       button.addEventListener('click', () => {
+        const defaultCategoryId = button.getAttribute('data-default-category-id') || '';
         // Dispatch event to open the asset form modal in add mode
         document.dispatchEvent(
           new CustomEvent('open-asset-form', {
             detail: {
               // No id means add mode
               name: '',
-              type: 'bank_account',
+              categoryId: defaultCategoryId,
               currency: 'IDR',
               balance: '',
             },

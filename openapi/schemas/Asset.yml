@@ -9,7 +9,10 @@ Asset:
       type: string
     type:
       type: string
-      enum: [bank_account, mutual_fund, bond, crypto, stock, other]
+      enum: [cash, bank_account, e_wallet, mutual_fund, bond, crypto, stock, other, credit_card, loan]
+    category_id:
+      type: string
+      nullable: true
     balance:
       type: string
       pattern: '^\d+(\.\d{1,2})?$'

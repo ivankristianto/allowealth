@@ -15,8 +15,9 @@ import AssetItemRow from '@components/organisms/AssetItemRow.astro';
 import AssetFormModal from '@components/organisms/AssetFormModal.astro';
 import AssetDeleteConfirmModal from '@components/organisms/AssetDeleteConfirmModal.astro';
 import AssetHistoryModal from '@components/organisms/AssetHistoryModal.astro';
+import AssetCategoryModal from '@components/organisms/AssetCategoryModal.astro';
 import EmptyState from '@components/atoms/EmptyState.astro';
-import { assetService } from '@/services';
+import { assetService, assetCategoryService } from '@/services';
 import type { AssetOutput, AssetType } from '@/lib/types/asset';
 import { formatAssetType } from '@/lib/types/asset';
 import {
@@ -24,7 +25,6 @@ import {
   calculatePortfolioTotals,
   groupAssetsByType,
   calculateGroupTotals,
-  sortAssetTypes,
 } from '@/lib/utils/asset';
 
 const user = Astro.locals.user!;
@@ -52,6 +52,7 @@ const searchParams = Object.fromEntries(url.searchParams.entries());
 const filters: {
   user_id: string;
   type?: AssetType;
+  category_id?: string;
   currency?: 'IDR' | 'USD';
 } = {
   user_id: user.id,
@@ -61,24 +62,41 @@ const filters: {
 if (searchParams.type && VALID_ASSET_TYPES.includes(searchParams.type as AssetType)) {
   filters.type = searchParams.type as AssetType;
 }
+if (searchParams.categoryId) {
+  filters.category_id = searchParams.categoryId;
+}
 if (searchParams.currency === 'IDR' || searchParams.currency === 'USD') {
   filters.currency = searchParams.currency;
 }
 
-// Fetch assets from database
+// Fetch assets and categories from database
+const categories = await assetCategoryService.findAll(user.id);
+const categoriesById = new Map(categories.map((category) => [category.id, category]));
+const defaultCategoryId =
+  categories.find((category) => category.is_system && !category.is_liability)?.id ||
+  categories[0]?.id ||
+  '';
 const rawAssets = await assetService.findAll(user.id, filters);
 
 // Transform to AssetOutput format
-const assets: AssetOutput[] = rawAssets.map((asset) => ({
-  id: asset.id,
-  name: asset.name,
-  type: asset.type,
-  balance: asset.balance,
-  currency: asset.currency,
-  last_updated: asset.last_updated,
-  created_at: asset.created_at,
-  updated_at: asset.updated_at,
-}));
+const assets: AssetOutput[] = rawAssets.map((asset) => {
+  const categoryName = asset.category_id
+    ? categoriesById.get(asset.category_id)?.name || null
+    : formatAssetType(asset.type);
+
+  return {
+    id: asset.id,
+    name: asset.name,
+    type: asset.type,
+    category_id: asset.category_id,
+    category_name: categoryName,
+    balance: asset.balance,
+    currency: asset.currency,
+    last_updated: asset.last_updated,
+    created_at: asset.created_at,
+    updated_at: asset.updated_at,
+  };
+});
 
 // Calculate portfolio totals and allocation
 // @TODO: Wire with backend - Consider moving calculations to service layer
@@ -87,13 +105,29 @@ const assetAllocation = calculateAssetAllocation(assets);
 
 // Group assets by type for display
 const assetsByType = groupAssetsByType(assets);
-const sortedTypes = sortAssetTypes(Object.keys(assetsByType));
+const sortedGroups = Object.entries(assetsByType)
+  .map(([groupKey, groupAssets]) => {
+    const category = categoriesById.get(groupKey);
+    const label = category?.name || formatAssetType(groupAssets[0]?.type as AssetType);
+    return {
+      groupKey,
+      label,
+      sortOrder: category?.sort_order ?? 999,
+      isSystem: category?.is_system ?? false,
+      assets: groupAssets,
+    };
+  })
+  .sort((a, b) => {
+    if (a.isSystem !== b.isSystem) return a.isSystem ? -1 : 1;
+    if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
+    return a.label.localeCompare(b.label);
+  });
 ---
 
 <ProtectedLayout title="Assets" currentPath={currentPath} subtitle="Your financial portfolio">
   <div class="max-w-7xl mx-auto sm:px-2 lg:px-6 space-y-6 sm:space-y-8" data-testid="assets-page">
     {/* Page Header */}
-    <AssetPageHeader />
+    <AssetPageHeader defaultCategoryId={defaultCategoryId} />
 
     {
       assets.length > 0 ? (
@@ -108,24 +142,25 @@ const sortedTypes = sortAssetTypes(Object.keys(assetsByType));
 
           {/* Asset Groups */}
           <div class="space-y-6">
-            {sortedTypes.map((assetType) => {
-              const typeAssets = assetsByType[assetType];
-              const groupTotals = calculateGroupTotals(typeAssets);
+            {sortedGroups.map((group) => {
+              const groupTotals = calculateGroupTotals(group.assets);
 
               return (
                 <AssetGroupCard
-                  type={formatAssetType(assetType as AssetType)}
-                  count={typeAssets.length}
+                  type={group.label}
+                  count={group.assets.length}
                   totalIdr={groupTotals.idr}
                   totalUsd={groupTotals.usd}
-                  groupId={assetType}
+                  groupId={group.groupKey}
                   defaultExpanded={true}
                 >
-                  {typeAssets.map((asset) => (
+                  {group.assets.map((asset) => (
                     <AssetItemRow
                       id={asset.id}
                       name={asset.name}
                       type={asset.type}
+                      categoryId={asset.category_id}
+                      categoryName={asset.category_name}
                       currency={asset.currency}
                       balance={parseFloat(asset.balance)}
                       lastUpdated={asset.last_updated}
@@ -155,7 +190,8 @@ const sortedTypes = sortAssetTypes(Object.keys(assetsByType));
   </div>
 
   {/* Asset Modals */}
-  <AssetFormModal id="asset-form-modal" mode="add" />
+  <AssetFormModal id="asset-form-modal" mode="add" categories={categories} />
+  <AssetCategoryModal id="asset-category-modal" />
   <AssetDeleteConfirmModal id="asset-delete-modal" />
   <AssetHistoryModal id="asset-history-modal" />
 </ProtectedLayout>

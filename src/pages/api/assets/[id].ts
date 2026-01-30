@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import { z } from 'zod';
-import { assetService } from '@/services';
+import { assetService, assetCategoryService } from '@/services';
 import {
   successResponse,
   errorResponse,
@@ -9,11 +9,33 @@ import {
   isValidationError,
 } from '@/lib/api-utils';
 import { logError } from '@/lib/utils';
+import { DEFAULT_ASSET_CATEGORIES } from '@/lib/constants';
 
 // Validation schemas
+const LEGACY_TYPE_BY_NAME = new Map(
+  DEFAULT_ASSET_CATEGORIES.map((category) => [category.name, category.legacyType])
+);
+const LEGACY_NAME_BY_TYPE = new Map(
+  DEFAULT_ASSET_CATEGORIES.map((category) => [category.legacyType, category.name])
+);
+
 const updateAssetSchema = z.object({
   name: z.string().min(1).max(255).optional(),
-  type: z.enum(['bank_account', 'mutual_fund', 'bond', 'crypto', 'stock', 'other']).optional(),
+  categoryId: z.string().min(1).optional(),
+  type: z
+    .enum([
+      'cash',
+      'bank_account',
+      'e_wallet',
+      'mutual_fund',
+      'bond',
+      'crypto',
+      'stock',
+      'other',
+      'credit_card',
+      'loan',
+    ])
+    .optional(),
   currency: z.enum(['IDR', 'USD']).optional(),
 });
 
@@ -65,7 +87,32 @@ export const PUT: APIRoute = async (context) => {
       return errorResponse('Validation failed', 400, 'VALIDATION_ERROR', validation.error.issues);
     }
 
-    const asset = await assetService.update(id, userId, validation.data);
+    let resolvedType = validation.data.type;
+    let resolvedCategoryId: string | null | undefined = undefined;
+
+    if (validation.data.categoryId) {
+      const category = await assetCategoryService.findById(validation.data.categoryId, userId);
+      if (!category) {
+        return errorResponse('Category not found', 404);
+      }
+      resolvedCategoryId = category.id;
+      resolvedType = category.is_system
+        ? LEGACY_TYPE_BY_NAME.get(category.name) || 'other'
+        : 'other';
+    } else if (validation.data.type) {
+      const categoryName = LEGACY_NAME_BY_TYPE.get(validation.data.type);
+      if (categoryName) {
+        const category = await assetCategoryService.findByName(categoryName, userId);
+        resolvedCategoryId = category?.id || null;
+      }
+    }
+
+    const asset = await assetService.update(id, userId, {
+      name: validation.data.name,
+      currency: validation.data.currency,
+      type: resolvedType,
+      category_id: resolvedCategoryId,
+    });
 
     if (!asset) {
       return errorResponse('Asset not found', 404);

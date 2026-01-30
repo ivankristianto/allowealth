@@ -1,6 +1,7 @@
 import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
 import { sqliteTimestampNow } from './base';
 import { users } from './users';
+import { assetCategories } from './asset-categories';
 
 export const assets = sqliteTable('assets', {
   id: text('id').primaryKey(),
@@ -24,6 +25,7 @@ export const assets = sqliteTable('assets', {
       'loan',
     ],
   }).notNull(),
+  category_id: text('category_id').references(() => assetCategories.id),
   balance: text('balance').notNull(), // Stored as string for decimal precision
   currency: text('currency', { enum: ['IDR', 'USD'] }).notNull(),
   credit_limit: text('credit_limit'), // For credit cards only, stored as string for decimal precision

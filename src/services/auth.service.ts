@@ -13,11 +13,13 @@
 
 import { auth } from '@/lib/auth/lucia';
 import { hashPassword, verifyPassword } from '@/lib/auth/password';
-import { db } from '@/db/index';
+import { db, type IDatabase } from '@/db';
 import { users } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import type { User, Session } from 'lucia';
 import { nanoid } from 'nanoid';
+import { DEFAULT_ASSET_CATEGORIES } from '@/lib/constants';
+import { AssetCategoryService } from './asset-category.service';
 
 /**
  * Error codes for authentication operations
@@ -155,16 +157,36 @@ export async function register(email: string, password: string, name: string): P
     // Generate unique user ID
     const userId = nanoid();
 
-    // Create user
-    const [newUser] = await db
-      .insert(users)
-      .values({
-        id: userId,
-        email: email.toLowerCase(),
-        password_hash: passwordHash,
-        name: name.trim(),
-      })
-      .returning();
+    const newUser = await db.transaction(async (tx: IDatabase) => {
+      const [createdUser] = await tx
+        .insert(users)
+        .values({
+          id: userId,
+          email: email.toLowerCase(),
+          password_hash: passwordHash,
+          name: name.trim(),
+        })
+        .returning();
+
+      if (!createdUser) {
+        throw new AuthError(AUTH_ERRORS.DATABASE_ERROR, 'Failed to create user');
+      }
+
+      const assetCategoryService = new AssetCategoryService(tx);
+
+      for (const category of DEFAULT_ASSET_CATEGORIES) {
+        await assetCategoryService.create({
+          user_id: createdUser.id,
+          name: category.name,
+          description: category.description,
+          is_liability: category.isLiability,
+          is_system: true,
+          sort_order: category.sortOrder,
+        });
+      }
+
+      return createdUser;
+    });
 
     if (!newUser) {
       throw new AuthError(AUTH_ERRORS.DATABASE_ERROR, 'Failed to create user');

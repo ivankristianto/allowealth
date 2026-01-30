@@ -11,6 +11,8 @@
  * @param {string} id - Asset ID
  * @param {string} name - Asset name
  * @param {string} type - Asset type (bank_account, stock, etc.)
+ * @param {string} categoryId - Asset category ID
+ * @param {string} categoryName - Asset category name
  * @param {string} currency - Currency code (IDR or USD)
  * @param {number} balance - Asset balance
  * @param {Date} lastUpdated - Last updated date
@@ -25,16 +27,29 @@ export interface Props {
   id: string;
   name: string;
   type: AssetType;
+  categoryId?: string | null;
+  categoryName?: string | null;
   currency: 'IDR' | 'USD';
   balance: number;
   lastUpdated: Date;
   className?: string;
 }
 
-const { id, name, type, currency, balance, lastUpdated, className = '' } = Astro.props;
+const {
+  id,
+  name,
+  type,
+  categoryId = null,
+  categoryName = null,
+  currency,
+  balance,
+  lastUpdated,
+  className = '',
+} = Astro.props;
 
 // Get display label for type
 const typeLabel = ASSET_TYPE_LABELS[type] || type;
+const categoryLabel = categoryName || typeLabel;
 
 // Format date for display
 const formattedDate = new Date(lastUpdated).toLocaleDateString('en-US', {
@@ -107,7 +122,7 @@ const rowClasses = [
         aria-label={`View ${name} history`}
         data-history-asset={id}
         data-asset-name={name}
-        data-asset-type={typeLabel}
+        data-asset-type={categoryLabel}
         data-asset-currency={currency}
         data-asset-balance={balance}
         data-testid="asset-history-btn"
@@ -124,6 +139,8 @@ const rowClasses = [
         data-edit-asset={id}
         data-asset-name={name}
         data-asset-type={type}
+        data-asset-category-id={categoryId || ''}
+        data-asset-category-name={categoryLabel}
         data-asset-currency={currency}
         data-asset-balance={balance}
         data-testid="asset-edit-btn"
@@ -139,7 +156,7 @@ const rowClasses = [
         aria-label={`Delete ${name}`}
         data-delete-asset={id}
         data-asset-name={name}
-        data-asset-type={typeLabel}
+        data-asset-type={categoryLabel}
         data-asset-currency={currency}
         data-asset-balance={balance}
         data-testid="asset-delete-btn"
@@ -203,6 +220,8 @@ const rowClasses = [
         const assetId = btn.getAttribute('data-edit-asset');
         const assetName = btn.getAttribute('data-asset-name') || '';
         const assetType = btn.getAttribute('data-asset-type') || 'bank_account';
+        const assetCategoryId = btn.getAttribute('data-asset-category-id') || '';
+        const assetCategoryName = btn.getAttribute('data-asset-category-name') || '';
         const assetCurrency = (btn.getAttribute('data-asset-currency') || 'IDR') as 'IDR' | 'USD';
         const assetBalance = btn.getAttribute('data-asset-balance') || '0';
 
@@ -215,6 +234,8 @@ const rowClasses = [
               id: assetId,
               name: assetName,
               type: assetType,
+              categoryId: assetCategoryId,
+              categoryName: assetCategoryName,
               currency: assetCurrency,
               balance: assetBalance,
             },

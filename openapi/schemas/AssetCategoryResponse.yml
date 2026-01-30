@@ -1,0 +1,9 @@
+# Asset Category Response Schema
+AssetCategoryResponse:
+  allOf:
+    - $ref: './ApiErrorResponse.yml#/ApiResponse'
+    - type: object
+      required: [success, data]
+      properties:
+        data:
+          $ref: './AssetCategory.yml#/AssetCategory'

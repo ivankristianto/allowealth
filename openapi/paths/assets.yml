@@ -13,7 +13,12 @@ paths:
           description: Filter by asset type
           schema:
             type: string
-            enum: [bank_account, mutual_fund, bond, crypto, stock, other]
+            enum: [cash, bank_account, e_wallet, mutual_fund, bond, crypto, stock, other, credit_card, loan]
+        - name: categoryId
+          in: query
+          description: Filter by asset category ID
+          schema:
+            type: string
         - name: currency
           in: query
           description: Filter by currency
@@ -86,7 +91,7 @@ paths:
     put:
       tags: [Assets]
       summary: Update an asset
-      description: Update an existing asset (name, type, or currency)
+      description: Update an existing asset (name, category, type, or currency)
       security:
         - sessionAuth: []
       parameters:

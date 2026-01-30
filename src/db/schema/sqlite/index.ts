@@ -4,6 +4,7 @@ export * from './user-meta';
 export * from './sessions';
 export * from './password-reset-tokens';
 export * from './categories';
+export * from './asset-categories';
 export * from './transactions';
 export * from './assets';
 export * from './asset-history';

@@ -7,8 +7,11 @@
 
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import AssetForm from '@/components/molecules/AssetForm.astro';
+import { assetCategoryService } from '@/services';
 
 const currentPath = '/assets/add';
+const user = Astro.locals.user!;
+const categories = await assetCategoryService.findAll(user.id);
 ---
 
 <ProtectedLayout title="Add Asset" currentPath={currentPath} subtitle="Register a new account">
@@ -23,6 +26,7 @@ const currentPath = '/assets/add';
         <AssetForm
           action="/api/assets"
           method="POST"
+          categories={categories}
           submitLabel="Save Asset"
           cancelUrl="/assets"
         />

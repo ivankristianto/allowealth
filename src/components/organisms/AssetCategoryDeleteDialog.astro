@@ -1,0 +1,162 @@
+---
+/**
+ * AssetCategoryDeleteDialog Component
+ *
+ * Confirmation dialog for deleting asset categories.
+ *
+ * @param {string} id - Dialog ID
+ */
+
+import Modal from '../molecules/Modal.astro';
+import { Trash2 } from '@lucide/astro';
+
+export interface Props {
+  id: string;
+  open?: boolean;
+}
+
+const { id, open = false } = Astro.props;
+---
+
+<div data-asset-category-delete-dialog-container data-id={id} data-category-id="">
+  <Modal id={id} open={open} size="sm" closable={false} backdropClose={true}>
+    <div slot="default" class="flex flex-col gap-6">
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 rounded-2xl flex items-center justify-center bg-error/10">
+          <Trash2 size={24} class="stroke-current text-error" aria-hidden="true" />
+        </div>
+        <div class="flex-1">
+          <h2 class="text-2xl font-bold tracking-tight text-error leading-none">Delete Category</h2>
+          <p class="text-neutral text-sm mt-2 font-medium">This action cannot be undone.</p>
+        </div>
+      </div>
+
+      <div class="p-4 bg-base-200/50 rounded-2xl border border-base-300">
+        <p class="text-xs uppercase tracking-widest text-base-content/50 font-medium">Category</p>
+        <p class="text-base font-bold text-base-content mt-2" data-category-name></p>
+        <p class="text-sm text-base-content/60 mt-1" data-category-meta></p>
+      </div>
+
+      <p class="text-base-content/70 text-sm">
+        Assets assigned to this category must be reassigned before deletion.
+      </p>
+
+      <div class="hidden alert alert-error text-sm" role="alert" data-delete-error></div>
+
+      <div class="flex gap-4 pt-4">
+        <button
+          type="button"
+          class="flex-1 btn btn-ghost h-14 rounded-full font-bold"
+          data-cancel-delete
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          class="flex-1 btn btn-error h-14 rounded-full font-bold"
+          data-confirm-delete
+          data-testid="asset-category-confirm-delete-btn"
+        >
+          Delete
+        </button>
+      </div>
+    </div>
+  </Modal>
+</div>
+
+<script>
+  import { addToast } from '@/lib/stores/toastStore';
+  import { getCsrfHeaders } from '@/lib/csrf-client';
+
+  // Track which dialog containers have been initialized
+  const initializedContainers = new WeakSet<Element>();
+
+  // Initialize asset category delete dialog containers
+  function initAssetCategoryDeleteDialogs() {
+    document
+      .querySelectorAll('[data-asset-category-delete-dialog-container]')
+      .forEach((container) => {
+        // Skip if already initialized
+        if (initializedContainers.has(container)) return;
+        initializedContainers.add(container);
+
+        const id = container.getAttribute('data-id');
+        if (!id) return;
+
+        const dialog = document.getElementById(id) as HTMLDialogElement;
+        const cancelBtn = container.querySelector('[data-cancel-delete]');
+        const confirmBtn = container.querySelector(
+          '[data-confirm-delete]'
+        ) as HTMLButtonElement | null;
+        const errorDiv = container.querySelector('[data-delete-error]') as HTMLElement | null;
+
+        if (!dialog || !confirmBtn) return;
+
+        // Cancel button - close dialog
+        cancelBtn?.addEventListener('click', () => {
+          errorDiv?.classList.add('hidden');
+          dialog.close();
+        });
+
+        // Confirm delete button
+        confirmBtn.addEventListener('click', async () => {
+          // Get category ID from container data attribute (set by page script)
+          const categoryId = container.getAttribute('data-category-id') || '';
+          if (!categoryId) return;
+
+          const originalText = confirmBtn.textContent || 'Delete';
+
+          // Clear errors
+          errorDiv?.classList.add('hidden');
+          if (errorDiv) errorDiv.textContent = '';
+
+          // Show loading state
+          confirmBtn.disabled = true;
+          confirmBtn.textContent = 'Deleting...';
+
+          try {
+            const response = await fetch(`/api/asset-categories/${categoryId}`, {
+              method: 'DELETE',
+              headers: getCsrfHeaders(),
+            });
+
+            const result = await response.json();
+
+            if (!response.ok || !result.success) {
+              const errorMessage = result.error?.message || 'Failed to delete category';
+              throw new Error(errorMessage);
+            }
+
+            // Success
+            addToast('Category deleted successfully!', 'success');
+            dialog.close();
+
+            // Reload page to show updated categories
+            const url = new URL(window.location.href);
+            window.location.href = url.pathname + url.search;
+          } catch (err) {
+            const message = err instanceof Error ? err.message : 'Failed to delete category';
+            if (errorDiv) {
+              errorDiv.textContent = message;
+              errorDiv.classList.remove('hidden');
+            }
+            addToast(message, 'error');
+          } finally {
+            // Reset button state
+            confirmBtn.disabled = false;
+            confirmBtn.textContent = originalText;
+          }
+        });
+      });
+  }
+
+  // Initialize on DOM ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initAssetCategoryDeleteDialogs);
+  } else {
+    initAssetCategoryDeleteDialogs();
+  }
+
+  // Re-initialize on Astro page transitions
+  document.addEventListener('astro:page-load', initAssetCategoryDeleteDialogs);
+</script>

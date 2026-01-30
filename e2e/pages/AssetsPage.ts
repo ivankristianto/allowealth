@@ -112,7 +112,7 @@ export class AssetsPage extends BasePage {
 
     // Select asset type - scoped within modal
     const typeSelect = modal
-      .locator('[data-testid="asset-type-select"]')
+      .locator('[data-testid="asset-category-select"]')
       .or(modal.locator('select[name="type"]'));
     await typeSelect.selectOption(data.type);
 
@@ -208,7 +208,7 @@ export class AssetsPage extends BasePage {
 
     if (updates.type !== undefined) {
       const typeSelect = modal
-        .locator('[data-testid="asset-type-select"]')
+        .locator('[data-testid="asset-category-select"]')
         .or(modal.locator('select[name="type"]'));
       await typeSelect.selectOption(updates.type);
     }
