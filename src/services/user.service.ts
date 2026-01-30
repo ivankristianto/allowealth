@@ -1,8 +1,11 @@
 /**
  * User Service
  *
- * Provides high-level user profile and settings operations.
- * Handles profile updates, password changes, and user preferences.
+ * Provides high-level user profile operations.
+ * Handles profile updates and password changes.
+ *
+ * Note: User settings (currency, display preferences) are now handled by
+ * UserMetaService via the user_meta table.
  *
  * Error codes:
  * - USER_NOT_FOUND: User doesn't exist
@@ -12,7 +15,7 @@
  * - VALIDATION_ERROR: Input validation failed
  */
 
-import { users, userSettings, type IDatabase } from '@/db';
+import { users, type IDatabase } from '@/db';
 import { eq } from 'drizzle-orm';
 import { verifyPassword, hashPassword } from '@/lib/auth/password';
 import { z } from 'zod';
@@ -40,38 +43,11 @@ export const updatePasswordSchema = z.object({
     .regex(PASSWORD_REQUIREMENTS.hasNumberOrSpecial, PASSWORD_ERROR_MESSAGES.hasNumberOrSpecial),
 });
 
-export const updateSettingsSchema = z.object({
-  primaryCurrency: z.enum(['IDR', 'USD'], {
-    message: 'Currency must be either IDR or USD',
-  }),
-  showConvertedTotals: z.boolean().optional(),
-  showIndividualCurrencies: z.boolean().optional(),
-});
-
 /**
  * Input types inferred from Zod schemas
  */
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
 export type UpdatePasswordInput = z.infer<typeof updatePasswordSchema>;
-export type UpdateSettingsInput = z.infer<typeof updateSettingsSchema>;
-
-/**
- * User settings with defaults
- */
-export type UserSettings = {
-  primaryCurrency: 'IDR' | 'USD';
-  showConvertedTotals: boolean;
-  showIndividualCurrencies: boolean;
-};
-
-/**
- * Default user settings
- */
-const DEFAULT_SETTINGS: UserSettings = {
-  primaryCurrency: 'IDR',
-  showConvertedTotals: true,
-  showIndividualCurrencies: true,
-};
 
 /**
  * Constant-time delay function to prevent timing attacks
@@ -190,112 +166,5 @@ export class UserService {
       .where(eq(users.id, userId));
 
     return { success: true };
-  }
-
-  /**
-   * Update user settings
-   *
-   * @param userId - User ID to update
-   * @param input - Settings update data
-   * @returns Promise resolving to updated settings
-   * @throws {UserServiceError} If user not found or validation fails
-   */
-  async updateSettings(userId: string, input: UpdateSettingsInput) {
-    // Validate input using Zod schema
-    const validated = updateSettingsSchema.parse(input);
-
-    // Check if user exists
-    const user = await this.db.query.users.findFirst({
-      where: eq(users.id, userId),
-    });
-
-    if (!user) {
-      throw new UserServiceError(ServiceErrorCode.USER_NOT_FOUND, 'User not found', 404);
-    }
-
-    // Check if settings exist
-    const existingSettings = await this.db.query.userSettings.findFirst({
-      where: eq(userSettings.user_id, userId),
-    });
-
-    type UserSettingsUpdate = Partial<{
-      primary_currency: 'IDR' | 'USD';
-      show_converted_totals: boolean;
-      show_individual_currencies: boolean;
-      updated_at: Date;
-    }>;
-
-    const updateData: UserSettingsUpdate = {
-      updated_at: new Date(),
-    };
-
-    if (validated.primaryCurrency !== undefined) {
-      updateData.primary_currency = validated.primaryCurrency;
-    }
-
-    if (validated.showConvertedTotals !== undefined) {
-      updateData.show_converted_totals = validated.showConvertedTotals;
-    }
-
-    if (validated.showIndividualCurrencies !== undefined) {
-      updateData.show_individual_currencies = validated.showIndividualCurrencies;
-    }
-
-    if (existingSettings) {
-      // Update existing settings
-      await this.db.update(userSettings).set(updateData).where(eq(userSettings.user_id, userId));
-    } else {
-      // Create new settings (Promise.resolve ensures await works correctly)
-      await Promise.resolve(
-        this.db.insert(userSettings).values({
-          user_id: userId,
-          primary_currency: validated.primaryCurrency,
-          show_converted_totals:
-            validated.showConvertedTotals ?? DEFAULT_SETTINGS.showConvertedTotals,
-          show_individual_currencies:
-            validated.showIndividualCurrencies ?? DEFAULT_SETTINGS.showIndividualCurrencies,
-          created_at: new Date(),
-          updated_at: new Date(),
-        })
-      );
-    }
-
-    // Return updated settings
-    return this.getSettings(userId);
-  }
-
-  /**
-   * Get user settings with defaults
-   *
-   * @param userId - User ID to get settings for
-   * @returns Promise resolving to user settings with defaults applied
-   */
-  async getSettings(userId: string): Promise<UserSettings> {
-    // Check if user exists
-    const user = await this.db.query.users.findFirst({
-      where: eq(users.id, userId),
-    });
-
-    if (!user) {
-      throw new UserServiceError(ServiceErrorCode.USER_NOT_FOUND, 'User not found', 404);
-    }
-
-    // Get settings from database
-    const settings = await this.db.query.userSettings.findFirst({
-      where: eq(userSettings.user_id, userId),
-    });
-
-    if (!settings) {
-      // Return defaults if no settings exist
-      return { ...DEFAULT_SETTINGS };
-    }
-
-    // Return settings with defaults for any missing values
-    return {
-      primaryCurrency: settings.primary_currency as 'IDR' | 'USD',
-      showConvertedTotals: settings.show_converted_totals ?? DEFAULT_SETTINGS.showConvertedTotals,
-      showIndividualCurrencies:
-        settings.show_individual_currencies ?? DEFAULT_SETTINGS.showIndividualCurrencies,
-    };
   }
 }

@@ -555,7 +555,7 @@ describe('Database Runtime-Agnostic Integration Tests', () => {
       expect(schemaModule.exchangeRates).toBeDefined();
       expect(schemaModule.passwordResetTokens).toBeDefined();
       expect(schemaModule.sessions).toBeDefined();
-      expect(schemaModule.userSettings).toBeDefined();
+      expect(schemaModule.userMeta).toBeDefined();
     });
 
     it('should export schema from @/db index', async () => {

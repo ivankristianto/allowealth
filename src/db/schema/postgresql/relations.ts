@@ -8,7 +8,7 @@ import { relations } from 'drizzle-orm';
 
 // Import all tables
 import { users } from './users';
-import { userSettings } from './user-settings';
+import { userMeta } from './user-meta';
 import { sessions } from './sessions';
 import { categories } from './categories';
 import { transactions } from './transactions';
@@ -21,7 +21,7 @@ import { budgets } from './budgets';
 
 // User relations
 export const usersRelations = relations(users, ({ many }) => ({
-  settings: many(userSettings),
+  meta: many(userMeta),
   categories: many(categories),
   transactions: many(transactions),
   assets: many(assets),
@@ -30,10 +30,10 @@ export const usersRelations = relations(users, ({ many }) => ({
   sessions: many(sessions),
 }));
 
-// User settings relations
-export const userSettingsRelations = relations(userSettings, ({ one }) => ({
+// User meta relations
+export const userMetaRelations = relations(userMeta, ({ one }) => ({
   user: one(users, {
-    fields: [userSettings.user_id],
+    fields: [userMeta.user_id],
     references: [users.id],
   }),
 }));

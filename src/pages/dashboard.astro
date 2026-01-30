@@ -34,7 +34,7 @@ const user = Astro.locals.user;
 const userSettings = Astro.locals.userSettings;
 
 // Get user's preferred currency (from ProtectedLayout)
-const primaryCurrency = userSettings?.primaryCurrency ?? 'IDR';
+const primaryCurrency = userSettings?.currency ?? 'IDR';
 
 // Get current month and year
 const now = new Date();

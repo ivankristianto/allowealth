@@ -1,7 +1,7 @@
 # User Meta Table Plan
 
 **Version:** 1.1.0
-**Status:** Ready for Implementation
+**Status:** ✅ Implemented (2026-01-30)
 
 ## Objective
 
@@ -386,30 +386,84 @@ drizzle/
 
 ## Acceptance Criteria
 
-- [ ] No references to `user_settings` remain in code or docs
-- [ ] All three settings migrated: `currency`, `show_converted_totals`, `show_individual_currencies`
-- [ ] Meta key whitelist enforced at service layer
-- [ ] Value size limit (4KB) enforced
-- [ ] Users can only access their own meta
-- [ ] `GET /api/user/meta` returns all meta for authenticated user
-- [ ] `GET /api/user/meta/:key` returns single meta value
-- [ ] `PUT /api/user/meta/:key` creates or updates meta
-- [ ] `DELETE /api/user/meta/:key` removes meta
-- [ ] Seeder creates default meta for every user
-- [ ] Type-safe wrappers available for common settings
+- [x] No references to `user_settings` remain in code or docs
+- [x] All three settings migrated: `currency`, `show_converted_totals`, `show_individual_currencies`
+- [x] Meta key whitelist enforced at service layer
+- [x] Value size limit (4KB) enforced
+- [x] Users can only access their own meta
+- [x] `GET /api/user/meta` returns all meta for authenticated user
+- [x] `GET /api/user/meta/:key` returns single meta value
+- [x] `PUT /api/user/meta/:key` creates or updates meta
+- [x] `DELETE /api/user/meta/:key` removes meta
+- [x] Seeder creates default meta for every user
+- [x] Type-safe wrappers available for common settings
 - [ ] `docs/architecture/004-database-schema.md` reflects new schema
-- [ ] OpenAPI docs updated with new endpoints
-- [ ] All tests pass
+- [x] OpenAPI docs updated with new endpoints
+- [x] All tests pass
 
 ---
 
 ## Implementation Order
 
-1. **Schema** - Create `user_meta` table, run migration
-2. **Constants** - Define meta key whitelist and defaults
-3. **Service** - Implement `user-meta.service.ts` with tests
-4. **API** - Create endpoints, update OpenAPI
-5. **UI** - Update layouts and pages to use meta
-6. **Seeder** - Update seed data
-7. **Cleanup** - Delete `user_settings` files and references
-8. **Docs** - Update architecture documentation
+1. **Schema** - Create `user_meta` table, run migration ✅
+2. **Constants** - Define meta key whitelist and defaults ✅
+3. **Service** - Implement `user-meta.service.ts` with tests ✅
+4. **API** - Create endpoints, update OpenAPI ✅
+5. **UI** - Update layouts and pages to use meta ✅
+6. **Seeder** - Update seed data ✅
+7. **Cleanup** - Delete `user_settings` files and references ✅
+8. **Docs** - Update architecture documentation (pending)
+
+---
+
+## Implementation Notes
+
+### Completed (2026-01-30)
+
+**Files Created:**
+
+- `src/db/schema/sqlite/user-meta.ts` - SQLite schema for user_meta table
+- `src/db/schema/postgresql/user-meta.ts` - PostgreSQL schema for user_meta table
+- `src/lib/constants/user-meta-keys.ts` - Meta key whitelist, defaults, and validation schemas
+- `src/services/user-meta.service.ts` - UserMetaService with type-safe wrappers
+- `src/services/user-meta.service.test.ts` - Unit tests for UserMetaService
+- `src/pages/api/user/meta/index.ts` - GET /api/user/meta endpoint
+- `src/pages/api/user/meta/[key].ts` - GET/PUT/DELETE /api/user/meta/:key endpoints
+- `openapi/paths/user-meta.yml` - OpenAPI path definitions
+- `openapi/schemas/UserMetaListResponse.yml` - OpenAPI schema
+- `openapi/schemas/UserMetaResponse.yml` - OpenAPI schema
+- `openapi/schemas/UpdateUserMetaRequest.yml` - OpenAPI schema
+- `openapi/schemas/DeleteUserMetaResponse.yml` - OpenAPI schema
+
+**Files Deleted:**
+
+- `src/db/schema/sqlite/user-settings.ts`
+- `src/db/schema/postgresql/user-settings.ts`
+- `src/pages/api/user/settings.ts`
+- `openapi/schemas/UpdateUserSettingsRequest.yml`
+- `openapi/schemas/UserSettingsResponse.yml`
+
+**Files Modified:**
+
+- `src/db/schema/sqlite/index.ts` - Export userMeta instead of userSettings
+- `src/db/schema/sqlite/relations.ts` - Add userMeta relations
+- `src/db/schema/postgresql/index.ts` - Export userMeta instead of userSettings
+- `src/db/schema/postgresql/relations.ts` - Add userMeta relations
+- `src/services/user.service.ts` - Remove settings methods
+- `src/services/user.service.test.ts` - Update tests
+- `src/services/index.ts` - Export userMetaService
+- `src/layouts/ProtectedLayout.astro` - Use userMetaService
+- `src/pages/profile.astro` - Use new meta API endpoints
+- `src/env.d.ts` - Update UserSettings import
+- `src/db/seed.ts` - Seed user_meta instead of user_settings
+- `openapi.yml` - Update path and schema references
+- `openapi/paths/user.yml` - Clean up (removed settings refs)
+- `src/pages/api/user/user.api.integration.test.ts` - Update tests for new meta API
+- `src/db/index.integration.test.ts` - Update schema assertions
+
+**Quality Gates Passed:**
+
+- `bun run lint:fix` ✅
+- `bun run stylelint:fix` ✅
+- `bun run format:fix` ✅
+- `bun run typecheck` ✅ (0 errors)

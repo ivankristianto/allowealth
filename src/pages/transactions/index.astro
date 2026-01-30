@@ -14,7 +14,7 @@ import TransactionFiltersBar from '@/components/organisms/TransactionFiltersBar.
 import DeleteConfirmationModal from '@/components/organisms/DeleteConfirmationModal.astro';
 import { Receipt, RotateCcw } from '@lucide/astro';
 import type { TransactionOutput } from '@/lib/types/transaction';
-import { transactionService, categoryService, userService } from '@/services';
+import { transactionService, categoryService, userMetaService } from '@/services';
 import {
   parseMonthKey,
   formatMonthKey,
@@ -29,8 +29,8 @@ const user = Astro.locals.user!;
 const currentPath = '/transactions';
 
 // Get user settings for currency preference
-const userSettings = await userService.getSettings(user.id);
-const userCurrency = userSettings.primaryCurrency;
+const userSettings = await userMetaService.getUserSettings(user.id);
+const userCurrency = userSettings.currency;
 
 // Get query parameters for filtering
 const url = new URL(Astro.url);

@@ -1,0 +1,25 @@
+# User meta single value response schema
+UserMetaResponse:
+  type: object
+  required:
+    - success
+    - data
+  properties:
+    success:
+      type: boolean
+      example: true
+    data:
+      type: object
+      required:
+        - key
+        - value
+      properties:
+        key:
+          type: string
+          description: The meta key
+          enum: [currency, show_converted_totals, show_individual_currencies]
+          example: currency
+        value:
+          type: string
+          description: The meta value
+          example: USD

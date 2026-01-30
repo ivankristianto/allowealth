@@ -1,7 +1,7 @@
 /// <reference types="astro/client" />
 
 import type { User, Session } from '@/lib/auth/lucia';
-import type { UserSettings } from '@/services/user.service';
+import type { UserSettings } from '@/lib/constants/user-meta-keys';
 
 declare global {
   namespace App {
