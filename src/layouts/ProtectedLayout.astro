@@ -33,8 +33,8 @@
 
 import MainLayout from './MainLayout.astro';
 import TransactionModal from '@/components/organisms/TransactionModal.astro';
-import { categoryService, assetService, userService } from '@/services';
-import type { UserSettings } from '@/services/user.service';
+import { categoryService, assetService, userMetaService } from '@/services';
+import { DEFAULT_USER_SETTINGS, type UserSettings } from '@/lib/constants/user-meta-keys';
 
 interface Props {
   title?: string;
@@ -50,17 +50,13 @@ const user = Astro.locals.user!;
 // Fetch categories, assets, and user settings for global transaction modal
 let categories: Array<{ id: string; name: string; type: string; currency?: string }> = [];
 let assets: Array<{ id: string; name: string; type: string }> = [];
-let userSettings: UserSettings = {
-  primaryCurrency: 'IDR',
-  showConvertedTotals: true,
-  showIndividualCurrencies: true,
-};
+let userSettings: UserSettings = { ...DEFAULT_USER_SETTINGS };
 
 try {
   [categories, assets, userSettings] = await Promise.all([
     categoryService.findAll(user.id, { is_active: true }),
     assetService.findAll(user.id),
-    userService.getSettings(user.id),
+    userMetaService.getUserSettings(user.id),
   ]);
 } catch (err) {
   console.error('Error loading transaction form data:', err);

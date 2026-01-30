@@ -1,0 +1,328 @@
+/**
+ * User Meta Service
+ *
+ * Provides key-value storage for user preferences and settings.
+ * Replaces the old user_settings system with a more flexible meta approach.
+ *
+ * Security features:
+ * - Meta key allowlist validation
+ * - Value size limit (4KB)
+ * - Per-key value schema validation
+ * - User-scoped access only
+ *
+ * Error codes:
+ * - USER_NOT_FOUND: User doesn't exist
+ * - INVALID_META_KEY: Key not in allowlist
+ * - INVALID_META_VALUE: Value fails validation for key
+ * - VALUE_TOO_LARGE: Value exceeds 4KB limit
+ * - META_NOT_FOUND: Meta key doesn't exist for user
+ */
+
+import { userMeta, users, type IDatabase } from '@/db';
+import { eq, and } from 'drizzle-orm';
+import { nanoid } from 'nanoid';
+import {
+  USER_META_KEYS,
+  type UserMetaKey,
+  type UserSettings,
+  type SupportedCurrency,
+  META_DEFAULTS,
+  META_VALUE_MAX_SIZE,
+  isValidMetaKey,
+  isSupportedMetaCurrency,
+  validateMetaValue,
+  metaValueToBoolean,
+  booleanToMetaValue,
+  DEFAULT_USER_SETTINGS,
+} from '@/lib/constants/user-meta-keys';
+import { UserMetaServiceError, ServiceErrorCode } from './service-errors';
+
+/**
+ * User Meta Service
+ */
+export class UserMetaService {
+  /**
+   * Create a new UserMetaService with database injection
+   * @param db - Database instance (injected for testability)
+   */
+  constructor(private db: IDatabase) {}
+
+  /**
+   * Get a single meta value for a user
+   *
+   * @param userId - User ID
+   * @param key - Meta key
+   * @returns The meta value or null if not set
+   * @throws {UserMetaServiceError} If user not found or invalid key
+   */
+  async getUserMeta(userId: string, key: UserMetaKey): Promise<string | null> {
+    // Validate key
+    if (!isValidMetaKey(key)) {
+      throw new UserMetaServiceError(
+        ServiceErrorCode.INVALID_META_KEY,
+        `Invalid meta key: ${key}`,
+        400
+      );
+    }
+
+    // Check if user exists
+    await this.ensureUserExists(userId);
+
+    // Get meta value
+    const meta = await this.db.query.userMeta.findFirst({
+      where: and(eq(userMeta.user_id, userId), eq(userMeta.meta_key, key)),
+    });
+
+    return meta?.meta_value ?? null;
+  }
+
+  /**
+   * Get all meta values for a user as a record
+   *
+   * @param userId - User ID
+   * @returns Record of meta key to value (includes defaults for unset keys)
+   * @throws {UserMetaServiceError} If user not found
+   */
+  async getUserMetaAll(userId: string): Promise<Record<UserMetaKey, string>> {
+    // Check if user exists
+    await this.ensureUserExists(userId);
+
+    // Get all meta for user
+    const metas = await this.db.query.userMeta.findMany({
+      where: eq(userMeta.user_id, userId),
+    });
+
+    // Start with defaults
+    const result = { ...META_DEFAULTS };
+
+    // Override with actual values
+    for (const meta of metas) {
+      if (isValidMetaKey(meta.meta_key)) {
+        result[meta.meta_key] = meta.meta_value;
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * Set a meta value for a user (upsert)
+   *
+   * @param userId - User ID
+   * @param key - Meta key
+   * @param value - Meta value
+   * @throws {UserMetaServiceError} If user not found, invalid key, invalid value, or value too large
+   */
+  async setUserMeta(userId: string, key: UserMetaKey, value: string): Promise<void> {
+    // Validate key
+    if (!isValidMetaKey(key)) {
+      throw new UserMetaServiceError(
+        ServiceErrorCode.INVALID_META_KEY,
+        `Invalid meta key: ${key}`,
+        400
+      );
+    }
+
+    // Validate value size using actual byte length (not character count)
+    const byteLength = new TextEncoder().encode(value).length;
+    if (byteLength > META_VALUE_MAX_SIZE) {
+      throw new UserMetaServiceError(
+        ServiceErrorCode.VALUE_TOO_LARGE,
+        `Value exceeds maximum size of ${META_VALUE_MAX_SIZE} bytes`,
+        400
+      );
+    }
+
+    // Validate value against key's schema
+    try {
+      validateMetaValue(key, value);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Invalid value';
+      throw new UserMetaServiceError(ServiceErrorCode.INVALID_META_VALUE, message, 400);
+    }
+
+    // Check if user exists
+    await this.ensureUserExists(userId);
+
+    // Use upsert to avoid race condition
+    // ON CONFLICT (user_id, meta_key) DO UPDATE
+    await this.db
+      .insert(userMeta)
+      .values({
+        meta_id: nanoid(),
+        user_id: userId,
+        meta_key: key,
+        meta_value: value,
+        created_at: new Date(),
+        updated_at: new Date(),
+      })
+      .onConflictDoUpdate({
+        target: [userMeta.user_id, userMeta.meta_key],
+        set: {
+          meta_value: value,
+          updated_at: new Date(),
+        },
+      });
+  }
+
+  /**
+   * Delete a meta value for a user
+   *
+   * @param userId - User ID
+   * @param key - Meta key
+   * @throws {UserMetaServiceError} If user not found, invalid key, or meta not found
+   */
+  async deleteUserMeta(userId: string, key: UserMetaKey): Promise<void> {
+    // Validate key
+    if (!isValidMetaKey(key)) {
+      throw new UserMetaServiceError(
+        ServiceErrorCode.INVALID_META_KEY,
+        `Invalid meta key: ${key}`,
+        400
+      );
+    }
+
+    // Check if user exists
+    await this.ensureUserExists(userId);
+
+    // Check if meta exists
+    const existing = await this.db.query.userMeta.findFirst({
+      where: and(eq(userMeta.user_id, userId), eq(userMeta.meta_key, key)),
+    });
+
+    if (!existing) {
+      throw new UserMetaServiceError(
+        ServiceErrorCode.META_NOT_FOUND,
+        `Meta key not found: ${key}`,
+        404
+      );
+    }
+
+    // Delete
+    await this.db
+      .delete(userMeta)
+      .where(and(eq(userMeta.user_id, userId), eq(userMeta.meta_key, key)));
+  }
+
+  // ============================================================================
+  // Type-safe wrappers for common settings
+  // ============================================================================
+
+  /**
+   * Get user's preferred currency
+   *
+   * @param userId - User ID
+   * @returns The currency or default 'IDR'
+   */
+  async getUserCurrency(userId: string): Promise<SupportedCurrency> {
+    const value = await this.getUserMeta(userId, USER_META_KEYS.CURRENCY);
+    // Validate runtime value to ensure type safety
+    if (isSupportedMetaCurrency(value)) {
+      return value;
+    }
+    return 'IDR'; // Fallback to default for invalid or missing values
+  }
+
+  /**
+   * Set user's preferred currency
+   *
+   * @param userId - User ID
+   * @param currency - Currency code ('IDR' or 'USD')
+   */
+  async setUserCurrency(userId: string, currency: SupportedCurrency): Promise<void> {
+    await this.setUserMeta(userId, USER_META_KEYS.CURRENCY, currency);
+  }
+
+  /**
+   * Get whether to show converted totals
+   *
+   * @param userId - User ID
+   * @returns Boolean (default true)
+   */
+  async getShowConvertedTotals(userId: string): Promise<boolean> {
+    const value = await this.getUserMeta(userId, USER_META_KEYS.SHOW_CONVERTED_TOTALS);
+    return metaValueToBoolean(value, true);
+  }
+
+  /**
+   * Set whether to show converted totals
+   *
+   * @param userId - User ID
+   * @param value - Boolean
+   */
+  async setShowConvertedTotals(userId: string, value: boolean): Promise<void> {
+    await this.setUserMeta(userId, USER_META_KEYS.SHOW_CONVERTED_TOTALS, booleanToMetaValue(value));
+  }
+
+  /**
+   * Get whether to show individual currencies
+   *
+   * @param userId - User ID
+   * @returns Boolean (default true)
+   */
+  async getShowIndividualCurrencies(userId: string): Promise<boolean> {
+    const value = await this.getUserMeta(userId, USER_META_KEYS.SHOW_INDIVIDUAL_CURRENCIES);
+    return metaValueToBoolean(value, true);
+  }
+
+  /**
+   * Set whether to show individual currencies
+   *
+   * @param userId - User ID
+   * @param value - Boolean
+   */
+  async setShowIndividualCurrencies(userId: string, value: boolean): Promise<void> {
+    await this.setUserMeta(
+      userId,
+      USER_META_KEYS.SHOW_INDIVIDUAL_CURRENCIES,
+      booleanToMetaValue(value)
+    );
+  }
+
+  /**
+   * Get all user settings as a typed object
+   *
+   * @param userId - User ID
+   * @returns UserSettings object with all preferences
+   */
+  async getUserSettings(userId: string): Promise<UserSettings> {
+    const metaAll = await this.getUserMetaAll(userId);
+
+    // Validate currency at runtime instead of unsafe cast
+    const rawCurrency = metaAll[USER_META_KEYS.CURRENCY];
+    const currency = isSupportedMetaCurrency(rawCurrency)
+      ? rawCurrency
+      : DEFAULT_USER_SETTINGS.currency;
+
+    return {
+      currency,
+      showConvertedTotals: metaValueToBoolean(
+        metaAll[USER_META_KEYS.SHOW_CONVERTED_TOTALS],
+        DEFAULT_USER_SETTINGS.showConvertedTotals
+      ),
+      showIndividualCurrencies: metaValueToBoolean(
+        metaAll[USER_META_KEYS.SHOW_INDIVIDUAL_CURRENCIES],
+        DEFAULT_USER_SETTINGS.showIndividualCurrencies
+      ),
+      phone: metaAll[USER_META_KEYS.PHONE] || DEFAULT_USER_SETTINGS.phone,
+      bio: metaAll[USER_META_KEYS.BIO] || DEFAULT_USER_SETTINGS.bio,
+    };
+  }
+
+  // ============================================================================
+  // Private helpers
+  // ============================================================================
+
+  /**
+   * Check if user exists, throw if not
+   */
+  private async ensureUserExists(userId: string): Promise<void> {
+    const user = await this.db.query.users.findFirst({
+      where: eq(users.id, userId),
+    });
+
+    if (!user) {
+      throw new UserMetaServiceError(ServiceErrorCode.USER_NOT_FOUND, 'User not found', 404);
+    }
+  }
+}

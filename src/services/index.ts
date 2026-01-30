@@ -22,6 +22,7 @@ import { AssetCategoryService } from './asset-category.service';
 import { BudgetService } from './budget.service';
 import { DashboardService } from './dashboard.service';
 import { UserService } from './user.service';
+import { UserMetaService } from './user-meta.service';
 import { ReportService } from './report.service';
 
 // Re-export types and utilities
@@ -33,6 +34,7 @@ export * from './budget.service';
 export * from './auth.service';
 export * from './dashboard.service';
 export * from './user.service';
+export * from './user-meta.service';
 export * from './report.service';
 export * from './service-errors';
 
@@ -44,4 +46,5 @@ export const assetCategoryService = new AssetCategoryService(db);
 export const budgetService = new BudgetService(db);
 export const dashboardService = new DashboardService(db);
 export const userService = new UserService(db);
+export const userMetaService = new UserMetaService(db);
 export const reportService = new ReportService(db);

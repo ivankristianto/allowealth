@@ -16,10 +16,11 @@
 
 import { describe, it, expect, beforeAll } from 'bun:test';
 import { db } from '@/db';
-import { users, userSettings } from '@/db';
+import { users, userMeta } from '@/db';
 import { eq } from 'drizzle-orm';
 import { auth } from '@/lib/auth/lucia';
 import { hashPassword } from '@/lib/auth/password';
+import { USER_META_KEYS } from '@/lib/constants/user-meta-keys';
 
 // Test user credentials (matches the seeder)
 const TEST_USER = {
@@ -55,11 +56,11 @@ describe('User API Integration Tests', () => {
   });
 
   // Helper to skip tests if demo user doesn't exist
-  const skipIfNoUser = (callback: () => void) => {
+  const skipIfNoUser = async (callback: () => Promise<void>) => {
     if (shouldSkip) {
       return;
     }
-    callback();
+    await callback();
   };
 
   // Helper to make authenticated API requests
@@ -91,7 +92,7 @@ describe('User API Integration Tests', () => {
 
   describe('GET /api/user/profile', () => {
     it('should return current user profile', async () => {
-      skipIfNoUser(async () => {
+      await skipIfNoUser(async () => {
         const response = await makeRequest('/api/user/profile', 'GET');
 
         expect(response.status).toBe(200);
@@ -105,7 +106,7 @@ describe('User API Integration Tests', () => {
     });
 
     it('should reject requests without authentication', async () => {
-      skipIfNoUser(async () => {
+      await skipIfNoUser(async () => {
         const url = new URL('/api/user/profile', 'http://localhost:4321');
 
         const response = await fetch(url.toString(), {
@@ -121,41 +122,41 @@ describe('User API Integration Tests', () => {
     });
   });
 
-  describe('GET /api/user/settings', () => {
-    it('should return user settings with defaults', async () => {
-      skipIfNoUser(async () => {
-        const response = await makeRequest('/api/user/settings', 'GET');
+  describe('GET /api/user/meta', () => {
+    it('should return all user meta values', async () => {
+      await skipIfNoUser(async () => {
+        const response = await makeRequest('/api/user/meta', 'GET');
 
         expect(response.status).toBe(200);
 
         const json = await response.json();
         expect(json.success).toBe(true);
-        expect(json.data).toHaveProperty('primaryCurrency');
-        expect(json.data).toHaveProperty('showConvertedTotals');
-        expect(json.data).toHaveProperty('showIndividualCurrencies');
+        expect(json.data).toHaveProperty('currency');
+        expect(json.data).toHaveProperty('show_converted_totals');
+        expect(json.data).toHaveProperty('show_individual_currencies');
       });
     });
 
-    it('should return default values when settings do not exist', async () => {
-      skipIfNoUser(async () => {
-        // Delete existing settings
-        await db.delete(userSettings).where(eq(userSettings.user_id, testUserId));
+    it('should return default values when meta does not exist', async () => {
+      await skipIfNoUser(async () => {
+        // Delete existing meta
+        await db.delete(userMeta).where(eq(userMeta.user_id, testUserId));
 
-        const response = await makeRequest('/api/user/settings', 'GET');
+        const response = await makeRequest('/api/user/meta', 'GET');
 
         expect(response.status).toBe(200);
 
         const json = await response.json();
         expect(json.success).toBe(true);
-        expect(json.data.primaryCurrency).toBe('IDR');
-        expect(json.data.showConvertedTotals).toBe(true);
-        expect(json.data.showIndividualCurrencies).toBe(true);
+        expect(json.data.currency).toBe('IDR');
+        expect(json.data.show_converted_totals).toBe('true');
+        expect(json.data.show_individual_currencies).toBe('true');
       });
     });
 
     it('should reject requests without authentication', async () => {
-      skipIfNoUser(async () => {
-        const url = new URL('/api/user/settings', 'http://localhost:4321');
+      await skipIfNoUser(async () => {
+        const url = new URL('/api/user/meta', 'http://localhost:4321');
 
         const response = await fetch(url.toString(), {
           method: 'GET',
@@ -172,7 +173,7 @@ describe('User API Integration Tests', () => {
 
   describe('PUT /api/user/profile', () => {
     it('should update user name and email', async () => {
-      skipIfNoUser(async () => {
+      await skipIfNoUser(async () => {
         const newName = `Updated ${TEST_USER.name}`;
         const newEmail = `updated+${Date.now()}@example.com`;
 
@@ -208,7 +209,7 @@ describe('User API Integration Tests', () => {
     });
 
     it('should reject duplicate email', async () => {
-      skipIfNoUser(async () => {
+      await skipIfNoUser(async () => {
         // First, create a temporary user
         const tempUserEmail = `temp+${Date.now()}@example.com`;
         const tempUserId = `temp-user-${Date.now()}`;
@@ -244,7 +245,7 @@ describe('User API Integration Tests', () => {
     });
 
     it('should validate required fields', async () => {
-      skipIfNoUser(async () => {
+      await skipIfNoUser(async () => {
         const response = await makeRequest('/api/user/profile', 'PUT', {
           name: '',
           email: 'invalid-email',
@@ -260,7 +261,7 @@ describe('User API Integration Tests', () => {
     });
 
     it('should reject requests without authentication', async () => {
-      skipIfNoUser(async () => {
+      await skipIfNoUser(async () => {
         const url = new URL('/api/user/profile', 'http://localhost:4321');
 
         const response = await fetch(url.toString(), {
@@ -279,7 +280,7 @@ describe('User API Integration Tests', () => {
 
   describe('PUT /api/user/password', () => {
     it('should update password with valid old password', async () => {
-      skipIfNoUser(async () => {
+      await skipIfNoUser(async () => {
         const newPassword = `NewPassword${Date.now()}123!`;
 
         const response = await makeRequest('/api/user/password', 'PUT', {
@@ -305,7 +306,7 @@ describe('User API Integration Tests', () => {
     });
 
     it('should reject invalid old password', async () => {
-      skipIfNoUser(async () => {
+      await skipIfNoUser(async () => {
         const response = await makeRequest('/api/user/password', 'PUT', {
           oldPassword: 'wrongpassword',
           newPassword: 'NewPassword123!',
@@ -320,7 +321,7 @@ describe('User API Integration Tests', () => {
     });
 
     it('should validate password strength', async () => {
-      skipIfNoUser(async () => {
+      await skipIfNoUser(async () => {
         // Test weak password (too short)
         const response1 = await makeRequest('/api/user/password', 'PUT', {
           oldPassword: TEST_USER.password,
@@ -347,7 +348,7 @@ describe('User API Integration Tests', () => {
     });
 
     it('should reject requests without authentication', async () => {
-      skipIfNoUser(async () => {
+      await skipIfNoUser(async () => {
         const url = new URL('/api/user/password', 'http://localhost:4321');
 
         const response = await fetch(url.toString(), {
@@ -367,88 +368,82 @@ describe('User API Integration Tests', () => {
     });
   });
 
-  describe('PUT /api/user/settings', () => {
-    it('should update primary currency', async () => {
-      skipIfNoUser(async () => {
-        const response = await makeRequest('/api/user/settings', 'PUT', {
-          primaryCurrency: 'USD',
+  describe('PUT /api/user/meta/:key', () => {
+    it('should update currency meta value', async () => {
+      await skipIfNoUser(async () => {
+        const response = await makeRequest(`/api/user/meta/${USER_META_KEYS.CURRENCY}`, 'PUT', {
+          value: 'USD',
         });
 
         expect(response.status).toBe(200);
 
         const json = await response.json();
         expect(json.success).toBe(true);
-        expect(json.data.primaryCurrency).toBe('USD');
+        expect(json.data.value).toBe('USD');
 
         // Verify in database
-        const settings = await db.query.userSettings.findFirst({
-          where: eq(userSettings.user_id, testUserId),
+        const meta = await db.query.userMeta.findFirst({
+          where: eq(userMeta.user_id, testUserId),
         });
-        expect(settings?.primary_currency).toBe('USD');
+        expect(meta?.meta_value).toBe('USD');
 
         // Restore original
-        await db
-          .update(userSettings)
-          .set({
-            primary_currency: 'IDR',
-          })
-          .where(eq(userSettings.user_id, testUserId));
+        await makeRequest(`/api/user/meta/${USER_META_KEYS.CURRENCY}`, 'PUT', { value: 'IDR' });
       });
     });
 
     it('should update display preferences', async () => {
-      skipIfNoUser(async () => {
-        const response = await makeRequest('/api/user/settings', 'PUT', {
-          primaryCurrency: 'IDR',
-          showConvertedTotals: false,
-          showIndividualCurrencies: false,
-        });
+      await skipIfNoUser(async () => {
+        const response = await makeRequest(
+          `/api/user/meta/${USER_META_KEYS.SHOW_CONVERTED_TOTALS}`,
+          'PUT',
+          { value: 'false' }
+        );
 
         expect(response.status).toBe(200);
 
         const json = await response.json();
         expect(json.success).toBe(true);
-        expect(json.data.showConvertedTotals).toBe(false);
-        expect(json.data.showIndividualCurrencies).toBe(false);
+        expect(json.data.value).toBe('false');
 
         // Restore defaults
-        await makeRequest('/api/user/settings', 'PUT', {
-          primaryCurrency: 'IDR',
-          showConvertedTotals: true,
-          showIndividualCurrencies: true,
+        await makeRequest(`/api/user/meta/${USER_META_KEYS.SHOW_CONVERTED_TOTALS}`, 'PUT', {
+          value: 'true',
         });
       });
     });
 
-    it('should create settings if they do not exist', async () => {
-      skipIfNoUser(async () => {
-        // Delete existing settings
-        await db.delete(userSettings).where(eq(userSettings.user_id, testUserId));
+    it('should create meta if it does not exist', async () => {
+      await skipIfNoUser(async () => {
+        // Delete existing meta
+        await db.delete(userMeta).where(eq(userMeta.user_id, testUserId));
 
-        const response = await makeRequest('/api/user/settings', 'PUT', {
-          primaryCurrency: 'USD',
+        const response = await makeRequest(`/api/user/meta/${USER_META_KEYS.CURRENCY}`, 'PUT', {
+          value: 'USD',
         });
 
         expect(response.status).toBe(200);
 
         const json = await response.json();
         expect(json.success).toBe(true);
-        expect(json.data.primaryCurrency).toBe('USD');
+        expect(json.data.value).toBe('USD');
 
-        // Verify settings were created
-        const settings = await db.query.userSettings.findFirst({
-          where: eq(userSettings.user_id, testUserId),
+        // Verify meta was created
+        const meta = await db.query.userMeta.findFirst({
+          where: eq(userMeta.user_id, testUserId),
         });
-        expect(settings).toBeDefined();
-        expect(settings?.primary_currency).toBe('USD');
+        expect(meta).toBeDefined();
+        expect(meta?.meta_value).toBe('USD');
       });
     });
 
     it('should validate currency values', async () => {
-      skipIfNoUser(async () => {
-        const response = await makeRequest('/api/user/settings', 'PUT', {
-          primaryCurrency: 'EUR', // Invalid currency
-        });
+      await skipIfNoUser(async () => {
+        const response = await makeRequest(
+          `/api/user/meta/${USER_META_KEYS.CURRENCY}`,
+          'PUT',
+          { value: 'EUR' } // Invalid currency
+        );
 
         expect(response.status).toBe(400);
 
@@ -459,13 +454,13 @@ describe('User API Integration Tests', () => {
     });
 
     it('should reject requests without authentication', async () => {
-      skipIfNoUser(async () => {
-        const url = new URL('/api/user/settings', 'http://localhost:4321');
+      await skipIfNoUser(async () => {
+        const url = new URL(`/api/user/meta/${USER_META_KEYS.CURRENCY}`, 'http://localhost:4321');
 
         const response = await fetch(url.toString(), {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ primaryCurrency: 'USD' }),
+          body: JSON.stringify({ value: 'USD' }),
         });
 
         expect(response.status).toBe(401);
@@ -478,7 +473,7 @@ describe('User API Integration Tests', () => {
 
   describe('Error Handling', () => {
     it('should handle malformed JSON', async () => {
-      skipIfNoUser(async () => {
+      await skipIfNoUser(async () => {
         const url = new URL('/api/user/profile', 'http://localhost:4321');
 
         const response = await fetch(url.toString(), {
@@ -495,7 +490,7 @@ describe('User API Integration Tests', () => {
     });
 
     it('should handle empty request body', async () => {
-      skipIfNoUser(async () => {
+      await skipIfNoUser(async () => {
         const response = await makeRequest('/api/user/profile', 'PUT');
 
         expect(response.status).toBe(400);

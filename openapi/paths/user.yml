@@ -72,33 +72,3 @@ paths:
         '500':
           $ref: '../responses/common.yml#/InternalServerError'
 
-  /api/user/settings:
-    put:
-      tags: [User]
-      summary: Update user settings
-      description: Update user preferences including primary currency and display options.
-      security:
-        - sessionAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '../schemas/UpdateUserSettingsRequest.yml#/UpdateUserSettingsRequest'
-      responses:
-        '200':
-          description: Settings updated successfully
-          content:
-            application/json:
-              schema:
-                $ref: '../schemas/UserSettingsResponse.yml#/UserSettingsResponse'
-        '400':
-          description: Validation error or invalid currency
-          content:
-            application/json:
-              schema:
-                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
-        '401':
-          $ref: '../responses/common.yml#/Unauthorized'
-        '500':
-          $ref: '../responses/common.yml#/InternalServerError'

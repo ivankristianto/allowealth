@@ -1,0 +1,20 @@
+# Delete user meta response schema
+DeleteUserMetaResponse:
+  type: object
+  required:
+    - success
+    - data
+  properties:
+    success:
+      type: boolean
+      example: true
+    data:
+      type: object
+      required:
+        - deleted
+      properties:
+        deleted:
+          type: string
+          description: The meta key that was deleted
+          enum: [currency, show_converted_totals, show_individual_currencies]
+          example: currency

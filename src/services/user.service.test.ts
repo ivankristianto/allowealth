@@ -1,12 +1,14 @@
 /**
  * Unit tests for UserService
+ *
+ * Note: Settings-related tests have been moved to user-meta.service.test.ts
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
 import { UserService } from './user.service';
 import { ServiceErrorCode } from './service-errors';
 import { db } from '@/db/index';
-import { users, userSettings } from '@/db/schema';
+import { users, userMeta } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { hashPassword } from '@/lib/auth/password';
@@ -33,32 +35,6 @@ async function createTestUser(email: string, password: string, name: string) {
   return user;
 }
 
-/**
- * Helper to create test settings for a user
- */
-async function createTestSettings(
-  userId: string,
-  settings?: {
-    primary_currency?: 'IDR' | 'USD';
-    show_converted_totals?: boolean;
-    show_individual_currencies?: boolean;
-  }
-) {
-  const [newSettings] = await db
-    .insert(userSettings)
-    .values({
-      user_id: userId,
-      primary_currency: settings?.primary_currency ?? 'IDR',
-      show_converted_totals: settings?.show_converted_totals ?? true,
-      show_individual_currencies: settings?.show_individual_currencies ?? true,
-      created_at: new Date(),
-      updated_at: new Date(),
-    })
-    .returning();
-
-  return newSettings;
-}
-
 describe('UserService', () => {
   const userService = new UserService(db);
 
@@ -69,14 +45,14 @@ describe('UserService', () => {
 
   // Clean up test database before each test
   beforeEach(async () => {
-    // Delete test users and their settings
+    // Delete test users and their meta
     const testUsers = await db.query.users.findMany({
       where: (users, { or }) =>
         or(eq(users.email, testEmail1.toLowerCase()), eq(users.email, testEmail2.toLowerCase())),
     });
 
     for (const user of testUsers) {
-      await db.delete(userSettings).where(eq(userSettings.user_id, user.id));
+      await db.delete(userMeta).where(eq(userMeta.user_id, user.id));
       await db.delete(users).where(eq(users.id, user.id));
     }
   });
@@ -89,7 +65,7 @@ describe('UserService', () => {
     });
 
     for (const user of testUsers) {
-      await db.delete(userSettings).where(eq(userSettings.user_id, user.id));
+      await db.delete(userMeta).where(eq(userMeta.user_id, user.id));
       await db.delete(users).where(eq(users.id, user.id));
     }
   });
@@ -344,193 +320,10 @@ describe('UserService', () => {
     });
   });
 
-  describe('updateSettings', () => {
-    it('should update primary currency', async () => {
-      const user = await createTestUser(testEmail1, testPassword, testName);
-
-      const settings = await userService.updateSettings(user.id, {
-        primaryCurrency: 'USD',
-      });
-
-      expect(settings.primaryCurrency).toBe('USD');
-    });
-
-    it('should update show converted totals', async () => {
-      const user = await createTestUser(testEmail1, testPassword, testName);
-
-      const settings = await userService.updateSettings(user.id, {
-        primaryCurrency: 'IDR',
-        showConvertedTotals: false,
-      });
-
-      expect(settings.showConvertedTotals).toBe(false);
-    });
-
-    it('should update show individual currencies', async () => {
-      const user = await createTestUser(testEmail1, testPassword, testName);
-
-      const settings = await userService.updateSettings(user.id, {
-        primaryCurrency: 'IDR',
-        showIndividualCurrencies: false,
-      });
-
-      expect(settings.showIndividualCurrencies).toBe(false);
-    });
-
-    it('should update all settings at once', async () => {
-      const user = await createTestUser(testEmail1, testPassword, testName);
-
-      const settings = await userService.updateSettings(user.id, {
-        primaryCurrency: 'USD',
-        showConvertedTotals: false,
-        showIndividualCurrencies: false,
-      });
-
-      expect(settings).toEqual({
-        primaryCurrency: 'USD',
-        showConvertedTotals: false,
-        showIndividualCurrencies: false,
-      });
-    });
-
-    it('should create settings if they do not exist', async () => {
-      const user = await createTestUser(testEmail1, testPassword, testName);
-
-      // Settings should not exist initially
-      const existingSettings = await db.query.userSettings.findFirst({
-        where: eq(userSettings.user_id, user.id),
-      });
-      expect(existingSettings).toBeUndefined();
-
-      // Update should create settings
-      const settings = await userService.updateSettings(user.id, {
-        primaryCurrency: 'USD',
-      });
-
-      expect(settings.primaryCurrency).toBe('USD');
-    });
-
-    it('should apply defaults for optional fields when creating new settings', async () => {
-      const user = await createTestUser(testEmail1, testPassword, testName);
-
-      const settings = await userService.updateSettings(user.id, {
-        primaryCurrency: 'USD',
-      });
-
-      expect(settings).toEqual({
-        primaryCurrency: 'USD',
-        showConvertedTotals: true,
-        showIndividualCurrencies: true,
-      });
-    });
-
-    it('should update existing settings without changing unspecified fields', async () => {
-      const user = await createTestUser(testEmail1, testPassword, testName);
-      await createTestSettings(user.id, {
-        primary_currency: 'IDR',
-        show_converted_totals: false,
-        show_individual_currencies: false,
-      });
-
-      const settings = await userService.updateSettings(user.id, {
-        primaryCurrency: 'USD',
-      });
-
-      expect(settings).toEqual({
-        primaryCurrency: 'USD',
-        showConvertedTotals: false,
-        showIndividualCurrencies: false,
-      });
-    });
-
-    it('should throw error for non-existent user', async () => {
-      expect(
-        userService.updateSettings('non-existent-id', {
-          primaryCurrency: 'USD',
-        })
-      ).rejects.toThrow();
-    });
-
-    it('should throw error with USER_NOT_FOUND code for non-existent user', async () => {
-      expect(
-        userService.updateSettings('non-existent-id', {
-          primaryCurrency: 'USD',
-        })
-      ).rejects.toMatchObject({
-        code: ServiceErrorCode.USER_NOT_FOUND,
-      });
-    });
-
-    it('should throw validation error for invalid currency', async () => {
-      const user = await createTestUser(testEmail1, testPassword, testName);
-
-      expect(
-        userService.updateSettings(user.id, {
-          primaryCurrency: 'EUR' as any,
-        })
-      ).rejects.toThrow();
-    });
-  });
-
-  describe('getSettings', () => {
-    it('should return user settings', async () => {
-      const user = await createTestUser(testEmail1, testPassword, testName);
-      await createTestSettings(user.id, {
-        primary_currency: 'USD',
-        show_converted_totals: false,
-        show_individual_currencies: false,
-      });
-
-      const settings = await userService.getSettings(user.id);
-
-      expect(settings).toEqual({
-        primaryCurrency: 'USD',
-        showConvertedTotals: false,
-        showIndividualCurrencies: false,
-      });
-    });
-
-    it('should return default settings if none exist', async () => {
-      const user = await createTestUser(testEmail1, testPassword, testName);
-
-      const settings = await userService.getSettings(user.id);
-
-      expect(settings).toEqual({
-        primaryCurrency: 'IDR',
-        showConvertedTotals: true,
-        showIndividualCurrencies: true,
-      });
-    });
-
-    it('should throw error for non-existent user', async () => {
-      expect(userService.getSettings('non-existent-id')).rejects.toThrow();
-    });
-
-    it('should throw error with USER_NOT_FOUND code for non-existent user', async () => {
-      expect(userService.getSettings('non-existent-id')).rejects.toMatchObject({
-        code: ServiceErrorCode.USER_NOT_FOUND,
-      });
-    });
-  });
-
   describe('Integration', () => {
     it('should complete full user profile flow', async () => {
       // Create user
       const user = await createTestUser(testEmail1, testPassword, testName);
-
-      // Get default settings
-      const settings1 = await userService.getSettings(user.id);
-      expect(settings1.primaryCurrency).toBe('IDR');
-
-      // Update settings
-      const settings2 = await userService.updateSettings(user.id, {
-        primaryCurrency: 'USD',
-      });
-      expect(settings2.primaryCurrency).toBe('USD');
-
-      // Verify settings persisted
-      const settings3 = await userService.getSettings(user.id);
-      expect(settings3.primaryCurrency).toBe('USD');
 
       // Update profile
       const updatedUser = await userService.updateProfile(user.id, {

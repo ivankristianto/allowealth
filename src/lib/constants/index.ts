@@ -8,3 +8,4 @@
 
 export * from './currency';
 export * from './asset-categories';
+export * from './user-meta-keys';

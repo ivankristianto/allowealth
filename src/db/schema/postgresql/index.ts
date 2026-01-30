@@ -1,6 +1,6 @@
 // Export all schema tables
 export * from './users';
-export * from './user-settings';
+export * from './user-meta';
 export * from './sessions';
 export * from './password-reset-tokens';
 export * from './categories';

@@ -1,0 +1,28 @@
+# User meta list response schema
+UserMetaListResponse:
+  type: object
+  required:
+    - success
+    - data
+  properties:
+    success:
+      type: boolean
+      example: true
+    data:
+      type: object
+      description: Map of meta keys to their values
+      properties:
+        currency:
+          type: string
+          enum: [IDR, USD]
+          example: IDR
+        show_converted_totals:
+          type: string
+          enum: ['true', 'false']
+          example: 'true'
+        show_individual_currencies:
+          type: string
+          enum: ['true', 'false']
+          example: 'true'
+      additionalProperties:
+        type: string
