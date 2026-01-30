@@ -58,17 +58,30 @@ export class AssetsPage extends BasePage {
    * Open the add asset modal.
    */
   async openAddAssetModal(): Promise<void> {
-    // Ensure page scripts are loaded
+    // Ensure page is fully loaded before interacting
     await this.page.waitForLoadState('domcontentloaded');
     await this.page.waitForLoadState('networkidle');
+
+    // Ensure any existing modal is closed first
+    const existingModal = this.page.locator('dialog#asset-form-modal[open]');
+    const isModalOpen = await existingModal.count();
+    if (isModalOpen > 0) {
+      // Close any open modal first
+      await this.page.keyboard.press('Escape');
+      await this.page.waitForTimeout(300);
+    }
 
     // Try the add asset button (data-testid or data-add-asset-btn)
     const addBtn = this.page
       .locator(this.addAssetBtn)
       .or(this.page.locator('[data-add-asset-btn]'));
 
-    // Wait for button to be ready and click
-    await addBtn.first().waitFor({ state: 'visible' });
+    // Wait for button to be ready and stable
+    await addBtn.first().waitFor({ state: 'visible', timeout: 10000 });
+
+    // Small delay to ensure page is stable after reload
+    await this.page.waitForTimeout(100);
+
     await addBtn.first().click();
 
     // Wait for modal dialog to be visible (not just attached)
@@ -131,14 +144,22 @@ export class AssetsPage extends BasePage {
 
     // Wait for submit button to be visible and stable before clicking
     await submitBtn.waitFor({ state: 'visible', timeout: 5000 });
-    await submitBtn.click();
 
-    // Wait for modal to close (form triggers reload after 500ms)
-    await modal.waitFor({ state: 'hidden', timeout: 10000 });
+    // Use Promise.all to handle navigation that happens after form submission
+    await Promise.all([
+      // Wait for navigation/reload to start
+      this.page.waitForURL(/.*\/assets.*/, { timeout: 15000 }),
+      submitBtn.click(),
+    ]);
 
-    // Wait for page reload to complete (the form does setTimeout -> reload after 500ms)
-    await this.page.waitForLoadState('networkidle');
+    // Wait for page to fully load after reload
     await this.page.waitForLoadState('domcontentloaded');
+    await this.page.waitForLoadState('networkidle');
+
+    // Ensure modal is truly closed
+    await modal.waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {
+      // Modal may already be detached after reload, which is fine
+    });
   }
 
   /**

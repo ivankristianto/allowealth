@@ -43,7 +43,7 @@ export class CategoriesPage extends BasePage {
    * Navigate to the categories settings page.
    */
   async gotoCategories(): Promise<void> {
-    await this.navigateTo('/categories');
+    await this.navigateTo('/budget/categories');
     await expect(this.createCategoryBtn).toBeVisible();
     // Wait for JavaScript to be fully initialized
     await this.page.waitForLoadState('domcontentloaded');
@@ -129,7 +129,10 @@ export class CategoriesPage extends BasePage {
     await this.categoryNameInput.fill(name);
 
     // Submit the form - this triggers a page reload after success
-    await Promise.all([this.page.waitForURL(/.*\/categories.*/), this.categorySubmitBtn.click()]);
+    await Promise.all([
+      this.page.waitForURL(/.*\/budget\/categories.*/),
+      this.categorySubmitBtn.click(),
+    ]);
     await this.waitForPageLoad();
   }
 
@@ -169,7 +172,10 @@ export class CategoriesPage extends BasePage {
     await this.categoryNameInput.fill(newName);
 
     // Submit the form - this triggers a page reload after success
-    await Promise.all([this.page.waitForURL(/.*\/categories.*/), this.categorySubmitBtn.click()]);
+    await Promise.all([
+      this.page.waitForURL(/.*\/budget\/categories.*/),
+      this.categorySubmitBtn.click(),
+    ]);
     await this.waitForPageLoad();
   }
 
