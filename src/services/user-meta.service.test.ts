@@ -397,6 +397,8 @@ describe('UserMetaService', () => {
           currency: 'USD',
           showConvertedTotals: false,
           showIndividualCurrencies: true,
+          phone: '',
+          bio: '',
         });
       });
 
@@ -410,6 +412,8 @@ describe('UserMetaService', () => {
           currency: 'IDR',
           showConvertedTotals: true,
           showIndividualCurrencies: true,
+          phone: '',
+          bio: '',
         });
       });
     });

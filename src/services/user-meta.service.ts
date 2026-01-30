@@ -304,6 +304,8 @@ export class UserMetaService {
         metaAll[USER_META_KEYS.SHOW_INDIVIDUAL_CURRENCIES],
         DEFAULT_USER_SETTINGS.showIndividualCurrencies
       ),
+      phone: metaAll[USER_META_KEYS.PHONE] || DEFAULT_USER_SETTINGS.phone,
+      bio: metaAll[USER_META_KEYS.BIO] || DEFAULT_USER_SETTINGS.bio,
     };
   }
 

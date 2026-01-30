@@ -13,8 +13,9 @@ import IconBadge from '@/components/atoms/IconBadge.astro';
 import PasswordChangeForm from '@/components/molecules/PasswordChangeForm.astro';
 import { User } from '@lucide/astro';
 import type { User as UserType } from '@/lib/auth/lucia';
-import { AVAILABLE_CURRENCIES, CURRENCY_META, DEFAULT_CURRENCY } from '@/lib/constants';
+import { AVAILABLE_CURRENCIES, CURRENCY_META } from '@/lib/constants';
 import { patterns } from '@/lib/validation/patterns';
+import type { UserSettings } from '@/lib/constants/user-meta-keys';
 
 export interface Props {
   user: UserType;
@@ -22,15 +23,18 @@ export interface Props {
 
 const { user } = Astro.props;
 
-const displayName = user?.name?.trim() || 'Sarah Jenkins';
-const displayEmail = user?.email?.trim() || 'sarah.j@familyfinance.com';
-const profileInitial = displayName ? displayName.charAt(0).toUpperCase() : 'S';
+// Get user settings from SSR (loaded in ProtectedLayout)
+const userSettings = Astro.locals.userSettings as UserSettings;
 
-// @TODO: Wire with backend for phone, bio, and currency values.
-const mockProfileDetails = {
-  phone: '+62 812-3456-7890',
-  bio: 'Family CFO and tech enthusiast.',
-  currency: DEFAULT_CURRENCY,
+const displayName = user?.name?.trim() || '';
+const displayEmail = user?.email?.trim() || '';
+const profileInitial = displayName ? displayName.charAt(0).toUpperCase() : 'U';
+
+// Profile data from SSR - no client-side fetching needed
+const profileDetails = {
+  phone: userSettings?.phone || '',
+  bio: userSettings?.bio || '',
+  currency: userSettings?.currency || 'IDR',
 };
 
 const currencyOptions = AVAILABLE_CURRENCIES.map((code) => ({
@@ -103,7 +107,7 @@ const currencyOptions = AVAILABLE_CURRENCIES.map((code) => ({
                 id="phone"
                 name="phone"
                 placeholder="+62 812-3456-7890"
-                value={mockProfileDetails.phone}
+                value={profileDetails.phone}
                 className="rounded-full py-4 px-6 h-14 text-base font-bold border border-base-300"
               />
             </div>
@@ -120,7 +124,7 @@ const currencyOptions = AVAILABLE_CURRENCIES.map((code) => ({
                   currencyOptions.map((option) => (
                     <option
                       value={option.value}
-                      selected={option.value === mockProfileDetails.currency}
+                      selected={option.value === profileDetails.currency}
                     >
                       {option.label}
                     </option>
@@ -136,7 +140,7 @@ const currencyOptions = AVAILABLE_CURRENCIES.map((code) => ({
                 name="bio"
                 rows={3}
                 class="textarea textarea-bordered w-full bg-base-200 rounded-2xl py-4 px-6 text-base border border-base-300 focus:ring-2 focus:ring-accent focus:ring-opacity-20 focus:outline-none"
-                placeholder="Tell us a bit about your role">{mockProfileDetails.bio}</textarea
+                placeholder="Tell us a bit about your role">{profileDetails.bio}</textarea
               >
             </div>
           </div>

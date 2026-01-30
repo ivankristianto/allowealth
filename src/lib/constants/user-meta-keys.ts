@@ -13,6 +13,8 @@ export const USER_META_KEYS = {
   CURRENCY: 'currency',
   SHOW_CONVERTED_TOTALS: 'show_converted_totals',
   SHOW_INDIVIDUAL_CURRENCIES: 'show_individual_currencies',
+  PHONE: 'phone',
+  BIO: 'bio',
 } as const;
 
 /**
@@ -32,6 +34,8 @@ export const META_DEFAULTS: Record<UserMetaKey, string> = {
   [USER_META_KEYS.CURRENCY]: 'IDR',
   [USER_META_KEYS.SHOW_CONVERTED_TOTALS]: 'true',
   [USER_META_KEYS.SHOW_INDIVIDUAL_CURRENCIES]: 'true',
+  [USER_META_KEYS.PHONE]: '',
+  [USER_META_KEYS.BIO]: '',
 };
 
 /**
@@ -70,6 +74,8 @@ export const META_VALUE_SCHEMAS: Record<UserMetaKey, z.ZodType<string>> = {
   [USER_META_KEYS.SHOW_INDIVIDUAL_CURRENCIES]: z.enum(['true', 'false'], {
     message: 'Value must be "true" or "false"',
   }),
+  [USER_META_KEYS.PHONE]: z.string().max(50, 'Phone number must be at most 50 characters'),
+  [USER_META_KEYS.BIO]: z.string().max(500, 'Bio must be at most 500 characters'),
 };
 
 /**
@@ -80,6 +86,8 @@ export const metaKeySchema = z.enum(
     USER_META_KEYS.CURRENCY,
     USER_META_KEYS.SHOW_CONVERTED_TOTALS,
     USER_META_KEYS.SHOW_INDIVIDUAL_CURRENCIES,
+    USER_META_KEYS.PHONE,
+    USER_META_KEYS.BIO,
   ],
   {
     message: `Invalid meta key. Must be one of: ${VALID_META_KEYS.join(', ')}`,
@@ -117,6 +125,8 @@ export interface UserSettings {
   currency: SupportedCurrency;
   showConvertedTotals: boolean;
   showIndividualCurrencies: boolean;
+  phone: string;
+  bio: string;
 }
 
 /**
@@ -126,6 +136,8 @@ export const DEFAULT_USER_SETTINGS: UserSettings = {
   currency: 'IDR',
   showConvertedTotals: true,
   showIndividualCurrencies: true,
+  phone: '',
+  bio: '',
 };
 
 /**
