@@ -20,12 +20,12 @@ const { user } = Astro.props;
 const ctaHref = user ? '/transactions' : '/signup';
 ---
 
-<section id="pricing" class="relative z-10 px-6 py-24 sm:py-44" aria-labelledby="pricing-title">
+<section id="pricing" class="relative z-10 px-6 py-24 sm:py-40" aria-labelledby="pricing-title">
   <div class="max-w-7xl mx-auto text-center">
     <!-- Section Header -->
     <h2
       id="pricing-title"
-      class="text-3xl sm:text-4xl md:text-7xl font-black text-base-content tracking-tighter mb-12 sm:mb-24"
+      class="text-3xl sm:text-4xl md:text-6xl font-black text-base-content tracking-tighter mb-12 sm:mb-20"
     >
       Simple, Transparent.
     </h2>
@@ -39,9 +39,9 @@ const ctaHref = user ? '/transactions' : '/signup';
 
           return (
             <article
-              class={`relative p-8 sm:p-12 rounded-[2.5rem] sm:rounded-[3.5rem] border transition-all hover:scale-105 flex flex-col ${
+              class={`relative p-8 sm:p-12 rounded-3xl sm:rounded-4xl border transition-all hover:scale-105 flex flex-col ${
                 isFeatured
-                  ? 'bg-primary text-primary-content border-transparent shadow-[0_35px_60px_-15px_rgba(99,102,241,0.3)]'
+                  ? 'bg-primary text-primary-content border-transparent shadow-2xl'
                   : 'bg-base-100 border-base-300 shadow-xl'
               }`}
               data-pricing-card
@@ -50,7 +50,7 @@ const ctaHref = user ? '/transactions' : '/signup';
             >
               {/* Featured Badge */}
               {isFeatured && (
-                <div class="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-accent text-white text-[10px] font-bold uppercase tracking-widest px-5 py-2 rounded-full shadow-glow">
+                <div class="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-accent text-white text-xs font-bold uppercase tracking-widest px-5 py-2 rounded-full shadow-lg">
                   Most Popular
                 </div>
               )}

@@ -9,7 +9,7 @@
 import BaseLayout from './BaseLayout.astro';
 import PublicNavbar from '@/components/layouts/PublicNavbar.astro';
 import PublicFooter from '@/components/layouts/PublicFooter.astro';
-import { Moon, Sun } from '@lucide/astro';
+import ThemeToggle from '@/components/atoms/ThemeToggle.astro';
 import type { User } from '@/lib/auth/lucia';
 
 interface Props {
@@ -34,8 +34,8 @@ const { title = 'allowealth', user, showBackground = true } = Astro.props;
   {
     showBackground && (
       <div class="fixed inset-0 overflow-hidden pointer-events-none z-0" aria-hidden="true">
-        <div class="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] bg-primary/10 blur-[140px] rounded-full animate-pulse" />
-        <div class="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-accent/10 blur-[140px] rounded-full animate-bounce-slow" />
+        <div class="absolute top-0 left-0 -translate-x-1/4 -translate-y-1/4 w-3/5 h-3/5 bg-primary/10 blur-3xl rounded-full animate-pulse" />
+        <div class="absolute bottom-0 right-0 translate-x-1/4 translate-y-1/4 w-1/2 h-1/2 bg-accent/10 blur-3xl rounded-full animate-bounce-slow" />
       </div>
     )
   }
@@ -52,16 +52,7 @@ const { title = 'allowealth', user, showBackground = true } = Astro.props;
   <PublicFooter />
 
   <!-- Floating Theme Toggle -->
-  <button
-    type="button"
-    id="floating-theme-toggle"
-    class="fixed bottom-6 right-6 z-50 w-12 h-12 rounded-full bg-base-100 border border-base-300 shadow-lg flex items-center justify-center text-neutral hover:text-primary hover:scale-110 active:scale-95 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
-    aria-label="Toggle dark mode"
-    title="Toggle dark mode"
-  >
-    <Moon size={20} class="stroke-current floating-theme-icon-light" aria-hidden="true" />
-    <Sun size={20} class="stroke-current floating-theme-icon-dark hidden" aria-hidden="true" />
-  </button>
+  <ThemeToggle className="fixed bottom-6 right-6 z-50" />
 </BaseLayout>
 
 <style is:global>
@@ -93,45 +84,3 @@ const { title = 'allowealth', user, showBackground = true } = Astro.props;
     scroll-margin-top: 100px;
   }
 </style>
-
-<script>
-  // Theme toggle functionality
-  const floatingThemeToggle = document.getElementById('floating-theme-toggle');
-
-  function updateFloatingThemeIcons() {
-    const theme = document.documentElement.getAttribute('data-theme');
-    const lightIcon = document.querySelector('.floating-theme-icon-light');
-    const darkIcon = document.querySelector('.floating-theme-icon-dark');
-
-    if (theme === 'dark') {
-      lightIcon?.classList.add('hidden');
-      darkIcon?.classList.remove('hidden');
-      floatingThemeToggle?.setAttribute('aria-label', 'Switch to light mode');
-    } else {
-      lightIcon?.classList.remove('hidden');
-      darkIcon?.classList.add('hidden');
-      floatingThemeToggle?.setAttribute('aria-label', 'Switch to dark mode');
-    }
-  }
-
-  floatingThemeToggle?.addEventListener('click', () => {
-    const current = document.documentElement.getAttribute('data-theme') as 'light' | 'dark';
-    const next = current === 'dark' ? 'light' : 'dark';
-    document.documentElement.setAttribute('data-theme', next);
-    localStorage.setItem('theme', next);
-    updateFloatingThemeIcons();
-  });
-
-  // Initialize theme icons on load
-  updateFloatingThemeIcons();
-
-  // Listen for theme changes from other sources
-  const observer = new MutationObserver((mutations) => {
-    mutations.forEach((mutation) => {
-      if (mutation.attributeName === 'data-theme') {
-        updateFloatingThemeIcons();
-      }
-    });
-  });
-  observer.observe(document.documentElement, { attributes: true });
-</script>

@@ -72,18 +72,18 @@ const iconMap: Record<string, typeof LayoutDashboard> = {
 
             {/* Image */}
             <div class="flex-1 w-full group">
-              <figure class="relative p-2 sm:p-3 bg-base-200/40 rounded-[2rem] sm:rounded-[3rem] border border-base-300 shadow-2xl overflow-hidden transition-transform duration-700 hover:scale-[1.02]">
+              <figure class="relative p-2 sm:p-3 bg-base-200/40 rounded-3xl sm:rounded-4xl border border-base-300 shadow-2xl overflow-hidden transition-transform duration-700 hover:scale-[1.02]">
                 <img
                   src={item.imageUrl}
                   alt={item.imageAlt}
-                  class="w-full h-auto rounded-[1.5rem] sm:rounded-[2.5rem] grayscale-[0.2] group-hover:grayscale-0 transition-all duration-500"
+                  class="w-full h-auto rounded-2xl sm:rounded-3xl grayscale-[0.2] group-hover:grayscale-0 transition-all duration-500"
                   loading={index === 0 ? 'eager' : 'lazy'}
                   width="1200"
                   height="800"
                   crossorigin="anonymous"
                 />
                 <div
-                  class={`absolute inset-0 bg-gradient-to-${isReverse ? 'bl' : 'tr'} ${item.gradientClass} pointer-events-none rounded-[1.5rem] sm:rounded-[2.5rem]`}
+                  class={`absolute inset-0 bg-gradient-to-${isReverse ? 'bl' : 'tr'} ${item.gradientClass} pointer-events-none rounded-2xl sm:rounded-3xl`}
                   aria-hidden="true"
                 />
               </figure>
