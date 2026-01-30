@@ -97,6 +97,14 @@ export class AssetCategoryService {
     return result;
   }
 
+  async findByName(name: string, user_id: string) {
+    const result = await this.db.query.assetCategories.findFirst({
+      where: and(eq(assetCategories.user_id, user_id), eq(assetCategories.name, name)),
+    });
+
+    return result;
+  }
+
   async update(id: string, user_id: string, input: UpdateAssetCategoryInput) {
     const category = await this.findById(id, user_id);
     if (!category) {

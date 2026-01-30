@@ -15,6 +15,9 @@ import { DEFAULT_ASSET_CATEGORIES } from '@/lib/constants';
 const LEGACY_TYPE_BY_NAME = new Map(
   DEFAULT_ASSET_CATEGORIES.map((category) => [category.name, category.legacyType])
 );
+const LEGACY_NAME_BY_TYPE = new Map(
+  DEFAULT_ASSET_CATEGORIES.map((category) => [category.legacyType, category.name])
+);
 
 const updateAssetSchema = z.object({
   name: z.string().min(1).max(255).optional(),
@@ -96,6 +99,12 @@ export const PUT: APIRoute = async (context) => {
       resolvedType = category.is_system
         ? LEGACY_TYPE_BY_NAME.get(category.name) || 'other'
         : 'other';
+    } else if (validation.data.type) {
+      const categoryName = LEGACY_NAME_BY_TYPE.get(validation.data.type);
+      if (categoryName) {
+        const category = await assetCategoryService.findByName(categoryName, userId);
+        resolvedCategoryId = category?.id || null;
+      }
     }
 
     const asset = await assetService.update(id, userId, {

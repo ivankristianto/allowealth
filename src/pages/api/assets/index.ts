@@ -18,6 +18,9 @@ const VALID_ASSET_TYPES = Object.keys(ASSET_TYPE_LABELS) as [AssetType, ...Asset
 const LEGACY_TYPE_BY_NAME = new Map(
   DEFAULT_ASSET_CATEGORIES.map((category) => [category.name, category.legacyType])
 );
+const LEGACY_NAME_BY_TYPE = new Map(
+  DEFAULT_ASSET_CATEGORIES.map((category) => [category.legacyType, category.name])
+);
 
 // Validation schemas using the shared asset types
 const createAssetSchema = z
@@ -95,6 +98,12 @@ export const POST: APIRoute = async (context) => {
       resolvedType = category.is_system
         ? LEGACY_TYPE_BY_NAME.get(category.name) || 'other'
         : 'other';
+    } else if (validation.data.type) {
+      const categoryName = LEGACY_NAME_BY_TYPE.get(validation.data.type);
+      if (categoryName) {
+        const category = await assetCategoryService.findByName(categoryName, userId);
+        resolvedCategoryId = category?.id || null;
+      }
     }
 
     if (!resolvedType) {

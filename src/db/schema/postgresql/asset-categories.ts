@@ -1,4 +1,12 @@
-import { pgTable, text, boolean, integer, timestamp, index } from 'drizzle-orm/pg-core';
+import {
+  pgTable,
+  text,
+  boolean,
+  integer,
+  timestamp,
+  index,
+  uniqueIndex,
+} from 'drizzle-orm/pg-core';
 import { users } from './users';
 
 export const assetCategories = pgTable(
@@ -16,5 +24,8 @@ export const assetCategories = pgTable(
     created_at: timestamp('created_at').defaultNow().notNull(),
     updated_at: timestamp('updated_at').defaultNow().notNull(),
   },
-  (table) => [index('asset_categories_user_id_idx').on(table.user_id)]
+  (table) => [
+    index('asset_categories_user_id_idx').on(table.user_id),
+    uniqueIndex('asset_categories_user_name_unique').on(table.user_id, table.name),
+  ]
 );

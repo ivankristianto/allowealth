@@ -13,7 +13,7 @@
 
 import { auth } from '@/lib/auth/lucia';
 import { hashPassword, verifyPassword } from '@/lib/auth/password';
-import { db } from '@/db/index';
+import { db, type IDatabase } from '@/db';
 import { users } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import type { User, Session } from 'lucia';
@@ -157,7 +157,7 @@ export async function register(email: string, password: string, name: string): P
     // Generate unique user ID
     const userId = nanoid();
 
-    const newUser = await db.transaction(async (tx) => {
+    const newUser = await db.transaction(async (tx: IDatabase) => {
       const [createdUser] = await tx
         .insert(users)
         .values({
@@ -172,7 +172,7 @@ export async function register(email: string, password: string, name: string): P
         throw new AuthError(AUTH_ERRORS.DATABASE_ERROR, 'Failed to create user');
       }
 
-      const assetCategoryService = new AssetCategoryService(tx as any);
+      const assetCategoryService = new AssetCategoryService(tx);
 
       for (const category of DEFAULT_ASSET_CATEGORIES) {
         await assetCategoryService.create({

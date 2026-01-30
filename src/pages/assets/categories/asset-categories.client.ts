@@ -3,7 +3,7 @@ function initAssetCategoriesPage() {
     'asset-category-search-form'
   ) as HTMLFormElement | null;
 
-  searchForm?.addEventListener('submit', (event) => {
+  searchForm?.addEventListener('submit', (event: SubmitEvent) => {
     event.preventDefault();
     const formData = new FormData(searchForm);
     const url = new URL(window.location.href);
@@ -21,7 +21,7 @@ function initAssetCategoriesPage() {
   });
 
   document.querySelectorAll('[data-action="edit-asset-category"]').forEach((button) => {
-    button.addEventListener('click', (event) => {
+    button.addEventListener('click', (event: MouseEvent) => {
       const target = event.currentTarget as HTMLElement;
       const categoryId = target.dataset.categoryId || '';
       if (!categoryId) return;
@@ -38,7 +38,7 @@ function initAssetCategoriesPage() {
   });
 
   document.querySelectorAll('[data-action="delete-asset-category"]').forEach((button) => {
-    button.addEventListener('click', (event) => {
+    button.addEventListener('click', (event: MouseEvent) => {
       const target = event.currentTarget as HTMLElement;
       const categoryId = target.dataset.categoryId || '';
       const categoryName = target.dataset.categoryName || '';

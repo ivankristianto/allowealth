@@ -174,16 +174,16 @@ Add a back button at the top:
 
 ## 6. Security Considerations
 
-| Concern                        | Mitigation                                                         | Status  |
-| ------------------------------ | ------------------------------------------------------------------ | ------- |
-| **Authorization**              | All category CRUD operations verify `user_id` matches session user | Pending |
-| **Input validation**           | Validate name (max 100 chars), description (max 500 chars)         | Pending |
-| **SQL injection**              | Use parameterized queries via Drizzle ORM                          | Pending |
-| **XSS**                        | Sanitize name/description before rendering                         | Pending |
-| **Duplicate names**            | Unique constraint on (user_id, name)                               | Pending |
-| **System category protection** | Prevent deletion/modification of `is_system=1` categories          | Pending |
-| **Orphan assets**              | Block deletion if category has assets (show reassignment message)  | Pending |
-| **Rate limiting**              | Limit category creation (max 50 custom categories per user)        | Pending |
+| Concern                        | Mitigation                                                                | Status    |
+| ------------------------------ | ------------------------------------------------------------------------- | --------- |
+| **Authorization**              | All category CRUD operations verify `user_id` matches session user        | Completed |
+| **Input validation**           | Validate name (max 100 chars), description (max 500 chars)                | Completed |
+| **SQL injection**              | Use parameterized queries via Drizzle ORM                                 | Completed |
+| **XSS**                        | Astro escapes content by default; avoid `set:html` for user-provided text | Completed |
+| **Duplicate names**            | Unique constraint on (user_id, name)                                      | Completed |
+| **System category protection** | Prevent deletion/modification of `is_system=1` categories                 | Completed |
+| **Orphan assets**              | Block deletion if category has assets (show reassignment message)         | Completed |
+| **Rate limiting**              | Limit category creation (max 50 custom categories per user)               | Completed |
 
 ---
 
@@ -311,6 +311,9 @@ Delete a custom category.
 - **2026-01-30:** Added asset category_id column, backfill logic, and updated assets UI/service to use categories.
 - **2026-01-30:** Updated assets API + OpenAPI schemas to accept categoryId while preserving legacy type support.
 - **2026-01-30:** Removed standalone asset category seeder script and kept all seeding in `src/db/seed.ts`.
+- **2026-01-30:** Backfilled legacy type handling on asset create/update and added Postgres unique index for asset category names.
+- **2026-01-30:** Resolved typecheck warnings in asset category client scripts and auth onboarding.
+- **2026-01-30:** Moved theme toggle and notification dropdown scripts to `.client.ts` modules for typed handlers.
 
 ---
 
