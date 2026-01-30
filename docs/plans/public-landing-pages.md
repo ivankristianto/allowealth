@@ -73,7 +73,8 @@ src/
 | **`#` links for unimplemented routes** | Per requirements, links point to `#` until pages exist                   |
 | **Placeholder images**                 | Use Unsplash URLs from PoC for now (same as reference)                   |
 | **Homepage for all users**             | Landing page always visible; CTA button text changes based on auth state |
-| **Contact form static**                | Display form UI only, no backend - shows "Coming soon" toast on submit   |
+| **Responsive**                         | Supported mobile view, read the design-system                            |
+| **Dark mode**                          | Supported both dark mode and light mode                                  |
 
 ---
 
