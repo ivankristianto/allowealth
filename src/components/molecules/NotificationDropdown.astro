@@ -2,102 +2,160 @@
 /**
  * NotificationDropdown Component
  *
- * Dropdown panel for displaying notifications with header, list, and footer.
- * Includes close button and "View all history" link.
+ * Dropdown panel for displaying user notifications with badge indicator.
+ * Currently shows mock notifications - will be connected to real notification system.
+ *
+ * @TODO Connect to real notification service
+ * @TODO Add notification read/unread state
+ * @TODO Add notification actions (mark as read, dismiss)
  */
 
-import NotificationItem from './NotificationItem.astro';
-
-export interface Props {
-  isOpen?: boolean;
-}
-
-const { isOpen = true } = Astro.props;
-
-// Note: In production, notifications would be passed as props from the API
-// For now, we'll use the mock data from the store
-const mockNotifications = [
-  {
-    id: '1',
-    type: 'warning' as const,
-    title: 'Budget Alert',
-    description: 'Dining has reached 95% of its monthly limit.',
-    time: '2m ago',
-  },
-  {
-    id: '2',
-    type: 'success' as const,
-    title: 'Salary Received',
-    description: 'Acme Corp deposited Rp51.025.000.',
-    time: '4h ago',
-  },
-];
+import { Bell, Plus } from '@lucide/astro';
 ---
 
-<div
-  id="notification-dropdown"
-  class="absolute right-0 mt-4 w-80 bg-base-100 rounded-3xl border border-base-300 shadow-premium z-50 overflow-hidden"
-  style={isOpen ? 'display: block;' : 'display: none;'}
-  role="menu"
-  aria-label="Notifications menu"
->
-  <!-- Header -->
-  <div class="p-5 border-b border-base-300 flex justify-between items-center bg-base-200/50">
-    <span class="font-bold text-base text-neutral">Notifications</span>
+<div class="relative" data-notification-dropdown-container>
+  <button
+    type="button"
+    data-notification-button
+    class="p-3 rounded-full transition-all relative text-neutral hover:bg-base-100 shadow-sm border border-base-300"
+    aria-label="Notifications"
+    aria-expanded="false"
+    aria-haspopup="true"
+  >
+    <Bell size={20} class="stroke-current" aria-hidden="true" />
+    <span
+      class="absolute top-2 right-2 w-2.5 h-2.5 bg-error rounded-full border-2 border-base-100 animate-pulse"
+      aria-hidden="true"></span>
+  </button>
+
+  <div
+    data-notification-panel
+    class="absolute right-0 mt-4 w-[calc(100vw-3rem)] sm:w-80 max-w-80 bg-base-100 rounded-2xl sm:rounded-3xl border border-base-300 shadow-premium z-50 overflow-hidden hidden"
+    role="menu"
+    aria-label="Notifications menu"
+  >
+    <div class="p-5 border-b border-base-300 flex justify-between items-center bg-base-200/50">
+      <span class="font-bold text-base text-neutral">Notifications</span>
+      <button
+        type="button"
+        data-close-notifications
+        class="text-sm font-bold text-accent hover:underline focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 rounded"
+        aria-label="Close notifications"
+      >
+        Close
+      </button>
+    </div>
+
+    <div class="max-h-96 overflow-y-auto divide-y divide-base-300">
+      <!-- Mock notification: Budget Alert -->
+      <div class="p-5 hover:bg-base-200/50 transition-colors cursor-pointer flex gap-5">
+        <div
+          class="w-12 h-12 shrink-0 rounded-2xl flex items-center justify-center bg-warning/10 text-warning shadow-sm"
+        >
+          <Bell size={20} class="shrink-0" aria-hidden="true" />
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="flex justify-between items-start mb-1.5 leading-none">
+            <p class="text-base font-bold text-base-content tracking-tight">Budget Alert</p>
+            <span class="text-[10px] font-bold text-neutral uppercase tracking-widest">
+              2m ago
+            </span>
+          </div>
+          <p class="text-sm text-neutral leading-relaxed">
+            Dining has reached 95% of its monthly limit.
+          </p>
+        </div>
+      </div>
+
+      <!-- Mock notification: Salary Received -->
+      <div class="p-5 hover:bg-base-200/50 transition-colors cursor-pointer flex gap-5">
+        <div
+          class="w-12 h-12 shrink-0 rounded-2xl flex items-center justify-center bg-success/10 text-success shadow-sm"
+        >
+          <Plus size={20} class="shrink-0" aria-hidden="true" />
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="flex justify-between items-start mb-1.5 leading-none">
+            <p class="text-base font-bold text-base-content tracking-tight">Salary Received</p>
+            <span class="text-[10px] font-bold text-neutral uppercase tracking-widest">
+              4h ago
+            </span>
+          </div>
+          <p class="text-sm text-neutral leading-relaxed">Acme Corp deposited Rp51.025.000.</p>
+        </div>
+      </div>
+    </div>
+
     <button
-      id="close-notifications"
-      class="text-sm font-bold text-accent hover:underline focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 rounded"
-      aria-label="Close notifications"
+      type="button"
+      class="w-full py-4 text-sm font-bold text-neutral hover:bg-base-200 transition-colors tracking-wide focus:outline-none focus:ring-2 focus:ring-accent focus:ring-inset"
+      aria-label="View all notification history"
     >
-      Close
+      View all history
     </button>
   </div>
-
-  <!-- Notification List -->
-  <div class="max-h-96 overflow-y-auto divide-y divide-base-300">
-    {mockNotifications.map((notification) => <NotificationItem notification={notification} />)}
-  </div>
-
-  <!-- Footer -->
-  <button
-    class="w-full py-4 text-sm font-bold text-neutral hover:bg-base-200 transition-colors tracking-wide focus:outline-none focus:ring-2 focus:ring-accent focus:ring-inset"
-    aria-label="View all notification history"
-  >
-    View all history
-  </button>
 </div>
 
 <script>
-  // Client-side script to handle dropdown toggle
-  const closeBtn = document.getElementById('close-notifications');
-  closeBtn?.addEventListener('click', () => {
-    const dropdown = document.getElementById('notification-dropdown');
-    if (dropdown) {
-      dropdown.style.display = 'none';
-    }
-  });
+  // Initialize notification dropdown functionality
+  function initNotificationDropdown() {
+    const containers = document.querySelectorAll('[data-notification-dropdown-container]');
 
-  // Close on Escape key
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-      const dropdown = document.getElementById('notification-dropdown');
-      if (dropdown) {
-        dropdown.style.display = 'none';
+    containers.forEach((container) => {
+      const button = container.querySelector('[data-notification-button]');
+      const panel = container.querySelector('[data-notification-panel]');
+      const closeBtn = container.querySelector('[data-close-notifications]');
+
+      if (!button || !panel) return;
+
+      // Toggle dropdown
+      function toggleDropdown() {
+        const isHidden = panel.classList.contains('hidden');
+        panel.classList.toggle('hidden');
+        button.setAttribute('aria-expanded', isHidden ? 'true' : 'false');
       }
-    }
-  });
 
-  // Close when clicking outside
-  document.addEventListener('click', (e) => {
-    const dropdown = document.getElementById('notification-dropdown');
-    const button = document.querySelector('[aria-label="Notifications"]');
-    if (
-      dropdown &&
-      button &&
-      !dropdown.contains(e.target as Node) &&
-      !button.contains(e.target as Node)
-    ) {
-      dropdown.style.display = 'none';
-    }
-  });
+      // Close dropdown
+      function closeDropdown() {
+        panel.classList.add('hidden');
+        button.setAttribute('aria-expanded', 'false');
+      }
+
+      // Event listeners
+      button.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleDropdown();
+      });
+
+      closeBtn?.addEventListener('click', closeDropdown);
+
+      // Close on Escape key
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && !panel.classList.contains('hidden')) {
+          closeDropdown();
+        }
+      });
+
+      // Close when clicking outside
+      document.addEventListener('click', (e) => {
+        if (!e.target || !(e.target instanceof Node)) return;
+        // Check if click is inside panel or button
+        const clickedInPanel = panel.contains(e.target);
+        const clickedOnButton = button.contains(e.target);
+        if (!clickedInPanel && !clickedOnButton && !panel.classList.contains('hidden')) {
+          closeDropdown();
+        }
+      });
+    });
+  }
+
+  // Initialize on DOM ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initNotificationDropdown);
+  } else {
+    initNotificationDropdown();
+  }
+
+  // Re-initialize on Astro page transitions
+  document.addEventListener('astro:page-load', initNotificationDropdown);
 </script>

@@ -15,7 +15,7 @@ import CategoryModal from '@/components/organisms/CategoryModal.astro';
 import CategoryDeleteDialog from '@/components/organisms/CategoryDeleteDialog.astro';
 
 const user = Astro.locals.user!;
-const currentPath = '/categories';
+const currentPath = '/budget/categories';
 
 // Fetch active categories only
 const allCategories = await categoryService.findAll(user.id, { is_active: true });
@@ -35,7 +35,11 @@ if (searchQuery) {
 }
 ---
 
-<ProtectedLayout title="Manage Categories" currentPath={currentPath}>
+<ProtectedLayout
+  title="Categories"
+  currentPath={currentPath}
+  subtitle="Manage your transaction labels"
+>
   <div
     class="max-w-7xl mx-auto sm:px-2 lg:px-6 space-y-6 sm:space-y-8"
     data-testid="categories-page"
@@ -122,6 +126,12 @@ if (searchQuery) {
                   </th>
                   <th
                     scope="col"
+                    class="px-8 py-5 text-[10px] font-bold text-base-content/40 uppercase tracking-widest hidden md:table-cell"
+                  >
+                    Description
+                  </th>
+                  <th
+                    scope="col"
                     class="px-8 py-5 text-[10px] font-bold text-base-content/40 uppercase tracking-widest text-right"
                   >
                     Actions
@@ -149,6 +159,14 @@ if (searchQuery) {
                         data-testid="category-name"
                       >
                         {category.name}
+                      </span>
+                    </td>
+                    <td class="px-8 py-5 hidden md:table-cell">
+                      <span
+                        class="text-sm text-base-content/60 font-medium"
+                        data-testid="category-description"
+                      >
+                        {category.description || '—'}
                       </span>
                     </td>
                     <td class="px-8 py-5 text-right">

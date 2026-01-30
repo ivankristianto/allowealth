@@ -2,7 +2,7 @@
 /**
  * CategoryIntelligenceTable Component
  *
- * Table displaying category intelligence data with spending, budget, status, and drill-down actions.
+ * Table displaying spending per category data with budget, status, and drill-down actions.
  * Follows Oasis Finance v1.0.0 design system specifications.
  *
  * @param {CategoryIntelligence[]} categories - Array of category data
@@ -78,13 +78,13 @@ const categoriesWithPercentage = categories.map((cat) => {
 <div
   class={`bg-base-100 rounded-3xl border border-base-300 shadow-sm ${className}`}
   role="region"
-  aria-label="Category intelligence table"
+  aria-label="Spending per category table"
 >
   <div class="overflow-hidden">
     {/* Header */}
     <div class="p-6 md:p-8 border-b border-base-300">
       <h4 class="font-bold text-base md:text-lg text-base-content tracking-tight">
-        Category Intelligence
+        Spending per Category
       </h4>
       <StatLabel size="sm" color="neutral" className="mt-1">{subtitle}</StatLabel>
     </div>

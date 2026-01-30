@@ -93,12 +93,19 @@ function initCategories() {
       // Populate form with values
       (categoryForm.querySelector('[name="id"]') as HTMLInputElement).value = values.id || '';
       (categoryForm.querySelector('[name="name"]') as HTMLInputElement).value = values.name || '';
+      (categoryForm.querySelector('[name="description"]') as HTMLInputElement).value =
+        values.description || '';
       (categoryForm.querySelector('[name="type"]') as HTMLSelectElement).value =
         values.type || 'expense';
-      (categoryForm.querySelector('[name="icon"]') as HTMLInputElement).value =
-        values.icon || 'tag';
-      (categoryForm.querySelector('[name="color"]') as HTMLSelectElement).value =
-        values.color || 'bg-neutral';
+
+      const iconSelect = categoryForm.querySelector('[name="icon"]') as HTMLSelectElement;
+      const colorSelect = categoryForm.querySelector('[name="color"]') as HTMLSelectElement;
+
+      iconSelect.value = values.icon || 'tag';
+      colorSelect.value = values.color || 'bg-neutral';
+
+      // Trigger change event to update icon preview
+      colorSelect.dispatchEvent(new Event('change', { bubbles: true }));
 
       // Update icon to Pencil
       if (modalIconContainer) {
@@ -136,6 +143,7 @@ function initCategories() {
           id: id,
           name: category.name,
           type: category.type,
+          description: category.description,
           icon: category.icon,
           color: category.color,
         });

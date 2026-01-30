@@ -182,7 +182,11 @@ const reportDataForPartials = {
 };
 ---
 
-<ProtectedLayout title="Financial Intelligence - Finance Manager" currentPath={currentPath}>
+<ProtectedLayout
+  title="Reports"
+  currentPath={currentPath}
+  subtitle="Financial insights and analytics"
+>
   <div class="max-w-7xl mx-auto sm:px-2 lg:px-6 space-y-6 md:space-y-8 pb-10">
     {/* Page Header with Report Selector */}
     <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
@@ -229,7 +233,7 @@ const reportDataForPartials = {
       />
     </div>
 
-    {/* Category Intelligence Table Container */}
+    {/* Spending per Category Table Container */}
     <div data-table-container>
       <CategoryTablePartial
         categories={reportDataForPartials.categoryIntelligence}

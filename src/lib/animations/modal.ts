@@ -37,12 +37,26 @@ export const MODAL_CONTENT_EXIT_KEYFRAMES = {
 } as const;
 
 /**
- * Modal content animation options (duration and easing)
+ * Modal content enter animation options (duration and easing)
  */
-export const MODAL_CONTENT_ANIMATION_OPTIONS = {
+export const MODAL_CONTENT_ENTER_OPTIONS = {
   duration: 0.3,
   easing: [0.4, 0, 0.2, 1],
 } as const;
+
+/**
+ * Modal content exit animation options (faster for snappy close feel)
+ * Exit animations should be faster than entrance per UX best practices
+ */
+export const MODAL_CONTENT_EXIT_OPTIONS = {
+  duration: 0.1,
+  easing: [0.4, 0, 0.2, 1],
+} as const;
+
+/**
+ * @deprecated Use MODAL_CONTENT_ENTER_OPTIONS or MODAL_CONTENT_EXIT_OPTIONS
+ */
+export const MODAL_CONTENT_ANIMATION_OPTIONS = MODAL_CONTENT_ENTER_OPTIONS;
 
 /**
  * Initial scale value for modal content enter animation
@@ -65,11 +79,11 @@ export const MODAL_ANIMATION_CONFIG = {
   content: {
     enter: {
       keyframes: MODAL_CONTENT_ENTER_KEYFRAMES,
-      options: MODAL_CONTENT_ANIMATION_OPTIONS,
+      options: MODAL_CONTENT_ENTER_OPTIONS,
     },
     exit: {
       keyframes: MODAL_CONTENT_EXIT_KEYFRAMES,
-      options: MODAL_CONTENT_ANIMATION_OPTIONS,
+      options: MODAL_CONTENT_EXIT_OPTIONS,
     },
   },
 } as const;

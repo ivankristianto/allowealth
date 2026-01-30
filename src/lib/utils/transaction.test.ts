@@ -26,6 +26,8 @@ describe('transaction utilities', () => {
         id: 'cat-1',
         name: 'Groceries',
         type: 'expense',
+        icon: 'shopping-cart',
+        color: 'bg-info',
       },
       asset: {
         id: 'asset-1',
@@ -92,6 +94,8 @@ describe('transaction utilities', () => {
           id: 'cat-2',
           name: 'Salary',
           type: 'income',
+          icon: 'banknote',
+          color: 'bg-success',
         },
       };
 

@@ -191,6 +191,8 @@ export const mockRecentTransactions: TransactionOutput[] = [
       id: 'cat1',
       name: 'Food & Groceries',
       type: 'expense',
+      icon: 'shopping-basket',
+      color: 'bg-info',
     },
     asset: {
       id: 'pm1',
@@ -212,6 +214,8 @@ export const mockRecentTransactions: TransactionOutput[] = [
       id: 'cat2',
       name: 'Reina Expenses',
       type: 'expense',
+      icon: 'user',
+      color: 'bg-secondary',
     },
     asset: {
       id: 'pm2',
@@ -233,6 +237,8 @@ export const mockRecentTransactions: TransactionOutput[] = [
       id: 'cat3',
       name: 'Monthly Salary',
       type: 'income',
+      icon: 'banknote',
+      color: 'bg-success',
     },
     asset: {
       id: 'pm3',
@@ -254,6 +260,8 @@ export const mockRecentTransactions: TransactionOutput[] = [
       id: 'cat4',
       name: 'Transportation',
       type: 'expense',
+      icon: 'car',
+      color: 'bg-secondary',
     },
     asset: {
       id: 'pm4',
@@ -275,6 +283,8 @@ export const mockRecentTransactions: TransactionOutput[] = [
       id: 'cat5',
       name: 'Dine Out',
       type: 'expense',
+      icon: 'utensils',
+      color: 'bg-warning',
     },
     asset: {
       id: 'pm5',

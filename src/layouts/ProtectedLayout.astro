@@ -10,23 +10,25 @@
  * ---
  * import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
  * ---
- * <ProtectedLayout title="My Page" currentPath="/my-page">
+ * <ProtectedLayout title="My Page" currentPath="/my-page" subtitle="Page description">
  *   <YourContent />
  * </ProtectedLayout>
  * ```
  *
  * Features:
  * - Middleware redirects unauthenticated users before page execution
- * - Passes authenticated user to MainLayout
+ * - Passes authenticated user and title/subtitle to MainLayout and Header
  * - Provides consistent layout for protected pages
- * - Includes global TransactionModal for "New Entry" button in header
+ * - Includes global TransactionModal (expense-modal, income-modal, edit-transaction-modal)
+ *   accessible from the "New Entry" button in the header
+ * - Makes userSettings available via Astro.locals.userSettings (frozen to prevent mutation)
  *
  * Note: This layout should only be used for pages under protected route prefixes:
- * /transactions, /budget, /assets, /reports, /forecast, /calculators, /settings, /profile, /security
+ * /dashboard, /transactions, /budget, /assets, /reports, /forecast, /calculators, /settings, /profile, /security
  *
- * @param title - Page title
+ * @param title - Page title displayed in header (defaults to "Finance Manager")
  * @param currentPath - Current route path for navigation highlighting
- * @param subtitle - Optional page subtitle displayed in header
+ * @param subtitle - Optional page subtitle displayed below title in header
  */
 
 import MainLayout from './MainLayout.astro';

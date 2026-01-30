@@ -124,6 +124,8 @@ export const GET: APIRoute = async (context) => {
             id: categoryId,
             name: categoryTransactionsData.categoryName,
             type: 'expense',
+            icon: 'tag',
+            color: 'bg-base-300',
           },
           asset: {
             id: '', // Asset ID not available in CategoryTransaction

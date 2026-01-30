@@ -2,7 +2,7 @@ import { pgTable, text, boolean, timestamp, index } from 'drizzle-orm/pg-core';
 import { users } from './users';
 
 export const categories = pgTable(
-  'categories',
+  'budget_categories',
   {
     id: text('id').primaryKey(),
     user_id: text('user_id')
@@ -10,6 +10,7 @@ export const categories = pgTable(
       .references(() => users.id, { onDelete: 'cascade' }),
     name: text('name').notNull(),
     type: text('type', { enum: ['expense', 'income'] }).notNull(),
+    description: text('description'), // Optional description, max 200 chars (validated at API layer)
     icon: text('icon').default('tag').notNull(), // Lucide icon name
     color: text('color').default('bg-neutral').notNull(), // DaisyUI semantic color class
     percentage: text('percentage').default('0').notNull(), // Stored as string for decimal precision
@@ -20,5 +21,5 @@ export const categories = pgTable(
     created_at: timestamp('created_at').defaultNow().notNull(),
     updated_at: timestamp('updated_at').defaultNow().notNull(),
   },
-  (table) => [index('categories_user_id_idx').on(table.user_id)]
+  (table) => [index('budget_categories_user_id_idx').on(table.user_id)]
 );
