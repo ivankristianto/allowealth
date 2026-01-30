@@ -159,6 +159,7 @@ bun run typecheck         # TypeScript (blocking)
 /transactions              # Transaction list (add/edit via TransactionModal)
 /budget                    # Budget overview
 /budget/history            # Budget history
+/budget/categories         # Category management
 /assets                    # Asset list
 /assets/add                # Add asset
 /assets/history            # Asset history
@@ -169,7 +170,6 @@ bun run typecheck         # TypeScript (blocking)
 /forecast/comparison       # Scenario comparison
 /calculators               # Compound interest calculator
 /settings                  # Profile settings
-/categories                # Category management
 /settings/payment-methods  # Payment methods
 ```
 

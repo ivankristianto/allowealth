@@ -42,7 +42,11 @@ const historyEntries: AssetHistoryOutput[] = history.map((entry) => ({
 }));
 ---
 
-<ProtectedLayout title={`Asset History - ${asset.name}`} currentPath="/assets">
+<ProtectedLayout
+  title="Asset History"
+  currentPath="/assets"
+  subtitle={`${asset.name} balance changes`}
+>
   <div class="space-y-6">
     {/* Header */}
     <div class="flex items-center gap-4">

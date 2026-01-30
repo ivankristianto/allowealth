@@ -2,42 +2,64 @@
 /**
  * ThemeToggle Component
  *
- * A floating button that toggles between light and dark themes.
+ * A button that toggles between light and dark themes.
  * Displays a moon icon in light mode (to switch to dark) and
  * a sun icon in dark mode (to switch to light).
  *
  * @design-system Oasis Finance v1.0.0
  * @accessibility WCAG 2.1 AA compliant - minimum touch target 44x44px
+ *
+ * @param size - Button size: 'sm' for header/compact, 'md' for floating/default
+ * @param className - Additional CSS classes
  */
 
 import { Moon, Sun } from '@lucide/astro';
 
 interface Props {
+  /** Button size: 'sm' for header, 'md' for floating (default) */
+  size?: 'sm' | 'md';
   /** Additional CSS classes */
   className?: string;
 }
 
-const { className = '' } = Astro.props;
+const { size = 'md', className = '' } = Astro.props;
+
+// Size-specific classes
+const sizeClasses = {
+  sm: {
+    button: 'p-3 rounded-full shadow-sm',
+    icon: 20,
+  },
+  md: {
+    button: 'w-14 h-14 rounded-2xl shadow-xl hover:scale-110',
+    icon: 24,
+  },
+};
+
+const config = sizeClasses[size];
 ---
 
 <div class:list={['theme-toggle-wrapper', className]}>
   <button
     type="button"
-    id="theme-toggle"
-    class="w-14 h-14 bg-base-100 border border-base-300 shadow-xl rounded-2xl flex items-center justify-center transition-all duration-200 hover:scale-110 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 group"
+    data-theme-toggle
+    class:list={[
+      'bg-base-100 border border-base-300 flex items-center justify-center transition-all duration-200 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 group text-neutral hover:bg-base-100',
+      config.button,
+    ]}
     aria-label="Toggle dark mode"
     title="Toggle dark mode"
   >
     <!-- Moon icon - shown in light mode -->
     <Moon
-      size={24}
-      class="stroke-current text-base-content theme-icon-light transition-transform duration-200 group-hover:rotate-12"
+      size={config.icon}
+      class="stroke-current theme-icon-light transition-transform duration-200 group-hover:rotate-12"
       aria-hidden="true"
     />
     <!-- Sun icon - shown in dark mode -->
     <Sun
-      size={24}
-      class="stroke-current text-base-content theme-icon-dark hidden transition-transform duration-200 group-hover:rotate-12"
+      size={config.icon}
+      class="stroke-current theme-icon-dark hidden transition-transform duration-200 group-hover:rotate-12"
       aria-hidden="true"
     />
   </button>
@@ -63,15 +85,15 @@ const { className = '' } = Astro.props;
 </style>
 
 <script>
-  // Theme toggle functionality
+  // Theme toggle functionality - supports multiple toggles on the page
   function initThemeToggle() {
-    const toggle = document.getElementById('theme-toggle');
-    if (!toggle) return;
+    const toggles = document.querySelectorAll('[data-theme-toggle]');
+    if (toggles.length === 0) return;
 
     // Get current theme from HTML or localStorage
-    function getCurrentTheme(): 'light' | 'dark' {
-      const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
-      if (savedTheme) return savedTheme;
+    function getCurrentTheme() {
+      const savedTheme = localStorage.getItem('theme');
+      if (savedTheme === 'light' || savedTheme === 'dark') return savedTheme;
 
       // Check system preference
       if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
@@ -81,51 +103,59 @@ const { className = '' } = Astro.props;
     }
 
     // Set theme on document and save to localStorage
-    function setTheme(theme: 'light' | 'dark') {
+    function setTheme(theme) {
       document.documentElement.setAttribute('data-theme', theme);
       localStorage.setItem('theme', theme);
-      updateAriaLabel(theme);
+      updateAllToggles(theme);
     }
 
-    // Update aria-label based on current theme
-    function updateAriaLabel(theme: 'light' | 'dark') {
-      toggle.setAttribute(
-        'aria-label',
-        theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'
-      );
+    // Update all toggle buttons' aria-label and icons
+    function updateAllToggles(theme) {
+      toggles.forEach((toggle) => {
+        toggle.setAttribute(
+          'aria-label',
+          theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'
+        );
+      });
     }
 
     // Toggle theme
     function toggleTheme() {
-      const current = document.documentElement.getAttribute('data-theme') as 'light' | 'dark';
+      const current = document.documentElement.getAttribute('data-theme');
       const next = current === 'dark' ? 'light' : 'dark';
       setTheme(next);
     }
 
     // Check if theme is already set by BaseLayout's FOUC prevention script
-    const existingTheme = document.documentElement.getAttribute('data-theme') as
-      | 'light'
-      | 'dark'
-      | null;
-    if (existingTheme) {
-      // Theme already set, just update aria-label
-      updateAriaLabel(existingTheme);
+    const existingTheme = document.documentElement.getAttribute('data-theme');
+    if (existingTheme === 'light' || existingTheme === 'dark') {
+      // Theme already set, just update aria-labels
+      updateAllToggles(existingTheme);
     } else {
       // No theme set yet, initialize it
       const initialTheme = getCurrentTheme();
       setTheme(initialTheme);
     }
 
-    // Add click listener
-    toggle.addEventListener('click', toggleTheme);
-
-    // Listen for system preference changes
-    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
-      // Only update if user hasn't explicitly set a preference
-      if (!localStorage.getItem('theme')) {
-        setTheme(e.matches ? 'dark' : 'light');
-      }
+    // Add click listener to all toggles
+    toggles.forEach((toggle) => {
+      // Skip if already initialized - use getAttribute to avoid type issues
+      if (toggle.getAttribute('data-theme-toggle-init') === 'true') return;
+      toggle.setAttribute('data-theme-toggle-init', 'true');
+      toggle.addEventListener('click', toggleTheme);
     });
+
+    // Listen for system preference changes (only add once)
+    // Use a property on window to track if listener is added
+    if (!window['__themeToggleSystemListenerAdded']) {
+      window['__themeToggleSystemListenerAdded'] = true;
+      window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+        // Only update if user hasn't explicitly set a preference
+        if (!localStorage.getItem('theme')) {
+          setTheme(e.matches ? 'dark' : 'light');
+        }
+      });
+    }
   }
 
   // Initialize on page load

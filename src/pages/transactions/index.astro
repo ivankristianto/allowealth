@@ -90,6 +90,8 @@ const transactions: TransactionOutput[] = rawTransactions.map((t: any) => ({
         id: t.category.id,
         name: t.category.name,
         type: t.category.type,
+        icon: t.category.icon ?? 'tag',
+        color: t.category.color ?? 'bg-base-300',
       }
     : null,
   asset: {
@@ -191,7 +193,11 @@ const ssrData = {
 };
 ---
 
-<ProtectedLayout title="Transactions - Finance Manager" currentPath={currentPath}>
+<ProtectedLayout
+  title="Transactions"
+  currentPath={currentPath}
+  subtitle="View and manage your transactions"
+>
   <div
     id="transactions-page"
     class="max-w-7xl mx-auto sm:px-2 lg:px-6 space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500"
@@ -254,7 +260,7 @@ const ssrData = {
           {
             Array.from({ length: 5 }).map(() => (
               <div class="flex items-center gap-5 p-5 animate-pulse">
-                <div class="flex-shrink-0 w-24">
+                <div class="shrink-0 w-24">
                   <div class="h-4 bg-base-200 rounded w-20" />
                 </div>
                 <div class="flex-1 flex items-center gap-4">
@@ -264,10 +270,10 @@ const ssrData = {
                     <div class="h-3 bg-base-200 rounded w-20" />
                   </div>
                 </div>
-                <div class="flex-shrink-0 hidden sm:block">
+                <div class="shrink-0 hidden sm:block">
                   <div class="h-3 bg-base-200 rounded w-16" />
                 </div>
-                <div class="flex-shrink-0 w-28">
+                <div class="shrink-0 w-28">
                   <div class="h-5 bg-base-200 rounded w-24 ml-auto" />
                 </div>
               </div>

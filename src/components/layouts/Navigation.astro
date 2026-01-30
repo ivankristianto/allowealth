@@ -17,7 +17,6 @@ import {
   ChartBar,
   TrendingUp,
   Calculator,
-  Tags,
   Settings,
   X,
   ChevronLeft,
@@ -40,6 +39,7 @@ interface NavItem {
 }
 
 // Updated icons per premium design spec - each nav item has unique icon
+// Note: Categories is accessible via /budget/categories (linked from Budget page)
 const navItems: NavItem[] = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/transactions', label: 'Transactions', icon: Receipt },
@@ -48,7 +48,6 @@ const navItems: NavItem[] = [
   { href: '/reports', label: 'Reports', icon: ChartBar },
   { href: '/forecast', label: 'Forecast', icon: TrendingUp },
   { href: '/calculators', label: 'Calculators', icon: Calculator },
-  { href: '/categories', label: 'Categories', icon: Tags },
   { href: '/settings', label: 'Settings', icon: Settings },
 ];
 

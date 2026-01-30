@@ -13,10 +13,9 @@
  */
 
 import Currency from '../atoms/Currency.astro';
-import IconBadge from '../atoms/IconBadge.astro';
+import CategoryIcon from '../atoms/CategoryIcon.astro';
 import { CreditCard, Ellipsis, Pencil, Trash2 } from '@lucide/astro';
 import type { TransactionOutput } from '@/lib/types/transaction';
-import { getCategoryMeta } from '@/lib/utils/categoryMeta';
 
 export interface Props {
   transaction?: TransactionOutput;
@@ -60,10 +59,9 @@ const formatDate = (d: Date): string => {
 const formattedDate = formatDate(date);
 const primaryText = transaction?.description?.trim() || transaction?.category?.name || '';
 
-const categoryMeta = transaction
-  ? getCategoryMeta(transaction.category.name, transaction.type)
-  : { icon: CreditCard, variant: 'neutral' as const };
-const CategoryIcon = categoryMeta.icon;
+// Get category display properties from database, with fallbacks
+const categoryIcon = transaction?.category?.icon || 'credit-card';
+const categoryColor = transaction?.category?.color || 'bg-base-300';
 
 // Prepare transaction data for edit action (reused in both layouts)
 const transactionDataJson = transaction
@@ -124,9 +122,7 @@ const cardClasses = [
       {/* Mobile Layout (stacked with dropdown) - shown below sm breakpoint */}
       <div class="sm:hidden">
         <div class="flex items-start gap-3">
-          <IconBadge variant={categoryMeta.variant} size="sm" className="rounded-xl shrink-0">
-            <CategoryIcon size={18} class="stroke-current" aria-hidden="true" />
-          </IconBadge>
+          <CategoryIcon icon={categoryIcon} color={categoryColor} size="sm" className="shrink-0" />
 
           <div class="flex-1 min-w-0">
             <div class="font-bold text-base tracking-tight leading-tight break-words">
@@ -217,13 +213,12 @@ const cardClasses = [
 
         {/* Category & Description */}
         <div class="flex-1 min-w-0 flex items-center gap-4">
-          <IconBadge
-            variant={categoryMeta.variant}
+          <CategoryIcon
+            icon={categoryIcon}
+            color={categoryColor}
             size="sm"
-            className="rounded-2xl transition-transform group-hover:rotate-2"
-          >
-            <CategoryIcon size={18} class="stroke-current" aria-hidden="true" />
-          </IconBadge>
+            className="transition-transform group-hover:rotate-2"
+          />
           <div class="min-w-0">
             <div class="font-bold tracking-tight truncate text-base leading-none">
               {primaryText}

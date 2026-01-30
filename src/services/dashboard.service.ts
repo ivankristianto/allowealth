@@ -128,6 +128,8 @@ export interface DashboardData {
       id: string;
       name: string;
       type: 'expense' | 'income';
+      icon: string;
+      color: string;
     };
     asset: {
       id: string;
@@ -671,6 +673,8 @@ export class DashboardService {
         id: string;
         name: string;
         type: 'expense' | 'income';
+        icon: string;
+        color: string;
       };
       asset: {
         id: string;
@@ -713,6 +717,8 @@ export class DashboardService {
           id: tx.category.id,
           name: tx.category.name,
           type: tx.category.type,
+          icon: tx.category.icon,
+          color: tx.category.color,
         },
         asset: {
           id: tx.asset.id,

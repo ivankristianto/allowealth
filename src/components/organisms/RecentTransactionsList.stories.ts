@@ -5,19 +5,43 @@ import {
 } from '@/services/__tests__/mocks/dashboard-mocks';
 import { IconRenderers } from '../../../.storybook/lucide-icons';
 
-const {
-  Banknote,
-  Briefcase,
-  Car,
-  CreditCard,
-  Film,
-  House,
-  Plus,
-  ShoppingBasket,
-  UtensilsCrossed,
-  Wallet,
-  Zap,
-} = IconRenderers;
+const { CreditCard, Plus, Tag } = IconRenderers;
+
+// Icon map for dynamic lookup from category.icon field (kebab-case to renderer)
+const iconMap: Record<string, (typeof IconRenderers)[keyof typeof IconRenderers]> = {
+  banknote: IconRenderers.Banknote,
+  briefcase: IconRenderers.Briefcase,
+  car: IconRenderers.Car,
+  'credit-card': IconRenderers.CreditCard,
+  film: IconRenderers.Film,
+  home: IconRenderers.Home,
+  'shopping-basket': IconRenderers.ShoppingBasket,
+  'shopping-cart': IconRenderers.ShoppingCart,
+  utensils: IconRenderers.UtensilsCrossed,
+  wallet: IconRenderers.Wallet,
+  zap: IconRenderers.Zap,
+  user: IconRenderers.User,
+  tag: IconRenderers.Tag,
+  smile: IconRenderers.Smile,
+  plane: IconRenderers.Plane,
+  package: IconRenderers.Package,
+  shield: IconRenderers.Shield,
+  users: IconRenderers.Users,
+  'circle-dot': IconRenderers.CircleDot,
+};
+
+// Color map from DaisyUI semantic classes to visual styling
+const colorStyleMap: Record<string, { bg: string; text: string }> = {
+  'bg-primary': { bg: 'bg-primary/10', text: 'text-primary' },
+  'bg-secondary': { bg: 'bg-secondary/10', text: 'text-secondary' },
+  'bg-accent': { bg: 'bg-accent/10', text: 'text-accent' },
+  'bg-success': { bg: 'bg-success/10', text: 'text-success' },
+  'bg-warning': { bg: 'bg-warning/10', text: 'text-warning' },
+  'bg-error': { bg: 'bg-error/10', text: 'text-error' },
+  'bg-info': { bg: 'bg-info/10', text: 'text-info' },
+  'bg-neutral': { bg: 'bg-base-300', text: 'text-base-content' },
+  'bg-base-300': { bg: 'bg-base-300', text: 'text-base-content' },
+};
 
 const meta: Meta = {
   title: 'Organisms/RecentTransactionsList',
@@ -135,68 +159,14 @@ const formatCurrency = (amount: number, currency: 'IDR' | 'USD'): string => {
   }).format(amount);
 };
 
-const iconVariants: Record<string, { bg: string; text: string }> = {
-  primary: { bg: 'bg-primary/10', text: 'text-primary' },
-  accent: { bg: 'bg-accent/10', text: 'text-accent' },
-  success: { bg: 'bg-success/10', text: 'text-success' },
-  warning: { bg: 'bg-warning/10', text: 'text-warning' },
-  error: { bg: 'bg-error/10', text: 'text-error' },
-  info: { bg: 'bg-info/10', text: 'text-info' },
-  neutral: { bg: 'bg-base-300', text: 'text-base-content' },
+// Helper to get icon renderer from category.icon field
+const getIconRenderer = (iconName: string) => {
+  return iconMap[iconName] || Tag;
 };
 
-const getCategoryMeta = (name: string, type: 'expense' | 'income') => {
-  const normalized = name.toLowerCase();
-
-  if (type === 'income') {
-    return { icon: Banknote, variant: 'success' };
-  }
-
-  if (
-    normalized.includes('grocery') ||
-    normalized.includes('market') ||
-    normalized.includes('food')
-  ) {
-    return { icon: ShoppingBasket, variant: 'warning' };
-  }
-  if (
-    normalized.includes('utility') ||
-    normalized.includes('electric') ||
-    normalized.includes('water') ||
-    normalized.includes('gas')
-  ) {
-    return { icon: Zap, variant: 'info' };
-  }
-  if (
-    normalized.includes('entertainment') ||
-    normalized.includes('movie') ||
-    normalized.includes('netflix')
-  ) {
-    return { icon: Film, variant: 'error' };
-  }
-  if (
-    normalized.includes('transport') ||
-    normalized.includes('uber') ||
-    normalized.includes('taxi') ||
-    normalized.includes('ride')
-  ) {
-    return { icon: Car, variant: 'accent' };
-  }
-  if (normalized.includes('dining') || normalized.includes('restaurant')) {
-    return { icon: UtensilsCrossed, variant: 'warning' };
-  }
-  if (
-    normalized.includes('housing') ||
-    normalized.includes('rent') ||
-    normalized.includes('mortgage')
-  ) {
-    return { icon: House, variant: 'primary' };
-  }
-  if (normalized.includes('freelance') || normalized.includes('contract')) {
-    return { icon: Briefcase, variant: 'info' };
-  }
-
-  return { icon: Wallet, variant: type === 'expense' ? 'error' : 'success' };
+// Helper to get color styling from category.color field
+const getColorStyle = (color: string) => {
+  return colorStyleMap[color] || { bg: 'bg-base-300', text: 'text-base-content' };
 };
 
 const createRecentTransactionsList = (args: {
@@ -301,8 +271,9 @@ const createRecentTransactionsList = (args: {
       const date = new Date(transaction.transaction_date);
       const amountColor = isExpense ? 'text-error' : 'text-success';
       const amountSign = isExpense ? '-' : '+';
-      const categoryMeta = getCategoryMeta(transaction.category.name, transaction.type);
-      const iconStyle = iconVariants[categoryMeta.variant];
+      // Use icon and color from category data
+      const iconRenderer = getIconRenderer(transaction.category.icon);
+      const iconStyle = getColorStyle(transaction.category.color);
       const primaryText = transaction.description || transaction.category.name;
 
       const item = document.createElement('li');
@@ -315,7 +286,7 @@ const createRecentTransactionsList = (args: {
       const iconBadge = document.createElement('div');
       iconBadge.className = `rounded-2xl p-3 shadow-sm ${iconStyle.bg} ${iconStyle.text} transition-transform group-hover:rotate-2`;
       iconBadge.appendChild(
-        categoryMeta.icon.render({ size: 18, class: 'stroke-current' }, { 'aria-hidden': 'true' })
+        iconRenderer.render({ size: 18, class: 'stroke-current' }, { 'aria-hidden': 'true' })
       );
       item.appendChild(iconBadge);
 
