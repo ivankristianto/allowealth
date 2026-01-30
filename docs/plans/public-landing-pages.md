@@ -1,8 +1,9 @@
 # Public Landing Pages Architecture Plan
 
-**Version:** 1.0.0
+**Version:** 1.2.0
 **Created:** 2025-01-30
-**Status:** Pending Implementation
+**Updated:** 2026-01-30
+**Status:** ✅ Complete
 
 ## Overview
 
@@ -27,73 +28,91 @@ Redesign the homepage and create a public layout for non-logged-in users, includ
 ```
 src/
 ├── layouts/
-│   └── PublicLayout.astro              # NEW - Landing page layout
+│   └── PublicLayout.astro              # ✅ DONE - Landing page layout
 ├── components/
 │   ├── layouts/
-│   │   ├── PublicNavbar.astro          # NEW - Glass navigation bar
-│   │   └── PublicFooter.astro          # NEW - Landing page footer
+│   │   ├── PublicNavbar.astro          # ✅ DONE - Glass navigation bar
+│   │   └── PublicFooter.astro          # ✅ DONE - Landing page footer
 │   └── organisms/
 │       └── landing/
-│           ├── HeroSection.astro       # NEW - Hero with CTA
-│           ├── ShowcaseSection.astro   # NEW - Feature showcase rows
-│           ├── FeaturesGrid.astro      # NEW - Bento grid features
-│           └── PricingSection.astro    # NEW - Pricing table
+│           ├── HeroSection.astro       # ✅ DONE - Hero with CTA
+│           ├── ShowcaseSection.astro   # ✅ DONE - Feature showcase rows
+│           ├── FeaturesGrid.astro      # ✅ DONE - Bento grid features
+│           └── PricingSection.astro    # ✅ DONE - Pricing table
 ├── pages/
-│   ├── index.astro                     # REDESIGN - Public landing
-│   ├── terms.astro                     # NEW - Terms & Conditions
-│   ├── privacy.astro                   # NEW - Privacy Policy
-│   └── contact.astro                   # NEW - Contact page (static form)
+│   ├── index.astro                     # ✅ DONE - Public landing
+│   ├── terms.astro                     # ✅ DONE - Terms & Conditions
+│   ├── privacy.astro                   # ✅ DONE - Privacy Policy
+│   └── contact.astro                   # ✅ DONE - Contact page (static form)
 └── lib/
-    └── landing-content.ts              # NEW - Centralized content data
+    └── landing-content.ts              # ✅ DONE - Centralized content data
 ```
 
-**Total: 11 new files, 1 modified file**
+**Total: 11 new files, 1 modified file** - ALL COMPLETE
 
 ---
 
 ## 3. Security Considerations
 
-| Concern                  | Mitigation                                                                                                         |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------ |
-| **XSS in content**       | Static content only, no user input on public pages                                                                 |
-| **External images**      | Use placeholder `<img>` for now; when real images are added, use `src/assets/`                                     |
-| **Form on Contact page** | Static placeholder only (no backend). When implemented: server-side validation + CSRF protection via Astro actions |
-| **Open redirect**        | Hardcode `/transactions` and `/signup` as destinations (no query params)                                           |
-| **Rate limiting**        | Not needed for static pages; Contact form would need rate limiting when functional                                 |
+| Concern                  | Mitigation                                                                                                         | Status |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------ | ------ |
+| **XSS in content**       | Static content only, no user input on public pages                                                                 | ✅     |
+| **External images**      | Added `crossorigin="anonymous"` to Unsplash images                                                                 | ✅     |
+| **Form on Contact page** | Static placeholder only (no backend). When implemented: server-side validation + CSRF protection via Astro actions | ✅     |
+| **Open redirect**        | Hardcode `/transactions` and `/signup` as destinations (no query params)                                           | ✅     |
+| **Rate limiting**        | Not needed for static pages; Contact form would need rate limiting when functional                                 | N/A    |
 
 ---
 
 ## 4. Key Architectural Decisions
 
-| Decision                               | Rationale                                                                |
-| -------------------------------------- | ------------------------------------------------------------------------ |
-| **Separate `PublicLayout`**            | No sidebar/drawer, different nav/footer for marketing pages              |
-| **Content in `landing-content.ts`**    | Single source of truth for pricing/features, easy to update              |
-| **No React conversion**                | Astro components are SSR, better performance, follow project standards   |
-| **`#` links for unimplemented routes** | Per requirements, links point to `#` until pages exist                   |
-| **Placeholder images**                 | Use Unsplash URLs from PoC for now (same as reference)                   |
-| **Homepage for all users**             | Landing page always visible; CTA button text changes based on auth state |
-| **Responsive**                         | Supported mobile view, read the design-system                            |
-| **Dark mode**                          | Supported both dark mode and light mode                                  |
+| Decision                               | Rationale                                                                | Status |
+| -------------------------------------- | ------------------------------------------------------------------------ | ------ |
+| **Separate `PublicLayout`**            | No sidebar/drawer, different nav/footer for marketing pages              | ✅     |
+| **Content in `landing-content.ts`**    | Single source of truth for pricing/features, easy to update              | ✅     |
+| **No React conversion**                | Astro components are SSR, better performance, follow project standards   | ✅     |
+| **`#` links for unimplemented routes** | Per requirements, links point to `#` until pages exist                   | ✅     |
+| **Placeholder images**                 | Use Unsplash URLs from PoC for now (same as reference)                   | ✅     |
+| **Homepage for all users**             | Landing page always visible; CTA button text changes based on auth state | ✅     |
+| **Responsive**                         | Supported mobile view, read the design-system                            | ✅     |
+| **Dark mode**                          | Supported both dark mode and light mode                                  | ✅     |
 
 ---
 
 ## 5. Implementation Tasks (Ordered)
 
-| #   | Task                            | Dependencies                                 | Est. Complexity |
-| --- | ------------------------------- | -------------------------------------------- | --------------- |
-| 1   | Create `lib/landing-content.ts` | None                                         | Low             |
-| 2   | Create `PublicNavbar.astro`     | Lucide icons                                 | Medium          |
-| 3   | Create `PublicFooter.astro`     | `landing-content.ts`                         | Medium          |
-| 4   | Create `PublicLayout.astro`     | `PublicNavbar`, `PublicFooter`, `BaseLayout` | Low             |
-| 5   | Create `HeroSection.astro`      | Motion animations                            | Medium          |
-| 6   | Create `ShowcaseSection.astro`  | None                                         | Medium          |
-| 7   | Create `FeaturesGrid.astro`     | Lucide icons                                 | Medium          |
-| 8   | Create `PricingSection.astro`   | `landing-content.ts`, Lucide icons           | Medium          |
-| 9   | Redesign `index.astro`          | All landing components                       | Low             |
-| 10  | Create `terms.astro`            | `PublicLayout`                               | Low             |
-| 11  | Create `privacy.astro`          | `PublicLayout`                               | Low             |
-| 12  | Create `contact.astro`          | `PublicLayout`                               | Medium          |
+| #   | Task                            | Dependencies                                 | Status |
+| --- | ------------------------------- | -------------------------------------------- | ------ |
+| 1   | Create `lib/landing-content.ts` | None                                         | ✅     |
+| 2   | Create `PublicNavbar.astro`     | Lucide icons                                 | ✅     |
+| 3   | Create `PublicFooter.astro`     | `landing-content.ts`                         | ✅     |
+| 4   | Create `PublicLayout.astro`     | `PublicNavbar`, `PublicFooter`, `BaseLayout` | ✅     |
+| 5   | Create `HeroSection.astro`      | Motion animations                            | ✅     |
+| 6   | Create `ShowcaseSection.astro`  | None                                         | ✅     |
+| 7   | Create `FeaturesGrid.astro`     | Lucide icons                                 | ✅     |
+| 8   | Create `PricingSection.astro`   | `landing-content.ts`, Lucide icons           | ✅     |
+| 9   | Redesign `index.astro`          | All landing components                       | ✅     |
+| 10  | Create `terms.astro`            | `PublicLayout`                               | ✅     |
+| 11  | Create `privacy.astro`          | `PublicLayout`                               | ✅     |
+| 12  | Create `contact.astro`          | `PublicLayout`                               | ✅     |
+
+---
+
+## 5.1 Known Issues & TODOs
+
+Issues identified during code review and documented in code:
+
+| Priority | Issue                                         | Location                      | Status       |
+| -------- | --------------------------------------------- | ----------------------------- | ------------ |
+| P2       | Add mobile navigation menu (hamburger/drawer) | `PublicNavbar.astro`          | TODO in code |
+| P2       | Replace deprecated Lucide brand icons         | `PublicFooter.astro`          | TODO in code |
+| P2       | Implement backend with CSRF + rate limiting   | `contact.astro`               | TODO in code |
+| P2       | Ensure Tailwind safelist for dynamic classes  | Multiple components           | Verified OK  |
+| ✅       | Add `prefers-reduced-motion` for animations   | `HeroSection`, `PublicLayout` | Fixed        |
+| ✅       | Fix incorrect ARIA roles in navbar            | `PublicNavbar.astro`          | Fixed        |
+| ✅       | Remove incorrect `role="status"` from badge   | `HeroSection.astro`           | Fixed        |
+| ✅       | Add `aria-describedby` to form fields         | `contact.astro`               | Fixed        |
+| ✅       | Add `crossorigin` to external images          | `ShowcaseSection.astro`       | Fixed        |
 
 ---
 
@@ -386,11 +405,31 @@ test.describe('Accessibility', () => {
 
 ## 10. Quality Gates (Pre-merge)
 
-- [ ] `bun run lint:fix` passes
-- [ ] `bun run stylelint:fix` passes
-- [ ] `bun run format:fix` passes
-- [ ] `bun run typecheck` passes
-- [ ] All user stories manually verified
-- [ ] Playwright tests written and passing
-- [ ] Accessibility audit (axe) passes
-- [ ] Mobile responsive verified (375px, 768px, 1024px, 1440px)
+- [x] `bun run lint:fix` passes
+- [x] `bun run stylelint:fix` passes
+- [x] `bun run format:fix` passes
+- [x] `bun run typecheck` passes
+- [x] All user stories manually verified
+- [x] ~~Playwright tests written and passing~~ (Skipped - user decision)
+- [x] ~~Accessibility audit (axe) passes~~ (Skipped - user decision)
+- [x] Mobile responsive verified (375px, 768px, 1024px, 1440px)
+
+---
+
+## 11. Next Steps
+
+~~All implementation complete.~~
+
+### Completed Tasks
+
+1. ✅ **Manual Verification** - All user stories verified in browser
+2. ✅ **Responsive Testing** - Verified at 375px, 768px, 1024px, 1440px breakpoints
+3. ✅ **Dark Mode Support** - Both light and dark themes working
+
+### Skipped (User Decision - 2026-01-30)
+
+4. ~~**Write Playwright E2E Tests** - Create test files per Section 7 structure~~
+5. ~~**Accessibility Audit** - Run axe-core scan on all pages~~
+6. ~~**Cross-browser Testing** - Test in Chrome, Firefox, Safari~~
+
+**Note:** E2E tests, accessibility audit, and cross-browser testing were skipped per user decision. The user stories in Section 6 remain as documentation for future reference if tests are needed later.

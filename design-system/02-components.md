@@ -185,7 +185,7 @@ Lucide icons use a default stroke-width of 2, which provides good visual clarity
 ```
 
 **Variants:** `primary` | `secondary` | `outline` | `ghost` | `danger` | `warning` | `success`
-**Sizes:** `sm` | `md` | `lg`
+**Sizes:** `sm` | `md` | `lg` | `xl`
 
 ### Card (`src/components/atoms/Card.astro`)
 

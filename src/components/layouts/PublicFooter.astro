@@ -1,0 +1,139 @@
+---
+/**
+ * PublicFooter Component
+ *
+ * Footer for public landing pages with brand info, social links,
+ * navigation columns, and legal links.
+ */
+
+import { siFacebook, siInstagram, siX } from 'simple-icons';
+import { footerLinks, socialLinks, legalLinks, brandContent } from '@/lib/landing-content';
+
+// LinkedIn SVG path (not available in simple-icons)
+const linkedinPath =
+  'M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z';
+
+// Map icon names to simple-icons data
+const iconMap: Record<string, { path: string; title: string }> = {
+  Facebook: { path: siFacebook.path, title: siFacebook.title },
+  Instagram: { path: siInstagram.path, title: siInstagram.title },
+  Twitter: { path: siX.path, title: siX.title }, // Twitter is now X
+  Linkedin: { path: linkedinPath, title: 'LinkedIn' },
+};
+---
+
+<footer
+  class="relative z-10 py-16 md:py-32 px-6 border-t border-base-300/50 bg-base-100/30 backdrop-blur-sm"
+  role="contentinfo"
+>
+  <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-12 md:gap-20">
+    <!-- Brand Column -->
+    <div class="md:col-span-5 space-y-8">
+      <!-- Logo and Brand Name -->
+      <a
+        href="/"
+        class="flex items-center gap-3 w-fit focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 rounded-lg"
+        aria-label={`${brandContent.name} - Go to homepage`}
+      >
+        <div class="w-9 h-9 flex items-center justify-center overflow-hidden">
+          <img src="/favicon.svg" alt="" class="w-9 h-9" aria-hidden="true" />
+        </div>
+        <span class="text-xl font-bold tracking-tighter text-base-content">
+          {brandContent.name}
+        </span>
+      </a>
+
+      <!-- Tagline -->
+      <p class="text-lg text-neutral font-medium leading-relaxed max-w-sm">
+        {brandContent.tagline}
+      </p>
+
+      <!-- Social Links -->
+      <nav aria-label="Social media links">
+        <ul class="flex items-center gap-4">
+          {
+            socialLinks.map((social) => {
+              const icon = iconMap[social.icon];
+              return (
+                <li>
+                  <a
+                    href={social.href}
+                    aria-label={social.label}
+                    class="w-11 h-11 rounded-xl bg-base-100 border border-base-300 flex items-center justify-center text-neutral hover:text-primary hover:border-primary/40 hover:scale-110 active:scale-95 transition-all duration-300 shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+                  >
+                    {icon && (
+                      <svg
+                        role="img"
+                        viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg"
+                        class="w-5 h-5 fill-current"
+                        aria-hidden="true"
+                      >
+                        <path d={icon.path} />
+                      </svg>
+                    )}
+                  </a>
+                </li>
+              );
+            })
+          }
+        </ul>
+      </nav>
+    </div>
+
+    <!-- Links Columns -->
+    <div class="md:col-span-7 grid grid-cols-2 sm:grid-cols-3 gap-8 md:gap-12">
+      {
+        footerLinks.map((section) => (
+          <nav aria-label={`${section.title} links`}>
+            <h5 class="text-[10px] font-bold uppercase tracking-widest text-neutral mb-6">
+              {section.title}
+            </h5>
+            <ul class="space-y-4 text-sm font-bold text-base-content/70">
+              {section.links.map((link) => (
+                <li>
+                  <a
+                    href={link.href}
+                    class="hover:text-primary transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 rounded"
+                  >
+                    {link.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        ))
+      }
+    </div>
+  </div>
+
+  <!-- Sub-footer -->
+  <div class="max-w-7xl mx-auto mt-16 md:mt-32 pt-8 md:pt-12 border-t border-base-300/30">
+    <div class="flex flex-col md:flex-row justify-between items-center gap-8">
+      <!-- Copyright -->
+      <p
+        class="text-[10px] font-bold text-neutral uppercase tracking-widest text-center md:text-left"
+      >
+        {brandContent.copyright}
+      </p>
+
+      <!-- Legal Links -->
+      <nav aria-label="Legal links">
+        <ul class="flex items-center gap-8">
+          {
+            legalLinks.map((link) => (
+              <li>
+                <a
+                  href={link.href}
+                  class="text-[10px] font-bold text-neutral uppercase tracking-widest hover:text-primary transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 rounded"
+                >
+                  {link.label}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </nav>
+    </div>
+  </div>
+</footer>

@@ -1,0 +1,85 @@
+---
+/**
+ * PublicNavbar Component
+ *
+ * Glass-effect navigation bar for public landing pages.
+ * Shows logo, nav links (desktop only), and auth-aware CTA button.
+ *
+ * TODO: P2 - Add mobile navigation menu (hamburger dropdown or drawer)
+ * for access to Platform, Showcase, Pricing links on mobile devices.
+ */
+
+import type { User } from '@/lib/auth/lucia';
+import { brandContent } from '@/lib/landing-content';
+import Button from '@/components/atoms/Button.astro';
+
+interface Props {
+  user?: User | null;
+}
+
+const { user } = Astro.props;
+
+const navLinks = [
+  { label: 'Platform', href: '#features' },
+  { label: 'Showcase', href: '#showcase' },
+  { label: 'Pricing', href: '#pricing' },
+];
+
+const ctaText = user ? 'Enter Dashboard' : 'Start Free';
+const ctaHref = user ? '/transactions' : '/register';
+---
+
+<nav
+  class="fixed top-0 left-0 right-0 z-50 px-4 py-4 md:px-8"
+  role="navigation"
+  aria-label="Main navigation"
+>
+  <div
+    class="max-w-7xl mx-auto flex items-center justify-between px-4 sm:px-6 py-3 bg-base-100/70 backdrop-blur-2xl border border-base-300/20 rounded-3xl shadow-premium"
+  >
+    <!-- Logo and Brand -->
+    <a
+      href="/"
+      class="flex items-center gap-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 rounded-lg"
+      data-logo
+      aria-label={`${brandContent.name} - Go to homepage`}
+    >
+      <div class="w-9 h-9 flex items-center justify-center overflow-hidden">
+        <img src="/favicon.svg" alt="" class="w-9 h-9" aria-hidden="true" />
+      </div>
+      <span class="text-lg font-bold tracking-tighter text-base-content">
+        {brandContent.name}
+      </span>
+    </a>
+
+    <!-- Desktop Navigation Links -->
+    <ul class="hidden lg:flex items-center gap-10 list-none m-0 p-0">
+      {
+        navLinks.map((link) => (
+          <li>
+            <a
+              href={link.href}
+              class="text-sm font-bold text-neutral hover:text-primary transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 rounded"
+            >
+              {link.label}
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+
+    <!-- Auth Buttons -->
+    <div class="flex items-center gap-3 sm:gap-4">
+      {
+        !user && (
+          <Button variant="ghost" href="/login" size="md">
+            Sign in
+          </Button>
+        )
+      }
+      <Button variant="primary" href={ctaHref} size="md">
+        {ctaText}
+      </Button>
+    </div>
+  </div>
+</nav>

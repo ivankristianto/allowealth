@@ -1,0 +1,96 @@
+---
+/**
+ * ShowcaseSection Component
+ *
+ * Feature showcase with alternating layout rows.
+ * Each row has text content and an image.
+ */
+
+import { LayoutDashboard, Sparkles, TrendingUp, BadgeCheck } from '@lucide/astro';
+import { showcaseItems } from '@/lib/landing-content';
+
+// Map icon names to components
+const iconMap: Record<string, typeof LayoutDashboard> = {
+  LayoutDashboard,
+  Sparkles,
+  TrendingUp,
+};
+---
+
+<section id="showcase" class="relative z-10 py-16 sm:py-32 px-6" aria-labelledby="showcase-title">
+  <h2 id="showcase-title" class="sr-only">Feature Showcase</h2>
+
+  <div class="max-w-7xl mx-auto space-y-16 sm:space-y-32">
+    {
+      showcaseItems.map((item, index) => {
+        const IconComponent = iconMap[item.icon];
+        const isReverse = item.reverse;
+
+        return (
+          <article
+            class={`flex flex-col gap-10 lg:gap-20 items-center ${
+              isReverse ? 'lg:flex-row-reverse' : 'lg:flex-row'
+            }`}
+          >
+            {/* Text Content */}
+            <div class="flex-1 space-y-6 sm:space-y-8 text-left">
+              {/* Icon */}
+              <div
+                class={`w-12 h-12 sm:w-14 sm:h-14 ${item.iconBg} ${item.iconColor} rounded-2xl flex items-center justify-center`}
+              >
+                {IconComponent && (
+                  <IconComponent size={28} class="stroke-current" aria-hidden="true" />
+                )}
+              </div>
+
+              {/* Title */}
+              <h3 class="text-3xl sm:text-4xl md:text-5xl font-bold text-base-content tracking-tighter leading-tight">
+                {item.title}
+                <br />
+                <span class={item.highlightColor}>{item.titleHighlight}</span>
+              </h3>
+
+              {/* Description */}
+              <p class="text-base sm:text-lg text-neutral font-medium leading-relaxed">
+                {item.description}
+              </p>
+
+              {/* Feature List */}
+              <ul class="space-y-3 sm:space-y-4" role="list">
+                {item.features.map((feature) => (
+                  <li class="flex items-center gap-3 text-base-content/80 font-bold text-sm">
+                    <BadgeCheck
+                      size={20}
+                      class={`${item.featureIconColor} shrink-0`}
+                      aria-hidden="true"
+                    />
+                    <span>{feature}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Image */}
+            <div class="flex-1 w-full group">
+              <figure class="relative p-2 sm:p-3 bg-base-200/40 rounded-3xl sm:rounded-4xl border border-base-300 shadow-2xl overflow-hidden transition-transform duration-700 hover:scale-[1.02]">
+                <img
+                  src={item.imageUrl}
+                  alt={item.imageAlt}
+                  class="w-full h-auto rounded-2xl sm:rounded-3xl grayscale-[0.2] group-hover:grayscale-0 transition-all duration-500"
+                  loading={index === 0 ? 'eager' : 'lazy'}
+                  width="1200"
+                  height="800"
+                  crossorigin="anonymous"
+                />
+                <div
+                  class={`absolute inset-0 bg-gradient-to-${isReverse ? 'bl' : 'tr'} ${item.gradientClass} pointer-events-none rounded-2xl sm:rounded-3xl`}
+                  aria-hidden="true"
+                />
+              </figure>
+            </div>
+          </article>
+        );
+      })
+    }
+  </div>
+</section>
