@@ -1,0 +1,13 @@
+# Update Asset Category Request Schema
+UpdateAssetCategoryRequest:
+  type: object
+  properties:
+    name:
+      type: string
+      maxLength: 100
+    description:
+      type: string
+      nullable: true
+      maxLength: 500
+    isLiability:
+      type: boolean

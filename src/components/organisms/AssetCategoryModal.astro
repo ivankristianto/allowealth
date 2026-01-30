@@ -1,0 +1,151 @@
+---
+/**
+ * AssetCategoryModal Component
+ *
+ * Modal for creating or editing asset categories.
+ *
+ * @param {string} id - Modal ID
+ * @param {'create' | 'edit'} mode - Modal mode
+ * @param {boolean} open - Whether modal is open
+ * @param {Object} values - Default form values
+ */
+
+import Modal from '../molecules/Modal.astro';
+import { Plus, Pencil } from '@lucide/astro';
+
+export interface Props {
+  id: string;
+  mode?: 'create' | 'edit';
+  open?: boolean;
+  values?: {
+    id?: string;
+    name?: string;
+    description?: string;
+    type?: 'asset' | 'liability';
+  };
+  errors?: Record<string, string>;
+}
+
+const { id, mode = 'create', open = false, values = {}, errors = {} } = Astro.props;
+
+const isEditMode = mode === 'edit';
+const title = isEditMode ? 'Edit Category' : 'Add Category';
+const subtitle = isEditMode
+  ? 'Update the category details.'
+  : 'Create a new category for your assets or liabilities.';
+---
+
+<div data-asset-category-modal-container data-id={id} data-mode={mode}>
+  <Modal id={id} open={open} size="md" closable={false} backdropClose={true}>
+    <div slot="default" class="flex flex-col gap-6">
+      <!-- Header -->
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 rounded-2xl flex items-center justify-center bg-accent/10">
+          {
+            isEditMode ? (
+              <Pencil size={24} class="stroke-current text-accent" aria-hidden="true" />
+            ) : (
+              <Plus size={24} class="stroke-current text-accent" aria-hidden="true" />
+            )
+          }
+        </div>
+        <div class="flex-1">
+          <h2 class="text-2xl font-bold tracking-tight text-primary leading-none" data-modal-title>
+            {title}
+          </h2>
+          <p class="text-neutral text-sm mt-2 font-medium" data-modal-subtitle>{subtitle}</p>
+        </div>
+      </div>
+
+      <!-- Form -->
+      <form data-asset-category-form class="flex flex-col gap-5">
+        <input type="hidden" name="id" value={values.id || ''} />
+
+        <div class="form-control">
+          <label class="label py-1" for={`${id}-name`}>
+            <span class="text-xs uppercase tracking-widest text-base-content/50 font-medium">
+              Category Name
+              <span class="sr-only">(required)</span>
+            </span>
+          </label>
+          <input
+            type="text"
+            name="name"
+            id={`${id}-name`}
+            class="input input-bordered w-full h-10 text-xs bg-base-200 focus:ring-2 focus:ring-accent focus:ring-opacity-20 focus:outline-none focus:ring-offset-2"
+            required
+            maxlength="100"
+            placeholder="e.g., Real Estate"
+            value={values.name || ''}
+            data-testid="asset-category-name-input"
+          />
+          {errors.name && <span class="text-error text-xs mt-1">{errors.name}</span>}
+        </div>
+
+        <div class="form-control">
+          <label class="label py-1" for={`${id}-description`}>
+            <span class="text-xs uppercase tracking-widest text-base-content/50 font-medium">
+              Description
+              <span class="text-base-content/30">(optional)</span>
+            </span>
+          </label>
+          <textarea
+            name="description"
+            id={`${id}-description`}
+            class="textarea textarea-bordered w-full text-xs bg-base-200 min-h-[96px] focus:ring-2 focus:ring-accent focus:ring-opacity-20 focus:outline-none focus:ring-offset-2"
+            maxlength="500"
+            placeholder="Short note about this category"
+            data-testid="asset-category-description-input">{values.description || ''}</textarea
+          >
+          <span class="text-base-content/40 text-xs mt-1">Max 500 characters</span>
+          {errors.description && <span class="text-error text-xs mt-1">{errors.description}</span>}
+        </div>
+
+        <div class="form-control">
+          <label class="label py-1" for={`${id}-type`}>
+            <span class="text-xs uppercase tracking-widest text-base-content/50 font-medium">
+              Type
+              <span class="sr-only">(required)</span>
+            </span>
+          </label>
+          <select
+            name="type"
+            id={`${id}-type`}
+            class="select select-bordered w-full h-10 text-xs bg-base-200 focus:ring-2 focus:ring-accent focus:ring-opacity-20 focus:outline-none focus:ring-offset-2"
+            required
+            data-testid="asset-category-type-select"
+          >
+            <option value="asset" selected={values.type === 'asset' || !values.type}>
+              Asset
+            </option>
+            <option value="liability" selected={values.type === 'liability'}>Liability</option>
+          </select>
+          {errors.type && <span class="text-error text-xs mt-1">{errors.type}</span>}
+        </div>
+
+        <!-- Global error -->
+        <div class="hidden alert alert-error text-sm" role="alert" data-form-error></div>
+
+        <!-- Actions -->
+        <div class="flex gap-4 pt-4">
+          <button
+            type="button"
+            class="flex-1 btn btn-ghost h-14 rounded-full font-bold"
+            data-cancel
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            class="flex-[2] btn btn-accent h-14 rounded-full font-bold"
+            data-testid="asset-category-submit-btn"
+          >
+            <span data-submit-text>{isEditMode ? 'Update Category' : 'Save Category'}</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </Modal>
+</div>
+
+<script src="./AssetCategoryModal.client.ts"></script>

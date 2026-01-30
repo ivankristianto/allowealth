@@ -17,6 +17,7 @@ import {
   users,
   userSettings,
   categories,
+  assetCategories,
   transactions,
   assets,
   assetHistory,
@@ -28,6 +29,7 @@ import {
   passwordResetTokens,
   budgets,
 } from './schema';
+import { DEFAULT_ASSET_CATEGORIES } from '@/lib/constants';
 
 // ============================================================================
 // CONFIGURATION
@@ -534,6 +536,7 @@ async function clearAllTables() {
     await db.delete(transactions);
     await db.delete(budgets);
     await db.delete(assets);
+    await db.delete(assetCategories);
     await db.delete(categories);
     await db.delete(userSettings);
     await db.delete(users);
@@ -635,6 +638,34 @@ async function seedCategories(userId: string): Promise<Map<string, string>> {
   }
 
   console.log(`✓ Created ${categoryMap.size} categories`);
+  return categoryMap;
+}
+
+/**
+ * Seed default asset categories (system categories)
+ */
+async function seedAssetCategories(userId: string): Promise<Map<string, string>> {
+  console.log('🏷️  Seeding asset categories...');
+
+  const categoryMap = new Map<string, string>();
+
+  for (const category of DEFAULT_ASSET_CATEGORIES) {
+    const id = nanoid();
+    await db.insert(assetCategories).values({
+      id,
+      user_id: userId,
+      name: category.name,
+      description: category.description,
+      is_liability: category.isLiability,
+      is_system: true,
+      sort_order: category.sortOrder,
+      created_at: new Date(),
+      updated_at: new Date(),
+    });
+    categoryMap.set(category.legacyType, id);
+  }
+
+  console.log(`✓ Created ${categoryMap.size} asset categories`);
   return categoryMap;
 }
 
@@ -890,7 +921,10 @@ async function seedExpenseTransactions(
 /**
  * Seed assets (both payment assets and investment assets)
  */
-async function seedAssets(userId: string): Promise<Map<string, string>> {
+async function seedAssets(
+  userId: string,
+  assetCategoryMap: Map<string, string>
+): Promise<Map<string, string>> {
   console.log('💰 Seeding assets...');
 
   const assetMap = new Map<string, string>();
@@ -898,11 +932,13 @@ async function seedAssets(userId: string): Promise<Map<string, string>> {
   // First, seed payment assets (cash, bank accounts, credit cards, e-wallets)
   for (const asset of PAYMENT_ASSETS) {
     const id = nanoid();
+    const categoryId = assetCategoryMap.get(asset.type) || null;
     await db.insert(assets).values({
       id,
       user_id: userId,
       name: asset.name,
       type: asset.type,
+      category_id: categoryId,
       balance: amt(asset.balance),
       currency: asset.currency,
       is_cash_account: asset.is_cash_account,
@@ -917,11 +953,13 @@ async function seedAssets(userId: string): Promise<Map<string, string>> {
   // Then, seed investment assets
   for (const asset of ASSET_TYPES) {
     const id = nanoid();
+    const categoryId = assetCategoryMap.get(asset.type) || null;
     await db.insert(assets).values({
       id,
       user_id: userId,
       name: asset.name,
       type: asset.type,
+      category_id: categoryId,
       balance: amt(asset.balance),
       currency: asset.currency,
       is_cash_account: false, // Investment assets are not cash accounts
@@ -1114,12 +1152,13 @@ async function seed() {
     // Seed in dependency order
     const userId = await seedUsers();
     const categoryMap = await seedCategories(userId);
+    const assetCategoryMap = await seedAssetCategories(userId);
 
     // Seed budgets for expense categories (must be after categories)
     await seedBudgets(userId, categoryMap);
 
     // Seed assets FIRST (transactions now depend on assets)
-    const assetMap = await seedAssets(userId);
+    const assetMap = await seedAssets(userId, assetCategoryMap);
 
     // Seed transactions for the 3 months
     await seedIncomeTransactions(userId, categoryMap, assetMap);

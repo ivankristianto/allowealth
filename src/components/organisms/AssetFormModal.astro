@@ -14,15 +14,22 @@
 
 import Modal from '../molecules/Modal.astro';
 import { Store } from '@lucide/astro';
-import { ASSET_TYPE_LABELS, type AssetType } from '@/lib/types/asset';
+import { DEFAULT_ASSET_CATEGORIES } from '@/lib/constants';
 
 export interface Props {
   id: string;
   mode?: 'add' | 'edit';
   currency?: 'IDR' | 'USD';
+  categories?: Array<{
+    id: string;
+    name: string;
+    is_liability: boolean;
+    is_system: boolean;
+    sort_order: number;
+  }>;
 }
 
-const { id, mode = 'add', currency = 'IDR' } = Astro.props;
+const { id, mode = 'add', currency = 'IDR', categories = [] } = Astro.props;
 
 const isEditMode = mode === 'edit';
 const title = isEditMode ? 'Edit Asset' : 'Register Asset';
@@ -31,13 +38,15 @@ const subtitle = isEditMode
   : 'Add a new account, fund or security to your portfolio.';
 const submitLabel = isEditMode ? 'Save Changes' : 'Register Asset';
 
-// Asset types for dropdown
-const assetTypes: { value: AssetType; label: string }[] = Object.entries(ASSET_TYPE_LABELS).map(
-  ([value, label]) => ({
-    value: value as AssetType,
-    label,
-  })
-);
+const categoryOptions = categories.length
+  ? categories.map((category) => ({
+      value: category.id,
+      label: category.name,
+    }))
+  : DEFAULT_ASSET_CATEGORIES.map((category) => ({
+      value: category.legacyType,
+      label: category.name,
+    }));
 ---
 
 <div data-asset-form-modal-container data-id={id} data-mode={mode} data-testid="asset-form-modal">
@@ -88,7 +97,7 @@ const assetTypes: { value: AssetType; label: string }[] = Object.entries(ASSET_T
         <div class="space-y-2">
           <div class="flex justify-between items-center">
             <label
-              for={`${id}-type`}
+              for={`${id}-categoryId`}
               class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest ml-1"
             >
               Asset Category
@@ -96,7 +105,7 @@ const assetTypes: { value: AssetType; label: string }[] = Object.entries(ASSET_T
             {/* P3: TODO - Implement custom category creation feature */}
             <button
               type="button"
-              class="text-[10px] font-bold text-accent uppercase tracking-widest hover:underline hidden"
+              class="text-[10px] font-bold text-accent uppercase tracking-widest hover:underline"
               data-toggle-custom-type
             >
               Create New Category
@@ -105,14 +114,18 @@ const assetTypes: { value: AssetType; label: string }[] = Object.entries(ASSET_T
 
           {/* Select dropdown (default) */}
           <select
-            id={`${id}-type`}
-            name="type"
+            id={`${id}-categoryId`}
+            name="categoryId"
             required
             class="select select-lg w-full bg-base-200 border border-base-300 rounded-2xl font-bold text-base-content focus:ring-2 focus:ring-accent focus:outline-none focus:border-accent"
-            data-type-select
-            data-testid="asset-type-select"
+            data-category-select
+            data-testid="asset-category-select"
           >
-            {assetTypes.map((type) => <option value={type.value}>{type.label}</option>)}
+            {
+              categoryOptions.map((category) => (
+                <option value={category.value}>{category.label}</option>
+              ))
+            }
           </select>
 
           {/* Custom type input (hidden by default) */}
@@ -211,7 +224,8 @@ const assetTypes: { value: AssetType; label: string }[] = Object.entries(ASSET_T
   interface AssetFormData {
     id?: string;
     name: string;
-    type: string;
+    categoryId?: string;
+    categoryName?: string;
     currency: 'IDR' | 'USD';
     balance: string;
   }
@@ -234,9 +248,12 @@ const assetTypes: { value: AssetType; label: string }[] = Object.entries(ASSET_T
       // Form fields
       const assetIdInput = document.getElementById(`${id}-asset-id`) as HTMLInputElement | null;
       const nameInput = document.getElementById(`${id}-name`) as HTMLInputElement | null;
-      const typeSelect = document.getElementById(`${id}-type`) as HTMLSelectElement | null;
+      const categorySelect = document.getElementById(
+        `${id}-categoryId`
+      ) as HTMLSelectElement | null;
       const currencySelect = document.getElementById(`${id}-currency`) as HTMLSelectElement | null;
       const balanceInput = document.getElementById(`${id}-balance`) as HTMLInputElement | null;
+      const createCategoryBtn = container.querySelector('[data-toggle-custom-type]');
 
       // Title and subtitle for dynamic updates
       const titleEl = container.querySelector('[data-modal-title]');
@@ -244,11 +261,31 @@ const assetTypes: { value: AssetType; label: string }[] = Object.entries(ASSET_T
 
       if (!modal || !form) return;
 
+      createCategoryBtn?.addEventListener('click', () => {
+        if (typeof (window as any).openAssetCategoryModal === 'function') {
+          (window as any).openAssetCategoryModal('create');
+        } else {
+          window.location.href = '/assets/categories';
+        }
+      });
+
       // Function to populate form for edit mode
       const populateForm = (data: AssetFormData) => {
         if (assetIdInput) assetIdInput.value = data.id || '';
         if (nameInput) nameInput.value = data.name || '';
-        if (typeSelect) typeSelect.value = data.type || 'bank_account';
+        if (categorySelect) {
+          if (data.categoryId) {
+            categorySelect.value = data.categoryId;
+          } else if (data.categoryName) {
+            const options = Array.from(categorySelect.options);
+            const match = options.find(
+              (option) => option.textContent?.trim() === data.categoryName
+            );
+            if (match) {
+              categorySelect.value = match.value;
+            }
+          }
+        }
         if (currencySelect) currencySelect.value = data.currency || 'IDR';
         if (balanceInput) balanceInput.value = data.balance || '';
 
@@ -313,7 +350,7 @@ const assetTypes: { value: AssetType; label: string }[] = Object.entries(ASSET_T
         const formData = new FormData(form);
         const assetId = formData.get('asset_id') as string;
         const name = formData.get('name') as string;
-        const type = formData.get('type') as string;
+        const categoryId = formData.get('categoryId') as string;
         const currency = formData.get('currency') as string;
         const balance = formData.get('balance') as string;
 
@@ -324,7 +361,7 @@ const assetTypes: { value: AssetType; label: string }[] = Object.entries(ASSET_T
         }
 
         // Validation
-        if (!name || !type || !currency || !balance) {
+        if (!name || !categoryId || !currency || !balance) {
           if (errorDiv) {
             errorDiv.textContent = 'Please fill in all required fields.';
             errorDiv.classList.remove('hidden');
@@ -343,8 +380,8 @@ const assetTypes: { value: AssetType; label: string }[] = Object.entries(ASSET_T
         }
 
         // Asset ID validation - ensure nanoid format if editing
-        const nanoidPattern = /^[A-Za-z0-9_-]{21}$/;
-        if (assetId && !nanoidPattern.test(assetId)) {
+        const assetIdPattern = /^[A-Za-z0-9_-]{21}$/;
+        if (assetId && !assetIdPattern.test(assetId)) {
           if (errorDiv) {
             errorDiv.textContent = 'Invalid asset ID format.';
             errorDiv.classList.remove('hidden');
@@ -367,9 +404,15 @@ const assetTypes: { value: AssetType; label: string }[] = Object.entries(ASSET_T
           // For edit, we need to update balance separately if it changed
           const payload: Record<string, string> = {
             name,
-            type,
             currency,
           };
+
+          const categoryIdPattern = /^[A-Za-z0-9_-]{21}$/;
+          if (categoryIdPattern.test(categoryId)) {
+            payload.categoryId = categoryId;
+          } else {
+            payload.type = categoryId;
+          }
 
           // For create, include balance; for update, use balance endpoint
           if (!isEdit) {
@@ -415,7 +458,7 @@ const assetTypes: { value: AssetType; label: string }[] = Object.entries(ASSET_T
           // Dispatch event for page refresh
           document.dispatchEvent(
             new CustomEvent('asset-saved', {
-              detail: { assetId, name, type, currency, balance, isEdit },
+              detail: { assetId, name, categoryId, currency, balance, isEdit },
             })
           );
 

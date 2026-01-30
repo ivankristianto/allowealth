@@ -8,6 +8,7 @@ export interface CreateAssetInput {
   user_id: string;
   name: string;
   type: AssetType;
+  category_id?: string | null;
   balance: string;
   currency: Currency;
   credit_limit?: string | null;
@@ -17,6 +18,7 @@ export interface CreateAssetInput {
 export interface UpdateAssetInput {
   name?: string;
   type?: AssetType;
+  category_id?: string | null;
   balance?: string;
   currency?: Currency;
   credit_limit?: string | null;
@@ -54,6 +56,7 @@ export class AssetService {
         user_id: input.user_id,
         name: input.name,
         type: input.type,
+        category_id: input.category_id ?? null,
         balance: input.balance,
         currency: input.currency,
         last_updated: now,
@@ -101,6 +104,7 @@ export class AssetService {
     user_id: string,
     filters?: {
       type?: AssetType;
+      category_id?: string;
       currency?: Currency;
     }
   ) {
@@ -108,6 +112,10 @@ export class AssetService {
 
     if (filters?.type) {
       conditions.push(eq(assets.type, filters.type));
+    }
+
+    if (filters?.category_id) {
+      conditions.push(eq(assets.category_id, filters.category_id));
     }
 
     if (filters?.currency) {
@@ -132,6 +140,7 @@ export class AssetService {
 
     if (input.name !== undefined) updateData.name = input.name;
     if (input.type !== undefined) updateData.type = input.type;
+    if (input.category_id !== undefined) updateData.category_id = input.category_id;
     if (input.currency !== undefined) updateData.currency = input.currency;
 
     // If balance is updated, also update last_updated timestamp
@@ -303,5 +312,27 @@ export class AssetService {
     );
 
     return assetsWithHistory;
+  }
+
+  /**
+   * Get asset counts grouped by category ID
+   */
+  async countByCategory(user_id: string) {
+    const result = await (this.db as any)
+      .select({
+        category_id: assets.category_id,
+        count: sql<number>`count(*)`,
+      })
+      .from(assets)
+      .where(
+        and(
+          eq(assets.user_id, user_id),
+          sql`${assets.deleted_at} IS NULL`,
+          sql`${assets.category_id} IS NOT NULL`
+        )
+      )
+      .groupBy(assets.category_id);
+
+    return result as Array<{ category_id: string; count: number }>;
   }
 }

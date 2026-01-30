@@ -11,6 +11,7 @@ import { users } from './users';
 import { userSettings } from './user-settings';
 import { sessions } from './sessions';
 import { categories } from './categories';
+import { assetCategories } from './asset-categories';
 import { transactions } from './transactions';
 import { assets } from './assets';
 import { assetHistory } from './asset-history';
@@ -23,6 +24,7 @@ import { budgets } from './budgets';
 export const usersRelations = relations(users, ({ many }) => ({
   settings: many(userSettings),
   categories: many(categories),
+  assetCategories: many(assetCategories),
   transactions: many(transactions),
   assets: many(assets),
   assetUpdateReminders: many(assetUpdateReminders),
@@ -56,6 +58,14 @@ export const categoriesRelations = relations(categories, ({ one, many }) => ({
   budgets: many(budgets),
 }));
 
+// Asset categories relations
+export const assetCategoriesRelations = relations(assetCategories, ({ one }) => ({
+  user: one(users, {
+    fields: [assetCategories.user_id],
+    references: [users.id],
+  }),
+}));
+
 // Transactions relations
 export const transactionsRelations = relations(transactions, ({ one }) => ({
   user: one(users, {
@@ -83,6 +93,10 @@ export const assetsRelations = relations(assets, ({ one, many }) => ({
   user: one(users, {
     fields: [assets.user_id],
     references: [users.id],
+  }),
+  category: one(assetCategories, {
+    fields: [assets.category_id],
+    references: [assetCategories.id],
   }),
   history: many(assetHistory),
   reminders: many(assetUpdateReminders),

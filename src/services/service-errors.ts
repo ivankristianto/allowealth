@@ -32,6 +32,10 @@ export enum ServiceErrorCode {
 
   // Asset-specific errors
   ASSET_NOT_FOUND = 'ASSET_NOT_FOUND',
+  ASSET_CATEGORY_NOT_FOUND = 'ASSET_CATEGORY_NOT_FOUND',
+  ASSET_CATEGORY_SYSTEM_PROTECTED = 'ASSET_CATEGORY_SYSTEM_PROTECTED',
+  ASSET_CATEGORY_HAS_ASSETS = 'ASSET_CATEGORY_HAS_ASSETS',
+  ASSET_CATEGORY_LIMIT_REACHED = 'ASSET_CATEGORY_LIMIT_REACHED',
 
   // Auth-specific errors
   INVALID_CREDENTIALS = 'INVALID_CREDENTIALS',
@@ -86,6 +90,13 @@ export class AssetServiceError extends ServiceError {
   constructor(code: ServiceErrorCode, message: string, statusCode: number = 400) {
     super(code, message, statusCode);
     this.name = 'AssetServiceError';
+  }
+}
+
+export class AssetCategoryServiceError extends ServiceError {
+  constructor(code: ServiceErrorCode, message: string, statusCode: number = 400) {
+    super(code, message, statusCode);
+    this.name = 'AssetCategoryServiceError';
   }
 }
 

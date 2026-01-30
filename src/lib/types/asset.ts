@@ -32,6 +32,7 @@ export interface Asset {
   user_id: string;
   name: string;
   type: AssetType;
+  category_id?: string | null;
   balance: string;
   currency: Currency;
   credit_limit: string | null;
@@ -49,6 +50,8 @@ export interface AssetOutput {
   id: string;
   name: string;
   type: AssetType;
+  category_id?: string | null;
+  category_name?: string | null;
   balance: string;
   currency: Currency;
   credit_limit?: string | null;
@@ -96,6 +99,21 @@ export interface AssetSummaryByType {
   currency: Currency;
   total: string;
   count: number;
+}
+
+/**
+ * Asset category (custom or system-defined)
+ */
+export interface AssetCategory {
+  id: string;
+  user_id: string;
+  name: string;
+  description: string | null;
+  is_liability: boolean;
+  is_system: boolean;
+  sort_order: number;
+  created_at: Date;
+  updated_at: Date;
 }
 
 /**

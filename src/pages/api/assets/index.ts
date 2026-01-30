@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import { z } from 'zod';
-import { assetService } from '@/services';
+import { assetService, assetCategoryService } from '@/services';
 import {
   successResponse,
   errorResponse,
@@ -10,17 +10,28 @@ import {
 } from '@/lib/api-utils';
 import { logError } from '@/lib/utils';
 import { ASSET_TYPE_LABELS, type AssetType } from '@/lib/types/asset';
+import { DEFAULT_ASSET_CATEGORIES } from '@/lib/constants';
 
 // Valid asset types derived from the canonical source of truth
 const VALID_ASSET_TYPES = Object.keys(ASSET_TYPE_LABELS) as [AssetType, ...AssetType[]];
 
+const LEGACY_TYPE_BY_NAME = new Map(
+  DEFAULT_ASSET_CATEGORIES.map((category) => [category.name, category.legacyType])
+);
+
 // Validation schemas using the shared asset types
-const createAssetSchema = z.object({
-  name: z.string().min(1).max(255),
-  type: z.enum(VALID_ASSET_TYPES),
-  balance: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Balance must be a valid number'),
-  currency: z.enum(['IDR', 'USD']),
-});
+const createAssetSchema = z
+  .object({
+    name: z.string().min(1).max(255),
+    categoryId: z.string().min(1).optional(),
+    type: z.enum(VALID_ASSET_TYPES).optional(),
+    balance: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Balance must be a valid number'),
+    currency: z.enum(['IDR', 'USD']),
+  })
+  .refine((data) => data.categoryId || data.type, {
+    message: 'Category or type is required',
+    path: ['categoryId'],
+  });
 
 /**
  * GET /api/assets
@@ -32,11 +43,15 @@ export const GET: APIRoute = async (context) => {
     const { url } = context;
 
     const type = url.searchParams.get('type');
+    const categoryId = url.searchParams.get('categoryId');
     const currency = url.searchParams.get('currency');
 
     const filters: any = {};
     if (type && VALID_ASSET_TYPES.includes(type as AssetType)) {
       filters.type = type;
+    }
+    if (categoryId) {
+      filters.category_id = categoryId;
     }
     if (currency && (currency === 'IDR' || currency === 'USD')) {
       filters.currency = currency;
@@ -68,10 +83,29 @@ export const POST: APIRoute = async (context) => {
       return errorResponse('Validation failed', 400, 'VALIDATION_ERROR', validation.error.issues);
     }
 
+    let resolvedType = validation.data.type;
+    let resolvedCategoryId: string | null = null;
+
+    if (validation.data.categoryId) {
+      const category = await assetCategoryService.findById(validation.data.categoryId, userId);
+      if (!category) {
+        return errorResponse('Category not found', 404);
+      }
+      resolvedCategoryId = category.id;
+      resolvedType = category.is_system
+        ? LEGACY_TYPE_BY_NAME.get(category.name) || 'other'
+        : 'other';
+    }
+
+    if (!resolvedType) {
+      return errorResponse('Asset type is required', 400);
+    }
+
     const asset = await assetService.create({
       user_id: userId,
       name: validation.data.name,
-      type: validation.data.type,
+      type: resolvedType,
+      category_id: resolvedCategoryId,
       balance: validation.data.balance,
       currency: validation.data.currency,
     });

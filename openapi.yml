@@ -85,6 +85,11 @@ paths:
   /api/categories/{id}:
     $ref: './openapi/paths/categories.yml#/paths/~1api~1categories~1{id}'
 
+  /api/asset-categories:
+    $ref: './openapi/paths/asset-categories.yml#/paths/~1api~1asset-categories'
+  /api/asset-categories/{id}:
+    $ref: './openapi/paths/asset-categories.yml#/paths/~1api~1asset-categories~1{id}'
+
   /api/assets:
     $ref: './openapi/paths/assets.yml#/paths/~1api~1assets'
   /api/assets/{id}:
@@ -205,6 +210,18 @@ components:
       $ref: './openapi/schemas/CategoryResponse.yml#/CategoryResponse'
     CategoriesListResponse:
       $ref: './openapi/schemas/CategoriesListResponse.yml#/CategoriesListResponse'
+
+    # Asset Category Schemas
+    AssetCategory:
+      $ref: './openapi/schemas/AssetCategory.yml#/AssetCategory'
+    CreateAssetCategoryRequest:
+      $ref: './openapi/schemas/CreateAssetCategoryRequest.yml#/CreateAssetCategoryRequest'
+    UpdateAssetCategoryRequest:
+      $ref: './openapi/schemas/UpdateAssetCategoryRequest.yml#/UpdateAssetCategoryRequest'
+    AssetCategoryResponse:
+      $ref: './openapi/schemas/AssetCategoryResponse.yml#/AssetCategoryResponse'
+    AssetCategoriesListResponse:
+      $ref: './openapi/schemas/AssetCategoriesListResponse.yml#/AssetCategoriesListResponse'
 
     # Asset Schemas
     Asset:

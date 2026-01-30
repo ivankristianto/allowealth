@@ -62,6 +62,14 @@ export interface AssetAllocationItem {
   color: string;
 }
 
+function getAssetGroupKey(asset: AssetOutput): string {
+  return asset.category_id || asset.type;
+}
+
+function getAssetGroupLabel(asset: AssetOutput): string {
+  return asset.category_name || formatTypeForDisplay(asset.type);
+}
+
 /**
  * @TODO: Wire with backend - Get actual exchange rate from API
  * Default exchange rate for IDR to USD conversion
@@ -97,7 +105,10 @@ export function calculateAssetAllocation(assets: AssetOutput[]): AssetAllocation
   }
 
   // Group assets by type and calculate total in IDR
-  const typeGroups: Record<string, { type: string; totalIdr: number; assets: AssetOutput[] }> = {};
+  const typeGroups: Record<
+    string,
+    { key: string; label: string; totalIdr: number; assets: AssetOutput[] }
+  > = {};
 
   for (const asset of assets) {
     const balance = parseFloat(asset.balance || '0');
@@ -105,16 +116,20 @@ export function calculateAssetAllocation(assets: AssetOutput[]): AssetAllocation
 
     const balanceInIdr = convertToIdr(balance, asset.currency);
 
-    if (!typeGroups[asset.type]) {
-      typeGroups[asset.type] = {
-        type: asset.type,
+    const groupKey = getAssetGroupKey(asset);
+    const groupLabel = getAssetGroupLabel(asset);
+
+    if (!typeGroups[groupKey]) {
+      typeGroups[groupKey] = {
+        key: groupKey,
+        label: groupLabel,
         totalIdr: 0,
         assets: [],
       };
     }
 
-    typeGroups[asset.type].totalIdr += balanceInIdr;
-    typeGroups[asset.type].assets.push(asset);
+    typeGroups[groupKey].totalIdr += balanceInIdr;
+    typeGroups[groupKey].assets.push(asset);
   }
 
   // Calculate total portfolio value in IDR
@@ -128,12 +143,12 @@ export function calculateAssetAllocation(assets: AssetOutput[]): AssetAllocation
   }
 
   // Calculate percentages and assign colors
-  const allocation = Object.entries(typeGroups)
-    .map(([type, group], index) => ({
-      type: formatTypeForDisplay(type),
+  const allocation = Object.values(typeGroups)
+    .map((group, index) => ({
+      type: group.label,
       percentage: Math.round((group.totalIdr / totalPortfolioIdr) * 100),
       totalIdr: group.totalIdr,
-      color: getAssetTypeColor(type, index),
+      color: getAssetTypeColor(group.key, index),
     }))
     .sort((a, b) => b.percentage - a.percentage);
 
@@ -164,10 +179,11 @@ export function formatTypeForDisplay(type: string): string {
 export function groupAssetsByType(assets: AssetOutput[]): Record<string, AssetOutput[]> {
   return assets.reduce(
     (acc, asset) => {
-      if (!acc[asset.type]) {
-        acc[asset.type] = [];
+      const groupKey = getAssetGroupKey(asset);
+      if (!acc[groupKey]) {
+        acc[groupKey] = [];
       }
-      acc[asset.type].push(asset);
+      acc[groupKey].push(asset);
       return acc;
     },
     {} as Record<string, AssetOutput[]>

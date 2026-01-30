@@ -1,0 +1,241 @@
+---
+/**
+ * Asset Categories Management Page
+ *
+ * UI scaffolding for custom asset categories.
+ */
+
+import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
+import TabToggle from '@/components/atoms/TabToggle.astro';
+import AssetCategoryModal from '@/components/organisms/AssetCategoryModal.astro';
+import AssetCategoryDeleteDialog from '@/components/organisms/AssetCategoryDeleteDialog.astro';
+import { ArrowLeft, Plus, Search, Pencil, Trash2 } from '@lucide/astro';
+import { assetCategoryService, assetService } from '@/services';
+
+const currentPath = '/assets/categories';
+const user = Astro.locals.user!;
+
+const url = new URL(Astro.url);
+const typeFilter = (url.searchParams.get('type') as 'asset' | 'liability') || 'asset';
+const searchQuery = url.searchParams.get('search') || '';
+
+const categories = await assetCategoryService.findAll(user.id);
+const assets = await assetService.findAll(user.id);
+const assetCountByCategory = new Map<string, number>();
+
+for (const asset of assets) {
+  if (!asset.category_id) continue;
+  assetCountByCategory.set(
+    asset.category_id,
+    (assetCountByCategory.get(asset.category_id) || 0) + 1
+  );
+}
+
+const allCategories = categories.map((category) => ({
+  id: category.id,
+  name: category.name,
+  description: category.description,
+  isLiability: category.is_liability,
+  isSystem: category.is_system,
+  sortOrder: category.sort_order,
+  assetCount: assetCountByCategory.get(category.id) || 0,
+}));
+
+let filteredCategories = allCategories.filter(
+  (category) => category.isLiability === (typeFilter === 'liability')
+);
+
+if (searchQuery) {
+  const query = searchQuery.toLowerCase();
+  filteredCategories = filteredCategories.filter(
+    (category) =>
+      category.name.toLowerCase().includes(query) ||
+      (category.description || '').toLowerCase().includes(query)
+  );
+}
+---
+
+<ProtectedLayout
+  title="Asset Categories"
+  currentPath={currentPath}
+  subtitle="Manage your asset and liability categories"
+>
+  <div class="max-w-7xl mx-auto sm:px-2 lg:px-6 space-y-6 sm:space-y-8">
+    <!-- Back to Assets -->
+    <a href="/assets" class="btn btn-ghost btn-sm gap-2 rounded-xl w-fit">
+      <ArrowLeft size={16} class="stroke-current" aria-hidden="true" />
+      Back to Assets
+    </a>
+
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+      <div>
+        <h2 class="text-2xl font-bold text-base-content tracking-tight leading-none">
+          Manage Categories
+        </h2>
+        <p class="text-sm text-base-content/60 mt-2 font-medium">
+          Organizing {allCategories.length} categories across your portfolio
+        </p>
+      </div>
+      <button
+        class="btn btn-accent rounded-2xl font-bold text-sm flex items-center gap-2"
+        data-action="create-asset-category"
+        data-testid="create-asset-category-btn"
+      >
+        <Plus size={18} class="stroke-current" aria-hidden="true" />
+        Add Category
+      </button>
+    </div>
+
+    <!-- Filters -->
+    <div class="flex flex-col md:flex-row justify-between items-center gap-6">
+      <TabToggle
+        activeTab={typeFilter}
+        option1Value="asset"
+        option1Label="Assets"
+        option2Value="liability"
+        option2Label="Liabilities"
+        name="type"
+      />
+
+      <form id="asset-category-search-form" class="relative flex-1 w-full max-w-md">
+        <label class="sr-only" for="asset-category-search">Search categories</label>
+        <span
+          class="absolute left-4 top-1/2 -translate-y-1/2 text-base-content/40"
+          aria-hidden="true"
+        >
+          <Search size={20} />
+        </span>
+        <input
+          id="asset-category-search"
+          type="search"
+          name="search"
+          placeholder="Search categories..."
+          value={searchQuery}
+          class="w-full pl-12 pr-6 py-3.5 bg-base-100 border border-base-300 focus:border-primary focus:ring-0 rounded-2xl text-base font-medium text-base-content shadow-sm"
+          data-testid="asset-category-search-input"
+        />
+        <input type="hidden" name="type" value={typeFilter} />
+      </form>
+    </div>
+
+    <!-- Categories Table -->
+    <div class="bg-base-100 rounded-3xl border border-base-300 shadow-sm overflow-hidden">
+      <div class="overflow-x-auto">
+        {
+          filteredCategories.length > 0 ? (
+            <table
+              class="w-full text-left border-collapse"
+              role="table"
+              data-testid="asset-categories-table"
+            >
+              <caption class="sr-only">
+                Asset categories list with {filteredCategories.length} entries
+              </caption>
+              <thead>
+                <tr class="border-b border-base-200 bg-base-200/50">
+                  <th
+                    scope="col"
+                    class="px-8 py-5 text-[10px] font-bold text-base-content/40 uppercase tracking-widest"
+                  >
+                    Category Name
+                  </th>
+                  <th
+                    scope="col"
+                    class="px-8 py-5 text-[10px] font-bold text-base-content/40 uppercase tracking-widest hidden md:table-cell"
+                  >
+                    Description
+                  </th>
+                  <th
+                    scope="col"
+                    class="px-8 py-5 text-[10px] font-bold text-base-content/40 uppercase tracking-widest"
+                  >
+                    Type
+                  </th>
+                  <th
+                    scope="col"
+                    class="px-8 py-5 text-[10px] font-bold text-base-content/40 uppercase tracking-widest"
+                  >
+                    Assets
+                  </th>
+                  <th
+                    scope="col"
+                    class="px-8 py-5 text-[10px] font-bold text-base-content/40 uppercase tracking-widest text-right"
+                  >
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-base-200">
+                {filteredCategories.map((category) => (
+                  <tr class="group hover:bg-base-200/50 transition-colors">
+                    <td class="px-8 py-5">
+                      <div class="flex items-center gap-3">
+                        <span class="text-base font-bold text-base-content tracking-tight leading-none">
+                          {category.name}
+                        </span>
+                        {category.isSystem && <span class="badge badge-ghost text-xs">System</span>}
+                      </div>
+                    </td>
+                    <td class="px-8 py-5 hidden md:table-cell">
+                      <span class="text-sm text-base-content/60 font-medium">
+                        {category.description || '—'}
+                      </span>
+                    </td>
+                    <td class="px-8 py-5">
+                      <span class="text-sm font-semibold text-base-content">
+                        {category.isLiability ? 'Liability' : 'Asset'}
+                      </span>
+                    </td>
+                    <td class="px-8 py-5">
+                      <span class="text-sm font-semibold text-base-content">
+                        {category.assetCount}
+                      </span>
+                    </td>
+                    <td class="px-8 py-5 text-right">
+                      <div class="flex items-center justify-end gap-2">
+                        <button
+                          class="p-2 text-base-content/30 hover:text-primary hover:bg-primary/10 rounded-xl transition-all disabled:opacity-40 disabled:hover:bg-transparent"
+                          data-action="edit-asset-category"
+                          data-category-id={category.id}
+                          data-category-name={category.name}
+                          data-category-description={category.description}
+                          data-category-type={category.isLiability ? 'liability' : 'asset'}
+                          disabled={category.isSystem}
+                          aria-label={`Edit ${category.name} category`}
+                        >
+                          <Pencil size={18} class="stroke-current" aria-hidden="true" />
+                        </button>
+                        <button
+                          class="p-2 text-base-content/30 hover:text-error hover:bg-error/10 rounded-xl transition-all disabled:opacity-40 disabled:hover:bg-transparent"
+                          data-action="delete-asset-category"
+                          data-category-id={category.id}
+                          data-category-name={category.name}
+                          data-category-meta={`${category.assetCount} assets`}
+                          disabled={category.isSystem}
+                          aria-label={`Delete ${category.name} category`}
+                        >
+                          <Trash2 size={18} class="stroke-current" aria-hidden="true" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <div class="py-24 text-center">
+              <h4 class="text-lg font-bold text-base-content mb-2">No categories found</h4>
+              <p class="text-base-content/40 font-medium">Try adjusting your search terms.</p>
+            </div>
+          )
+        }
+      </div>
+    </div>
+  </div>
+
+  <AssetCategoryModal id="asset-category-modal" />
+  <AssetCategoryDeleteDialog id="asset-category-delete-dialog" />
+</ProtectedLayout>
+
+<script src="./asset-categories.client.ts"></script>

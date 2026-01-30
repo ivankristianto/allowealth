@@ -15,17 +15,25 @@ import Label from '../atoms/Label.astro';
 import Input from '../atoms/Input.astro';
 import Button from '../atoms/Button.astro';
 import { Wallet } from '@lucide/astro';
-import type { AssetType, Currency } from '@/lib/types/asset';
+import type { Currency } from '@/lib/types/asset';
+import { DEFAULT_ASSET_CATEGORIES } from '@/lib/constants';
 
 export interface Props {
   action: string;
   method?: 'POST' | 'PUT';
   values?: {
     name?: string;
-    type?: AssetType;
+    categoryId?: string;
     balance?: string;
     currency?: Currency;
   };
+  categories?: Array<{
+    id: string;
+    name: string;
+    is_liability: boolean;
+    is_system: boolean;
+    sort_order: number;
+  }>;
   errors?: Record<string, string>;
   submitLabel?: string;
   cancelUrl?: string;
@@ -36,21 +44,22 @@ const {
   action,
   method = 'POST',
   values = {},
+  categories = [],
   errors = {},
   submitLabel = 'Save Asset',
   cancelUrl = '/assets',
   assetId = '',
 } = Astro.props;
 
-// Asset type options matching database schema
-const assetTypes: Array<{ value: AssetType; label: string }> = [
-  { value: 'bank_account', label: 'Bank Account' },
-  { value: 'mutual_fund', label: 'Mutual Fund' },
-  { value: 'stock', label: 'Stock' },
-  { value: 'bond', label: 'Bond' },
-  { value: 'crypto', label: 'Cryptocurrency' },
-  { value: 'other', label: 'Other' },
-];
+const categoryOptions = categories.length
+  ? categories.map((category) => ({
+      value: category.id,
+      label: category.name,
+    }))
+  : DEFAULT_ASSET_CATEGORIES.map((category) => ({
+      value: category.legacyType,
+      label: category.name,
+    }));
 
 const currencyOptions: Array<{ value: Currency; label: string }> = [
   { value: 'IDR', label: 'IDR - Indonesian Rupiah' },
@@ -85,30 +94,35 @@ const currencyOptions: Array<{ value: Currency; label: string }> = [
     />
   </div>
 
-  <!-- Asset Type -->
+  <!-- Asset Category -->
   <div class="form-control">
-    <Label required htmlFor="type" id="type-label">Asset Type</Label>
+    <div class="flex items-center justify-between">
+      <Label required htmlFor="categoryId" id="type-label">Asset Category</Label>
+      <a href="/assets/categories" class="text-xs text-accent font-semibold hover:underline">
+        Manage categories
+      </a>
+    </div>
     <select
-      id="type"
-      name="type"
+      id="categoryId"
+      name="categoryId"
       class="select select-bordered"
       required={true}
-      class:list={['select', 'select-bordered', errors.type && 'select-error']}
-      aria-describedby={errors.type ? 'type-error' : undefined}
+      class:list={['select', 'select-bordered', errors.categoryId && 'select-error']}
+      aria-describedby={errors.categoryId ? 'categoryId-error' : undefined}
     >
-      <option value="">Select type...</option>
+      <option value="">Select category...</option>
       {
-        assetTypes.map((type) => (
-          <option value={type.value} selected={values.type === type.value}>
-            {type.label}
+        categoryOptions.map((option) => (
+          <option value={option.value} selected={values.categoryId === option.value}>
+            {option.label}
           </option>
         ))
       }
     </select>
     {
-      errors.type && (
-        <span id="type-error" class="text-error text-sm mt-1">
-          {errors.type}
+      errors.categoryId && (
+        <span id="categoryId-error" class="text-error text-sm mt-1">
+          {errors.categoryId}
         </span>
       )
     }
@@ -193,7 +207,7 @@ const currencyOptions: Array<{ value: Currency; label: string }> = [
 
   interface AssetFormValues {
     name: string;
-    type: string;
+    categoryId: string;
     balance: string;
     currency: string;
   }
@@ -305,8 +319,8 @@ const currencyOptions: Array<{ value: Currency; label: string }> = [
         errors.push('Asset name must be less than 255 characters');
       }
 
-      if (!values.type) {
-        errors.push('Asset type is required');
+      if (!values.categoryId) {
+        errors.push('Asset category is required');
       }
 
       if (!values.currency) {
@@ -353,7 +367,7 @@ const currencyOptions: Array<{ value: Currency; label: string }> = [
       const formData = new FormData(form);
       const values: AssetFormValues = {
         name: formData.get('name') as string,
-        type: formData.get('type') as string,
+        categoryId: formData.get('categoryId') as string,
         balance: formData.get('balance') as string,
         currency: formData.get('currency') as string,
       };
@@ -368,11 +382,24 @@ const currencyOptions: Array<{ value: Currency; label: string }> = [
       setLoading(true);
 
       try {
+        const payload: Record<string, string> = {
+          name: values.name,
+          balance: values.balance,
+          currency: values.currency,
+        };
+
+        const nanoidPattern = /^[A-Za-z0-9_-]{21}$/;
+        if (nanoidPattern.test(values.categoryId)) {
+          payload.categoryId = values.categoryId;
+        } else {
+          payload.type = values.categoryId;
+        }
+
         const url = assetId ? `/api/assets/${assetId}` : action;
         const response = await fetch(url, {
           method: assetId ? 'PUT' : method,
           headers: getCsrfHeaders({ 'Content-Type': 'application/json' }),
-          body: JSON.stringify(values),
+          body: JSON.stringify(payload),
         });
 
         const result = (await response.json()) as CreateAssetResponse;

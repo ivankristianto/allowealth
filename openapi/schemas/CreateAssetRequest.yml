@@ -1,18 +1,35 @@
 # Create Asset Request Schema
 CreateAssetRequest:
-  type: object
-  required: [name, type, balance, currency]
-  properties:
-    name:
-      type: string
-      minLength: 1
-      maxLength: 255
-    type:
-      type: string
-      enum: [bank_account, mutual_fund, bond, crypto, stock, other]
-    balance:
-      type: string
-      pattern: '^\d+(\.\d{1,2})?$'
-    currency:
-      type: string
-      enum: [IDR, USD]
+  oneOf:
+    - type: object
+      required: [name, categoryId, balance, currency]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        categoryId:
+          type: string
+        balance:
+          type: string
+          pattern: '^\d+(\.\d{1,2})?$'
+        currency:
+          type: string
+          enum: [IDR, USD]
+    - type: object
+      required: [name, type, balance, currency]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        type:
+          type: string
+          enum:
+            [cash, bank_account, e_wallet, mutual_fund, bond, crypto, stock, other, credit_card, loan]
+        balance:
+          type: string
+          pattern: '^\d+(\.\d{1,2})?$'
+        currency:
+          type: string
+          enum: [IDR, USD]

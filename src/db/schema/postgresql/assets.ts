@@ -1,5 +1,6 @@
 import { pgTable, text, boolean, timestamp, index } from 'drizzle-orm/pg-core';
 import { users } from './users';
+import { assetCategories } from './asset-categories';
 
 export const assets = pgTable(
   'assets',
@@ -25,6 +26,7 @@ export const assets = pgTable(
         'loan',
       ],
     }).notNull(),
+    category_id: text('category_id').references(() => assetCategories.id),
     balance: text('balance').notNull(), // Stored as string for decimal precision
     // P2: TODO - Consider using numeric type for PostgreSQL native decimal support
     currency: text('currency', { enum: ['IDR', 'USD'] }).notNull(),

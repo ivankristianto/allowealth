@@ -3,7 +3,7 @@
 **Version:** 1.1.0
 **Created:** 2026-01-30
 **Updated:** 2026-01-30
-**Status:** Draft
+**Status:** In Progress
 **Priority:** P3
 
 ## Overview
@@ -49,6 +49,19 @@ Enable users to create custom asset categories beyond the current hardcoded 10 t
 - `@lucide/astro` - Icons
 
 **No new dependencies needed** - follows existing patterns from transaction categories system.
+
+---
+
+## Execution Plan (Agent)
+
+**Order:** UI → Service → API → CLI → Seeder (per constitution)
+
+1. **UI scaffolding (in progress):** Add `/assets/categories` page, category modal, and wire header + asset form to category selection using mock data.
+2. **Data model:** Add `asset_categories` schema + migrations, update types.
+3. **Service layer:** Implement `AssetCategoryService` with validation + tests.
+4. **API layer:** CRUD endpoints + OpenAPI updates.
+5. **CLI + Seeder:** Seed defaults and add script.
+6. **Asset integration:** Migrate assets to `category_id`, update filters/grouping, deprecate type usage.
 
 ---
 
@@ -264,26 +277,40 @@ Delete a custom category.
 
 ## 9. Implementation Tasks (Ordered)
 
-| #   | Task                                                | Dependencies | Complexity | Status  |
-| --- | --------------------------------------------------- | ------------ | ---------- | ------- |
-| 1   | Create database schema for `asset_categories`       | None         | Low        | Pending |
-| 2   | Create migration to add schema                      | Task 1       | Low        | Pending |
-| 3   | Create `AssetCategoryService`                       | Task 1       | Medium     | Pending |
-| 4   | Create seeder script for default categories         | Task 1, 3    | Low        | Pending |
-| 5   | Create `GET /api/asset-categories` endpoint         | Task 3       | Low        | Pending |
-| 6   | Create `POST /api/asset-categories` endpoint        | Task 3       | Medium     | Pending |
-| 7   | Create `PUT /api/asset-categories/[id]` endpoint    | Task 3       | Medium     | Pending |
-| 8   | Create `DELETE /api/asset-categories/[id]` endpoint | Task 3       | Medium     | Pending |
-| 9   | Update `AssetType` types to support custom          | Task 1       | Low        | Pending |
-| 10  | Modify `AssetPageHeader.astro` - add Categories btn | Task 5       | Low        | Pending |
-| 11  | Modify `AssetForm.astro` to fetch categories        | Task 5       | Medium     | Pending |
-| 12  | Enable "Create New Category" in `AssetFormModal`    | Task 6       | Medium     | Pending |
-| 13  | Create `AssetCategoryModal.astro`                   | Task 6       | Medium     | Pending |
-| 14  | Create `/assets/categories` management page         | Task 5-8, 13 | High       | Pending |
-| 15  | Create migration for existing assets                | Task 1-4     | Medium     | Pending |
-| 16  | Update OpenAPI documentation                        | Task 5-8     | Low        | Pending |
-| 17  | Write unit tests for service                        | Task 3       | Medium     | Pending |
-| 18  | Write API integration tests                         | Task 5-8     | Medium     | Pending |
+| #   | Task                                                | Dependencies | Complexity | Status    |
+| --- | --------------------------------------------------- | ------------ | ---------- | --------- |
+| 1   | Create database schema for `asset_categories`       | None         | Low        | Completed |
+| 2   | Create migration to add schema                      | Task 1       | Low        | Completed |
+| 3   | Create `AssetCategoryService`                       | Task 1       | Medium     | Completed |
+| 4   | Create seeder script for default categories         | Task 1, 3    | Low        | Completed |
+| 5   | Create `GET /api/asset-categories` endpoint         | Task 3       | Low        | Completed |
+| 6   | Create `POST /api/asset-categories` endpoint        | Task 3       | Medium     | Completed |
+| 7   | Create `PUT /api/asset-categories/[id]` endpoint    | Task 3       | Medium     | Completed |
+| 8   | Create `DELETE /api/asset-categories/[id]` endpoint | Task 3       | Medium     | Completed |
+| 9   | Update `AssetType` types to support custom          | Task 1       | Low        | Completed |
+| 10  | Modify `AssetPageHeader.astro` - add Categories btn | Task 5       | Low        | Completed |
+| 11  | Modify `AssetForm.astro` to fetch categories        | Task 5       | Medium     | Completed |
+| 12  | Enable "Create New Category" in `AssetFormModal`    | Task 6       | Medium     | Completed |
+| 13  | Create `AssetCategoryModal.astro`                   | Task 6       | Medium     | Completed |
+| 14  | Create `/assets/categories` management page         | Task 5-8, 13 | High       | Completed |
+| 15  | Create migration for existing assets                | Task 1-4     | Medium     | Completed |
+| 16  | Update OpenAPI documentation                        | Task 5-8     | Low        | Completed |
+| 17  | Write unit tests for service                        | Task 3       | Medium     | Completed |
+| 18  | Write API integration tests                         | Task 5-8     | Medium     | Pending   |
+
+---
+
+## Progress Log
+
+- **2026-01-30:** UI scaffolding completed for tasks 10–14 (using mock categories pending API wiring).
+- **2026-01-30:** Added asset_categories schema (sqlite + postgres) and SQLite migration.
+- **2026-01-30:** Implemented AssetCategoryService + validation and unit tests.
+- **2026-01-30:** Added asset category API endpoints and OpenAPI documentation.
+- **2026-01-30:** Integrated asset category seeding into main database seeder.
+- **2026-01-30:** Wired default asset category seeding into user registration.
+- **2026-01-30:** Added asset category_id column, backfill logic, and updated assets UI/service to use categories.
+- **2026-01-30:** Updated assets API + OpenAPI schemas to accept categoryId while preserving legacy type support.
+- **2026-01-30:** Removed standalone asset category seeder script and kept all seeding in `src/db/seed.ts`.
 
 ---
 
@@ -341,49 +368,26 @@ Seed default asset categories for all users (existing and new).
 
 ### Seeder Implementation
 
-**File:** `src/scripts/seed-asset-categories.ts`
+**File:** `src/db/seed.ts` (integrated into main seeder)
 
 ```typescript
 // Pseudo-code structure
-async function seedAssetCategories() {
-  const users = await getAllUsers();
-
-  for (const user of users) {
-    const existingCategories = await getAssetCategories(user.id);
-
-    for (const defaultCategory of DEFAULT_CATEGORIES) {
-      // Skip if category already exists (by name)
-      if (existingCategories.find((c) => c.name === defaultCategory.name)) {
-        continue;
-      }
-
-      await createAssetCategory({
-        userId: user.id,
-        ...defaultCategory,
-        isSystem: true,
-      });
-    }
-  }
-}
-```
-
-### CLI Command
-
-Add to `package.json`:
-
-```json
-{
-  "scripts": {
-    "seed:asset-categories": "bun run src/scripts/seed-asset-categories.ts"
+async function seedAssetCategories(userId) {
+  for (const defaultCategory of DEFAULT_CATEGORIES) {
+    await createAssetCategory({
+      userId,
+      ...defaultCategory,
+      isSystem: true,
+    });
   }
 }
 ```
 
 ### When to Run
 
-1. **Migration:** Run once after deploying schema changes
+1. **Migration:** Run `bun run db:seed` after deploying schema changes
 2. **New user signup:** Create default categories in user creation flow
-3. **Manual:** Admin can run to fix any missing categories
+3. **Manual:** Re-run `bun run db:seed` to fix missing categories
 
 ---
 
