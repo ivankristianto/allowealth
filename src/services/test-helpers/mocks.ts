@@ -97,6 +97,7 @@ export function createMockCategory(
     user_id: 'user-1',
     name: 'Food & Groceries',
     type: 'expense',
+    description: 'Daily food and grocery purchases',
     icon: 'utensils',
     color: 'bg-primary',
     is_active: true,

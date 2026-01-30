@@ -2,11 +2,28 @@
 
 ## Objective
 
-- Rename the `categories` table to **`BUDGET_CATEGORIES`** (no backward compatibility).
-- Add optional `description` column (can be empty).
+- Rename the `categories` table to **`budget_categories`** (lowercase, no backward compatibility).
+- Add optional `description` column (nullable text, max 200 chars).
 - Expose `description` **only** in the Categories page table UI.
 - Update seeder and all relevant tests.
 - Update OpenAPI docs for any API shape changes.
+
+## Progress Tracking
+
+| Task                            | Status  | Notes                                           |
+| ------------------------------- | ------- | ----------------------------------------------- |
+| 1. Update plan document         | ✅ Done | Changed table name to lowercase                 |
+| 2. Update database schemas      | ✅ Done | SQLite + PostgreSQL, added description column   |
+| 3. Update types and validation  | ✅ Done | Added description field (nullable, max 200)     |
+| 4. Update category service      | ✅ Done | Handle description in create/update             |
+| 5. Update API routes            | ✅ Done | No changes needed (uses validation schemas)     |
+| 6. Update CategoryModal UI      | ✅ Done | Added description input field                   |
+| 7. Update Categories page table | ✅ Done | Added description column (hidden on mobile)     |
+| 8. Update seeder                | ✅ Done | Added sample descriptions to categories         |
+| 9. Update OpenAPI docs          | ✅ Done | Added description to Category schemas           |
+| 10. Generate migrations         | ✅ Done | Destructive drop/recreate with db:push          |
+| 11. Update tests                | ✅ Done | Unit tests + integration test mocks             |
+| 12. Run quality gates           | ✅ Done | lint, stylelint, format, typecheck, test passed |
 
 ## Dependencies (Internal + External)
 
@@ -61,7 +78,7 @@
 - **Stored XSS risk** if `description` is ever inserted via `innerHTML` or unescaped template injection. Mitigate by rendering as plain text (Astro escapes by default) and avoid client-side `innerHTML` with user content.
 - **Unbounded input size** could lead to DB bloat or slow responses. Mitigate with a strict max length (200 chars) in validation and (optional) DB constraint.
 - **Data integrity during rename**: renaming a table with foreign keys can orphan budgets/transactions if migration is destructive or incomplete. Ensure migrations update FKs and preserve rows.
-- **Case-sensitivity/quoting** with `BUDGET_CATEGORIES` in Postgres: unquoted identifiers are lowercased. Ensure generated SQL uses quoted identifiers consistently to avoid mismatch.
+- **Case-sensitivity/quoting**: Using lowercase `budget_categories` eliminates quoting issues across SQLite and PostgreSQL.
 - **Exposure scope**: API responses will include `description` by default (confirmed). Ensure it is treated as user-provided text in any consumer UI.
 - **Intentional data loss**: destructive drop/recreate is acceptable, but must be explicit in migration notes and release notes to avoid surprise loss of existing categories.
 
@@ -118,7 +135,7 @@ src/db/index.integration.test.ts
 ### 2) Service + DB Schema
 
 - Update Drizzle schema definitions to:
-  - Rename the table to `BUDGET_CATEGORIES`.
+  - Rename the table to `budget_categories`.
   - Add `description` column (nullable or default empty string).
 - Update relations and FK references (budgets/transactions) to the renamed table.
 - Update Category service to accept/persist `description` on create/update.

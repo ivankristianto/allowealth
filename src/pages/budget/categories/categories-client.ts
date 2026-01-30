@@ -93,6 +93,8 @@ function initCategories() {
       // Populate form with values
       (categoryForm.querySelector('[name="id"]') as HTMLInputElement).value = values.id || '';
       (categoryForm.querySelector('[name="name"]') as HTMLInputElement).value = values.name || '';
+      (categoryForm.querySelector('[name="description"]') as HTMLInputElement).value =
+        values.description || '';
       (categoryForm.querySelector('[name="type"]') as HTMLSelectElement).value =
         values.type || 'expense';
 
@@ -141,6 +143,7 @@ function initCategories() {
           id: id,
           name: category.name,
           type: category.type,
+          description: category.description,
           icon: category.icon,
           color: category.color,
         });

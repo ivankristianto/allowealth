@@ -38,11 +38,19 @@ const colorValidation = z
   .default('bg-neutral')
   .transform((val) => val || 'bg-neutral');
 
+const descriptionValidation = z
+  .string()
+  .max(200, 'Description must not exceed 200 characters')
+  .nullable()
+  .optional()
+  .transform((val) => val || null); // Normalize empty string to null
+
 // Schema for creating a category (for service layer)
 export const createCategorySchema = z.object({
   user_id: z.string().min(1, 'User ID is required'),
   name: nameValidation,
   type: categoryTypeEnum,
+  description: descriptionValidation,
   icon: iconValidation,
   color: colorValidation,
 });
@@ -53,6 +61,7 @@ export type CreateCategoryInput = z.infer<typeof createCategorySchema>;
 export const updateCategorySchema = z.object({
   name: nameValidation.optional(),
   type: categoryTypeEnum.optional(),
+  description: descriptionValidation,
   icon: z.string().optional(),
   color: z.string().optional(),
   is_active: z.boolean().optional(),
@@ -64,6 +73,7 @@ export type UpdateCategoryInput = z.infer<typeof updateCategorySchema>;
 export const createCategoryAPISchema = z.object({
   name: nameValidation,
   type: categoryTypeEnum,
+  description: descriptionValidation,
   icon: iconValidation,
   color: colorValidation,
 });

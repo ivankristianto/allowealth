@@ -93,29 +93,78 @@ function randomAmount(min: number, max: number): string {
 // DATA TEMPLATES
 // ============================================================================
 
-// Icon and color mapping for categories (Lucide icons + DaisyUI semantic colors)
-const CATEGORY_STYLES: Record<string, { icon: string; color: string }> = {
+// Icon, color, and description mapping for categories (Lucide icons + DaisyUI semantic colors)
+const CATEGORY_STYLES: Record<string, { icon: string; color: string; description?: string }> = {
   // Expense categories
-  Holiday: { icon: 'plane', color: 'bg-secondary' },
-  'Food & Groceries': { icon: 'shopping-basket', color: 'bg-info' },
-  'Dine Out': { icon: 'utensils', color: 'bg-warning' },
-  'Work Support': { icon: 'briefcase', color: 'bg-neutral' },
-  'Pocket Money': { icon: 'wallet', color: 'bg-secondary' },
-  'Kids Expenses': { icon: 'user', color: 'bg-secondary' },
-  'Utility Bills': { icon: 'zap', color: 'bg-info' },
-  'Misc. Cost': { icon: 'package', color: 'bg-neutral' },
-  Entertainment: { icon: 'smile', color: 'bg-secondary' },
-  Housekeeper: { icon: 'users', color: 'bg-accent' },
-  Transportation: { icon: 'car', color: 'bg-secondary' },
-  'House Installment': { icon: 'home', color: 'bg-error' },
-  'House Expenses': { icon: 'shopping-cart', color: 'bg-success' },
-  Insurance: { icon: 'shield', color: 'bg-info' },
+  Holiday: {
+    icon: 'plane',
+    color: 'bg-secondary',
+    description: 'Travel, vacations, and holiday-related expenses',
+  },
+  'Food & Groceries': {
+    icon: 'shopping-basket',
+    color: 'bg-info',
+    description: 'Daily food shopping and grocery purchases',
+  },
+  'Dine Out': {
+    icon: 'utensils',
+    color: 'bg-warning',
+    description: 'Restaurant meals and takeout orders',
+  },
+  'Work Support': { icon: 'briefcase', color: 'bg-neutral', description: 'Work-related expenses' },
+  'Pocket Money': { icon: 'wallet', color: 'bg-secondary' }, // No description for variety
+  'Kids Expenses': {
+    icon: 'user',
+    color: 'bg-secondary',
+    description: 'Education, activities, and supplies for children',
+  },
+  'Utility Bills': {
+    icon: 'zap',
+    color: 'bg-info',
+    description: 'Electricity, water, internet, and phone bills',
+  },
+  'Misc. Cost': { icon: 'package', color: 'bg-neutral' }, // No description
+  Entertainment: {
+    icon: 'smile',
+    color: 'bg-secondary',
+    description: 'Movies, games, and recreational activities',
+  },
+  'Housekeeper Salary': {
+    icon: 'users',
+    color: 'bg-accent',
+    description: 'Household staff salaries',
+  },
+  Transportation: {
+    icon: 'car',
+    color: 'bg-secondary',
+    description: 'Fuel, parking, tolls, and public transport',
+  },
+  'Installment Debt': {
+    icon: 'home',
+    color: 'bg-error',
+    description: 'Monthly mortgage or loan payments',
+  },
+  'House Expenses': { icon: 'shopping-cart', color: 'bg-success' }, // No description
+  'House Renovation': {
+    icon: 'hammer',
+    color: 'bg-warning',
+    description: 'Home improvement and renovation costs',
+  },
+  Insurance: {
+    icon: 'shield',
+    color: 'bg-info',
+    description: 'Health, life, and property insurance premiums',
+  },
   // Income categories
-  'Dad Salary': { icon: 'banknote', color: 'bg-success' },
-  'Mom Salary': { icon: 'banknote', color: 'bg-success' },
-  'Side Business': { icon: 'banknote', color: 'bg-success' },
-  Dividend: { icon: 'banknote', color: 'bg-success' },
-  'Other Income': { icon: 'circle-dot', color: 'bg-primary' },
+  'Dad Salary': { icon: 'banknote', color: 'bg-success', description: 'Monthly salary income' },
+  'Mom Salary': { icon: 'banknote', color: 'bg-success', description: 'Monthly salary income' },
+  'Side Business': {
+    icon: 'banknote',
+    color: 'bg-success',
+    description: 'Income from freelance or side projects',
+  },
+  Dividend: { icon: 'banknote', color: 'bg-success', description: 'Investment dividend payments' },
+  'Other Income': { icon: 'circle-dot', color: 'bg-primary' }, // No description
 };
 
 // Expense categories with their budgets
@@ -126,13 +175,15 @@ const EXPENSE_CATEGORIES = [
   { name: 'Utility Bills', budget: 2000000 },
   { name: 'Misc. Cost', budget: 2000000 },
   { name: 'Entertainment', budget: 1500000 },
-  { name: 'Expenses for Mom', budget: 2000000 },
-  { name: 'Maid Salary', budget: 6000000 },
+  { name: 'Housekeeper Salary', budget: 6000000 },
   { name: 'Transportation', budget: 1500000 },
-  { name: 'Cicilan Properti', budget: 8000000 },
-  { name: 'Belanja Rumah', budget: 3000000 },
-  { name: 'Renovasi Rumah', budget: 5000000 },
+  { name: 'Installment Debt', budget: 8000000 },
+  { name: 'House Expenses', budget: 3000000 },
+  { name: 'House Renovation', budget: 5000000 },
   { name: 'Insurance', budget: 3000000 },
+  { name: 'Kids Expenses', budget: 5000000 },
+  { name: 'Pocket Money', budget: 1000000 },
+  { name: 'Work Support', budget: 3000000 },
 ];
 
 // Income categories
@@ -144,13 +195,6 @@ const PAYMENT_ASSETS = [
     name: 'Cash',
     type: 'cash' as const,
     balance: 2000000,
-    currency: 'IDR' as const,
-    is_cash_account: true,
-  },
-  {
-    name: 'BCA Debit',
-    type: 'bank_account' as const,
-    balance: 15000000,
     currency: 'IDR' as const,
     is_cash_account: true,
   },
@@ -223,7 +267,7 @@ const EXPENSE_TRANSACTIONS: Array<{
   // Regular monthly expenses
   {
     description: 'House Installment Payment 20/36',
-    category: 'House Installment',
+    category: 'Installment Debt',
     amount: 8500000,
   },
   { description: 'Health Insurance - Dad', category: 'Insurance', amount: 500000 },
@@ -236,10 +280,14 @@ const EXPENSE_TRANSACTIONS: Array<{
   { description: 'HOA Fee', category: 'Utility Bills', amount: [500000, 800000] },
   { description: 'Water Bill', category: 'Utility Bills', amount: [150000, 300000] },
   { description: 'Electricity', category: 'Utility Bills', amount: [800000, 1500000] },
-  { description: 'Housekeeper Salary 1', category: 'Housekeeper', amount: 1900000 },
-  { description: 'Housekeeper Salary 2', category: 'Housekeeper', amount: 2900000 },
-  { description: 'Housekeeper Salary 3', category: 'Housekeeper', amount: 4000000 },
-  { description: 'Housekeeper Salary Bonus', category: 'Housekeeper', amount: [2000000, 2500000] },
+  { description: 'Housekeeper Salary 1', category: 'Housekeeper Salary', amount: 1900000 },
+  { description: 'Housekeeper Salary 2', category: 'Housekeeper Salary', amount: 2900000 },
+  { description: 'Housekeeper Salary 3', category: 'Housekeeper Salary', amount: 4000000 },
+  {
+    description: 'Housekeeper Salary Bonus',
+    category: 'Housekeeper Salary',
+    amount: [2000000, 2500000],
+  },
   { description: 'Health Insurance', category: 'Pocket Money', amount: [200000, 400000] },
   { description: 'Personal Care', category: 'Pocket Money', amount: [100000, 300000] },
 
@@ -383,16 +431,28 @@ const EXPENSE_TRANSACTIONS: Array<{
 
   // Insurance via marketplace
   { description: 'Health Insurance - Family', category: 'Insurance', amount: [300000, 800000] },
+
+  // Entertainment
+  { description: 'Movie Tickets', category: 'Entertainment', amount: [100000, 250000] },
+  { description: 'Streaming Subscription', category: 'Entertainment', amount: [50000, 150000] },
+  { description: 'Concert Tickets', category: 'Entertainment', amount: [300000, 800000] },
+  { description: 'Game Purchase', category: 'Entertainment', amount: [200000, 500000] },
+  { description: 'Bowling', category: 'Entertainment', amount: [150000, 350000] },
+  { description: 'Karaoke', category: 'Entertainment', amount: [200000, 500000] },
+  { description: 'Sports Event', category: 'Entertainment', amount: [150000, 400000] },
+
+  // House Renovation
+  { description: 'Paint Supplies', category: 'House Renovation', amount: [500000, 1500000] },
+  { description: 'Furniture Assembly', category: 'House Renovation', amount: [300000, 800000] },
+  { description: 'Kitchen Upgrade', category: 'House Renovation', amount: [1000000, 3000000] },
+  { description: 'Bathroom Fixtures', category: 'House Renovation', amount: [500000, 2000000] },
+  { description: 'Flooring Materials', category: 'House Renovation', amount: [1500000, 4000000] },
+  { description: 'Contractor Labor', category: 'House Renovation', amount: [800000, 2500000] },
+  { description: 'Lighting Upgrade', category: 'House Renovation', amount: [300000, 1000000] },
 ];
 
 const ASSET_TYPES = [
   // Indonesian bank accounts (IDR)
-  {
-    name: 'BCA Checking',
-    type: 'bank_account' as const,
-    balance: 15000000,
-    currency: 'IDR' as const,
-  },
   {
     name: 'BCA Savings',
     type: 'bank_account' as const,
@@ -545,6 +605,7 @@ async function seedCategories(userId: string): Promise<Map<string, string>> {
       user_id: userId,
       name: cat.name,
       type: 'income',
+      description: style.description || null,
       icon: style.icon,
       color: style.color,
       is_active: true,
@@ -563,6 +624,7 @@ async function seedCategories(userId: string): Promise<Map<string, string>> {
       user_id: userId,
       name: cat.name,
       type: 'expense',
+      description: style.description || null,
       icon: style.icon,
       color: style.color,
       is_active: true,
@@ -662,6 +724,7 @@ async function seedIncomeTransactions(
         user_id: userId,
         name: income.description,
         type: 'income',
+        description: style.description || null,
         icon: style.icon,
         color: style.color,
         is_active: true,
@@ -753,13 +816,13 @@ async function seedExpenseTransactions(
       // Add some random time variation
       transactionDate.setHours(SEED_TIME_HOUR + Math.floor(Math.random() * 10), 0, 0, 0);
 
-      // Select asset (prefer debit/credit card for larger amounts)
+      // Select asset (prefer bank transfer/credit card for larger amounts)
       let assetName = paymentAssetNames[Math.floor(Math.random() * paymentAssetNames.length)];
       if (amount > 500000) {
-        assetName = Math.random() > 0.5 ? 'BCA Debit' : 'BCA Credit Card';
+        assetName = Math.random() > 0.5 ? 'Transfer' : 'BCA Credit Card';
       }
 
-      const assetId = assetMap.get(assetName || 'BCA Debit');
+      const assetId = assetMap.get(assetName || 'Transfer');
       if (!assetId) continue;
 
       await db.insert(transactions).values({
