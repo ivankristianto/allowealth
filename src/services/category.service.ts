@@ -35,6 +35,7 @@ export class CategoryService {
         user_id: validated.user_id,
         name: validated.name,
         type: validated.type,
+        description: validated.description,
         icon: validated.icon,
         color: validated.color,
         is_active: true,
@@ -93,6 +94,7 @@ export class CategoryService {
 
     if (validated.name !== undefined) updateData.name = validated.name;
     if (validated.type !== undefined) updateData.type = validated.type;
+    if (validated.description !== undefined) updateData.description = validated.description;
     if (validated.icon !== undefined) updateData.icon = validated.icon;
     if (validated.color !== undefined) updateData.color = validated.color;
     if (validated.is_active !== undefined) updateData.is_active = validated.is_active;

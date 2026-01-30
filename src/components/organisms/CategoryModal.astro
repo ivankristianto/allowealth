@@ -28,6 +28,7 @@ export interface Props {
     id?: string;
     name?: string;
     type?: 'expense' | 'income';
+    description?: string;
     icon?: string;
     color?: string;
   };
@@ -103,6 +104,31 @@ const iconColorClass = 'text-accent';
               data-testid="category-name-input"
             />
             {errors.name && <span class="text-error text-xs mt-1">{errors.name}</span>}
+          </div>
+
+          <div class="form-control md:col-span-2">
+            <label class="label py-1" for="category-description">
+              <span class="text-xs uppercase tracking-widest text-base-content/50 font-medium">
+                Description
+                <span class="text-base-content/30">(optional)</span>
+              </span>
+            </label>
+            <input
+              type="text"
+              name="description"
+              id="category-description"
+              class="input input-bordered w-full h-10 text-xs bg-base-200 focus:ring-2 focus:ring-accent focus:ring-opacity-20 focus:outline-none focus:ring-offset-2"
+              placeholder="Brief description of this category"
+              maxlength="200"
+              value={values.description || ''}
+              data-testid="category-description-input"
+            />
+            <span class="text-base-content/40 text-xs mt-1">Max 200 characters</span>
+            {
+              errors.description && (
+                <span class="text-error text-xs mt-1">{errors.description}</span>
+              )
+            }
           </div>
 
           <div class="form-control">
@@ -289,9 +315,11 @@ const iconColorClass = 'text-accent';
         try {
           const formData = new FormData(form);
           const categoryId = (formData.get('id') as string) || '';
+          const description = (formData.get('description') as string) || '';
           const data = {
             name: formData.get('name'),
             type: formData.get('type'),
+            description: description || null, // Send null if empty
             icon: formData.get('icon'),
             color: formData.get('color'),
           };

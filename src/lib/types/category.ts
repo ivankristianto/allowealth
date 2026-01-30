@@ -20,6 +20,7 @@ export interface Category {
   user_id: string;
   name: string;
   type: CategoryType;
+  description: string | null; // Optional description, max 200 chars
   icon: string;
   color: string;
   is_active: boolean;
