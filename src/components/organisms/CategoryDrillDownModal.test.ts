@@ -5,6 +5,7 @@
  */
 
 import { describe, it, expect } from 'bun:test';
+import { formatCurrency } from '@/lib/formatting';
 
 describe('CategoryDrillDownModal', () => {
   describe('Data Structure', () => {
@@ -342,26 +343,12 @@ describe('CategoryDrillDownModal', () => {
 
   describe('Currency Formatting', () => {
     it('should format amounts correctly', () => {
-      const formatter = new Intl.NumberFormat('id-ID', {
-        style: 'currency',
-        currency: 'IDR',
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0,
-      });
-
-      expect(formatter.format(1850000)).toBe('Rp\u00a01.850.000');
-      expect(formatter.format(4000000)).toBe('Rp\u00a04.000.000');
+      expect(formatCurrency(1850000, 'IDR')).toBe('Rp1.850.000');
+      expect(formatCurrency(4000000, 'IDR')).toBe('Rp4.000.000');
     });
 
     it('should handle zero values', () => {
-      const formatter = new Intl.NumberFormat('id-ID', {
-        style: 'currency',
-        currency: 'IDR',
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0,
-      });
-
-      expect(formatter.format(0)).toBe('Rp\u00a00');
+      expect(formatCurrency(0, 'IDR')).toBe('Rp0');
     });
   });
 

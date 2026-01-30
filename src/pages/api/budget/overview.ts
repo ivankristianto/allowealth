@@ -4,7 +4,8 @@ import { budgetService } from '@/services';
 import { successResponse, errorResponse, getAuthenticatedUser } from '@/lib/api-utils';
 import { logError } from '@/lib/utils';
 import { createRenderHelper } from '@/lib/api/renderResponse';
-import { formatCurrency, calculateAllocationDistribution } from '@/lib/utils/budget';
+import { formatCurrency } from '@/lib/formatting';
+import { calculateAllocationDistribution } from '@/lib/utils/budget';
 
 // Import partial components for HTML rendering
 import BudgetSummaryPartial from '@/components/partials/BudgetSummaryPartial.astro';

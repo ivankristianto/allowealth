@@ -5,7 +5,8 @@ import {
   mockSummaryCardsExceeded,
   mockSummaryCardsEmpty,
 } from '@/services/__tests__/mocks/dashboard-mocks';
-import { formatCurrency, formatPercentage } from '@/lib/tokens';
+import { formatCurrency } from '@/lib/formatting/currency-client';
+import { formatPercentage } from '@/lib/formatting/percentage';
 
 const meta: Meta = {
   title: 'Organisms/SummaryCards',

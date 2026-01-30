@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/html';
+import { formatCurrency } from '@/lib/formatting/currency-client';
 
 const meta: Meta = {
   title: 'Organisms/NetWorthWidget',
@@ -15,22 +16,6 @@ const meta: Meta = {
 };
 
 export default meta;
-
-const formatIDR = (amount: number): string =>
-  new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
-
-const formatUSD = (amount: number): string =>
-  new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  }).format(amount);
 
 const createNetWorthWidget = (args: {
   totalIDR?: number;
@@ -111,17 +96,17 @@ const createNetWorthWidget = (args: {
       </div>
       <p class="text-xs font-bold uppercase tracking-widest text-base-content/60 leading-none mb-3">Total net worth</p>
       <div>
-        <h3 class="text-3xl font-bold text-base-content tracking-tighter leading-none">${formatIDR(totalIDR)}</h3>
-        <p class="text-lg font-semibold text-base-content/60 mt-1.5 tracking-tight">${formatUSD(totalUSD)}</p>
+        <h3 class="text-3xl font-bold text-base-content tracking-tighter leading-none">${formatCurrency(totalIDR, 'IDR')}</h3>
+        <p class="text-lg font-semibold text-base-content/60 mt-1.5 tracking-tight">${formatCurrency(totalUSD, 'USD')}</p>
       </div>
       <div class="mt-6 pt-6 border-t border-base-200 space-y-3">
         <div class="flex justify-between text-base font-medium leading-none">
           <span class="text-base-content/60">Local assets</span>
-          <span class="text-base-content font-bold">${formatIDR(localAssets)}</span>
+          <span class="text-base-content font-bold">${formatCurrency(localAssets, 'IDR')}</span>
         </div>
         <div class="flex justify-between text-base font-medium leading-none">
           <span class="text-base-content/60">Global assets</span>
-          <span class="text-base-content font-bold">${formatUSD(globalAssets)}</span>
+          <span class="text-base-content font-bold">${formatCurrency(globalAssets, 'USD')}</span>
         </div>
       </div>
     </div>`;

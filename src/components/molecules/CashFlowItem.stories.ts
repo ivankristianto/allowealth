@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/html';
-import { formatCurrencyFromNumber } from '@/lib/utils/currency';
+import { formatCurrency } from '@/lib/formatting/currency-client';
 
 const meta: Meta = {
   title: 'Molecules/CashFlowItem',
@@ -73,7 +73,7 @@ const createCashFlowItem = (args: {
   const badgeClass = isIncome ? 'bg-success/10 text-success' : 'bg-error/10 text-error';
   const sign = amount === 0 ? '' : isIncome ? '+' : '-';
 
-  const formatted = formatCurrencyFromNumber(Math.abs(amount), currency);
+  const formatted = formatCurrency(Math.abs(amount), currency);
 
   const container = document.createElement('div');
   container.className = 'block max-w-sm';

@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/html';
+import { formatCurrency } from '@/lib/formatting/currency-client';
 
 const meta: Meta = {
   title: 'Organisms/BudgetCardGrid',
@@ -25,22 +26,6 @@ const meta: Meta = {
 };
 
 export default meta;
-
-// Format currency helper
-const formatCurrency = (amount: number, curr: string): string => {
-  const config: Record<string, { symbol: string; decimals: number; locale: string }> = {
-    IDR: { symbol: 'Rp', decimals: 0, locale: 'id-ID' },
-    USD: { symbol: '$', decimals: 2, locale: 'en-US' },
-  };
-  const currConfig = config[curr] || { symbol: curr, decimals: 0, locale: 'en-US' };
-
-  return new Intl.NumberFormat(currConfig.locale, {
-    style: 'currency',
-    currency: curr,
-    minimumFractionDigits: currConfig.decimals,
-    maximumFractionDigits: currConfig.decimals,
-  }).format(amount);
-};
 
 // Icon SVG mapping
 const icons: Record<string, string> = {

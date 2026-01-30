@@ -97,7 +97,7 @@ const { id } = Astro.props;
 
 <script>
   import { addToast } from '@lib/stores/toastStore';
-  import { formatCurrency } from '@/lib/tokens';
+  import { formatCurrency } from '@/lib/formatting/currency-client';
   import { getCsrfHeaders } from '@/lib/csrf-client';
 
   // Track initialized modals to avoid duplicate handlers

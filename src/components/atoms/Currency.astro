@@ -13,7 +13,7 @@
  * @param {string} className - Additional CSS classes
  */
 
-import { formatCurrency } from '@/lib/tokens';
+import { formatCurrency, formatCurrencyCompact } from '@/lib/formatting/currency';
 
 export interface Props {
   amount: number;
@@ -49,7 +49,9 @@ const variantClasses: Record<string, string> = {
   neutral: 'text-neutral',
 };
 
-let formattedAmount = formatCurrency(amount, currency, compact);
+let formattedAmount = compact
+  ? formatCurrencyCompact(amount, currency)
+  : formatCurrency(amount, currency);
 
 // Add sign if requested and amount is not zero
 if (showSign && amount !== 0) {

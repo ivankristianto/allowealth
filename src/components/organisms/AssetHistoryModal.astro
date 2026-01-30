@@ -216,7 +216,7 @@ const { id } = Astro.props;
 </div>
 
 <script>
-  import { formatCurrency } from '@/lib/tokens';
+  import { formatCurrency } from '@/lib/formatting/currency-client';
 
   // Track initialized modals to avoid duplicate handlers
   const initializedModals = new WeakSet<Element>();

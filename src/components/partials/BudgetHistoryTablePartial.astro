@@ -9,7 +9,7 @@
  * The client injects this directly into #budget-history-table-body.
  */
 
-import { formatCurrency, formatPercentage } from '@/lib/tokens';
+import { formatCurrency, formatCurrencyCompact, formatPercentage } from '@/lib/formatting';
 import type { MonthlyBudgetHistory } from '@/services';
 import { Receipt, RotateCcw, Eye } from '@lucide/astro';
 
@@ -135,7 +135,7 @@ const sortedHistory = [...history].sort((a, b) => {
                         Balance
                       </div>
                       <div class={`font-bold ${balance >= 0 ? 'text-success' : 'text-error'}`}>
-                        {formatCurrency(balance, currency, true)}
+                        {formatCurrencyCompact(balance, currency)}
                       </div>
                     </div>
                     <div>
@@ -230,7 +230,7 @@ const sortedHistory = [...history].sort((a, b) => {
               <div class="px-8 py-8 text-right">
                 {monthHasData ? (
                   <span class={`text-sm font-bold ${balance >= 0 ? 'text-success' : 'text-error'}`}>
-                    {formatCurrency(balance, currency, true)}
+                    {formatCurrencyCompact(balance, currency)}
                   </span>
                 ) : (
                   <span class="text-sm font-bold text-base-content/30">No data</span>

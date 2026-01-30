@@ -66,10 +66,7 @@ const meta: Meta = {
 
 export default meta;
 
-import { formatCurrencyFromNumber } from '@/lib/utils/currency';
-
-// Re-export for convenience in this file
-const formatCurrency = formatCurrencyFromNumber;
+import { formatCurrency } from '@/lib/formatting/currency-client';
 
 /**
  * Mock data for different scenarios

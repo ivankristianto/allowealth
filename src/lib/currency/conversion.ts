@@ -167,14 +167,6 @@ export function roundToDecimals(value: number, decimals: number = 2): number {
  * @param currency - Currency code
  * @returns Formatted currency string
  */
-export function formatCurrencyAmount(amount: number, currency: Currency): string {
-  const rounded = roundToDecimals(amount);
-  const symbol = currency === 'IDR' ? 'Rp' : '$';
-  const decimals = currency === 'IDR' ? 0 : 2;
-
-  return `${symbol}${rounded.toFixed(decimals).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`;
-}
-
 /**
  * Calculate percentage of budget used
  *

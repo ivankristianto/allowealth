@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/html';
+import { formatCurrency } from '@/lib/formatting/currency-client';
 import type { TransactionOutput } from '@/lib/types/transaction';
 
 const meta: Meta = {
@@ -122,18 +123,6 @@ const createTransactionRow = (transaction: TransactionOutput): HTMLElement => {
     year: 'numeric',
   });
 
-  const formatCurrencyValue = (val: number, currency: string, showSign = false) => {
-    const formatted = new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: currency,
-    }).format(val);
-
-    if (showSign) {
-      return isExpense ? `-${formatted}` : `+${formatted}`;
-    }
-    return formatted;
-  };
-
   const wrapper = document.createElement('div');
   // Updated to use design system hover color
   wrapper.className =
@@ -177,7 +166,8 @@ const createTransactionRow = (transaction: TransactionOutput): HTMLElement => {
   amountCol.className = 'flex-shrink-0 text-right';
   const amountSpan = document.createElement('span');
   amountSpan.className = `${isExpense ? 'text-error' : 'text-success'} font-medium`;
-  amountSpan.textContent = formatCurrencyValue(amount, transaction.currency, true);
+  const formattedAmount = formatCurrency(amount, transaction.currency);
+  amountSpan.textContent = isExpense ? `-${formattedAmount}` : `+${formattedAmount}`;
   amountCol.appendChild(amountSpan);
   wrapper.appendChild(amountCol);
 

@@ -5,15 +5,30 @@ Financial data display patterns.
 ## Currency Formatting
 
 ```typescript
-import { formatCurrency, formatPercentage, formatCompactNumber } from '@/lib/tokens';
+import {
+  formatCurrency,
+  formatCurrencyCompact,
+  formatPercentage,
+  formatCompactNumber,
+} from '@/lib/formatting';
 
 formatCurrency(150000, 'IDR'); // "Rp150.000"
-formatCurrency(1500000, 'IDR', true); // "Rp1.5M"
+formatCurrencyCompact(1500000, 'IDR'); // "Rp1.5M"
 formatCurrency(99.99, 'USD'); // "$99.99"
 
 formatPercentage(85.5, 2); // "85.50%"
 formatCompactNumber(1500000); // "1.5M"
 ```
+
+**Client-side scripts:** use `@/lib/formatting/currency-client` to avoid bundling Decimal.js.
+
+### Canonical Formatting Rules
+
+- **Currency metadata**: IDR uses `id-ID` (0 decimals), USD uses `en-US` (2 decimals).
+- **Symbol placement**: Always before the number with no space (`Rp150.000`, `$1,000.00`).
+- **Negative values**: Negative sign precedes the symbol (`-Rp150.000`, `-$1,000.00`).
+- **Compact notation**: `K/M/B` suffixes with one decimal (trim trailing `.0`, dot decimal separator).
+- **Invalid values**: Non-finite values format as zero in the requested currency.
 
 ### Component
 

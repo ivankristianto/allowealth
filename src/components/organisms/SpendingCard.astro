@@ -17,8 +17,8 @@
  */
 
 import { Scale } from '@lucide/astro';
+import { formatCurrency, formatCurrencyCompact } from '@/lib/formatting';
 import {
-  formatCurrency,
   getBudgetStatusClass,
   getStatusBadgeClasses,
   type BudgetStatusClassName,
@@ -88,7 +88,7 @@ const progressBarStatus = getProgressBarStatus(status);
 const iconBadgeVariant = getIconBadgeVariant(status);
 
 const spentFormatted = formatCurrency(spent, currency);
-const budgetFormatted = formatCurrency(budget, currency, true);
+const budgetFormatted = formatCurrencyCompact(budget, currency);
 const remainingFormatted = formatCurrency(remaining, currency);
 const incomeFormatted = formatCurrency(income, currency);
 const netSavingsFormatted = formatCurrency(Math.abs(netSavings), currency);

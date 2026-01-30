@@ -50,6 +50,8 @@ export interface CurrencyInfo {
   code: Currency;
   /** Currency symbol */
   symbol: string;
+  /** Locale for formatting */
+  locale: string;
   /** Full currency name */
   name: string;
   /** Number of decimal places */
@@ -106,6 +108,7 @@ export const CURRENCY_META = {
   IDR: {
     code: 'IDR' as const,
     symbol: 'Rp',
+    locale: 'id-ID',
     name: 'Indonesian Rupiah',
     decimals: 0,
     symbolPosition: 'before' as const,
@@ -116,6 +119,7 @@ export const CURRENCY_META = {
   USD: {
     code: 'USD' as const,
     symbol: '$',
+    locale: 'en-US',
     name: 'US Dollar',
     decimals: 2,
     symbolPosition: 'before' as const,
@@ -189,33 +193,4 @@ export function isValidCurrency(code: string): code is Currency {
  */
 export function getCurrencyMeta(code: Currency): CurrencyInfo {
   return CURRENCY_META[code];
-}
-
-/**
- * Format currency amount for display.
- *
- * Uses currency metadata to format amounts with proper
- * symbol placement and separators.
- *
- * @param amount - Numeric amount to format
- * @param code - Currency code
- * @returns Formatted currency string
- *
- * @example
- * ```ts
- * formatCurrency(1500000, 'IDR'); // "Rp1.500.000"
- * formatCurrency(1234.56, 'USD'); // "$1,234.56"
- * ```
- */
-export function formatCurrency(amount: number, code: Currency): string {
-  const meta = CURRENCY_META[code];
-  const formatted = amount.toLocaleString('en-US', {
-    minimumFractionDigits: meta.decimals,
-    maximumFractionDigits: meta.decimals,
-  });
-
-  if (meta.symbolPosition === 'before') {
-    return `${meta.symbol}${formatted}`;
-  }
-  return `${formatted}${meta.symbol}`;
 }

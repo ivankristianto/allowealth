@@ -8,7 +8,6 @@ import { describe, it, expect } from 'bun:test';
 import {
   convertCurrencySync,
   roundToDecimals,
-  formatCurrencyAmount,
   calculatePercentageUsed,
   DEFAULT_EXCHANGE_RATE,
 } from './conversion';
@@ -96,35 +95,6 @@ describe('convertCurrencySync', () => {
     expect(() => convertCurrencySync(100, 'USD', 'IDR', 0)).toThrow('Invalid exchange rate');
     expect(() => convertCurrencySync(100, 'USD', 'IDR', -15000)).toThrow('Invalid exchange rate');
     expect(() => convertCurrencySync(100, 'USD', 'IDR', NaN)).toThrow('Invalid exchange rate');
-  });
-});
-
-describe('formatCurrencyAmount', () => {
-  it('should format USD correctly', () => {
-    expect(formatCurrencyAmount(100, 'USD')).toBe('$100.00');
-    expect(formatCurrencyAmount(1234.56, 'USD')).toBe('$1,234.56');
-    expect(formatCurrencyAmount(1000000, 'USD')).toBe('$1,000,000.00');
-  });
-
-  it('should format IDR correctly', () => {
-    expect(formatCurrencyAmount(100, 'IDR')).toBe('Rp100');
-    expect(formatCurrencyAmount(1234.56, 'IDR')).toBe('Rp1,235');
-    expect(formatCurrencyAmount(1000000, 'IDR')).toBe('Rp1,000,000');
-  });
-
-  it('should round to appropriate decimals', () => {
-    expect(formatCurrencyAmount(123.456, 'USD')).toBe('$123.46');
-    expect(formatCurrencyAmount(123.456, 'IDR')).toBe('Rp123');
-  });
-
-  it('should handle zero', () => {
-    expect(formatCurrencyAmount(0, 'USD')).toBe('$0.00');
-    expect(formatCurrencyAmount(0, 'IDR')).toBe('Rp0');
-  });
-
-  it('should handle negative numbers', () => {
-    expect(formatCurrencyAmount(-100, 'USD')).toBe('$-100.00');
-    expect(formatCurrencyAmount(-100, 'IDR')).toBe('Rp-100');
   });
 });
 

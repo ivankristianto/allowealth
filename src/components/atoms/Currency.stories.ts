@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/html';
+import { formatCurrency, formatCurrencyCompact } from '@/lib/formatting/currency-client';
 
 const meta: Meta = {
   title: 'Atoms/Currency',
@@ -23,32 +24,6 @@ const meta: Meta = {
 };
 
 export default meta;
-
-const formatCurrency = (
-  amount: number,
-  currency: 'IDR' | 'USD' = 'IDR',
-  compact: boolean = false
-): string => {
-  const configs = {
-    IDR: { code: 'IDR', symbol: 'Rp', decimals: 0, locale: 'id-ID' },
-    USD: { code: 'USD', symbol: '$', decimals: 2, locale: 'en-US' },
-  };
-
-  const config = configs[currency];
-  const options: Intl.NumberFormatOptions = {
-    style: 'currency',
-    currency: config.code,
-    minimumFractionDigits: compact ? 0 : config.decimals,
-    maximumFractionDigits: compact ? 0 : config.decimals,
-  };
-
-  if (compact && amount >= 1_000_000) {
-    const millions = amount / 1_000_000;
-    return `${config.symbol}${millions.toFixed(1)}M`;
-  }
-
-  return new Intl.NumberFormat(config.locale, options).format(amount);
-};
 
 const createCurrency = (args: {
   amount?: number;
@@ -83,7 +58,9 @@ const createCurrency = (args: {
     neutral: 'text-neutral',
   };
 
-  let formatted = formatCurrency(amount, currency as 'IDR' | 'USD', compact);
+  let formatted = compact
+    ? formatCurrencyCompact(amount, currency as 'IDR' | 'USD')
+    : formatCurrency(amount, currency as 'IDR' | 'USD');
 
   if (showSign && amount !== 0) {
     formatted = (amount > 0 ? '+' : '') + formatted;

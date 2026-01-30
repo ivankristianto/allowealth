@@ -1,4 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/html';
+import { formatCurrency } from '@/lib/formatting/currency-client';
+import { formatPercentage } from '@/lib/formatting/percentage';
 
 const meta: Meta = {
   title: 'Atoms/Percentage',
@@ -20,10 +22,6 @@ const meta: Meta = {
 };
 
 export default meta;
-
-const formatPercentage = (value: number, decimals: number = 1): string => {
-  return `${value.toFixed(decimals)}%`;
-};
 
 const createPercentage = (args: {
   value?: number;
@@ -218,13 +216,4 @@ export const BudgetProgress: StoryObj = {
 
     return card;
   },
-};
-
-const formatCurrency = (amount: number): string => {
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
 };

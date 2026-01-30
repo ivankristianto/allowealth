@@ -3,13 +3,14 @@
  * ===================================
  *
  * Shared helper functions for BudgetHealthWidget tests and Storybook stories.
- * Re-exports formatCurrency and formatPercentage from tokens for convenience.
+ * Re-exports formatCurrency and formatPercentage from canonical formatting utilities.
  *
  * Usage in Storybook:
  * import { getStatusColor, getStatusBg, getStatusBadge, getProgressBarColor } from './__tests__/budget-health-test-utils';
  */
 
-import { formatCurrency, formatPercentage } from '@/lib/tokens';
+import { formatCurrency } from '@/lib/formatting/currency-client';
+import { formatPercentage } from '@/lib/formatting/percentage';
 
 // Re-export from tokens for test convenience
 export { formatCurrency, formatPercentage };

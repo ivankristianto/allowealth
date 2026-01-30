@@ -1,4 +1,4 @@
-import { formatCurrency } from '@/lib/tokens';
+import { formatCurrency } from '@/lib/formatting';
 
 export type CashFlowType = 'income' | 'expense';
 
