@@ -95,6 +95,8 @@ export const POST: APIRoute = async (context) => {
         return errorResponse('Category not found', 404);
       }
       resolvedCategoryId = category.id;
+      // Custom categories always map to 'other' type since they don't have legacy type mappings.
+      // System categories use their defined legacy type from DEFAULT_ASSET_CATEGORIES.
       resolvedType = category.is_system
         ? LEGACY_TYPE_BY_NAME.get(category.name) || 'other'
         : 'other';

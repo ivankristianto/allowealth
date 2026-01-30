@@ -30,6 +30,8 @@ export class AssetCategoryService {
       }
     }
 
+    // Pre-check for name conflicts (fast-fail for UX)
+    // The database unique constraint is the final source of truth for concurrent requests
     const nameExists = await this.existsByName(validated.name, validated.user_id);
     if (nameExists) {
       throw new AssetCategoryServiceError(
@@ -42,22 +44,34 @@ export class AssetCategoryService {
     const id = nanoid();
     const now = new Date();
 
-    const [category] = await this.db
-      .insert(assetCategories)
-      .values({
-        id,
-        user_id: validated.user_id,
-        name: validated.name,
-        description: validated.description,
-        is_liability: validated.is_liability,
-        is_system: validated.is_system ?? false,
-        sort_order: validated.sort_order ?? 0,
-        created_at: now,
-        updated_at: now,
-      })
-      .returning();
+    try {
+      const [category] = await this.db
+        .insert(assetCategories)
+        .values({
+          id,
+          user_id: validated.user_id,
+          name: validated.name,
+          description: validated.description,
+          is_liability: validated.is_liability,
+          is_system: validated.is_system ?? false,
+          sort_order: validated.sort_order ?? 0,
+          created_at: now,
+          updated_at: now,
+        })
+        .returning();
 
-    return category;
+      return category;
+    } catch (error: any) {
+      // Handle race condition: another request created the same name concurrently
+      if (error.message?.includes('UNIQUE constraint failed')) {
+        throw new AssetCategoryServiceError(
+          ServiceErrorCode.CONFLICT,
+          'Category name already exists',
+          409
+        );
+      }
+      throw error;
+    }
   }
 
   async findById(id: string, user_id: string) {

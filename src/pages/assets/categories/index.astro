@@ -3,13 +3,15 @@
  * Asset Categories Management Page
  *
  * UI scaffolding for custom asset categories.
+ * Uses the interactive architecture with server-rendered HTML fragments.
  */
 
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import TabToggle from '@/components/atoms/TabToggle.astro';
 import AssetCategoryModal from '@/components/organisms/AssetCategoryModal.astro';
 import AssetCategoryDeleteDialog from '@/components/organisms/AssetCategoryDeleteDialog.astro';
-import { ArrowLeft, Plus, Search, Pencil, Trash2 } from '@lucide/astro';
+import AssetCategoryTablePartial from '@/components/partials/AssetCategoryTablePartial.astro';
+import { ArrowLeft, Plus, Search } from '@lucide/astro';
 import { assetCategoryService, assetService } from '@/services';
 
 const currentPath = '/assets/categories';
@@ -122,117 +124,57 @@ if (searchQuery) {
     <!-- Categories Table -->
     <div class="bg-base-100 rounded-3xl border border-base-300 shadow-sm overflow-hidden">
       <div class="overflow-x-auto">
-        {
-          filteredCategories.length > 0 ? (
-            <table
-              class="w-full text-left border-collapse"
-              role="table"
-              data-testid="asset-categories-table"
-            >
-              <caption class="sr-only">
-                Asset categories list with {filteredCategories.length} entries
-              </caption>
-              <thead>
-                <tr class="border-b border-base-200 bg-base-200/50">
-                  <th
-                    scope="col"
-                    class="px-8 py-5 text-[10px] font-bold text-base-content/40 uppercase tracking-widest"
-                  >
-                    Category Name
-                  </th>
-                  <th
-                    scope="col"
-                    class="px-8 py-5 text-[10px] font-bold text-base-content/40 uppercase tracking-widest hidden md:table-cell"
-                  >
-                    Description
-                  </th>
-                  <th
-                    scope="col"
-                    class="px-8 py-5 text-[10px] font-bold text-base-content/40 uppercase tracking-widest"
-                  >
-                    Type
-                  </th>
-                  <th
-                    scope="col"
-                    class="px-8 py-5 text-[10px] font-bold text-base-content/40 uppercase tracking-widest"
-                  >
-                    Assets
-                  </th>
-                  <th
-                    scope="col"
-                    class="px-8 py-5 text-[10px] font-bold text-base-content/40 uppercase tracking-widest text-right"
-                  >
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-base-200">
-                {filteredCategories.map((category) => (
-                  <tr class="group hover:bg-base-200/50 transition-colors">
-                    <td class="px-8 py-5">
-                      <div class="flex items-center gap-3">
-                        <span class="text-base font-bold text-base-content tracking-tight leading-none">
-                          {category.name}
-                        </span>
-                        {category.isSystem && <span class="badge badge-ghost text-xs">System</span>}
-                      </div>
-                    </td>
-                    <td class="px-8 py-5 hidden md:table-cell">
-                      <span class="text-sm text-base-content/60 font-medium">
-                        {category.description || '—'}
-                      </span>
-                    </td>
-                    <td class="px-8 py-5">
-                      <span class="text-sm font-semibold text-base-content">
-                        {category.isLiability ? 'Liability' : 'Asset'}
-                      </span>
-                    </td>
-                    <td class="px-8 py-5">
-                      <span class="text-sm font-semibold text-base-content">
-                        {category.assetCount}
-                      </span>
-                    </td>
-                    <td class="px-8 py-5 text-right">
-                      <div class="flex items-center justify-end gap-2">
-                        <button
-                          class="p-2 text-base-content/30 hover:text-primary hover:bg-primary/10 rounded-xl transition-all disabled:opacity-40 disabled:hover:bg-transparent"
-                          data-action="edit-asset-category"
-                          data-category-id={category.id}
-                          data-category-name={category.name}
-                          data-category-description={category.description}
-                          data-category-type={category.isLiability ? 'liability' : 'asset'}
-                          disabled={category.isSystem}
-                          aria-label={`Edit ${category.name} category`}
-                        >
-                          <Pencil size={18} class="stroke-current" aria-hidden="true" />
-                        </button>
-                        <button
-                          class="p-2 text-base-content/30 hover:text-error hover:bg-error/10 rounded-xl transition-all disabled:opacity-40 disabled:hover:bg-transparent"
-                          data-action="delete-asset-category"
-                          data-category-id={category.id}
-                          data-category-name={category.name}
-                          data-category-meta={`${category.assetCount} assets`}
-                          disabled={category.isSystem}
-                          aria-label={`Delete ${category.name} category`}
-                        >
-                          <Trash2 size={18} class="stroke-current" aria-hidden="true" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          ) : (
-            <div class="py-24 text-center">
-              <h4 class="text-lg font-bold text-base-content mb-2">No categories found</h4>
-              <p class="text-base-content/40 font-medium">Try adjusting your search terms.</p>
-            </div>
-          )
-        }
+        <table
+          class="w-full text-left border-collapse"
+          role="table"
+          data-testid="asset-categories-table"
+        >
+          <caption class="sr-only">
+            Asset categories list with {filteredCategories.length} entries
+          </caption>
+          <thead>
+            <tr class="border-b border-base-200 bg-base-200/50">
+              <th
+                scope="col"
+                class="px-8 py-5 text-[10px] font-bold text-base-content/40 uppercase tracking-widest"
+              >
+                Category Name
+              </th>
+              <th
+                scope="col"
+                class="px-8 py-5 text-[10px] font-bold text-base-content/40 uppercase tracking-widest hidden md:table-cell"
+              >
+                Description
+              </th>
+              <th
+                scope="col"
+                class="px-8 py-5 text-[10px] font-bold text-base-content/40 uppercase tracking-widest"
+              >
+                Type
+              </th>
+              <th
+                scope="col"
+                class="px-8 py-5 text-[10px] font-bold text-base-content/40 uppercase tracking-widest"
+              >
+                Assets
+              </th>
+              <th
+                scope="col"
+                class="px-8 py-5 text-[10px] font-bold text-base-content/40 uppercase tracking-widest text-right"
+              >
+                Actions
+              </th>
+            </tr>
+          </thead>
+          <!-- Server-rendered table body partial - used for both SSR and dynamic HTML injection -->
+          <AssetCategoryTablePartial categories={allCategories} typeFilter={typeFilter} />
+        </table>
       </div>
     </div>
   </div>
+
+  <!-- Live region for screen reader announcements -->
+  <div id="categories-live-region" class="sr-only" aria-live="polite" aria-atomic="true"></div>
 
   <AssetCategoryModal id="asset-category-modal" />
   <AssetCategoryDeleteDialog id="asset-category-delete-dialog" />
