@@ -342,9 +342,9 @@ const assetTypes: { value: AssetType; label: string }[] = Object.entries(ASSET_T
           return;
         }
 
-        // Asset ID validation - ensure UUID format if editing
-        const uuidPattern = /^[a-f0-9-]{36}$/i;
-        if (assetId && !uuidPattern.test(assetId)) {
+        // Asset ID validation - ensure nanoid format if editing
+        const nanoidPattern = /^[A-Za-z0-9_-]{21}$/;
+        if (assetId && !nanoidPattern.test(assetId)) {
           if (errorDiv) {
             errorDiv.textContent = 'Invalid asset ID format.';
             errorDiv.classList.remove('hidden');
