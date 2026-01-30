@@ -7,6 +7,7 @@
 
 import { debounce } from '@/lib/utils/client';
 import { addToast } from '@/lib/stores/toastStore';
+import { formatCurrencyCompact } from '@/lib/utils/currency-client';
 import type { ForecastResult } from '@/lib/forecast';
 
 // Track in-flight requests per chart ID to prevent race conditions
@@ -207,8 +208,6 @@ function updateSummaryCards(
     }
   }
 }
-
-import { formatCurrencyCompact } from '@/lib/utils/currency';
 
 // Initialize on page load
 if (document.readyState === 'loading') {

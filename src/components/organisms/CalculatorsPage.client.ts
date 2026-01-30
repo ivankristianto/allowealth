@@ -6,17 +6,19 @@
  */
 
 import { csrfFetch } from '@/lib/csrf-client';
-
-import { formatCurrencyFromNumber } from '@/lib/utils/currency';
+// @TODO: P2 - Use import alias syntax instead of re-export
+import { formatCurrencyFromNumber as formatCurrency } from '@/lib/utils/currency-client';
 
 // DOM Elements
 const form = document.getElementById('compound-calculator-form') as HTMLFormElement;
 const resultsContainer = document.getElementById('results-container');
 
-// Re-export for convenience in this file
-const formatCurrency = formatCurrencyFromNumber;
-
-// Render results HTML
+/**
+ * Render results HTML
+ * SECURITY NOTE: All interpolated values in the HTML templates below are numeric types
+ * processed through formatCurrency(). Never interpolate raw strings without proper escaping.
+ * @TODO: P2 - Consider migrating to server-rendered HTML fragments per ADR-002.
+ */
 function renderResults(data: {
   totalInterest: number;
   finalBalance: number;

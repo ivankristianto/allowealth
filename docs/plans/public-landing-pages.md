@@ -1,9 +1,9 @@
 # Public Landing Pages Architecture Plan
 
-**Version:** 1.1.0
+**Version:** 1.2.0
 **Created:** 2025-01-30
-**Updated:** 2025-01-30
-**Status:** Implementation Complete - Pending E2E Tests
+**Updated:** 2026-01-30
+**Status:** ✅ Complete
 
 ## Overview
 
@@ -409,17 +409,27 @@ test.describe('Accessibility', () => {
 - [x] `bun run stylelint:fix` passes
 - [x] `bun run format:fix` passes
 - [x] `bun run typecheck` passes
-- [ ] All user stories manually verified
-- [ ] Playwright tests written and passing
-- [ ] Accessibility audit (axe) passes
-- [ ] Mobile responsive verified (375px, 768px, 1024px, 1440px)
+- [x] All user stories manually verified
+- [x] ~~Playwright tests written and passing~~ (Skipped - user decision)
+- [x] ~~Accessibility audit (axe) passes~~ (Skipped - user decision)
+- [x] Mobile responsive verified (375px, 768px, 1024px, 1440px)
 
 ---
 
 ## 11. Next Steps
 
-1. **Manual Verification** - Test all user stories manually in browser
-2. **Write Playwright E2E Tests** - Create test files per Section 7 structure
-3. **Accessibility Audit** - Run axe-core scan on all pages
-4. **Responsive Testing** - Verify at 375px, 768px, 1024px, 1440px breakpoints
-5. **Cross-browser Testing** - Test in Chrome, Firefox, Safari
+~~All implementation complete.~~
+
+### Completed Tasks
+
+1. ✅ **Manual Verification** - All user stories verified in browser
+2. ✅ **Responsive Testing** - Verified at 375px, 768px, 1024px, 1440px breakpoints
+3. ✅ **Dark Mode Support** - Both light and dark themes working
+
+### Skipped (User Decision - 2026-01-30)
+
+4. ~~**Write Playwright E2E Tests** - Create test files per Section 7 structure~~
+5. ~~**Accessibility Audit** - Run axe-core scan on all pages~~
+6. ~~**Cross-browser Testing** - Test in Chrome, Firefox, Safari~~
+
+**Note:** E2E tests, accessibility audit, and cross-browser testing were skipped per user decision. The user stories in Section 6 remain as documentation for future reference if tests are needed later.
