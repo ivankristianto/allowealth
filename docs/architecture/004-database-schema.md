@@ -18,7 +18,7 @@ This document describes the database schema design for the personal finance appl
 ├─────────────────────────────────────────────────────────────────────┤
 │                                                                     │
 │  ┌──────────────┐        ┌──────────────────┐                      │
-│  │   USERS      │◀───────│  USER_SETTINGS   │                      │
+│  │   USERS      │◀───────│  USER_META       │  (key-value prefs)   │
 │  │              │        │                  │                      │
 │  └──────┬───────┘        └──────────────────┘                      │
 │         │                                                           │
@@ -36,25 +36,28 @@ This document describes the database schema design for the personal finance appl
 │  │            │ TRANSACTIONS   │                      │            │
 │  │            └───────┬────────┘                      │            │
 │  │                    │                               │            │
-│  │   ┌────────────────▼──────────┐                   │            │
-│  ├──▶│ ASSETS & LIABILITIES       │                   │            │
-│  │   │ (cash, bank, e-wallet,     │                   │            │
-│  │   │  credit_card, loan, etc.)  │                   │            │
-│  │   └────┬─────┬─────────────────┘                   │            │
-│  │        │     │                                     │            │
-│  │   ┌────▼─────▼──────┐    ┌──────────────────────┐ │            │
-│  │   │ ASSET_HISTORY   │    │ ASSET_UPDATE         │◀┤            │
-│  │   └─────────────────┘    │ _REMINDERS           │ │            │
-│  │                          └──────────────────────┘ │            │
+│  │   ┌──────────────────┐    ┌───────────────────────┐│            │
+│  ├──▶│ ASSET_CATEGORIES │───▶│ ASSETS & LIABILITIES ││            │
+│  │   │ (user-defined)   │    │ (cash, bank, e-wallet,││            │
+│  │   └──────────────────┘    │  credit_card, loan)   ││            │
+│  │                           └────┬─────┬────────────┘│            │
+│  │                                │     │             │            │
+│  │   ┌────────────────────────────▼─────▼──────────┐ │            │
+│  │   │ ASSET_HISTORY                               │ │            │
+│  │   └─────────────────────────────────────────────┘ │            │
+│  │                                                     │            │
+│  │   ┌──────────────────────────────────────────────┐│            │
+│  ├──▶│ ASSET_UPDATE_REMINDERS                       ││            │
+│  │   └──────────────────────────────────────────────┘│            │
 │  │                                                     │            │
 │  │   ┌──────────────────┐                             │            │
 │  ├──▶│ ASSET_SNAPSHOTS  │                             │            │
 │  │   └────────┬─────────┘                             │            │
 │  │            │                                        │            │
 │  │   ┌────────▼──────────┐                            │            │
-│  │   │ ASSET_SNAPSHOT    │                            │            │
-│  │   │ _ITEMS            │────────────────────────────┘            │
-│  │   └───────────────────┘         (links to ASSETS)              │
+│  │   │ ASSET_SNAPSHOT    │────────────────────────────┘            │
+│  │   │ _ITEMS            │         (links to ASSETS)              │
+│  │   └───────────────────┘                                         │
 │  │                                                                 │
 │  │   ┌──────────────────┐                                          │
 │  ├──▶│ SESSIONS         │                                          │
@@ -76,8 +79,9 @@ This document describes the database schema design for the personal finance appl
 
 ```mermaid
 erDiagram
-    USERS ||--o{ USER_SETTINGS : "has"
+    USERS ||--o{ USER_META : "has"
     USERS ||--o{ CATEGORIES : "owns"
+    USERS ||--o{ ASSET_CATEGORIES : "owns"
     USERS ||--o{ TRANSACTIONS : "creates"
     USERS ||--o{ ASSETS : "owns"
     USERS ||--o{ ASSET_UPDATE_REMINDERS : "has"
@@ -88,6 +92,8 @@ erDiagram
 
     CATEGORIES ||--o{ TRANSACTIONS : "categorizes"
     CATEGORIES ||--o{ BUDGETS : "allocates"
+
+    ASSET_CATEGORIES ||--o{ ASSETS : "groups"
 
     ASSETS ||--o{ TRANSACTIONS : "source_of"
     ASSETS ||--o{ TRANSACTIONS : "destination_for"
@@ -106,11 +112,11 @@ erDiagram
         timestamp updated_at
     }
 
-    USER_SETTINGS {
-        text user_id PK,FK
-        text primary_currency
-        boolean show_converted_totals
-        boolean show_individual_currencies
+    USER_META {
+        text meta_id PK
+        text user_id FK
+        text meta_key
+        text meta_value
         timestamp created_at
         timestamp updated_at
     }
@@ -140,6 +146,18 @@ erDiagram
         text budget_amount
         text currency
         boolean is_active
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    ASSET_CATEGORIES {
+        text id PK
+        text user_id FK
+        text name
+        text description
+        boolean is_liability
+        boolean is_system
+        integer sort_order
         timestamp created_at
         timestamp updated_at
     }
@@ -177,6 +195,7 @@ erDiagram
     ASSETS {
         text id PK
         text user_id FK
+        text category_id FK
         text name
         text type
         text balance
@@ -271,15 +290,21 @@ Secure password reset functionality.
 - **Indexes**: `token`, `user_id`, `expires_at`
 - **TTL**: Tokens expire after 1 hour
 
-#### `user_settings`
+#### `user_meta`
 
-User preferences and display options.
+Flexible key-value storage for user preferences and settings. Replaces the old `user_settings` table with a more extensible design.
 
-- **Primary Key**: `user_id` (also FK to users)
+- **Primary Key**: `meta_id` (text)
+- **Foreign Keys**: `user_id` → `users.id` (cascade delete)
 - **Key Fields**:
-  - `primary_currency`: Default currency (IDR/USD)
-  - `show_converted_totals`: Toggle total conversions
-  - `show_individual_currencies`: Toggle per-currency breakdowns
+  - `meta_key`: Setting key (validated against allowlist at service layer)
+  - `meta_value`: Setting value (limited to 4KB at service layer)
+- **Unique Constraint**: (`user_id`, `meta_key`)
+- **Indexes**: `user_id`
+- **Security Notes**:
+  - `meta_key` must be validated against an allowlist at the service layer
+  - `meta_value` is limited to 4KB at the service layer
+  - Users can only access their own meta (enforced via `user_id`)
 
 ### Financial Transactions
 
@@ -340,12 +365,28 @@ Financial transactions (income/expenses/transfers).
 
 ### Asset & Liability Tracking
 
+#### `asset_categories`
+
+User-defined categories for organizing assets and liabilities.
+
+- **Primary Key**: `id` (text)
+- **Foreign Keys**: `user_id` → `users.id` (cascade delete)
+- **Key Fields**:
+  - `name`: Category name (e.g., "Investments", "Emergency Fund", "Retirement")
+  - `description`: Optional description
+  - `is_liability`: Whether this category is for liabilities (vs assets)
+  - `is_system`: Whether this is a system-created default category (cannot be deleted)
+  - `sort_order`: Display order for sorting categories
+- **Use Case**: Allows users to create custom groupings for their assets/liabilities beyond the built-in types
+
 #### `assets`
 
 Accounts representing both assets (what you own) and liabilities (what you owe).
 
 - **Primary Key**: `id` (text)
-- **Foreign Keys**: `user_id` → `users.id` (cascade delete)
+- **Foreign Keys**:
+  - `user_id` → `users.id` (cascade delete)
+  - `category_id` → `asset_categories.id` (nullable, for custom grouping)
 - **Key Fields**:
   - `type`: Asset type ('cash', 'bank_account', 'e_wallet', 'mutual_fund', 'bond', 'crypto', 'stock', 'other') or Liability type ('credit_card', 'loan')
   - `balance`: Current value (positive for assets, positive for liabilities - represents amount owed) (string for precision)
@@ -556,7 +597,7 @@ Two currencies supported: `IDR` (Indonesian Rupiah) and `USD` (US Dollar).
 ### Storage Strategy
 
 1. **Native Currency**: Store amounts in their original currency
-2. **User Preference**: `user_settings.primary_currency` for display
+2. **User Preference**: User's primary currency stored in `user_meta` for display
 3. **Conversion**: Use `exchange_rates` for real-time conversion
 4. **Display Options**:
    - Show converted totals only
@@ -678,25 +719,32 @@ const txns = await db.query.transactions.findMany({
 
 ## Schema Location
 
+The schema is organized by database type (SQLite for development, PostgreSQL for production):
+
 ```
 src/db/schema/
-├── index.ts                      # Export all schemas
-├── base.ts                       # Common utilities
-├── relations.ts                  # Drizzle ORM relations
-├── users.ts                      # User accounts
-├── user-settings.ts              # User preferences
-├── sessions.ts                   # Authentication sessions
-├── password-reset-tokens.ts      # Password reset
-├── categories.ts                 # Income/expense categories
-├── budgets.ts                    # Period-specific budget allocations
-├── transactions.ts               # Financial transactions
-├── assets.ts                     # Assets & liabilities
-├── asset-history.ts              # Balance tracking
-├── asset-update-reminders.ts     # Update notifications
-├── asset-snapshots.ts            # Monthly net worth
-├── asset-snapshot-items.ts       # Snapshot details
-├── audit-logs.ts                 # Audit trail
-└── exchange-rates.ts             # Currency conversion
+├── index.ts                      # Export all schemas (auto-selects based on env)
+├── sqlite/                       # SQLite schema (development)
+│   ├── index.ts                  # Export all SQLite tables
+│   ├── base.ts                   # Common utilities (timestamps)
+│   ├── relations.ts              # Drizzle ORM relations
+│   ├── users.ts                  # User accounts
+│   ├── user-meta.ts              # User preferences (key-value)
+│   ├── sessions.ts               # Authentication sessions
+│   ├── password-reset-tokens.ts  # Password reset
+│   ├── categories.ts             # Income/expense categories
+│   ├── asset-categories.ts       # Custom asset categories
+│   ├── budgets.ts                # Period-specific budget allocations
+│   ├── transactions.ts           # Financial transactions
+│   ├── assets.ts                 # Assets & liabilities
+│   ├── asset-history.ts          # Balance tracking
+│   ├── asset-update-reminders.ts # Update notifications
+│   ├── asset-snapshots.ts        # Monthly net worth
+│   ├── asset-snapshot-items.ts   # Snapshot details
+│   ├── audit-logs.ts             # Audit trail
+│   └── exchange-rates.ts         # Currency conversion
+└── postgresql/                   # PostgreSQL schema (production)
+    └── ... (mirrors sqlite structure)
 ```
 
 ## Key Takeaways
