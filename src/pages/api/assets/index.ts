@@ -90,7 +90,10 @@ export const POST: APIRoute = async (context) => {
     let resolvedCategoryId: string | null = null;
 
     if (validation.data.categoryId) {
-      const category = await assetCategoryService.findById(validation.data.categoryId, auth.workspaceId);
+      const category = await assetCategoryService.findById(
+        validation.data.categoryId,
+        auth.workspaceId
+      );
       if (!category) {
         return errorResponse('Category not found', 404);
       }

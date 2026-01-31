@@ -91,7 +91,11 @@ export const PUT: APIRoute = async (context) => {
     if (validation.data.description !== undefined)
       updateData.description = validation.data.description;
 
-    const rawTransaction = await transactionService.update(idValidation.data, auth.workspaceId, updateData);
+    const rawTransaction = await transactionService.update(
+      idValidation.data,
+      auth.workspaceId,
+      updateData
+    );
 
     if (!rawTransaction) {
       return errorResponse('Transaction not found', 404);

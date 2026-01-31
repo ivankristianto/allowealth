@@ -33,10 +33,7 @@ import {
 } from './schema';
 import { DEFAULT_ASSET_CATEGORIES } from '@/lib/constants';
 import { USER_META_KEYS } from '@/lib/constants/user-meta-keys';
-import {
-  WORKSPACE_META_KEYS,
-  WORKSPACE_META_DEFAULTS,
-} from '@/lib/constants/workspace-meta-keys';
+import { WORKSPACE_META_KEYS, WORKSPACE_META_DEFAULTS } from '@/lib/constants/workspace-meta-keys';
 
 // ============================================================================
 // CONFIGURATION
@@ -674,10 +671,7 @@ async function seedUsers(workspaceId: string): Promise<string> {
 /**
  * Seed categories (income and expense)
  */
-async function seedCategories(
-  workspaceId: string,
-  userId: string
-): Promise<Map<string, string>> {
+async function seedCategories(workspaceId: string, userId: string): Promise<Map<string, string>> {
   console.log('🏷️  Seeding categories...');
 
   const categoryMap = new Map<string, string>();

@@ -11,10 +11,7 @@
 import { db } from '@/db';
 import { WorkspaceService } from '@/services/workspace.service';
 import { WorkspaceMetaService } from '@/services/workspace-meta.service';
-import {
-  WORKSPACE_META_KEYS,
-  WORKSPACE_META_DEFAULTS,
-} from '@/lib/constants/workspace-meta-keys';
+import { WORKSPACE_META_KEYS, WORKSPACE_META_DEFAULTS } from '@/lib/constants/workspace-meta-keys';
 
 interface CreateWorkspaceOptions {
   name: string;

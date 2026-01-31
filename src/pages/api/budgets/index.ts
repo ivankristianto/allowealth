@@ -50,7 +50,12 @@ export const GET: APIRoute = async (context) => {
       currencyFilter = currency;
     }
 
-    const budgets = await budgetService.findAllBudgets(auth.workspaceId, month, year, currencyFilter);
+    const budgets = await budgetService.findAllBudgets(
+      auth.workspaceId,
+      month,
+      year,
+      currencyFilter
+    );
 
     return successResponse(budgets);
   } catch (error) {

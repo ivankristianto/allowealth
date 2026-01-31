@@ -84,7 +84,12 @@ export const POST: APIRoute = async (context) => {
     }
 
     // Import transactions
-    const result = await transactionService.importFromCSV(auth.workspaceId, auth.userId, rows, columnMapping);
+    const result = await transactionService.importFromCSV(
+      auth.workspaceId,
+      auth.userId,
+      rows,
+      columnMapping
+    );
 
     return successResponse({
       message: 'Import completed',
