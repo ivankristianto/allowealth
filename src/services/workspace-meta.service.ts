@@ -76,7 +76,9 @@ function validateMetaValue(key: WorkspaceMetaKey, value: string): void {
 
     case WORKSPACE_META_KEYS.WEEK_START:
       if (!isValidWeekStart(value)) {
-        throw new Error(`Invalid week start value. Must be one of: ${WEEK_START_VALUES.join(', ')}`);
+        throw new Error(
+          `Invalid week start value. Must be one of: ${WEEK_START_VALUES.join(', ')}`
+        );
       }
       break;
 

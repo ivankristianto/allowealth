@@ -10,7 +10,7 @@
  * Response:
  * - 200: Login successful, sets session cookie
  * - 400: Invalid input
- * - 401: Invalid credentials
+ * - 401: Invalid credentials or user has been deleted
  * - 429: Too many requests (rate limited)
  * - 500: Server error
  */
@@ -55,7 +55,21 @@ export const POST: APIRoute = async (context) => {
     }
 
     // Login user
-    const { user, session } = await login(email, password);
+    const { user, session, isDeleted } = await login(email, password);
+
+    // Check if user has been soft-deleted
+    if (isDeleted) {
+      // Log failed login attempt for deleted user
+      await logAuthEvent('LOGIN_FAILURE', null, auditContext, {
+        emailHash: hashSensitiveValue(email),
+        error: 'Account has been deleted',
+      });
+      return createErrorResponseResponse(
+        AUTH_ERRORS.INVALID_CREDENTIALS,
+        'This account has been deleted',
+        401
+      );
+    }
 
     // Log successful login (hash session ID for security)
     await logAuthEvent('LOGIN_SUCCESS', user.id, auditContext, {

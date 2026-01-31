@@ -128,6 +128,8 @@ function validateLoginInput(email: string, password: string): ValidationResult {
 /**
  * Register a new user
  *
+ * Creates a new workspace and makes the user an admin of that workspace.
+ *
  * @param email - User email address
  * @param password - User password (will be hashed)
  * @param name - User display name
@@ -187,7 +189,8 @@ export async function register(email: string, password: string, name: string): P
 
       for (const category of DEFAULT_ASSET_CATEGORIES) {
         await assetCategoryService.create({
-          user_id: createdUser.id,
+          workspace_id: workspaceId,
+          created_by_user_id: createdUser.id,
           name: category.name,
           description: category.description,
           is_liability: category.isLiability,
@@ -223,17 +226,96 @@ export async function register(email: string, password: string, name: string): P
 }
 
 /**
+ * Register a new user with an invitation
+ *
+ * Adds the user to an existing workspace with the specified role.
+ * Does NOT create a new workspace or default asset categories (those belong to workspace creator).
+ *
+ * @param email - User email address
+ * @param password - User password (will be hashed)
+ * @param name - User display name
+ * @param workspaceId - ID of the workspace to join
+ * @param role - Role in the workspace ('admin' or 'member')
+ * @returns Promise resolving to the created user
+ * @throws {AuthError} If email already exists or input is invalid
+ */
+export async function registerWithInvitation(
+  email: string,
+  password: string,
+  name: string,
+  workspaceId: string,
+  role: 'admin' | 'member'
+): Promise<User> {
+  // Validate input
+  const validation = validateRegistrationInput(email, password, name);
+  if (!validation.valid) {
+    throw new AuthError(AUTH_ERRORS.INVALID_INPUT, validation.errors!.join(', '));
+  }
+
+  try {
+    // Check if user already exists
+    const existingUser = await db.query.users.findFirst({
+      where: eq(users.email, email.toLowerCase()),
+    });
+
+    if (existingUser) {
+      throw new AuthError(AUTH_ERRORS.USER_EXISTS, 'An account with this email already exists');
+    }
+
+    // Hash password
+    const passwordHash = await hashPassword(password);
+
+    // Generate unique user ID
+    const userId = nanoid();
+
+    // Create user in the invited workspace (no new workspace creation)
+    const [newUser] = await db
+      .insert(users)
+      .values({
+        id: userId,
+        workspace_id: workspaceId,
+        email: email.toLowerCase(),
+        password_hash: passwordHash,
+        name: name.trim(),
+        role: role,
+      })
+      .returning();
+
+    if (!newUser) {
+      throw new AuthError(AUTH_ERRORS.DATABASE_ERROR, 'Failed to create user');
+    }
+
+    // Return user in Lucia format
+    return {
+      id: newUser.id,
+      email: newUser.email,
+      name: newUser.name,
+      attributes: {
+        id: newUser.id,
+        email: newUser.email,
+        name: newUser.name,
+      },
+    } as User & { attributes: any };
+  } catch (error) {
+    if (error instanceof AuthError) {
+      throw error;
+    }
+    throw new AuthError(AUTH_ERRORS.DATABASE_ERROR, 'Database operation failed');
+  }
+}
+
+/**
  * Login a user
  *
  * @param email - User email address
  * @param password - User password
- * @returns Promise resolving to { user, session }
+ * @returns Promise resolving to { user, session, isDeleted }
  * @throws {AuthError} If credentials are invalid
  */
 export async function login(
   email: string,
   password: string
-): Promise<{ user: User; session: Session }> {
+): Promise<{ user: User; session: Session; isDeleted: boolean }> {
   // Validate input
   const validation = validateLoginInput(email, password);
   if (!validation.valid) {
@@ -257,6 +339,9 @@ export async function login(
       throw new AuthError(AUTH_ERRORS.INVALID_CREDENTIALS, 'Invalid email or password');
     }
 
+    // Check if user has been soft-deleted
+    const isDeleted = user.deleted_at !== null;
+
     // Create session using Lucia
     // Note: Lucia's createSession expects (userId, attributes)
     // The adapter should handle inserting the session into the database
@@ -277,6 +362,7 @@ export async function login(
     return {
       user: luciaUser,
       session,
+      isDeleted,
     };
   } catch (error) {
     if (error instanceof AuthError) {
