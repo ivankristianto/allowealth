@@ -11,6 +11,9 @@ declare module 'lucia' {
       id: string;
       email: string;
       name: string;
+      workspace_id: string;
+      role: 'admin' | 'member';
+      deleted_at: Date | null;
     };
   }
 }
