@@ -14,7 +14,7 @@ const user = Astro.locals.user!;
 const currentPath = '/assets/history';
 
 // Fetch all assets from database
-const rawAssets = await assetService.findAll(user.id);
+const rawAssets = await assetService.findAll(user.workspaceId);
 
 // Transform to AssetOutput format
 const assets: AssetOutput[] = rawAssets.map((asset) => ({

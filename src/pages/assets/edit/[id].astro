@@ -21,14 +21,14 @@ if (!id) {
 }
 
 // Load existing asset
-const asset = await assetService.findById(id, user.id);
+const asset = await assetService.findById(id, user.workspaceId);
 
 if (!asset) {
   // Asset not found or doesn't belong to user
   return Astro.redirect('/404');
 }
 
-const categories = await assetCategoryService.findAll(user.id);
+const categories = await assetCategoryService.findAll(user.workspaceId);
 const legacyTypeToName = new Map(
   DEFAULT_ASSET_CATEGORIES.map((category) => [category.legacyType, category.name])
 );

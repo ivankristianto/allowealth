@@ -21,8 +21,8 @@ const url = new URL(Astro.url);
 const typeFilter = (url.searchParams.get('type') as 'asset' | 'liability') || 'asset';
 const searchQuery = url.searchParams.get('search') || '';
 
-const categories = await assetCategoryService.findAll(user.id);
-const assets = await assetService.findAll(user.id);
+const categories = await assetCategoryService.findAll(user.workspaceId);
+const assets = await assetService.findAll(user.workspaceId);
 const assetCountByCategory = new Map<string, number>();
 
 for (const asset of assets) {

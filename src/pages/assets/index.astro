@@ -55,7 +55,7 @@ const filters: {
   category_id?: string;
   currency?: 'IDR' | 'USD';
 } = {
-  user_id: user.id,
+  user_id: user.workspaceId,
 };
 
 // Validate asset type parameter before assignment
@@ -70,13 +70,13 @@ if (searchParams.currency === 'IDR' || searchParams.currency === 'USD') {
 }
 
 // Fetch assets and categories from database
-const categories = await assetCategoryService.findAll(user.id);
+const categories = await assetCategoryService.findAll(user.workspaceId);
 const categoriesById = new Map(categories.map((category) => [category.id, category]));
 const defaultCategoryId =
   categories.find((category) => category.is_system && !category.is_liability)?.id ||
   categories[0]?.id ||
   '';
-const rawAssets = await assetService.findAll(user.id, filters);
+const rawAssets = await assetService.findAll(user.workspaceId, filters);
 
 // Transform to AssetOutput format
 const assets: AssetOutput[] = rawAssets.map((asset) => {

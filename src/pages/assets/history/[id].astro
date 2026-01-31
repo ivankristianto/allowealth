@@ -23,7 +23,7 @@ if (!id) {
 }
 
 // Load existing asset
-const asset = await assetService.findById(id, user.id);
+const asset = await assetService.findById(id, user.workspaceId);
 
 if (!asset) {
   // Asset not found or doesn't belong to user
@@ -31,7 +31,7 @@ if (!asset) {
 }
 
 // Load asset history
-const history = await assetService.getHistory(id, user.id);
+const history = await assetService.getHistory(id, user.workspaceId);
 
 // Transform history for display
 const historyEntries: AssetHistoryOutput[] = history.map((entry) => ({
