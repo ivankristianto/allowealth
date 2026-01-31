@@ -233,7 +233,7 @@ const createBudgetSummary = (args: BudgetSummaryArgs): HTMLElement => {
 const defaultDistribution: DistributionItem[] = [
   { name: 'Housing', weight: 67.8, color: '#ea580c' },
   { name: 'Groceries', weight: 13.6, color: '#3b82f6' },
-  { name: 'Utilities', weight: 6.8, color: '#6366f1' },
+  { name: 'Utilities', weight: 6.8, color: '#16a34a' },
   { name: 'Dining', weight: 5.1, color: '#8b5cf6' },
   { name: 'Transport', weight: 4.2, color: '#a855f7' },
   { name: 'Entertainment', weight: 2.5, color: '#ec4899' },
@@ -290,7 +290,7 @@ export const USD: StoryObj = {
     distribution: [
       { name: 'Housing', weight: 60, color: '#ea580c' },
       { name: 'Groceries', weight: 15, color: '#3b82f6' },
-      { name: 'Utilities', weight: 10, color: '#6366f1' },
+      { name: 'Utilities', weight: 10, color: '#16a34a' },
       { name: 'Dining', weight: 8, color: '#8b5cf6' },
       { name: 'Transport', weight: 5, color: '#a855f7' },
       { name: 'Entertainment', weight: 2, color: '#ec4899' },
@@ -323,7 +323,7 @@ export const ManyCategories: StoryObj = {
     distribution: [
       { name: 'Housing', weight: 45, color: '#ea580c' },
       { name: 'Groceries', weight: 15, color: '#3b82f6' },
-      { name: 'Utilities', weight: 10, color: '#6366f1' },
+      { name: 'Utilities', weight: 10, color: '#16a34a' },
       { name: 'Dining', weight: 8, color: '#8b5cf6' },
       { name: 'Transport', weight: 6, color: '#a855f7' },
       { name: 'Entertainment', weight: 5, color: '#ec4899' },

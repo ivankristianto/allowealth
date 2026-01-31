@@ -7,7 +7,7 @@ const meta: Meta = {
     docs: {
       description: {
         component: `
-### Design System Alignment (Oasis Finance v1.0.0)
+### Design System Alignment (Oasis Finance v1.1.0 - Forest Green)
 
 | Property | Value | Class/Token |
 |----------|-------|-------------|
@@ -21,8 +21,8 @@ const meta: Meta = {
 
 | Property | Value | Applied Via |
 |----------|-------|-------------|
-| Gradient | \`linear-gradient(90deg, rgba(99,102,241,0.1) 0%, rgba(99,102,241,0) 100%)\` | \`.nav-active\` |
-| Left Border | 2px solid #6366f1 | \`.nav-active\` |
+| Gradient | \`linear-gradient(90deg, rgba(22,163,74,0.1) 0%, rgba(22,163,74,0) 100%)\` | \`.nav-active\` |
+| Left Border | 2px solid #16a34a | \`.nav-active\` |
 | ARIA | Current page indicator | \`aria-current="page"\` |
 
 ### Navigation Items (8 total)
@@ -42,7 +42,7 @@ const meta: Meta = {
 - User name: \`text-base-content\` (adapts to theme)
 - User email: \`text-neutral\` (adapts to theme)
 - Borders: \`border-base-300\` (adapts to theme)
-- Badges: \`badge-accent\` (indigo-500)
+- Badges: \`badge-accent\` (forest-600)
 
 ### Collapse State
 - Storage key: \`ff.sidebar.collapsed\`

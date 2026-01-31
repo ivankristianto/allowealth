@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from '@storybook/html';
 /**
  * Badge Component Stories
  *
- * Aligned with Oasis Finance v1.0.0 design system specifications.
+ * Aligned with Oasis Finance v1.1.0 design system specifications (Forest Green).
  *
  * @see design-system/styles.json - Badge component specifications
  * @see src/components/atoms/Badge.astro - Component implementation
@@ -18,7 +18,7 @@ const meta: Meta = {
         component: `
 ### Design System Alignment
 
-Aligned with Oasis Finance v1.0.0 design system.
+Aligned with Oasis Finance v1.1.0 design system (Forest Green).
 
 | Property | Value | Class |
 |----------|-------|-------|
@@ -28,16 +28,16 @@ Aligned with Oasis Finance v1.0.0 design system.
 | Font Weight | 700 (bold) | \`font-bold\` |
 | Border Radius | DaisyUI tokenized | \`--radius-selector\` (1rem) |
 
-### Color Semantic Model
+### Color Semantic Model (v1.1.0 - Forest Green)
 
 | Variant | Semantic Use | Color |
 |---------|--------------|-------|
 | primary | Headings, primary text | slate-900 |
-| accent | CTAs, interactive elements, active states | indigo-500 |
+| accent | CTAs, interactive elements, active states | forest-600 |
 | success | Positive status, confirmations | emerald-500 |
 | warning | Budget alerts, caution states | amber-500 |
 | error | Over budget, destructive actions | rose-500 |
-| info | Informational messages | indigo-500 |
+| info | Informational messages | sky-500 |
 | neutral | Default neutral gray | neutral |
 
 ### Budget Status Variants

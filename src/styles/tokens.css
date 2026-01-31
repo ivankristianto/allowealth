@@ -4,12 +4,13 @@
  * Single source of truth for all design decisions
  * Modify these values to update the entire application
  *
- * Color Semantics (Oasis Finance v1.0.0):
+ * Color Semantics (Oasis Finance v1.1.0 - Forest Green):
  * - primary: slate-900 (#0f172a) - headings, primary text, secondary buttons
- * - accent: indigo-500 (#6366f1) - CTAs, interactive elements, active states
+ * - accent: forest-600 (#16a34a) - CTAs, interactive elements, active states
  * - success: emerald-500 (#10b981) - positive status, confirmations
  * - warning: amber-500 (#f59e0b) - budget alerts, caution states
  * - error: rose-500 (#f43f5e) - over budget, destructive actions
+ * - info: sky-500 (#0ea5e9) - informational messages (distinct from accent)
  */
 
 :root {
@@ -23,9 +24,9 @@
   --color-primary-hover: #0f172a;
   --color-primary-light: #f1f5f9; /* slate-100 */
 
-  /* Accent: CTAs, active states (indigo - from styles.json) */
-  --color-accent: #6366f1; /* indigo-500 */
-  --color-accent-hover: #4f46e5; /* indigo-600 */
+  /* Accent: CTAs, active states (forest green - v1.1.0) */
+  --color-accent: #16a34a; /* forest-600 */
+  --color-accent-hover: #15803d; /* forest-700 */
   --color-accent-content: #ffffff;
 
   /* Warning: Budget alerts (yellow/orange) */
@@ -42,9 +43,9 @@
   --color-success: #10b981; /* emerald-500 */
   --color-success-hover: #059669; /* emerald-600 */
 
-  /* Info: Neutral information (indigo - from styles.json) */
-  --color-info: #6366f1; /* indigo-500 */
-  --color-info-hover: #4f46e5; /* indigo-600 */
+  /* Info: Neutral information (sky - distinct from forest accent) */
+  --color-info: #0ea5e9; /* sky-500 */
+  --color-info-hover: #0284c7; /* sky-600 */
 
   /* Slate color scale (from styles.json) */
   --color-slate-50: #f8fafc;
@@ -58,13 +59,24 @@
   --color-slate-800: #1e293b;
   --color-slate-900: #0f172a;
 
-  /* Indigo color scale (from styles.json) */
-  --color-indigo-50: #eef2ff;
-  --color-indigo-100: #e0e7ff;
-  --color-indigo-400: #818cf8;
-  --color-indigo-500: #6366f1;
-  --color-indigo-600: #4f46e5;
-  --color-indigo-700: #4338ca;
+  /* Forest green color scale (v1.1.0 accent) */
+  --color-forest-50: #f0fdf4;
+  --color-forest-100: #dcfce7;
+  --color-forest-200: #bbf7d0;
+  --color-forest-300: #86efac;
+  --color-forest-400: #4ade80;
+  --color-forest-500: #22c55e;
+  --color-forest-600: #16a34a;
+  --color-forest-700: #15803d;
+  --color-forest-800: #166534;
+  --color-forest-900: #14532d;
+
+  /* Sky color scale (info color) */
+  --color-sky-50: #f0f9ff;
+  --color-sky-100: #e0f2fe;
+  --color-sky-400: #38bdf8;
+  --color-sky-500: #0ea5e9;
+  --color-sky-600: #0284c7;
 
   /* Rose color scale (from styles.json) */
   --color-rose-50: #fff1f2;
@@ -85,8 +97,8 @@
   --color-neutral-900: #111827;
 
   /* Currency colors */
-  --color-currency-idr: #10b981; /* Green for IDR */
-  --color-currency-usd: #6366f1; /* Indigo for USD (updated from blue) */
+  --color-currency-idr: #10b981; /* Emerald for IDR */
+  --color-currency-usd: #0ea5e9; /* Sky for USD (distinct from forest accent) */
 
   /* Status indicators */
   --color-status-ok: #22c55e; /* Green - under 80% */
@@ -258,9 +270,9 @@
   --button-lg-padding: 0.75rem 1.5rem;
   --button-lg-height: 3rem;
   --button-lg-font-size: 0.875rem;
-  --button-primary-bg: #6366f1;
+  --button-primary-bg: #16a34a;
   --button-primary-color: #ffffff;
-  --button-primary-shadow: 0 10px 15px -3px rgb(99 102 241 / 0.2);
+  --button-primary-shadow: 0 10px 15px -3px rgb(22 163 74 / 0.25);
   --button-secondary-bg: #0f172a;
   --button-secondary-color: #ffffff;
   --button-ghost-border: 1px solid #e2e8f0;
@@ -280,7 +292,7 @@
   --input-font-size: 0.75rem;
   --input-bg-light: #f1f5f9;
   --input-bg-dark: #1e293b;
-  --input-focus-ring: 2px solid rgb(99 102 241 / 0.2);
+  --input-focus-ring: 2px solid rgb(22 163 74 / 0.25);
 
   /* Badge tokens */
   --badge-padding: 0.25rem 0.625rem;
@@ -298,10 +310,10 @@
   --sidebar-icon-size: 22px;
   --sidebar-active-gradient: linear-gradient(
     90deg,
-    rgb(99 102 241 / 0.1) 0%,
-    rgb(99 102 241 / 0) 100%
+    rgb(22 163 74 / 0.1) 0%,
+    rgb(22 163 74 / 0) 100%
   );
-  --sidebar-active-border: 2px solid #6366f1;
+  --sidebar-active-border: 2px solid #16a34a;
 
   /* Table tokens */
   --table-header-bg-light: rgb(248 250 252 / 0.5);
@@ -328,12 +340,12 @@
   --glass-bg-dark: rgb(15 23 42 / 0.8);
 
   /* Gradients */
-  --gradient-accent-glow: radial-gradient(circle, rgb(255 255 255 / 0.1) 0%, transparent 70%);
+  --gradient-accent-glow: radial-gradient(circle, rgb(22 163 74 / 0.1) 0%, transparent 70%);
 
   /* Premium shadows */
   --shadow-premium: 0 1px 3px 0 rgb(0 0 0 / 0.05), 0 1px 2px 0 rgb(0 0 0 / 0.03);
-  --shadow-accent-glow: 0 10px 15px -3px rgb(99 102 241 / 0.2);
-  --shadow-accent-glow-lg: 0 25px 50px -12px rgb(99 102 241 / 0.3);
+  --shadow-accent-glow: 0 10px 15px -3px rgb(22 163 74 / 0.25);
+  --shadow-accent-glow-lg: 0 25px 50px -12px rgb(22 163 74 / 0.3);
 
   /* ========================================
    * ANIMATION TOKENS (from styles.json)
@@ -380,8 +392,8 @@
   --color-primary-light: #1e293b; /* slate-800 */
 
   /* Accent: CTAs in dark mode */
-  --color-accent: #818cf8; /* indigo-400 */
-  --color-accent-hover: #6366f1; /* indigo-500 */
+  --color-accent: #4ade80; /* forest-400 - vibrant for dark mode */
+  --color-accent-hover: #22c55e; /* forest-500 */
 
   /* Error, success, warning remain similar */
   --color-error: #f43f5e; /* rose-500 */
@@ -391,9 +403,9 @@
   --color-warning: #fbbf24; /* amber-400 */
   --color-warning-hover: #f59e0b; /* amber-500 */
 
-  /* Info: indigo-400 in dark mode */
-  --color-info: #818cf8;
-  --color-info-hover: #6366f1; /* indigo-500 */
+  /* Info: sky-400 in dark mode (distinct from forest accent) */
+  --color-info: #38bdf8;
+  --color-info-hover: #0ea5e9; /* sky-500 */
 
   /* Dark mode slate scale */
   --color-slate-50: #f8fafc;
@@ -407,10 +419,14 @@
   --color-slate-800: #1e293b;
   --color-slate-900: #0f172a;
 
-  /* Dark mode indigo scale */
-  --color-indigo-400: #818cf8;
-  --color-indigo-500: #6366f1;
-  --color-indigo-900: #312e81;
+  /* Dark mode forest scale */
+  --color-forest-400: #4ade80;
+  --color-forest-500: #22c55e;
+  --color-forest-900: #14532d;
+
+  /* Dark mode sky scale */
+  --color-sky-400: #38bdf8;
+  --color-sky-500: #0ea5e9;
 
   /* Dark mode rose scale */
   --color-rose-500: #f43f5e;

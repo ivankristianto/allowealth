@@ -11,7 +11,7 @@ Visual building blocks. **Always import from `@/lib/tokens`** - never hardcode.
 
 ## Colors
 
-### Semantic Colors
+### Semantic Colors (v1.1.0 - Forest Green)
 
 ```typescript
 import { colors } from '@/lib/tokens';
@@ -20,34 +20,34 @@ import { colors } from '@/lib/tokens';
 colors.primary; // #0f172a (slate-900)
 colors.primaryLight; // #f1f5f9 (slate-100)
 
-// Accent color (indigo) - CTAs, interactive elements, active states
-colors.accent; // #6366f1 (indigo-500)
-colors.accentHover; // #4f46e5 (indigo-600)
+// Accent color (forest green) - CTAs, interactive elements, active states
+colors.accent; // #16a34a (forest-600)
+colors.accentHover; // #15803d (forest-700)
 
 colors.warning; // #f59e0b (amber-500)
 colors.error; // #f43f5e (rose-500)
 colors.errorHover; // #e11d48 (rose-600)
 
 colors.success; // #10b981 (emerald-500)
-colors.info; // #6366f1 (indigo-500)
+colors.info; // #0ea5e9 (sky-500)
 ```
 
 **Color Semantic Model:**
 
 | Usage         | Color   | Hex     | Semantic                   |
 | ------------- | ------- | ------- | -------------------------- |
-| Primary CTAs  | accent  | #6366f1 | indigo - CTAs, interactive |
+| Primary CTAs  | accent  | #16a34a | forest - CTAs, interactive |
 | Headings/text | primary | #0f172a | slate - headings, text     |
 | Success       | success | #10b981 | emerald - positive status  |
 | Warning       | warning | #f59e0b | amber - caution states     |
 | Error         | error   | #f43f5e | rose - destructive actions |
-| Info          | info    | #6366f1 | indigo - informational     |
+| Info          | info    | #0ea5e9 | sky - informational        |
 
 ### Currency & Status
 
 ```typescript
 colors.currency.idr; // #10b981 (emerald-500)
-colors.currency.usd; // #3b82f6 (blue-500)
+colors.currency.usd; // #0ea5e9 (sky-500)
 
 colors.status.ok; // #22c55e (emerald-500, <80%)
 colors.status.warning; // #f59e0b (amber-500, 80-99%)
@@ -63,11 +63,25 @@ colors.status.danger; // #f43f5e (rose-500, ≥100%)
   --color-slate-900: #0f172a;
 ```
 
-### Accent Scale (Indigo)
+### Accent Scale (Forest Green)
 
 ```css
---color-indigo-50: #eef2ff --color-indigo-100: #e0e7ff --color-indigo-400: #818cf8
-  --color-indigo-500: #6366f1 --color-indigo-600: #4f46e5 --color-indigo-700: #4338ca;
+--color-forest-50: #f0fdf4;
+--color-forest-100: #dcfce7;
+--color-forest-400: #4ade80;
+--color-forest-500: #22c55e;
+--color-forest-600: #16a34a;
+--color-forest-700: #15803d;
+--color-forest-800: #166534;
+```
+
+### Info Scale (Sky)
+
+```css
+--color-sky-50: #f0f9ff;
+--color-sky-400: #38bdf8;
+--color-sky-500: #0ea5e9;
+--color-sky-600: #0284c7;
 ```
 
 ### Error Scale (Rose)

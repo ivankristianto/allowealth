@@ -205,7 +205,7 @@ const createPortfolioSummary = (args: PortfolioSummaryArgs): HTMLElement => {
 
 // Default distribution based on screenshot
 const defaultDistribution: AllocationItem[] = [
-  { type: 'Stock', percentage: 78, color: '#6366f1' },
+  { type: 'Stock', percentage: 78, color: '#16a34a' },
   { type: 'Bank Account', percentage: 19, color: '#10b981' },
   { type: 'Mutual Fund', percentage: 2, color: '#f59e0b' },
 ];
@@ -236,7 +236,7 @@ export const FewAssetTypes: StoryObj = {
     totalUsd: 33333.33,
     distribution: [
       { type: 'Bank Account', percentage: 60, color: '#10b981' },
-      { type: 'Stock', percentage: 40, color: '#6366f1' },
+      { type: 'Stock', percentage: 40, color: '#16a34a' },
     ],
     loading: false,
   },
@@ -248,7 +248,7 @@ export const ManyAssetTypes: StoryObj = {
     totalIdr: 2000000000,
     totalUsd: 133333.33,
     distribution: [
-      { type: 'Stock', percentage: 40, color: '#6366f1' },
+      { type: 'Stock', percentage: 40, color: '#16a34a' },
       { type: 'Bank Account', percentage: 25, color: '#10b981' },
       { type: 'Mutual Fund', percentage: 15, color: '#f59e0b' },
       { type: 'Bond', percentage: 10, color: '#3b82f6' },
