@@ -30,7 +30,7 @@ async function getWorkspaces(): Promise<WorkspaceInfo[]> {
 
   for (const workspace of allWorkspaces) {
     // Get member count using raw SQL count
-    const memberResult = await (db as unknown as { select: typeof db.select })
+    const memberResult = await (db as any)
       .select({ count: sql<number>`count(*)` })
       .from(users)
       .where(eq(users.workspace_id, workspace.id));
@@ -50,7 +50,7 @@ async function getWorkspaces(): Promise<WorkspaceInfo[]> {
       id: workspace.id,
       name: workspace.name,
       createdAt: workspace.created_at,
-      memberCount: (memberResult[0] as { count: number })?.count ?? 0,
+      memberCount: memberResult[0]?.count ?? 0,
       settings,
     });
   }

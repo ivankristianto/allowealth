@@ -41,6 +41,8 @@ tags:
     description: User authentication and session management
   - name: User
     description: User profile and settings management
+  - name: Workspace
+    description: Workspace management (settings, members, invitations)
   - name: Transactions
     description: Transaction management (income and expenses)
   - name: Categories
@@ -72,6 +74,18 @@ paths:
     $ref: './openapi/paths/user-meta.yml#/paths/~1api~1user~1meta'
   /api/user/meta/{key}:
     $ref: './openapi/paths/user-meta.yml#/paths/~1api~1user~1meta~1{key}'
+
+  # Workspace endpoints
+  /api/workspace/settings:
+    $ref: './openapi/paths/workspace.yml#/paths/~1api~1workspace~1settings'
+  /api/workspace/members:
+    $ref: './openapi/paths/workspace.yml#/paths/~1api~1workspace~1members'
+  /api/workspace/members/{memberId}:
+    $ref: './openapi/paths/workspace.yml#/paths/~1api~1workspace~1members~1{memberId}'
+  /api/workspace/invitations:
+    $ref: './openapi/paths/workspace.yml#/paths/~1api~1workspace~1invitations'
+  /api/workspace/invitations/{invitationId}:
+    $ref: './openapi/paths/workspace.yml#/paths/~1api~1workspace~1invitations~1{invitationId}'
 
   /api/transactions:
     $ref: './openapi/paths/transactions.yml#/paths/~1api~1transactions'
@@ -192,6 +206,32 @@ components:
       $ref: './openapi/schemas/UpdateUserMetaRequest.yml#/UpdateUserMetaRequest'
     DeleteUserMetaResponse:
       $ref: './openapi/schemas/DeleteUserMetaResponse.yml#/DeleteUserMetaResponse'
+
+    # Workspace Schemas
+    Workspace:
+      $ref: './openapi/schemas/Workspace.yml#/Workspace'
+    WorkspaceSettings:
+      $ref: './openapi/schemas/WorkspaceSettings.yml#/WorkspaceSettings'
+    WorkspaceSettingsResponse:
+      $ref: './openapi/schemas/WorkspaceSettingsResponse.yml#/WorkspaceSettingsResponse'
+    UpdateWorkspaceSettingsRequest:
+      $ref: './openapi/schemas/UpdateWorkspaceSettingsRequest.yml#/UpdateWorkspaceSettingsRequest'
+    WorkspaceMember:
+      $ref: './openapi/schemas/WorkspaceMember.yml#/WorkspaceMember'
+    WorkspaceMembersResponse:
+      $ref: './openapi/schemas/WorkspaceMembersResponse.yml#/WorkspaceMembersResponse'
+    WorkspaceMemberDeleteResponse:
+      $ref: './openapi/schemas/WorkspaceMemberDeleteResponse.yml#/WorkspaceMemberDeleteResponse'
+    WorkspaceInvitation:
+      $ref: './openapi/schemas/WorkspaceInvitation.yml#/WorkspaceInvitation'
+    CreateWorkspaceInvitationRequest:
+      $ref: './openapi/schemas/CreateWorkspaceInvitationRequest.yml#/CreateWorkspaceInvitationRequest'
+    WorkspaceInvitationResponse:
+      $ref: './openapi/schemas/WorkspaceInvitationResponse.yml#/WorkspaceInvitationResponse'
+    WorkspaceInvitationsListResponse:
+      $ref: './openapi/schemas/WorkspaceInvitationsListResponse.yml#/WorkspaceInvitationsListResponse'
+    WorkspaceInvitationDeleteResponse:
+      $ref: './openapi/schemas/WorkspaceInvitationDeleteResponse.yml#/WorkspaceInvitationDeleteResponse'
 
     # Transaction Schemas
     Transaction:

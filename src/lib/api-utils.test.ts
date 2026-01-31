@@ -12,7 +12,15 @@ import { getAuthenticatedUser } from './api-utils';
 /**
  * Create a mock APIContext for testing
  */
-function createMockContext(user: { id: string; email: string; name: string } | null): APIContext {
+function createMockContext(
+  user: {
+    id: string;
+    email: string;
+    name: string;
+    workspaceId: string;
+    role: 'admin' | 'member';
+  } | null
+): APIContext {
   return {
     locals: {
       user,
@@ -50,25 +58,46 @@ function createMockContext(user: { id: string; email: string; name: string } | n
 
 describe('getAuthenticatedUser', () => {
   describe('when user is authenticated', () => {
-    test('returns user ID from context.locals.user', () => {
+    test('returns AuthenticatedUser from context.locals.user', () => {
       const mockUser = {
         id: 'user-123',
         email: 'test@example.com',
         name: 'Test User',
+        workspaceId: 'workspace-123',
+        role: 'admin' as const,
       };
       const context = createMockContext(mockUser);
 
-      const userId = getAuthenticatedUser(context);
+      const authUser = getAuthenticatedUser(context);
 
-      expect(userId).toBe('user-123');
+      expect(authUser.userId).toBe('user-123');
+      expect(authUser.workspaceId).toBe('workspace-123');
+      expect(authUser.role).toBe('admin');
     });
 
-    test('returns correct user ID for different users', () => {
-      const user1 = { id: 'abc-def', email: 'user1@test.com', name: 'User One' };
-      const user2 = { id: 'xyz-789', email: 'user2@test.com', name: 'User Two' };
+    test('returns correct user data for different users', () => {
+      const user1 = {
+        id: 'abc-def',
+        email: 'user1@test.com',
+        name: 'User One',
+        workspaceId: 'ws-1',
+        role: 'admin' as const,
+      };
+      const user2 = {
+        id: 'xyz-789',
+        email: 'user2@test.com',
+        name: 'User Two',
+        workspaceId: 'ws-2',
+        role: 'member' as const,
+      };
 
-      expect(getAuthenticatedUser(createMockContext(user1))).toBe('abc-def');
-      expect(getAuthenticatedUser(createMockContext(user2))).toBe('xyz-789');
+      const authUser1 = getAuthenticatedUser(createMockContext(user1));
+      expect(authUser1.userId).toBe('abc-def');
+      expect(authUser1.workspaceId).toBe('ws-1');
+
+      const authUser2 = getAuthenticatedUser(createMockContext(user2));
+      expect(authUser2.userId).toBe('xyz-789');
+      expect(authUser2.workspaceId).toBe('ws-2');
     });
   });
 

@@ -1,0 +1,14 @@
+# Workspace Invitation Response Schema
+WorkspaceInvitationResponse:
+  allOf:
+    - $ref: './ApiErrorResponse.yml#/ApiResponse'
+    - type: object
+      required:
+        - success
+        - data
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          $ref: './WorkspaceInvitation.yml#/WorkspaceInvitation'

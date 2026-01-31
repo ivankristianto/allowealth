@@ -33,7 +33,8 @@ describe('TransactionService', () => {
   describe('create', () => {
     it('should create a new transaction with valid input', async () => {
       const input = {
-        user_id: 'user-1',
+        workspace_id: 'workspace-1',
+        created_by_user_id: 'user-1',
         type: 'expense' as const,
         amount: '50000',
         currency: 'IDR' as const,
@@ -71,7 +72,8 @@ describe('TransactionService', () => {
 
     it('should throw error if category not found', async () => {
       const input = {
-        user_id: 'user-1',
+        workspace_id: 'workspace-1',
+        created_by_user_id: 'user-1',
         type: 'expense' as const,
         amount: '50000',
         currency: 'IDR' as const,
@@ -88,7 +90,8 @@ describe('TransactionService', () => {
 
     it('should throw error if asset not found', async () => {
       const input = {
-        user_id: 'user-1',
+        workspace_id: 'workspace-1',
+        created_by_user_id: 'user-1',
         type: 'expense' as const,
         amount: '50000',
         currency: 'IDR' as const,
@@ -108,7 +111,8 @@ describe('TransactionService', () => {
       const inactiveCategory = createMockCategory({ is_active: false });
 
       const input = {
-        user_id: 'user-1',
+        workspace_id: 'workspace-1',
+        created_by_user_id: 'user-1',
         type: 'expense' as const,
         amount: '50000',
         currency: 'IDR' as const,
@@ -161,7 +165,7 @@ describe('TransactionService', () => {
       (mockDb.query.transactions.findMany as any).mockResolvedValueOnce(transactionsWithRelations);
 
       const result = await transactionService.findAll({
-        user_id: 'user-1',
+        workspace_id: 'workspace-1',
         type: 'expense',
         limit: 10,
       });
@@ -178,7 +182,7 @@ describe('TransactionService', () => {
       (mockDb.query.transactions.findMany as any).mockResolvedValueOnce(transactionsWithRelations);
 
       const result = await transactionService.findAll({
-        user_id: 'user-1',
+        workspace_id: 'workspace-1',
         start_date: new Date('2026-01-01'),
         end_date: new Date('2026-01-31'),
       });
@@ -195,7 +199,7 @@ describe('TransactionService', () => {
       (mockDb.query.transactions.findMany as any).mockResolvedValueOnce(transactionsWithRelations);
 
       const result = await transactionService.findAll({
-        user_id: 'user-1',
+        workspace_id: 'workspace-1',
         limit: 10,
         offset: 20,
       });
@@ -216,7 +220,7 @@ describe('TransactionService', () => {
       (mockDb.query.transactions.findMany as any).mockResolvedValueOnce(transactionsWithRelations);
 
       const result = await transactionService.findAll({
-        user_id: 'user-1',
+        workspace_id: 'workspace-1',
         category_id: 'cat-food',
       });
 
@@ -236,7 +240,7 @@ describe('TransactionService', () => {
       (mockDb.query.transactions.findMany as any).mockResolvedValueOnce(transactionsWithRelations);
 
       const result = await transactionService.findAll({
-        user_id: 'user-1',
+        workspace_id: 'workspace-1',
         asset_id: 'asset-cash',
       });
 
@@ -256,7 +260,7 @@ describe('TransactionService', () => {
       (mockDb.query.transactions.findMany as any).mockResolvedValueOnce(transactionsWithRelations);
 
       const result = await transactionService.findAll({
-        user_id: 'user-1',
+        workspace_id: 'workspace-1',
         currency: 'USD',
       });
 
@@ -276,7 +280,7 @@ describe('TransactionService', () => {
       (mockDb.query.transactions.findMany as any).mockResolvedValueOnce(transactionsWithRelations);
 
       const result = await transactionService.findAll({
-        user_id: 'user-1',
+        workspace_id: 'workspace-1',
         search: 'lunch',
       });
 
@@ -411,7 +415,7 @@ describe('TransactionService', () => {
       });
 
       const result = await transactionService.count({
-        user_id: 'user-1',
+        workspace_id: 'workspace-1',
         type: 'expense',
       });
 
@@ -427,7 +431,7 @@ describe('TransactionService', () => {
       });
 
       const result = await transactionService.count({
-        user_id: 'user-1',
+        workspace_id: 'workspace-1',
         type: 'income',
       });
 
@@ -442,7 +446,7 @@ describe('TransactionService', () => {
       });
 
       const result = await transactionService.count({
-        user_id: 'user-1',
+        workspace_id: 'workspace-1',
         category_id: 'cat-food',
       });
 
@@ -457,7 +461,7 @@ describe('TransactionService', () => {
       });
 
       const result = await transactionService.count({
-        user_id: 'user-1',
+        workspace_id: 'workspace-1',
         asset_id: 'asset-cash',
       });
 
@@ -472,7 +476,7 @@ describe('TransactionService', () => {
       });
 
       const result = await transactionService.count({
-        user_id: 'user-1',
+        workspace_id: 'workspace-1',
         start_date: new Date('2026-01-01'),
         end_date: new Date('2026-01-31'),
       });

@@ -38,6 +38,7 @@ const TEST_USER = {
 
 // Test data holders
 let testUserId: string;
+let testWorkspaceId: string;
 let testSessionId: string;
 let testCategoryName: string;
 let testAssetName: string;
@@ -78,14 +79,15 @@ describe('Transaction Import API Integration Tests', () => {
     }
 
     testUserId = user.id;
+    testWorkspaceId = user.workspace_id;
 
     // Get a category and asset names for CSV data
     const category = await db.query.categories.findFirst({
-      where: and(eq(categories.user_id, testUserId), eq(categories.type, 'expense')),
+      where: and(eq(categories.workspace_id, testWorkspaceId), eq(categories.type, 'expense')),
     });
 
     const asset = await db.query.assets.findFirst({
-      where: eq(assets.user_id, testUserId),
+      where: eq(assets.workspace_id, testWorkspaceId),
     });
 
     if (!category || !asset) {

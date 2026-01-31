@@ -1,0 +1,17 @@
+# Create Workspace Invitation Request Schema
+CreateWorkspaceInvitationRequest:
+  type: object
+  required:
+    - email
+    - role
+  properties:
+    email:
+      type: string
+      format: email
+      description: Email address of the person to invite
+      example: "jane@example.com"
+    role:
+      type: string
+      enum: [admin, member]
+      description: Role to assign when the invitation is accepted
+      example: "member"

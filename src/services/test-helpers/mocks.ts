@@ -94,7 +94,8 @@ export function createMockCategory(
 ): Category {
   return {
     id: 'cat-1',
-    user_id: 'user-1',
+    workspace_id: 'workspace-1',
+    created_by_user_id: 'user-1',
     name: 'Food & Groceries',
     type: 'expense',
     description: 'Daily food and grocery purchases',
@@ -113,7 +114,8 @@ export function createMockCategory(
 export function createMockBudget(overrides: Partial<Budget> = {}): Budget {
   return {
     id: 'budget-1',
-    user_id: 'user-1',
+    workspace_id: 'workspace-1',
+    created_by_user_id: 'user-1',
     category_id: 'cat-1',
     month: 1,
     year: 2026,
@@ -160,7 +162,8 @@ export function createMockBudgetWithCategory(
 export function createMockAsset(overrides: Partial<Asset> = {}): Asset {
   return {
     id: 'asset-1',
-    user_id: 'user-1',
+    workspace_id: 'workspace-1',
+    created_by_user_id: 'user-1',
     name: 'BCA Savings',
     type: 'bank_account',
     currency: 'IDR',
@@ -181,7 +184,8 @@ export function createMockAsset(overrides: Partial<Asset> = {}): Asset {
 export function createMockTransaction(overrides: Partial<Transaction> = {}): Transaction {
   return {
     id: 'txn-1',
-    user_id: 'user-1',
+    workspace_id: 'workspace-1',
+    created_by_user_id: 'user-1',
     category_id: 'cat-1',
     asset_id: 'asset-1',
     to_asset_id: null,

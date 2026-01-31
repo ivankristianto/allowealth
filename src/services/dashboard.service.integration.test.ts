@@ -155,7 +155,7 @@ describe('DashboardService Integration Tests', () => {
 
         // Verify we have assets from the database
         const dbAssets = await db.query.assets.findMany({
-          where: eq(assets.user_id, testUserId),
+          where: eq(assets.workspace_id, testUserId),
         });
 
         // Should have seeded assets
@@ -506,7 +506,7 @@ describe('DashboardService Integration Tests', () => {
       skipIfNoUser(async () => {
         // Verify we have transactions in the database
         const dbTransactions = await db.query.transactions.findMany({
-          where: eq(transactions.user_id, testUserId),
+          where: eq(transactions.workspace_id, testUserId),
           limit: 10,
         });
 
@@ -519,7 +519,7 @@ describe('DashboardService Integration Tests', () => {
       skipIfNoUser(async () => {
         // Get assets from database
         const dbAssets = await db.query.assets.findMany({
-          where: eq(assets.user_id, testUserId),
+          where: eq(assets.workspace_id, testUserId),
         });
 
         // Should have seeded assets (seeder creates 25 assets)
@@ -531,7 +531,7 @@ describe('DashboardService Integration Tests', () => {
       skipIfNoUser(async () => {
         // Get categories from database
         const dbCategories = await db.query.categories.findMany({
-          where: eq(categories.user_id, testUserId),
+          where: eq(categories.workspace_id, testUserId),
         });
 
         // Should have all seeded categories

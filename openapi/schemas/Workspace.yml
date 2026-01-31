@@ -1,0 +1,30 @@
+# Workspace Schema
+Workspace:
+  type: object
+  required:
+    - id
+    - name
+    - createdAt
+    - updatedAt
+  properties:
+    id:
+      type: string
+      format: uuid
+      description: Unique workspace identifier
+      example: "ws_123e4567-e89b-12d3-a456-426614174000"
+    name:
+      type: string
+      description: Workspace display name
+      example: "Family Budget"
+      minLength: 1
+      maxLength: 100
+    createdAt:
+      type: integer
+      format: int64
+      description: Creation timestamp (Unix milliseconds)
+      example: 1704067200000
+    updatedAt:
+      type: integer
+      format: int64
+      description: Last update timestamp (Unix milliseconds)
+      example: 1704067200000

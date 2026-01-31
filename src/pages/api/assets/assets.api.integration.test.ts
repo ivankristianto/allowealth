@@ -722,7 +722,8 @@ describe('Assets API Integration Tests', () => {
           .insert(assets)
           .values({
             id: nanoid(),
-            user_id: secondUserId,
+            workspace_id: TEST_WORKSPACE_ID,
+            created_by_user_id: secondUserId,
             name: 'Second User Asset',
             type: 'bank_account',
             balance: '1000000',

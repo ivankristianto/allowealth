@@ -617,7 +617,7 @@ describe('BudgetService', () => {
       const mockBudget = createMockBudget({
         id: 'budget-1',
         category_id: categoryId,
-        user_id: userId,
+        workspace_id: userId, // Using userId as workspaceId for test isolation
         budget_amount: '6000000',
       });
 

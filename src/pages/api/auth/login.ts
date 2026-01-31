@@ -32,13 +32,11 @@ import {
   applyRateLimitHeaders,
   RATE_LIMIT_PRESETS,
 } from '@/lib/rate-limit';
-import { logAuthEvent, getAuditContext, hashSensitiveValue } from '@/lib/audit-log';
 
 export const prerender = false;
 
 export const POST: APIRoute = async (context) => {
   const { request, clientAddress } = context;
-  const auditContext = getAuditContext(context);
   let email: string | undefined;
 
   try {
@@ -59,22 +57,12 @@ export const POST: APIRoute = async (context) => {
 
     // Check if user has been soft-deleted
     if (isDeleted) {
-      // Log failed login attempt for deleted user
-      await logAuthEvent('LOGIN_FAILURE', null, auditContext, {
-        emailHash: hashSensitiveValue(email),
-        error: 'Account has been deleted',
-      });
       return createErrorResponseResponse(
         AUTH_ERRORS.INVALID_CREDENTIALS,
         'This account has been deleted',
         401
       );
     }
-
-    // Log successful login (hash session ID for security)
-    await logAuthEvent('LOGIN_SUCCESS', user.id, auditContext, {
-      sessionHash: hashSensitiveValue(session.id),
-    });
 
     // Create session cookie
     const sessionCookie = auth.createSessionCookie(session.id);
@@ -116,11 +104,6 @@ export const POST: APIRoute = async (context) => {
 
       switch (authError.code) {
         case AUTH_ERRORS.INVALID_CREDENTIALS:
-          // Log failed login attempt (hash email for privacy)
-          await logAuthEvent('LOGIN_FAILURE', null, auditContext, {
-            emailHash: hashSensitiveValue(email),
-            error: 'Invalid credentials',
-          });
           return createErrorResponseResponse(
             AUTH_ERRORS.INVALID_CREDENTIALS,
             'Invalid email or password',

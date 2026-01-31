@@ -36,6 +36,7 @@ const TEST_USER = {
 
 // Test data holders
 let testUserId: string;
+let testWorkspaceId: string;
 let testSessionId: string;
 let testCategoryId: string;
 let testAssetId: string;
@@ -76,14 +77,15 @@ describe('Transaction API Integration Tests', () => {
     }
 
     testUserId = user.id;
+    testWorkspaceId = user.workspace_id;
 
     // Get a category and asset for creating test transactions
     const category = await db.query.categories.findFirst({
-      where: and(eq(categories.user_id, testUserId), eq(categories.type, 'expense')),
+      where: and(eq(categories.workspace_id, testWorkspaceId), eq(categories.type, 'expense')),
     });
 
     const asset = await db.query.assets.findFirst({
-      where: eq(assets.user_id, testUserId),
+      where: eq(assets.workspace_id, testWorkspaceId),
     });
 
     if (!category || !asset) {
@@ -487,7 +489,7 @@ describe('Transaction API Integration Tests', () => {
       await skipIfNotReady(async () => {
         // Get an income category
         const incomeCategory = await db.query.categories.findFirst({
-          where: and(eq(categories.user_id, testUserId), eq(categories.type, 'income')),
+          where: and(eq(categories.workspace_id, testWorkspaceId), eq(categories.type, 'income')),
         });
 
         if (!incomeCategory) {
@@ -797,7 +799,7 @@ describe('Transaction API Integration Tests', () => {
       await skipIfNotReady(async () => {
         // Create a transaction directly in the database with a different user ID
         // Note: We use the test user's category/asset IDs since the API
-        // only checks user_id on the transaction itself, not related entities.
+        // only checks workspace_id on the transaction itself, not related entities.
         // In a real scenario, a malicious user wouldn't have access to
         // another user's categories/assets anyway.
         const otherUserId = 'other-user-id-12345';
@@ -805,7 +807,8 @@ describe('Transaction API Integration Tests', () => {
 
         await db.insert(transactions).values({
           id: transactionId,
-          user_id: otherUserId,
+          workspace_id: testWorkspaceId,
+          created_by_user_id: otherUserId,
           category_id: testCategoryId,
           asset_id: testAssetId,
           type: 'expense',
@@ -869,7 +872,7 @@ describe('Transaction API Integration Tests', () => {
       await skipIfNotReady(async () => {
         // Get an income category
         const incomeCategory = await db.query.categories.findFirst({
-          where: and(eq(categories.user_id, testUserId), eq(categories.type, 'income')),
+          where: and(eq(categories.workspace_id, testWorkspaceId), eq(categories.type, 'income')),
         });
 
         if (!incomeCategory) {
@@ -1061,16 +1064,18 @@ describe('Transaction API Integration Tests', () => {
       });
     });
 
-    it('should not delete transactions from other users', async () => {
+    it('should not delete transactions from other workspaces', async () => {
       await skipIfNotReady(async () => {
-        // Create a transaction directly in the database with a different user ID
+        // Create a transaction directly in the database with a different workspace ID
         // Note: See comment in GET tests about using shared category/asset IDs
+        const otherWorkspaceId = 'other-workspace-delete-test';
         const otherUserId = 'other-user-delete-test';
-        const transactionId = `other-user-delete-${Date.now()}`;
+        const transactionId = `other-workspace-delete-${Date.now()}`;
 
         await db.insert(transactions).values({
           id: transactionId,
-          user_id: otherUserId,
+          workspace_id: otherWorkspaceId,
+          created_by_user_id: otherUserId,
           category_id: testCategoryId,
           asset_id: testAssetId,
           type: 'expense',
@@ -1084,7 +1089,7 @@ describe('Transaction API Integration Tests', () => {
         // Try to delete the transaction as the demo user
         const response = await makeRequest(`/api/transactions/${transactionId}`, 'DELETE');
 
-        // Should not be found (user can only delete their own transactions)
+        // Should not be found (user can only delete transactions in their workspace)
         expect(response.status).toBe(404);
 
         // Verify transaction still exists

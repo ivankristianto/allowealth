@@ -17,7 +17,8 @@ export type { Currency };
 // Database model (from schema)
 export interface Budget {
   id: string;
-  user_id: string;
+  workspace_id: string;
+  created_by_user_id: string;
   category_id: string;
   month: number; // 1-12
   year: number; // e.g., 2025, 2026
@@ -41,8 +42,8 @@ export interface BudgetWithCategory extends Budget {
   };
 }
 
-// Output type for API responses (omits user_id)
-export interface BudgetOutput extends Omit<Budget, 'user_id'> {
+// Output type for API responses (omits workspace fields)
+export interface BudgetOutput extends Omit<Budget, 'workspace_id' | 'created_by_user_id'> {
   category_name?: string;
   category_icon?: string;
   category_color?: string;

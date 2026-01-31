@@ -149,12 +149,12 @@ async function createTestDatabase() {
   // Insert a test category
   const testCategory = {
     id: 'test-category-runtime',
-    user_id: testUser.id,
+    workspace_id: TEST_WORKSPACE_ID,
+    created_by_user_id: testUser.id,
     name: 'Test Category',
     type: 'expense' as const,
-    percentage: '10',
-    budget_amount: '1000000',
-    currency: 'IDR' as const,
+    icon: 'tag',
+    color: 'bg-neutral',
     is_active: true,
     created_at: new Date(),
     updated_at: new Date(),
@@ -165,7 +165,8 @@ async function createTestDatabase() {
   // Insert a test asset
   const testAsset = {
     id: 'test-asset-runtime',
-    user_id: testUser.id,
+    workspace_id: TEST_WORKSPACE_ID,
+    created_by_user_id: testUser.id,
     name: 'Test Asset',
     type: 'bank_account' as const,
     balance: '1000000',
@@ -180,7 +181,8 @@ async function createTestDatabase() {
   // Insert a test transaction
   const testTransaction = {
     id: 'test-tx-runtime',
-    user_id: testUser.id,
+    workspace_id: TEST_WORKSPACE_ID,
+    created_by_user_id: testUser.id,
     category_id: testCategory.id,
     asset_id: testAsset.id,
     type: 'expense' as const,
@@ -420,16 +422,16 @@ describe('Database Runtime-Agnostic Integration Tests', () => {
       expect(foundUser).toBeDefined();
       expect(foundUser?.email).toBe(testUser.email);
 
-      // Test READ with relations
+      // Test READ with relations (categories created by this user)
       const userWithCategories = await db.query.users.findFirst({
         where: eq(users.id, testUser.id),
         with: {
-          categories: true,
+          createdCategories: true,
         },
       });
 
-      expect(userWithCategories?.categories).toBeDefined();
-      expect(userWithCategories?.categories.length).toBeGreaterThan(0);
+      expect(userWithCategories?.createdCategories).toBeDefined();
+      expect(userWithCategories?.createdCategories.length).toBeGreaterThan(0);
     });
 
     it('should handle transaction operations correctly', async () => {
@@ -442,7 +444,8 @@ describe('Database Runtime-Agnostic Integration Tests', () => {
           .insert(transactions)
           .values({
             id: 'test-tx-transaction-test',
-            user_id: testUser.id,
+            workspace_id: TEST_WORKSPACE_ID,
+            created_by_user_id: testUser.id,
             category_id: testCategory.id,
             asset_id: testAsset.id,
             type: 'expense',
@@ -488,7 +491,8 @@ describe('Database Runtime-Agnostic Integration Tests', () => {
       // Create a category to delete
       await db.insert(categories).values({
         id: 'test-category-delete',
-        user_id: testUser.id,
+        workspace_id: TEST_WORKSPACE_ID,
+        created_by_user_id: testUser.id,
         name: 'Delete Test Category',
         type: 'expense',
         icon: 'tag',

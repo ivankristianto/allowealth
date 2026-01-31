@@ -5,21 +5,39 @@
 import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
 import { register, login, logout, validateSession, getUser } from './auth.service';
 import { db } from '@/db/index';
-import { users } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { users, workspaces } from '@/db/schema';
+import { eq, like } from 'drizzle-orm';
 
 describe('AuthService', () => {
+  /**
+   * Clean up test database - delete workspaces created by test users
+   * Users are cascade deleted when their workspace is deleted
+   */
+  async function cleanupTestData() {
+    // Find test users and their workspaces
+    const testUsers = await db.query.users.findMany({
+      where: eq(users.email, 'test@example.com'),
+    });
+    const anotherUsers = await db.query.users.findMany({
+      where: eq(users.email, 'another@example.com'),
+    });
+
+    // Delete workspaces (users will be cascade deleted)
+    for (const user of [...testUsers, ...anotherUsers]) {
+      if (user.workspace_id) {
+        await db.delete(workspaces).where(eq(workspaces.id, user.workspace_id));
+      }
+    }
+  }
+
   // Clean up test database before each test
   beforeEach(async () => {
-    // Delete test users created during tests
-    await db.delete(users).where(eq(users.email, 'test@example.com'));
-    await db.delete(users).where(eq(users.email, 'another@example.com'));
+    await cleanupTestData();
   });
 
   // Clean up after all tests
   afterEach(async () => {
-    await db.delete(users).where(eq(users.email, 'test@example.com'));
-    await db.delete(users).where(eq(users.email, 'another@example.com'));
+    await cleanupTestData();
   });
 
   describe('register', () => {

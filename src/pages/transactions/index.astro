@@ -58,7 +58,7 @@ const monthDateRange = parseMonthKey(effectiveMonth);
 
 // Build filters for service - ALWAYS filter by month
 const filters = {
-  user_id: user.id,
+  workspace_id: user.workspaceId,
   type: typeFilter as 'expense' | 'income',
   category_id: categoryId || undefined,
   category_ids: categoryIds.length > 0 ? categoryIds : undefined,
@@ -113,11 +113,11 @@ const { limit, offset: _, ...countFilters } = filters;
 const total = await transactionService.count(countFilters);
 
 // Fetch categories for filter dropdowns
-const categories = await categoryService.findAll(user.id, { is_active: true });
+const categories = await categoryService.findAll(user.workspaceId, { is_active: true });
 
 // For month selector, fetch all months available (optimized query)
 const allUserTransactions = await transactionService.findAll({
-  user_id: user.id,
+  workspace_id: user.workspaceId,
   limit: PAGINATION.MAX_MONTH_TRANSACTIONS,
 });
 

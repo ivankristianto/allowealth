@@ -10,7 +10,8 @@ describe('AssetCategoryService', () => {
   it('should create a new asset category with valid input', async () => {
     const mockCategory: AssetCategory = {
       id: 'cat-1',
-      user_id: 'user-1',
+      workspace_id: 'workspace-1',
+      created_by_user_id: 'user-1',
       name: 'Real Estate',
       description: 'Property investments',
       is_liability: false,
@@ -52,7 +53,8 @@ describe('AssetCategoryService', () => {
     const service = new AssetCategoryService(mockDb);
 
     const result = await service.create({
-      user_id: 'user-1',
+      workspace_id: 'workspace-1',
+      created_by_user_id: 'user-1',
       name: 'Real Estate',
       description: 'Property investments',
       is_liability: false,
@@ -97,7 +99,8 @@ describe('AssetCategoryService', () => {
 
     await expect(
       service.create({
-        user_id: 'user-1',
+        workspace_id: 'workspace-1',
+        created_by_user_id: 'user-1',
         name: 'Real Estate',
         description: 'Property investments',
         is_liability: false,
@@ -119,7 +122,8 @@ describe('AssetCategoryService', () => {
           findFirst: mock(() =>
             Promise.resolve({
               id: 'cat-1',
-              user_id: 'user-1',
+              workspace_id: 'workspace-1',
+              created_by_user_id: 'user-1',
               name: 'Cash',
               description: 'System category',
               is_liability: false,

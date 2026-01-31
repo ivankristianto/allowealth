@@ -1,0 +1,228 @@
+# Workspace endpoint paths
+paths:
+  /api/workspace/settings:
+    get:
+      tags: [Workspace]
+      summary: Get workspace settings
+      description: |
+        Retrieve the current workspace settings including name and preferences.
+        All authenticated users can view workspace settings.
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          description: Workspace settings retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/WorkspaceSettingsResponse.yml#/WorkspaceSettingsResponse'
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'
+
+    put:
+      tags: [Workspace]
+      summary: Update workspace settings
+      description: |
+        Update workspace settings. Only workspace admins can update settings.
+        Available settings: name, currency, weekStart, compactNumbers.
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/UpdateWorkspaceSettingsRequest.yml#/UpdateWorkspaceSettingsRequest'
+      responses:
+        '200':
+          description: Workspace settings updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/WorkspaceSettingsResponse.yml#/WorkspaceSettingsResponse'
+        '400':
+          description: Validation error or invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '403':
+          description: Forbidden - admin role required
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'
+
+  /api/workspace/members:
+    get:
+      tags: [Workspace]
+      summary: Get workspace members
+      description: |
+        Retrieve all members of the current workspace.
+        All authenticated users can view the member list.
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          description: Workspace members retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/WorkspaceMembersResponse.yml#/WorkspaceMembersResponse'
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'
+
+  /api/workspace/members/{memberId}:
+    delete:
+      tags: [Workspace]
+      summary: Remove workspace member
+      description: |
+        Remove a member from the workspace (soft delete).
+        Only workspace admins can remove members.
+        Admins cannot remove themselves.
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: memberId
+          in: path
+          required: true
+          description: The ID of the member to remove
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Member removed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/WorkspaceMemberDeleteResponse.yml#/WorkspaceMemberDeleteResponse'
+        '400':
+          description: Cannot remove yourself or invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '403':
+          description: Forbidden - admin role required
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+        '404':
+          $ref: '../responses/common.yml#/NotFound'
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'
+
+  /api/workspace/invitations:
+    post:
+      tags: [Workspace]
+      summary: Create workspace invitation
+      description: |
+        Create an invitation for a new user to join the workspace.
+        Only workspace admins can create invitations.
+        The invitation token is sent to the invitee's email.
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/CreateWorkspaceInvitationRequest.yml#/CreateWorkspaceInvitationRequest'
+      responses:
+        '201':
+          description: Invitation created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/WorkspaceInvitationResponse.yml#/WorkspaceInvitationResponse'
+        '400':
+          description: Validation error or email already invited/member
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '403':
+          description: Forbidden - admin role required
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'
+
+    get:
+      tags: [Workspace]
+      summary: Get pending invitations
+      description: |
+        Retrieve all pending invitations for the current workspace.
+        Only workspace admins can view invitations.
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          description: Invitations retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/WorkspaceInvitationsListResponse.yml#/WorkspaceInvitationsListResponse'
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '403':
+          description: Forbidden - admin role required
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'
+
+  /api/workspace/invitations/{invitationId}:
+    delete:
+      tags: [Workspace]
+      summary: Cancel workspace invitation
+      description: |
+        Cancel a pending invitation.
+        Only workspace admins can cancel invitations.
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: invitationId
+          in: path
+          required: true
+          description: The ID of the invitation to cancel
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Invitation cancelled successfully
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/WorkspaceInvitationDeleteResponse.yml#/WorkspaceInvitationDeleteResponse'
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '403':
+          description: Forbidden - admin role required
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+        '404':
+          $ref: '../responses/common.yml#/NotFound'
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'

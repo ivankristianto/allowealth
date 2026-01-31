@@ -39,7 +39,10 @@ describe('UserMetaService', () => {
       },
     },
     insert: mock(() => ({
-      values: mock(() => Promise.resolve({})),
+      values: mock(() => ({
+        onConflictDoUpdate: mock(() => Promise.resolve({})),
+        onConflictDoNothing: mock(() => Promise.resolve({})),
+      })),
     })),
     update: mock(() => ({
       set: mock(() => ({
@@ -141,8 +144,11 @@ describe('UserMetaService', () => {
 
   describe('setUserMeta', () => {
     it('should create new meta when it does not exist', async () => {
+      const onConflictDoUpdateMock = mock(() => Promise.resolve({}));
       const insertMock = mock(() => ({
-        values: mock(() => Promise.resolve({})),
+        values: mock(() => ({
+          onConflictDoUpdate: onConflictDoUpdateMock,
+        })),
       }));
 
       const mockDb = createMockDb({
@@ -153,12 +159,15 @@ describe('UserMetaService', () => {
       await service.setUserMeta('user-1', USER_META_KEYS.CURRENCY, 'USD');
 
       expect(insertMock).toHaveBeenCalled();
+      expect(onConflictDoUpdateMock).toHaveBeenCalled();
     });
 
     it('should update existing meta', async () => {
-      const updateMock = mock(() => ({
-        set: mock(() => ({
-          where: mock(() => Promise.resolve({})),
+      // The service now uses upsert (onConflictDoUpdate), not separate update
+      const onConflictDoUpdateMock = mock(() => Promise.resolve({}));
+      const insertMock = mock(() => ({
+        values: mock(() => ({
+          onConflictDoUpdate: onConflictDoUpdateMock,
         })),
       }));
 
@@ -167,13 +176,14 @@ describe('UserMetaService', () => {
           findFirst: mock(() => Promise.resolve(mockMeta)),
           findMany: mock(() => Promise.resolve([])),
         },
-        update: updateMock,
+        insert: insertMock,
       });
 
       const service = new UserMetaService(mockDb as any);
       await service.setUserMeta('user-1', USER_META_KEYS.CURRENCY, 'IDR');
 
-      expect(updateMock).toHaveBeenCalled();
+      expect(insertMock).toHaveBeenCalled();
+      expect(onConflictDoUpdateMock).toHaveBeenCalled();
     });
 
     it('should reject invalid meta key', async () => {
@@ -299,8 +309,11 @@ describe('UserMetaService', () => {
 
     describe('setUserCurrency', () => {
       it('should set currency value', async () => {
+        const onConflictDoUpdateMock = mock(() => Promise.resolve({}));
         const insertMock = mock(() => ({
-          values: mock(() => Promise.resolve({})),
+          values: mock(() => ({
+            onConflictDoUpdate: onConflictDoUpdateMock,
+          })),
         }));
 
         const mockDb = createMockDb({ insert: insertMock });
@@ -309,6 +322,7 @@ describe('UserMetaService', () => {
         await service.setUserCurrency('user-1', 'USD');
 
         expect(insertMock).toHaveBeenCalled();
+        expect(onConflictDoUpdateMock).toHaveBeenCalled();
       });
     });
 

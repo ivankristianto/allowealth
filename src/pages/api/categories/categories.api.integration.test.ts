@@ -37,6 +37,7 @@ const TEST_USER = {
 
 // Test data holders
 let testUserId: string;
+let testWorkspaceId: string;
 let testSessionId: string;
 let shouldSkip = false;
 let serverNotRunning = false;
@@ -75,6 +76,7 @@ describe('Category API Integration Tests', () => {
     }
 
     testUserId = user.id;
+    testWorkspaceId = user.workspace_id;
 
     // Create a session for authenticated requests
     const session = await auth.createSession(testUserId, {});
@@ -601,7 +603,8 @@ describe('Category API Integration Tests', () => {
 
         await db.insert(categories).values({
           id: categoryId,
-          user_id: otherUserId,
+          workspace_id: testWorkspaceId,
+          created_by_user_id: otherUserId,
           name: 'Other User Category',
           type: 'expense',
           description: null,
@@ -858,7 +861,8 @@ describe('Category API Integration Tests', () => {
 
         await db.insert(categories).values({
           id: categoryId,
-          user_id: otherUserId,
+          workspace_id: testWorkspaceId,
+          created_by_user_id: otherUserId,
           name: 'Other User Delete Test',
           type: 'expense',
           description: null,

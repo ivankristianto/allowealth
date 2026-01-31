@@ -40,7 +40,6 @@ import {
   applyRateLimitHeaders,
   RATE_LIMIT_PRESETS,
 } from '@/lib/rate-limit';
-import { logAuthEvent, getAuditContext, hashSensitiveValue } from '@/lib/audit-log';
 import { workspaceInvitationService } from '@/services';
 import { WorkspaceInvitationServiceError, ServiceErrorCode } from '@/services/service-errors';
 
@@ -48,7 +47,6 @@ export const prerender = false;
 
 export const POST: APIRoute = async (context) => {
   const { request, clientAddress, url } = context;
-  const auditContext = getAuditContext(context);
   let email: string | undefined;
 
   // Get invitation token from query parameter if present
@@ -90,19 +88,9 @@ export const POST: APIRoute = async (context) => {
 
       // Mark invitation as accepted
       await workspaceInvitationService.accept(invitationToken);
-
-      // Log successful signup with invitation
-      await logAuthEvent('SIGNUP', user.id, auditContext, {
-        invitationId: invitation.id,
-        workspaceId: invitation.workspace_id,
-        role: invitation.role,
-      });
     } else {
       // Standard signup - creates new workspace with user as admin
       user = await register(email, password, name);
-
-      // Log successful signup
-      await logAuthEvent('SIGNUP', user.id, auditContext);
     }
 
     // Return success response with standardized headers
@@ -160,12 +148,6 @@ export const POST: APIRoute = async (context) => {
 
       switch (authError.code) {
         case AUTH_ERRORS.USER_EXISTS:
-          // Log signup attempt with existing email (potential enumeration attempt)
-          // P3: Consider whether to log this - may be legitimate user confusion
-          await logAuthEvent('AUTH_FAILURE', null, auditContext, {
-            emailHash: hashSensitiveValue(email),
-            error: 'Email already exists',
-          });
           return createErrorResponseResponse(
             AUTH_ERRORS.USER_EXISTS,
             'An account with this email already exists',

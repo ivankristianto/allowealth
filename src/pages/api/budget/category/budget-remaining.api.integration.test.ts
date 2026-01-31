@@ -33,6 +33,7 @@ const TEST_USER = {
 
 describe('Budget Remaining API Integration Tests', () => {
   let testUserId: string;
+  let testWorkspaceId: string;
   let sessionId: string;
   let testCategoryId: string;
   let testAssetId: string;
@@ -52,6 +53,7 @@ describe('Budget Remaining API Integration Tests', () => {
     }
 
     testUserId = user.id;
+    testWorkspaceId = user.workspace_id;
     console.log(`API integration test using demo user: ${user.name} (${user.email})`);
 
     // Create a session for authentication
@@ -63,7 +65,8 @@ describe('Budget Remaining API Integration Tests', () => {
       .insert(assets)
       .values({
         id: nanoid(),
-        user_id: testUserId,
+        workspace_id: testWorkspaceId,
+        created_by_user_id: testUserId,
         name: `Test Asset ${Date.now()}`,
         type: 'cash',
         currency: 'IDR',
@@ -80,7 +83,8 @@ describe('Budget Remaining API Integration Tests', () => {
       .insert(categories)
       .values({
         id: nanoid(),
-        user_id: testUserId,
+        workspace_id: testWorkspaceId,
+        created_by_user_id: testUserId,
         name: `Test Budget Remaining ${Date.now()}`,
         type: 'expense',
         icon: 'tag',
@@ -97,7 +101,8 @@ describe('Budget Remaining API Integration Tests', () => {
     const now = new Date();
     await db.insert(budgets).values({
       id: nanoid(),
-      user_id: testUserId,
+      workspace_id: testWorkspaceId,
+      created_by_user_id: testUserId,
       category_id: testCategoryId,
       month: now.getMonth() + 1,
       year: now.getFullYear(),
@@ -149,7 +154,8 @@ describe('Budget Remaining API Integration Tests', () => {
     const now = new Date();
     await db.insert(transactions).values({
       id: nanoid(),
-      user_id: testUserId,
+      workspace_id: testWorkspaceId,
+      created_by_user_id: testUserId,
       category_id: testCategoryId,
       asset_id: testAssetId,
       type: 'expense',
@@ -167,7 +173,10 @@ describe('Budget Remaining API Integration Tests', () => {
     await db
       .delete(transactions)
       .where(
-        and(eq(transactions.category_id, testCategoryId), eq(transactions.user_id, testUserId))
+        and(
+          eq(transactions.category_id, testCategoryId),
+          eq(transactions.workspace_id, testWorkspaceId)
+        )
       );
   };
 
@@ -361,7 +370,8 @@ describe('Budget Remaining API Integration Tests', () => {
 
         await db.insert(categories).values({
           id: otherCategoryId,
-          user_id: otherUserId,
+          workspace_id: TEST_WORKSPACE_ID,
+          created_by_user_id: otherUserId,
           name: "Other User's Category",
           type: 'expense',
           icon: 'tag',
@@ -397,7 +407,8 @@ describe('Budget Remaining API Integration Tests', () => {
           .insert(categories)
           .values({
             id: nanoid(),
-            user_id: testUserId,
+            workspace_id: testWorkspaceId,
+            created_by_user_id: testUserId,
             name: `Zero Budget Category ${Date.now()}`,
             type: 'expense',
             icon: 'tag',
@@ -435,7 +446,8 @@ describe('Budget Remaining API Integration Tests', () => {
           .insert(categories)
           .values({
             id: nanoid(),
-            user_id: testUserId,
+            workspace_id: testWorkspaceId,
+            created_by_user_id: testUserId,
             name: `Decimal Budget Category ${Date.now()}`,
             type: 'expense',
             icon: 'tag',
@@ -452,7 +464,8 @@ describe('Budget Remaining API Integration Tests', () => {
         const now = new Date();
         await db.insert(budgets).values({
           id: nanoid(),
-          user_id: testUserId,
+          workspace_id: testWorkspaceId,
+          created_by_user_id: testUserId,
           category_id: decimalCategoryId,
           month: now.getMonth() + 1,
           year: now.getFullYear(),
@@ -467,7 +480,8 @@ describe('Budget Remaining API Integration Tests', () => {
           // Create transaction with decimal amount
           await db.insert(transactions).values({
             id: nanoid(),
-            user_id: testUserId,
+            workspace_id: testWorkspaceId,
+            created_by_user_id: testUserId,
             category_id: decimalCategoryId,
             asset_id: testAssetId,
             type: 'expense',
@@ -498,7 +512,7 @@ describe('Budget Remaining API Integration Tests', () => {
             .where(
               and(
                 eq(transactions.category_id, decimalCategory.id),
-                eq(transactions.user_id, testUserId)
+                eq(transactions.workspace_id, testWorkspaceId)
               )
             );
           await db.delete(categories).where(eq(categories.id, decimalCategory.id));
@@ -514,7 +528,8 @@ describe('Budget Remaining API Integration Tests', () => {
         const now = new Date();
         await db.insert(transactions).values({
           id: nanoid(),
-          user_id: testUserId,
+          workspace_id: testWorkspaceId,
+          created_by_user_id: testUserId,
           category_id: testCategoryId,
           asset_id: testAssetId,
           type: 'expense',
@@ -530,7 +545,8 @@ describe('Budget Remaining API Integration Tests', () => {
         const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 15);
         await db.insert(transactions).values({
           id: nanoid(),
-          user_id: testUserId,
+          workspace_id: testWorkspaceId,
+          created_by_user_id: testUserId,
           category_id: testCategoryId,
           asset_id: testAssetId,
           type: 'expense',
@@ -565,7 +581,8 @@ describe('Budget Remaining API Integration Tests', () => {
         // Create active transaction
         await db.insert(transactions).values({
           id: nanoid(),
-          user_id: testUserId,
+          workspace_id: testWorkspaceId,
+          created_by_user_id: testUserId,
           category_id: testCategoryId,
           asset_id: testAssetId,
           type: 'expense',
@@ -580,7 +597,8 @@ describe('Budget Remaining API Integration Tests', () => {
         // Create deleted transaction
         await db.insert(transactions).values({
           id: nanoid(),
-          user_id: testUserId,
+          workspace_id: testWorkspaceId,
+          created_by_user_id: testUserId,
           category_id: testCategoryId,
           asset_id: testAssetId,
           type: 'expense',
@@ -612,11 +630,14 @@ describe('Budget Remaining API Integration Tests', () => {
   // Cleanup test data after all tests
   afterAll(async () => {
     if (!shouldSkip) {
-      // Delete all transactions for the test user and category
+      // Delete all transactions for the test workspace and category
       await db
         .delete(transactions)
         .where(
-          and(eq(transactions.category_id, testCategoryId), eq(transactions.user_id, testUserId))
+          and(
+            eq(transactions.category_id, testCategoryId),
+            eq(transactions.workspace_id, testWorkspaceId)
+          )
         );
 
       // Delete the test category
