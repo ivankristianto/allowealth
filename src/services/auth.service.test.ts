@@ -6,7 +6,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
 import { register, login, logout, validateSession, getUser } from './auth.service';
 import { db } from '@/db/index';
 import { users, workspaces } from '@/db/schema';
-import { eq, like } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 
 describe('AuthService', () => {
   /**

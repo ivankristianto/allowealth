@@ -11,12 +11,11 @@
  * - DATABASE_ERROR: Database operation failed
  */
 
-import { auth } from '@/lib/auth/lucia';
+import { auth, type User, type Session } from '@/lib/auth/lucia';
 import { hashPassword, verifyPassword } from '@/lib/auth/password';
 import { db, type IDatabase } from '@/db';
 import { users, workspaces } from '@/db/schema';
 import { eq } from 'drizzle-orm';
-import type { User, Session } from 'lucia';
 import { nanoid } from 'nanoid';
 import { DEFAULT_ASSET_CATEGORIES } from '@/lib/constants';
 import { AssetCategoryService } from './asset-category.service';
@@ -161,13 +160,16 @@ export async function register(email: string, password: string, name: string): P
     const userId = nanoid();
 
     const newUser = await db.transaction(async (tx: IDatabase) => {
-      // Create workspace for the new user
-      await tx.insert(workspaces).values({
-        id: workspaceId,
-        name: `${name.trim()}'s Workspace`,
-        created_at: new Date(),
-        updated_at: new Date(),
-      });
+      // Create workspace for the new user - use returning() to ensure execution
+      await tx
+        .insert(workspaces)
+        .values({
+          id: workspaceId,
+          name: `${name.trim()}'s Workspace`,
+          created_at: new Date(),
+          updated_at: new Date(),
+        })
+        .returning();
 
       const [createdUser] = await tx
         .insert(users)
@@ -347,17 +349,15 @@ export async function login(
     // The adapter should handle inserting the session into the database
     const session = await auth.createSession(user.id, {});
 
-    // Return user in Lucia format
-    const luciaUser: User & { attributes: any } = {
+    // Return user in Lucia format with workspace context
+    const luciaUser: User = {
       id: user.id,
       email: user.email,
       name: user.name,
-      attributes: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-      },
-    } as User & { attributes: any };
+      workspaceId: user.workspace_id,
+      role: user.role as 'admin' | 'member',
+      deletedAt: user.deleted_at,
+    };
 
     return {
       user: luciaUser,
@@ -437,7 +437,8 @@ export async function getUser(sessionId: string): Promise<User | null> {
       return null;
     }
 
-    return user;
+    // Cast to our custom User type (Lucia's getUserAttributes returns these properties)
+    return user as unknown as User;
   } catch (error) {
     return null;
   }

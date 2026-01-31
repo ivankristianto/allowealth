@@ -15,7 +15,7 @@ import { z } from 'zod';
  * Schema for POST request body - create invitation
  */
 const createInvitationSchema = z.object({
-  email: z.string().email('Invalid email format'),
+  email: z.email({ message: 'Invalid email format' }),
   role: z.enum(['admin', 'member']).default('member'),
 });
 

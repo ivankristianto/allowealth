@@ -18,7 +18,7 @@ import { SUPPORTED_CURRENCIES } from '@/lib/constants/user-meta-keys';
  */
 const updateFullProfileSchema = z.object({
   name: z.string().min(1, 'Name is required').max(100, 'Name must be at most 100 characters'),
-  email: z.string().email('Invalid email format'),
+  email: z.email({ message: 'Invalid email format' }),
   phone: z.string().max(50, 'Phone must be at most 50 characters').optional().default(''),
   bio: z.string().max(500, 'Bio must be at most 500 characters').optional().default(''),
   currency: z.enum(SUPPORTED_CURRENCIES).optional(),
