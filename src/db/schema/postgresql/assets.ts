@@ -1,4 +1,5 @@
 import { pgTable, text, boolean, timestamp, index } from 'drizzle-orm/pg-core';
+import { workspaces } from './workspaces';
 import { users } from './users';
 import { assetCategories } from './asset-categories';
 
@@ -6,9 +7,12 @@ export const assets = pgTable(
   'assets',
   {
     id: text('id').primaryKey(),
-    user_id: text('user_id')
+    workspace_id: text('workspace_id')
       .notNull()
-      .references(() => users.id, { onDelete: 'cascade' }),
+      .references(() => workspaces.id, { onDelete: 'cascade' }),
+    created_by_user_id: text('created_by_user_id')
+      .notNull()
+      .references(() => users.id),
     name: text('name').notNull(),
     type: text('type', {
       enum: [
@@ -37,5 +41,5 @@ export const assets = pgTable(
     created_at: timestamp('created_at').defaultNow().notNull(),
     updated_at: timestamp('updated_at').defaultNow().notNull(),
   },
-  (table) => [index('assets_user_id_idx').on(table.user_id)]
+  (table) => [index('assets_workspace_id_idx').on(table.workspace_id)]
 );

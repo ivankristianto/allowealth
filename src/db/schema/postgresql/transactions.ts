@@ -1,4 +1,5 @@
 import { pgTable, text, timestamp, index } from 'drizzle-orm/pg-core';
+import { workspaces } from './workspaces';
 import { users } from './users';
 import { categories } from './categories';
 import { assets } from './assets';
@@ -7,9 +8,12 @@ export const transactions = pgTable(
   'transactions',
   {
     id: text('id').primaryKey(),
-    user_id: text('user_id')
+    workspace_id: text('workspace_id')
       .notNull()
-      .references(() => users.id, { onDelete: 'cascade' }),
+      .references(() => workspaces.id, { onDelete: 'cascade' }),
+    created_by_user_id: text('created_by_user_id')
+      .notNull()
+      .references(() => users.id),
     category_id: text('category_id').references(() => categories.id), // Nullable for transfers
     asset_id: text('asset_id')
       .notNull()
@@ -26,7 +30,7 @@ export const transactions = pgTable(
     updated_at: timestamp('updated_at').defaultNow().notNull(),
   },
   (table) => [
-    index('transactions_user_id_idx').on(table.user_id),
+    index('transactions_workspace_id_idx').on(table.workspace_id),
     index('transactions_asset_id_idx').on(table.asset_id),
     index('transactions_transaction_date_idx').on(table.transaction_date),
     index('transactions_category_id_idx').on(table.category_id),
