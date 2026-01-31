@@ -23,7 +23,7 @@ export const GET: APIRoute = async (context) => {
   const render = createRenderHelper(url);
 
   try {
-    const userId = getAuthenticatedUser(context);
+    const auth = getAuthenticatedUser(context);
 
     const currency = (url.searchParams.get('currency') as 'IDR' | 'USD') || 'IDR';
     const monthsParam = url.searchParams.get('months');
@@ -45,7 +45,7 @@ export const GET: APIRoute = async (context) => {
     }
 
     // Get full history
-    let history = await budgetService.getBudgetHistory(userId, currency, months);
+    let history = await budgetService.getBudgetHistory(auth.workspaceId, currency, months);
 
     // Filter by year if specified
     if (yearParam) {

@@ -27,8 +27,8 @@ import { UserMetaServiceError, ServiceErrorCode } from '@/services/service-error
  */
 export const GET: APIRoute = async (context) => {
   try {
-    const userId = getAuthenticatedUser(context);
-    const metaAll = await userMetaService.getUserMetaAll(userId);
+    const auth = getAuthenticatedUser(context);
+    const metaAll = await userMetaService.getUserMetaAll(auth.userId);
     return successResponse(metaAll);
   } catch (error) {
     if (error instanceof Error && error.message === 'Unauthorized') {

@@ -37,7 +37,7 @@ export const GET: APIRoute = async (context) => {
 
   try {
     // 1. Authenticate user
-    const userId = getAuthenticatedUser(context);
+    const auth = getAuthenticatedUser(context);
 
     // 2. Extract and validate query parameters
     const range = url.searchParams.get('range') as 'monthly' | 'yearly' | null;
@@ -99,13 +99,13 @@ export const GET: APIRoute = async (context) => {
         : errorResponse(errorMsg, 400, 'INVALID_CURRENCY');
     }
 
-    // 3. Call service with userId to fetch report data
+    // 3. Call service with workspaceId to fetch report data
     let reportData: ReportData;
     if (range === 'monthly') {
-      reportData = await reportService.getMonthlyReport(userId, period, currency);
+      reportData = await reportService.getMonthlyReport(auth.workspaceId, period, currency);
     } else {
       const year = parseInt(period, 10);
-      reportData = await reportService.getYearlyReport(userId, year, currency);
+      reportData = await reportService.getYearlyReport(auth.workspaceId, year, currency);
     }
 
     // 4. Return response based on requested format

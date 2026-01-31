@@ -17,7 +17,7 @@ import { ServiceError } from '@/services/service-errors';
  */
 export const GET: APIRoute = async (context) => {
   try {
-    const userId = getAuthenticatedUser(context);
+    const auth = getAuthenticatedUser(context);
     const { id } = context.params;
 
     // Validate transaction ID format
@@ -27,7 +27,7 @@ export const GET: APIRoute = async (context) => {
     }
 
     // Now we know id is a valid string
-    const rawTransaction = await transactionService.findById(idValidation.data, userId);
+    const rawTransaction = await transactionService.findById(idValidation.data, auth.workspaceId);
 
     if (!rawTransaction) {
       return errorResponse('Transaction not found', 404);
@@ -52,7 +52,7 @@ export const GET: APIRoute = async (context) => {
  */
 export const PUT: APIRoute = async (context) => {
   try {
-    const userId = getAuthenticatedUser(context);
+    const auth = getAuthenticatedUser(context);
     const { id } = context.params;
     const { request } = context;
 
@@ -91,7 +91,7 @@ export const PUT: APIRoute = async (context) => {
     if (validation.data.description !== undefined)
       updateData.description = validation.data.description;
 
-    const rawTransaction = await transactionService.update(idValidation.data, userId, updateData);
+    const rawTransaction = await transactionService.update(idValidation.data, auth.workspaceId, updateData);
 
     if (!rawTransaction) {
       return errorResponse('Transaction not found', 404);
@@ -116,7 +116,7 @@ export const PUT: APIRoute = async (context) => {
  */
 export const DELETE: APIRoute = async (context) => {
   try {
-    const userId = getAuthenticatedUser(context);
+    const auth = getAuthenticatedUser(context);
     const { id } = context.params;
 
     // Validate transaction ID format
@@ -125,7 +125,7 @@ export const DELETE: APIRoute = async (context) => {
       return errorResponse('Invalid transaction ID format', 400);
     }
 
-    await transactionService.delete(idValidation.data, userId);
+    await transactionService.delete(idValidation.data, auth.workspaceId);
 
     return successResponse({ message: 'Transaction deleted successfully' });
   } catch (error) {

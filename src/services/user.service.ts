@@ -167,4 +167,35 @@ export class UserService {
 
     return { success: true };
   }
+
+  /**
+   * Soft delete a user by setting deleted_at timestamp
+   *
+   * @param userId - User ID to soft delete
+   * @throws {UserServiceError} If user not found
+   */
+  async softDelete(userId: string): Promise<void> {
+    // Check if user exists
+    const user = await this.db.query.users.findFirst({
+      where: eq(users.id, userId),
+    });
+
+    if (!user) {
+      throw new UserServiceError(ServiceErrorCode.USER_NOT_FOUND, 'User not found', 404);
+    }
+
+    // If already deleted, just return
+    if (user.deleted_at !== null) {
+      return;
+    }
+
+    // Soft delete user
+    await this.db
+      .update(users)
+      .set({
+        deleted_at: new Date(),
+        updated_at: new Date(),
+      })
+      .where(eq(users.id, userId));
+  }
 }

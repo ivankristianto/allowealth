@@ -27,7 +27,7 @@ export const GET: APIRoute = async (context) => {
   const render = createRenderHelper(url);
 
   try {
-    const userId = getAuthenticatedUser(context);
+    const auth = getAuthenticatedUser(context);
 
     const yearParam = url.searchParams.get('year');
     const monthParam = url.searchParams.get('month');
@@ -61,7 +61,7 @@ export const GET: APIRoute = async (context) => {
 
     // Fetch budget data
     const budgetData = await budgetService.getMonthlyOverview(
-      userId,
+      auth.workspaceId,
       year,
       month,
       selectedCurrency
@@ -107,7 +107,7 @@ export const GET: APIRoute = async (context) => {
       // Render advice partial
       if (partial === 'all' || partial === 'advice') {
         // Fetch alerts to generate advice data
-        const alerts = await budgetService.getAlerts(userId, selectedCurrency);
+        const alerts = await budgetService.getAlerts(auth.workspaceId, selectedCurrency);
         const adviceData = generateAdviceData(alerts, selectedCurrency);
 
         const adviceHtml = await container.renderToString(BudgetAdviceBannerPartial, {

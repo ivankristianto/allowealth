@@ -160,22 +160,32 @@ export async function validateBody<T>(
 }
 
 /**
- * Get authenticated user ID from middleware-validated session
+ * Authenticated user context returned by getAuthenticatedUser
+ */
+export interface AuthenticatedUser {
+  userId: string;
+  workspaceId: string;
+  role: 'admin' | 'member';
+}
+
+/**
+ * Get authenticated user from middleware-validated session
  *
  * Uses the user data already validated and set by middleware in `context.locals.user`.
  * This avoids redundant database calls since the middleware has already validated
  * the session.
  *
  * @param context - Astro API context with locals set by middleware
- * @returns User ID string
+ * @returns AuthenticatedUser object with userId, workspaceId, and role
  * @throws Error with message 'Unauthorized' if not authenticated
  *
  * @example
  * ```typescript
  * export const GET: APIRoute = async (context) => {
  *   try {
- *     const userId = getAuthenticatedUser(context);
- *     // User is authenticated, proceed...
+ *     const auth = getAuthenticatedUser(context);
+ *     // auth.userId, auth.workspaceId, auth.role are now available
+ *     await service.findAll(auth.workspaceId);
  *   } catch (error) {
  *     if (error instanceof Error && error.message === 'Unauthorized') {
  *       return errorResponse('Unauthorized', 401);
@@ -185,14 +195,18 @@ export async function validateBody<T>(
  * }
  * ```
  */
-export function getAuthenticatedUser(context: APIContext): string {
+export function getAuthenticatedUser(context: APIContext): AuthenticatedUser {
   const user = context.locals.user;
 
-  if (!user?.id) {
+  if (!user?.id || !user?.workspaceId) {
     throw new Error('Unauthorized');
   }
 
-  return user.id;
+  return {
+    userId: user.id,
+    workspaceId: user.workspaceId,
+    role: user.role,
+  };
 }
 
 /**
@@ -252,7 +266,8 @@ export async function getUserId(context: APIContext): Promise<string | null> {
  */
 export async function requireAuth(context: APIContext): Promise<string> {
   // Use getAuthenticatedUser to avoid redundant database call
-  return getAuthenticatedUser(context);
+  const auth = getAuthenticatedUser(context);
+  return auth.userId;
 }
 
 /**

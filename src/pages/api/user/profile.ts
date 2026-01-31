@@ -31,9 +31,9 @@ const updateFullProfileSchema = z.object({
  */
 export const GET: APIRoute = async (context) => {
   try {
-    const userId = getAuthenticatedUser(context);
+    const auth = getAuthenticatedUser(context);
     const user = await db.query.users.findFirst({
-      where: (users, { eq }) => eq(users.id, userId),
+      where: (users, { eq }) => eq(users.id, auth.userId),
     });
 
     if (!user) {
@@ -41,7 +41,7 @@ export const GET: APIRoute = async (context) => {
     }
 
     // Get user settings from meta
-    const settings = await userMetaService.getUserSettings(userId);
+    const settings = await userMetaService.getUserSettings(auth.userId);
 
     return successResponse({
       id: user.id,
@@ -81,7 +81,7 @@ export const GET: APIRoute = async (context) => {
  */
 export const PUT: APIRoute = async (context) => {
   try {
-    const userId = getAuthenticatedUser(context);
+    const auth = getAuthenticatedUser(context);
 
     const validation = await validateBody(context.request, updateFullProfileSchema);
 
@@ -92,25 +92,25 @@ export const PUT: APIRoute = async (context) => {
     const { name, email, phone, bio, currency } = validation.data;
 
     // Update user table (name, email)
-    const user = await userService.updateProfile(userId, { name, email });
+    const user = await userService.updateProfile(auth.userId, { name, email });
 
     // Update meta values (phone, bio, currency)
     const metaPromises: Promise<void>[] = [];
 
     if (phone !== undefined) {
-      metaPromises.push(userMetaService.setUserMeta(userId, 'phone', phone));
+      metaPromises.push(userMetaService.setUserMeta(auth.userId, 'phone', phone));
     }
     if (bio !== undefined) {
-      metaPromises.push(userMetaService.setUserMeta(userId, 'bio', bio));
+      metaPromises.push(userMetaService.setUserMeta(auth.userId, 'bio', bio));
     }
     if (currency !== undefined) {
-      metaPromises.push(userMetaService.setUserMeta(userId, 'currency', currency));
+      metaPromises.push(userMetaService.setUserMeta(auth.userId, 'currency', currency));
     }
 
     await Promise.all(metaPromises);
 
     // Get updated settings
-    const settings = await userMetaService.getUserSettings(userId);
+    const settings = await userMetaService.getUserSettings(auth.userId);
 
     return successResponse({
       id: user.id,

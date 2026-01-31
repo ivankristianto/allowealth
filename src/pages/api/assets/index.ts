@@ -42,7 +42,7 @@ const createAssetSchema = z
  */
 export const GET: APIRoute = async (context) => {
   try {
-    const userId = getAuthenticatedUser(context);
+    const auth = getAuthenticatedUser(context);
     const { url } = context;
 
     const type = url.searchParams.get('type');
@@ -60,7 +60,7 @@ export const GET: APIRoute = async (context) => {
       filters.currency = currency;
     }
 
-    const assets = await assetService.findAll(userId, filters);
+    const assets = await assetService.findAll(auth.workspaceId, filters);
 
     return successResponse(assets);
   } catch (error) {
@@ -78,7 +78,7 @@ export const GET: APIRoute = async (context) => {
  */
 export const POST: APIRoute = async (context) => {
   try {
-    const userId = getAuthenticatedUser(context);
+    const auth = getAuthenticatedUser(context);
 
     const validation = await validateBody(context.request, createAssetSchema);
 
@@ -90,7 +90,7 @@ export const POST: APIRoute = async (context) => {
     let resolvedCategoryId: string | null = null;
 
     if (validation.data.categoryId) {
-      const category = await assetCategoryService.findById(validation.data.categoryId, userId);
+      const category = await assetCategoryService.findById(validation.data.categoryId, auth.workspaceId);
       if (!category) {
         return errorResponse('Category not found', 404);
       }
@@ -103,7 +103,7 @@ export const POST: APIRoute = async (context) => {
     } else if (validation.data.type) {
       const categoryName = LEGACY_NAME_BY_TYPE.get(validation.data.type);
       if (categoryName) {
-        const category = await assetCategoryService.findByName(categoryName, userId);
+        const category = await assetCategoryService.findByName(categoryName, auth.workspaceId);
         resolvedCategoryId = category?.id || null;
       }
     }
@@ -113,7 +113,8 @@ export const POST: APIRoute = async (context) => {
     }
 
     const asset = await assetService.create({
-      user_id: userId,
+      workspace_id: auth.workspaceId,
+      created_by_user_id: auth.userId,
       name: validation.data.name,
       type: resolvedType,
       category_id: resolvedCategoryId,

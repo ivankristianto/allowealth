@@ -45,14 +45,14 @@ const updateAssetSchema = z.object({
  */
 export const GET: APIRoute = async (context) => {
   try {
-    const userId = getAuthenticatedUser(context);
+    const auth = getAuthenticatedUser(context);
     const { id } = context.params;
 
     if (!id) {
       return errorResponse('Asset ID is required', 400);
     }
 
-    const asset = await assetService.findById(id, userId);
+    const asset = await assetService.findById(id, auth.workspaceId);
 
     if (!asset) {
       return errorResponse('Asset not found', 404);
@@ -74,7 +74,7 @@ export const GET: APIRoute = async (context) => {
  */
 export const PUT: APIRoute = async (context) => {
   try {
-    const userId = getAuthenticatedUser(context);
+    const auth = getAuthenticatedUser(context);
     const { id } = context.params;
 
     if (!id) {
@@ -91,7 +91,7 @@ export const PUT: APIRoute = async (context) => {
     let resolvedCategoryId: string | null | undefined = undefined;
 
     if (validation.data.categoryId) {
-      const category = await assetCategoryService.findById(validation.data.categoryId, userId);
+      const category = await assetCategoryService.findById(validation.data.categoryId, auth.workspaceId);
       if (!category) {
         return errorResponse('Category not found', 404);
       }
@@ -102,12 +102,12 @@ export const PUT: APIRoute = async (context) => {
     } else if (validation.data.type) {
       const categoryName = LEGACY_NAME_BY_TYPE.get(validation.data.type);
       if (categoryName) {
-        const category = await assetCategoryService.findByName(categoryName, userId);
+        const category = await assetCategoryService.findByName(categoryName, auth.workspaceId);
         resolvedCategoryId = category?.id || null;
       }
     }
 
-    const asset = await assetService.update(id, userId, {
+    const asset = await assetService.update(id, auth.workspaceId, {
       name: validation.data.name,
       currency: validation.data.currency,
       type: resolvedType,
@@ -134,14 +134,14 @@ export const PUT: APIRoute = async (context) => {
  */
 export const DELETE: APIRoute = async (context) => {
   try {
-    const userId = getAuthenticatedUser(context);
+    const auth = getAuthenticatedUser(context);
     const { id } = context.params;
 
     if (!id) {
       return errorResponse('Asset ID is required', 400);
     }
 
-    await assetService.delete(id, userId);
+    await assetService.delete(id, auth.workspaceId);
 
     return successResponse({ message: 'Asset deleted successfully' });
   } catch (error) {

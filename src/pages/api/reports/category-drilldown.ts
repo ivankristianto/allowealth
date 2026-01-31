@@ -37,7 +37,7 @@ export const GET: APIRoute = async (context) => {
 
   try {
     // 1. Authenticate user
-    const userId = getAuthenticatedUser(context);
+    const auth = getAuthenticatedUser(context);
 
     // 2. Extract and validate query parameters
     const categoryId = url.searchParams.get('categoryId');
@@ -99,7 +99,7 @@ export const GET: APIRoute = async (context) => {
 
     // 3. Fetch category transactions
     const categoryTransactionsData = await reportService.getCategoryTransactions(
-      userId,
+      auth.workspaceId,
       categoryId,
       period,
       range

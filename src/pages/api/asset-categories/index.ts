@@ -35,7 +35,7 @@ const toAssetCategoryResponse = (category: any, assetCount = 0) => ({
  */
 export const GET: APIRoute = async (context) => {
   try {
-    const userId = getAuthenticatedUser(context);
+    const auth = getAuthenticatedUser(context);
     const { url } = context;
 
     const isLiabilityParam = url.searchParams.get('isLiability');
@@ -49,8 +49,8 @@ export const GET: APIRoute = async (context) => {
       filters.is_system = isSystemParam === 'true';
     }
 
-    const categories = await assetCategoryService.findAll(userId, filters);
-    const counts = await assetService.countByCategory(userId);
+    const categories = await assetCategoryService.findAll(auth.workspaceId, filters);
+    const counts = await assetService.countByCategory(auth.workspaceId);
     const countMap = new Map(counts.map((row) => [row.category_id, row.count]));
 
     // Check if HTML rendering is requested
@@ -121,7 +121,7 @@ export const GET: APIRoute = async (context) => {
  */
 export const POST: APIRoute = async (context) => {
   try {
-    const userId = getAuthenticatedUser(context);
+    const auth = getAuthenticatedUser(context);
     const render = createRenderHelper(context.url);
 
     const validation = await validateBody(context.request, createAssetCategoryAPISchema);
@@ -133,7 +133,8 @@ export const POST: APIRoute = async (context) => {
     }
 
     const category = await assetCategoryService.create({
-      user_id: userId,
+      workspace_id: auth.workspaceId,
+      created_by_user_id: auth.userId,
       name: validation.data.name,
       description: validation.data.description,
       is_liability: validation.data.isLiability,
@@ -146,8 +147,8 @@ export const POST: APIRoute = async (context) => {
       const container = await AstroContainer.create();
 
       // Fetch all categories for updated table
-      const allCategories = await assetCategoryService.findAll(userId);
-      const counts = await assetService.countByCategory(userId);
+      const allCategories = await assetCategoryService.findAll(auth.workspaceId);
+      const counts = await assetService.countByCategory(auth.workspaceId);
       const countMap = new Map(counts.map((row) => [row.category_id, row.count]));
 
       // Get type filter from query params (default: asset)

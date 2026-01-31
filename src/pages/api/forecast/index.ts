@@ -80,7 +80,7 @@ export const GET: APIRoute = async (context) => {
   const { url } = context;
 
   try {
-    const userId = getAuthenticatedUser(context);
+    const auth = getAuthenticatedUser(context);
 
     // Validate and parse query parameters
     const queryParams = {
@@ -107,8 +107,8 @@ export const GET: APIRoute = async (context) => {
     // This would allow testing the forecast UI without seeding asset history data
     // Example: if (isDev && assetsWithHistory.length === 0) return mockForecastResponse()
 
-    // Fetch user's assets with history
-    const assetsWithHistory = await assetService.findAllWithHistory(userId);
+    // Fetch workspace's assets with history
+    const assetsWithHistory = await assetService.findAllWithHistory(auth.workspaceId);
 
     // Convert to forecast-compatible format
     const forecastAssets: AssetWithHistory[] = assetsWithHistory.map((asset) => ({

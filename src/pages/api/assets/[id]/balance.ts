@@ -22,7 +22,7 @@ const updateBalanceSchema = z.object({
  */
 export const POST: APIRoute = async (context) => {
   try {
-    const userId = getAuthenticatedUser(context);
+    const auth = getAuthenticatedUser(context);
     const { id } = context.params;
 
     if (!id) {
@@ -35,7 +35,7 @@ export const POST: APIRoute = async (context) => {
       return errorResponse('Validation failed', 400, 'VALIDATION_ERROR', validation.error.issues);
     }
 
-    const asset = await assetService.updateBalance(id, userId, validation.data);
+    const asset = await assetService.updateBalance(id, auth.workspaceId, validation.data);
 
     if (!asset) {
       return errorResponse('Asset not found', 404);

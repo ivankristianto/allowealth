@@ -17,7 +17,7 @@ import { logError } from '@/lib/utils';
  */
 export const GET: APIRoute = async (context) => {
   try {
-    const userId = getAuthenticatedUser(context);
+    const auth = getAuthenticatedUser(context);
 
     // Parse required query params
     const monthParam = context.url.searchParams.get('month');
@@ -50,7 +50,7 @@ export const GET: APIRoute = async (context) => {
       currencyFilter = currency;
     }
 
-    const budgets = await budgetService.findAllBudgets(userId, month, year, currencyFilter);
+    const budgets = await budgetService.findAllBudgets(auth.workspaceId, month, year, currencyFilter);
 
     return successResponse(budgets);
   } catch (error) {
@@ -68,7 +68,7 @@ export const GET: APIRoute = async (context) => {
  */
 export const POST: APIRoute = async (context) => {
   try {
-    const userId = getAuthenticatedUser(context);
+    const auth = getAuthenticatedUser(context);
 
     const validation = await validateBody(context.request, createBudgetAPISchema);
 
@@ -77,7 +77,8 @@ export const POST: APIRoute = async (context) => {
     }
 
     const budget = await budgetService.createBudget({
-      user_id: userId,
+      workspace_id: auth.workspaceId,
+      created_by_user_id: auth.userId,
       ...validation.data,
     });
 

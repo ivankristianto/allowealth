@@ -68,7 +68,7 @@ import { UserServiceError, ServiceErrorCode } from '@/services/service-errors';
  */
 export const PUT: APIRoute = async (context) => {
   try {
-    const userId = getAuthenticatedUser(context);
+    const auth = getAuthenticatedUser(context);
 
     const validation = await validateBody(context.request, updatePasswordSchema);
 
@@ -76,7 +76,7 @@ export const PUT: APIRoute = async (context) => {
       return errorResponse('Validation failed', 400, 'VALIDATION_ERROR', validation.error.issues);
     }
 
-    const result = await userService.updatePassword(userId, validation.data);
+    const result = await userService.updatePassword(auth.userId, validation.data);
 
     return successResponse(result);
   } catch (error) {

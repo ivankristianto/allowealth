@@ -34,20 +34,20 @@ const toAssetCategoryResponse = (category: any, assetCount = 0) => ({
  */
 export const GET: APIRoute = async (context) => {
   try {
-    const userId = getAuthenticatedUser(context);
+    const auth = getAuthenticatedUser(context);
     const { id } = context.params;
 
     if (!id) {
       return errorResponse('Category ID is required', 400);
     }
 
-    const category = await assetCategoryService.findById(id, userId);
+    const category = await assetCategoryService.findById(id, auth.workspaceId);
 
     if (!category) {
       return errorResponse('Category not found', 404);
     }
 
-    const counts = await assetService.countByCategory(userId);
+    const counts = await assetService.countByCategory(auth.workspaceId);
     const assetCount = counts.find((row) => row.category_id === category.id)?.count || 0;
 
     return successResponse(toAssetCategoryResponse(category, assetCount));
@@ -67,7 +67,7 @@ export const GET: APIRoute = async (context) => {
  */
 export const PUT: APIRoute = async (context) => {
   try {
-    const userId = getAuthenticatedUser(context);
+    const auth = getAuthenticatedUser(context);
     const { id } = context.params;
     const render = createRenderHelper(context.url);
 
@@ -85,7 +85,7 @@ export const PUT: APIRoute = async (context) => {
         : errorResponse('Validation failed', 400, 'VALIDATION_ERROR', validation.error.issues);
     }
 
-    const category = await assetCategoryService.update(id, userId, {
+    const category = await assetCategoryService.update(id, auth.workspaceId, {
       name: validation.data.name,
       description: validation.data.description,
       is_liability: validation.data.isLiability,
@@ -96,8 +96,8 @@ export const PUT: APIRoute = async (context) => {
       const container = await AstroContainer.create();
 
       // Fetch all categories for updated table
-      const allCategories = await assetCategoryService.findAll(userId);
-      const counts = await assetService.countByCategory(userId);
+      const allCategories = await assetCategoryService.findAll(auth.workspaceId);
+      const counts = await assetService.countByCategory(auth.workspaceId);
       const countMap = new Map(counts.map((row) => [row.category_id, row.count]));
 
       // Get type filter from query params (default: asset)
@@ -152,7 +152,7 @@ export const PUT: APIRoute = async (context) => {
  */
 export const DELETE: APIRoute = async (context) => {
   try {
-    const userId = getAuthenticatedUser(context);
+    const auth = getAuthenticatedUser(context);
     const { id } = context.params;
     const render = createRenderHelper(context.url);
 
@@ -162,15 +162,15 @@ export const DELETE: APIRoute = async (context) => {
         : errorResponse('Category ID is required', 400);
     }
 
-    await assetCategoryService.delete(id, userId);
+    await assetCategoryService.delete(id, auth.workspaceId);
 
     // If HTML rendering requested, return updated table
     if (render.wantsHtml()) {
       const container = await AstroContainer.create();
 
       // Fetch all categories for updated table
-      const allCategories = await assetCategoryService.findAll(userId);
-      const counts = await assetService.countByCategory(userId);
+      const allCategories = await assetCategoryService.findAll(auth.workspaceId);
+      const counts = await assetService.countByCategory(auth.workspaceId);
       const countMap = new Map(counts.map((row) => [row.category_id, row.count]));
 
       // Get type filter from query params (default: asset)
