@@ -1,0 +1,446 @@
+---
+/**
+ * Signup Page
+ *
+ * User registration page with support for invitation-based signups.
+ * - If `?token` is present: validates invitation and pre-fills email
+ * - If no token: shows regular signup form (creates new workspace)
+ */
+
+import AuthLayout from '../layouts/AuthLayout.astro';
+import Input from '../components/atoms/Input.astro';
+import PasswordField from '../components/atoms/PasswordField.astro';
+import Button from '../components/atoms/Button.astro';
+import Label from '../components/atoms/Label.astro';
+import { Building2, Eye, EyeOff, TriangleAlert, CircleCheck } from '@lucide/astro';
+import { getSignupUrl } from '@/lib/config';
+import { workspaceInvitationService, workspaceService } from '@/services';
+
+// Get query params
+const url = new URL(Astro.request.url);
+const token = url.searchParams.get('token');
+const error = url.searchParams.get('error');
+
+// Error messages mapping
+const errorMessages: Record<string, string> = {
+  email_exists: 'An account with this email already exists.',
+  weak_password: 'Password must be at least 12 characters long.',
+  invalid_email: 'Please enter a valid email address.',
+  invalid_input: 'Please check your input and try again.',
+  network_error: 'Network error. Please check your connection.',
+  server_error: 'A server error occurred. Please try again later.',
+  invalid_token: 'Invalid or expired invitation token.',
+  token_expired: 'This invitation has expired.',
+  token_used: 'This invitation has already been used.',
+};
+
+// Only use whitelisted error codes to prevent XSS
+const errorMessage = error ? errorMessages[error] || 'An error occurred. Please try again.' : '';
+
+// Invitation data (if token is present)
+let invitation: {
+  email: string;
+  workspaceName: string;
+  role: 'admin' | 'member';
+} | null = null;
+
+let invitationError = '';
+
+// Validate invitation token if present
+if (token) {
+  try {
+    const invitationData = await workspaceInvitationService.validateAndGet(token);
+    const workspace = await workspaceService.findById(invitationData.workspace_id);
+
+    if (workspace) {
+      invitation = {
+        email: invitationData.email,
+        workspaceName: workspace.name,
+        role: invitationData.role as 'admin' | 'member',
+      };
+    } else {
+      invitationError = 'Workspace not found';
+    }
+  } catch (err: any) {
+    // Handle specific error codes
+    if (err.code === 'INVITATION_NOT_FOUND') {
+      invitationError = 'This invitation link is invalid or has been revoked.';
+    } else if (err.code === 'INVITATION_EXPIRED') {
+      invitationError = 'This invitation has expired. Please request a new invitation.';
+    } else if (err.code === 'INVITATION_ALREADY_ACCEPTED') {
+      invitationError = 'This invitation has already been used.';
+    } else {
+      invitationError = 'Unable to validate invitation. Please try again.';
+    }
+  }
+}
+
+// Get CSP nonce from middleware
+const cspNonce = Astro.locals.cspNonce || '';
+
+const isInvitation = !!invitation;
+const hasInvitationError = !!invitationError;
+---
+
+<AuthLayout title={isInvitation ? 'allowealth - Join Workspace' : 'allowealth - Sign Up'}>
+  {
+    hasInvitationError ? (
+      // Show error state for invalid/expired invitation
+      <div class="card bg-base-100 shadow-2xl border border-base-300">
+        <div class="card-body p-8">
+          <div class="flex flex-col items-center gap-4 text-center">
+            <div class="w-16 h-16 rounded-full bg-error/10 flex items-center justify-center">
+              <TriangleAlert size={32} class="text-error stroke-current" aria-hidden="true" />
+            </div>
+            <h2 class="text-2xl font-bold text-error">Invalid Invitation</h2>
+            <p class="text-base-content/70">{invitationError}</p>
+            <div class="flex gap-4 mt-4">
+              <a href="/login" class="btn btn-ghost rounded-full">
+                Sign In
+              </a>
+              <a href="/register" class="btn btn-accent rounded-full">
+                Create Account
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    ) : (
+      <div class="card bg-base-100 shadow-2xl border border-base-300">
+        <div class="card-body p-8">
+          {/* Invitation banner */}
+          {isInvitation && invitation && (
+            <div class="bg-accent/10 border border-accent/20 rounded-2xl p-4 mb-6">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center">
+                  <Building2 size={20} class="text-accent stroke-current" aria-hidden="true" />
+                </div>
+                <div class="flex-1">
+                  <p class="text-sm text-base-content/70">You've been invited to join</p>
+                  <p class="font-bold text-base-content">{invitation.workspaceName}</p>
+                </div>
+                <span class="badge badge-accent">{invitation.role}</span>
+              </div>
+            </div>
+          )}
+
+          <h2 class="text-2xl font-bold mb-6 text-center">
+            {isInvitation ? 'Complete Your Account' : 'Create Account'}
+          </h2>
+
+          <form
+            id="signup-form"
+            class="space-y-5"
+            data-signup-form
+            data-invitation-token={token || ''}
+            novalidate
+          >
+            <div id="form-messages" class="space-y-2" aria-live="polite" tabindex="-1">
+              {errorMessage && (
+                <div role="alert" class="alert alert-error">
+                  <TriangleAlert size={20} class="shrink-0 stroke-current" aria-hidden="true" />
+                  <span>{errorMessage}</span>
+                </div>
+              )}
+            </div>
+
+            <div class="form-control">
+              <Label htmlFor="name" required>
+                Full Name
+              </Label>
+              <Input
+                type="text"
+                id="name"
+                name="name"
+                placeholder="Enter your full name"
+                required
+                className="rounded-full py-4 px-6 h-14 text-base font-bold border border-base-300"
+              />
+            </div>
+
+            <div class="form-control">
+              <Label htmlFor="email" required>
+                Email Address
+              </Label>
+              {isInvitation && invitation ? (
+                // Pre-filled and readonly for invitation signup
+                <div class="flex items-center gap-3 h-14 py-4 px-6 bg-base-200 rounded-full border border-base-300">
+                  <CircleCheck
+                    size={20}
+                    class="stroke-current text-accent shrink-0"
+                    aria-hidden="true"
+                  />
+                  <span class="text-base font-bold">{invitation.email}</span>
+                  <input type="hidden" name="email" value={invitation.email} />
+                </div>
+              ) : (
+                <Input
+                  type="email"
+                  id="email"
+                  name="email"
+                  placeholder="your.email@example.com"
+                  required
+                  className="rounded-full py-4 px-6 h-14 text-base font-bold border border-base-300"
+                />
+              )}
+            </div>
+
+            <PasswordField
+              id="password"
+              name="password"
+              label="Password"
+              placeholder="Create a strong password"
+              required={true}
+              showStrength={true}
+              showRequirements={true}
+              inputClassName="rounded-full py-4 pl-6 h-14 text-base font-bold border border-base-300"
+            />
+
+            <div class="form-control">
+              <Label htmlFor="confirm-password" required>
+                Confirm Password
+              </Label>
+              <div class="relative">
+                <Input
+                  type="password"
+                  id="confirm-password"
+                  name="confirm-password"
+                  placeholder="Re-enter your password"
+                  required
+                  className="rounded-full py-4 pl-6 h-14 text-base font-bold border border-base-300 pr-12"
+                />
+                <button
+                  type="button"
+                  class="absolute right-3 top-1/2 -translate-y-1/2 btn btn-ghost btn-circle btn-sm"
+                  aria-label="Toggle password visibility"
+                  data-toggle-password="confirm-password"
+                  tabindex="-1"
+                >
+                  <Eye size={20} class="stroke-current" data-eye-icon />
+                  <EyeOff size={20} class="stroke-current hidden" data-eye-off-icon />
+                </button>
+              </div>
+            </div>
+
+            {/* Workspace name for new signups */}
+            {!isInvitation && (
+              <div class="form-control">
+                <Label htmlFor="workspace-name">Workspace Name (Optional)</Label>
+                <Input
+                  type="text"
+                  id="workspace-name"
+                  name="workspaceName"
+                  placeholder="My Family Finances"
+                  className="rounded-full py-4 px-6 h-14 text-base font-bold border border-base-300"
+                />
+                <p class="text-xs text-base-content/50 mt-2 ml-4">
+                  Leave blank to use your name as workspace name.
+                </p>
+              </div>
+            )}
+
+            <div class="pt-2">
+              <Button
+                type="submit"
+                variant="accent"
+                className="w-full h-14 rounded-full"
+                data-submit-button
+              >
+                <span data-button-text>{isInvitation ? 'Join Workspace' : 'Create Account'}</span>
+                <span data-loading-spinner class="hidden">
+                  <span class="loading loading-spinner" />
+                  Creating account...
+                </span>
+              </Button>
+            </div>
+
+            <div class="text-center text-sm pt-4 border-t border-base-300">
+              <span class="text-base-content/60">Already have an account?</span>
+              <a href="/login" class="link link-primary font-semibold ml-1">
+                Sign in
+              </a>
+            </div>
+          </form>
+        </div>
+      </div>
+    )
+  }
+</AuthLayout>
+
+<style>
+  /* Disabled state during submission */
+  [data-signup-form].submitting input,
+  [data-signup-form].submitting button {
+    pointer-events: none;
+    opacity: 0.7;
+  }
+
+  /* Focus styles for accessibility */
+  input:focus-visible,
+  button:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 2px;
+  }
+</style>
+
+<script src="/scripts/registration-validation.js" nonce={cspNonce} is:inline></script>
+
+<script
+  define:vars={{
+    apiSignupUrl: getSignupUrl(),
+  }}
+  nonce={cspNonce}
+  is:inline
+>
+  document.addEventListener('DOMContentLoaded', () => {
+    const form = document.querySelector('[data-signup-form]');
+    const messagesContainer = document.getElementById('form-messages');
+    const submitButton = form?.querySelector('[data-submit-button]');
+    const buttonText = submitButton?.querySelector('[data-button-text]');
+    const loadingSpinner = submitButton?.querySelector('[data-loading-spinner]');
+
+    if (!form || !messagesContainer) return;
+
+    // Get invitation token if present
+    const invitationToken = form.getAttribute('data-invitation-token') || '';
+
+    // Handle password toggle for confirm password field
+    const toggleButtons = form.querySelectorAll('[data-toggle-password]');
+    toggleButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        const targetId = button.getAttribute('data-toggle-password');
+        const input = document.getElementById(targetId);
+        const eyeIcon = button.querySelector('[data-eye-icon]');
+        const eyeOffIcon = button.querySelector('[data-eye-off-icon]');
+
+        if (input && eyeIcon && eyeOffIcon) {
+          const isPassword = input.type === 'password';
+          input.type = isPassword ? 'text' : 'password';
+          eyeIcon.classList.toggle('hidden', !isPassword);
+          eyeOffIcon.classList.toggle('hidden', isPassword);
+          button.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
+        }
+      });
+    });
+
+    // Clear messages on input
+    const inputs = form.querySelectorAll('input');
+    inputs.forEach((input) => {
+      input.addEventListener('input', () => {
+        if (messagesContainer) {
+          messagesContainer.innerHTML = '';
+        }
+      });
+    });
+
+    // Form submission
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      // Clear previous messages
+      messagesContainer.innerHTML = '';
+
+      const formData = new FormData(form);
+      const data = {
+        name: formData.get('name'),
+        email: formData.get('email'),
+        password: formData.get('password'),
+        'confirm-password': formData.get('confirm-password'),
+      };
+
+      // Use shared validation from RegistrationValidation module
+      const emailInput = document.getElementById('email');
+      const validationResult = window.RegistrationValidation.validateRegistrationForm(
+        data,
+        emailInput
+      );
+
+      // Display validation errors
+      if (!validationResult.isValid) {
+        messagesContainer.innerHTML = window.RegistrationValidation.renderValidationErrors(
+          validationResult.errors
+        );
+        return;
+      }
+
+      // Show loading state
+      form.classList.add('submitting');
+      if (buttonText) buttonText.classList.add('hidden');
+      if (loadingSpinner) loadingSpinner.classList.remove('hidden');
+      if (submitButton) submitButton.disabled = true;
+
+      try {
+        // Build signup URL with token if present
+        const signupUrl = invitationToken
+          ? `${apiSignupUrl}?token=${encodeURIComponent(invitationToken)}`
+          : apiSignupUrl;
+
+        const response = await fetch(signupUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({
+            name: data.name,
+            email: data.email,
+            password: data.password,
+          }),
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+          // Registration successful
+          messagesContainer.innerHTML = `
+            <div role="alert" class="alert alert-success">
+              <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="m9 12 2 2 4-4"></path>
+              </svg>
+              <span>Account created successfully! Redirecting to login...</span>
+            </div>
+          `;
+
+          // Reset form
+          form.reset();
+
+          // Redirect to login after delay
+          setTimeout(() => {
+            window.location.href = '/login';
+          }, 2000);
+        } else {
+          // Registration failed
+          messagesContainer.innerHTML = `
+            <div role="alert" class="alert alert-error">
+              <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="m15 9-6 6"></path>
+                <path d="m9 9 6 6"></path>
+              </svg>
+              <span>${window.RegistrationValidation.escapeHtml(result.error?.message || 'Registration failed. Please try again.')}</span>
+            </div>
+          `;
+        }
+      } catch (error) {
+        console.error('Registration error:', error);
+        messagesContainer.innerHTML = `
+          <div role="alert" class="alert alert-error">
+            <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10"></circle>
+              <path d="m15 9-6 6"></path>
+              <path d="m9 9 6 6"></path>
+            </svg>
+            <span>An error occurred. Please try again.</span>
+          </div>
+        `;
+      } finally {
+        // Reset loading state
+        form.classList.remove('submitting');
+        if (buttonText) buttonText.classList.remove('hidden');
+        if (loadingSpinner) loadingSpinner.classList.add('hidden');
+        if (submitButton) submitButton.disabled = false;
+      }
+    });
+  });
+</script>

@@ -2,90 +2,176 @@
 /**
  * System Settings Page
  *
- * Recreates the settings layout from the PoC.
+ * Workspace settings page with general configuration and member management.
+ * Admin users can manage workspace settings and invite/remove members.
  */
 
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import Label from '@/components/atoms/Label.astro';
 import Card from '@/components/atoms/Card.astro';
-import Modal from '@/components/molecules/Modal.astro';
-import { Bell, Database, RotateCcw, Save, Settings, Trash2, UserPlus, Users } from '@lucide/astro';
+import MemberList from '@/components/organisms/MemberList.astro';
+import InviteMemberModal from '@/components/organisms/InviteMemberModal.astro';
+import {
+  Bell,
+  Building2,
+  Clock,
+  Database,
+  Mail,
+  RotateCcw,
+  Save,
+  Settings,
+  Trash2,
+  UserPlus,
+  Users,
+  X,
+} from '@lucide/astro';
 
 const currentPath = '/settings';
 
-// @TODO: Wire with backend
-const settingsData = {
-  general: {
+// Get user from locals
+const user = Astro.locals.user;
+if (!user) {
+  return Astro.redirect('/login?error=unauthorized');
+}
+
+const isAdmin = user.role === 'admin';
+
+// Fetch workspace settings from API
+let workspaceData = {
+  id: '',
+  name: 'My Workspace',
+  createdAt: new Date().toISOString(),
+  settings: {
     currency: 'IDR',
-    weekStart: 'Monday',
+    weekStart: 'monday',
     compactNumbers: true,
-  },
-  family: {
-    members: [
-      { id: 'sarah-jenkins', name: 'Sarah Jenkins', role: 'CFO (Admin)', status: 'Active' },
-      { id: 'mark-jenkins', name: 'Mark Jenkins', role: 'Member', status: 'Active' },
-      { id: 'leo-jenkins', name: 'Leo Jenkins', role: 'Viewer (Junior)', status: 'Active' },
-    ],
-  },
-  notifications: [
-    {
-      id: 'budget-alerts',
-      label: 'Budget Threshold Alerts',
-      description: 'Notify when categories hit 80% usage.',
-      enabled: true,
-    },
-    {
-      id: 'large-expense',
-      label: 'Large Expense Monitoring',
-      description: 'Alert for any transaction over defined threshold.',
-      enabled: true,
-    },
-    {
-      id: 'bill-reminders',
-      label: 'Bill Due Reminders',
-      description: 'Get notified 48 hours before scheduled bills.',
-      enabled: true,
-    },
-    {
-      id: 'daily-digest',
-      label: 'Daily Financial Summary',
-      description: "Evening summary of today's total spending.",
-      enabled: false,
-    },
-  ],
-  dataActions: [
-    {
-      id: 'clear-history',
-      title: 'Clear Transaction History',
-      description: 'Archive 245 items',
-      icon: Trash2,
-    },
-    {
-      id: 'factory-reset',
-      title: 'Factory Reset App',
-      description: 'Delete all assets, members and settings',
-      icon: RotateCcw,
-    },
-  ],
-  options: {
-    currencies: [
-      { value: 'IDR', label: 'Indonesian Rupiah (IDR)' },
-      { value: 'USD', label: 'US Dollar (USD)' },
-      { value: 'EUR', label: 'Euro (EUR)' },
-      { value: 'GBP', label: 'British Pound (GBP)' },
-    ],
-    weekStarts: ['Monday', 'Sunday'],
   },
 };
 
+let members: Array<{
+  id: string;
+  name: string;
+  email: string;
+  role: 'admin' | 'member';
+  createdAt: string;
+}> = [];
+
+let invitations: Array<{
+  id: string;
+  email: string;
+  role: 'admin' | 'member';
+  expiresAt: string;
+  createdAt: string;
+}> = [];
+
+try {
+  // Fetch workspace settings
+  const settingsResponse = await fetch(new URL('/api/workspace/settings', Astro.url), {
+    headers: {
+      Cookie: Astro.request.headers.get('Cookie') || '',
+    },
+  });
+
+  if (settingsResponse.ok) {
+    const settingsResult = await settingsResponse.json();
+    if (settingsResult.success) {
+      workspaceData = settingsResult.data;
+    }
+  }
+
+  // Fetch workspace members
+  const membersResponse = await fetch(new URL('/api/workspace/members', Astro.url), {
+    headers: {
+      Cookie: Astro.request.headers.get('Cookie') || '',
+    },
+  });
+
+  if (membersResponse.ok) {
+    const membersResult = await membersResponse.json();
+    if (membersResult.success) {
+      members = membersResult.data.members;
+    }
+  }
+
+  // Fetch pending invitations (admin only)
+  if (isAdmin) {
+    const invitationsResponse = await fetch(new URL('/api/workspace/invitations', Astro.url), {
+      headers: {
+        Cookie: Astro.request.headers.get('Cookie') || '',
+      },
+    });
+
+    if (invitationsResponse.ok) {
+      const invitationsResult = await invitationsResponse.json();
+      if (invitationsResult.success) {
+        invitations = invitationsResult.data.invitations;
+      }
+    }
+  }
+} catch (error) {
+  console.error('Failed to fetch workspace data:', error);
+}
+
 const navItems = [
   { id: 'general', label: 'General', icon: Settings },
-  { id: 'family', label: 'Family', icon: Users },
+  { id: 'members', label: 'Members', icon: Users },
   { id: 'notifications', label: 'Notifications', icon: Bell },
   { id: 'data', label: 'Data', icon: Database },
 ] as const;
 
 const activeSection = 'general';
+
+const currencyOptions = [
+  { value: 'IDR', label: 'Indonesian Rupiah (IDR)' },
+  { value: 'USD', label: 'US Dollar (USD)' },
+];
+
+const weekStartOptions = [
+  { value: 'monday', label: 'Monday' },
+  { value: 'sunday', label: 'Sunday' },
+];
+
+const notificationSettings = [
+  {
+    id: 'budget-alerts',
+    label: 'Budget Threshold Alerts',
+    description: 'Notify when categories hit 80% usage.',
+    enabled: true,
+  },
+  {
+    id: 'large-expense',
+    label: 'Large Expense Monitoring',
+    description: 'Alert for any transaction over defined threshold.',
+    enabled: true,
+  },
+  {
+    id: 'bill-reminders',
+    label: 'Bill Due Reminders',
+    description: 'Get notified 48 hours before scheduled bills.',
+    enabled: true,
+  },
+  {
+    id: 'daily-digest',
+    label: 'Daily Financial Summary',
+    description: "Evening summary of today's total spending.",
+    enabled: false,
+  },
+];
+
+const dataActions = [
+  {
+    id: 'clear-history',
+    title: 'Clear Transaction History',
+    description: 'Archive all transactions',
+    icon: Trash2,
+  },
+  {
+    id: 'factory-reset',
+    title: 'Factory Reset App',
+    description: 'Delete all assets, members and settings',
+    icon: RotateCcw,
+  },
+];
 ---
 
 <ProtectedLayout title="Settings" currentPath={currentPath} subtitle="Manage your preferences">
@@ -93,17 +179,18 @@ const activeSection = 'general';
     class="mx-auto max-w-5xl space-y-8 px-4 sm:px-6 lg:px-8"
     data-settings-page
     data-active-tab={activeSection}
+    data-is-admin={isAdmin ? 'true' : 'false'}
+    data-user-id={user.id}
   >
     <header class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
       <div class="space-y-1">
         <h1 class="text-2xl font-semibold text-base-content">System Settings</h1>
-        <p class="text-sm text-base-content/60">Configure global behavior and household access.</p>
+        <p class="text-sm text-base-content/60">Configure workspace settings and manage access.</p>
       </div>
       <button
         type="button"
         class="btn btn-accent h-14 rounded-full gap-2 font-bold shadow-sm"
-        data-cta-modal
-        data-cta-label="Save changes"
+        id="save-settings-btn"
       >
         <Save size={18} class="stroke-current" aria-hidden="true" />
         Save Changes
@@ -170,6 +257,7 @@ const activeSection = 'general';
       <article class="flex-1">
         <Card padding="lg" rounded="card-lg" className="w-full">
           <div class="flex flex-col gap-8">
+            {/* General Settings Panel */}
             <section
               id="settings-panel-general"
               data-settings-panel
@@ -179,26 +267,72 @@ const activeSection = 'general';
             >
               <div class="flex flex-col gap-6">
                 <header class="space-y-1">
-                  <h2 class="text-xl font-semibold text-base-content">General Configuration</h2>
+                  <h2 class="text-xl font-semibold text-base-content">Workspace Settings</h2>
                   <p class="text-sm text-base-content/60">
-                    Manage preferences for your general workspace.
+                    Manage your workspace name and preferences.
                   </p>
                 </header>
                 <div class="divider my-0"></div>
 
-                <div class="flex flex-col gap-5">
+                <form id="workspace-settings-form" class="flex flex-col gap-5">
+                  {/* Workspace Name (Admin only) */}
+                  {
+                    isAdmin && (
+                      <div class="form-control">
+                        <Label htmlFor="workspace-name">Workspace Name</Label>
+                        <div class="flex gap-2">
+                          <input
+                            type="text"
+                            id="workspace-name"
+                            name="workspaceName"
+                            value={workspaceData.name}
+                            class="input input-bordered flex-1 h-14 py-4 px-6 text-base font-bold bg-base-200 rounded-full border-0 focus:ring-2 focus:ring-accent focus:ring-opacity-20 focus:outline-none focus:ring-offset-2"
+                            placeholder="My Workspace"
+                          />
+                        </div>
+                        <p class="text-xs text-base-content/50 mt-2 ml-4">
+                          This name is visible to all workspace members.
+                        </p>
+                      </div>
+                    )
+                  }
+
+                  {/* Non-admin workspace name display */}
+                  {
+                    !isAdmin && (
+                      <div class="form-control">
+                        <Label>Workspace Name</Label>
+                        <div class="flex items-center gap-3 h-14 py-4 px-6 bg-base-200 rounded-full">
+                          <Building2
+                            size={20}
+                            class="stroke-current text-base-content/50"
+                            aria-hidden="true"
+                          />
+                          <span class="text-base font-bold">{workspaceData.name}</span>
+                        </div>
+                        <p class="text-xs text-base-content/50 mt-2 ml-4">
+                          Only admins can change the workspace name.
+                        </p>
+                      </div>
+                    )
+                  }
+
                   <div class="grid gap-4 md:grid-cols-2">
                     <div class="form-control">
                       <Label htmlFor="primary-currency">Primary Currency</Label>
                       <select
                         id="primary-currency"
-                        name="primary-currency"
+                        name="currency"
                         class="select select-bordered w-full h-14 py-4 pl-6 pr-10 text-base font-bold bg-base-200 rounded-full border-0 focus:ring-2 focus:ring-accent focus:ring-opacity-20 focus:outline-none focus:ring-offset-2"
-                        value={settingsData.general.currency}
                       >
                         {
-                          settingsData.options.currencies.map((currency) => (
-                            <option value={currency.value}>{currency.label}</option>
+                          currencyOptions.map((currency) => (
+                            <option
+                              value={currency.value}
+                              selected={workspaceData.settings.currency === currency.value}
+                            >
+                              {currency.label}
+                            </option>
                           ))
                         }
                       </select>
@@ -208,13 +342,17 @@ const activeSection = 'general';
                       <Label htmlFor="week-starts">Week Starts On</Label>
                       <select
                         id="week-starts"
-                        name="week-starts"
+                        name="weekStart"
                         class="select select-bordered w-full h-14 py-4 pl-6 pr-10 text-base font-bold bg-base-200 rounded-full border-0 focus:ring-2 focus:ring-accent focus:ring-opacity-20 focus:outline-none focus:ring-offset-2"
-                        value={settingsData.general.weekStart}
                       >
                         {
-                          settingsData.options.weekStarts.map((weekday) => (
-                            <option value={weekday}>{weekday}</option>
+                          weekStartOptions.map((option) => (
+                            <option
+                              value={option.value}
+                              selected={workspaceData.settings.weekStart === option.value}
+                            >
+                              {option.label}
+                            </option>
                           ))
                         }
                       </select>
@@ -233,85 +371,125 @@ const activeSection = 'general';
                     <input
                       type="checkbox"
                       class="toggle toggle-accent"
-                      name="compact-numbers"
+                      name="compactNumbers"
+                      id="compact-numbers"
                       aria-label="Compact number display"
-                      checked={settingsData.general.compactNumbers}
+                      checked={workspaceData.settings.compactNumbers}
                     />
                   </div>
-                </div>
+                </form>
               </div>
             </section>
 
+            {/* Members Panel */}
             <section
-              id="settings-panel-family"
+              id="settings-panel-members"
               data-settings-panel
-              data-tab="family"
+              data-tab="members"
               role="tabpanel"
-              aria-labelledby="settings-tab-family"
+              aria-labelledby="settings-tab-members"
               class="hidden"
             >
               <div class="flex flex-col gap-6">
                 <header class="space-y-1">
-                  <h2 class="text-xl font-semibold text-base-content">Family Configuration</h2>
+                  <h2 class="text-xl font-semibold text-base-content">Workspace Members</h2>
                   <p class="text-sm text-base-content/60">
-                    Manage household access and member roles.
+                    Manage who has access to this workspace.
                   </p>
                 </header>
                 <div class="divider my-0"></div>
 
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <p class="text-xs font-semibold uppercase tracking-wide text-base-content/50">
-                    Active Household Members
+                    {members.length} Active Member{members.length !== 1 ? 's' : ''}
                   </p>
-                  <button
-                    type="button"
-                    class="btn btn-ghost btn-sm gap-2"
-                    data-cta-modal
-                    data-cta-label="Invite member"
-                  >
-                    <UserPlus size={16} class="stroke-current" aria-hidden="true" />
-                    Invite Member
-                  </button>
+                  {
+                    isAdmin && (
+                      <button
+                        type="button"
+                        class="btn btn-ghost btn-sm gap-2"
+                        onclick="openInviteMemberModal()"
+                      >
+                        <UserPlus size={16} class="stroke-current" aria-hidden="true" />
+                        Invite Member
+                      </button>
+                    )
+                  }
                 </div>
 
-                <ul class="divide-y divide-base-200 rounded-box border border-base-300 bg-base-100">
-                  {
-                    settingsData.family.members.map((member) => (
-                      <li class="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between transition-colors hover:bg-accent/10">
-                        <div class="flex items-center gap-4">
-                          <div class="flex h-10 w-10 items-center justify-center rounded-box bg-base-200 text-base-content font-semibold">
-                            {member.name
-                              .split(' ')
-                              .map((segment) => segment[0])
-                              .join('')
-                              .slice(0, 2)}
-                          </div>
-                          <div>
-                            <p class="font-semibold text-base-content">{member.name}</p>
-                            <p class="text-xs font-semibold uppercase tracking-wide text-base-content/50">
-                              {member.role}
-                            </p>
-                          </div>
-                        </div>
-                        <div class="flex items-center gap-3">
-                          <span class="badge badge-success">{member.status}</span>
-                          <button
-                            type="button"
-                            class="btn btn-ghost btn-sm btn-square"
-                            aria-label={`Manage ${member.name}`}
-                            data-cta-modal
-                            data-cta-label={`Manage ${member.name}`}
+                <MemberList members={members} currentUserId={user.id} isAdmin={isAdmin} />
+
+                {/* Pending Invitations (Admin only) */}
+                {
+                  isAdmin && invitations.length > 0 && (
+                    <div class="mt-6">
+                      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-base-content/50">
+                          Pending Invitations ({invitations.length})
+                        </p>
+                      </div>
+
+                      <ul
+                        class="divide-y divide-base-200 rounded-box border border-base-300 bg-base-100"
+                        data-invitations-list
+                      >
+                        {invitations.map((invitation) => (
+                          <li
+                            class="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between"
+                            data-invitation-item
+                            data-invitation-id={invitation.id}
                           >
-                            <Settings size={16} class="stroke-current" aria-hidden="true" />
-                          </button>
-                        </div>
-                      </li>
-                    ))
-                  }
-                </ul>
+                            <div class="flex items-center gap-4">
+                              <div class="flex h-10 w-10 items-center justify-center rounded-full bg-warning/10 text-warning">
+                                <Mail size={20} class="stroke-current" aria-hidden="true" />
+                              </div>
+                              <div>
+                                <p class="font-semibold text-base-content">{invitation.email}</p>
+                                <div class="flex items-center gap-2 text-xs text-base-content/60">
+                                  <Clock size={12} aria-hidden="true" />
+                                  <span>
+                                    Expires{' '}
+                                    {new Date(invitation.expiresAt).toLocaleDateString('en-US', {
+                                      month: 'short',
+                                      day: 'numeric',
+                                    })}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                            <div class="flex items-center gap-3">
+                              <span class="badge badge-warning badge-outline">
+                                {invitation.role}
+                              </span>
+                              <button
+                                type="button"
+                                class="btn btn-ghost btn-sm btn-square text-error hover:bg-error/10"
+                                aria-label={`Cancel invitation to ${invitation.email}`}
+                                data-cancel-invitation
+                                data-invitation-id={invitation.id}
+                                data-invitation-email={invitation.email}
+                              >
+                                <X size={16} class="stroke-current" aria-hidden="true" />
+                              </button>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )
+                }
+
+                {
+                  isAdmin && invitations.length === 0 && (
+                    <p class="text-sm text-base-content/60 text-center py-4">
+                      No pending invitations. Use the "Invite Member" button to add new members.
+                    </p>
+                  )
+                }
               </div>
             </section>
 
+            {/* Notifications Panel */}
             <section
               id="settings-panel-notifications"
               data-settings-panel
@@ -326,14 +504,14 @@ const activeSection = 'general';
                     Notifications Configuration
                   </h2>
                   <p class="text-sm text-base-content/60">
-                    Choose how and when we should notify your household.
+                    Choose how and when we should notify you.
                   </p>
                 </header>
                 <div class="divider my-0"></div>
 
                 <div class="flex flex-col gap-4">
                   {
-                    settingsData.notifications.map((item) => (
+                    notificationSettings.map((item) => (
                       <div class="flex flex-col gap-4 rounded-box border border-base-300 bg-base-200 p-6 sm:flex-row sm:items-center sm:justify-between">
                         <div class="space-y-1">
                           <p class="font-semibold text-base-content">{item.label}</p>
@@ -345,14 +523,19 @@ const activeSection = 'general';
                           name={`notification-${item.id}`}
                           aria-label={item.label}
                           checked={item.enabled}
+                          disabled
                         />
                       </div>
                     ))
                   }
                 </div>
+                <p class="text-xs text-base-content/50 text-center">
+                  Notification settings are coming soon.
+                </p>
               </div>
             </section>
 
+            {/* Data Panel */}
             <section
               id="settings-panel-data"
               data-settings-panel
@@ -379,12 +562,11 @@ const activeSection = 'general';
                   </div>
                   <div class="flex flex-col gap-3">
                     {
-                      settingsData.dataActions.map((action) => (
+                      dataActions.map((action) => (
                         <button
                           type="button"
-                          class="flex w-full items-center justify-between rounded-box border border-base-300 bg-base-100 p-4 text-left hover:bg-base-200"
-                          data-cta-modal
-                          data-cta-label={action.title}
+                          class="flex w-full items-center justify-between rounded-box border border-base-300 bg-base-100 p-4 text-left hover:bg-base-200 opacity-50 cursor-not-allowed"
+                          disabled
                         >
                           <div class="space-y-1">
                             <p class="font-semibold text-base-content">{action.title}</p>
@@ -401,6 +583,9 @@ const activeSection = 'general';
                       ))
                     }
                   </div>
+                  <p class="text-xs text-base-content/50 text-center">
+                    Data management actions are coming soon.
+                  </p>
                 </div>
               </div>
             </section>
@@ -410,16 +595,37 @@ const activeSection = 'general';
     </section>
   </main>
 
-  <Modal id="settings-cta-modal" title="Coming Soon" size="sm" closable={false}>
-    <p class="text-sm text-base-content/70" data-cta-modal-message>
-      This feature is not yet implemented.
-    </p>
-    <div slot="actions" class="flex justify-end">
-      <form method="dialog">
-        <button type="submit" class="btn btn-accent rounded-full"> Got it </button>
-      </form>
+  {/* Invite Member Modal */}
+  <InviteMemberModal id="invite-member-modal" />
+
+  {/* Cancel Invitation Confirmation Modal */}
+  <dialog id="cancel-invitation-modal" class="modal" data-cancel-invitation-modal>
+    <div class="modal-box max-w-md rounded-3xl shadow-premium">
+      <h3 class="font-bold text-lg text-warning">Cancel Invitation</h3>
+      <p class="py-4 text-base-content/70">
+        Are you sure you want to cancel the invitation to <span
+          class="font-semibold"
+          data-invitation-email-display></span>? They will no longer be able to join this workspace
+        using the invitation link.
+      </p>
+      <div class="modal-action">
+        <form method="dialog">
+          <button class="btn btn-ghost rounded-full">Keep Invitation</button>
+        </form>
+        <button
+          type="button"
+          class="btn btn-warning rounded-full"
+          data-confirm-cancel-invitation
+          data-canceling-invitation-id=""
+        >
+          Cancel Invitation
+        </button>
+      </div>
     </div>
-  </Modal>
+    <form method="dialog" class="modal-backdrop">
+      <button>close</button>
+    </form>
+  </dialog>
 
   <script src="./settings-client.ts"></script>
 </ProtectedLayout>
@@ -429,147 +635,43 @@ const activeSection = 'general';
   import { setButtonLoading } from '@/lib/client-utils';
   import { getCsrfHeaders } from '@/lib/csrf-client';
 
-  const API_PROFILE_URL = '/api/user/profile';
-  const API_META_CURRENCY_URL = '/api/user/meta/currency';
-  const DEFAULT_CURRENCY = 'IDR';
+  const container = document.querySelector('[data-settings-page]') as HTMLElement | null;
+  if (!container) throw new Error('Settings page container not found');
 
-  // ==================== PROFILE FORM ====================
-  const profileForm = document.getElementById('profile-form') as HTMLFormElement | null;
-  const profileNameInput = document.getElementById('displayName') as HTMLInputElement | null;
-  const profileEmailInput = document.getElementById('email') as HTMLInputElement | null;
-  const profileSubmitButton = profileForm?.querySelector(
-    'button[type="submit"]'
-  ) as HTMLButtonElement | null;
+  const isAdmin = container.dataset.isAdmin === 'true';
 
-  if (profileForm && profileNameInput && profileEmailInput && profileSubmitButton) {
-    // Profile form submission
-    profileForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
+  // ==================== WORKSPACE SETTINGS FORM ====================
+  const saveBtn = document.getElementById('save-settings-btn') as HTMLButtonElement | null;
+  const settingsForm = document.getElementById('workspace-settings-form') as HTMLFormElement | null;
 
-      // Client-side validation
-      const errors = [];
-
-      if (!profileNameInput.value || !profileNameInput.value.trim()) {
-        errors.push('Please enter your name');
-      }
-
-      if (!profileEmailInput.value || !profileEmailInput.checkValidity()) {
-        errors.push('Please enter a valid email address');
-      }
-
-      // Display validation errors
-      if (errors.length > 0) {
-        addToast(errors.join('. '), 'error');
-        return;
-      }
-
-      // Show loading state
-      setButtonLoading(profileSubmitButton, true);
-
-      try {
-        const formData = new FormData(profileForm);
-        const data = {
-          name: formData.get('name'),
-          email: formData.get('email'),
-        };
-
-        const response = await fetch(API_PROFILE_URL, {
-          method: 'PUT',
-          headers: getCsrfHeaders({
-            'Content-Type': 'application/json',
-          }),
-          credentials: 'include',
-          body: JSON.stringify(data),
-        });
-
-        const result = await response.json();
-
-        if (response.ok && result.success) {
-          addToast('Profile updated successfully!', 'success');
-        } else {
-          const errorMessage =
-            result.error?.message || 'Failed to update profile. Please try again.';
-          addToast(errorMessage, 'error');
-        }
-      } catch (error) {
-        console.error('Profile update error:', error);
-        addToast('An error occurred. Please check your connection and try again.', 'error');
-      } finally {
-        // Reset loading state
-        setButtonLoading(profileSubmitButton, false);
-      }
-    });
-  }
-
-  // ==================== SETTINGS FORM ====================
-  const settingsForm = document.getElementById('settings-form') as HTMLFormElement | null;
-  const settingsCurrencyInput = document.getElementById('currency') as HTMLSelectElement | null;
-  const currencyLoadingIndicator = document.getElementById('currency-loading');
-  const settingsSubmitButton = settingsForm?.querySelector(
-    'button[type="submit"]'
-  ) as HTMLButtonElement | null;
-
-  // Fetch current settings and pre-fill currency with race condition guard
-  let isFetchingSettings = false;
-  const fetchCurrentSettings = async () => {
-    if (isFetchingSettings) return;
-    isFetchingSettings = true;
-    try {
-      const response = await fetch(API_META_CURRENCY_URL, {
-        method: 'GET',
-        credentials: 'include',
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        if (result.success && result.data && settingsCurrencyInput) {
-          settingsCurrencyInput.value = result.data.value || DEFAULT_CURRENCY;
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching user settings:', error);
-    } finally {
-      // Hide loading spinner and enable select
-      if (currencyLoadingIndicator) {
-        currencyLoadingIndicator.classList.add('hidden');
-      }
-      if (settingsCurrencyInput) {
-        settingsCurrencyInput.disabled = false;
-      }
-      isFetchingSettings = false;
-    }
-  };
-
-  // Fetch settings on page load
-  fetchCurrentSettings();
-
-  if (settingsForm && settingsCurrencyInput && settingsSubmitButton) {
-    // Settings form submission
-    settingsForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-
-      // Client-side validation
-      if (!settingsCurrencyInput.value) {
-        addToast('Please select a currency', 'error');
-        return;
-      }
-
-      // Show loading state
-      setButtonLoading(settingsSubmitButton, true);
+  if (saveBtn && settingsForm) {
+    saveBtn.addEventListener('click', async () => {
+      setButtonLoading(saveBtn, true);
 
       try {
         const formData = new FormData(settingsForm);
-        const data = {
-          value: formData.get('primaryCurrency'),
+
+        const payload: Record<string, unknown> = {
+          currency: formData.get('currency'),
+          weekStart: formData.get('weekStart'),
+          compactNumbers: formData.get('compactNumbers') === 'on',
         };
 
-        const response = await fetch(API_META_CURRENCY_URL, {
+        // Include workspace name only if admin
+        if (isAdmin) {
+          const workspaceName = formData.get('workspaceName');
+          if (workspaceName) {
+            payload.name = workspaceName;
+          }
+        }
+
+        const response = await fetch('/api/workspace/settings', {
           method: 'PUT',
           headers: getCsrfHeaders({
             'Content-Type': 'application/json',
           }),
           credentials: 'include',
-          body: JSON.stringify(data),
+          body: JSON.stringify(payload),
         });
 
         const result = await response.json();
@@ -585,9 +687,94 @@ const activeSection = 'general';
         console.error('Settings update error:', error);
         addToast('An error occurred. Please check your connection and try again.', 'error');
       } finally {
-        // Reset loading state
-        setButtonLoading(settingsSubmitButton, false);
+        setButtonLoading(saveBtn, false);
       }
     });
   }
+
+  // ==================== CANCEL INVITATION ====================
+  const cancelInvitationModal = document.getElementById(
+    'cancel-invitation-modal'
+  ) as HTMLDialogElement | null;
+  const invitationEmailDisplay = cancelInvitationModal?.querySelector(
+    '[data-invitation-email-display]'
+  );
+  const confirmCancelBtn = cancelInvitationModal?.querySelector(
+    '[data-confirm-cancel-invitation]'
+  ) as HTMLButtonElement | null;
+
+  // Handle cancel invitation button clicks - open modal
+  document.querySelectorAll('[data-cancel-invitation]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const invitationId = btn.getAttribute('data-invitation-id');
+      const invitationEmail = btn.getAttribute('data-invitation-email');
+
+      if (
+        invitationId &&
+        invitationEmail &&
+        invitationEmailDisplay &&
+        confirmCancelBtn &&
+        cancelInvitationModal
+      ) {
+        invitationEmailDisplay.textContent = invitationEmail;
+        confirmCancelBtn.setAttribute('data-canceling-invitation-id', invitationId);
+        cancelInvitationModal.showModal();
+      }
+    });
+  });
+
+  // Handle confirm cancel in modal
+  if (confirmCancelBtn && cancelInvitationModal) {
+    confirmCancelBtn.addEventListener('click', async () => {
+      const invitationId = confirmCancelBtn.getAttribute('data-canceling-invitation-id');
+      if (!invitationId) return;
+
+      setButtonLoading(confirmCancelBtn, true);
+
+      try {
+        const response = await fetch(`/api/workspace/invitations?invitationId=${invitationId}`, {
+          method: 'DELETE',
+          credentials: 'include',
+          headers: getCsrfHeaders(),
+        });
+
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+          throw new Error(result.error?.message || 'Failed to cancel invitation');
+        }
+
+        addToast('Invitation cancelled', 'success');
+        cancelInvitationModal.close();
+
+        // Remove the invitation row from the list
+        const invitationRow = document.querySelector(
+          `[data-invitation-item][data-invitation-id="${invitationId}"]`
+        );
+        if (invitationRow) {
+          invitationRow.remove();
+        }
+
+        // Check if there are no more invitations
+        const remainingInvitations = document.querySelectorAll('[data-invitation-item]');
+        if (remainingInvitations.length === 0) {
+          const invitationsList = document.querySelector('[data-invitations-list]');
+          if (invitationsList) {
+            invitationsList.parentElement?.remove();
+          }
+        }
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Failed to cancel invitation';
+        addToast(message, 'error');
+      } finally {
+        setButtonLoading(confirmCancelBtn, false);
+      }
+    });
+  }
+
+  // Listen for new invitations to refresh the page
+  document.addEventListener('invitation:created', () => {
+    // Reload the page to show the new invitation
+    window.location.reload();
+  });
 </script>

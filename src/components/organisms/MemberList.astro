@@ -1,0 +1,213 @@
+---
+/**
+ * Member List Component
+ *
+ * Displays workspace members with their roles.
+ * Allows admin to remove members.
+ *
+ * @param {Array} members - List of workspace members
+ * @param {string} currentUserId - Current user's ID (to prevent self-removal)
+ * @param {boolean} isAdmin - Whether current user is admin
+ */
+
+import { Trash2, User, Crown } from '@lucide/astro';
+
+export interface Member {
+  id: string;
+  name: string;
+  email: string;
+  role: 'admin' | 'member';
+  createdAt: string | Date;
+}
+
+export interface Props {
+  members: Member[];
+  currentUserId: string;
+  isAdmin: boolean;
+}
+
+const { members, currentUserId, isAdmin } = Astro.props;
+
+/**
+ * Get initials from name
+ */
+function getInitials(name: string): string {
+  return name
+    .split(' ')
+    .map((segment) => segment[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
+}
+---
+
+<div data-member-list class="flex flex-col gap-4">
+  {
+    members.length === 0 ? (
+      <div class="text-center py-8 text-base-content/60">
+        <User size={48} class="stroke-current mx-auto mb-4 opacity-50" aria-hidden="true" />
+        <p class="text-sm font-medium">No members found</p>
+      </div>
+    ) : (
+      <ul class="divide-y divide-base-200 rounded-box border border-base-300 bg-base-100">
+        {members.map((member) => (
+          <li
+            class="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between transition-colors hover:bg-accent/5"
+            data-member-item
+            data-member-id={member.id}
+          >
+            <div class="flex items-center gap-4">
+              {/* Avatar */}
+              <div class="flex h-10 w-10 items-center justify-center rounded-full bg-base-200 text-base-content font-semibold text-sm">
+                {getInitials(member.name)}
+              </div>
+
+              {/* Info */}
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2">
+                  <p class="font-semibold text-base-content truncate">{member.name}</p>
+                  {member.id === currentUserId && (
+                    <span class="badge badge-ghost badge-sm">You</span>
+                  )}
+                </div>
+                <p class="text-xs text-base-content/60 truncate">{member.email}</p>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+              {/* Role badge */}
+              {member.role === 'admin' ? (
+                <span class="badge badge-accent gap-1">
+                  <Crown size={12} aria-hidden="true" />
+                  Admin
+                </span>
+              ) : (
+                <span class="badge badge-ghost gap-1">
+                  <User size={12} aria-hidden="true" />
+                  Member
+                </span>
+              )}
+
+              {/* Remove button (admin only, not for self) */}
+              {isAdmin && member.id !== currentUserId && (
+                <button
+                  type="button"
+                  class="btn btn-ghost btn-sm btn-square text-error hover:bg-error/10"
+                  aria-label={`Remove ${member.name} from workspace`}
+                  data-remove-member
+                  data-member-id={member.id}
+                  data-member-name={member.name}
+                >
+                  <Trash2 size={16} class="stroke-current" aria-hidden="true" />
+                </button>
+              )}
+            </div>
+          </li>
+        ))}
+      </ul>
+    )
+  }
+</div>
+
+{/* Remove Member Confirmation Modal */}
+<dialog id="remove-member-modal" class="modal" data-remove-member-modal>
+  <div class="modal-box max-w-md rounded-3xl shadow-premium">
+    <h3 class="font-bold text-lg text-error">Remove Member</h3>
+    <p class="py-4 text-base-content/70">
+      Are you sure you want to remove <span class="font-semibold" data-member-name-display></span>
+      from this workspace? They will lose access to all workspace data.
+    </p>
+    <div class="modal-action">
+      <form method="dialog">
+        <button class="btn btn-ghost rounded-full">Cancel</button>
+      </form>
+      <button
+        type="button"
+        class="btn btn-error rounded-full"
+        data-confirm-remove
+        data-removing-member-id=""
+      >
+        Remove Member
+      </button>
+    </div>
+  </div>
+  <form method="dialog" class="modal-backdrop">
+    <button>close</button>
+  </form>
+</dialog>
+
+<script>
+  import { addToast } from '@/lib/stores/toastStore';
+  import { getCsrfHeaders } from '@/lib/csrf-client';
+  import { setButtonLoading } from '@/lib/client-utils';
+
+  function initMemberList() {
+    const modal = document.getElementById('remove-member-modal') as HTMLDialogElement | null;
+    const memberNameDisplay = modal?.querySelector('[data-member-name-display]');
+    const confirmBtn = modal?.querySelector('[data-confirm-remove]') as HTMLButtonElement | null;
+
+    if (!modal || !confirmBtn) return;
+
+    // Handle remove button clicks
+    document.querySelectorAll('[data-remove-member]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const memberId = btn.getAttribute('data-member-id');
+        const memberName = btn.getAttribute('data-member-name');
+
+        if (memberId && memberName && memberNameDisplay) {
+          memberNameDisplay.textContent = memberName;
+          confirmBtn.setAttribute('data-removing-member-id', memberId);
+          modal.showModal();
+        }
+      });
+    });
+
+    // Handle confirm removal
+    confirmBtn.addEventListener('click', async () => {
+      const memberId = confirmBtn.getAttribute('data-removing-member-id');
+      if (!memberId) return;
+
+      setButtonLoading(confirmBtn, true);
+
+      try {
+        const response = await fetch(`/api/workspace/members?memberId=${memberId}`, {
+          method: 'DELETE',
+          credentials: 'include',
+          headers: getCsrfHeaders(),
+        });
+
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+          throw new Error(result.error?.message || 'Failed to remove member');
+        }
+
+        addToast('Member removed successfully', 'success');
+        modal.close();
+
+        // Remove the member row from the list
+        const memberRow = document.querySelector(
+          `[data-member-item][data-member-id="${memberId}"]`
+        );
+        if (memberRow) {
+          memberRow.remove();
+        }
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Failed to remove member';
+        addToast(message, 'error');
+      } finally {
+        setButtonLoading(confirmBtn, false);
+      }
+    });
+  }
+
+  // Initialize on DOM ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initMemberList);
+  } else {
+    initMemberList();
+  }
+
+  // Re-initialize on Astro page transitions
+  document.addEventListener('astro:page-load', initMemberList);
+</script>
