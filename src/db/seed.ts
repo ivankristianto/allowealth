@@ -33,6 +33,10 @@ import {
 } from './schema';
 import { DEFAULT_ASSET_CATEGORIES } from '@/lib/constants';
 import { USER_META_KEYS } from '@/lib/constants/user-meta-keys';
+import {
+  WORKSPACE_META_KEYS,
+  WORKSPACE_META_DEFAULTS,
+} from '@/lib/constants/workspace-meta-keys';
 
 // ============================================================================
 // CONFIGURATION
@@ -572,15 +576,45 @@ async function seedWorkspace(): Promise<string> {
   console.log('🏢 Seeding workspace...');
 
   const workspaceId = nanoid();
+  const now = new Date();
 
   await db.insert(workspaces).values({
     id: workspaceId,
     name: 'Demo Family',
-    created_at: new Date(),
-    updated_at: new Date(),
+    created_at: now,
+    updated_at: now,
   });
 
+  // Seed default workspace meta values
+  await db.insert(workspaceMeta).values([
+    {
+      id: nanoid(),
+      workspace_id: workspaceId,
+      meta_key: WORKSPACE_META_KEYS.CURRENCY,
+      meta_value: WORKSPACE_META_DEFAULTS[WORKSPACE_META_KEYS.CURRENCY],
+      created_at: now,
+      updated_at: now,
+    },
+    {
+      id: nanoid(),
+      workspace_id: workspaceId,
+      meta_key: WORKSPACE_META_KEYS.WEEK_START,
+      meta_value: WORKSPACE_META_DEFAULTS[WORKSPACE_META_KEYS.WEEK_START],
+      created_at: now,
+      updated_at: now,
+    },
+    {
+      id: nanoid(),
+      workspace_id: workspaceId,
+      meta_key: WORKSPACE_META_KEYS.COMPACT_NUMBERS,
+      meta_value: WORKSPACE_META_DEFAULTS[WORKSPACE_META_KEYS.COMPACT_NUMBERS],
+      created_at: now,
+      updated_at: now,
+    },
+  ]);
+
   console.log(`✓ Created workspace: Demo Family`);
+  console.log(`✓ Seeded default workspace meta values`);
   return workspaceId;
 }
 
@@ -640,10 +674,14 @@ async function seedUsers(workspaceId: string): Promise<string> {
 /**
  * Seed categories (income and expense)
  */
-async function seedCategories(userId: string): Promise<Map<string, string>> {
+async function seedCategories(
+  workspaceId: string,
+  userId: string
+): Promise<Map<string, string>> {
   console.log('🏷️  Seeding categories...');
 
   const categoryMap = new Map<string, string>();
+  const now = new Date();
 
   // Income categories
   for (const cat of INCOME_CATEGORIES) {
@@ -651,15 +689,16 @@ async function seedCategories(userId: string): Promise<Map<string, string>> {
     const style = CATEGORY_STYLES[cat.name] || { icon: 'circle-dot', color: 'bg-slate-500' };
     await db.insert(categories).values({
       id,
-      user_id: userId,
+      workspace_id: workspaceId,
+      created_by_user_id: userId,
       name: cat.name,
       type: 'income',
       description: style.description || null,
       icon: style.icon,
       color: style.color,
       is_active: true,
-      created_at: new Date(),
-      updated_at: new Date(),
+      created_at: now,
+      updated_at: now,
     });
     categoryMap.set(cat.name, id);
   }
@@ -670,15 +709,16 @@ async function seedCategories(userId: string): Promise<Map<string, string>> {
     const style = CATEGORY_STYLES[cat.name] || { icon: 'tag', color: 'bg-slate-500' };
     await db.insert(categories).values({
       id,
-      user_id: userId,
+      workspace_id: workspaceId,
+      created_by_user_id: userId,
       name: cat.name,
       type: 'expense',
       description: style.description || null,
       icon: style.icon,
       color: style.color,
       is_active: true,
-      created_at: new Date(),
-      updated_at: new Date(),
+      created_at: now,
+      updated_at: now,
     });
     categoryMap.set(cat.name, id);
   }
@@ -690,23 +730,28 @@ async function seedCategories(userId: string): Promise<Map<string, string>> {
 /**
  * Seed default asset categories (system categories)
  */
-async function seedAssetCategories(userId: string): Promise<Map<string, string>> {
+async function seedAssetCategories(
+  workspaceId: string,
+  userId: string
+): Promise<Map<string, string>> {
   console.log('🏷️  Seeding asset categories...');
 
   const categoryMap = new Map<string, string>();
+  const now = new Date();
 
   for (const category of DEFAULT_ASSET_CATEGORIES) {
     const id = nanoid();
     await db.insert(assetCategories).values({
       id,
-      user_id: userId,
+      workspace_id: workspaceId,
+      created_by_user_id: userId,
       name: category.name,
       description: category.description,
       is_liability: category.isLiability,
       is_system: true,
       sort_order: category.sortOrder,
-      created_at: new Date(),
-      updated_at: new Date(),
+      created_at: now,
+      updated_at: now,
     });
     categoryMap.set(category.legacyType, id);
   }
@@ -721,7 +766,11 @@ async function seedAssetCategories(userId: string): Promise<Map<string, string>>
  * P2 TODO: Consider extracting monthsToSeed to a shared constant (SEED_MONTHS)
  * to synchronize with INCOME_TRANSACTIONS and expense seeding months
  */
-async function seedBudgets(userId: string, categoryMap: Map<string, string>): Promise<void> {
+async function seedBudgets(
+  workspaceId: string,
+  userId: string,
+  categoryMap: Map<string, string>
+): Promise<void> {
   console.log('📊 Seeding budgets...');
 
   const monthsToSeed = [
@@ -730,10 +779,13 @@ async function seedBudgets(userId: string, categoryMap: Map<string, string>): Pr
     { year: 2026, month: 1 }, // January 2026
   ];
 
+  const now = new Date();
+
   // P2 TODO: Consider using schema-derived type for currency (e.g., 'IDR' as const)
   const budgetRecords: Array<{
     id: string;
-    user_id: string;
+    workspace_id: string;
+    created_by_user_id: string;
     category_id: string;
     month: number;
     year: number;
@@ -752,7 +804,8 @@ async function seedBudgets(userId: string, categoryMap: Map<string, string>): Pr
 
       budgetRecords.push({
         id: nanoid(),
-        user_id: userId,
+        workspace_id: workspaceId,
+        created_by_user_id: userId,
         category_id: categoryId,
         month,
         year,
@@ -760,8 +813,8 @@ async function seedBudgets(userId: string, categoryMap: Map<string, string>): Pr
         currency: 'IDR',
         is_closed: false,
         notes: null,
-        created_at: new Date(),
-        updated_at: new Date(),
+        created_at: now,
+        updated_at: now,
       });
     }
   }
@@ -777,6 +830,7 @@ async function seedBudgets(userId: string, categoryMap: Map<string, string>): Pr
  * Seed income transactions for the 3 months
  */
 async function seedIncomeTransactions(
+  workspaceId: string,
   userId: string,
   categoryMap: Map<string, string>,
   assetMap: Map<string, string>
@@ -786,6 +840,7 @@ async function seedIncomeTransactions(
   let count = 0;
   // Use only payment assets for transactions (cash, bank accounts, e-wallets)
   const paymentAssetNames = PAYMENT_ASSETS.map((a) => a.name);
+  const now = new Date();
 
   for (const income of INCOME_TRANSACTIONS) {
     const categoryId = categoryMap.get(income.description);
@@ -798,15 +853,16 @@ async function seedIncomeTransactions(
       };
       await db.insert(categories).values({
         id: newId,
-        user_id: userId,
+        workspace_id: workspaceId,
+        created_by_user_id: userId,
         name: income.description,
         type: 'income',
         description: style.description || null,
         icon: style.icon,
         color: style.color,
         is_active: true,
-        created_at: new Date(),
-        updated_at: new Date(),
+        created_at: now,
+        updated_at: now,
       });
       categoryMap.set(income.description, newId);
     }
@@ -825,7 +881,8 @@ async function seedIncomeTransactions(
 
     await db.insert(transactions).values({
       id: nanoid(),
-      user_id: userId,
+      workspace_id: workspaceId,
+      created_by_user_id: userId,
       category_id: finalCategoryId,
       asset_id: assetId,
       type: 'income',
@@ -847,6 +904,7 @@ async function seedIncomeTransactions(
  * Seed expense transactions for the 3 months
  */
 async function seedExpenseTransactions(
+  workspaceId: string,
   userId: string,
   categoryMap: Map<string, string>,
   assetMap: Map<string, string>
@@ -904,7 +962,8 @@ async function seedExpenseTransactions(
 
       await db.insert(transactions).values({
         id: nanoid(),
-        user_id: userId,
+        workspace_id: workspaceId,
+        created_by_user_id: userId,
         category_id: categoryId,
         asset_id: assetId,
         type: 'expense',
@@ -944,7 +1003,8 @@ async function seedExpenseTransactions(
 
         await db.insert(transactions).values({
           id: nanoid(),
-          user_id: userId,
+          workspace_id: workspaceId,
+          created_by_user_id: userId,
           category_id: categoryId,
           asset_id: assetId,
           type: 'expense',
@@ -968,12 +1028,15 @@ async function seedExpenseTransactions(
  * Seed assets (both payment assets and investment assets)
  */
 async function seedAssets(
+  workspaceId: string,
   userId: string,
   assetCategoryMap: Map<string, string>
 ): Promise<Map<string, string>> {
   console.log('💰 Seeding assets...');
 
   const assetMap = new Map<string, string>();
+  const now = new Date();
+  const createdAt = daysAgo(90);
 
   // First, seed payment assets (cash, bank accounts, credit cards, e-wallets)
   for (const asset of PAYMENT_ASSETS) {
@@ -981,7 +1044,8 @@ async function seedAssets(
     const categoryId = assetCategoryMap.get(asset.type) || null;
     await db.insert(assets).values({
       id,
-      user_id: userId,
+      workspace_id: workspaceId,
+      created_by_user_id: userId,
       name: asset.name,
       type: asset.type,
       category_id: categoryId,
@@ -989,9 +1053,9 @@ async function seedAssets(
       currency: asset.currency,
       is_cash_account: asset.is_cash_account,
       credit_limit: 'credit_limit' in asset ? amt(asset.credit_limit) : null,
-      last_updated: new Date(),
-      created_at: daysAgo(90),
-      updated_at: new Date(),
+      last_updated: now,
+      created_at: createdAt,
+      updated_at: now,
     });
     assetMap.set(asset.name, id);
   }
@@ -1002,16 +1066,17 @@ async function seedAssets(
     const categoryId = assetCategoryMap.get(asset.type) || null;
     await db.insert(assets).values({
       id,
-      user_id: userId,
+      workspace_id: workspaceId,
+      created_by_user_id: userId,
       name: asset.name,
       type: asset.type,
       category_id: categoryId,
       balance: amt(asset.balance),
       currency: asset.currency,
       is_cash_account: false, // Investment assets are not cash accounts
-      last_updated: new Date(),
-      created_at: daysAgo(90),
-      updated_at: new Date(),
+      last_updated: now,
+      created_at: createdAt,
+      updated_at: now,
     });
     assetMap.set(asset.name, id);
   }
@@ -1062,10 +1127,13 @@ async function seedAssetHistory(assetMap: Map<string, string>): Promise<void> {
  * Seed asset update reminders
  */
 async function seedAssetUpdateReminders(
+  workspaceId: string,
   userId: string,
   assetMap: Map<string, string>
 ): Promise<void> {
   console.log('🔔 Seeding asset update reminders...');
+
+  const now = new Date();
 
   for (const [assetName, assetId] of assetMap.entries()) {
     const assetConfig = ALL_ASSETS.find((a) => a.name === assetName);
@@ -1090,13 +1158,14 @@ async function seedAssetUpdateReminders(
 
     await db.insert(assetUpdateReminders).values({
       id: nanoid(),
-      user_id: userId,
+      workspace_id: workspaceId,
+      created_by_user_id: userId,
       asset_id: assetId,
       frequency,
-      last_updated: new Date(),
+      last_updated: now,
       next_reminder: nextReminder,
       is_dismissed: false,
-      created_at: new Date(),
+      created_at: now,
     });
   }
 
@@ -1106,7 +1175,11 @@ async function seedAssetUpdateReminders(
 /**
  * Seed asset snapshots (3 monthly snapshots)
  */
-async function seedAssetSnapshots(userId: string, assetMap: Map<string, string>): Promise<void> {
+async function seedAssetSnapshots(
+  workspaceId: string,
+  userId: string,
+  assetMap: Map<string, string>
+): Promise<void> {
   console.log('📸 Seeding asset snapshots...');
 
   const now = new Date();
@@ -1118,7 +1191,8 @@ async function seedAssetSnapshots(userId: string, assetMap: Map<string, string>)
     const snapshotId = nanoid();
     await db.insert(assetSnapshots).values({
       id: snapshotId,
-      user_id: userId,
+      workspace_id: workspaceId,
+      created_by_user_id: userId,
       snapshot_date: snapshotDate,
       month: snapshotDate.getMonth() + 1,
       year: snapshotDate.getFullYear(),
@@ -1198,23 +1272,23 @@ async function seed() {
     // Seed in dependency order
     const workspaceId = await seedWorkspace();
     const userId = await seedUsers(workspaceId);
-    const categoryMap = await seedCategories(userId);
-    const assetCategoryMap = await seedAssetCategories(userId);
+    const categoryMap = await seedCategories(workspaceId, userId);
+    const assetCategoryMap = await seedAssetCategories(workspaceId, userId);
 
     // Seed budgets for expense categories (must be after categories)
-    await seedBudgets(userId, categoryMap);
+    await seedBudgets(workspaceId, userId, categoryMap);
 
     // Seed assets FIRST (transactions now depend on assets)
-    const assetMap = await seedAssets(userId, assetCategoryMap);
+    const assetMap = await seedAssets(workspaceId, userId, assetCategoryMap);
 
     // Seed transactions for the 3 months
-    await seedIncomeTransactions(userId, categoryMap, assetMap);
-    await seedExpenseTransactions(userId, categoryMap, assetMap);
+    await seedIncomeTransactions(workspaceId, userId, categoryMap, assetMap);
+    await seedExpenseTransactions(workspaceId, userId, categoryMap, assetMap);
 
     // Seed asset-related data
     await seedAssetHistory(assetMap);
-    await seedAssetUpdateReminders(userId, assetMap);
-    await seedAssetSnapshots(userId, assetMap);
+    await seedAssetUpdateReminders(workspaceId, userId, assetMap);
+    await seedAssetSnapshots(workspaceId, userId, assetMap);
     await seedExchangeRates();
 
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
