@@ -115,9 +115,9 @@ export class ReportService {
    * @private
    * @throws Error if userId is invalid
    */
-  private validateUserId(userId: string): void {
-    if (!userId || typeof userId !== 'string' || userId.trim() === '') {
-      throw new Error('Invalid userId: must be a non-empty string');
+  private validateWorkspaceId(workspaceId: string): void {
+    if (!workspaceId || typeof workspaceId !== 'string' || workspaceId.trim() === '') {
+      throw new Error('Invalid workspaceId: must be a non-empty string');
     }
   }
 
@@ -138,19 +138,19 @@ export class ReportService {
    * Aggregates data for a specific month including income, expenses, budget health,
    * category breakdown, and trailing 3-month trend.
    *
-   * @param userId - User ID (from auth context)
+   * @param workspaceId - Workspace ID (from auth context)
    * @param period - Period in format 'YYYY-MM' (e.g., '2024-02')
    * @param currency - Currency to aggregate (default: IDR)
    * @returns Monthly report data
    */
   async getMonthlyReport(
-    userId: string,
+    workspaceId: string,
     period: string,
     currency: 'IDR' | 'USD' = 'IDR'
   ): Promise<ReportData> {
     try {
       // Validate inputs
-      this.validateUserId(userId);
+      this.validateWorkspaceId(workspaceId);
       this.validateCurrency(currency);
 
       // Validate and parse period format (YYYY-MM)
@@ -172,12 +172,12 @@ export class ReportService {
         categoryIntelligence,
         trendData,
       ] = await Promise.all([
-        this.getTotalIncome(userId, startDate, endDate, currency),
-        this.getTotalExpenses(userId, startDate, endDate, currency),
-        this.getBudgetHealth(userId, year, month, currency),
-        this.getExpenseByCategory(userId, startDate, endDate, currency),
-        this.getCategoryIntelligence(userId, year, month, currency),
-        this.getTrendData(userId, year, month, currency, 3), // Trailing 3 months
+        this.getTotalIncome(workspaceId, startDate, endDate, currency),
+        this.getTotalExpenses(workspaceId, startDate, endDate, currency),
+        this.getBudgetHealth(workspaceId, year, month, currency),
+        this.getExpenseByCategory(workspaceId, startDate, endDate, currency),
+        this.getCategoryIntelligence(workspaceId, year, month, currency),
+        this.getTrendData(workspaceId, year, month, currency, 3), // Trailing 3 months
       ]);
 
       // Calculate net savings
@@ -209,19 +209,19 @@ export class ReportService {
    * Aggregates data for an entire year including income, expenses, budget health,
    * category breakdown, and 12-month trend.
    *
-   * @param userId - User ID (from auth context)
+   * @param workspaceId - Workspace ID (from auth context)
    * @param year - Year (e.g., 2024)
    * @param currency - Currency to aggregate (default: IDR)
    * @returns Yearly report data
    */
   async getYearlyReport(
-    userId: string,
+    workspaceId: string,
     year: number,
     currency: 'IDR' | 'USD' = 'IDR'
   ): Promise<ReportData> {
     try {
       // Validate inputs
-      this.validateUserId(userId);
+      this.validateWorkspaceId(workspaceId);
       this.validateCurrency(currency);
 
       // Validate year
@@ -240,12 +240,12 @@ export class ReportService {
         categoryIntelligence,
         trendData,
       ] = await Promise.all([
-        this.getTotalIncome(userId, startDate, endDate, currency),
-        this.getTotalExpenses(userId, startDate, endDate, currency),
-        this.getYearlyBudgetHealth(userId, year, currency),
-        this.getExpenseByCategory(userId, startDate, endDate, currency),
-        this.getYearlyCategoryIntelligence(userId, year, currency),
-        this.getYearlyTrendData(userId, year, currency), // 12 months
+        this.getTotalIncome(workspaceId, startDate, endDate, currency),
+        this.getTotalExpenses(workspaceId, startDate, endDate, currency),
+        this.getYearlyBudgetHealth(workspaceId, year, currency),
+        this.getExpenseByCategory(workspaceId, startDate, endDate, currency),
+        this.getYearlyCategoryIntelligence(workspaceId, year, currency),
+        this.getYearlyTrendData(workspaceId, year, currency), // 12 months
       ]);
 
       // Calculate net savings
@@ -275,26 +275,26 @@ export class ReportService {
    * Get category transactions for drill-down
    *
    * Returns all transactions for a specific category within a period.
-   * Verifies category belongs to user for access control.
+   * Verifies category belongs to workspace for access control.
    *
-   * @param userId - User ID (from auth context)
+   * @param workspaceId - Workspace ID (from auth context)
    * @param categoryId - Category ID
    * @param period - Period string ('YYYY-MM' for monthly, 'YYYY' for yearly)
    * @param range - Report range type
    * @returns Category transactions data
    */
   async getCategoryTransactions(
-    userId: string,
+    workspaceId: string,
     categoryId: string,
     period: string,
     range: 'monthly' | 'yearly'
   ): Promise<CategoryTransactionsData> {
     // Validate inputs
-    this.validateUserId(userId);
+    this.validateWorkspaceId(workspaceId);
 
-    // Verify category exists and belongs to user (access control)
+    // Verify category exists and belongs to workspace (access control)
     const category = await this.db.query.categories.findFirst({
-      where: and(eq(categories.id, categoryId), eq(categories.user_id, userId)),
+      where: and(eq(categories.id, categoryId), eq(categories.workspace_id, workspaceId)),
     });
 
     if (!category) {
@@ -325,7 +325,7 @@ export class ReportService {
       // Get transactions for category in period
       const categoryTransactions = await this.db.query.transactions.findMany({
         where: and(
-          eq(transactions.user_id, userId),
+          eq(transactions.workspace_id, workspaceId),
           eq(transactions.category_id, categoryId),
           eq(transactions.type, 'expense'),
           gte(transactions.transaction_date, startDate),
@@ -377,7 +377,7 @@ export class ReportService {
    * @private
    */
   private async getTotalIncome(
-    userId: string,
+    workspaceId: string,
     startDate: Date,
     endDate: Date,
     currency: 'IDR' | 'USD'
@@ -389,7 +389,7 @@ export class ReportService {
       .from(transactions)
       .where(
         and(
-          eq(transactions.user_id, userId),
+          eq(transactions.workspace_id, workspaceId),
           eq(transactions.type, 'income'),
           eq(transactions.currency, currency),
           gte(transactions.transaction_date, startDate),
@@ -407,7 +407,7 @@ export class ReportService {
    * @private
    */
   private async getTotalExpenses(
-    userId: string,
+    workspaceId: string,
     startDate: Date,
     endDate: Date,
     currency: 'IDR' | 'USD'
@@ -419,7 +419,7 @@ export class ReportService {
       .from(transactions)
       .where(
         and(
-          eq(transactions.user_id, userId),
+          eq(transactions.workspace_id, workspaceId),
           eq(transactions.type, 'expense'),
           eq(transactions.currency, currency),
           gte(transactions.transaction_date, startDate),
@@ -437,7 +437,7 @@ export class ReportService {
    * @private
    */
   private async getBudgetHealth(
-    userId: string,
+    workspaceId: string,
     year: number,
     month: number,
     currency: 'IDR' | 'USD'
@@ -451,7 +451,7 @@ export class ReportService {
       .innerJoin(categories, eq(budgets.category_id, categories.id))
       .where(
         and(
-          eq(budgets.user_id, userId),
+          eq(budgets.workspace_id, workspaceId),
           eq(budgets.month, month),
           eq(budgets.year, year),
           eq(budgets.currency, currency),
@@ -465,7 +465,7 @@ export class ReportService {
     // Get total spent
     const startDate = new Date(year, month - 1, 1);
     const endDate = new Date(year, month, 0, 23, 59, 59);
-    const totalExpenses = await this.getTotalExpenses(userId, startDate, endDate, currency);
+    const totalExpenses = await this.getTotalExpenses(workspaceId, startDate, endDate, currency);
 
     // Calculate percentage
     if (decimalIsZero(totalBudget)) {
@@ -483,7 +483,7 @@ export class ReportService {
    * @private
    */
   private async getYearlyBudgetHealth(
-    userId: string,
+    workspaceId: string,
     year: number,
     currency: 'IDR' | 'USD'
   ): Promise<number> {
@@ -496,7 +496,7 @@ export class ReportService {
       .innerJoin(categories, eq(budgets.category_id, categories.id))
       .where(
         and(
-          eq(budgets.user_id, userId),
+          eq(budgets.workspace_id, workspaceId),
           eq(budgets.year, year),
           eq(budgets.currency, currency),
           eq(categories.type, 'expense'),
@@ -509,7 +509,7 @@ export class ReportService {
     // Get total spent for year
     const startDate = new Date(year, 0, 1);
     const endDate = new Date(year, 11, 31, 23, 59, 59);
-    const totalExpenses = await this.getTotalExpenses(userId, startDate, endDate, currency);
+    const totalExpenses = await this.getTotalExpenses(workspaceId, startDate, endDate, currency);
 
     // Calculate percentage
     if (decimalIsZero(totalBudget)) {
@@ -527,7 +527,7 @@ export class ReportService {
    * @private
    */
   private async getExpenseByCategory(
-    userId: string,
+    workspaceId: string,
     startDate: Date,
     endDate: Date,
     currency: 'IDR' | 'USD'
@@ -541,7 +541,7 @@ export class ReportService {
       .innerJoin(categories, eq(transactions.category_id, categories.id))
       .where(
         and(
-          eq(transactions.user_id, userId),
+          eq(transactions.workspace_id, workspaceId),
           eq(transactions.type, 'expense'),
           eq(transactions.currency, currency),
           gte(transactions.transaction_date, startDate),
@@ -567,7 +567,7 @@ export class ReportService {
    * @private
    */
   private async getCategoryIntelligence(
-    userId: string,
+    workspaceId: string,
     year: number,
     month: number,
     currency: 'IDR' | 'USD'
@@ -578,7 +578,7 @@ export class ReportService {
     // Get all budgets for the month with category info
     const monthBudgets = await this.db.query.budgets.findMany({
       where: and(
-        eq(budgets.user_id, userId),
+        eq(budgets.workspace_id, workspaceId),
         eq(budgets.month, month),
         eq(budgets.year, year),
         eq(budgets.currency, currency)
@@ -602,7 +602,7 @@ export class ReportService {
       .from(transactions)
       .where(
         and(
-          eq(transactions.user_id, userId),
+          eq(transactions.workspace_id, workspaceId),
           eq(transactions.type, 'expense'),
           eq(transactions.currency, currency),
           gte(transactions.transaction_date, startDate),
@@ -636,7 +636,7 @@ export class ReportService {
    * @private
    */
   private async getYearlyCategoryIntelligence(
-    userId: string,
+    workspaceId: string,
     year: number,
     currency: 'IDR' | 'USD'
   ): Promise<CategoryIntelligence[]> {
@@ -651,7 +651,11 @@ export class ReportService {
       })
       .from(budgets)
       .where(
-        and(eq(budgets.user_id, userId), eq(budgets.year, year), eq(budgets.currency, currency))
+        and(
+          eq(budgets.workspace_id, workspaceId),
+          eq(budgets.year, year),
+          eq(budgets.currency, currency)
+        )
       )
       .groupBy(budgets.category_id);
 
@@ -669,7 +673,7 @@ export class ReportService {
 
     // Get category info for all budget categories
     const categoriesData = await this.db.query.categories.findMany({
-      where: and(eq(categories.user_id, userId), eq(categories.type, 'expense')),
+      where: and(eq(categories.workspace_id, workspaceId), eq(categories.type, 'expense')),
     });
 
     // Filter to only categories with budgets
@@ -684,7 +688,7 @@ export class ReportService {
       .from(transactions)
       .where(
         and(
-          eq(transactions.user_id, userId),
+          eq(transactions.workspace_id, workspaceId),
           eq(transactions.type, 'expense'),
           eq(transactions.currency, currency),
           gte(transactions.transaction_date, startDate),
@@ -718,7 +722,7 @@ export class ReportService {
    * @private
    */
   private async getTrendData(
-    userId: string,
+    workspaceId: string,
     year: number,
     month: number,
     currency: 'IDR' | 'USD',
@@ -751,8 +755,8 @@ export class ReportService {
       const endDate = new Date(trendYear, trendMonth, 0, 23, 59, 59);
 
       const [income, expenses] = await Promise.all([
-        this.getTotalIncome(userId, startDate, endDate, currency),
-        this.getTotalExpenses(userId, startDate, endDate, currency),
+        this.getTotalIncome(workspaceId, startDate, endDate, currency),
+        this.getTotalExpenses(workspaceId, startDate, endDate, currency),
       ]);
 
       trendData.push({
@@ -770,7 +774,7 @@ export class ReportService {
    * @private
    */
   private async getYearlyTrendData(
-    userId: string,
+    workspaceId: string,
     year: number,
     currency: 'IDR' | 'USD'
   ): Promise<TrendDataPoint[]> {
@@ -797,8 +801,8 @@ export class ReportService {
       const endDate = new Date(year, month, 0, 23, 59, 59);
 
       const [income, expenses] = await Promise.all([
-        this.getTotalIncome(userId, startDate, endDate, currency),
-        this.getTotalExpenses(userId, startDate, endDate, currency),
+        this.getTotalIncome(workspaceId, startDate, endDate, currency),
+        this.getTotalExpenses(workspaceId, startDate, endDate, currency),
       ]);
 
       trendData.push({

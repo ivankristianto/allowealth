@@ -5,7 +5,8 @@ import { AssetServiceError, ServiceErrorCode } from './service-errors';
 import type { AssetType, Currency } from '@/lib/types/asset';
 
 export interface CreateAssetInput {
-  user_id: string;
+  workspace_id: string;
+  created_by_user_id: string;
   name: string;
   type: AssetType;
   category_id?: string | null;
@@ -53,7 +54,8 @@ export class AssetService {
       .insert(assets)
       .values({
         id,
-        user_id: input.user_id,
+        workspace_id: input.workspace_id,
+        created_by_user_id: input.created_by_user_id,
         name: input.name,
         type: input.type,
         category_id: input.category_id ?? null,
@@ -89,26 +91,30 @@ export class AssetService {
   /**
    * Find asset by ID
    */
-  async findById(id: string, user_id: string) {
+  async findById(id: string, workspaceId: string) {
     const result = await this.db.query.assets.findFirst({
-      where: and(eq(assets.id, id), eq(assets.user_id, user_id), sql`${assets.deleted_at} IS NULL`),
+      where: and(
+        eq(assets.id, id),
+        eq(assets.workspace_id, workspaceId),
+        sql`${assets.deleted_at} IS NULL`
+      ),
     });
 
     return result;
   }
 
   /**
-   * Find all assets for a user
+   * Find all assets for a workspace
    */
   async findAll(
-    user_id: string,
+    workspaceId: string,
     filters?: {
       type?: AssetType;
       category_id?: string;
       currency?: Currency;
     }
   ) {
-    const conditions = [eq(assets.user_id, user_id), sql`${assets.deleted_at} IS NULL`];
+    const conditions = [eq(assets.workspace_id, workspaceId), sql`${assets.deleted_at} IS NULL`];
 
     if (filters?.type) {
       conditions.push(eq(assets.type, filters.type));
@@ -133,7 +139,7 @@ export class AssetService {
   /**
    * Update asset details
    */
-  async update(id: string, user_id: string, input: UpdateAssetInput) {
+  async update(id: string, workspaceId: string, input: UpdateAssetInput) {
     const updateData: Record<string, any> = {
       updated_at: new Date(),
     };
@@ -152,9 +158,9 @@ export class AssetService {
     await this.db
       .update(assets)
       .set(updateData)
-      .where(and(eq(assets.id, id), eq(assets.user_id, user_id)));
+      .where(and(eq(assets.id, id), eq(assets.workspace_id, workspaceId)));
 
-    return this.findById(id, user_id);
+    return this.findById(id, workspaceId);
   }
 
   /**
@@ -164,11 +170,11 @@ export class AssetService {
    * better-sqlite3 with Drizzle doesn't support async transaction callbacks.
    * Includes compensating transaction on failure to maintain data integrity.
    */
-  async updateBalance(id: string, user_id: string, input: UpdateAssetBalanceInput) {
+  async updateBalance(id: string, workspaceId: string, input: UpdateAssetBalanceInput) {
     const now = new Date();
 
     // Get current balance for potential rollback
-    const currentAsset = await this.findById(id, user_id);
+    const currentAsset = await this.findById(id, workspaceId);
     if (!currentAsset) {
       throw new AssetServiceError(ServiceErrorCode.ASSET_NOT_FOUND, 'Asset not found', 404);
     }
@@ -184,7 +190,7 @@ export class AssetService {
         last_updated: now,
         updated_at: now,
       })
-      .where(and(eq(assets.id, id), eq(assets.user_id, user_id)));
+      .where(and(eq(assets.id, id), eq(assets.workspace_id, workspaceId)));
 
     // Create history entry with compensating transaction on failure
     try {
@@ -204,7 +210,7 @@ export class AssetService {
           last_updated: previousLastUpdated,
           updated_at: previousUpdatedAt,
         })
-        .where(and(eq(assets.id, id), eq(assets.user_id, user_id)));
+        .where(and(eq(assets.id, id), eq(assets.workspace_id, workspaceId)));
       throw new AssetServiceError(
         ServiceErrorCode.ASSET_NOT_FOUND,
         'Failed to update balance: could not create history entry',
@@ -212,15 +218,15 @@ export class AssetService {
       );
     }
 
-    return this.findById(id, user_id);
+    return this.findById(id, workspaceId);
   }
 
   /**
    * Delete asset (soft delete)
    */
-  async delete(id: string, user_id: string) {
+  async delete(id: string, workspaceId: string) {
     // Check if asset exists
-    const asset = await this.findById(id, user_id);
+    const asset = await this.findById(id, workspaceId);
     if (!asset) {
       throw new AssetServiceError(ServiceErrorCode.ASSET_NOT_FOUND, 'Asset not found', 404);
     }
@@ -231,7 +237,7 @@ export class AssetService {
         deleted_at: new Date(),
         updated_at: new Date(),
       })
-      .where(and(eq(assets.id, id), eq(assets.user_id, user_id)));
+      .where(and(eq(assets.id, id), eq(assets.workspace_id, workspaceId)));
 
     return { success: true };
   }
@@ -239,9 +245,9 @@ export class AssetService {
   /**
    * Get asset history
    */
-  async getHistory(asset_id: string, user_id: string) {
-    // Verify asset belongs to user
-    const asset = await this.findById(asset_id, user_id);
+  async getHistory(asset_id: string, workspaceId: string) {
+    // Verify asset belongs to workspace
+    const asset = await this.findById(asset_id, workspaceId);
     if (!asset) {
       throw new Error('Asset not found');
     }
@@ -257,14 +263,14 @@ export class AssetService {
   /**
    * Get total assets by currency
    */
-  async getTotalByCurrency(user_id: string) {
+  async getTotalByCurrency(workspaceId: string) {
     const result = await (this.db as any)
       .select({
         currency: assets.currency,
         total: sql<string>`sum(CAST(${assets.balance} AS REAL))`,
       })
       .from(assets)
-      .where(and(eq(assets.user_id, user_id), sql`${assets.deleted_at} IS NULL`))
+      .where(and(eq(assets.workspace_id, workspaceId), sql`${assets.deleted_at} IS NULL`))
       .groupBy(assets.currency);
 
     return result;
@@ -273,7 +279,7 @@ export class AssetService {
   /**
    * Get total assets by type
    */
-  async getTotalByType(user_id: string) {
+  async getTotalByType(workspaceId: string) {
     const result = await (this.db as any)
       .select({
         type: assets.type,
@@ -282,7 +288,7 @@ export class AssetService {
         count: sql<number>`count(*)`,
       })
       .from(assets)
-      .where(and(eq(assets.user_id, user_id), sql`${assets.deleted_at} IS NULL`))
+      .where(and(eq(assets.workspace_id, workspaceId), sql`${assets.deleted_at} IS NULL`))
       .groupBy(assets.type, assets.currency);
 
     return result;
@@ -291,8 +297,8 @@ export class AssetService {
   /**
    * Get all assets with their history for forecast calculations
    */
-  async findAllWithHistory(user_id: string) {
-    const allAssets = await this.findAll(user_id);
+  async findAllWithHistory(workspaceId: string) {
+    const allAssets = await this.findAll(workspaceId);
 
     const assetsWithHistory = await Promise.all(
       allAssets.map(async (asset) => {
@@ -317,7 +323,7 @@ export class AssetService {
   /**
    * Get asset counts grouped by category ID
    */
-  async countByCategory(user_id: string) {
+  async countByCategory(workspaceId: string) {
     const result = await (this.db as any)
       .select({
         category_id: assets.category_id,
@@ -326,7 +332,7 @@ export class AssetService {
       .from(assets)
       .where(
         and(
-          eq(assets.user_id, user_id),
+          eq(assets.workspace_id, workspaceId),
           sql`${assets.deleted_at} IS NULL`,
           sql`${assets.category_id} IS NOT NULL`
         )

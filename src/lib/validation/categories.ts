@@ -47,7 +47,8 @@ const descriptionValidation = z
 
 // Schema for creating a category (for service layer)
 export const createCategorySchema = z.object({
-  user_id: z.string().min(1, 'User ID is required'),
+  workspace_id: z.string().min(1, 'Workspace ID is required'),
+  created_by_user_id: z.string().min(1, 'Created by user ID is required'),
   name: nameValidation,
   type: categoryTypeEnum,
   description: descriptionValidation,

@@ -34,7 +34,8 @@ const transactionDateValidation = z.date().refine((date) => date <= new Date(), 
 // Schema for creating a transaction (for service layer)
 export const createTransactionSchema = z
   .object({
-    user_id: z.string().min(1, 'User ID is required'),
+    workspace_id: z.string().min(1, 'Workspace ID is required'),
+    created_by_user_id: z.string().min(1, 'Created by user ID is required'),
     type: transactionTypeEnum,
     amount: amountValidation,
     currency: currencyEnum,

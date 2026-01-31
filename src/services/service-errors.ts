@@ -51,6 +51,14 @@ export enum ServiceErrorCode {
   INVALID_META_VALUE = 'INVALID_META_VALUE',
   VALUE_TOO_LARGE = 'VALUE_TOO_LARGE',
   META_NOT_FOUND = 'META_NOT_FOUND',
+
+  // Workspace-specific errors
+  WORKSPACE_NOT_FOUND = 'WORKSPACE_NOT_FOUND',
+
+  // Workspace invitation-specific errors
+  INVITATION_NOT_FOUND = 'INVITATION_NOT_FOUND',
+  INVITATION_EXPIRED = 'INVITATION_EXPIRED',
+  INVITATION_ALREADY_ACCEPTED = 'INVITATION_ALREADY_ACCEPTED',
 }
 
 export class ServiceError extends Error {
@@ -117,5 +125,26 @@ export class UserMetaServiceError extends ServiceError {
   constructor(code: ServiceErrorCode, message: string, statusCode: number = 400) {
     super(code, message, statusCode);
     this.name = 'UserMetaServiceError';
+  }
+}
+
+export class WorkspaceServiceError extends ServiceError {
+  constructor(code: ServiceErrorCode, message: string, statusCode: number = 400) {
+    super(code, message, statusCode);
+    this.name = 'WorkspaceServiceError';
+  }
+}
+
+export class WorkspaceMetaServiceError extends ServiceError {
+  constructor(code: ServiceErrorCode, message: string, statusCode: number = 400) {
+    super(code, message, statusCode);
+    this.name = 'WorkspaceMetaServiceError';
+  }
+}
+
+export class WorkspaceInvitationServiceError extends ServiceError {
+  constructor(code: ServiceErrorCode, message: string, statusCode: number = 400) {
+    super(code, message, statusCode);
+    this.name = 'WorkspaceInvitationServiceError';
   }
 }
