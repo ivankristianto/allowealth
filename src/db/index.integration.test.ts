@@ -29,8 +29,11 @@
 
 import { describe, it, expect, beforeAll, beforeEach, afterEach } from 'bun:test';
 import { db, getDb, resetDb } from '@/db';
-import { users, categories, assets, transactions } from '@/db/schema';
+import { workspaces, users, categories, assets, transactions } from '@/db/schema';
 import { eq } from 'drizzle-orm';
+
+// Test workspace for all test users
+const TEST_WORKSPACE_ID = 'test-workspace-runtime-agnostic';
 import { execSync } from 'node:child_process';
 
 // Test database path (use -test postfix for isolation)
@@ -119,12 +122,24 @@ async function simulateMiddlewareImport() {
 async function createTestDatabase() {
   const testDb = getDb();
 
+  // Insert a test workspace
+  const testWorkspace = {
+    id: TEST_WORKSPACE_ID,
+    name: 'Runtime Test Workspace',
+    created_at: new Date(),
+    updated_at: new Date(),
+  };
+
+  await testDb.insert(workspaces).values(testWorkspace).onConflictDoNothing();
+
   // Insert a test user
   const testUser = {
     id: 'test-user-runtime-agnostic',
+    workspace_id: TEST_WORKSPACE_ID,
     email: 'runtime-test@example.com',
     password_hash: 'dummy_hash',
     name: 'Runtime Test User',
+    role: 'admin' as const,
     created_at: new Date(),
     updated_at: new Date(),
   };
@@ -590,9 +605,11 @@ describe('Database Runtime-Agnostic Integration Tests', () => {
       try {
         await db.insert(users).values({
           id: 'test-user-runtime-agnostic', // Same ID
+          workspace_id: TEST_WORKSPACE_ID,
           email: 'another@example.com',
           password_hash: 'hash',
           name: 'Another User',
+          role: 'admin',
           created_at: new Date(),
           updated_at: new Date(),
         });

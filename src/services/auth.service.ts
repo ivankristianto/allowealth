@@ -14,7 +14,7 @@
 import { auth } from '@/lib/auth/lucia';
 import { hashPassword, verifyPassword } from '@/lib/auth/password';
 import { db, type IDatabase } from '@/db';
-import { users } from '@/db/schema';
+import { users, workspaces } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import type { User, Session } from 'lucia';
 import { nanoid } from 'nanoid';
@@ -154,17 +154,28 @@ export async function register(email: string, password: string, name: string): P
     // Hash password
     const passwordHash = await hashPassword(password);
 
-    // Generate unique user ID
+    // Generate unique IDs
+    const workspaceId = nanoid();
     const userId = nanoid();
 
     const newUser = await db.transaction(async (tx: IDatabase) => {
+      // Create workspace for the new user
+      await tx.insert(workspaces).values({
+        id: workspaceId,
+        name: `${name.trim()}'s Workspace`,
+        created_at: new Date(),
+        updated_at: new Date(),
+      });
+
       const [createdUser] = await tx
         .insert(users)
         .values({
           id: userId,
+          workspace_id: workspaceId,
           email: email.toLowerCase(),
           password_hash: passwordHash,
           name: name.trim(),
+          role: 'admin',
         })
         .returning();
 

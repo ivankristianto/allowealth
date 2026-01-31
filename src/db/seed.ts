@@ -14,6 +14,8 @@ import { nanoid } from 'nanoid';
 import { hashPassword } from '@/lib/auth/password';
 import { sql } from 'drizzle-orm';
 import {
+  workspaces,
+  workspaceMeta,
   users,
   userMeta,
   categories,
@@ -541,6 +543,8 @@ async function clearAllTables() {
     await db.delete(categories);
     await db.delete(userMeta);
     await db.delete(users);
+    await db.delete(workspaceMeta);
+    await db.delete(workspaces);
     await db.delete(exchangeRates);
 
     // Run VACUUM to clean up the database and reclaim space (SQLite only)
@@ -562,9 +566,28 @@ async function clearAllTables() {
 }
 
 /**
+ * Seed workspace first (required for users)
+ */
+async function seedWorkspace(): Promise<string> {
+  console.log('🏢 Seeding workspace...');
+
+  const workspaceId = nanoid();
+
+  await db.insert(workspaces).values({
+    id: workspaceId,
+    name: 'Demo Family',
+    created_at: new Date(),
+    updated_at: new Date(),
+  });
+
+  console.log(`✓ Created workspace: Demo Family`);
+  return workspaceId;
+}
+
+/**
  * Seed users and user settings
  */
-async function seedUsers(): Promise<string> {
+async function seedUsers(workspaceId: string): Promise<string> {
   console.log('👤 Seeding users...');
 
   const userId = nanoid();
@@ -572,9 +595,11 @@ async function seedUsers(): Promise<string> {
 
   await db.insert(users).values({
     id: userId,
+    workspace_id: workspaceId,
     email: DEMO_USER.email,
     password_hash: passwordHash,
     name: DEMO_USER.name,
+    role: 'admin',
     created_at: new Date(),
     updated_at: new Date(),
   });
@@ -1171,7 +1196,8 @@ async function seed() {
     await clearAllTables();
 
     // Seed in dependency order
-    const userId = await seedUsers();
+    const workspaceId = await seedWorkspace();
+    const userId = await seedUsers(workspaceId);
     const categoryMap = await seedCategories(userId);
     const assetCategoryMap = await seedAssetCategories(userId);
 

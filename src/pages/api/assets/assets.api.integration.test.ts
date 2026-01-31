@@ -31,10 +31,13 @@
 import { describe, it, expect, beforeAll, afterAll, afterEach } from 'bun:test';
 import { nanoid } from 'nanoid';
 import { db } from '@/db';
-import { users, assets, assetHistory } from '@/db';
+import { workspaces, users, assets, assetHistory } from '@/db';
 import { eq } from 'drizzle-orm';
 import { auth } from '@/lib/auth/lucia';
 import { clearRateLimitStore } from '@/lib/rate-limit';
+
+// Test workspace for isolation tests
+const TEST_WORKSPACE_ID = 'test-workspace-assets-isolation';
 
 // Test user credentials (matches the seeder)
 const TEST_USER = {
@@ -686,14 +689,29 @@ describe('Assets API Integration Tests', () => {
   describe('User Isolation', () => {
     it('should not allow access to other users assets', async () => {
       await skipIfNotReady(async () => {
+        // Create a test workspace for isolation tests
+        const existingWorkspace = await db.query.workspaces.findFirst({
+          where: eq(workspaces.id, TEST_WORKSPACE_ID),
+        });
+        if (!existingWorkspace) {
+          await db.insert(workspaces).values({
+            id: TEST_WORKSPACE_ID,
+            name: 'Test Isolation Workspace',
+            created_at: new Date(),
+            updated_at: new Date(),
+          });
+        }
+
         // Create a second test user
         const secondUser = await db
           .insert(users)
           .values({
             id: nanoid(),
+            workspace_id: TEST_WORKSPACE_ID,
             email: 'test-isolation-assets@example.com',
             name: 'Test Isolation User',
             password_hash: 'fake-hash',
+            role: 'member',
           })
           .returning();
 

@@ -1,4 +1,7 @@
-// Export all schema tables
+// Export all schema tables (order matters for dependencies)
+export * from './workspaces';
+export * from './workspace-meta';
+export * from './workspace-invitations';
 export * from './users';
 export * from './user-meta';
 export * from './sessions';

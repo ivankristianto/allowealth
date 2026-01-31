@@ -16,11 +16,14 @@
 
 import { describe, it, expect, beforeAll } from 'bun:test';
 import { db } from '@/db';
-import { users, userMeta } from '@/db';
+import { users, userMeta, workspaces } from '@/db';
 import { eq } from 'drizzle-orm';
 import { auth } from '@/lib/auth/lucia';
 import { hashPassword } from '@/lib/auth/password';
 import { USER_META_KEYS } from '@/lib/constants/user-meta-keys';
+
+// Test workspace for temp users
+const TEST_WORKSPACE_ID = 'test-workspace-api-integration';
 
 // Test user credentials (matches the seeder)
 const TEST_USER = {
@@ -210,6 +213,19 @@ describe('User API Integration Tests', () => {
 
     it('should reject duplicate email', async () => {
       await skipIfNoUser(async () => {
+        // Ensure test workspace exists
+        const existingWorkspace = await db.query.workspaces.findFirst({
+          where: eq(workspaces.id, TEST_WORKSPACE_ID),
+        });
+        if (!existingWorkspace) {
+          await db.insert(workspaces).values({
+            id: TEST_WORKSPACE_ID,
+            name: 'Test Workspace',
+            created_at: new Date(),
+            updated_at: new Date(),
+          });
+        }
+
         // First, create a temporary user
         const tempUserEmail = `temp+${Date.now()}@example.com`;
         const tempUserId = `temp-user-${Date.now()}`;
@@ -219,9 +235,11 @@ describe('User API Integration Tests', () => {
           .insert(users)
           .values({
             id: tempUserId,
+            workspace_id: TEST_WORKSPACE_ID,
             email: tempUserEmail,
             name: 'Temp User',
             password_hash: passwordHash,
+            role: 'member',
             created_at: new Date(),
             updated_at: new Date(),
           })

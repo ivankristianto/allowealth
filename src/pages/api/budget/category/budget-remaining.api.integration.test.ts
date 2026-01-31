@@ -16,10 +16,13 @@
 
 import { describe, it, expect, beforeAll, afterAll } from 'bun:test';
 import { db } from '@/db';
-import { users, categories, transactions, assets, budgets } from '@/db';
+import { workspaces, users, categories, transactions, assets, budgets } from '@/db';
 import { eq, and } from 'drizzle-orm';
 import { auth } from '@/lib/auth/lucia';
 import { nanoid } from 'nanoid';
+
+// Test workspace for isolation tests
+const TEST_WORKSPACE_ID = 'test-workspace-budget-isolation';
 
 // Test user credentials (matches the seeder)
 const TEST_USER = {
@@ -328,15 +331,30 @@ describe('Budget Remaining API Integration Tests', () => {
 
     it('should reject requests for another user category', async () => {
       skipIfNoUser(async () => {
+        // Ensure test workspace exists
+        const existingWorkspace = await db.query.workspaces.findFirst({
+          where: eq(workspaces.id, TEST_WORKSPACE_ID),
+        });
+        if (!existingWorkspace) {
+          await db.insert(workspaces).values({
+            id: TEST_WORKSPACE_ID,
+            name: 'Test Isolation Workspace',
+            created_at: new Date(),
+            updated_at: new Date(),
+          });
+        }
+
         // Create another user and category
         const otherUserId = `other-user-${Date.now()}`;
         const otherCategoryId = nanoid();
 
         await db.insert(users).values({
           id: otherUserId,
+          workspace_id: TEST_WORKSPACE_ID,
           email: `other-${Date.now()}@example.com`,
           name: 'Other User',
           password_hash: 'dummy_hash',
+          role: 'member',
           created_at: new Date(),
           updated_at: new Date(),
         });
