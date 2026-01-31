@@ -145,7 +145,7 @@ export function getBudgetProgressClass(status: BudgetStatus): string {
 const ALLOCATION_COLORS = [
   '#ea580c', // orange-600 - Housing typically largest
   '#3b82f6', // blue-500 - Groceries
-  '#6366f1', // indigo-500 - Utilities
+  '#16a34a', // forest-600 - Utilities (accent)
   '#8b5cf6', // violet-500 - Dining
   '#a855f7', // purple-500 - Transport
   '#ec4899', // pink-500 - Entertainment

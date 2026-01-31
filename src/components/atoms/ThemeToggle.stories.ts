@@ -117,7 +117,7 @@ export const DarkMode: Story = {
         <div class="theme-toggle-wrapper">
           <button
             type="button"
-            class="w-14 h-14 bg-slate-800 border border-slate-700 shadow-xl rounded-2xl flex items-center justify-center transition-all duration-200 hover:scale-110 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 group"
+            class="w-14 h-14 bg-slate-800 border border-slate-700 shadow-xl rounded-2xl flex items-center justify-center transition-all duration-200 hover:scale-110 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 group"
             aria-label="Switch to light mode"
             title="Switch to light mode"
           >

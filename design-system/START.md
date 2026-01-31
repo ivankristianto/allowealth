@@ -12,14 +12,14 @@ This guide reflects the **Oasis Finance** design system (v1.0.0).
 
 **Source of truth:** `design-system/styles.json`
 
-**Color system update:**
+**Color system update (v1.1.0 - Forest Green):**
 
 - **Primary:** `#0f172a` (slate-900) - main brand color, text, borders
-- **Accent:** `#6366f1` (indigo-500) - interactive elements, CTAs, focus states
+- **Accent:** `#16a34a` (forest-600) - interactive elements, CTAs, focus states
 - **Success:** `#10b981` (emerald-500) - confirmations, positive states, IDR currency
 - **Warning:** `#f59e0b` (amber-500) - budget alerts, caution states
 - **Error:** `#f43f5e` (rose-500) - errors, over budget, danger states
-- **Info:** `#6366f1` (indigo-500) - informational messages
+- **Info:** `#0ea5e9` (sky-500) - informational messages (distinct from accent)
 
 See `styles.json` for complete token definitions and theme configurations.
 
@@ -71,14 +71,14 @@ import { animate } from 'motion';
 colors.primary; // #0f172a (slate-900 - headings, text)
 colors.primaryLight; // #f1f5f9 (slate-100 - backgrounds)
 
-// Accent color (indigo) - CTAs, interactive elements, active states
-colors.accent; // #6366f1 (indigo-500 - CTAs, interactive)
-colors.accentHover; // #4f46e5 (indigo-600)
+// Accent color (forest green) - CTAs, interactive elements, active states
+colors.accent; // #16a34a (forest-600 - CTAs, interactive)
+colors.accentHover; // #15803d (forest-700)
 
 colors.warning; // #f59e0b (amber - budget alerts)
 colors.error; // #f43f5e (rose - over budget)
 colors.success; // #10b981 (emerald - confirmations)
-colors.info; // #6366f1 (indigo - info)
+colors.info; // #0ea5e9 (sky - info, distinct from accent)
 
 colors.currency.idr; // #10b981 (emerald)
 colors.currency.usd; // #3b82f6 (blue)
@@ -92,11 +92,11 @@ colors.status.danger; // #f43f5e (≥100%)
 
 ```typescript
 'text-primary'; // Primary brand color (slate-900 light / slate-50 dark)
-'text-accent'; // Accent color (indigo-500) - CTAs, interactive elements
+'text-accent'; // Accent color (forest-600) - CTAs, interactive elements
 'text-success'; // Success states (emerald-500) - confirmations, IDR
 'text-warning'; // Warning states (amber-500) - budget alerts
 'text-error'; // Error states (rose-500) - over budget, danger
-'text-info'; // Info states (indigo-500) - informational
+'text-info'; // Info states (sky-500) - informational
 
 'bg-base-100'; // Base background
 'bg-base-200'; // Elevated background (cards, inputs)
@@ -107,9 +107,9 @@ colors.status.danger; // #f43f5e (≥100%)
 
 **Important Color Semantics:**
 
-- Use `btn-accent` for primary CTAs (indigo interactive elements)
+- Use `btn-accent` for primary CTAs (forest green interactive elements)
 - Use `text-primary` for headings and primary text (slate)
-- Use `focus:ring-accent` for focus states (indigo)
+- Use `focus:ring-accent` for focus states (forest green)
 - Use DaisyUI semantic colors (`bg-base-200`, `border-base-300`) for theme-friendly styling
 
 **Avoid Tailwind color names** (`text-slate-500`, `bg-gray-100`) - they don't change with themes.

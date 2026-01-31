@@ -1,13 +1,13 @@
 {
   "design": {
     "name": "allowealth - Modern Finance Dashboard",
-    "version": "1.0.0",
-    "description": "Premium design system for allowealth finance application with light/dark mode support"
+    "version": "1.1.0",
+    "description": "Premium design system for allowealth finance application with forest green accent and light/dark mode support"
   },
   "colors": {
     "light": {
       "primary": "#0f172a",
-      "accent": "#6366f1",
+      "accent": "#16a34a",
       "background": "#f8fafc",
       "cardBg": "#ffffff",
       "border": "#e2e8f0",
@@ -37,13 +37,24 @@
         "500": "#f43f5e",
         "600": "#e11d48"
       },
-      "indigo": {
-        "50": "#eef2ff",
-        "100": "#e0e7ff",
-        "400": "#818cf8",
-        "500": "#6366f1",
-        "600": "#4f46e5",
-        "700": "#4338ca"
+      "forest": {
+        "50": "#f0fdf4",
+        "100": "#dcfce7",
+        "200": "#bbf7d0",
+        "300": "#86efac",
+        "400": "#4ade80",
+        "500": "#22c55e",
+        "600": "#16a34a",
+        "700": "#15803d",
+        "800": "#166534",
+        "900": "#14532d"
+      },
+      "sky": {
+        "50": "#f0f9ff",
+        "100": "#e0f2fe",
+        "400": "#38bdf8",
+        "500": "#0ea5e9",
+        "600": "#0284c7"
       },
       "orange": {
         "50": "#fff7ed",
@@ -59,7 +70,7 @@
     },
     "dark": {
       "primary": "#f8fafc",
-      "accent": "#818cf8",
+      "accent": "#4ade80",
       "background": "#020617",
       "cardBg": "#0f172a",
       "border": "#1e293b",
@@ -83,17 +94,21 @@
       "rose": {
         "500": "#f43f5e"
       },
-      "indigo": {
-        "400": "#818cf8",
-        "500": "#6366f1",
-        "900": "#312e81"
+      "forest": {
+        "400": "#4ade80",
+        "500": "#22c55e",
+        "900": "#14532d"
+      },
+      "sky": {
+        "400": "#38bdf8",
+        "500": "#0ea5e9"
       }
     },
     "semantic": {
       "success": "#10b981",
       "error": "#f43f5e",
       "warning": "#f59e0b",
-      "info": "#6366f1"
+      "info": "#0ea5e9"
     }
   },
   "typography": {
@@ -179,8 +194,8 @@
     "lg": "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
     "xl": "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
     "2xl": "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
-    "accentGlow": "0 10px 15px -3px rgba(99, 102, 241, 0.2)",
-    "accentGlowLg": "0 25px 50px -12px rgba(99, 102, 241, 0.3)",
+    "accentGlow": "0 10px 15px -3px rgba(22, 163, 74, 0.25)",
+    "accentGlowLg": "0 25px 50px -12px rgba(22, 163, 74, 0.3)",
     "premiumLg": "0 20px 25px -5px rgba(0, 0, 0, 0.1)"
   },
   "effects": {
@@ -231,9 +246,9 @@
       },
       "variants": {
         "primary": {
-          "background": "#6366f1",
+          "background": "#16a34a",
           "color": "#ffffff",
-          "shadow": "0 10px 15px -3px rgba(99, 102, 241, 0.2)"
+          "shadow": "0 10px 15px -3px rgba(22, 163, 74, 0.25)"
         },
         "secondary": {
           "background": "#0f172a",
@@ -268,7 +283,7 @@
         "light": "#f1f5f9",
         "dark": "#1e293b"
       },
-      "focusRing": "2px solid rgba(99, 102, 241, 0.2)"
+      "focusRing": "2px solid rgba(22, 163, 74, 0.25)"
     },
     "badge": {
       "padding": "0.25rem 0.625rem",
@@ -292,8 +307,8 @@
         "gap": "0.75rem",
         "iconSize": "22px"
       },
-      "activeGradient": "linear-gradient(90deg, rgba(99, 102, 241, 0.1) 0%, rgba(99, 102, 241, 0) 100%)",
-      "activeBorder": "2px solid #6366f1"
+      "activeGradient": "linear-gradient(90deg, rgba(22, 163, 74, 0.1) 0%, rgba(22, 163, 74, 0) 100%)",
+      "activeBorder": "2px solid #16a34a"
     },
     "table": {
       "headerBackground": {
@@ -771,14 +786,14 @@
       }
     },
     "gradient": {
-      "sidebarActive": "linear-gradient(90deg, rgba(99, 102, 241, 0.1) 0%, rgba(99, 102, 241, 0) 100%)",
-      "accentGlow": "radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%)"
+      "sidebarActive": "linear-gradient(90deg, rgba(22, 163, 74, 0.1) 0%, rgba(22, 163, 74, 0) 100%)",
+      "accentGlow": "radial-gradient(circle, rgba(22, 163, 74, 0.1) 0%, transparent 70%)"
     }
   },
   "accessibility": {
     "focusRing": {
       "width": "2px",
-      "color": "rgba(99, 102, 241, 0.2)",
+      "color": "rgba(22, 163, 74, 0.25)",
       "offset": "2px"
     },
     "minTouchTarget": "44px",

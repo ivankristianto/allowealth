@@ -205,8 +205,8 @@ const createAssetHistoryModal = (args: AssetHistoryModalArgs): HTMLElement => {
               <svg class="w-full h-full" viewBox="0 0 800 300" preserveAspectRatio="none">
                 <defs>
                   <linearGradient id="gradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stop-color="#6366f1" stop-opacity="0.3"></stop>
-                    <stop offset="100%" stop-color="#6366f1" stop-opacity="0"></stop>
+                    <stop offset="0%" stop-color="#16a34a" stop-opacity="0.3"></stop>
+                    <stop offset="100%" stop-color="#16a34a" stop-opacity="0"></stop>
                   </linearGradient>
                 </defs>
 
@@ -222,7 +222,7 @@ const createAssetHistoryModal = (args: AssetHistoryModalArgs): HTMLElement => {
                 <path d="${areaPath}" fill="url(#gradient)"></path>
 
                 <!-- Line -->
-                <path d="${linePath}" fill="none" stroke="#6366f1" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path>
+                <path d="${linePath}" fill="none" stroke="#16a34a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path>
               </svg>
 
               <!-- X-axis labels -->

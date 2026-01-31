@@ -3,13 +3,14 @@
  * ==========================================
  * Use these values in component logic for consistency
  *
- * Version: 1.0.0 - Oasis Finance Design System
+ * Version: 1.1.0 - Oasis Finance Design System (Forest Green)
  * Color semantic model:
  * - primary = slate-900 → headings, primary text, secondary buttons
- * - accent = indigo-500 → CTAs, interactive elements, active states
+ * - accent = forest-600 (#16a34a) → CTAs, interactive elements, active states
  * - success = emerald-500 → positive status, confirmations
  * - warning = amber-500 → budget alerts, caution states
  * - error = rose-500 → over budget, destructive actions
+ * - info = sky-500 (#0ea5e9) → informational messages (distinct from accent)
  */
 
 /* ========================================
@@ -75,9 +76,9 @@ export const colors = {
   primary: '#0f172a',
   primaryLight: '#f1f5f9',
 
-  // Accent color - indigo-500 (CTAs, interactive elements, active states)
-  accent: '#6366f1',
-  accentHover: '#4f46e5',
+  // Accent color - forest-600 (CTAs, interactive elements, active states)
+  accent: '#16a34a',
+  accentHover: '#15803d',
   accentContent: '#ffffff',
 
   warning: '#f59e0b',
@@ -87,7 +88,7 @@ export const colors = {
   errorHover: '#e11d48',
 
   success: '#10b981',
-  info: '#6366f1',
+  info: '#0ea5e9', // sky-500 - distinct from forest accent
 
   // Slate color scale
   slate: {
@@ -103,14 +104,27 @@ export const colors = {
     900: '#0f172a',
   } as const,
 
-  // Indigo color scale
-  indigo: {
-    50: '#eef2ff',
-    100: '#e0e7ff',
-    400: '#818cf8',
-    500: '#6366f1',
-    600: '#4f46e5',
-    700: '#4338ca',
+  // Forest green color scale (accent)
+  forest: {
+    50: '#f0fdf4',
+    100: '#dcfce7',
+    200: '#bbf7d0',
+    300: '#86efac',
+    400: '#4ade80',
+    500: '#22c55e',
+    600: '#16a34a',
+    700: '#15803d',
+    800: '#166534',
+    900: '#14532d',
+  } as const,
+
+  // Sky color scale (info)
+  sky: {
+    50: '#f0f9ff',
+    100: '#e0f2fe',
+    400: '#38bdf8',
+    500: '#0ea5e9',
+    600: '#0284c7',
   } as const,
 
   // Rose color scale
@@ -122,8 +136,8 @@ export const colors = {
   } as const,
 
   currency: {
-    idr: '#10b981',
-    usd: '#3b82f6',
+    idr: '#10b981', // emerald
+    usd: '#0ea5e9', // sky - distinct from forest accent
   },
 
   status: {
