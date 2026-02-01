@@ -1,0 +1,33 @@
+# Workspace Member Schema
+WorkspaceMember:
+  type: object
+  required:
+    - id
+    - email
+    - name
+    - role
+  properties:
+    id:
+      type: string
+      format: uuid
+      description: User ID
+      example: "usr_123e4567-e89b-12d3-a456-426614174000"
+    email:
+      type: string
+      format: email
+      description: User email address
+      example: "john@example.com"
+    name:
+      type: string
+      description: User display name
+      example: "John Doe"
+    role:
+      type: string
+      enum: [admin, member]
+      description: User's role within the workspace
+      example: "admin"
+    createdAt:
+      type: integer
+      format: int64
+      description: When the user joined the workspace (Unix milliseconds)
+      example: 1704067200000

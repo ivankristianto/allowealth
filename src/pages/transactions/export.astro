@@ -15,8 +15,8 @@ const user = Astro.locals.user!;
 const currentPath = '/transactions/export';
 
 // Fetch categories and assets for filters
-const categories = await categoryService.findAll(user.id, { is_active: true });
-const assets = await assetService.findAll(user.id);
+const categories = await categoryService.findAll(user.workspaceId, { is_active: true });
+const assets = await assetService.findAll(user.workspaceId);
 
 // Get current filters from query params
 const url = new URL(Astro.url);

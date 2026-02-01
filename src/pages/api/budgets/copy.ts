@@ -17,7 +17,7 @@ import { logError } from '@/lib/utils';
  */
 export const POST: APIRoute = async (context) => {
   try {
-    const userId = getAuthenticatedUser(context);
+    const auth = getAuthenticatedUser(context);
 
     const validation = await validateBody(context.request, copyBudgetsAPISchema);
 
@@ -26,7 +26,8 @@ export const POST: APIRoute = async (context) => {
     }
 
     const result = await budgetService.copyBudgetsToMonth({
-      user_id: userId,
+      workspace_id: auth.workspaceId,
+      created_by_user_id: auth.userId,
       ...validation.data,
     });
 

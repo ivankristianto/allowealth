@@ -1,0 +1,337 @@
+/**
+ * Workspace Invitation Service
+ *
+ * Manages workspace invitations for adding new members.
+ * Handles invitation creation, acceptance, cancellation, and resending.
+ *
+ * Security features:
+ * - Secure 64-character tokens using nanoid
+ * - 7-day expiration for invitations
+ * - One-time use tokens (marked as accepted after use)
+ *
+ * Error codes:
+ * - WORKSPACE_NOT_FOUND: Workspace doesn't exist
+ * - INVITATION_NOT_FOUND: Invitation doesn't exist
+ * - INVITATION_EXPIRED: Invitation has expired
+ * - INVITATION_ALREADY_ACCEPTED: Invitation was already used
+ */
+
+import { workspaceInvitations, workspaces, type IDatabase } from '@/db';
+import { eq, and, isNull, gt, desc } from 'drizzle-orm';
+import { nanoid } from 'nanoid';
+import { z } from 'zod';
+import { WorkspaceInvitationServiceError, ServiceErrorCode } from './service-errors';
+
+/**
+ * Invitation expiration time in milliseconds (7 days)
+ */
+const INVITATION_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000;
+
+/**
+ * Secure token length for invitations
+ */
+const TOKEN_LENGTH = 64;
+
+/**
+ * Zod schemas for invitation service validation
+ */
+export const createInvitationSchema = z.object({
+  workspaceId: z.string().min(1, 'Workspace ID is required'),
+  email: z.string().regex(/^[^\s@]+@[^\s@]+\.[^\s@]+$/, 'Invalid email format'),
+  invitedByUserId: z.string().min(1, 'Invited by user ID is required'),
+  role: z.enum(['admin', 'member']),
+});
+
+/**
+ * Input types inferred from Zod schemas
+ */
+export type CreateInvitationInput = z.infer<typeof createInvitationSchema>;
+
+/**
+ * Invitation type inferred from schema
+ */
+export type WorkspaceInvitation = typeof workspaceInvitations.$inferSelect;
+
+/**
+ * Workspace Invitation Service
+ */
+export class WorkspaceInvitationService {
+  /**
+   * Create a new WorkspaceInvitationService with database injection
+   * @param db - Database instance (injected for testability)
+   */
+  constructor(private db: IDatabase) {}
+
+  /**
+   * Create a new workspace invitation
+   *
+   * Generates a secure token and sets expiration to 7 days from now.
+   *
+   * @param input - Invitation creation data
+   * @returns Promise resolving to created invitation
+   * @throws {WorkspaceInvitationServiceError} If workspace not found or validation fails
+   */
+  async create(input: CreateInvitationInput): Promise<WorkspaceInvitation> {
+    // Validate input using Zod schema
+    const validated = createInvitationSchema.parse(input);
+
+    // Check if workspace exists
+    await this.ensureWorkspaceExists(validated.workspaceId);
+
+    const id = nanoid();
+    const token = nanoid(TOKEN_LENGTH); // 64-character secure token
+    const now = new Date();
+    const expiresAt = new Date(now.getTime() + INVITATION_EXPIRY_MS);
+
+    const [invitation] = await this.db
+      .insert(workspaceInvitations)
+      .values({
+        id,
+        workspace_id: validated.workspaceId,
+        email: validated.email.toLowerCase(),
+        token,
+        invited_by_user_id: validated.invitedByUserId,
+        role: validated.role,
+        expires_at: expiresAt,
+        accepted_at: null,
+        created_at: now,
+      })
+      .returning();
+
+    return invitation;
+  }
+
+  /**
+   * Find invitation by token
+   *
+   * @param token - Invitation token
+   * @returns Promise resolving to invitation or null if not found
+   */
+  async findByToken(token: string): Promise<WorkspaceInvitation | null> {
+    const invitation = await this.db.query.workspaceInvitations.findFirst({
+      where: eq(workspaceInvitations.token, token),
+    });
+
+    return invitation ?? null;
+  }
+
+  /**
+   * Find invitation by ID
+   *
+   * @param id - Invitation ID
+   * @returns Promise resolving to invitation or null if not found
+   */
+  async findById(id: string): Promise<WorkspaceInvitation | null> {
+    const invitation = await this.db.query.workspaceInvitations.findFirst({
+      where: eq(workspaceInvitations.id, id),
+    });
+
+    return invitation ?? null;
+  }
+
+  /**
+   * Find all pending invitations for a workspace
+   *
+   * Returns invitations that:
+   * - Have not been accepted (accepted_at is null)
+   * - Have not expired (expires_at > now)
+   *
+   * @param workspaceId - Workspace ID
+   * @returns Promise resolving to array of pending invitations
+   * @throws {WorkspaceInvitationServiceError} If workspace not found
+   */
+  async findPendingByWorkspace(workspaceId: string): Promise<WorkspaceInvitation[]> {
+    // Check if workspace exists
+    await this.ensureWorkspaceExists(workspaceId);
+
+    const now = new Date();
+
+    const invitations = await this.db.query.workspaceInvitations.findMany({
+      where: and(
+        eq(workspaceInvitations.workspace_id, workspaceId),
+        isNull(workspaceInvitations.accepted_at),
+        gt(workspaceInvitations.expires_at, now)
+      ),
+      orderBy: [desc(workspaceInvitations.created_at)],
+    });
+
+    return invitations;
+  }
+
+  /**
+   * Accept an invitation
+   *
+   * Marks the invitation as accepted by setting accepted_at timestamp.
+   * The actual user creation and workspace membership should be handled
+   * by the calling code (e.g., auth service during signup).
+   *
+   * @param token - Invitation token
+   * @throws {WorkspaceInvitationServiceError} If invitation not found, expired, or already accepted
+   */
+  async accept(token: string): Promise<void> {
+    // Find invitation
+    const invitation = await this.findByToken(token);
+
+    if (!invitation) {
+      throw new WorkspaceInvitationServiceError(
+        ServiceErrorCode.INVITATION_NOT_FOUND,
+        'Invitation not found',
+        404
+      );
+    }
+
+    // Check if already accepted
+    if (invitation.accepted_at !== null) {
+      throw new WorkspaceInvitationServiceError(
+        ServiceErrorCode.INVITATION_ALREADY_ACCEPTED,
+        'Invitation has already been accepted',
+        400
+      );
+    }
+
+    // Check if expired
+    const now = new Date();
+    if (invitation.expires_at < now) {
+      throw new WorkspaceInvitationServiceError(
+        ServiceErrorCode.INVITATION_EXPIRED,
+        'Invitation has expired',
+        400
+      );
+    }
+
+    // Mark as accepted
+    await this.db
+      .update(workspaceInvitations)
+      .set({
+        accepted_at: now,
+      })
+      .where(eq(workspaceInvitations.token, token));
+  }
+
+  /**
+   * Cancel (delete) an invitation
+   *
+   * @param id - Invitation ID
+   * @throws {WorkspaceInvitationServiceError} If invitation not found
+   */
+  async cancel(id: string): Promise<void> {
+    // Check if invitation exists
+    const invitation = await this.findById(id);
+
+    if (!invitation) {
+      throw new WorkspaceInvitationServiceError(
+        ServiceErrorCode.INVITATION_NOT_FOUND,
+        'Invitation not found',
+        404
+      );
+    }
+
+    // Delete invitation
+    await this.db.delete(workspaceInvitations).where(eq(workspaceInvitations.id, id));
+  }
+
+  /**
+   * Resend an invitation by extending its expiration
+   *
+   * Sets the expiration to 7 days from now, effectively extending the invitation.
+   *
+   * @param id - Invitation ID
+   * @throws {WorkspaceInvitationServiceError} If invitation not found or already accepted
+   */
+  async resend(id: string): Promise<void> {
+    // Check if invitation exists
+    const invitation = await this.findById(id);
+
+    if (!invitation) {
+      throw new WorkspaceInvitationServiceError(
+        ServiceErrorCode.INVITATION_NOT_FOUND,
+        'Invitation not found',
+        404
+      );
+    }
+
+    // Check if already accepted
+    if (invitation.accepted_at !== null) {
+      throw new WorkspaceInvitationServiceError(
+        ServiceErrorCode.INVITATION_ALREADY_ACCEPTED,
+        'Cannot resend an accepted invitation',
+        400
+      );
+    }
+
+    // Extend expiration
+    const newExpiresAt = new Date(Date.now() + INVITATION_EXPIRY_MS);
+
+    await this.db
+      .update(workspaceInvitations)
+      .set({
+        expires_at: newExpiresAt,
+      })
+      .where(eq(workspaceInvitations.id, id));
+  }
+
+  /**
+   * Get invitation details with validation
+   *
+   * Validates that the invitation exists, is not expired, and has not been accepted.
+   * Useful for checking invitation validity before accepting.
+   *
+   * @param token - Invitation token
+   * @returns Promise resolving to invitation
+   * @throws {WorkspaceInvitationServiceError} If invitation not found, expired, or already accepted
+   */
+  async validateAndGet(token: string): Promise<WorkspaceInvitation> {
+    // Find invitation
+    const invitation = await this.findByToken(token);
+
+    if (!invitation) {
+      throw new WorkspaceInvitationServiceError(
+        ServiceErrorCode.INVITATION_NOT_FOUND,
+        'Invitation not found',
+        404
+      );
+    }
+
+    // Check if already accepted
+    if (invitation.accepted_at !== null) {
+      throw new WorkspaceInvitationServiceError(
+        ServiceErrorCode.INVITATION_ALREADY_ACCEPTED,
+        'Invitation has already been accepted',
+        400
+      );
+    }
+
+    // Check if expired
+    const now = new Date();
+    if (invitation.expires_at < now) {
+      throw new WorkspaceInvitationServiceError(
+        ServiceErrorCode.INVITATION_EXPIRED,
+        'Invitation has expired',
+        400
+      );
+    }
+
+    return invitation;
+  }
+
+  // ============================================================================
+  // Private helpers
+  // ============================================================================
+
+  /**
+   * Check if workspace exists, throw if not
+   */
+  private async ensureWorkspaceExists(workspaceId: string): Promise<void> {
+    const workspace = await this.db.query.workspaces.findFirst({
+      where: eq(workspaces.id, workspaceId),
+    });
+
+    if (!workspace) {
+      throw new WorkspaceInvitationServiceError(
+        ServiceErrorCode.WORKSPACE_NOT_FOUND,
+        'Workspace not found',
+        404
+      );
+    }
+  }
+}

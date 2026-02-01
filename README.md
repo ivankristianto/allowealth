@@ -80,6 +80,162 @@ The dashboard seeder creates focused test data:
 
 **Solution:** Run `bun run db:reset` to start fresh with a clean database.
 
+## Workspace Management
+
+Workspaces provide a shared financial context for families, teams, or groups. Each workspace maintains isolated data including transactions, budgets, assets, and settings. Users belong to one workspace and have a designated role (admin or member).
+
+### Key Concepts
+
+- **Data Isolation:** Each workspace has completely separate financial data
+- **Workspace Settings:** Currency, week start, and number formatting preferences apply to all members
+- **Role-Based Access:** Admins have full control, members have limited permissions
+- **Cascade Delete:** Deleting a workspace removes all associated data permanently
+
+### CLI Commands
+
+#### Create Workspace
+
+Create a new workspace with custom settings:
+
+```bash
+# Basic workspace creation
+bun run cli:create-workspace -- --name "My Family"
+
+# Create with custom settings
+bun run cli:create-workspace -- --name "Business" --currency USD --week-start sunday --compact-numbers true
+```
+
+**Example Output:**
+
+```
+Creating workspace...
+
+Created workspace:
+  ID:   abc123def456
+  Name: My Family
+
+Workspace settings:
+  Currency:        IDR
+  Week Start:      monday
+  Compact Numbers: true
+
+Workspace created successfully!
+```
+
+**Available Options:**
+
+- `--name, -n` - Workspace name (required)
+- `--currency, -c` - Default currency code (default: IDR)
+- `--week-start, -w` - Week start day: `monday` or `sunday` (default: monday)
+- `--compact-numbers` - Use compact formatting: `true` or `false` (default: true)
+
+#### List Workspaces
+
+View all workspaces with their details:
+
+```bash
+bun run cli:list-workspaces
+```
+
+**Example Output:**
+
+```
+Fetching workspaces...
+
+Found 2 workspace(s):
+
+────────────────────────────────────────────────────────────────────────────────
+
+Workspace: My Family
+  ID:         abc123def456
+  Created:    2026-01-15
+  Members:    4
+  Settings:
+    currency: IDR
+    week_start: monday
+    compact_numbers: true
+────────────────────────────────────────────────────────────────────────────────
+
+Workspace: Business
+  ID:         xyz789uvw012
+  Created:    2026-01-20
+  Members:    2
+  Settings:
+    currency: USD
+    week_start: sunday
+    compact_numbers: false
+────────────────────────────────────────────────────────────────────────────────
+
+Total: 2 workspace(s)
+```
+
+#### Delete Workspace
+
+Remove a workspace and all associated data:
+
+```bash
+# Delete with confirmation prompt
+bun run cli:delete-workspace -- --id abc123def456
+
+# Force delete without confirmation (use with caution)
+bun run cli:delete-workspace -- --id abc123def456 --force
+```
+
+**Example Output (with confirmation):**
+
+```
+Looking up workspace...
+
+Found workspace:
+  ID:      abc123def456
+  Name:    My Family
+  Members: 4
+
+This will permanently delete:
+  - Workspace: My Family
+  - 4 member(s)
+  - All related data (categories, transactions, assets, etc.)
+
+This action cannot be undone.
+
+Type "DELETE" to confirm: DELETE
+
+Deleting workspace...
+Workspace deleted successfully!
+```
+
+**Warning:** Workspace deletion is irreversible and removes:
+
+- All workspace members
+- All categories and payment methods
+- All transactions and budget data
+- All assets and asset history
+- All workspace settings
+
+### Workspace Settings
+
+Each workspace has configurable settings that apply to all members:
+
+- **Currency** - Primary currency for displaying amounts (e.g., IDR, USD, EUR)
+- **Week Start** - First day of the week (`monday` or `sunday`) for reports and charts
+- **Compact Numbers** - Display large numbers in compact format (e.g., "1.2K" vs "1,200")
+
+Settings can be configured during workspace creation or modified via the CLI commands.
+
+### Member Management
+
+**Current Implementation:**
+
+- Members are associated with workspaces at the database level
+- Each user has a `workspace_id` and `role` field
+- Roles: `admin` (full access) or `member` (limited permissions)
+
+**Future Implementation:**
+
+- UI-based member invitations (admin only)
+- Permission controls for different operations
+- Member removal and role changes
+
 ## E2E Testing
 
 End-to-end tests use Playwright with a Page Object Model pattern.

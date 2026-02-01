@@ -14,7 +14,7 @@ const MAX_ROW_COUNT = 500;
  */
 export const POST: APIRoute = async (context) => {
   try {
-    const userId = getAuthenticatedUser(context);
+    const auth = getAuthenticatedUser(context);
     const { request } = context;
 
     // Parse form data with file
@@ -84,7 +84,12 @@ export const POST: APIRoute = async (context) => {
     }
 
     // Import transactions
-    const result = await transactionService.importFromCSV(userId, rows, columnMapping);
+    const result = await transactionService.importFromCSV(
+      auth.workspaceId,
+      auth.userId,
+      rows,
+      columnMapping
+    );
 
     return successResponse({
       message: 'Import completed',

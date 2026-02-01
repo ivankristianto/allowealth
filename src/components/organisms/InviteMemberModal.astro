@@ -1,0 +1,237 @@
+---
+/**
+ * Invite Member Modal Component
+ *
+ * Modal for inviting new members to the workspace.
+ * Admin only functionality.
+ *
+ * @param {string} id - Modal ID
+ */
+
+import Modal from '../molecules/Modal.astro';
+import Input from '../atoms/Input.astro';
+import Label from '../atoms/Label.astro';
+import { UserPlus } from '@lucide/astro';
+
+export interface Props {
+  id: string;
+}
+
+const { id } = Astro.props;
+---
+
+<div data-invite-member-modal data-id={id}>
+  <Modal id={id} size="md" closable={false} backdropClose={true}>
+    <div slot="default" class="flex flex-col gap-6">
+      <!-- Header section -->
+      <div class="flex items-center gap-4">
+        <!-- Icon -->
+        <div class="w-12 h-12 rounded-2xl flex items-center justify-center bg-accent/10">
+          <UserPlus size={24} class="stroke-current text-accent" aria-hidden="true" />
+        </div>
+
+        <!-- Title and description -->
+        <div class="flex-1">
+          <h2
+            class="text-2xl font-bold tracking-tight text-primary leading-none"
+            id={`${id}-title`}
+          >
+            Invite Member
+          </h2>
+          <p class="text-neutral text-sm mt-2 font-medium">
+            Send an invitation to join your workspace.
+          </p>
+        </div>
+      </div>
+
+      <!-- Form -->
+      <form id={`${id}-form`} data-invite-form class="flex flex-col gap-5">
+        <div class="form-control">
+          <Label htmlFor={`${id}-email`} required>Email Address</Label>
+          <Input
+            id={`${id}-email`}
+            name="email"
+            type="email"
+            required
+            placeholder="colleague@example.com"
+            className="rounded-full py-4 px-6 h-14 text-base font-bold border border-base-300"
+          />
+        </div>
+
+        <div class="form-control">
+          <Label htmlFor={`${id}-role`} required>Role</Label>
+          <select
+            name="role"
+            id={`${id}-role`}
+            class="select select-bordered w-full h-14 py-4 pl-6 pr-10 text-base font-bold bg-base-200 rounded-full border-0 focus:ring-2 focus:ring-accent focus:ring-opacity-20 focus:outline-none focus:ring-offset-2"
+            required
+          >
+            <option value="member">Member - Can view and add transactions</option>
+            <option value="admin">Admin - Full access including settings</option>
+          </select>
+          <p class="text-xs text-base-content/50 mt-2 ml-4">
+            Members can view and manage transactions. Admins can also manage workspace settings and
+            members.
+          </p>
+        </div>
+
+        <!-- Error message -->
+        <div
+          id={`${id}-error`}
+          class="hidden alert alert-error text-sm rounded-2xl"
+          role="alert"
+          aria-live="polite"
+          data-form-error
+        >
+        </div>
+
+        <!-- Success message -->
+        <div
+          id={`${id}-success`}
+          class="hidden alert alert-success text-sm rounded-2xl"
+          role="status"
+          aria-live="polite"
+          data-form-success
+        >
+        </div>
+
+        <!-- Actions -->
+        <div class="flex gap-4 pt-2">
+          <button
+            type="button"
+            class="btn btn-ghost flex-1 h-14 rounded-full font-bold text-base-content hover:bg-base-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent"
+            data-close-modal
+          >
+            Cancel
+          </button>
+          <button type="submit" class="btn btn-accent flex-[2] h-14 rounded-full font-bold">
+            Send Invitation
+          </button>
+        </div>
+      </form>
+    </div>
+  </Modal>
+</div>
+
+<script>
+  import { addToast } from '@/lib/stores/toastStore';
+  import { getCsrfHeaders } from '@/lib/csrf-client';
+
+  // Track initialized containers
+  const initializedContainers = new WeakSet<Element>();
+
+  function initInviteMemberModals() {
+    document.querySelectorAll('[data-invite-member-modal]').forEach((container) => {
+      if (initializedContainers.has(container)) return;
+      initializedContainers.add(container);
+
+      const id = container.getAttribute('data-id');
+      if (!id) return;
+
+      const modal = document.getElementById(id) as HTMLDialogElement | null;
+      const form = container.querySelector('[data-invite-form]') as HTMLFormElement | null;
+      const errorEl = container.querySelector('[data-form-error]');
+      const successEl = container.querySelector('[data-form-success]');
+
+      if (!modal || !form) return;
+
+      // Handle cancel button
+      const cancelBtn = container.querySelector('[data-close-modal]');
+      cancelBtn?.addEventListener('click', () => {
+        form.reset();
+        errorEl?.classList.add('hidden');
+        successEl?.classList.add('hidden');
+        modal.close();
+      });
+
+      // Handle form submission
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
+        const originalText = submitBtn?.textContent || 'Send Invitation';
+
+        // Clear messages
+        errorEl?.classList.add('hidden');
+        successEl?.classList.add('hidden');
+
+        // Show loading state
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.textContent = 'Sending...';
+        }
+
+        try {
+          const formData = new FormData(form);
+          const email = formData.get('email') as string;
+          const role = formData.get('role') as string;
+
+          const response = await fetch('/api/workspace/invitations', {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+              'Content-Type': 'application/json',
+              ...getCsrfHeaders(),
+            },
+            body: JSON.stringify({ email, role }),
+          });
+
+          const result = await response.json();
+
+          if (!response.ok || !result.success) {
+            throw new Error(result.error?.message || 'Failed to send invitation');
+          }
+
+          // Success
+          if (successEl) {
+            successEl.textContent = `Invitation sent to ${email}! They will receive an email with instructions to join.`;
+            successEl.classList.remove('hidden');
+          }
+          addToast('Invitation sent successfully!', 'success');
+
+          // Reset form but keep modal open to show success
+          form.reset();
+
+          // Dispatch event to refresh invitations list
+          document.dispatchEvent(new CustomEvent('invitation:created'));
+
+          // Close modal after a delay
+          setTimeout(() => {
+            successEl?.classList.add('hidden');
+            modal.classList.remove('modal-open');
+          }, 2000);
+        } catch (err) {
+          const message = err instanceof Error ? err.message : 'Failed to send invitation';
+          if (errorEl) {
+            errorEl.textContent = message;
+            errorEl.classList.remove('hidden');
+          }
+          addToast(message, 'error');
+        } finally {
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = originalText;
+          }
+        }
+      });
+
+      // Expose function to open modal
+      (window as any).openInviteMemberModal = () => {
+        form.reset();
+        errorEl?.classList.add('hidden');
+        successEl?.classList.add('hidden');
+        modal.classList.add('modal-open');
+      };
+    });
+  }
+
+  // Initialize on DOM ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initInviteMemberModals);
+  } else {
+    initInviteMemberModals();
+  }
+
+  // Re-initialize on Astro page transitions
+  document.addEventListener('astro:page-load', initInviteMemberModals);
+</script>

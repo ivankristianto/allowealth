@@ -10,11 +10,16 @@ openapi/
 ├── paths/                           # API endpoint definitions organized by feature
 │   ├── auth.yml                     # Authentication endpoints (signup, login, logout)
 │   ├── user.yml                     # User profile and settings endpoints
+│   ├── user-meta.yml                # User meta/preferences endpoints
+│   ├── workspace.yml                # Workspace management endpoints (settings, members, invitations)
 │   ├── transactions.yml             # Transaction endpoints (CRUD, import, export)
 │   ├── categories.yml               # Category management endpoints
-│   ├── payment-methods.yml          # Payment method endpoints
+│   ├── asset-categories.yml         # Asset category endpoints
 │   ├── assets.yml                   # Asset tracking endpoints
-│   └── budget.yml                   # Budget overview and alerts endpoints
+│   ├── budget.yml                   # Budget overview and alerts endpoints
+│   ├── budgets.yml                  # Budget CRUD endpoints
+│   ├── forecast.yml                 # Forecast endpoints
+│   └── reports.yml                  # Reports endpoints
 ├── schemas/                         # Reusable data model definitions
 │   ├── ApiErrorResponse.yml         # Base API response schema
 │   ├── ErrorResponse.yml            # Error response schema
@@ -22,27 +27,40 @@ openapi/
 │   ├── LoginRequest.yml             # Login request schema
 │   ├── AuthSuccessResponse.yml      # Authentication success response
 │   ├── UpdateUserProfileRequest.yml # Profile update request
-│   ├── UserProfileResponse.yml     # Profile response
+│   ├── UserProfileResponse.yml      # Profile response
 │   ├── UpdatePasswordRequest.yml    # Password change request
 │   ├── PasswordUpdateResponse.yml   # Password update response
-│   ├── UpdateUserSettingsRequest.yml # Settings update request
-│   ├── UserSettingsResponse.yml     # Settings response
+│   │
+│   │ # Workspace schemas
+│   ├── Workspace.yml                # Workspace object
+│   ├── WorkspaceSettings.yml        # Workspace settings object
+│   ├── WorkspaceSettingsResponse.yml # Workspace settings response
+│   ├── UpdateWorkspaceSettingsRequest.yml # Workspace settings update request
+│   ├── WorkspaceMember.yml          # Workspace member object
+│   ├── WorkspaceMembersResponse.yml # Workspace members list response
+│   ├── WorkspaceMemberDeleteResponse.yml # Member removal response
+│   ├── WorkspaceInvitation.yml      # Workspace invitation object
+│   ├── CreateWorkspaceInvitationRequest.yml # Invitation creation request
+│   ├── WorkspaceInvitationResponse.yml # Single invitation response
+│   ├── WorkspaceInvitationsListResponse.yml # Invitations list response
+│   ├── WorkspaceInvitationDeleteResponse.yml # Invitation cancellation response
+│   │
+│   │ # Transaction schemas
 │   ├── Transaction.yml              # Transaction object
 │   ├── CreateTransactionRequest.yml # Transaction creation request
 │   ├── UpdateTransactionRequest.yml # Transaction update request
 │   ├── TransactionResponse.yml      # Transaction response
 │   ├── TransactionsListResponse.yml # Transaction list response
 │   ├── TransactionImportResult.yml  # Import result schema
+│   │
+│   │ # Category schemas
 │   ├── Category.yml                 # Category object
 │   ├── CreateCategoryRequest.yml    # Category creation request
 │   ├── UpdateCategoryRequest.yml    # Category update request
 │   ├── CategoryResponse.yml         # Category response
 │   ├── CategoriesListResponse.yml   # Category list response
-│   ├── PaymentMethod.yml            # Payment method object
-│   ├── CreatePaymentMethodRequest.yml # Payment method creation request
-│   ├── UpdatePaymentMethodRequest.yml # Payment method update request
-│   ├── PaymentMethodResponse.yml    # Payment method response
-│   ├── PaymentMethodsListResponse.yml # Payment method list response
+│   │
+│   │ # Asset schemas
 │   ├── Asset.yml                    # Asset object
 │   ├── CreateAssetRequest.yml       # Asset creation request
 │   ├── UpdateAssetRequest.yml       # Asset update request
@@ -52,12 +70,13 @@ openapi/
 │   ├── AssetHistoryItem.yml         # Asset history item
 │   ├── AssetHistoryListResponse.yml # Asset history list response
 │   ├── AssetSummaryResponse.yml     # Asset summary response
+│   │
+│   │ # Budget schemas
 │   ├── BudgetOverviewResponse.yml   # Budget overview response
 │   ├── BudgetAlertsResponse.yml     # Budget alerts response
 │   ├── CategoryRemainingResponse.yml # Category remaining budget response
 │   ├── BudgetHistoryResponse.yml    # Budget history response
-│   ├── UpdateBudgetCategoryRequest.yml # Budget category update request
-│   └── BudgetCategoryResponse.yml   # Budget category response
+│   └── ... (other budget schemas)
 ├── responses/                       # Reusable response definitions
 │   └── common.yml                   # Common HTTP responses (400, 401, 404, 500)
 └── parameters/                      # Reusable parameter definitions

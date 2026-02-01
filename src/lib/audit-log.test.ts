@@ -2,71 +2,14 @@
  * Audit Logging Tests
  *
  * Tests for the audit logging module including:
- * - Event logging functionality
- * - Context extraction
- * - Event types
+ * - Hash functionality
+ * - Type definitions
  */
 
 import { describe, test, expect } from 'bun:test';
-import {
-  getAuditContext,
-  hashSensitiveValue,
-  type AuditContext,
-  type AuditEventData,
-} from './audit-log';
+import { hashSensitiveValue, type AuditAction, type AuditEntityType } from './audit-log';
 
 describe('audit-log', () => {
-  describe('getAuditContext', () => {
-    test('extracts IP address from clientAddress', () => {
-      const context = {
-        clientAddress: '192.168.1.100',
-        request: new Request('http://localhost/api/test', {
-          headers: { 'User-Agent': 'Test Browser' },
-        }),
-      };
-
-      const auditContext = getAuditContext(context);
-
-      expect(auditContext.ipAddress).toBe('192.168.1.100');
-    });
-
-    test('extracts user agent from request headers', () => {
-      const context = {
-        clientAddress: '192.168.1.100',
-        request: new Request('http://localhost/api/test', {
-          headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' },
-        }),
-      };
-
-      const auditContext = getAuditContext(context);
-
-      expect(auditContext.userAgent).toBe('Mozilla/5.0 (Windows NT 10.0; Win64; x64)');
-    });
-
-    test('handles missing user agent', () => {
-      const context = {
-        clientAddress: '192.168.1.100',
-        request: new Request('http://localhost/api/test'),
-      };
-
-      const auditContext = getAuditContext(context);
-
-      expect(auditContext.ipAddress).toBe('192.168.1.100');
-      expect(auditContext.userAgent).toBeNull();
-    });
-
-    test('handles IPv6 addresses', () => {
-      const context = {
-        clientAddress: '::1',
-        request: new Request('http://localhost/api/test'),
-      };
-
-      const auditContext = getAuditContext(context);
-
-      expect(auditContext.ipAddress).toBe('::1');
-    });
-  });
-
   describe('hashSensitiveValue', () => {
     test('returns null for undefined input', () => {
       expect(hashSensitiveValue(undefined)).toBeNull();
@@ -101,117 +44,62 @@ describe('audit-log', () => {
     });
   });
 
-  describe('AuditEventData', () => {
-    test('supports emailHash field for login failures', () => {
-      const eventData: AuditEventData = {
-        emailHash: hashSensitiveValue('test@example.com'),
-        error: 'Invalid credentials',
-      };
-
-      expect(eventData.emailHash).not.toBeNull();
-      expect(eventData.error).toBe('Invalid credentials');
+  describe('AuditAction types', () => {
+    test('create action is valid', () => {
+      const action: AuditAction = 'create';
+      expect(action).toBe('create');
     });
 
-    test('supports sessionHash for successful logins', () => {
-      const eventData: AuditEventData = {
-        sessionHash: hashSensitiveValue('session-123'),
-      };
-
-      expect(eventData.sessionHash).not.toBeNull();
+    test('update action is valid', () => {
+      const action: AuditAction = 'update';
+      expect(action).toBe('update');
     });
 
-    test('supports arbitrary additional data', () => {
-      const eventData: AuditEventData = {
-        customField: 'custom value',
-        nested: { key: 'value' },
-      };
+    test('delete action is valid', () => {
+      const action: AuditAction = 'delete';
+      expect(action).toBe('delete');
+    });
 
-      expect(eventData.customField).toBe('custom value');
-      expect(eventData.nested).toEqual({ key: 'value' });
+    test('login action is valid', () => {
+      const action: AuditAction = 'login';
+      expect(action).toBe('login');
+    });
+
+    test('logout action is valid', () => {
+      const action: AuditAction = 'logout';
+      expect(action).toBe('logout');
     });
   });
 
-  describe('AuditContext', () => {
-    test('allows null values for optional fields', () => {
-      const context: AuditContext = {
-        ipAddress: null,
-        userAgent: null,
-      };
-
-      expect(context.ipAddress).toBeNull();
-      expect(context.userAgent).toBeNull();
+  describe('AuditEntityType types', () => {
+    test('transaction entity type is valid', () => {
+      const entityType: AuditEntityType = 'transaction';
+      expect(entityType).toBe('transaction');
     });
 
-    test('allows string values for IP and user agent', () => {
-      const context: AuditContext = {
-        ipAddress: '10.0.0.1',
-        userAgent: 'curl/7.68.0',
-      };
-
-      expect(context.ipAddress).toBe('10.0.0.1');
-      expect(context.userAgent).toBe('curl/7.68.0');
-    });
-  });
-
-  describe('Event Types', () => {
-    test('LOGIN_SUCCESS event type is valid', () => {
-      const eventType = 'LOGIN_SUCCESS';
-      expect(eventType).toBe('LOGIN_SUCCESS');
+    test('category entity type is valid', () => {
+      const entityType: AuditEntityType = 'category';
+      expect(entityType).toBe('category');
     });
 
-    test('LOGIN_FAILURE event type is valid', () => {
-      const eventType = 'LOGIN_FAILURE';
-      expect(eventType).toBe('LOGIN_FAILURE');
+    test('asset entity type is valid', () => {
+      const entityType: AuditEntityType = 'asset';
+      expect(entityType).toBe('asset');
     });
 
-    test('LOGOUT event type is valid', () => {
-      const eventType = 'LOGOUT';
-      expect(eventType).toBe('LOGOUT');
+    test('budget entity type is valid', () => {
+      const entityType: AuditEntityType = 'budget';
+      expect(entityType).toBe('budget');
     });
 
-    test('SIGNUP event type is valid', () => {
-      const eventType = 'SIGNUP';
-      expect(eventType).toBe('SIGNUP');
+    test('user entity type is valid', () => {
+      const entityType: AuditEntityType = 'user';
+      expect(entityType).toBe('user');
     });
 
-    test('PASSWORD_RESET_REQUEST event type is valid', () => {
-      const eventType = 'PASSWORD_RESET_REQUEST';
-      expect(eventType).toBe('PASSWORD_RESET_REQUEST');
-    });
-
-    test('PASSWORD_CHANGE event type is valid', () => {
-      const eventType = 'PASSWORD_CHANGE';
-      expect(eventType).toBe('PASSWORD_CHANGE');
-    });
-
-    test('AUTH_FAILURE event type is valid', () => {
-      const eventType = 'AUTH_FAILURE';
-      expect(eventType).toBe('AUTH_FAILURE');
-    });
-  });
-
-  describe('JSON serialization of event data', () => {
-    test('event data can be serialized to JSON', () => {
-      const eventData: AuditEventData = {
-        email: 'test@example.com',
-        error: 'Test error',
-        sessionId: 'session-456',
-      };
-
-      const json = JSON.stringify(eventData);
-      const parsed = JSON.parse(json);
-
-      expect(parsed.email).toBe('test@example.com');
-      expect(parsed.error).toBe('Test error');
-      expect(parsed.sessionId).toBe('session-456');
-    });
-
-    test('handles undefined event data', () => {
-      const eventData: AuditEventData | undefined = undefined;
-
-      const json = eventData ? JSON.stringify(eventData) : null;
-
-      expect(json).toBeNull();
+    test('workspace entity type is valid', () => {
+      const entityType: AuditEntityType = 'workspace';
+      expect(entityType).toBe('workspace');
     });
   });
 });

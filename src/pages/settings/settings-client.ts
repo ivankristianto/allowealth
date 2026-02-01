@@ -55,25 +55,4 @@ document.addEventListener('DOMContentLoaded', () => {
   window.addEventListener('hashchange', () => {
     setActiveTab(resolveTabFromHash());
   });
-
-  const ctaModal = document.getElementById('settings-cta-modal') as HTMLDialogElement | null;
-  const ctaMessage = ctaModal?.querySelector<HTMLElement>('[data-cta-modal-message]') || null;
-
-  const openCtaModal = (label?: string) => {
-    if (!ctaModal) return;
-    if (ctaMessage) {
-      ctaMessage.textContent = label
-        ? `${label} is not yet implemented.`
-        : 'This feature is not yet implemented.';
-    }
-    ctaModal.showModal();
-  };
-
-  container.querySelectorAll<HTMLElement>('[data-cta-modal]').forEach((button) => {
-    button.addEventListener('click', (event) => {
-      event.preventDefault();
-      const label = button.dataset.ctaLabel;
-      openCtaModal(label);
-    });
-  });
 });

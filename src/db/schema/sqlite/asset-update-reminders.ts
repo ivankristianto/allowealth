@@ -1,13 +1,17 @@
 import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
 import { sqliteTimestampNow } from './base';
+import { workspaces } from './workspaces';
 import { users } from './users';
 import { assets } from './assets';
 
 export const assetUpdateReminders = sqliteTable('asset_update_reminders', {
   id: text('id').primaryKey(),
-  user_id: text('user_id')
+  workspace_id: text('workspace_id')
     .notNull()
-    .references(() => users.id, { onDelete: 'cascade' }),
+    .references(() => workspaces.id, { onDelete: 'cascade' }),
+  created_by_user_id: text('created_by_user_id')
+    .notNull()
+    .references(() => users.id),
   asset_id: text('asset_id')
     .notNull()
     .references(() => assets.id, { onDelete: 'cascade' }),

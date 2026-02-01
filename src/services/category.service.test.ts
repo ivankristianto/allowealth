@@ -12,7 +12,8 @@ describe('CategoryService', () => {
       // Create mock database
       const mockCategory: Category = {
         id: 'cat-1',
-        user_id: 'user-1',
+        workspace_id: 'workspace-1',
+        created_by_user_id: 'user-1',
         name: 'Food & Groceries',
         type: 'expense',
         description: 'Daily food and grocery purchases',
@@ -47,7 +48,8 @@ describe('CategoryService', () => {
       const categoryService = new CategoryService(mockDb);
 
       const input = {
-        user_id: 'user-1',
+        workspace_id: 'workspace-1',
+        created_by_user_id: 'user-1',
         name: 'Food & Groceries',
         type: 'expense' as const,
         icon: 'utensils',
@@ -65,7 +67,8 @@ describe('CategoryService', () => {
     it('should use default values for optional fields', async () => {
       const mockCategory: Category = {
         id: 'cat-2',
-        user_id: 'user-1',
+        workspace_id: 'workspace-1',
+        created_by_user_id: 'user-1',
         name: 'Salary',
         type: 'income',
         description: null,
@@ -100,7 +103,8 @@ describe('CategoryService', () => {
       const categoryService = new CategoryService(mockDb);
 
       const input = {
-        user_id: 'user-1',
+        workspace_id: 'workspace-1',
+        created_by_user_id: 'user-1',
         name: 'Salary',
         type: 'income' as const,
       };
@@ -116,7 +120,8 @@ describe('CategoryService', () => {
     it('should find category by id for user', async () => {
       const mockCategory: Category = {
         id: 'cat-1',
-        user_id: 'user-1',
+        workspace_id: 'workspace-1',
+        created_by_user_id: 'user-1',
         name: 'Food & Groceries',
         type: 'expense',
         description: 'Daily food and grocery purchases',
@@ -188,7 +193,8 @@ describe('CategoryService', () => {
       const mockCategories: Category[] = [
         {
           id: 'cat-1',
-          user_id: 'user-1',
+          workspace_id: 'workspace-1',
+          created_by_user_id: 'user-1',
           name: 'Food & Groceries',
           type: 'expense',
           description: 'Daily food and grocery purchases',
@@ -200,7 +206,8 @@ describe('CategoryService', () => {
         },
         {
           id: 'cat-2',
-          user_id: 'user-1',
+          workspace_id: 'workspace-1',
+          created_by_user_id: 'user-1',
           name: 'Salary',
           type: 'income',
           description: null,
@@ -243,7 +250,8 @@ describe('CategoryService', () => {
       const mockCategories: Category[] = [
         {
           id: 'cat-1',
-          user_id: 'user-1',
+          workspace_id: 'workspace-1',
+          created_by_user_id: 'user-1',
           name: 'Food & Groceries',
           type: 'expense',
           description: 'Daily food and grocery purchases',
@@ -286,7 +294,8 @@ describe('CategoryService', () => {
       const mockCategories: Category[] = [
         {
           id: 'cat-1',
-          user_id: 'user-1',
+          workspace_id: 'workspace-1',
+          created_by_user_id: 'user-1',
           name: 'Food & Groceries',
           type: 'expense',
           description: 'Daily food and grocery purchases',
@@ -330,7 +339,8 @@ describe('CategoryService', () => {
     it('should update category fields', async () => {
       const mockUpdatedCategory: Category = {
         id: 'cat-1',
-        user_id: 'user-1',
+        workspace_id: 'workspace-1',
+        created_by_user_id: 'user-1',
         name: 'Food & Groceries Updated',
         type: 'expense',
         description: 'Updated description',
@@ -374,7 +384,8 @@ describe('CategoryService', () => {
     it('should support partial updates', async () => {
       const mockUpdatedCategory: Category = {
         id: 'cat-1',
-        user_id: 'user-1',
+        workspace_id: 'workspace-1',
+        created_by_user_id: 'user-1',
         name: 'Food & Groceries',
         type: 'expense',
         description: 'Daily food and grocery purchases',
@@ -418,7 +429,8 @@ describe('CategoryService', () => {
     it('should soft delete category', async () => {
       const mockCategory: Category = {
         id: 'cat-1',
-        user_id: 'user-1',
+        workspace_id: 'workspace-1',
+        created_by_user_id: 'user-1',
         name: 'Food & Groceries',
         type: 'expense',
         description: 'Daily food and grocery purchases',

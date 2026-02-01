@@ -10,7 +10,7 @@
  * Response:
  * - 200: Login successful, sets session cookie
  * - 400: Invalid input
- * - 401: Invalid credentials
+ * - 401: Invalid credentials or user has been deleted
  * - 429: Too many requests (rate limited)
  * - 500: Server error
  */
@@ -32,13 +32,11 @@ import {
   applyRateLimitHeaders,
   RATE_LIMIT_PRESETS,
 } from '@/lib/rate-limit';
-import { logAuthEvent, getAuditContext, hashSensitiveValue } from '@/lib/audit-log';
 
 export const prerender = false;
 
 export const POST: APIRoute = async (context) => {
   const { request, clientAddress } = context;
-  const auditContext = getAuditContext(context);
   let email: string | undefined;
 
   try {
@@ -55,12 +53,16 @@ export const POST: APIRoute = async (context) => {
     }
 
     // Login user
-    const { user, session } = await login(email, password);
+    const { user, session, isDeleted } = await login(email, password);
 
-    // Log successful login (hash session ID for security)
-    await logAuthEvent('LOGIN_SUCCESS', user.id, auditContext, {
-      sessionHash: hashSensitiveValue(session.id),
-    });
+    // Check if user has been soft-deleted
+    if (isDeleted) {
+      return createErrorResponseResponse(
+        AUTH_ERRORS.INVALID_CREDENTIALS,
+        'This account has been deleted',
+        401
+      );
+    }
 
     // Create session cookie
     const sessionCookie = auth.createSessionCookie(session.id);
@@ -102,11 +104,6 @@ export const POST: APIRoute = async (context) => {
 
       switch (authError.code) {
         case AUTH_ERRORS.INVALID_CREDENTIALS:
-          // Log failed login attempt (hash email for privacy)
-          await logAuthEvent('LOGIN_FAILURE', null, auditContext, {
-            emailHash: hashSensitiveValue(email),
-            error: 'Invalid credentials',
-          });
           return createErrorResponseResponse(
             AUTH_ERRORS.INVALID_CREDENTIALS,
             'Invalid email or password',

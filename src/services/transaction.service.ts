@@ -31,7 +31,7 @@ export interface CSVRow {
 }
 
 export interface TransactionFilters {
-  user_id: string;
+  workspace_id: string;
   type?: 'expense' | 'income' | 'transfer';
   category_id?: string;
   category_ids?: string[]; // Multiple category filter
@@ -66,11 +66,11 @@ export class TransactionService {
     // Validate input using Zod schema
     const validated = createTransactionSchema.parse(input);
 
-    // For non-transfer transactions, verify category exists and belongs to user
+    // For non-transfer transactions, verify category exists and belongs to workspace
     if (validated.type !== 'transfer' && validated.category_id) {
       const category = await this.categoryService.findById(
         validated.category_id,
-        validated.user_id
+        validated.workspace_id
       );
       if (!category) {
         throw new TransactionServiceError(
@@ -88,15 +88,18 @@ export class TransactionService {
       }
     }
 
-    // Verify source asset exists and belongs to user
-    const asset = await this.assetService.findById(validated.asset_id, validated.user_id);
+    // Verify source asset exists and belongs to workspace
+    const asset = await this.assetService.findById(validated.asset_id, validated.workspace_id);
     if (!asset) {
       throw new TransactionServiceError(ServiceErrorCode.ASSET_NOT_FOUND, 'Asset not found', 404);
     }
 
     // For transfers, verify destination asset exists
     if (validated.type === 'transfer' && validated.to_asset_id) {
-      const toAsset = await this.assetService.findById(validated.to_asset_id, validated.user_id);
+      const toAsset = await this.assetService.findById(
+        validated.to_asset_id,
+        validated.workspace_id
+      );
       if (!toAsset) {
         throw new TransactionServiceError(
           ServiceErrorCode.ASSET_NOT_FOUND,
@@ -112,7 +115,8 @@ export class TransactionService {
       .insert(transactions)
       .values({
         id,
-        user_id: validated.user_id,
+        workspace_id: validated.workspace_id,
+        created_by_user_id: validated.created_by_user_id,
         type: validated.type,
         amount: validated.amount,
         currency: validated.currency,
@@ -126,18 +130,18 @@ export class TransactionService {
       })
       .returning();
 
-    return this.findById(id, validated.user_id);
+    return this.findById(id, validated.workspace_id);
   }
 
   /**
    * Find transaction by ID (with relations)
    * Excludes soft-deleted transactions
    */
-  async findById(id: string, user_id: string) {
+  async findById(id: string, workspaceId: string) {
     const result = await (this as any).db.query.transactions.findFirst({
       where: and(
         eq(transactions.id, id),
-        eq(transactions.user_id, user_id),
+        eq(transactions.workspace_id, workspaceId),
         sql`${transactions.deleted_at} IS NULL`
       ),
       with: {
@@ -155,7 +159,7 @@ export class TransactionService {
    */
   async findAll(filters: TransactionFilters) {
     const conditions = [
-      eq(transactions.user_id, filters.user_id),
+      eq(transactions.workspace_id, filters.workspace_id),
       sql`${transactions.deleted_at} IS NULL`,
     ];
 
@@ -212,13 +216,13 @@ export class TransactionService {
   /**
    * Update transaction
    */
-  async update(id: string, user_id: string, input: UpdateTransactionInput) {
+  async update(id: string, workspaceId: string, input: UpdateTransactionInput) {
     // Validate input using Zod schema
     const validated = updateTransactionSchema.parse(input);
 
     // Verify category if being updated
     if (validated.category_id !== undefined) {
-      const category = await this.categoryService.findById(validated.category_id, user_id);
+      const category = await this.categoryService.findById(validated.category_id, workspaceId);
       if (!category) {
         throw new TransactionServiceError(
           ServiceErrorCode.CATEGORY_NOT_FOUND,
@@ -237,7 +241,7 @@ export class TransactionService {
 
     // Verify asset if being updated
     if (validated.asset_id !== undefined) {
-      const asset = await this.assetService.findById(validated.asset_id, user_id);
+      const asset = await this.assetService.findById(validated.asset_id, workspaceId);
       if (!asset) {
         throw new TransactionServiceError(ServiceErrorCode.ASSET_NOT_FOUND, 'Asset not found', 404);
       }
@@ -245,7 +249,7 @@ export class TransactionService {
 
     // Verify destination asset if being updated
     if (validated.to_asset_id !== undefined && validated.to_asset_id !== null) {
-      const toAsset = await this.assetService.findById(validated.to_asset_id, user_id);
+      const toAsset = await this.assetService.findById(validated.to_asset_id, workspaceId);
       if (!toAsset) {
         throw new TransactionServiceError(
           ServiceErrorCode.ASSET_NOT_FOUND,
@@ -272,17 +276,17 @@ export class TransactionService {
     await (this as any).db
       .update(transactions)
       .set(updateData)
-      .where(and(eq(transactions.id, id), eq(transactions.user_id, user_id)));
+      .where(and(eq(transactions.id, id), eq(transactions.workspace_id, workspaceId)));
 
-    return this.findById(id, user_id);
+    return this.findById(id, workspaceId);
   }
 
   /**
    * Soft delete transaction
    */
-  async delete(id: string, user_id: string) {
+  async delete(id: string, workspaceId: string) {
     // Check if transaction exists
-    const transaction = await this.findById(id, user_id);
+    const transaction = await this.findById(id, workspaceId);
     if (!transaction) {
       throw new TransactionServiceError(
         ServiceErrorCode.TRANSACTION_NOT_FOUND,
@@ -297,7 +301,7 @@ export class TransactionService {
         deleted_at: new Date(),
         updated_at: new Date(),
       })
-      .where(and(eq(transactions.id, id), eq(transactions.user_id, user_id)));
+      .where(and(eq(transactions.id, id), eq(transactions.workspace_id, workspaceId)));
 
     return { success: true };
   }
@@ -307,7 +311,7 @@ export class TransactionService {
    */
   async count(filters: Omit<TransactionFilters, 'limit' | 'offset'>) {
     const conditions = [
-      eq(transactions.user_id, filters.user_id),
+      eq(transactions.workspace_id, filters.workspace_id),
       sql`${transactions.deleted_at} IS NULL`,
     ];
 
@@ -358,7 +362,8 @@ export class TransactionService {
    * Import transactions from CSV data
    */
   async importFromCSV(
-    user_id: string,
+    workspaceId: string,
+    createdByUserId: string,
     rows: CSVRow[],
     columnMapping: Record<string, string>
   ): Promise<CSVImportResult> {
@@ -368,15 +373,15 @@ export class TransactionService {
       errors: [],
     };
 
-    // Get user's categories and assets for lookup
-    const userCategories = await this.categoryService.findAll(user_id);
-    const userAssets = await this.assetService.findAll(user_id);
+    // Get workspace's categories and assets for lookup
+    const workspaceCategories = await this.categoryService.findAll(workspaceId);
+    const workspaceAssets = await this.assetService.findAll(workspaceId);
 
-    const categoryMap = new Map(userCategories.map((c) => [c.name.toLowerCase(), c.id]));
-    const assetMap = new Map(userAssets.map((a) => [a.name.toLowerCase(), a.id]));
+    const categoryMap = new Map(workspaceCategories.map((c) => [c.name.toLowerCase(), c.id]));
+    const assetMap = new Map(workspaceAssets.map((a) => [a.name.toLowerCase(), a.id]));
 
     // Get existing transactions for duplicate detection
-    const existingTransactions = await this.findAll({ user_id, limit: 10000 });
+    const existingTransactions = await this.findAll({ workspace_id: workspaceId, limit: 10000 });
     const existingKeys = new Set(
       existingTransactions.map(
         (t: any) =>
@@ -464,7 +469,8 @@ export class TransactionService {
 
         // Create transaction
         await this.create({
-          user_id,
+          workspace_id: workspaceId,
+          created_by_user_id: createdByUserId,
           type: typeStr as 'expense' | 'income' | 'transfer',
           amount: amountStr ?? '0',
           currency: currencyStr as 'IDR' | 'USD',

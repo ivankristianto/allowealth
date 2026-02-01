@@ -29,7 +29,8 @@ export type Currency = 'IDR' | 'USD';
  */
 export interface Asset {
   id: string;
-  user_id: string;
+  workspace_id: string;
+  created_by_user_id: string;
   name: string;
   type: AssetType;
   category_id?: string | null;
@@ -106,7 +107,8 @@ export interface AssetSummaryByType {
  */
 export interface AssetCategory {
   id: string;
-  user_id: string;
+  workspace_id: string;
+  created_by_user_id: string;
   name: string;
   description: string | null;
   is_liability: boolean;

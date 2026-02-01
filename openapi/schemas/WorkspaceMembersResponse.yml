@@ -1,0 +1,22 @@
+# Workspace Members Response Schema
+WorkspaceMembersResponse:
+  allOf:
+    - $ref: './ApiErrorResponse.yml#/ApiResponse'
+    - type: object
+      required:
+        - success
+        - data
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          required:
+            - members
+          properties:
+            members:
+              type: array
+              description: List of workspace members
+              items:
+                $ref: './WorkspaceMember.yml#/WorkspaceMember'

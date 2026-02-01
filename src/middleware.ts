@@ -12,7 +12,7 @@
  */
 
 import type { MiddlewareHandler } from 'astro';
-import { auth } from './lib/auth/lucia';
+import { auth, type User } from './lib/auth/lucia';
 import { logError } from './lib/utils/error-logger';
 import {
   generateCsrfToken,
@@ -195,7 +195,33 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
 
   try {
     // Validate session using Lucia
-    const { session, user } = await auth.validateSession(sessionId);
+    const { session, user: luciaUser } = await auth.validateSession(sessionId);
+
+    // Cast to our custom User type which includes workspace fields
+    const user = luciaUser as User | null;
+
+    // Check if user has been soft-deleted
+    if (user?.deletedAt !== null && user?.deletedAt !== undefined) {
+      // User is soft-deleted - treat as unauthenticated
+      (context.locals as any).user = null;
+      (context.locals as any).session = null;
+
+      // Redirect to login if accessing protected route
+      if (isProtectedRoute) {
+        const returnUrl = pathname + context.url.search;
+        return context.redirect(`/login?redirect=${encodeURIComponent(returnUrl)}`, 302);
+      }
+
+      // Still apply CSP headers
+      const response = await next();
+      response.headers.set('Content-Security-Policy', buildCSPHeader(nonce));
+      response.headers.set('X-Content-Type-Options', 'nosniff');
+      response.headers.set('X-Frame-Options', 'DENY');
+      response.headers.set('X-XSS-Protection', '1; mode=block');
+      response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+
+      return response;
+    }
 
     // Session is valid - attach user and session to locals
     (context.locals as any).session = session;

@@ -1,0 +1,190 @@
+/**
+ * Workspace Service
+ *
+ * Provides high-level workspace operations.
+ * Handles workspace CRUD and member management.
+ *
+ * Error codes:
+ * - WORKSPACE_NOT_FOUND: Workspace doesn't exist
+ * - VALIDATION_ERROR: Input validation failed
+ */
+
+import { workspaces, users, type IDatabase } from '@/db';
+import { eq, and, isNull } from 'drizzle-orm';
+import { nanoid } from 'nanoid';
+import { z } from 'zod';
+import { WorkspaceServiceError, ServiceErrorCode } from './service-errors';
+
+/**
+ * Zod schemas for workspace service validation
+ */
+export const createWorkspaceSchema = z.object({
+  name: z
+    .string()
+    .min(1, 'Workspace name is required')
+    .max(255, 'Workspace name must be less than 255 characters'),
+});
+
+export const updateWorkspaceNameSchema = z.object({
+  name: z
+    .string()
+    .min(1, 'Workspace name is required')
+    .max(255, 'Workspace name must be less than 255 characters'),
+});
+
+/**
+ * Input types inferred from Zod schemas
+ */
+export type CreateWorkspaceInput = z.infer<typeof createWorkspaceSchema>;
+export type UpdateWorkspaceNameInput = z.infer<typeof updateWorkspaceNameSchema>;
+
+/**
+ * Workspace type inferred from schema
+ */
+export type Workspace = typeof workspaces.$inferSelect;
+
+/**
+ * User type for getMembers result (excludes password hash)
+ */
+export type WorkspaceMember = Omit<typeof users.$inferSelect, 'password_hash'>;
+
+/**
+ * Workspace Service
+ */
+export class WorkspaceService {
+  /**
+   * Create a new WorkspaceService with database injection
+   * @param db - Database instance (injected for testability)
+   */
+  constructor(private db: IDatabase) {}
+
+  /**
+   * Create a new workspace
+   *
+   * @param input - Workspace creation data
+   * @returns Promise resolving to created workspace
+   * @throws {WorkspaceServiceError} If validation fails
+   */
+  async create(input: CreateWorkspaceInput): Promise<Workspace> {
+    // Validate input using Zod schema
+    const validated = createWorkspaceSchema.parse(input);
+
+    const id = nanoid();
+    const now = new Date();
+
+    const [workspace] = await this.db
+      .insert(workspaces)
+      .values({
+        id,
+        name: validated.name.trim(),
+        created_at: now,
+        updated_at: now,
+      })
+      .returning();
+
+    return workspace;
+  }
+
+  /**
+   * Find workspace by ID
+   *
+   * @param id - Workspace ID
+   * @returns Promise resolving to workspace or null if not found
+   */
+  async findById(id: string): Promise<Workspace | null> {
+    const workspace = await this.db.query.workspaces.findFirst({
+      where: eq(workspaces.id, id),
+    });
+
+    return workspace ?? null;
+  }
+
+  /**
+   * Delete workspace and all associated data
+   *
+   * Note: Due to ON DELETE CASCADE constraints, deleting a workspace will
+   * automatically delete all related data (users, categories, transactions, etc.)
+   *
+   * @param id - Workspace ID to delete
+   * @throws {WorkspaceServiceError} If workspace not found
+   */
+  async delete(id: string): Promise<void> {
+    // Check if workspace exists
+    const workspace = await this.findById(id);
+    if (!workspace) {
+      throw new WorkspaceServiceError(
+        ServiceErrorCode.WORKSPACE_NOT_FOUND,
+        'Workspace not found',
+        404
+      );
+    }
+
+    // Delete workspace (cascades to all related data)
+    await this.db.delete(workspaces).where(eq(workspaces.id, id));
+  }
+
+  /**
+   * Get all members of a workspace
+   *
+   * Returns users who belong to the workspace and are not soft-deleted.
+   *
+   * @param workspaceId - Workspace ID
+   * @returns Promise resolving to array of workspace members
+   * @throws {WorkspaceServiceError} If workspace not found
+   */
+  async getMembers(workspaceId: string): Promise<WorkspaceMember[]> {
+    // Check if workspace exists
+    const workspace = await this.findById(workspaceId);
+    if (!workspace) {
+      throw new WorkspaceServiceError(
+        ServiceErrorCode.WORKSPACE_NOT_FOUND,
+        'Workspace not found',
+        404
+      );
+    }
+
+    // Get all non-deleted users in the workspace
+    const members = await this.db.query.users.findMany({
+      where: and(eq(users.workspace_id, workspaceId), isNull(users.deleted_at)),
+    });
+
+    // Map to exclude password_hash for security
+    return members.map(({ password_hash: _, ...member }) => member);
+  }
+
+  /**
+   * Update workspace name
+   *
+   * @param id - Workspace ID
+   * @param name - New workspace name
+   * @returns Promise resolving to updated workspace
+   * @throws {WorkspaceServiceError} If workspace not found or validation fails
+   */
+  async updateName(id: string, name: string): Promise<Workspace> {
+    // Validate input
+    const validated = updateWorkspaceNameSchema.parse({ name });
+
+    // Check if workspace exists
+    const workspace = await this.findById(id);
+    if (!workspace) {
+      throw new WorkspaceServiceError(
+        ServiceErrorCode.WORKSPACE_NOT_FOUND,
+        'Workspace not found',
+        404
+      );
+    }
+
+    // Update workspace name
+    await this.db
+      .update(workspaces)
+      .set({
+        name: validated.name.trim(),
+        updated_at: new Date(),
+      })
+      .where(eq(workspaces.id, id));
+
+    // Return updated workspace
+    const updated = await this.findById(id);
+    return updated!;
+  }
+}

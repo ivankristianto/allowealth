@@ -8,15 +8,36 @@ import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
 import { UserService } from './user.service';
 import { ServiceErrorCode } from './service-errors';
 import { db } from '@/db/index';
-import { users, userMeta } from '@/db/schema';
+import { users, userMeta, workspaces } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { hashPassword } from '@/lib/auth/password';
+
+// Test workspace for all test users
+const TEST_WORKSPACE_ID = 'test-workspace-user-service';
+
+/**
+ * Ensure test workspace exists
+ */
+async function ensureTestWorkspace() {
+  const existing = await db.query.workspaces.findFirst({
+    where: eq(workspaces.id, TEST_WORKSPACE_ID),
+  });
+  if (!existing) {
+    await db.insert(workspaces).values({
+      id: TEST_WORKSPACE_ID,
+      name: 'Test Workspace',
+      created_at: new Date(),
+      updated_at: new Date(),
+    });
+  }
+}
 
 /**
  * Helper to create a test user
  */
 async function createTestUser(email: string, password: string, name: string) {
+  await ensureTestWorkspace();
   const userId = nanoid();
   const passwordHash = await hashPassword(password);
 
@@ -24,9 +45,11 @@ async function createTestUser(email: string, password: string, name: string) {
     .insert(users)
     .values({
       id: userId,
+      workspace_id: TEST_WORKSPACE_ID,
       email: email.toLowerCase(),
       password_hash: passwordHash,
       name: name.trim(),
+      role: 'admin',
       created_at: new Date(),
       updated_at: new Date(),
     })

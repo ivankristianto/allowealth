@@ -58,7 +58,8 @@ const notesValidation = z
 
 // Schema for creating a budget (for service layer)
 export const createBudgetSchema = z.object({
-  user_id: z.string().min(1, 'User ID is required'),
+  workspace_id: z.string().min(1, 'Workspace ID is required'),
+  created_by_user_id: z.string().min(1, 'Created by user ID is required'),
   category_id: z.string().min(1, 'Category ID is required'),
   month: monthValidation,
   year: yearValidation,
@@ -81,7 +82,8 @@ export type UpdateBudgetInput = z.infer<typeof updateBudgetSchema>;
 // Schema for copying budgets to another month (for service layer)
 export const copyBudgetsSchema = z
   .object({
-    user_id: z.string().min(1, 'User ID is required'),
+    workspace_id: z.string().min(1, 'Workspace ID is required'),
+    created_by_user_id: z.string().min(1, 'Created by user ID is required'),
     source_month: monthValidation,
     source_year: yearValidation,
     target_month: monthValidation,

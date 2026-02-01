@@ -7,15 +7,19 @@ import {
   index,
   uniqueIndex,
 } from 'drizzle-orm/pg-core';
+import { workspaces } from './workspaces';
 import { users } from './users';
 
 export const assetCategories = pgTable(
   'asset_categories',
   {
     id: text('id').primaryKey(),
-    user_id: text('user_id')
+    workspace_id: text('workspace_id')
       .notNull()
-      .references(() => users.id, { onDelete: 'cascade' }),
+      .references(() => workspaces.id, { onDelete: 'cascade' }),
+    created_by_user_id: text('created_by_user_id')
+      .notNull()
+      .references(() => users.id),
     name: text('name').notNull(),
     description: text('description'),
     is_liability: boolean('is_liability').default(false).notNull(),
@@ -25,7 +29,7 @@ export const assetCategories = pgTable(
     updated_at: timestamp('updated_at').defaultNow().notNull(),
   },
   (table) => [
-    index('asset_categories_user_id_idx').on(table.user_id),
-    uniqueIndex('asset_categories_user_name_unique').on(table.user_id, table.name),
+    index('asset_categories_workspace_id_idx').on(table.workspace_id),
+    uniqueIndex('asset_categories_workspace_name_unique').on(table.workspace_id, table.name),
   ]
 );

@@ -9,12 +9,12 @@ import { logError } from '@/lib/utils';
  */
 export const GET: APIRoute = async (context) => {
   try {
-    const userId = getAuthenticatedUser(context);
+    const auth = getAuthenticatedUser(context);
     const { url } = context;
 
     // Parse filter params (same as list endpoint)
     const filters: any = {
-      user_id: userId,
+      workspace_id: auth.workspaceId,
     };
 
     const type = url.searchParams.get('type');

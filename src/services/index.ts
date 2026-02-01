@@ -24,6 +24,9 @@ import { DashboardService } from './dashboard.service';
 import { UserService } from './user.service';
 import { UserMetaService } from './user-meta.service';
 import { ReportService } from './report.service';
+import { WorkspaceService } from './workspace.service';
+import { WorkspaceMetaService } from './workspace-meta.service';
+import { WorkspaceInvitationService } from './workspace-invitation.service';
 
 // Re-export types and utilities
 export * from './transaction.service';
@@ -36,6 +39,9 @@ export * from './dashboard.service';
 export * from './user.service';
 export * from './user-meta.service';
 export * from './report.service';
+export * from './workspace.service';
+export * from './workspace-meta.service';
+export * from './workspace-invitation.service';
 export * from './service-errors';
 
 // Export singleton instances with real database
@@ -48,3 +54,6 @@ export const dashboardService = new DashboardService(db);
 export const userService = new UserService(db);
 export const userMetaService = new UserMetaService(db);
 export const reportService = new ReportService(db);
+export const workspaceService = new WorkspaceService(db);
+export const workspaceMetaService = new WorkspaceMetaService(db);
+export const workspaceInvitationService = new WorkspaceInvitationService(db);

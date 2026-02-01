@@ -12,7 +12,7 @@ import { logError } from '@/lib/utils';
  */
 export const GET: APIRoute = async (context) => {
   try {
-    const userId = getAuthenticatedUser(context);
+    const auth = getAuthenticatedUser(context);
     const { id } = context.params;
 
     if (!id) {
@@ -25,7 +25,7 @@ export const GET: APIRoute = async (context) => {
       return errorResponse('Currency is required and must be IDR or USD', 400);
     }
 
-    const remaining = await budgetService.getCategoryRemaining(id, userId, currency);
+    const remaining = await budgetService.getCategoryRemaining(id, auth.workspaceId, currency);
 
     return successResponse(remaining);
   } catch (error) {

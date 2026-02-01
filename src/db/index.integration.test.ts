@@ -29,8 +29,11 @@
 
 import { describe, it, expect, beforeAll, beforeEach, afterEach } from 'bun:test';
 import { db, getDb, resetDb } from '@/db';
-import { users, categories, assets, transactions } from '@/db/schema';
+import { workspaces, users, categories, assets, transactions } from '@/db/schema';
 import { eq } from 'drizzle-orm';
+
+// Test workspace for all test users
+const TEST_WORKSPACE_ID = 'test-workspace-runtime-agnostic';
 import { execSync } from 'node:child_process';
 
 // Test database path (use -test postfix for isolation)
@@ -119,12 +122,24 @@ async function simulateMiddlewareImport() {
 async function createTestDatabase() {
   const testDb = getDb();
 
+  // Insert a test workspace
+  const testWorkspace = {
+    id: TEST_WORKSPACE_ID,
+    name: 'Runtime Test Workspace',
+    created_at: new Date(),
+    updated_at: new Date(),
+  };
+
+  await testDb.insert(workspaces).values(testWorkspace).onConflictDoNothing();
+
   // Insert a test user
   const testUser = {
     id: 'test-user-runtime-agnostic',
+    workspace_id: TEST_WORKSPACE_ID,
     email: 'runtime-test@example.com',
     password_hash: 'dummy_hash',
     name: 'Runtime Test User',
+    role: 'admin' as const,
     created_at: new Date(),
     updated_at: new Date(),
   };
@@ -134,12 +149,12 @@ async function createTestDatabase() {
   // Insert a test category
   const testCategory = {
     id: 'test-category-runtime',
-    user_id: testUser.id,
+    workspace_id: TEST_WORKSPACE_ID,
+    created_by_user_id: testUser.id,
     name: 'Test Category',
     type: 'expense' as const,
-    percentage: '10',
-    budget_amount: '1000000',
-    currency: 'IDR' as const,
+    icon: 'tag',
+    color: 'bg-neutral',
     is_active: true,
     created_at: new Date(),
     updated_at: new Date(),
@@ -150,7 +165,8 @@ async function createTestDatabase() {
   // Insert a test asset
   const testAsset = {
     id: 'test-asset-runtime',
-    user_id: testUser.id,
+    workspace_id: TEST_WORKSPACE_ID,
+    created_by_user_id: testUser.id,
     name: 'Test Asset',
     type: 'bank_account' as const,
     balance: '1000000',
@@ -165,7 +181,8 @@ async function createTestDatabase() {
   // Insert a test transaction
   const testTransaction = {
     id: 'test-tx-runtime',
-    user_id: testUser.id,
+    workspace_id: TEST_WORKSPACE_ID,
+    created_by_user_id: testUser.id,
     category_id: testCategory.id,
     asset_id: testAsset.id,
     type: 'expense' as const,
@@ -405,16 +422,16 @@ describe('Database Runtime-Agnostic Integration Tests', () => {
       expect(foundUser).toBeDefined();
       expect(foundUser?.email).toBe(testUser.email);
 
-      // Test READ with relations
+      // Test READ with relations (categories created by this user)
       const userWithCategories = await db.query.users.findFirst({
         where: eq(users.id, testUser.id),
         with: {
-          categories: true,
+          createdCategories: true,
         },
       });
 
-      expect(userWithCategories?.categories).toBeDefined();
-      expect(userWithCategories?.categories.length).toBeGreaterThan(0);
+      expect(userWithCategories?.createdCategories).toBeDefined();
+      expect(userWithCategories?.createdCategories.length).toBeGreaterThan(0);
     });
 
     it('should handle transaction operations correctly', async () => {
@@ -427,7 +444,8 @@ describe('Database Runtime-Agnostic Integration Tests', () => {
           .insert(transactions)
           .values({
             id: 'test-tx-transaction-test',
-            user_id: testUser.id,
+            workspace_id: TEST_WORKSPACE_ID,
+            created_by_user_id: testUser.id,
             category_id: testCategory.id,
             asset_id: testAsset.id,
             type: 'expense',
@@ -473,7 +491,8 @@ describe('Database Runtime-Agnostic Integration Tests', () => {
       // Create a category to delete
       await db.insert(categories).values({
         id: 'test-category-delete',
-        user_id: testUser.id,
+        workspace_id: TEST_WORKSPACE_ID,
+        created_by_user_id: testUser.id,
         name: 'Delete Test Category',
         type: 'expense',
         icon: 'tag',
@@ -590,9 +609,11 @@ describe('Database Runtime-Agnostic Integration Tests', () => {
       try {
         await db.insert(users).values({
           id: 'test-user-runtime-agnostic', // Same ID
+          workspace_id: TEST_WORKSPACE_ID,
           email: 'another@example.com',
           password_hash: 'hash',
           name: 'Another User',
+          role: 'admin',
           created_at: new Date(),
           updated_at: new Date(),
         });

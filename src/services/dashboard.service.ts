@@ -152,12 +152,12 @@ export class DashboardService {
   /**
    * Get total assets summed by currency
    *
-   * @param userId - User ID
+   * @param workspaceId - Workspace ID
    * @param primaryCurrency - Primary currency for converted total (default: IDR)
    * @returns Total assets by currency
    */
   async getTotalAssets(
-    userId: string,
+    workspaceId: string,
     primaryCurrency: 'IDR' | 'USD' = 'IDR'
   ): Promise<TotalAssets> {
     try {
@@ -166,14 +166,14 @@ export class DashboardService {
         throw new Error('Database query not available');
       }
 
-      // Get all non-deleted assets for user
-      const userAssets = await this.db.query.assets.findMany({
-        where: and(eq(assets.user_id, userId), sql`${assets.deleted_at} IS NULL`),
+      // Get all non-deleted assets for workspace
+      const workspaceAssets = await this.db.query.assets.findMany({
+        where: and(eq(assets.workspace_id, workspaceId), sql`${assets.deleted_at} IS NULL`),
       });
 
       // Sum by currency using decimal arithmetic
-      const idrBalances = userAssets.filter((a) => a.currency === 'IDR').map((a) => a.balance);
-      const usdBalances = userAssets.filter((a) => a.currency === 'USD').map((a) => a.balance);
+      const idrBalances = workspaceAssets.filter((a) => a.currency === 'IDR').map((a) => a.balance);
+      const usdBalances = workspaceAssets.filter((a) => a.currency === 'USD').map((a) => a.balance);
 
       const idrTotal = decimalSum(idrBalances);
       const usdTotal = decimalSum(usdBalances);
@@ -215,14 +215,14 @@ export class DashboardService {
   /**
    * Get total spending for a specific month
    *
-   * @param userId - User ID
+   * @param workspaceId - Workspace ID
    * @param month - Month (1-12)
    * @param year - Year
    * @param currency - Currency to aggregate (default: IDR)
    * @returns Monthly spending summary
    */
   async getMonthlySpent(
-    userId: string,
+    workspaceId: string,
     month: number,
     year: number,
     currency: 'IDR' | 'USD' = 'IDR'
@@ -254,7 +254,7 @@ export class DashboardService {
         .innerJoin(categories, eq(budgets.category_id, categories.id))
         .where(
           and(
-            eq(budgets.user_id, userId),
+            eq(budgets.workspace_id, workspaceId),
             eq(budgets.month, month),
             eq(budgets.year, year),
             eq(budgets.currency, currency),
@@ -273,7 +273,7 @@ export class DashboardService {
         .from(transactions)
         .where(
           and(
-            eq(transactions.user_id, userId),
+            eq(transactions.workspace_id, workspaceId),
             eq(transactions.type, 'expense'),
             eq(transactions.currency, currency),
             gte(transactions.transaction_date, startDate),
@@ -311,14 +311,14 @@ export class DashboardService {
   /**
    * Get total income for a specific month
    *
-   * @param userId - User ID
+   * @param workspaceId - Workspace ID
    * @param month - Month (1-12)
    * @param year - Year
    * @param currency - Currency to aggregate (default: IDR)
    * @returns Monthly income summary
    */
   async getMonthlyIncome(
-    userId: string,
+    workspaceId: string,
     month: number,
     year: number,
     currency: 'IDR' | 'USD' = 'IDR'
@@ -349,7 +349,7 @@ export class DashboardService {
         .from(transactions)
         .where(
           and(
-            eq(transactions.user_id, userId),
+            eq(transactions.workspace_id, workspaceId),
             eq(transactions.type, 'income'),
             eq(transactions.currency, currency),
             gte(transactions.transaction_date, startDate),
@@ -378,14 +378,14 @@ export class DashboardService {
    * Returns top 4 categories by spending amount, with remaining categories
    * grouped into "Other". Includes category colors for chart display.
    *
-   * @param userId - User ID
+   * @param workspaceId - Workspace ID
    * @param month - Month (1-12)
    * @param year - Year
    * @param currency - Currency to aggregate (default: IDR)
    * @returns Array of top category expenses (max 5: top 4 + Other)
    */
   async getTopCategoryExpenses(
-    userId: string,
+    workspaceId: string,
     month: number,
     year: number,
     currency: 'IDR' | 'USD' = 'IDR'
@@ -420,7 +420,7 @@ export class DashboardService {
         .innerJoin(categories, eq(transactions.category_id, categories.id))
         .where(
           and(
-            eq(transactions.user_id, userId),
+            eq(transactions.workspace_id, workspaceId),
             eq(transactions.type, 'expense'),
             eq(transactions.currency, currency),
             gte(transactions.transaction_date, startDate),
@@ -485,14 +485,14 @@ export class DashboardService {
   /**
    * Get budget health with alerts for a specific month
    *
-   * @param userId - User ID
+   * @param workspaceId - Workspace ID
    * @param month - Month (1-12)
    * @param year - Year
    * @param currency - Currency to check (default: IDR)
    * @returns Budget health with alerts
    */
   async getBudgetHealth(
-    userId: string,
+    workspaceId: string,
     month: number,
     year: number,
     currency: 'IDR' | 'USD' = 'IDR'
@@ -518,7 +518,7 @@ export class DashboardService {
       // Get all budgets for the month with their category info
       const monthBudgets = await this.db.query.budgets.findMany({
         where: and(
-          eq(budgets.user_id, userId),
+          eq(budgets.workspace_id, workspaceId),
           eq(budgets.month, month),
           eq(budgets.year, year),
           eq(budgets.currency, currency)
@@ -542,7 +542,7 @@ export class DashboardService {
         .from(transactions)
         .where(
           and(
-            eq(transactions.user_id, userId),
+            eq(transactions.workspace_id, workspaceId),
             eq(transactions.type, 'expense'),
             eq(transactions.currency, currency),
             gte(transactions.transaction_date, startDate),
@@ -599,10 +599,10 @@ export class DashboardService {
   /**
    * Get assets that need updating (older than 7 days)
    *
-   * @param userId - User ID
+   * @param workspaceId - Workspace ID
    * @returns Array of asset reminders
    */
-  async getAssetUpdateReminders(userId: string): Promise<AssetReminder[]> {
+  async getAssetUpdateReminders(workspaceId: string): Promise<AssetReminder[]> {
     try {
       // Check if db.query exists (for unit tests with mock db)
       if (!this.db?.query?.assets) {
@@ -610,14 +610,14 @@ export class DashboardService {
       }
 
       // Get all non-deleted assets
-      const userAssets = await this.db.query.assets.findMany({
-        where: and(eq(assets.user_id, userId), sql`${assets.deleted_at} IS NULL`),
+      const workspaceAssets = await this.db.query.assets.findMany({
+        where: and(eq(assets.workspace_id, workspaceId), sql`${assets.deleted_at} IS NULL`),
       });
 
       // Calculate priority for each asset
       const reminders: AssetReminder[] = [];
 
-      for (const asset of userAssets) {
+      for (const asset of workspaceAssets) {
         const priorityResult = calculateAssetPriority(asset.last_updated);
 
         // Only include assets that need update (>7 days)
@@ -652,14 +652,14 @@ export class DashboardService {
   }
 
   /**
-   * Get recent transactions for the user
+   * Get recent transactions for the workspace
    *
-   * @param userId - User ID
+   * @param workspaceId - Workspace ID
    * @param limit - Maximum number of transactions to return (default: 5)
    * @returns Array of recent transactions
    */
   async getRecentTransactions(
-    userId: string,
+    workspaceId: string,
     limit: number = 5
   ): Promise<
     Array<{
@@ -696,7 +696,10 @@ export class DashboardService {
 
       // Get recent transactions
       const recentTransactions = await this.db.query.transactions.findMany({
-        where: and(eq(transactions.user_id, userId), sql`${transactions.deleted_at} IS NULL`),
+        where: and(
+          eq(transactions.workspace_id, workspaceId),
+          sql`${transactions.deleted_at} IS NULL`
+        ),
         with: {
           category: true,
           asset: true,
@@ -734,16 +737,16 @@ export class DashboardService {
   }
 
   /**
-   * Get complete dashboard data for a user
+   * Get complete dashboard data for a workspace
    *
-   * @param userId - User ID
+   * @param workspaceId - Workspace ID
    * @param month - Month (1-12, default: current month)
    * @param year - Year (default: current year)
    * @param currency - Primary currency (default: IDR)
    * @returns Complete dashboard data
    */
   async getDashboardData(
-    userId: string,
+    workspaceId: string,
     month?: number,
     year?: number,
     currency: 'IDR' | 'USD' = 'IDR'
@@ -762,13 +765,13 @@ export class DashboardService {
       assetReminders,
       recentTransactions,
     ] = await Promise.all([
-      this.getTotalAssets(userId, currency),
-      this.getMonthlySpent(userId, currentMonth, currentYear, currency),
-      this.getMonthlyIncome(userId, currentMonth, currentYear, currency),
-      this.getTopCategoryExpenses(userId, currentMonth, currentYear, currency),
-      this.getBudgetHealth(userId, currentMonth, currentYear, currency),
-      this.getAssetUpdateReminders(userId),
-      this.getRecentTransactions(userId, 10),
+      this.getTotalAssets(workspaceId, currency),
+      this.getMonthlySpent(workspaceId, currentMonth, currentYear, currency),
+      this.getMonthlyIncome(workspaceId, currentMonth, currentYear, currency),
+      this.getTopCategoryExpenses(workspaceId, currentMonth, currentYear, currency),
+      this.getBudgetHealth(workspaceId, currentMonth, currentYear, currency),
+      this.getAssetUpdateReminders(workspaceId),
+      this.getRecentTransactions(workspaceId, 10),
     ]);
 
     return {

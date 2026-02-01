@@ -17,7 +17,8 @@ export type { CategoryType };
 // Note: Budget-related fields (percentage, budget_amount, currency) are now in the budgets table
 export interface Category {
   id: string;
-  user_id: string;
+  workspace_id: string;
+  created_by_user_id: string;
   name: string;
   type: CategoryType;
   description: string | null; // Optional description, max 200 chars
@@ -29,7 +30,7 @@ export interface Category {
 }
 
 // Output types (with computed fields for API responses)
-export interface CategoryOutput extends Omit<Category, 'user_id'> {
+export interface CategoryOutput extends Omit<Category, 'workspace_id' | 'created_by_user_id'> {
   transaction_count?: number; // Number of transactions using this category
 }
 

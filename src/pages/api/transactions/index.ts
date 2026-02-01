@@ -26,14 +26,14 @@ import PaginationPartial from '@/components/partials/PaginationPartial.astro';
  */
 export const GET: APIRoute = async (context) => {
   try {
-    const userId = getAuthenticatedUser(context);
+    const auth = getAuthenticatedUser(context);
     const { url } = context;
 
     const { limit, offset } = getPaginationParams(url);
 
     // Parse filter params
     const filters: any = {
-      user_id: userId,
+      workspace_id: auth.workspaceId,
       limit,
       offset,
     };
@@ -98,7 +98,7 @@ export const GET: APIRoute = async (context) => {
     let monthSummary = null;
     if (filters.start_date && filters.end_date) {
       const monthTransactions = await transactionService.findAll({
-        user_id: userId,
+        workspace_id: auth.workspaceId,
         start_date: filters.start_date,
         end_date: filters.end_date,
         limit: PAGINATION.MAX_MONTH_TRANSACTIONS,
@@ -222,7 +222,7 @@ export const GET: APIRoute = async (context) => {
  */
 export const POST: APIRoute = async (context) => {
   try {
-    const userId = getAuthenticatedUser(context);
+    const auth = getAuthenticatedUser(context);
     const { request } = context;
 
     // Validate Content-Type header
@@ -242,7 +242,8 @@ export const POST: APIRoute = async (context) => {
     const transactionDate = new Date(validation.data.transaction_date + 'T00:00:00.000Z');
 
     const rawTransaction = await transactionService.create({
-      user_id: userId,
+      workspace_id: auth.workspaceId,
+      created_by_user_id: auth.userId,
       type: validation.data.type,
       amount: validation.data.amount,
       currency: validation.data.currency,

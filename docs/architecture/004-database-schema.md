@@ -4,92 +4,165 @@ This document describes the database schema design for the personal finance appl
 
 ## Core Principles
 
-1. **User Isolation**: All user data tables include `user_id` foreign key with cascade delete
-2. **Decimal Precision**: Money amounts stored as strings to prevent floating-point errors
-3. **Soft Deletes**: Transactional data uses `deleted_at` for audit trail
-4. **Timestamp Consistency**: All tables use Unix timestamps (milliseconds since epoch)
-5. **Type Safety**: Enums defined at schema level for consistent data validation
+1. **Workspace Isolation**: All financial data is scoped to workspaces via `workspace_id` foreign key with cascade delete
+2. **User Attribution**: All records track the creator via `created_by_user_id` for audit purposes
+3. **Decimal Precision**: Money amounts stored as strings to prevent floating-point errors
+4. **Soft Deletes**: Transactional data uses `deleted_at` for audit trail
+5. **Timestamp Consistency**: All tables use Unix timestamps (milliseconds since epoch)
+6. **Type Safety**: Enums defined at schema level for consistent data validation
+
+## Multi-Tenant Architecture
+
+The application uses a **workspace-centric** multi-tenant model:
+
+- **Workspace** = Shared financial context (personal, family, or team)
+- **Users** belong to a single workspace with role-based access (`admin` | `member`)
+- **All financial data** is scoped to the workspace, not individual users
+- **User attribution** tracks who created each record for audit purposes
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                     MULTI-TENANT HIERARCHY                              │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│   ┌───────────────┐                                                     │
+│   │  WORKSPACE    │◀──── Shared financial context                      │
+│   └───────┬───────┘                                                     │
+│           │                                                             │
+│           │ One workspace has many...                                   │
+│           │                                                             │
+│   ┌───────┴───────────────────────────────────────────────────────┐    │
+│   │                                                               │    │
+│   │   USERS (admin/member)                                        │    │
+│   │   CATEGORIES, ASSETS, TRANSACTIONS, BUDGETS, etc.            │    │
+│   │   All scoped by workspace_id                                  │    │
+│   │                                                               │    │
+│   └───────────────────────────────────────────────────────────────┘    │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+```
 
 ## Schema Overview
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                         DATABASE SCHEMA                             │
-├─────────────────────────────────────────────────────────────────────┤
-│                                                                     │
-│  ┌──────────────┐        ┌──────────────────┐                      │
-│  │   USERS      │◀───────│  USER_META       │  (key-value prefs)   │
-│  │              │        │                  │                      │
-│  └──────┬───────┘        └──────────────────┘                      │
-│         │                                                           │
-│         │ Cascade Delete                                           │
-│         │                                                           │
-│  ┌──────┴─────────────────────────────────────────────┐            │
-│  │                                                     │            │
-│  │   ┌──────────────────┐    ┌──────────────────┐    │            │
-│  ├──▶│ CATEGORIES       │    │ BUDGETS          │◀───┤            │
-│  │   └────────┬─────────┘    └────────┬─────────┘    │            │
-│  │            │                       │               │            │
-│  │            └───────┬───────────────┘               │            │
-│  │                    │                               │            │
-│  │            ┌───────▼────────┐                      │            │
-│  │            │ TRANSACTIONS   │                      │            │
-│  │            └───────┬────────┘                      │            │
-│  │                    │                               │            │
-│  │   ┌──────────────────┐    ┌───────────────────────┐│            │
-│  ├──▶│ ASSET_CATEGORIES │───▶│ ASSETS & LIABILITIES ││            │
-│  │   │ (user-defined)   │    │ (cash, bank, e-wallet,││            │
-│  │   └──────────────────┘    │  credit_card, loan)   ││            │
-│  │                           └────┬─────┬────────────┘│            │
-│  │                                │     │             │            │
-│  │   ┌────────────────────────────▼─────▼──────────┐ │            │
-│  │   │ ASSET_HISTORY                               │ │            │
-│  │   └─────────────────────────────────────────────┘ │            │
-│  │                                                     │            │
-│  │   ┌──────────────────────────────────────────────┐│            │
-│  ├──▶│ ASSET_UPDATE_REMINDERS                       ││            │
-│  │   └──────────────────────────────────────────────┘│            │
-│  │                                                     │            │
-│  │   ┌──────────────────┐                             │            │
-│  ├──▶│ ASSET_SNAPSHOTS  │                             │            │
-│  │   └────────┬─────────┘                             │            │
-│  │            │                                        │            │
-│  │   ┌────────▼──────────┐                            │            │
-│  │   │ ASSET_SNAPSHOT    │────────────────────────────┘            │
-│  │   │ _ITEMS            │         (links to ASSETS)              │
-│  │   └───────────────────┘                                         │
-│  │                                                                 │
-│  │   ┌──────────────────┐                                          │
-│  ├──▶│ SESSIONS         │                                          │
-│  │   └──────────────────┘                                          │
-│  │                                                                 │
-│  │   ┌──────────────────┐                                          │
-│  └──▶│ PASSWORD_RESET   │                                          │
-│      │ _TOKENS          │                                          │
-│      └──────────────────┘                                          │
-│                                                                     │
-│  ┌──────────────────┐                                              │
-│  │ EXCHANGE_RATES   │  (no user relation - shared data)           │
-│  └──────────────────┘                                              │
-│                                                                     │
-└─────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           DATABASE SCHEMA                                    │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  ┌──────────────────┐                                                       │
+│  │   WORKSPACES     │◀─────── Root entity for multi-tenancy                │
+│  └────────┬─────────┘                                                       │
+│           │                                                                  │
+│           ├──────────────────────────────────────────────────────────┐      │
+│           │                                                          │      │
+│  ┌────────▼────────┐    ┌──────────────────┐                        │      │
+│  │ WORKSPACE_META  │    │ WORKSPACE_       │                        │      │
+│  │ (key-value      │    │ INVITATIONS      │                        │      │
+│  │  settings)      │    │ (pending joins)  │                        │      │
+│  └─────────────────┘    └──────────────────┘                        │      │
+│                                                                      │      │
+│  ┌──────────────────┐   ┌──────────────────┐                        │      │
+│  │   USERS          │◀──│  USER_META       │  (user prefs)          │      │
+│  │ (workspace_id,   │   │                  │                        │      │
+│  │  role, deleted_at│   └──────────────────┘                        │      │
+│  └────────┬─────────┘                                               │      │
+│           │                                                          │      │
+│           │ All financial data scoped by workspace_id               │      │
+│           │ and tracks created_by_user_id                           │      │
+│           │                                                          │      │
+│  ┌────────┴────────────────────────────────────────────────────┐    │      │
+│  │                                                              │    │      │
+│  │   ┌──────────────────┐    ┌──────────────────┐              │    │      │
+│  │   │ CATEGORIES       │    │ BUDGETS          │◀─────────────┤    │      │
+│  │   │ (workspace_id,   │    │ (workspace_id,   │              │    │      │
+│  │   │  created_by_     │    │  created_by_     │              │    │      │
+│  │   │  user_id)        │    │  user_id)        │              │    │      │
+│  │   └────────┬─────────┘    └────────┬─────────┘              │    │      │
+│  │            │                       │                         │    │      │
+│  │            └───────┬───────────────┘                         │    │      │
+│  │                    │                                         │    │      │
+│  │            ┌───────▼────────┐                                │    │      │
+│  │            │ TRANSACTIONS   │                                │    │      │
+│  │            │ (workspace_id, │                                │    │      │
+│  │            │  created_by_   │                                │    │      │
+│  │            │  user_id)      │                                │    │      │
+│  │            └───────┬────────┘                                │    │      │
+│  │                    │                                         │    │      │
+│  │   ┌──────────────────┐    ┌───────────────────────┐         │    │      │
+│  │   │ ASSET_CATEGORIES │───▶│ ASSETS & LIABILITIES │         │    │      │
+│  │   │ (workspace_id,   │    │ (workspace_id,       │         │    │      │
+│  │   │  created_by_     │    │  created_by_user_id) │         │    │      │
+│  │   │  user_id)        │    │                       │         │    │      │
+│  │   └──────────────────┘    └────┬─────┬───────────┘         │    │      │
+│  │                                │     │                       │    │      │
+│  │   ┌────────────────────────────▼─────▼──────────┐           │    │      │
+│  │   │ ASSET_HISTORY                               │           │    │      │
+│  │   └─────────────────────────────────────────────┘           │    │      │
+│  │                                                              │    │      │
+│  │   ┌──────────────────────────────────────────────┐          │    │      │
+│  │   │ ASSET_UPDATE_REMINDERS (workspace_id,        │          │    │      │
+│  │   │                         created_by_user_id)  │          │    │      │
+│  │   └──────────────────────────────────────────────┘          │    │      │
+│  │                                                              │    │      │
+│  │   ┌──────────────────┐                                      │    │      │
+│  │   │ ASSET_SNAPSHOTS  │ (workspace_id, created_by_user_id)   │    │      │
+│  │   └────────┬─────────┘                                      │    │      │
+│  │            │                                                 │    │      │
+│  │   ┌────────▼──────────┐                                     │    │      │
+│  │   │ ASSET_SNAPSHOT    │─────────────────────────────────────┘    │      │
+│  │   │ _ITEMS            │         (links to ASSETS)                │      │
+│  │   └───────────────────┘                                          │      │
+│  │                                                                   │      │
+│  └───────────────────────────────────────────────────────────────────┘      │
+│                                                                              │
+│  ┌──────────────────┐                                                       │
+│  │ SESSIONS         │  (user_id → users.id)                                │
+│  └──────────────────┘                                                       │
+│                                                                              │
+│  ┌──────────────────┐                                                       │
+│  │ PASSWORD_RESET   │  (user_id → users.id)                                │
+│  │ _TOKENS          │                                                       │
+│  └──────────────────┘                                                       │
+│                                                                              │
+│  ┌──────────────────┐                                                       │
+│  │ EXCHANGE_RATES   │  (no workspace relation - shared data)               │
+│  └──────────────────┘                                                       │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ## Entity Relationship Diagram
 
 ```mermaid
 erDiagram
-    USERS ||--o{ USER_META : "has"
-    USERS ||--o{ CATEGORIES : "owns"
-    USERS ||--o{ ASSET_CATEGORIES : "owns"
-    USERS ||--o{ TRANSACTIONS : "creates"
-    USERS ||--o{ ASSETS : "owns"
-    USERS ||--o{ ASSET_UPDATE_REMINDERS : "has"
-    USERS ||--o{ ASSET_SNAPSHOTS : "creates"
-    USERS ||--o{ BUDGETS : "creates"
-    USERS ||--o{ SESSIONS : "has"
-    USERS ||--o{ PASSWORD_RESET_TOKENS : "requests"
+    %% Workspace-centric multi-tenant model
+    WORKSPACES ||--o{ WORKSPACE_META : "has_settings"
+    WORKSPACES ||--o{ WORKSPACE_INVITATIONS : "has_pending"
+    WORKSPACES ||--o{ USERS : "has_members"
+    WORKSPACES ||--o{ CATEGORIES : "contains"
+    WORKSPACES ||--o{ ASSET_CATEGORIES : "contains"
+    WORKSPACES ||--o{ TRANSACTIONS : "contains"
+    WORKSPACES ||--o{ ASSETS : "contains"
+    WORKSPACES ||--o{ ASSET_SNAPSHOTS : "contains"
+    WORKSPACES ||--o{ ASSET_UPDATE_REMINDERS : "contains"
+    WORKSPACES ||--o{ BUDGETS : "contains"
 
+    %% User relationships
+    USERS ||--o{ USER_META : "has_preferences"
+    USERS ||--o{ SESSIONS : "has_sessions"
+    USERS ||--o{ PASSWORD_RESET_TOKENS : "requests"
+    USERS ||--o{ WORKSPACE_INVITATIONS : "invites"
+
+    %% User creates financial data (audit trail)
+    USERS ||--o{ CATEGORIES : "creates"
+    USERS ||--o{ ASSET_CATEGORIES : "creates"
+    USERS ||--o{ TRANSACTIONS : "creates"
+    USERS ||--o{ ASSETS : "creates"
+    USERS ||--o{ ASSET_SNAPSHOTS : "creates"
+    USERS ||--o{ ASSET_UPDATE_REMINDERS : "creates"
+    USERS ||--o{ BUDGETS : "creates"
+
+    %% Financial data relationships
     CATEGORIES ||--o{ TRANSACTIONS : "categorizes"
     CATEGORIES ||--o{ BUDGETS : "allocates"
 
@@ -103,11 +176,44 @@ erDiagram
 
     ASSET_SNAPSHOTS ||--o{ ASSET_SNAPSHOT_ITEMS : "contains"
 
+    %% Workspace tables
+    WORKSPACES {
+        text id PK
+        text name
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    WORKSPACE_META {
+        text id PK
+        text workspace_id FK
+        text meta_key
+        text meta_value
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    WORKSPACE_INVITATIONS {
+        text id PK
+        text workspace_id FK
+        text email
+        text token UK
+        text invited_by_user_id FK
+        text role
+        timestamp expires_at
+        timestamp accepted_at
+        timestamp created_at
+    }
+
+    %% User tables
     USERS {
         text id PK
+        text workspace_id FK
         text email UK
         text password_hash
         text name
+        text role
+        timestamp deleted_at
         timestamp created_at
         timestamp updated_at
     }
@@ -135,16 +241,16 @@ erDiagram
         timestamp created_at
     }
 
+    %% Financial tables (workspace-scoped with user attribution)
     CATEGORIES {
         text id PK
-        text user_id FK
+        text workspace_id FK
+        text created_by_user_id FK
         text name
         text type
+        text description
         text icon
         text color
-        text percentage
-        text budget_amount
-        text currency
         boolean is_active
         timestamp created_at
         timestamp updated_at
@@ -152,7 +258,8 @@ erDiagram
 
     ASSET_CATEGORIES {
         text id PK
-        text user_id FK
+        text workspace_id FK
+        text created_by_user_id FK
         text name
         text description
         boolean is_liability
@@ -164,7 +271,8 @@ erDiagram
 
     BUDGETS {
         text id PK
-        text user_id FK
+        text workspace_id FK
+        text created_by_user_id FK
         text category_id FK
         integer month
         integer year
@@ -178,7 +286,8 @@ erDiagram
 
     TRANSACTIONS {
         text id PK
-        text user_id FK
+        text workspace_id FK
+        text created_by_user_id FK
         text category_id FK
         text asset_id FK
         text to_asset_id FK
@@ -194,7 +303,8 @@ erDiagram
 
     ASSETS {
         text id PK
-        text user_id FK
+        text workspace_id FK
+        text created_by_user_id FK
         text category_id FK
         text name
         text type
@@ -218,7 +328,8 @@ erDiagram
 
     ASSET_UPDATE_REMINDERS {
         text id PK
-        text user_id FK
+        text workspace_id FK
+        text created_by_user_id FK
         text asset_id FK
         text frequency
         timestamp last_updated
@@ -229,7 +340,8 @@ erDiagram
 
     ASSET_SNAPSHOTS {
         text id PK
-        text user_id FK
+        text workspace_id FK
+        text created_by_user_id FK
         timestamp snapshot_date
         integer month
         integer year
@@ -257,19 +369,71 @@ erDiagram
 
 ## Domain Organization
 
+### Workspace Management
+
+#### `workspaces`
+
+Root entity for multi-tenant data isolation. All financial data belongs to a workspace.
+
+- **Primary Key**: `id` (text)
+- **Key Fields**:
+  - `name`: Workspace display name (e.g., "Personal", "Family Budget")
+- **Cascade Deletes**: All workspace-owned data deleted on workspace removal
+- **Use Case**: Groups users and financial data into shared contexts
+
+#### `workspace_meta`
+
+Flexible key-value storage for workspace settings (currency preferences, display options, etc.).
+
+- **Primary Key**: `id` (text)
+- **Foreign Keys**: `workspace_id` → `workspaces.id` (cascade delete)
+- **Key Fields**:
+  - `meta_key`: Setting key (e.g., 'currency', 'weekStart', 'compactNumbers')
+  - `meta_value`: Setting value (JSON string or simple value)
+- **Unique Constraint**: (`workspace_id`, `meta_key`)
+- **Common Settings**:
+  - `currency`: Default currency ('IDR' | 'USD')
+  - `weekStart`: Week start day ('sunday' | 'monday')
+  - `compactNumbers`: Whether to show compact numbers (boolean as string)
+
+#### `workspace_invitations`
+
+Pending invitations for users to join a workspace.
+
+- **Primary Key**: `id` (text)
+- **Unique Constraints**: `token`
+- **Foreign Keys**:
+  - `workspace_id` → `workspaces.id` (cascade delete)
+  - `invited_by_user_id` → `users.id` (nullable, for system-generated invites)
+- **Key Fields**:
+  - `email`: Email address of invitee
+  - `token`: Unique invitation token (for secure joining)
+  - `role`: Assigned role on acceptance ('admin' | 'member')
+  - `expires_at`: Invitation expiration timestamp
+  - `accepted_at`: When invitation was accepted (NULL if pending)
+- **TTL**: Invitations typically expire after 7 days
+- **Use Case**: Enables workspace admins to invite new members
+
 ### Authentication & User Management
 
 #### `users`
 
-Core user accounts table.
+User accounts belonging to a workspace with role-based access.
 
 - **Primary Key**: `id` (text)
-- **Unique Constraints**: `email`
+- **Unique Constraints**: `email` (globally unique)
+- **Foreign Keys**: `workspace_id` → `workspaces.id` (cascade delete)
 - **Key Fields**:
+  - `workspace_id`: The workspace this user belongs to
   - `email`: User's email address (unique login identifier)
   - `password_hash`: Bcrypt hashed password
   - `name`: Display name
-- **Cascade Deletes**: All user-related data deleted on user removal
+  - `role`: User role within workspace ('admin' | 'member')
+  - `deleted_at`: Soft delete timestamp (for member removal without data loss)
+- **Roles**:
+  - `admin`: Can manage workspace settings, invite/remove members
+  - `member`: Can view and create financial data
+- **Soft Delete**: Removed members have `deleted_at` set (preserves audit trail)
 
 #### `sessions`
 
@@ -292,7 +456,7 @@ Secure password reset functionality.
 
 #### `user_meta`
 
-Flexible key-value storage for user preferences and settings. Replaces the old `user_settings` table with a more extensible design.
+Flexible key-value storage for user preferences and settings (personal to each user, not workspace-wide).
 
 - **Primary Key**: `meta_id` (text)
 - **Foreign Keys**: `user_id` → `users.id` (cascade delete)
@@ -310,50 +474,59 @@ Flexible key-value storage for user preferences and settings. Replaces the old `
 
 #### `categories`
 
-Income and expense categories for transaction organization.
-
-- **Primary Key**: `id` (text)
-- **Foreign Keys**: `user_id` → `users.id` (cascade delete)
-- **Key Fields**:
-  - `type`: 'expense' | 'income'
-  - `icon`: Lucide icon name (default: 'tag')
-  - `color`: DaisyUI semantic color class (default: 'bg-neutral')
-  - `percentage`: Budget allocation percentage (string for precision)
-  - `budget_amount`: Default monthly budget limit (string for precision)
-  - `currency`: IDR | USD
-  - `is_active`: Soft enable/disable
-- **Validation**: User can only see/use their own categories
-- **Note**: Budget amounts can be overridden per-period in the `budgets` table
-
-#### `budgets`
-
-Period-specific budget allocations for categories.
+Income and expense categories for transaction organization. Shared across the workspace.
 
 - **Primary Key**: `id` (text)
 - **Foreign Keys**:
-  - `user_id` → `users.id` (cascade delete)
+  - `workspace_id` → `workspaces.id` (cascade delete)
+  - `created_by_user_id` → `users.id` (audit trail)
+- **Key Fields**:
+  - `workspace_id`: Workspace this category belongs to
+  - `created_by_user_id`: User who created this category
+  - `name`: Category name
+  - `type`: 'expense' | 'income'
+  - `description`: Optional description (max 200 chars)
+  - `icon`: Lucide icon name (default: 'tag')
+  - `color`: DaisyUI semantic color class (default: 'bg-neutral')
+  - `is_active`: Soft enable/disable
+- **Validation**: All workspace members can see/use categories
+- **Note**: Budget amounts are defined in the `budgets` table per-period
+
+#### `budgets`
+
+Period-specific budget allocations for categories. Shared across the workspace.
+
+- **Primary Key**: `id` (text)
+- **Foreign Keys**:
+  - `workspace_id` → `workspaces.id` (cascade delete)
+  - `created_by_user_id` → `users.id` (audit trail)
   - `category_id` → `categories.id` (cascade delete)
 - **Key Fields**:
+  - `workspace_id`: Workspace this budget belongs to
+  - `created_by_user_id`: User who created this budget
   - `month`: Month (1-12)
   - `year`: Year (YYYY)
   - `budget_amount`: Budget limit for this period (string for precision)
   - `currency`: IDR | USD
   - `is_closed`: Whether this budget period is closed (for book closing)
   - `notes`: Optional notes for this budget period
-- **Unique Constraint**: (user_id, category_id, month, year)
+- **Unique Constraint**: (workspace_id, category_id, month, year)
 - **Use Case**: Allow flexible, period-specific budgeting overrides
 
 #### `transactions`
 
-Financial transactions (income/expenses/transfers).
+Financial transactions (income/expenses/transfers). Shared across the workspace.
 
 - **Primary Key**: `id` (text)
 - **Foreign Keys**:
-  - `user_id` → `users.id` (cascade delete)
+  - `workspace_id` → `workspaces.id` (cascade delete)
+  - `created_by_user_id` → `users.id` (audit trail)
   - `category_id` → `categories.id` (nullable for transfers)
   - `asset_id` → `assets.id` (source asset)
   - `to_asset_id` → `assets.id` (destination asset for transfers)
 - **Key Fields**:
+  - `workspace_id`: Workspace this transaction belongs to
+  - `created_by_user_id`: User who created this transaction
   - `type`: 'expense' | 'income' | 'transfer'
   - `amount`: Transaction amount (string for precision)
   - `currency`: IDR | USD
@@ -367,27 +540,34 @@ Financial transactions (income/expenses/transfers).
 
 #### `asset_categories`
 
-User-defined categories for organizing assets and liabilities.
+Workspace-defined categories for organizing assets and liabilities.
 
 - **Primary Key**: `id` (text)
-- **Foreign Keys**: `user_id` → `users.id` (cascade delete)
+- **Foreign Keys**:
+  - `workspace_id` → `workspaces.id` (cascade delete)
+  - `created_by_user_id` → `users.id` (audit trail)
 - **Key Fields**:
+  - `workspace_id`: Workspace this category belongs to
+  - `created_by_user_id`: User who created this category
   - `name`: Category name (e.g., "Investments", "Emergency Fund", "Retirement")
   - `description`: Optional description
   - `is_liability`: Whether this category is for liabilities (vs assets)
   - `is_system`: Whether this is a system-created default category (cannot be deleted)
   - `sort_order`: Display order for sorting categories
-- **Use Case**: Allows users to create custom groupings for their assets/liabilities beyond the built-in types
+- **Use Case**: Allows workspace members to create custom groupings for their assets/liabilities beyond the built-in types
 
 #### `assets`
 
-Accounts representing both assets (what you own) and liabilities (what you owe).
+Accounts representing both assets (what you own) and liabilities (what you owe). Shared across the workspace.
 
 - **Primary Key**: `id` (text)
 - **Foreign Keys**:
-  - `user_id` → `users.id` (cascade delete)
+  - `workspace_id` → `workspaces.id` (cascade delete)
+  - `created_by_user_id` → `users.id` (audit trail)
   - `category_id` → `asset_categories.id` (nullable, for custom grouping)
 - **Key Fields**:
+  - `workspace_id`: Workspace this asset belongs to
+  - `created_by_user_id`: User who created this asset
   - `type`: Asset type ('cash', 'bank_account', 'e_wallet', 'mutual_fund', 'bond', 'crypto', 'stock', 'other') or Liability type ('credit_card', 'loan')
   - `balance`: Current value (positive for assets, positive for liabilities - represents amount owed) (string for precision)
   - `currency`: IDR | USD
@@ -413,26 +593,33 @@ Balance change log for assets.
 
 #### `asset_update_reminders`
 
-Scheduled reminders to update asset balances.
+Scheduled reminders to update asset balances. Shared across the workspace.
 
 - **Primary Key**: `id` (text)
 - **Foreign Keys**:
-  - `user_id` → `users.id` (cascade delete)
+  - `workspace_id` → `workspaces.id` (cascade delete)
+  - `created_by_user_id` → `users.id` (audit trail)
   - `asset_id` → `assets.id` (cascade delete)
 - **Key Fields**:
+  - `workspace_id`: Workspace this reminder belongs to
+  - `created_by_user_id`: User who created this reminder
   - `frequency`: 'weekly' | 'monthly' | 'quarterly'
   - `last_updated`: Last time asset was updated
   - `next_reminder`: When to show next reminder
   - `is_dismissed`: User dismissed this reminder
-- **Use Case**: Prompt users to keep asset values current
+- **Use Case**: Prompt workspace members to keep asset values current
 
 #### `asset_snapshots`
 
-Monthly net worth snapshots.
+Monthly net worth snapshots. Shared across the workspace.
 
 - **Primary Key**: `id` (text)
-- **Foreign Keys**: `user_id` → `users.id` (cascade delete)
+- **Foreign Keys**:
+  - `workspace_id` → `workspaces.id` (cascade delete)
+  - `created_by_user_id` → `users.id` (audit trail)
 - **Key Fields**:
+  - `workspace_id`: Workspace this snapshot belongs to
+  - `created_by_user_id`: User who created this snapshot
   - `snapshot_date`: Date of snapshot capture
   - `month`: Month (1-12)
   - `year`: Year (YYYY)
@@ -517,17 +704,33 @@ is_active: integer('is_active', { mode: 'boolean' }).default(true).notNull();
 
 ## Schema Patterns
 
-### User Data Isolation
+### Workspace Data Isolation
 
-All user-owned tables include cascade delete:
+All workspace-owned tables include cascade delete:
 
 ```typescript
-user_id: text('user_id')
+workspace_id: text('workspace_id')
   .notNull()
-  .references(() => users.id, { onDelete: 'cascade' });
+  .references(() => workspaces.id, { onDelete: 'cascade' });
 ```
 
-When a user is deleted, all their data is automatically removed.
+When a workspace is deleted, all its data is automatically removed (users, categories, transactions, etc.).
+
+### User Attribution (Audit Trail)
+
+All financial tables track who created each record:
+
+```typescript
+created_by_user_id: text('created_by_user_id')
+  .notNull()
+  .references(() => users.id);
+```
+
+This enables:
+
+- Audit trail for who created each record
+- Filtering by creator if needed
+- No cascade delete (records persist even if creator is soft-deleted)
 
 ### Soft Deletes
 
@@ -678,17 +881,17 @@ bun run db:push
 
 ## Query Patterns
 
-### User Data Scoping
+### Workspace Data Scoping
 
-Always filter by `user_id`:
+Always filter by `workspace_id`:
 
 ```typescript
-// ✅ Correct - scoped to user
+// ✅ Correct - scoped to workspace
 const categories = await db.query.categories.findMany({
-  where: eq(categories.user_id, userId),
+  where: eq(categories.workspace_id, workspaceId),
 });
 
-// ❌ Wrong - exposes all users' data
+// ❌ Wrong - exposes all workspaces' data
 const categories = await db.query.categories.findMany();
 ```
 
@@ -698,7 +901,10 @@ Exclude deleted records:
 
 ```typescript
 // Active transactions only
-where: and(eq(transactions.user_id, userId), isNull(transactions.deleted_at));
+where: and(eq(transactions.workspace_id, workspaceId), isNull(transactions.deleted_at));
+
+// Active users only (not removed from workspace)
+where: and(eq(users.workspace_id, workspaceId), isNull(users.deleted_at));
 ```
 
 ### With Relations
@@ -707,13 +913,28 @@ Use Drizzle's relational queries for joins:
 
 ```typescript
 const txns = await db.query.transactions.findMany({
-  where: eq(transactions.user_id, userId),
+  where: eq(transactions.workspace_id, workspaceId),
   with: {
     category: true,
     asset: true,
     toAsset: true,
-    user: true,
+    createdBy: true, // User who created this transaction
   },
+});
+```
+
+### Filtering by Creator
+
+When needed, filter by who created the record:
+
+```typescript
+// Get transactions created by a specific user (within their workspace)
+const myTxns = await db.query.transactions.findMany({
+  where: and(
+    eq(transactions.workspace_id, workspaceId),
+    eq(transactions.created_by_user_id, userId),
+    isNull(transactions.deleted_at)
+  ),
 });
 ```
 
@@ -728,7 +949,10 @@ src/db/schema/
 │   ├── index.ts                  # Export all SQLite tables
 │   ├── base.ts                   # Common utilities (timestamps)
 │   ├── relations.ts              # Drizzle ORM relations
-│   ├── users.ts                  # User accounts
+│   ├── workspaces.ts             # Workspace (tenant) definition
+│   ├── workspace-meta.ts         # Workspace settings (key-value)
+│   ├── workspace-invitations.ts  # Pending workspace invitations
+│   ├── users.ts                  # User accounts (with workspace_id, role)
 │   ├── user-meta.ts              # User preferences (key-value)
 │   ├── sessions.ts               # Authentication sessions
 │   ├── password-reset-tokens.ts  # Password reset
@@ -749,12 +973,14 @@ src/db/schema/
 
 ## Key Takeaways
 
-1. **User Isolation**: All user data isolated by `user_id` with cascade deletes
-2. **Decimal Precision**: Money stored as strings to prevent floating-point errors
-3. **Soft Deletes**: Transactions and assets use `deleted_at` for audit trail
-4. **Multi-Currency**: Native currency storage with conversion at query time
-5. **Type Safety**: Drizzle schema provides end-to-end TypeScript types
-6. **Modular Organization**: One file per table for maintainability
+1. **Workspace Isolation**: All financial data isolated by `workspace_id` with cascade deletes
+2. **User Attribution**: All records track `created_by_user_id` for audit trail
+3. **Role-Based Access**: Users have `admin` or `member` role within their workspace
+4. **Decimal Precision**: Money stored as strings to prevent floating-point errors
+5. **Soft Deletes**: Transactions, assets, and users use `deleted_at` for audit trail
+6. **Multi-Currency**: Native currency storage with conversion at query time
+7. **Type Safety**: Drizzle schema provides end-to-end TypeScript types
+8. **Modular Organization**: One file per table for maintainability
 
 ## Related Documentation
 

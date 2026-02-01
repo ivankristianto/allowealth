@@ -13,7 +13,6 @@ import IconBadge from '@/components/atoms/IconBadge.astro';
 import PasswordChangeForm from '@/components/molecules/PasswordChangeForm.astro';
 import { User } from '@lucide/astro';
 import type { User as UserType } from '@/lib/auth/lucia';
-import { AVAILABLE_CURRENCIES, CURRENCY_META } from '@/lib/constants';
 import { patterns } from '@/lib/validation/patterns';
 import type { UserSettings } from '@/lib/constants/user-meta-keys';
 
@@ -34,13 +33,7 @@ const profileInitial = displayName ? displayName.charAt(0).toUpperCase() : 'U';
 const profileDetails = {
   phone: userSettings?.phone || '',
   bio: userSettings?.bio || '',
-  currency: userSettings?.currency || 'IDR',
 };
-
-const currencyOptions = AVAILABLE_CURRENCIES.map((code) => ({
-  value: code,
-  label: `${CURRENCY_META[code].name} (${code})`,
-}));
 ---
 
 <div class="space-y-8">
@@ -100,7 +93,7 @@ const currencyOptions = AVAILABLE_CURRENCIES.map((code) => ({
               />
             </div>
 
-            <div class="form-control">
+            <div class="form-control md:col-span-2">
               <Label htmlFor="phone">Phone Number</Label>
               <Input
                 type="text"
@@ -110,27 +103,6 @@ const currencyOptions = AVAILABLE_CURRENCIES.map((code) => ({
                 value={profileDetails.phone}
                 className="rounded-full py-4 px-6 h-14 text-base font-bold border border-base-300"
               />
-            </div>
-
-            <div class="form-control">
-              <Label htmlFor="currency" required>Default Currency</Label>
-              <select
-                id="currency"
-                name="primaryCurrency"
-                class="select select-bordered w-full h-14 rounded-full py-4 pl-6 pr-10 text-base font-bold border border-base-300 bg-base-200 focus:ring-2 focus:ring-accent focus:ring-opacity-20 focus:outline-none focus:ring-offset-2"
-                required
-              >
-                {
-                  currencyOptions.map((option) => (
-                    <option
-                      value={option.value}
-                      selected={option.value === profileDetails.currency}
-                    >
-                      {option.label}
-                    </option>
-                  ))
-                }
-              </select>
             </div>
 
             <div class="form-control md:col-span-2">

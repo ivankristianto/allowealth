@@ -1,5 +1,6 @@
 import { sqliteTable, text, integer, unique } from 'drizzle-orm/sqlite-core';
 import { sqliteTimestampNow } from './base';
+import { workspaces } from './workspaces';
 import { users } from './users';
 import { categories } from './categories';
 
@@ -7,9 +8,12 @@ export const budgets = sqliteTable(
   'budgets',
   {
     id: text('id').primaryKey(),
-    user_id: text('user_id')
+    workspace_id: text('workspace_id')
       .notNull()
-      .references(() => users.id, { onDelete: 'cascade' }),
+      .references(() => workspaces.id, { onDelete: 'cascade' }),
+    created_by_user_id: text('created_by_user_id')
+      .notNull()
+      .references(() => users.id),
     category_id: text('category_id')
       .notNull()
       .references(() => categories.id, { onDelete: 'cascade' }),
@@ -22,5 +26,7 @@ export const budgets = sqliteTable(
     created_at: integer('created_at', { mode: 'timestamp' }).default(sqliteTimestampNow).notNull(),
     updated_at: integer('updated_at', { mode: 'timestamp' }).default(sqliteTimestampNow).notNull(),
   },
-  (table) => [unique().on(table.user_id, table.category_id, table.month, table.year)]
+  (table) => [
+    unique('budgets_unique').on(table.workspace_id, table.category_id, table.month, table.year),
+  ]
 );

@@ -54,8 +54,8 @@ let userSettings: UserSettings = { ...DEFAULT_USER_SETTINGS };
 
 try {
   [categories, assets, userSettings] = await Promise.all([
-    categoryService.findAll(user.id, { is_active: true }),
-    assetService.findAll(user.id),
+    categoryService.findAll(user.workspaceId, { is_active: true }),
+    assetService.findAll(user.workspaceId),
     userMetaService.getUserSettings(user.id),
   ]);
 } catch (err) {

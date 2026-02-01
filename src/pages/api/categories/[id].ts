@@ -16,14 +16,14 @@ import { logError } from '@/lib/utils';
  */
 export const GET: APIRoute = async (context) => {
   try {
-    const userId = getAuthenticatedUser(context);
+    const auth = getAuthenticatedUser(context);
     const { id } = context.params;
 
     if (!id) {
       return errorResponse('Category ID is required', 400);
     }
 
-    const category = await categoryService.findById(id, userId);
+    const category = await categoryService.findById(id, auth.workspaceId);
 
     if (!category) {
       return errorResponse('Category not found', 404);
@@ -45,7 +45,7 @@ export const GET: APIRoute = async (context) => {
  */
 export const PUT: APIRoute = async (context) => {
   try {
-    const userId = getAuthenticatedUser(context);
+    const auth = getAuthenticatedUser(context);
     const { id } = context.params;
 
     if (!id) {
@@ -60,13 +60,13 @@ export const PUT: APIRoute = async (context) => {
 
     // Check if name is being updated and if it conflicts
     if (validation.data.name) {
-      const exists = await categoryService.existsByName(validation.data.name, userId, id);
+      const exists = await categoryService.existsByName(validation.data.name, auth.workspaceId, id);
       if (exists) {
         return errorResponse('Category with this name already exists', 409, 'DUPLICATE_NAME');
       }
     }
 
-    const category = await categoryService.update(id, userId, validation.data);
+    const category = await categoryService.update(id, auth.workspaceId, validation.data);
 
     if (!category) {
       return errorResponse('Category not found', 404);
@@ -88,14 +88,14 @@ export const PUT: APIRoute = async (context) => {
  */
 export const DELETE: APIRoute = async (context) => {
   try {
-    const userId = getAuthenticatedUser(context);
+    const auth = getAuthenticatedUser(context);
     const { id } = context.params;
 
     if (!id) {
       return errorResponse('Category ID is required', 400);
     }
 
-    await categoryService.delete(id, userId);
+    await categoryService.delete(id, auth.workspaceId);
 
     return successResponse({ message: 'Category deleted successfully' });
   } catch (error) {

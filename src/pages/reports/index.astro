@@ -36,8 +36,8 @@ import { safeParseDecimal } from '@/lib/utils/decimal';
 const currentPath = '/reports';
 
 // Ensure user is authenticated
-const userId = Astro.locals.user?.id;
-if (!userId) {
+const user = Astro.locals.user;
+if (!user?.id) {
   return Astro.redirect('/login');
 }
 
@@ -128,10 +128,10 @@ let reportData: ReportData;
 
 try {
   if (defaultRange === 'monthly') {
-    reportData = await reportService.getMonthlyReport(userId, defaultPeriod, currency);
+    reportData = await reportService.getMonthlyReport(user.workspaceId, defaultPeriod, currency);
   } else {
     const year = parseInt(defaultPeriod, 10);
-    reportData = await reportService.getYearlyReport(userId, year, currency);
+    reportData = await reportService.getYearlyReport(user.workspaceId, year, currency);
   }
 } catch (error) {
   console.error('Error fetching report data:', error);

@@ -175,6 +175,11 @@ function sanitizeString(input: string): string {
  * @param error - The error to log (will be sanitized)
  */
 export function logError(message: string, error: unknown): void {
+  // Skip logging in test environment to avoid noisy output
+  if (process.env.NODE_ENV === 'test') {
+    return;
+  }
+
   const sanitized = sanitizeError(error, message);
 
   // Build the log message

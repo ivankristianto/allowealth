@@ -16,14 +16,14 @@ import { logError } from '@/lib/utils';
  */
 export const GET: APIRoute = async (context) => {
   try {
-    const userId = getAuthenticatedUser(context);
+    const auth = getAuthenticatedUser(context);
     const { id } = context.params;
 
     if (!id) {
       return errorResponse('Budget ID is required', 400);
     }
 
-    const budget = await budgetService.getBudgetById(id, userId);
+    const budget = await budgetService.getBudgetById(id, auth.workspaceId);
 
     if (!budget) {
       return errorResponse('Budget not found', 404);
@@ -45,7 +45,7 @@ export const GET: APIRoute = async (context) => {
  */
 export const PUT: APIRoute = async (context) => {
   try {
-    const userId = getAuthenticatedUser(context);
+    const auth = getAuthenticatedUser(context);
     const { id } = context.params;
 
     if (!id) {
@@ -58,7 +58,7 @@ export const PUT: APIRoute = async (context) => {
       return errorResponse('Validation failed', 400, 'VALIDATION_ERROR', validation.error.issues);
     }
 
-    const budget = await budgetService.updateBudget(id, userId, validation.data);
+    const budget = await budgetService.updateBudget(id, auth.workspaceId, validation.data);
 
     return successResponse(budget);
   } catch (error) {
@@ -79,14 +79,14 @@ export const PUT: APIRoute = async (context) => {
  */
 export const DELETE: APIRoute = async (context) => {
   try {
-    const userId = getAuthenticatedUser(context);
+    const auth = getAuthenticatedUser(context);
     const { id } = context.params;
 
     if (!id) {
       return errorResponse('Budget ID is required', 400);
     }
 
-    await budgetService.deleteBudget(id, userId);
+    await budgetService.deleteBudget(id, auth.workspaceId);
 
     return successResponse({ message: 'Budget deleted successfully' });
   } catch (error) {

@@ -11,17 +11,15 @@ import { logError } from '@/lib/utils';
 import { UserServiceError, UserMetaServiceError } from '@/services/service-errors';
 import { db } from '@/db';
 import { z } from 'zod';
-import { SUPPORTED_CURRENCIES } from '@/lib/constants/user-meta-keys';
 
 /**
  * Schema for PUT request body - all profile fields in one request
  */
 const updateFullProfileSchema = z.object({
   name: z.string().min(1, 'Name is required').max(100, 'Name must be at most 100 characters'),
-  email: z.string().email('Invalid email format'),
+  email: z.email({ message: 'Invalid email format' }),
   phone: z.string().max(50, 'Phone must be at most 50 characters').optional().default(''),
   bio: z.string().max(500, 'Bio must be at most 500 characters').optional().default(''),
-  currency: z.enum(SUPPORTED_CURRENCIES).optional(),
 });
 
 /**
@@ -31,9 +29,9 @@ const updateFullProfileSchema = z.object({
  */
 export const GET: APIRoute = async (context) => {
   try {
-    const userId = getAuthenticatedUser(context);
+    const auth = getAuthenticatedUser(context);
     const user = await db.query.users.findFirst({
-      where: (users, { eq }) => eq(users.id, userId),
+      where: (users, { eq }) => eq(users.id, auth.userId),
     });
 
     if (!user) {
@@ -41,7 +39,7 @@ export const GET: APIRoute = async (context) => {
     }
 
     // Get user settings from meta
-    const settings = await userMetaService.getUserSettings(userId);
+    const settings = await userMetaService.getUserSettings(auth.userId);
 
     return successResponse({
       id: user.id,
@@ -49,7 +47,6 @@ export const GET: APIRoute = async (context) => {
       email: user.email,
       phone: settings.phone,
       bio: settings.bio,
-      currency: settings.currency,
     });
   } catch (error) {
     if (error instanceof Error && error.message === 'Unauthorized') {
@@ -65,7 +62,7 @@ export const GET: APIRoute = async (context) => {
  *
  * Updates all profile fields in one request:
  * - name, email -> users table
- * - phone, bio, currency -> user_meta table
+ * - phone, bio -> user_meta table
  *
  * @example
  * Request:
@@ -74,14 +71,13 @@ export const GET: APIRoute = async (context) => {
  *   "name": "John Doe",
  *   "email": "john@example.com",
  *   "phone": "+1234567890",
- *   "bio": "Developer",
- *   "currency": "USD"
+ *   "bio": "Developer"
  * }
  * ```
  */
 export const PUT: APIRoute = async (context) => {
   try {
-    const userId = getAuthenticatedUser(context);
+    const auth = getAuthenticatedUser(context);
 
     const validation = await validateBody(context.request, updateFullProfileSchema);
 
@@ -89,28 +85,25 @@ export const PUT: APIRoute = async (context) => {
       return errorResponse('Validation failed', 400, 'VALIDATION_ERROR', validation.error.issues);
     }
 
-    const { name, email, phone, bio, currency } = validation.data;
+    const { name, email, phone, bio } = validation.data;
 
     // Update user table (name, email)
-    const user = await userService.updateProfile(userId, { name, email });
+    const user = await userService.updateProfile(auth.userId, { name, email });
 
-    // Update meta values (phone, bio, currency)
+    // Update meta values (phone, bio)
     const metaPromises: Promise<void>[] = [];
 
     if (phone !== undefined) {
-      metaPromises.push(userMetaService.setUserMeta(userId, 'phone', phone));
+      metaPromises.push(userMetaService.setUserMeta(auth.userId, 'phone', phone));
     }
     if (bio !== undefined) {
-      metaPromises.push(userMetaService.setUserMeta(userId, 'bio', bio));
-    }
-    if (currency !== undefined) {
-      metaPromises.push(userMetaService.setUserMeta(userId, 'currency', currency));
+      metaPromises.push(userMetaService.setUserMeta(auth.userId, 'bio', bio));
     }
 
     await Promise.all(metaPromises);
 
     // Get updated settings
-    const settings = await userMetaService.getUserSettings(userId);
+    const settings = await userMetaService.getUserSettings(auth.userId);
 
     return successResponse({
       id: user.id,
@@ -118,7 +111,6 @@ export const PUT: APIRoute = async (context) => {
       email: user.email,
       phone: settings.phone,
       bio: settings.bio,
-      currency: settings.currency,
     });
   } catch (error) {
     if (error instanceof Error && error.message === 'Unauthorized') {

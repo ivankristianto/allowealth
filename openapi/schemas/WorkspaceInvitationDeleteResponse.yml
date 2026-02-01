@@ -1,0 +1,21 @@
+# Workspace Invitation Delete Response Schema
+WorkspaceInvitationDeleteResponse:
+  allOf:
+    - $ref: './ApiErrorResponse.yml#/ApiResponse'
+    - type: object
+      required:
+        - success
+        - data
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          required:
+            - message
+          properties:
+            message:
+              type: string
+              description: Success message
+              example: "Invitation cancelled successfully"

@@ -17,7 +17,8 @@ const descriptionValidation = z
 const sortOrderValidation = z.number().int().min(0, 'Sort order must be 0 or greater');
 
 export const createAssetCategorySchema = z.object({
-  user_id: z.string().min(1, 'User ID is required'),
+  workspace_id: z.string().min(1, 'Workspace ID is required'),
+  created_by_user_id: z.string().min(1, 'Created by user ID is required'),
   name: nameValidation,
   description: descriptionValidation,
   is_liability: z.boolean(),

@@ -16,7 +16,8 @@ export type { TransactionType, Currency };
 // Database model (from schema)
 export interface Transaction {
   id: string;
-  user_id: string;
+  workspace_id: string;
+  created_by_user_id: string;
   category_id: string | null; // Nullable for transfers
   asset_id: string;
   to_asset_id: string | null; // For transfers only
@@ -33,7 +34,7 @@ export interface Transaction {
 // Output types (with relations for API responses)
 export interface TransactionOutput extends Omit<
   Transaction,
-  'user_id' | 'category_id' | 'asset_id' | 'to_asset_id'
+  'workspace_id' | 'created_by_user_id' | 'category_id' | 'asset_id' | 'to_asset_id'
 > {
   category: {
     id: string;

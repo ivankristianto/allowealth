@@ -1,0 +1,56 @@
+# Workspace Invitation Schema
+WorkspaceInvitation:
+  type: object
+  required:
+    - id
+    - email
+    - role
+    - expiresAt
+    - createdAt
+  properties:
+    id:
+      type: string
+      format: uuid
+      description: Invitation ID
+      example: "inv_123e4567-e89b-12d3-a456-426614174000"
+    email:
+      type: string
+      format: email
+      description: Invitee's email address
+      example: "jane@example.com"
+    role:
+      type: string
+      enum: [admin, member]
+      description: Role to be assigned on acceptance
+      example: "member"
+    invitedBy:
+      type: object
+      description: User who created the invitation
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Inviter's user ID
+        name:
+          type: string
+          description: Inviter's name
+        email:
+          type: string
+          format: email
+          description: Inviter's email
+    expiresAt:
+      type: integer
+      format: int64
+      description: Invitation expiration timestamp (Unix milliseconds)
+      example: 1704672000000
+    acceptedAt:
+      type: integer
+      format: int64
+      nullable: true
+      description: When the invitation was accepted (Unix milliseconds), null if pending
+      example: null
+    createdAt:
+      type: integer
+      format: int64
+      description: When the invitation was created (Unix milliseconds)
+      example: 1704067200000

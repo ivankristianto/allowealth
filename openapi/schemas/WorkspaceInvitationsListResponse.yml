@@ -1,0 +1,22 @@
+# Workspace Invitations List Response Schema
+WorkspaceInvitationsListResponse:
+  allOf:
+    - $ref: './ApiErrorResponse.yml#/ApiResponse'
+    - type: object
+      required:
+        - success
+        - data
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          required:
+            - invitations
+          properties:
+            invitations:
+              type: array
+              description: List of pending invitations
+              items:
+                $ref: './WorkspaceInvitation.yml#/WorkspaceInvitation'

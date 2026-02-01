@@ -1,11 +1,15 @@
 import { pgTable, text, integer, timestamp } from 'drizzle-orm/pg-core';
+import { workspaces } from './workspaces';
 import { users } from './users';
 
 export const assetSnapshots = pgTable('asset_snapshots', {
   id: text('id').primaryKey(),
-  user_id: text('user_id')
+  workspace_id: text('workspace_id')
     .notNull()
-    .references(() => users.id, { onDelete: 'cascade' }),
+    .references(() => workspaces.id, { onDelete: 'cascade' }),
+  created_by_user_id: text('created_by_user_id')
+    .notNull()
+    .references(() => users.id),
   snapshot_date: timestamp('snapshot_date').notNull(),
   month: integer('month').notNull(),
   year: integer('year').notNull(),

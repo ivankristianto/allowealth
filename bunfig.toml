@@ -2,3 +2,6 @@
 # Limit test discovery to src/ directory only
 # This excludes e2e/ directory - those tests run with Playwright, not bun test
 root = "./src"
+
+# Preload test setup to suppress noisy error output
+preload = ["./src/__tests__/setup.ts"]

@@ -102,3 +102,46 @@ export function isAuthenticated(astro: any): boolean {
 export function getCurrentUser(astro: any): any {
   return astro.locals?.user;
 }
+
+/**
+ * Require admin role for a route
+ *
+ * Checks if the user is authenticated and has admin role.
+ * If not authenticated, redirects to the login page.
+ * If authenticated but not admin, returns a 403 Forbidden response.
+ *
+ * @param astro - Astro global object
+ * @returns Response if not authorized, null if authorized
+ *
+ * @example
+ * ```astro
+ * ---
+ * import { requireAdmin } from '@/lib/auth/requireAuth';
+ *
+ * // Check admin authorization at the top of your admin-only page
+ * const authResponse = requireAdmin(Astro);
+ * if (authResponse) {
+ *   return authResponse;
+ * }
+ *
+ * // User is authenticated and is admin, proceed with page logic
+ * const user = Astro.locals.user;
+ * ---
+ * ```
+ */
+export function requireAdmin(astro: any): AuthCheckResult {
+  // First check if user is authenticated
+  const authResult = requireAuth(astro);
+  if (authResult) return authResult;
+
+  // Check if user has admin role
+  if (astro.locals?.user?.role !== 'admin') {
+    return new Response(JSON.stringify({ error: 'Admin access required' }), {
+      status: 403,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
+  // User is authenticated and is admin - allow access
+  return null;
+}

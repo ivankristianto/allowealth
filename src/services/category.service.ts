@@ -32,7 +32,8 @@ export class CategoryService {
       .insert(categories)
       .values({
         id,
-        user_id: validated.user_id,
+        workspace_id: validated.workspace_id,
+        created_by_user_id: validated.created_by_user_id,
         name: validated.name,
         type: validated.type,
         description: validated.description,
@@ -50,19 +51,22 @@ export class CategoryService {
   /**
    * Find category by ID
    */
-  async findById(id: string, user_id: string) {
+  async findById(id: string, workspaceId: string) {
     const result = await this.db.query.categories.findFirst({
-      where: and(eq(categories.id, id), eq(categories.user_id, user_id)),
+      where: and(eq(categories.id, id), eq(categories.workspace_id, workspaceId)),
     });
 
     return result;
   }
 
   /**
-   * Find all categories for a user
+   * Find all categories for a workspace
    */
-  async findAll(user_id: string, filters?: { type?: 'expense' | 'income'; is_active?: boolean }) {
-    const conditions = [eq(categories.user_id, user_id)];
+  async findAll(
+    workspaceId: string,
+    filters?: { type?: 'expense' | 'income'; is_active?: boolean }
+  ) {
+    const conditions = [eq(categories.workspace_id, workspaceId)];
 
     if (filters?.type) {
       conditions.push(eq(categories.type, filters.type));
@@ -84,7 +88,7 @@ export class CategoryService {
    * Update category
    * Note: Budget-related fields are now managed via the budgets table
    */
-  async update(id: string, user_id: string, input: UpdateCategoryInput) {
+  async update(id: string, workspaceId: string, input: UpdateCategoryInput) {
     // Validate input using Zod schema
     const validated = updateCategorySchema.parse(input);
 
@@ -102,17 +106,17 @@ export class CategoryService {
     await this.db
       .update(categories)
       .set(updateData)
-      .where(and(eq(categories.id, id), eq(categories.user_id, user_id)));
+      .where(and(eq(categories.id, id), eq(categories.workspace_id, workspaceId)));
 
-    return this.findById(id, user_id);
+    return this.findById(id, workspaceId);
   }
 
   /**
    * Delete category (soft delete by marking inactive)
    */
-  async delete(id: string, user_id: string) {
+  async delete(id: string, workspaceId: string) {
     // Check if category exists
-    const category = await this.findById(id, user_id);
+    const category = await this.findById(id, workspaceId);
     if (!category) {
       throw new CategoryServiceError(
         ServiceErrorCode.CATEGORY_NOT_FOUND,
@@ -127,17 +131,17 @@ export class CategoryService {
         is_active: false,
         updated_at: new Date(),
       })
-      .where(and(eq(categories.id, id), eq(categories.user_id, user_id)));
+      .where(and(eq(categories.id, id), eq(categories.workspace_id, workspaceId)));
 
     return { success: true };
   }
 
   /**
-   * Check if category name exists for user
+   * Check if category name exists for workspace
    */
-  async existsByName(name: string, user_id: string, excludeId?: string) {
+  async existsByName(name: string, workspaceId: string, excludeId?: string) {
     const conditions = [
-      eq(categories.user_id, user_id),
+      eq(categories.workspace_id, workspaceId),
       eq(categories.name, name),
       eq(categories.is_active, true),
     ];

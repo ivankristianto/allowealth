@@ -69,7 +69,7 @@ export class BudgetService {
    * Queries the budgets table (not categories) for budget amounts
    */
   async getMonthlyOverview(
-    user_id: string,
+    workspaceId: string,
     year: number,
     month: number,
     currency: 'IDR' | 'USD'
@@ -89,7 +89,7 @@ export class BudgetService {
     // Get all budgets for this month/year with category info
     const monthBudgets = await this.db.query.budgets.findMany({
       where: and(
-        eq(budgets.user_id, user_id),
+        eq(budgets.workspace_id, workspaceId),
         eq(budgets.month, month),
         eq(budgets.year, year),
         eq(budgets.currency, currency)
@@ -113,7 +113,7 @@ export class BudgetService {
       .from(transactions)
       .where(
         and(
-          eq(transactions.user_id, user_id),
+          eq(transactions.workspace_id, workspaceId),
           eq(transactions.type, 'expense'),
           eq(transactions.currency, currency),
           gte(transactions.transaction_date, startDate),
@@ -197,7 +197,7 @@ export class BudgetService {
    * Get budget history for multiple months
    */
   async getBudgetHistory(
-    user_id: string,
+    workspaceId: string,
     currency: 'IDR' | 'USD',
     months: number = 12
   ): Promise<MonthlyBudgetHistory[]> {
@@ -230,7 +230,7 @@ export class BudgetService {
       const year = date.getFullYear();
       const month = date.getMonth() + 1;
 
-      const overview = await this.getMonthlyOverview(user_id, year, month, currency);
+      const overview = await this.getMonthlyOverview(workspaceId, year, month, currency);
 
       const totalBudget = overview.total_budget;
       const totalSpent = overview.total_spent;
@@ -261,10 +261,10 @@ export class BudgetService {
   /**
    * Get budget alerts for current month
    */
-  async getAlerts(user_id: string, currency: 'IDR' | 'USD') {
+  async getAlerts(workspaceId: string, currency: 'IDR' | 'USD') {
     const now = new Date();
     const overview = await this.getMonthlyOverview(
-      user_id,
+      workspaceId,
       now.getFullYear(),
       now.getMonth() + 1,
       currency
@@ -291,12 +291,12 @@ export class BudgetService {
    * Get budget remaining for a category in current month
    * Queries the budgets table for budget_amount
    * @param category_id - Category ID
-   * @param user_id - User ID
+   * @param workspaceId - Workspace ID
    * @param currency - Currency to use for budget lookup (required since categories no longer have currency)
    */
-  async getCategoryRemaining(category_id: string, user_id: string, currency: 'IDR' | 'USD') {
+  async getCategoryRemaining(category_id: string, workspaceId: string, currency: 'IDR' | 'USD') {
     const category = await this.db.query.categories.findFirst({
-      where: and(eq(categories.id, category_id), eq(categories.user_id, user_id)),
+      where: and(eq(categories.id, category_id), eq(categories.workspace_id, workspaceId)),
     });
 
     if (!category) {
@@ -313,7 +313,7 @@ export class BudgetService {
     const budget = await this.db.query.budgets.findFirst({
       where: and(
         eq(budgets.category_id, category_id),
-        eq(budgets.user_id, user_id),
+        eq(budgets.workspace_id, workspaceId),
         eq(budgets.month, currentMonth),
         eq(budgets.year, currentYear),
         eq(budgets.currency, currency)
@@ -330,7 +330,7 @@ export class BudgetService {
       .from(transactions)
       .where(
         and(
-          eq(transactions.user_id, user_id),
+          eq(transactions.workspace_id, workspaceId),
           eq(transactions.category_id, category_id),
           eq(transactions.type, 'expense'),
           eq(transactions.currency, currency),
@@ -360,14 +360,14 @@ export class BudgetService {
    * Export budget overview to CSV format
    */
   async exportToCSV(
-    user_id: string,
+    workspaceId: string,
     year: number,
     month: number,
     currency: 'IDR' | 'USD',
     sortBy?: 'category' | 'percentage' | 'budget' | 'spent' | 'balance' | 'status',
     sortOrder?: 'asc' | 'desc'
   ): Promise<string> {
-    const overview = await this.getMonthlyOverview(user_id, year, month, currency);
+    const overview = await this.getMonthlyOverview(workspaceId, year, month, currency);
 
     // Sort categories based on sortBy and sortOrder (same logic as BudgetOverviewTable)
     let sortedCategories = [...overview.categories];
@@ -467,11 +467,11 @@ export class BudgetService {
   async createBudget(input: CreateBudgetInput): Promise<Budget> {
     const validated = createBudgetSchema.parse(input);
 
-    // Check if category exists and belongs to user
+    // Check if category exists and belongs to workspace
     const category = await this.db.query.categories.findFirst({
       where: and(
         eq(categories.id, validated.category_id),
-        eq(categories.user_id, validated.user_id),
+        eq(categories.workspace_id, validated.workspace_id),
         eq(categories.is_active, true)
       ),
     });
@@ -487,7 +487,7 @@ export class BudgetService {
     // Check if budget already exists for this category/month/year/currency combination
     const existingBudget = await this.db.query.budgets.findFirst({
       where: and(
-        eq(budgets.user_id, validated.user_id),
+        eq(budgets.workspace_id, validated.workspace_id),
         eq(budgets.category_id, validated.category_id),
         eq(budgets.month, validated.month),
         eq(budgets.year, validated.year),
@@ -508,7 +508,8 @@ export class BudgetService {
       .insert(budgets)
       .values({
         id,
-        user_id: validated.user_id,
+        workspace_id: validated.workspace_id,
+        created_by_user_id: validated.created_by_user_id,
         category_id: validated.category_id,
         month: validated.month,
         year: validated.year,
@@ -524,11 +525,11 @@ export class BudgetService {
   /**
    * Update an existing budget record
    */
-  async updateBudget(id: string, user_id: string, input: UpdateBudgetInput): Promise<Budget> {
+  async updateBudget(id: string, workspaceId: string, input: UpdateBudgetInput): Promise<Budget> {
     const validated = updateBudgetSchema.parse(input);
 
-    // Check if budget exists and belongs to user
-    const existingBudget = await this.getBudgetById(id, user_id);
+    // Check if budget exists and belongs to workspace
+    const existingBudget = await this.getBudgetById(id, workspaceId);
     if (!existingBudget) {
       throw new BudgetServiceError(ServiceErrorCode.BUDGET_NOT_FOUND, 'Budget not found', 404);
     }
@@ -573,9 +574,9 @@ export class BudgetService {
     await this.db
       .update(budgets)
       .set(updateData)
-      .where(and(eq(budgets.id, id), eq(budgets.user_id, user_id)));
+      .where(and(eq(budgets.id, id), eq(budgets.workspace_id, workspaceId)));
 
-    const updatedBudget = await this.getBudgetById(id, user_id);
+    const updatedBudget = await this.getBudgetById(id, workspaceId);
     return updatedBudget as Budget;
   }
 
@@ -583,8 +584,8 @@ export class BudgetService {
    * Delete a budget record
    * P2: TODO - Consider returning the deleted budget for UI confirmation/undo
    */
-  async deleteBudget(id: string, user_id: string): Promise<{ success: boolean }> {
-    const existingBudget = await this.getBudgetById(id, user_id);
+  async deleteBudget(id: string, workspaceId: string): Promise<{ success: boolean }> {
+    const existingBudget = await this.getBudgetById(id, workspaceId);
     if (!existingBudget) {
       throw new BudgetServiceError(ServiceErrorCode.BUDGET_NOT_FOUND, 'Budget not found', 404);
     }
@@ -598,7 +599,9 @@ export class BudgetService {
       );
     }
 
-    await this.db.delete(budgets).where(and(eq(budgets.id, id), eq(budgets.user_id, user_id)));
+    await this.db
+      .delete(budgets)
+      .where(and(eq(budgets.id, id), eq(budgets.workspace_id, workspaceId)));
 
     return { success: true };
   }
@@ -606,9 +609,9 @@ export class BudgetService {
   /**
    * Get a single budget by ID
    */
-  async getBudgetById(id: string, user_id: string): Promise<Budget | null> {
+  async getBudgetById(id: string, workspaceId: string): Promise<Budget | null> {
     const budget = await this.db.query.budgets.findFirst({
-      where: and(eq(budgets.id, id), eq(budgets.user_id, user_id)),
+      where: and(eq(budgets.id, id), eq(budgets.workspace_id, workspaceId)),
     });
 
     return budget as Budget | null;
@@ -619,14 +622,14 @@ export class BudgetService {
    */
   async getBudgetByCategory(
     category_id: string,
-    user_id: string,
+    workspaceId: string,
     month: number,
     year: number
   ): Promise<Budget | null> {
     const budget = await this.db.query.budgets.findFirst({
       where: and(
         eq(budgets.category_id, category_id),
-        eq(budgets.user_id, user_id),
+        eq(budgets.workspace_id, workspaceId),
         eq(budgets.month, month),
         eq(budgets.year, year)
       ),
@@ -636,16 +639,16 @@ export class BudgetService {
   }
 
   /**
-   * Find all budgets for a user with optional filters
+   * Find all budgets for a workspace with optional filters
    */
   async findAllBudgets(
-    user_id: string,
+    workspaceId: string,
     month: number,
     year: number,
     currency?: 'IDR' | 'USD'
   ): Promise<BudgetWithCategory[]> {
     const conditions = [
-      eq(budgets.user_id, user_id),
+      eq(budgets.workspace_id, workspaceId),
       eq(budgets.month, month),
       eq(budgets.year, year),
     ];
@@ -669,7 +672,7 @@ export class BudgetService {
    * Used to determine if month navigation should be enabled for future months
    */
   async hasBudgetsForMonth(
-    user_id: string,
+    workspaceId: string,
     year: number,
     month: number,
     currency?: 'IDR' | 'USD'
@@ -683,7 +686,7 @@ export class BudgetService {
     }
 
     const conditions = [
-      eq(budgets.user_id, user_id),
+      eq(budgets.workspace_id, workspaceId),
       eq(budgets.month, month),
       eq(budgets.year, year),
     ];
@@ -712,7 +715,7 @@ export class BudgetService {
     // Get all budgets from source month
     const sourceBudgets = await this.db.query.budgets.findMany({
       where: and(
-        eq(budgets.user_id, validated.user_id),
+        eq(budgets.workspace_id, validated.workspace_id),
         eq(budgets.month, validated.source_month),
         eq(budgets.year, validated.source_year)
       ),
@@ -729,7 +732,7 @@ export class BudgetService {
     // Get existing budgets in target month to avoid duplicates
     const existingTargetBudgets = await this.db.query.budgets.findMany({
       where: and(
-        eq(budgets.user_id, validated.user_id),
+        eq(budgets.workspace_id, validated.workspace_id),
         eq(budgets.month, validated.target_month),
         eq(budgets.year, validated.target_year)
       ),
@@ -754,7 +757,8 @@ export class BudgetService {
     if (budgetsToCopy.length > 0) {
       const newBudgets = budgetsToCopy.map((b: Budget) => ({
         id: nanoid(),
-        user_id: validated.user_id,
+        workspace_id: validated.workspace_id,
+        created_by_user_id: validated.created_by_user_id,
         category_id: b.category_id,
         month: validated.target_month,
         year: validated.target_year,

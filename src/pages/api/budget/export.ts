@@ -10,7 +10,7 @@ import { logError } from '@/lib/utils';
  */
 export const GET: APIRoute = async (context) => {
   try {
-    const userId = getAuthenticatedUser(context);
+    const auth = getAuthenticatedUser(context);
     const { url } = context;
 
     const yearParam = url.searchParams.get('year');
@@ -47,7 +47,7 @@ export const GET: APIRoute = async (context) => {
 
     // Generate CSV with optional sorting
     const csv = await budgetService.exportToCSV(
-      userId,
+      auth.workspaceId,
       year,
       month,
       selectedCurrency,

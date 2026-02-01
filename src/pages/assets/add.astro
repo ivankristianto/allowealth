@@ -11,7 +11,7 @@ import { assetCategoryService } from '@/services';
 
 const currentPath = '/assets/add';
 const user = Astro.locals.user!;
-const categories = await assetCategoryService.findAll(user.id);
+const categories = await assetCategoryService.findAll(user.workspaceId);
 ---
 
 <ProtectedLayout title="Add Asset" currentPath={currentPath} subtitle="Register a new account">

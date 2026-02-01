@@ -1,12 +1,16 @@
 import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
 import { sqliteTimestampNow } from './base';
+import { workspaces } from './workspaces';
 import { users } from './users';
 
 export const assetCategories = sqliteTable('asset_categories', {
   id: text('id').primaryKey(),
-  user_id: text('user_id')
+  workspace_id: text('workspace_id')
     .notNull()
-    .references(() => users.id, { onDelete: 'cascade' }),
+    .references(() => workspaces.id, { onDelete: 'cascade' }),
+  created_by_user_id: text('created_by_user_id')
+    .notNull()
+    .references(() => users.id),
   name: text('name').notNull(),
   description: text('description'),
   is_liability: integer('is_liability', { mode: 'boolean' }).default(false).notNull(),

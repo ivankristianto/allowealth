@@ -106,6 +106,23 @@ Agents must internalize:
 - ❌ Add unnecessary error handling for impossible scenarios
 - ❌ Use backwards-compatibility hacks (delete unused code completely)
 
+### Debugging & Problem Solving
+
+**DO:**
+
+- ✅ Fix root cause of typecheck errors (update API usage, fix imports)
+- ✅ Trace bugs through full flow: DB → Service → API → Session → UI
+- ✅ Test after every code change
+- ✅ Check all usages after changing types or imports (`grep` the codebase)
+- ✅ Identify ALL sources of a problem before declaring it fixed
+
+**DON'T:**
+
+- ❌ Suppress warnings with `@ts-expect-error` or `eslint-disable`
+- ❌ Remove `await` just because TypeScript says "no effect" (runtime differs)
+- ❌ Assume one fix solves everything (check for ripple effects)
+- ❌ Stop investigating when symptoms disappear (verify root cause)
+
 ### TypeScript Best Practices
 
 **DO:**

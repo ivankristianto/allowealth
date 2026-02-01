@@ -18,7 +18,7 @@ const user = Astro.locals.user!;
 const currentPath = '/budget/categories';
 
 // Fetch active categories only
-const allCategories = await categoryService.findAll(user.id, { is_active: true });
+const allCategories = await categoryService.findAll(user.workspaceId, { is_active: true });
 
 // Get filters from query params
 const url = new URL(Astro.url);

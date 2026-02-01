@@ -54,7 +54,7 @@ let error: string | null = null;
 
 try {
   budgetData = await budgetService.getMonthlyOverview(
-    user.id,
+    user.workspaceId,
     selectedYear,
     selectedMonth,
     selectedCurrency
@@ -129,7 +129,7 @@ let allowNextMonthNavigation = !isNextMonthInFuture;
 if (isNextMonthInFuture) {
   try {
     const hasNextMonthBudgets = await budgetService.hasBudgetsForMonth(
-      user.id,
+      user.workspaceId,
       nextMonthYear,
       nextMonth,
       selectedCurrency
@@ -146,7 +146,7 @@ if (isNextMonthInFuture) {
 let alerts: Awaited<ReturnType<typeof budgetService.getAlerts>> = [];
 if (budgetData) {
   try {
-    alerts = await budgetService.getAlerts(user.id, selectedCurrency);
+    alerts = await budgetService.getAlerts(user.workspaceId, selectedCurrency);
   } catch (err) {
     console.error('Error fetching budget alerts:', err);
     alerts = [];
@@ -198,12 +198,12 @@ const generateAdviceData = (): AdviceData | null => {
 const adviceData = generateAdviceData();
 
 // Fetch all categories for the edit modal
-const allCategories = await categoryService.findAll(user.id, { is_active: true });
+const allCategories = await categoryService.findAll(user.workspaceId, { is_active: true });
 const expenseCategories = allCategories.filter((c) => c.type === 'expense');
 
 // Fetch existing budgets for this month (for SetNewBudgetModal to determine create vs update)
 const existingBudgets = await budgetService.findAllBudgets(
-  user.id,
+  user.workspaceId,
   selectedMonth,
   selectedYear,
   selectedCurrency

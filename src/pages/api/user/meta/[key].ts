@@ -39,7 +39,7 @@ const updateMetaSchema = z.object({
  */
 export const GET: APIRoute = async (context) => {
   try {
-    const userId = getAuthenticatedUser(context);
+    const auth = getAuthenticatedUser(context);
     const key = context.params.key;
 
     if (!key || !isValidMetaKey(key)) {
@@ -50,7 +50,7 @@ export const GET: APIRoute = async (context) => {
       );
     }
 
-    const value = await userMetaService.getUserMeta(userId, key as UserMetaKey);
+    const value = await userMetaService.getUserMeta(auth.userId, key as UserMetaKey);
 
     return successResponse({
       key,
@@ -93,7 +93,7 @@ export const GET: APIRoute = async (context) => {
  */
 export const PUT: APIRoute = async (context) => {
   try {
-    const userId = getAuthenticatedUser(context);
+    const auth = getAuthenticatedUser(context);
     const key = context.params.key;
 
     if (!key || !isValidMetaKey(key)) {
@@ -109,7 +109,7 @@ export const PUT: APIRoute = async (context) => {
       return errorResponse('Validation failed', 400, 'VALIDATION_ERROR', validation.error.issues);
     }
 
-    await userMetaService.setUserMeta(userId, key as UserMetaKey, validation.data.value);
+    await userMetaService.setUserMeta(auth.userId, key as UserMetaKey, validation.data.value);
 
     return successResponse({
       key,
@@ -147,7 +147,7 @@ export const PUT: APIRoute = async (context) => {
  */
 export const DELETE: APIRoute = async (context) => {
   try {
-    const userId = getAuthenticatedUser(context);
+    const auth = getAuthenticatedUser(context);
     const key = context.params.key;
 
     if (!key || !isValidMetaKey(key)) {
@@ -158,7 +158,7 @@ export const DELETE: APIRoute = async (context) => {
       );
     }
 
-    await userMetaService.deleteUserMeta(userId, key as UserMetaKey);
+    await userMetaService.deleteUserMeta(auth.userId, key as UserMetaKey);
 
     return successResponse({ deleted: key });
   } catch (error) {

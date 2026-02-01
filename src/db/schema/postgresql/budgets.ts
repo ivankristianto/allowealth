@@ -1,4 +1,5 @@
 import { pgTable, text, integer, boolean, timestamp, unique } from 'drizzle-orm/pg-core';
+import { workspaces } from './workspaces';
 import { users } from './users';
 import { categories } from './categories';
 
@@ -6,9 +7,12 @@ export const budgets = pgTable(
   'budgets',
   {
     id: text('id').primaryKey(),
-    user_id: text('user_id')
+    workspace_id: text('workspace_id')
       .notNull()
-      .references(() => users.id, { onDelete: 'cascade' }),
+      .references(() => workspaces.id, { onDelete: 'cascade' }),
+    created_by_user_id: text('created_by_user_id')
+      .notNull()
+      .references(() => users.id),
     category_id: text('category_id')
       .notNull()
       .references(() => categories.id, { onDelete: 'cascade' }),
@@ -21,5 +25,7 @@ export const budgets = pgTable(
     created_at: timestamp('created_at').defaultNow().notNull(),
     updated_at: timestamp('updated_at').defaultNow().notNull(),
   },
-  (table) => [unique().on(table.user_id, table.category_id, table.month, table.year)]
+  (table) => [
+    unique('budgets_unique').on(table.workspace_id, table.category_id, table.month, table.year),
+  ]
 );

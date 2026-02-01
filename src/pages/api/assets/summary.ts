@@ -9,11 +9,11 @@ import { logError } from '@/lib/utils';
  */
 export const GET: APIRoute = async (context) => {
   try {
-    const userId = getAuthenticatedUser(context);
+    const auth = getAuthenticatedUser(context);
 
     const [totalByCurrency, totalByType] = await Promise.all([
-      assetService.getTotalByCurrency(userId),
-      assetService.getTotalByType(userId),
+      assetService.getTotalByCurrency(auth.workspaceId),
+      assetService.getTotalByType(auth.workspaceId),
     ]);
 
     return successResponse({

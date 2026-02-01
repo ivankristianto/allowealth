@@ -16,7 +16,7 @@ import { logError } from '@/lib/utils';
  */
 export const GET: APIRoute = async (context) => {
   try {
-    const userId = getAuthenticatedUser(context);
+    const auth = getAuthenticatedUser(context);
 
     const type = context.url.searchParams.get('type');
     const isActiveParam = context.url.searchParams.get('is_active');
@@ -29,7 +29,7 @@ export const GET: APIRoute = async (context) => {
       filters.is_active = isActiveParam === 'true';
     }
 
-    const categories = await categoryService.findAll(userId, filters);
+    const categories = await categoryService.findAll(auth.workspaceId, filters);
 
     return successResponse(categories);
   } catch (error) {
@@ -47,7 +47,7 @@ export const GET: APIRoute = async (context) => {
  */
 export const POST: APIRoute = async (context) => {
   try {
-    const userId = getAuthenticatedUser(context);
+    const auth = getAuthenticatedUser(context);
 
     const validation = await validateBody(context.request, createCategoryAPISchema);
 
@@ -56,13 +56,14 @@ export const POST: APIRoute = async (context) => {
     }
 
     // Check if category name already exists
-    const exists = await categoryService.existsByName(validation.data.name, userId);
+    const exists = await categoryService.existsByName(validation.data.name, auth.workspaceId);
     if (exists) {
       return errorResponse('Category with this name already exists', 409, 'DUPLICATE_NAME');
     }
 
     const category = await categoryService.create({
-      user_id: userId,
+      workspace_id: auth.workspaceId,
+      created_by_user_id: auth.userId,
       ...validation.data,
     });
 

@@ -1,14 +1,18 @@
 import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
 import { sqliteTimestampNow } from './base';
+import { workspaces } from './workspaces';
 import { users } from './users';
 import { categories } from './categories';
 import { assets } from './assets';
 
 export const transactions = sqliteTable('transactions', {
   id: text('id').primaryKey(),
-  user_id: text('user_id')
+  workspace_id: text('workspace_id')
     .notNull()
-    .references(() => users.id, { onDelete: 'cascade' }),
+    .references(() => workspaces.id, { onDelete: 'cascade' }),
+  created_by_user_id: text('created_by_user_id')
+    .notNull()
+    .references(() => users.id),
   category_id: text('category_id').references(() => categories.id), // Nullable for transfers
   asset_id: text('asset_id')
     .notNull()
