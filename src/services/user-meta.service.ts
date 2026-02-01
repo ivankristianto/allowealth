@@ -25,11 +25,9 @@ import {
   USER_META_KEYS,
   type UserMetaKey,
   type UserSettings,
-  type SupportedCurrency,
   META_DEFAULTS,
   META_VALUE_MAX_SIZE,
   isValidMetaKey,
-  isSupportedMetaCurrency,
   validateMetaValue,
   metaValueToBoolean,
   booleanToMetaValue,
@@ -209,31 +207,6 @@ export class UserMetaService {
   // ============================================================================
 
   /**
-   * Get user's preferred currency
-   *
-   * @param userId - User ID
-   * @returns The currency or default 'IDR'
-   */
-  async getUserCurrency(userId: string): Promise<SupportedCurrency> {
-    const value = await this.getUserMeta(userId, USER_META_KEYS.CURRENCY);
-    // Validate runtime value to ensure type safety
-    if (isSupportedMetaCurrency(value)) {
-      return value;
-    }
-    return 'IDR'; // Fallback to default for invalid or missing values
-  }
-
-  /**
-   * Set user's preferred currency
-   *
-   * @param userId - User ID
-   * @param currency - Currency code ('IDR' or 'USD')
-   */
-  async setUserCurrency(userId: string, currency: SupportedCurrency): Promise<void> {
-    await this.setUserMeta(userId, USER_META_KEYS.CURRENCY, currency);
-  }
-
-  /**
    * Get whether to show converted totals
    *
    * @param userId - User ID
@@ -288,14 +261,7 @@ export class UserMetaService {
   async getUserSettings(userId: string): Promise<UserSettings> {
     const metaAll = await this.getUserMetaAll(userId);
 
-    // Validate currency at runtime instead of unsafe cast
-    const rawCurrency = metaAll[USER_META_KEYS.CURRENCY];
-    const currency = isSupportedMetaCurrency(rawCurrency)
-      ? rawCurrency
-      : DEFAULT_USER_SETTINGS.currency;
-
     return {
-      currency,
       showConvertedTotals: metaValueToBoolean(
         metaAll[USER_META_KEYS.SHOW_CONVERTED_TOTALS],
         DEFAULT_USER_SETTINGS.showConvertedTotals

@@ -14,7 +14,7 @@ import TransactionFiltersBar from '@/components/organisms/TransactionFiltersBar.
 import DeleteConfirmationModal from '@/components/organisms/DeleteConfirmationModal.astro';
 import { Receipt, RotateCcw } from '@lucide/astro';
 import type { TransactionOutput } from '@/lib/types/transaction';
-import { transactionService, categoryService, userMetaService } from '@/services';
+import { transactionService, categoryService } from '@/services';
 import {
   parseMonthKey,
   formatMonthKey,
@@ -28,9 +28,9 @@ import { PAGINATION } from '@/lib/constants/pagination';
 const user = Astro.locals.user!;
 const currentPath = '/transactions';
 
-// Get user settings for currency preference
-const userSettings = await userMetaService.getUserSettings(user.id);
-const userCurrency = userSettings.currency;
+// TODO: Get workspace currency from workspace settings
+// For now, use IDR as default since currency is now workspace-scoped
+const userCurrency = 'IDR';
 
 // Get query parameters for filtering
 const url = new URL(Astro.url);

@@ -11,7 +11,6 @@ import { logError } from '@/lib/utils';
 import { UserServiceError, UserMetaServiceError } from '@/services/service-errors';
 import { db } from '@/db';
 import { z } from 'zod';
-import { SUPPORTED_CURRENCIES } from '@/lib/constants/user-meta-keys';
 
 /**
  * Schema for PUT request body - all profile fields in one request
@@ -21,7 +20,6 @@ const updateFullProfileSchema = z.object({
   email: z.email({ message: 'Invalid email format' }),
   phone: z.string().max(50, 'Phone must be at most 50 characters').optional().default(''),
   bio: z.string().max(500, 'Bio must be at most 500 characters').optional().default(''),
-  currency: z.enum(SUPPORTED_CURRENCIES).optional(),
 });
 
 /**
@@ -49,7 +47,6 @@ export const GET: APIRoute = async (context) => {
       email: user.email,
       phone: settings.phone,
       bio: settings.bio,
-      currency: settings.currency,
     });
   } catch (error) {
     if (error instanceof Error && error.message === 'Unauthorized') {
@@ -65,7 +62,7 @@ export const GET: APIRoute = async (context) => {
  *
  * Updates all profile fields in one request:
  * - name, email -> users table
- * - phone, bio, currency -> user_meta table
+ * - phone, bio -> user_meta table
  *
  * @example
  * Request:
@@ -74,8 +71,7 @@ export const GET: APIRoute = async (context) => {
  *   "name": "John Doe",
  *   "email": "john@example.com",
  *   "phone": "+1234567890",
- *   "bio": "Developer",
- *   "currency": "USD"
+ *   "bio": "Developer"
  * }
  * ```
  */
@@ -89,12 +85,12 @@ export const PUT: APIRoute = async (context) => {
       return errorResponse('Validation failed', 400, 'VALIDATION_ERROR', validation.error.issues);
     }
 
-    const { name, email, phone, bio, currency } = validation.data;
+    const { name, email, phone, bio } = validation.data;
 
     // Update user table (name, email)
     const user = await userService.updateProfile(auth.userId, { name, email });
 
-    // Update meta values (phone, bio, currency)
+    // Update meta values (phone, bio)
     const metaPromises: Promise<void>[] = [];
 
     if (phone !== undefined) {
@@ -102,9 +98,6 @@ export const PUT: APIRoute = async (context) => {
     }
     if (bio !== undefined) {
       metaPromises.push(userMetaService.setUserMeta(auth.userId, 'bio', bio));
-    }
-    if (currency !== undefined) {
-      metaPromises.push(userMetaService.setUserMeta(auth.userId, 'currency', currency));
     }
 
     await Promise.all(metaPromises);
@@ -118,7 +111,6 @@ export const PUT: APIRoute = async (context) => {
       email: user.email,
       phone: settings.phone,
       bio: settings.bio,
-      currency: settings.currency,
     });
   } catch (error) {
     if (error instanceof Error && error.message === 'Unauthorized') {

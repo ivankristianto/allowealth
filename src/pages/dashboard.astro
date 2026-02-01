@@ -31,10 +31,10 @@ import type { CashFlowEntry, CashFlowIconName } from '@/lib/cash-flow';
 
 const currentPath = '/dashboard';
 const user = Astro.locals.user;
-const userSettings = Astro.locals.userSettings;
 
-// Get user's preferred currency (from ProtectedLayout)
-const primaryCurrency = userSettings?.currency ?? 'IDR';
+// TODO: Get workspace currency from workspace settings
+// For now, use IDR as default since currency is now workspace-scoped
+const primaryCurrency = 'IDR';
 
 // Get current month and year
 const now = new Date();

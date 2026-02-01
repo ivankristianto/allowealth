@@ -10,7 +10,6 @@ import { z } from 'zod';
  * Allowed meta keys - only these keys can be stored in user_meta
  */
 export const USER_META_KEYS = {
-  CURRENCY: 'currency',
   SHOW_CONVERTED_TOTALS: 'show_converted_totals',
   SHOW_INDIVIDUAL_CURRENCIES: 'show_individual_currencies',
   PHONE: 'phone',
@@ -31,7 +30,6 @@ export const VALID_META_KEYS = Object.values(USER_META_KEYS);
  * Default values for each meta key (stored as strings in database)
  */
 export const META_DEFAULTS: Record<UserMetaKey, string> = {
-  [USER_META_KEYS.CURRENCY]: 'IDR',
   [USER_META_KEYS.SHOW_CONVERTED_TOTALS]: 'true',
   [USER_META_KEYS.SHOW_INDIVIDUAL_CURRENCIES]: 'true',
   [USER_META_KEYS.PHONE]: '',
@@ -44,30 +42,12 @@ export const META_DEFAULTS: Record<UserMetaKey, string> = {
 export const META_VALUE_MAX_SIZE = 4096;
 
 /**
- * Supported currency values
- */
-export const SUPPORTED_CURRENCIES = ['IDR', 'USD'] as const;
-export type SupportedCurrency = (typeof SUPPORTED_CURRENCIES)[number];
-
-/**
- * Check if a value is a valid supported currency for user meta
- */
-export function isSupportedMetaCurrency(
-  value: string | null | undefined
-): value is SupportedCurrency {
-  return value === 'IDR' || value === 'USD';
-}
-
-/**
  * Validation schemas for each meta key's value
  *
  * Note: All values are stored as strings in the database.
  * Boolean values are stored as 'true' or 'false' strings.
  */
 export const META_VALUE_SCHEMAS: Record<UserMetaKey, z.ZodType<string>> = {
-  [USER_META_KEYS.CURRENCY]: z.enum(SUPPORTED_CURRENCIES, {
-    message: `Currency must be one of: ${SUPPORTED_CURRENCIES.join(', ')}`,
-  }),
   [USER_META_KEYS.SHOW_CONVERTED_TOTALS]: z.enum(['true', 'false'], {
     message: 'Value must be "true" or "false"',
   }),
@@ -83,7 +63,6 @@ export const META_VALUE_SCHEMAS: Record<UserMetaKey, z.ZodType<string>> = {
  */
 export const metaKeySchema = z.enum(
   [
-    USER_META_KEYS.CURRENCY,
     USER_META_KEYS.SHOW_CONVERTED_TOTALS,
     USER_META_KEYS.SHOW_INDIVIDUAL_CURRENCIES,
     USER_META_KEYS.PHONE,
@@ -122,7 +101,6 @@ export function validateMetaValue(key: UserMetaKey, value: string): string {
  * Type-safe user settings derived from meta values
  */
 export interface UserSettings {
-  currency: SupportedCurrency;
   showConvertedTotals: boolean;
   showIndividualCurrencies: boolean;
   phone: string;
@@ -133,7 +111,6 @@ export interface UserSettings {
  * Default user settings
  */
 export const DEFAULT_USER_SETTINGS: UserSettings = {
-  currency: 'IDR',
   showConvertedTotals: true,
   showIndividualCurrencies: true,
   phone: '',

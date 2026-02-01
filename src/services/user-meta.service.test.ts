@@ -20,8 +20,8 @@ describe('UserMetaService', () => {
   const mockMeta = {
     meta_id: 'meta-1',
     user_id: 'user-1',
-    meta_key: USER_META_KEYS.CURRENCY,
-    meta_value: 'USD',
+    meta_key: USER_META_KEYS.PHONE,
+    meta_value: '+1234567890',
     created_at: new Date(),
     updated_at: new Date(),
   };
@@ -65,16 +65,16 @@ describe('UserMetaService', () => {
       });
 
       const service = new UserMetaService(mockDb as any);
-      const result = await service.getUserMeta('user-1', USER_META_KEYS.CURRENCY);
+      const result = await service.getUserMeta('user-1', USER_META_KEYS.PHONE);
 
-      expect(result).toBe('USD');
+      expect(result).toBe('+1234567890');
     });
 
     it('should return null when meta does not exist', async () => {
       const mockDb = createMockDb();
 
       const service = new UserMetaService(mockDb as any);
-      const result = await service.getUserMeta('user-1', USER_META_KEYS.CURRENCY);
+      const result = await service.getUserMeta('user-1', USER_META_KEYS.PHONE);
 
       expect(result).toBeNull();
     });
@@ -102,7 +102,7 @@ describe('UserMetaService', () => {
       const service = new UserMetaService(mockDb as any);
 
       try {
-        await service.getUserMeta('user-1', USER_META_KEYS.CURRENCY);
+        await service.getUserMeta('user-1', USER_META_KEYS.PHONE);
         expect(true).toBe(false); // Should not reach here
       } catch (error) {
         expect(error).toBeInstanceOf(UserMetaServiceError);
@@ -117,7 +117,9 @@ describe('UserMetaService', () => {
         userMeta: {
           findFirst: mock(() => Promise.resolve(null)),
           findMany: mock(() =>
-            Promise.resolve([{ ...mockMeta, meta_key: USER_META_KEYS.CURRENCY, meta_value: 'USD' }])
+            Promise.resolve([
+              { ...mockMeta, meta_key: USER_META_KEYS.PHONE, meta_value: '+1234567890' },
+            ])
           ),
         },
       });
@@ -125,7 +127,7 @@ describe('UserMetaService', () => {
       const service = new UserMetaService(mockDb as any);
       const result = await service.getUserMetaAll('user-1');
 
-      expect(result[USER_META_KEYS.CURRENCY]).toBe('USD');
+      expect(result[USER_META_KEYS.PHONE]).toBe('+1234567890');
       // Defaults should be applied for unset keys
       expect(result[USER_META_KEYS.SHOW_CONVERTED_TOTALS]).toBe(
         META_DEFAULTS[USER_META_KEYS.SHOW_CONVERTED_TOTALS]
@@ -156,7 +158,7 @@ describe('UserMetaService', () => {
       });
 
       const service = new UserMetaService(mockDb as any);
-      await service.setUserMeta('user-1', USER_META_KEYS.CURRENCY, 'USD');
+      await service.setUserMeta('user-1', USER_META_KEYS.PHONE, '+1234567890');
 
       expect(insertMock).toHaveBeenCalled();
       expect(onConflictDoUpdateMock).toHaveBeenCalled();
@@ -180,7 +182,7 @@ describe('UserMetaService', () => {
       });
 
       const service = new UserMetaService(mockDb as any);
-      await service.setUserMeta('user-1', USER_META_KEYS.CURRENCY, 'IDR');
+      await service.setUserMeta('user-1', USER_META_KEYS.PHONE, '+0987654321');
 
       expect(insertMock).toHaveBeenCalled();
       expect(onConflictDoUpdateMock).toHaveBeenCalled();
@@ -207,7 +209,7 @@ describe('UserMetaService', () => {
       const largeValue = 'a'.repeat(META_VALUE_MAX_SIZE + 1);
 
       try {
-        await service.setUserMeta('user-1', USER_META_KEYS.CURRENCY, largeValue);
+        await service.setUserMeta('user-1', USER_META_KEYS.BIO, largeValue);
         expect(true).toBe(false); // Should not reach here
       } catch (error) {
         expect(error).toBeInstanceOf(UserMetaServiceError);
@@ -220,9 +222,9 @@ describe('UserMetaService', () => {
 
       const service = new UserMetaService(mockDb as any);
 
-      // Currency must be 'IDR' or 'USD'
+      // Phone must be max 50 characters
       try {
-        await service.setUserMeta('user-1', USER_META_KEYS.CURRENCY, 'INVALID');
+        await service.setUserMeta('user-1', USER_META_KEYS.PHONE, 'x'.repeat(51));
         expect(true).toBe(false); // Should not reach here
       } catch (error) {
         expect(error).toBeInstanceOf(UserMetaServiceError);
@@ -261,7 +263,7 @@ describe('UserMetaService', () => {
       });
 
       const service = new UserMetaService(mockDb as any);
-      await service.deleteUserMeta('user-1', USER_META_KEYS.CURRENCY);
+      await service.deleteUserMeta('user-1', USER_META_KEYS.PHONE);
 
       expect(deleteMock).toHaveBeenCalled();
     });
@@ -272,7 +274,7 @@ describe('UserMetaService', () => {
       const service = new UserMetaService(mockDb as any);
 
       try {
-        await service.deleteUserMeta('user-1', USER_META_KEYS.CURRENCY);
+        await service.deleteUserMeta('user-1', USER_META_KEYS.PHONE);
         expect(true).toBe(false); // Should not reach here
       } catch (error) {
         expect(error).toBeInstanceOf(UserMetaServiceError);
@@ -282,50 +284,6 @@ describe('UserMetaService', () => {
   });
 
   describe('Type-safe wrappers', () => {
-    describe('getUserCurrency', () => {
-      it('should return currency value', async () => {
-        const mockDb = createMockDb({
-          userMeta: {
-            findFirst: mock(() => Promise.resolve({ ...mockMeta, meta_value: 'USD' })),
-            findMany: mock(() => Promise.resolve([])),
-          },
-        });
-
-        const service = new UserMetaService(mockDb as any);
-        const result = await service.getUserCurrency('user-1');
-
-        expect(result).toBe('USD');
-      });
-
-      it('should return default IDR when not set', async () => {
-        const mockDb = createMockDb();
-
-        const service = new UserMetaService(mockDb as any);
-        const result = await service.getUserCurrency('user-1');
-
-        expect(result).toBe('IDR');
-      });
-    });
-
-    describe('setUserCurrency', () => {
-      it('should set currency value', async () => {
-        const onConflictDoUpdateMock = mock(() => Promise.resolve({}));
-        const insertMock = mock(() => ({
-          values: mock(() => ({
-            onConflictDoUpdate: onConflictDoUpdateMock,
-          })),
-        }));
-
-        const mockDb = createMockDb({ insert: insertMock });
-
-        const service = new UserMetaService(mockDb as any);
-        await service.setUserCurrency('user-1', 'USD');
-
-        expect(insertMock).toHaveBeenCalled();
-        expect(onConflictDoUpdateMock).toHaveBeenCalled();
-      });
-    });
-
     describe('getShowConvertedTotals', () => {
       it('should return boolean true when set to "true"', async () => {
         const mockDb = createMockDb({
@@ -386,11 +344,6 @@ describe('UserMetaService', () => {
               Promise.resolve([
                 {
                   ...mockMeta,
-                  meta_key: USER_META_KEYS.CURRENCY,
-                  meta_value: 'USD',
-                },
-                {
-                  ...mockMeta,
                   meta_key: USER_META_KEYS.SHOW_CONVERTED_TOTALS,
                   meta_value: 'false',
                 },
@@ -398,6 +351,11 @@ describe('UserMetaService', () => {
                   ...mockMeta,
                   meta_key: USER_META_KEYS.SHOW_INDIVIDUAL_CURRENCIES,
                   meta_value: 'true',
+                },
+                {
+                  ...mockMeta,
+                  meta_key: USER_META_KEYS.PHONE,
+                  meta_value: '+1234567890',
                 },
               ])
             ),
@@ -408,10 +366,9 @@ describe('UserMetaService', () => {
         const result = await service.getUserSettings('user-1');
 
         expect(result).toEqual({
-          currency: 'USD',
           showConvertedTotals: false,
           showIndividualCurrencies: true,
-          phone: '',
+          phone: '+1234567890',
           bio: '',
         });
       });
@@ -423,7 +380,6 @@ describe('UserMetaService', () => {
         const result = await service.getUserSettings('user-1');
 
         expect(result).toEqual({
-          currency: 'IDR',
           showConvertedTotals: true,
           showIndividualCurrencies: true,
           phone: '',

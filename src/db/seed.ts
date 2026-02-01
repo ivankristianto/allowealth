@@ -39,10 +39,18 @@ import { WORKSPACE_META_KEYS, WORKSPACE_META_DEFAULTS } from '@/lib/constants/wo
 // CONFIGURATION
 // ============================================================================
 
-const DEMO_USER = {
+const DEMO_ADMIN = {
   email: 'demo@example.com',
   password: 'demo123456789', // Must be at least 12 chars for Argon2id
   name: 'Demo User',
+  role: 'admin' as const,
+};
+
+const DEMO_MEMBER = {
+  email: 'member@example.com',
+  password: 'demo123456789', // Must be at least 12 chars for Argon2id
+  name: 'Demo Member',
+  role: 'member' as const,
 };
 
 // Seeding configuration constants
@@ -621,34 +629,28 @@ async function seedWorkspace(): Promise<string> {
 async function seedUsers(workspaceId: string): Promise<string> {
   console.log('👤 Seeding users...');
 
-  const userId = nanoid();
-  const passwordHash = await hashPassword(DEMO_USER.password);
+  const now = new Date();
+
+  // Create admin user
+  const adminUserId = nanoid();
+  const adminPasswordHash = await hashPassword(DEMO_ADMIN.password);
 
   await db.insert(users).values({
-    id: userId,
+    id: adminUserId,
     workspace_id: workspaceId,
-    email: DEMO_USER.email,
-    password_hash: passwordHash,
-    name: DEMO_USER.name,
-    role: 'admin',
-    created_at: new Date(),
-    updated_at: new Date(),
+    email: DEMO_ADMIN.email,
+    password_hash: adminPasswordHash,
+    name: DEMO_ADMIN.name,
+    role: DEMO_ADMIN.role,
+    created_at: now,
+    updated_at: now,
   });
 
-  // Insert user meta values
-  const now = new Date();
+  // Insert admin user meta values (without currency - it's workspace-scoped only)
   await db.insert(userMeta).values([
     {
       meta_id: nanoid(),
-      user_id: userId,
-      meta_key: USER_META_KEYS.CURRENCY,
-      meta_value: 'IDR',
-      created_at: now,
-      updated_at: now,
-    },
-    {
-      meta_id: nanoid(),
-      user_id: userId,
+      user_id: adminUserId,
       meta_key: USER_META_KEYS.SHOW_CONVERTED_TOTALS,
       meta_value: 'true',
       created_at: now,
@@ -656,7 +658,7 @@ async function seedUsers(workspaceId: string): Promise<string> {
     },
     {
       meta_id: nanoid(),
-      user_id: userId,
+      user_id: adminUserId,
       meta_key: USER_META_KEYS.SHOW_INDIVIDUAL_CURRENCIES,
       meta_value: 'true',
       created_at: now,
@@ -664,8 +666,44 @@ async function seedUsers(workspaceId: string): Promise<string> {
     },
   ]);
 
-  console.log(`✓ Created user: ${DEMO_USER.email}`);
-  return userId;
+  // Create member user
+  const memberUserId = nanoid();
+  const memberPasswordHash = await hashPassword(DEMO_MEMBER.password);
+
+  await db.insert(users).values({
+    id: memberUserId,
+    workspace_id: workspaceId,
+    email: DEMO_MEMBER.email,
+    password_hash: memberPasswordHash,
+    name: DEMO_MEMBER.name,
+    role: DEMO_MEMBER.role,
+    created_at: now,
+    updated_at: now,
+  });
+
+  // Insert member user meta values (without currency - it's workspace-scoped only)
+  await db.insert(userMeta).values([
+    {
+      meta_id: nanoid(),
+      user_id: memberUserId,
+      meta_key: USER_META_KEYS.SHOW_CONVERTED_TOTALS,
+      meta_value: 'true',
+      created_at: now,
+      updated_at: now,
+    },
+    {
+      meta_id: nanoid(),
+      user_id: memberUserId,
+      meta_key: USER_META_KEYS.SHOW_INDIVIDUAL_CURRENCIES,
+      meta_value: 'true',
+      created_at: now,
+      updated_at: now,
+    },
+  ]);
+
+  console.log(`✓ Created admin user: ${DEMO_ADMIN.email}`);
+  console.log(`✓ Created member user: ${DEMO_MEMBER.email}`);
+  return adminUserId; // Return admin user ID for seeding data
 }
 
 /**
@@ -1289,8 +1327,12 @@ async function seed() {
 
     console.log(`\n✅ Database seeded successfully in ${elapsed}s!`);
     console.log('\n📋 Demo Credentials:');
-    console.log(`   Email:    ${DEMO_USER.email}`);
-    console.log(`   Password: ${DEMO_USER.password}`);
+    console.log('\n   Admin User:');
+    console.log(`   Email:    ${DEMO_ADMIN.email}`);
+    console.log(`   Password: ${DEMO_ADMIN.password}`);
+    console.log('\n   Member User:');
+    console.log(`   Email:    ${DEMO_MEMBER.email}`);
+    console.log(`   Password: ${DEMO_MEMBER.password}`);
   } catch (error) {
     console.error('\n❌ Seeding failed:', error);
     process.exit(1);
