@@ -25,6 +25,7 @@ import {
   Users,
   X,
 } from '@lucide/astro';
+import { workspaceService, workspaceMetaService, workspaceInvitationService } from '@/services';
 
 const currentPath = '/settings';
 
@@ -35,8 +36,9 @@ if (!user) {
 }
 
 const isAdmin = user.role === 'admin';
+const workspaceId = user.workspaceId;
 
-// Fetch workspace settings from API
+// Initialize workspace data with defaults
 let workspaceData = {
   id: '',
   name: 'My Workspace',
@@ -65,48 +67,50 @@ let invitations: Array<{
 }> = [];
 
 try {
-  // Fetch workspace settings
-  const settingsResponse = await fetch(new URL('/api/workspace/settings', Astro.url), {
-    headers: {
-      Cookie: Astro.request.headers.get('Cookie') || '',
-    },
-  });
-
-  if (settingsResponse.ok) {
-    const settingsResult = await settingsResponse.json();
-    if (settingsResult.success) {
-      workspaceData = settingsResult.data;
-    }
+  // Fetch workspace settings directly from services
+  const workspace = await workspaceService.findById(workspaceId);
+  if (workspace) {
+    const settings = await workspaceMetaService.getSettings(workspaceId);
+    workspaceData = {
+      id: workspace.id,
+      name: workspace.name,
+      createdAt:
+        workspace.created_at instanceof Date
+          ? workspace.created_at.toISOString()
+          : String(workspace.created_at),
+      settings: {
+        currency: settings.currency,
+        weekStart: settings.weekStart,
+        compactNumbers: settings.compactNumbers,
+      },
+    };
   }
 
   // Fetch workspace members
-  const membersResponse = await fetch(new URL('/api/workspace/members', Astro.url), {
-    headers: {
-      Cookie: Astro.request.headers.get('Cookie') || '',
-    },
-  });
-
-  if (membersResponse.ok) {
-    const membersResult = await membersResponse.json();
-    if (membersResult.success) {
-      members = membersResult.data.members;
-    }
-  }
+  const workspaceMembers = await workspaceService.getMembers(workspaceId);
+  members = workspaceMembers.map((member) => ({
+    id: member.id,
+    name: member.name,
+    email: member.email,
+    role: member.role,
+    createdAt:
+      member.created_at instanceof Date
+        ? member.created_at.toISOString()
+        : String(member.created_at),
+  }));
 
   // Fetch pending invitations (admin only)
   if (isAdmin) {
-    const invitationsResponse = await fetch(new URL('/api/workspace/invitations', Astro.url), {
-      headers: {
-        Cookie: Astro.request.headers.get('Cookie') || '',
-      },
-    });
-
-    if (invitationsResponse.ok) {
-      const invitationsResult = await invitationsResponse.json();
-      if (invitationsResult.success) {
-        invitations = invitationsResult.data.invitations;
-      }
-    }
+    const pendingInvitations = await workspaceInvitationService.findPendingByWorkspace(workspaceId);
+    invitations = pendingInvitations.map((inv) => ({
+      id: inv.id,
+      email: inv.email,
+      role: inv.role,
+      expiresAt:
+        inv.expires_at instanceof Date ? inv.expires_at.toISOString() : String(inv.expires_at),
+      createdAt:
+        inv.created_at instanceof Date ? inv.created_at.toISOString() : String(inv.created_at),
+    }));
   }
 } catch (error) {
   console.error('Failed to fetch workspace data:', error);
@@ -124,18 +128,15 @@ let emailSettings = {
 // Fetch email settings (admin only)
 if (isAdmin) {
   try {
-    const emailResponse = await fetch(new URL('/api/workspace/email-settings', Astro.url), {
-      headers: {
-        Cookie: Astro.request.headers.get('Cookie') || '',
-      },
-    });
-
-    if (emailResponse.ok) {
-      const emailResult = await emailResponse.json();
-      if (emailResult.success) {
-        emailSettings = emailResult.data;
-      }
-    }
+    const settings = await workspaceMetaService.getEmailSettings(workspaceId);
+    const isConfigured = await workspaceMetaService.isEmailConfigured(workspaceId);
+    emailSettings = {
+      provider: settings.provider,
+      senderName: settings.senderName,
+      senderAddress: settings.senderAddress,
+      hasApiKey: !!settings.apiKey,
+      isConfigured,
+    };
   } catch (error) {
     console.error('Failed to fetch email settings:', error);
   }

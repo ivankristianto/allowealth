@@ -12,9 +12,12 @@ const TAG_LENGTH = 128; // bits
 
 /**
  * Get the encryption key from environment variable
+ *
+ * Note: Uses import.meta.env instead of process.env because Astro/Vite
+ * only populates import.meta.env from .env files, not process.env.
  */
 function getEncryptionKey(): Uint8Array {
-  const keyBase64 = process.env.EMAIL_ENCRYPTION_KEY;
+  const keyBase64 = import.meta.env.EMAIL_ENCRYPTION_KEY;
 
   if (!keyBase64) {
     throw new Error('EMAIL_ENCRYPTION_KEY environment variable is not set');

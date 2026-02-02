@@ -35,11 +35,14 @@ const TOKEN_LENGTH = 64;
 
 /**
  * Get base URL from environment or use default
+ *
+ * Note: Uses import.meta.env because Astro/Vite only populates
+ * import.meta.env from .env files, not process.env.
  */
 function getBaseUrl(): string {
   return (
-    process.env.PUBLIC_BASE_URL ||
-    process.env.PUBLIC_API_URL?.replace('/api', '') ||
+    import.meta.env.PUBLIC_BASE_URL ||
+    import.meta.env.PUBLIC_API_URL?.replace('/api', '') ||
     'http://localhost:4321'
   );
 }

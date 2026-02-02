@@ -131,7 +131,7 @@ export class EmailService {
     const { to, subject, html } = options;
 
     // Check if we're in console mode (development)
-    if (process.env.EMAIL_MODE === 'console') {
+    if (import.meta.env.EMAIL_MODE === 'console') {
       return consoleProvider.send({
         apiKey: '',
         from: { name: 'Console Mode', email: 'console@localhost' },

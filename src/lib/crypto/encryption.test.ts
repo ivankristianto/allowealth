@@ -2,18 +2,18 @@ import { describe, it, expect, beforeAll, afterAll } from 'bun:test';
 import { encrypt, decrypt, generateEncryptionKey } from './encryption';
 
 describe('Encryption', () => {
-  const originalEnv = process.env.EMAIL_ENCRYPTION_KEY;
+  const originalEnv = import.meta.env.EMAIL_ENCRYPTION_KEY;
 
   beforeAll(() => {
     // Set a test encryption key (32 bytes base64 encoded)
-    process.env.EMAIL_ENCRYPTION_KEY = 'tDEmsRTMP7szCIbk9KWwzIOdkup1344oqOqQscCLRCY=';
+    import.meta.env.EMAIL_ENCRYPTION_KEY = 'tDEmsRTMP7szCIbk9KWwzIOdkup1344oqOqQscCLRCY=';
   });
 
   afterAll(() => {
     if (originalEnv) {
-      process.env.EMAIL_ENCRYPTION_KEY = originalEnv;
+      import.meta.env.EMAIL_ENCRYPTION_KEY = originalEnv;
     } else {
-      delete process.env.EMAIL_ENCRYPTION_KEY;
+      delete import.meta.env.EMAIL_ENCRYPTION_KEY;
     }
   });
 
