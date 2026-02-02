@@ -16,6 +16,7 @@ import { nanoid } from 'nanoid';
 import { db } from '@/db/index';
 import { users, passwordResetTokens } from '@/db/schema';
 import { eq, and, gt } from 'drizzle-orm';
+import { emailService } from '@/services';
 
 /**
  * Error codes for password reset operations
@@ -79,6 +80,20 @@ function validateForgotPasswordInput(email: string): ValidationResult {
 const TOKEN_EXPIRATION_MS = 60 * 60 * 1000;
 
 /**
+ * Get base URL from environment or use default
+ *
+ * Note: Uses import.meta.env because Astro/Vite only populates
+ * import.meta.env from .env files, not process.env.
+ */
+function getBaseUrl(): string {
+  return (
+    import.meta.env.PUBLIC_BASE_URL ||
+    import.meta.env.PUBLIC_API_URL?.replace('/api', '') ||
+    'http://localhost:4321'
+  );
+}
+
+/**
  * Request a password reset
  *
  * This function always returns success to prevent email enumeration attacks.
@@ -127,14 +142,21 @@ export async function requestPasswordReset(email: string): Promise<void> {
       expires_at: expiresAt,
     });
 
-    // TODO: Send email with reset link
-    // This requires email service integration (Resend, SendGrid, AWS SES, etc.)
-    // The email should contain a link to /reset-password?token={token}
-    console.warn(`[TODO] Send password reset email to: ${email}`);
-    console.warn(`[TODO] Reset link: /reset-password?token=${token}`);
+    // Send password reset email
+    const baseUrl = getBaseUrl();
+    const resetUrl = `${baseUrl}/reset-password?token=${token}`;
 
-    // For now, log the token (remove this in production)
-    console.warn(`[DEV] Password reset token for ${email}: ${token}`);
+    try {
+      await emailService.sendPasswordReset(user.workspace_id, {
+        to: email,
+        resetUrl,
+        expiresIn: '1 hour',
+      });
+    } catch (emailError) {
+      // Log email error but don't fail the request
+      // (console fallback will have already logged it)
+      console.error('[Password Reset] Email sending failed:', emailError);
+    }
   } catch (error) {
     // Log error but return success to prevent email enumeration
     console.error('[ERROR] Password reset request failed:', error);

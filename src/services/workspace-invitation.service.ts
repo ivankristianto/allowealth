@@ -16,11 +16,12 @@
  * - INVITATION_ALREADY_ACCEPTED: Invitation was already used
  */
 
-import { workspaceInvitations, workspaces, type IDatabase } from '@/db';
+import { workspaceInvitations, workspaces, users, type IDatabase } from '@/db';
 import { eq, and, isNull, gt, desc } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { z } from 'zod';
 import { WorkspaceInvitationServiceError, ServiceErrorCode } from './service-errors';
+import { emailService } from '@/services';
 
 /**
  * Invitation expiration time in milliseconds (7 days)
@@ -31,6 +32,20 @@ const INVITATION_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000;
  * Secure token length for invitations
  */
 const TOKEN_LENGTH = 64;
+
+/**
+ * Get base URL from environment or use default
+ *
+ * Note: Uses import.meta.env because Astro/Vite only populates
+ * import.meta.env from .env files, not process.env.
+ */
+function getBaseUrl(): string {
+  return (
+    import.meta.env.PUBLIC_BASE_URL ||
+    import.meta.env.PUBLIC_API_URL?.replace('/api', '') ||
+    'http://localhost:4321'
+  );
+}
 
 /**
  * Zod schemas for invitation service validation
@@ -97,6 +112,9 @@ export class WorkspaceInvitationService {
         created_at: now,
       })
       .returning();
+
+    // Send invitation email
+    await this.sendInvitationEmail(invitation);
 
     return invitation;
   }
@@ -268,6 +286,12 @@ export class WorkspaceInvitationService {
         expires_at: newExpiresAt,
       })
       .where(eq(workspaceInvitations.id, id));
+
+    // Send invitation email
+    await this.sendInvitationEmail({
+      ...invitation,
+      expires_at: newExpiresAt,
+    });
   }
 
   /**
@@ -332,6 +356,43 @@ export class WorkspaceInvitationService {
         'Workspace not found',
         404
       );
+    }
+  }
+
+  /**
+   * Send invitation email to the invitee
+   */
+  private async sendInvitationEmail(invitation: WorkspaceInvitation): Promise<void> {
+    try {
+      // Get workspace name
+      const workspace = await this.db.query.workspaces.findFirst({
+        where: eq(workspaces.id, invitation.workspace_id),
+      });
+      const workspaceName = workspace?.name || 'Unknown Workspace';
+
+      // Get inviter name
+      const inviter = await this.db.query.users.findFirst({
+        where: eq(users.id, invitation.invited_by_user_id),
+      });
+      const inviterName = inviter?.name || 'A team member';
+
+      // Build invite URL
+      const baseUrl = getBaseUrl();
+      const inviteUrl = `${baseUrl}/invite?token=${invitation.token}`;
+
+      // Calculate expiration time
+      const expiresIn = '7 days';
+
+      await emailService.sendWorkspaceInvitation(invitation.workspace_id, {
+        to: invitation.email,
+        inviterName,
+        workspaceName,
+        inviteUrl,
+        expiresIn,
+      });
+    } catch (emailError) {
+      // Log email error but don't fail the invitation creation
+      console.error('[Workspace Invitation] Email sending failed:', emailError);
     }
   }
 }
