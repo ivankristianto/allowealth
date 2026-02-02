@@ -1,0 +1,20 @@
+# Cloudflare Workers Configuration
+# https://developers.cloudflare.com/workers/wrangler/configuration/
+
+name = "expenses"
+main = "dist/_worker.js"
+compatibility_date = "2024-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Environment variables (non-secret)
+[vars]
+NODE_ENV = "production"
+
+# Secrets (set via CLI, not committed):
+# wrangler secret put DATABASE_URL
+#
+# To deploy:
+# 1. bun add -d @astrojs/cloudflare wrangler
+# 2. wrangler login
+# 3. wrangler secret put DATABASE_URL
+# 4. bun run deploy:cloudflare
