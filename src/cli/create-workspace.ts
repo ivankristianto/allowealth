@@ -1,9 +1,10 @@
 /**
- * CLI Script: Create Workspace
+ * CLI Script: Create Workspace with Admin User
  *
- * Creates a new workspace with optional default meta values.
+ * Creates a new workspace with an admin user and default categories.
+ * This is the primary setup command for production deployments.
  *
- * Usage: bun run cli:create-workspace -- --name "Workspace Name"
+ * Usage: bun run cli:create-workspace -- --name "Workspace Name" --email admin@example.com
  */
 
 /* eslint-disable no-console -- Console output is intentional for CLI */
@@ -11,13 +12,98 @@
 import { db } from '@/db';
 import { WorkspaceService } from '@/services/workspace.service';
 import { WorkspaceMetaService } from '@/services/workspace-meta.service';
+import { AssetCategoryService } from '@/services/asset-category.service';
 import { WORKSPACE_META_KEYS, WORKSPACE_META_DEFAULTS } from '@/lib/constants/workspace-meta-keys';
+import { DEFAULT_ASSET_CATEGORIES } from '@/lib/constants';
+import { hashPassword } from '@/lib/auth/password';
+import { users } from '@/db/schema';
+import { nanoid } from 'nanoid';
+import * as readline from 'readline';
 
 interface CreateWorkspaceOptions {
   name: string;
+  email?: string;
+  password?: string;
   currency?: string;
   weekStart?: string;
   compactNumbers?: boolean;
+}
+
+/**
+ * Prompt for user input (hidden for passwords)
+ */
+function prompt(question: string, hidden = false): Promise<string> {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+
+  return new Promise((resolve) => {
+    if (hidden) {
+      // For password input, we need to handle it specially
+      process.stdout.write(question);
+      let password = '';
+
+      process.stdin.setRawMode(true);
+      process.stdin.resume();
+      process.stdin.setEncoding('utf8');
+
+      const onData = (char: string) => {
+        if (char === '\n' || char === '\r') {
+          process.stdin.setRawMode(false);
+          process.stdin.removeListener('data', onData);
+          process.stdout.write('\n');
+          rl.close();
+          resolve(password);
+        } else if (char === '\u0003') {
+          // Ctrl+C
+          process.exit();
+        } else if (char === '\u007F') {
+          // Backspace
+          if (password.length > 0) {
+            password = password.slice(0, -1);
+            process.stdout.write('\b \b');
+          }
+        } else {
+          password += char;
+          process.stdout.write('*');
+        }
+      };
+
+      process.stdin.on('data', onData);
+    } else {
+      rl.question(question, (answer) => {
+        rl.close();
+        resolve(answer);
+      });
+    }
+  });
+}
+
+/**
+ * Validate email format
+ */
+function validateEmail(email: string): boolean {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+}
+
+/**
+ * Validate password strength
+ */
+function validatePassword(password: string): { valid: boolean; message?: string } {
+  if (password.length < 12) {
+    return { valid: false, message: 'Password must be at least 12 characters' };
+  }
+  const hasLetter = /[a-zA-Z]/.test(password);
+  const hasNumberOrSpecial = /[0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
+  if (!hasLetter || !hasNumberOrSpecial) {
+    return {
+      valid: false,
+      message: 'Password must contain letters and numbers/special characters',
+    };
+  }
+  return { valid: true };
 }
 
 /**
@@ -34,6 +120,14 @@ function parseArgs(): CreateWorkspaceOptions {
       case '--name':
       case '-n':
         options.name = args[++i];
+        break;
+      case '--email':
+      case '-e':
+        options.email = args[++i];
+        break;
+      case '--password':
+      case '-p':
+        options.password = args[++i];
         break;
       case '--currency':
       case '-c':
@@ -71,14 +165,19 @@ Usage: bun run cli:create-workspace -- [options]
 
 Options:
   --name, -n <name>           Workspace name (required)
+  --email, -e <email>         Admin email (will prompt if not provided)
+  --password, -p <password>   Admin password (will prompt if not provided)
   --currency, -c <currency>   Default currency (default: IDR)
   --week-start, -w <day>      Week start day: monday or sunday (default: monday)
   --compact-numbers           Use compact number formatting: true or false (default: true)
   --help, -h                  Show this help message
 
 Examples:
+  # Interactive mode (prompts for email/password)
   bun run cli:create-workspace -- --name "My Family"
-  bun run cli:create-workspace -- --name "Business" --currency USD --week-start sunday
+
+  # Non-interactive mode
+  bun run cli:create-workspace -- --name "My Family" --email admin@example.com --password "SecurePass123!"
 `);
 }
 
@@ -88,41 +187,111 @@ Examples:
 async function main(): Promise<void> {
   const options = parseArgs();
 
-  console.log('Creating workspace...\n');
+  console.log('');
+  console.log('Create Workspace');
+  console.log('==================');
+  console.log('');
+
+  // Get admin email
+  let email = options.email;
+  if (!email) {
+    email = await prompt('Admin email: ');
+  }
+  if (!validateEmail(email)) {
+    console.error('Error: Invalid email format');
+    process.exit(1);
+  }
+
+  // Get admin password
+  let password = options.password;
+  if (!password) {
+    password = await prompt('Admin password: ', true);
+    const confirm = await prompt('Confirm password: ', true);
+    if (password !== confirm) {
+      console.error('Error: Passwords do not match');
+      process.exit(1);
+    }
+  }
+  const passwordValidation = validatePassword(password);
+  if (!passwordValidation.valid) {
+    console.error(`Error: ${passwordValidation.message}`);
+    process.exit(1);
+  }
+
+  console.log('');
+  console.log('Creating workspace...');
 
   try {
     // Create workspace
     const workspaceService = new WorkspaceService(db);
     const workspace = await workspaceService.create({ name: options.name });
 
-    console.log(`Created workspace:`);
-    console.log(`  ID:   ${workspace.id}`);
-    console.log(`  Name: ${workspace.name}`);
+    console.log(`✓ Created workspace: ${workspace.name} (${workspace.id})`);
 
     // Set workspace meta values
     const metaService = new WorkspaceMetaService(db);
 
-    // Currency
     const currency = options.currency || WORKSPACE_META_DEFAULTS[WORKSPACE_META_KEYS.CURRENCY];
     await metaService.set(workspace.id, WORKSPACE_META_KEYS.CURRENCY, currency);
 
-    // Week start
     const weekStart = options.weekStart || WORKSPACE_META_DEFAULTS[WORKSPACE_META_KEYS.WEEK_START];
     await metaService.set(workspace.id, WORKSPACE_META_KEYS.WEEK_START, weekStart);
 
-    // Compact numbers
     const compactNumbers =
       options.compactNumbers !== undefined
         ? String(options.compactNumbers)
         : WORKSPACE_META_DEFAULTS[WORKSPACE_META_KEYS.COMPACT_NUMBERS];
     await metaService.set(workspace.id, WORKSPACE_META_KEYS.COMPACT_NUMBERS, compactNumbers);
 
-    console.log(`\nWorkspace settings:`);
-    console.log(`  Currency:        ${currency}`);
-    console.log(`  Week Start:      ${weekStart}`);
-    console.log(`  Compact Numbers: ${compactNumbers}`);
+    console.log(`✓ Set workspace settings (currency: ${currency}, weekStart: ${weekStart})`);
 
-    console.log('\nWorkspace created successfully!');
+    // Create admin user
+    const userId = nanoid();
+    const passwordHash = await hashPassword(password);
+
+    await db.insert(users).values({
+      id: userId,
+      workspace_id: workspace.id,
+      email: email.toLowerCase(),
+      password_hash: passwordHash,
+      name: 'Admin',
+      role: 'admin',
+      created_at: new Date(),
+      updated_at: new Date(),
+    });
+
+    console.log(`✓ Created admin user: ${email}`);
+
+    // Create default asset categories
+    const assetCategoryService = new AssetCategoryService(db);
+    for (const category of DEFAULT_ASSET_CATEGORIES) {
+      await assetCategoryService.create({
+        workspace_id: workspace.id,
+        created_by_user_id: userId,
+        name: category.name,
+        description: category.description,
+        is_liability: category.isLiability,
+        is_system: true,
+        sort_order: category.sortOrder,
+      });
+    }
+
+    console.log(`✓ Created ${DEFAULT_ASSET_CATEGORIES.length} default asset categories`);
+
+    console.log('');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('✅ Workspace created successfully!');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('');
+    console.log('Login credentials:');
+    console.log(`  Email:    ${email}`);
+    console.log(`  Password: (the password you entered)`);
+    console.log('');
+    console.log('Next steps:');
+    console.log('  1. Open your app URL in a browser');
+    console.log('  2. Log in with the credentials above');
+    console.log('  3. Invite family members from Settings');
+    console.log('');
   } catch (error) {
     console.error('Failed to create workspace:', error);
     process.exit(1);
