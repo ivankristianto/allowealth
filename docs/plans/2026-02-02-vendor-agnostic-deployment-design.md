@@ -1,7 +1,7 @@
 # Vendor-Agnostic Deployment Design
 
 **Date:** 2026-02-02
-**Status:** Implemented
+**Status:** Draft
 
 ## Overview
 
