@@ -58,23 +58,55 @@ setup('reset database', async () => {
  * Credentials must match src/db/seed.ts DEMO_USER configuration.
  */
 setup('authenticate', async ({ page }) => {
+  // Timeout for authentication (E2E uses lighter Argon2 params for speed)
+  setup.setTimeout(30000);
   const email = process.env.E2E_USER_EMAIL || 'demo@example.com';
   const password = process.env.E2E_USER_PASSWORD || 'demo123456789';
 
   await page.goto(`${E2E_BASE_URL}/login`);
 
-  // Wait for login form to be visible
-  await expect(page.locator('[data-testid="email-input"]')).toBeVisible({
-    timeout: 10000,
-  });
+  // Wait for login form to be visible and ready
+  const loginButton = page.getByRole('button', { name: /sign in/i });
+  await expect(loginButton).toBeVisible({ timeout: 15000 });
 
-  // Fill login form
-  await page.fill('[data-testid="email-input"]', email);
-  await page.fill('[data-testid="password-input"]', password);
-  await page.click('[data-testid="login-btn"]');
+  // Fill login form using JavaScript evaluation for maximum reliability
+  await page.evaluate(
+    ({ emailVal, passwordVal }) => {
+      const emailInput = document.getElementById('email') as HTMLInputElement;
+      const passwordInput = document.getElementById('password') as HTMLInputElement;
+      if (emailInput) {
+        emailInput.value = emailVal;
+        emailInput.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+      if (passwordInput) {
+        passwordInput.value = passwordVal;
+        passwordInput.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+    },
+    { emailVal: email, passwordVal: password }
+  );
 
-  // Wait for redirect to dashboard (indicates successful login)
-  await page.waitForURL('**/dashboard', { timeout: 10000 });
+  // Wait for form to process input
+  await page.waitForTimeout(200);
+
+  // Click login button and wait for navigation
+  // The login API can take a while due to Argon2 password verification
+  await loginButton.click();
+
+  // Wait for either successful navigation to dashboard OR error message
+  try {
+    await page.waitForURL('**/dashboard', { timeout: 15000 });
+  } catch {
+    // Check if there's an error message (use specific selector to avoid matching toast announcer)
+    const errorAlert = page
+      .locator('[data-testid="login-error"]')
+      .or(page.locator('.alert.alert-error[role="alert"]'));
+    if (await errorAlert.first().isVisible()) {
+      const errorText = await errorAlert.first().textContent();
+      throw new Error(`Login failed with error: ${errorText}`);
+    }
+    throw new Error('Login navigation timed out without error message');
+  }
 
   // Save authentication state
   await page.context().storageState({ path: 'e2e/.auth/user.json' });

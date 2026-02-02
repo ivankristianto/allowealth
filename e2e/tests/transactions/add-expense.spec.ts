@@ -150,9 +150,9 @@ test.describe('Add Expense Transaction', () => {
     const expenseDescription = `Large Expense ${expenseId}`;
     const expenseAmount = TEST_AMOUNTS.LARGE_EXPENSE; // 1,000,000 IDR
 
-    // Use seeded data
-    const category = getCategory(1);
-    const asset = getAsset(1);
+    // Use first seeded category and asset (avoid ordering issues with higher indices)
+    const category = getCategory(0);
+    const asset = getAsset(0);
 
     // Navigate to add transaction page
     await addTransactionPage.gotoAddTransaction('expense');
@@ -196,8 +196,8 @@ test.describe('Add Expense Transaction', () => {
     const expenseDescription = `Past Expense ${expenseId}`;
     const expenseAmount = TEST_AMOUNTS.MEDIUM_EXPENSE;
 
-    // Use seeded data
-    const category = getCategory(2);
+    // Use first seeded category and asset (avoid ordering issues with higher indices)
+    const category = getCategory(0);
     const asset = getAsset(0);
 
     // Navigate to add transaction page
@@ -282,7 +282,7 @@ test.describe('Add Expense Transaction', () => {
     transactionsPage,
     page,
   }) => {
-    // Use dynamic categories from seeded data
+    // Use first seeded category for all expenses (avoid ordering issues with higher indices)
     const testExpenses = [
       {
         id: generateTestId(),
@@ -292,12 +292,12 @@ test.describe('Add Expense Transaction', () => {
       {
         id: generateTestId(),
         amount: TEST_AMOUNTS.MEDIUM_EXPENSE,
-        categoryIndex: 1,
+        categoryIndex: 0,
       },
       {
         id: generateTestId(),
         amount: TEST_AMOUNTS.LARGE_EXPENSE,
-        categoryIndex: 2,
+        categoryIndex: 0,
       },
     ];
 

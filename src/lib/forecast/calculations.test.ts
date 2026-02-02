@@ -154,10 +154,21 @@ describe('aggregateAssetHistory', () => {
 });
 
 describe('mergeRealAndForecast', () => {
+  // Helper to get month key from offset (0 = current month, 1 = next month, etc.)
+  function getMonthKey(monthOffset: number): string {
+    const today = new Date();
+    const targetDate = new Date(today.getFullYear(), today.getMonth() + monthOffset, 1);
+    return `${targetDate.getFullYear()}-${String(targetDate.getMonth() + 1).padStart(2, '0')}`;
+  }
+
   test('should merge real data into forecast', () => {
+    // Use month keys that match the forecast (which starts from current month)
+    const currentMonthKey = getMonthKey(0);
+    const nextMonthKey = getMonthKey(1);
+
     const realData: MonthlyHistoricalData[] = [
-      { key: '2026-01', balance: 1000000, interest: 5000 },
-      { key: '2026-02', balance: 1100000, interest: 5500 },
+      { key: currentMonthKey, balance: 1000000, interest: 5000 },
+      { key: nextMonthKey, balance: 1100000, interest: 5500 },
     ];
 
     const forecast = calculateForecast(1000000, 100000, 7, 1);
@@ -166,23 +177,26 @@ describe('mergeRealAndForecast', () => {
     expect(result).toHaveLength(forecast.length);
 
     // Check that real data is merged
-    const jan2026 = result.find((p) => p.key === '2026-01');
-    expect(jan2026?.realBalance).toBe(1000000);
-    expect(jan2026?.realInterest).toBe(5000);
+    const currentMonth = result.find((p) => p.key === currentMonthKey);
+    expect(currentMonth?.realBalance).toBe(1000000);
+    expect(currentMonth?.realInterest).toBe(5000);
 
-    const feb2026 = result.find((p) => p.key === '2026-02');
-    expect(feb2026?.realBalance).toBe(1100000);
-    expect(feb2026?.realInterest).toBe(5500);
+    const nextMonth = result.find((p) => p.key === nextMonthKey);
+    expect(nextMonth?.realBalance).toBe(1100000);
+    expect(nextMonth?.realInterest).toBe(5500);
   });
 
   test('should keep null for months without real data', () => {
-    const realData: MonthlyHistoricalData[] = [{ key: '2026-01', balance: 1000000, interest: 0 }];
+    const currentMonthKey = getMonthKey(0);
+    const realData: MonthlyHistoricalData[] = [
+      { key: currentMonthKey, balance: 1000000, interest: 0 },
+    ];
 
     const forecast = calculateForecast(1000000, 100000, 7, 1);
     const result = mergeRealAndForecast(realData, forecast);
 
-    // Find a future month
-    const futureMonth = result.find((p) => p.key !== '2026-01');
+    // Find a future month (not the current month)
+    const futureMonth = result.find((p) => p.key !== currentMonthKey);
     expect(futureMonth?.realBalance).toBeNull();
     expect(futureMonth?.realInterest).toBeNull();
   });

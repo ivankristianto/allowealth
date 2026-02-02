@@ -79,14 +79,29 @@ export class AssetsPage extends BasePage {
     // Wait for button to be ready and stable
     await addBtn.first().waitFor({ state: 'visible', timeout: 10000 });
 
-    // Small delay to ensure page is stable after reload
-    await this.page.waitForTimeout(100);
-
-    await addBtn.first().click();
-
-    // Wait for modal dialog to be visible (not just attached)
+    // Retry logic for clicking button and opening modal
     const modal = this.page.locator('dialog#asset-form-modal[open]');
-    await modal.waitFor({ state: 'visible', timeout: 10000 });
+    const maxRetries = 3;
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      // Small delay to ensure page is stable
+      await this.page.waitForTimeout(200);
+
+      // Click the button
+      await addBtn.first().click();
+
+      // Wait for modal to be visible with shorter timeout for retries
+      try {
+        await modal.waitFor({ state: 'visible', timeout: 5000 });
+        break; // Modal opened successfully
+      } catch {
+        if (attempt === maxRetries) {
+          throw new Error(`Failed to open asset modal after ${maxRetries} attempts`);
+        }
+        // Modal didn't open, wait a bit and retry
+        await this.page.waitForTimeout(300);
+      }
+    }
 
     // Wait for form to be ready inside the modal
     const nameInput = modal
@@ -111,10 +126,24 @@ export class AssetsPage extends BasePage {
     await nameInput.fill(data.name);
 
     // Select asset type - scoped within modal
+    // Map legacy type values to human-readable labels for the select
+    const typeToLabel: Record<string, string> = {
+      cash: 'Cash',
+      bank_account: 'Bank Account',
+      e_wallet: 'E-Wallet',
+      mutual_fund: 'Mutual Fund',
+      bond: 'Bond',
+      crypto: 'Crypto',
+      stock: 'Stock',
+      other: 'Other',
+      credit_card: 'Credit Card',
+      loan: 'Loan',
+    };
+    const typeLabel = typeToLabel[data.type] || data.type;
     const typeSelect = modal
       .locator('[data-testid="asset-category-select"]')
       .or(modal.locator('select[name="type"]'));
-    await typeSelect.selectOption(data.type);
+    await typeSelect.selectOption({ label: typeLabel });
 
     // Select currency - scoped within modal
     const currencySelect = modal
@@ -172,6 +201,10 @@ export class AssetsPage extends BasePage {
     await this.openAddAssetModal();
     await this.fillAssetForm(data);
     await this.submitAssetForm();
+
+    // Wait for page to be fully stable after submission (important for sequential operations)
+    await this.page.waitForLoadState('networkidle');
+    await this.page.waitForTimeout(500);
   }
 
   /**
@@ -207,10 +240,24 @@ export class AssetsPage extends BasePage {
     }
 
     if (updates.type !== undefined) {
+      // Map legacy type values to human-readable labels for the select
+      const typeToLabel: Record<string, string> = {
+        cash: 'Cash',
+        bank_account: 'Bank Account',
+        e_wallet: 'E-Wallet',
+        mutual_fund: 'Mutual Fund',
+        bond: 'Bond',
+        crypto: 'Crypto',
+        stock: 'Stock',
+        other: 'Other',
+        credit_card: 'Credit Card',
+        loan: 'Loan',
+      };
+      const typeLabel = typeToLabel[updates.type] || updates.type;
       const typeSelect = modal
         .locator('[data-testid="asset-category-select"]')
         .or(modal.locator('select[name="type"]'));
-      await typeSelect.selectOption(updates.type);
+      await typeSelect.selectOption({ label: typeLabel });
     }
 
     if (updates.currency !== undefined) {
@@ -286,26 +333,41 @@ export class AssetsPage extends BasePage {
    * @returns The portfolio total as a string
    */
   async getPortfolioTotal(): Promise<string> {
-    // First check if portfolio summary section exists
-    const portfolioSection = this.page.locator(this.portfolioTotal);
-    const sectionCount = await portfolioSection.count();
+    // Wait for portfolio summary section to be visible
+    const portfolioSection = this.page
+      .locator('[aria-label*="Portfolio"]')
+      .or(this.page.locator('section:has-text("Total Value")'));
 
-    if (sectionCount === 0) {
-      // No assets - return empty or zero
+    try {
+      await portfolioSection.first().waitFor({ state: 'visible', timeout: 5000 });
+    } catch {
+      // No portfolio section found
       return '0';
     }
 
-    // Get the IDR total specifically from the portfolio summary
-    const idrTotalElement = this.page.locator('[data-testid="portfolio-total-idr"] p.text-success');
-    const elementCount = await idrTotalElement.count();
+    // Look for IDR total value - it appears after "Total Value (IDR)" text
+    // Try multiple selectors for robustness
+    const idrValueLocators = [
+      // Direct data-testid
+      this.page.locator('[data-testid="portfolio-total-idr"] p'),
+      // Text containing "Total Value (IDR)" followed by a paragraph
+      this.page.locator('text=Total Value (IDR) >> xpath=following-sibling::p'),
+      // Paragraph containing "Rp" currency format in portfolio section
+      portfolioSection.locator('p:has-text("Rp")').first(),
+    ];
 
-    if (elementCount > 0) {
-      const text = await idrTotalElement.textContent();
-      return text?.trim() ?? '0';
+    for (const locator of idrValueLocators) {
+      const count = await locator.count();
+      if (count > 0) {
+        const text = await locator.first().textContent();
+        if (text && text.includes('Rp')) {
+          return text.trim();
+        }
+      }
     }
 
-    // Fallback: Get the first text content with currency format from portfolio section
-    const portfolioText = await portfolioSection.textContent();
+    // Final fallback: Get the full portfolio section text
+    const portfolioText = await portfolioSection.first().textContent();
     return portfolioText?.trim() ?? '0';
   }
 

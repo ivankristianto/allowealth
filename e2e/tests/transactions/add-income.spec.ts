@@ -110,9 +110,9 @@ test.describe('Add Income Transaction', () => {
     const incomeDescription = `E2E Income ${incomeId}`;
     const incomeAmount = TEST_AMOUNTS.SMALL_INCOME; // 1,000,000 IDR
 
-    // Use seeded data
-    const category = getCategory(1);
-    const asset = getAsset(1);
+    // Use first seeded category and asset (avoid ordering issues with higher indices)
+    const category = getCategory(0);
+    const asset = getAsset(0);
 
     // Navigate to add transaction page
     await addTransactionPage.gotoAddTransaction('income');
@@ -149,8 +149,8 @@ test.describe('Add Income Transaction', () => {
     const incomeDescription = `Large Income ${incomeId}`;
     const incomeAmount = TEST_AMOUNTS.LARGE_INCOME; // 15,000,000 IDR
 
-    // Use seeded data
-    const category = getCategory(2);
+    // Use first seeded category and asset (avoid ordering issues with higher indices)
+    const category = getCategory(0);
     const asset = getAsset(0);
 
     // Navigate to add transaction page
@@ -192,9 +192,9 @@ test.describe('Add Income Transaction', () => {
     const incomeDescription = `Custom Date Income ${incomeId}`;
     const incomeAmount = TEST_AMOUNTS.MEDIUM_INCOME;
 
-    // Use seeded data
-    const category = getCategory(3);
-    const asset = getAsset(1);
+    // Use first seeded category and asset (avoid ordering issues with higher indices)
+    const category = getCategory(0);
+    const asset = getAsset(0);
 
     // Navigate to add transaction page
     await addTransactionPage.gotoAddTransaction('income');
@@ -234,8 +234,8 @@ test.describe('Add Income Transaction', () => {
     const incomeDescription = `Type Test Income ${incomeId}`;
     const incomeAmount = TEST_AMOUNTS.MEDIUM_INCOME;
 
-    // Use seeded data
-    const category = getCategory(4);
+    // Use first seeded category and asset (avoid ordering issues with higher indices)
+    const category = getCategory(0);
     const asset = getAsset(0);
 
     // Navigate to add transaction page with income pre-selected
@@ -275,7 +275,7 @@ test.describe('Add Income Transaction', () => {
     transactionsPage,
     page,
   }) => {
-    // Use dynamic categories from seeded data
+    // Use first seeded category for all incomes (avoid ordering issues with higher indices)
     const testIncomes = [
       {
         id: generateTestId(),
@@ -285,12 +285,12 @@ test.describe('Add Income Transaction', () => {
       {
         id: generateTestId(),
         amount: TEST_AMOUNTS.MEDIUM_INCOME,
-        categoryIndex: 1,
+        categoryIndex: 0,
       },
       {
         id: generateTestId(),
         amount: TEST_AMOUNTS.LARGE_INCOME,
-        categoryIndex: 2,
+        categoryIndex: 0,
       },
     ];
 

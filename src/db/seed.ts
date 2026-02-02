@@ -52,6 +52,15 @@ if (isProduction && !allowSeed) {
 // CONFIGURATION
 // ============================================================================
 
+// Pre-computed Argon2id hash for 'demo123456789' to speed up E2E tests
+// Uses lighter parameters (4MB memory, 1 iteration) for fast verification
+// This avoids expensive password hashing during test database seeding and login
+const PRECOMPUTED_DEMO_PASSWORD_HASH =
+  '$argon2id$v=19$m=4096,t=1,p=1$5Uhn8liMmbcIV/5rYKx+lg$1M3uPJzRTbwMpl4fwXXs4bm6m8enLdSCoIMf5EeLNMc';
+
+// Detect E2E mode by checking DATABASE_URL
+const isE2EMode = process.env.DATABASE_URL?.includes('.e2e.db') ?? false;
+
 const DEMO_ADMIN = {
   email: 'demo@example.com',
   password: 'demo123456789', // Must be at least 12 chars for Argon2id
@@ -646,7 +655,10 @@ async function seedUsers(workspaceId: string): Promise<string> {
 
   // Create admin user
   const adminUserId = nanoid();
-  const adminPasswordHash = await hashPassword(DEMO_ADMIN.password);
+  // Use pre-computed hash in E2E mode to speed up seeding
+  const adminPasswordHash = isE2EMode
+    ? PRECOMPUTED_DEMO_PASSWORD_HASH
+    : await hashPassword(DEMO_ADMIN.password);
 
   await db.insert(users).values({
     id: adminUserId,
@@ -681,7 +693,10 @@ async function seedUsers(workspaceId: string): Promise<string> {
 
   // Create member user
   const memberUserId = nanoid();
-  const memberPasswordHash = await hashPassword(DEMO_MEMBER.password);
+  // Use pre-computed hash in E2E mode to speed up seeding
+  const memberPasswordHash = isE2EMode
+    ? PRECOMPUTED_DEMO_PASSWORD_HASH
+    : await hashPassword(DEMO_MEMBER.password);
 
   await db.insert(users).values({
     id: memberUserId,
@@ -818,13 +833,25 @@ async function seedBudgets(
 ): Promise<void> {
   console.log('📊 Seeding budgets...');
 
-  const monthsToSeed = [
-    { year: 2025, month: 11 }, // November 2025
-    { year: 2025, month: 12 }, // December 2025
-    { year: 2026, month: 1 }, // January 2026
-  ];
-
   const now = new Date();
+  const currentMonth = now.getMonth() + 1; // 1-indexed
+  const currentYear = now.getFullYear();
+
+  // Seed budgets for current month and 2 previous months
+  const monthsToSeed = [
+    // 2 months ago
+    {
+      year: currentMonth <= 2 ? currentYear - 1 : currentYear,
+      month: currentMonth <= 2 ? currentMonth + 10 : currentMonth - 2,
+    },
+    // 1 month ago
+    {
+      year: currentMonth === 1 ? currentYear - 1 : currentYear,
+      month: currentMonth === 1 ? 12 : currentMonth - 1,
+    },
+    // Current month
+    { year: currentYear, month: currentMonth },
+  ];
 
   // P2 TODO: Consider using schema-derived type for currency (e.g., 'IDR' as const)
   const budgetRecords: Array<{

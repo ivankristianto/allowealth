@@ -122,9 +122,29 @@ export class AddTransactionPage extends BasePage {
     await this.amountInput.fill(''); // Clear first
     await this.amountInput.fill(String(data.amount));
 
-    // Wait for selects to be enabled before interacting
+    // Wait for selects to be enabled and have options loaded
     await this.categorySelect.waitFor({ state: 'attached', timeout: 5000 });
     await this.assetSelect.waitFor({ state: 'attached', timeout: 5000 });
+
+    // Wait for category options to be populated (more than just the placeholder)
+    await this.page.waitForFunction(
+      (selector: string) => {
+        const select = document.querySelector(selector) as HTMLSelectElement;
+        return select && select.options.length > 1;
+      },
+      `dialog#${this.currentModalType === 'expense' ? 'expense-modal' : 'income-modal'} [data-testid="transaction-category-select"]`,
+      { timeout: 10000 }
+    );
+
+    // Wait for asset options to be populated
+    await this.page.waitForFunction(
+      (selector: string) => {
+        const select = document.querySelector(selector) as HTMLSelectElement;
+        return select && select.options.length > 1;
+      },
+      `dialog#${this.currentModalType === 'expense' ? 'expense-modal' : 'income-modal'} [data-testid="transaction-asset-select"]`,
+      { timeout: 10000 }
+    );
 
     // Select category by visible text
     await this.categorySelect.selectOption({ label: data.categoryName });
