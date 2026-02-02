@@ -1,5 +1,4 @@
-import { defineConfig } from 'astro/config';
-import node from '@astrojs/node';
+import { defineConfig, type AstroIntegration } from 'astro/config';
 import tailwindcss from '@tailwindcss/vite';
 import { fileURLToPath } from 'node:url';
 import { loadEnv } from 'vite';
@@ -13,15 +12,58 @@ const { PORT, DEV_HOST } = loadEnv(process.env.NODE_ENV || 'development', proces
 const devHost = DEV_HOST || true;
 const port = parseInt(PORT || '4321', 10);
 
+/**
+ * Deployment Target Configuration
+ *
+ * Set DEPLOY_TARGET to switch between platforms:
+ * - node (default): Local development and traditional Node.js hosting
+ * - cloudflare: Cloudflare Workers/Pages
+ * - vercel: Vercel serverless
+ * - netlify: Netlify Functions
+ */
+type DeployTarget = 'node' | 'cloudflare' | 'vercel' | 'netlify';
+const DEPLOY_TARGET = (process.env.DEPLOY_TARGET || 'node') as DeployTarget;
+
+/**
+ * Get the appropriate adapter based on DEPLOY_TARGET
+ */
+async function getAdapter(): Promise<AstroIntegration> {
+  switch (DEPLOY_TARGET) {
+    case 'cloudflare': {
+      const cloudflare = await import('@astrojs/cloudflare');
+      return cloudflare.default({
+        platformProxy: {
+          enabled: true,
+        },
+      });
+    }
+    case 'vercel': {
+      const vercel = await import('@astrojs/vercel');
+      return vercel.default({});
+    }
+    case 'netlify': {
+      const netlify = await import('@astrojs/netlify');
+      return netlify.default({});
+    }
+    case 'node':
+    default: {
+      const node = await import('@astrojs/node');
+      return node.default({ mode: 'standalone' });
+    }
+  }
+}
+
+const adapter = await getAdapter();
+
+console.log(`[astro.config] Using adapter: ${DEPLOY_TARGET}`);
+
 export default defineConfig({
   server: {
     host: devHost,
     port: port,
   },
   output: 'server',
-  adapter: node({
-    mode: 'standalone',
-  }),
+  adapter,
   vite: {
     plugins: [
       tailwindcss(),
@@ -29,7 +71,7 @@ export default defineConfig({
         filename: 'dist/stats.html',
         gzipSize: true,
         brotliSize: true,
-        template: 'treemap', // Options: 'treemap', 'sunburst', 'network'
+        template: 'treemap',
       }),
       visualizer({
         filename: 'dist/stats.json',
@@ -45,9 +87,7 @@ export default defineConfig({
       rollupOptions: {
         output: {
           manualChunks: {
-            // Separate chart.js into its own chunk for better caching
             chartjs: ['chart.js'],
-            // Separate motion library into its own chunk
             motion: ['motion'],
           },
         },
