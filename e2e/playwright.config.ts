@@ -14,9 +14,9 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  // Limit workers to prevent overwhelming the dev server
-  // Local: 2 workers, CI: 1 worker for stability
-  workers: process.env.CI ? 1 : 2,
+  // Use 1 worker to prevent database race conditions between parallel tests
+  // Tests share the same database, so parallel execution causes interference
+  workers: 1,
   reporter: [
     ['html', { outputFolder: '../test-results/playwright-report' }],
     ['json', { outputFile: '../test-results/e2e-results.json' }],

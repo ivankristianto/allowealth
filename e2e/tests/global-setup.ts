@@ -66,28 +66,18 @@ setup('authenticate', async ({ page }) => {
   await page.goto(`${E2E_BASE_URL}/login`);
 
   // Wait for login form to be visible and ready
+  const emailInput = page.locator('#email');
+  const passwordInput = page.locator('#password');
   const loginButton = page.getByRole('button', { name: /sign in/i });
-  await expect(loginButton).toBeVisible({ timeout: 15000 });
 
-  // Fill login form using JavaScript evaluation for maximum reliability
-  await page.evaluate(
-    ({ emailVal, passwordVal }) => {
-      const emailInput = document.getElementById('email') as HTMLInputElement;
-      const passwordInput = document.getElementById('password') as HTMLInputElement;
-      if (emailInput) {
-        emailInput.value = emailVal;
-        emailInput.dispatchEvent(new Event('input', { bubbles: true }));
-      }
-      if (passwordInput) {
-        passwordInput.value = passwordVal;
-        passwordInput.dispatchEvent(new Event('input', { bubbles: true }));
-      }
-    },
-    { emailVal: email, passwordVal: password }
-  );
+  await expect(emailInput).toBeVisible();
+  await expect(passwordInput).toBeVisible();
+  await expect(loginButton).toBeVisible();
+  await expect(loginButton).toBeEnabled();
 
-  // Wait for form to process input
-  await page.waitForTimeout(200);
+  // Fill login form using Playwright's native fill method
+  await emailInput.fill(email);
+  await passwordInput.fill(password);
 
   // Click login button and wait for navigation
   // The login API can take a while due to Argon2 password verification

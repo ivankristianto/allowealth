@@ -22,10 +22,12 @@ export abstract class BasePage {
   }
 
   /**
-   * Wait for page to fully load (network idle state).
+   * Wait for page to fully load (DOM content loaded).
+   * Note: We use 'domcontentloaded' instead of 'networkidle' for better performance.
+   * For specific elements, prefer explicit waits (toBeVisible, etc.).
    */
   async waitForPageLoad(): Promise<void> {
-    await this.page.waitForLoadState('networkidle');
+    await this.page.waitForLoadState('domcontentloaded');
   }
 
   /**

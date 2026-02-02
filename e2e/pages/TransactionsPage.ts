@@ -35,7 +35,7 @@ export class TransactionsPage extends BasePage {
    * @param description - The transaction description to search for
    */
   private getTransactionItemByDescription(description: string) {
-    return this.page.locator('[data-testid="transaction-item"], [data-transaction-card]', {
+    return this.page.locator('[data-transaction-card]', {
       hasText: description,
     });
   }
@@ -235,7 +235,7 @@ export class TransactionsPage extends BasePage {
    * @returns The count of visible transactions
    */
   async getTransactionCount(): Promise<number> {
-    const items = this.page.locator('[data-testid="transaction-item"], [data-transaction-card]');
+    const items = this.page.locator('[data-transaction-card]');
     return items.count();
   }
 
@@ -243,7 +243,8 @@ export class TransactionsPage extends BasePage {
    * Verify that the transaction list is visible.
    */
   async expectTransactionListVisible(): Promise<void> {
-    const list = this.page.locator(this.transactionList).or(this.page.locator('#transaction-list'));
+    // Primary ID-based locator
+    const list = this.page.locator('#transaction-list');
     await expect(list).toBeVisible();
   }
 

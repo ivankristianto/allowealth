@@ -380,21 +380,21 @@ export async function getAssetsViaAPI(
  * @param timeout - Maximum wait time in milliseconds
  */
 export async function waitForAPIReady(page: Page, timeout: number = 30000): Promise<void> {
-  const startTime = Date.now();
+  const { expect } = await import('@playwright/test');
 
-  while (Date.now() - startTime < timeout) {
-    try {
-      const response = await page.request.get(`${E2E_BASE_URL}/api/health`);
-      if (response.ok()) {
-        return;
-      }
-    } catch {
-      // API not ready yet, continue waiting
-    }
-    await page.waitForTimeout(500);
-  }
-
-  throw new Error(`API not ready after ${timeout}ms`);
+  await expect
+    .poll(
+      async () => {
+        try {
+          const response = await page.request.get(`${E2E_BASE_URL}/api/health`);
+          return response.ok();
+        } catch {
+          return false;
+        }
+      },
+      { timeout, intervals: [100, 250, 500, 1000], message: `API not ready after ${timeout}ms` }
+    )
+    .toBe(true);
 }
 
 /**

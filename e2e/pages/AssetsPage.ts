@@ -40,10 +40,15 @@ export class AssetsPage extends BasePage {
 
   /**
    * Get an asset item locator by asset name.
+   * Uses a heading element for more precise matching to avoid cross-test interference.
    * @param name - The asset name to search for
    */
   private getAssetItemByName(name: string) {
-    return this.page.locator('[data-testid="asset-item"]', { hasText: name });
+    // Use heading with exact text for more precise matching
+    // This prevents finding assets from parallel test runs with similar names
+    return this.page.locator('[data-testid="asset-item"]').filter({
+      has: this.page.locator('h4', { hasText: name }),
+    });
   }
 
   /**
@@ -58,17 +63,11 @@ export class AssetsPage extends BasePage {
    * Open the add asset modal.
    */
   async openAddAssetModal(): Promise<void> {
-    // Ensure page is fully loaded before interacting
-    await this.page.waitForLoadState('domcontentloaded');
-    await this.page.waitForLoadState('networkidle');
-
     // Ensure any existing modal is closed first
     const existingModal = this.page.locator('dialog#asset-form-modal[open]');
-    const isModalOpen = await existingModal.count();
-    if (isModalOpen > 0) {
-      // Close any open modal first
+    if ((await existingModal.count()) > 0) {
       await this.page.keyboard.press('Escape');
-      await this.page.waitForTimeout(300);
+      await expect(existingModal).not.toBeVisible();
     }
 
     // Try the add asset button (data-testid or data-add-asset-btn)
@@ -76,38 +75,20 @@ export class AssetsPage extends BasePage {
       .locator(this.addAssetBtn)
       .or(this.page.locator('[data-add-asset-btn]'));
 
-    // Wait for button to be ready and stable
-    await addBtn.first().waitFor({ state: 'visible', timeout: 10000 });
+    // Wait for button to be visible and enabled
+    await expect(addBtn.first()).toBeVisible();
+    await expect(addBtn.first()).toBeEnabled();
 
-    // Retry logic for clicking button and opening modal
+    // Click the button and wait for modal
     const modal = this.page.locator('dialog#asset-form-modal[open]');
-    const maxRetries = 3;
-
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      // Small delay to ensure page is stable
-      await this.page.waitForTimeout(200);
-
-      // Click the button
-      await addBtn.first().click();
-
-      // Wait for modal to be visible with shorter timeout for retries
-      try {
-        await modal.waitFor({ state: 'visible', timeout: 5000 });
-        break; // Modal opened successfully
-      } catch {
-        if (attempt === maxRetries) {
-          throw new Error(`Failed to open asset modal after ${maxRetries} attempts`);
-        }
-        // Modal didn't open, wait a bit and retry
-        await this.page.waitForTimeout(300);
-      }
-    }
+    await addBtn.first().click();
+    await expect(modal).toBeVisible({ timeout: 5000 });
 
     // Wait for form to be ready inside the modal
     const nameInput = modal
       .locator('[data-testid="asset-name-input"]')
       .or(modal.locator('[name="name"]').first());
-    await nameInput.waitFor({ state: 'visible', timeout: 5000 });
+    await expect(nameInput).toBeVisible();
   }
 
   /**
@@ -171,24 +152,21 @@ export class AssetsPage extends BasePage {
       .locator('[data-testid="asset-submit-btn"]')
       .or(modal.locator('button[type="submit"]'));
 
-    // Wait for submit button to be visible and stable before clicking
-    await submitBtn.waitFor({ state: 'visible', timeout: 5000 });
+    // Wait for submit button to be visible and enabled
+    await expect(submitBtn).toBeVisible();
+    await expect(submitBtn).toBeEnabled();
 
-    // Use Promise.all to handle navigation that happens after form submission
-    await Promise.all([
-      // Wait for navigation/reload to start
-      this.page.waitForURL(/.*\/assets.*/, { timeout: 15000 }),
-      submitBtn.click(),
-    ]);
+    // Click submit and wait for the page to reload
+    await submitBtn.click();
 
-    // Wait for page to fully load after reload
-    await this.page.waitForLoadState('domcontentloaded');
-    await this.page.waitForLoadState('networkidle');
+    // Wait for navigation to complete (page reloads after successful submission)
+    await this.page.waitForURL(/.*\/assets.*/, { timeout: 15000 });
 
-    // Ensure modal is truly closed
-    await modal.waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {
-      // Modal may already be detached after reload, which is fine
-    });
+    // Wait for the add asset button to be visible again (indicates page reload complete)
+    const addBtn = this.page
+      .locator(this.addAssetBtn)
+      .or(this.page.locator('[data-add-asset-btn]'));
+    await expect(addBtn.first()).toBeVisible({ timeout: 10000 });
   }
 
   /**
@@ -201,10 +179,7 @@ export class AssetsPage extends BasePage {
     await this.openAddAssetModal();
     await this.fillAssetForm(data);
     await this.submitAssetForm();
-
-    // Wait for page to be fully stable after submission (important for sequential operations)
-    await this.page.waitForLoadState('networkidle');
-    await this.page.waitForTimeout(500);
+    // submitAssetForm already ensures the page is ready for next operation
   }
 
   /**
@@ -308,7 +283,7 @@ export class AssetsPage extends BasePage {
    */
   async expectAssetExists(name: string): Promise<void> {
     const assetItem = this.getAssetItemByName(name);
-    await expect(assetItem).toBeVisible();
+    await expect(assetItem).toBeVisible({ timeout: 10000 });
   }
 
   /**

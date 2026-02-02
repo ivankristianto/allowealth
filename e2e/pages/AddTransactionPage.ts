@@ -81,7 +81,6 @@ export class AddTransactionPage extends BasePage {
 
     // Navigate to dashboard page where quick actions are available
     await this.page.goto('/dashboard');
-    await this.page.waitForLoadState('networkidle');
 
     // Open the appropriate modal via quick action button
     const quickActionButton =
@@ -89,21 +88,21 @@ export class AddTransactionPage extends BasePage {
         ? this.page.locator('[data-testid="quick-action-expense"]')
         : this.page.locator('[data-testid="quick-action-income"]');
 
-    // Wait for the quick action button to be visible and clickable
-    await quickActionButton.waitFor({ state: 'visible', timeout: 10000 });
+    // Wait for the quick action button to be visible and enabled
+    await expect(quickActionButton).toBeVisible();
+    await expect(quickActionButton).toBeEnabled();
 
     // Click the quick action button to open modal
     await quickActionButton.click();
 
-    // Wait for modal to be visible with timeout for animation
+    // Wait for modal and form to be visible
     const modal = this.getModal(transactionType);
     await expect(modal).toBeVisible({ timeout: 5000 });
+    await expect(this.transactionForm).toBeVisible();
 
-    // Wait for form to be fully rendered and interactive (now scoped to specific modal)
-    await this.transactionForm.waitFor({ state: 'visible', timeout: 3000 });
-
-    // Wait for animations to complete (QuickActions transition: 200ms)
-    await this.page.waitForTimeout(250);
+    // Wait for form fields to be ready (amount input is a good indicator)
+    await expect(this.amountInput).toBeVisible();
+    await expect(this.amountInput).toBeEnabled();
   }
 
   /**
@@ -114,37 +113,35 @@ export class AddTransactionPage extends BasePage {
   async fillForm(data: TransactionFormData): Promise<void> {
     // Fill description/title (required)
     if (data.description) {
-      await this.descriptionInput.fill(''); // Clear first
+      await this.descriptionInput.clear();
       await this.descriptionInput.fill(data.description);
     }
 
     // Fill amount (required)
-    await this.amountInput.fill(''); // Clear first
+    await this.amountInput.clear();
     await this.amountInput.fill(String(data.amount));
 
-    // Wait for selects to be enabled and have options loaded
-    await this.categorySelect.waitFor({ state: 'attached', timeout: 5000 });
-    await this.assetSelect.waitFor({ state: 'attached', timeout: 5000 });
+    // Wait for category select to have options (poll for option with our category name)
+    await expect
+      .poll(
+        async () => {
+          const options = await this.categorySelect.locator('option').allTextContents();
+          return options.some((opt) => opt.includes(data.categoryName));
+        },
+        { timeout: 10000, message: `Category "${data.categoryName}" not found in select options` }
+      )
+      .toBe(true);
 
-    // Wait for category options to be populated (more than just the placeholder)
-    await this.page.waitForFunction(
-      (selector: string) => {
-        const select = document.querySelector(selector) as HTMLSelectElement;
-        return select && select.options.length > 1;
-      },
-      `dialog#${this.currentModalType === 'expense' ? 'expense-modal' : 'income-modal'} [data-testid="transaction-category-select"]`,
-      { timeout: 10000 }
-    );
-
-    // Wait for asset options to be populated
-    await this.page.waitForFunction(
-      (selector: string) => {
-        const select = document.querySelector(selector) as HTMLSelectElement;
-        return select && select.options.length > 1;
-      },
-      `dialog#${this.currentModalType === 'expense' ? 'expense-modal' : 'income-modal'} [data-testid="transaction-asset-select"]`,
-      { timeout: 10000 }
-    );
+    // Wait for asset select to have options (poll for option with our asset name)
+    await expect
+      .poll(
+        async () => {
+          const options = await this.assetSelect.locator('option').allTextContents();
+          return options.some((opt) => opt.includes(data.assetName));
+        },
+        { timeout: 10000, message: `Asset "${data.assetName}" not found in select options` }
+      )
+      .toBe(true);
 
     // Select category by visible text
     await this.categorySelect.selectOption({ label: data.categoryName });
@@ -210,17 +207,20 @@ export class AddTransactionPage extends BasePage {
     // First verify modal closes after submission
     await this.expectModalClosed(type);
 
-    // Wait for page reload (modal closes and page reloads)
-    await this.page.waitForLoadState('networkidle');
-
     // Navigate to transactions page with appropriate type filter
     // Transactions page defaults to 'expense', so we need to specify type=income for income transactions
     await this.page.goto(`/transactions?type=${type}`);
-    await this.page.waitForLoadState('networkidle');
 
-    // Verify we're on the transactions page
-    const currentPath = new URL(this.page.url()).pathname;
-    expect(currentPath).toBe('/transactions');
+    // Verify we're on the transactions page by checking for the type filter buttons
+    const typeFilter =
+      type === 'expense'
+        ? this.page.locator(
+            'button:has-text("Expenses")[aria-pressed="true"], [data-testid="type-filter-expense"][pressed]'
+          )
+        : this.page.locator(
+            'button:has-text("Income")[aria-pressed="true"], [data-testid="type-filter-income"][pressed]'
+          );
+    await expect(typeFilter.first()).toBeVisible();
   }
 
   /**
