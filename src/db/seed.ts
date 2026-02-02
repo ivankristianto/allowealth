@@ -36,6 +36,19 @@ import { USER_META_KEYS } from '@/lib/constants/user-meta-keys';
 import { WORKSPACE_META_KEYS, WORKSPACE_META_DEFAULTS } from '@/lib/constants/workspace-meta-keys';
 
 // ============================================================================
+// PRODUCTION GUARD
+// ============================================================================
+
+const isProduction = process.env.NODE_ENV === 'production';
+const allowSeed = process.env.ALLOW_SEED === 'true';
+
+if (isProduction && !allowSeed) {
+  console.error('❌ Seeding is disabled in production.');
+  console.error('   Set ALLOW_SEED=true to override (use with caution).');
+  process.exit(1);
+}
+
+// ============================================================================
 // CONFIGURATION
 // ============================================================================
 

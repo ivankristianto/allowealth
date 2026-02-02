@@ -1,0 +1,14 @@
+# Netlify Configuration
+# https://docs.netlify.com/configure-builds/file-based-configuration/
+
+[build]
+  command = "DEPLOY_TARGET=netlify bun run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_ENV = "production"
+
+# To deploy:
+# 1. bun add -d @astrojs/netlify
+# 2. Set DATABASE_URL in Netlify dashboard
+# 3. Connect repo or run: netlify deploy --prod
