@@ -10,10 +10,10 @@
 
 import { generateEncryptionKey } from '@/lib/crypto/encryption';
 
-console.log('\n🔐 Email Encryption Key Generator\n');
-console.log('Add the following line to your .env file:\n');
+console.warn('\n🔐 Email Encryption Key Generator\n');
+console.warn('Add the following line to your .env file:\n');
 
 const key = generateEncryptionKey();
-console.log(`EMAIL_ENCRYPTION_KEY=${key}`);
+console.warn(`EMAIL_ENCRYPTION_KEY=${key}`);
 
-console.log('\n⚠️  Keep this key secure! If lost, encrypted API keys cannot be recovered.\n');
+console.warn('\n⚠️  Keep this key secure! If lost, encrypted API keys cannot be recovered.\n');

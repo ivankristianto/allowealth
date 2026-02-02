@@ -55,8 +55,6 @@ async function getAdapter(): Promise<AstroIntegration> {
 
 const adapter = await getAdapter();
 
-console.log(`[astro.config] Using adapter: ${DEPLOY_TARGET}`);
-
 export default defineConfig({
   server: {
     host: devHost,
@@ -77,7 +75,7 @@ export default defineConfig({
         filename: 'dist/stats.json',
         gzipSize: true,
         brotliSize: true,
-        json: true,
+        template: 'raw-data',
       }),
     ],
     server: {

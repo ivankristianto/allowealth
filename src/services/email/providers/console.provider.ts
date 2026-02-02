@@ -13,22 +13,22 @@ export class ConsoleEmailProvider implements EmailProvider {
   async send(options: SendEmailOptions): Promise<SendEmailResult> {
     const { from, to, subject, html } = options;
 
-    console.log('\n' + '='.repeat(60));
-    console.log('[EMAIL] Console Provider - Email would be sent:');
-    console.log('='.repeat(60));
-    console.log(`From: ${from.name} <${from.email}>`);
-    console.log(`To: ${to}`);
-    console.log(`Subject: ${subject}`);
-    console.log('-'.repeat(60));
-    console.log('Body (HTML):');
+    console.warn('\n' + '='.repeat(60));
+    console.warn('[EMAIL] Console Provider - Email would be sent:');
+    console.warn('='.repeat(60));
+    console.warn(`From: ${from.name} <${from.email}>`);
+    console.warn(`To: ${to}`);
+    console.warn(`Subject: ${subject}`);
+    console.warn('-'.repeat(60));
+    console.warn('Body (HTML):');
     // Strip HTML tags for console readability
     const textContent = html
       .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
       .replace(/<[^>]+>/g, ' ')
       .replace(/\s+/g, ' ')
       .trim();
-    console.log(textContent.substring(0, 500) + (textContent.length > 500 ? '...' : ''));
-    console.log('='.repeat(60) + '\n');
+    console.warn(textContent.substring(0, 500) + (textContent.length > 500 ? '...' : ''));
+    console.warn('='.repeat(60) + '\n');
 
     return {
       success: true,
