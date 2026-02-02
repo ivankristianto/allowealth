@@ -7,7 +7,12 @@
 
 import type { WorkspaceMetaService } from '@/services/workspace-meta.service';
 import { decrypt } from '@/lib/crypto/encryption';
-import { getEmailProvider, consoleProvider, type SendEmailResult } from './providers';
+import {
+  getEmailProvider,
+  consoleProvider,
+  type SendEmailResult,
+  type EmailProvider,
+} from './providers';
 import { emailTemplateService } from './email-template.service';
 import { EmailServiceError, EmailErrorCode } from './email-errors';
 
@@ -165,7 +170,7 @@ export class EmailService {
     }
 
     // Get provider
-    let provider;
+    let provider: EmailProvider;
     try {
       provider = getEmailProvider(settings.provider);
     } catch (error) {
