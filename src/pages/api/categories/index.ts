@@ -68,13 +68,17 @@ export const POST: APIRoute = async (context) => {
       ...validation.data,
     });
 
-    // Invalidate layout cache since categories changed
-    const cache = getCacheManager();
-    await cache.invalidateByTags([
-      CacheTags.workspace(auth.workspaceId),
-      CacheTags.CATEGORIES,
-      CacheTags.LAYOUT,
-    ]);
+    // Invalidate layout cache since categories changed (best-effort)
+    try {
+      const cache = getCacheManager();
+      await cache.invalidateByTags([
+        CacheTags.workspace(auth.workspaceId),
+        CacheTags.CATEGORIES,
+        CacheTags.LAYOUT,
+      ]);
+    } catch (cacheError) {
+      logError(`Cache invalidation failed for workspace ${auth.workspaceId}`, cacheError);
+    }
 
     return successResponse(category, 201);
   } catch (error) {

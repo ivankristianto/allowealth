@@ -73,13 +73,20 @@ export const PUT: APIRoute = async (context) => {
       return errorResponse('Category not found', 404);
     }
 
-    // Invalidate layout cache since categories changed
-    const cache = getCacheManager();
-    await cache.invalidateByTags([
-      CacheTags.workspace(auth.workspaceId),
-      CacheTags.CATEGORIES,
-      CacheTags.LAYOUT,
-    ]);
+    // Invalidate layout cache since categories changed (best-effort)
+    try {
+      const cache = getCacheManager();
+      await cache.invalidateByTags([
+        CacheTags.workspace(auth.workspaceId),
+        CacheTags.CATEGORIES,
+        CacheTags.LAYOUT,
+      ]);
+    } catch (cacheError) {
+      logError(
+        `Cache invalidation failed for workspace ${auth.workspaceId}, category ${id}`,
+        cacheError
+      );
+    }
 
     return successResponse(category);
   } catch (error) {
@@ -106,13 +113,20 @@ export const DELETE: APIRoute = async (context) => {
 
     await categoryService.delete(id, auth.workspaceId);
 
-    // Invalidate layout cache since categories changed
-    const cache = getCacheManager();
-    await cache.invalidateByTags([
-      CacheTags.workspace(auth.workspaceId),
-      CacheTags.CATEGORIES,
-      CacheTags.LAYOUT,
-    ]);
+    // Invalidate layout cache since categories changed (best-effort)
+    try {
+      const cache = getCacheManager();
+      await cache.invalidateByTags([
+        CacheTags.workspace(auth.workspaceId),
+        CacheTags.CATEGORIES,
+        CacheTags.LAYOUT,
+      ]);
+    } catch (cacheError) {
+      logError(
+        `Cache invalidation failed for workspace ${auth.workspaceId}, category ${id}`,
+        cacheError
+      );
+    }
 
     return successResponse({ message: 'Category deleted successfully' });
   } catch (error) {

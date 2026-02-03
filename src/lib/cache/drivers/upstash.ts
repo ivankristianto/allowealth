@@ -41,7 +41,7 @@ export class UpstashDriver implements CacheDriver {
         for (const tag of options.tags) {
           const tagKey = `tag:${tag}`;
           pipeline.sadd(tagKey, key);
-          pipeline.expire(tagKey, ttl + 60);
+          pipeline.expire(tagKey, ttl + 60, 'GT');
         }
         await pipeline.exec();
       }

@@ -60,10 +60,19 @@ let categories: Array<{ id: string; name: string; type: string; currency?: strin
 let assets: Array<{ id: string; name: string; type: string }> = [];
 let userSettings: UserSettings = { ...DEFAULT_USER_SETTINGS };
 
-// Try to get from cache first
-const cache = getCacheManager();
-const cacheKey = CacheKeys.layout(user.workspaceId, user.id);
-const cached = await cache.get<LayoutData>(cacheKey);
+// Try to get from cache first (fail-silent: cache errors should never break the page)
+let cached: LayoutData | null = null;
+let cache: ReturnType<typeof getCacheManager> | null = null;
+let cacheKey: string | null = null;
+
+try {
+  cache = getCacheManager();
+  cacheKey = CacheKeys.layout(user.workspaceId, user.id);
+  cached = await cache.get<LayoutData>(cacheKey);
+} catch (cacheReadErr) {
+  console.warn('Cache read failed, falling back to database:', cacheReadErr);
+  // Continue to DB fetch path
+}
 
 if (cached) {
   categories = cached.categories;
@@ -76,22 +85,29 @@ if (cached) {
       assetService.findAll(user.workspaceId),
       userMetaService.getUserSettings(user.id),
     ]);
-    // Cache the results (60 seconds TTL)
-    await cache.set<LayoutData>(
-      cacheKey,
-      { categories, assets, userSettings },
-      {
-        ttl: 60,
-        tags: [
-          CacheTags.workspace(user.workspaceId),
-          CacheTags.user(user.id),
-          CacheTags.LAYOUT,
-          CacheTags.CATEGORIES,
-          CacheTags.ASSETS,
-          CacheTags.SETTINGS,
-        ],
+    // Cache the results (60 seconds TTL) - fail-silent
+    try {
+      if (cache && cacheKey) {
+        await cache.set<LayoutData>(
+          cacheKey,
+          { categories, assets, userSettings },
+          {
+            ttl: 60,
+            tags: [
+              CacheTags.workspace(user.workspaceId),
+              CacheTags.user(user.id),
+              CacheTags.LAYOUT,
+              CacheTags.CATEGORIES,
+              CacheTags.ASSETS,
+              CacheTags.SETTINGS,
+            ],
+          }
+        );
       }
-    );
+    } catch (cacheWriteErr) {
+      console.warn('Cache write failed:', cacheWriteErr);
+      // Non-critical: DB-fetched data is still returned
+    }
   } catch (err) {
     console.error('Error loading transaction form data:', err);
     // Non-critical: modal won't have options but pages still work

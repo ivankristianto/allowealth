@@ -175,21 +175,31 @@ export class TransactionService {
     const filtersHash = hashFilters(filters as unknown as Record<string, unknown>);
     const cacheKey = CacheKeys.transactions(filters.workspace_id, filtersHash);
 
-    // Try cache first
+    // Try cache first (fail-silent)
     type FindAllResult = Awaited<ReturnType<typeof this.fetchTransactionsFromDb>>;
-    const cached = await cache.get<FindAllResult>(cacheKey);
-    if (cached) {
-      return cached;
+    try {
+      const cached = await cache.get<FindAllResult>(cacheKey);
+      if (cached) {
+        return cached;
+      }
+    } catch (error) {
+      // Cache read failed - treat as cache miss and proceed to DB
+      console.warn('[TransactionService] Cache read failed, falling back to DB:', error);
     }
 
     // Cache miss - fetch from DB
     const result = await this.fetchTransactionsFromDb(filters);
 
-    // Cache the result
-    await cache.set(cacheKey, result, {
-      ttl: 1800, // 30 minutes
-      tags: [CacheTags.workspace(filters.workspace_id), CacheTags.TRANSACTIONS],
-    });
+    // Cache the result (fail-silent)
+    try {
+      await cache.set(cacheKey, result, {
+        ttl: 1800, // 30 minutes
+        tags: [CacheTags.workspace(filters.workspace_id), CacheTags.TRANSACTIONS],
+      });
+    } catch (error) {
+      // Cache write failed - log and continue (DB result is still valid)
+      console.warn('[TransactionService] Cache write failed:', error);
+    }
 
     return result;
   }

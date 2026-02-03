@@ -90,7 +90,13 @@ export class BudgetService {
     const cache = getCacheManager();
     const cacheKey = CacheKeys.budget(workspaceId, year, month, currency);
 
-    const cached = await cache.get<BudgetSummary>(cacheKey);
+    // Cache read - fail-silent, treat errors as cache miss
+    let cached: BudgetSummary | null = null;
+    try {
+      cached = await cache.get<BudgetSummary>(cacheKey);
+    } catch {
+      // Cache read failed, continue to DB fetch
+    }
     if (cached) {
       return cached;
     }
@@ -98,11 +104,15 @@ export class BudgetService {
     // Cache miss - fetch from DB
     const result = await this.fetchMonthlyOverviewFromDb(workspaceId, year, month, currency);
 
-    // Cache the result
-    await cache.set(cacheKey, result, {
-      ttl: 3600,
-      tags: [CacheTags.workspace(workspaceId), CacheTags.BUDGET, CacheTags.TRANSACTIONS],
-    });
+    // Cache write - fail-silent, log at debug level but don't rethrow
+    try {
+      await cache.set(cacheKey, result, {
+        ttl: 3600,
+        tags: [CacheTags.workspace(workspaceId), CacheTags.BUDGET, CacheTags.TRANSACTIONS],
+      });
+    } catch {
+      // Cache write failed, continue without caching
+    }
 
     return result;
   }

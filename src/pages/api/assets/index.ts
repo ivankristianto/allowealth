@@ -126,13 +126,20 @@ export const POST: APIRoute = async (context) => {
       currency: validation.data.currency,
     });
 
-    // Invalidate layout cache since assets changed
-    const cache = getCacheManager();
-    await cache.invalidateByTags([
-      CacheTags.workspace(auth.workspaceId),
-      CacheTags.ASSETS,
-      CacheTags.LAYOUT,
-    ]);
+    // Invalidate layout cache since assets changed (best-effort)
+    try {
+      const cache = getCacheManager();
+      await cache.invalidateByTags([
+        CacheTags.workspace(auth.workspaceId),
+        CacheTags.ASSETS,
+        CacheTags.LAYOUT,
+      ]);
+    } catch (cacheError) {
+      logError(
+        `Failed to invalidate cache after asset create [workspaceId=${auth.workspaceId}, assetId=${asset.id}]`,
+        cacheError
+      );
+    }
 
     return successResponse(asset, 201);
   } catch (error) {

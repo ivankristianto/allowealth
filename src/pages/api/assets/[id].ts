@@ -122,13 +122,20 @@ export const PUT: APIRoute = async (context) => {
       return errorResponse('Asset not found', 404);
     }
 
-    // Invalidate layout cache since assets changed
-    const cache = getCacheManager();
-    await cache.invalidateByTags([
-      CacheTags.workspace(auth.workspaceId),
-      CacheTags.ASSETS,
-      CacheTags.LAYOUT,
-    ]);
+    // Invalidate layout cache since assets changed (best-effort)
+    try {
+      const cache = getCacheManager();
+      await cache.invalidateByTags([
+        CacheTags.workspace(auth.workspaceId),
+        CacheTags.ASSETS,
+        CacheTags.LAYOUT,
+      ]);
+    } catch (cacheError) {
+      logError(
+        `Failed to invalidate cache after asset update [workspaceId=${auth.workspaceId}, assetId=${id}]`,
+        cacheError
+      );
+    }
 
     return successResponse(asset);
   } catch (error) {
@@ -155,13 +162,20 @@ export const DELETE: APIRoute = async (context) => {
 
     await assetService.delete(id, auth.workspaceId);
 
-    // Invalidate layout cache since assets changed
-    const cache = getCacheManager();
-    await cache.invalidateByTags([
-      CacheTags.workspace(auth.workspaceId),
-      CacheTags.ASSETS,
-      CacheTags.LAYOUT,
-    ]);
+    // Invalidate layout cache since assets changed (best-effort)
+    try {
+      const cache = getCacheManager();
+      await cache.invalidateByTags([
+        CacheTags.workspace(auth.workspaceId),
+        CacheTags.ASSETS,
+        CacheTags.LAYOUT,
+      ]);
+    } catch (cacheError) {
+      logError(
+        `Failed to invalidate cache after asset delete [workspaceId=${auth.workspaceId}, assetId=${id}]`,
+        cacheError
+      );
+    }
 
     return successResponse({ message: 'Asset deleted successfully' });
   } catch (error) {
