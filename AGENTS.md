@@ -68,6 +68,7 @@ Agents must internalize:
 | **Bundle Size**         | Specific imports (`@/lib/utils/client`)  | Barrel exports (`@/lib/utils`)   | `005-bundle-performance.md`       |
 | **Chart.js**            | `@/lib/chart-setup` (tree-shaken)        | `chart.js/auto`                  | `005-bundle-performance.md`       |
 | **Server Libraries**    | Type-only imports (`import type`)        | Runtime imports in client        | `005-bundle-performance.md`       |
+| **Password Hashing**    | PBKDF2-SHA256 (Web Crypto API)           | oslo/argon2 (native addon)       | Cross-runtime compatibility       |
 
 ### Design System Compliance
 
@@ -139,6 +140,37 @@ Agents must internalize:
 - ❌ Import types directly from library packages in global declarations
 - ❌ Forget `export {}` in module-scoped declaration files
 - ❌ Mix type annotations with browser-executed scripts
+
+### E2E Testing & Playwright
+
+**DO:**
+
+- ✅ Use expect.poll() for condition-based waiting (replaces manual loops)
+- ✅ Set Playwright workers=1 for shared database tests (prevents race conditions)
+- ✅ Use domcontentloaded instead of networkidle (faster, still reliable)
+- ✅ Follow systematic-debugging skill for test failures (find root cause)
+- ✅ Remove precomputed hashes when changing algorithms (prevents seed mismatches)
+
+**DON'T:**
+
+- ❌ Use waitForTimeout() in E2E tests (creates flaky tests)
+- ❌ Use manual polling loops (use expect.poll() with intervals instead)
+- ❌ Use networkidle for default load state (slows tests unnecessarily)
+- ❌ Parallelize tests that share database state (causes race conditions)
+- ❌ Hardcode dates in seed data (use dynamic dates for current month)
+
+### Cross-Runtime Compatibility
+
+**DO:**
+
+- ✅ Use Web Crypto API for cross-runtime compatibility (Cloudflare Workers, etc.)
+- ✅ Use PBKDF2-SHA256 when native modules aren't available (310k iterations)
+- ✅ Replace native Node modules with platform-agnostic alternatives
+
+**DON'T:**
+
+- ❌ Assume oslo/argon2 works everywhere (requires @node-rs/argon2 native addon)
+- ❌ Use native addons for edge runtime deployments (incompatible with Workers)
 
 ### Pre-Commit Checklist
 
