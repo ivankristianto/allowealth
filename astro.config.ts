@@ -35,6 +35,9 @@ async function getAdapter(): Promise<AstroIntegration> {
         platformProxy: {
           enabled: true,
         },
+        // Externalize Bun-specific modules that don't exist in Workers runtime
+        // Workers only support PostgreSQL - SQLite drivers are for local dev only
+        wasmModuleImports: true,
       });
     }
     case 'vercel': {
@@ -80,6 +83,48 @@ export default defineConfig({
     ],
     server: {
       allowedHosts: ['.local'],
+    },
+    // Externalize Node.js built-in modules to suppress Vite warnings
+    // These are auto-externalized but Vite emits warnings suggesting explicit config
+    ssr: {
+      external: [
+        // Node.js built-ins (both prefixed and non-prefixed)
+        'path',
+        'fs',
+        'os',
+        'child_process',
+        'crypto',
+        'url',
+        'util',
+        'stream',
+        'events',
+        'buffer',
+        'tty',
+        'net',
+        'module',
+        'http2',
+        'node:path',
+        'node:fs',
+        'node:os',
+        'node:child_process',
+        'node:crypto',
+        'node:url',
+        'node:util',
+        'node:stream',
+        'node:events',
+        'node:buffer',
+        'node:tty',
+        'node:net',
+        'node:module',
+        'node:http2',
+        'esbuild',
+        // Bun-specific modules (for Cloudflare Workers compatibility)
+        // These are only used in local SQLite development, not in Workers
+        'bun:sqlite',
+        'bun:test',
+        // SQLite drivers - not needed in Cloudflare (uses PostgreSQL)
+        'better-sqlite3',
+      ],
     },
     build: {
       rollupOptions: {
