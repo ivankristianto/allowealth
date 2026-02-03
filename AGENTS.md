@@ -28,25 +28,16 @@ Agents must internalize:
 
 ### Session Rules (Every Agent Session)
 
-**DO:**
-
 - ✅ Follow implementation order: UI → Service → API → CLI → Seeder
 - ✅ Run quality gates before committing (lint, stylelint, format, typecheck)
 - ✅ Update OpenAPI docs when modifying API endpoints
 - ✅ Apply refactor checklist each loop, not at the end
-
-**DON'T:**
-
-- ❌ Start coding without a plan
-- ❌ Commit without running quality gates
-- ❌ Hardcode colors, spacing, or font sizes
-- ❌ Use non-semantic elements (`<div onclick>` instead of `<button>`)
-- ❌ Build desktop-first layouts
+- ✅ Create a plan before coding
+- ❌ Hardcode colors, spacing, or font sizes (use design tokens)
+- ❌ Build desktop-first layouts (use mobile-first)
 - ❌ Remove focus outlines without replacement
 - ❌ Use placeholder text as labels
 - ❌ Rely on color alone to convey information
-- ❌ Use custom SVG icons or emojis (use Lucide icons)
-- ❌ Create non-semantic wrapper divs (use semantic HTML)
 
 ### Architectural Decisions (ADR Quick Reference)
 
@@ -74,8 +65,6 @@ Agents must internalize:
 
 ### Design System Compliance
 
-**DO:**
-
 - ✅ Import design tokens from `@/lib/tokens` for colors, spacing, typography
 - ✅ Use DaisyUI classes first, then Tailwind utilities
 - ✅ Use semantic HTML elements (`<button>`, `<nav>`, `<main>`, `<section>`)
@@ -85,111 +74,70 @@ Agents must internalize:
 - ✅ Maintain color contrast ratios (text ≥4.5:1, UI ≥3:1)
 - ✅ Use minimum touch targets of 44x44px for mobile
 - ✅ Include visible labels for all form inputs
-- ✅ Use icons with text labels (not color-only indicators)
+- ✅ Use Lucide icons with text labels
 
 ### Code Quality (Constitution)
 
-**DO:**
-
 - ✅ Write clear, explicit code (clarity over cleverness)
 - ✅ Follow Single Responsibility Principle (one function = one responsibility)
-- ✅ Use descriptive variable names that explain purpose
+- ✅ Use descriptive variable names that explain purpose (not `data`, `temp`, `x`)
 - ✅ Document _what_ and _why_ in commit messages
 - ✅ Write unit tests first (fail first, then implement)
 - ✅ Validate inputs at system boundaries (user input, external APIs)
 - ✅ Define performance targets upfront (e.g., <200ms p95)
-- ✅ Refactor each loop (not at the end)
 - ✅ Follow refactor checklist: Maintainability → Security → Performance → Consistency → Abstraction
-
-**DON'T:**
-
-- ❌ Create functions with multiple responsibilities
-- ❌ Use vague variable names (`data`, `temp`, `x`)
-- ❌ Skip tests or write tests after implementation
 - ❌ Add unnecessary error handling for impossible scenarios
 - ❌ Use backwards-compatibility hacks (delete unused code completely)
 
 ### Debugging & Problem Solving
 
-**DO:**
-
 - ✅ Fix root cause of typecheck errors (update API usage, fix imports)
 - ✅ Trace bugs through full flow: DB → Service → API → Session → UI
 - ✅ Test after every code change
 - ✅ Check all usages after changing types or imports (`grep` the codebase)
-- ✅ Identify ALL sources of a problem before declaring it fixed
-
-**DON'T:**
-
+- ✅ Verify root cause is fixed, not just symptoms
 - ❌ Suppress warnings with `@ts-expect-error` or `eslint-disable`
 - ❌ Remove `await` just because TypeScript says "no effect" (runtime differs)
-- ❌ Assume one fix solves everything (check for ripple effects)
-- ❌ Stop investigating when symptoms disappear (verify root cause)
 
 ### TypeScript Best Practices
 
-**DO:**
-
 - ✅ Use `declare global { namespace App { ... } }` when `env.d.ts` has imports
-- ✅ Import custom types from project files (`@/lib/auth/lucia`)
+- ✅ Import custom types from project files (`@/lib/auth/lucia`), not library packages
 - ✅ Add `export {}` at the end of module-scoped type files
-- ✅ Use TypeScript in separate `.ts` files for client-side code
+- ✅ Use TypeScript in separate `.ts` files for client-side code (not inline `<script>`)
 - ✅ Define component props with interfaces
-
-**DON'T:**
-
-- ❌ Add TypeScript types in Astro inline `<script>` tags
-- ❌ Import types directly from library packages in global declarations
-- ❌ Forget `export {}` in module-scoped declaration files
-- ❌ Mix type annotations with browser-executed scripts
 
 ### E2E Testing & Playwright
 
-**DO:**
-
-- ✅ Use expect.poll() for condition-based waiting (replaces manual loops)
+- ✅ Use expect.poll() for condition-based waiting (not manual loops or waitForTimeout)
 - ✅ Set Playwright workers=1 for shared database tests (prevents race conditions)
 - ✅ Use domcontentloaded instead of networkidle (faster, still reliable)
 - ✅ Follow systematic-debugging skill for test failures (find root cause)
 - ✅ Remove precomputed hashes when changing algorithms (prevents seed mismatches)
+- ✅ Use dynamic dates for current month in seed data (not hardcoded)
 
-**DON'T:**
+### Cross-Runtime & Edge Compatibility
 
-- ❌ Use waitForTimeout() in E2E tests (creates flaky tests)
-- ❌ Use manual polling loops (use expect.poll() with intervals instead)
-- ❌ Use networkidle for default load state (slows tests unnecessarily)
-- ❌ Parallelize tests that share database state (causes race conditions)
-- ❌ Hardcode dates in seed data (use dynamic dates for current month)
-
-### Cross-Runtime Compatibility
-
-**DO:**
-
-- ✅ Use Web Crypto API for cross-runtime compatibility (Cloudflare Workers, etc.)
-- ✅ Use PBKDF2-SHA256 when native modules aren't available (310k iterations)
-- ✅ Replace native Node modules with platform-agnostic alternatives
-
-**DON'T:**
-
-- ❌ Assume oslo/argon2 works everywhere (requires @node-rs/argon2 native addon)
-- ❌ Use native addons for edge runtime deployments (incompatible with Workers)
+- ✅ Use Web Crypto API (PBKDF2-SHA256) for password hashing - works in all runtimes including Workers
+- ✅ Replace native Node modules with platform-agnostic alternatives (no native addons)
+- ✅ Serialize Date objects explicitly when returning from services - PostgreSQL Date objects can't JSON-serialize in Workers
+- ✅ Set `runtimeEnv` from middleware on first request - Workers secrets aren't available at module load
+- ✅ Create fresh DB connections per request in Workers (no singletons in edge runtime)
+- ✅ Use tag-based cache invalidation (`user:123`, `budget:123`) with configurable TTLs
+- ✅ Create abstraction layers for vendor-agnostic features (cache drivers: Memory, Noop, Upstash)
+- ✅ Handle cache errors gracefully - fall back to database queries
+- ✅ Add diagnostic logging when debugging production issues
+- ❌ Use `script-src 'unsafe-inline'` for CSP - inject nonces into Astro-generated scripts instead
+- ❌ Change DATABASE_URL to sqlite fallback in prod config (causes "table not found" errors)
 
 ### PostgreSQL/Supabase Compatibility
 
-**DO:**
-
-- ✅ Use `getActiveSchema()` for dual-database support - Centralizes schema selection based on dialect
+- ✅ Use `getActiveSchema()` and `this.schema.tableName` pattern in services (not direct table imports)
 - ✅ Use `import.meta.env` instead of `process.env` - Bun doesn't populate process.env from .env files
-- ✅ Add `:prod` script variants with `--env-file=.env.production` - Production scripts need explicit env loading
-- ✅ Import SQLite schema for type inference only - Both schemas have same structure, safe for `$inferSelect`
-- ✅ Use `this.schema.tableName` pattern in services - Ensures correct schema for current database dialect
-
-**DON'T:**
-
-- ❌ Use direct table imports in services - Breaks PostgreSQL when SQLite schema is imported
-- ❌ Assume `process.env` works in Bun - Always use `import.meta.env` for environment variables
-- ❌ Mix SQLite timestamp handling with PostgreSQL - SQLite uses integers, PostgreSQL uses native timestamps
-- ❌ Forget to check for double-prefix bugs during mass replace - Watch for `this.schema.this.schema` patterns
+- ✅ Add `:prod` script variants with `--env-file=.env.production` for explicit env loading
+- ✅ Import SQLite schema for type inference only - both schemas have same structure
+- ✅ Handle timestamps correctly: SQLite uses integers, PostgreSQL uses native timestamps
+- ❌ Check for double-prefix bugs during mass replace (`this.schema.this.schema` patterns)
 
 ### Pre-Commit Checklist
 
