@@ -178,38 +178,75 @@ function injectScriptNonces(html: string, nonce: string): string {
  */
 async function applySecurityHeaders(response: Response, nonce: string): Promise<Response> {
   const contentType = response.headers.get('Content-Type') || '';
-  const isHtml = contentType.includes('text/html');
+  const mightBeHtml = contentType === '' || contentType.includes('text/html');
 
-  // For HTML responses in production, inject nonces into all script tags
-  if (!isDev && isHtml) {
-    const html = await response.text();
-    const modifiedHtml = injectScriptNonces(html, nonce);
+  // For potential HTML responses, read body and inject nonces if it's actually HTML
+  // We check body content because Content-Type may not be set in some SSR environments
+  if (mightBeHtml) {
+    const body = await response.text();
+    const trimmedBody = body.trimStart().toLowerCase();
+    const isActuallyHtml = trimmedBody.startsWith('<!doctype') || trimmedBody.startsWith('<html');
 
-    // Create new response with modified HTML
-    const newResponse = new Response(modifiedHtml, {
+    if (isActuallyHtml) {
+      // Inject nonces into all script tags (both dev and production for consistency)
+      const modifiedHtml = injectScriptNonces(body, nonce);
+
+      // Create new response with modified HTML and copy headers
+      const newHeaders = new Headers();
+      response.headers.forEach((value, key) => {
+        newHeaders.set(key, value);
+      });
+
+      // Set security headers
+      newHeaders.set('Content-Security-Policy', buildCSPHeader(nonce));
+      newHeaders.set('X-Content-Type-Options', 'nosniff');
+      newHeaders.set('X-Frame-Options', 'DENY');
+      newHeaders.set('X-XSS-Protection', '1; mode=block');
+      newHeaders.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+
+      return new Response(modifiedHtml, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: newHeaders,
+      });
+    }
+
+    // Body was read but not HTML - reconstruct response with original body
+    const newHeaders = new Headers();
+    response.headers.forEach((value, key) => {
+      newHeaders.set(key, value);
+    });
+    newHeaders.set('Content-Security-Policy', buildCSPHeader(nonce));
+    newHeaders.set('X-Content-Type-Options', 'nosniff');
+    newHeaders.set('X-Frame-Options', 'DENY');
+    newHeaders.set('X-XSS-Protection', '1; mode=block');
+    newHeaders.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+
+    return new Response(body, {
       status: response.status,
       statusText: response.statusText,
-      headers: response.headers,
+      headers: newHeaders,
     });
-
-    // Set security headers
-    newResponse.headers.set('Content-Security-Policy', buildCSPHeader(nonce));
-    newResponse.headers.set('X-Content-Type-Options', 'nosniff');
-    newResponse.headers.set('X-Frame-Options', 'DENY');
-    newResponse.headers.set('X-XSS-Protection', '1; mode=block');
-    newResponse.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
-
-    return newResponse;
   }
 
-  // For non-HTML responses or dev mode, just add headers
-  response.headers.set('Content-Security-Policy', buildCSPHeader(nonce));
-  response.headers.set('X-Content-Type-Options', 'nosniff');
-  response.headers.set('X-Frame-Options', 'DENY');
-  response.headers.set('X-XSS-Protection', '1; mode=block');
-  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  // For non-HTML responses (e.g., JSON API), clone and add headers
+  const newHeaders = new Headers();
+  response.headers.forEach((value, key) => {
+    newHeaders.set(key, value);
+  });
+  newHeaders.set('Content-Security-Policy', buildCSPHeader(nonce));
+  newHeaders.set('X-Content-Type-Options', 'nosniff');
+  newHeaders.set('X-Frame-Options', 'DENY');
+  newHeaders.set('X-XSS-Protection', '1; mode=block');
+  newHeaders.set('Referrer-Policy', 'strict-origin-when-cross-origin');
 
-  return response;
+  // Clone the response body for non-HTML content
+  const bodyStream = response.body;
+  return new Response(bodyStream, {
+    status: response.status,
+    statusText: response.statusText,
+    headers: newHeaders,
+  });
 }
 
 export const onRequest: MiddlewareHandler = async (context, next) => {
