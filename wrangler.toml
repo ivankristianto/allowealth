@@ -1,7 +1,7 @@
 # Cloudflare Workers Configuration
 # https://developers.cloudflare.com/workers/wrangler/configuration/
 
-name = "allowealth"
+name = "expenses"
 main = "dist/_worker.js"
 compatibility_date = "2026-02-01"
 compatibility_flags = ["nodejs_compat", "disable_nodejs_process_v2"]
