@@ -120,7 +120,7 @@ const isActive = (href: string) => {
 
   <!-- Brand Logo Section (desktop only - mobile has it in the header above) -->
   <div
-    class="hidden lg:flex flex-col p-8 group-data-[sidebar-collapsed=true]:p-4 group-data-[sidebar-collapsed=true]:items-center"
+    class="hidden lg:flex pt-8 px-8 pb-4 items-center gap-3 group-data-[sidebar-collapsed=true]:p-4 group-data-[sidebar-collapsed=true]:justify-center group-data-[sidebar-collapsed=true]:gap-0"
   >
     <a
       href="/"
@@ -139,9 +139,13 @@ const isActive = (href: string) => {
         allowealth
       </span>
     </a>
-    <span class="text-xs text-base-content/40 mt-1 group-data-[sidebar-collapsed=true]:hidden">
-      v{APP_VERSION}
-    </span>
+  </div>
+
+  <!-- Version Divider -->
+  <div class="flex items-center gap-2 px-4 pb-4 group-data-[sidebar-collapsed=true]:hidden">
+    <div class="flex-1 h-px bg-base-300"></div>
+    <span class="text-[10px] text-base-content/40">v{APP_VERSION}</span>
+    <div class="flex-1 h-px bg-base-300"></div>
   </div>
 
   <!-- Navigation -->
