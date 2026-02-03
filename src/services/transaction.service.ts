@@ -10,6 +10,7 @@ import {
   type UpdateTransactionInput,
 } from '@/lib/validation/transactions';
 import { TransactionServiceError, ServiceErrorCode } from './service-errors';
+import { getCacheManager, CacheKeys, CacheTags, hashFilters } from '@/lib/cache';
 
 export { type CreateTransactionInput, type UpdateTransactionInput };
 
@@ -131,6 +132,15 @@ export class TransactionService {
       })
       .returning();
 
+    // Invalidate caches affected by transaction changes
+    const cache = getCacheManager();
+    await cache.invalidateByTags([
+      CacheTags.workspace(validated.workspace_id),
+      CacheTags.TRANSACTIONS,
+      CacheTags.DASHBOARD,
+      CacheTags.BUDGET,
+    ]);
+
     return this.findById(id, validated.workspace_id);
   }
 
@@ -157,8 +167,37 @@ export class TransactionService {
 
   /**
    * Find all transactions with filters
+   * Results are cached for 30 minutes (shorter TTL due to many filter combinations)
    */
   async findAll(filters: TransactionFilters) {
+    // Build cache key from filters
+    const cache = getCacheManager();
+    const filtersHash = hashFilters(filters as unknown as Record<string, unknown>);
+    const cacheKey = CacheKeys.transactions(filters.workspace_id, filtersHash);
+
+    // Try cache first
+    type FindAllResult = Awaited<ReturnType<typeof this.fetchTransactionsFromDb>>;
+    const cached = await cache.get<FindAllResult>(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
+    // Cache miss - fetch from DB
+    const result = await this.fetchTransactionsFromDb(filters);
+
+    // Cache the result
+    await cache.set(cacheKey, result, {
+      ttl: 1800, // 30 minutes
+      tags: [CacheTags.workspace(filters.workspace_id), CacheTags.TRANSACTIONS],
+    });
+
+    return result;
+  }
+
+  /**
+   * Fetch transactions from database (no caching)
+   */
+  private async fetchTransactionsFromDb(filters: TransactionFilters) {
     const conditions = [
       eq(this.schema.transactions.workspace_id, filters.workspace_id),
       sql`${this.schema.transactions.deleted_at} IS NULL`,
@@ -287,6 +326,15 @@ export class TransactionService {
         )
       );
 
+    // Invalidate caches affected by transaction changes
+    const cache = getCacheManager();
+    await cache.invalidateByTags([
+      CacheTags.workspace(workspaceId),
+      CacheTags.TRANSACTIONS,
+      CacheTags.DASHBOARD,
+      CacheTags.BUDGET,
+    ]);
+
     return this.findById(id, workspaceId);
   }
 
@@ -316,6 +364,15 @@ export class TransactionService {
           eq(this.schema.transactions.workspace_id, workspaceId)
         )
       );
+
+    // Invalidate caches affected by transaction changes
+    const cache = getCacheManager();
+    await cache.invalidateByTags([
+      CacheTags.workspace(workspaceId),
+      CacheTags.TRANSACTIONS,
+      CacheTags.DASHBOARD,
+      CacheTags.BUDGET,
+    ]);
 
     return { success: true };
   }
