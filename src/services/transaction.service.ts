@@ -1,4 +1,4 @@
-import { transactions, type IDatabase } from '@/db';
+import { type IDatabase, getActiveSchema } from '@/db';
 import { eq, and, gte, lte, desc, sql, like, inArray } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { CategoryService } from './category.service';
@@ -45,6 +45,7 @@ export interface TransactionFilters {
 }
 
 export class TransactionService {
+  private schema = getActiveSchema();
   private categoryService: CategoryService;
   private assetService: AssetService;
 
@@ -112,7 +113,7 @@ export class TransactionService {
     const id = nanoid();
 
     await (this as any).db
-      .insert(transactions)
+      .insert(this.schema.transactions)
       .values({
         id,
         workspace_id: validated.workspace_id,
@@ -140,9 +141,9 @@ export class TransactionService {
   async findById(id: string, workspaceId: string) {
     const result = await (this as any).db.query.transactions.findFirst({
       where: and(
-        eq(transactions.id, id),
-        eq(transactions.workspace_id, workspaceId),
-        sql`${transactions.deleted_at} IS NULL`
+        eq(this.schema.transactions.id, id),
+        eq(this.schema.transactions.workspace_id, workspaceId),
+        sql`${this.schema.transactions.deleted_at} IS NULL`
       ),
       with: {
         category: true,
@@ -159,41 +160,41 @@ export class TransactionService {
    */
   async findAll(filters: TransactionFilters) {
     const conditions = [
-      eq(transactions.workspace_id, filters.workspace_id),
-      sql`${transactions.deleted_at} IS NULL`,
+      eq(this.schema.transactions.workspace_id, filters.workspace_id),
+      sql`${this.schema.transactions.deleted_at} IS NULL`,
     ];
 
     if (filters.type) {
-      conditions.push(eq(transactions.type, filters.type));
+      conditions.push(eq(this.schema.transactions.type, filters.type));
     }
 
     if (filters.category_id) {
-      conditions.push(eq(transactions.category_id, filters.category_id));
+      conditions.push(eq(this.schema.transactions.category_id, filters.category_id));
     }
 
     // Handle multiple category IDs (OR filter)
     if (filters.category_ids && filters.category_ids.length > 0) {
-      conditions.push(inArray(transactions.category_id, filters.category_ids));
+      conditions.push(inArray(this.schema.transactions.category_id, filters.category_ids));
     }
 
     if (filters.asset_id) {
-      conditions.push(eq(transactions.asset_id, filters.asset_id));
+      conditions.push(eq(this.schema.transactions.asset_id, filters.asset_id));
     }
 
     if (filters.currency) {
-      conditions.push(eq(transactions.currency, filters.currency));
+      conditions.push(eq(this.schema.transactions.currency, filters.currency));
     }
 
     if (filters.start_date) {
-      conditions.push(gte(transactions.transaction_date, filters.start_date));
+      conditions.push(gte(this.schema.transactions.transaction_date, filters.start_date));
     }
 
     if (filters.end_date) {
-      conditions.push(lte(transactions.transaction_date, filters.end_date));
+      conditions.push(lte(this.schema.transactions.transaction_date, filters.end_date));
     }
 
     if (filters.search) {
-      const searchCondition = like(transactions.description, `%${filters.search}%`);
+      const searchCondition = like(this.schema.transactions.description, `%${filters.search}%`);
       // The or() function needs at least one condition, so we use it directly
       conditions.push(searchCondition);
     }
@@ -205,7 +206,10 @@ export class TransactionService {
         asset: true,
         toAsset: true,
       },
-      orderBy: [desc(transactions.transaction_date), desc(transactions.created_at)],
+      orderBy: [
+        desc(this.schema.transactions.transaction_date),
+        desc(this.schema.transactions.created_at),
+      ],
       limit: filters.limit || 50,
       offset: filters.offset || 0,
     });
@@ -274,9 +278,14 @@ export class TransactionService {
     if (validated.description !== undefined) updateData.description = validated.description;
 
     await (this as any).db
-      .update(transactions)
+      .update(this.schema.transactions)
       .set(updateData)
-      .where(and(eq(transactions.id, id), eq(transactions.workspace_id, workspaceId)));
+      .where(
+        and(
+          eq(this.schema.transactions.id, id),
+          eq(this.schema.transactions.workspace_id, workspaceId)
+        )
+      );
 
     return this.findById(id, workspaceId);
   }
@@ -296,12 +305,17 @@ export class TransactionService {
     }
 
     await (this as any).db
-      .update(transactions)
+      .update(this.schema.transactions)
       .set({
         deleted_at: new Date(),
         updated_at: new Date(),
       })
-      .where(and(eq(transactions.id, id), eq(transactions.workspace_id, workspaceId)));
+      .where(
+        and(
+          eq(this.schema.transactions.id, id),
+          eq(this.schema.transactions.workspace_id, workspaceId)
+        )
+      );
 
     return { success: true };
   }
@@ -311,48 +325,48 @@ export class TransactionService {
    */
   async count(filters: Omit<TransactionFilters, 'limit' | 'offset'>) {
     const conditions = [
-      eq(transactions.workspace_id, filters.workspace_id),
-      sql`${transactions.deleted_at} IS NULL`,
+      eq(this.schema.transactions.workspace_id, filters.workspace_id),
+      sql`${this.schema.transactions.deleted_at} IS NULL`,
     ];
 
     if (filters.type) {
-      conditions.push(eq(transactions.type, filters.type));
+      conditions.push(eq(this.schema.transactions.type, filters.type));
     }
 
     if (filters.category_id) {
-      conditions.push(eq(transactions.category_id, filters.category_id));
+      conditions.push(eq(this.schema.transactions.category_id, filters.category_id));
     }
 
     // Handle multiple category IDs (OR filter)
     if (filters.category_ids && filters.category_ids.length > 0) {
-      conditions.push(inArray(transactions.category_id, filters.category_ids));
+      conditions.push(inArray(this.schema.transactions.category_id, filters.category_ids));
     }
 
     if (filters.asset_id) {
-      conditions.push(eq(transactions.asset_id, filters.asset_id));
+      conditions.push(eq(this.schema.transactions.asset_id, filters.asset_id));
     }
 
     if (filters.currency) {
-      conditions.push(eq(transactions.currency, filters.currency));
+      conditions.push(eq(this.schema.transactions.currency, filters.currency));
     }
 
     if (filters.start_date) {
-      conditions.push(gte(transactions.transaction_date, filters.start_date));
+      conditions.push(gte(this.schema.transactions.transaction_date, filters.start_date));
     }
 
     if (filters.end_date) {
-      conditions.push(lte(transactions.transaction_date, filters.end_date));
+      conditions.push(lte(this.schema.transactions.transaction_date, filters.end_date));
     }
 
     if (filters.search) {
-      const searchCondition = like(transactions.description, `%${filters.search}%`);
+      const searchCondition = like(this.schema.transactions.description, `%${filters.search}%`);
       // The or() function needs at least one condition, so we use it directly
       conditions.push(searchCondition);
     }
 
     const result = await ((this as any).db as any)
       .select({ count: sql<number>`count(*)` })
-      .from(transactions)
+      .from(this.schema.transactions)
       .where(and(...conditions));
 
     return result[0]?.count || 0;

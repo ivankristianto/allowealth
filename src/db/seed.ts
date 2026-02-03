@@ -39,8 +39,8 @@ import { WORKSPACE_META_KEYS, WORKSPACE_META_DEFAULTS } from '@/lib/constants/wo
 // PRODUCTION GUARD
 // ============================================================================
 
-const isProduction = process.env.NODE_ENV === 'production';
-const allowSeed = process.env.ALLOW_SEED === 'true';
+const isProduction = import.meta.env.MODE === 'production';
+const allowSeed = import.meta.env.ALLOW_SEED === 'true';
 
 if (isProduction && !allowSeed) {
   console.error('❌ Seeding is disabled in production.');

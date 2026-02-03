@@ -19,7 +19,7 @@
  * path, which logs to console and returns safe defaults.
  */
 
-import { assets, transactions, categories, budgets, type IDatabase } from '@/db';
+import { type IDatabase, getActiveSchema } from '@/db';
 import { eq, and, gte, lte, desc, sql } from 'drizzle-orm';
 import { getLatestExchangeRate } from '@/lib/currency/conversion';
 import { calculateBudgetAlert } from '@/lib/budget/alerts';
@@ -143,6 +143,8 @@ export interface DashboardData {
  * Dashboard data aggregation service
  */
 export class DashboardService {
+  private schema = getActiveSchema();
+
   /**
    * Create a new DashboardService with database injection
    * @param db - Database instance (injected for testability)
@@ -168,7 +170,10 @@ export class DashboardService {
 
       // Get all non-deleted assets for workspace
       const workspaceAssets = await this.db.query.assets.findMany({
-        where: and(eq(assets.workspace_id, workspaceId), sql`${assets.deleted_at} IS NULL`),
+        where: and(
+          eq(this.schema.assets.workspace_id, workspaceId),
+          sql`${this.schema.assets.deleted_at} IS NULL`
+        ),
       });
 
       // Sum by currency using decimal arithmetic
@@ -248,18 +253,21 @@ export class DashboardService {
       // Get total budget for the month from budgets table
       const [budgetResult] = await (this.db as any)
         .select({
-          total: sql<string>`COALESCE(SUM(CAST(${budgets.budget_amount} AS REAL)), 0)`,
+          total: sql<string>`COALESCE(SUM(CAST(${this.schema.budgets.budget_amount} AS REAL)), 0)`,
         })
-        .from(budgets)
-        .innerJoin(categories, eq(budgets.category_id, categories.id))
+        .from(this.schema.budgets)
+        .innerJoin(
+          this.schema.categories,
+          eq(this.schema.budgets.category_id, this.schema.categories.id)
+        )
         .where(
           and(
-            eq(budgets.workspace_id, workspaceId),
-            eq(budgets.month, month),
-            eq(budgets.year, year),
-            eq(budgets.currency, currency),
-            eq(categories.type, 'expense'),
-            eq(categories.is_active, true)
+            eq(this.schema.budgets.workspace_id, workspaceId),
+            eq(this.schema.budgets.month, month),
+            eq(this.schema.budgets.year, year),
+            eq(this.schema.budgets.currency, currency),
+            eq(this.schema.categories.type, 'expense'),
+            eq(this.schema.categories.is_active, true)
           )
         );
 
@@ -268,17 +276,17 @@ export class DashboardService {
       // Get total spent for the month
       const [spentResult] = await (this.db as any)
         .select({
-          total: sql<string>`COALESCE(SUM(CAST(${transactions.amount} AS REAL)), 0)`,
+          total: sql<string>`COALESCE(SUM(CAST(${this.schema.transactions.amount} AS REAL)), 0)`,
         })
-        .from(transactions)
+        .from(this.schema.transactions)
         .where(
           and(
-            eq(transactions.workspace_id, workspaceId),
-            eq(transactions.type, 'expense'),
-            eq(transactions.currency, currency),
-            gte(transactions.transaction_date, startDate),
-            lte(transactions.transaction_date, endDate),
-            sql`${transactions.deleted_at} IS NULL`
+            eq(this.schema.transactions.workspace_id, workspaceId),
+            eq(this.schema.transactions.type, 'expense'),
+            eq(this.schema.transactions.currency, currency),
+            gte(this.schema.transactions.transaction_date, startDate),
+            lte(this.schema.transactions.transaction_date, endDate),
+            sql`${this.schema.transactions.deleted_at} IS NULL`
           )
         );
 
@@ -344,17 +352,17 @@ export class DashboardService {
       // Get total income for the month
       const [incomeResult] = await (this.db as any)
         .select({
-          total: sql<string>`COALESCE(SUM(CAST(${transactions.amount} AS REAL)), 0)`,
+          total: sql<string>`COALESCE(SUM(CAST(${this.schema.transactions.amount} AS REAL)), 0)`,
         })
-        .from(transactions)
+        .from(this.schema.transactions)
         .where(
           and(
-            eq(transactions.workspace_id, workspaceId),
-            eq(transactions.type, 'income'),
-            eq(transactions.currency, currency),
-            gte(transactions.transaction_date, startDate),
-            lte(transactions.transaction_date, endDate),
-            sql`${transactions.deleted_at} IS NULL`
+            eq(this.schema.transactions.workspace_id, workspaceId),
+            eq(this.schema.transactions.type, 'income'),
+            eq(this.schema.transactions.currency, currency),
+            gte(this.schema.transactions.transaction_date, startDate),
+            lte(this.schema.transactions.transaction_date, endDate),
+            sql`${this.schema.transactions.deleted_at} IS NULL`
           )
         );
 
@@ -411,25 +419,32 @@ export class DashboardService {
       // Get expenses grouped by category
       const categoryExpenses = await (this.db as any)
         .select({
-          category_id: transactions.category_id,
-          category_name: categories.name,
-          category_color: categories.color,
-          total: sql<string>`COALESCE(SUM(CAST(${transactions.amount} AS REAL)), 0)`,
+          category_id: this.schema.transactions.category_id,
+          category_name: this.schema.categories.name,
+          category_color: this.schema.categories.color,
+          total: sql<string>`COALESCE(SUM(CAST(${this.schema.transactions.amount} AS REAL)), 0)`,
         })
-        .from(transactions)
-        .innerJoin(categories, eq(transactions.category_id, categories.id))
+        .from(this.schema.transactions)
+        .innerJoin(
+          this.schema.categories,
+          eq(this.schema.transactions.category_id, this.schema.categories.id)
+        )
         .where(
           and(
-            eq(transactions.workspace_id, workspaceId),
-            eq(transactions.type, 'expense'),
-            eq(transactions.currency, currency),
-            gte(transactions.transaction_date, startDate),
-            lte(transactions.transaction_date, endDate),
-            sql`${transactions.deleted_at} IS NULL`
+            eq(this.schema.transactions.workspace_id, workspaceId),
+            eq(this.schema.transactions.type, 'expense'),
+            eq(this.schema.transactions.currency, currency),
+            gte(this.schema.transactions.transaction_date, startDate),
+            lte(this.schema.transactions.transaction_date, endDate),
+            sql`${this.schema.transactions.deleted_at} IS NULL`
           )
         )
-        .groupBy(transactions.category_id, categories.name, categories.color)
-        .orderBy(sql`SUM(CAST(${transactions.amount} AS REAL)) DESC`);
+        .groupBy(
+          this.schema.transactions.category_id,
+          this.schema.categories.name,
+          this.schema.categories.color
+        )
+        .orderBy(sql`SUM(CAST(${this.schema.transactions.amount} AS REAL)) DESC`);
 
       if (categoryExpenses.length === 0) {
         return [];
@@ -518,10 +533,10 @@ export class DashboardService {
       // Get all budgets for the month with their category info
       const monthBudgets = await this.db.query.budgets.findMany({
         where: and(
-          eq(budgets.workspace_id, workspaceId),
-          eq(budgets.month, month),
-          eq(budgets.year, year),
-          eq(budgets.currency, currency)
+          eq(this.schema.budgets.workspace_id, workspaceId),
+          eq(this.schema.budgets.month, month),
+          eq(this.schema.budgets.year, year),
+          eq(this.schema.budgets.currency, currency)
         ),
         with: {
           category: true,
@@ -536,21 +551,21 @@ export class DashboardService {
       // Get total spent per category for the month
       const categorySpending = await (this.db as any)
         .select({
-          category_id: transactions.category_id,
-          total: sql<string>`COALESCE(SUM(CAST(${transactions.amount} AS REAL)), 0)`,
+          category_id: this.schema.transactions.category_id,
+          total: sql<string>`COALESCE(SUM(CAST(${this.schema.transactions.amount} AS REAL)), 0)`,
         })
-        .from(transactions)
+        .from(this.schema.transactions)
         .where(
           and(
-            eq(transactions.workspace_id, workspaceId),
-            eq(transactions.type, 'expense'),
-            eq(transactions.currency, currency),
-            gte(transactions.transaction_date, startDate),
-            lte(transactions.transaction_date, endDate),
-            sql`${transactions.deleted_at} IS NULL`
+            eq(this.schema.transactions.workspace_id, workspaceId),
+            eq(this.schema.transactions.type, 'expense'),
+            eq(this.schema.transactions.currency, currency),
+            gte(this.schema.transactions.transaction_date, startDate),
+            lte(this.schema.transactions.transaction_date, endDate),
+            sql`${this.schema.transactions.deleted_at} IS NULL`
           )
         )
-        .groupBy(transactions.category_id);
+        .groupBy(this.schema.transactions.category_id);
 
       // Create map of spending by category
       const spendingByCategory = new Map<string, string>();
@@ -611,7 +626,10 @@ export class DashboardService {
 
       // Get all non-deleted assets
       const workspaceAssets = await this.db.query.assets.findMany({
-        where: and(eq(assets.workspace_id, workspaceId), sql`${assets.deleted_at} IS NULL`),
+        where: and(
+          eq(this.schema.assets.workspace_id, workspaceId),
+          sql`${this.schema.assets.deleted_at} IS NULL`
+        ),
       });
 
       // Calculate priority for each asset
@@ -697,14 +715,17 @@ export class DashboardService {
       // Get recent transactions
       const recentTransactions = await this.db.query.transactions.findMany({
         where: and(
-          eq(transactions.workspace_id, workspaceId),
-          sql`${transactions.deleted_at} IS NULL`
+          eq(this.schema.transactions.workspace_id, workspaceId),
+          sql`${this.schema.transactions.deleted_at} IS NULL`
         ),
         with: {
           category: true,
           asset: true,
         },
-        orderBy: [desc(transactions.transaction_date), desc(transactions.created_at)],
+        orderBy: [
+          desc(this.schema.transactions.transaction_date),
+          desc(this.schema.transactions.created_at),
+        ],
         limit,
       });
 

@@ -17,7 +17,7 @@
  * - META_NOT_FOUND: Meta key doesn't exist for workspace
  */
 
-import { workspaceMeta, workspaces, type IDatabase } from '@/db';
+import { type IDatabase, getActiveSchema } from '@/db';
 import { eq, and } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import {
@@ -132,6 +132,8 @@ function validateMetaValue(key: WorkspaceMetaKey, value: string): void {
  * Workspace Meta Service
  */
 export class WorkspaceMetaService {
+  private schema = getActiveSchema();
+
   /**
    * Create a new WorkspaceMetaService with database injection
    * @param db - Database instance (injected for testability)
@@ -161,7 +163,10 @@ export class WorkspaceMetaService {
 
     // Get meta value
     const meta = await this.db.query.workspaceMeta.findFirst({
-      where: and(eq(workspaceMeta.workspace_id, workspaceId), eq(workspaceMeta.meta_key, key)),
+      where: and(
+        eq(this.schema.workspaceMeta.workspace_id, workspaceId),
+        eq(this.schema.workspaceMeta.meta_key, key)
+      ),
     });
 
     return meta?.meta_value ?? null;
@@ -209,7 +214,7 @@ export class WorkspaceMetaService {
     // Use upsert to avoid race condition
     // ON CONFLICT (workspace_id, meta_key) DO UPDATE
     await this.db
-      .insert(workspaceMeta)
+      .insert(this.schema.workspaceMeta)
       .values({
         id: nanoid(),
         workspace_id: workspaceId,
@@ -219,7 +224,7 @@ export class WorkspaceMetaService {
         updated_at: new Date(),
       })
       .onConflictDoUpdate({
-        target: [workspaceMeta.workspace_id, workspaceMeta.meta_key],
+        target: [this.schema.workspaceMeta.workspace_id, this.schema.workspaceMeta.meta_key],
         set: {
           meta_value: value,
           updated_at: new Date(),
@@ -241,7 +246,7 @@ export class WorkspaceMetaService {
 
     // Get all meta for workspace
     const metas = await this.db.query.workspaceMeta.findMany({
-      where: eq(workspaceMeta.workspace_id, workspaceId),
+      where: eq(this.schema.workspaceMeta.workspace_id, workspaceId),
     });
 
     // Build result with only set values
@@ -269,7 +274,7 @@ export class WorkspaceMetaService {
 
     // Get all meta for workspace
     const metas = await this.db.query.workspaceMeta.findMany({
-      where: eq(workspaceMeta.workspace_id, workspaceId),
+      where: eq(this.schema.workspaceMeta.workspace_id, workspaceId),
     });
 
     // Start with defaults
@@ -307,7 +312,10 @@ export class WorkspaceMetaService {
 
     // Check if meta exists
     const existing = await this.db.query.workspaceMeta.findFirst({
-      where: and(eq(workspaceMeta.workspace_id, workspaceId), eq(workspaceMeta.meta_key, key)),
+      where: and(
+        eq(this.schema.workspaceMeta.workspace_id, workspaceId),
+        eq(this.schema.workspaceMeta.meta_key, key)
+      ),
     });
 
     if (!existing) {
@@ -320,8 +328,13 @@ export class WorkspaceMetaService {
 
     // Delete
     await this.db
-      .delete(workspaceMeta)
-      .where(and(eq(workspaceMeta.workspace_id, workspaceId), eq(workspaceMeta.meta_key, key)));
+      .delete(this.schema.workspaceMeta)
+      .where(
+        and(
+          eq(this.schema.workspaceMeta.workspace_id, workspaceId),
+          eq(this.schema.workspaceMeta.meta_key, key)
+        )
+      );
   }
 
   // ============================================================================
@@ -523,7 +536,7 @@ export class WorkspaceMetaService {
    */
   private async ensureWorkspaceExists(workspaceId: string): Promise<void> {
     const workspace = await this.db.query.workspaces.findFirst({
-      where: eq(workspaces.id, workspaceId),
+      where: eq(this.schema.workspaces.id, workspaceId),
     });
 
     if (!workspace) {

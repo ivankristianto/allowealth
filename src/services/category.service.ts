@@ -1,4 +1,4 @@
-import { categories, type IDatabase } from '@/db';
+import { type IDatabase, getActiveSchema } from '@/db';
 import { eq, and, ne } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import {
@@ -12,6 +12,8 @@ import { CategoryServiceError, ServiceErrorCode } from './service-errors';
 export { type CreateCategoryInput, type UpdateCategoryInput };
 
 export class CategoryService {
+  private schema = getActiveSchema();
+
   /**
    * Create a new CategoryService with database injection
    * @param db - Database instance (injected for testability)
@@ -29,7 +31,7 @@ export class CategoryService {
     const id = nanoid();
 
     const [category] = await this.db
-      .insert(categories)
+      .insert(this.schema.categories)
       .values({
         id,
         workspace_id: validated.workspace_id,
@@ -53,7 +55,10 @@ export class CategoryService {
    */
   async findById(id: string, workspaceId: string) {
     const result = await this.db.query.categories.findFirst({
-      where: and(eq(categories.id, id), eq(categories.workspace_id, workspaceId)),
+      where: and(
+        eq(this.schema.categories.id, id),
+        eq(this.schema.categories.workspace_id, workspaceId)
+      ),
     });
 
     return result;
@@ -66,14 +71,14 @@ export class CategoryService {
     workspaceId: string,
     filters?: { type?: 'expense' | 'income'; is_active?: boolean }
   ) {
-    const conditions = [eq(categories.workspace_id, workspaceId)];
+    const conditions = [eq(this.schema.categories.workspace_id, workspaceId)];
 
     if (filters?.type) {
-      conditions.push(eq(categories.type, filters.type));
+      conditions.push(eq(this.schema.categories.type, filters.type));
     }
 
     if (filters?.is_active !== undefined) {
-      conditions.push(eq(categories.is_active, filters.is_active));
+      conditions.push(eq(this.schema.categories.is_active, filters.is_active));
     }
 
     const result = await this.db.query.categories.findMany({
@@ -104,9 +109,11 @@ export class CategoryService {
     if (validated.is_active !== undefined) updateData.is_active = validated.is_active;
 
     await this.db
-      .update(categories)
+      .update(this.schema.categories)
       .set(updateData)
-      .where(and(eq(categories.id, id), eq(categories.workspace_id, workspaceId)));
+      .where(
+        and(eq(this.schema.categories.id, id), eq(this.schema.categories.workspace_id, workspaceId))
+      );
 
     return this.findById(id, workspaceId);
   }
@@ -126,12 +133,14 @@ export class CategoryService {
     }
 
     await this.db
-      .update(categories)
+      .update(this.schema.categories)
       .set({
         is_active: false,
         updated_at: new Date(),
       })
-      .where(and(eq(categories.id, id), eq(categories.workspace_id, workspaceId)));
+      .where(
+        and(eq(this.schema.categories.id, id), eq(this.schema.categories.workspace_id, workspaceId))
+      );
 
     return { success: true };
   }
@@ -141,13 +150,13 @@ export class CategoryService {
    */
   async existsByName(name: string, workspaceId: string, excludeId?: string) {
     const conditions = [
-      eq(categories.workspace_id, workspaceId),
-      eq(categories.name, name),
-      eq(categories.is_active, true),
+      eq(this.schema.categories.workspace_id, workspaceId),
+      eq(this.schema.categories.name, name),
+      eq(this.schema.categories.is_active, true),
     ];
 
     if (excludeId) {
-      conditions.push(ne(categories.id, excludeId));
+      conditions.push(ne(this.schema.categories.id, excludeId));
     }
 
     const result = await this.db.query.categories.findFirst({

@@ -1,4 +1,4 @@
-import { transactions, categories, budgets, type IDatabase } from '@/db';
+import { type IDatabase, getActiveSchema } from '@/db';
 import { eq, and, gte, lte, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import {
@@ -58,6 +58,8 @@ export interface MonthlyBudgetHistory {
 }
 
 export class BudgetService {
+  private schema = getActiveSchema();
+
   /**
    * Create a new BudgetService with database injection
    * @param db - Database instance (injected for testability)
@@ -89,10 +91,10 @@ export class BudgetService {
     // Get all budgets for this month/year with category info
     const monthBudgets = await this.db.query.budgets.findMany({
       where: and(
-        eq(budgets.workspace_id, workspaceId),
-        eq(budgets.month, month),
-        eq(budgets.year, year),
-        eq(budgets.currency, currency)
+        eq(this.schema.budgets.workspace_id, workspaceId),
+        eq(this.schema.budgets.month, month),
+        eq(this.schema.budgets.year, year),
+        eq(this.schema.budgets.currency, currency)
       ),
       with: {
         category: true,
@@ -107,21 +109,21 @@ export class BudgetService {
     // Get transactions for the month grouped by category
     const monthTransactions = await (this.db as any)
       .select({
-        category_id: transactions.category_id,
-        total: sql<string>`sum(CAST(${transactions.amount} AS REAL))`,
+        category_id: this.schema.transactions.category_id,
+        total: sql<string>`sum(CAST(${this.schema.transactions.amount} AS REAL))`,
       })
-      .from(transactions)
+      .from(this.schema.transactions)
       .where(
         and(
-          eq(transactions.workspace_id, workspaceId),
-          eq(transactions.type, 'expense'),
-          eq(transactions.currency, currency),
-          gte(transactions.transaction_date, startDate),
-          lte(transactions.transaction_date, endDate),
-          sql`${transactions.deleted_at} IS NULL`
+          eq(this.schema.transactions.workspace_id, workspaceId),
+          eq(this.schema.transactions.type, 'expense'),
+          eq(this.schema.transactions.currency, currency),
+          gte(this.schema.transactions.transaction_date, startDate),
+          lte(this.schema.transactions.transaction_date, endDate),
+          sql`${this.schema.transactions.deleted_at} IS NULL`
         )
       )
-      .groupBy(transactions.category_id);
+      .groupBy(this.schema.transactions.category_id);
 
     // Create a map of spent amounts by category
     const spentByCategory = new Map<string, string>();
@@ -296,7 +298,10 @@ export class BudgetService {
    */
   async getCategoryRemaining(category_id: string, workspaceId: string, currency: 'IDR' | 'USD') {
     const category = await this.db.query.categories.findFirst({
-      where: and(eq(categories.id, category_id), eq(categories.workspace_id, workspaceId)),
+      where: and(
+        eq(this.schema.categories.id, category_id),
+        eq(this.schema.categories.workspace_id, workspaceId)
+      ),
     });
 
     if (!category) {
@@ -312,11 +317,11 @@ export class BudgetService {
     // Get budget for current month from budgets table
     const budget = await this.db.query.budgets.findFirst({
       where: and(
-        eq(budgets.category_id, category_id),
-        eq(budgets.workspace_id, workspaceId),
-        eq(budgets.month, currentMonth),
-        eq(budgets.year, currentYear),
-        eq(budgets.currency, currency)
+        eq(this.schema.budgets.category_id, category_id),
+        eq(this.schema.budgets.workspace_id, workspaceId),
+        eq(this.schema.budgets.month, currentMonth),
+        eq(this.schema.budgets.year, currentYear),
+        eq(this.schema.budgets.currency, currency)
       ),
     });
 
@@ -325,18 +330,18 @@ export class BudgetService {
 
     const [result] = await (this.db as any)
       .select({
-        total: sql<string>`COALESCE(sum(CAST(${transactions.amount} AS REAL)), 0)`,
+        total: sql<string>`COALESCE(sum(CAST(${this.schema.transactions.amount} AS REAL)), 0)`,
       })
-      .from(transactions)
+      .from(this.schema.transactions)
       .where(
         and(
-          eq(transactions.workspace_id, workspaceId),
-          eq(transactions.category_id, category_id),
-          eq(transactions.type, 'expense'),
-          eq(transactions.currency, currency),
-          gte(transactions.transaction_date, startDate),
-          lte(transactions.transaction_date, endDate),
-          sql`${transactions.deleted_at} IS NULL`
+          eq(this.schema.transactions.workspace_id, workspaceId),
+          eq(this.schema.transactions.category_id, category_id),
+          eq(this.schema.transactions.type, 'expense'),
+          eq(this.schema.transactions.currency, currency),
+          gte(this.schema.transactions.transaction_date, startDate),
+          lte(this.schema.transactions.transaction_date, endDate),
+          sql`${this.schema.transactions.deleted_at} IS NULL`
         )
       );
 
@@ -470,9 +475,9 @@ export class BudgetService {
     // Check if category exists and belongs to workspace
     const category = await this.db.query.categories.findFirst({
       where: and(
-        eq(categories.id, validated.category_id),
-        eq(categories.workspace_id, validated.workspace_id),
-        eq(categories.is_active, true)
+        eq(this.schema.categories.id, validated.category_id),
+        eq(this.schema.categories.workspace_id, validated.workspace_id),
+        eq(this.schema.categories.is_active, true)
       ),
     });
 
@@ -487,11 +492,11 @@ export class BudgetService {
     // Check if budget already exists for this category/month/year/currency combination
     const existingBudget = await this.db.query.budgets.findFirst({
       where: and(
-        eq(budgets.workspace_id, validated.workspace_id),
-        eq(budgets.category_id, validated.category_id),
-        eq(budgets.month, validated.month),
-        eq(budgets.year, validated.year),
-        eq(budgets.currency, validated.currency)
+        eq(this.schema.budgets.workspace_id, validated.workspace_id),
+        eq(this.schema.budgets.category_id, validated.category_id),
+        eq(this.schema.budgets.month, validated.month),
+        eq(this.schema.budgets.year, validated.year),
+        eq(this.schema.budgets.currency, validated.currency)
       ),
     });
 
@@ -505,7 +510,7 @@ export class BudgetService {
 
     const id = nanoid();
     const [budget] = await this.db
-      .insert(budgets)
+      .insert(this.schema.budgets)
       .values({
         id,
         workspace_id: validated.workspace_id,
@@ -572,9 +577,11 @@ export class BudgetService {
     }
 
     await this.db
-      .update(budgets)
+      .update(this.schema.budgets)
       .set(updateData)
-      .where(and(eq(budgets.id, id), eq(budgets.workspace_id, workspaceId)));
+      .where(
+        and(eq(this.schema.budgets.id, id), eq(this.schema.budgets.workspace_id, workspaceId))
+      );
 
     const updatedBudget = await this.getBudgetById(id, workspaceId);
     return updatedBudget as Budget;
@@ -600,8 +607,10 @@ export class BudgetService {
     }
 
     await this.db
-      .delete(budgets)
-      .where(and(eq(budgets.id, id), eq(budgets.workspace_id, workspaceId)));
+      .delete(this.schema.budgets)
+      .where(
+        and(eq(this.schema.budgets.id, id), eq(this.schema.budgets.workspace_id, workspaceId))
+      );
 
     return { success: true };
   }
@@ -611,7 +620,7 @@ export class BudgetService {
    */
   async getBudgetById(id: string, workspaceId: string): Promise<Budget | null> {
     const budget = await this.db.query.budgets.findFirst({
-      where: and(eq(budgets.id, id), eq(budgets.workspace_id, workspaceId)),
+      where: and(eq(this.schema.budgets.id, id), eq(this.schema.budgets.workspace_id, workspaceId)),
     });
 
     return budget as Budget | null;
@@ -628,10 +637,10 @@ export class BudgetService {
   ): Promise<Budget | null> {
     const budget = await this.db.query.budgets.findFirst({
       where: and(
-        eq(budgets.category_id, category_id),
-        eq(budgets.workspace_id, workspaceId),
-        eq(budgets.month, month),
-        eq(budgets.year, year)
+        eq(this.schema.budgets.category_id, category_id),
+        eq(this.schema.budgets.workspace_id, workspaceId),
+        eq(this.schema.budgets.month, month),
+        eq(this.schema.budgets.year, year)
       ),
     });
 
@@ -648,13 +657,13 @@ export class BudgetService {
     currency?: 'IDR' | 'USD'
   ): Promise<BudgetWithCategory[]> {
     const conditions = [
-      eq(budgets.workspace_id, workspaceId),
-      eq(budgets.month, month),
-      eq(budgets.year, year),
+      eq(this.schema.budgets.workspace_id, workspaceId),
+      eq(this.schema.budgets.month, month),
+      eq(this.schema.budgets.year, year),
     ];
 
     if (currency) {
-      conditions.push(eq(budgets.currency, currency));
+      conditions.push(eq(this.schema.budgets.currency, currency));
     }
 
     const result = await this.db.query.budgets.findMany({
@@ -686,13 +695,13 @@ export class BudgetService {
     }
 
     const conditions = [
-      eq(budgets.workspace_id, workspaceId),
-      eq(budgets.month, month),
-      eq(budgets.year, year),
+      eq(this.schema.budgets.workspace_id, workspaceId),
+      eq(this.schema.budgets.month, month),
+      eq(this.schema.budgets.year, year),
     ];
 
     if (currency) {
-      conditions.push(eq(budgets.currency, currency));
+      conditions.push(eq(this.schema.budgets.currency, currency));
     }
 
     const result = await this.db.query.budgets.findFirst({
@@ -715,9 +724,9 @@ export class BudgetService {
     // Get all budgets from source month
     const sourceBudgets = await this.db.query.budgets.findMany({
       where: and(
-        eq(budgets.workspace_id, validated.workspace_id),
-        eq(budgets.month, validated.source_month),
-        eq(budgets.year, validated.source_year)
+        eq(this.schema.budgets.workspace_id, validated.workspace_id),
+        eq(this.schema.budgets.month, validated.source_month),
+        eq(this.schema.budgets.year, validated.source_year)
       ),
     });
 
@@ -732,9 +741,9 @@ export class BudgetService {
     // Get existing budgets in target month to avoid duplicates
     const existingTargetBudgets = await this.db.query.budgets.findMany({
       where: and(
-        eq(budgets.workspace_id, validated.workspace_id),
-        eq(budgets.month, validated.target_month),
-        eq(budgets.year, validated.target_year)
+        eq(this.schema.budgets.workspace_id, validated.workspace_id),
+        eq(this.schema.budgets.month, validated.target_month),
+        eq(this.schema.budgets.year, validated.target_year)
       ),
     });
 
@@ -770,7 +779,7 @@ export class BudgetService {
 
       // Bulk insert for better performance and atomicity
       // Drizzle ORM handles the array insert appropriately for each database driver
-      await Promise.resolve(this.db.insert(budgets).values(newBudgets));
+      await Promise.resolve(this.db.insert(this.schema.budgets).values(newBudgets));
     }
 
     return {

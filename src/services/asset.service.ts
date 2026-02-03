@@ -1,4 +1,4 @@
-import { assets, assetHistory, type IDatabase } from '@/db';
+import { type IDatabase, getActiveSchema } from '@/db';
 import { eq, and, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { AssetServiceError, ServiceErrorCode } from './service-errors';
@@ -32,6 +32,8 @@ export interface UpdateAssetBalanceInput {
 }
 
 export class AssetService {
+  private schema = getActiveSchema();
+
   /**
    * Create a new AssetService with database injection
    * @param db - Database instance (injected for testability)
@@ -51,7 +53,7 @@ export class AssetService {
 
     // Insert the asset
     const [asset] = await (this.db as any)
-      .insert(assets)
+      .insert(this.schema.assets)
       .values({
         id,
         workspace_id: input.workspace_id,
@@ -69,7 +71,7 @@ export class AssetService {
 
     // Create initial history entry with compensating transaction on failure
     try {
-      await (this.db as any).insert(assetHistory).values({
+      await (this.db as any).insert(this.schema.assetHistory).values({
         id: nanoid(),
         asset_id: id,
         balance: input.balance,
@@ -77,7 +79,7 @@ export class AssetService {
       });
     } catch (historyError) {
       // Compensating transaction: delete the orphaned asset to maintain data integrity
-      await this.db.delete(assets).where(eq(assets.id, id));
+      await this.db.delete(this.schema.assets).where(eq(this.schema.assets.id, id));
       throw new AssetServiceError(
         ServiceErrorCode.ASSET_NOT_FOUND,
         'Failed to create asset: could not create history entry',
@@ -94,9 +96,9 @@ export class AssetService {
   async findById(id: string, workspaceId: string) {
     const result = await this.db.query.assets.findFirst({
       where: and(
-        eq(assets.id, id),
-        eq(assets.workspace_id, workspaceId),
-        sql`${assets.deleted_at} IS NULL`
+        eq(this.schema.assets.id, id),
+        eq(this.schema.assets.workspace_id, workspaceId),
+        sql`${this.schema.assets.deleted_at} IS NULL`
       ),
     });
 
@@ -114,23 +116,26 @@ export class AssetService {
       currency?: Currency;
     }
   ) {
-    const conditions = [eq(assets.workspace_id, workspaceId), sql`${assets.deleted_at} IS NULL`];
+    const conditions = [
+      eq(this.schema.assets.workspace_id, workspaceId),
+      sql`${this.schema.assets.deleted_at} IS NULL`,
+    ];
 
     if (filters?.type) {
-      conditions.push(eq(assets.type, filters.type));
+      conditions.push(eq(this.schema.assets.type, filters.type));
     }
 
     if (filters?.category_id) {
-      conditions.push(eq(assets.category_id, filters.category_id));
+      conditions.push(eq(this.schema.assets.category_id, filters.category_id));
     }
 
     if (filters?.currency) {
-      conditions.push(eq(assets.currency, filters.currency));
+      conditions.push(eq(this.schema.assets.currency, filters.currency));
     }
 
     const result = await this.db.query.assets.findMany({
       where: and(...conditions),
-      orderBy: (assets: any, { asc }: any) => [asc(assets.name)],
+      orderBy: (assets: any, { asc }: any) => [asc(this.schema.assets.name)],
     });
 
     return result;
@@ -156,9 +161,9 @@ export class AssetService {
     }
 
     await this.db
-      .update(assets)
+      .update(this.schema.assets)
       .set(updateData)
-      .where(and(eq(assets.id, id), eq(assets.workspace_id, workspaceId)));
+      .where(and(eq(this.schema.assets.id, id), eq(this.schema.assets.workspace_id, workspaceId)));
 
     return this.findById(id, workspaceId);
   }
@@ -184,17 +189,17 @@ export class AssetService {
 
     // Update asset
     await this.db
-      .update(assets)
+      .update(this.schema.assets)
       .set({
         balance: input.balance,
         last_updated: now,
         updated_at: now,
       })
-      .where(and(eq(assets.id, id), eq(assets.workspace_id, workspaceId)));
+      .where(and(eq(this.schema.assets.id, id), eq(this.schema.assets.workspace_id, workspaceId)));
 
     // Create history entry with compensating transaction on failure
     try {
-      await (this.db as any).insert(assetHistory).values({
+      await (this.db as any).insert(this.schema.assetHistory).values({
         id: nanoid(),
         asset_id: id,
         balance: input.balance,
@@ -204,13 +209,15 @@ export class AssetService {
     } catch (historyError) {
       // Compensating transaction: rollback the balance update
       await this.db
-        .update(assets)
+        .update(this.schema.assets)
         .set({
           balance: previousBalance,
           last_updated: previousLastUpdated,
           updated_at: previousUpdatedAt,
         })
-        .where(and(eq(assets.id, id), eq(assets.workspace_id, workspaceId)));
+        .where(
+          and(eq(this.schema.assets.id, id), eq(this.schema.assets.workspace_id, workspaceId))
+        );
       throw new AssetServiceError(
         ServiceErrorCode.ASSET_NOT_FOUND,
         'Failed to update balance: could not create history entry',
@@ -232,12 +239,12 @@ export class AssetService {
     }
 
     await this.db
-      .update(assets)
+      .update(this.schema.assets)
       .set({
         deleted_at: new Date(),
         updated_at: new Date(),
       })
-      .where(and(eq(assets.id, id), eq(assets.workspace_id, workspaceId)));
+      .where(and(eq(this.schema.assets.id, id), eq(this.schema.assets.workspace_id, workspaceId)));
 
     return { success: true };
   }
@@ -253,7 +260,7 @@ export class AssetService {
     }
 
     const history = await this.db.query.assetHistory.findMany({
-      where: eq(assetHistory.asset_id, asset_id),
+      where: eq(this.schema.assetHistory.asset_id, asset_id),
       orderBy: (assetHistory: any, { desc }: any) => [desc(assetHistory.recorded_at)],
     });
 
@@ -266,12 +273,17 @@ export class AssetService {
   async getTotalByCurrency(workspaceId: string) {
     const result = await (this.db as any)
       .select({
-        currency: assets.currency,
-        total: sql<string>`sum(CAST(${assets.balance} AS REAL))`,
+        currency: this.schema.assets.currency,
+        total: sql<string>`sum(CAST(${this.schema.assets.balance} AS REAL))`,
       })
-      .from(assets)
-      .where(and(eq(assets.workspace_id, workspaceId), sql`${assets.deleted_at} IS NULL`))
-      .groupBy(assets.currency);
+      .from(this.schema.assets)
+      .where(
+        and(
+          eq(this.schema.assets.workspace_id, workspaceId),
+          sql`${this.schema.assets.deleted_at} IS NULL`
+        )
+      )
+      .groupBy(this.schema.assets.currency);
 
     return result;
   }
@@ -282,14 +294,19 @@ export class AssetService {
   async getTotalByType(workspaceId: string) {
     const result = await (this.db as any)
       .select({
-        type: assets.type,
-        currency: assets.currency,
-        total: sql<string>`sum(CAST(${assets.balance} AS REAL))`,
+        type: this.schema.assets.type,
+        currency: this.schema.assets.currency,
+        total: sql<string>`sum(CAST(${this.schema.assets.balance} AS REAL))`,
         count: sql<number>`count(*)`,
       })
-      .from(assets)
-      .where(and(eq(assets.workspace_id, workspaceId), sql`${assets.deleted_at} IS NULL`))
-      .groupBy(assets.type, assets.currency);
+      .from(this.schema.assets)
+      .where(
+        and(
+          eq(this.schema.assets.workspace_id, workspaceId),
+          sql`${this.schema.assets.deleted_at} IS NULL`
+        )
+      )
+      .groupBy(this.schema.assets.type, this.schema.assets.currency);
 
     return result;
   }
@@ -303,7 +320,7 @@ export class AssetService {
     const assetsWithHistory = await Promise.all(
       allAssets.map(async (asset) => {
         const history = await this.db.query.assetHistory.findMany({
-          where: eq(assetHistory.asset_id, asset.id),
+          where: eq(this.schema.assetHistory.asset_id, asset.id),
           orderBy: (assetHistory: any, { asc }: any) => [asc(assetHistory.recorded_at)],
         });
 
@@ -326,18 +343,18 @@ export class AssetService {
   async countByCategory(workspaceId: string) {
     const result = await (this.db as any)
       .select({
-        category_id: assets.category_id,
+        category_id: this.schema.assets.category_id,
         count: sql<number>`count(*)`,
       })
-      .from(assets)
+      .from(this.schema.assets)
       .where(
         and(
-          eq(assets.workspace_id, workspaceId),
-          sql`${assets.deleted_at} IS NULL`,
-          sql`${assets.category_id} IS NOT NULL`
+          eq(this.schema.assets.workspace_id, workspaceId),
+          sql`${this.schema.assets.deleted_at} IS NULL`,
+          sql`${this.schema.assets.category_id} IS NOT NULL`
         )
       )
-      .groupBy(assets.category_id);
+      .groupBy(this.schema.assets.category_id);
 
     return result as Array<{ category_id: string; count: number }>;
   }

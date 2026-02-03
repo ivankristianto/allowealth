@@ -176,7 +176,7 @@ function sanitizeString(input: string): string {
  */
 export function logError(message: string, error: unknown): void {
   // Skip logging in test environment to avoid noisy output
-  if (process.env.NODE_ENV === 'test') {
+  if (import.meta.env.MODE === 'test') {
     return;
   }
 

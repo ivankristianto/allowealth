@@ -1,4 +1,4 @@
-import { assetCategories, assets, type IDatabase } from '@/db';
+import { type IDatabase, getActiveSchema } from '@/db';
 import { and, eq, ne, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import {
@@ -14,6 +14,8 @@ export { type CreateAssetCategoryInput, type UpdateAssetCategoryInput };
 const MAX_CUSTOM_CATEGORIES = 50;
 
 export class AssetCategoryService {
+  private schema = getActiveSchema();
+
   constructor(private db: IDatabase) {}
 
   async create(input: CreateAssetCategoryInput) {
@@ -46,7 +48,7 @@ export class AssetCategoryService {
 
     try {
       const [category] = await this.db
-        .insert(assetCategories)
+        .insert(this.schema.assetCategories)
         .values({
           id,
           workspace_id: validated.workspace_id,
@@ -77,7 +79,10 @@ export class AssetCategoryService {
 
   async findById(id: string, workspaceId: string) {
     const result = await this.db.query.assetCategories.findFirst({
-      where: and(eq(assetCategories.id, id), eq(assetCategories.workspace_id, workspaceId)),
+      where: and(
+        eq(this.schema.assetCategories.id, id),
+        eq(this.schema.assetCategories.workspace_id, workspaceId)
+      ),
     });
 
     return result;
@@ -90,14 +95,14 @@ export class AssetCategoryService {
       is_system?: boolean;
     }
   ) {
-    const conditions = [eq(assetCategories.workspace_id, workspaceId)];
+    const conditions = [eq(this.schema.assetCategories.workspace_id, workspaceId)];
 
     if (filters?.is_liability !== undefined) {
-      conditions.push(eq(assetCategories.is_liability, filters.is_liability));
+      conditions.push(eq(this.schema.assetCategories.is_liability, filters.is_liability));
     }
 
     if (filters?.is_system !== undefined) {
-      conditions.push(eq(assetCategories.is_system, filters.is_system));
+      conditions.push(eq(this.schema.assetCategories.is_system, filters.is_system));
     }
 
     const result = await this.db.query.assetCategories.findMany({
@@ -114,7 +119,10 @@ export class AssetCategoryService {
 
   async findByName(name: string, workspaceId: string) {
     const result = await this.db.query.assetCategories.findFirst({
-      where: and(eq(assetCategories.workspace_id, workspaceId), eq(assetCategories.name, name)),
+      where: and(
+        eq(this.schema.assetCategories.workspace_id, workspaceId),
+        eq(this.schema.assetCategories.name, name)
+      ),
     });
 
     return result;
@@ -161,9 +169,14 @@ export class AssetCategoryService {
     if (validated.sort_order !== undefined) updateData.sort_order = validated.sort_order;
 
     await this.db
-      .update(assetCategories)
+      .update(this.schema.assetCategories)
       .set(updateData)
-      .where(and(eq(assetCategories.id, id), eq(assetCategories.workspace_id, workspaceId)));
+      .where(
+        and(
+          eq(this.schema.assetCategories.id, id),
+          eq(this.schema.assetCategories.workspace_id, workspaceId)
+        )
+      );
 
     return this.findById(id, workspaceId);
   }
@@ -190,12 +203,12 @@ export class AssetCategoryService {
       .select({
         count: sql<number>`count(*)`,
       })
-      .from(assets)
+      .from(this.schema.assets)
       .where(
         and(
-          eq(assets.workspace_id, workspaceId),
-          eq(assets.category_id, id),
-          sql`${assets.deleted_at} IS NULL`
+          eq(this.schema.assets.workspace_id, workspaceId),
+          eq(this.schema.assets.category_id, id),
+          sql`${this.schema.assets.deleted_at} IS NULL`
         )
       );
 
@@ -208,20 +221,25 @@ export class AssetCategoryService {
     }
 
     await this.db
-      .delete(assetCategories)
-      .where(and(eq(assetCategories.id, id), eq(assetCategories.workspace_id, workspaceId)));
+      .delete(this.schema.assetCategories)
+      .where(
+        and(
+          eq(this.schema.assetCategories.id, id),
+          eq(this.schema.assetCategories.workspace_id, workspaceId)
+        )
+      );
 
     return { success: true };
   }
 
   async existsByName(name: string, workspaceId: string, excludeId?: string) {
     const conditions = [
-      eq(assetCategories.workspace_id, workspaceId),
-      eq(assetCategories.name, name),
+      eq(this.schema.assetCategories.workspace_id, workspaceId),
+      eq(this.schema.assetCategories.name, name),
     ];
 
     if (excludeId) {
-      conditions.push(ne(assetCategories.id, excludeId));
+      conditions.push(ne(this.schema.assetCategories.id, excludeId));
     }
 
     const result = await this.db.query.assetCategories.findFirst({
@@ -236,9 +254,12 @@ export class AssetCategoryService {
       .select({
         count: sql<number>`count(*)`,
       })
-      .from(assetCategories)
+      .from(this.schema.assetCategories)
       .where(
-        and(eq(assetCategories.workspace_id, workspaceId), eq(assetCategories.is_system, false))
+        and(
+          eq(this.schema.assetCategories.workspace_id, workspaceId),
+          eq(this.schema.assetCategories.is_system, false)
+        )
       );
 
     return result?.count ?? 0;

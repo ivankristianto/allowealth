@@ -36,6 +36,20 @@ import * as pgSchema from './schema/postgresql';
 // Re-export schema (uses SQLite schema for types, runtime selects correct dialect)
 export * from './schema';
 
+/**
+ * Get the active schema based on current database dialect
+ *
+ * This function returns the correct schema tables for the current database connection.
+ * Use this when you need runtime schema selection (e.g., in services that may connect
+ * to either SQLite or PostgreSQL).
+ *
+ * @returns The schema object for the current database dialect
+ */
+export function getActiveSchema(): typeof sqliteSchema | typeof pgSchema {
+  const config = getDatabaseConfig();
+  return config.dialect === 'postgresql' ? pgSchema : sqliteSchema;
+}
+
 // Re-export driver types for dependency injection
 export type { DatabaseDriver, PreparedStatement, RunResult } from './driver';
 

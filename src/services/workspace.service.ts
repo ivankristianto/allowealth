@@ -9,7 +9,7 @@
  * - VALIDATION_ERROR: Input validation failed
  */
 
-import { workspaces, users, type IDatabase } from '@/db';
+import { workspaces, users, type IDatabase, getActiveSchema } from '@/db';
 import { eq, and, isNull } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { z } from 'zod';
@@ -52,6 +52,8 @@ export type WorkspaceMember = Omit<typeof users.$inferSelect, 'password_hash'>;
  * Workspace Service
  */
 export class WorkspaceService {
+  private schema = getActiveSchema();
+
   /**
    * Create a new WorkspaceService with database injection
    * @param db - Database instance (injected for testability)
@@ -73,7 +75,7 @@ export class WorkspaceService {
     const now = new Date();
 
     const [workspace] = await this.db
-      .insert(workspaces)
+      .insert(this.schema.workspaces)
       .values({
         id,
         name: validated.name.trim(),
@@ -93,7 +95,7 @@ export class WorkspaceService {
    */
   async findById(id: string): Promise<Workspace | null> {
     const workspace = await this.db.query.workspaces.findFirst({
-      where: eq(workspaces.id, id),
+      where: eq(this.schema.workspaces.id, id),
     });
 
     return workspace ?? null;
@@ -120,7 +122,7 @@ export class WorkspaceService {
     }
 
     // Delete workspace (cascades to all related data)
-    await this.db.delete(workspaces).where(eq(workspaces.id, id));
+    await this.db.delete(this.schema.workspaces).where(eq(this.schema.workspaces.id, id));
   }
 
   /**
@@ -145,7 +147,10 @@ export class WorkspaceService {
 
     // Get all non-deleted users in the workspace
     const members = await this.db.query.users.findMany({
-      where: and(eq(users.workspace_id, workspaceId), isNull(users.deleted_at)),
+      where: and(
+        eq(this.schema.users.workspace_id, workspaceId),
+        isNull(this.schema.users.deleted_at)
+      ),
     });
 
     // Map to exclude password_hash for security
@@ -176,12 +181,12 @@ export class WorkspaceService {
 
     // Update workspace name
     await this.db
-      .update(workspaces)
+      .update(this.schema.workspaces)
       .set({
         name: validated.name.trim(),
         updated_at: new Date(),
       })
-      .where(eq(workspaces.id, id));
+      .where(eq(this.schema.workspaces.id, id));
 
     // Return updated workspace
     const updated = await this.findById(id);

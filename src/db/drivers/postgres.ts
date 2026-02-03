@@ -37,7 +37,7 @@ function getSslConfig(isSupabase: boolean): boolean | 'require' {
   }
 
   // Only disable SSL in development for local PostgreSQL
-  if (process.env.NODE_ENV === 'development') {
+  if (import.meta.env.MODE === 'development') {
     // P3: TODO - Consider using DATABASE_SSL env var for explicit opt-out
     return false;
   }

@@ -16,7 +16,8 @@
  * - INVITATION_ALREADY_ACCEPTED: Invitation was already used
  */
 
-import { workspaceInvitations, workspaces, users, type IDatabase } from '@/db';
+import { type IDatabase, getActiveSchema } from '@/db';
+import { workspaceInvitations as workspaceInvitationsSchema } from '@/db/schema/sqlite';
 import { eq, and, isNull, gt, desc } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { z } from 'zod';
@@ -65,12 +66,14 @@ export type CreateInvitationInput = z.infer<typeof createInvitationSchema>;
 /**
  * Invitation type inferred from schema
  */
-export type WorkspaceInvitation = typeof workspaceInvitations.$inferSelect;
+export type WorkspaceInvitation = typeof workspaceInvitationsSchema.$inferSelect;
 
 /**
  * Workspace Invitation Service
  */
 export class WorkspaceInvitationService {
+  private schema = getActiveSchema();
+
   /**
    * Create a new WorkspaceInvitationService with database injection
    * @param db - Database instance (injected for testability)
@@ -99,7 +102,7 @@ export class WorkspaceInvitationService {
     const expiresAt = new Date(now.getTime() + INVITATION_EXPIRY_MS);
 
     const [invitation] = await this.db
-      .insert(workspaceInvitations)
+      .insert(this.schema.workspaceInvitations)
       .values({
         id,
         workspace_id: validated.workspaceId,
@@ -127,7 +130,7 @@ export class WorkspaceInvitationService {
    */
   async findByToken(token: string): Promise<WorkspaceInvitation | null> {
     const invitation = await this.db.query.workspaceInvitations.findFirst({
-      where: eq(workspaceInvitations.token, token),
+      where: eq(this.schema.workspaceInvitations.token, token),
     });
 
     return invitation ?? null;
@@ -141,7 +144,7 @@ export class WorkspaceInvitationService {
    */
   async findById(id: string): Promise<WorkspaceInvitation | null> {
     const invitation = await this.db.query.workspaceInvitations.findFirst({
-      where: eq(workspaceInvitations.id, id),
+      where: eq(this.schema.workspaceInvitations.id, id),
     });
 
     return invitation ?? null;
@@ -166,11 +169,11 @@ export class WorkspaceInvitationService {
 
     const invitations = await this.db.query.workspaceInvitations.findMany({
       where: and(
-        eq(workspaceInvitations.workspace_id, workspaceId),
-        isNull(workspaceInvitations.accepted_at),
-        gt(workspaceInvitations.expires_at, now)
+        eq(this.schema.workspaceInvitations.workspace_id, workspaceId),
+        isNull(this.schema.workspaceInvitations.accepted_at),
+        gt(this.schema.workspaceInvitations.expires_at, now)
       ),
-      orderBy: [desc(workspaceInvitations.created_at)],
+      orderBy: [desc(this.schema.workspaceInvitations.created_at)],
     });
 
     return invitations;
@@ -219,11 +222,11 @@ export class WorkspaceInvitationService {
 
     // Mark as accepted
     await this.db
-      .update(workspaceInvitations)
+      .update(this.schema.workspaceInvitations)
       .set({
         accepted_at: now,
       })
-      .where(eq(workspaceInvitations.token, token));
+      .where(eq(this.schema.workspaceInvitations.token, token));
   }
 
   /**
@@ -245,7 +248,9 @@ export class WorkspaceInvitationService {
     }
 
     // Delete invitation
-    await this.db.delete(workspaceInvitations).where(eq(workspaceInvitations.id, id));
+    await this.db
+      .delete(this.schema.workspaceInvitations)
+      .where(eq(this.schema.workspaceInvitations.id, id));
   }
 
   /**
@@ -281,11 +286,11 @@ export class WorkspaceInvitationService {
     const newExpiresAt = new Date(Date.now() + INVITATION_EXPIRY_MS);
 
     await this.db
-      .update(workspaceInvitations)
+      .update(this.schema.workspaceInvitations)
       .set({
         expires_at: newExpiresAt,
       })
-      .where(eq(workspaceInvitations.id, id));
+      .where(eq(this.schema.workspaceInvitations.id, id));
 
     // Send invitation email
     await this.sendInvitationEmail({
@@ -347,7 +352,7 @@ export class WorkspaceInvitationService {
    */
   private async ensureWorkspaceExists(workspaceId: string): Promise<void> {
     const workspace = await this.db.query.workspaces.findFirst({
-      where: eq(workspaces.id, workspaceId),
+      where: eq(this.schema.workspaces.id, workspaceId),
     });
 
     if (!workspace) {
@@ -366,13 +371,13 @@ export class WorkspaceInvitationService {
     try {
       // Get workspace name
       const workspace = await this.db.query.workspaces.findFirst({
-        where: eq(workspaces.id, invitation.workspace_id),
+        where: eq(this.schema.workspaces.id, invitation.workspace_id),
       });
       const workspaceName = workspace?.name || 'Unknown Workspace';
 
       // Get inviter name
       const inviter = await this.db.query.users.findFirst({
-        where: eq(users.id, invitation.invited_by_user_id),
+        where: eq(this.schema.users.id, invitation.invited_by_user_id),
       });
       const inviterName = inviter?.name || 'A team member';
 

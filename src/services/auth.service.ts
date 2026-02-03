@@ -13,9 +13,11 @@
 
 import { auth, type User, type Session } from '@/lib/auth/lucia';
 import { hashPassword, verifyPassword } from '@/lib/auth/password';
-import { db, type IDatabase } from '@/db';
-import { users, workspaces } from '@/db/schema';
+import { db, type IDatabase, getActiveSchema } from '@/db';
 import { eq } from 'drizzle-orm';
+
+// Get the correct schema for the current database dialect
+const schema = getActiveSchema();
 import { nanoid } from 'nanoid';
 import { DEFAULT_ASSET_CATEGORIES } from '@/lib/constants';
 import { AssetCategoryService } from './asset-category.service';
@@ -145,7 +147,7 @@ export async function register(email: string, password: string, name: string): P
   try {
     // Check if user already exists
     const existingUser = await db.query.users.findFirst({
-      where: eq(users.email, email.toLowerCase()),
+      where: eq(schema.users.email, email.toLowerCase()),
     });
 
     if (existingUser) {
@@ -162,7 +164,7 @@ export async function register(email: string, password: string, name: string): P
     const newUser = await db.transaction(async (tx: IDatabase) => {
       // Create workspace for the new user - use returning() to ensure execution
       await tx
-        .insert(workspaces)
+        .insert(schema.workspaces)
         .values({
           id: workspaceId,
           name: `${name.trim()}'s Workspace`,
@@ -172,7 +174,7 @@ export async function register(email: string, password: string, name: string): P
         .returning();
 
       const [createdUser] = await tx
-        .insert(users)
+        .insert(schema.users)
         .values({
           id: userId,
           workspace_id: workspaceId,
@@ -257,7 +259,7 @@ export async function registerWithInvitation(
   try {
     // Check if user already exists
     const existingUser = await db.query.users.findFirst({
-      where: eq(users.email, email.toLowerCase()),
+      where: eq(schema.users.email, email.toLowerCase()),
     });
 
     if (existingUser) {
@@ -272,7 +274,7 @@ export async function registerWithInvitation(
 
     // Create user in the invited workspace (no new workspace creation)
     const [newUser] = await db
-      .insert(users)
+      .insert(schema.users)
       .values({
         id: userId,
         workspace_id: workspaceId,
@@ -327,7 +329,7 @@ export async function login(
   try {
     // Find user by email
     const user = await db.query.users.findFirst({
-      where: eq(users.email, email.toLowerCase()),
+      where: eq(schema.users.email, email.toLowerCase()),
     });
 
     if (!user) {

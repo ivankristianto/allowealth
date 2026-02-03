@@ -35,7 +35,7 @@ function isSupabaseUrl(url: string): boolean {
 }
 
 export function getDatabaseConfig(): DatabaseConfig {
-  const url = process.env.DATABASE_URL || 'db/.dev.db';
+  const url = import.meta.env.DATABASE_URL || 'db/.dev.db';
   const dialect = detectDialect(url);
   return {
     dialect,

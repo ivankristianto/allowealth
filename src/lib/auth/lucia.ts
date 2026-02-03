@@ -49,7 +49,7 @@ export const auth = new Lucia(adapter, {
     attributes: {
       // Secure: only send cookie over HTTPS (disabled in development for local testing)
       // In production, this prevents cookies from being sent over unencrypted HTTP connections
-      secure: process.env.NODE_ENV === 'production',
+      secure: import.meta.env.MODE === 'production',
 
       // SameSite: helps prevent CSRF attacks
       // - 'lax': allows cookies to be sent with top-level navigations (safe for most use cases)
