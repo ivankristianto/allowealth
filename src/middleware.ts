@@ -26,6 +26,7 @@ import {
 import { setRuntimeEnv } from './db/config';
 import { getCachedSession, cacheSession } from './lib/auth/session-cache';
 import { warmupDatabase } from './db';
+import { PerfCollector } from './lib/perf';
 
 // Track if database has been warmed up (one-time operation per server start)
 let dbWarmedUp = false;
@@ -253,6 +254,14 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
   const requestStart = performance.now();
   const pathname = context.url.pathname;
   const timings: Record<string, number> = {};
+
+  // Create PerfCollector when PERF_DEBUG is enabled
+  const perfDebugEnabled = import.meta.env.PERF_DEBUG === 'true';
+  if (perfDebugEnabled) {
+    const perf = new PerfCollector();
+    perf.setRoute(pathname);
+    (context.locals as any).perf = perf;
+  }
 
   // Set runtime env for Cloudflare Workers (secrets are only available via request context)
   // This must happen before any database operations
