@@ -15,13 +15,18 @@
 /**
  * PBKDF2 configuration
  *
- * - iterations: 310,000 (OWASP recommends 600,000 for SHA-256, but we balance security/performance)
+ * - iterations: 100,000 (Cloudflare Workers limit - max supported is 100,000)
  * - saltLength: 16 bytes (128 bits)
  * - hashLength: 32 bytes (256 bits)
  * - algorithm: SHA-256
+ *
+ * Note: OWASP recommends 600,000 iterations for SHA-256, but Cloudflare Workers
+ * has a hard limit of 100,000 iterations. For edge deployment compatibility,
+ * we use the maximum allowed value.
+ * @see https://developers.cloudflare.com/workers/runtime-apis/web-crypto/
  */
 const PBKDF2_CONFIG = {
-  iterations: 310_000,
+  iterations: 100_000,
   saltLength: 16,
   hashLength: 32,
   algorithm: 'SHA-256',

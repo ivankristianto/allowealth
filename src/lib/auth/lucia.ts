@@ -8,8 +8,10 @@
  */
 
 import { Lucia, TimeSpan } from 'lucia';
+import type { Adapter, DatabaseSession, DatabaseUser } from 'lucia';
 import { DrizzleSQLiteAdapter } from '@lucia-auth/adapter-drizzle';
-import { db } from '@/db/index';
+import { eq, lte } from 'drizzle-orm';
+import { db, getDatabaseConfig } from '@/db/index';
 import * as schema from '@/db/schema';
 
 /**
@@ -19,20 +21,125 @@ import * as schema from '@/db/schema';
 const SESSION_EXPIRATION = new TimeSpan(30, 'd');
 
 /**
- * Lucia auth instance
+ * Custom PostgreSQL adapter for Cloudflare Workers
  *
- * Configured with:
- * - Drizzle adapter for SQLite database
- * - HTTP-only cookies to prevent XSS attacks
- * - Secure cookies (HTTPS-only in production)
- * - SameSite lax to prevent CSRF attacks
- * - 30-day session expiration
+ * Cloudflare Workers' Buffer.from() cannot serialize Date objects,
+ * so we convert dates to ISO strings before passing to Drizzle.
+ * This wrapper overrides setSession and updateSessionExpiration.
+ */
+class CloudflarePostgreSQLAdapter implements Adapter {
+  private db: any;
+  private sessionTable: any;
+  private userTable: any;
+
+  constructor(db: any, sessionTable: any, userTable: any) {
+    this.db = db;
+    this.sessionTable = sessionTable;
+    this.userTable = userTable;
+  }
+
+  async deleteSession(sessionId: string): Promise<void> {
+    await this.db.delete(this.sessionTable).where(eq(this.sessionTable.id, sessionId));
+  }
+
+  async deleteUserSessions(userId: string): Promise<void> {
+    await this.db.delete(this.sessionTable).where(eq(this.sessionTable.userId, userId));
+  }
+
+  async getSessionAndUser(
+    sessionId: string
+  ): Promise<[session: DatabaseSession | null, user: DatabaseUser | null]> {
+    const result = await this.db
+      .select({
+        user: this.userTable,
+        session: this.sessionTable,
+      })
+      .from(this.sessionTable)
+      .innerJoin(this.userTable, eq(this.sessionTable.userId, this.userTable.id))
+      .where(eq(this.sessionTable.id, sessionId));
+
+    if (result.length !== 1) return [null, null];
+
+    const session = result[0].session;
+    const user = result[0].user;
+
+    return [
+      {
+        id: session.id,
+        userId: session.userId,
+        expiresAt: new Date(session.expiresAt),
+        attributes: {},
+      },
+      {
+        id: user.id,
+        attributes: user,
+      },
+    ];
+  }
+
+  async getUserSessions(userId: string): Promise<DatabaseSession[]> {
+    const result = await this.db
+      .select()
+      .from(this.sessionTable)
+      .where(eq(this.sessionTable.userId, userId));
+
+    return result.map((session: any) => ({
+      id: session.id,
+      userId: session.userId,
+      expiresAt: new Date(session.expiresAt),
+      attributes: {},
+    }));
+  }
+
+  async setSession(session: DatabaseSession): Promise<void> {
+    // Convert Date to ISO string for Cloudflare Workers compatibility
+    await this.db.insert(this.sessionTable).values({
+      id: session.id,
+      userId: session.userId,
+      expiresAt: session.expiresAt.toISOString(),
+      ...session.attributes,
+    });
+  }
+
+  async updateSessionExpiration(sessionId: string, expiresAt: Date): Promise<void> {
+    // Convert Date to ISO string for Cloudflare Workers compatibility
+    await this.db
+      .update(this.sessionTable)
+      .set({ expiresAt: expiresAt.toISOString() })
+      .where(eq(this.sessionTable.id, sessionId));
+  }
+
+  async deleteExpiredSessions(): Promise<void> {
+    // Use ISO string for date comparison
+    await this.db
+      .delete(this.sessionTable)
+      .where(lte(this.sessionTable.expiresAt, new Date().toISOString()));
+  }
+}
+
+/**
+ * Create the appropriate Drizzle adapter based on database dialect
  *
  * Note: DrizzleSQLiteAdapter expects (db, sessionsTable, usersTable)
+ * DrizzlePostgreSQLAdapter expects (db, sessionsTable, usersTable)
  * The sessions table must use camelCase property names (userId, expiresAt)
  * for proper adapter compatibility.
+ *
+ * For PostgreSQL on Cloudflare Workers, we use a custom adapter that
+ * converts Date objects to ISO strings to work around Buffer.from() limitations.
  */
-const adapter = new DrizzleSQLiteAdapter(db, schema.sessions as any, schema.users);
+function createAdapter() {
+  const config = getDatabaseConfig();
+
+  if (config.dialect === 'postgresql') {
+    // Use custom adapter for Cloudflare Workers compatibility
+    return new CloudflarePostgreSQLAdapter(db as any, schema.sessions as any, schema.users);
+  }
+
+  return new DrizzleSQLiteAdapter(db, schema.sessions as any, schema.users);
+}
+
+const adapter = createAdapter();
 
 export const auth = new Lucia(adapter, {
   sessionCookie: {

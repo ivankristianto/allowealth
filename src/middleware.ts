@@ -23,6 +23,7 @@ import {
   requiresCsrfProtection,
   isCsrfExempt,
 } from './lib/csrf';
+import { setRuntimeEnv } from './db/config';
 
 /**
  * Session cookie name used by Lucia Auth
@@ -130,6 +131,14 @@ function buildCSPHeader(nonce: string): string {
 }
 
 export const onRequest: MiddlewareHandler = async (context, next) => {
+  // Set runtime env for Cloudflare Workers (secrets are only available via request context)
+  // This must happen before any database operations
+  const runtime = (context.locals as any).runtime;
+
+  if (runtime?.env) {
+    setRuntimeEnv(runtime.env);
+  }
+
   // Generate a fresh CSP nonce for each request
   const nonce = generateNonce();
   (context.locals as any).cspNonce = nonce;

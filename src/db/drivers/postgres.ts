@@ -47,16 +47,42 @@ function getSslConfig(isSupabase: boolean): boolean | 'require' {
 }
 
 /**
+ * Detect if running in Cloudflare Workers edge environment
+ */
+function isEdgeRuntime(): boolean {
+  return (
+    typeof globalThis.caches !== 'undefined' &&
+    typeof (globalThis as any).WebSocketPair !== 'undefined'
+  );
+}
+
+/**
  * Create a PostgreSQL connection using postgres.js
  *
- * Uses singleton pattern to prevent connection leaks. If a client already
- * exists for the same URL, returns the existing client.
+ * IMPORTANT: In Cloudflare Workers, connections cannot be shared between requests.
+ * Each request must create its own connection due to I/O context isolation.
+ *
+ * For non-edge environments (Node.js, Bun), uses singleton pattern to prevent
+ * connection leaks.
  *
  * @param url - PostgreSQL connection URL
  * @returns postgres.js client instance
  */
 export function createPostgresDriver(url: string): ReturnType<typeof postgres> {
-  // Return existing client if URL matches (singleton pattern)
+  const isEdge = isEdgeRuntime();
+
+  // In Cloudflare Workers, MUST create fresh connection per request
+  // Singleton pattern causes "Cannot perform I/O on behalf of a different request" error
+  if (isEdge) {
+    return postgres(url, {
+      max: 1,
+      idle_timeout: 20,
+      ssl: false, // SSL causes "too many subrequests" in Workers
+      connect_timeout: 10,
+    });
+  }
+
+  // Non-edge: use singleton pattern to prevent connection leaks
   if (client && clientUrl === url) {
     return client;
   }
@@ -65,7 +91,6 @@ export function createPostgresDriver(url: string): ReturnType<typeof postgres> {
   if (client && clientUrl !== url) {
     client.end().catch((error) => {
       console.error('[PostgreSQL] Error closing existing connection during URL switch:', error);
-      // Continue with new connection despite close error
     });
   }
 
@@ -75,6 +100,7 @@ export function createPostgresDriver(url: string): ReturnType<typeof postgres> {
     max: config.poolConfig?.max ?? 10,
     idle_timeout: config.poolConfig?.idleTimeout ?? 30,
     ssl: getSslConfig(config.isSupabase),
+    connect_timeout: 30,
   });
   clientUrl = url;
 

@@ -370,12 +370,6 @@ export async function login(
     if (error instanceof AuthError) {
       throw error;
     }
-    console.error('[ERROR] Login database error:', error);
-    if (error instanceof Error) {
-      console.error('[ERROR] Message:', error.message);
-      console.error('[ERROR] Stack:', error.stack);
-      console.error('[ERROR] Cause:', (error as any).cause);
-    }
     throw new AuthError(
       AUTH_ERRORS.DATABASE_ERROR,
       `Database operation failed: ${error instanceof Error ? error.message : 'Unknown error'}`
