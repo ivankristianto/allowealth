@@ -31,6 +31,10 @@ export const CacheKeys = {
 
   /** Session: cache:session:{sessionId} */
   session: (sessionId: string): string => `${PREFIX}:session:${sessionId}`,
+
+  /** Layout data (categories, assets, settings): cache:layout:{workspaceId}:{userId} */
+  layout: (workspaceId: string, userId: string): string =>
+    `${PREFIX}:layout:${workspaceId}:${userId}`,
 } as const;
 
 /**

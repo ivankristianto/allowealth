@@ -35,7 +35,13 @@ import MainLayout from './MainLayout.astro';
 import TransactionModal from '@/components/organisms/TransactionModal.astro';
 import { categoryService, assetService, userMetaService } from '@/services';
 import { DEFAULT_USER_SETTINGS, type UserSettings } from '@/lib/constants/user-meta-keys';
-import { getCachedLayoutData, cacheLayoutData } from '@/lib/cache/layout-cache';
+import { getCacheManager, CacheKeys, CacheTags } from '@/lib/cache';
+
+interface LayoutData {
+  categories: Array<{ id: string; name: string; type: string; currency?: string }>;
+  assets: Array<{ id: string; name: string; type: string }>;
+  userSettings: UserSettings;
+}
 
 interface Props {
   title?: string;
@@ -55,11 +61,14 @@ let assets: Array<{ id: string; name: string; type: string }> = [];
 let userSettings: UserSettings = { ...DEFAULT_USER_SETTINGS };
 
 // Try to get from cache first
-const cached = getCachedLayoutData(user.workspaceId, user.id);
+const cache = getCacheManager();
+const cacheKey = CacheKeys.layout(user.workspaceId, user.id);
+const cached = await cache.get<LayoutData>(cacheKey);
+
 if (cached) {
   categories = cached.categories;
   assets = cached.assets;
-  userSettings = cached.userSettings as UserSettings;
+  userSettings = cached.userSettings;
 } else {
   try {
     [categories, assets, userSettings] = await Promise.all([
@@ -67,8 +76,22 @@ if (cached) {
       assetService.findAll(user.workspaceId),
       userMetaService.getUserSettings(user.id),
     ]);
-    // Cache the results
-    cacheLayoutData(user.workspaceId, user.id, { categories, assets, userSettings });
+    // Cache the results (60 seconds TTL)
+    await cache.set<LayoutData>(
+      cacheKey,
+      { categories, assets, userSettings },
+      {
+        ttl: 60,
+        tags: [
+          CacheTags.workspace(user.workspaceId),
+          CacheTags.user(user.id),
+          CacheTags.LAYOUT,
+          CacheTags.CATEGORIES,
+          CacheTags.ASSETS,
+          CacheTags.SETTINGS,
+        ],
+      }
+    );
   } catch (err) {
     console.error('Error loading transaction form data:', err);
     // Non-critical: modal won't have options but pages still work

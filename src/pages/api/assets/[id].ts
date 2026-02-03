@@ -10,7 +10,7 @@ import {
 } from '@/lib/api-utils';
 import { logError } from '@/lib/utils';
 import { DEFAULT_ASSET_CATEGORIES } from '@/lib/constants';
-import { invalidateWorkspaceLayoutCache } from '@/lib/cache/layout-cache';
+import { getCacheManager, CacheTags } from '@/lib/cache';
 
 // Validation schemas
 const LEGACY_TYPE_BY_NAME = new Map(
@@ -123,7 +123,12 @@ export const PUT: APIRoute = async (context) => {
     }
 
     // Invalidate layout cache since assets changed
-    invalidateWorkspaceLayoutCache(auth.workspaceId);
+    const cache = getCacheManager();
+    await cache.invalidateByTags([
+      CacheTags.workspace(auth.workspaceId),
+      CacheTags.ASSETS,
+      CacheTags.LAYOUT,
+    ]);
 
     return successResponse(asset);
   } catch (error) {
@@ -151,7 +156,12 @@ export const DELETE: APIRoute = async (context) => {
     await assetService.delete(id, auth.workspaceId);
 
     // Invalidate layout cache since assets changed
-    invalidateWorkspaceLayoutCache(auth.workspaceId);
+    const cache = getCacheManager();
+    await cache.invalidateByTags([
+      CacheTags.workspace(auth.workspaceId),
+      CacheTags.ASSETS,
+      CacheTags.LAYOUT,
+    ]);
 
     return successResponse({ message: 'Asset deleted successfully' });
   } catch (error) {

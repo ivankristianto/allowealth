@@ -9,7 +9,7 @@ import {
 } from '@/lib/api-utils';
 import { updateCategoryAPISchema } from '@/lib/validation';
 import { logError } from '@/lib/utils';
-import { invalidateWorkspaceLayoutCache } from '@/lib/cache/layout-cache';
+import { getCacheManager, CacheTags } from '@/lib/cache';
 
 /**
  * GET /api/categories/:id
@@ -74,7 +74,12 @@ export const PUT: APIRoute = async (context) => {
     }
 
     // Invalidate layout cache since categories changed
-    invalidateWorkspaceLayoutCache(auth.workspaceId);
+    const cache = getCacheManager();
+    await cache.invalidateByTags([
+      CacheTags.workspace(auth.workspaceId),
+      CacheTags.CATEGORIES,
+      CacheTags.LAYOUT,
+    ]);
 
     return successResponse(category);
   } catch (error) {
@@ -102,7 +107,12 @@ export const DELETE: APIRoute = async (context) => {
     await categoryService.delete(id, auth.workspaceId);
 
     // Invalidate layout cache since categories changed
-    invalidateWorkspaceLayoutCache(auth.workspaceId);
+    const cache = getCacheManager();
+    await cache.invalidateByTags([
+      CacheTags.workspace(auth.workspaceId),
+      CacheTags.CATEGORIES,
+      CacheTags.LAYOUT,
+    ]);
 
     return successResponse({ message: 'Category deleted successfully' });
   } catch (error) {

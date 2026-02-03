@@ -20,4 +20,7 @@ export const CacheTags = {
   SETTINGS: 'settings' as const,
   DASHBOARD: 'dashboard' as const,
   SESSION: 'session' as const,
+  CATEGORIES: 'categories' as const,
+  ASSETS: 'assets' as const,
+  LAYOUT: 'layout' as const,
 } as const;

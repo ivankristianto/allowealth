@@ -9,7 +9,7 @@ import {
 } from '@/lib/api-utils';
 import { createCategoryAPISchema } from '@/lib/validation';
 import { logError } from '@/lib/utils';
-import { invalidateWorkspaceLayoutCache } from '@/lib/cache/layout-cache';
+import { getCacheManager, CacheTags } from '@/lib/cache';
 
 /**
  * GET /api/categories
@@ -69,7 +69,12 @@ export const POST: APIRoute = async (context) => {
     });
 
     // Invalidate layout cache since categories changed
-    invalidateWorkspaceLayoutCache(auth.workspaceId);
+    const cache = getCacheManager();
+    await cache.invalidateByTags([
+      CacheTags.workspace(auth.workspaceId),
+      CacheTags.CATEGORIES,
+      CacheTags.LAYOUT,
+    ]);
 
     return successResponse(category, 201);
   } catch (error) {
