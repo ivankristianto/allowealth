@@ -324,7 +324,8 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
 
     // Expose server-side performance metrics via Server-Timing header
     // Viewable in browser DevTools Network panel under "Timing" tab
-    if (Object.keys(timings).length > 0) {
+    // Enable with PERF_DEBUG=true environment variable
+    if (import.meta.env.PERF_DEBUG === 'true' && Object.keys(timings).length > 0) {
       response.headers.set('Server-Timing', buildServerTimingHeader(timings));
     }
 
