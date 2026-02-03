@@ -20,6 +20,7 @@ import {
 import type { Budget, BudgetWithCategory, CopyBudgetsResult } from '@/lib/types/budget';
 import { BudgetServiceError, ServiceErrorCode } from './service-errors';
 import { toHexColor } from '@/lib/utils/colorUtils';
+import { getCacheManager, CacheKeys, CacheTags } from '@/lib/cache';
 
 export interface BudgetOverview {
   category_id: string;
@@ -69,6 +70,7 @@ export class BudgetService {
   /**
    * Get budget overview for a specific month
    * Queries the budgets table (not categories) for budget amounts
+   * Results are cached for 1 hour
    */
   async getMonthlyOverview(
     workspaceId: string,
@@ -76,7 +78,7 @@ export class BudgetService {
     month: number,
     currency: 'IDR' | 'USD'
   ): Promise<BudgetSummary> {
-    // Validate inputs
+    // Validate inputs first
     if (!Number.isInteger(year) || year < 2000 || year > 2100) {
       throw new Error('Invalid year parameter');
     }
@@ -84,6 +86,36 @@ export class BudgetService {
       throw new Error('Invalid month parameter');
     }
 
+    // Try cache first
+    const cache = getCacheManager();
+    const cacheKey = CacheKeys.budget(workspaceId, year, month, currency);
+
+    const cached = await cache.get<BudgetSummary>(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
+    // Cache miss - fetch from DB
+    const result = await this.fetchMonthlyOverviewFromDb(workspaceId, year, month, currency);
+
+    // Cache the result
+    await cache.set(cacheKey, result, {
+      ttl: 3600,
+      tags: [CacheTags.workspace(workspaceId), CacheTags.BUDGET, CacheTags.TRANSACTIONS],
+    });
+
+    return result;
+  }
+
+  /**
+   * Fetch budget overview from database (no caching)
+   */
+  private async fetchMonthlyOverviewFromDb(
+    workspaceId: string,
+    year: number,
+    month: number,
+    currency: 'IDR' | 'USD'
+  ): Promise<BudgetSummary> {
     // Get start and end of month
     const startDate = new Date(year, month - 1, 1);
     const endDate = new Date(year, month, 0, 23, 59, 59);
@@ -524,6 +556,10 @@ export class BudgetService {
       })
       .returning();
 
+    // Invalidate budget cache
+    const cache = getCacheManager();
+    await cache.invalidateByTags([CacheTags.workspace(validated.workspace_id), CacheTags.BUDGET]);
+
     return budget as Budget;
   }
 
@@ -583,6 +619,10 @@ export class BudgetService {
         and(eq(this.schema.budgets.id, id), eq(this.schema.budgets.workspace_id, workspaceId))
       );
 
+    // Invalidate budget cache
+    const cache = getCacheManager();
+    await cache.invalidateByTags([CacheTags.workspace(workspaceId), CacheTags.BUDGET]);
+
     const updatedBudget = await this.getBudgetById(id, workspaceId);
     return updatedBudget as Budget;
   }
@@ -611,6 +651,10 @@ export class BudgetService {
       .where(
         and(eq(this.schema.budgets.id, id), eq(this.schema.budgets.workspace_id, workspaceId))
       );
+
+    // Invalidate budget cache
+    const cache = getCacheManager();
+    await cache.invalidateByTags([CacheTags.workspace(workspaceId), CacheTags.BUDGET]);
 
     return { success: true };
   }
@@ -781,6 +825,10 @@ export class BudgetService {
       // Drizzle ORM handles the array insert appropriately for each database driver
       await Promise.resolve(this.db.insert(this.schema.budgets).values(newBudgets));
     }
+
+    // Invalidate budget cache for the workspace
+    const cache = getCacheManager();
+    await cache.invalidateByTags([CacheTags.workspace(validated.workspace_id), CacheTags.BUDGET]);
 
     return {
       copied_count: budgetsToCopy.length,

@@ -14,12 +14,16 @@ import {
   createMockBudgetWithCategory,
   resetMockDatabase,
 } from './test-helpers/mocks';
+import { resetCacheManager } from '@/lib/cache';
 
 describe('BudgetService', () => {
   let mockDb: ReturnType<typeof createMockDatabase>;
   let budgetService: BudgetService;
 
   beforeEach(() => {
+    // Reset cache manager to prevent stale data across tests
+    resetCacheManager();
+
     // Create fresh mock database and service for each test
     mockDb = createMockDatabase();
     budgetService = new BudgetService(mockDb);
