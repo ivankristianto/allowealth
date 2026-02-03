@@ -1,0 +1,85 @@
+import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
+import { CacheManager, getCacheManager, resetCacheManager } from './cache-manager';
+import { MemoryDriver } from './drivers/memory';
+import { NoopDriver } from './drivers/noop';
+
+describe('CacheManager', () => {
+  afterEach(() => {
+    resetCacheManager();
+  });
+
+  describe('driver selection', () => {
+    it('should use MemoryDriver when driver=memory', () => {
+      const manager = new CacheManager({ driver: 'memory' });
+      expect((manager as any).driver).toBeInstanceOf(MemoryDriver);
+    });
+
+    it('should use NoopDriver when driver=none', () => {
+      const manager = new CacheManager({ driver: 'none' });
+      expect((manager as any).driver).toBeInstanceOf(NoopDriver);
+    });
+
+    it('should fall back to MemoryDriver when upstash credentials missing', () => {
+      const manager = new CacheManager({ driver: 'upstash' });
+      expect((manager as any).driver).toBeInstanceOf(MemoryDriver);
+    });
+  });
+
+  describe('get/set operations', () => {
+    let manager: CacheManager;
+
+    beforeEach(() => {
+      manager = new CacheManager({ driver: 'memory' });
+    });
+
+    it('should store and retrieve values', async () => {
+      await manager.set('test-key', { data: 'value' });
+      const result = await manager.get<{ data: string }>('test-key');
+      expect(result).toEqual({ data: 'value' });
+    });
+
+    it('should return null for missing keys', async () => {
+      const result = await manager.get('nonexistent');
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('invalidation', () => {
+    let manager: CacheManager;
+
+    beforeEach(() => {
+      manager = new CacheManager({ driver: 'memory' });
+    });
+
+    it('should invalidate by tags', async () => {
+      await manager.set('key1', 'value1', { tags: ['workspace:123'] });
+      await manager.set('key2', 'value2', { tags: ['workspace:456'] });
+
+      await manager.invalidateByTags(['workspace:123']);
+
+      expect(await manager.get('key1')).toBeNull();
+      expect(await manager.get('key2')).toBe('value2');
+    });
+
+    it('should delete specific key', async () => {
+      await manager.set('key1', 'value1');
+      await manager.delete('key1');
+      expect(await manager.get('key1')).toBeNull();
+    });
+  });
+
+  describe('singleton', () => {
+    it('should return same instance on multiple calls', () => {
+      const instance1 = getCacheManager();
+      const instance2 = getCacheManager();
+      expect(instance1).toBe(instance2);
+    });
+
+    it('should reset singleton', () => {
+      const instance1 = getCacheManager();
+      resetCacheManager();
+      const instance2 = getCacheManager();
+      expect(instance1).not.toBe(instance2);
+    });
+  });
+});
