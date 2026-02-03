@@ -36,7 +36,7 @@ export const POST: APIRoute = async (context) => {
     }
 
     // Invalidate session from cache and database
-    invalidateSession(sessionId);
+    await invalidateSession(sessionId);
     await logout(sessionId);
 
     // Create blank session cookie to clear the existing one

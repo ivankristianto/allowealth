@@ -226,7 +226,7 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
     let user: User | null = null;
     let cacheHit = false;
 
-    const cached = getCachedSession(sessionId);
+    const cached = await getCachedSession(sessionId);
     if (cached) {
       session = cached.session;
       user = cached.user;
@@ -242,7 +242,7 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
 
       // Cache the validated session for future requests
       if (session && user) {
-        cacheSession(sessionId, session, user);
+        await cacheSession(sessionId, session, user);
       }
     }
     timings['auth.validateSession'] = performance.now() - authStart;

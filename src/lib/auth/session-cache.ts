@@ -1,115 +1,83 @@
 /**
  * Session Cache
  *
- * In-memory cache for session validation to reduce database round-trips.
- * Sessions are valid for 30 days, so we cache for a shorter duration (5 minutes)
- * to balance performance with security.
- *
- * This is especially important when database latency is high (e.g., 400ms RTT).
- *
- * Note: This cache is per-process, so in clustered environments each process
- * will have its own cache. For distributed caching, use Redis or similar.
+ * Caches session validation results to reduce database round-trips.
+ * Uses the cache abstraction layer for vendor-agnostic storage.
  */
 
 import type { User, Session } from './lucia';
+import { getCacheManager, CacheKeys, CacheTags } from '@/lib/cache';
 
-interface CachedSession {
+// Cache TTL in seconds (5 minutes)
+const SESSION_CACHE_TTL = 5 * 60;
+
+interface CachedSessionData {
   session: Session;
   user: User;
-  cachedAt: number;
 }
-
-// Cache TTL in milliseconds (5 minutes)
-const CACHE_TTL_MS = 5 * 60 * 1000;
-
-// Maximum cache size to prevent memory bloat
-const MAX_CACHE_SIZE = 1000;
-
-// Session cache map
-const sessionCache = new Map<string, CachedSession>();
 
 /**
  * Get a cached session if it exists and hasn't expired
  */
-export function getCachedSession(sessionId: string): { session: Session; user: User } | null {
-  const cached = sessionCache.get(sessionId);
+export async function getCachedSession(
+  sessionId: string
+): Promise<{ session: Session; user: User } | null> {
+  const cache = getCacheManager();
+  const cacheKey = CacheKeys.session(sessionId);
 
+  const cached = await cache.get<CachedSessionData>(cacheKey);
   if (!cached) {
     return null;
   }
 
-  // Check if cache entry has expired
-  const age = Date.now() - cached.cachedAt;
-  if (age > CACHE_TTL_MS) {
-    sessionCache.delete(sessionId);
-    return null;
-  }
-
   // Check if session itself has expired
-  if (cached.session.expiresAt < new Date()) {
-    sessionCache.delete(sessionId);
+  const expiresAt = new Date(cached.session.expiresAt);
+  if (expiresAt < new Date()) {
+    await cache.delete(cacheKey);
     return null;
   }
 
-  return { session: cached.session, user: cached.user };
+  return cached;
 }
 
 /**
  * Cache a validated session
  */
-export function cacheSession(sessionId: string, session: Session, user: User): void {
-  // Enforce max cache size (LRU-like: delete oldest if at capacity)
-  if (sessionCache.size >= MAX_CACHE_SIZE) {
-    // Delete the oldest entry (first in map)
-    const firstKey = sessionCache.keys().next().value;
-    if (firstKey) {
-      sessionCache.delete(firstKey);
-    }
-  }
+export async function cacheSession(sessionId: string, session: Session, user: User): Promise<void> {
+  const cache = getCacheManager();
+  const cacheKey = CacheKeys.session(sessionId);
 
-  sessionCache.set(sessionId, {
-    session,
-    user,
-    cachedAt: Date.now(),
-  });
+  await cache.set<CachedSessionData>(
+    cacheKey,
+    { session, user },
+    {
+      ttl: SESSION_CACHE_TTL,
+      tags: [CacheTags.session(sessionId), CacheTags.user(user.id), CacheTags.SESSION],
+    }
+  );
 }
 
 /**
  * Invalidate a cached session (call on logout or session update)
  */
-export function invalidateSession(sessionId: string): void {
-  sessionCache.delete(sessionId);
+export async function invalidateSession(sessionId: string): Promise<void> {
+  const cache = getCacheManager();
+  await cache.invalidateByTags([CacheTags.session(sessionId)]);
 }
 
 /**
  * Invalidate all sessions for a user (call on password change, etc.)
  */
-export function invalidateUserSessions(userId: string): void {
-  for (const [sessionId, cached] of sessionCache.entries()) {
-    if (cached.user.id === userId) {
-      sessionCache.delete(sessionId);
-    }
-  }
+export async function invalidateUserSessions(userId: string): Promise<void> {
+  const cache = getCacheManager();
+  await cache.invalidateByTags([CacheTags.user(userId), CacheTags.SESSION]);
 }
 
 /**
  * Clear the entire session cache
+ * @deprecated Use invalidateByTags for targeted invalidation
  */
-export function clearSessionCache(): void {
-  sessionCache.clear();
-}
-
-/**
- * Get cache statistics for monitoring
- */
-export function getSessionCacheStats(): {
-  size: number;
-  maxSize: number;
-  ttlMs: number;
-} {
-  return {
-    size: sessionCache.size,
-    maxSize: MAX_CACHE_SIZE,
-    ttlMs: CACHE_TTL_MS,
-  };
+export async function clearSessionCache(): Promise<void> {
+  const cache = getCacheManager();
+  await cache.invalidateByTags([CacheTags.SESSION]);
 }
