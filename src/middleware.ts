@@ -154,6 +154,64 @@ function buildCSPHeader(nonce: string): string {
     .join('; ');
 }
 
+/**
+ * Inject CSP nonce into all script tags in HTML response
+ * This is necessary because Astro generates inline scripts for module bootstrapping
+ * that don't automatically get nonces from Astro.locals.cspNonce
+ *
+ * @param html - The HTML string to process
+ * @param nonce - The CSP nonce to inject
+ * @returns HTML with nonce attributes added to all script tags
+ */
+function injectScriptNonces(html: string, nonce: string): string {
+  // Match <script tags that don't already have a nonce attribute
+  // Handles: <script>, <script type="module">, <script src="...">, etc.
+  // Uses negative lookahead to skip scripts that already have nonce
+  return html.replace(/<script(?![^>]*\bnonce\b)([^>]*)>/gi, `<script nonce="${nonce}"$1>`);
+}
+
+/**
+ * Apply security headers and optionally inject nonces into HTML responses
+ * @param response - The original response
+ * @param nonce - The CSP nonce
+ * @returns Modified response with security headers
+ */
+async function applySecurityHeaders(response: Response, nonce: string): Promise<Response> {
+  const contentType = response.headers.get('Content-Type') || '';
+  const isHtml = contentType.includes('text/html');
+
+  // For HTML responses in production, inject nonces into all script tags
+  if (!isDev && isHtml) {
+    const html = await response.text();
+    const modifiedHtml = injectScriptNonces(html, nonce);
+
+    // Create new response with modified HTML
+    const newResponse = new Response(modifiedHtml, {
+      status: response.status,
+      statusText: response.statusText,
+      headers: response.headers,
+    });
+
+    // Set security headers
+    newResponse.headers.set('Content-Security-Policy', buildCSPHeader(nonce));
+    newResponse.headers.set('X-Content-Type-Options', 'nosniff');
+    newResponse.headers.set('X-Frame-Options', 'DENY');
+    newResponse.headers.set('X-XSS-Protection', '1; mode=block');
+    newResponse.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+
+    return newResponse;
+  }
+
+  // For non-HTML responses or dev mode, just add headers
+  response.headers.set('Content-Security-Policy', buildCSPHeader(nonce));
+  response.headers.set('X-Content-Type-Options', 'nosniff');
+  response.headers.set('X-Frame-Options', 'DENY');
+  response.headers.set('X-XSS-Protection', '1; mode=block');
+  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+
+  return response;
+}
+
 export const onRequest: MiddlewareHandler = async (context, next) => {
   const requestStart = performance.now();
   const pathname = context.url.pathname;
@@ -204,13 +262,7 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
 
     // Still apply CSP headers for unauthenticated requests
     const response = await next();
-    response.headers.set('Content-Security-Policy', buildCSPHeader(nonce));
-    response.headers.set('X-Content-Type-Options', 'nosniff');
-    response.headers.set('X-Frame-Options', 'DENY');
-    response.headers.set('X-XSS-Protection', '1; mode=block');
-    response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
-
-    return response;
+    return applySecurityHeaders(response, nonce);
   }
 
   // Validate CSRF token for protected API requests
@@ -281,13 +333,7 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
 
       // Still apply CSP headers
       const response = await next();
-      response.headers.set('Content-Security-Policy', buildCSPHeader(nonce));
-      response.headers.set('X-Content-Type-Options', 'nosniff');
-      response.headers.set('X-Frame-Options', 'DENY');
-      response.headers.set('X-XSS-Protection', '1; mode=block');
-      response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
-
-      return response;
+      return applySecurityHeaders(response, nonce);
     }
 
     // Session is valid - attach user and session to locals
@@ -322,23 +368,17 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
     timings['page.render'] = performance.now() - nextStart;
     timings['total'] = performance.now() - requestStart;
 
+    // Apply security headers and inject nonces into HTML scripts
+    const securedResponse = await applySecurityHeaders(response, nonce);
+
     // Expose server-side performance metrics via Server-Timing header
     // Viewable in browser DevTools Network panel under "Timing" tab
     // Enable with PERF_DEBUG=true environment variable
     if (import.meta.env.PERF_DEBUG === 'true' && Object.keys(timings).length > 0) {
-      response.headers.set('Server-Timing', buildServerTimingHeader(timings));
+      securedResponse.headers.set('Server-Timing', buildServerTimingHeader(timings));
     }
 
-    // Add Content Security Policy headers for XSS prevention with nonce
-    response.headers.set('Content-Security-Policy', buildCSPHeader(nonce));
-
-    // Add additional security headers
-    response.headers.set('X-Content-Type-Options', 'nosniff'); // Prevent MIME type sniffing
-    response.headers.set('X-Frame-Options', 'DENY'); // Prevent clickjacking
-    response.headers.set('X-XSS-Protection', '1; mode=block'); // Legacy XSS protection
-    response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin'); // Control referrer information
-
-    return response;
+    return securedResponse;
   } catch (error) {
     // Session validation failed - clear user data
     logError('Session validation error', error);
@@ -353,12 +393,6 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
 
     // Still apply CSP headers even when session validation fails
     const response = await next();
-    response.headers.set('Content-Security-Policy', buildCSPHeader(nonce));
-    response.headers.set('X-Content-Type-Options', 'nosniff');
-    response.headers.set('X-Frame-Options', 'DENY');
-    response.headers.set('X-XSS-Protection', '1; mode=block');
-    response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
-
-    return response;
+    return applySecurityHeaders(response, nonce);
   }
 };
