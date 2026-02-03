@@ -9,6 +9,7 @@ import {
 } from '@/lib/api-utils';
 import { updateCategoryAPISchema } from '@/lib/validation';
 import { logError } from '@/lib/utils';
+import { invalidateWorkspaceLayoutCache } from '@/lib/cache/layout-cache';
 
 /**
  * GET /api/categories/:id
@@ -72,6 +73,9 @@ export const PUT: APIRoute = async (context) => {
       return errorResponse('Category not found', 404);
     }
 
+    // Invalidate layout cache since categories changed
+    invalidateWorkspaceLayoutCache(auth.workspaceId);
+
     return successResponse(category);
   } catch (error) {
     if (error instanceof Error && error.message === 'Unauthorized') {
@@ -96,6 +100,9 @@ export const DELETE: APIRoute = async (context) => {
     }
 
     await categoryService.delete(id, auth.workspaceId);
+
+    // Invalidate layout cache since categories changed
+    invalidateWorkspaceLayoutCache(auth.workspaceId);
 
     return successResponse({ message: 'Category deleted successfully' });
   } catch (error) {

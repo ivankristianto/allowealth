@@ -144,3 +144,25 @@ export async function closePostgres(): Promise<void> {
 export function getPostgresClient(): ReturnType<typeof postgres> | null {
   return client;
 }
+
+/**
+ * Warm up the PostgreSQL connection pool
+ *
+ * Executes a simple query to establish the TCP connection, SSL handshake,
+ * and authentication before any real requests arrive.
+ *
+ * @returns Promise that resolves when warm-up is complete
+ */
+export async function warmupPostgres(): Promise<void> {
+  if (!client) {
+    return;
+  }
+
+  try {
+    // Simple query to establish the connection
+    await client`SELECT 1 AS warmup`;
+  } catch (error) {
+    console.error('[PostgreSQL] Warm-up failed:', error);
+    throw error;
+  }
+}

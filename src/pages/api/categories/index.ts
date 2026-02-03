@@ -9,6 +9,7 @@ import {
 } from '@/lib/api-utils';
 import { createCategoryAPISchema } from '@/lib/validation';
 import { logError } from '@/lib/utils';
+import { invalidateWorkspaceLayoutCache } from '@/lib/cache/layout-cache';
 
 /**
  * GET /api/categories
@@ -66,6 +67,9 @@ export const POST: APIRoute = async (context) => {
       created_by_user_id: auth.userId,
       ...validation.data,
     });
+
+    // Invalidate layout cache since categories changed
+    invalidateWorkspaceLayoutCache(auth.workspaceId);
 
     return successResponse(category, 201);
   } catch (error) {

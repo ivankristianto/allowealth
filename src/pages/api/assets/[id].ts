@@ -10,6 +10,7 @@ import {
 } from '@/lib/api-utils';
 import { logError } from '@/lib/utils';
 import { DEFAULT_ASSET_CATEGORIES } from '@/lib/constants';
+import { invalidateWorkspaceLayoutCache } from '@/lib/cache/layout-cache';
 
 // Validation schemas
 const LEGACY_TYPE_BY_NAME = new Map(
@@ -121,6 +122,9 @@ export const PUT: APIRoute = async (context) => {
       return errorResponse('Asset not found', 404);
     }
 
+    // Invalidate layout cache since assets changed
+    invalidateWorkspaceLayoutCache(auth.workspaceId);
+
     return successResponse(asset);
   } catch (error) {
     if (error instanceof Error && error.message === 'Unauthorized') {
@@ -145,6 +149,9 @@ export const DELETE: APIRoute = async (context) => {
     }
 
     await assetService.delete(id, auth.workspaceId);
+
+    // Invalidate layout cache since assets changed
+    invalidateWorkspaceLayoutCache(auth.workspaceId);
 
     return successResponse({ message: 'Asset deleted successfully' });
   } catch (error) {

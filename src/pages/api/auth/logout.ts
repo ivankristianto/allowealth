@@ -22,6 +22,7 @@ import {
   type ApiSuccessResponse,
 } from '@/types/api';
 import { logError } from '@/lib/utils';
+import { invalidateSession } from '@/lib/auth/session-cache';
 
 export const prerender = false;
 
@@ -34,7 +35,8 @@ export const POST: APIRoute = async (context) => {
       return createErrorResponseResponse(AUTH_ERRORS.NOT_AUTHENTICATED, 'Not authenticated', 401);
     }
 
-    // Invalidate session
+    // Invalidate session from cache and database
+    invalidateSession(sessionId);
     await logout(sessionId);
 
     // Create blank session cookie to clear the existing one

@@ -11,6 +11,7 @@ import {
 import { logError } from '@/lib/utils';
 import { ASSET_TYPE_LABELS, type AssetType } from '@/lib/types/asset';
 import { DEFAULT_ASSET_CATEGORIES } from '@/lib/constants';
+import { invalidateWorkspaceLayoutCache } from '@/lib/cache/layout-cache';
 
 // Valid asset types derived from the canonical source of truth
 const VALID_ASSET_TYPES = Object.keys(ASSET_TYPE_LABELS) as [AssetType, ...AssetType[]];
@@ -124,6 +125,9 @@ export const POST: APIRoute = async (context) => {
       balance: validation.data.balance,
       currency: validation.data.currency,
     });
+
+    // Invalidate layout cache since assets changed
+    invalidateWorkspaceLayoutCache(auth.workspaceId);
 
     return successResponse(asset, 201);
   } catch (error) {
