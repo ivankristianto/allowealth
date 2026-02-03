@@ -10,6 +10,9 @@ const { title = 'allowealth' } = Astro.props;
 
 // Construct browser title: "Page Title | allowealth" or just "allowealth" for home
 const browserTitle = title && title !== 'allowealth' ? `${title} | allowealth` : 'allowealth';
+
+// Get CSP nonce from middleware for inline scripts
+const cspNonce = Astro.locals.cspNonce || '';
 ---
 
 <!doctype html>
@@ -20,7 +23,7 @@ const browserTitle = title && title !== 'allowealth' ? `${title} | allowealth` :
     <title>{browserTitle}</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <!-- Prevent flash of wrong theme by setting data-theme early -->
-    <script is:inline>
+    <script is:inline nonce={cspNonce}>
       (function () {
         const savedTheme = localStorage.getItem('theme');
         if (savedTheme) {

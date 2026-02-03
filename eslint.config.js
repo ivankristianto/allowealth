@@ -8,6 +8,7 @@ export default [
     ignores: [
       'dist',
       '.astro',
+      '.wrangler',
       'node_modules',
       'storybook-static',
       'e2e/playwright-report',

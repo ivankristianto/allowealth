@@ -45,7 +45,7 @@ const positionClasses: Record<string, string> = {
 <toast-message
   id={id}
   data-type={type}
-  data-duration={duration}
+  data-duration={duration.toString()}
   data-testid={`toast-${type}`}
   class:list={['alert shadow-lg', typeClasses[type], positionClasses[position]]}
 >
@@ -55,84 +55,127 @@ const positionClasses: Record<string, string> = {
   </button>
 </toast-message>
 
-<script is:inline define:vars={{ id, duration }}>
+<script>
   import { animate } from 'motion';
   import { TOAST_ANIMATION_CONFIG, TOAST_INITIAL_STYLES } from '@/lib/animations';
 
-  const toast = document.getElementById(id);
-  if (!toast) {
-    console.error('Toast element not found');
-    throw new Error('Toast element not found');
-  }
+  /**
+   * Initialize a toast element with animations and auto-dismiss
+   * Uses data attributes to pass configuration from server to client
+   */
+  function initToast(toast: HTMLElement) {
+    // Get configuration from data attributes
+    const duration = parseInt(toast.dataset.duration || '5000', 10);
 
-  // Check if user prefers reduced motion
-  // Use MediaQueryList object to enable dynamic preference changes
-  const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-  let prefersReducedMotion = motionQuery.matches;
+    // Check if user prefers reduced motion
+    const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    let prefersReducedMotion = motionQuery.matches;
 
-  // Listen for runtime motion preference changes
-  const handleMotionPreferenceChange = (e) => {
-    prefersReducedMotion = e.matches;
-  };
-  motionQuery.addEventListener('change', handleMotionPreferenceChange);
+    // Listen for runtime motion preference changes
+    const handleMotionPreferenceChange = (e: MediaQueryListEvent) => {
+      prefersReducedMotion = e.matches;
+    };
+    motionQuery.addEventListener('change', handleMotionPreferenceChange);
 
-  // Track whether toast has been dismissed to prevent race conditions
-  let isDismissed = false;
-  // Store timeout ID to cancel on manual dismiss (explicitly initialized to undefined)
-  let autoDismissTimeout = undefined;
+    // Track whether toast has been dismissed to prevent race conditions
+    let isDismissed = false;
+    // Store timeout ID to cancel on manual dismiss
+    let autoDismissTimeout: ReturnType<typeof setTimeout> | undefined = undefined;
 
-  // Enter animation (using shared config from @/lib/animations/toast.ts)
-  // Skip animation if user prefers reduced motion - show toast immediately
-  if (prefersReducedMotion) {
-    toast.style.opacity = '1';
-  } else {
-    // Set initial state for enter animation
-    Object.assign(toast.style, TOAST_INITIAL_STYLES);
+    // Enter animation (using shared config from @/lib/animations/toast.ts)
+    // Skip animation if user prefers reduced motion - show toast immediately
+    if (prefersReducedMotion) {
+      toast.style.opacity = '1';
+    } else {
+      // Set initial state for enter animation
+      Object.assign(toast.style, TOAST_INITIAL_STYLES);
 
-    animate(toast, TOAST_ANIMATION_CONFIG.enter.keyframes, TOAST_ANIMATION_CONFIG.enter.options);
-  }
-
-  // Dismiss toast with exit animation
-  const dismiss = () => {
-    if (isDismissed) return;
-    isDismissed = true;
-
-    // Cancel auto-dismiss timeout if running
-    if (autoDismissTimeout !== undefined) {
-      clearTimeout(autoDismissTimeout);
-      autoDismissTimeout = undefined;
+      animate(toast, TOAST_ANIMATION_CONFIG.enter.keyframes, TOAST_ANIMATION_CONFIG.enter.options);
     }
 
-    // Cleanup motion preference listener
-    motionQuery.removeEventListener('change', handleMotionPreferenceChange);
+    // Dismiss toast with exit animation
+    const dismiss = () => {
+      if (isDismissed) return;
+      isDismissed = true;
 
-    // Exit animation (using shared config from @/lib/animations/toast.ts)
-    // Skip animation if user prefers reduced motion - remove immediately
-    if (prefersReducedMotion) {
-      toast.remove();
-    } else {
-      animate(
-        toast,
-        TOAST_ANIMATION_CONFIG.exit.keyframes,
-        TOAST_ANIMATION_CONFIG.exit.options
-      ).then(() => {
-        if (document.contains(toast)) {
-          toast.remove();
+      // Cancel auto-dismiss timeout if running
+      if (autoDismissTimeout !== undefined) {
+        clearTimeout(autoDismissTimeout);
+        autoDismissTimeout = undefined;
+      }
+
+      // Cleanup motion preference listener
+      motionQuery.removeEventListener('change', handleMotionPreferenceChange);
+
+      // Exit animation (using shared config from @/lib/animations/toast.ts)
+      // Skip animation if user prefers reduced motion - remove immediately
+      if (prefersReducedMotion) {
+        toast.remove();
+      } else {
+        animate(
+          toast,
+          TOAST_ANIMATION_CONFIG.exit.keyframes,
+          TOAST_ANIMATION_CONFIG.exit.options
+        ).then(() => {
+          if (document.contains(toast)) {
+            toast.remove();
+          }
+        });
+      }
+    };
+
+    // Dismiss button handler
+    const dismissBtn = toast.querySelector('[data-dismiss]');
+    if (dismissBtn) {
+      dismissBtn.addEventListener('click', dismiss);
+    }
+
+    // Auto-dismiss after duration
+    if (duration > 0) {
+      autoDismissTimeout = setTimeout(() => {
+        dismiss();
+      }, duration);
+    }
+  }
+
+  // Initialize all toast-message elements on page load
+  function initAllToasts() {
+    document.querySelectorAll<HTMLElement>('toast-message').forEach((toast) => {
+      // Only initialize if not already initialized
+      if (!toast.dataset.initialized) {
+        toast.dataset.initialized = 'true';
+        initToast(toast);
+      }
+    });
+  }
+
+  // Initialize on DOM ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initAllToasts);
+  } else {
+    initAllToasts();
+  }
+
+  // Use MutationObserver to handle dynamically added toasts
+  const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      mutation.addedNodes.forEach((node) => {
+        if (node instanceof HTMLElement) {
+          if (node.tagName === 'TOAST-MESSAGE' && !node.dataset.initialized) {
+            node.dataset.initialized = 'true';
+            initToast(node);
+          }
+          // Also check for toasts added as children
+          node
+            .querySelectorAll<HTMLElement>('toast-message:not([data-initialized])')
+            .forEach((toast) => {
+              toast.dataset.initialized = 'true';
+              initToast(toast);
+            });
         }
       });
-    }
-  };
+    });
+  });
 
-  // Dismiss button handler
-  const dismissBtn = toast.querySelector('[data-dismiss]');
-  if (dismissBtn) {
-    dismissBtn.addEventListener('click', dismiss);
-  }
-
-  // Auto-dismiss after duration
-  if (duration > 0) {
-    autoDismissTimeout = setTimeout(() => {
-      dismiss();
-    }, duration);
-  }
+  observer.observe(document.body, { childList: true, subtree: true });
 </script>
