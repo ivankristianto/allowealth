@@ -23,6 +23,7 @@ import {
 } from '@lucide/astro';
 import type { User } from '@/lib/auth/lucia';
 import UserProfile from './UserProfile.astro';
+import { APP_VERSION } from '@/lib/version';
 
 interface Props {
   currentPath?: string;
@@ -119,7 +120,7 @@ const isActive = (href: string) => {
 
   <!-- Brand Logo Section (desktop only - mobile has it in the header above) -->
   <div
-    class="hidden lg:flex p-8 items-center gap-3 group-data-[sidebar-collapsed=true]:p-4 group-data-[sidebar-collapsed=true]:justify-center group-data-[sidebar-collapsed=true]:gap-0"
+    class="hidden lg:flex flex-col p-8 group-data-[sidebar-collapsed=true]:p-4 group-data-[sidebar-collapsed=true]:items-center"
   >
     <a
       href="/"
@@ -138,6 +139,9 @@ const isActive = (href: string) => {
         allowealth
       </span>
     </a>
+    <span class="text-xs text-base-content/40 mt-1 group-data-[sidebar-collapsed=true]:hidden">
+      v{APP_VERSION}
+    </span>
   </div>
 
   <!-- Navigation -->
