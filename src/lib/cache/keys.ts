@@ -5,10 +5,21 @@
  * All keys are prefixed with 'cache:' for easy identification.
  */
 
-import { createHash } from 'node:crypto';
-
 /** Cache key prefix */
 const PREFIX = 'cache';
+
+/**
+ * Simple hash function (djb2 variant) for cross-runtime compatibility.
+ * Works in Node.js, Bun, and Cloudflare Workers without native crypto.
+ */
+function simpleHash(str: string): string {
+  let hash = 5381;
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash * 33) ^ str.charCodeAt(i);
+  }
+  // Convert to unsigned 32-bit integer and then to hex
+  return (hash >>> 0).toString(16).padStart(8, '0');
+}
 
 /**
  * Build cache keys for different data types
@@ -38,7 +49,9 @@ export const CacheKeys = {
 } as const;
 
 /**
- * Hash filter object to create stable cache key
+ * Hash filter object to create stable cache key.
+ * Uses a simple hash function for cross-runtime compatibility
+ * (works in Node.js, Bun, and Cloudflare Workers).
  */
 export function hashFilters(filters: Record<string, unknown>): string {
   const cleaned: Record<string, unknown> = {};
@@ -48,5 +61,5 @@ export function hashFilters(filters: Record<string, unknown>): string {
     }
   }
   const json = JSON.stringify(cleaned);
-  return createHash('md5').update(json).digest('hex').slice(0, 8);
+  return simpleHash(json);
 }
