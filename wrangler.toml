@@ -10,6 +10,9 @@ compatibility_flags = ["nodejs_compat", "disable_nodejs_process_v2"]
 [vars]
 NODE_ENV = "production"
 
+# Note: The _worker.js bundling is handled by @astrojs/cloudflare adapter
+# Workers only support PostgreSQL - SQLite (bun:sqlite) is for local development only
+
 # Secrets (set via CLI, not committed):
 # wrangler secret put DATABASE_URL
 #
@@ -18,3 +21,6 @@ NODE_ENV = "production"
 # 2. wrangler login
 # 3. wrangler secret put DATABASE_URL
 # 4. bun run deploy:cloudflare
+#
+# IMPORTANT: Workers only support PostgreSQL. Set DATABASE_URL to a PostgreSQL connection string.
+# SQLite (bun:sqlite) is for local development only.

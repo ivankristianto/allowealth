@@ -834,10 +834,14 @@ const converted = txns.map((txn) => ({
 
 ```
 drizzle/
-├── 0000_hard_silk_fever.sql      # Initial schema
-├── 0001_watery_celestials.sql    # Asset tracking
-└── 0002_material_sentinel.sql    # Latest changes
+├── sqlite/
+│   ├── 0000_groovy_tiger_shark.sql  # Initial schema (complete)
+│   └── meta/                         # Drizzle migration metadata
+└── postgresql/                       # PostgreSQL migrations (generated on demand)
 ```
+
+> **Note**: The schema was reset on 2026-02-03 to a single initial migration for MVP deployment.
+> All 18 tables are defined in `0000_groovy_tiger_shark.sql`.
 
 ### Migration Commands
 
@@ -850,6 +854,10 @@ bun run db:migrate
 
 # Push schema directly (dev only)
 bun run db:push
+
+# For PostgreSQL (production):
+DATABASE_URL=postgresql://... bun run db:generate
+DATABASE_URL=postgresql://... bun run db:push
 ```
 
 ### Best Practices
@@ -858,6 +866,7 @@ bun run db:push
 2. **Test Rollbacks**: Ensure data can be safely reverted
 3. **Backup Production**: Before applying migrations
 4. **Run in Transaction**: Use `BEGIN/COMMIT` for atomicity
+5. **Fresh Start for MVP**: Schema was consolidated to single migration for clean deployment
 
 ## Data Integrity Rules
 

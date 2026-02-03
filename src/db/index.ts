@@ -22,9 +22,9 @@
  */
 import { createRequire } from 'node:module';
 import { getDatabaseConfig } from './config';
-import { detectRuntime } from './driver';
-import { createBunDriver } from './drivers/bun';
-import { createNodeDriver } from './drivers/node';
+import { detectRuntime, type DatabaseDriver } from './driver';
+// Use dynamic imports for SQLite drivers to prevent bundling in edge environments
+// The Bun and Node drivers are only loaded when actually needed at runtime
 import { createPostgresDatabase, closePostgres } from './drivers/postgres';
 import type { BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
@@ -161,7 +161,7 @@ const PRAGMA_STATEMENTS = [
 /**
  * Apply SQLite performance optimizations
  */
-function applyPragmas(driver: ReturnType<typeof createBunDriver | typeof createNodeDriver>): void {
+function applyPragmas(driver: DatabaseDriver): void {
   PRAGMA_STATEMENTS.forEach((sql) => driver.exec(sql));
 }
 
@@ -184,6 +184,9 @@ function getRequire() {
  * - PostgreSQL URLs → postgres.js driver
  * - SQLite paths → bun:sqlite or better-sqlite3 based on runtime
  *
+ * Note: SQLite drivers are loaded via createRequire to work with Vite/Astro bundling.
+ * For edge environments (Cloudflare Workers), only PostgreSQL is supported.
+ *
  * @throws Error if database connection fails
  */
 function createDatabase(): Database {
@@ -191,28 +194,25 @@ function createDatabase(): Database {
   const dynamicRequire = getRequire();
 
   try {
-    // PostgreSQL path
+    // PostgreSQL path - can be sync since no dynamic imports needed
     if (config.dialect === 'postgresql') {
-      // Dynamic import of PostgreSQL schema using createRequire
-      // Note: We use dynamicRequire here because bare require is not available
-      // when bundled by Vite/Astro
       const pgSchema = dynamicRequire('./schema/postgresql');
-      // Cast to Database type for type compatibility
-      // Runtime behavior is correct; this is only for TypeScript inference
       return createPostgresDatabase(config.url, pgSchema) as unknown as Database;
     }
 
-    // SQLite path
+    // SQLite path - requires sync loading which may not work in all environments
+    // This path should only be taken in Bun or Node.js environments
+    // For edge environments (Cloudflare Workers), configure DATABASE_URL to use PostgreSQL
     const runtime = detectRuntime();
 
-    // Create the native SQLite driver
-    const driver = runtime === 'bun' ? createBunDriver(config.url) : createNodeDriver(config.url);
+    // Use require for sync loading in SQLite path (Bun/Node.js only)
+    const driver =
+      runtime === 'bun'
+        ? dynamicRequire('./drivers/bun').createBunDriver(config.url)
+        : dynamicRequire('./drivers/node').createNodeDriver(config.url);
 
-    // Apply performance optimizations
     applyPragmas(driver);
 
-    // Create Drizzle ORM instance with SQLite schema
-    // Use the already-imported sqliteSchema module
     const { drizzle } =
       runtime === 'bun'
         ? dynamicRequire('drizzle-orm/bun-sqlite')

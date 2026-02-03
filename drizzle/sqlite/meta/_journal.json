@@ -5,36 +5,8 @@
     {
       "idx": 0,
       "version": "6",
-      "when": 1767546379505,
-      "tag": "0000_hard_silk_fever",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "6",
-      "when": 1767953898729,
-      "tag": "0001_watery_celestials",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "6",
-      "when": 1768153858587,
-      "tag": "0002_material_sentinel",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "6",
-      "when": 1769766422274,
-      "tag": "0003_asset_categories",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "6",
-      "when": 1769767339903,
-      "tag": "0004_asset_category_id",
+      "when": 1770086129320,
+      "tag": "0000_groovy_tiger_shark",
       "breakpoints": true
     }
   ]
