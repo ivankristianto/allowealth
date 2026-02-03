@@ -52,6 +52,12 @@ bun run db:reset
 
 # Reset database with dashboard test data
 bun run db:reset:dashboard
+
+# Empty database (delete all data, preserve schema)
+bun run db:empty
+
+# Empty production database (with 5-second safety delay)
+bun run db:empty:prod
 ```
 
 ### Dashboard Test User
@@ -361,6 +367,43 @@ NODE_ENV=production
 
 **Important:** For serverless platforms (Cloudflare, Vercel, Netlify), always use the Supabase **pooler URL** (port 6543), not the direct connection.
 
+### Supabase PostgreSQL Setup
+
+When using Supabase as your production database:
+
+1. **Create a Supabase project** at [supabase.com](https://supabase.com)
+
+2. **Get the connection string** from Settings → Database → Connection string → URI
+   - Use the **Transaction pooler** connection (port 6543) for serverless deployments
+   - Use the **Session pooler** connection for long-running servers
+
+3. **Create `.env.production`** with your database URL:
+
+   ```bash
+   DATABASE_URL=postgresql://postgres.[project-ref]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres
+   ```
+
+4. **Push the schema** to your production database:
+
+   ```bash
+   bun run db:push
+   ```
+
+5. **Use production CLI commands** to manage data:
+
+   ```bash
+   # Create workspace in production
+   bun run cli:create-workspace:prod -- --name "My Family"
+
+   # List production workspaces
+   bun run cli:list-workspaces:prod
+
+   # Empty production database (use with caution!)
+   bun run db:empty:prod
+   ```
+
+**Note:** The codebase uses `import.meta.env` (not `process.env`) for Bun compatibility. The `:prod` script variants automatically load `.env.production` using `--env-file`.
+
 ### Platform-Specific Deployment
 
 #### 1. Node (Traditional Hosting)
@@ -444,18 +487,21 @@ bun run deploy:netlify
 After deploying to your chosen platform, complete these steps:
 
 ```bash
-# 1. Run database migrations
-DATABASE_URL="postgresql://..." bun run db:push
+# 1. Create .env.production with your Supabase DATABASE_URL
+echo 'DATABASE_URL=postgresql://...' > .env.production
 
-# 2. Create workspace and admin user
-DATABASE_URL="postgresql://..." bun run cli:create-workspace -- \
+# 2. Run database migrations
+bun --env-file=.env.production run db:push
+
+# 3. Create workspace and admin user
+bun run cli:create-workspace:prod -- \
   --name "My Family" \
   --currency IDR \
   --week-start monday
 
-# 3. Follow the CLI output to get admin credentials
+# 4. Follow the CLI output to get admin credentials
 
-# 4. Log in and start using the application
+# 5. Log in and start using the application
 ```
 
 **Important Notes:**
