@@ -70,6 +70,7 @@ playwright-report/
 test-results/
 .env.e2e
 .env.backup
+.env*
 
 # Platform-specific local files
 .wrangler/
