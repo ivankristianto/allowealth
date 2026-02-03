@@ -133,6 +133,7 @@ const hasInvitationError = !!invitationError;
             class="space-y-5"
             data-signup-form
             data-invitation-token={token || ''}
+            data-api-signup-url={getSignupUrl()}
             novalidate
           >
             <div id="form-messages" class="space-y-2" aria-live="polite" tabindex="-1">
@@ -285,13 +286,7 @@ const hasInvitationError = !!invitationError;
 
 <script src="/scripts/registration-validation.js" nonce={cspNonce} is:inline></script>
 
-<script
-  define:vars={{
-    apiSignupUrl: getSignupUrl(),
-  }}
-  nonce={cspNonce}
-  is:inline
->
+<script nonce={cspNonce} is:inline>
   document.addEventListener('DOMContentLoaded', () => {
     const form = document.querySelector('[data-signup-form]');
     const messagesContainer = document.getElementById('form-messages');
@@ -301,8 +296,9 @@ const hasInvitationError = !!invitationError;
 
     if (!form || !messagesContainer) return;
 
-    // Get invitation token if present
+    // Get values from data attributes
     const invitationToken = form.getAttribute('data-invitation-token') || '';
+    const apiSignupUrl = form.getAttribute('data-api-signup-url') || '/api/signup';
 
     // Handle password toggle for confirm password field
     const toggleButtons = form.querySelectorAll('[data-toggle-password]');

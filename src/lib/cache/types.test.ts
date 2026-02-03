@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'bun:test';
-import type { CacheDriver, CacheSetOptions, CacheConfig } from './types';
+import type { CacheSetOptions, CacheConfig } from './types';
 import { DEFAULT_CACHE_CONFIG } from './types';
 
 describe('Cache Types', () => {
