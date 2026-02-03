@@ -33,6 +33,7 @@ import {
   decimalIsZero,
 } from '@/lib/utils/decimal';
 import { toHexColor } from '@/lib/utils/colorUtils';
+import { getCacheManager, CacheKeys, CacheTags } from '@/lib/cache';
 
 /**
  * Total assets by currency
@@ -764,6 +765,7 @@ export class DashboardService {
    * 1. Combining asset queries (totalAssets + assetReminders use same data)
    * 2. Running all independent queries in parallel
    * 3. Using single aggregate queries where possible
+   * 4. Caching results with 1 hour TTL
    *
    * @param workspaceId - Workspace ID
    * @param month - Month (1-12, default: current month)
@@ -780,6 +782,17 @@ export class DashboardService {
     const now = new Date();
     const currentMonth = month ?? now.getMonth() + 1;
     const currentYear = year ?? now.getFullYear();
+
+    // Try cache first
+    const cache = getCacheManager();
+    const cacheKey = CacheKeys.dashboard(workspaceId, currentYear, currentMonth, currency);
+
+    const cached = await cache.get<DashboardData>(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
+    // Cache miss - fetch from database
     const startDate = new Date(currentYear, currentMonth - 1, 1);
     const endDate = new Date(currentYear, currentMonth, 0, 23, 59, 59);
 
@@ -807,7 +820,7 @@ export class DashboardService {
         this.getRecentTransactions(workspaceId, 10),
       ]);
 
-    return {
+    const result: DashboardData = {
       totalAssets: assetsData.totalAssets,
       monthlySpent: transactionAggregates.monthlySpent,
       monthlyIncome: transactionAggregates.monthlyIncome,
@@ -816,6 +829,19 @@ export class DashboardService {
       assetReminders: assetsData.assetReminders,
       recentTransactions,
     };
+
+    // Cache the result
+    await cache.set(cacheKey, result, {
+      ttl: 3600,
+      tags: [
+        CacheTags.workspace(workspaceId),
+        CacheTags.DASHBOARD,
+        CacheTags.BUDGET,
+        CacheTags.TRANSACTIONS,
+      ],
+    });
+
+    return result;
   }
 
   /**
