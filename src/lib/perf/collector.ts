@@ -46,6 +46,7 @@ export interface TimedOperation {
 export class PerfCollector {
   private startTime: number;
   private route: string = '';
+  private cacheDriver: string = '';
   private cacheHits: number = 0;
   private cacheMisses: number = 0;
   private dbQueries: TimedOperation[] = [];
@@ -101,6 +102,15 @@ export class PerfCollector {
   }
 
   /**
+   * Set the cache driver being used
+   *
+   * @param driver - Cache driver name (e.g., 'memory', 'upstash', 'noop')
+   */
+  setCacheDriver(driver: string): void {
+    this.cacheDriver = driver;
+  }
+
+  /**
    * Mark the start of rendering phase
    */
   startRender(): void {
@@ -147,6 +157,13 @@ export class PerfCollector {
    */
   getRoute(): string {
     return this.route;
+  }
+
+  /**
+   * Get the cache driver name
+   */
+  getCacheDriver(): string {
+    return this.cacheDriver;
   }
 
   /**
@@ -245,10 +262,13 @@ export class PerfCollector {
 
     // Cache stats
     const cacheTotal = this.cacheHits + this.cacheMisses;
-    if (cacheTotal > 0) {
+    if (cacheTotal > 0 || this.cacheDriver) {
       const hitLabel = this.cacheHits === 1 ? 'hit' : 'hits';
       const missLabel = this.cacheMisses === 1 ? 'miss' : 'misses';
-      lines.push(`Cache: ${this.cacheHits} ${hitLabel}, ${this.cacheMisses} ${missLabel}`);
+      const driverSuffix = this.cacheDriver ? ` (${this.cacheDriver})` : '';
+      lines.push(
+        `Cache${driverSuffix}: ${this.cacheHits} ${hitLabel}, ${this.cacheMisses} ${missLabel}`
+      );
     }
 
     // DB queries
