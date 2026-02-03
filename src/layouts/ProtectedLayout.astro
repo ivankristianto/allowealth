@@ -35,6 +35,13 @@ import MainLayout from './MainLayout.astro';
 import TransactionModal from '@/components/organisms/TransactionModal.astro';
 import { categoryService, assetService, userMetaService } from '@/services';
 import { DEFAULT_USER_SETTINGS, type UserSettings } from '@/lib/constants/user-meta-keys';
+import { getCacheManager, CacheKeys, CacheTags } from '@/lib/cache';
+
+interface LayoutData {
+  categories: Array<{ id: string; name: string; type: string; currency?: string }>;
+  assets: Array<{ id: string; name: string; type: string }>;
+  userSettings: UserSettings;
+}
 
 interface Props {
   title?: string;
@@ -48,19 +55,63 @@ const { title = 'Finance Manager', currentPath = '/', subtitle } = Astro.props;
 const user = Astro.locals.user!;
 
 // Fetch categories, assets, and user settings for global transaction modal
+// Use cache to reduce database round-trips (saves ~400ms per page load)
 let categories: Array<{ id: string; name: string; type: string; currency?: string }> = [];
 let assets: Array<{ id: string; name: string; type: string }> = [];
 let userSettings: UserSettings = { ...DEFAULT_USER_SETTINGS };
 
+// Try to get from cache first (fail-silent: cache errors should never break the page)
+let cached: LayoutData | null = null;
+let cache: ReturnType<typeof getCacheManager> | null = null;
+let cacheKey: string | null = null;
+
 try {
-  [categories, assets, userSettings] = await Promise.all([
-    categoryService.findAll(user.workspaceId, { is_active: true }),
-    assetService.findAll(user.workspaceId),
-    userMetaService.getUserSettings(user.id),
-  ]);
-} catch (err) {
-  console.error('Error loading transaction form data:', err);
-  // Non-critical: modal won't have options but pages still work
+  cache = getCacheManager();
+  cacheKey = CacheKeys.layout(user.workspaceId, user.id);
+  cached = await cache.get<LayoutData>(cacheKey);
+} catch (cacheReadErr) {
+  console.warn('Cache read failed, falling back to database:', cacheReadErr);
+  // Continue to DB fetch path
+}
+
+if (cached) {
+  categories = cached.categories;
+  assets = cached.assets;
+  userSettings = cached.userSettings;
+} else {
+  try {
+    [categories, assets, userSettings] = await Promise.all([
+      categoryService.findAll(user.workspaceId, { is_active: true }),
+      assetService.findAll(user.workspaceId),
+      userMetaService.getUserSettings(user.id),
+    ]);
+    // Cache the results (60 seconds TTL) - fail-silent
+    try {
+      if (cache && cacheKey) {
+        await cache.set<LayoutData>(
+          cacheKey,
+          { categories, assets, userSettings },
+          {
+            ttl: 60,
+            tags: [
+              CacheTags.workspace(user.workspaceId),
+              CacheTags.user(user.id),
+              CacheTags.LAYOUT,
+              CacheTags.CATEGORIES,
+              CacheTags.ASSETS,
+              CacheTags.SETTINGS,
+            ],
+          }
+        );
+      }
+    } catch (cacheWriteErr) {
+      console.warn('Cache write failed:', cacheWriteErr);
+      // Non-critical: DB-fetched data is still returned
+    }
+  } catch (err) {
+    console.error('Error loading transaction form data:', err);
+    // Non-critical: modal won't have options but pages still work
+  }
 }
 
 // Make userSettings available to child pages via Astro.locals (frozen to prevent mutation)

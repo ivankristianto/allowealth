@@ -12,7 +12,7 @@
  */
 
 import type { MiddlewareHandler } from 'astro';
-import { auth, type User } from './lib/auth/lucia';
+import { auth, type User, type Session } from './lib/auth/lucia';
 import { logError } from './lib/utils/error-logger';
 import {
   generateCsrfToken,
@@ -24,6 +24,11 @@ import {
   isCsrfExempt,
 } from './lib/csrf';
 import { setRuntimeEnv } from './db/config';
+import { getCachedSession, cacheSession } from './lib/auth/session-cache';
+import { warmupDatabase } from './db';
+
+// Track if database has been warmed up (one-time operation per server start)
+let dbWarmedUp = false;
 
 /**
  * Session cookie name used by Lucia Auth
@@ -113,6 +118,25 @@ function generateNonce(): string {
 }
 
 /**
+ * Build Server-Timing header from timings object
+ * Server-Timing exposes server-side metrics to browser DevTools Network panel
+ * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Server-Timing
+ */
+function buildServerTimingHeader(timings: Record<string, number>): string {
+  return Object.entries(timings)
+    .map(([name, value]) => {
+      // Server-Timing format: metric;dur=value;desc="description"
+      // auth.source is a flag (1=cache, 0=db), not a duration
+      if (name === 'auth.source') {
+        const desc = value === 1 ? 'cache' : 'db';
+        return `${name.replace(/\./g, '-')};desc="${desc}"`;
+      }
+      return `${name.replace(/\./g, '-')};dur=${value.toFixed(2)}`;
+    })
+    .join(', ');
+}
+
+/**
  * Convert CSP headers object to CSP header string with nonce
  * @param nonce - The CSP nonce to allow for inline scripts (production only)
  */
@@ -131,6 +155,10 @@ function buildCSPHeader(nonce: string): string {
 }
 
 export const onRequest: MiddlewareHandler = async (context, next) => {
+  const requestStart = performance.now();
+  const pathname = context.url.pathname;
+  const timings: Record<string, number> = {};
+
   // Set runtime env for Cloudflare Workers (secrets are only available via request context)
   // This must happen before any database operations
   const runtime = (context.locals as any).runtime;
@@ -139,12 +167,20 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
     setRuntimeEnv(runtime.env);
   }
 
+  // Warm up database connection on first request (one-time operation)
+  // This avoids the ~3 second cold start penalty on first authenticated request
+  if (!dbWarmedUp) {
+    const warmupStart = performance.now();
+    await warmupDatabase();
+    dbWarmedUp = true;
+    timings['db.warmup'] = performance.now() - warmupStart;
+  }
+
   // Generate a fresh CSP nonce for each request
   const nonce = generateNonce();
   (context.locals as any).cspNonce = nonce;
 
   const sessionId = context.cookies.get(SESSION_COOKIE_NAME)?.value;
-  const pathname = context.url.pathname;
   const method = context.request.method;
 
   // Check if this is an API request that requires CSRF protection
@@ -203,11 +239,33 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
   }
 
   try {
-    // Validate session using Lucia
-    const { session, user: luciaUser } = await auth.validateSession(sessionId);
+    // Try to get session from cache first (saves ~400ms DB round trip)
+    const authStart = performance.now();
+    let session: Session | null = null;
+    let user: User | null = null;
+    let cacheHit = false;
 
-    // Cast to our custom User type which includes workspace fields
-    const user = luciaUser as User | null;
+    const cached = await getCachedSession(sessionId);
+    if (cached) {
+      session = cached.session;
+      user = cached.user;
+      cacheHit = true;
+      timings['auth.cacheHit'] = performance.now() - authStart;
+    } else {
+      // Cache miss - validate session with database
+      const dbStart = performance.now();
+      const result = await auth.validateSession(sessionId);
+      session = result.session;
+      user = result.user as User | null;
+      timings['auth.dbValidate'] = performance.now() - dbStart;
+
+      // Cache the validated session for future requests
+      if (session && user) {
+        await cacheSession(sessionId, session, user);
+      }
+    }
+    timings['auth.validateSession'] = performance.now() - authStart;
+    timings['auth.source'] = cacheHit ? 1 : 0; // 1 = cache, 0 = db
 
     // Check if user has been soft-deleted
     if (user?.deletedAt !== null && user?.deletedAt !== undefined) {
@@ -259,7 +317,17 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
     }
 
     // Apply security headers to response
+    const nextStart = performance.now();
     const response = await next();
+    timings['page.render'] = performance.now() - nextStart;
+    timings['total'] = performance.now() - requestStart;
+
+    // Expose server-side performance metrics via Server-Timing header
+    // Viewable in browser DevTools Network panel under "Timing" tab
+    // Enable with PERF_DEBUG=true environment variable
+    if (import.meta.env.PERF_DEBUG === 'true' && Object.keys(timings).length > 0) {
+      response.headers.set('Server-Timing', buildServerTimingHeader(timings));
+    }
 
     // Add Content Security Policy headers for XSS prevention with nonce
     response.headers.set('Content-Security-Policy', buildCSPHeader(nonce));

@@ -23,7 +23,7 @@
 import { createRequire } from 'node:module';
 import { getDatabaseConfig } from './config';
 import { detectRuntime, type DatabaseDriver } from './driver';
-import { createPostgresDatabase, closePostgres } from './drivers/postgres';
+import { createPostgresDatabase, closePostgres, warmupPostgres } from './drivers/postgres';
 import { createNodeDriver } from './drivers/node';
 import type { BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
@@ -327,6 +327,48 @@ export async function closeDatabase(): Promise<void> {
     dbInstance = null;
   } finally {
     isClosing = false;
+  }
+}
+
+/**
+ * Warm up the database connection
+ *
+ * Call this at server startup to establish database connections
+ * before any requests arrive. This avoids the cold start penalty
+ * on the first request (~3 seconds for PostgreSQL connection establishment).
+ *
+ * For non-edge environments only (Node.js/Bun).
+ *
+ * @returns Promise that resolves when warm-up is complete
+ */
+export async function warmupDatabase(): Promise<void> {
+  // Skip warm-up in edge environments (connections are per-request)
+  if (isEdgeRuntime()) {
+    return;
+  }
+
+  const config = getDatabaseConfig();
+  const startTime = performance.now();
+
+  try {
+    // Get database instance (creates connection if needed)
+    getDb();
+
+    // Execute a simple query to ensure the connection is fully established
+    // This forces the TCP connection, SSL handshake, and authentication to complete
+    if (config.dialect === 'postgresql') {
+      await warmupPostgres();
+    }
+
+    const duration = performance.now() - startTime;
+    // Only log in development mode
+    if (import.meta.env.DEV) {
+      console.warn(`[DB] Connection warmed up in ${duration.toFixed(0)}ms`);
+    }
+  } catch (error) {
+    const duration = performance.now() - startTime;
+    console.error(`[DB] Warm-up failed after ${duration.toFixed(0)}ms:`, error);
+    // Don't throw - let the server start anyway and fail on first real request
   }
 }
 

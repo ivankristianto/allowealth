@@ -9,6 +9,7 @@ import {
 } from '@/lib/api-utils';
 import { createCategoryAPISchema } from '@/lib/validation';
 import { logError } from '@/lib/utils';
+import { getCacheManager, CacheTags } from '@/lib/cache';
 
 /**
  * GET /api/categories
@@ -66,6 +67,18 @@ export const POST: APIRoute = async (context) => {
       created_by_user_id: auth.userId,
       ...validation.data,
     });
+
+    // Invalidate layout cache since categories changed (best-effort)
+    try {
+      const cache = getCacheManager();
+      await cache.invalidateByTags([
+        CacheTags.workspace(auth.workspaceId),
+        CacheTags.CATEGORIES,
+        CacheTags.LAYOUT,
+      ]);
+    } catch (cacheError) {
+      logError(`Cache invalidation failed for workspace ${auth.workspaceId}`, cacheError);
+    }
 
     return successResponse(category, 201);
   } catch (error) {

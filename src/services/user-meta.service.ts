@@ -34,6 +34,7 @@ import {
   DEFAULT_USER_SETTINGS,
 } from '@/lib/constants/user-meta-keys';
 import { UserMetaServiceError, ServiceErrorCode } from './service-errors';
+import { getCacheManager, CacheKeys, CacheTags } from '@/lib/cache';
 
 /**
  * User Meta Service
@@ -163,6 +164,10 @@ export class UserMetaService {
           updated_at: new Date(),
         },
       });
+
+    // Invalidate settings cache
+    const cache = getCacheManager();
+    await cache.invalidateByTags([CacheTags.user(userId), CacheTags.SETTINGS]);
   }
 
   /**
@@ -202,6 +207,10 @@ export class UserMetaService {
     await this.db
       .delete(this.schema.userMeta)
       .where(and(eq(this.schema.userMeta.user_id, userId), eq(this.schema.userMeta.meta_key, key)));
+
+    // Invalidate settings cache
+    const cache = getCacheManager();
+    await cache.invalidateByTags([CacheTags.user(userId), CacheTags.SETTINGS]);
   }
 
   // ============================================================================
@@ -261,9 +270,19 @@ export class UserMetaService {
    * @returns UserSettings object with all preferences
    */
   async getUserSettings(userId: string): Promise<UserSettings> {
+    const cache = getCacheManager();
+    const cacheKey = CacheKeys.settings(userId);
+
+    // Try cache first
+    const cached = await cache.get<UserSettings>(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
+    // Cache miss - fetch from database
     const metaAll = await this.getUserMetaAll(userId);
 
-    return {
+    const result: UserSettings = {
       showConvertedTotals: metaValueToBoolean(
         metaAll[USER_META_KEYS.SHOW_CONVERTED_TOTALS],
         DEFAULT_USER_SETTINGS.showConvertedTotals
@@ -275,6 +294,14 @@ export class UserMetaService {
       phone: metaAll[USER_META_KEYS.PHONE] || DEFAULT_USER_SETTINGS.phone,
       bio: metaAll[USER_META_KEYS.BIO] || DEFAULT_USER_SETTINGS.bio,
     };
+
+    // Cache the result
+    await cache.set(cacheKey, result, {
+      ttl: 3600,
+      tags: [CacheTags.user(userId), CacheTags.SETTINGS],
+    });
+
+    return result;
   }
 
   // ============================================================================

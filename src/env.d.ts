@@ -22,6 +22,15 @@ declare global {
   interface ImportMetaEnv {
     /** Base URL for API endpoints (default: /api) */
     readonly PUBLIC_API_URL?: string;
+
+    // Cache configuration
+    readonly CACHE_DRIVER?: 'upstash' | 'memory' | 'none';
+    readonly UPSTASH_REDIS_REST_URL?: string;
+    readonly UPSTASH_REDIS_REST_TOKEN?: string;
+
+    // Performance debugging
+    /** Enable Server-Timing header for performance metrics (default: false) */
+    readonly PERF_DEBUG?: string;
   }
 
   interface ImportMeta {

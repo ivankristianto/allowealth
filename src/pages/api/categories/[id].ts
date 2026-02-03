@@ -9,6 +9,7 @@ import {
 } from '@/lib/api-utils';
 import { updateCategoryAPISchema } from '@/lib/validation';
 import { logError } from '@/lib/utils';
+import { getCacheManager, CacheTags } from '@/lib/cache';
 
 /**
  * GET /api/categories/:id
@@ -72,6 +73,21 @@ export const PUT: APIRoute = async (context) => {
       return errorResponse('Category not found', 404);
     }
 
+    // Invalidate layout cache since categories changed (best-effort)
+    try {
+      const cache = getCacheManager();
+      await cache.invalidateByTags([
+        CacheTags.workspace(auth.workspaceId),
+        CacheTags.CATEGORIES,
+        CacheTags.LAYOUT,
+      ]);
+    } catch (cacheError) {
+      logError(
+        `Cache invalidation failed for workspace ${auth.workspaceId}, category ${id}`,
+        cacheError
+      );
+    }
+
     return successResponse(category);
   } catch (error) {
     if (error instanceof Error && error.message === 'Unauthorized') {
@@ -96,6 +112,21 @@ export const DELETE: APIRoute = async (context) => {
     }
 
     await categoryService.delete(id, auth.workspaceId);
+
+    // Invalidate layout cache since categories changed (best-effort)
+    try {
+      const cache = getCacheManager();
+      await cache.invalidateByTags([
+        CacheTags.workspace(auth.workspaceId),
+        CacheTags.CATEGORIES,
+        CacheTags.LAYOUT,
+      ]);
+    } catch (cacheError) {
+      logError(
+        `Cache invalidation failed for workspace ${auth.workspaceId}, category ${id}`,
+        cacheError
+      );
+    }
 
     return successResponse({ message: 'Category deleted successfully' });
   } catch (error) {
