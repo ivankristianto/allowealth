@@ -52,25 +52,16 @@ if (isProduction && !allowSeed) {
 // CONFIGURATION
 // ============================================================================
 
-// Pre-computed Argon2id hash for 'demo123456789' to speed up E2E tests
-// Uses lighter parameters (4MB memory, 1 iteration) for fast verification
-// This avoids expensive password hashing during test database seeding and login
-const PRECOMPUTED_DEMO_PASSWORD_HASH =
-  '$argon2id$v=19$m=4096,t=1,p=1$5Uhn8liMmbcIV/5rYKx+lg$1M3uPJzRTbwMpl4fwXXs4bm6m8enLdSCoIMf5EeLNMc';
-
-// Detect E2E mode by checking DATABASE_URL
-const isE2EMode = process.env.DATABASE_URL?.includes('.e2e.db') ?? false;
-
 const DEMO_ADMIN = {
   email: 'demo@example.com',
-  password: 'demo123456789', // Must be at least 12 chars for Argon2id
+  password: 'demo123456789', // Must be at least 12 chars
   name: 'Demo User',
   role: 'admin' as const,
 };
 
 const DEMO_MEMBER = {
   email: 'member@example.com',
-  password: 'demo123456789', // Must be at least 12 chars for Argon2id
+  password: 'demo123456789', // Must be at least 12 chars
   name: 'Demo Member',
   role: 'member' as const,
 };
@@ -655,10 +646,7 @@ async function seedUsers(workspaceId: string): Promise<string> {
 
   // Create admin user
   const adminUserId = nanoid();
-  // Use pre-computed hash in E2E mode to speed up seeding
-  const adminPasswordHash = isE2EMode
-    ? PRECOMPUTED_DEMO_PASSWORD_HASH
-    : await hashPassword(DEMO_ADMIN.password);
+  const adminPasswordHash = await hashPassword(DEMO_ADMIN.password);
 
   await db.insert(users).values({
     id: adminUserId,
@@ -693,10 +681,7 @@ async function seedUsers(workspaceId: string): Promise<string> {
 
   // Create member user
   const memberUserId = nanoid();
-  // Use pre-computed hash in E2E mode to speed up seeding
-  const memberPasswordHash = isE2EMode
-    ? PRECOMPUTED_DEMO_PASSWORD_HASH
-    : await hashPassword(DEMO_MEMBER.password);
+  const memberPasswordHash = await hashPassword(DEMO_MEMBER.password);
 
   await db.insert(users).values({
     id: memberUserId,
