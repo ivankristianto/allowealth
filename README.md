@@ -328,3 +328,149 @@ E2E tests run automatically on:
 - Manual workflow dispatch
 
 See `.github/workflows/e2e-tests.yml` for the full CI configuration.
+
+## Deployment
+
+The application supports deployment to multiple platforms without vendor lock-in. Local development uses SQLite, while production deployments use Supabase PostgreSQL.
+
+### Supported Platforms
+
+| Platform   | Use Case                  | Adapter               |
+| ---------- | ------------------------- | --------------------- |
+| Node       | Traditional hosting (VPS) | `@astrojs/node`       |
+| Cloudflare | Workers/Pages (Edge)      | `@astrojs/cloudflare` |
+| Vercel     | Serverless                | `@astrojs/vercel`     |
+| Netlify    | Functions                 | `@astrojs/netlify`    |
+
+### Prerequisites
+
+Before deploying to any platform, you need:
+
+1. **Supabase Project** with PostgreSQL database
+2. **Database URL** (use the pooler connection string for serverless platforms)
+3. **Platform adapter** installed: `bun add -d @astrojs/[platform]`
+
+### Environment Variables
+
+All platforms require these environment variables:
+
+```bash
+DATABASE_URL=postgresql://postgres.xxx:password@aws-0-region.pooler.supabase.com:6543/postgres
+NODE_ENV=production
+```
+
+**Important:** For serverless platforms (Cloudflare, Vercel, Netlify), always use the Supabase **pooler URL** (port 6543), not the direct connection.
+
+### Platform-Specific Deployment
+
+#### 1. Node (Traditional Hosting)
+
+Deploy to any VPS or cloud provider that supports Node.js.
+
+```bash
+# Install adapter
+bun add -d @astrojs/node
+
+# Build for Node
+bun run build:node
+
+# Start server
+node dist/server/entry.mjs
+```
+
+**Production server:**
+
+```bash
+# Using PM2 or similar process manager
+pm2 start dist/server/entry.mjs --name expenses
+```
+
+#### 2. Cloudflare Workers/Pages
+
+Deploy to Cloudflare's edge network.
+
+```bash
+# Install adapter and Wrangler CLI
+bun add -d @astrojs/cloudflare
+bun add -d wrangler
+
+# Set database URL secret
+wrangler secret put DATABASE_URL
+
+# Build and deploy
+bun run deploy:cloudflare
+```
+
+**Configuration:** `wrangler.toml` is already included in the project.
+
+#### 3. Vercel
+
+Deploy to Vercel's serverless platform.
+
+```bash
+# Install adapter and Vercel CLI
+bun add -d @astrojs/vercel
+npm install -g vercel
+
+# Add environment variables in Vercel dashboard
+# or via CLI: vercel env add DATABASE_URL
+
+# Build and deploy
+bun run deploy:vercel
+```
+
+**Configuration:** `vercel.json` is already included in the project.
+
+#### 4. Netlify
+
+Deploy to Netlify Functions.
+
+```bash
+# Install adapter and Netlify CLI
+bun add -d @astrojs/netlify
+npm install -g netlify-cli
+
+# Add environment variables in Netlify dashboard
+# or via CLI: netlify env:set DATABASE_URL "postgresql://..."
+
+# Build and deploy
+bun run deploy:netlify
+```
+
+**Configuration:** `netlify.toml` is already included in the project.
+
+### First Deployment Checklist
+
+After deploying to your chosen platform, complete these steps:
+
+```bash
+# 1. Run database migrations
+DATABASE_URL="postgresql://..." bun run db:push
+
+# 2. Create workspace and admin user
+DATABASE_URL="postgresql://..." bun run cli:create-workspace -- \
+  --name "My Family" \
+  --currency IDR \
+  --week-start monday
+
+# 3. Follow the CLI output to get admin credentials
+
+# 4. Log in and start using the application
+```
+
+**Important Notes:**
+
+- The seeder is **disabled in production** by default (safe by default)
+- Use the CLI to create your first workspace and admin user
+- Invite additional family members through the application after logging in
+- Never commit `.env` files with production credentials
+
+### Testing Production Database Locally
+
+You can test with the production database locally:
+
+```bash
+DATABASE_URL="postgresql://..." bun run dev
+```
+
+This is useful for debugging production-specific issues without deploying.
