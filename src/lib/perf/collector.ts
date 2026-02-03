@@ -228,6 +228,22 @@ export class PerfCollector {
   }
 
   /**
+   * Sanitize a string for safe inclusion in an HTML comment.
+   * Prevents comment-breaking sequences like "-->" or "--" from
+   * prematurely closing the comment or injecting markup.
+   *
+   * @param value - The untrusted string to sanitize
+   * @returns A sanitized string safe for HTML comment inclusion
+   */
+  private sanitizeCommentField(value: string): string {
+    return value
+      .replace(/-->/g, '==>') // Prevent comment close
+      .replace(/--/g, '- -') // Break double-dash sequences
+      .replace(/</g, '&lt;') // Prevent tag injection
+      .replace(/>/g, '&gt;'); // Prevent any remaining close sequences
+  }
+
+  /**
    * Generate an HTML comment with all collected performance metrics
    *
    * Output format:
@@ -255,23 +271,25 @@ export class PerfCollector {
     lines.push('');
     lines.push(`[PERF DEBUG] ${this.formatTimestamp()}`);
 
-    // Route
+    // Route (sanitized - comes from URL pathname)
     if (this.route) {
-      lines.push(`Route: ${this.route}`);
+      lines.push(`Route: ${this.sanitizeCommentField(this.route)}`);
     }
 
-    // Cache stats
+    // Cache stats (driver name sanitized - comes from config)
     const cacheTotal = this.cacheHits + this.cacheMisses;
     if (cacheTotal > 0 || this.cacheDriver) {
       const hitLabel = this.cacheHits === 1 ? 'hit' : 'hits';
       const missLabel = this.cacheMisses === 1 ? 'miss' : 'misses';
-      const driverSuffix = this.cacheDriver ? ` (${this.cacheDriver})` : '';
+      const driverSuffix = this.cacheDriver
+        ? ` (${this.sanitizeCommentField(this.cacheDriver)})`
+        : '';
       lines.push(
         `Cache${driverSuffix}: ${this.cacheHits} ${hitLabel}, ${this.cacheMisses} ${missLabel}`
       );
     }
 
-    // DB queries
+    // DB queries (names sanitized - come from service code)
     if (this.dbQueries.length > 0) {
       const totalDbTime = this.getTotalDbTime();
       const queryLabel = this.dbQueries.length === 1 ? 'query' : 'queries';
@@ -279,14 +297,16 @@ export class PerfCollector {
         `DB: ${this.dbQueries.length} ${queryLabel} in ${this.formatDuration(totalDbTime)}`
       );
       for (const query of this.dbQueries) {
-        lines.push(`  - ${query.name}: ${this.formatDuration(query.durationMs)}`);
+        lines.push(
+          `  - ${this.sanitizeCommentField(query.name)}: ${this.formatDuration(query.durationMs)}`
+        );
       }
     }
 
-    // Services
+    // Services (names sanitized - come from service code)
     if (this.services.length > 0) {
       const serviceParts = this.services.map(
-        (s) => `${s.name} ${this.formatDuration(s.durationMs)}`
+        (s) => `${this.sanitizeCommentField(s.name)} ${this.formatDuration(s.durationMs)}`
       );
       lines.push(`Services: ${serviceParts.join(', ')}`);
     }

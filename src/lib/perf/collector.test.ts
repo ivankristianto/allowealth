@@ -277,5 +277,32 @@ describe('PerfCollector', () => {
       expect(output).toContain('Memory:');
       expect(output).toContain('Total:');
     });
+
+    test('sanitizes comment-breaking sequences in untrusted fields', () => {
+      // Inject malicious values that could break HTML comments
+      perf.setRoute('/test-->injection<script>');
+      perf.setCacheDriver('evil--driver');
+      perf.recordDbQuery('query-->name', 5);
+      perf.recordService('service--<name>', 10);
+
+      const output = perf.toHtmlComment();
+
+      // Should not contain unescaped comment-breaking sequences
+      expect(output).not.toContain('-->injection');
+      expect(output).not.toContain('<script>');
+      expect(output).not.toContain('evil--driver');
+      expect(output).not.toContain('query-->name');
+      expect(output).not.toContain('service--<name>');
+
+      // Should contain sanitized versions
+      expect(output).toContain('Route: /test==&gt;injection&lt;script&gt;');
+      expect(output).toContain('(evil- -driver)');
+      expect(output).toContain('query==&gt;name');
+      expect(output).toContain('service- -&lt;name&gt;');
+
+      // Comment structure should still be valid
+      expect(output).toMatch(/^<!--\n/);
+      expect(output).toMatch(/\n-->$/);
+    });
   });
 });
