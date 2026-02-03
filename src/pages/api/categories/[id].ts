@@ -18,13 +18,14 @@ import { getCacheManager, CacheTags } from '@/lib/cache';
 export const GET: APIRoute = async (context) => {
   try {
     const auth = getAuthenticatedUser(context);
+    const perf = context.locals.perf;
     const { id } = context.params;
 
     if (!id) {
       return errorResponse('Category ID is required', 400);
     }
 
-    const category = await categoryService.findById(id, auth.workspaceId);
+    const category = await categoryService.findById(id, auth.workspaceId, perf);
 
     if (!category) {
       return errorResponse('Category not found', 404);
@@ -47,6 +48,7 @@ export const GET: APIRoute = async (context) => {
 export const PUT: APIRoute = async (context) => {
   try {
     const auth = getAuthenticatedUser(context);
+    const perf = context.locals.perf;
     const { id } = context.params;
 
     if (!id) {
@@ -61,13 +63,18 @@ export const PUT: APIRoute = async (context) => {
 
     // Check if name is being updated and if it conflicts
     if (validation.data.name) {
-      const exists = await categoryService.existsByName(validation.data.name, auth.workspaceId, id);
+      const exists = await categoryService.existsByName(
+        validation.data.name,
+        auth.workspaceId,
+        id,
+        perf
+      );
       if (exists) {
         return errorResponse('Category with this name already exists', 409, 'DUPLICATE_NAME');
       }
     }
 
-    const category = await categoryService.update(id, auth.workspaceId, validation.data);
+    const category = await categoryService.update(id, auth.workspaceId, validation.data, perf);
 
     if (!category) {
       return errorResponse('Category not found', 404);
@@ -105,13 +112,14 @@ export const PUT: APIRoute = async (context) => {
 export const DELETE: APIRoute = async (context) => {
   try {
     const auth = getAuthenticatedUser(context);
+    const perf = context.locals.perf;
     const { id } = context.params;
 
     if (!id) {
       return errorResponse('Category ID is required', 400);
     }
 
-    await categoryService.delete(id, auth.workspaceId);
+    await categoryService.delete(id, auth.workspaceId, perf);
 
     // Invalidate layout cache since categories changed (best-effort)
     try {
