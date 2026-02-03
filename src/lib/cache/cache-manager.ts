@@ -6,6 +6,7 @@
  */
 
 import type { CacheDriver, CacheSetOptions, CacheConfig } from './types';
+import type { PerfCollector } from '@/lib/perf';
 import { UpstashDriver } from './drivers/upstash';
 import { MemoryDriver } from './drivers/memory';
 import { NoopDriver } from './drivers/noop';
@@ -42,8 +43,19 @@ export class CacheManager {
     }
   }
 
-  async get<T>(key: string): Promise<T | null> {
-    return this.driver.get<T>(key);
+  async get<T>(key: string, perf?: PerfCollector): Promise<T | null> {
+    try {
+      const result = await this.driver.get<T>(key);
+      if (result !== null) {
+        perf?.cacheHit();
+      } else {
+        perf?.cacheMiss();
+      }
+      return result;
+    } catch {
+      perf?.cacheMiss();
+      return null;
+    }
   }
 
   async set<T>(key: string, value: T, options?: CacheSetOptions): Promise<void> {

@@ -343,7 +343,7 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
     let user: User | null = null;
     let cacheHit = false;
 
-    const cached = await getCachedSession(sessionId);
+    const cached = await getCachedSession(sessionId, context.locals.perf);
     if (cached) {
       session = cached.session;
       user = cached.user;

@@ -6,6 +6,7 @@
  */
 
 import type { User, Session } from './lucia';
+import type { PerfCollector } from '@/lib/perf';
 import { getCacheManager, CacheKeys, CacheTags } from '@/lib/cache';
 
 // Cache TTL in seconds (5 minutes)
@@ -20,12 +21,13 @@ interface CachedSessionData {
  * Get a cached session if it exists and hasn't expired
  */
 export async function getCachedSession(
-  sessionId: string
+  sessionId: string,
+  perf?: PerfCollector
 ): Promise<{ session: Session; user: User } | null> {
   const cache = getCacheManager();
   const cacheKey = CacheKeys.session(sessionId);
 
-  const cached = await cache.get<CachedSessionData>(cacheKey);
+  const cached = await cache.get<CachedSessionData>(cacheKey, perf);
   if (!cached) {
     return null;
   }
