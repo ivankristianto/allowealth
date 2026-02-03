@@ -287,7 +287,7 @@ describe('helpers', () => {
 
       const output = perf.toHtmlComment();
       expect(output).toContain('Route: /test');
-      expect(output).toContain('DB: 1 queries');
+      expect(output).toContain('DB: 1 query');
       expect(output).toContain('Services: TestService');
     });
   });

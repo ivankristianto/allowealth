@@ -18,7 +18,7 @@
 /**
  * Represents a single timed operation
  */
-interface TimedOperation {
+export interface TimedOperation {
   name: string;
   durationMs: number;
 }
@@ -246,13 +246,18 @@ export class PerfCollector {
     // Cache stats
     const cacheTotal = this.cacheHits + this.cacheMisses;
     if (cacheTotal > 0) {
-      lines.push(`Cache: ${this.cacheHits} hits, ${this.cacheMisses} miss`);
+      const hitLabel = this.cacheHits === 1 ? 'hit' : 'hits';
+      const missLabel = this.cacheMisses === 1 ? 'miss' : 'misses';
+      lines.push(`Cache: ${this.cacheHits} ${hitLabel}, ${this.cacheMisses} ${missLabel}`);
     }
 
     // DB queries
     if (this.dbQueries.length > 0) {
       const totalDbTime = this.getTotalDbTime();
-      lines.push(`DB: ${this.dbQueries.length} queries in ${this.formatDuration(totalDbTime)}`);
+      const queryLabel = this.dbQueries.length === 1 ? 'query' : 'queries';
+      lines.push(
+        `DB: ${this.dbQueries.length} ${queryLabel} in ${this.formatDuration(totalDbTime)}`
+      );
       for (const query of this.dbQueries) {
         lines.push(`  - ${query.name}: ${this.formatDuration(query.durationMs)}`);
       }
