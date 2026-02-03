@@ -118,6 +118,25 @@ function generateNonce(): string {
 }
 
 /**
+ * Build Server-Timing header from timings object
+ * Server-Timing exposes server-side metrics to browser DevTools Network panel
+ * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Server-Timing
+ */
+function buildServerTimingHeader(timings: Record<string, number>): string {
+  return Object.entries(timings)
+    .map(([name, value]) => {
+      // Server-Timing format: metric;dur=value;desc="description"
+      // auth.source is a flag (1=cache, 0=db), not a duration
+      if (name === 'auth.source') {
+        const desc = value === 1 ? 'cache' : 'db';
+        return `${name.replace(/\./g, '-')};desc="${desc}"`;
+      }
+      return `${name.replace(/\./g, '-')};dur=${value.toFixed(2)}`;
+    })
+    .join(', ');
+}
+
+/**
  * Convert CSP headers object to CSP header string with nonce
  * @param nonce - The CSP nonce to allow for inline scripts (production only)
  */
@@ -303,9 +322,10 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
     timings['page.render'] = performance.now() - nextStart;
     timings['total'] = performance.now() - requestStart;
 
-    // Log timing diagnostics in development mode only (using warn to avoid lint error)
-    if (import.meta.env.DEV && Object.keys(timings).length > 0) {
-      console.warn(`[PERF] ${pathname}:`, JSON.stringify(timings));
+    // Expose server-side performance metrics via Server-Timing header
+    // Viewable in browser DevTools Network panel under "Timing" tab
+    if (Object.keys(timings).length > 0) {
+      response.headers.set('Server-Timing', buildServerTimingHeader(timings));
     }
 
     // Add Content Security Policy headers for XSS prevention with nonce
