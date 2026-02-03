@@ -23,15 +23,15 @@
 import { createRequire } from 'node:module';
 import { getDatabaseConfig } from './config';
 import { detectRuntime, type DatabaseDriver } from './driver';
-// Use dynamic imports for SQLite drivers to prevent bundling in edge environments
-// The Bun and Node drivers are only loaded when actually needed at runtime
 import { createPostgresDatabase, closePostgres } from './drivers/postgres';
+import { createNodeDriver } from './drivers/node';
 import type { BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 
 // Import schemas for type inference (SQLite schema is structurally compatible)
 import * as sqliteSchema from './schema/sqlite';
+import * as pgSchema from './schema/postgresql';
 
 // Re-export schema (uses SQLite schema for types, runtime selects correct dialect)
 export * from './schema';
@@ -194,9 +194,8 @@ function createDatabase(): Database {
   const dynamicRequire = getRequire();
 
   try {
-    // PostgreSQL path - can be sync since no dynamic imports needed
+    // PostgreSQL path
     if (config.dialect === 'postgresql') {
-      const pgSchema = dynamicRequire('./schema/postgresql');
       return createPostgresDatabase(config.url, pgSchema) as unknown as Database;
     }
 
@@ -205,19 +204,22 @@ function createDatabase(): Database {
     // For edge environments (Cloudflare Workers), configure DATABASE_URL to use PostgreSQL
     const runtime = detectRuntime();
 
-    // Use require for sync loading in SQLite path (Bun/Node.js only)
-    const driver =
-      runtime === 'bun'
-        ? dynamicRequire('./drivers/bun').createBunDriver(config.url)
-        : dynamicRequire('./drivers/node').createNodeDriver(config.url);
+    // Use static imports for local drivers, dynamic require only for npm packages
+    let driver: DatabaseDriver & { _raw: unknown };
+    let drizzle: (db: unknown, config: { schema: typeof sqliteSchema }) => Database;
+
+    if (runtime === 'bun') {
+      // Bun runtime: use bun:sqlite driver
+      const { createBunDriver } = dynamicRequire('./drivers/bun');
+      driver = createBunDriver(config.url);
+      drizzle = dynamicRequire('drizzle-orm/bun-sqlite').drizzle;
+    } else {
+      // Node.js runtime: use better-sqlite3 driver (static import)
+      driver = createNodeDriver(config.url);
+      drizzle = dynamicRequire('drizzle-orm/better-sqlite3').drizzle;
+    }
 
     applyPragmas(driver);
-
-    const { drizzle } =
-      runtime === 'bun'
-        ? dynamicRequire('drizzle-orm/bun-sqlite')
-        : dynamicRequire('drizzle-orm/better-sqlite3');
-
     return drizzle(driver._raw, { schema: sqliteSchema });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
