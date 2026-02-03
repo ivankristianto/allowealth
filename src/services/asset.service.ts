@@ -135,7 +135,7 @@ export class AssetService {
 
     const result = await this.db.query.assets.findMany({
       where: and(...conditions),
-      orderBy: (assets: any, { asc }: any) => [asc(this.schema.assets.name)],
+      orderBy: (_assets: any, { asc }: any) => [asc(this.schema.assets.name)],
     });
 
     return result;
