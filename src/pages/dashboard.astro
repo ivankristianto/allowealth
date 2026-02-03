@@ -31,6 +31,7 @@ import type { CashFlowEntry, CashFlowIconName } from '@/lib/cash-flow';
 
 const currentPath = '/dashboard';
 const user = Astro.locals.user;
+const perf = Astro.locals.perf;
 
 // TODO: Get workspace currency from workspace settings
 // For now, use IDR as default since currency is now workspace-scoped
@@ -55,7 +56,8 @@ try {
     user.workspaceId,
     currentMonth,
     currentYear,
-    primaryCurrency
+    primaryCurrency,
+    perf
   );
 } catch (err) {
   console.error('Error loading dashboard data:', err);
@@ -108,12 +110,14 @@ const recentTransactions: TransactionOutput[] =
     },
   })) || [];
 
-const formatCashFlowDate = (date: Date): string =>
-  date.toLocaleDateString('en-US', {
+const formatCashFlowDate = (date: Date | string): string => {
+  const d = typeof date === 'string' ? new Date(date) : date;
+  return d.toLocaleDateString('en-US', {
     month: 'short',
     day: '2-digit',
     year: 'numeric',
   });
+};
 
 // Safe parseFloat helper to prevent NaN propagation
 const safeParseFloat = (value: string | undefined | null): number => {

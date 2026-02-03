@@ -6,6 +6,7 @@
  */
 
 import type { CacheDriver, CacheSetOptions, CacheConfig } from './types';
+import type { PerfCollector } from '@/lib/perf';
 import { UpstashDriver } from './drivers/upstash';
 import { MemoryDriver } from './drivers/memory';
 import { NoopDriver } from './drivers/noop';
@@ -14,12 +15,15 @@ let instance: CacheManager | null = null;
 
 export class CacheManager {
   private driver: CacheDriver;
+  private driverName: string;
 
   constructor(config: CacheConfig) {
-    this.driver = this.createDriver(config);
+    const { driver, name } = this.createDriver(config);
+    this.driver = driver;
+    this.driverName = name;
   }
 
-  private createDriver(config: CacheConfig): CacheDriver {
+  private createDriver(config: CacheConfig): { driver: CacheDriver; name: string } {
     switch (config.driver) {
       case 'upstash': {
         const url = config.upstash?.url;
@@ -27,23 +31,39 @@ export class CacheManager {
 
         if (!url || !token) {
           console.warn('[Cache] Upstash credentials missing, falling back to memory driver');
-          return new MemoryDriver(config.defaultTtl);
+          return { driver: new MemoryDriver(config.defaultTtl), name: 'memory' };
         }
 
-        return new UpstashDriver(url, token, config.defaultTtl);
+        return { driver: new UpstashDriver(url, token, config.defaultTtl), name: 'upstash' };
       }
 
       case 'memory':
-        return new MemoryDriver(config.defaultTtl);
+        return { driver: new MemoryDriver(config.defaultTtl), name: 'memory' };
 
       case 'none':
       default:
-        return new NoopDriver();
+        return { driver: new NoopDriver(), name: 'noop' };
     }
   }
 
-  async get<T>(key: string): Promise<T | null> {
-    return this.driver.get<T>(key);
+  getDriverName(): string {
+    return this.driverName;
+  }
+
+  async get<T>(key: string, perf?: PerfCollector): Promise<T | null> {
+    try {
+      perf?.setCacheDriver(this.driverName);
+      const result = await this.driver.get<T>(key);
+      if (result !== null) {
+        perf?.cacheHit();
+      } else {
+        perf?.cacheMiss();
+      }
+      return result;
+    } catch {
+      perf?.cacheMiss();
+      return null;
+    }
   }
 
   async set<T>(key: string, value: T, options?: CacheSetOptions): Promise<void> {

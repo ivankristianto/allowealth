@@ -8,6 +8,7 @@ import {
   type UpdateCategoryInput,
 } from '@/lib/validation/categories';
 import { CategoryServiceError, ServiceErrorCode } from './service-errors';
+import { type PerfCollector, trackQuery } from '@/lib/perf';
 
 export { type CreateCategoryInput, type UpdateCategoryInput };
 
@@ -23,42 +24,53 @@ export class CategoryService {
   /**
    * Create a new category
    * Note: Budget-related fields are now managed via the budgets table
+   *
+   * @param input - Category creation input
+   * @param perf - Optional performance collector for timing metrics
    */
-  async create(input: CreateCategoryInput) {
+  async create(input: CreateCategoryInput, perf?: PerfCollector) {
     // Validate input using Zod schema
     const validated = createCategorySchema.parse(input);
 
     const id = nanoid();
 
-    const [category] = await this.db
-      .insert(this.schema.categories)
-      .values({
-        id,
-        workspace_id: validated.workspace_id,
-        created_by_user_id: validated.created_by_user_id,
-        name: validated.name,
-        type: validated.type,
-        description: validated.description,
-        icon: validated.icon,
-        color: validated.color,
-        is_active: true,
-        created_at: new Date(),
-        updated_at: new Date(),
-      })
-      .returning();
+    const [category] = await trackQuery('CategoryService.create', perf, async () => {
+      return this.db
+        .insert(this.schema.categories)
+        .values({
+          id,
+          workspace_id: validated.workspace_id,
+          created_by_user_id: validated.created_by_user_id,
+          name: validated.name,
+          type: validated.type,
+          description: validated.description,
+          icon: validated.icon,
+          color: validated.color,
+          is_active: true,
+          created_at: new Date(),
+          updated_at: new Date(),
+        })
+        .returning();
+    });
 
     return category;
   }
 
   /**
    * Find category by ID
+   *
+   * @param id - Category ID
+   * @param workspaceId - Workspace ID
+   * @param perf - Optional performance collector for timing metrics
    */
-  async findById(id: string, workspaceId: string) {
-    const result = await this.db.query.categories.findFirst({
-      where: and(
-        eq(this.schema.categories.id, id),
-        eq(this.schema.categories.workspace_id, workspaceId)
-      ),
+  async findById(id: string, workspaceId: string, perf?: PerfCollector) {
+    const result = await trackQuery('CategoryService.findById', perf, async () => {
+      return this.db.query.categories.findFirst({
+        where: and(
+          eq(this.schema.categories.id, id),
+          eq(this.schema.categories.workspace_id, workspaceId)
+        ),
+      });
     });
 
     return result;
@@ -66,10 +78,15 @@ export class CategoryService {
 
   /**
    * Find all categories for a workspace
+   *
+   * @param workspaceId - Workspace ID
+   * @param filters - Optional filters for type and active status
+   * @param perf - Optional performance collector for timing metrics
    */
   async findAll(
     workspaceId: string,
-    filters?: { type?: 'expense' | 'income'; is_active?: boolean }
+    filters?: { type?: 'expense' | 'income'; is_active?: boolean },
+    perf?: PerfCollector
   ) {
     const conditions = [eq(this.schema.categories.workspace_id, workspaceId)];
 
@@ -81,9 +98,11 @@ export class CategoryService {
       conditions.push(eq(this.schema.categories.is_active, filters.is_active));
     }
 
-    const result = await this.db.query.categories.findMany({
-      where: and(...conditions),
-      orderBy: (categories: any, { asc }: any) => [asc(categories.name)],
+    const result = await trackQuery('CategoryService.findAll', perf, async () => {
+      return this.db.query.categories.findMany({
+        where: and(...conditions),
+        orderBy: (categories: any, { asc }: any) => [asc(categories.name)],
+      });
     });
 
     return result;
@@ -92,8 +111,13 @@ export class CategoryService {
   /**
    * Update category
    * Note: Budget-related fields are now managed via the budgets table
+   *
+   * @param id - Category ID
+   * @param workspaceId - Workspace ID
+   * @param input - Category update input
+   * @param perf - Optional performance collector for timing metrics
    */
-  async update(id: string, workspaceId: string, input: UpdateCategoryInput) {
+  async update(id: string, workspaceId: string, input: UpdateCategoryInput, perf?: PerfCollector) {
     // Validate input using Zod schema
     const validated = updateCategorySchema.parse(input);
 
@@ -108,22 +132,31 @@ export class CategoryService {
     if (validated.color !== undefined) updateData.color = validated.color;
     if (validated.is_active !== undefined) updateData.is_active = validated.is_active;
 
-    await this.db
-      .update(this.schema.categories)
-      .set(updateData)
-      .where(
-        and(eq(this.schema.categories.id, id), eq(this.schema.categories.workspace_id, workspaceId))
-      );
+    await trackQuery('CategoryService.update', perf, async () => {
+      return this.db
+        .update(this.schema.categories)
+        .set(updateData)
+        .where(
+          and(
+            eq(this.schema.categories.id, id),
+            eq(this.schema.categories.workspace_id, workspaceId)
+          )
+        );
+    });
 
-    return this.findById(id, workspaceId);
+    return this.findById(id, workspaceId, perf);
   }
 
   /**
    * Delete category (soft delete by marking inactive)
+   *
+   * @param id - Category ID
+   * @param workspaceId - Workspace ID
+   * @param perf - Optional performance collector for timing metrics
    */
-  async delete(id: string, workspaceId: string) {
+  async delete(id: string, workspaceId: string, perf?: PerfCollector) {
     // Check if category exists
-    const category = await this.findById(id, workspaceId);
+    const category = await this.findById(id, workspaceId, perf);
     if (!category) {
       throw new CategoryServiceError(
         ServiceErrorCode.CATEGORY_NOT_FOUND,
@@ -132,23 +165,33 @@ export class CategoryService {
       );
     }
 
-    await this.db
-      .update(this.schema.categories)
-      .set({
-        is_active: false,
-        updated_at: new Date(),
-      })
-      .where(
-        and(eq(this.schema.categories.id, id), eq(this.schema.categories.workspace_id, workspaceId))
-      );
+    await trackQuery('CategoryService.delete', perf, async () => {
+      return this.db
+        .update(this.schema.categories)
+        .set({
+          is_active: false,
+          updated_at: new Date(),
+        })
+        .where(
+          and(
+            eq(this.schema.categories.id, id),
+            eq(this.schema.categories.workspace_id, workspaceId)
+          )
+        );
+    });
 
     return { success: true };
   }
 
   /**
    * Check if category name exists for workspace
+   *
+   * @param name - Category name to check
+   * @param workspaceId - Workspace ID
+   * @param excludeId - Optional category ID to exclude from check
+   * @param perf - Optional performance collector for timing metrics
    */
-  async existsByName(name: string, workspaceId: string, excludeId?: string) {
+  async existsByName(name: string, workspaceId: string, excludeId?: string, perf?: PerfCollector) {
     const conditions = [
       eq(this.schema.categories.workspace_id, workspaceId),
       eq(this.schema.categories.name, name),
@@ -159,8 +202,10 @@ export class CategoryService {
       conditions.push(ne(this.schema.categories.id, excludeId));
     }
 
-    const result = await this.db.query.categories.findFirst({
-      where: and(...conditions),
+    const result = await trackQuery('CategoryService.existsByName', perf, async () => {
+      return this.db.query.categories.findFirst({
+        where: and(...conditions),
+      });
     });
 
     return !!result;

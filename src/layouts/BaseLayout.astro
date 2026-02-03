@@ -13,6 +13,10 @@ const browserTitle = title && title !== 'allowealth' ? `${title} | allowealth` :
 
 // Get CSP nonce from middleware for inline scripts
 const cspNonce = Astro.locals.cspNonce || '';
+
+// Get perf collector for debug output (only when PERF_DEBUG=true)
+const perf = Astro.locals.perf;
+const perfDebugComment = perf ? perf.toHtmlComment() : '';
 ---
 
 <!doctype html>
@@ -43,5 +47,6 @@ const cspNonce = Astro.locals.cspNonce || '';
   <body>
     <slot />
     <ToastContainer />
+    {perfDebugComment && <Fragment set:html={perfDebugComment} />}
   </body>
 </html>

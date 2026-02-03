@@ -2,6 +2,7 @@
 
 import type { User, Session } from '@/lib/auth/lucia';
 import type { UserSettings } from '@/lib/constants/user-meta-keys';
+import type { PerfCollector } from '@/lib/perf';
 
 declare global {
   namespace App {
@@ -11,6 +12,7 @@ declare global {
       userSettings?: UserSettings;
       cspNonce?: string;
       csrfToken?: string;
+      perf?: PerfCollector;
     }
   }
 

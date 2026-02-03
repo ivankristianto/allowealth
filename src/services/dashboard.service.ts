@@ -34,6 +34,7 @@ import {
 } from '@/lib/utils/decimal';
 import { toHexColor } from '@/lib/utils/colorUtils';
 import { getCacheManager, CacheKeys, CacheTags } from '@/lib/cache';
+import { type PerfCollector, trackQuery, trackService } from '@/lib/perf';
 
 /**
  * Total assets by currency
@@ -771,77 +772,82 @@ export class DashboardService {
    * @param month - Month (1-12, default: current month)
    * @param year - Year (default: current year)
    * @param currency - Primary currency (default: IDR)
+   * @param perf - Optional performance collector for timing metrics
    * @returns Complete dashboard data
    */
   async getDashboardData(
     workspaceId: string,
     month?: number,
     year?: number,
-    currency: 'IDR' | 'USD' = 'IDR'
+    currency: 'IDR' | 'USD' = 'IDR',
+    perf?: PerfCollector
   ): Promise<DashboardData> {
-    const now = new Date();
-    const currentMonth = month ?? now.getMonth() + 1;
-    const currentYear = year ?? now.getFullYear();
+    return trackService('DashboardService.getDashboardData', perf, async () => {
+      const now = new Date();
+      const currentMonth = month ?? now.getMonth() + 1;
+      const currentYear = year ?? now.getFullYear();
 
-    // Try cache first
-    const cache = getCacheManager();
-    const cacheKey = CacheKeys.dashboard(workspaceId, currentYear, currentMonth, currency);
+      // Try cache first
+      const cache = getCacheManager();
+      const cacheKey = CacheKeys.dashboard(workspaceId, currentYear, currentMonth, currency);
 
-    const cached = await cache.get<DashboardData>(cacheKey);
-    if (cached) {
-      return cached;
-    }
+      const cached = await cache.get<DashboardData>(cacheKey, perf);
+      if (cached) {
+        return cached;
+      }
 
-    // Cache miss - fetch from database
-    const startDate = new Date(currentYear, currentMonth - 1, 1);
-    const endDate = new Date(currentYear, currentMonth, 0, 23, 59, 59);
+      // Cache miss - fetch from database
+      const startDate = new Date(currentYear, currentMonth - 1, 1);
+      const endDate = new Date(currentYear, currentMonth, 0, 23, 59, 59);
 
-    // Run all independent queries in parallel (maximum parallelism)
-    // Group 1: Asset-related (single query handles both totalAssets and assetReminders)
-    // Group 2: Transaction aggregates (budget, spent, income, categories)
-    // Group 3: Budget health (budgets + category spending)
-    // Group 4: Recent transactions
-    const [assetsData, transactionAggregates, budgetHealthData, recentTransactions] =
-      await Promise.all([
-        // Combined assets query
-        this.getAssetsOptimized(workspaceId, currency),
-        // Combined transaction aggregates (budget, spent, income, top categories)
-        this.getTransactionAggregatesOptimized(
-          workspaceId,
-          currentMonth,
-          currentYear,
-          startDate,
-          endDate,
-          currency
-        ),
-        // Budget health (requires budgets + spending per category)
-        this.getBudgetHealth(workspaceId, currentMonth, currentYear, currency),
-        // Recent transactions
-        this.getRecentTransactions(workspaceId, 10),
-      ]);
+      // Run all independent queries in parallel (maximum parallelism)
+      // Group 1: Asset-related (single query handles both totalAssets and assetReminders)
+      // Group 2: Transaction aggregates (budget, spent, income, categories)
+      // Group 3: Budget health (budgets + category spending)
+      // Group 4: Recent transactions
+      const [assetsData, transactionAggregates, budgetHealthData, recentTransactions] =
+        await Promise.all([
+          // Combined assets query
+          this.getAssetsOptimized(workspaceId, currency, perf),
+          // Combined transaction aggregates (budget, spent, income, top categories)
+          this.getTransactionAggregatesOptimized(
+            workspaceId,
+            currentMonth,
+            currentYear,
+            startDate,
+            endDate,
+            currency,
+            perf
+          ),
+          // Budget health (requires budgets + spending per category)
+          this.getBudgetHealthOptimized(workspaceId, currentMonth, currentYear, currency, perf),
+          // Recent transactions
+          this.getRecentTransactionsOptimized(workspaceId, 10, perf),
+        ]);
 
-    const result: DashboardData = {
-      totalAssets: assetsData.totalAssets,
-      monthlySpent: transactionAggregates.monthlySpent,
-      monthlyIncome: transactionAggregates.monthlyIncome,
-      topCategoryExpenses: transactionAggregates.topCategoryExpenses,
-      budgetHealth: budgetHealthData,
-      assetReminders: assetsData.assetReminders,
-      recentTransactions,
-    };
+      const result: DashboardData = {
+        totalAssets: assetsData.totalAssets,
+        monthlySpent: transactionAggregates.monthlySpent,
+        monthlyIncome: transactionAggregates.monthlyIncome,
+        topCategoryExpenses: transactionAggregates.topCategoryExpenses,
+        budgetHealth: budgetHealthData,
+        assetReminders: assetsData.assetReminders,
+        recentTransactions,
+      };
 
-    // Cache the result
-    await cache.set(cacheKey, result, {
-      ttl: 3600,
-      tags: [
-        CacheTags.workspace(workspaceId),
-        CacheTags.DASHBOARD,
-        CacheTags.BUDGET,
-        CacheTags.TRANSACTIONS,
-      ],
+      // Cache the result
+      await cache.set(cacheKey, result, {
+        ttl: 3600,
+        tags: [
+          CacheTags.workspace(workspaceId),
+          CacheTags.DASHBOARD,
+          CacheTags.BUDGET,
+          CacheTags.TRANSACTIONS,
+        ],
+      });
+
+      return result;
     });
-
-    return result;
   }
 
   /**
@@ -850,7 +856,8 @@ export class DashboardService {
    */
   private async getAssetsOptimized(
     workspaceId: string,
-    primaryCurrency: 'IDR' | 'USD'
+    primaryCurrency: 'IDR' | 'USD',
+    perf?: PerfCollector
   ): Promise<{ totalAssets: TotalAssets; assetReminders: AssetReminder[] }> {
     try {
       if (!this.db?.query?.assets) {
@@ -858,12 +865,14 @@ export class DashboardService {
       }
 
       // Single query to get all assets
-      const workspaceAssets = await this.db.query.assets.findMany({
-        where: and(
-          eq(this.schema.assets.workspace_id, workspaceId),
-          sql`${this.schema.assets.deleted_at} IS NULL`
-        ),
-      });
+      const workspaceAssets = await trackQuery('DashboardService.getAssets', perf, async () =>
+        this.db.query.assets.findMany({
+          where: and(
+            eq(this.schema.assets.workspace_id, workspaceId),
+            sql`${this.schema.assets.deleted_at} IS NULL`
+          ),
+        })
+      );
 
       // Calculate totals by currency
       const idrBalances = workspaceAssets.filter((a) => a.currency === 'IDR').map((a) => a.balance);
@@ -939,7 +948,8 @@ export class DashboardService {
     year: number,
     startDate: Date,
     endDate: Date,
-    currency: 'IDR' | 'USD'
+    currency: 'IDR' | 'USD',
+    perf?: PerfCollector
   ): Promise<{
     monthlySpent: MonthlySpent;
     monthlyIncome: MonthlyIncome;
@@ -953,72 +963,78 @@ export class DashboardService {
       // Run all transaction queries in parallel (they are independent)
       const [budgetResult, aggregateResult, categoryExpenses] = await Promise.all([
         // Budget total
-        (this.db as any)
-          .select({
-            total: sql<string>`COALESCE(SUM(CAST(${this.schema.budgets.budget_amount} AS REAL)), 0)`,
-          })
-          .from(this.schema.budgets)
-          .innerJoin(
-            this.schema.categories,
-            eq(this.schema.budgets.category_id, this.schema.categories.id)
-          )
-          .where(
-            and(
-              eq(this.schema.budgets.workspace_id, workspaceId),
-              eq(this.schema.budgets.month, month),
-              eq(this.schema.budgets.year, year),
-              eq(this.schema.budgets.currency, currency),
-              eq(this.schema.categories.type, 'expense'),
-              eq(this.schema.categories.is_active, true)
+        trackQuery('DashboardService.getBudgetTotal', perf, async () =>
+          (this.db as any)
+            .select({
+              total: sql<string>`COALESCE(SUM(CAST(${this.schema.budgets.budget_amount} AS REAL)), 0)`,
+            })
+            .from(this.schema.budgets)
+            .innerJoin(
+              this.schema.categories,
+              eq(this.schema.budgets.category_id, this.schema.categories.id)
             )
-          ),
+            .where(
+              and(
+                eq(this.schema.budgets.workspace_id, workspaceId),
+                eq(this.schema.budgets.month, month),
+                eq(this.schema.budgets.year, year),
+                eq(this.schema.budgets.currency, currency),
+                eq(this.schema.categories.type, 'expense'),
+                eq(this.schema.categories.is_active, true)
+              )
+            )
+        ),
 
         // Combined spent + income query (single query with CASE statements)
-        (this.db as any)
-          .select({
-            spent: sql<string>`COALESCE(SUM(CASE WHEN ${this.schema.transactions.type} = 'expense' THEN CAST(${this.schema.transactions.amount} AS REAL) ELSE 0 END), 0)`,
-            income: sql<string>`COALESCE(SUM(CASE WHEN ${this.schema.transactions.type} = 'income' THEN CAST(${this.schema.transactions.amount} AS REAL) ELSE 0 END), 0)`,
-          })
-          .from(this.schema.transactions)
-          .where(
-            and(
-              eq(this.schema.transactions.workspace_id, workspaceId),
-              eq(this.schema.transactions.currency, currency),
-              gte(this.schema.transactions.transaction_date, startDate),
-              lte(this.schema.transactions.transaction_date, endDate),
-              sql`${this.schema.transactions.deleted_at} IS NULL`
+        trackQuery('DashboardService.getSpentIncome', perf, async () =>
+          (this.db as any)
+            .select({
+              spent: sql<string>`COALESCE(SUM(CASE WHEN ${this.schema.transactions.type} = 'expense' THEN CAST(${this.schema.transactions.amount} AS REAL) ELSE 0 END), 0)`,
+              income: sql<string>`COALESCE(SUM(CASE WHEN ${this.schema.transactions.type} = 'income' THEN CAST(${this.schema.transactions.amount} AS REAL) ELSE 0 END), 0)`,
+            })
+            .from(this.schema.transactions)
+            .where(
+              and(
+                eq(this.schema.transactions.workspace_id, workspaceId),
+                eq(this.schema.transactions.currency, currency),
+                gte(this.schema.transactions.transaction_date, startDate),
+                lte(this.schema.transactions.transaction_date, endDate),
+                sql`${this.schema.transactions.deleted_at} IS NULL`
+              )
             )
-          ),
+        ),
 
         // Top categories
-        (this.db as any)
-          .select({
-            category_id: this.schema.transactions.category_id,
-            category_name: this.schema.categories.name,
-            category_color: this.schema.categories.color,
-            total: sql<string>`COALESCE(SUM(CAST(${this.schema.transactions.amount} AS REAL)), 0)`,
-          })
-          .from(this.schema.transactions)
-          .innerJoin(
-            this.schema.categories,
-            eq(this.schema.transactions.category_id, this.schema.categories.id)
-          )
-          .where(
-            and(
-              eq(this.schema.transactions.workspace_id, workspaceId),
-              eq(this.schema.transactions.type, 'expense'),
-              eq(this.schema.transactions.currency, currency),
-              gte(this.schema.transactions.transaction_date, startDate),
-              lte(this.schema.transactions.transaction_date, endDate),
-              sql`${this.schema.transactions.deleted_at} IS NULL`
+        trackQuery('DashboardService.getTopCategories', perf, async () =>
+          (this.db as any)
+            .select({
+              category_id: this.schema.transactions.category_id,
+              category_name: this.schema.categories.name,
+              category_color: this.schema.categories.color,
+              total: sql<string>`COALESCE(SUM(CAST(${this.schema.transactions.amount} AS REAL)), 0)`,
+            })
+            .from(this.schema.transactions)
+            .innerJoin(
+              this.schema.categories,
+              eq(this.schema.transactions.category_id, this.schema.categories.id)
             )
-          )
-          .groupBy(
-            this.schema.transactions.category_id,
-            this.schema.categories.name,
-            this.schema.categories.color
-          )
-          .orderBy(sql`SUM(CAST(${this.schema.transactions.amount} AS REAL)) DESC`),
+            .where(
+              and(
+                eq(this.schema.transactions.workspace_id, workspaceId),
+                eq(this.schema.transactions.type, 'expense'),
+                eq(this.schema.transactions.currency, currency),
+                gte(this.schema.transactions.transaction_date, startDate),
+                lte(this.schema.transactions.transaction_date, endDate),
+                sql`${this.schema.transactions.deleted_at} IS NULL`
+              )
+            )
+            .groupBy(
+              this.schema.transactions.category_id,
+              this.schema.categories.name,
+              this.schema.categories.color
+            )
+            .orderBy(sql`SUM(CAST(${this.schema.transactions.amount} AS REAL)) DESC`)
+        ),
       ]);
 
       const totalBudget = budgetResult[0]?.total || '0';
@@ -1053,6 +1069,212 @@ export class DashboardService {
         monthlyIncome: { total: '0' },
         topCategoryExpenses: [],
       };
+    }
+  }
+
+  /**
+   * Optimized budget health - with perf tracking
+   */
+  private async getBudgetHealthOptimized(
+    workspaceId: string,
+    month: number,
+    year: number,
+    currency: 'IDR' | 'USD',
+    perf?: PerfCollector
+  ): Promise<BudgetHealth> {
+    try {
+      // Validate inputs
+      if (month < 1 || month > 12) {
+        throw new Error(`Invalid month: ${month}. Must be between 1 and 12.`);
+      }
+      if (year < 2000 || year > 2100) {
+        throw new Error(`Invalid year: ${year}. Must be between 2000 and 2100.`);
+      }
+
+      // Check if db methods exist (for unit tests with mock db)
+      if (!this.db?.query?.budgets || typeof (this.db as any).select !== 'function') {
+        throw new Error('Database query not available');
+      }
+
+      // Calculate date range for the month
+      const startDate = new Date(year, month - 1, 1);
+      const endDate = new Date(year, month, 0, 23, 59, 59);
+
+      // Get all budgets for the month with their category info
+      const monthBudgets = await trackQuery('DashboardService.getBudgets', perf, async () =>
+        this.db.query.budgets.findMany({
+          where: and(
+            eq(this.schema.budgets.workspace_id, workspaceId),
+            eq(this.schema.budgets.month, month),
+            eq(this.schema.budgets.year, year),
+            eq(this.schema.budgets.currency, currency)
+          ),
+          with: {
+            category: true,
+          },
+        })
+      );
+
+      // Filter to only active expense categories
+      const expenseBudgets = monthBudgets.filter(
+        (b: any) => b.category?.type === 'expense' && b.category?.is_active === true
+      );
+
+      // Get total spent per category for the month
+      const categorySpending = await trackQuery(
+        'DashboardService.getCategorySpending',
+        perf,
+        async () =>
+          (this.db as any)
+            .select({
+              category_id: this.schema.transactions.category_id,
+              total: sql<string>`COALESCE(SUM(CAST(${this.schema.transactions.amount} AS REAL)), 0)`,
+            })
+            .from(this.schema.transactions)
+            .where(
+              and(
+                eq(this.schema.transactions.workspace_id, workspaceId),
+                eq(this.schema.transactions.type, 'expense'),
+                eq(this.schema.transactions.currency, currency),
+                gte(this.schema.transactions.transaction_date, startDate),
+                lte(this.schema.transactions.transaction_date, endDate),
+                sql`${this.schema.transactions.deleted_at} IS NULL`
+              )
+            )
+            .groupBy(this.schema.transactions.category_id)
+      );
+
+      // Create map of spending by category
+      const spendingByCategory = new Map<string, string>();
+      for (const spending of categorySpending) {
+        spendingByCategory.set(spending.category_id, spending.total);
+      }
+
+      // Calculate alerts for each budget
+      const alerts: BudgetAlert[] = [];
+
+      for (const budget of expenseBudgets) {
+        const budgetAmount = budget.budget_amount;
+        const spent = spendingByCategory.get(budget.category_id) || '0';
+        const categoryName = budget.category?.name || 'Unknown';
+
+        const alert = calculateBudgetAlert(categoryName, budgetAmount, spent);
+        if (alert) {
+          alerts.push(alert);
+        }
+      }
+
+      // Determine overall status
+      let status: 'healthy' | 'warning' | 'exceeded' = 'healthy';
+      if (alerts.some((a) => a.status === 'exceeded')) {
+        status = 'exceeded';
+      } else if (alerts.some((a) => a.status === 'warning')) {
+        status = 'warning';
+      }
+
+      return {
+        alertCount: alerts.length,
+        status,
+        alerts,
+      };
+    } catch (error) {
+      console.error('Error getting budget health:', error);
+      // Return empty result on error
+      return {
+        alertCount: 0,
+        status: 'healthy',
+        alerts: [],
+      };
+    }
+  }
+
+  /**
+   * Optimized recent transactions - with perf tracking
+   */
+  private async getRecentTransactionsOptimized(
+    workspaceId: string,
+    limit: number,
+    perf?: PerfCollector
+  ): Promise<
+    Array<{
+      id: string;
+      type: 'expense' | 'income' | 'transfer';
+      amount: string;
+      currency: 'IDR' | 'USD';
+      description: string | null;
+      transactionDate: Date;
+      category: {
+        id: string;
+        name: string;
+        type: 'expense' | 'income';
+        icon: string;
+        color: string;
+      };
+      asset: {
+        id: string;
+        name: string;
+        type: string;
+      };
+    }>
+  > {
+    try {
+      // Validate limit
+      if (limit < 1 || limit > 100) {
+        throw new Error(`Invalid limit: ${limit}. Must be between 1 and 100.`);
+      }
+
+      // Check if db.query exists (for unit tests with mock db)
+      if (!this.db?.query?.transactions) {
+        throw new Error('Database query not available');
+      }
+
+      // Get recent transactions
+      const recentTransactions = await trackQuery(
+        'DashboardService.getRecentTransactions',
+        perf,
+        async () =>
+          this.db.query.transactions.findMany({
+            where: and(
+              eq(this.schema.transactions.workspace_id, workspaceId),
+              sql`${this.schema.transactions.deleted_at} IS NULL`
+            ),
+            with: {
+              category: true,
+              asset: true,
+            },
+            orderBy: [
+              desc(this.schema.transactions.transaction_date),
+              desc(this.schema.transactions.created_at),
+            ],
+            limit,
+          })
+      );
+
+      // Map transaction_date to transactionDate for the return type
+      return recentTransactions.map((tx) => ({
+        id: tx.id,
+        type: tx.type,
+        amount: tx.amount,
+        currency: tx.currency,
+        description: tx.description,
+        transactionDate: tx.transaction_date,
+        category: {
+          id: tx.category.id,
+          name: tx.category.name,
+          type: tx.category.type,
+          icon: tx.category.icon,
+          color: tx.category.color,
+        },
+        asset: {
+          id: tx.asset.id,
+          name: tx.asset.name,
+          type: tx.asset.type,
+        },
+      }));
+    } catch (error) {
+      console.error('Error getting recent transactions:', error);
+      // Return empty array on error
+      return [];
     }
   }
 
