@@ -2,12 +2,18 @@
  * Unit tests for UserMetaService
  */
 
-import { describe, it, expect, mock } from 'bun:test';
+import { describe, it, expect, mock, beforeEach } from 'bun:test';
 import { UserMetaService } from './user-meta.service';
 import { ServiceErrorCode, UserMetaServiceError } from './service-errors';
 import { USER_META_KEYS, META_VALUE_MAX_SIZE, META_DEFAULTS } from '@/lib/constants/user-meta-keys';
+import { resetCacheManager } from '@/lib/cache';
 
 describe('UserMetaService', () => {
+  // Reset cache manager before each test to prevent cache pollution
+  beforeEach(() => {
+    resetCacheManager();
+  });
+
   const mockUser = {
     id: 'user-1',
     email: 'test@example.com',
