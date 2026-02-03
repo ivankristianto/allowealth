@@ -15,7 +15,7 @@
  * - VALIDATION_ERROR: Input validation failed
  */
 
-import { users, type IDatabase } from '@/db';
+import { type IDatabase, getActiveSchema } from '@/db';
 import { eq } from 'drizzle-orm';
 import { verifyPassword, hashPassword } from '@/lib/auth/password';
 import { z } from 'zod';
@@ -61,6 +61,8 @@ function constantTimeDelay(ms: number): Promise<void> {
  * User Service
  */
 export class UserService {
+  private schema = getActiveSchema();
+
   /**
    * Create a new UserService with database injection
    * @param db - Database instance (injected for testability)
@@ -81,7 +83,7 @@ export class UserService {
 
     // Check if user exists
     const user = await this.db.query.users.findFirst({
-      where: eq(users.id, userId),
+      where: eq(this.schema.users.id, userId),
     });
 
     if (!user) {
@@ -91,7 +93,7 @@ export class UserService {
     // If email is being changed, check if it's already taken
     if (validated.email.toLowerCase() !== user.email.toLowerCase()) {
       const existingUser = await this.db.query.users.findFirst({
-        where: eq(users.email, validated.email.toLowerCase()),
+        where: eq(this.schema.users.email, validated.email.toLowerCase()),
       });
 
       if (existingUser) {
@@ -105,17 +107,17 @@ export class UserService {
 
     // Update user
     await this.db
-      .update(users)
+      .update(this.schema.users)
       .set({
         name: validated.name.trim(),
         email: validated.email.toLowerCase(),
         updated_at: new Date(),
       })
-      .where(eq(users.id, userId));
+      .where(eq(this.schema.users.id, userId));
 
     // Return updated user
     const updatedUser = await this.db.query.users.findFirst({
-      where: eq(users.id, userId),
+      where: eq(this.schema.users.id, userId),
     });
 
     return updatedUser!;
@@ -135,7 +137,7 @@ export class UserService {
 
     // Check if user exists
     const user = await this.db.query.users.findFirst({
-      where: eq(users.id, userId),
+      where: eq(this.schema.users.id, userId),
     });
 
     if (!user) {
@@ -158,12 +160,12 @@ export class UserService {
 
     // Update password
     await this.db
-      .update(users)
+      .update(this.schema.users)
       .set({
         password_hash: newPasswordHash,
         updated_at: new Date(),
       })
-      .where(eq(users.id, userId));
+      .where(eq(this.schema.users.id, userId));
 
     return { success: true };
   }
@@ -177,7 +179,7 @@ export class UserService {
   async softDelete(userId: string): Promise<void> {
     // Check if user exists
     const user = await this.db.query.users.findFirst({
-      where: eq(users.id, userId),
+      where: eq(this.schema.users.id, userId),
     });
 
     if (!user) {
@@ -191,11 +193,11 @@ export class UserService {
 
     // Soft delete user
     await this.db
-      .update(users)
+      .update(this.schema.users)
       .set({
         deleted_at: new Date(),
         updated_at: new Date(),
       })
-      .where(eq(users.id, userId));
+      .where(eq(this.schema.users.id, userId));
   }
 }

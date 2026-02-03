@@ -63,6 +63,8 @@ Agents must internalize:
 | **Feedback**            | Toast notifications                      | `alert()`, `confirm()`           | N/A                               |
 | **TypeScript**          | Separate `.ts` files                     | Types in `<script>` tags         | `AGENTS.md`                       |
 | **Database**            | `better-sqlite3` (shared code)           | `bun:sqlite` (middleware)        | `docs/constitution.md`            |
+| **Schema Selection**    | `getActiveSchema()` in services          | Direct table imports             | Dual SQLite/PostgreSQL support    |
+| **Environment Vars**    | `import.meta.env`                        | `process.env`                    | Bun compatibility                 |
 | **Testing**             | `bun:test`                               | `vitest`                         | `docs/constitution.md`            |
 | **API Docs**            | Update OpenAPI files                     | Comments only                    | `openapi/README.md`               |
 | **Bundle Size**         | Specific imports (`@/lib/utils/client`)  | Barrel exports (`@/lib/utils`)   | `005-bundle-performance.md`       |
@@ -171,6 +173,23 @@ Agents must internalize:
 
 - ❌ Assume oslo/argon2 works everywhere (requires @node-rs/argon2 native addon)
 - ❌ Use native addons for edge runtime deployments (incompatible with Workers)
+
+### PostgreSQL/Supabase Compatibility
+
+**DO:**
+
+- ✅ Use `getActiveSchema()` for dual-database support - Centralizes schema selection based on dialect
+- ✅ Use `import.meta.env` instead of `process.env` - Bun doesn't populate process.env from .env files
+- ✅ Add `:prod` script variants with `--env-file=.env.production` - Production scripts need explicit env loading
+- ✅ Import SQLite schema for type inference only - Both schemas have same structure, safe for `$inferSelect`
+- ✅ Use `this.schema.tableName` pattern in services - Ensures correct schema for current database dialect
+
+**DON'T:**
+
+- ❌ Use direct table imports in services - Breaks PostgreSQL when SQLite schema is imported
+- ❌ Assume `process.env` works in Bun - Always use `import.meta.env` for environment variables
+- ❌ Mix SQLite timestamp handling with PostgreSQL - SQLite uses integers, PostgreSQL uses native timestamps
+- ❌ Forget to check for double-prefix bugs during mass replace - Watch for `this.schema.this.schema` patterns
 
 ### Pre-Commit Checklist
 

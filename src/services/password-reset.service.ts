@@ -13,9 +13,11 @@
  */
 
 import { nanoid } from 'nanoid';
-import { db } from '@/db/index';
-import { users, passwordResetTokens } from '@/db/schema';
+import { db, getActiveSchema } from '@/db/index';
 import { eq, and, gt } from 'drizzle-orm';
+
+// Get the correct schema for the current database dialect
+const schema = getActiveSchema();
 import { emailService } from '@/services';
 
 /**
@@ -116,7 +118,7 @@ export async function requestPasswordReset(email: string): Promise<void> {
   try {
     // Find user by email
     const user = await db.query.users.findFirst({
-      where: eq(users.email, email.toLowerCase()),
+      where: eq(schema.users.email, email.toLowerCase()),
     });
 
     // If user not found, return success anyway to prevent email enumeration
@@ -132,10 +134,12 @@ export async function requestPasswordReset(email: string): Promise<void> {
     const expiresAt = new Date(Date.now() + TOKEN_EXPIRATION_MS);
 
     // Delete any existing tokens for this user
-    await db.delete(passwordResetTokens).where(eq(passwordResetTokens.user_id, user.id));
+    await db
+      .delete(schema.passwordResetTokens)
+      .where(eq(schema.passwordResetTokens.user_id, user.id));
 
     // Create new reset token
-    await db.insert(passwordResetTokens).values({
+    await db.insert(schema.passwordResetTokens).values({
       id: tokenId,
       token,
       user_id: user.id,
@@ -181,8 +185,8 @@ export async function validateResetToken(token: string): Promise<string | null> 
     // Find token that hasn't expired
     const resetToken = await db.query.passwordResetTokens.findFirst({
       where: and(
-        eq(passwordResetTokens.token, token),
-        gt(passwordResetTokens.expires_at, new Date())
+        eq(schema.passwordResetTokens.token, token),
+        gt(schema.passwordResetTokens.expires_at, new Date())
       ),
     });
 
@@ -211,7 +215,7 @@ export async function consumeResetToken(token: string): Promise<void> {
   }
 
   try {
-    await db.delete(passwordResetTokens).where(eq(passwordResetTokens.token, token));
+    await db.delete(schema.passwordResetTokens).where(eq(schema.passwordResetTokens.token, token));
   } catch (error) {
     console.error('[ERROR] Token consumption failed:', error);
   }

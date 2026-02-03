@@ -18,7 +18,7 @@
  * - META_NOT_FOUND: Meta key doesn't exist for user
  */
 
-import { userMeta, users, type IDatabase } from '@/db';
+import { type IDatabase, getActiveSchema } from '@/db';
 import { eq, and } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import {
@@ -39,6 +39,8 @@ import { UserMetaServiceError, ServiceErrorCode } from './service-errors';
  * User Meta Service
  */
 export class UserMetaService {
+  private schema = getActiveSchema();
+
   /**
    * Create a new UserMetaService with database injection
    * @param db - Database instance (injected for testability)
@@ -68,7 +70,7 @@ export class UserMetaService {
 
     // Get meta value
     const meta = await this.db.query.userMeta.findFirst({
-      where: and(eq(userMeta.user_id, userId), eq(userMeta.meta_key, key)),
+      where: and(eq(this.schema.userMeta.user_id, userId), eq(this.schema.userMeta.meta_key, key)),
     });
 
     return meta?.meta_value ?? null;
@@ -87,7 +89,7 @@ export class UserMetaService {
 
     // Get all meta for user
     const metas = await this.db.query.userMeta.findMany({
-      where: eq(userMeta.user_id, userId),
+      where: eq(this.schema.userMeta.user_id, userId),
     });
 
     // Start with defaults
@@ -145,7 +147,7 @@ export class UserMetaService {
     // Use upsert to avoid race condition
     // ON CONFLICT (user_id, meta_key) DO UPDATE
     await this.db
-      .insert(userMeta)
+      .insert(this.schema.userMeta)
       .values({
         meta_id: nanoid(),
         user_id: userId,
@@ -155,7 +157,7 @@ export class UserMetaService {
         updated_at: new Date(),
       })
       .onConflictDoUpdate({
-        target: [userMeta.user_id, userMeta.meta_key],
+        target: [this.schema.userMeta.user_id, this.schema.userMeta.meta_key],
         set: {
           meta_value: value,
           updated_at: new Date(),
@@ -185,7 +187,7 @@ export class UserMetaService {
 
     // Check if meta exists
     const existing = await this.db.query.userMeta.findFirst({
-      where: and(eq(userMeta.user_id, userId), eq(userMeta.meta_key, key)),
+      where: and(eq(this.schema.userMeta.user_id, userId), eq(this.schema.userMeta.meta_key, key)),
     });
 
     if (!existing) {
@@ -198,8 +200,8 @@ export class UserMetaService {
 
     // Delete
     await this.db
-      .delete(userMeta)
-      .where(and(eq(userMeta.user_id, userId), eq(userMeta.meta_key, key)));
+      .delete(this.schema.userMeta)
+      .where(and(eq(this.schema.userMeta.user_id, userId), eq(this.schema.userMeta.meta_key, key)));
   }
 
   // ============================================================================
@@ -284,7 +286,7 @@ export class UserMetaService {
    */
   private async ensureUserExists(userId: string): Promise<void> {
     const user = await this.db.query.users.findFirst({
-      where: eq(users.id, userId),
+      where: eq(this.schema.users.id, userId),
     });
 
     if (!user) {

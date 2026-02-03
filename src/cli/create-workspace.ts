@@ -9,16 +9,18 @@
 
 /* eslint-disable no-console -- Console output is intentional for CLI */
 
-import { db } from '@/db';
+import { db, getActiveSchema } from '@/db';
 import { WorkspaceService } from '@/services/workspace.service';
 import { WorkspaceMetaService } from '@/services/workspace-meta.service';
 import { AssetCategoryService } from '@/services/asset-category.service';
 import { WORKSPACE_META_KEYS, WORKSPACE_META_DEFAULTS } from '@/lib/constants/workspace-meta-keys';
 import { DEFAULT_ASSET_CATEGORIES } from '@/lib/constants';
 import { hashPassword } from '@/lib/auth/password';
-import { users } from '@/db/schema';
 import { nanoid } from 'nanoid';
 import * as readline from 'readline';
+
+// Get the correct schema for the current database dialect
+const schema = getActiveSchema();
 
 interface CreateWorkspaceOptions {
   name: string;
@@ -249,7 +251,7 @@ async function main(): Promise<void> {
     const userId = nanoid();
     const passwordHash = await hashPassword(password);
 
-    await db.insert(users).values({
+    await db.insert(schema.users).values({
       id: userId,
       workspace_id: workspace.id,
       email: email.toLowerCase(),
