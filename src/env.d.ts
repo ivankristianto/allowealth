@@ -33,6 +33,12 @@ declare global {
     // Performance debugging
     /** Enable Server-Timing header for performance metrics (default: false) */
     readonly PERF_DEBUG?: string;
+
+    // Email configuration
+    /** Email mode: 'console' for development logging, undefined for real sending */
+    readonly EMAIL_MODE?: 'console';
+    /** Base64-encoded 32-byte encryption key for email credentials */
+    readonly EMAIL_ENCRYPTION_KEY?: string;
   }
 
   interface ImportMeta {

@@ -1,3 +1,8 @@
+import { getEnv } from '@/lib/env';
+
+// Re-export setRuntimeEnv for middleware to use
+export { setRuntimeEnv } from '@/lib/env';
+
 export type DatabaseDialect = 'sqlite' | 'postgresql';
 
 export interface DatabaseConfig {
@@ -5,27 +10,6 @@ export interface DatabaseConfig {
   url: string;
   isSupabase: boolean;
   poolConfig?: { max: number; idleTimeout: number };
-}
-
-/**
- * Runtime environment holder for Cloudflare Workers
- *
- * In Cloudflare Workers, secrets are only accessible via request context
- * (Astro.locals.runtime.env), not via import.meta.env at module load time.
- * This holder allows middleware to set the runtime env on first request.
- */
-let runtimeEnv: Record<string, string | undefined> | null = null;
-
-/**
- * Set the runtime environment (call from middleware on first request)
- *
- * This is needed for Cloudflare Workers where secrets are passed via
- * the runtime context, not available at module initialization.
- */
-export function setRuntimeEnv(env: Record<string, string | undefined>): void {
-  if (!runtimeEnv) {
-    runtimeEnv = env;
-  }
 }
 
 /**
@@ -37,14 +21,10 @@ export function setRuntimeEnv(env: Record<string, string | undefined>): void {
  * 3. Fallback to SQLite dev database
  */
 function getDatabaseUrl(): string {
-  // Check runtime env first (Cloudflare Workers)
-  if (runtimeEnv?.DATABASE_URL) {
-    return runtimeEnv.DATABASE_URL;
-  }
+  const url = getEnv('DATABASE_URL');
 
-  // Check import.meta.env (Node.js/Bun build-time vars)
-  if (import.meta.env.DATABASE_URL) {
-    return import.meta.env.DATABASE_URL;
+  if (url) {
+    return url;
   }
 
   // Log warning if we're falling back to SQLite in a non-dev environment

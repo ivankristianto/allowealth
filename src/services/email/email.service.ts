@@ -7,6 +7,7 @@
 
 import type { WorkspaceMetaService } from '@/services/workspace-meta.service';
 import { decrypt } from '@/lib/crypto/encryption';
+import { getEnv } from '@/lib/env';
 import {
   getEmailProvider,
   consoleProvider,
@@ -131,7 +132,7 @@ export class EmailService {
     const { to, subject, html } = options;
 
     // Check if we're in console mode (development)
-    if (import.meta.env.EMAIL_MODE === 'console') {
+    if (getEnv('EMAIL_MODE') === 'console') {
       return consoleProvider.send({
         apiKey: '',
         from: { name: 'Console Mode', email: 'console@localhost' },

@@ -6,6 +6,7 @@
  */
 
 import nodeCrypto from 'crypto';
+import { getEnv } from '@/lib/env';
 
 const IV_LENGTH = 12; // 96 bits for GCM
 const TAG_LENGTH = 128; // bits
@@ -13,11 +14,11 @@ const TAG_LENGTH = 128; // bits
 /**
  * Get the encryption key from environment variable
  *
- * Note: Uses import.meta.env instead of process.env because Astro/Vite
- * only populates import.meta.env from .env files, not process.env.
+ * Checks runtime env first (Cloudflare Workers), then falls back to
+ * import.meta.env for local development.
  */
 function getEncryptionKey(): Uint8Array {
-  const keyBase64 = import.meta.env.EMAIL_ENCRYPTION_KEY;
+  const keyBase64 = getEnv('EMAIL_ENCRYPTION_KEY');
 
   if (!keyBase64) {
     throw new Error('EMAIL_ENCRYPTION_KEY environment variable is not set');

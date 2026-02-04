@@ -1,6 +1,7 @@
 import { describe, it, expect, mock, beforeEach, afterEach } from 'bun:test';
 import { EmailServiceError, EmailErrorCode } from './email-errors';
 import { EmailService } from './email.service';
+import { setTestEnv } from '@/lib/env';
 
 describe('EmailServiceError', () => {
   it('should create error with correct code and message', () => {
@@ -20,26 +21,16 @@ describe('EmailServiceError', () => {
 });
 
 describe('EmailService', () => {
-  const originalEmailMode = import.meta.env.EMAIL_MODE;
-  const originalEncryptionKey = import.meta.env.EMAIL_ENCRYPTION_KEY;
-
   beforeEach(() => {
     // Default to console mode for tests
-    import.meta.env.EMAIL_MODE = 'console';
-    import.meta.env.EMAIL_ENCRYPTION_KEY = 'tDEmsRTMP7szCIbk9KWwzIOdkup1344oqOqQscCLRCY=';
+    setTestEnv({
+      EMAIL_MODE: 'console',
+      EMAIL_ENCRYPTION_KEY: 'tDEmsRTMP7szCIbk9KWwzIOdkup1344oqOqQscCLRCY=',
+    });
   });
 
   afterEach(() => {
-    if (originalEmailMode) {
-      import.meta.env.EMAIL_MODE = originalEmailMode;
-    } else {
-      delete import.meta.env.EMAIL_MODE;
-    }
-    if (originalEncryptionKey) {
-      import.meta.env.EMAIL_ENCRYPTION_KEY = originalEncryptionKey;
-    } else {
-      delete import.meta.env.EMAIL_ENCRYPTION_KEY;
-    }
+    setTestEnv(null);
   });
 
   const createMockWorkspaceMetaService = (settings = {}) => ({
@@ -81,7 +72,6 @@ describe('EmailService', () => {
 
   describe('sendPasswordReset', () => {
     it('should send password reset email successfully', async () => {
-      import.meta.env.EMAIL_MODE = 'console'; // Force console mode
       const mockMeta = createMockWorkspaceMetaService();
       const service = new EmailService(mockMeta as any);
 
@@ -95,7 +85,6 @@ describe('EmailService', () => {
     });
 
     it('should use console provider when EMAIL_MODE is console', async () => {
-      import.meta.env.EMAIL_MODE = 'console';
       const mockMeta = createMockWorkspaceMetaService();
       const service = new EmailService(mockMeta as any);
 
@@ -112,7 +101,6 @@ describe('EmailService', () => {
 
   describe('sendWorkspaceInvitation', () => {
     it('should send workspace invitation email successfully', async () => {
-      import.meta.env.EMAIL_MODE = 'console';
       const mockMeta = createMockWorkspaceMetaService();
       const service = new EmailService(mockMeta as any);
 
@@ -130,7 +118,6 @@ describe('EmailService', () => {
 
   describe('sendTest', () => {
     it('should send test email successfully', async () => {
-      import.meta.env.EMAIL_MODE = 'console';
       const mockMeta = createMockWorkspaceMetaService();
       const service = new EmailService(mockMeta as any);
 

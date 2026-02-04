@@ -24,6 +24,7 @@ import {
   isCsrfExempt,
 } from './lib/csrf';
 import { setRuntimeEnv } from './db/config';
+import { getEnv } from './lib/env';
 import { getCachedSession, cacheSession } from './lib/auth/session-cache';
 import { PerfCollector } from './lib/perf';
 
@@ -251,20 +252,19 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
   const pathname = context.url.pathname;
   const timings: Record<string, number> = {};
 
+  // Set runtime env for Cloudflare Workers (secrets are only available via request context)
+  // This must happen before any env access
+  const runtime = (context.locals as any).runtime;
+  if (runtime?.env) {
+    setRuntimeEnv(runtime.env);
+  }
+
   // Create PerfCollector when PERF_DEBUG is enabled
-  const perfDebugEnabled = import.meta.env.PERF_DEBUG === 'true';
+  const perfDebugEnabled = getEnv('PERF_DEBUG') === 'true';
   if (perfDebugEnabled) {
     const perf = new PerfCollector();
     perf.setRoute(pathname);
     (context.locals as any).perf = perf;
-  }
-
-  // Set runtime env for Cloudflare Workers (secrets are only available via request context)
-  // This must happen before any database operations
-  const runtime = (context.locals as any).runtime;
-
-  if (runtime?.env) {
-    setRuntimeEnv(runtime.env);
   }
 
   // Generate a fresh CSP nonce for each request
@@ -407,7 +407,7 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
     // Expose server-side performance metrics via Server-Timing header
     // Viewable in browser DevTools Network panel under "Timing" tab
     // Enable with PERF_DEBUG=true environment variable
-    if (import.meta.env.PERF_DEBUG === 'true' && Object.keys(timings).length > 0) {
+    if (perfDebugEnabled && Object.keys(timings).length > 0) {
       securedResponse.headers.set('Server-Timing', buildServerTimingHeader(timings));
     }
 

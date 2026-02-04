@@ -7,6 +7,7 @@
 
 import type { CacheDriver, CacheSetOptions, CacheConfig } from './types';
 import type { PerfCollector } from '@/lib/perf';
+import { getEnv } from '@/lib/env';
 import { UpstashDriver } from './drivers/upstash';
 import { MemoryDriver } from './drivers/memory';
 import { NoopDriver } from './drivers/noop';
@@ -81,9 +82,9 @@ export class CacheManager {
 
 export function getCacheManager(): CacheManager {
   if (!instance) {
-    const driver = (import.meta.env.CACHE_DRIVER as CacheConfig['driver']) || 'memory';
-    const url = import.meta.env.UPSTASH_REDIS_REST_URL || '';
-    const token = import.meta.env.UPSTASH_REDIS_REST_TOKEN || '';
+    const driver = (getEnv('CACHE_DRIVER') as CacheConfig['driver']) || 'memory';
+    const url = getEnv('UPSTASH_REDIS_REST_URL') || '';
+    const token = getEnv('UPSTASH_REDIS_REST_TOKEN') || '';
 
     instance = new CacheManager({
       driver,
