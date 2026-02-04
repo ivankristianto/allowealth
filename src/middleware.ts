@@ -25,11 +25,7 @@ import {
 } from './lib/csrf';
 import { setRuntimeEnv } from './db/config';
 import { getCachedSession, cacheSession } from './lib/auth/session-cache';
-import { warmupDatabase } from './db';
 import { PerfCollector } from './lib/perf';
-
-// Track if database has been warmed up (one-time operation per server start)
-let dbWarmedUp = false;
 
 /**
  * Session cookie name used by Lucia Auth
@@ -269,15 +265,6 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
 
   if (runtime?.env) {
     setRuntimeEnv(runtime.env);
-  }
-
-  // Warm up database connection on first request (one-time operation)
-  // This avoids the ~3 second cold start penalty on first authenticated request
-  if (!dbWarmedUp) {
-    const warmupStart = performance.now();
-    await warmupDatabase();
-    dbWarmedUp = true;
-    timings['db.warmup'] = performance.now() - warmupStart;
   }
 
   // Generate a fresh CSP nonce for each request
