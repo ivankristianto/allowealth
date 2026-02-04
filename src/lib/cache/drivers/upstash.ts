@@ -11,6 +11,9 @@
 
 import { Redis } from '@upstash/redis';
 import type { CacheDriver, CacheSetOptions } from '../types';
+import { createLogger } from '@/lib/logger';
+
+const log = createLogger('cache:upstash');
 
 export class UpstashDriver implements CacheDriver {
   private redis: Redis;
@@ -26,7 +29,7 @@ export class UpstashDriver implements CacheDriver {
       const value = await this.redis.get<T>(key);
       return value ?? null;
     } catch (error) {
-      console.warn('[Cache] Get failed:', key, error);
+      log.warn(' Get failed:', key, error);
       return null;
     }
   }
@@ -46,7 +49,7 @@ export class UpstashDriver implements CacheDriver {
         await pipeline.exec();
       }
     } catch (error) {
-      console.warn('[Cache] Set failed:', key, error);
+      log.warn(' Set failed:', key, error);
     }
   }
 
@@ -54,7 +57,7 @@ export class UpstashDriver implements CacheDriver {
     try {
       await this.redis.del(key);
     } catch (error) {
-      console.warn('[Cache] Delete failed:', key, error);
+      log.warn(' Delete failed:', key, error);
     }
   }
 
@@ -75,7 +78,7 @@ export class UpstashDriver implements CacheDriver {
         await this.redis.del(...keysToDelete, ...tagKeys);
       }
     } catch (error) {
-      console.warn('[Cache] InvalidateByTags failed:', tags, error);
+      log.warn(' InvalidateByTags failed:', tags, error);
     }
   }
 }
