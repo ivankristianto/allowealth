@@ -1,4 +1,7 @@
 import { type IDatabase, getActiveSchema } from '@/db';
+import { createLogger } from '@/lib/logger';
+
+const log = createLogger('transaction');
 import { eq, and, gte, lte, desc, sql, like, inArray } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { CategoryService } from './category.service';
@@ -187,7 +190,7 @@ export class TransactionService {
       }
     } catch (error) {
       // Cache read failed - treat as cache miss and proceed to DB
-      console.warn('[TransactionService] Cache read failed, falling back to DB:', error);
+      log.warn('cache read failed, falling back to DB:', error);
     }
 
     // Cache miss - fetch from DB
@@ -203,7 +206,7 @@ export class TransactionService {
       });
     } catch (error) {
       // Cache write failed - log and continue (DB result is still valid)
-      console.warn('[TransactionService] Cache write failed:', error);
+      log.warn('cache write failed:', error);
     }
 
     return result;

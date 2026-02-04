@@ -15,6 +15,9 @@
 import { nanoid } from 'nanoid';
 import { db, getActiveSchema } from '@/db/index';
 import { eq, and, gt } from 'drizzle-orm';
+import { createLogger } from '@/lib/logger';
+
+const log = createLogger('password-reset');
 
 // Get the correct schema for the current database dialect
 const schema = getActiveSchema();
@@ -124,7 +127,7 @@ export async function requestPasswordReset(email: string): Promise<void> {
     // If user not found, return success anyway to prevent email enumeration
     if (!user) {
       // Log the attempt but don't throw error
-      console.warn(`Password reset requested for non-existent email: ${email}`);
+      log.warn('password reset requested for non-existent email');
       return;
     }
 
@@ -159,11 +162,11 @@ export async function requestPasswordReset(email: string): Promise<void> {
     } catch (emailError) {
       // Log email error but don't fail the request
       // (console fallback will have already logged it)
-      console.error('[Password Reset] Email sending failed:', emailError);
+      log.error('email sending failed:', emailError);
     }
   } catch (error) {
     // Log error but return success to prevent email enumeration
-    console.error('[ERROR] Password reset request failed:', error);
+    log.error('password reset request failed:', error);
 
     // Don't throw error to prevent email enumeration
     // In production, you might want to monitor these errors
@@ -196,7 +199,7 @@ export async function validateResetToken(token: string): Promise<string | null> 
 
     return resetToken.user_id;
   } catch (error) {
-    console.error('[ERROR] Token validation failed:', error);
+    log.error('token validation failed:', error);
     return null;
   }
 }
@@ -217,6 +220,6 @@ export async function consumeResetToken(token: string): Promise<void> {
   try {
     await db.delete(schema.passwordResetTokens).where(eq(schema.passwordResetTokens.token, token));
   } catch (error) {
-    console.error('[ERROR] Token consumption failed:', error);
+    log.error('token consumption failed:', error);
   }
 }

@@ -39,3 +39,9 @@ PERF_DEBUG = "true"
 [[hyperdrive]]
 binding = "HYPERDRIVE"
 id = "119e775bed8d476cb4d24c42278131e2"
+
+# Workers Logs — captures all console.* output, auto-indexes JSON fields
+# https://developers.cloudflare.com/workers/observability/logs/workers-logs/
+[observability]
+enabled = true
+head_sampling_rate = 1

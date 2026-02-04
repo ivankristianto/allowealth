@@ -1,7 +1,10 @@
 import { getEnv } from '@/lib/env';
+import { createLogger } from '@/lib/logger';
 
 // Re-export setRuntimeEnv for middleware to use
 export { setRuntimeEnv } from '@/lib/env';
+
+const log = createLogger('database');
 
 export type DatabaseDialect = 'sqlite' | 'postgresql';
 
@@ -31,8 +34,8 @@ function getDatabaseUrl(): string {
 
   // Log warning if we're falling back to SQLite in a non-dev environment
   if (import.meta.env.PROD) {
-    console.error(
-      '[DATABASE] WARNING: DATABASE_URL not found in runtime env or import.meta.env. ' +
+    log.warn(
+      'DATABASE_URL not found in runtime env or import.meta.env. ' +
         'Falling back to SQLite which will fail in Cloudflare Workers. ' +
         'Ensure DATABASE_URL secret is set via: wrangler secret put DATABASE_URL'
     );

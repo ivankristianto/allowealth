@@ -14,6 +14,9 @@
 import { auth, type User, type Session } from '@/lib/auth/lucia';
 import { hashPassword, verifyPassword } from '@/lib/auth/password';
 import { db, type IDatabase, getActiveSchema } from '@/db';
+import { createLogger } from '@/lib/logger';
+
+const log = createLogger('auth');
 import { eq } from 'drizzle-orm';
 
 // Get the correct schema for the current database dialect
@@ -382,7 +385,7 @@ export async function login(
     ]
       .filter(Boolean)
       .join(' | ');
-    console.error('[login] DB error details:', details);
+    log.error('DB error details:', details);
     throw new AuthError(AUTH_ERRORS.DATABASE_ERROR, `Database operation failed: ${details}`);
   }
 }

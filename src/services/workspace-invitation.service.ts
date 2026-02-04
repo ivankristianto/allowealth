@@ -19,6 +19,9 @@
 import { type IDatabase, getActiveSchema } from '@/db';
 import { workspaceInvitations as workspaceInvitationsSchema } from '@/db/schema/sqlite';
 import { eq, and, isNull, gt, desc } from 'drizzle-orm';
+import { createLogger } from '@/lib/logger';
+
+const log = createLogger('workspace-invitation');
 import { nanoid } from 'nanoid';
 import { z } from 'zod';
 import { WorkspaceInvitationServiceError, ServiceErrorCode } from './service-errors';
@@ -397,7 +400,7 @@ export class WorkspaceInvitationService {
       });
     } catch (emailError) {
       // Log email error but don't fail the invitation creation
-      console.error('[Workspace Invitation] Email sending failed:', emailError);
+      log.error('email sending failed:', emailError);
     }
   }
 }

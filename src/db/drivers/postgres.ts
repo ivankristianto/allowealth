@@ -15,6 +15,9 @@
 import postgres from 'postgres';
 import { drizzle, type PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import { getDatabaseConfig } from '../config';
+import { createLogger } from '@/lib/logger';
+
+const log = createLogger('postgresql');
 
 // Singleton client instance - prevents multiple pool creation
 let client: ReturnType<typeof postgres> | null = null;
@@ -64,7 +67,7 @@ export function createPostgresDriver(url: string): ReturnType<typeof postgres> {
   // Close existing client if URL changed
   if (client && clientUrl !== url) {
     client.end().catch((error) => {
-      console.error('[PostgreSQL] Error closing existing connection during URL switch:', error);
+      log.error('error closing existing connection during URL switch:', error);
     });
   }
 

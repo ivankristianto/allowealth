@@ -8,6 +8,9 @@
 import type { CacheDriver, CacheSetOptions, CacheConfig } from './types';
 import type { PerfCollector } from '@/lib/perf';
 import { getEnv } from '@/lib/env';
+import { createLogger } from '@/lib/logger';
+
+const log = createLogger('cache');
 import { UpstashDriver } from './drivers/upstash';
 import { MemoryDriver } from './drivers/memory';
 import { NoopDriver } from './drivers/noop';
@@ -31,7 +34,7 @@ export class CacheManager {
         const token = config.upstash?.token;
 
         if (!url || !token) {
-          console.warn('[Cache] Upstash credentials missing, falling back to memory driver');
+          log.warn('Upstash credentials missing, falling back to memory driver');
           return { driver: new MemoryDriver(config.defaultTtl), name: 'memory' };
         }
 

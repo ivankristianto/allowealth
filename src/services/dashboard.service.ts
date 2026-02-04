@@ -21,6 +21,9 @@
 
 import { type IDatabase, getActiveSchema } from '@/db';
 import { eq, and, gte, lte, desc, sql } from 'drizzle-orm';
+import { createLogger } from '@/lib/logger';
+
+const log = createLogger('dashboard');
 import { getLatestExchangeRate } from '@/lib/currency/conversion';
 import { calculateBudgetAlert } from '@/lib/budget/alerts';
 import { calculateAssetPriority } from '@/lib/assets/priority';
@@ -208,7 +211,7 @@ export class DashboardService {
         convertedCurrency: primaryCurrency,
       };
     } catch (error) {
-      console.error('Error getting total assets:', error);
+      log.error('error getting total assets:', error);
       // Return zeroed values on error
       return {
         idr: '0',
@@ -307,7 +310,7 @@ export class DashboardService {
         remaining,
       };
     } catch (error) {
-      console.error('Error getting monthly spent:', error);
+      log.error('error getting monthly spent:', error);
       // Return zeroed values on error
       return {
         total: '0',
@@ -374,7 +377,7 @@ export class DashboardService {
         total: totalIncome,
       };
     } catch (error) {
-      console.error('Error getting monthly income:', error);
+      log.error('error getting monthly income:', error);
       // Return zeroed values on error
       return {
         total: '0',
@@ -494,7 +497,7 @@ export class DashboardService {
 
       return result;
     } catch (error) {
-      console.error('Error getting top category expenses:', error);
+      log.error('error getting top category expenses:', error);
       return [];
     }
   }
@@ -603,7 +606,7 @@ export class DashboardService {
         alerts,
       };
     } catch (error) {
-      console.error('Error getting budget health:', error);
+      log.error('error getting budget health:', error);
       // Return empty result on error
       return {
         alertCount: 0,
@@ -665,7 +668,7 @@ export class DashboardService {
 
       return reminders;
     } catch (error) {
-      console.error('Error getting asset update reminders:', error);
+      log.error('error getting asset update reminders:', error);
       // Return empty array on error
       return [];
     }
@@ -753,7 +756,7 @@ export class DashboardService {
         },
       }));
     } catch (error) {
-      console.error('Error getting recent transactions:', error);
+      log.error('error getting recent transactions:', error);
       // Return empty array on error
       return [];
     }
@@ -930,7 +933,7 @@ export class DashboardService {
         assetReminders: reminders,
       };
     } catch (error) {
-      console.error('Error getting optimized assets:', error);
+      log.error('error getting optimized assets:', error);
       return {
         totalAssets: { idr: '0', usd: '0', converted: '0', convertedCurrency: primaryCurrency },
         assetReminders: [],
@@ -1063,7 +1066,7 @@ export class DashboardService {
         topCategoryExpenses,
       };
     } catch (error) {
-      console.error('Error getting optimized transaction aggregates:', error);
+      log.error('error getting optimized transaction aggregates:', error);
       return {
         monthlySpent: { total: '0', budget: '0', percentage: 0, remaining: '0' },
         monthlyIncome: { total: '0' },
@@ -1178,7 +1181,7 @@ export class DashboardService {
         alerts,
       };
     } catch (error) {
-      console.error('Error getting budget health:', error);
+      log.error('error getting budget health:', error);
       // Return empty result on error
       return {
         alertCount: 0,
@@ -1272,7 +1275,7 @@ export class DashboardService {
         },
       }));
     } catch (error) {
-      console.error('Error getting recent transactions:', error);
+      log.error('error getting recent transactions:', error);
       // Return empty array on error
       return [];
     }

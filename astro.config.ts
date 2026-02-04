@@ -9,7 +9,7 @@ const { PORT, DEV_HOST } = loadEnv(process.env.NODE_ENV || 'development', proces
 
 // DEV_HOST: Set custom hostname (e.g., "k2-expenses.local")
 // Falls back to listening on all interfaces if not set
-const devHost = DEV_HOST || true;
+const devHost = DEV_HOST || '0.0.0.0';
 const port = parseInt(PORT || '4321', 10);
 
 /**
@@ -65,6 +65,9 @@ export default defineConfig({
   },
   output: 'server',
   adapter,
+  image: {
+    remotePatterns: [],
+  },
   vite: {
     plugins: [
       tailwindcss(),
