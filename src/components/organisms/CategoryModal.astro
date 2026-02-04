@@ -490,38 +490,45 @@ const currentColorName = colorNameMap[values.color || 'bg-primary'] || 'Slate Da
       }
 
       iconSelect?.addEventListener('change', updateIconPreview);
-      colorSelect?.addEventListener('change', () => {
-        updateIconPreview();
-        // Update color swatch preview
+      const colorNameMap: Record<string, string> = {
+        'bg-primary': 'Slate Dark',
+        'bg-secondary': 'Slate',
+        'bg-accent': 'Forest Green',
+        'bg-neutral': 'Gray',
+        'bg-success': 'Emerald',
+        'bg-warning': 'Amber',
+        'bg-error': 'Rose',
+        'bg-info': 'Sky Blue',
+      };
+      const colorClasses = Object.keys(colorNameMap);
+
+      function syncColorPreview() {
         const swatch = container.querySelector('[data-color-swatch]') as HTMLElement;
         const nameLabel = container.querySelector('[data-color-name-label]');
-        if (swatch && colorSelect) {
-          const colorClasses = [
-            'bg-primary',
-            'bg-secondary',
-            'bg-accent',
-            'bg-neutral',
-            'bg-success',
-            'bg-warning',
-            'bg-error',
-            'bg-info',
-          ];
+        const currentColor = colorSelect?.value || 'bg-primary';
+        if (swatch) {
           colorClasses.forEach((c) => swatch.classList.remove(c));
-          swatch.classList.add(colorSelect.value);
+          swatch.classList.add(currentColor);
         }
-        if (nameLabel && colorSelect) {
-          const nameMap: Record<string, string> = {
-            'bg-primary': 'Slate Dark',
-            'bg-secondary': 'Slate',
-            'bg-accent': 'Forest Green',
-            'bg-neutral': 'Gray',
-            'bg-success': 'Emerald',
-            'bg-warning': 'Amber',
-            'bg-error': 'Rose',
-            'bg-info': 'Sky Blue',
-          };
-          nameLabel.textContent = nameMap[colorSelect.value] || colorSelect.value;
+        if (nameLabel) {
+          nameLabel.textContent = colorNameMap[currentColor] || currentColor;
         }
+      }
+
+      colorSelect?.addEventListener('change', () => {
+        updateIconPreview();
+        syncColorPreview();
+      });
+
+      // Sync on init, cancel, close so preview never goes stale
+      syncColorPreview();
+
+      cancelBtn?.addEventListener('click', () => {
+        syncColorPreview();
+      });
+
+      modal.addEventListener('close', () => {
+        syncColorPreview();
       });
     });
   }

@@ -269,8 +269,8 @@ const categoryOptions = categories.length
         }
       });
 
-      // Balance label element for dynamic update
-      const balanceLabel = document.querySelector(`label[for="${id}-balance"]`);
+      // Balance label element for dynamic update (scoped to this modal's container)
+      const balanceLabel = container.querySelector(`label[for="${id}-balance"]`);
 
       // Function to populate form for edit mode
       const populateForm = (data: AssetFormData) => {

@@ -290,17 +290,21 @@ function initCategories() {
       submitBtn.disabled = false;
       if (submitText) submitText.textContent = 'Create Categories';
 
-      if (successCount > 0) {
+      if (errors.length === 0 && successCount > 0) {
+        // Full success — close and reload
         addToast(`${successCount} categories created successfully!`, 'success');
         bulkModal.close();
-        // Reload to show new categories
         const urlParams = new URL(window.location.href);
         window.location.href = urlParams.pathname + urlParams.search;
-      }
-
-      if (errors.length > 0 && errorDiv) {
-        errorDiv.textContent = errors.join('; ');
-        errorDiv.classList.remove('hidden');
+      } else if (errors.length > 0) {
+        // Partial or full failure — keep modal open so user can retry
+        if (successCount > 0) {
+          addToast(`${successCount} created, ${errors.length} failed`, 'warning');
+        }
+        if (errorDiv) {
+          errorDiv.textContent = errors.join('; ');
+          errorDiv.classList.remove('hidden');
+        }
       }
     });
   }
