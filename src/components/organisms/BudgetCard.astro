@@ -54,6 +54,7 @@ import { formatCurrency } from '@/lib/formatting';
 import { getIconForCategory } from '@/lib/utils/categoryIcons';
 
 // Internal aliases - components
+import Badge from '@components/atoms/Badge.astro';
 import IconBadge from '@components/atoms/IconBadge.astro';
 import ProgressBar from '@components/atoms/ProgressBar.astro';
 import StatLabel from '@components/atoms/StatLabel.astro';
@@ -94,14 +95,13 @@ const remaining = budget - spent;
 // Map status to ProgressBar status and badge colors
 const progressStatus = status === 'exceeded' ? 'danger' : status === 'warning' ? 'warning' : 'ok';
 
-// Status badge styling based on percentage
-const getStatusBadgeClasses = (statusVal: 'ok' | 'warning' | 'exceeded'): string => {
-  const statusMap: Record<string, string> = {
-    ok: 'bg-success/10 text-success',
-    warning: 'bg-warning/10 text-warning',
-    exceeded: 'bg-error/10 text-error',
-  };
-  return statusMap[statusVal] || statusMap.ok;
+// Status badge variant based on percentage
+const getStatusBadgeVariant = (
+  statusVal: 'ok' | 'warning' | 'exceeded'
+): 'optimal' | 'review' | 'exceeded' => {
+  if (statusVal === 'exceeded') return 'exceeded';
+  if (statusVal === 'warning') return 'review';
+  return 'optimal';
 };
 
 // Icon badge variant based on status
@@ -254,11 +254,17 @@ const cardClasses = [
               {categoryName}
             </h3>
             <span
-              class={`inline-block mt-1 md:mt-2 px-2 py-0.5 rounded-md text-[9px] md:text-[10px] font-bold uppercase tracking-wider ${getStatusBadgeClasses(status)}`}
+              class="inline-block mt-1 md:mt-2"
               data-status-badge
               data-testid="budget-percentage"
             >
-              {Math.round(percentageUsed)}% Used
+              <Badge
+                variant={getStatusBadgeVariant(status)}
+                size="sm"
+                className="text-[9px] md:text-[10px] uppercase tracking-wider"
+              >
+                {Math.round(percentageUsed)}% Used
+              </Badge>
             </span>
           </div>
         </div>

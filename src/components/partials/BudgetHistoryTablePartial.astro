@@ -10,6 +10,7 @@
  */
 
 import { formatCurrency, formatCurrencyCompact, formatPercentage } from '@/lib/formatting';
+import Badge from '../atoms/Badge.astro';
 import ProgressBar from '../atoms/ProgressBar.astro';
 import type { MonthlyBudgetHistory } from '@/services';
 import { Receipt, RotateCcw, Eye } from '@lucide/astro';
@@ -25,12 +26,6 @@ const { history, currency, currentMonth, currentYear } = Astro.props;
 
 // Check if month has data (budget > 0)
 const hasData = (budgetAmount: number): boolean => budgetAmount > 0;
-
-// Status helpers
-const getStatusBadgeClass = (percentage: number): string => {
-  if (percentage >= 100) return 'bg-error text-white';
-  return 'bg-success text-white';
-};
 
 const getChangeIndicator = (
   current: number,
@@ -106,11 +101,13 @@ const sortedHistory = [...history].sort((a, b) => {
                   )}
                 </div>
                 {monthHasData ? (
-                  <div
-                    class={`px-4 py-1.5 rounded-full text-xs font-bold shadow-sm ${getStatusBadgeClass(percentageUsed)}`}
+                  <Badge
+                    variant={percentageUsed >= 100 ? 'exceeded' : 'optimal'}
+                    size="sm"
+                    className="px-4 py-1.5 text-xs"
                   >
                     {percentageUsed.toFixed(2)}%
-                  </div>
+                  </Badge>
                 ) : (
                   <span class="text-xs font-bold text-base-content/30">No data</span>
                 )}
@@ -233,11 +230,13 @@ const sortedHistory = [...history].sort((a, b) => {
               <div class="px-8 py-8 text-center">
                 {monthHasData ? (
                   <div class="inline-flex flex-col items-center">
-                    <div
-                      class={`px-4 py-1.5 rounded-full text-xs font-bold shadow-sm ${getStatusBadgeClass(percentageUsed)}`}
+                    <Badge
+                      variant={percentageUsed >= 100 ? 'exceeded' : 'optimal'}
+                      size="sm"
+                      className="px-4 py-1.5 text-xs"
                     >
                       {percentageUsed.toFixed(2)}%
-                    </div>
+                    </Badge>
                     {(monthData.categories_exceeded > 0 || monthData.categories_warning > 0) && (
                       <div class="mt-2 flex gap-2 justify-center">
                         {monthData.categories_exceeded > 0 && (

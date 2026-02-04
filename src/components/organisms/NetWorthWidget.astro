@@ -18,6 +18,7 @@
 
 import { Landmark, TrendingUp, Wallet, Plus } from '@lucide/astro';
 import { formatCurrency } from '@/lib/formatting';
+import Badge from '@/components/atoms/Badge.astro';
 import IconBadge from '@/components/atoms/IconBadge.astro';
 import Card from '@/components/atoms/Card.astro';
 import StatCard from '@/components/atoms/StatCard.astro';
@@ -53,11 +54,7 @@ const isEmpty = !totalIDR && !totalUSD && !localAssets && !globalAssets;
 const isPositiveGrowth = growthPercentage >= 0;
 const growthLabel = `${isPositiveGrowth ? '+' : ''}${growthPercentage.toFixed(1)}% growth`;
 
-// Growth badge classes - use explicit classes for Tailwind JIT compatibility
-const growthBadgeClasses = [
-  'text-xs font-bold px-3 py-1.5 rounded-full inline-flex items-center gap-1.5',
-  isPositiveGrowth ? 'bg-success/10 text-success' : 'bg-error/10 text-error',
-].join(' ');
+const growthBadgeVariant: 'success' | 'error' = isPositiveGrowth ? 'success' : 'error';
 
 // Card content classes
 const cardClasses = [
@@ -150,9 +147,15 @@ const ariaLabel = loading ? 'Loading net worth data...' : undefined;
           <IconBadge variant="success" size="md">
             <Landmark size={24} class="stroke-current" aria-hidden="true" />
           </IconBadge>
-          <span class={growthBadgeClasses} aria-label={`Net worth growth: ${growthLabel}`}>
-            <TrendingUp size={12} class="stroke-current" aria-hidden="true" />
-            {growthLabel}
+          <span aria-label={`Net worth growth: ${growthLabel}`}>
+            <Badge
+              variant={growthBadgeVariant}
+              size="sm"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs"
+            >
+              <TrendingUp size={12} class="stroke-current" aria-hidden="true" />
+              {growthLabel}
+            </Badge>
           </span>
         </div>
 

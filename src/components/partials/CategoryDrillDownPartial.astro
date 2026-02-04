@@ -9,6 +9,7 @@
  */
 
 import CategoryIcon from '../atoms/CategoryIcon.astro';
+import Badge from '../atoms/Badge.astro';
 import ProgressBar from '../atoms/ProgressBar.astro';
 import TransactionCard from '../molecules/TransactionCard.astro';
 import { TrendingUp, TrendingDown, TriangleAlert } from '@lucide/astro';
@@ -37,29 +38,28 @@ const remaining = hasBudget ? budgetLimit - spent : 0;
 const isOverBudget = percentage > 100;
 
 // Badge styling
-let badgeClasses = '';
+let badgeVariant: 'neutral' | 'optimal' | 'review' | 'exceeded' = 'neutral';
+let badgeClassName =
+  'inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest';
 let badgeText = '';
 let showAlertIcon = false;
 let showTrendingUpIcon = false;
 let showTrendingDownIcon = false;
 
 if (!hasBudget) {
-  badgeClasses =
-    'flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest bg-base-300 text-base-content/60';
+  badgeVariant = 'neutral';
+  badgeClassName = `${badgeClassName} bg-base-300 text-base-content/60`;
   badgeText = 'NOT SET';
 } else if (isOverBudget) {
-  badgeClasses =
-    'flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest bg-error/10 text-error';
+  badgeVariant = 'exceeded';
   badgeText = `OVER BY ${percentage.toFixed(1)}%`;
   showAlertIcon = true;
 } else if (percentage >= 80) {
-  badgeClasses =
-    'flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest bg-warning/10 text-warning';
+  badgeVariant = 'review';
   badgeText = `${percentage.toFixed(1)}% USED`;
   showTrendingUpIcon = true;
 } else {
-  badgeClasses =
-    'flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest bg-success/10 text-success';
+  badgeVariant = 'optimal';
   badgeText = `${percentage.toFixed(1)}% USED`;
   showTrendingDownIcon = true;
 }
@@ -91,15 +91,17 @@ const progressStatus: 'ok' | 'warning' | 'danger' = isOverBudget
       <p class="text-2xl md:text-3xl font-bold text-base-content tracking-tight">
         {formatCurrency(spent, 'IDR')}
       </p>
-      <div class={badgeClasses}>
-        {showAlertIcon && <TriangleAlert size={12} class="stroke-current" aria-hidden="true" />}
-        {showTrendingUpIcon && <TrendingUp size={12} class="stroke-current" aria-hidden="true" />}
-        {
-          showTrendingDownIcon && (
-            <TrendingDown size={12} class="stroke-current" aria-hidden="true" />
-          )
-        }
-        <span>{badgeText}</span>
+      <div class="mt-2">
+        <Badge variant={badgeVariant} size="sm" className={badgeClassName}>
+          {showAlertIcon && <TriangleAlert size={12} class="stroke-current" aria-hidden="true" />}
+          {showTrendingUpIcon && <TrendingUp size={12} class="stroke-current" aria-hidden="true" />}
+          {
+            showTrendingDownIcon && (
+              <TrendingDown size={12} class="stroke-current" aria-hidden="true" />
+            )
+          }
+          <span>{badgeText}</span>
+        </Badge>
       </div>
     </div>
   </div>

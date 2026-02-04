@@ -23,6 +23,7 @@ import { formatCurrency } from '@/lib/formatting';
 import { sanitizeColor } from '@/lib/utils/budget';
 
 // Internal aliases - components
+import Badge from '@components/atoms/Badge.astro';
 import StatLabel from '@components/atoms/StatLabel.astro';
 import Skeleton from '@components/atoms/Skeleton.astro';
 
@@ -191,16 +192,15 @@ const cardClasses = [
             ) : (
               <Landmark size={20} class="text-success shrink-0" aria-hidden="true" />
             )}
-            <p
-              class:list={[
-                'text-xs font-bold uppercase tracking-wide',
-                isDeficit ? 'text-error' : 'text-success',
-              ]}
+            <Badge
+              variant={isDeficit ? 'exceeded' : 'optimal'}
+              size="sm"
+              className="uppercase tracking-wide"
             >
               {isDeficit
                 ? `Deficit of ${formatCurrency(Math.abs(remaining), currency)}`
                 : `Surplus of ${formatCurrency(remaining, currency)}`}
-            </p>
+            </Badge>
           </div>
         </div>
 
