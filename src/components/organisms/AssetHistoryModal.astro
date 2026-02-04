@@ -276,33 +276,27 @@ const { id } = Astro.props;
       let currentData: AssetHistoryData | null = null;
       let currentTimeframe: 'weekly' | 'monthly' = 'monthly';
 
-      // Generate mock history data
-      // @TODO: Wire with backend - Replace with actual API call to /api/assets/:id/history
-      const generateMockHistory = (currentBalance: number, days: number): HistoryPoint[] => {
-        const history: HistoryPoint[] = [];
-        const today = new Date();
-        let balance = currentBalance * (0.85 + Math.random() * 0.1); // Start 5-15% lower
+      // Fetch real history data from API
+      const fetchHistory = async (assetId: string): Promise<HistoryPoint[]> => {
+        try {
+          const response = await fetch(`/api/assets/${assetId}/history`);
+          if (!response.ok) return [];
+          const result = await response.json();
+          const data = result.data || result;
+          if (!Array.isArray(data)) return [];
 
-        for (let i = days - 1; i >= 0; i--) {
-          const date = new Date(today);
-          date.setDate(date.getDate() - i);
-
-          // Random daily change between -2% and +3%
-          const changePercent = (Math.random() * 5 - 2) / 100;
-          balance = balance * (1 + changePercent);
-
-          // Ensure we trend towards current balance on last day
-          if (i === 0) {
-            balance = currentBalance;
-          }
-
-          history.push({
-            date: date.toISOString().split('T')[0],
-            balance: Math.round(balance * 100) / 100,
-          });
+          return data
+            .map((entry: { balance: string; recorded_at: string | number }) => ({
+              date: new Date(entry.recorded_at).toISOString().split('T')[0],
+              balance: parseFloat(entry.balance) || 0,
+            }))
+            .sort(
+              (a: HistoryPoint, b: HistoryPoint) =>
+                new Date(a.date).getTime() - new Date(b.date).getTime()
+            );
+        } catch {
+          return [];
         }
-
-        return history;
       };
 
       // Draw chart
@@ -421,9 +415,8 @@ const { id } = Astro.props;
         if (balanceEl) balanceEl.textContent = formatCurrency(data.balance, data.currency);
 
         // Get history for timeframe
-        const days = timeframe === 'weekly' ? 7 : 30;
-        const history = data.history || generateMockHistory(data.balance, days);
-        const displayHistory = timeframe === 'weekly' ? history.slice(-7) : history;
+        const history = data.history || [];
+        const displayHistory = timeframe === 'weekly' ? history.slice(-7) : history.slice(-30);
 
         // Calculate change
         const startBalance = displayHistory[0]?.balance || data.balance;
@@ -461,7 +454,7 @@ const { id } = Astro.props;
       };
 
       // Listen for open-asset-history event
-      const handleOpenHistory = ((e: CustomEvent<AssetHistoryData>) => {
+      const handleOpenHistory = (async (e: CustomEvent<AssetHistoryData>) => {
         currentData = e.detail;
         currentTimeframe = 'monthly';
 
@@ -470,12 +463,11 @@ const { id } = Astro.props;
         chartSvg?.classList.add('hidden');
         chartEmpty?.classList.add('hidden');
 
-        // Generate mock history data
-        // @TODO: Wire with backend - Fetch from API instead
-        const days = 30;
-        currentData.history = generateMockHistory(currentData.balance, days);
-
         modal.showModal();
+
+        // Fetch real history data from API
+        const history = await fetchHistory(currentData.id);
+        currentData.history = history;
 
         // Delay to allow modal animation
         setTimeout(() => {

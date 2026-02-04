@@ -1,5 +1,6 @@
 // Categories Management Client-side script
 import { getCsrfHeaders } from '@/lib/csrf-client';
+import { addToast } from '@/lib/stores/toastStore';
 
 // Initialize when DOM is ready
 function initCategories() {
@@ -10,9 +11,13 @@ function initCategories() {
   document.querySelectorAll('[data-action="create-category"]').forEach((btn) => {
     btn.addEventListener('click', (e: Event) => {
       e.preventDefault();
-      openCategoryModal('create');
+      const currentType = (btn as HTMLElement).dataset.type as 'expense' | 'income' | undefined;
+      openCategoryModal('create', undefined, currentType);
     });
   });
+
+  // Bulk add categories handler
+  initBulkAddModal();
 
   // Search form submit handler
   document.getElementById('search-form')?.addEventListener('submit', (e) => {
@@ -51,7 +56,11 @@ function initCategories() {
   });
 
   // Open category modal
-  function openCategoryModal(mode: 'create' | 'edit', values?: any) {
+  function openCategoryModal(
+    mode: 'create' | 'edit',
+    values?: any,
+    defaultType?: 'expense' | 'income'
+  ) {
     if (!categoryModal || !categoryForm) return;
 
     // Update modal mode in container
@@ -75,6 +84,15 @@ function initCategories() {
       categoryForm.reset();
       const idInput = categoryForm.querySelector('[name="id"]') as HTMLInputElement;
       if (idInput) idInput.value = '';
+
+      // Auto-select type based on current tab
+      if (defaultType) {
+        const typeSelect = categoryForm.querySelector('[name="type"]') as HTMLSelectElement;
+        if (typeSelect) {
+          typeSelect.value = defaultType;
+          typeSelect.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      }
 
       // Update icon to Plus
       if (modalIconContainer) {
@@ -151,6 +169,140 @@ function initCategories() {
     } catch (err) {
       console.error('Network error:', err);
     }
+  }
+
+  // Bulk Add Modal logic
+  function initBulkAddModal() {
+    const bulkModal = document.getElementById('bulk-add-modal') as HTMLDialogElement;
+    const textarea = document.getElementById('bulk-categories-input') as HTMLTextAreaElement;
+    const previewContainer = document.getElementById('bulk-preview');
+    const previewTags = document.querySelector('[data-bulk-preview-tags]');
+    const countEl = document.querySelector('[data-bulk-count]');
+    const errorDiv = document.getElementById('bulk-error');
+    const submitBtn = document.querySelector('[data-bulk-submit]') as HTMLButtonElement;
+    const submitText = document.querySelector('[data-bulk-submit-text]');
+    const cancelBtn = document.querySelector('[data-bulk-cancel]');
+    const typeLabel = document.querySelector('[data-bulk-type-label]');
+
+    if (!bulkModal || !textarea) return;
+
+    let bulkType: 'expense' | 'income' = 'expense';
+
+    // Open bulk modal
+    document.querySelectorAll('[data-action="bulk-add-categories"]').forEach((btn) => {
+      btn.addEventListener('click', (e: Event) => {
+        e.preventDefault();
+        bulkType = ((btn as HTMLElement).dataset.type as 'expense' | 'income') || 'expense';
+        if (typeLabel) typeLabel.textContent = bulkType;
+        textarea.value = '';
+        if (previewContainer) previewContainer.classList.add('hidden');
+        if (errorDiv) {
+          errorDiv.textContent = '';
+          errorDiv.classList.add('hidden');
+        }
+        bulkModal.showModal();
+      });
+    });
+
+    // Update preview on input
+    textarea.addEventListener('input', () => {
+      const names = textarea.value
+        .split('\n')
+        .map((line) => line.trim())
+        .filter((line) => line.length >= 3);
+
+      if (names.length > 0 && previewContainer && previewTags && countEl) {
+        previewContainer.classList.remove('hidden');
+        countEl.textContent = String(names.length);
+        previewTags.replaceChildren(
+          ...names.map((name) => {
+            const span = document.createElement('span');
+            span.className =
+              'px-3 py-1 bg-base-200 rounded-full text-xs font-medium text-base-content';
+            span.textContent = name;
+            return span;
+          })
+        );
+      } else if (previewContainer) {
+        previewContainer.classList.add('hidden');
+      }
+    });
+
+    // Cancel
+    cancelBtn?.addEventListener('click', () => {
+      bulkModal.close();
+    });
+
+    // Submit
+    submitBtn?.addEventListener('click', async () => {
+      const names = textarea.value
+        .split('\n')
+        .map((line) => line.trim())
+        .filter((line) => line.length >= 3);
+
+      if (names.length === 0) {
+        if (errorDiv) {
+          errorDiv.textContent =
+            'Please enter at least one category name (min 3 characters per name).';
+          errorDiv.classList.remove('hidden');
+        }
+        return;
+      }
+
+      if (errorDiv) {
+        errorDiv.textContent = '';
+        errorDiv.classList.add('hidden');
+      }
+
+      submitBtn.disabled = true;
+      if (submitText) submitText.textContent = 'Creating...';
+
+      const defaultIcon = bulkType === 'expense' ? 'tag' : 'banknote';
+      let successCount = 0;
+      const errors: string[] = [];
+
+      for (const name of names) {
+        try {
+          const response = await fetch('/api/categories', {
+            method: 'POST',
+            headers: getCsrfHeaders({ 'Content-Type': 'application/json' }),
+            body: JSON.stringify({
+              name,
+              type: bulkType,
+              icon: defaultIcon,
+              color: 'bg-primary',
+              description: null,
+            }),
+          });
+
+          const result = await response.json();
+          if (response.ok && result.success) {
+            successCount++;
+          } else {
+            const msg = result.error?.message || `Failed to create "${name}"`;
+            errors.push(msg);
+          }
+        } catch {
+          errors.push(`Network error creating "${name}"`);
+        }
+      }
+
+      submitBtn.disabled = false;
+      if (submitText) submitText.textContent = 'Create Categories';
+
+      if (successCount > 0) {
+        addToast(`${successCount} categories created successfully!`, 'success');
+        bulkModal.close();
+        // Reload to show new categories
+        const urlParams = new URL(window.location.href);
+        window.location.href = urlParams.pathname + urlParams.search;
+      }
+
+      if (errors.length > 0 && errorDiv) {
+        errorDiv.textContent = errors.join('; ');
+        errorDiv.classList.remove('hidden');
+      }
+    });
   }
 }
 

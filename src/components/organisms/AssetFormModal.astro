@@ -269,6 +269,9 @@ const categoryOptions = categories.length
         }
       });
 
+      // Balance label element for dynamic update
+      const balanceLabel = document.querySelector(`label[for="${id}-balance"]`);
+
       // Function to populate form for edit mode
       const populateForm = (data: AssetFormData) => {
         if (assetIdInput) assetIdInput.value = data.id || '';
@@ -294,6 +297,7 @@ const categoryOptions = categories.length
           titleEl.textContent = 'Edit Asset';
           subtitleEl.textContent = 'Update the details of your asset.';
           if (submitBtn) submitBtn.textContent = 'Save Changes';
+          if (balanceLabel) balanceLabel.textContent = 'Updated Balance';
         }
       };
 
@@ -311,6 +315,7 @@ const categoryOptions = categories.length
           titleEl.textContent = 'Register Asset';
           subtitleEl.textContent = 'Add a new account, fund or security to your portfolio.';
           if (submitBtn) submitBtn.textContent = 'Register Asset';
+          if (balanceLabel) balanceLabel.textContent = 'Initial Balance';
         }
       };
 

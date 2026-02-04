@@ -52,11 +52,27 @@ const typeLabel = ASSET_TYPE_LABELS[type] || type;
 const categoryLabel = categoryName || typeLabel;
 
 // Format date for display
-const formattedDate = new Date(lastUpdated).toLocaleDateString('en-US', {
-  month: 'numeric',
+const lastUpdateDate = new Date(lastUpdated);
+const formattedDate = lastUpdateDate.toLocaleDateString('en-US', {
+  month: 'short',
   day: 'numeric',
   year: 'numeric',
 });
+
+// Calculate relative time for "last updated" display
+const now = new Date();
+const diffMs = now.getTime() - lastUpdateDate.getTime();
+const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+const relativeTime =
+  diffDays === 0
+    ? 'Today'
+    : diffDays === 1
+      ? 'Yesterday'
+      : diffDays < 7
+        ? `${diffDays}d ago`
+        : diffDays < 30
+          ? `${Math.floor(diffDays / 7)}w ago`
+          : formattedDate;
 
 // Currency-specific classes
 const currencyBadgeClasses =
@@ -91,8 +107,11 @@ const rowClasses = [
       >
         {currency}
       </span>
-      <span class="text-xs text-base-content/50 font-medium tracking-tight">
-        Updated: {formattedDate}
+      <span
+        class="text-xs text-base-content/50 font-medium tracking-tight"
+        title={`Last balance input: ${formattedDate}`}
+      >
+        Balance updated: {relativeTime}
       </span>
     </div>
   </div>
