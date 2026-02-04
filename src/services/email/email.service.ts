@@ -8,6 +8,9 @@
 import type { WorkspaceMetaService } from '@/services/workspace-meta.service';
 import { decrypt } from '@/lib/crypto/encryption';
 import { getEnv } from '@/lib/env';
+import { createLogger } from '@/lib/logger';
+
+const log = createLogger('email');
 import {
   getEmailProvider,
   consoleProvider,
@@ -147,7 +150,7 @@ export class EmailService {
 
     // If not configured, fall back to console
     if (!settings.provider || !settings.apiKey || !settings.senderAddress) {
-      console.warn('[Email] Not configured, falling back to console provider');
+      log.warn('not configured, falling back to console provider');
       return consoleProvider.send({
         apiKey: '',
         from: { name: 'Not Configured', email: 'notconfigured@localhost' },
@@ -162,7 +165,7 @@ export class EmailService {
     try {
       apiKey = decrypt(settings.apiKey);
     } catch (error) {
-      console.error('[Email] Failed to decrypt API key:', error);
+      log.error('failed to decrypt API key:', error);
       throw new EmailServiceError(
         EmailErrorCode.ENCRYPTION_ERROR,
         'Failed to decrypt email API key',
@@ -175,7 +178,7 @@ export class EmailService {
     try {
       provider = getEmailProvider(settings.provider);
     } catch (error) {
-      console.error('[Email] Invalid provider:', settings.provider);
+      log.error('invalid provider:', settings.provider);
       throw new EmailServiceError(
         EmailErrorCode.INVALID_PROVIDER,
         `Invalid email provider: ${settings.provider}`,
@@ -197,7 +200,7 @@ export class EmailService {
 
     // Log failures
     if (!result.success) {
-      console.error('[Email] Send failed:', result.error);
+      log.error('send failed:', result.error);
 
       // Check for API key errors
       if (result.error?.toLowerCase().includes('api key')) {
