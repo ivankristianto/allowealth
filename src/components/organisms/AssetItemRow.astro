@@ -134,82 +134,89 @@ const rowClasses = [
       >
         {formatCurrency(balance, currency)}
       </p>
-      {initialBalance !== undefined && initialBalance !== balance && (
-        <p class="text-[10px] font-medium text-base-content/40 mt-1" data-testid="asset-initial-balance">
-          Initial: {formatCurrency(initialBalance, currency)}
-        </p>
-      )}
+      {
+        initialBalance !== undefined && initialBalance !== balance && (
+          <p
+            class="text-[10px] font-medium text-base-content/40 mt-1"
+            data-testid="asset-initial-balance"
+          >
+            Initial: {formatCurrency(initialBalance, currency)}
+          </p>
+        )
+      }
     </div>
 
     {/* Action Buttons - hidden for historical views */}
-    {!isHistoricalView && (
-      <div class="flex items-center gap-1 opacity-40 group-hover:opacity-100 transition-opacity">
-        {/* View History / Timeline */}
-        <button
-          type="button"
-          class="p-2 text-base-content/50 hover:text-accent transition-all rounded-xl hover:bg-accent/10"
-          title="View timeline"
-          aria-label={`View ${name} history`}
-          data-history-asset={id}
-          data-asset-name={name}
-          data-asset-type={categoryLabel}
-          data-asset-currency={currency}
-          data-asset-balance={balance}
-          data-testid="asset-history-btn"
-        >
-          <TrendingUp size={18} class="stroke-current" aria-hidden="true" />
-        </button>
+    {
+      !isHistoricalView && (
+        <div class="flex items-center gap-1 opacity-40 group-hover:opacity-100 transition-opacity">
+          {/* View History / Timeline */}
+          <button
+            type="button"
+            class="p-2 text-base-content/50 hover:text-accent transition-all rounded-xl hover:bg-accent/10"
+            title="View timeline"
+            aria-label={`View ${name} history`}
+            data-history-asset={id}
+            data-asset-name={name}
+            data-asset-type={categoryLabel}
+            data-asset-currency={currency}
+            data-asset-balance={balance}
+            data-testid="asset-history-btn"
+          >
+            <TrendingUp size={18} class="stroke-current" aria-hidden="true" />
+          </button>
 
-        {/* Update Value */}
-        <button
-          type="button"
-          class="p-2 text-base-content/50 hover:text-warning transition-all rounded-xl hover:bg-warning/10"
-          title="Update value"
-          aria-label={`Update ${name} value`}
-          data-update-value-asset={id}
-          data-asset-name={name}
-          data-asset-currency={currency}
-          data-asset-balance={balance}
-          data-testid="asset-update-value-btn"
-        >
-          <RefreshCw size={18} class="stroke-current" aria-hidden="true" />
-        </button>
+          {/* Update Value */}
+          <button
+            type="button"
+            class="p-2 text-base-content/50 hover:text-warning transition-all rounded-xl hover:bg-warning/10"
+            title="Update value"
+            aria-label={`Update ${name} value`}
+            data-update-value-asset={id}
+            data-asset-name={name}
+            data-asset-currency={currency}
+            data-asset-balance={balance}
+            data-testid="asset-update-value-btn"
+          >
+            <RefreshCw size={18} class="stroke-current" aria-hidden="true" />
+          </button>
 
-        {/* Edit Asset */}
-        <button
-          type="button"
-          class="p-2 text-base-content/50 hover:text-success transition-all rounded-xl hover:bg-success/10"
-          title="Edit asset"
-          aria-label={`Edit ${name}`}
-          data-edit-asset={id}
-          data-asset-name={name}
-          data-asset-type={type}
-          data-asset-category-id={categoryId || ''}
-          data-asset-category-name={categoryLabel}
-          data-asset-currency={currency}
-          data-asset-balance={balance}
-          data-testid="asset-edit-btn"
-        >
-          <Pencil size={18} class="stroke-current" aria-hidden="true" />
-        </button>
+          {/* Edit Asset */}
+          <button
+            type="button"
+            class="p-2 text-base-content/50 hover:text-success transition-all rounded-xl hover:bg-success/10"
+            title="Edit asset"
+            aria-label={`Edit ${name}`}
+            data-edit-asset={id}
+            data-asset-name={name}
+            data-asset-type={type}
+            data-asset-category-id={categoryId || ''}
+            data-asset-category-name={categoryLabel}
+            data-asset-currency={currency}
+            data-asset-balance={balance}
+            data-testid="asset-edit-btn"
+          >
+            <Pencil size={18} class="stroke-current" aria-hidden="true" />
+          </button>
 
-        {/* Delete Asset */}
-        <button
-          type="button"
-          class="p-2 text-base-content/50 hover:text-error transition-all rounded-xl hover:bg-error/10"
-          title="Delete asset"
-          aria-label={`Delete ${name}`}
-          data-delete-asset={id}
-          data-asset-name={name}
-          data-asset-type={categoryLabel}
-          data-asset-currency={currency}
-          data-asset-balance={balance}
-          data-testid="asset-delete-btn"
-        >
-          <Trash2 size={18} class="stroke-current" aria-hidden="true" />
-        </button>
-      </div>
-    )}
+          {/* Delete Asset */}
+          <button
+            type="button"
+            class="p-2 text-base-content/50 hover:text-error transition-all rounded-xl hover:bg-error/10"
+            title="Delete asset"
+            aria-label={`Delete ${name}`}
+            data-delete-asset={id}
+            data-asset-name={name}
+            data-asset-type={categoryLabel}
+            data-asset-currency={currency}
+            data-asset-balance={balance}
+            data-testid="asset-delete-btn"
+          >
+            <Trash2 size={18} class="stroke-current" aria-hidden="true" />
+          </button>
+        </div>
+      )
+    }
   </div>
 </div>
 

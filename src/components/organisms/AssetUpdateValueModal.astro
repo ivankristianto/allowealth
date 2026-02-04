@@ -31,10 +31,7 @@ const { id } = Astro.props;
           <RefreshCw size={24} class="stroke-current" aria-hidden="true" />
         </div>
         <div class="flex-1">
-          <h2
-            class="text-2xl font-bold tracking-tight text-primary leading-none"
-            data-modal-title
-          >
+          <h2 class="text-2xl font-bold tracking-tight text-primary leading-none" data-modal-title>
             Update Value
           </h2>
           <p class="text-neutral text-sm mt-2 font-medium" data-modal-subtitle>
@@ -44,11 +41,7 @@ const { id } = Astro.props;
       </div>
 
       {/* Form */}
-      <form
-        id={`${id}-form`}
-        class="flex flex-col gap-6"
-        aria-describedby={`${id}-error`}
-      >
+      <form id={`${id}-form`} class="flex flex-col gap-6" aria-describedby={`${id}-error`}>
         <input type="hidden" name="asset_id" id={`${id}-asset-id`} value="" />
 
         {/* Date */}
@@ -104,8 +97,7 @@ const { id } = Astro.props;
             rows="2"
             placeholder="e.g. Monthly statement update"
             class="textarea textarea-lg w-full bg-base-200 border border-base-300 rounded-2xl font-bold text-base-content focus:ring-2 focus:ring-accent focus:outline-none focus:border-accent placeholder:text-base-content/30 placeholder:font-normal"
-            data-testid="update-value-notes-input"
-          ></textarea>
+            data-testid="update-value-notes-input"></textarea>
         </div>
 
         {/* Error message container */}

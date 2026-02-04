@@ -1344,10 +1344,7 @@ async function backfillInitialBalance(): Promise<void> {
 
     const initialBalance = firstHistory?.balance || asset.balance;
 
-    await db
-      .update(assets)
-      .set({ initial_balance: initialBalance })
-      .where(eq(assets.id, asset.id));
+    await db.update(assets).set({ initial_balance: initialBalance }).where(eq(assets.id, asset.id));
 
     updated++;
   }

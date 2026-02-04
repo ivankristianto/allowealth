@@ -115,7 +115,10 @@ let assets: AssetOutput[];
 if (!isViewingCurrentMonth) {
   // Historical view: get snapshot for the selected month
   const snapshots = await assetService.getSnapshotForMonth(
-    user.workspaceId, selectedYear, selectedMonth, Astro.locals.perf
+    user.workspaceId,
+    selectedYear,
+    selectedMonth,
+    Astro.locals.perf
   );
   assets = snapshots.map((snapshot) => {
     const categoryName = snapshot.category_id
@@ -193,19 +196,24 @@ const sortedGroups = Object.entries(assetsByType)
       defaultCategoryId={defaultCategoryId}
       currentMonth={currentMonthDisplay}
       prevMonthUrl={buildMonthUrl(prevMonthDate.getFullYear(), prevMonthDate.getMonth() + 1)}
-      nextMonthUrl={!isNextMonthFuture ? buildMonthUrl(nextMonthDate.getFullYear(), nextMonthDate.getMonth() + 1) : undefined}
+      nextMonthUrl={!isNextMonthFuture
+        ? buildMonthUrl(nextMonthDate.getFullYear(), nextMonthDate.getMonth() + 1)
+        : undefined}
       isNextDisabled={isNextMonthFuture}
       currentMonthResetUrl={!isViewingCurrentMonth ? '/assets' : undefined}
       isHistoricalView={!isViewingCurrentMonth}
     />
 
     {/* Historical view indicator */}
-    {!isViewingCurrentMonth && (
-      <div class="bg-warning/10 border border-warning/20 rounded-card px-4 py-3 text-sm text-warning font-medium flex items-center gap-2">
-        <CalendarDays size={16} class="stroke-current shrink-0" />
-        Showing portfolio values as of {currentMonthDisplay}. Update actions are disabled for historical views.
-      </div>
-    )}
+    {
+      !isViewingCurrentMonth && (
+        <div class="bg-warning/10 border border-warning/20 rounded-card px-4 py-3 text-sm text-warning font-medium flex items-center gap-2">
+          <CalendarDays size={16} class="stroke-current shrink-0" />
+          Showing portfolio values as of {currentMonthDisplay}. Update actions are disabled for
+          historical views.
+        </div>
+      )
+    }
 
     {
       assets.length > 0 ? (
@@ -241,7 +249,9 @@ const sortedGroups = Object.entries(assetsByType)
                       categoryName={asset.category_name}
                       currency={asset.currency}
                       balance={parseFloat(asset.balance)}
-                      initialBalance={asset.initial_balance ? parseFloat(asset.initial_balance) : undefined}
+                      initialBalance={
+                        asset.initial_balance ? parseFloat(asset.initial_balance) : undefined
+                      }
                       lastUpdated={asset.last_updated}
                       isHistoricalView={!isViewingCurrentMonth}
                     />

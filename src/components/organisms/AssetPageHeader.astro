@@ -64,55 +64,67 @@ const headerClasses = [
 
   <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4">
     {/* Month Navigation - only shown when currentMonth is provided */}
-    {currentMonth && (
-      <div class="flex items-center gap-1" data-testid="asset-month-selector">
-        {prevMonthUrl ? (
-          <a
-            href={prevMonthUrl}
-            class="btn btn-sm btn-square bg-base-100 border border-base-300 hover:border-accent/30 hover:text-accent rounded-xl transition-all"
-            aria-label="Previous month"
-            data-testid="asset-prev-month-btn"
-          >
-            <ChevronLeft size={18} class="stroke-current" aria-hidden="true" />
-          </a>
-        ) : (
-          <button type="button" class="btn btn-sm btn-square bg-base-100 border border-base-300 rounded-xl opacity-30 cursor-not-allowed" disabled aria-label="Previous month (disabled)">
-            <ChevronLeft size={18} class="stroke-current" aria-hidden="true" />
-          </button>
-        )}
+    {
+      currentMonth && (
+        <div class="flex items-center gap-1" data-testid="asset-month-selector">
+          {prevMonthUrl ? (
+            <a
+              href={prevMonthUrl}
+              class="btn btn-sm btn-square bg-base-100 border border-base-300 hover:border-accent/30 hover:text-accent rounded-xl transition-all"
+              aria-label="Previous month"
+              data-testid="asset-prev-month-btn"
+            >
+              <ChevronLeft size={18} class="stroke-current" aria-hidden="true" />
+            </a>
+          ) : (
+            <button
+              type="button"
+              class="btn btn-sm btn-square bg-base-100 border border-base-300 rounded-xl opacity-30 cursor-not-allowed"
+              disabled
+              aria-label="Previous month (disabled)"
+            >
+              <ChevronLeft size={18} class="stroke-current" aria-hidden="true" />
+            </button>
+          )}
 
-        <div class="px-4 py-2 bg-base-100 border border-base-300 rounded-xl text-sm font-bold text-base-content min-w-[130px] text-center">
-          {currentMonth}
+          <div class="px-4 py-2 bg-base-100 border border-base-300 rounded-xl text-sm font-bold text-base-content min-w-[130px] text-center">
+            {currentMonth}
+          </div>
+
+          {nextMonthUrl && !isNextDisabled ? (
+            <a
+              href={nextMonthUrl}
+              class="btn btn-sm btn-square bg-base-100 border border-base-300 hover:border-accent/30 hover:text-accent rounded-xl transition-all"
+              aria-label="Next month"
+              data-testid="asset-next-month-btn"
+            >
+              <ChevronRight size={18} class="stroke-current" aria-hidden="true" />
+            </a>
+          ) : (
+            <button
+              type="button"
+              class="btn btn-sm btn-square bg-base-100 border border-base-300 rounded-xl opacity-30 cursor-not-allowed"
+              disabled
+              aria-label="Next month (disabled)"
+            >
+              <ChevronRight size={18} class="stroke-current" aria-hidden="true" />
+            </button>
+          )}
+
+          {currentMonthResetUrl && (
+            <a
+              href={currentMonthResetUrl}
+              class="btn btn-sm bg-base-100 border border-base-300 hover:border-accent/30 hover:text-accent rounded-xl transition-all gap-1 ml-1"
+              aria-label="Go to current month"
+              data-testid="asset-current-month-btn"
+            >
+              <CalendarDays size={16} class="stroke-current" aria-hidden="true" />
+              <span class="text-xs">Today</span>
+            </a>
+          )}
         </div>
-
-        {nextMonthUrl && !isNextDisabled ? (
-          <a
-            href={nextMonthUrl}
-            class="btn btn-sm btn-square bg-base-100 border border-base-300 hover:border-accent/30 hover:text-accent rounded-xl transition-all"
-            aria-label="Next month"
-            data-testid="asset-next-month-btn"
-          >
-            <ChevronRight size={18} class="stroke-current" aria-hidden="true" />
-          </a>
-        ) : (
-          <button type="button" class="btn btn-sm btn-square bg-base-100 border border-base-300 rounded-xl opacity-30 cursor-not-allowed" disabled aria-label="Next month (disabled)">
-            <ChevronRight size={18} class="stroke-current" aria-hidden="true" />
-          </button>
-        )}
-
-        {currentMonthResetUrl && (
-          <a
-            href={currentMonthResetUrl}
-            class="btn btn-sm bg-base-100 border border-base-300 hover:border-accent/30 hover:text-accent rounded-xl transition-all gap-1 ml-1"
-            aria-label="Go to current month"
-            data-testid="asset-current-month-btn"
-          >
-            <CalendarDays size={16} class="stroke-current" aria-hidden="true" />
-            <span class="text-xs">Today</span>
-          </a>
-        )}
-      </div>
-    )}
+      )
+    }
 
     {/* Actions */}
     <div class="flex items-center gap-2">
@@ -125,30 +137,32 @@ const headerClasses = [
         <Settings size={16} class="stroke-current" aria-hidden="true" />
         <span>Categories</span>
       </a>
-      {isHistoricalView ? (
-        <button
-          type="button"
-          class="btn btn-accent gap-2 rounded-2xl opacity-40 cursor-not-allowed"
-          disabled
-          aria-label="Add new asset (disabled for historical view)"
-          data-testid="add-asset-btn"
-        >
-          <Plus size={18} class="stroke-current" aria-hidden="true" />
-          <span>Add Asset</span>
-        </button>
-      ) : (
-        <button
-          type="button"
-          class="btn btn-accent gap-2 rounded-2xl shadow-md hover:shadow-lg transition-all"
-          aria-label="Add new asset"
-          data-add-asset-btn
-          data-default-category-id={defaultCategoryId}
-          data-testid="add-asset-btn"
-        >
-          <Plus size={18} class="stroke-current" aria-hidden="true" />
-          <span>Add Asset</span>
-        </button>
-      )}
+      {
+        isHistoricalView ? (
+          <button
+            type="button"
+            class="btn btn-accent gap-2 rounded-2xl opacity-40 cursor-not-allowed"
+            disabled
+            aria-label="Add new asset (disabled for historical view)"
+            data-testid="add-asset-btn"
+          >
+            <Plus size={18} class="stroke-current" aria-hidden="true" />
+            <span>Add Asset</span>
+          </button>
+        ) : (
+          <button
+            type="button"
+            class="btn btn-accent gap-2 rounded-2xl shadow-md hover:shadow-lg transition-all"
+            aria-label="Add new asset"
+            data-add-asset-btn
+            data-default-category-id={defaultCategoryId}
+            data-testid="add-asset-btn"
+          >
+            <Plus size={18} class="stroke-current" aria-hidden="true" />
+            <span>Add Asset</span>
+          </button>
+        )
+      }
     </div>
   </div>
 </header>

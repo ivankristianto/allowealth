@@ -390,7 +390,12 @@ const categoryOptions = categories.length
         // Balance validation - reject commas and invalid numbers (only when balance is provided)
         if (balance) {
           const balanceNum = parseFloat(balance);
-          if (isNaN(balanceNum) || balanceNum < 0 || !isFinite(balanceNum) || balance.includes(',')) {
+          if (
+            isNaN(balanceNum) ||
+            balanceNum < 0 ||
+            !isFinite(balanceNum) ||
+            balance.includes(',')
+          ) {
             if (errorDiv) {
               errorDiv.textContent = 'Please enter a valid positive number for balance.';
               errorDiv.classList.remove('hidden');
