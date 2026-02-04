@@ -38,4 +38,4 @@ PERF_DEBUG = "true"
 # Create config: wrangler hyperdrive create expenses-db --connection-string="<direct-supabase-url>"
 [[hyperdrive]]
 binding = "HYPERDRIVE"
-id = "<REPLACE_WITH_HYPERDRIVE_CONFIG_ID>"
+id = "119e775bed8d476cb4d24c42278131e2"
