@@ -15,6 +15,7 @@ import AssetItemRow from '@components/organisms/AssetItemRow.astro';
 import AssetFormModal from '@components/organisms/AssetFormModal.astro';
 import AssetDeleteConfirmModal from '@components/organisms/AssetDeleteConfirmModal.astro';
 import AssetHistoryModal from '@components/organisms/AssetHistoryModal.astro';
+import AssetUpdateValueModal from '@components/organisms/AssetUpdateValueModal.astro';
 import AssetCategoryModal from '@components/organisms/AssetCategoryModal.astro';
 import EmptyState from '@components/atoms/EmptyState.astro';
 import { assetService, assetCategoryService } from '@/services';
@@ -91,6 +92,7 @@ const assets: AssetOutput[] = rawAssets.map((asset) => {
     category_id: asset.category_id,
     category_name: categoryName,
     balance: asset.balance,
+    initial_balance: asset.initial_balance || null,
     currency: asset.currency,
     last_updated: asset.last_updated,
     created_at: asset.created_at,
@@ -163,6 +165,7 @@ const sortedGroups = Object.entries(assetsByType)
                       categoryName={asset.category_name}
                       currency={asset.currency}
                       balance={parseFloat(asset.balance)}
+                      initialBalance={asset.initial_balance ? parseFloat(asset.initial_balance) : undefined}
                       lastUpdated={asset.last_updated}
                     />
                   ))}
@@ -194,4 +197,5 @@ const sortedGroups = Object.entries(assetsByType)
   <AssetCategoryModal id="asset-category-modal" />
   <AssetDeleteConfirmModal id="asset-delete-modal" />
   <AssetHistoryModal id="asset-history-modal" />
+  <AssetUpdateValueModal id="asset-update-value-modal" />
 </ProtectedLayout>

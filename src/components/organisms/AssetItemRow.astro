@@ -31,6 +31,7 @@ export interface Props {
   categoryName?: string | null;
   currency: 'IDR' | 'USD';
   balance: number;
+  initialBalance?: number;
   lastUpdated: Date;
   className?: string;
 }
@@ -43,6 +44,7 @@ const {
   categoryName = null,
   currency,
   balance,
+  initialBalance,
   lastUpdated,
   className = '',
 } = Astro.props;
@@ -130,6 +132,11 @@ const rowClasses = [
       >
         {formatCurrency(balance, currency)}
       </p>
+      {initialBalance !== undefined && initialBalance !== balance && (
+        <p class="text-[10px] font-medium text-base-content/40 mt-1" data-testid="asset-initial-balance">
+          Initial: {formatCurrency(initialBalance, currency)}
+        </p>
+      )}
     </div>
 
     {/* Action Buttons */}
