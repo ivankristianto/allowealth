@@ -14,6 +14,7 @@ import { logError } from '@/lib/utils';
 const updateBalanceSchema = z.object({
   balance: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Balance must be a valid number'),
   notes: z.string().optional(),
+  recorded_at: z.string().datetime().optional(),
 });
 
 /**
@@ -35,7 +36,11 @@ export const POST: APIRoute = async (context) => {
       return errorResponse('Validation failed', 400, 'VALIDATION_ERROR', validation.error.issues);
     }
 
-    const asset = await assetService.updateBalance(id, auth.workspaceId, validation.data);
+    const serviceInput = {
+      ...validation.data,
+      recorded_at: validation.data.recorded_at ? new Date(validation.data.recorded_at) : undefined,
+    };
+    const asset = await assetService.updateBalance(id, auth.workspaceId, serviceInput);
 
     if (!asset) {
       return errorResponse('Asset not found', 404);
