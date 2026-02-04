@@ -31,6 +31,7 @@ export const assets = sqliteTable('assets', {
   }).notNull(),
   category_id: text('category_id').references(() => assetCategories.id),
   balance: text('balance').notNull(), // Stored as string for decimal precision
+  initial_balance: text('initial_balance'), // Original balance at creation, stored as string
   currency: text('currency', { enum: ['IDR', 'USD'] }).notNull(),
   credit_limit: text('credit_limit'), // For credit cards only, stored as string for decimal precision
   is_cash_account: integer('is_cash_account', { mode: 'boolean' }).default(false).notNull(), // Flag for cash-type accounts
