@@ -18,6 +18,9 @@ export interface Props {
 }
 
 const { id } = Astro.props;
+
+// Today's date for max attribute on date input
+const today = new Date().toISOString().split('T')[0];
 ---
 
 <div data-asset-update-value-modal-container data-id={id} data-testid="asset-update-value-modal">
@@ -57,6 +60,7 @@ const { id } = Astro.props;
             name="date"
             type="date"
             required
+            max={today}
             class="input input-lg w-full bg-base-200 border border-base-300 rounded-2xl font-bold text-base-content focus:ring-2 focus:ring-accent focus:outline-none focus:border-accent"
             data-testid="update-value-date-input"
           />
@@ -230,6 +234,15 @@ const { id } = Astro.props;
         if (isNaN(balanceNum) || balanceNum < 0 || !isFinite(balanceNum) || balance.includes(',')) {
           if (errorDiv) {
             errorDiv.textContent = 'Please enter a valid positive number for balance.';
+            errorDiv.classList.remove('hidden');
+          }
+          return;
+        }
+
+        // Validate max 2 decimal places (matches server-side regex)
+        if (!/^\d+(\.\d{1,2})?$/.test(balance)) {
+          if (errorDiv) {
+            errorDiv.textContent = 'Balance can have at most 2 decimal places.';
             errorDiv.classList.remove('hidden');
           }
           return;

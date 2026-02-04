@@ -284,15 +284,25 @@ export class AssetService {
     workspaceId: string,
     year: number,
     month: number,
+    filters?: {
+      type?: AssetType;
+      category_id?: string;
+      currency?: Currency;
+    },
     perf?: PerfCollector
   ) {
     const endOfMonth = new Date(year, month, 0, 23, 59, 59, 999);
 
     return trackQuery('AssetService.getSnapshotForMonth', perf, async () => {
-      const allAssets = await this.findAll(workspaceId);
+      const allAssets = await this.findAll(workspaceId, filters);
+
+      // Filter out assets created after the snapshot month
+      const assetsExistingAtTime = allAssets.filter(
+        (asset) => new Date(asset.created_at) <= endOfMonth
+      );
 
       const snapshots = await Promise.all(
-        allAssets.map(async (asset) => {
+        assetsExistingAtTime.map(async (asset) => {
           const history = await this.db.query.assetHistory.findFirst({
             where: and(
               eq(this.schema.assetHistory.asset_id, asset.id),
@@ -303,7 +313,7 @@ export class AssetService {
 
           return {
             ...asset,
-            snapshot_balance: history?.balance || asset.initial_balance || asset.balance,
+            snapshot_balance: history?.balance ?? asset.initial_balance ?? asset.balance,
             snapshot_date: history?.recorded_at || asset.created_at,
           };
         })
