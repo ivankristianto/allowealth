@@ -3,10 +3,13 @@
  * Security API Keys Card
  *
  * Displays a list of API keys with generate and revoke actions.
+ * Follows the same layout pattern as SecurityPasskeysCard.
  * Uses SecurityApiKeysListPartial for the key list (supports ?_render=html refresh).
  */
 
-import { KeyRound } from '@lucide/astro';
+import Button from '@/components/atoms/Button.astro';
+import IconBadge from '@/components/atoms/IconBadge.astro';
+import { Cpu, Plus } from '@lucide/astro';
 import SecurityApiKeysListPartial from '@/components/partials/SecurityApiKeysListPartial.astro';
 import type { ApiKeyItem } from '@/components/partials/SecurityApiKeysListPartial.astro';
 
@@ -17,22 +20,31 @@ export interface Props {
 const { keys } = Astro.props;
 ---
 
-<section class="card bg-base-200/60 border border-base-300 shadow" data-api-keys-card>
-  <div class="card-body p-6 space-y-5">
-    <div class="flex items-center justify-between">
-      <div class="flex items-center gap-2 text-base-content/70">
-        <KeyRound size={18} class="stroke-current" aria-hidden="true" />
-        <h3 class="text-sm font-semibold">API Keys</h3>
+<section class="card bg-base-100 shadow border border-base-300" data-api-keys-card>
+  <div class="card-body p-6 space-y-6">
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div class="flex items-center gap-4">
+        <IconBadge variant="info" size="sm">
+          <Cpu size={20} class="stroke-current" aria-hidden="true" />
+        </IconBadge>
+        <div>
+          <h3 class="text-lg font-bold">API Keys</h3>
+          <p class="text-xs uppercase tracking-widest text-base-content/50">
+            AI & Integration Access
+          </p>
+        </div>
       </div>
-      <button
-        type="button"
-        class="btn btn-primary btn-sm"
-        data-generate-key-btn
-        aria-label="Generate new API key"
-      >
-        Generate Key
-      </button>
+      <span data-generate-key-btn>
+        <Button type="button" variant="primary" size="sm">
+          <Plus size={16} class="stroke-current" aria-hidden="true" />
+          Generate Key
+        </Button>
+      </span>
     </div>
+
+    <p class="text-sm text-base-content/70">
+      Connect AI assistants and external tools to your financial data securely.
+    </p>
 
     <div data-api-keys-list>
       <SecurityApiKeysListPartial keys={keys} />

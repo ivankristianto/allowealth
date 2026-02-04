@@ -3,8 +3,11 @@
  * API Keys List Partial
  *
  * Server-rendered partial for the API keys list.
+ * Follows the same row layout as SecurityPasskeysCard.
  * Used for both SSR and HTML fragment responses (?_render=html).
  */
+
+import { KeyRound, Trash2 } from '@lucide/astro';
 
 export interface ApiKeyItem {
   id: string;
@@ -54,50 +57,43 @@ function isExpired(date: Date | null): boolean {
       <p class="text-sm">No API keys yet. Generate one to connect AI assistants.</p>
     </div>
   ) : (
-    <div class="space-y-3">
+    <div class="border border-base-300 rounded-2xl overflow-hidden divide-y divide-base-300 bg-base-100">
       {keys.map((key) => (
         <div
-          class="flex items-center justify-between gap-4 p-3 rounded-lg bg-base-100 border border-base-300"
+          class="flex items-center justify-between gap-4 p-4"
           data-api-key-item
           data-key-id={key.id}
         >
-          <div class="flex-1 min-w-0">
-            <div class="flex items-center gap-2">
-              <span class="font-medium text-sm truncate">{key.name}</span>
-              {isExpired(key.expires_at) && <span class="badge badge-error badge-xs">Expired</span>}
+          <div class="flex items-center gap-4 min-w-0">
+            <div class="rounded-xl bg-base-200 p-2 text-base-content/60 shrink-0">
+              <KeyRound size={18} class="stroke-current" aria-hidden="true" />
             </div>
-            <div class="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-xs text-base-content/50">
-              <span class="font-mono">{key.key_prefix}...</span>
-              <span>Created {formatDate(key.created_at)}</span>
-              <span>Last used: {formatRelativeDate(key.last_used_at)}</span>
-              {key.expires_at && !isExpired(key.expires_at) && (
-                <span>Expires {formatDate(key.expires_at)}</span>
-              )}
+            <div class="min-w-0">
+              <div class="flex items-center gap-2">
+                <p class="text-sm font-semibold truncate">{key.name}</p>
+                {isExpired(key.expires_at) && (
+                  <span class="badge badge-error badge-xs shrink-0">Expired</span>
+                )}
+              </div>
+              <div class="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-base-content/60">
+                <span class="font-mono">{key.key_prefix}...</span>
+                <span>Created {formatDate(key.created_at)}</span>
+                <span>Used: {formatRelativeDate(key.last_used_at)}</span>
+                {key.expires_at && !isExpired(key.expires_at) && (
+                  <span>Expires {formatDate(key.expires_at)}</span>
+                )}
+              </div>
             </div>
           </div>
           <button
             type="button"
-            class="btn btn-ghost btn-sm btn-square text-error/70 hover:text-error hover:bg-error/10"
+            class="btn btn-ghost btn-sm text-error"
             data-revoke-key
             data-key-id={key.id}
             data-key-name={key.name}
             aria-label={`Revoke ${key.name}`}
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path d="M3 6h18" />
-              <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-              <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-            </svg>
+            <Trash2 size={16} class="stroke-current" aria-hidden="true" />
           </button>
         </div>
       ))}
