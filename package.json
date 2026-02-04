@@ -110,5 +110,8 @@
     "stylelint-config-standard": "^39.0.1",
     "typescript": "^5.9.3",
     "wrangler": "^4.61.1"
+  },
+  "patchedDependencies": {
+    "astro@5.16.15": "patches/astro@5.16.15.patch"
   }
 }
