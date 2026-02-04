@@ -17,6 +17,7 @@ binding = "ASSETS"
 NODE_ENV = "production"
 CACHE_DRIVER = "upstash"
 PERF_DEBUG = "true"
+LOG_LEVEL = "warn"
 
 # Note: The _worker.js bundling is handled by @astrojs/cloudflare adapter
 # Workers only support PostgreSQL - SQLite (bun:sqlite) is for local development only

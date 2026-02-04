@@ -35,6 +35,10 @@ declare global {
     /** Enable Server-Timing header for performance metrics (default: false) */
     readonly PERF_DEBUG?: string;
 
+    // Logging
+    /** Log verbosity: silent | fatal | error | warn | log | info | debug | trace | verbose */
+    readonly LOG_LEVEL?: string;
+
     // Email configuration
     /** Email mode: 'console' for development logging, undefined for real sending */
     readonly EMAIL_MODE?: 'console';
