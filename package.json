@@ -42,6 +42,8 @@
     "cli:list-workspaces:prod": "bun --env-file=.env.production run src/cli/list-workspaces.ts",
     "cli:delete-workspace": "bun run src/cli/delete-workspace.ts",
     "cli:delete-workspace:prod": "bun --env-file=.env.production run src/cli/delete-workspace.ts",
+    "cli:create-api-key": "bun run src/cli/create-api-key.ts",
+    "cli:create-api-key:prod": "bun --env-file=.env.production run src/cli/create-api-key.ts",
     "cli:generate-email-key": "bun run scripts/generate-email-key.ts",
     "test": "bun test",
     "test:watch": "bun test --watch",
