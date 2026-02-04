@@ -1,0 +1,139 @@
+---
+/**
+ * Period Navigator Component
+ *
+ * Reusable period filter with navigation buttons and dropdown selector.
+ * Used in TransactionFiltersBar and ReportSelector for consistent period navigation.
+ *
+ * @param {Array} options - Array of period options with value and label
+ * @param {string} selected - Currently selected period value (e.g., "2024-02" or "2024")
+ * @param {string} inputName - Name for hidden input (default: "period")
+ * @param {string} ariaLabel - Aria label for the selector button
+ * @param {string} className - Additional CSS classes
+ */
+
+import { ChevronLeft, ChevronRight, Calendar, ChevronDown } from '@lucide/astro';
+
+export interface PeriodOption {
+  value: string;
+  label: string;
+}
+
+export interface Props {
+  options?: PeriodOption[];
+  selected?: string;
+  prevHref?: string;
+  nextHref?: string;
+  prevDisabled?: boolean;
+  nextDisabled?: boolean;
+  ariaLabel?: string;
+  inputName?: string;
+  className?: string;
+}
+
+const {
+  options = [],
+  selected = '',
+  prevHref,
+  nextHref,
+  prevDisabled,
+  nextDisabled,
+  ariaLabel = 'Select period',
+  inputName = 'period',
+  className = '',
+} = Astro.props;
+
+const currentIndex = options.findIndex((option) => option.value === selected);
+const hasPrevOption = currentIndex > 0;
+const hasNextOption = currentIndex < options.length - 1;
+
+const isPrevDisabled = prevDisabled ?? !hasPrevOption;
+const isNextDisabled = nextDisabled ?? !hasNextOption;
+
+const selectedOption = options.find((option) => option.value === selected);
+const currentLabel =
+  selectedOption?.label ||
+  options[options.length - 1]?.label ||
+  new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+---
+
+{
+  options.length > 0 && (
+    <div
+      class={`flex items-center gap-1 ${className}`}
+      data-period-navigator
+      data-period-options={JSON.stringify(options)}
+      data-prev-href={prevHref}
+      data-next-href={nextHref}
+    >
+      <button
+        type="button"
+        class={`btn btn-ghost btn-square border border-base-300 bg-base-100 rounded-2xl transition-all active:scale-95 shadow-sm ${
+          isPrevDisabled
+            ? 'opacity-30 cursor-not-allowed pointer-events-none'
+            : 'text-base-content/40 hover:text-primary hover:border-accent/30'
+        }`}
+        aria-label="Previous period"
+        aria-disabled={isPrevDisabled}
+        data-period-nav="prev"
+        data-has-prev={isPrevDisabled ? 'false' : 'true'}
+      >
+        <ChevronLeft size={18} class="stroke-current" aria-hidden="true" />
+      </button>
+
+      <div class="dropdown" data-period-dropdown>
+        <input type="hidden" name={inputName} data-period-input value={selected} />
+        <button
+          type="button"
+          tabindex={0}
+          class="flex items-center gap-2 px-4 py-3 text-xs font-bold border border-base-300 bg-base-100 text-base-content rounded-2xl shadow-sm hover:border-base-content/30 transition-colors min-w-[120px]"
+          aria-label={ariaLabel}
+          data-period-trigger
+        >
+          <Calendar size={16} class="stroke-current text-base-content/40" aria-hidden="true" />
+          <span class="flex-1 text-left" data-period-label>
+            {currentLabel}
+          </span>
+          <ChevronDown size={14} class="stroke-current text-base-content/40" aria-hidden="true" />
+        </button>
+        <ul
+          tabindex={0}
+          class="dropdown-content z-50 menu p-2 shadow-lg bg-base-100 rounded-2xl w-52 border border-base-300 mt-2 max-h-64 overflow-y-auto"
+        >
+          {options.map((option) => (
+            <li>
+              <button
+                type="button"
+                class={`text-xs font-medium ${option.value === selected ? 'bg-primary/10 text-primary' : ''}`}
+                data-period-option={option.value}
+                data-period-label={option.label}
+              >
+                {option.label}
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <button
+        type="button"
+        class={`btn btn-ghost btn-square border border-base-300 bg-base-100 rounded-2xl transition-all active:scale-95 shadow-sm ${
+          isNextDisabled
+            ? 'opacity-30 cursor-not-allowed pointer-events-none'
+            : 'text-base-content/40 hover:text-primary hover:border-accent/30'
+        }`}
+        aria-label="Next period"
+        aria-disabled={isNextDisabled}
+        data-period-nav="next"
+        data-has-next={isNextDisabled ? 'false' : 'true'}
+      >
+        <ChevronRight size={18} class="stroke-current" aria-hidden="true" />
+      </button>
+    </div>
+  )
+}
+
+<script>
+  // Import external initialization script
+  import '@/components/molecules/PeriodNavigator.client';
+</script>

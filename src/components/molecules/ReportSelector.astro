@@ -13,8 +13,7 @@
  * @param {string} className - Additional CSS classes
  */
 
-import MonthNavigator from '@/components/molecules/MonthNavigator.astro';
-import YearNavigator from '@/components/molecules/YearNavigator.astro';
+import PeriodNavigator from '@/components/molecules/PeriodNavigator.astro';
 
 export interface PeriodOption {
   key: string;
@@ -36,6 +35,16 @@ const {
   yearlyPeriods = [],
   className = '',
 } = Astro.props;
+
+const monthlyOptions = monthlyPeriods.map((period) => ({
+  value: period.key,
+  label: period.label,
+}));
+
+const yearlyOptions = yearlyPeriods.map((period) => ({
+  value: period.key,
+  label: period.label,
+}));
 ---
 
 <div
@@ -77,12 +86,16 @@ const {
     </button>
   </div>
 
-  <!-- Period Selector: MonthNavigator for monthly, YearNavigator for yearly -->
+  <!-- Period Selector: PeriodNavigator for monthly/yearly -->
   {
-    selectedRange === 'monthly' && monthlyPeriods.length > 0 ? (
-      <MonthNavigator availableMonths={monthlyPeriods} selectedMonth={selectedPeriod} />
-    ) : selectedRange === 'yearly' && yearlyPeriods.length > 0 ? (
-      <YearNavigator availableYears={yearlyPeriods} selectedYear={selectedPeriod} />
+    selectedRange === 'monthly' && monthlyOptions.length > 0 ? (
+      <PeriodNavigator
+        options={monthlyOptions}
+        selected={selectedPeriod}
+        ariaLabel="Select month"
+      />
+    ) : selectedRange === 'yearly' && yearlyOptions.length > 0 ? (
+      <PeriodNavigator options={yearlyOptions} selected={selectedPeriod} ariaLabel="Select year" />
     ) : null
   }
 </div>
@@ -91,28 +104,15 @@ const {
   // Store references to event listeners for cleanup
   const rangeClickHandlers = new Map<Element, () => void>();
 
-  // Listen for month changes from MonthNavigator component
-  function handleMonthChange(e: Event) {
+  // Listen for period changes from PeriodNavigator component
+  function handlePeriodChange(e: Event) {
     const customEvent = e as CustomEvent;
-    const { month, label } = customEvent.detail;
+    const { period, label } = customEvent.detail;
 
     // Dispatch period change event
     window.dispatchEvent(
       new CustomEvent('reportPeriodChange', {
-        detail: { period: month, label },
-      })
-    );
-  }
-
-  // Listen for year changes from YearNavigator component
-  function handleYearChange(e: Event) {
-    const customEvent = e as CustomEvent;
-    const { year, label } = customEvent.detail;
-
-    // Dispatch period change event
-    window.dispatchEvent(
-      new CustomEvent('reportPeriodChange', {
-        detail: { period: year, label },
+        detail: { period, label },
       })
     );
   }
@@ -122,11 +122,8 @@ const {
     // Cleanup previous listeners first
     cleanupReportSelector();
 
-    // Listen for month changes from MonthNavigator
-    window.addEventListener('monthChange', handleMonthChange);
-
-    // Listen for year changes from YearNavigator
-    window.addEventListener('yearChange', handleYearChange);
+    // Listen for period changes from PeriodNavigator
+    window.addEventListener('periodChange', handlePeriodChange);
 
     // Handle range toggle button clicks
     document.querySelectorAll('[data-range]').forEach((btn) => {
@@ -166,8 +163,7 @@ const {
     rangeClickHandlers.clear();
 
     // Remove change listeners
-    window.removeEventListener('monthChange', handleMonthChange);
-    window.removeEventListener('yearChange', handleYearChange);
+    window.removeEventListener('periodChange', handlePeriodChange);
   }
 
   // Initialize on DOM ready

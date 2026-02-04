@@ -13,7 +13,7 @@
  */
 
 import { Search, ChevronDown, Tag, Check, RotateCcw } from '@lucide/astro';
-import MonthNavigator from '@/components/molecules/MonthNavigator.astro';
+import PeriodNavigator from '@/components/molecules/PeriodNavigator.astro';
 
 export interface Props {
   typeFilter?: 'income' | 'expense';
@@ -82,7 +82,12 @@ const buildFilterUrl = (updates: Record<string, string>) => {
   return queryString ? `${basePath}?${queryString}` : basePath;
 };
 
-// Month navigator logic moved to MonthNavigator component
+const periodOptions = availableMonths.map((month) => ({
+  value: month.key,
+  label: month.label,
+}));
+
+// Period navigator logic moved to PeriodNavigator component
 ---
 
 <!-- Filter Bar Container -->
@@ -230,7 +235,12 @@ const buildFilterUrl = (updates: Record<string, string>) => {
     <!-- Month Filter with Navigation -->
     {
       monthSelector && (
-        <MonthNavigator availableMonths={availableMonths} selectedMonth={selectedMonth} />
+        <PeriodNavigator
+          options={periodOptions}
+          selected={selectedMonth}
+          ariaLabel="Select month"
+          inputName="month"
+        />
       )
     }
   </div>
@@ -286,7 +296,7 @@ const buildFilterUrl = (updates: Record<string, string>) => {
     if (!resetBtn) return;
 
     const searchInput = document.getElementById('search-input') as HTMLInputElement;
-    const monthInput = document.querySelector('[data-month-input]') as HTMLInputElement;
+    const periodInput = document.querySelector('[data-period-input]') as HTMLInputElement;
     const typeButtons = document.querySelectorAll('[data-filter-type]');
     const currentMonth = getCurrentMonth();
 
@@ -302,7 +312,7 @@ const buildFilterUrl = (updates: Record<string, string>) => {
       currentType !== 'expense' ||
       (searchInput && searchInput.value.trim() !== '') ||
       selectedCategoryIds.length > 0 ||
-      (monthInput && monthInput.value !== '' && monthInput.value !== currentMonth);
+      (periodInput && periodInput.value !== '' && periodInput.value !== currentMonth);
 
     resetBtn.classList.toggle('hidden', !hasFilters);
   }
@@ -481,17 +491,17 @@ const buildFilterUrl = (updates: Record<string, string>) => {
     });
   }
 
-  // Listen for month changes from MonthNavigator component
-  window.addEventListener('monthChange', (e: Event) => {
+  // Listen for period changes from PeriodNavigator component
+  window.addEventListener('periodChange', (e: Event) => {
     const customEvent = e as CustomEvent;
-    const { month } = customEvent.detail;
+    const { period } = customEvent.detail;
 
     // Update reset button visibility
     updateResetButtonVisibility();
 
     // Dispatch filterChange event for compatibility with existing page handlers
     window.dispatchEvent(
-      new CustomEvent('filterChange', { detail: { type: 'month', value: month } })
+      new CustomEvent('filterChange', { detail: { type: 'month', value: period } })
     );
   });
 

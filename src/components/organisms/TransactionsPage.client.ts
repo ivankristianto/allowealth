@@ -305,8 +305,8 @@ function updateMonthNavigationUI(): void {
   const currentIndex = state.availableMonths.findIndex((m) => m.key === currentMonth);
   const totalMonths = state.availableMonths.length;
 
-  const prevBtn = document.querySelector('[data-month-nav="prev"]');
-  const nextBtn = document.querySelector('[data-month-nav="next"]');
+  const prevBtn = document.querySelector('[data-period-nav="prev"]');
+  const nextBtn = document.querySelector('[data-period-nav="next"]');
 
   if (prevBtn) {
     const hasPrev = currentIndex > 0;
@@ -662,7 +662,7 @@ function setupEventListeners(): void {
       const state = transactionsDataStore.get();
       const monthData = state.availableMonths.find((m) => m.key === currentMonth);
       if (monthData) {
-        const monthLabel = document.querySelector('[data-month-label]');
+        const monthLabel = document.querySelector('[data-period-label]');
         if (monthLabel) monthLabel.textContent = monthData.label;
       }
 

@@ -1,39 +1,39 @@
 /**
- * Year Navigator Client Script
+ * Period Navigator Client Script
  *
- * Handles year navigation interactions and dispatches events.
+ * Handles period navigation interactions and dispatches events.
  * Separated from component for explicit initialization after HTML injection.
  */
 
-interface YearOption {
-  key: string;
+interface PeriodOption {
+  value: string;
   label: string;
 }
 
 // Track initialized navigators to avoid duplicate handlers
 const initializedNavigators = new WeakSet<Element>();
 
-export function initYearNavigator() {
-  document.querySelectorAll('[data-year-navigator]').forEach((navigator) => {
+export function initPeriodNavigator() {
+  document.querySelectorAll('[data-period-navigator]').forEach((navigator) => {
     // Skip if already initialized
     if (initializedNavigators.has(navigator)) return;
     initializedNavigators.add(navigator);
 
-    const yearInput = navigator.querySelector('[data-year-input]') as HTMLInputElement;
-    const yearLabel = navigator.querySelector('[data-year-label]');
-    const prevBtn = navigator.querySelector('[data-year-nav="prev"]') as HTMLButtonElement;
-    const nextBtn = navigator.querySelector('[data-year-nav="next"]') as HTMLButtonElement;
+    const periodInput = navigator.querySelector('[data-period-input]') as HTMLInputElement;
+    const periodLabel = navigator.querySelector('[data-period-label]');
+    const prevBtn = navigator.querySelector('[data-period-nav="prev"]') as HTMLButtonElement;
+    const nextBtn = navigator.querySelector('[data-period-nav="next"]') as HTMLButtonElement;
 
-    if (!yearInput || !yearLabel) return;
+    if (!periodInput || !periodLabel) return;
 
-    // Get available years from data attribute
-    const yearsData = navigator.getAttribute('data-available-years');
-    const availableYears: YearOption[] = yearsData ? JSON.parse(yearsData) : [];
+    // Get available periods from data attribute
+    const optionsData = navigator.getAttribute('data-period-options');
+    const availableOptions: PeriodOption[] = optionsData ? JSON.parse(optionsData) : [];
 
     // Update navigation button states
     function updateNavButtons() {
-      const currentYear = yearInput.value;
-      const currentIndex = availableYears.findIndex((y) => y.key === currentYear);
+      const currentPeriod = periodInput.value;
+      const currentIndex = availableOptions.findIndex((option) => option.value === currentPeriod);
 
       if (prevBtn) {
         const hasPrev = currentIndex > 0;
@@ -49,7 +49,7 @@ export function initYearNavigator() {
       }
 
       if (nextBtn) {
-        const hasNext = currentIndex < availableYears.length - 1;
+        const hasNext = currentIndex < availableOptions.length - 1;
         nextBtn.disabled = !hasNext;
         nextBtn.setAttribute('aria-disabled', hasNext ? 'false' : 'true');
         nextBtn.setAttribute('data-has-next', hasNext ? 'true' : 'false');
@@ -62,18 +62,18 @@ export function initYearNavigator() {
       }
     }
 
-    // Handle year dropdown selection
-    navigator.querySelectorAll('[data-year-option]').forEach((btn) => {
+    // Handle period dropdown selection
+    navigator.querySelectorAll('[data-period-option]').forEach((btn) => {
       btn.addEventListener('click', (e: Event) => {
         e.preventDefault();
         e.stopPropagation();
 
         const el = btn as HTMLElement;
-        const value = el.dataset.yearOption || '';
-        const displayLabel = el.dataset.yearLabel || value;
+        const value = el.dataset.periodOption || '';
+        const displayLabel = el.dataset.periodLabel || value;
 
-        yearInput.value = value;
-        yearLabel.textContent = displayLabel;
+        periodInput.value = value;
+        periodLabel.textContent = displayLabel;
 
         // Close dropdown
         (document.activeElement as HTMLElement)?.blur();
@@ -83,8 +83,8 @@ export function initYearNavigator() {
 
         // Dispatch custom event
         window.dispatchEvent(
-          new CustomEvent('yearChange', {
-            detail: { year: value, label: displayLabel },
+          new CustomEvent('periodChange', {
+            detail: { period: value, label: displayLabel },
           })
         );
       });
@@ -95,21 +95,21 @@ export function initYearNavigator() {
       prevBtn.addEventListener('click', (e: Event) => {
         e.preventDefault();
 
-        const currentYear = yearInput.value;
-        const currentIndex = availableYears.findIndex((y) => y.key === currentYear);
+        const currentPeriod = periodInput.value;
+        const currentIndex = availableOptions.findIndex((option) => option.value === currentPeriod);
 
         if (currentIndex > 0) {
-          const prevYear = availableYears[currentIndex - 1];
-          yearInput.value = prevYear.key;
-          yearLabel.textContent = prevYear.label;
+          const prevOption = availableOptions[currentIndex - 1];
+          periodInput.value = prevOption.value;
+          periodLabel.textContent = prevOption.label;
 
           // Update nav button states
           updateNavButtons();
 
           // Dispatch custom event
           window.dispatchEvent(
-            new CustomEvent('yearChange', {
-              detail: { year: prevYear.key, label: prevYear.label },
+            new CustomEvent('periodChange', {
+              detail: { period: prevOption.value, label: prevOption.label },
             })
           );
         }
@@ -120,21 +120,21 @@ export function initYearNavigator() {
       nextBtn.addEventListener('click', (e: Event) => {
         e.preventDefault();
 
-        const currentYear = yearInput.value;
-        const currentIndex = availableYears.findIndex((y) => y.key === currentYear);
+        const currentPeriod = periodInput.value;
+        const currentIndex = availableOptions.findIndex((option) => option.value === currentPeriod);
 
-        if (currentIndex < availableYears.length - 1) {
-          const nextYear = availableYears[currentIndex + 1];
-          yearInput.value = nextYear.key;
-          yearLabel.textContent = nextYear.label;
+        if (currentIndex < availableOptions.length - 1) {
+          const nextOption = availableOptions[currentIndex + 1];
+          periodInput.value = nextOption.value;
+          periodLabel.textContent = nextOption.label;
 
           // Update nav button states
           updateNavButtons();
 
           // Dispatch custom event
           window.dispatchEvent(
-            new CustomEvent('yearChange', {
-              detail: { year: nextYear.key, label: nextYear.label },
+            new CustomEvent('periodChange', {
+              detail: { period: nextOption.value, label: nextOption.label },
             })
           );
         }
@@ -148,10 +148,10 @@ export function initYearNavigator() {
 
 // Auto-initialize on page load
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initYearNavigator);
+  document.addEventListener('DOMContentLoaded', initPeriodNavigator);
 } else {
-  initYearNavigator();
+  initPeriodNavigator();
 }
 
 // Re-initialize on Astro page transitions
-document.addEventListener('astro:page-load', initYearNavigator);
+document.addEventListener('astro:page-load', initPeriodNavigator);
