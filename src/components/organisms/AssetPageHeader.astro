@@ -31,6 +31,7 @@ export interface Props {
   nextMonthUrl?: string;
   isNextDisabled?: boolean;
   currentMonthResetUrl?: string;
+  isHistoricalView?: boolean;
 }
 
 const {
@@ -43,6 +44,7 @@ const {
   nextMonthUrl,
   isNextDisabled = false,
   currentMonthResetUrl,
+  isHistoricalView = false,
 } = Astro.props;
 
 const headerClasses = [
@@ -123,17 +125,30 @@ const headerClasses = [
         <Settings size={16} class="stroke-current" aria-hidden="true" />
         <span>Categories</span>
       </a>
-      <button
-        type="button"
-        class="btn btn-accent gap-2 rounded-2xl shadow-md hover:shadow-lg transition-all"
-        aria-label="Add new asset"
-        data-add-asset-btn
-        data-default-category-id={defaultCategoryId}
-        data-testid="add-asset-btn"
-      >
-        <Plus size={18} class="stroke-current" aria-hidden="true" />
-        <span>Add Asset</span>
-      </button>
+      {isHistoricalView ? (
+        <button
+          type="button"
+          class="btn btn-accent gap-2 rounded-2xl opacity-40 cursor-not-allowed"
+          disabled
+          aria-label="Add new asset (disabled for historical view)"
+          data-testid="add-asset-btn"
+        >
+          <Plus size={18} class="stroke-current" aria-hidden="true" />
+          <span>Add Asset</span>
+        </button>
+      ) : (
+        <button
+          type="button"
+          class="btn btn-accent gap-2 rounded-2xl shadow-md hover:shadow-lg transition-all"
+          aria-label="Add new asset"
+          data-add-asset-btn
+          data-default-category-id={defaultCategoryId}
+          data-testid="add-asset-btn"
+        >
+          <Plus size={18} class="stroke-current" aria-hidden="true" />
+          <span>Add Asset</span>
+        </button>
+      )}
     </div>
   </div>
 </header>
