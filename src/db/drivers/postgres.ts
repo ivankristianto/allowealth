@@ -73,11 +73,13 @@ export function createPostgresDriver(url: string): ReturnType<typeof postgres> {
   client = postgres(url, {
     max: config.poolConfig?.max ?? 1,
     idle_timeout: config.poolConfig?.idleTimeout ?? 20,
-    ssl: getSslConfig(config.isSupabase),
+    // Hyperdrive handles SSL to origin — local connection is unencrypted.
+    // Direct Supabase/production: require SSL.
+    ssl: config.isHyperdrive ? false : getSslConfig(config.isSupabase),
     connect_timeout: 30,
-    // Supabase transaction pooler (port 6543) uses PgBouncer in transaction mode,
-    // which doesn't support prepared statements across connections.
-    prepare: !config.isTransactionPooler,
+    // Hyperdrive connects directly (not through PgBouncer), so prepared statements work.
+    // Transaction pooler (PgBouncer): must disable prepared statements.
+    prepare: config.isHyperdrive ? true : !config.isTransactionPooler,
     // Disable type catalog query to reduce subrequests in Cloudflare Workers.
     // postgres.js queries pg_type on first connection by default.
     fetch_types: false,

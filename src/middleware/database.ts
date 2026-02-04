@@ -24,7 +24,10 @@ export const database: MiddlewareHandler = async (_context, next) => {
 
   // Diagnostic: log DB config and count fetch subrequests
   console.log(
-    `[database] dialect=${config.dialect} url=${config.url ? config.url.replace(/\/\/.*@/, '//***@') : 'MISSING'} supabase=${config.isSupabase}`
+    `[database] dialect=${config.dialect}` +
+      ` url=${config.url ? config.url.replace(/\/\/.*@/, '//***@') : 'MISSING'}` +
+      ` supabase=${config.isSupabase}` +
+      ` hyperdrive=${config.isHyperdrive}`
   );
 
   // Diagnostic: count fetch() calls to identify subrequest sources
