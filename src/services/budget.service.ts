@@ -9,6 +9,7 @@ import {
   decimalSum,
   decimalIsZero,
 } from '@/lib/utils/decimal';
+import { MONTH_NAMES } from '@/lib/utils/date';
 import {
   createBudgetSchema,
   updateBudgetSchema,
@@ -255,21 +256,6 @@ export class BudgetService {
       throw new Error('Invalid months parameter (must be 1-24)');
     }
 
-    const monthNames = [
-      'January',
-      'February',
-      'March',
-      'April',
-      'May',
-      'June',
-      'July',
-      'August',
-      'September',
-      'October',
-      'November',
-      'December',
-    ];
-
     const now = new Date();
     const history: MonthlyBudgetHistory[] = [];
 
@@ -288,7 +274,7 @@ export class BudgetService {
         : 0;
 
       // Safely get month name with fallback
-      const monthName = monthNames[month - 1] ?? `Month ${month}`;
+      const monthName = MONTH_NAMES[month - 1] ?? `Month ${month}`;
 
       history.push({
         month,

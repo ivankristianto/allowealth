@@ -25,6 +25,7 @@ import {
 } from '@/services';
 import { formatCurrency } from '@/lib/formatting';
 import { calculateAllocationDistribution } from '@/lib/utils/budget';
+import { MONTH_NAMES } from '@/lib/utils/date';
 import { CircleX, Search } from '@lucide/astro';
 
 const user = Astro.locals.user;
@@ -77,23 +78,7 @@ const allocationDistribution = budgetData
     )
   : [];
 
-// Month names for display
-const monthNames = [
-  'January',
-  'February',
-  'March',
-  'April',
-  'May',
-  'June',
-  'July',
-  'August',
-  'September',
-  'October',
-  'November',
-  'December',
-];
-
-const currentMonthName = monthNames[selectedMonth - 1];
+const currentMonthName = MONTH_NAMES[selectedMonth - 1];
 const currentMonthDisplay = `${currentMonthName} ${selectedYear}`;
 
 // Build URLs for month navigation

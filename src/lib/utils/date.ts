@@ -3,6 +3,61 @@
  */
 
 /**
+ * Full month names (January-December), indexed 0-11.
+ * Use with 1-based month numbers: `MONTH_NAMES[month - 1]`
+ */
+export const MONTH_NAMES = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+] as const;
+
+/**
+ * Abbreviated month names (Jan-Dec), indexed 0-11.
+ * Use with 1-based month numbers: `MONTH_NAMES_SHORT[month - 1]`
+ */
+export const MONTH_NAMES_SHORT = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+] as const;
+
+/**
+ * Get month name by 1-based month number (1 = January, 12 = December).
+ *
+ * @param month - Month number (1-12)
+ * @param format - 'long' for full name, 'short' for abbreviation (default: 'long')
+ * @returns Month name, or fallback string if month is out of range
+ *
+ * @example
+ * getMonthName(1)          // "January"
+ * getMonthName(1, 'short') // "Jan"
+ * getMonthName(13)         // "Month 13"
+ */
+export function getMonthName(month: number, format: 'long' | 'short' = 'long'): string {
+  const names = format === 'short' ? MONTH_NAMES_SHORT : MONTH_NAMES;
+  return names[month - 1] ?? `Month ${month}`;
+}
+
+/**
  * Format a date for display
  * @param date - Date to format
  * @param format - Format style ('short', 'long', 'iso', 'relative')

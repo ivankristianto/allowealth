@@ -15,6 +15,7 @@
 
 import Modal from '../molecules/Modal.astro';
 import { Copy, ArrowRight } from '@lucide/astro';
+import { getMonthName } from '@/lib/utils/date';
 
 export interface Props {
   id: string;
@@ -27,24 +28,8 @@ export interface Props {
 
 const { id, sourceMonth, sourceYear, targetMonth, targetYear, budgetCount } = Astro.props;
 
-// Month names for display
-const monthNames = [
-  'January',
-  'February',
-  'March',
-  'April',
-  'May',
-  'June',
-  'July',
-  'August',
-  'September',
-  'October',
-  'November',
-  'December',
-];
-
-const sourceMonthName = monthNames[sourceMonth - 1] || `Month ${sourceMonth}`;
-const targetMonthName = monthNames[targetMonth - 1] || `Month ${targetMonth}`;
+const sourceMonthName = getMonthName(sourceMonth);
+const targetMonthName = getMonthName(targetMonth);
 ---
 
 <div

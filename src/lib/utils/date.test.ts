@@ -5,6 +5,9 @@
 
 import { describe, test, expect } from 'bun:test';
 import {
+  MONTH_NAMES,
+  MONTH_NAMES_SHORT,
+  getMonthName,
   formatDate,
   formatMonthYear,
   isFutureDate,
@@ -23,6 +26,71 @@ import {
   getCurrentMonthKey,
   extractAvailableMonths,
 } from './date';
+
+describe('month name constants', () => {
+  describe('MONTH_NAMES', () => {
+    test('has 12 entries', () => {
+      expect(MONTH_NAMES).toHaveLength(12);
+    });
+
+    test('starts with January and ends with December', () => {
+      expect(MONTH_NAMES[0]).toBe('January');
+      expect(MONTH_NAMES[11]).toBe('December');
+    });
+
+    test('contains all full month names in order', () => {
+      const expected = [
+        'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December',
+      ];
+      expect([...MONTH_NAMES]).toEqual(expected);
+    });
+  });
+
+  describe('MONTH_NAMES_SHORT', () => {
+    test('has 12 entries', () => {
+      expect(MONTH_NAMES_SHORT).toHaveLength(12);
+    });
+
+    test('starts with Jan and ends with Dec', () => {
+      expect(MONTH_NAMES_SHORT[0]).toBe('Jan');
+      expect(MONTH_NAMES_SHORT[11]).toBe('Dec');
+    });
+
+    test('contains all abbreviated month names in order', () => {
+      const expected = [
+        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+      ];
+      expect([...MONTH_NAMES_SHORT]).toEqual(expected);
+    });
+  });
+
+  describe('getMonthName', () => {
+    test('returns full month name by default', () => {
+      expect(getMonthName(1)).toBe('January');
+      expect(getMonthName(6)).toBe('June');
+      expect(getMonthName(12)).toBe('December');
+    });
+
+    test('returns short month name when format is "short"', () => {
+      expect(getMonthName(1, 'short')).toBe('Jan');
+      expect(getMonthName(6, 'short')).toBe('Jun');
+      expect(getMonthName(12, 'short')).toBe('Dec');
+    });
+
+    test('returns fallback for out-of-range month numbers', () => {
+      expect(getMonthName(0)).toBe('Month 0');
+      expect(getMonthName(13)).toBe('Month 13');
+      expect(getMonthName(-1)).toBe('Month -1');
+    });
+
+    test('returns fallback for out-of-range short format', () => {
+      expect(getMonthName(0, 'short')).toBe('Month 0');
+      expect(getMonthName(13, 'short')).toBe('Month 13');
+    });
+  });
+});
 
 describe('date utilities', () => {
   describe('formatDate', () => {
