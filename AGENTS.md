@@ -127,8 +127,12 @@ Agents must internalize:
 - ✅ Create abstraction layers for vendor-agnostic features (cache drivers: Memory, Noop, Upstash)
 - ✅ Handle cache errors gracefully - fall back to database queries
 - ✅ Add diagnostic logging when debugging production issues
+- ✅ Use Hyperdrive for Workers database connections - postgres.js TCP/TLS operations count as subrequests; Hyperdrive provides local proxy with 0 overhead
+- ✅ Trace dependency chains when builds fail - e.g., oslo → @node-rs/argon2 → native addon reveals the incompatible layer
 - ❌ Use `script-src 'unsafe-inline'` for CSP - inject nonces into Astro-generated scripts instead
 - ❌ Change DATABASE_URL to sqlite fallback in prod config (causes "table not found" errors)
+- ❌ Assume fetch counter captures all subrequests - TCP sockets via nodejs_compat are subrequests that bypass fetch wrappers
+- ❌ Use Supabase transaction pooler with Hyperdrive - Hyperdrive handles pooling; use direct connection (port 5432, not 6543)
 
 ### PostgreSQL/Supabase Compatibility
 
