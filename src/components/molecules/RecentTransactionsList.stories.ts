@@ -45,7 +45,7 @@ const colorStyleMap: Record<string, { bg: string; text: string }> = {
 };
 
 const meta: Meta = {
-  title: 'Organisms/RecentTransactionsList',
+  title: 'Molecules/RecentTransactionsList',
   tags: ['autodocs'],
   parameters: {
     docs: {
