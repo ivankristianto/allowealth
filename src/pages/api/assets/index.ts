@@ -44,6 +44,7 @@ const createAssetSchema = z
 export const GET: APIRoute = async (context) => {
   try {
     const auth = getAuthenticatedUser(context);
+    const perf = context.locals.perf;
     const { url } = context;
 
     const type = url.searchParams.get('type');
@@ -61,7 +62,7 @@ export const GET: APIRoute = async (context) => {
       filters.currency = currency;
     }
 
-    const assets = await assetService.findAll(auth.workspaceId, filters);
+    const assets = await assetService.findAll(auth.workspaceId, filters, perf);
 
     return successResponse(assets);
   } catch (error) {

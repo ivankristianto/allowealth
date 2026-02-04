@@ -11,6 +11,7 @@ import { logError } from '@/lib/utils';
 export const GET: APIRoute = async (context) => {
   try {
     const auth = getAuthenticatedUser(context);
+    const perf = context.locals.perf;
     const { url } = context;
 
     const currency = (url.searchParams.get('currency') as 'IDR' | 'USD') || 'IDR';
@@ -19,7 +20,7 @@ export const GET: APIRoute = async (context) => {
       return errorResponse('Invalid currency parameter', 400);
     }
 
-    const alerts = await budgetService.getAlerts(auth.workspaceId, currency);
+    const alerts = await budgetService.getAlerts(auth.workspaceId, currency, perf);
 
     return successResponse(alerts);
   } catch (error) {

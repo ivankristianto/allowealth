@@ -12,6 +12,7 @@
 import type { MiddlewareHandler } from 'astro';
 import { PerfCollector } from '@/lib/perf';
 import { getEnv } from '@/lib/env';
+import { getDatabaseConfig } from '@/db/config';
 
 /**
  * Build Server-Timing header from timing entries
@@ -39,6 +40,7 @@ export const perfDebug: MiddlewareHandler = async (context, next) => {
   const requestStart = performance.now();
   const perf = new PerfCollector();
   perf.setRoute(context.url.pathname);
+  perf.setDialect(getDatabaseConfig().dialect);
   context.locals.perf = perf;
   context.locals.serverTimings = {};
 

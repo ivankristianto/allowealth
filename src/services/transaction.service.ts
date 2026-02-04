@@ -11,6 +11,7 @@ import {
 } from '@/lib/validation/transactions';
 import { TransactionServiceError, ServiceErrorCode } from './service-errors';
 import { getCacheManager, CacheKeys, CacheTags, hashFilters } from '@/lib/cache';
+import { type PerfCollector, trackQuery } from '@/lib/perf';
 
 export { type CreateTransactionInput, type UpdateTransactionInput };
 
@@ -148,28 +149,30 @@ export class TransactionService {
    * Find transaction by ID (with relations)
    * Excludes soft-deleted transactions
    */
-  async findById(id: string, workspaceId: string) {
-    const result = await (this as any).db.query.transactions.findFirst({
-      where: and(
-        eq(this.schema.transactions.id, id),
-        eq(this.schema.transactions.workspace_id, workspaceId),
-        sql`${this.schema.transactions.deleted_at} IS NULL`
-      ),
-      with: {
-        category: true,
-        asset: true,
-        toAsset: true,
-      },
-    });
+  async findById(id: string, workspaceId: string, perf?: PerfCollector) {
+    return trackQuery('TransactionService.findById', perf, async () => {
+      const result = await (this as any).db.query.transactions.findFirst({
+        where: and(
+          eq(this.schema.transactions.id, id),
+          eq(this.schema.transactions.workspace_id, workspaceId),
+          sql`${this.schema.transactions.deleted_at} IS NULL`
+        ),
+        with: {
+          category: true,
+          asset: true,
+          toAsset: true,
+        },
+      });
 
-    return result;
+      return result;
+    });
   }
 
   /**
    * Find all transactions with filters
    * Results are cached for 30 minutes (shorter TTL due to many filter combinations)
    */
-  async findAll(filters: TransactionFilters) {
+  async findAll(filters: TransactionFilters, perf?: PerfCollector) {
     // Build cache key from filters
     const cache = getCacheManager();
     const filtersHash = hashFilters(filters as unknown as Record<string, unknown>);
@@ -188,7 +191,9 @@ export class TransactionService {
     }
 
     // Cache miss - fetch from DB
-    const result = await this.fetchTransactionsFromDb(filters);
+    const result = await trackQuery('TransactionService.findAll', perf, () =>
+      this.fetchTransactionsFromDb(filters)
+    );
 
     // Cache the result (fail-silent)
     try {
@@ -390,7 +395,7 @@ export class TransactionService {
   /**
    * Get transaction count
    */
-  async count(filters: Omit<TransactionFilters, 'limit' | 'offset'>) {
+  async count(filters: Omit<TransactionFilters, 'limit' | 'offset'>, perf?: PerfCollector) {
     const conditions = [
       eq(this.schema.transactions.workspace_id, filters.workspace_id),
       sql`${this.schema.transactions.deleted_at} IS NULL`,
@@ -431,12 +436,14 @@ export class TransactionService {
       conditions.push(searchCondition);
     }
 
-    const result = await ((this as any).db as any)
-      .select({ count: sql<number>`count(*)` })
-      .from(this.schema.transactions)
-      .where(and(...conditions));
+    return trackQuery('TransactionService.count', perf, async () => {
+      const result = await ((this as any).db as any)
+        .select({ count: sql<number>`count(*)` })
+        .from(this.schema.transactions)
+        .where(and(...conditions));
 
-    return result[0]?.count || 0;
+      return result[0]?.count || 0;
+    });
   }
 
   /**

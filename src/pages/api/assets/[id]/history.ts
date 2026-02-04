@@ -10,13 +10,14 @@ import { logError } from '@/lib/utils';
 export const GET: APIRoute = async (context) => {
   try {
     const auth = getAuthenticatedUser(context);
+    const perf = context.locals.perf;
     const { id } = context.params;
 
     if (!id) {
       return errorResponse('Asset ID is required', 400);
     }
 
-    const history = await assetService.getHistory(id, auth.workspaceId);
+    const history = await assetService.getHistory(id, auth.workspaceId, perf);
 
     return successResponse(history);
   } catch (error) {

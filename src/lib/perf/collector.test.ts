@@ -116,6 +116,22 @@ describe('PerfCollector', () => {
       perf.setRoute('/budget');
       expect(perf.getRoute()).toBe('/budget');
     });
+
+    test('sets dialect', () => {
+      perf.setDialect('sqlite');
+      expect(perf.getDialect()).toBe('sqlite');
+    });
+
+    test('includes dialect in output', () => {
+      perf.setDialect('postgresql');
+      const output = perf.toHtmlComment();
+      expect(output).toContain('Dialect: postgresql');
+    });
+
+    test('excludes dialect when not set', () => {
+      const output = perf.toHtmlComment();
+      expect(output).not.toContain('Dialect:');
+    });
   });
 
   describe('render timing', () => {

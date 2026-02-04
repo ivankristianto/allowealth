@@ -3,6 +3,7 @@ import { eq, and, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { AssetServiceError, ServiceErrorCode } from './service-errors';
 import type { AssetType, Currency } from '@/lib/types/asset';
+import { type PerfCollector, trackQuery } from '@/lib/perf';
 
 export interface CreateAssetInput {
   workspace_id: string;
@@ -114,7 +115,8 @@ export class AssetService {
       type?: AssetType;
       category_id?: string;
       currency?: Currency;
-    }
+    },
+    perf?: PerfCollector
   ) {
     const conditions = [
       eq(this.schema.assets.workspace_id, workspaceId),
@@ -133,12 +135,14 @@ export class AssetService {
       conditions.push(eq(this.schema.assets.currency, filters.currency));
     }
 
-    const result = await this.db.query.assets.findMany({
-      where: and(...conditions),
-      orderBy: (_assets: any, { asc }: any) => [asc(this.schema.assets.name)],
-    });
+    return trackQuery('AssetService.findAll', perf, async () => {
+      const result = await this.db.query.assets.findMany({
+        where: and(...conditions),
+        orderBy: (_assets: any, { asc }: any) => [asc(this.schema.assets.name)],
+      });
 
-    return result;
+      return result;
+    });
   }
 
   /**
@@ -252,63 +256,69 @@ export class AssetService {
   /**
    * Get asset history
    */
-  async getHistory(asset_id: string, workspaceId: string) {
+  async getHistory(asset_id: string, workspaceId: string, perf?: PerfCollector) {
     // Verify asset belongs to workspace
     const asset = await this.findById(asset_id, workspaceId);
     if (!asset) {
       throw new Error('Asset not found');
     }
 
-    const history = await this.db.query.assetHistory.findMany({
-      where: eq(this.schema.assetHistory.asset_id, asset_id),
-      orderBy: (assetHistory: any, { desc }: any) => [desc(assetHistory.recorded_at)],
-    });
+    return trackQuery('AssetService.getHistory', perf, async () => {
+      const history = await this.db.query.assetHistory.findMany({
+        where: eq(this.schema.assetHistory.asset_id, asset_id),
+        orderBy: (assetHistory: any, { desc }: any) => [desc(assetHistory.recorded_at)],
+      });
 
-    return history;
+      return history;
+    });
   }
 
   /**
    * Get total assets by currency
    */
-  async getTotalByCurrency(workspaceId: string) {
-    const result = await (this.db as any)
-      .select({
-        currency: this.schema.assets.currency,
-        total: sql<string>`sum(CAST(${this.schema.assets.balance} AS REAL))`,
-      })
-      .from(this.schema.assets)
-      .where(
-        and(
-          eq(this.schema.assets.workspace_id, workspaceId),
-          sql`${this.schema.assets.deleted_at} IS NULL`
+  async getTotalByCurrency(workspaceId: string, perf?: PerfCollector) {
+    return trackQuery('AssetService.getTotalByCurrency', perf, async () => {
+      const result = await (this.db as any)
+        .select({
+          currency: this.schema.assets.currency,
+          total: sql<string>`sum(CAST(${this.schema.assets.balance} AS REAL))`,
+        })
+        .from(this.schema.assets)
+        .where(
+          and(
+            eq(this.schema.assets.workspace_id, workspaceId),
+            sql`${this.schema.assets.deleted_at} IS NULL`
+          )
         )
-      )
-      .groupBy(this.schema.assets.currency);
+        .groupBy(this.schema.assets.currency);
 
-    return result;
+      return result;
+    });
   }
 
   /**
    * Get total assets by type
    */
-  async getTotalByType(workspaceId: string) {
-    const result = await (this.db as any)
-      .select({
-        type: this.schema.assets.type,
-        currency: this.schema.assets.currency,
-        total: sql<string>`sum(CAST(${this.schema.assets.balance} AS REAL))`,
-        count: sql<number>`count(*)`,
-      })
-      .from(this.schema.assets)
-      .where(
-        and(
-          eq(this.schema.assets.workspace_id, workspaceId),
-          sql`${this.schema.assets.deleted_at} IS NULL`
+  async getTotalByType(workspaceId: string, perf?: PerfCollector) {
+    return trackQuery('AssetService.getTotalByType', perf, async () => {
+      const result = await (this.db as any)
+        .select({
+          type: this.schema.assets.type,
+          currency: this.schema.assets.currency,
+          total: sql<string>`sum(CAST(${this.schema.assets.balance} AS REAL))`,
+          count: sql<number>`count(*)`,
+        })
+        .from(this.schema.assets)
+        .where(
+          and(
+            eq(this.schema.assets.workspace_id, workspaceId),
+            sql`${this.schema.assets.deleted_at} IS NULL`
+          )
         )
-      )
-      .groupBy(this.schema.assets.type, this.schema.assets.currency);
+        .groupBy(this.schema.assets.type, this.schema.assets.currency);
 
-    return result;
+      return result;
+    });
   }
 
   /**

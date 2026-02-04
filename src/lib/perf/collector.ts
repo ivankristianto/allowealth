@@ -46,6 +46,7 @@ export interface TimedOperation {
 export class PerfCollector {
   private startTime: number;
   private route: string = '';
+  private dialect: string = '';
   private cacheDriver: string = '';
   private cacheHits: number = 0;
   private cacheMisses: number = 0;
@@ -99,6 +100,20 @@ export class PerfCollector {
    */
   setRoute(route: string): void {
     this.route = route;
+  }
+
+  /**
+   * Set the database dialect (e.g., 'sqlite', 'postgresql')
+   */
+  setDialect(dialect: string): void {
+    this.dialect = dialect;
+  }
+
+  /**
+   * Get the database dialect
+   */
+  getDialect(): string {
+    return this.dialect;
   }
 
   /**
@@ -274,6 +289,11 @@ export class PerfCollector {
     // Route (sanitized - comes from URL pathname)
     if (this.route) {
       lines.push(`Route: ${this.sanitizeCommentField(this.route)}`);
+    }
+
+    // Database dialect
+    if (this.dialect) {
+      lines.push(`Dialect: ${this.sanitizeCommentField(this.dialect)}`);
     }
 
     // Cache stats (driver name sanitized - comes from config)

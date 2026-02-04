@@ -27,6 +27,7 @@ import PaginationPartial from '@/components/partials/PaginationPartial.astro';
 export const GET: APIRoute = async (context) => {
   try {
     const auth = getAuthenticatedUser(context);
+    const perf = context.locals.perf;
     const { url } = context;
 
     const { limit, offset } = getPaginationParams(url);
@@ -87,8 +88,8 @@ export const GET: APIRoute = async (context) => {
       filters.search = search;
     }
 
-    const rawTransactions = await transactionService.findAll(filters);
-    const total = await transactionService.count(filters);
+    const rawTransactions = await transactionService.findAll(filters, perf);
+    const total = await transactionService.count(filters, perf);
 
     // Transform to TransactionOutput format
     const transactions = rawTransactions.map(transformTransaction);

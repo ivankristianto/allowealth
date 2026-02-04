@@ -21,6 +21,7 @@ import type { Budget, BudgetWithCategory, CopyBudgetsResult } from '@/lib/types/
 import { BudgetServiceError, ServiceErrorCode } from './service-errors';
 import { toHexColor } from '@/lib/utils/colorUtils';
 import { getCacheManager, CacheKeys, CacheTags } from '@/lib/cache';
+import { type PerfCollector, trackQuery } from '@/lib/perf';
 
 export interface BudgetOverview {
   category_id: string;
@@ -76,7 +77,8 @@ export class BudgetService {
     workspaceId: string,
     year: number,
     month: number,
-    currency: 'IDR' | 'USD'
+    currency: 'IDR' | 'USD',
+    perf?: PerfCollector
   ): Promise<BudgetSummary> {
     // Validate inputs first
     if (!Number.isInteger(year) || year < 2000 || year > 2100) {
@@ -102,7 +104,9 @@ export class BudgetService {
     }
 
     // Cache miss - fetch from DB
-    const result = await this.fetchMonthlyOverviewFromDb(workspaceId, year, month, currency);
+    const result = await trackQuery('BudgetService.getMonthlyOverview', perf, () =>
+      this.fetchMonthlyOverviewFromDb(workspaceId, year, month, currency)
+    );
 
     // Cache write - fail-silent, log at debug level but don't rethrow
     try {
@@ -243,7 +247,8 @@ export class BudgetService {
   async getBudgetHistory(
     workspaceId: string,
     currency: 'IDR' | 'USD',
-    months: number = 12
+    months: number = 12,
+    perf?: PerfCollector
   ): Promise<MonthlyBudgetHistory[]> {
     // Validate months parameter
     if (!Number.isInteger(months) || months < 1 || months > 24) {
@@ -274,7 +279,7 @@ export class BudgetService {
       const year = date.getFullYear();
       const month = date.getMonth() + 1;
 
-      const overview = await this.getMonthlyOverview(workspaceId, year, month, currency);
+      const overview = await this.getMonthlyOverview(workspaceId, year, month, currency, perf);
 
       const totalBudget = overview.total_budget;
       const totalSpent = overview.total_spent;
@@ -305,13 +310,14 @@ export class BudgetService {
   /**
    * Get budget alerts for current month
    */
-  async getAlerts(workspaceId: string, currency: 'IDR' | 'USD') {
+  async getAlerts(workspaceId: string, currency: 'IDR' | 'USD', perf?: PerfCollector) {
     const now = new Date();
     const overview = await this.getMonthlyOverview(
       workspaceId,
       now.getFullYear(),
       now.getMonth() + 1,
-      currency
+      currency,
+      perf
     );
 
     const alerts = overview.categories

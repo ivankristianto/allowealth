@@ -18,6 +18,7 @@ import { ServiceError } from '@/services/service-errors';
 export const GET: APIRoute = async (context) => {
   try {
     const auth = getAuthenticatedUser(context);
+    const perf = context.locals.perf;
     const { id } = context.params;
 
     // Validate transaction ID format
@@ -27,7 +28,11 @@ export const GET: APIRoute = async (context) => {
     }
 
     // Now we know id is a valid string
-    const rawTransaction = await transactionService.findById(idValidation.data, auth.workspaceId);
+    const rawTransaction = await transactionService.findById(
+      idValidation.data,
+      auth.workspaceId,
+      perf
+    );
 
     if (!rawTransaction) {
       return errorResponse('Transaction not found', 404);
