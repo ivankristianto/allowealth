@@ -26,6 +26,9 @@
 
 import { type IDatabase, getActiveSchema } from '@/db';
 import { eq, and, gte, lte, sql } from 'drizzle-orm';
+import { createLogger } from '@/lib/logger';
+
+const log = createLogger('report');
 import {
   decimalSubtract,
   decimalDivide,
@@ -199,7 +202,7 @@ export class ReportService {
         categoryIntelligence,
       };
     } catch (error) {
-      console.error('Error getting monthly report:', error);
+      log.error('error getting monthly report:', error);
       // Return safe defaults on error
       return this.getEmptyReport();
     }
@@ -267,7 +270,7 @@ export class ReportService {
         categoryIntelligence,
       };
     } catch (error) {
-      console.error('Error getting yearly report:', error);
+      log.error('error getting yearly report:', error);
       // Return safe defaults on error
       return this.getEmptyReport();
     }
@@ -368,7 +371,7 @@ export class ReportService {
         throw error;
       }
       // Log and re-throw unexpected errors
-      console.error('Error getting category transactions:', error);
+      log.error('error getting category transactions:', error);
       throw new Error('Failed to retrieve category transactions');
     }
   }
