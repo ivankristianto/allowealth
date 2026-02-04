@@ -13,6 +13,7 @@ declare global {
       cspNonce?: string;
       csrfToken?: string;
       perf?: PerfCollector;
+      serverTimings?: Record<string, number>;
     }
   }
 

@@ -171,7 +171,8 @@ bun run typecheck         # TypeScript (blocking)
 ## Routes
 
 ```
-/                          # Dashboard
+/                          # Homepage
+/dashboard                 # Dashboard
 /transactions              # Transaction list (add/edit via TransactionModal)
 /budget                    # Budget overview
 /budget/history            # Budget history
