@@ -110,10 +110,15 @@ async function verifyKey(key: string, hash: string): Promise<boolean> {
 
 function generateRandomKey(): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  const bytes = crypto.getRandomValues(new Uint8Array(KEY_LENGTH));
+  const maxUnbiased = 256 - (256 % chars.length); // 248 — largest multiple of 62 < 256
   let result = '';
-  for (let i = 0; i < KEY_LENGTH; i++) {
-    result += chars[bytes[i] % chars.length];
+  while (result.length < KEY_LENGTH) {
+    const bytes = crypto.getRandomValues(new Uint8Array(KEY_LENGTH));
+    for (let i = 0; i < bytes.length && result.length < KEY_LENGTH; i++) {
+      if (bytes[i] < maxUnbiased) {
+        result += chars[bytes[i] % chars.length];
+      }
+    }
   }
   return KEY_PREFIX + result;
 }
@@ -210,7 +215,10 @@ export class ApiKeyService {
     return true;
   }
 
-  async list(workspaceId: string): Promise<
+  async list(
+    workspaceId: string,
+    userId?: string
+  ): Promise<
     Array<{
       id: string;
       name: string;
@@ -220,11 +228,15 @@ export class ApiKeyService {
       expires_at: Date | null;
     }>
   > {
+    const conditions = [
+      eq(this.schema.apiKeys.workspace_id, workspaceId),
+      isNull(this.schema.apiKeys.deleted_at),
+    ];
+    if (userId) {
+      conditions.push(eq(this.schema.apiKeys.user_id, userId));
+    }
     const rows = await this.db.query.apiKeys.findMany({
-      where: and(
-        eq(this.schema.apiKeys.workspace_id, workspaceId),
-        isNull(this.schema.apiKeys.deleted_at)
-      ),
+      where: and(...conditions),
     });
     return rows.map((row) => ({
       id: row.id,

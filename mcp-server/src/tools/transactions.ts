@@ -31,7 +31,7 @@ export const addTransactionSchema = z.object({
   category_name: z.string(),
   asset_name: z.string(),
   date: isoDateString.optional(),
-  description: z.string().optional(),
+  description: z.string().max(500).optional(),
 });
 
 export const listTransactionsTool: Tool = {

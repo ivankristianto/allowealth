@@ -50,13 +50,18 @@ export function fuzzyMatch(query: string, options: string[], maxDistance = 3): s
     return substringMatches.sort((a, b) => a.length - b.length)[0];
   }
 
-  // 3. Levenshtein distance
+  // 3. Levenshtein distance — scale threshold by query length to prevent
+  //    short queries from matching unrelated options (e.g. "Gas" → "Tax")
+  const effectiveMaxDistance = Math.min(
+    maxDistance,
+    Math.max(1, Math.floor(queryLower.length / 3))
+  );
   let bestMatch: string | null = null;
   let bestDistance = Infinity;
 
   for (const option of options) {
     const distance = levenshteinDistance(queryLower, option.toLowerCase());
-    if (distance <= maxDistance && distance < bestDistance) {
+    if (distance <= effectiveMaxDistance && distance < bestDistance) {
       bestDistance = distance;
       bestMatch = option;
     }

@@ -20,7 +20,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 async function main(): Promise<void> {
   // Authenticate API key on startup
   const context = await authenticate();
-  console.error(`Allowealth MCP server started (workspace: ${context.workspaceId})`);
+  console.error(`Allowealth MCP server started (workspace: ${context.workspaceId.slice(0, 8)}…)`);
 
   const transport = new StdioServerTransport();
   await server.connect(transport);

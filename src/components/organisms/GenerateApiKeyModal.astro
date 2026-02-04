@@ -1,0 +1,268 @@
+---
+/**
+ * Generate API Key Modal
+ *
+ * Two-step modal:
+ * Step 1: Form with name (required) and optional expiration date
+ * Step 2: Shows the generated plain key with copy button and warning
+ */
+
+import Modal from '@/components/molecules/Modal.astro';
+---
+
+<div data-generate-key-modal-container>
+  <Modal
+    id="generate-api-key-modal"
+    title="Generate API Key"
+    size="md"
+    closable={true}
+    backdropClose={false}
+  >
+    <!-- Step 1: Form -->
+    <div data-step="form">
+      <form data-generate-key-form class="space-y-4">
+        <div class="form-control w-full">
+          <label class="label" for="api-key-name">
+            <span class="label-text">Name</span>
+          </label>
+          <input
+            type="text"
+            id="api-key-name"
+            name="name"
+            class="input input-bordered w-full"
+            placeholder='e.g. "Claude Desktop"'
+            required
+            maxlength="100"
+          />
+        </div>
+
+        <div class="form-control w-full">
+          <label class="label" for="api-key-expires">
+            <span class="label-text">Expiration (optional)</span>
+          </label>
+          <input
+            type="date"
+            id="api-key-expires"
+            name="expires_at"
+            class="input input-bordered w-full"
+          />
+          <label class="label">
+            <span class="label-text-alt text-base-content/50">Leave empty for no expiration</span>
+          </label>
+        </div>
+
+        <div
+          data-form-error
+          class="hidden alert alert-error text-sm"
+          role="alert"
+          aria-live="polite"
+        >
+        </div>
+
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" class="btn btn-ghost btn-sm" data-close-generate>Cancel</button>
+          <button type="submit" class="btn btn-primary btn-sm" data-submit-generate>Generate</button
+          >
+        </div>
+      </form>
+    </div>
+
+    <!-- Step 2: Key Display -->
+    <div data-step="result" class="hidden space-y-4">
+      <div class="alert alert-warning text-sm">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="stroke-current shrink-0 h-5 w-5"
+          fill="none"
+          viewBox="0 0 24 24"
+          ><path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"
+          ></path></svg
+        >
+        <span>Save this key now — it won't be shown again.</span>
+      </div>
+
+      <div class="relative">
+        <pre
+          class="bg-base-300 rounded-lg p-4 text-sm font-mono break-all whitespace-pre-wrap select-all"
+          data-plain-key>
+        </pre>
+        <button
+          type="button"
+          class="btn btn-ghost btn-xs absolute top-2 right-2"
+          data-copy-key
+          aria-label="Copy API key"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            ><rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect><path
+              d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg
+          >
+          <span data-copy-label>Copy</span>
+        </button>
+      </div>
+
+      <div class="flex justify-end pt-2">
+        <button type="button" class="btn btn-primary btn-sm" data-close-after-generate>Done</button>
+      </div>
+    </div>
+  </Modal>
+</div>
+
+<script>
+  import { addToast } from '@/lib/stores/toastStore';
+  import { getCsrfHeaders } from '@/lib/csrf-client';
+  import { setButtonLoading } from '@/lib/client-utils';
+
+  const initializedContainers = new WeakSet<Element>();
+
+  function initGenerateKeyModal() {
+    document
+      .querySelectorAll<HTMLElement>('[data-generate-key-modal-container]')
+      .forEach((container) => {
+        if (initializedContainers.has(container)) return;
+        initializedContainers.add(container);
+
+        const modal = container.querySelector<HTMLDialogElement>('#generate-api-key-modal');
+        const form = container.querySelector<HTMLFormElement>('[data-generate-key-form]');
+        const stepForm = container.querySelector<HTMLElement>('[data-step="form"]');
+        const stepResult = container.querySelector<HTMLElement>('[data-step="result"]');
+        const errorEl = container.querySelector<HTMLElement>('[data-form-error]');
+        const submitBtn = container.querySelector<HTMLButtonElement>('[data-submit-generate]');
+        const closeBtn = container.querySelector<HTMLButtonElement>('[data-close-generate]');
+        const closeDoneBtn = container.querySelector<HTMLButtonElement>(
+          '[data-close-after-generate]'
+        );
+        const plainKeyEl = container.querySelector<HTMLElement>('[data-plain-key]');
+        const copyBtn = container.querySelector<HTMLButtonElement>('[data-copy-key]');
+        const copyLabel = container.querySelector<HTMLElement>('[data-copy-label]');
+        const expiresInput = container.querySelector<HTMLInputElement>('#api-key-expires');
+
+        if (!modal || !form || !stepForm || !stepResult || !submitBtn || !plainKeyEl) return;
+
+        // Set min date to tomorrow for expiration
+        if (expiresInput) {
+          const tomorrow = new Date();
+          tomorrow.setDate(tomorrow.getDate() + 1);
+          expiresInput.min = tomorrow.toISOString().split('T')[0];
+        }
+
+        function resetModal() {
+          form!.reset();
+          stepForm!.classList.remove('hidden');
+          stepResult!.classList.add('hidden');
+          errorEl?.classList.add('hidden');
+          if (copyLabel) copyLabel.textContent = 'Copy';
+        }
+
+        // Open modal event
+        document.addEventListener('apikey:open-generate', () => {
+          resetModal();
+        });
+
+        // Form submission
+        form.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          errorEl?.classList.add('hidden');
+
+          const formData = new FormData(form);
+          const name = formData.get('name') as string;
+          const expiresAt = formData.get('expires_at') as string;
+
+          if (!name.trim()) {
+            if (errorEl) {
+              errorEl.textContent = 'Name is required';
+              errorEl.classList.remove('hidden');
+            }
+            return;
+          }
+
+          setButtonLoading(submitBtn, true);
+
+          try {
+            const body: Record<string, string> = { name: name.trim() };
+            if (expiresAt) body.expires_at = expiresAt;
+
+            const response = await fetch('/api/user/api-keys', {
+              method: 'POST',
+              credentials: 'include',
+              headers: {
+                'Content-Type': 'application/json',
+                ...getCsrfHeaders(),
+              },
+              body: JSON.stringify(body),
+            });
+
+            const result = await response.json();
+            if (!response.ok || !result.success) {
+              throw new Error(result.error?.message || 'Failed to generate key');
+            }
+
+            // Show step 2 with the plain key
+            plainKeyEl.textContent = result.data.plain_key;
+            stepForm.classList.add('hidden');
+            stepResult.classList.remove('hidden');
+
+            addToast('API key generated', 'success');
+          } catch (err) {
+            const message = err instanceof Error ? err.message : 'Failed to generate key';
+            if (errorEl) {
+              errorEl.textContent = message;
+              errorEl.classList.remove('hidden');
+            }
+            addToast(message, 'error');
+          } finally {
+            setButtonLoading(submitBtn, false);
+          }
+        });
+
+        // Copy key
+        if (copyBtn && copyLabel) {
+          copyBtn.addEventListener('click', async () => {
+            const key = (plainKeyEl.textContent || '').trim();
+            try {
+              await navigator.clipboard.writeText(key);
+            } catch {
+              // Fallback for non-secure contexts or dialog focus issues
+              const textarea = document.createElement('textarea');
+              textarea.value = key;
+              textarea.style.position = 'fixed';
+              textarea.style.opacity = '0';
+              document.body.appendChild(textarea);
+              textarea.select();
+              document.execCommand('copy');
+              document.body.removeChild(textarea);
+            }
+            copyLabel.textContent = 'Copied!';
+            setTimeout(() => {
+              copyLabel.textContent = 'Copy';
+            }, 2000);
+          });
+        }
+
+        // Close buttons
+        closeBtn?.addEventListener('click', () => {
+          modal.close();
+        });
+
+        closeDoneBtn?.addEventListener('click', () => {
+          modal.close();
+          document.dispatchEvent(new CustomEvent('apikey:created'));
+        });
+      });
+  }
+
+  document.addEventListener('DOMContentLoaded', initGenerateKeyModal);
+  document.addEventListener('astro:page-load', initGenerateKeyModal);
+</script>

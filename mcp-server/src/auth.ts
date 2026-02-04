@@ -49,14 +49,8 @@ export async function getAuthContext(): Promise<AuthContext> {
     columns: { deleted_at: true, expires_at: true },
   });
 
-  if (!key) {
-    throw new Error('API key no longer exists.');
-  }
-  if (key.deleted_at) {
-    throw new Error('API key has been revoked.');
-  }
-  if (key.expires_at && new Date(key.expires_at) < new Date()) {
-    throw new Error('API key has expired.');
+  if (!key || key.deleted_at || (key.expires_at && new Date(key.expires_at) < new Date())) {
+    throw new Error('API key is no longer valid.');
   }
 
   return cachedContext;
