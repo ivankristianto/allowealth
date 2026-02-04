@@ -292,6 +292,9 @@ export class AssetService {
     perf?: PerfCollector
   ) {
     const endOfMonth = new Date(year, month, 0, 23, 59, 59, 999);
+    // SQLite stores recorded_at as integer (epoch seconds) via mode: 'timestamp'
+    // Must bind a number, not a Date object
+    const endOfMonthEpoch = Math.floor(endOfMonth.getTime() / 1000);
 
     return trackQuery('AssetService.getSnapshotForMonth', perf, async () => {
       const allAssets = await this.findAll(workspaceId, filters);
@@ -306,7 +309,7 @@ export class AssetService {
           const history = await this.db.query.assetHistory.findFirst({
             where: and(
               eq(this.schema.assetHistory.asset_id, asset.id),
-              sql`${this.schema.assetHistory.recorded_at} <= ${endOfMonth}`
+              sql`${this.schema.assetHistory.recorded_at} <= ${endOfMonthEpoch}`
             ),
             orderBy: (assetHistory: any, { desc }: any) => [desc(assetHistory.recorded_at)],
           });

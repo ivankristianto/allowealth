@@ -1148,34 +1148,80 @@ async function seedAssets(
 const ALL_ASSETS = [...PAYMENT_ASSETS, ...ASSET_TYPES];
 
 /**
- * Seed asset history (weekly updates for 12 weeks)
+ * Seed asset history (monthly entries for 6 months, plus biweekly for recent 2 months)
+ * Generates enough data so historical month navigation shows realistic values.
  */
 async function seedAssetHistory(assetMap: Map<string, string>): Promise<void> {
   console.log('📈 Seeding asset history...');
 
   let historyCount = 0;
+  const now = new Date();
 
   for (const [assetName, assetId] of assetMap.entries()) {
     const assetConfig = ALL_ASSETS.find((a) => a.name === assetName);
-    if (!assetConfig) continue; // Skip if asset not found
+    if (!assetConfig) continue;
 
-    // Generate weekly history for 12 weeks
-    for (let week = 0; week < 12; week++) {
-      const recordedAt = daysAgo(week * 7);
-      const baseBalance = parseFloat(assetConfig.balance.toString());
+    const baseBalance = parseFloat(assetConfig.balance.toString());
 
-      // Add some variation to the balance
-      const variation = (Math.random() - 0.5) * baseBalance * 0.1; // ±5% variation
-      const balance = amt(baseBalance + variation);
+    // Generate entries for each of the past 6 months
+    for (let monthsAgo = 6; monthsAgo >= 0; monthsAgo--) {
+      const monthDate = new Date(now.getFullYear(), now.getMonth() - monthsAgo, 1);
 
-      await db.insert(assetHistory).values({
-        id: nanoid(),
-        asset_id: assetId,
-        balance,
-        notes: `Weekly balance update - ${new Date(recordedAt).toLocaleDateString()}`,
-        recorded_at: recordedAt,
-      });
-      historyCount++;
+      // Simulate gradual growth/decline over time (older = further from current)
+      const growthFactor = 1 - monthsAgo * 0.03; // ~3% growth per month
+      const monthBaseBalance = baseBalance * growthFactor;
+
+      if (monthsAgo <= 2) {
+        // Recent months: biweekly entries (1st and 15th)
+        for (const day of [1, 15]) {
+          const recordedAt = new Date(
+            monthDate.getFullYear(),
+            monthDate.getMonth(),
+            day,
+            SEED_TIME_HOUR,
+            0,
+            0,
+            0
+          );
+          if (recordedAt > now) continue;
+
+          const variation = (Math.random() - 0.5) * monthBaseBalance * 0.04; // ±2% variation
+          const balance = amt(monthBaseBalance + variation);
+
+          await db.insert(assetHistory).values({
+            id: nanoid(),
+            asset_id: assetId,
+            balance,
+            notes: `Balance update - ${recordedAt.toLocaleDateString()}`,
+            recorded_at: recordedAt,
+          });
+          historyCount++;
+        }
+      } else {
+        // Older months: one entry mid-month
+        const recordedAt = new Date(
+          monthDate.getFullYear(),
+          monthDate.getMonth(),
+          15,
+          SEED_TIME_HOUR,
+          0,
+          0,
+          0
+        );
+        if (recordedAt > now) continue;
+
+        const variation = (Math.random() - 0.5) * monthBaseBalance * 0.06; // ±3% variation
+        const balance = amt(monthBaseBalance + variation);
+
+        await db.insert(assetHistory).values({
+          id: nanoid(),
+          asset_id: assetId,
+          balance,
+          notes: `Monthly balance update - ${recordedAt.toLocaleDateString()}`,
+          recorded_at: recordedAt,
+        });
+        historyCount++;
+      }
     }
   }
 

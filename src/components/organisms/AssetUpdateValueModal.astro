@@ -34,9 +34,17 @@ const today = new Date().toISOString().split('T')[0];
           <RefreshCw size={24} class="stroke-current" aria-hidden="true" />
         </div>
         <div class="flex-1">
-          <h2 class="text-2xl font-bold tracking-tight text-primary leading-none" data-modal-title>
-            Update Value
-          </h2>
+          <div class="flex items-center gap-2">
+            <h2
+              class="text-2xl font-bold tracking-tight text-primary leading-none"
+              data-modal-title
+            >
+              Update Value
+            </h2>
+            <span
+              class="px-2 py-0.5 rounded-md text-[10px] font-bold tracking-wider uppercase bg-base-200 text-base-content/50 hidden"
+              data-modal-currency-badge></span>
+          </div>
           <p class="text-neutral text-sm mt-2 font-medium" data-modal-subtitle>
             Record a new balance for this asset.
           </p>
@@ -71,8 +79,9 @@ const today = new Date().toISOString().split('T')[0];
           <label
             for={`${id}-balance`}
             class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest ml-1"
+            data-balance-label
           >
-            Current Balance
+            New Balance
           </label>
           <input
             id={`${id}-balance`}
@@ -160,6 +169,8 @@ const today = new Date().toISOString().split('T')[0];
       const balanceInput = document.getElementById(`${id}-balance`) as HTMLInputElement | null;
       const notesInput = document.getElementById(`${id}-notes`) as HTMLTextAreaElement | null;
       const subtitleEl = container.querySelector('[data-modal-subtitle]');
+      const currencyBadge = container.querySelector('[data-modal-currency-badge]') as HTMLElement;
+      const balanceLabel = container.querySelector('[data-balance-label]') as HTMLElement;
 
       if (!modal || !form) return;
 
@@ -183,6 +194,17 @@ const today = new Date().toISOString().split('T')[0];
       ) => {
         if (assetIdInput) assetIdInput.value = e.detail.id;
         if (subtitleEl) subtitleEl.textContent = `Record a new balance for ${e.detail.name}.`;
+        if (currencyBadge) {
+          currencyBadge.textContent = e.detail.currency;
+          currencyBadge.classList.remove('hidden');
+          // Apply currency-specific coloring
+          currencyBadge.className =
+            'px-2 py-0.5 rounded-md text-[10px] font-bold tracking-wider uppercase ' +
+            (e.detail.currency === 'IDR' ? 'bg-success/10 text-success' : 'bg-info/10 text-info');
+        }
+        if (balanceLabel) {
+          balanceLabel.textContent = `New Balance (${e.detail.currency})`;
+        }
         if (dateInput) dateInput.value = today;
         if (balanceInput) balanceInput.value = '';
         if (notesInput) notesInput.value = '';

@@ -1,0 +1,117 @@
+---
+/**
+ * AssetActions Component
+ *
+ * Action buttons row for the Assets page containing Categories link
+ * and Add Asset button. Follows the same layout pattern as BudgetActions.
+ *
+ * @param {boolean} isHistoricalView - Disable mutation actions for historical views
+ * @param {string} defaultCategoryId - Default category ID for new assets
+ * @param {string} className - Additional CSS classes
+ */
+
+import { Plus, Settings } from '@lucide/astro';
+
+export interface Props {
+  isHistoricalView?: boolean;
+  defaultCategoryId?: string;
+  className?: string;
+}
+
+const { isHistoricalView = false, defaultCategoryId = '', className = '' } = Astro.props;
+
+const containerClasses = [
+  // Card styling
+  'bg-base-100 rounded-card border border-base-300 shadow-sm',
+  // Responsive padding - compact on mobile
+  'p-2 md:p-4 lg:p-6',
+  // Layout - nowrap on mobile for single row, wrap on larger screens
+  'flex items-center gap-1 md:gap-3 md:flex-wrap',
+  // Additional classes
+  className,
+]
+  .filter(Boolean)
+  .join(' ');
+---
+
+<div class={containerClasses}>
+  {/* Secondary Actions - Ghost style, icon-only on mobile */}
+  <div class="flex items-center gap-1 md:gap-2">
+    {/* Categories */}
+    <a
+      href="/assets/categories"
+      class="btn btn-ghost btn-sm md:btn-md gap-1 md:gap-2 rounded-lg md:rounded-xl text-base-content/70 hover:text-base-content hover:bg-base-200 px-2 md:px-4"
+      aria-label="Manage asset categories"
+      title="Categories"
+    >
+      <Settings size={16} class="stroke-current md:hidden" aria-hidden="true" />
+      <Settings size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+      <span class="hidden md:inline">Categories</span>
+    </a>
+  </div>
+
+  {/* Primary Action - Pushed to right */}
+  {
+    isHistoricalView ? (
+      <button
+        type="button"
+        class="btn btn-accent btn-sm md:btn-md ml-auto gap-1 md:gap-2 rounded-lg md:rounded-xl font-semibold px-3 md:px-4 opacity-40 cursor-not-allowed"
+        disabled
+        aria-label="Add new asset (disabled for historical view)"
+        data-testid="add-asset-btn"
+      >
+        <Plus size={16} class="stroke-current md:hidden" aria-hidden="true" />
+        <Plus size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+        <span class="hidden sm:inline">Add Asset</span>
+        <span class="sm:hidden">Add</span>
+      </button>
+    ) : (
+      <button
+        type="button"
+        class="btn btn-accent btn-sm md:btn-md ml-auto gap-1 md:gap-2 rounded-lg md:rounded-xl font-semibold px-3 md:px-4"
+        aria-label="Add new asset"
+        data-add-asset-btn
+        data-default-category-id={defaultCategoryId}
+        data-testid="add-asset-btn"
+      >
+        <Plus size={16} class="stroke-current md:hidden" aria-hidden="true" />
+        <Plus size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+        <span class="hidden sm:inline">Add Asset</span>
+        <span class="sm:hidden">Add</span>
+      </button>
+    )
+  }
+</div>
+
+<script>
+  const initializedAddButtons = new WeakSet<Element>();
+
+  function initAddAssetButton() {
+    document.querySelectorAll('[data-add-asset-btn]').forEach((button) => {
+      if (initializedAddButtons.has(button)) return;
+      initializedAddButtons.add(button);
+
+      button.addEventListener('click', () => {
+        const defaultCategoryId = button.getAttribute('data-default-category-id') || '';
+        document.dispatchEvent(
+          new CustomEvent('open-asset-form', {
+            detail: {
+              name: '',
+              categoryId: defaultCategoryId,
+              currency: 'IDR',
+              balance: '',
+            },
+          })
+        );
+      });
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initAddAssetButton);
+  } else {
+    initAddAssetButton();
+  }
+
+  document.addEventListener('astro:page-load', initAddAssetButton);
+</script>

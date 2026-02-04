@@ -135,7 +135,7 @@ if (!isViewingCurrentMonth) {
       balance: snapshot.snapshot_balance,
       initial_balance: snapshot.initial_balance || null,
       currency: snapshot.currency,
-      last_updated: snapshot.last_updated,
+      last_updated: snapshot.snapshot_date || snapshot.last_updated,
       created_at: snapshot.created_at,
       updated_at: snapshot.updated_at,
     };
@@ -168,6 +168,12 @@ if (!isViewingCurrentMonth) {
 // @TODO: Wire with backend - Consider moving calculations to service layer
 const portfolioTotals = calculatePortfolioTotals(assets);
 const assetAllocation = calculateAssetAllocation(assets);
+
+// Find latest update date across all assets
+const latestUpdate = assets.reduce<Date | null>((latest, asset) => {
+  const updated = new Date(asset.last_updated);
+  return !latest || updated > latest ? updated : latest;
+}, null);
 
 // Group assets by type for display
 const assetsByType = groupAssetsByType(assets);
@@ -225,6 +231,8 @@ const sortedGroups = Object.entries(assetsByType)
             totalUsd={portfolioTotals.totalUsd}
             distribution={assetAllocation}
             loading={false}
+            latestUpdate={latestUpdate}
+            isHistoricalView={!isViewingCurrentMonth}
           />
 
           {/* Asset Groups */}
