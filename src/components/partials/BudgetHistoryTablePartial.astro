@@ -11,9 +11,10 @@
 
 import { formatCurrency, formatCurrencyCompact, formatPercentage } from '@/lib/formatting';
 import Badge from '../atoms/Badge.astro';
+import EmptyState from '../atoms/EmptyState.astro';
 import ProgressBar from '../atoms/ProgressBar.astro';
 import type { MonthlyBudgetHistory } from '@/services';
-import { Receipt, RotateCcw, Eye } from '@lucide/astro';
+import { RotateCcw, Eye } from '@lucide/astro';
 
 export interface Props {
   history: MonthlyBudgetHistory[];
@@ -282,14 +283,14 @@ const sortedHistory = [...history].sort((a, b) => {
     </div>
   ) : (
     <div id="empty-state" class="py-24 text-center">
-      <div class="w-20 h-20 bg-base-200 mx-auto rounded-3xl flex items-center justify-center text-base-content/30 mb-6 shadow-inner">
-        <Receipt size={40} class="stroke-current" aria-hidden="true" />
-      </div>
-      <h4 class="text-lg font-bold mb-2">No budget history available</h4>
-      <p class="text-base-content/60 font-medium max-w-xs mx-auto mb-6">
-        Budget history will appear here as you track your spending over time.
-      </p>
-      <a href="/transactions/add" class="btn btn-outline btn-sm gap-2">
+      <EmptyState
+        title="No budget history available"
+        message="Budget history will appear here as you track your spending over time."
+        iconName="receipt"
+        variant="centered"
+        className="py-0"
+      />
+      <a href="/transactions/add" class="btn btn-outline btn-sm gap-2 mt-6">
         <RotateCcw size={16} class="stroke-current" aria-hidden="true" />
         Start Tracking
       </a>

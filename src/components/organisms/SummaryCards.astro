@@ -17,16 +17,10 @@ import Card from '../atoms/Card.astro';
 import StatCard from '../atoms/StatCard.astro';
 import Badge from '../atoms/Badge.astro';
 import ProgressBar from '../atoms/ProgressBar.astro';
+import EmptyState from '../atoms/EmptyState.astro';
 import { formatCurrency, formatPercentage } from '@/lib/formatting';
 import { decimalSubtract } from '@/lib/utils/decimal';
-import {
-  CircleAlert,
-  TrendingUp,
-  DollarSign,
-  Calendar,
-  ShieldCheck,
-  ChevronRight,
-} from '@lucide/astro';
+import { CircleAlert, DollarSign, Calendar, ShieldCheck, ChevronRight } from '@lucide/astro';
 
 // Icon sizing hierarchy (from largest to smallest):
 // - 48px: Empty state illustration (prominent visual cue)
@@ -164,11 +158,13 @@ const getProgressStatus = (percentage: number): 'ok' | 'warning' | 'danger' => {
       // Empty state
       <div class="col-span-full" role="status" aria-live="polite">
         <Card>
-          <div class="text-center py-8">
-            <TrendingUp size={48} class="mx-auto mb-4 text-neutral" aria-hidden="true" />
-            <h3 class="text-lg font-semibold mb-2">No data yet</h3>
-            <p class="text-neutral">Start by adding your assets and transactions</p>
-          </div>
+          <EmptyState
+            title="No data yet"
+            message="Start by adding your assets and transactions"
+            iconName="trending"
+            variant="centered"
+            className="py-0"
+          />
         </Card>
       </div>
     ) : (

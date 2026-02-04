@@ -16,9 +16,10 @@
  * @param {string} className - Additional CSS classes
  */
 
-import { Landmark, TrendingUp, Wallet, Plus } from '@lucide/astro';
+import { Landmark, TrendingUp } from '@lucide/astro';
 import { formatCurrency } from '@/lib/formatting';
 import Badge from '@/components/atoms/Badge.astro';
+import EmptyState from '@/components/atoms/EmptyState.astro';
 import IconBadge from '@/components/atoms/IconBadge.astro';
 import Card from '@/components/atoms/Card.astro';
 import StatCard from '@/components/atoms/StatCard.astro';
@@ -126,19 +127,15 @@ const ariaLabel = loading ? 'Loading net worth data...' : undefined;
       </div>
     ) : isEmpty ? (
       // Empty State
-      <div class="flex flex-col items-center justify-center py-4 text-center">
-        <div class="w-16 h-16 rounded-2xl bg-base-200 flex items-center justify-center mb-4">
-          <Wallet size={32} class="stroke-base-content/40" aria-hidden="true" />
-        </div>
-        <h3 class="text-lg font-bold text-base-content mb-2">No assets yet</h3>
-        <p class="text-sm text-base-content/60 max-w-[200px] mb-4">
-          Add your first asset to start tracking your net worth.
-        </p>
-        <a href="/assets/add" class="btn btn-accent btn-sm gap-2">
-          <Plus size={16} aria-hidden="true" />
-          Add Asset
-        </a>
-      </div>
+      <EmptyState
+        title="No assets yet"
+        message="Add your first asset to start tracking your net worth."
+        iconName="wallet"
+        actionLabel="Add Asset"
+        actionHref="/assets/add"
+        variant="centered"
+        className="py-4"
+      />
     ) : (
       // Normal State
       <>

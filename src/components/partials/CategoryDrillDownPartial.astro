@@ -10,6 +10,7 @@
 
 import CategoryIcon from '../atoms/CategoryIcon.astro';
 import Badge from '../atoms/Badge.astro';
+import EmptyState from '../atoms/EmptyState.astro';
 import ProgressBar from '../atoms/ProgressBar.astro';
 import TransactionCard from '../molecules/TransactionCard.astro';
 import { TrendingUp, TrendingDown, TriangleAlert } from '@lucide/astro';
@@ -152,12 +153,14 @@ const progressStatus: 'ok' | 'warning' | 'danger' = isOverBudget
 
     {
       transactions.length === 0 ? (
-        <div
-          class="flex flex-col items-center justify-center py-8"
-          role="status"
-          aria-live="polite"
-        >
-          <p class="text-base-content/50 text-sm">No transactions in this period</p>
+        <div role="status" aria-live="polite">
+          <EmptyState
+            title="No transactions"
+            message="No transactions in this period."
+            iconName="info"
+            variant="centered"
+            className="py-0"
+          />
         </div>
       ) : (
         <div class="space-y-3">
