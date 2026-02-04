@@ -65,6 +65,10 @@ export default defineConfig({
   },
   output: 'server',
   adapter,
+  build: {
+    server: './server/',
+    client: './client/',
+  },
   image: {
     remotePatterns: [],
   },
