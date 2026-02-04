@@ -231,7 +231,7 @@ const ssrData = {
     >
       {
         Array.from({ length: 3 }).map(() => (
-          <div class="card bg-base-100 border border-base-300 rounded-3xl shadow-sm relative overflow-hidden">
+          <div class="card bg-base-100 border border-base-300 rounded-card shadow-sm relative overflow-hidden">
             <div class="card-body p-8">
               <div class="h-3 bg-base-300 rounded w-1/2 mb-4 animate-pulse" />
               <div class="h-9 bg-base-300 rounded w-4/5 mb-3 animate-pulse" />
@@ -264,7 +264,7 @@ const ssrData = {
       <!-- Transaction List Card -->
       <div
         id="transaction-list-card"
-        class="card bg-base-100 border border-base-300 rounded-3xl shadow-sm overflow-hidden"
+        class="card bg-base-100 border border-base-300 rounded-card shadow-sm overflow-hidden"
       >
         <!-- Loading Skeleton (hidden by default, shown during fetch) -->
         <div id="transaction-list-skeleton" class="divide-y divide-base-200 hidden">
