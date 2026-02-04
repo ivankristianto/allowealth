@@ -65,6 +65,9 @@ export default defineConfig({
   },
   output: 'server',
   adapter,
+  image: {
+    remotePatterns: [],
+  },
   vite: {
     plugins: [
       tailwindcss(),
