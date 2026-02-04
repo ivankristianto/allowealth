@@ -16,6 +16,7 @@
 import Card from '../atoms/Card.astro';
 import StatCard from '../atoms/StatCard.astro';
 import Badge from '../atoms/Badge.astro';
+import ProgressBar from '../atoms/ProgressBar.astro';
 import { formatCurrency, formatPercentage } from '@/lib/formatting';
 import { decimalSubtract } from '@/lib/utils/decimal';
 import {
@@ -97,10 +98,10 @@ const getBudgetStatusBadge = (status: string): 'success' | 'warning' | 'error' |
   }
 };
 
-const getProgressClass = (percentage: number): string => {
-  if (percentage >= 100) return 'progress-error';
-  if (percentage >= 80) return 'progress-warning';
-  return 'progress-success';
+const getProgressStatus = (percentage: number): 'ok' | 'warning' | 'danger' => {
+  if (percentage >= 100) return 'danger';
+  if (percentage >= 80) return 'warning';
+  return 'ok';
 };
 ---
 
@@ -222,11 +223,11 @@ const getProgressClass = (percentage: number): string => {
                 {formatPercentage(data!.monthlySpent.percentage)}
               </span>
             </div>
-            <progress
-              class={`progress progress-neutral w-full ${getProgressClass(data!.monthlySpent.percentage)}`}
+            <ProgressBar
               value={data!.monthlySpent.percentage}
-              max="100"
-              aria-label={`Budget progress: ${formatPercentage(data!.monthlySpent.percentage)} used`}
+              status={getProgressStatus(data!.monthlySpent.percentage)}
+              size="sm"
+              ariaLabel={`Budget progress: ${formatPercentage(data!.monthlySpent.percentage)} used`}
             />
             <p class="text-xs text-neutral text-center">
               {data!.monthlySpent.percentage >= 100

@@ -9,6 +9,7 @@
  */
 
 import CategoryIcon from '../atoms/CategoryIcon.astro';
+import ProgressBar from '../atoms/ProgressBar.astro';
 import TransactionCard from '../molecules/TransactionCard.astro';
 import { TrendingUp, TrendingDown, TriangleAlert } from '@lucide/astro';
 import { formatCurrency } from '@/lib/formatting';
@@ -64,10 +65,11 @@ if (!hasBudget) {
 }
 
 // Progress bar
-const progressPercent = Math.min(percentage, 100);
-const progressBarClasses = `h-full transition-all duration-300 ${
-  isOverBudget ? 'bg-error' : percentage >= 80 ? 'bg-warning' : 'bg-success'
-}`;
+const progressStatus: 'ok' | 'warning' | 'danger' = isOverBudget
+  ? 'danger'
+  : percentage >= 80
+    ? 'warning'
+    : 'ok';
 ---
 
 <div data-category-drilldown-content>
@@ -129,17 +131,12 @@ const progressBarClasses = `h-full transition-all duration-300 ${
       </div>
 
       {/* Progress Bar */}
-      <div class="w-full bg-base-300 rounded-full h-2 overflow-hidden">
-        <div
-          class={progressBarClasses}
-          style={`width: ${progressPercent}%`}
-          role="progressbar"
-          aria-valuenow={percentage.toFixed(1)}
-          aria-valuemin="0"
-          aria-valuemax="100"
-        >
-        </div>
-      </div>
+      <ProgressBar
+        value={percentage}
+        status={progressStatus}
+        size="sm"
+        ariaLabel={`Budget progress for ${categoryName}`}
+      />
     </div>
   </div>
 

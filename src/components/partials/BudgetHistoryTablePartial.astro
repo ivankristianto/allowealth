@@ -10,6 +10,7 @@
  */
 
 import { formatCurrency, formatCurrencyCompact, formatPercentage } from '@/lib/formatting';
+import ProgressBar from '../atoms/ProgressBar.astro';
 import type { MonthlyBudgetHistory } from '@/services';
 import { Receipt, RotateCcw, Eye } from '@lucide/astro';
 
@@ -148,20 +149,12 @@ const sortedHistory = [...history].sort((a, b) => {
 
                   {/* Progress bar */}
                   <div class="pt-2">
-                    <div class="w-full bg-base-300 rounded-full h-2 overflow-hidden">
-                      <div
-                        class:list={[
-                          'h-full transition-all duration-300',
-                          percentageUsed >= 100 ? 'bg-error' : 'bg-success',
-                        ]}
-                        style={`width: ${Math.min(percentageUsed, 100)}%`}
-                        role="progressbar"
-                        aria-valuenow={percentageUsed}
-                        aria-valuemin={0}
-                        aria-valuemax={100}
-                        aria-label={`${monthData.month_name}: ${formatPercentage(percentageUsed)} of budget used`}
-                      />
-                    </div>
+                    <ProgressBar
+                      value={percentageUsed}
+                      status={percentageUsed >= 100 ? 'danger' : 'ok'}
+                      size="sm"
+                      ariaLabel={`${monthData.month_name}: ${formatPercentage(percentageUsed)} of budget used`}
+                    />
                   </div>
 
                   {/* Alerts summary */}
