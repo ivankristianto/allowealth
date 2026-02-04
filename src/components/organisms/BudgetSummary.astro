@@ -20,7 +20,7 @@ import { Landmark, TriangleAlert } from '@lucide/astro';
 
 // Internal aliases - lib
 import { formatCurrency } from '@/lib/formatting';
-import { sanitizeColor } from '@/lib/utils/budget';
+import { getBudgetStatus, sanitizeColor } from '@/lib/utils/budget';
 
 // Internal aliases - components
 import Badge from '@components/atoms/Badge.astro';
@@ -60,8 +60,11 @@ const {
 
 // Calculate derived values
 const remaining = totalAllocated - totalSpent;
-const isDeficit = remaining < 0;
 const overallUsage = totalAllocated > 0 ? (totalSpent / totalAllocated) * 100 : 0;
+const usageStatus = getBudgetStatus(overallUsage);
+const isDeficit = remaining < 0;
+const statusForDisplay = isDeficit ? 'danger' : usageStatus.status;
+const badgeVariant = isDeficit ? 'exceeded' : usageStatus.badgeVariant;
 
 // Sort distribution by weight (largest first)
 const sortedDistribution = [...distribution].sort((a, b) => b.weight - a.weight);
@@ -169,7 +172,11 @@ const cardClasses = [
                 <p
                   class:list={[
                     'text-2xl lg:text-3xl font-bold tracking-tight leading-none',
-                    totalSpent > totalAllocated ? 'text-error' : 'text-base-content',
+                    statusForDisplay === 'danger'
+                      ? 'text-error'
+                      : statusForDisplay === 'warning'
+                        ? 'text-warning'
+                        : 'text-base-content',
                   ]}
                 >
                   {formatCurrency(totalSpent, currency)}
@@ -193,11 +200,7 @@ const cardClasses = [
             ) : (
               <Landmark size={20} class="text-success shrink-0" aria-hidden="true" />
             )}
-            <Badge
-              variant={isDeficit ? 'exceeded' : 'optimal'}
-              size="sm"
-              className="uppercase tracking-wide"
-            >
+            <Badge variant={badgeVariant} size="sm" className="uppercase tracking-wide">
               {isDeficit
                 ? `Deficit of ${formatCurrency(Math.abs(remaining), currency)}`
                 : `Surplus of ${formatCurrency(remaining, currency)}`}

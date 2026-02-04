@@ -10,6 +10,7 @@
  */
 
 import { formatCurrency, formatCurrencyCompact, formatPercentage } from '@/lib/formatting';
+import { getBudgetStatus } from '@/lib/utils/budget';
 import Badge from '../atoms/Badge.astro';
 import EmptyState from '../atoms/EmptyState.astro';
 import ProgressBar from '../atoms/ProgressBar.astro';
@@ -74,6 +75,7 @@ const sortedHistory = [...history].sort((a, b) => {
         const spentAmount = parseFloat(monthData.total_spent);
         const balance = parseFloat(monthData.total_balance);
         const percentageUsed = monthData.percentage_used;
+        const budgetStatus = getBudgetStatus(percentageUsed);
         const monthHasData = hasData(budgetAmount);
 
         // Get previous month for comparison
@@ -103,7 +105,7 @@ const sortedHistory = [...history].sort((a, b) => {
                 </div>
                 {monthHasData ? (
                   <Badge
-                    variant={percentageUsed >= 100 ? 'exceeded' : 'optimal'}
+                    variant={budgetStatus.badgeVariant}
                     size="sm"
                     className="px-4 py-1.5 text-xs"
                   >

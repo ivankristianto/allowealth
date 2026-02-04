@@ -15,6 +15,7 @@ import ProgressBar from '../atoms/ProgressBar.astro';
 import TransactionCard from '../molecules/TransactionCard.astro';
 import { TrendingUp, TrendingDown, TriangleAlert } from '@lucide/astro';
 import { formatCurrency } from '@/lib/formatting';
+import { getBudgetStatus } from '@/lib/utils/budget';
 
 import type { TransactionOutput } from '@/lib/types/transaction';
 
@@ -36,7 +37,7 @@ const { categoryName, categoryIcon, categoryColor, spent, budgetLimit, period, t
 const hasBudget = budgetLimit !== null && budgetLimit !== undefined;
 const percentage = hasBudget ? (spent / budgetLimit) * 100 : 0;
 const remaining = hasBudget ? budgetLimit - spent : 0;
-const isOverBudget = percentage > 100;
+const budgetStatus = hasBudget ? getBudgetStatus(percentage) : null;
 
 // Badge styling
 let badgeVariant: 'neutral' | 'optimal' | 'review' | 'exceeded' = 'neutral';
@@ -51,26 +52,20 @@ if (!hasBudget) {
   badgeVariant = 'neutral';
   badgeClassName = `${badgeClassName} bg-base-300 text-base-content/60`;
   badgeText = 'NOT SET';
-} else if (isOverBudget) {
-  badgeVariant = 'exceeded';
-  badgeText = `OVER BY ${percentage.toFixed(1)}%`;
-  showAlertIcon = true;
-} else if (percentage >= 80) {
-  badgeVariant = 'review';
-  badgeText = `${percentage.toFixed(1)}% USED`;
-  showTrendingUpIcon = true;
-} else {
-  badgeVariant = 'optimal';
-  badgeText = `${percentage.toFixed(1)}% USED`;
-  showTrendingDownIcon = true;
+} else if (budgetStatus) {
+  badgeVariant = budgetStatus.badgeVariant;
+  if (budgetStatus.status === 'danger') {
+    badgeText = `OVER BY ${percentage.toFixed(1)}%`;
+    showAlertIcon = true;
+  } else {
+    badgeText = `${percentage.toFixed(1)}% USED`;
+    showTrendingUpIcon = budgetStatus.status === 'warning';
+    showTrendingDownIcon = budgetStatus.status === 'ok';
+  }
 }
 
 // Progress bar
-const progressStatus: 'ok' | 'warning' | 'danger' = isOverBudget
-  ? 'danger'
-  : percentage >= 80
-    ? 'warning'
-    : 'ok';
+const progressStatus: 'ok' | 'warning' | 'danger' = budgetStatus?.status ?? 'ok';
 ---
 
 <div data-category-drilldown-content>

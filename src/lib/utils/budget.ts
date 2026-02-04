@@ -9,6 +9,38 @@ import { decimalCompare, decimalIsZero, decimalDivide } from './decimal';
 
 export type BudgetStatus = 'ok' | 'warning' | 'exceeded';
 
+export type BudgetUsageStatus = 'ok' | 'warning' | 'danger';
+
+export interface BudgetStatusSummary {
+  status: BudgetUsageStatus;
+  badgeVariant: 'optimal' | 'review' | 'exceeded';
+  label: string;
+}
+
+export function getBudgetStatus(percentage: number): BudgetStatusSummary {
+  if (percentage >= 100) {
+    return {
+      status: 'danger',
+      badgeVariant: 'exceeded',
+      label: 'Over Budget',
+    };
+  }
+
+  if (percentage >= 80) {
+    return {
+      status: 'warning',
+      badgeVariant: 'review',
+      label: 'Near Limit',
+    };
+  }
+
+  return {
+    status: 'ok',
+    badgeVariant: 'optimal',
+    label: 'On Track',
+  };
+}
+
 /**
  * Calculate budget status for a category
  * @param budgetAmount - Budget limit as string
