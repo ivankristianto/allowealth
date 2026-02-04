@@ -43,6 +43,7 @@ const containerClasses = [
       class="btn btn-ghost btn-sm md:btn-md gap-1 md:gap-2 rounded-lg md:rounded-xl text-base-content/70 hover:text-base-content hover:bg-base-200 px-2 md:px-4"
       aria-label="Manage asset categories"
       title="Categories"
+      data-testid="manage-asset-categories-btn"
     >
       <Settings size={16} class="stroke-current md:hidden" aria-hidden="true" />
       <Settings size={18} class="stroke-current hidden md:block" aria-hidden="true" />
@@ -84,14 +85,13 @@ const containerClasses = [
 </div>
 
 <script>
-  const initializedAddButtons = new WeakSet<Element>();
+  const handlerMap = new WeakMap<HTMLElement, (e: Event) => void>();
 
   function initAddAssetButton() {
-    document.querySelectorAll('[data-add-asset-btn]').forEach((button) => {
-      if (initializedAddButtons.has(button)) return;
-      initializedAddButtons.add(button);
+    document.querySelectorAll<HTMLElement>('[data-add-asset-btn]').forEach((button) => {
+      if (handlerMap.has(button)) return;
 
-      button.addEventListener('click', () => {
+      const handler = () => {
         const defaultCategoryId = button.getAttribute('data-default-category-id') || '';
         document.dispatchEvent(
           new CustomEvent('open-asset-form', {
@@ -103,15 +103,32 @@ const containerClasses = [
             },
           })
         );
-      });
+      };
+
+      handlerMap.set(button, handler);
+      button.addEventListener('click', handler);
     });
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initAddAssetButton);
-  } else {
-    initAddAssetButton();
+  function cleanupAssetActionButtons() {
+    document.querySelectorAll<HTMLElement>('[data-add-asset-btn]').forEach((button) => {
+      const handler = handlerMap.get(button);
+      if (handler) {
+        button.removeEventListener('click', handler);
+        handlerMap.delete(button);
+      }
+    });
   }
 
-  document.addEventListener('astro:page-load', initAddAssetButton);
+  function registerCleanup() {
+    document.addEventListener('astro:before-swap', cleanupAssetActionButtons, { once: true });
+  }
+
+  initAddAssetButton();
+  registerCleanup();
+
+  document.addEventListener('astro:page-load', () => {
+    initAddAssetButton();
+    registerCleanup();
+  });
 </script>

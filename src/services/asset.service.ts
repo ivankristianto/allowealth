@@ -1,5 +1,5 @@
 import { type IDatabase, getActiveSchema } from '@/db';
-import { eq, and, sql } from 'drizzle-orm';
+import { eq, and, lte, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { AssetServiceError, ServiceErrorCode } from './service-errors';
 import type { AssetType, Currency } from '@/lib/types/asset';
@@ -292,9 +292,6 @@ export class AssetService {
     perf?: PerfCollector
   ) {
     const endOfMonth = new Date(year, month, 0, 23, 59, 59, 999);
-    // SQLite stores recorded_at as integer (epoch seconds) via mode: 'timestamp'
-    // Must bind a number, not a Date object
-    const endOfMonthEpoch = Math.floor(endOfMonth.getTime() / 1000);
 
     return trackQuery('AssetService.getSnapshotForMonth', perf, async () => {
       const allAssets = await this.findAll(workspaceId, filters);
@@ -309,7 +306,9 @@ export class AssetService {
           const history = await this.db.query.assetHistory.findFirst({
             where: and(
               eq(this.schema.assetHistory.asset_id, asset.id),
-              sql`${this.schema.assetHistory.recorded_at} <= ${endOfMonthEpoch}`
+              // Use Drizzle's lte() for cross-database compatibility
+              // (SQLite stores as integer epoch, PostgreSQL as native timestamp)
+              lte(this.schema.assetHistory.recorded_at, endOfMonth)
             ),
             orderBy: (assetHistory: any, { desc }: any) => [desc(assetHistory.recorded_at)],
           });

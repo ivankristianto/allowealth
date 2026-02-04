@@ -197,7 +197,7 @@ const today = new Date().toISOString().split('T')[0];
         if (currencyBadge) {
           currencyBadge.textContent = e.detail.currency;
           currencyBadge.classList.remove('hidden');
-          // Apply currency-specific coloring
+          // Currency colors: IDR=success, USD=info (only two currencies per schema enum)
           currencyBadge.className =
             'px-2 py-0.5 rounded-md text-[10px] font-bold tracking-wider uppercase ' +
             (e.detail.currency === 'IDR' ? 'bg-success/10 text-success' : 'bg-info/10 text-info');
