@@ -12,7 +12,7 @@
 import { db, getDatabaseConfig } from './index';
 import { nanoid } from 'nanoid';
 import { hashPassword } from '@/lib/auth/password';
-import { sql } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import {
   workspaces,
   workspaceMeta,
@@ -1107,6 +1107,7 @@ async function seedAssets(
       type: asset.type,
       category_id: categoryId,
       balance: amt(asset.balance),
+      initial_balance: amt(asset.balance),
       currency: asset.currency,
       is_cash_account: asset.is_cash_account,
       credit_limit: 'credit_limit' in asset ? amt(asset.credit_limit) : null,
@@ -1129,6 +1130,7 @@ async function seedAssets(
       type: asset.type,
       category_id: categoryId,
       balance: amt(asset.balance),
+      initial_balance: amt(asset.balance),
       currency: asset.currency,
       is_cash_account: false, // Investment assets are not cash accounts
       last_updated: now,
@@ -1311,6 +1313,49 @@ async function seedExchangeRates(): Promise<void> {
 }
 
 // ============================================================================
+// BACKFILL FUNCTIONS
+// ============================================================================
+
+/**
+ * Backfill initial_balance for existing assets that don't have it set.
+ * Uses the earliest asset_history entry as the initial balance.
+ * Falls back to current balance if no history exists.
+ */
+async function backfillInitialBalance(): Promise<void> {
+  console.log('🔄 Backfilling initial_balance for existing assets...');
+
+  const assetsWithoutInitial = await db
+    .select()
+    .from(assets)
+    .where(sql`${assets.initial_balance} IS NULL AND ${assets.deleted_at} IS NULL`);
+
+  if (assetsWithoutInitial.length === 0) {
+    console.log('✓ No assets need backfilling');
+    return;
+  }
+
+  let updated = 0;
+  for (const asset of assetsWithoutInitial) {
+    // Find the earliest history entry
+    const firstHistory = await db.query.assetHistory.findFirst({
+      where: eq(assetHistory.asset_id, asset.id),
+      orderBy: (h: any, { asc }: any) => [asc(h.recorded_at)],
+    });
+
+    const initialBalance = firstHistory?.balance || asset.balance;
+
+    await db
+      .update(assets)
+      .set({ initial_balance: initialBalance })
+      .where(eq(assets.id, asset.id));
+
+    updated++;
+  }
+
+  console.log(`✓ Backfilled initial_balance for ${updated} assets`);
+}
+
+// ============================================================================
 // MAIN SEED FUNCTION
 // ============================================================================
 
@@ -1346,6 +1391,10 @@ async function seed() {
     await seedAssetHistory(assetMap);
     await seedAssetUpdateReminders(workspaceId, userId, assetMap);
     await seedAssetSnapshots(workspaceId, userId, assetMap);
+
+    // Backfill initial_balance for any assets that don't have it
+    await backfillInitialBalance();
+
     await seedExchangeRates();
 
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
