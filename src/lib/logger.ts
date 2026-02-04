@@ -19,6 +19,36 @@
 import { createConsola, type LogObject } from 'consola/core';
 
 const isDev = typeof import.meta !== 'undefined' && import.meta.env?.MODE === 'development';
+// Bun test does not set import.meta.env.MODE; it sets process.env.NODE_ENV instead.
+const isTest =
+  (typeof import.meta !== 'undefined' && import.meta.env?.MODE === 'test') ||
+  (typeof process !== 'undefined' && process.env?.NODE_ENV === 'test');
+
+/**
+ * Map standard log level names to consola numeric levels.
+ * Consola levels: 0=fatal/error, 1=warn, 2=log, 3=info, 4=debug, 5=trace
+ */
+const LOG_LEVEL_MAP: Record<string, number> = {
+  silent: -999,
+  fatal: 0,
+  error: 0,
+  warn: 1,
+  log: 2,
+  info: 3,
+  debug: 4,
+  trace: 5,
+  verbose: 5,
+};
+
+export function resolveLogLevel(): number {
+  const envLevel = typeof import.meta !== 'undefined' ? import.meta.env?.LOG_LEVEL : undefined;
+  if (envLevel && envLevel.toLowerCase() in LOG_LEVEL_MAP) {
+    return LOG_LEVEL_MAP[envLevel.toLowerCase()];
+  }
+  // Dev/test: debug (4) — show everything for diagnostics
+  // Production: warn (1) — only warn/error/fatal
+  return isDev || isTest ? 4 : 1;
+}
 
 /**
  * JSON reporter for production — outputs structured JSON that
@@ -88,7 +118,7 @@ const prettyReporter = {
  */
 const baseLogger = createConsola({
   reporters: [isDev ? prettyReporter : jsonReporter],
-  level: isDev ? 4 : 3, // debug in dev, info in prod
+  level: resolveLogLevel(),
 });
 
 /**
