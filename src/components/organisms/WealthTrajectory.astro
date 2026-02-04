@@ -217,6 +217,7 @@ const serializedInput = JSON.stringify(input);
 
 <script>
   import { Chart } from '@/lib/chart-setup';
+  import { createChartLifecycle, isDarkTheme } from '@/lib/utils/chart-lifecycle';
   import type { ForecastDataPoint } from '@/lib/forecast';
 
   interface ChartInstance {
@@ -236,55 +237,16 @@ const serializedInput = JSON.stringify(input);
   /**
    * Cleanup all chart instances and observers
    */
-  function cleanupCharts(): void {
-    Object.values(charts).forEach(({ chart }) => {
-      try {
-        chart.destroy();
-      } catch (e) {
-        // Chart may already be destroyed
-      }
-    });
-
-    for (const key in charts) {
-      delete charts[key];
-    }
-
-    if (chartObserver) {
-      chartObserver.disconnect();
-      chartObserver = null;
-    }
-
-    if (themeObserver) {
-      themeObserver.disconnect();
-      themeObserver = null;
-    }
-
-    if (systemThemeMediaQuery) {
-      systemThemeMediaQuery.removeEventListener('change', handleSystemThemeChange);
-      systemThemeMediaQuery = null;
-    }
-  }
 
   /**
    * Check if current theme is dark
    * @TODO: P3 - Add more detailed JSDoc explaining theme detection logic
    */
-  function isDarkTheme(): boolean {
-    const theme = document.documentElement.getAttribute('data-theme');
-    if (theme) return theme === 'dark';
-    return window.matchMedia('(prefers-color-scheme: dark)').matches;
-  }
 
   /**
    * Handle system theme preference change
    * @TODO: P3 - Add JSDoc explaining when and why this is called
    */
-  function handleSystemThemeChange(): void {
-    const explicitTheme = document.documentElement.getAttribute('data-theme');
-    if (!explicitTheme) {
-      updateChartThemeColors();
-    }
-  }
 
   /**
    * Update chart colors based on current theme
@@ -302,33 +264,6 @@ const serializedInput = JSON.stringify(input);
         chart.update('none');
       }
     });
-  }
-
-  /**
-   * Initialize theme observer
-   */
-  function initThemeObserver(): void {
-    if (themeObserver) {
-      themeObserver.disconnect();
-    }
-
-    themeObserver = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        if (mutation.type === 'attributes' && mutation.attributeName === 'data-theme') {
-          updateChartThemeColors();
-        }
-      });
-    });
-
-    themeObserver.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ['data-theme'],
-    });
-
-    if (window.matchMedia) {
-      systemThemeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-      systemThemeMediaQuery.addEventListener('change', handleSystemThemeChange);
-    }
   }
 
   /**
@@ -495,57 +430,55 @@ const serializedInput = JSON.stringify(input);
     charts[chartId] = { chart: chart as any, data };
   }
 
-  /**
-   * Initialize all charts with Intersection Observer
-   */
-  function initAllCharts(): void {
-    cleanupCharts();
-    initThemeObserver();
-
-    const chartContainers = document.querySelectorAll('[data-chart-id]');
-
-    chartObserver = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            const container = entry.target as HTMLElement;
-            const chartId = container.getAttribute('data-chart-id');
-            const dataAttr = container.getAttribute('data-chart-data');
-            const inputAttr = container.getAttribute('data-chart-input');
-
-            if (chartId && dataAttr && inputAttr && !charts[chartId]) {
-              try {
-                const data = JSON.parse(dataAttr) as ForecastDataPoint[];
-                initWealthTrajectoryChart(chartId, data);
-              } catch (e) {
-                console.warn('Failed to parse chart data:', e);
-              }
-
-              chartObserver?.unobserve(container);
-            }
-          }
-        });
-      },
-      { rootMargin: '50px' }
-    );
-
-    chartContainers.forEach((container) => {
-      if (chartObserver) chartObserver.observe(container);
-    });
+  function parseChartData(raw: unknown): ForecastDataPoint[] | null {
+    if (!Array.isArray(raw)) return null;
+    const validData = raw.filter(
+      (item) =>
+        typeof item?.netWorth === 'number' &&
+        isFinite(item.netWorth) &&
+        typeof item?.date === 'string' &&
+        item.date.length > 0 &&
+        item.date.length <= 50
+    ) as ForecastDataPoint[];
+    return validData.length > 0 ? validData : null;
   }
+
+  const lifecycle = createChartLifecycle<ForecastDataPoint[]>({
+    containerSelector: '[id^="wealth-trajectory-chart-"][id$="-container"]',
+    parseData: parseChartData,
+    onInit: (container, data) => {
+      const chartId = container.querySelector('canvas')?.id;
+      if (!chartId || charts[chartId]) return;
+      initWealthTrajectoryChart(chartId, data);
+    },
+    onThemeChange: updateChartThemeColors,
+    onCleanup: () => {
+      Object.keys(charts).forEach((chartId) => {
+        const entry = charts[chartId];
+        if (entry?.chart) {
+          try {
+            entry.chart.destroy();
+          } catch (e) {
+            // Chart may already be destroyed
+          }
+        }
+        delete charts[chartId];
+      });
+    },
+  });
 
   // Initialize when DOM is ready
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initAllCharts);
+    document.addEventListener('DOMContentLoaded', lifecycle.init);
   } else {
-    initAllCharts();
+    lifecycle.init();
   }
 
   // Cleanup on page navigation/unload
-  window.addEventListener('beforeunload', cleanupCharts);
+  window.addEventListener('beforeunload', lifecycle.cleanup);
 
   // For Astro View Transitions
   // @TODO: P2 - Performance: Check if charts exist before reinitializing to avoid unnecessary work
-  document.addEventListener('astro:before-swap', cleanupCharts);
-  document.addEventListener('astro:after-swap', initAllCharts);
+  document.addEventListener('astro:before-swap', lifecycle.cleanup);
+  document.addEventListener('astro:after-swap', lifecycle.init);
 </script>

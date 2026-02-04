@@ -128,6 +128,7 @@ const chartId = `financial-velocity-chart-${Math.random().toString(36).slice(2, 
 <script>
   import { Chart } from '@/lib/chart-setup';
   import { formatCurrency } from '@/lib/formatting/currency-client';
+  import { createChartLifecycle, isDarkTheme } from '@/lib/utils/chart-lifecycle';
 
   interface TrendDataPoint {
     name: string;
@@ -136,71 +137,12 @@ const chartId = `financial-velocity-chart-${Math.random().toString(36).slice(2, 
   }
 
   interface ChartData {
-    [chartId: string]: {
-      chart: Chart<'bar', number[], string>;
-      data: TrendDataPoint[];
-    };
+    chart: Chart<'bar', number[], string>;
+    data: TrendDataPoint[];
   }
 
   // Store chart instances globally for cleanup
-  const charts: ChartData = {};
-
-  // Store observer reference for cleanup
-  let chartObserver: IntersectionObserver | null = null;
-  let themeObserver: MutationObserver | null = null;
-  let systemThemeMediaQuery: MediaQueryList | null = null;
-
-  /**
-   * Cleanup all chart instances and observers
-   */
-  function cleanupCharts(): void {
-    const chartIds = Object.keys(charts);
-    chartIds.forEach((chartId) => {
-      const entry = charts[chartId];
-      if (entry?.chart) {
-        try {
-          entry.chart.destroy();
-        } catch (e) {
-          console.warn('Failed to destroy chart:', chartId, e);
-        }
-      }
-      delete charts[chartId];
-    });
-
-    if (chartObserver) {
-      chartObserver.disconnect();
-      chartObserver = null;
-    }
-
-    if (themeObserver) {
-      themeObserver.disconnect();
-      themeObserver = null;
-    }
-
-    if (systemThemeMediaQuery) {
-      systemThemeMediaQuery.removeEventListener('change', handleSystemThemeChange);
-      systemThemeMediaQuery = null;
-    }
-  }
-
-  /**
-   * Check if current theme is dark
-   */
-  function isDarkTheme(): boolean {
-    const theme = document.documentElement.getAttribute('data-theme');
-    if (theme) return theme === 'dark';
-    return window.matchMedia('(prefers-color-scheme: dark)').matches;
-  }
-
-  /**
-   * Handle system theme preference change
-   */
-  function handleSystemThemeChange(): void {
-    const explicitTheme = document.documentElement.getAttribute('data-theme');
-    if (!explicitTheme) {
-      updateChartThemeColors();
-    }
-  }
+  const charts: Record<string, ChartData> = {};
 
   /**
    * Update chart colors based on current theme
@@ -238,33 +180,6 @@ const chartId = `financial-velocity-chart-${Math.random().toString(36).slice(2, 
 
       chart.update('none');
     });
-  }
-
-  /**
-   * Initialize theme observer
-   */
-  function initThemeObserver(): void {
-    if (themeObserver) {
-      themeObserver.disconnect();
-    }
-
-    themeObserver = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        if (mutation.type === 'attributes' && mutation.attributeName === 'data-theme') {
-          updateChartThemeColors();
-        }
-      });
-    });
-
-    themeObserver.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ['data-theme'],
-    });
-
-    if (window.matchMedia) {
-      systemThemeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-      systemThemeMediaQuery.addEventListener('change', handleSystemThemeChange);
-    }
   }
 
   /**
@@ -382,76 +297,55 @@ const chartId = `financial-velocity-chart-${Math.random().toString(36).slice(2, 
     charts[chartId] = { chart, data };
   }
 
-  /**
-   * Initialize all charts with Intersection Observer
-   */
-  function initAllCharts(): void {
-    cleanupCharts();
-    initThemeObserver();
+  function parseChartData(raw: unknown): TrendDataPoint[] | null {
+    if (!Array.isArray(raw)) return null;
+    const validData = raw.filter(
+      (item) =>
+        typeof item?.income === 'number' &&
+        isFinite(item.income) &&
+        item.income >= 0 &&
+        typeof item?.expenses === 'number' &&
+        isFinite(item.expenses) &&
+        item.expenses >= 0 &&
+        typeof item?.name === 'string' &&
+        item.name.length > 0 &&
+        item.name.length <= 100
+    ) as TrendDataPoint[];
+    return validData.length > 0 ? validData : null;
+  }
 
-    const chartContainers = document.querySelectorAll(
-      '[id^="financial-velocity-chart-"][id$="-container"]'
-    );
-
-    chartObserver = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            const container = entry.target as HTMLElement;
-            chartObserver?.unobserve(container); // Unobserve immediately to prevent memory leaks
-
-            const chartId = container.querySelector('canvas')?.id;
-            if (chartId && !charts[chartId]) {
-              try {
-                const dataAttr = container.getAttribute('data-chart-data');
-                if (dataAttr) {
-                  const rawData = JSON.parse(dataAttr) as TrendDataPoint[];
-                  // Validate chart data to prevent security issues and rendering errors
-                  const validData = rawData.filter(
-                    (item) =>
-                      typeof item.income === 'number' &&
-                      isFinite(item.income) &&
-                      item.income >= 0 &&
-                      typeof item.expenses === 'number' &&
-                      isFinite(item.expenses) &&
-                      item.expenses >= 0 &&
-                      typeof item.name === 'string' &&
-                      item.name.length > 0 &&
-                      item.name.length <= 100
-                  );
-                  if (validData.length > 0) {
-                    initFinancialVelocityChart(chartId, validData);
-                  }
-                }
-              } catch (e) {
-                console.warn('Failed to initialize chart:', chartId, e);
-              }
-            }
+  const lifecycle = createChartLifecycle<TrendDataPoint[]>({
+    containerSelector: '[id^="financial-velocity-chart-"][id$="-container"]',
+    parseData: parseChartData,
+    onInit: (container, data) => {
+      const chartId = container.querySelector('canvas')?.id;
+      if (!chartId || charts[chartId]) return;
+      initFinancialVelocityChart(chartId, data);
+    },
+    onThemeChange: updateChartThemeColors,
+    onCleanup: () => {
+      Object.keys(charts).forEach((chartId) => {
+        const entry = charts[chartId];
+        if (entry?.chart) {
+          try {
+            entry.chart.destroy();
+          } catch (e) {
+            console.warn('Failed to destroy chart:', chartId, e);
           }
-        });
-      },
-      { rootMargin: '50px' }
-    );
+        }
+        delete charts[chartId];
+      });
+    },
+  });
 
-    chartContainers.forEach((container) => {
-      if (chartObserver) chartObserver.observe(container);
-    });
-  }
-
-  // Initialize when DOM is ready
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initAllCharts);
+    document.addEventListener('DOMContentLoaded', lifecycle.init);
   } else {
-    initAllCharts();
+    lifecycle.init();
   }
 
-  // Cleanup on page navigation/unload
-  window.addEventListener('beforeunload', cleanupCharts);
-
-  // For Astro View Transitions
-  document.addEventListener('astro:before-swap', cleanupCharts);
-  document.addEventListener('astro:after-swap', initAllCharts);
-
-  // For dynamic HTML injection (reports page interactive updates)
-  document.addEventListener('charts:reinit', initAllCharts);
+  window.addEventListener('beforeunload', lifecycle.cleanup);
+  document.addEventListener('astro:before-swap', lifecycle.cleanup);
+  document.addEventListener('astro:after-swap', lifecycle.init);
+  document.addEventListener('charts:reinit', lifecycle.init);
 </script>

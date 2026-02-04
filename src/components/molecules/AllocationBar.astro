@@ -1,0 +1,124 @@
+---
+/**
+ * AllocationBar Component
+ *
+ * Stacked allocation bar for showing percentage distribution across segments.
+ * Includes hover tooltip and accessible description.
+ *
+ * @param {Array} segments - List of allocation segments
+ * @param {string} height - Bar height: sm, md, lg
+ * @param {boolean} showTooltip - Enable hover tooltip
+ * @param {string} className - Additional CSS classes
+ * @param {string} ariaLabel - Accessible label for the bar
+ */
+
+import { sanitizeColor } from '@/lib/utils/budget';
+
+export interface AllocationSegment {
+  label: string;
+  percentage: number; // 0-100
+  color: string;
+}
+
+export interface Props {
+  segments: AllocationSegment[];
+  height?: 'sm' | 'md' | 'lg';
+  showTooltip?: boolean;
+  className?: string;
+  ariaLabel?: string;
+}
+
+const { segments, height = 'md', showTooltip = true, className = '', ariaLabel } = Astro.props;
+
+const heightClasses: Record<string, string> = {
+  sm: 'h-4',
+  md: 'h-6',
+  lg: 'h-8',
+};
+
+const barClasses = [
+  'w-full bg-base-300 rounded-full overflow-hidden flex shadow-inner',
+  heightClasses[height],
+  className,
+]
+  .filter(Boolean)
+  .join(' ');
+
+const sanitizedSegments = segments.map((segment) => ({
+  label: segment.label,
+  percentage: Math.min(Math.max(segment.percentage, 0), 100),
+  color: sanitizeColor(segment.color),
+}));
+---
+
+<div class="relative" data-allocation-bar data-tooltip-enabled={showTooltip ? 'true' : 'false'}>
+  <div class={barClasses} role="img" aria-label={ariaLabel}>
+    {
+      sanitizedSegments.map((segment) => (
+        <div
+          class="h-full transition-all duration-500 relative group/segment cursor-pointer"
+          style={`width: ${segment.percentage}%; background-color: ${segment.color};`}
+          data-segment-label={segment.label}
+          data-segment-percentage={segment.percentage.toFixed(1)}
+        >
+          <div class="absolute inset-0 bg-white/10 opacity-0 group-hover/segment:opacity-100 transition-opacity" />
+        </div>
+      ))
+    }
+  </div>
+
+  {
+    showTooltip && (
+      <div
+        class="absolute -top-10 left-1/2 -translate-x-1/2 px-3 py-1.5 bg-neutral text-neutral-content text-xs font-medium rounded-lg shadow-lg opacity-0 pointer-events-none transition-opacity z-50 whitespace-nowrap"
+        data-allocation-tooltip
+      >
+        <span data-tooltip-text />
+        <div class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-neutral rotate-45" />
+      </div>
+    )
+  }
+</div>
+
+<script>
+  function initAllocationTooltips() {
+    document.querySelectorAll('[data-allocation-bar]').forEach((bar) => {
+      const tooltipEnabled = bar.getAttribute('data-tooltip-enabled') === 'true';
+      if (!tooltipEnabled) return;
+
+      const tooltip = bar.querySelector('[data-allocation-tooltip]') as HTMLElement | null;
+      const tooltipText = bar.querySelector('[data-tooltip-text]') as HTMLElement | null;
+      if (!tooltip || !tooltipText) return;
+
+      const segments = bar.querySelectorAll('[data-segment-label]');
+
+      segments.forEach((segment) => {
+        segment.addEventListener('mouseenter', (e: MouseEvent) => {
+          const target = e.currentTarget as HTMLElement;
+          const label = target.dataset.segmentLabel || '';
+          const percentage = target.dataset.segmentPercentage || '0';
+          tooltipText.textContent = `${label}: ${percentage}%`;
+
+          const barRect = bar.getBoundingClientRect();
+          const segmentRect = target.getBoundingClientRect();
+          const segmentCenter = segmentRect.left + segmentRect.width / 2 - barRect.left;
+
+          tooltip.style.left = `${segmentCenter}px`;
+          tooltip.style.opacity = '1';
+        });
+
+        segment.addEventListener('mouseleave', () => {
+          tooltip.style.opacity = '0';
+        });
+      });
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initAllocationTooltips);
+  } else {
+    initAllocationTooltips();
+  }
+
+  document.addEventListener('astro:page-load', initAllocationTooltips);
+</script>
