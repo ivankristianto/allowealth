@@ -19,7 +19,7 @@
  * @param {string} className - Additional CSS classes
  */
 
-import { TrendingUp, Pencil, Trash2 } from '@lucide/astro';
+import { TrendingUp, Pencil, Trash2, Clock } from '@lucide/astro';
 import { formatCurrency } from '@/lib/formatting';
 import { ASSET_TYPE_LABELS, type AssetType } from '@/lib/types/asset';
 
@@ -108,10 +108,11 @@ const rowClasses = [
         {currency}
       </span>
       <span
-        class="text-xs text-base-content/50 font-medium tracking-tight"
+        class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold tracking-wider uppercase bg-base-200 text-base-content/50"
         title={`Last balance input: ${formattedDate}`}
       >
-        Balance updated: {relativeTime}
+        <Clock size={10} class="stroke-current" aria-hidden="true" />
+        {relativeTime}
       </span>
     </div>
   </div>

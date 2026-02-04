@@ -349,19 +349,32 @@ const { id } = Astro.props;
         // Clear and add points
         chartPoints.innerHTML = '';
         points.forEach((p, i) => {
-          const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-          circle.setAttribute('cx', String(p.x));
-          circle.setAttribute('cy', String(p.y));
-          circle.setAttribute('r', '4');
-          circle.setAttribute('fill', '#16a34a');
-          circle.setAttribute(
-            'class',
-            'opacity-0 hover:opacity-100 transition-opacity cursor-pointer'
-          );
-          circle.setAttribute('data-point-index', String(i));
+          const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+          g.setAttribute('data-point-index', String(i));
+          g.style.cursor = 'pointer';
 
-          // Tooltip events
-          circle.addEventListener('mouseenter', (e) => {
+          // Invisible larger hit area for easier hovering
+          const hitArea = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+          hitArea.setAttribute('cx', String(p.x));
+          hitArea.setAttribute('cy', String(p.y));
+          hitArea.setAttribute('r', '14');
+          hitArea.setAttribute('fill', 'transparent');
+          g.appendChild(hitArea);
+
+          // Visible dot (small, always shown)
+          const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+          dot.setAttribute('cx', String(p.x));
+          dot.setAttribute('cy', String(p.y));
+          dot.setAttribute('r', '3.5');
+          dot.setAttribute('fill', '#16a34a');
+          dot.setAttribute('stroke', 'white');
+          dot.setAttribute('stroke-width', '1.5');
+          g.appendChild(dot);
+
+          // Tooltip events on the group
+          g.addEventListener('mouseenter', (e) => {
+            dot.setAttribute('r', '6');
+            dot.setAttribute('stroke-width', '2');
             const point = points[i];
             if (tooltipDate) {
               tooltipDate.textContent = new Date(point.date).toLocaleDateString('en-US', {
@@ -374,21 +387,22 @@ const { id } = Astro.props;
               tooltipValue.textContent = formatCurrency(point.balance, currency);
             }
             if (tooltip) {
-              const rect = (e.target as Element).getBoundingClientRect();
-              // P4: TODO - Add viewport boundary checks to prevent tooltip overflow on mobile
+              const rect = dot.getBoundingClientRect();
               tooltip.style.left = `${rect.left - 40}px`;
               tooltip.style.top = `${rect.top - 60}px`;
               tooltip.style.opacity = '1';
             }
           });
 
-          circle.addEventListener('mouseleave', () => {
+          g.addEventListener('mouseleave', () => {
+            dot.setAttribute('r', '3.5');
+            dot.setAttribute('stroke-width', '1.5');
             if (tooltip) {
               tooltip.style.opacity = '0';
             }
           });
 
-          chartPoints.appendChild(circle);
+          chartPoints.appendChild(g);
         });
 
         // Update x-axis labels
