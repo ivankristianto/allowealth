@@ -9,7 +9,7 @@
 
 import type { MiddlewareHandler } from 'astro';
 import { auth, type User, type Session } from '@/lib/auth/lucia';
-import { logError } from '@/lib/utils/error-logger';
+import { logError } from '@/lib/logger';
 import { getCachedSession, cacheSession } from '@/lib/auth/session-cache';
 
 /** Session cookie name set in lucia.ts configuration */

@@ -82,7 +82,7 @@ export {
 } from './decimal';
 
 // Error logging utilities
-export { logError, sanitizeError, getSafeErrorMessage, type SanitizedError } from './error-logger';
+export { logError, sanitizeError, getSafeErrorMessage, type SanitizedError } from '@/lib/logger';
 
 // Client-side utilities
 export { debounce, throttle } from './client';
