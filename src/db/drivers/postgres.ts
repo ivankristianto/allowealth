@@ -47,42 +47,17 @@ function getSslConfig(isSupabase: boolean): boolean | 'require' {
 }
 
 /**
- * Detect if running in Cloudflare Workers edge environment
- */
-function isEdgeRuntime(): boolean {
-  return (
-    typeof globalThis.caches !== 'undefined' &&
-    typeof (globalThis as any).WebSocketPair !== 'undefined'
-  );
-}
-
-/**
  * Create a PostgreSQL connection using postgres.js
  *
- * IMPORTANT: In Cloudflare Workers, connections cannot be shared between requests.
- * Each request must create its own connection due to I/O context isolation.
- *
- * For non-edge environments (Node.js, Bun), uses singleton pattern to prevent
- * connection leaks.
+ * Uses singleton pattern to reuse connections. In Cloudflare Workers,
+ * module-level state is isolated per request, so the singleton
+ * naturally provides one connection per request.
  *
  * @param url - PostgreSQL connection URL
  * @returns postgres.js client instance
  */
 export function createPostgresDriver(url: string): ReturnType<typeof postgres> {
-  const isEdge = isEdgeRuntime();
-
-  // In Cloudflare Workers, MUST create fresh connection per request
-  // Singleton pattern causes "Cannot perform I/O on behalf of a different request" error
-  if (isEdge) {
-    return postgres(url, {
-      max: 1,
-      idle_timeout: 20,
-      ssl: false, // SSL causes "too many subrequests" in Workers
-      connect_timeout: 10,
-    });
-  }
-
-  // Non-edge: use singleton pattern to prevent connection leaks
+  // Return cached client if URL matches
   if (client && clientUrl === url) {
     return client;
   }

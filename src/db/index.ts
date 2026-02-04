@@ -244,17 +244,10 @@ function createDatabase(): Database {
 }
 
 /**
- * Detect if running in Cloudflare Workers edge environment
- */
-function isEdgeRuntime(): boolean {
-  return (
-    typeof globalThis.caches !== 'undefined' &&
-    typeof (globalThis as any).WebSocketPair !== 'undefined'
-  );
-}
-
-/**
- * Singleton database instance (not used in edge environments)
+ * Singleton database instance
+ *
+ * In Cloudflare Workers, module-level state is isolated per request,
+ * so the singleton naturally resets between requests.
  */
 let dbInstance: Database | null = null;
 
@@ -266,8 +259,9 @@ let isClosing = false;
 /**
  * Get the database instance
  *
- * IMPORTANT: In Cloudflare Workers, creates a fresh connection per request.
- * In Node.js/Bun, uses singleton pattern to prevent connection leaks.
+ * Uses singleton pattern to ensure one connection per request context.
+ * In Cloudflare Workers, module-level state is isolated per request,
+ * so this naturally provides one connection per request.
  *
  * @throws Error if database is being closed
  */
@@ -276,13 +270,6 @@ export function getDb(): Database {
     throw new Error('Database is being closed. Cannot acquire new connection.');
   }
 
-  // In Cloudflare Workers, cannot reuse connections across requests
-  // Each request gets a fresh database connection
-  if (isEdgeRuntime()) {
-    return createDatabase();
-  }
-
-  // Non-edge: use singleton pattern
   if (!dbInstance) {
     dbInstance = createDatabase();
   }
