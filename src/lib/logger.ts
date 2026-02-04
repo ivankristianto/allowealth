@@ -15,6 +15,7 @@
  * indexes JSON fields for querying in the Cloudflare dashboard.
  */
 
+/* eslint-disable no-console -- Logger is the console wrapper; direct console calls are intentional */
 import { createConsola, type LogObject } from 'consola/core';
 
 const isDev = typeof import.meta !== 'undefined' && import.meta.env?.MODE === 'development';
