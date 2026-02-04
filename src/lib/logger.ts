@@ -33,7 +33,9 @@ const jsonReporter = {
     };
 
     // Clean undefined values
-    Object.keys(entry).forEach((k) => entry[k] === undefined && delete entry[k]);
+    Object.keys(entry).forEach((k) => {
+      if (entry[k] === undefined) delete entry[k];
+    });
 
     const json = JSON.stringify(entry);
 

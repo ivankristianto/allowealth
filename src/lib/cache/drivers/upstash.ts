@@ -29,7 +29,7 @@ export class UpstashDriver implements CacheDriver {
       const value = await this.redis.get<T>(key);
       return value ?? null;
     } catch (error) {
-      log.warn(' Get failed:', key, error);
+      log.warn('Get failed:', key, error);
       return null;
     }
   }
@@ -49,7 +49,7 @@ export class UpstashDriver implements CacheDriver {
         await pipeline.exec();
       }
     } catch (error) {
-      log.warn(' Set failed:', key, error);
+      log.warn('Set failed:', key, error);
     }
   }
 
@@ -57,7 +57,7 @@ export class UpstashDriver implements CacheDriver {
     try {
       await this.redis.del(key);
     } catch (error) {
-      log.warn(' Delete failed:', key, error);
+      log.warn('Delete failed:', key, error);
     }
   }
 
@@ -78,7 +78,7 @@ export class UpstashDriver implements CacheDriver {
         await this.redis.del(...keysToDelete, ...tagKeys);
       }
     } catch (error) {
-      log.warn(' InvalidateByTags failed:', tags, error);
+      log.warn('InvalidateByTags failed:', tags, error);
     }
   }
 }

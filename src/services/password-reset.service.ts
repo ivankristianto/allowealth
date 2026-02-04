@@ -127,7 +127,7 @@ export async function requestPasswordReset(email: string): Promise<void> {
     // If user not found, return success anyway to prevent email enumeration
     if (!user) {
       // Log the attempt but don't throw error
-      log.warn(`password reset requested for non-existent email: ${email}`);
+      log.warn('password reset requested for non-existent email');
       return;
     }
 
