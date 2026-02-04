@@ -43,6 +43,24 @@ export function escapeHtml(text: string): string {
 }
 
 /**
+ * Safely parse a JSON array string.
+ *
+ * Returns null when input is empty, invalid JSON, or not an array.
+ */
+export function safeParseJsonArray(value: string | null | undefined): unknown[] | null {
+  if (!value || !value.trim()) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Manages button loading state during async operations.
  *
  * This utility provides a consistent way to show loading state on buttons

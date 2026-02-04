@@ -229,25 +229,6 @@ const serializedInput = JSON.stringify(input);
   const charts: Record<string, ChartInstance> = {};
   (window as any).wealthTrajectoryCharts = charts;
 
-  // Store observers for cleanup
-  let chartObserver: IntersectionObserver | null = null;
-  let themeObserver: MutationObserver | null = null;
-  let systemThemeMediaQuery: MediaQueryList | null = null;
-
-  /**
-   * Cleanup all chart instances and observers
-   */
-
-  /**
-   * Check if current theme is dark
-   * @TODO: P3 - Add more detailed JSDoc explaining theme detection logic
-   */
-
-  /**
-   * Handle system theme preference change
-   * @TODO: P3 - Add JSDoc explaining when and why this is called
-   */
-
   /**
    * Update chart colors based on current theme
    */

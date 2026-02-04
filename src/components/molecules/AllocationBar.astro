@@ -83,24 +83,25 @@ const sanitizedSegments = segments.map((segment) => ({
 <script>
   function initAllocationTooltips() {
     document.querySelectorAll('[data-allocation-bar]').forEach((bar) => {
+      if (!(bar instanceof HTMLElement)) return;
       const tooltipEnabled = bar.getAttribute('data-tooltip-enabled') === 'true';
       if (!tooltipEnabled) return;
 
-      const tooltip = bar.querySelector('[data-allocation-tooltip]') as HTMLElement | null;
-      const tooltipText = bar.querySelector('[data-tooltip-text]') as HTMLElement | null;
-      if (!tooltip || !tooltipText) return;
+      const tooltip = bar.querySelector('[data-allocation-tooltip]');
+      const tooltipText = bar.querySelector('[data-tooltip-text]');
+      if (!(tooltip instanceof HTMLElement) || !(tooltipText instanceof HTMLElement)) return;
 
       const segments = bar.querySelectorAll('[data-segment-label]');
 
       segments.forEach((segment) => {
-        segment.addEventListener('mouseenter', (e: MouseEvent) => {
-          const target = e.currentTarget as HTMLElement;
-          const label = target.dataset.segmentLabel || '';
-          const percentage = target.dataset.segmentPercentage || '0';
+        segment.addEventListener('mouseenter', () => {
+          if (!(segment instanceof HTMLElement)) return;
+          const label = segment.dataset.segmentLabel || '';
+          const percentage = segment.dataset.segmentPercentage || '0';
           tooltipText.textContent = `${label}: ${percentage}%`;
 
           const barRect = bar.getBoundingClientRect();
-          const segmentRect = target.getBoundingClientRect();
+          const segmentRect = segment.getBoundingClientRect();
           const segmentCenter = segmentRect.left + segmentRect.width / 2 - barRect.left;
 
           tooltip.style.left = `${segmentCenter}px`;

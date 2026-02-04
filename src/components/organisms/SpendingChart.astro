@@ -216,6 +216,7 @@ const chartId = `spending-chart-${Math.random().toString(36).slice(2, 11)}`;
 
 <script>
   import { Chart } from '@/lib/chart-setup';
+  import { safeParseJsonArray } from '@/lib/client-utils';
   import { createChartLifecycle, isDarkTheme } from '@/lib/utils/chart-lifecycle';
 
   interface SpendingCategory {
@@ -510,7 +511,7 @@ const chartId = `spending-chart-${Math.random().toString(36).slice(2, 11)}`;
     },
     onInit: (container, payload) => {
       const colorsAttr = container.getAttribute('data-chart-colors');
-      const colors = colorsAttr ? parseChartColors(JSON.parse(colorsAttr)) : null;
+      const colors = parseChartColors(safeParseJsonArray(colorsAttr));
       if (!colors) return;
       const chartId = container.querySelector('canvas')?.id;
       if (!chartId || charts[chartId]) return;
