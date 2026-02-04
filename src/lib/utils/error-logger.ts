@@ -13,6 +13,10 @@
  * - Internal error codes that expose implementation details
  */
 
+import { createLogger } from '@/lib/logger';
+
+const log = createLogger('error');
+
 /**
  * Sensitive patterns to strip from error messages
  */
@@ -190,8 +194,8 @@ export function logError(message: string, error: unknown): void {
     logParts.push(`Context: ${sanitized.context}`);
   }
 
-  // Log to console (sanitized)
-  console.error(logParts.join(' | '));
+  // Log via structured logger (sanitized)
+  log.error(logParts.join(' | '));
 }
 
 /**
