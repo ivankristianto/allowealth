@@ -49,9 +49,8 @@ function getSslConfig(isSupabase: boolean): boolean | 'require' {
 /**
  * Create a PostgreSQL connection using postgres.js
  *
- * Uses singleton pattern to reuse connections. In Cloudflare Workers,
- * module-level state is isolated per request, so the singleton
- * naturally provides one connection per request.
+ * In Cloudflare Workers, the database middleware resets this per request
+ * (I/O objects are bound to the request that created them).
  *
  * @param url - PostgreSQL connection URL
  * @returns postgres.js client instance
@@ -72,10 +71,16 @@ export function createPostgresDriver(url: string): ReturnType<typeof postgres> {
   const config = getDatabaseConfig();
 
   client = postgres(url, {
-    max: config.poolConfig?.max ?? 10,
-    idle_timeout: config.poolConfig?.idleTimeout ?? 30,
+    max: config.poolConfig?.max ?? 1,
+    idle_timeout: config.poolConfig?.idleTimeout ?? 20,
     ssl: getSslConfig(config.isSupabase),
     connect_timeout: 30,
+    // Supabase transaction pooler (port 6543) uses PgBouncer in transaction mode,
+    // which doesn't support prepared statements across connections.
+    prepare: !config.isTransactionPooler,
+    // Disable type catalog query to reduce subrequests in Cloudflare Workers.
+    // postgres.js queries pg_type on first connection by default.
+    fetch_types: false,
   });
   clientUrl = url;
 
@@ -98,14 +103,35 @@ export function createPostgresDatabase<T extends Record<string, unknown>>(
 }
 
 /**
+ * Reset the PostgreSQL client singleton without closing
+ *
+ * In Cloudflare Workers, I/O objects (TCP sockets) are bound to the request
+ * context that created them. Reusing a connection from a previous request throws:
+ * "Cannot perform I/O on behalf of a different request"
+ *
+ * This function discards the stale reference so the next access creates
+ * a fresh connection in the current request's I/O context.
+ * The old socket is cleaned up by the Workers runtime when the previous
+ * request context is garbage collected.
+ */
+export function resetPostgresClient(): void {
+  client = null;
+  clientUrl = null;
+}
+
+/**
  * Close the PostgreSQL connection pool
  *
- * Should be called when shutting down the application
- * to properly release database connections.
+ * Should be called when shutting down the application or at the end
+ * of a request in Cloudflare Workers to properly release connections.
  */
 export async function closePostgres(): Promise<void> {
   if (client) {
-    await client.end();
+    try {
+      await client.end();
+    } catch {
+      // In Workers, the socket may already be invalidated — ignore close errors
+    }
     client = null;
     clientUrl = null;
   }

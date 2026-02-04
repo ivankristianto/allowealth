@@ -1,4 +1,5 @@
 import { describe, expect, test, beforeEach, afterEach } from 'bun:test';
+import { setTestEnv } from '@/lib/env';
 import { detectDialect, getDatabaseConfig } from './config';
 
 describe('detectDialect', () => {
@@ -53,6 +54,7 @@ describe('getDatabaseConfig', () => {
     expect(config.dialect).toBe('sqlite');
     expect(config.url).toBe('db/.dev.db');
     expect(config.isSupabase).toBe(false);
+    expect(config.isTransactionPooler).toBe(false);
     expect(config.poolConfig).toBeUndefined();
   });
 
@@ -62,22 +64,25 @@ describe('getDatabaseConfig', () => {
     expect(config.dialect).toBe('postgresql');
     expect(config.url).toBe('postgresql://user:pass@localhost:5432/db');
     expect(config.isSupabase).toBe(false);
-    expect(config.poolConfig).toEqual({ max: 10, idleTimeout: 30 });
+    expect(config.isTransactionPooler).toBe(false);
+    expect(config.poolConfig).toEqual({ max: 1, idleTimeout: 20 });
   });
 
-  test('detects Supabase URLs', () => {
+  test('detects Supabase URLs with transaction pooler', () => {
     process.env.DATABASE_URL =
       'postgresql://postgres.abc123:pass@aws-0-us-east-1.pooler.supabase.com:6543/postgres';
     const config = getDatabaseConfig();
     expect(config.dialect).toBe('postgresql');
     expect(config.isSupabase).toBe(true);
-    expect(config.poolConfig).toEqual({ max: 10, idleTimeout: 30 });
+    expect(config.isTransactionPooler).toBe(true);
+    expect(config.poolConfig).toEqual({ max: 1, idleTimeout: 20 });
   });
 
   test('detects Supabase URLs with .supabase.co domain', () => {
     process.env.DATABASE_URL = 'postgresql://user:pass@db.abc123.supabase.co:5432/postgres';
     const config = getDatabaseConfig();
     expect(config.isSupabase).toBe(true);
+    expect(config.isTransactionPooler).toBe(false);
   });
 
   test('does not falsely detect supabase in non-Supabase URLs', () => {
@@ -85,5 +90,45 @@ describe('getDatabaseConfig', () => {
     process.env.DATABASE_URL = 'postgresql://user:pass@myserver.example.com:5432/supabase-clone';
     const config = getDatabaseConfig();
     expect(config.isSupabase).toBe(false);
+    expect(config.isTransactionPooler).toBe(false);
+  });
+});
+
+describe('Hyperdrive detection', () => {
+  beforeEach(() => {
+    delete process.env.DATABASE_URL;
+  });
+
+  afterEach(() => {
+    setTestEnv(null);
+  });
+
+  test('detects Hyperdrive when HYPERDRIVE_ENABLED is set', () => {
+    setTestEnv({
+      DATABASE_URL: 'postgresql://user:pass@hyperdrive-local:5432/postgres',
+      HYPERDRIVE_ENABLED: 'true',
+    });
+    const config = getDatabaseConfig();
+    expect(config.dialect).toBe('postgresql');
+    expect(config.isHyperdrive).toBe(true);
+    expect(config.isSupabase).toBe(false);
+    expect(config.isTransactionPooler).toBe(false);
+  });
+
+  test('Hyperdrive overrides Supabase detection', () => {
+    setTestEnv({
+      DATABASE_URL: 'postgresql://user:pass@pooler.supabase.com:6543/postgres',
+      HYPERDRIVE_ENABLED: 'true',
+    });
+    const config = getDatabaseConfig();
+    expect(config.isHyperdrive).toBe(true);
+    expect(config.isSupabase).toBe(false);
+    expect(config.isTransactionPooler).toBe(false);
+  });
+
+  test('returns isHyperdrive false when not set', () => {
+    process.env.DATABASE_URL = 'postgresql://user:pass@localhost:5432/db';
+    const config = getDatabaseConfig();
+    expect(config.isHyperdrive).toBe(false);
   });
 });

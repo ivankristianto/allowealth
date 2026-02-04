@@ -370,10 +370,20 @@ export async function login(
     if (error instanceof AuthError) {
       throw error;
     }
-    throw new AuthError(
-      AUTH_ERRORS.DATABASE_ERROR,
-      `Database operation failed: ${error instanceof Error ? error.message : 'Unknown error'}`
-    );
+    // Log full error details for diagnosis (postgres.js errors have code, severity, detail)
+    const errObj = error as Record<string, unknown>;
+    const details = [
+      errObj.message,
+      errObj.code && `code=${errObj.code}`,
+      errObj.severity && `severity=${errObj.severity}`,
+      errObj.detail && `detail=${errObj.detail}`,
+      errObj.hint && `hint=${errObj.hint}`,
+      errObj.cause && `cause=${errObj.cause}`,
+    ]
+      .filter(Boolean)
+      .join(' | ');
+    console.error('[login] DB error details:', details);
+    throw new AuthError(AUTH_ERRORS.DATABASE_ERROR, `Database operation failed: ${details}`);
   }
 }
 

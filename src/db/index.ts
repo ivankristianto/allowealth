@@ -23,7 +23,7 @@
 import { createRequire } from 'node:module';
 import { getDatabaseConfig } from './config';
 import { detectRuntime, type DatabaseDriver } from './driver';
-import { createPostgresDatabase, closePostgres } from './drivers/postgres';
+import { createPostgresDatabase, closePostgres, resetPostgresClient } from './drivers/postgres';
 import { createNodeDriver } from './drivers/node';
 import type { BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
@@ -246,8 +246,11 @@ function createDatabase(): Database {
 /**
  * Singleton database instance
  *
- * In Cloudflare Workers, module-level state is isolated per request,
- * so the singleton naturally resets between requests.
+ * WARNING: In Cloudflare Workers, module-level state persists across requests
+ * within the same isolate, but I/O objects (TCP sockets) are bound to the
+ * request context that created them. The database middleware must reset this
+ * at the start of each request to avoid "Cannot perform I/O on behalf of
+ * a different request" errors.
  */
 let dbInstance: Database | null = null;
 
@@ -259,9 +262,9 @@ let isClosing = false;
 /**
  * Get the database instance
  *
- * Uses singleton pattern to ensure one connection per request context.
- * In Cloudflare Workers, module-level state is isolated per request,
- * so this naturally provides one connection per request.
+ * Uses singleton pattern within a request. In Cloudflare Workers, the
+ * database middleware calls prepareForRequest() at the start of each
+ * request to ensure a fresh connection in the current I/O context.
  *
  * @throws Error if database is being closed
  */
@@ -289,6 +292,22 @@ export function getDb(): Database {
  */
 export function resetDb(): void {
   dbInstance = null;
+}
+
+/**
+ * Prepare database for a new request (Cloudflare Workers)
+ *
+ * Discards stale connection references from previous requests.
+ * Must be called at the start of each request before any DB access.
+ *
+ * In Workers, I/O objects (TCP sockets) are bound to the request that
+ * created them. Reusing a connection from a prior request throws:
+ * "Cannot perform I/O on behalf of a different request"
+ */
+export function prepareForRequest(): void {
+  resetPostgresClient();
+  dbInstance = null;
+  isClosing = false;
 }
 
 /**

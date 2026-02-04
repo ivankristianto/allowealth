@@ -32,3 +32,10 @@ PERF_DEBUG = "true"
 #
 # IMPORTANT: Workers only support PostgreSQL. Set DATABASE_URL to a PostgreSQL connection string.
 # SQLite (bun:sqlite) is for local development only.
+
+# Hyperdrive connection pooling for PostgreSQL
+# Eliminates per-request TCP/TLS overhead (fixes "Too many subrequests")
+# Create config: wrangler hyperdrive create expenses-db --connection-string="<direct-supabase-url>"
+[[hyperdrive]]
+binding = "HYPERDRIVE"
+id = "<REPLACE_WITH_HYPERDRIVE_CONFIG_ID>"

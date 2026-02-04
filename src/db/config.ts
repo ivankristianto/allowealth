@@ -9,6 +9,8 @@ export interface DatabaseConfig {
   dialect: DatabaseDialect;
   url: string;
   isSupabase: boolean;
+  isTransactionPooler: boolean;
+  isHyperdrive: boolean;
   poolConfig?: { max: number; idleTimeout: number };
 }
 
@@ -66,14 +68,38 @@ function isSupabaseUrl(url: string): boolean {
   }
 }
 
+/**
+ * Detect if the URL uses the Supabase transaction pooler (port 6543)
+ *
+ * Transaction mode pooler (PgBouncer) doesn't support prepared statements,
+ * so postgres.js must use `prepare: false` when connecting through it.
+ */
+function isTransactionPoolerUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    return parsed.port === '6543';
+  } catch {
+    return url.includes(':6543');
+  }
+}
+
 export function getDatabaseConfig(): DatabaseConfig {
   const url = getDatabaseUrl();
   const dialect = detectDialect(url);
+  const isHyperdrive = getEnv('HYPERDRIVE_ENABLED') === 'true';
+  // Hyperdrive handles Supabase/pooler specifics — skip detection when active
+  const isSupabase = !isHyperdrive && dialect === 'postgresql' && isSupabaseUrl(url);
+  const isTransactionPooler =
+    !isHyperdrive && dialect === 'postgresql' && isTransactionPoolerUrl(url);
+
   return {
     dialect,
     url,
-    isSupabase: dialect === 'postgresql' && isSupabaseUrl(url),
-    // P2: TODO - Make pool settings configurable via DATABASE_POOL_MAX and DATABASE_IDLE_TIMEOUT env vars
-    poolConfig: dialect === 'postgresql' ? { max: 10, idleTimeout: 30 } : undefined,
+    isSupabase,
+    isTransactionPooler,
+    isHyperdrive,
+    // Cloudflare Workers: use max 1 to minimize subrequests (TCP connections).
+    // Supabase pooler handles connection pooling server-side.
+    poolConfig: dialect === 'postgresql' ? { max: 1, idleTimeout: 20 } : undefined,
   };
 }
