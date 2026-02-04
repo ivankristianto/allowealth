@@ -183,19 +183,20 @@ const { id } = Astro.props;
             data-x-labels
           >
           </div>
-        </div>
 
-        {/* Tooltip (positioned absolutely) */}
-        <div
-          class="fixed z-50 px-3 py-2 bg-neutral text-neutral-content text-xs font-medium rounded-lg shadow-lg pointer-events-none opacity-0 transition-opacity"
-          data-chart-tooltip
-        >
+          {/* Tooltip (absolute within chart container) */}
           <div
-            data-tooltip-date
-            class="text-[10px] text-neutral-content/60 uppercase tracking-wider mb-1"
+            class="absolute z-10 px-3 py-2 bg-neutral text-neutral-content text-xs font-medium rounded-lg shadow-lg pointer-events-none opacity-0 transition-opacity"
+            style="transform: translate(-50%, -100%); margin-top: -8px;"
+            data-chart-tooltip
           >
+            <div
+              data-tooltip-date
+              class="text-[10px] text-neutral-content/60 uppercase tracking-wider mb-1"
+            >
+            </div>
+            <div data-tooltip-value class="font-bold"></div>
           </div>
-          <div data-tooltip-value class="font-bold"></div>
         </div>
       </div>
 
@@ -299,6 +300,13 @@ const { id } = Astro.props;
         }
       };
 
+      // Chart container for tooltip positioning
+      const chartContainer = container.querySelector('[data-chart-container]') as HTMLElement;
+
+      // SVG viewBox dimensions (must match the SVG viewBox attribute)
+      const SVG_WIDTH = 800;
+      const SVG_HEIGHT = 300;
+
       // Draw chart
       const drawChart = (data: HistoryPoint[], currency: 'IDR' | 'USD') => {
         if (!chartSvg || !chartArea || !chartLine || !chartPoints || !xLabels) return;
@@ -372,7 +380,7 @@ const { id } = Astro.props;
           g.appendChild(dot);
 
           // Tooltip events on the group
-          g.addEventListener('mouseenter', (e) => {
+          g.addEventListener('mouseenter', () => {
             dot.setAttribute('r', '6');
             dot.setAttribute('stroke-width', '2');
             const point = points[i];
@@ -386,10 +394,14 @@ const { id } = Astro.props;
             if (tooltipValue) {
               tooltipValue.textContent = formatCurrency(point.balance, currency);
             }
-            if (tooltip) {
-              const rect = dot.getBoundingClientRect();
-              tooltip.style.left = `${rect.left - 40}px`;
-              tooltip.style.top = `${rect.top - 60}px`;
+            if (tooltip && chartContainer) {
+              // Map SVG coordinates to container pixel coordinates
+              const cw = chartContainer.clientWidth;
+              const ch = chartContainer.clientHeight;
+              const pixelX = (p.x / SVG_WIDTH) * cw;
+              const pixelY = (p.y / SVG_HEIGHT) * ch;
+              tooltip.style.left = `${pixelX}px`;
+              tooltip.style.top = `${pixelY}px`;
               tooltip.style.opacity = '1';
             }
           });
