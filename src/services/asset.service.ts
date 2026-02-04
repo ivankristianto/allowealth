@@ -30,6 +30,7 @@ export interface UpdateAssetInput {
 export interface UpdateAssetBalanceInput {
   balance: string;
   notes?: string;
+  recorded_at?: Date;
 }
 
 export class AssetService {
@@ -63,6 +64,7 @@ export class AssetService {
         type: input.type,
         category_id: input.category_id ?? null,
         balance: input.balance,
+        initial_balance: input.balance,
         currency: input.currency,
         last_updated: now,
         created_at: now,
@@ -208,7 +210,7 @@ export class AssetService {
         asset_id: id,
         balance: input.balance,
         notes: input.notes,
-        recorded_at: now,
+        recorded_at: input.recorded_at || now,
       });
     } catch (historyError) {
       // Compensating transaction: rollback the balance update
@@ -270,6 +272,44 @@ export class AssetService {
       });
 
       return history;
+    });
+  }
+
+  /**
+   * Get the latest balance snapshot for each asset within a given month.
+   * For each asset, returns the most recent history entry where recorded_at <= end of month.
+   * If no entry exists, falls back to initial_balance or current balance.
+   */
+  async getSnapshotForMonth(
+    workspaceId: string,
+    year: number,
+    month: number,
+    perf?: PerfCollector
+  ) {
+    const endOfMonth = new Date(year, month, 0, 23, 59, 59, 999);
+
+    return trackQuery('AssetService.getSnapshotForMonth', perf, async () => {
+      const allAssets = await this.findAll(workspaceId);
+
+      const snapshots = await Promise.all(
+        allAssets.map(async (asset) => {
+          const history = await this.db.query.assetHistory.findFirst({
+            where: and(
+              eq(this.schema.assetHistory.asset_id, asset.id),
+              sql`${this.schema.assetHistory.recorded_at} <= ${endOfMonth}`
+            ),
+            orderBy: (assetHistory: any, { desc }: any) => [desc(assetHistory.recorded_at)],
+          });
+
+          return {
+            ...asset,
+            snapshot_balance: history?.balance || asset.initial_balance || asset.balance,
+            snapshot_date: history?.recorded_at || asset.created_at,
+          };
+        })
+      );
+
+      return snapshots;
     });
   }
 
