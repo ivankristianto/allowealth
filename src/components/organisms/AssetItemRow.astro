@@ -19,7 +19,7 @@
  * @param {string} className - Additional CSS classes
  */
 
-import { TrendingUp, Pencil, Trash2, Clock } from '@lucide/astro';
+import { TrendingUp, Pencil, Trash2, Clock, RefreshCw } from '@lucide/astro';
 import { formatCurrency } from '@/lib/formatting';
 import { ASSET_TYPE_LABELS, type AssetType } from '@/lib/types/asset';
 
@@ -150,6 +150,21 @@ const rowClasses = [
         <TrendingUp size={18} class="stroke-current" aria-hidden="true" />
       </button>
 
+      {/* Update Value */}
+      <button
+        type="button"
+        class="p-2 text-base-content/50 hover:text-warning transition-all rounded-xl hover:bg-warning/10"
+        title="Update value"
+        aria-label={`Update ${name} value`}
+        data-update-value-asset={id}
+        data-asset-name={name}
+        data-asset-currency={currency}
+        data-asset-balance={balance}
+        data-testid="asset-update-value-btn"
+      >
+        <RefreshCw size={18} class="stroke-current" aria-hidden="true" />
+      </button>
+
       {/* Edit Asset */}
       <button
         type="button"
@@ -190,6 +205,7 @@ const rowClasses = [
 <script>
   // Track initialized elements to avoid duplicate listeners
   const initializedHistoryButtons = new WeakSet<Element>();
+  const initializedUpdateValueButtons = new WeakSet<Element>();
   const initializedEditButtons = new WeakSet<Element>();
   const initializedDeleteButtons = new WeakSet<Element>();
 
@@ -219,6 +235,36 @@ const rowClasses = [
               id: assetId,
               name: assetName,
               type: assetType,
+              currency: assetCurrency,
+              balance: assetBalance,
+            },
+          })
+        );
+      });
+    });
+
+    // Initialize Update Value buttons
+    document.querySelectorAll('[data-update-value-asset]').forEach((button) => {
+      if (initializedUpdateValueButtons.has(button)) return;
+      initializedUpdateValueButtons.add(button);
+
+      button.addEventListener('click', (e: MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const btn = button as HTMLElement;
+        const assetId = btn.getAttribute('data-update-value-asset');
+        const assetName = btn.getAttribute('data-asset-name') || 'Asset';
+        const assetCurrency = (btn.getAttribute('data-asset-currency') || 'IDR') as 'IDR' | 'USD';
+        const assetBalance = parseFloat(btn.getAttribute('data-asset-balance') || '0');
+
+        if (!assetId) return;
+
+        document.dispatchEvent(
+          new CustomEvent('open-asset-update-value', {
+            detail: {
+              id: assetId,
+              name: assetName,
               currency: assetCurrency,
               balance: assetBalance,
             },

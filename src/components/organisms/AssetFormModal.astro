@@ -299,6 +299,12 @@ const categoryOptions = categories.length
           if (submitBtn) submitBtn.textContent = 'Save Changes';
           if (balanceLabel) balanceLabel.textContent = 'Updated Balance';
         }
+
+        // Hide balance field in edit mode (balance updates go through Update Value modal)
+        const balanceField = container.querySelector(`#${id}-balance`)?.closest('.space-y-2');
+        if (balanceField) {
+          (balanceField as HTMLElement).style.display = data.id ? 'none' : '';
+        }
       };
 
       // Function to reset form
@@ -316,6 +322,12 @@ const categoryOptions = categories.length
           subtitleEl.textContent = 'Add a new account, fund or security to your portfolio.';
           if (submitBtn) submitBtn.textContent = 'Register Asset';
           if (balanceLabel) balanceLabel.textContent = 'Initial Balance';
+        }
+
+        // Show balance field for add mode
+        const balanceField = container.querySelector(`#${id}-balance`)?.closest('.space-y-2');
+        if (balanceField) {
+          (balanceField as HTMLElement).style.display = '';
         }
       };
 
@@ -366,7 +378,8 @@ const categoryOptions = categories.length
         }
 
         // Validation
-        if (!name || !categoryId || !currency || !balance) {
+        const isEdit = Boolean(assetIdInput?.value);
+        if (!name || !categoryId || !currency || (!isEdit && !balance)) {
           if (errorDiv) {
             errorDiv.textContent = 'Please fill in all required fields.';
             errorDiv.classList.remove('hidden');
@@ -374,14 +387,16 @@ const categoryOptions = categories.length
           return;
         }
 
-        // Balance validation - reject commas and invalid numbers
-        const balanceNum = parseFloat(balance);
-        if (isNaN(balanceNum) || balanceNum < 0 || !isFinite(balanceNum) || balance.includes(',')) {
-          if (errorDiv) {
-            errorDiv.textContent = 'Please enter a valid positive number for balance.';
-            errorDiv.classList.remove('hidden');
+        // Balance validation - reject commas and invalid numbers (only when balance is provided)
+        if (balance) {
+          const balanceNum = parseFloat(balance);
+          if (isNaN(balanceNum) || balanceNum < 0 || !isFinite(balanceNum) || balance.includes(',')) {
+            if (errorDiv) {
+              errorDiv.textContent = 'Please enter a valid positive number for balance.';
+              errorDiv.classList.remove('hidden');
+            }
+            return;
           }
-          return;
         }
 
         // Asset ID validation - ensure nanoid format if editing
@@ -437,22 +452,6 @@ const categoryOptions = categories.length
                 errorData.message ||
                 `Failed to ${isEdit ? 'update' : 'create'} asset`
             );
-          }
-
-          // If editing and balance changed, update balance separately
-          if (isEdit) {
-            const balanceResponse = await csrfFetch(`/api/assets/${assetId}/balance`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ balance }),
-            });
-
-            if (!balanceResponse.ok) {
-              const errorData = await balanceResponse.json();
-              throw new Error(
-                errorData.error?.message || errorData.message || 'Failed to update balance'
-              );
-            }
           }
 
           // Success
