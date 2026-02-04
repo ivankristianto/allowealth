@@ -46,6 +46,19 @@ const subtitle = isEditMode
 // Icon styling based on mode
 const iconBgClass = isEditMode ? 'bg-accent/10' : 'bg-accent/10';
 const iconColorClass = 'text-accent';
+
+// Color name mapping for human-readable labels
+const colorNameMap: Record<string, string> = {
+  'bg-primary': 'Slate Dark',
+  'bg-secondary': 'Slate',
+  'bg-accent': 'Forest Green',
+  'bg-neutral': 'Gray',
+  'bg-success': 'Emerald',
+  'bg-warning': 'Amber',
+  'bg-error': 'Rose',
+  'bg-info': 'Sky Blue',
+};
+const currentColorName = colorNameMap[values.color || 'bg-primary'] || 'Slate Dark';
 ---
 
 <div data-category-modal-container data-id={id} data-mode={mode} data-testid="category-modal">
@@ -221,20 +234,36 @@ const iconColorClass = 'text-accent';
               id="category-color"
               class="select select-bordered w-full h-10 text-xs bg-base-200 focus:ring-2 focus:ring-accent focus:ring-opacity-20 focus:outline-none focus:ring-offset-2"
               required
+              data-color-select
             >
               <option value="bg-primary" selected={values.color === 'bg-primary' || !values.color}>
-                Primary
+                Slate Dark
               </option>
               <option value="bg-secondary" selected={values.color === 'bg-secondary'}>
-                Secondary
+                Slate
               </option>
-              <option value="bg-accent" selected={values.color === 'bg-accent'}>Accent</option>
-              <option value="bg-neutral" selected={values.color === 'bg-neutral'}>Neutral</option>
-              <option value="bg-success" selected={values.color === 'bg-success'}>Success</option>
-              <option value="bg-warning" selected={values.color === 'bg-warning'}>Warning</option>
-              <option value="bg-error" selected={values.color === 'bg-error'}>Error</option>
-              <option value="bg-info" selected={values.color === 'bg-info'}>Info</option>
+              <option value="bg-accent" selected={values.color === 'bg-accent'}>Forest Green</option
+              >
+              <option value="bg-neutral" selected={values.color === 'bg-neutral'}>Gray</option>
+              <option value="bg-success" selected={values.color === 'bg-success'}>Emerald</option>
+              <option value="bg-warning" selected={values.color === 'bg-warning'}>Amber</option>
+              <option value="bg-error" selected={values.color === 'bg-error'}>Rose</option>
+              <option value="bg-info" selected={values.color === 'bg-info'}>Sky Blue</option>
             </select>
+            {/* Color preview swatch */}
+            <div class="flex items-center gap-2 mt-2" data-color-preview-row>
+              <div
+                class:list={[
+                  'w-5 h-5 rounded-md shadow-inner border border-base-300',
+                  values.color || 'bg-primary',
+                ]}
+                data-color-swatch
+              >
+              </div>
+              <span class="text-xs text-base-content/50" data-color-name-label>
+                {currentColorName}
+              </span>
+            </div>
             {errors.color && <span class="text-error text-xs mt-1">{errors.color}</span>}
           </div>
         </div>
@@ -380,10 +409,46 @@ const iconColorClass = 'text-accent';
         errorDiv?.classList.add('hidden');
       });
 
-      // Update icon preview when icon or color changes
+      // Filter icons when type changes
+      const typeSelect = form.querySelector('#category-type') as HTMLSelectElement;
       const iconSelect = form.querySelector('[data-icon-select]') as HTMLSelectElement;
       const colorSelect = form.querySelector('#category-color') as HTMLSelectElement;
       const iconPreview = container.querySelector('#icon-preview');
+
+      function filterIconsByType() {
+        if (!typeSelect || !iconSelect) return;
+        const selectedType = typeSelect.value; // 'expense' or 'income'
+
+        // Show/hide optgroups and options based on type
+        const optgroups = iconSelect.querySelectorAll('optgroup');
+        optgroups.forEach((group) => {
+          const label = group.label.toLowerCase();
+          if (label.includes('general')) {
+            // Always show general icons
+            (group as HTMLOptGroupElement).style.display = '';
+          } else if (label.includes(selectedType)) {
+            // Show matching type
+            (group as HTMLOptGroupElement).style.display = '';
+          } else {
+            // Hide non-matching type
+            (group as HTMLOptGroupElement).style.display = 'none';
+          }
+        });
+
+        // If current icon is now hidden, switch to default
+        const currentOption = iconSelect.querySelector(`option[value="${iconSelect.value}"]`);
+        const parentGroup = currentOption?.parentElement as HTMLOptGroupElement | null;
+        if (parentGroup && parentGroup.style.display === 'none') {
+          // Select the first visible option
+          const defaultIcon = selectedType === 'expense' ? 'tag' : 'banknote';
+          iconSelect.value = defaultIcon;
+          iconSelect.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      }
+
+      typeSelect?.addEventListener('change', filterIconsByType);
+      // Apply initial filtering
+      filterIconsByType();
 
       function updateIconPreview() {
         if (!iconPreview || !iconSelect || !colorSelect) return;
@@ -425,7 +490,46 @@ const iconColorClass = 'text-accent';
       }
 
       iconSelect?.addEventListener('change', updateIconPreview);
-      colorSelect?.addEventListener('change', updateIconPreview);
+      const colorNameMap: Record<string, string> = {
+        'bg-primary': 'Slate Dark',
+        'bg-secondary': 'Slate',
+        'bg-accent': 'Forest Green',
+        'bg-neutral': 'Gray',
+        'bg-success': 'Emerald',
+        'bg-warning': 'Amber',
+        'bg-error': 'Rose',
+        'bg-info': 'Sky Blue',
+      };
+      const colorClasses = Object.keys(colorNameMap);
+
+      function syncColorPreview() {
+        const swatch = container.querySelector('[data-color-swatch]') as HTMLElement;
+        const nameLabel = container.querySelector('[data-color-name-label]');
+        const currentColor = colorSelect?.value || 'bg-primary';
+        if (swatch) {
+          colorClasses.forEach((c) => swatch.classList.remove(c));
+          swatch.classList.add(currentColor);
+        }
+        if (nameLabel) {
+          nameLabel.textContent = colorNameMap[currentColor] || currentColor;
+        }
+      }
+
+      colorSelect?.addEventListener('change', () => {
+        updateIconPreview();
+        syncColorPreview();
+      });
+
+      // Sync on init, cancel, close so preview never goes stale
+      syncColorPreview();
+
+      cancelBtn?.addEventListener('click', () => {
+        syncColorPreview();
+      });
+
+      modal.addEventListener('close', () => {
+        syncColorPreview();
+      });
     });
   }
 

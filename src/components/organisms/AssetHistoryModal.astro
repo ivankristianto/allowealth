@@ -67,7 +67,7 @@ const { id } = Astro.props;
       </div>
 
       {/* Chart section */}
-      <div class="bg-base-200/50 rounded-3xl p-6 md:p-8 border border-base-300/50">
+      <div class="bg-base-200/50 rounded-card p-6 md:p-8 border border-base-300/50">
         {/* Chart header */}
         <div class="flex justify-between items-center mb-8">
           <h3 class="text-sm font-bold text-base-content/60 uppercase tracking-widest">
@@ -183,19 +183,20 @@ const { id } = Astro.props;
             data-x-labels
           >
           </div>
-        </div>
 
-        {/* Tooltip (positioned absolutely) */}
-        <div
-          class="fixed z-50 px-3 py-2 bg-neutral text-neutral-content text-xs font-medium rounded-lg shadow-lg pointer-events-none opacity-0 transition-opacity"
-          data-chart-tooltip
-        >
+          {/* Tooltip (absolute within chart container) */}
           <div
-            data-tooltip-date
-            class="text-[10px] text-neutral-content/60 uppercase tracking-wider mb-1"
+            class="absolute z-10 px-3 py-2 bg-neutral text-neutral-content text-xs font-medium rounded-lg shadow-lg pointer-events-none opacity-0 transition-opacity"
+            style="transform: translate(-50%, -100%); margin-top: -8px;"
+            data-chart-tooltip
           >
+            <div
+              data-tooltip-date
+              class="text-[10px] text-neutral-content/60 uppercase tracking-wider mb-1"
+            >
+            </div>
+            <div data-tooltip-value class="font-bold"></div>
           </div>
-          <div data-tooltip-value class="font-bold"></div>
         </div>
       </div>
 
@@ -276,34 +277,35 @@ const { id } = Astro.props;
       let currentData: AssetHistoryData | null = null;
       let currentTimeframe: 'weekly' | 'monthly' = 'monthly';
 
-      // Generate mock history data
-      // @TODO: Wire with backend - Replace with actual API call to /api/assets/:id/history
-      const generateMockHistory = (currentBalance: number, days: number): HistoryPoint[] => {
-        const history: HistoryPoint[] = [];
-        const today = new Date();
-        let balance = currentBalance * (0.85 + Math.random() * 0.1); // Start 5-15% lower
+      // Fetch real history data from API
+      const fetchHistory = async (assetId: string): Promise<HistoryPoint[]> => {
+        try {
+          const response = await fetch(`/api/assets/${assetId}/history`);
+          if (!response.ok) return [];
+          const result = await response.json();
+          const data = result.data || result;
+          if (!Array.isArray(data)) return [];
 
-        for (let i = days - 1; i >= 0; i--) {
-          const date = new Date(today);
-          date.setDate(date.getDate() - i);
-
-          // Random daily change between -2% and +3%
-          const changePercent = (Math.random() * 5 - 2) / 100;
-          balance = balance * (1 + changePercent);
-
-          // Ensure we trend towards current balance on last day
-          if (i === 0) {
-            balance = currentBalance;
-          }
-
-          history.push({
-            date: date.toISOString().split('T')[0],
-            balance: Math.round(balance * 100) / 100,
-          });
+          return data
+            .map((entry: { balance: string; recorded_at: string | number }) => ({
+              date: new Date(entry.recorded_at).toISOString().split('T')[0],
+              balance: parseFloat(entry.balance) || 0,
+            }))
+            .sort(
+              (a: HistoryPoint, b: HistoryPoint) =>
+                new Date(a.date).getTime() - new Date(b.date).getTime()
+            );
+        } catch {
+          return [];
         }
-
-        return history;
       };
+
+      // Chart container for tooltip positioning
+      const chartContainer = container.querySelector('[data-chart-container]') as HTMLElement;
+
+      // SVG viewBox dimensions (must match the SVG viewBox attribute)
+      const SVG_WIDTH = 800;
+      const SVG_HEIGHT = 300;
 
       // Draw chart
       const drawChart = (data: HistoryPoint[], currency: 'IDR' | 'USD') => {
@@ -355,19 +357,32 @@ const { id } = Astro.props;
         // Clear and add points
         chartPoints.innerHTML = '';
         points.forEach((p, i) => {
-          const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-          circle.setAttribute('cx', String(p.x));
-          circle.setAttribute('cy', String(p.y));
-          circle.setAttribute('r', '4');
-          circle.setAttribute('fill', '#16a34a');
-          circle.setAttribute(
-            'class',
-            'opacity-0 hover:opacity-100 transition-opacity cursor-pointer'
-          );
-          circle.setAttribute('data-point-index', String(i));
+          const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+          g.setAttribute('data-point-index', String(i));
+          g.style.cursor = 'pointer';
 
-          // Tooltip events
-          circle.addEventListener('mouseenter', (e) => {
+          // Invisible larger hit area for easier hovering
+          const hitArea = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+          hitArea.setAttribute('cx', String(p.x));
+          hitArea.setAttribute('cy', String(p.y));
+          hitArea.setAttribute('r', '14');
+          hitArea.setAttribute('fill', 'transparent');
+          g.appendChild(hitArea);
+
+          // Visible dot (small, always shown)
+          const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+          dot.setAttribute('cx', String(p.x));
+          dot.setAttribute('cy', String(p.y));
+          dot.setAttribute('r', '3.5');
+          dot.setAttribute('fill', '#16a34a');
+          dot.setAttribute('stroke', 'white');
+          dot.setAttribute('stroke-width', '1.5');
+          g.appendChild(dot);
+
+          // Tooltip events on the group
+          g.addEventListener('mouseenter', () => {
+            dot.setAttribute('r', '6');
+            dot.setAttribute('stroke-width', '2');
             const point = points[i];
             if (tooltipDate) {
               tooltipDate.textContent = new Date(point.date).toLocaleDateString('en-US', {
@@ -379,22 +394,27 @@ const { id } = Astro.props;
             if (tooltipValue) {
               tooltipValue.textContent = formatCurrency(point.balance, currency);
             }
-            if (tooltip) {
-              const rect = (e.target as Element).getBoundingClientRect();
-              // P4: TODO - Add viewport boundary checks to prevent tooltip overflow on mobile
-              tooltip.style.left = `${rect.left - 40}px`;
-              tooltip.style.top = `${rect.top - 60}px`;
+            if (tooltip && chartContainer) {
+              // Map SVG coordinates to container pixel coordinates
+              const cw = chartContainer.clientWidth;
+              const ch = chartContainer.clientHeight;
+              const pixelX = (p.x / SVG_WIDTH) * cw;
+              const pixelY = (p.y / SVG_HEIGHT) * ch;
+              tooltip.style.left = `${pixelX}px`;
+              tooltip.style.top = `${pixelY}px`;
               tooltip.style.opacity = '1';
             }
           });
 
-          circle.addEventListener('mouseleave', () => {
+          g.addEventListener('mouseleave', () => {
+            dot.setAttribute('r', '3.5');
+            dot.setAttribute('stroke-width', '1.5');
             if (tooltip) {
               tooltip.style.opacity = '0';
             }
           });
 
-          chartPoints.appendChild(circle);
+          chartPoints.appendChild(g);
         });
 
         // Update x-axis labels
@@ -421,9 +441,8 @@ const { id } = Astro.props;
         if (balanceEl) balanceEl.textContent = formatCurrency(data.balance, data.currency);
 
         // Get history for timeframe
-        const days = timeframe === 'weekly' ? 7 : 30;
-        const history = data.history || generateMockHistory(data.balance, days);
-        const displayHistory = timeframe === 'weekly' ? history.slice(-7) : history;
+        const history = data.history || [];
+        const displayHistory = timeframe === 'weekly' ? history.slice(-7) : history.slice(-30);
 
         // Calculate change
         const startBalance = displayHistory[0]?.balance || data.balance;
@@ -461,7 +480,7 @@ const { id } = Astro.props;
       };
 
       // Listen for open-asset-history event
-      const handleOpenHistory = ((e: CustomEvent<AssetHistoryData>) => {
+      const handleOpenHistory = (async (e: CustomEvent<AssetHistoryData>) => {
         currentData = e.detail;
         currentTimeframe = 'monthly';
 
@@ -470,12 +489,11 @@ const { id } = Astro.props;
         chartSvg?.classList.add('hidden');
         chartEmpty?.classList.add('hidden');
 
-        // Generate mock history data
-        // @TODO: Wire with backend - Fetch from API instead
-        const days = 30;
-        currentData.history = generateMockHistory(currentData.balance, days);
-
         modal.showModal();
+
+        // Fetch real history data from API
+        const history = await fetchHistory(currentData.id);
+        currentData.history = history;
 
         // Delay to allow modal animation
         setTimeout(() => {

@@ -15,7 +15,7 @@
  */
 
 // External packages
-import { Wallet, Globe } from '@lucide/astro';
+import { Wallet, Globe, Clock } from '@lucide/astro';
 
 // Internal aliases - lib
 import { formatCurrency } from '@/lib/formatting';
@@ -42,9 +42,30 @@ export interface Props {
   distribution: AllocationItem[];
   loading?: boolean;
   className?: string;
+  latestUpdate?: Date | string | null;
+  isHistoricalView?: boolean;
 }
 
-const { totalIdr, totalUsd, distribution, loading = false, className = '' } = Astro.props;
+const {
+  totalIdr,
+  totalUsd,
+  distribution,
+  loading = false,
+  className = '',
+  latestUpdate,
+  isHistoricalView = false,
+} = Astro.props;
+
+// Format the latest update date if provided
+const formattedLatestUpdate = latestUpdate
+  ? new Date(latestUpdate).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+  : null;
 
 // Sort distribution by percentage (largest first)
 const sortedDistribution = [...distribution].sort((a, b) => b.percentage - a.percentage);
@@ -161,6 +182,17 @@ const cardClasses = [
             </div>
           </div>
         </div>
+
+        {/* Latest Update Info */}
+        {formattedLatestUpdate && (
+          <div class="flex items-center gap-2 text-xs text-base-content/50 font-medium pt-2">
+            <Clock size={12} class="stroke-current shrink-0" aria-hidden="true" />
+            <span>
+              {isHistoricalView ? 'Latest update in this period' : 'Latest update'}:{' '}
+              {formattedLatestUpdate}
+            </span>
+          </div>
+        )}
 
         {/* Asset Allocation */}
         {displayDistribution.length > 0 && (

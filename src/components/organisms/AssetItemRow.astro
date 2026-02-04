@@ -19,7 +19,7 @@
  * @param {string} className - Additional CSS classes
  */
 
-import { TrendingUp, Pencil, Trash2 } from '@lucide/astro';
+import { TrendingUp, Pencil, Trash2, Clock, RefreshCw } from '@lucide/astro';
 import { formatCurrency } from '@/lib/formatting';
 import { ASSET_TYPE_LABELS, type AssetType } from '@/lib/types/asset';
 
@@ -31,8 +31,10 @@ export interface Props {
   categoryName?: string | null;
   currency: 'IDR' | 'USD';
   balance: number;
+  initialBalance?: number;
   lastUpdated: Date;
   className?: string;
+  isHistoricalView?: boolean;
 }
 
 const {
@@ -43,8 +45,10 @@ const {
   categoryName = null,
   currency,
   balance,
+  initialBalance,
   lastUpdated,
   className = '',
+  isHistoricalView = false,
 } = Astro.props;
 
 // Get display label for type
@@ -52,11 +56,27 @@ const typeLabel = ASSET_TYPE_LABELS[type] || type;
 const categoryLabel = categoryName || typeLabel;
 
 // Format date for display
-const formattedDate = new Date(lastUpdated).toLocaleDateString('en-US', {
-  month: 'numeric',
+const lastUpdateDate = new Date(lastUpdated);
+const formattedDate = lastUpdateDate.toLocaleDateString('en-US', {
+  month: 'short',
   day: 'numeric',
   year: 'numeric',
 });
+
+// Calculate relative time for "last updated" display
+const now = new Date();
+const diffMs = now.getTime() - lastUpdateDate.getTime();
+const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+const relativeTime =
+  diffDays === 0
+    ? 'Today'
+    : diffDays === 1
+      ? 'Yesterday'
+      : diffDays < 7
+        ? `${diffDays}d ago`
+        : diffDays < 30
+          ? `${Math.floor(diffDays / 7)}w ago`
+          : formattedDate;
 
 // Currency-specific classes
 const currencyBadgeClasses =
@@ -91,8 +111,12 @@ const rowClasses = [
       >
         {currency}
       </span>
-      <span class="text-xs text-base-content/50 font-medium tracking-tight">
-        Updated: {formattedDate}
+      <span
+        class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold tracking-wider uppercase bg-base-200 text-base-content/50"
+        title={`Last balance input: ${formattedDate}`}
+      >
+        <Clock size={10} class="stroke-current" aria-hidden="true" />
+        {relativeTime}
       </span>
     </div>
   </div>
@@ -110,66 +134,96 @@ const rowClasses = [
       >
         {formatCurrency(balance, currency)}
       </p>
+      {
+        initialBalance !== undefined && initialBalance !== balance && (
+          <p
+            class="text-[10px] font-medium text-base-content/40 mt-1"
+            data-testid="asset-initial-balance"
+          >
+            Initial: {formatCurrency(initialBalance, currency)}
+          </p>
+        )
+      }
     </div>
 
-    {/* Action Buttons */}
-    <div class="flex items-center gap-1 opacity-40 group-hover:opacity-100 transition-opacity">
-      {/* View History / Timeline */}
-      <button
-        type="button"
-        class="p-2 text-base-content/50 hover:text-accent transition-all rounded-xl hover:bg-accent/10"
-        title="View timeline"
-        aria-label={`View ${name} history`}
-        data-history-asset={id}
-        data-asset-name={name}
-        data-asset-type={categoryLabel}
-        data-asset-currency={currency}
-        data-asset-balance={balance}
-        data-testid="asset-history-btn"
-      >
-        <TrendingUp size={18} class="stroke-current" aria-hidden="true" />
-      </button>
+    {/* Action Buttons - hidden for historical views */}
+    {
+      !isHistoricalView && (
+        <div class="flex items-center gap-1 opacity-40 group-hover:opacity-100 transition-opacity">
+          {/* View History / Timeline */}
+          <button
+            type="button"
+            class="p-2 text-base-content/50 hover:text-accent transition-all rounded-xl hover:bg-accent/10"
+            title="View timeline"
+            aria-label={`View ${name} history`}
+            data-history-asset={id}
+            data-asset-name={name}
+            data-asset-type={categoryLabel}
+            data-asset-currency={currency}
+            data-asset-balance={balance}
+            data-testid="asset-history-btn"
+          >
+            <TrendingUp size={18} class="stroke-current" aria-hidden="true" />
+          </button>
 
-      {/* Edit Asset */}
-      <button
-        type="button"
-        class="p-2 text-base-content/50 hover:text-success transition-all rounded-xl hover:bg-success/10"
-        title="Edit asset"
-        aria-label={`Edit ${name}`}
-        data-edit-asset={id}
-        data-asset-name={name}
-        data-asset-type={type}
-        data-asset-category-id={categoryId || ''}
-        data-asset-category-name={categoryLabel}
-        data-asset-currency={currency}
-        data-asset-balance={balance}
-        data-testid="asset-edit-btn"
-      >
-        <Pencil size={18} class="stroke-current" aria-hidden="true" />
-      </button>
+          {/* Update Value */}
+          <button
+            type="button"
+            class="p-2 text-base-content/50 hover:text-warning transition-all rounded-xl hover:bg-warning/10"
+            title="Update value"
+            aria-label={`Update ${name} value`}
+            data-update-value-asset={id}
+            data-asset-name={name}
+            data-asset-currency={currency}
+            data-asset-balance={balance}
+            data-testid="asset-update-value-btn"
+          >
+            <RefreshCw size={18} class="stroke-current" aria-hidden="true" />
+          </button>
 
-      {/* Delete Asset */}
-      <button
-        type="button"
-        class="p-2 text-base-content/50 hover:text-error transition-all rounded-xl hover:bg-error/10"
-        title="Delete asset"
-        aria-label={`Delete ${name}`}
-        data-delete-asset={id}
-        data-asset-name={name}
-        data-asset-type={categoryLabel}
-        data-asset-currency={currency}
-        data-asset-balance={balance}
-        data-testid="asset-delete-btn"
-      >
-        <Trash2 size={18} class="stroke-current" aria-hidden="true" />
-      </button>
-    </div>
+          {/* Edit Asset */}
+          <button
+            type="button"
+            class="p-2 text-base-content/50 hover:text-success transition-all rounded-xl hover:bg-success/10"
+            title="Edit asset"
+            aria-label={`Edit ${name}`}
+            data-edit-asset={id}
+            data-asset-name={name}
+            data-asset-type={type}
+            data-asset-category-id={categoryId || ''}
+            data-asset-category-name={categoryLabel}
+            data-asset-currency={currency}
+            data-asset-balance={balance}
+            data-testid="asset-edit-btn"
+          >
+            <Pencil size={18} class="stroke-current" aria-hidden="true" />
+          </button>
+
+          {/* Delete Asset */}
+          <button
+            type="button"
+            class="p-2 text-base-content/50 hover:text-error transition-all rounded-xl hover:bg-error/10"
+            title="Delete asset"
+            aria-label={`Delete ${name}`}
+            data-delete-asset={id}
+            data-asset-name={name}
+            data-asset-type={categoryLabel}
+            data-asset-currency={currency}
+            data-asset-balance={balance}
+            data-testid="asset-delete-btn"
+          >
+            <Trash2 size={18} class="stroke-current" aria-hidden="true" />
+          </button>
+        </div>
+      )
+    }
   </div>
 </div>
 
 <script>
   // Track initialized elements to avoid duplicate listeners
   const initializedHistoryButtons = new WeakSet<Element>();
+  const initializedUpdateValueButtons = new WeakSet<Element>();
   const initializedEditButtons = new WeakSet<Element>();
   const initializedDeleteButtons = new WeakSet<Element>();
 
@@ -199,6 +253,36 @@ const rowClasses = [
               id: assetId,
               name: assetName,
               type: assetType,
+              currency: assetCurrency,
+              balance: assetBalance,
+            },
+          })
+        );
+      });
+    });
+
+    // Initialize Update Value buttons
+    document.querySelectorAll('[data-update-value-asset]').forEach((button) => {
+      if (initializedUpdateValueButtons.has(button)) return;
+      initializedUpdateValueButtons.add(button);
+
+      button.addEventListener('click', (e: MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const btn = button as HTMLElement;
+        const assetId = btn.getAttribute('data-update-value-asset');
+        const assetName = btn.getAttribute('data-asset-name') || 'Asset';
+        const assetCurrency = (btn.getAttribute('data-asset-currency') || 'IDR') as 'IDR' | 'USD';
+        const assetBalance = parseFloat(btn.getAttribute('data-asset-balance') || '0');
+
+        if (!assetId) return;
+
+        document.dispatchEvent(
+          new CustomEvent('open-asset-update-value', {
+            detail: {
+              id: assetId,
+              name: assetName,
               currency: assetCurrency,
               balance: assetBalance,
             },
