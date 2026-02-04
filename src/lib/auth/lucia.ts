@@ -12,6 +12,7 @@ import type { Adapter, DatabaseSession, DatabaseUser } from 'lucia';
 import { DrizzleSQLiteAdapter } from '@lucia-auth/adapter-drizzle';
 import { eq, lte } from 'drizzle-orm';
 import { db, getDatabaseConfig } from '@/db/index';
+import { getEnv } from '@/lib/env';
 import * as schema from '@/db/schema';
 
 /**
@@ -156,7 +157,9 @@ export const auth = new Lucia(adapter, {
     attributes: {
       // Secure: only send cookie over HTTPS (disabled in development for local testing)
       // In production, this prevents cookies from being sent over unencrypted HTTP connections
-      secure: import.meta.env.MODE === 'production',
+      // Note: Use runtime check via getEnv() instead of import.meta.env.MODE which is
+      // evaluated at build time and would always be 'production' in built output
+      secure: getEnv('NODE_ENV') === 'production',
 
       // SameSite: helps prevent CSRF attacks
       // - 'lax': allows cookies to be sent with top-level navigations (safe for most use cases)

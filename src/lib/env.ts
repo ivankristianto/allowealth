@@ -40,7 +40,8 @@ export function setRuntimeEnv(env: Record<string, string | undefined>): void {
  * Priority:
  * 1. Test overrides (for unit tests)
  * 2. Runtime env (Cloudflare Workers secrets/vars)
- * 3. import.meta.env (build-time env vars for local dev)
+ * 3. process.env (Node.js/Bun runtime - loaded via --env-file)
+ * 4. import.meta.env (build-time env vars from Vite)
  *
  * @param key - The environment variable name
  * @returns The value or undefined if not set
@@ -56,7 +57,13 @@ export function getEnv(key: string): string | undefined {
     return runtimeEnv[key];
   }
 
-  // Fall back to import.meta.env (local dev)
+  // Check process.env (Node.js/Bun runtime)
+  // This handles env vars loaded via `bun --env-file` or Node.js environment
+  if (typeof process !== 'undefined' && process.env?.[key] !== undefined) {
+    return process.env[key];
+  }
+
+  // Fall back to import.meta.env (build-time vars from Vite)
   return (import.meta.env as Record<string, string | undefined>)[key];
 }
 

@@ -352,6 +352,23 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
     timings['auth.validateSession'] = performance.now() - authStart;
     timings['auth.source'] = cacheHit ? 1 : 0; // 1 = cache, 0 = db
 
+    // Check if session is invalid (expired, doesn't exist, etc.)
+    // This handles the case where a cookie exists but the session is no longer valid
+    if (!session || !user) {
+      (context.locals as any).user = null;
+      (context.locals as any).session = null;
+
+      // Redirect to login if accessing protected route
+      if (isProtectedRoute) {
+        const returnUrl = pathname + context.url.search;
+        return context.redirect(`/login?redirect=${encodeURIComponent(returnUrl)}`, 302);
+      }
+
+      // Still apply CSP headers for unauthenticated requests
+      const response = await next();
+      return applySecurityHeaders(response, nonce);
+    }
+
     // Check if user has been soft-deleted
     if (user?.deletedAt !== null && user?.deletedAt !== undefined) {
       // User is soft-deleted - treat as unauthenticated
