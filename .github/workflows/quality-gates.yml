@@ -146,6 +146,13 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Debug Astro config (bundle-size)
+        run: |
+          echo "DEPLOY_TARGET=${DEPLOY_TARGET:-<unset>}"
+          echo "NODE_ENV=${NODE_ENV:-<unset>}"
+          echo "ASTRO_CONFIG=${ASTRO_CONFIG:-<unset>}"
+          node --input-type=module -e "import('./node_modules/astro/dist/core/config/config.js').then(async ({ resolveConfig }) => { const { astroConfig } = await resolveConfig({}, 'build'); const toStr = (value) => value?.href ?? value?.toString?.() ?? value; console.log('resolved.output=', astroConfig.output); console.log('resolved.build.server=', toStr(astroConfig.build?.server)); console.log('resolved.build.client=', toStr(astroConfig.build?.client)); console.log('resolved.outDir=', toStr(astroConfig.outDir)); console.log('resolved.adapter=', astroConfig.adapter?.name ?? 'none'); })"
+
       - name: Build project and generate bundle stats
         run: bun run build
 
