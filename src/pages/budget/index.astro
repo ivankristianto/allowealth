@@ -57,7 +57,8 @@ try {
     user.workspaceId,
     selectedYear,
     selectedMonth,
-    selectedCurrency
+    selectedCurrency,
+    Astro.locals.perf
   );
 } catch (err) {
   console.error('Error fetching budget data:', err);

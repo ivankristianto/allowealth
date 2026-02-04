@@ -26,6 +26,7 @@ import {
 import { PAGINATION } from '@/lib/constants/pagination';
 
 const user = Astro.locals.user!;
+const perf = Astro.locals.perf;
 const currentPath = '/transactions';
 
 // TODO: Get workspace currency from workspace settings
@@ -72,7 +73,7 @@ const filters = {
 };
 
 // Fetch transactions from database
-const rawTransactions = await transactionService.findAll(filters);
+const rawTransactions = await transactionService.findAll(filters, perf);
 
 // Transform Drizzle result to TransactionOutput format
 const transactions: TransactionOutput[] = rawTransactions.map((t: any) => ({
@@ -110,16 +111,19 @@ const transactions: TransactionOutput[] = rawTransactions.map((t: any) => ({
 
 // Get total count for pagination (without limit/offset)
 const { limit, offset: _, ...countFilters } = filters;
-const total = await transactionService.count(countFilters);
+const total = await transactionService.count(countFilters, perf);
 
 // Fetch categories for filter dropdowns
 const categories = await categoryService.findAll(user.workspaceId, { is_active: true });
 
 // For month selector, fetch all months available (optimized query)
-const allUserTransactions = await transactionService.findAll({
-  workspace_id: user.workspaceId,
-  limit: PAGINATION.MAX_MONTH_TRANSACTIONS,
-});
+const allUserTransactions = await transactionService.findAll(
+  {
+    workspace_id: user.workspaceId,
+    limit: PAGINATION.MAX_MONTH_TRANSACTIONS,
+  },
+  perf
+);
 
 // Extract available months using utility function
 const availableMonthsWithLabels = extractAvailableMonths(allUserTransactions);

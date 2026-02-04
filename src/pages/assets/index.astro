@@ -76,7 +76,7 @@ const defaultCategoryId =
   categories.find((category) => category.is_system && !category.is_liability)?.id ||
   categories[0]?.id ||
   '';
-const rawAssets = await assetService.findAll(user.workspaceId, filters);
+const rawAssets = await assetService.findAll(user.workspaceId, filters, Astro.locals.perf);
 
 // Transform to AssetOutput format
 const assets: AssetOutput[] = rawAssets.map((asset) => {
