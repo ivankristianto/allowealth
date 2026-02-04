@@ -10,7 +10,7 @@
 
 import Modal from '../molecules/Modal.astro';
 import Input from '../atoms/Input.astro';
-import Label from '../atoms/Label.astro';
+import FormField from '../molecules/FormField.astro';
 import { CreditCard } from '@lucide/astro';
 
 export interface Props {
@@ -49,8 +49,7 @@ const { id } = Astro.props;
       <form id={`${id}-form`} data-payment-method-form class="flex flex-col gap-5">
         <input type="hidden" name="id" value="" data-method-id />
 
-        <div class="form-control">
-          <Label htmlFor={`${id}-name`} required>Name</Label>
+        <FormField label="Name" htmlFor={`${id}-name`} required>
           <Input
             id={`${id}-name`}
             name="name"
@@ -58,10 +57,9 @@ const { id } = Astro.props;
             required
             placeholder="e.g., BCA Account, GoPay, Cash Wallet"
           />
-        </div>
+        </FormField>
 
-        <div class="form-control">
-          <Label htmlFor={`${id}-type`} required>Type</Label>
+        <FormField label="Type" htmlFor={`${id}-type`} required>
           <select
             name="type"
             id={`${id}-type`}
@@ -75,7 +73,7 @@ const { id } = Astro.props;
             <option value="bank_transfer">Bank Transfer</option>
             <option value="e_wallet">E-Wallet</option>
           </select>
-        </div>
+        </FormField>
 
         <!-- Error message -->
         <div

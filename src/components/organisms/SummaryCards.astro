@@ -14,6 +14,7 @@
  */
 
 import Card from '../atoms/Card.astro';
+import StatCard from '../atoms/StatCard.astro';
 import Badge from '../atoms/Badge.astro';
 import { formatCurrency, formatPercentage } from '@/lib/formatting';
 import { decimalSubtract } from '@/lib/utils/decimal';
@@ -173,24 +174,15 @@ const getProgressClass = (percentage: number): string => {
       // Normal state with data
       <>
         {/* Total Assets Card */}
-        <Card hoverable className="group">
-          <div class="flex items-start justify-between mb-4">
-            <h3
-              id="summary-assets-title"
-              class="text-sm font-medium text-base-content uppercase tracking-wide"
-            >
-              Total Assets
-            </h3>
-            <div class="p-2 bg-accent/10 rounded-lg group-hover:bg-accent/20 transition-colors">
-              <DollarSign
-                size={20}
-                class="stroke-current shrink-0 text-accent"
-                aria-hidden="true"
-              />
-            </div>
-          </div>
-
-          <div class="space-y-2 mb-4">
+        <StatCard
+          title="Total Assets"
+          value={formatCurrency(data!.totalAssets.converted, data!.totalAssets.convertedCurrency)}
+          valueColor="text-success"
+          iconVariant="accent"
+          className="transition-all hover:shadow-md"
+        >
+          <DollarSign slot="icon" size={48} class="stroke-current" aria-hidden="true" />
+          <div slot="details" class="space-y-2">
             <div class="flex justify-between items-baseline">
               <span class="text-sm text-neutral">IDR:</span>
               <span class="font-semibold text-lg text-success">
@@ -204,40 +196,19 @@ const getProgressClass = (percentage: number): string => {
               </span>
             </div>
           </div>
-
-          <div class="pt-3 border-t border-base-300">
-            <div class="flex justify-between items-baseline">
-              <span class="text-sm text-neutral">Total:</span>
-              <span class="font-bold text-xl text-success">
-                {formatCurrency(data!.totalAssets.converted, data!.totalAssets.convertedCurrency)}
-              </span>
-            </div>
-          </div>
-        </Card>
+        </StatCard>
 
         {/* Monthly Spent Card */}
-        <Card hoverable className="group">
-          <div class="flex items-start justify-between mb-4">
-            <h3
-              id="summary-monthly-title"
-              class="text-sm font-medium text-base-content uppercase tracking-wide"
-            >
-              This Month
-            </h3>
-            <div class="p-2 bg-accent/10 rounded-lg group-hover:bg-accent/20 transition-colors">
-              <Calendar size={20} class="stroke-current shrink-0 text-accent" aria-hidden="true" />
-            </div>
-          </div>
-
-          <div class="mb-4">
-            <div class="flex justify-between items-baseline mb-2">
-              <span class="text-2xl font-bold">
-                {formatCurrency(data!.monthlySpent.spent, data!.monthlySpent.currency)}
-              </span>
-              <span class="text-sm text-neutral">
-                of {formatCurrency(data!.monthlySpent.budget, data!.monthlySpent.currency)}
-              </span>
-            </div>
+        <StatCard
+          title="This Month"
+          value={formatCurrency(data!.monthlySpent.spent, data!.monthlySpent.currency)}
+          subtitle={`of ${formatCurrency(data!.monthlySpent.budget, data!.monthlySpent.currency)}`}
+          subtitleColor="text-base-content/60"
+          iconVariant="accent"
+          className="transition-all hover:shadow-md"
+        >
+          <Calendar slot="icon" size={48} class="stroke-current" aria-hidden="true" />
+          <div slot="details" class="space-y-2">
             <div class="text-right">
               <span
                 class={`text-lg font-semibold ${getBudgetStatusColor(
@@ -251,9 +222,6 @@ const getProgressClass = (percentage: number): string => {
                 {formatPercentage(data!.monthlySpent.percentage)}
               </span>
             </div>
-          </div>
-
-          <div class="space-y-2">
             <progress
               class={`progress progress-neutral w-full ${getProgressClass(data!.monthlySpent.percentage)}`}
               value={data!.monthlySpent.percentage}
@@ -266,36 +234,20 @@ const getProgressClass = (percentage: number): string => {
                 : `${formatCurrency(monthlySpentRemaining, data!.monthlySpent.currency)} remaining`}
             </p>
           </div>
-        </Card>
+        </StatCard>
 
         {/* Budget Health Card */}
-        <Card hoverable className="group">
-          <div class="flex items-start justify-between mb-4">
-            <h3
-              id="summary-budget-title"
-              class="text-sm font-medium text-base-content uppercase tracking-wide"
-            >
-              Budget Health
-            </h3>
-            <div class="p-2 bg-accent/10 rounded-lg group-hover:bg-accent/20 transition-colors">
-              <ShieldCheck
-                size={20}
-                class="stroke-current shrink-0 text-accent"
-                aria-hidden="true"
-              />
-            </div>
-          </div>
-
-          <div class="flex items-center gap-4 mb-4">
-            <div class="flex-1">
-              <div class={`text-3xl font-bold ${getBudgetStatusColor(data!.budgetHealth.status)}`}>
-                {data!.budgetHealth.alertCount}
-              </div>
-              <div class="text-sm text-neutral">
-                alert{data!.budgetHealth.alertCount !== 1 ? 's' : ''}
-              </div>
-            </div>
-
+        <StatCard
+          title="Budget Health"
+          value={`${data!.budgetHealth.alertCount}`}
+          subtitle={`alert${data!.budgetHealth.alertCount !== 1 ? 's' : ''}`}
+          subtitleColor="text-base-content/60"
+          valueColor={getBudgetStatusColor(data!.budgetHealth.status)}
+          iconVariant="accent"
+          className="transition-all hover:shadow-md"
+        >
+          <ShieldCheck slot="icon" size={48} class="stroke-current" aria-hidden="true" />
+          <div slot="details" class="space-y-3">
             <Badge variant={getBudgetStatusBadge(data!.budgetHealth.status)} size="lg">
               {data!.budgetHealth.status === 'healthy'
                 ? 'On Track'
@@ -303,21 +255,20 @@ const getProgressClass = (percentage: number): string => {
                   ? 'Review'
                   : 'Action Needed'}
             </Badge>
+            <a
+              href="/budget"
+              class="flex items-center justify-center gap-2 w-full py-2 px-4 bg-base-200 hover:bg-base-300 rounded-lg transition-colors text-sm font-medium group"
+              aria-label="View budget details"
+            >
+              View Budget
+              <ChevronRight
+                size={16}
+                class="group-hover:translate-x-1 transition-transform"
+                aria-hidden="true"
+              />
+            </a>
           </div>
-
-          <a
-            href="/budget"
-            class="flex items-center justify-center gap-2 w-full py-2 px-4 bg-base-200 hover:bg-base-300 rounded-lg transition-colors text-sm font-medium group"
-            aria-label="View budget details"
-          >
-            View Budget
-            <ChevronRight
-              size={16}
-              class="group-hover:translate-x-1 transition-transform"
-              aria-hidden="true"
-            />
-          </a>
-        </Card>
+        </StatCard>
       </>
     )
   }

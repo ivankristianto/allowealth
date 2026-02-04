@@ -16,13 +16,13 @@
  * @param {string} modalId - Parent modal ID for closing on success
  */
 
-import Label from '../atoms/Label.astro';
 import Input from '../atoms/Input.astro';
 import CurrencyInput from '../atoms/CurrencyInput.astro';
 import CategorySelect from '../atoms/CategorySelect.astro';
 import AssetSelect from '../atoms/AssetSelect.astro';
 import DatePicker from '../atoms/DatePicker.astro';
 import Button from '../atoms/Button.astro';
+import FormField from '../molecules/FormField.astro';
 
 export interface Props {
   type: 'expense' | 'income';
@@ -99,8 +99,7 @@ const formId = `transaction-entry-form-${type}`;
   <div id={`${formId}-error`} class="hidden alert alert-error text-sm" role="alert"></div>
 
   <!-- Title (required) -->
-  <div class="form-control">
-    <Label required htmlFor={`${formId}-title`} id={`${formId}-title-label`}>Title</Label>
+  <FormField label="Title" htmlFor={`${formId}-title`} required>
     <Input
       id={`${formId}-title`}
       name="title"
@@ -113,12 +112,11 @@ const formId = `transaction-entry-form-${type}`;
       className="rounded-full py-4 px-6 h-14 text-base font-bold border-0"
       data-testid="transaction-description-input"
     />
-  </div>
+  </FormField>
 
   <!-- Amount and Date row -->
   <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-    <div class="form-control">
-      <Label required htmlFor={`${formId}-amount`} id={`${formId}-amount-label`}>Amount</Label>
+    <FormField label="Amount" htmlFor={`${formId}-amount`} required>
       <CurrencyInput
         id={`${formId}-amount`}
         name="amount"
@@ -129,10 +127,9 @@ const formId = `transaction-entry-form-${type}`;
         errorMessage={errors.amount}
         data-testid="transaction-amount-input"
       />
-    </div>
+    </FormField>
 
-    <div class="form-control">
-      <Label required htmlFor={`${formId}-date`} id={`${formId}-date-label`}>Date</Label>
+    <FormField label="Date" htmlFor={`${formId}-date`} required>
       <DatePicker
         id={`${formId}-date`}
         name="transaction_date"
@@ -143,39 +140,33 @@ const formId = `transaction-entry-form-${type}`;
         errorMessage={errors.transaction_date}
         data-testid="transaction-date-input"
       />
-    </div>
+    </FormField>
   </div>
 
   <!-- Category and Account row -->
   <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-    <div class="form-control">
-      <Label required htmlFor={`${formId}-category`} id={`${formId}-category-label`}>
-        Category
-      </Label>
-      <CategorySelect
-        id={`${formId}-category`}
-        categories={typeCategories}
-        value={values.category_id || ''}
-        type={type}
-        required={true}
-        error={!!errors.category_id}
-        errorMessage={errors.category_id}
-        data-testid="transaction-category-select"
-      />
-    </div>
+    <CategorySelect
+      id={`${formId}-category`}
+      categories={typeCategories}
+      value={values.category_id || ''}
+      type={type}
+      required={true}
+      error={!!errors.category_id}
+      errorMessage={errors.category_id}
+      label="Category"
+      data-testid="transaction-category-select"
+    />
 
-    <div class="form-control">
-      <Label required htmlFor={`${formId}-asset`} id={`${formId}-asset-label`}> Account </Label>
-      <AssetSelect
-        id={`${formId}-asset`}
-        assets={assets}
-        value={values.asset_id || ''}
-        required={true}
-        error={!!errors.asset_id}
-        errorMessage={errors.asset_id}
-        data-testid="transaction-asset-select"
-      />
-    </div>
+    <AssetSelect
+      id={`${formId}-asset`}
+      assets={assets}
+      value={values.asset_id || ''}
+      required={true}
+      error={!!errors.asset_id}
+      errorMessage={errors.asset_id}
+      label="Account"
+      data-testid="transaction-asset-select"
+    />
   </div>
 
   <!-- Actions -->

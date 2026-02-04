@@ -11,9 +11,10 @@
  * @param {string} cancelUrl - URL to cancel and go back
  */
 
-import Label from '../atoms/Label.astro';
 import Input from '../atoms/Input.astro';
 import Button from '../atoms/Button.astro';
+import Label from '../atoms/Label.astro';
+import FormField from '../molecules/FormField.astro';
 import { Wallet } from '@lucide/astro';
 import type { Currency } from '@/lib/types/asset';
 import { DEFAULT_ASSET_CATEGORIES } from '@/lib/constants';
@@ -80,8 +81,7 @@ const currencyOptions: Array<{ value: Currency; label: string }> = [
   novalidate
 >
   <!-- Asset Name -->
-  <div class="form-control">
-    <Label required htmlFor="name" id="name-label">Asset Name</Label>
+  <FormField label="Asset Name" htmlFor="name" required>
     <Input
       id="name"
       name="name"
@@ -92,11 +92,18 @@ const currencyOptions: Array<{ value: Currency; label: string }> = [
       error={!!errors.name}
       errorMessage={errors.name}
     />
-  </div>
+  </FormField>
 
   <!-- Asset Category -->
-  <div class="form-control">
-    <div class="flex items-center justify-between">
+  <FormField
+    label="Asset Category"
+    htmlFor="categoryId"
+    required
+    error={!!errors.categoryId}
+    errorMessage={errors.categoryId}
+    errorId="categoryId-error"
+  >
+    <div slot="label" class="flex items-center justify-between">
       <Label required htmlFor="categoryId" id="type-label">Asset Category</Label>
       <a href="/assets/categories" class="text-xs text-accent font-semibold hover:underline">
         Manage categories
@@ -119,18 +126,17 @@ const currencyOptions: Array<{ value: Currency; label: string }> = [
         ))
       }
     </select>
-    {
-      errors.categoryId && (
-        <span id="categoryId-error" class="text-error text-sm mt-1">
-          {errors.categoryId}
-        </span>
-      )
-    }
-  </div>
+  </FormField>
 
   <!-- Currency -->
-  <div class="form-control">
-    <Label required htmlFor="currency" id="currency-label">Currency</Label>
+  <FormField
+    label="Currency"
+    htmlFor="currency"
+    required
+    error={!!errors.currency}
+    errorMessage={errors.currency}
+    errorId="currency-error"
+  >
     <select
       id="currency"
       name="currency"
@@ -147,18 +153,10 @@ const currencyOptions: Array<{ value: Currency; label: string }> = [
         ))
       }
     </select>
-    {
-      errors.currency && (
-        <span id="currency-error" class="text-error text-sm mt-1">
-          {errors.currency}
-        </span>
-      )
-    }
-  </div>
+  </FormField>
 
   <!-- Current Balance -->
-  <div class="form-control">
-    <Label required htmlFor="balance" id="balance-label">Current Balance</Label>
+  <FormField label="Current Balance" htmlFor="balance" required>
     <div class="join">
       <select
         id="currency-select"
@@ -187,7 +185,7 @@ const currencyOptions: Array<{ value: Currency; label: string }> = [
         className="join-item flex-1"
       />
     </div>
-  </div>
+  </FormField>
 
   <!-- Actions -->
   <div class="card-actions justify-end mt-6 gap-2">

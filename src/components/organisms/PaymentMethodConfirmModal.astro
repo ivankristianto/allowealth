@@ -9,7 +9,7 @@
  * @param {'deactivate' | 'activate'} action - Action type
  */
 
-import Modal from '../molecules/Modal.astro';
+import ConfirmationModal from '../molecules/ConfirmationModal.astro';
 import { Ban, RefreshCw } from '@lucide/astro';
 
 export interface Props {
@@ -25,75 +25,36 @@ const description = isDeactivate
   ? 'Are you sure you want to deactivate this payment method? It will no longer appear in transaction forms, but existing transactions will remain unchanged.'
   : 'Are you sure you want to reactivate this payment method? It will become available for use in transaction forms again.';
 const confirmLabel = isDeactivate ? 'Deactivate' : 'Reactivate';
-const buttonClass = isDeactivate ? 'btn-warning' : 'btn-success';
+const confirmVariant = isDeactivate ? 'warning' : 'success';
+const confirmLoadingLabel = isDeactivate ? 'Deactivating...' : 'Reactivating...';
+const iconVariant = isDeactivate ? 'warning' : 'success';
+const iconComponent = isDeactivate ? Ban : RefreshCw;
 ---
 
 <div data-payment-method-confirm-modal data-id={id} data-action={action}>
-  <Modal id={id} size="sm" closable={false} backdropClose={true}>
-    <div slot="default" class="flex flex-col gap-6">
-      <!-- Header section -->
-      <div class="flex items-center gap-4">
-        <!-- Icon -->
-        <div
-          class:list={[
-            'w-12 h-12 rounded-2xl flex items-center justify-center',
-            isDeactivate ? 'bg-warning/10' : 'bg-success/10',
-          ]}
-        >
-          {
-            isDeactivate ? (
-              <Ban size={24} class="stroke-current text-warning" aria-hidden="true" />
-            ) : (
-              <RefreshCw size={24} class="stroke-current text-success" aria-hidden="true" />
-            )
-          }
-        </div>
-
-        <!-- Title and description -->
-        <div class="flex-1">
-          <h2 class="text-2xl font-bold tracking-tight text-primary leading-none" data-modal-title>
-            {title}
-          </h2>
-          <p class="text-neutral text-sm mt-2 font-medium" data-modal-subtitle>
-            {description}
-          </p>
-        </div>
-      </div>
-
-      <!-- Error message -->
-      <div
-        id={`${id}-error`}
-        class="hidden alert alert-error text-sm rounded-2xl"
-        role="alert"
-        aria-live="polite"
-        data-confirm-error
-      >
-      </div>
-
-      <!-- Actions -->
-      <div class="flex gap-4 pt-2">
-        <button
-          type="button"
-          class="btn btn-ghost flex-1 h-14 rounded-full font-bold text-base-content hover:bg-base-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent"
-          data-close-modal
-        >
-          Cancel
-        </button>
-        <button
-          type="button"
-          class:list={['btn flex-1 h-14 rounded-full font-bold', buttonClass]}
-          data-confirm-action
-        >
-          {confirmLabel}
-        </button>
-      </div>
-    </div>
-  </Modal>
+  <ConfirmationModal
+    id={id}
+    title={title}
+    description={description}
+    icon={iconComponent}
+    iconVariant={iconVariant}
+    confirmLabel={confirmLabel}
+    confirmVariant={confirmVariant}
+    confirmLoadingLabel={confirmLoadingLabel}
+  />
 </div>
 
 <script>
   import { addToast } from '@/lib/stores/toastStore';
   import { getCsrfHeaders } from '@/lib/csrf-client';
+  import {
+    clearConfirmError,
+    closeConfirmationModal,
+    getConfirmationModalElements,
+    resetConfirmationModal,
+    setConfirmLoading,
+    showConfirmError,
+  } from '@/components/molecules/ConfirmationModal.client';
 
   // Track initialized containers
   const initializedContainers = new WeakSet<Element>();
@@ -107,34 +68,32 @@ const buttonClass = isDeactivate ? 'btn-warning' : 'btn-success';
       const actionType = container.getAttribute('data-action') as 'deactivate' | 'activate';
       if (!id) return;
 
-      const modal = document.getElementById(id) as HTMLDialogElement | null;
-      const errorEl = container.querySelector('[data-confirm-error]');
-      const confirmBtn = container.querySelector('[data-confirm-action]') as HTMLButtonElement;
+      const { modal, confirmButton, cancelButton, errorElement } = getConfirmationModalElements(
+        container,
+        id
+      );
 
-      if (!modal || !confirmBtn) return;
+      if (!modal || !confirmButton) return;
 
       let currentMethodId: string | null = null;
 
       // Handle cancel button
-      const cancelBtn = container.querySelector('[data-close-modal]');
-      cancelBtn?.addEventListener('click', () => {
-        errorEl?.classList.add('hidden');
-        modal.classList.remove('modal-open');
+      cancelButton?.addEventListener('click', () => {
+        resetConfirmationModal(confirmButton, errorElement);
+        closeConfirmationModal(modal);
       });
 
       // Handle confirm button
-      confirmBtn.addEventListener('click', async () => {
+      confirmButton.addEventListener('click', async () => {
         if (!currentMethodId) return;
 
-        const originalText = confirmBtn.textContent || 'Confirm';
         const isDeactivate = actionType === 'deactivate';
 
         // Clear errors
-        errorEl?.classList.add('hidden');
+        clearConfirmError(errorElement);
 
         // Show loading state
-        confirmBtn.disabled = true;
-        confirmBtn.textContent = isDeactivate ? 'Deactivating...' : 'Reactivating...';
+        setConfirmLoading(confirmButton, true);
 
         try {
           const response = await fetch(`/api/payment-methods/${currentMethodId}`, {
@@ -158,20 +117,16 @@ const buttonClass = isDeactivate ? 'btn-warning' : 'btn-success';
             isDeactivate ? 'Payment method deactivated!' : 'Payment method reactivated!',
             'success'
           );
-          modal.classList.remove('modal-open');
+          closeConfirmationModal(modal);
 
           // Reload page to show updated data
           window.location.reload();
         } catch (err) {
           const message = err instanceof Error ? err.message : 'Operation failed';
-          if (errorEl) {
-            errorEl.textContent = message;
-            errorEl.classList.remove('hidden');
-          }
+          showConfirmError(errorElement, message);
           addToast(message, 'error');
         } finally {
-          confirmBtn.disabled = false;
-          confirmBtn.textContent = originalText;
+          setConfirmLoading(confirmButton, false);
         }
       });
 
@@ -181,7 +136,7 @@ const buttonClass = isDeactivate ? 'btn-warning' : 'btn-success';
       const fnName = actionType === 'deactivate' ? 'openDeactivateModal' : 'openActivateModal';
       (window as any)[fnName] = (methodId: string) => {
         currentMethodId = methodId;
-        errorEl?.classList.add('hidden');
+        clearConfirmError(errorElement);
         modal.classList.add('modal-open');
       };
     });

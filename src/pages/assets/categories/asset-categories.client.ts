@@ -101,7 +101,7 @@ function initAssetCategoriesPage(): void {
   const deleteCategoryName = deleteContainer?.querySelector('[data-category-name]');
   const deleteCategoryMeta = deleteContainer?.querySelector('[data-category-meta]');
   const deleteErrorDiv = deleteContainer?.querySelector(
-    '[data-delete-error]'
+    '[data-confirm-error]'
   ) as HTMLElement | null;
 
   /**

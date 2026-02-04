@@ -1,36 +1,27 @@
 import { getCsrfHeaders } from '@/lib/csrf-client';
 import { formatCurrency } from '@/lib/formatting/currency-client';
 import { addToast } from '@/lib/stores/toastStore';
+import {
+  clearConfirmError,
+  closeConfirmationModal,
+  setConfirmLoading,
+  showConfirmError,
+} from '@/components/molecules/ConfirmationModal.client';
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Delete transaction handler using DeleteConfirmationModal
+  // Delete transaction handler using ConfirmationModal
   let transactionToDelete: string | null = null;
   let rowToDelete: HTMLElement | null = null;
 
-  const modalContainer = document.querySelector(
-    '[data-delete-confirmation-modal][data-id="delete-transaction-modal"]'
-  );
   const modal = document.getElementById('delete-transaction-modal') as HTMLDialogElement | null;
-  const confirmDeleteBtn = modalContainer?.querySelector(
-    '[data-confirm-delete]'
+  const confirmDeleteBtn = modal?.querySelector(
+    '[data-confirm-action]'
   ) as HTMLButtonElement | null;
-  const detailsDiv = modalContainer?.querySelector('[data-delete-details]') as HTMLElement | null;
-  const errorDiv = modalContainer?.querySelector('[data-delete-error]') as HTMLElement | null;
+  const detailsDiv = modal?.querySelector('[data-confirm-details]') as HTMLElement | null;
+  const errorDiv = modal?.querySelector('[data-confirm-error]') as HTMLElement | null;
+  const cancelBtn = modal?.querySelector('[data-confirm-cancel]') as HTMLButtonElement | null;
 
   if (!modal || !confirmDeleteBtn) return;
-
-  // Helper function to show inline error
-  function showDialogError(element: HTMLElement | null, message: string) {
-    if (!element) return;
-    element.textContent = message;
-    element.classList.remove('hidden');
-  }
-
-  function hideDialogError(element: HTMLElement | null) {
-    if (!element) return;
-    element.classList.add('hidden');
-    element.textContent = '';
-  }
 
   // Add click handlers to delete buttons
   document.querySelectorAll<HTMLButtonElement>('[data-delete-transaction]').forEach((button) => {
@@ -55,7 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
       rowToDelete = row;
 
       // Hide any previous errors
-      hideDialogError(errorDiv);
+      clearConfirmError(errorDiv);
 
       // Populate details section with transaction info (using DOM methods to prevent XSS)
       if (detailsDiv) {
@@ -97,17 +88,20 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  cancelBtn?.addEventListener('click', () => {
+    clearConfirmError(errorDiv);
+    closeConfirmationModal(modal);
+  });
+
   // Handle confirm delete button
   confirmDeleteBtn.addEventListener('click', async () => {
     if (!transactionToDelete) return;
 
     // Hide any previous errors
-    hideDialogError(errorDiv);
+    clearConfirmError(errorDiv);
 
     // Disable button during request
-    confirmDeleteBtn.disabled = true;
-    const originalText = confirmDeleteBtn.textContent || 'Delete';
-    confirmDeleteBtn.innerHTML = '<span class="loading loading-spinner"></span> Deleting...';
+    setConfirmLoading(confirmDeleteBtn, true);
 
     try {
       const response = await fetch(`/api/transactions/${transactionToDelete}`, {
@@ -140,18 +134,17 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Close modal using CSS class for consistency with Modal.astro pattern
-        modal.classList.remove('modal-open');
+        closeConfirmationModal(modal);
       } else {
         // Show inline error
-        showDialogError(errorDiv, data.error?.message || 'Failed to delete transaction');
+        showConfirmError(errorDiv, data.error?.message || 'Failed to delete transaction');
       }
     } catch (error) {
       // Show inline error
-      showDialogError(errorDiv, 'Failed to delete transaction. Please try again.');
+      showConfirmError(errorDiv, 'Failed to delete transaction. Please try again.');
     } finally {
       // Re-enable button
-      confirmDeleteBtn.disabled = false;
-      confirmDeleteBtn.textContent = originalText;
+      setConfirmLoading(confirmDeleteBtn, false);
       transactionToDelete = null;
       rowToDelete = null;
     }

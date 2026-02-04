@@ -19,8 +19,8 @@
 import { Landmark, TrendingUp, Wallet, Plus } from '@lucide/astro';
 import { formatCurrency } from '@/lib/formatting';
 import IconBadge from '@/components/atoms/IconBadge.astro';
-import StatLabel from '@/components/atoms/StatLabel.astro';
 import Card from '@/components/atoms/Card.astro';
+import StatCard from '@/components/atoms/StatCard.astro';
 
 export interface Props {
   totalIDR: number;
@@ -156,29 +156,17 @@ const ariaLabel = loading ? 'Loading net worth data...' : undefined;
           </span>
         </div>
 
-        {/* Total Net Worth Label */}
-        <span id="net-worth-label">
-          <StatLabel size="sm" color="neutral">
-            Total net worth
-          </StatLabel>
+        <span id="net-worth-label" class="sr-only">
+          Total net worth
         </span>
 
-        {/* Primary Amount (IDR) */}
-        <div class="mt-3">
-          <h3
-            class="text-2xl sm:text-3xl font-bold text-base-content tracking-tighter leading-none"
-            aria-label={`Total net worth: ${formatCurrency(totalIDR, 'IDR')}`}
-          >
-            {formatCurrency(totalIDR, 'IDR')}
-          </h3>
-          {/* Secondary Amount (USD) */}
-          <p
-            class="text-base sm:text-lg font-semibold text-base-content/60 mt-1.5 tracking-tight"
-            aria-label={`Equivalent to ${formatCurrency(totalUSD, 'USD')} USD`}
-          >
-            {formatCurrency(totalUSD, 'USD')}
-          </p>
-        </div>
+        <StatCard
+          title="Total net worth"
+          value={formatCurrency(totalIDR, 'IDR')}
+          subtitle={formatCurrency(totalUSD, 'USD')}
+          subtitleColor="text-base-content/60"
+          className="bg-transparent border-0 shadow-none p-0 rounded-none"
+        />
 
         {/* Divider */}
         <div class="mt-6 pt-6 border-t border-base-200 space-y-3">

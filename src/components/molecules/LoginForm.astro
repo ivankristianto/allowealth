@@ -12,9 +12,9 @@
 import Input from '../atoms/Input.astro';
 import PasswordField from '../atoms/PasswordField.astro';
 import Checkbox from '../atoms/Checkbox.astro';
-import Label from '../atoms/Label.astro';
 import Button from '../atoms/Button.astro';
 import ErrorMessage from '../atoms/ErrorMessage.astro';
+import FormField from '../molecules/FormField.astro';
 import { CircleX } from '@lucide/astro';
 
 export interface Props {
@@ -39,8 +39,7 @@ const cspNonce = Astro.locals.cspNonce || '';
 
     <form id="login-form" data-testid="login-form" class="space-y-5" novalidate>
       <!-- Email Field -->
-      <div class="form-control">
-        <Label htmlFor="email" required>Email</Label>
+      <FormField label="Email" htmlFor="email" required>
         <Input
           type="email"
           id="email"
@@ -50,7 +49,7 @@ const cspNonce = Astro.locals.cspNonce || '';
           className="w-full rounded-full py-4 px-6 h-14 text-base font-bold border border-base-300"
           data-testid="email-input"
         />
-      </div>
+      </FormField>
 
       <!-- Password Field -->
       <PasswordField

@@ -11,7 +11,7 @@ import TransactionCard from '@/components/molecules/TransactionCard.astro';
 import TransactionSummaryCards from '@/components/organisms/TransactionSummaryCards.astro';
 import TransactionActionsBar from '@/components/organisms/TransactionActionsBar.astro';
 import TransactionFiltersBar from '@/components/organisms/TransactionFiltersBar.astro';
-import DeleteConfirmationModal from '@/components/organisms/DeleteConfirmationModal.astro';
+import ConfirmationModal from '@/components/molecules/ConfirmationModal.astro';
 import { Receipt, RotateCcw } from '@lucide/astro';
 import type { TransactionOutput } from '@/lib/types/transaction';
 import { transactionService, categoryService } from '@/services';
@@ -361,13 +361,25 @@ const ssrData = {
   </div>
 
   <!-- Delete Confirmation Modal -->
-  <DeleteConfirmationModal
+  <ConfirmationModal
     id="delete-dialog"
     title="Delete Transaction"
     description="Are you sure you want to delete this transaction? This action cannot be undone."
     confirmLabel="Delete Transaction"
+    confirmVariant="error"
+    confirmLoadingLabel="Deleting..."
     cancelLabel="Cancel"
-  />
+    iconVariant="error"
+    confirmTestId="confirm-delete-btn"
+  >
+    <div
+      slot="details"
+      id="delete-dialog-details"
+      class="bg-base-200 rounded-2xl p-4 text-sm hidden"
+      data-confirm-details
+    >
+    </div>
+  </ConfirmationModal>
 </ProtectedLayout>
 
 <script>
