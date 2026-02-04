@@ -1,5 +1,6 @@
-import { db } from '@/db';
+import { db, getActiveSchema } from '@/db';
 import { ApiKeyService } from '@/services/api-key.service';
+import { eq } from 'drizzle-orm';
 
 export interface AuthContext {
   workspaceId: string;
@@ -11,7 +12,7 @@ let cachedContext: AuthContext | null = null;
 
 /**
  * Authenticate the API key from environment and cache the result.
- * Called once on server startup.
+ * Called once on server startup (expensive PBKDF2 verification).
  */
 export async function authenticate(): Promise<AuthContext> {
   if (cachedContext) return cachedContext;
@@ -33,11 +34,30 @@ export async function authenticate(): Promise<AuthContext> {
 }
 
 /**
- * Get the cached auth context. Must call authenticate() first.
+ * Get the auth context with a lightweight revocation/expiry check.
+ * Verifies the key hasn't been revoked or expired since startup
+ * without re-running PBKDF2.
  */
-export function getAuthContext(): AuthContext {
+export async function getAuthContext(): Promise<AuthContext> {
   if (!cachedContext) {
     throw new Error('Not authenticated. Call authenticate() first.');
   }
+
+  const schema = getActiveSchema();
+  const key = await db.query.apiKeys.findFirst({
+    where: eq(schema.apiKeys.id, cachedContext.apiKeyId),
+    columns: { deleted_at: true, expires_at: true },
+  });
+
+  if (!key) {
+    throw new Error('API key no longer exists.');
+  }
+  if (key.deleted_at) {
+    throw new Error('API key has been revoked.');
+  }
+  if (key.expires_at && new Date(key.expires_at) < new Date()) {
+    throw new Error('API key has expired.');
+  }
+
   return cachedContext;
 }

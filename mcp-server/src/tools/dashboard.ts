@@ -39,7 +39,7 @@ export const assetSummaryTool: Tool = {
 };
 
 export async function handleGetDashboard(args: Record<string, unknown>) {
-  const { workspaceId } = getAuthContext();
+  const { workspaceId } = await getAuthContext();
   const input = dashboardSchema.parse(args);
 
   const now = new Date();
@@ -97,7 +97,7 @@ export async function handleGetDashboard(args: Record<string, unknown>) {
 }
 
 export async function handleGetAssetSummary(args: Record<string, unknown>) {
-  const { workspaceId } = getAuthContext();
+  const { workspaceId } = await getAuthContext();
   const input = assetSummarySchema.parse(args);
 
   const [byCurrency, byType] = await Promise.all([

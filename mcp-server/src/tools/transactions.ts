@@ -4,19 +4,33 @@ import { getAuthContext } from '../auth.js';
 import { transactionService, categoryService, assetService } from '../context.js';
 import { fuzzyMatch } from '../utils/fuzzy-match.js';
 
-export const listTransactionsSchema = z.object({
-  type: z.enum(['expense', 'income', 'transfer']).optional(),
-  start_date: z.string().optional(),
-  end_date: z.string().optional(),
-  limit: z.number().min(1).max(50).default(20),
+const isoDateString = z.string().refine((val) => !isNaN(new Date(val).getTime()), {
+  message: 'Invalid date format. Use YYYY-MM-DD.',
 });
+
+export const listTransactionsSchema = z
+  .object({
+    type: z.enum(['expense', 'income', 'transfer']).optional(),
+    start_date: isoDateString.optional(),
+    end_date: isoDateString.optional(),
+    limit: z.number().min(1).max(50).default(20),
+  })
+  .refine(
+    (data) => {
+      if (data.start_date && data.end_date) {
+        return new Date(data.start_date) <= new Date(data.end_date);
+      }
+      return true;
+    },
+    { message: 'start_date must be before or equal to end_date' }
+  );
 
 export const addTransactionSchema = z.object({
   amount: z.number().positive(),
   currency: z.enum(['IDR', 'USD']),
   category_name: z.string(),
   asset_name: z.string(),
-  date: z.string().optional(),
+  date: isoDateString.optional(),
   description: z.string().optional(),
 });
 
@@ -84,7 +98,7 @@ export const addIncomeTool: Tool = {
 };
 
 export async function handleListTransactions(args: Record<string, unknown>) {
-  const { workspaceId } = getAuthContext();
+  const { workspaceId } = await getAuthContext();
   const input = listTransactionsSchema.parse(args);
 
   const filters: any = {
@@ -156,7 +170,7 @@ export async function handleAddTransaction(
   args: Record<string, unknown>,
   type: 'expense' | 'income'
 ) {
-  const { workspaceId, userId } = getAuthContext();
+  const { workspaceId, userId } = await getAuthContext();
   const input = addTransactionSchema.parse(args);
 
   // Resolve category

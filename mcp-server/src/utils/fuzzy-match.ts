@@ -38,6 +38,7 @@ export function fuzzyMatch(query: string, options: string[], maxDistance = 3): s
   if (!query || options.length === 0) return null;
 
   const queryLower = query.toLowerCase().trim();
+  if (queryLower === '') return null;
 
   // 1. Exact match (case-insensitive)
   const exactMatch = options.find((opt) => opt.toLowerCase() === queryLower);

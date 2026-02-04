@@ -37,7 +37,7 @@ export const tools: Tool[] = [
 ];
 
 export async function handleListCategories(args: Record<string, unknown>) {
-  const { workspaceId } = getAuthContext();
+  const { workspaceId } = await getAuthContext();
   const input = listCategoriesSchema.parse(args);
 
   const categories = await categoryService.findAll(workspaceId, {
@@ -57,7 +57,7 @@ export async function handleListCategories(args: Record<string, unknown>) {
 }
 
 export async function handleListAssets(_args: Record<string, unknown>) {
-  const { workspaceId } = getAuthContext();
+  const { workspaceId } = await getAuthContext();
   listAssetsSchema.parse(_args);
 
   const assets = await assetService.findAll(workspaceId);

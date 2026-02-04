@@ -9,6 +9,16 @@ interface Options {
   name?: string;
 }
 
+function consumeValue(args: string[], index: number, flag: string): string {
+  const value = args[index];
+  if (!value || value.startsWith('-')) {
+    console.error(`Error: ${flag} requires a value`);
+    printHelp();
+    process.exit(1);
+  }
+  return value;
+}
+
 function parseArgs(): Options {
   const args = process.argv.slice(2);
   const options: Options = {};
@@ -17,15 +27,15 @@ function parseArgs(): Options {
     switch (args[i]) {
       case '--workspace-id':
       case '-w':
-        options.workspaceId = args[++i];
+        options.workspaceId = consumeValue(args, ++i, args[i - 1]);
         break;
       case '--user-id':
       case '-u':
-        options.userId = args[++i];
+        options.userId = consumeValue(args, ++i, args[i - 1]);
         break;
       case '--name':
       case '-n':
-        options.name = args[++i];
+        options.name = consumeValue(args, ++i, args[i - 1]);
         break;
       case '--help':
       case '-h':

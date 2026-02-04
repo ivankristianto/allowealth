@@ -60,6 +60,7 @@
     "release": "bun run scripts/release.ts"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1",
     "@astrojs/node": "9.5.2",
     "@lucia-auth/adapter-drizzle": "^1.1.0",
     "@lucide/astro": "^0.562.0",

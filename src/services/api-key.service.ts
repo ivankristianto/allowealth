@@ -25,7 +25,6 @@ interface GenerateResult {
     id: string;
     name: string;
     key_prefix: string;
-    key_hash: string;
     created_at: Date;
     expires_at: Date | null;
   };
@@ -150,7 +149,6 @@ export class ApiKeyService {
         id: apiKey.id,
         name: apiKey.name,
         key_prefix: apiKey.key_prefix,
-        key_hash: apiKey.key_hash,
         created_at: apiKey.created_at,
         expires_at: apiKey.expires_at,
       },
@@ -196,21 +194,45 @@ export class ApiKeyService {
   }
 
   async revoke(id: string, workspaceId: string): Promise<boolean> {
+    const existing = await this.db.query.apiKeys.findFirst({
+      where: and(
+        eq(this.schema.apiKeys.id, id),
+        eq(this.schema.apiKeys.workspace_id, workspaceId),
+        isNull(this.schema.apiKeys.deleted_at)
+      ),
+    });
+    if (!existing) return false;
+
     await this.db
       .update(this.schema.apiKeys)
       .set({ deleted_at: new Date() })
-      .where(
-        and(eq(this.schema.apiKeys.id, id), eq(this.schema.apiKeys.workspace_id, workspaceId))
-      );
+      .where(eq(this.schema.apiKeys.id, id));
     return true;
   }
 
-  async list(workspaceId: string) {
-    return this.db.query.apiKeys.findMany({
+  async list(workspaceId: string): Promise<
+    Array<{
+      id: string;
+      name: string;
+      key_prefix: string;
+      last_used_at: Date | null;
+      created_at: Date;
+      expires_at: Date | null;
+    }>
+  > {
+    const rows = await this.db.query.apiKeys.findMany({
       where: and(
         eq(this.schema.apiKeys.workspace_id, workspaceId),
         isNull(this.schema.apiKeys.deleted_at)
       ),
     });
+    return rows.map((row) => ({
+      id: row.id,
+      name: row.name,
+      key_prefix: row.key_prefix,
+      last_used_at: row.last_used_at,
+      created_at: row.created_at,
+      expires_at: row.expires_at,
+    }));
   }
 }

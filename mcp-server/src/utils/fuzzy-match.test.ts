@@ -24,6 +24,11 @@ describe('fuzzyMatch', () => {
     expect(fuzzyMatch('', options)).toBeNull();
   });
 
+  it('should return null for whitespace-only query', () => {
+    expect(fuzzyMatch('   ', options)).toBeNull();
+    expect(fuzzyMatch('\t', options)).toBeNull();
+  });
+
   it('should return null for empty options', () => {
     expect(fuzzyMatch('food', [])).toBeNull();
   });

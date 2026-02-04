@@ -43,7 +43,7 @@ describe('ApiKeyService', () => {
       expect(result.plainKey.length).toBe(35); // 'aw_' + 32 chars
       expect(result.apiKey).toBeDefined();
       expect(result.apiKey.key_prefix).toStartWith('aw_');
-      expect(result.apiKey.key_hash).toContain('$pbkdf2-sha256$');
+      expect((result.apiKey as any).key_hash).toBeUndefined();
       expect(mockDb.insert).toHaveBeenCalled();
       expect(capturedValues).not.toBeNull();
       expect(capturedValues.workspace_id).toBe('ws-1');

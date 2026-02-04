@@ -24,7 +24,7 @@ export const tool: Tool = {
 };
 
 export async function handleGetBudgetSummary(args: Record<string, unknown>) {
-  const { workspaceId } = getAuthContext();
+  const { workspaceId } = await getAuthContext();
   const input = budgetSummarySchema.parse(args);
 
   const now = new Date();
