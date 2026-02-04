@@ -18,13 +18,15 @@
 
 import type { MiddlewareHandler } from 'astro';
 import { prepareForRequest, closeDatabase, getDatabaseConfig } from '@/db';
+import { createLogger } from '@/lib/logger';
+
+const log = createLogger('database');
 
 export const database: MiddlewareHandler = async (_context, next) => {
   const config = getDatabaseConfig();
 
-  // Diagnostic: log DB config and count fetch subrequests
-  console.log(
-    `[database] dialect=${config.dialect}` +
+  log.info(
+    `dialect=${config.dialect}` +
       ` url=${config.url ? config.url.replace(/\/\/.*@/, '//***@') : 'MISSING'}` +
       ` supabase=${config.isSupabase}` +
       ` hyperdrive=${config.isHyperdrive}`
@@ -41,7 +43,7 @@ export const database: MiddlewareHandler = async (_context, next) => {
         : args[0] instanceof Request
           ? args[0].url
           : String(args[0]);
-    console.log(`[fetch #${fetchCount}] ${url.substring(0, 120)}`);
+    log.debug(`fetch #${fetchCount}: ${url.substring(0, 120)}`);
     return originalFetch(...args);
   }) as typeof fetch;
 
@@ -57,7 +59,7 @@ export const database: MiddlewareHandler = async (_context, next) => {
   try {
     return await next();
   } finally {
-    console.log(`[database] Total fetch subrequests: ${fetchCount}`);
+    log.info(`total fetch subrequests: ${fetchCount}`);
     globalThis.fetch = originalFetch;
     await closeDatabase();
   }
