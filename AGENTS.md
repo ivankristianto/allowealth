@@ -31,6 +31,7 @@ Agents must internalize:
 - ✅ Follow implementation order: UI → Service → API → CLI → Seeder
 - ✅ Run quality gates before committing (lint, stylelint, format, typecheck)
 - ✅ Update OpenAPI docs when modifying API endpoints
+- ✅ Update `COMMANDS.md` when adding or modifying `package.json` scripts or CLI tools
 - ✅ Apply refactor checklist each loop, not at the end
 - ✅ Create a plan before coding
 - ❌ Hardcode colors, spacing, or font sizes (use design tokens)
