@@ -98,4 +98,9 @@ describe('review feedback regressions', () => {
       expect(content).not.toContain('animate-pulse');
     });
   });
+
+  it('transactions page skeletons should not use animate-pulse', () => {
+    const content = read('src/pages/transactions/index.astro');
+    expect(content).not.toContain('animate-pulse');
+  });
 });

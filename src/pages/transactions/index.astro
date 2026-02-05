@@ -12,6 +12,7 @@ import TransactionSummaryCards from '@/components/organisms/TransactionSummaryCa
 import TransactionActionsBar from '@/components/molecules/TransactionActionsBar.astro';
 import TransactionFiltersBar from '@/components/organisms/TransactionFiltersBar.astro';
 import ConfirmationModal from '@/components/molecules/ConfirmationModal.astro';
+import Skeleton from '@/components/atoms/Skeleton.astro';
 import { Receipt, RotateCcw } from '@lucide/astro';
 import type { TransactionOutput } from '@/lib/types/transaction';
 import { transactionService, categoryService } from '@/services';
@@ -232,10 +233,10 @@ const ssrData = {
       {
         Array.from({ length: 3 }).map(() => (
           <div class="card bg-base-100 border border-base-300 rounded-card shadow-sm relative overflow-hidden">
-            <div class="card-body p-8">
-              <div class="h-3 bg-base-300 rounded w-1/2 mb-4 animate-pulse" />
-              <div class="h-9 bg-base-300 rounded w-4/5 mb-3 animate-pulse" />
-              <div class="h-3 bg-base-300 rounded w-2/5 animate-pulse" />
+            <div class="card-body p-8 space-y-3">
+              <Skeleton variant="text" width="50%" />
+              <Skeleton variant="heading" width="80%" />
+              <Skeleton variant="text" width="40%" />
             </div>
           </div>
         ))
@@ -270,22 +271,22 @@ const ssrData = {
         <div id="transaction-list-skeleton" class="divide-y divide-base-200 hidden">
           {
             Array.from({ length: 5 }).map(() => (
-              <div class="flex items-center gap-5 p-5 animate-pulse">
+              <div class="flex items-center gap-5 p-5">
                 <div class="shrink-0 w-24">
-                  <div class="h-4 bg-base-200 rounded w-20" />
+                  <Skeleton width="80px" height="16px" />
                 </div>
                 <div class="flex-1 flex items-center gap-4">
-                  <div class="w-10 h-10 bg-base-200 rounded-2xl" />
+                  <Skeleton variant="circular" width="40px" height="40px" />
                   <div class="flex-1">
-                    <div class="h-4 bg-base-200 rounded w-32 mb-2" />
-                    <div class="h-3 bg-base-200 rounded w-20" />
+                    <Skeleton width="128px" height="16px" className="mb-2" />
+                    <Skeleton width="80px" height="12px" />
                   </div>
                 </div>
                 <div class="shrink-0 hidden sm:block">
-                  <div class="h-3 bg-base-200 rounded w-16" />
+                  <Skeleton width="64px" height="12px" />
                 </div>
                 <div class="shrink-0 w-28">
-                  <div class="h-5 bg-base-200 rounded w-24 ml-auto" />
+                  <Skeleton width="96px" height="20px" className="ml-auto" />
                 </div>
               </div>
             ))

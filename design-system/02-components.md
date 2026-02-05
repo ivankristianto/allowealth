@@ -54,6 +54,8 @@ Component patterns for atoms, molecules, and organisms.
 | ForgotPasswordForm            | `src/components/molecules/ForgotPasswordForm.astro`            | Password reset form      |
 | FormField                     | `src/components/molecules/FormField.astro`                     | Label + input wrapper    |
 | GrowthScheduleTable           | `src/components/molecules/GrowthScheduleTable.astro`           | Forecast schedule table  |
+| FeaturesGrid                  | `src/components/molecules/landing/FeaturesGrid.astro`          | Landing feature grid     |
+| HeroSection                   | `src/components/molecules/landing/HeroSection.astro`           | Landing hero section     |
 | LoginForm                     | `src/components/molecules/LoginForm.astro`                     | Login form               |
 | Modal                         | `src/components/molecules/Modal.astro`                         | Base modal               |
 | NotificationDropdown          | `src/components/molecules/NotificationDropdown.astro`          | Notification menu        |
@@ -382,7 +384,12 @@ Lucide icons use a default stroke-width of 2, which provides good visual clarity
 <script>
   const modal = document.getElementById('example-modal') as HTMLDialogElement;
 
-  // Open modal
+  // Open modal (preferred: native dialog API)
+  if (modal && !modal.open) {
+    modal.showModal();
+  }
+
+  // Alternative: class toggle (legacy)
   modal?.classList.add('modal-open');
 
   // Close modal
@@ -735,6 +742,11 @@ export interface Props {
 ```typescript
 // Open modal by adding class (triggers animation)
 const modal = document.getElementById('modal-id') as HTMLDialogElement;
+if (modal && !modal.open) {
+  modal.showModal();
+}
+
+// Alternative: class toggle (legacy)
 modal?.classList.add('modal-open');
 
 // Close modal (triggers exit animation)
