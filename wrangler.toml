@@ -46,3 +46,10 @@ id = "119e775bed8d476cb4d24c42278131e2"
 [observability]
 enabled = true
 head_sampling_rate = 1
+
+# Custom domain routes
+# https://developers.cloudflare.com/workers/configuration/routing/routes/
+routes = [
+  { pattern = "allowealth.io/*", custom_domain = true },
+  { pattern = "www.allowealth.io/*", custom_domain = true }
+]
