@@ -109,6 +109,104 @@ function extractChunks(
   return chunks;
 }
 
+/**
+ * Find all nodes matching a pattern at any depth and sum their sizes
+ * This handles deeply nested library modules that aren't top-level chunks
+ */
+function findLibrarySize(
+  node: TreeNode,
+  nodeParts: Record<string, NodePart>,
+  pattern: RegExp
+): number {
+  let totalGzip = 0;
+
+  // If this node matches and has a size, add it
+  if (node.name && pattern.test(node.name) && node.uid && nodeParts[node.uid]) {
+    totalGzip += nodeParts[node.uid].gzipLength || 0;
+  }
+
+  // Recurse into all children at any depth
+  if (node.children) {
+    for (const child of node.children) {
+      totalGzip += findLibrarySize(child, nodeParts, pattern);
+    }
+  }
+
+  return totalGzip;
+}
+
+interface LibraryBreakdown {
+  name: string;
+  size: number;
+}
+
+/**
+ * Analyze a chunk to find what libraries it contains
+ */
+function analyzeChunkContents(
+  node: TreeNode,
+  nodeParts: Record<string, NodePart>
+): LibraryBreakdown[] {
+  const libraries = new Map<string, number>();
+
+  function sumNodeSize(n: TreeNode): number {
+    let total = 0;
+    if (n.uid && nodeParts[n.uid]) {
+      total += nodeParts[n.uid].gzipLength || 0;
+    }
+    if (n.children) {
+      n.children.forEach((child) => {
+        total += sumNodeSize(child);
+      });
+    }
+    return total;
+  }
+
+  function traverse(n: TreeNode, inNodeModules: boolean = false) {
+    // If we're directly under node_modules, this is a library root
+    if (inNodeModules && n.name) {
+      // Handle scoped packages (@org/package) and regular packages
+      const isScope = n.name.startsWith('@');
+      if (isScope) {
+        // For scoped packages, we need to look at children
+        if (n.children) {
+          n.children.forEach((child) => {
+            const libName = `${n.name}/${child.name}`;
+            const size = sumNodeSize(child);
+            if (size > 0) {
+              libraries.set(libName, (libraries.get(libName) || 0) + size);
+            }
+          });
+        }
+      } else {
+        // Regular package
+        const size = sumNodeSize(n);
+        if (size > 0) {
+          libraries.set(n.name, (libraries.get(n.name) || 0) + size);
+        }
+      }
+      return; // Don't traverse deeper, we've handled this library
+    }
+
+    // Check if this is the node_modules folder
+    if (n.name === 'node_modules' && n.children) {
+      n.children.forEach((child) => traverse(child, true));
+      return;
+    }
+
+    // Continue traversing
+    if (n.children) {
+      n.children.forEach((child) => traverse(child, inNodeModules));
+    }
+  }
+
+  traverse(node);
+
+  return Array.from(libraries.entries())
+    .map(([name, size]) => ({ name, size }))
+    .sort((a, b) => b.size - a.size);
+}
+
 function findChunksByPattern(
   tree: TreeNode,
   nodeParts: Record<string, NodePart>,
@@ -136,14 +234,10 @@ function analyzeBundle(): string {
   const totalGzipSize = clientChunks.reduce((sum, chunk) => sum + chunk.gzipSize, 0);
   const totalRenderedSize = clientChunks.reduce((sum, chunk) => sum + chunk.renderedSize, 0);
 
-  // Find specific library chunks
-  const chartjsChunks = findChunksByPattern(stats.tree, stats.nodeParts, /chart/i);
-  const motionChunks = findChunksByPattern(stats.tree, stats.nodeParts, /motion/i);
-  const decimalChunks = findChunksByPattern(stats.tree, stats.nodeParts, /decimal/i);
-
-  const chartjsSize = chartjsChunks.reduce((sum, chunk) => sum + chunk.gzipSize, 0);
-  const motionSize = motionChunks.reduce((sum, chunk) => sum + chunk.gzipSize, 0);
-  const decimalSize = decimalChunks.reduce((sum, chunk) => sum + chunk.gzipSize, 0);
+  // Find specific library sizes by searching all nodes at any depth
+  const chartjsSize = findLibrarySize(stats.tree, stats.nodeParts, /chart/i);
+  const motionSize = findLibrarySize(stats.tree, stats.nodeParts, /motion/i);
+  const decimalSize = findLibrarySize(stats.tree, stats.nodeParts, /decimal/i);
 
   // Generate markdown report
   let report = '## 📊 Bundle Size Report\n\n';
@@ -171,6 +265,43 @@ function analyzeBundle(): string {
     // Clean up chunk name to show just the file
     const fileName = chunk.name.split('/').pop() || chunk.name;
     report += `| \`${fileName}\` | ${formatBytes(chunk.gzipSize)} | ${formatBytes(chunk.renderedSize)} |\n`;
+  }
+
+  // Add breakdown for large chunks (> 50 kB)
+  const largeChunks = stats.tree.children?.filter((child) => {
+    if (!child.name.includes('_astro/')) return false;
+    const sizes = sumTreeSizes(child, stats.nodeParts);
+    return sizes.gzip > 50 * 1024; // 50 kB threshold
+  });
+
+  if (largeChunks && largeChunks.length > 0) {
+    report += '\n### 📦 Large Chunk Breakdown (>50 kB)\n\n';
+    for (const chunk of largeChunks) {
+      const fileName = chunk.name.split('/').pop() || chunk.name;
+      const sizes = sumTreeSizes(chunk, stats.nodeParts);
+      const libraries = analyzeChunkContents(chunk, stats.nodeParts);
+
+      report += `**${fileName}** (${formatBytes(sizes.gzip)} gzipped)\n\n`;
+
+      if (libraries.length > 0) {
+        report += '| Library | Size (gzipped) | % of Chunk |\n';
+        report += '|---------|----------------|------------|\n';
+
+        const topLibs = libraries.slice(0, 5);
+        for (const lib of topLibs) {
+          const percentage = Math.round((lib.size / sizes.gzip) * 100);
+          report += `| \`${lib.name}\` | ${formatBytes(lib.size)} | ${percentage}% |\n`;
+        }
+
+        if (libraries.length > 5) {
+          const otherSize = libraries.slice(5).reduce((sum, l) => sum + l.size, 0);
+          const otherPercentage = Math.round((otherSize / sizes.gzip) * 100);
+          report += `| _Other libraries_ | ${formatBytes(otherSize)} | ${otherPercentage}% |\n`;
+        }
+
+        report += '\n';
+      }
+    }
   }
 
   // Add warnings section
