@@ -19,7 +19,7 @@
  * @param {string} className - Additional CSS classes
  */
 
-import { TrendingUp, Pencil, Trash2, Clock, RefreshCw } from '@lucide/astro';
+import { TrendingUp, Pencil, Trash2, Clock, RefreshCw, History } from '@lucide/astro';
 import { formatCurrency } from '@/lib/formatting';
 import { ASSET_TYPE_LABELS, type AssetType } from '@/lib/types/asset';
 
@@ -150,6 +150,19 @@ const rowClasses = [
     {
       !isHistoricalView && (
         <div class="flex items-center gap-1 opacity-40 group-hover:opacity-100 transition-opacity">
+          {/* Inline History Toggle */}
+          <button
+            type="button"
+            class="p-2 text-base-content/50 hover:text-info transition-all rounded-xl hover:bg-info/10"
+            title="Quick history"
+            aria-label={`Toggle ${name} inline history`}
+            data-toggle-history
+            data-asset-id={id}
+            data-testid="asset-inline-history-btn"
+          >
+            <History size={18} class="stroke-current" aria-hidden="true" />
+          </button>
+
           {/* View History / Timeline */}
           <button
             type="button"
@@ -219,6 +232,17 @@ const rowClasses = [
     }
   </div>
 </div>
+
+{/* Inline History Container (populated by client script) */}
+{
+  !isHistoricalView && (
+    <div
+      data-history-container
+      data-asset-id={id}
+      class="hidden bg-base-200/50 rounded-xl p-4 mt-2 mb-2 mx-4 lg:mx-8"
+    ></div>
+  )
+}
 
 <script>
   // Track initialized elements to avoid duplicate listeners

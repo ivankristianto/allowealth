@@ -258,7 +258,7 @@ export class AssetService {
   /**
    * Get asset history
    */
-  async getHistory(asset_id: string, workspaceId: string, perf?: PerfCollector) {
+  async getHistory(asset_id: string, workspaceId: string, perf?: PerfCollector, limit?: number) {
     // Verify asset belongs to workspace
     const asset = await this.findById(asset_id, workspaceId);
     if (!asset) {
@@ -266,10 +266,14 @@ export class AssetService {
     }
 
     return trackQuery('AssetService.getHistory', perf, async () => {
-      const history = await this.db.query.assetHistory.findMany({
+      const query: Record<string, unknown> = {
         where: eq(this.schema.assetHistory.asset_id, asset_id),
         orderBy: (assetHistory: any, { desc }: any) => [desc(assetHistory.recorded_at)],
-      });
+      };
+      if (limit) {
+        query.limit = limit;
+      }
+      const history = await this.db.query.assetHistory.findMany(query as any);
 
       return history;
     });

@@ -295,3 +295,19 @@ const sortedGroups = Object.entries(assetsByType)
   <AssetHistoryModal id="asset-history-modal" />
   <AssetUpdateValueModal id="asset-update-value-modal" />
 </ProtectedLayout>
+
+<script>
+  import { initInlineHistory } from '@/components/molecules/AssetInlineHistory.client';
+
+  function init() {
+    initInlineHistory();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+
+  document.addEventListener('astro:page-load', init);
+</script>

@@ -17,7 +17,11 @@ export const GET: APIRoute = async (context) => {
       return errorResponse('Asset ID is required', 400);
     }
 
-    const history = await assetService.getHistory(id, auth.workspaceId, perf);
+    // Parse optional limit param
+    const limitParam = context.url.searchParams.get('limit');
+    const limit = limitParam ? Math.min(Math.max(parseInt(limitParam, 10), 1), 100) : undefined;
+
+    const history = await assetService.getHistory(id, auth.workspaceId, perf, limit);
 
     return successResponse(history);
   } catch (error) {
