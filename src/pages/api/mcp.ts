@@ -1,6 +1,5 @@
 import type { APIRoute } from 'astro';
-import type { IDatabase } from '@/db';
-import { getDb } from '@/db';
+import { db } from '@/db';
 import { ApiKeyService } from '@/services/api-key.service';
 import type { ApiKeyContext } from '@/services/api-key.service';
 import { getCacheManager, CacheKeys, CacheTags } from '@/lib/cache';
@@ -37,7 +36,6 @@ async function validateApiKeyWithCache(apiKey: string): Promise<ApiKeyContext | 
   if (cached) return cached;
 
   // Cache miss: perform full PBKDF2 validation
-  const db = getDb() as unknown as IDatabase;
   const service = new ApiKeyService(db);
   const result = await service.validate(apiKey);
   if (!result) return null;
@@ -90,7 +88,7 @@ function errorResponse(status: number, message: string): Response {
 async function dispatchMcpMessage(
   message: JsonRpcRequest,
   ctx: ToolContext
-): Promise<JsonRpcResponse> {
+): Promise<JsonRpcResponse | null> {
   switch (message.method) {
     case 'initialize':
       return {
@@ -120,13 +118,16 @@ async function dispatchMcpMessage(
       };
     }
 
-    case 'notifications/initialized':
     case 'ping':
       return {
         jsonrpc: '2.0',
         id: message.id,
         result: {},
       };
+
+    case 'notifications/initialized':
+      // Notifications don't need a JSON-RPC response
+      return null;
 
     default:
       return {
@@ -155,7 +156,6 @@ export const POST: APIRoute = async (context) => {
   }
 
   // Build per-request ToolContext with fresh DB connection and service instances
-  const db = getDb() as unknown as IDatabase;
   const services = createServices(db);
   const ctx: ToolContext = { auth, services };
 
@@ -171,15 +171,16 @@ export const POST: APIRoute = async (context) => {
   }
 
   const result = await dispatchMcpMessage(body, ctx);
+
+  // Notifications (no id) get 204 No Content
+  if (!result) {
+    return new Response(null, { status: 204 });
+  }
+
   return jsonResponse(result);
 };
 
-/** Reject non-POST methods */
-export const GET: APIRoute = async () => {
-  return errorResponse(405, 'Method not allowed. Use POST.');
-};
-
-/** Reject non-POST methods */
-export const DELETE: APIRoute = async () => {
+/** Reject all non-POST methods */
+export const ALL: APIRoute = async () => {
   return errorResponse(405, 'Method not allowed. Use POST.');
 };

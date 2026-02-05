@@ -13,6 +13,7 @@ import {
 import { createRenderHelper } from '@/lib/api/renderResponse';
 import { logError } from '@/lib/utils';
 import { checkRateLimit, createRateLimitResponse } from '@/lib/rate-limit';
+import { getCacheManager } from '@/lib/cache';
 import SecurityApiKeysListPartial from '@/components/partials/SecurityApiKeysListPartial.astro';
 
 const MAX_KEYS_PER_USER = 25;
@@ -147,9 +148,18 @@ export const DELETE: APIRoute = async (context) => {
       return errorResponse('API key not found', 404);
     }
 
+    // Find the key prefix before revoking (needed for cache invalidation)
+    const keyToRevoke = userKeys.find((k) => k.id === validation.data.id);
+
     const revoked = await service.revoke(validation.data.id, auth.workspaceId);
     if (!revoked) {
       return errorResponse('API key not found', 404);
+    }
+
+    // Invalidate cached API key auth context so revocation takes effect immediately
+    if (keyToRevoke?.key_prefix) {
+      const cache = getCacheManager();
+      await cache.invalidateByTags([`apikey:${keyToRevoke.key_prefix}`]);
     }
 
     return successResponse({ message: 'API key revoked' });
