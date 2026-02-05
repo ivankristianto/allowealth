@@ -1,12 +1,15 @@
 # Allowealth MCP Server
 
-Model Context Protocol (MCP) server that lets AI assistants (Claude Desktop, etc.) interact with your Allowealth financial data via stdio transport.
+Model Context Protocol (MCP) server that lets AI assistants (Claude Desktop, Claude Code, etc.) interact with your Allowealth financial data. Supports two transport modes:
+
+- **stdio** — for local MCP clients running on the same machine
+- **HTTP** — for remote access via the deployed web app (Cloudflare Workers, Vercel, etc.)
 
 ## Prerequisites
 
 - [Bun](https://bun.sh/) 1.x installed
 - A running Allowealth instance with a database
-- An API key (created via CLI)
+- An API key (created via CLI or Settings > Security in the web app)
 
 ## Setup
 
@@ -21,28 +24,31 @@ cd mcp-server && bun install && cd ..
 
 ### 2. Create an API key
 
-You need the workspace ID and user ID. List existing workspaces first:
+**Option A: Via CLI**
 
 ```bash
 bun run cli:list-workspaces
-```
-
-Then create an API key:
-
-```bash
 bun run cli:create-api-key -- \
   --workspace-id <your-workspace-id> \
   --user-id <your-user-id> \
   --name "Claude Desktop"
 ```
 
+**Option B: Via web UI**
+
+Go to **Settings > Security > API Keys** and click **Generate New Key**.
+
 Save the displayed key — it is shown only once.
 
 ### 3. Configure your MCP client
 
-#### Claude Desktop
+Choose the transport that fits your setup:
 
-Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS):
+#### Option A: stdio (local)
+
+Use this when the MCP client runs on the same machine as the Allowealth database.
+
+**Claude Desktop** (`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS):
 
 ```json
 {
@@ -58,9 +64,7 @@ Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_
 }
 ```
 
-#### Claude Code
-
-Add to your Claude Code MCP settings:
+**Claude Code:**
 
 ```json
 {
@@ -74,15 +78,60 @@ Add to your Claude Code MCP settings:
     }
   }
 }
+```
+
+#### Option B: HTTP (remote)
+
+Use this when the Allowealth app is deployed (e.g., on Cloudflare Workers) and you want to connect from any MCP client without local database access.
+
+The HTTP endpoint is at `/api/mcp` on your deployed Allowealth instance.
+
+**Claude Desktop / Claude Code (MCP clients with HTTP support):**
+
+```json
+{
+  "mcpServers": {
+    "allowealth": {
+      "url": "https://your-allowealth-domain.com/api/mcp",
+      "headers": {
+        "Authorization": "Bearer aw_your_api_key_here"
+      }
+    }
+  }
+}
+```
+
+**Any HTTP client (manual testing with curl):**
+
+```bash
+# Initialize
+curl -X POST https://your-allowealth-domain.com/api/mcp \
+  -H "Authorization: Bearer aw_your_api_key_here" \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}'
+
+# List tools
+curl -X POST https://your-allowealth-domain.com/api/mcp \
+  -H "Authorization: Bearer aw_your_api_key_here" \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":2,"method":"tools/list"}'
+
+# Call a tool
+curl -X POST https://your-allowealth-domain.com/api/mcp \
+  -H "Authorization: Bearer aw_your_api_key_here" \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"get_dashboard","arguments":{}}}'
 ```
 
 ### 4. Verify
 
-Restart your MCP client. The server logs to stderr on startup:
+**stdio:** Restart your MCP client. The server logs to stderr on startup:
 
 ```
-Allowealth MCP server started (workspace: <your-workspace-id>)
+Allowealth MCP server started (workspace: a1b2c3d4...)
 ```
+
+**HTTP:** Send an `initialize` request (see curl example above). You should receive a JSON-RPC response with server info.
 
 ## Available Tools
 
@@ -114,10 +163,12 @@ The AI will call the appropriate tools automatically. Category and asset names a
 
 - API keys are hashed with PBKDF2-SHA256 (100k iterations) before storage
 - Keys are verified with constant-time comparison
-- Revoked or expired keys are checked on every tool call
+- Revoked or expired keys are checked on every tool call (stdio) and on cache miss (HTTP)
+- HTTP auth results are cached for 5 minutes to avoid PBKDF2 on every request; cache is invalidated immediately on key revocation
 - The plain key is shown only once at creation time
+- Only POST requests are accepted on the HTTP endpoint
 
-## Running Manually
+## Running Manually (stdio)
 
 ```bash
 # Development (uses .env)
@@ -129,4 +180,31 @@ bun run mcp:start:prod
 
 ## Revoking an API Key
 
-Currently done via database. Future CLI support planned.
+**Via web UI:** Go to **Settings > Security > API Keys** and click the revoke button next to the key.
+
+**Via CLI:** Currently done via database. Future CLI support planned.
+
+Revoked keys take effect immediately for both stdio (checked per tool call) and HTTP (cache invalidated on revocation).
+
+## Architecture
+
+Both transports share the same tool handlers via dependency injection (`ToolContext`):
+
+```
+Tool Layer (shared)
+  registerTools() / handleToolCall(name, args, ctx)
+  ├── transactions.ts
+  ├── budget.ts
+  ├── assets.ts
+  └── dashboard.ts
+       │
+  ┌────┴────────────┐  ┌──────────────────────────┐
+  │ stdio entry      │  │ HTTP entry                │
+  │ mcp-server/      │  │ src/pages/api/mcp.ts      │
+  │ src/index.ts     │  │                           │
+  │                  │  │ Auth: Bearer token         │
+  │ Auth: env var    │  │ DB: per-request (MW)       │
+  │ DB: singleton    │  │ Cache: CacheManager        │
+  │ Transport: stdio │  │ Transport: JSON-RPC/HTTP   │
+  └──────────────────┘  └───────────────────────────┘
+```

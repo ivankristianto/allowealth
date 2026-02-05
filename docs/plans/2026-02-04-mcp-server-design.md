@@ -458,8 +458,9 @@ PBKDF2 validation is expensive (~100ms), so results are cached using the existin
 const CACHE_TTL = 300; // 5 minutes
 
 async function validateWithCache(apiKey: string, db: IDatabase): Promise<AuthContext | null> {
+  const keyHash = simpleHash(apiKey); // hash of full key (not prefix)
   const prefix = apiKey.slice(0, 8);
-  const cacheKey = `cache:apikey:${prefix}`;
+  const cacheKey = `cache:apikey:${keyHash}`;
   const cache = getCacheManager();
 
   // 1. Try cache
@@ -471,7 +472,7 @@ async function validateWithCache(apiKey: string, db: IDatabase): Promise<AuthCon
   const result = await service.validate(apiKey);
   if (!result) return null;
 
-  // 3. Store in cache with tag for invalidation on revoke
+  // 3. Store in cache with prefix tag for invalidation on revoke
   await cache.set(cacheKey, result, {
     ttl: CACHE_TTL,
     tags: [`apikey:${prefix}`],
@@ -481,7 +482,7 @@ async function validateWithCache(apiKey: string, db: IDatabase): Promise<AuthCon
 }
 ```
 
-When a key is revoked, invalidate with tag `apikey:{prefix}`.
+The cache key uses a hash of the full API key (preventing prefix-collision auth bypass), while the tag uses the prefix (enabling invalidation on revocation without the full key). When a key is revoked, invalidate with tag `apikey:{prefix}`.
 
 ### MCP Message Dispatch
 

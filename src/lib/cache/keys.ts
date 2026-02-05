@@ -12,7 +12,7 @@ const PREFIX = 'cache';
  * Simple hash function (djb2 variant) for cross-runtime compatibility.
  * Works in Node.js, Bun, and Cloudflare Workers without native crypto.
  */
-function simpleHash(str: string): string {
+export function simpleHash(str: string): string {
   let hash = 5381;
   for (let i = 0; i < str.length; i++) {
     hash = (hash * 33) ^ str.charCodeAt(i);
@@ -47,8 +47,8 @@ export const CacheKeys = {
   layout: (workspaceId: string, userId: string): string =>
     `${PREFIX}:layout:${workspaceId}:${userId}`,
 
-  /** API key auth context: cache:apikey:{prefix} */
-  apiKey: (prefix: string): string => `${PREFIX}:apikey:${prefix}`,
+  /** API key auth context: cache:apikey:{keyHash} */
+  apiKey: (keyHash: string): string => `${PREFIX}:apikey:${keyHash}`,
 } as const;
 
 /**
