@@ -156,7 +156,7 @@ const cardClasses = [
             {/* Total Monthly Pot */}
             <div>
               <StatLabel size="sm" className="uppercase tracking-widest">
-                Total Monthly Pot
+                Allocated Budget
               </StatLabel>
               <p class="text-2xl lg:text-3xl font-bold mt-2 lg:mt-3 text-base-content tracking-tight leading-none">
                 {formatCurrency(totalAllocated, currency)}
@@ -166,7 +166,7 @@ const cardClasses = [
             {/* Aggregate Spending */}
             <div>
               <StatLabel size="sm" color="warning" className="uppercase tracking-widest">
-                Aggregate Spending
+                Total Budget Spent
               </StatLabel>
               <div class="flex items-baseline gap-2 mt-2 lg:mt-3">
                 <p
@@ -191,7 +191,7 @@ const cardClasses = [
           {/* Surplus/Deficit Indicator */}
           <div
             class:list={[
-              'p-4 rounded-2xl border flex items-center gap-3',
+              'p-4 rounded-2xl border flex items-center gap-3 flex-wrap min-w-0',
               isDeficit ? 'bg-error/5 border-error/20' : 'bg-success/5 border-success/20',
             ]}
           >
@@ -208,54 +208,82 @@ const cardClasses = [
           </div>
         </div>
 
-        {/* Right: Allocation Mix */}
-        <div class="lg:col-span-8 flex flex-col justify-center gap-6 lg:gap-8">
-          {/* Header */}
-          <div class="flex justify-between items-end">
+        {/* Right: Budget Allocations — collapsed on mobile, open on desktop */}
+        <details class="lg:col-span-8 group/alloc lg:open" data-budget-allocations>
+          <summary class="flex justify-between items-center cursor-pointer list-none lg:pointer-events-none select-none mb-6 lg:mb-8 [&::-webkit-details-marker]:hidden">
             <h3 class="font-bold text-base-content tracking-tight text-base lg:text-lg leading-none">
-              Allocation Mix
+              Budget Allocations
             </h3>
-            <StatLabel size="sm" className="uppercase tracking-widest hidden sm:block">
+            <span class="text-base-content/40 text-xs font-bold uppercase tracking-widest lg:hidden">
+              Tap to expand
+            </span>
+            <StatLabel size="sm" className="uppercase tracking-widest hidden lg:block">
               Total Share Distribution
             </StatLabel>
-          </div>
+          </summary>
 
-          {/* Stacked Bar - P0: Colors sanitized, P1: Accessible description */}
-          {/* Uses displayDistribution to match legend (top 7 + Others) */}
-          <AllocationBar
-            segments={displayDistribution.map((item) => ({
-              label: item.name,
-              percentage: item.weight,
-              color: item.color,
-            }))}
-            height="md"
-            ariaLabel={`Budget allocation: ${allocationDescription}`}
-          />
+          <div class="flex flex-col gap-6 lg:gap-8">
+            {/* Stacked Bar - P0: Colors sanitized, P1: Accessible description */}
+            {/* Uses displayDistribution to match legend (top 7 + Others) */}
+            <AllocationBar
+              segments={displayDistribution.map((item) => ({
+                label: item.name,
+                percentage: item.weight,
+                color: item.color,
+              }))}
+              height="md"
+              ariaLabel={`Budget allocation: ${allocationDescription}`}
+            />
 
-          {/* Legend - P0: Colors sanitized, shows top 7 + Others */}
-          <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 lg:gap-4">
-            {displayDistribution.map((item) => {
-              return (
-                <div class="flex flex-col gap-1">
-                  <div class="flex items-center gap-2">
-                    <div
-                      class="w-2 h-2 rounded-full shrink-0"
-                      style={`background-color: ${sanitizeColor(item.color)};`}
-                      aria-hidden="true"
-                    />
-                    <span class="text-[10px] font-bold text-base-content/60 uppercase tracking-tight truncate">
-                      {item.name}
-                    </span>
+            {/* Legend - P0: Colors sanitized, shows top 7 + Others */}
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 lg:gap-4">
+              {displayDistribution.map((item) => {
+                return (
+                  <div class="flex flex-col gap-1">
+                    <div class="flex items-center gap-2">
+                      <div
+                        class="w-2 h-2 rounded-full shrink-0"
+                        style={`background-color: ${sanitizeColor(item.color)};`}
+                        aria-hidden="true"
+                      />
+                      <span class="text-[10px] font-bold text-base-content/60 uppercase tracking-tight truncate">
+                        {item.name}
+                      </span>
+                    </div>
+                    <p class="text-xs font-bold text-base-content leading-none ml-4">
+                      {item.weight.toFixed(1)}%
+                    </p>
                   </div>
-                  <p class="text-xs font-bold text-base-content leading-none ml-4">
-                    {item.weight.toFixed(1)}%
-                  </p>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
-        </div>
+        </details>
       </div>
     </section>
   )
 }
+
+<script>
+  function initBudgetAllocations() {
+    document
+      .querySelectorAll<HTMLDetailsElement>('[data-budget-allocations]')
+      .forEach((details) => {
+        // Open by default on desktop (lg breakpoint = 1024px)
+        const mq = window.matchMedia('(min-width: 1024px)');
+        if (mq.matches) details.open = true;
+
+        mq.addEventListener('change', (e) => {
+          details.open = e.matches;
+        });
+      });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initBudgetAllocations);
+  } else {
+    initBudgetAllocations();
+  }
+
+  document.addEventListener('astro:page-load', initBudgetAllocations);
+</script>

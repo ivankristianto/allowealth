@@ -116,29 +116,45 @@ const gridClasses = [
       aria-label="Budget categories"
       aria-rowcount={sortedBudgets.length}
     >
-      {sortedBudgets.map((budget) => (
-        <div role="listitem" class="h-full">
-          <BudgetCard
-            categoryId={budget.category_id}
-            categoryName={budget.category_name}
-            icon={budget.category_icon || getIconForCategory(budget.category_name, budget.icon)}
-            color={budget.category_color}
-            spent={
-              typeof budget.spent_amount === 'string'
-                ? parseFloat(budget.spent_amount)
-                : budget.spent_amount
-            }
-            budget={
-              typeof budget.budget_amount === 'string'
-                ? parseFloat(budget.budget_amount)
-                : budget.budget_amount
-            }
-            percentageUsed={budget.percentage_used}
-            status={budget.status}
-            currency={currency}
-          />
-        </div>
-      ))}
+      {sortedBudgets.map((budget) => {
+        const budgetAmt =
+          typeof budget.budget_amount === 'string'
+            ? parseFloat(budget.budget_amount)
+            : budget.budget_amount;
+        const spentAmt =
+          typeof budget.spent_amount === 'string'
+            ? parseFloat(budget.spent_amount)
+            : budget.spent_amount;
+        return (
+          <div
+            role="listitem"
+            class="h-full"
+            data-sort-title={budget.category_name}
+            data-sort-budget={budgetAmt}
+            data-sort-spent={spentAmt}
+          >
+            <BudgetCard
+              categoryId={budget.category_id}
+              categoryName={budget.category_name}
+              icon={budget.category_icon || getIconForCategory(budget.category_name, budget.icon)}
+              color={budget.category_color}
+              spent={
+                typeof budget.spent_amount === 'string'
+                  ? parseFloat(budget.spent_amount)
+                  : budget.spent_amount
+              }
+              budget={
+                typeof budget.budget_amount === 'string'
+                  ? parseFloat(budget.budget_amount)
+                  : budget.budget_amount
+              }
+              percentageUsed={budget.percentage_used}
+              status={budget.status}
+              currency={currency}
+            />
+          </div>
+        );
+      })}
       {/* Hidden "no results" element for client-side filter - shown via JS when no cards match */}
       <div
         data-filter-no-results

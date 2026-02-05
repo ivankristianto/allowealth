@@ -154,30 +154,51 @@ import { BookOpen, Copy, Check } from '@lucide/astro';
 
       copyBtn.addEventListener('click', async () => {
         const text = configText.textContent || '';
-        try {
-          await navigator.clipboard.writeText(text);
-        } catch {
-          // Fallback for non-secure contexts
-          const textarea = document.createElement('textarea');
-          textarea.value = text;
-          textarea.style.position = 'fixed';
-          textarea.style.opacity = '0';
-          document.body.appendChild(textarea);
-          textarea.select();
-          document.execCommand('copy');
-          document.body.removeChild(textarea);
+        let copied = false;
+
+        // Try modern clipboard API first
+        if (navigator.clipboard) {
+          try {
+            await navigator.clipboard.writeText(text);
+            copied = true;
+          } catch {
+            // Fall through to fallback
+          }
         }
 
-        // Toggle icons
-        const defaultIcon = copyBtn.querySelector('[data-copy-icon-default]');
-        const successIcon = copyBtn.querySelector('[data-copy-icon-success]');
-        defaultIcon?.classList.add('hidden');
-        successIcon?.classList.remove('hidden');
+        // Fallback: hidden textarea + execCommand
+        if (!copied) {
+          try {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.left = '-9999px';
+            textarea.style.top = '-9999px';
+            document.body.appendChild(textarea);
+            textarea.focus();
+            textarea.select();
+            document.execCommand('copy');
+            textarea.remove();
+            copied = true;
+          } catch {
+            // Both methods failed
+          }
+        }
 
-        setTimeout(() => {
-          defaultIcon?.classList.remove('hidden');
-          successIcon?.classList.add('hidden');
-        }, 2000);
+        if (copied) {
+          const defaultIcon = copyBtn.querySelector('[data-copy-icon-default]');
+          const successIcon = copyBtn.querySelector('[data-copy-icon-success]');
+          defaultIcon?.classList.add('hidden');
+          successIcon?.classList.remove('hidden');
+
+          setTimeout(() => {
+            defaultIcon?.classList.remove('hidden');
+            successIcon?.classList.add('hidden');
+          }, 2000);
+        } else {
+          const { addToast } = await import('@/lib/stores/toastStore');
+          addToast('Unable to copy. Please select and copy manually.', 'error');
+        }
       });
     });
   }
