@@ -10,7 +10,7 @@
  * @param {string} className - Additional CSS classes
  */
 
-import { Plus, Settings } from '@lucide/astro';
+import { Plus, Settings, ArrowRightLeft } from '@lucide/astro';
 
 export interface Props {
   isHistoricalView?: boolean;
@@ -49,6 +49,24 @@ const containerClasses = [
       <Settings size={18} class="stroke-current hidden md:block" aria-hidden="true" />
       <span class="hidden md:inline">Categories</span>
     </a>
+
+    {/* Transfer */}
+    {
+      !isHistoricalView && (
+        <button
+          type="button"
+          class="btn btn-ghost btn-sm md:btn-md gap-1 md:gap-2 rounded-lg md:rounded-xl text-base-content/70 hover:text-base-content hover:bg-base-200 px-2 md:px-4"
+          aria-label="Transfer between assets"
+          title="Transfer"
+          data-transfer-btn
+          data-testid="asset-transfer-btn"
+        >
+          <ArrowRightLeft size={16} class="stroke-current md:hidden" aria-hidden="true" />
+          <ArrowRightLeft size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+          <span class="hidden md:inline">Transfer</span>
+        </button>
+      )
+    }
   </div>
 
   {/* Primary Action - Pushed to right */}
@@ -86,6 +104,20 @@ const containerClasses = [
 
 <script>
   const handlerMap = new WeakMap<HTMLElement, (e: Event) => void>();
+
+  function initTransferButton() {
+    document.querySelectorAll<HTMLElement>('[data-transfer-btn]').forEach((button) => {
+      if (handlerMap.has(button)) return;
+
+      const handler = () => {
+        const modal = document.getElementById('asset-transfer-modal') as HTMLDialogElement;
+        if (modal) modal.showModal();
+      };
+
+      handlerMap.set(button, handler);
+      button.addEventListener('click', handler);
+    });
+  }
 
   function initAddAssetButton() {
     document.querySelectorAll<HTMLElement>('[data-add-asset-btn]').forEach((button) => {
@@ -125,10 +157,12 @@ const containerClasses = [
   }
 
   initAddAssetButton();
+  initTransferButton();
   registerCleanup();
 
   document.addEventListener('astro:page-load', () => {
     initAddAssetButton();
+    initTransferButton();
     registerCleanup();
   });
 </script>

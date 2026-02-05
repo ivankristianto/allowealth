@@ -1,0 +1,305 @@
+---
+/**
+ * AssetTransferModal Component
+ *
+ * Modal for transferring balance between two assets of the same currency.
+ * Uses inline error display (no toasts for errors).
+ *
+ * @param {string} id - Modal ID
+ * @param {Array} assets - Available assets for transfer
+ */
+
+import Modal from '../molecules/Modal.astro';
+import FormField from '../molecules/FormField.astro';
+import { ArrowRightLeft } from '@lucide/astro';
+
+interface TransferAsset {
+  id: string;
+  name: string;
+  currency: string;
+  balance: string;
+}
+
+export interface Props {
+  id: string;
+  assets: TransferAsset[];
+}
+
+const { id, assets = [] } = Astro.props;
+---
+
+<div data-transfer-modal-container data-id={id}>
+  <Modal id={id} title="" size="md" closable={false} className="[&_.modal-box]:rounded-3xl">
+    <div class="space-y-6">
+      {/* Header with icon */}
+      <div class="flex items-center gap-4">
+        <div
+          class="w-12 h-12 rounded-2xl flex items-center justify-center bg-accent/10 text-accent"
+        >
+          <ArrowRightLeft size={24} class="stroke-current" aria-hidden="true" />
+        </div>
+        <div>
+          <h2 class="text-xl font-bold tracking-tight text-base-content leading-none">
+            Transfer Between Assets
+          </h2>
+          <p class="text-base-content/60 text-sm mt-2 font-medium">
+            Move balance from one account to another.
+          </p>
+        </div>
+      </div>
+
+      {/* Form */}
+      <form id={`${id}-form`} data-transfer-form class="space-y-6">
+        {/* From Asset */}
+        <FormField label="From" htmlFor={`${id}-from`} required>
+          <select
+            id={`${id}-from`}
+            name="fromAssetId"
+            required
+            class="select select-lg w-full bg-base-200 border border-base-300 rounded-2xl font-bold text-base-content focus:ring-2 focus:ring-accent focus:outline-none focus:border-accent"
+            data-from-select
+          >
+            <option value="" disabled selected>Select source account</option>
+            {
+              assets.map((asset) => (
+                <option
+                  value={asset.id}
+                  data-currency={asset.currency}
+                  data-balance={asset.balance}
+                >
+                  {asset.name} ({asset.currency} {parseFloat(asset.balance).toLocaleString()})
+                </option>
+              ))
+            }
+          </select>
+        </FormField>
+
+        {/* To Asset */}
+        <FormField label="To" htmlFor={`${id}-to`} required>
+          <select
+            id={`${id}-to`}
+            name="toAssetId"
+            required
+            class="select select-lg w-full bg-base-200 border border-base-300 rounded-2xl font-bold text-base-content focus:ring-2 focus:ring-accent focus:outline-none focus:border-accent"
+            data-to-select
+          >
+            <option value="" disabled selected>Select destination account</option>
+            {
+              assets.map((asset) => (
+                <option
+                  value={asset.id}
+                  data-currency={asset.currency}
+                  data-balance={asset.balance}
+                >
+                  {asset.name} ({asset.currency} {parseFloat(asset.balance).toLocaleString()})
+                </option>
+              ))
+            }
+          </select>
+        </FormField>
+
+        {/* Amount */}
+        <FormField label="Amount" htmlFor={`${id}-amount`} required>
+          <input
+            id={`${id}-amount`}
+            name="amount"
+            type="number"
+            required
+            min="0.01"
+            step="0.01"
+            placeholder="Enter transfer amount"
+            class="input input-lg w-full bg-base-200 border border-base-300 rounded-2xl font-bold text-base-content focus:ring-2 focus:ring-accent focus:outline-none focus:border-accent placeholder:text-base-content/30 placeholder:font-normal"
+            data-amount-input
+          />
+          <p class="text-xs text-base-content/40 ml-1 mt-1" data-balance-hint></p>
+        </FormField>
+
+        {/* Notes */}
+        <FormField label="Notes (optional)" htmlFor={`${id}-notes`}>
+          <input
+            id={`${id}-notes`}
+            name="notes"
+            type="text"
+            maxlength="500"
+            placeholder="e.g. Monthly savings transfer"
+            class="input input-lg w-full bg-base-200 border border-base-300 rounded-2xl font-bold text-base-content focus:ring-2 focus:ring-accent focus:outline-none focus:border-accent placeholder:text-base-content/30 placeholder:font-normal"
+          />
+        </FormField>
+
+        {/* Error message */}
+        <div
+          data-form-error
+          class="hidden alert alert-error text-sm rounded-xl"
+          role="alert"
+          aria-live="polite"
+        >
+        </div>
+
+        {/* Actions */}
+        <div class="flex items-center gap-4 pt-4">
+          <button
+            type="button"
+            class="flex-1 py-4 text-base-content/60 font-bold hover:bg-base-200 rounded-2xl transition-colors"
+            data-cancel-transfer
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            class="flex-[2] btn btn-accent py-4 rounded-full font-bold text-base shadow-lg shadow-accent/20 hover:shadow-xl transition-all"
+            data-submit-transfer
+          >
+            Transfer
+          </button>
+        </div>
+      </form>
+    </div>
+  </Modal>
+</div>
+
+<script>
+  import { addToast } from '@/lib/stores/toastStore';
+  import { getCsrfHeaders } from '@/lib/csrf-client';
+
+  const initializedContainers = new WeakSet<Element>();
+
+  function initTransferModal() {
+    document
+      .querySelectorAll<HTMLElement>('[data-transfer-modal-container]')
+      .forEach((container) => {
+        if (initializedContainers.has(container)) return;
+        initializedContainers.add(container);
+
+        const id = container.getAttribute('data-id');
+        if (!id) return;
+
+        const modal = document.getElementById(id) as HTMLDialogElement | null;
+        const form = container.querySelector<HTMLFormElement>('[data-transfer-form]');
+        const fromSelect = container.querySelector<HTMLSelectElement>('[data-from-select]');
+        const toSelect = container.querySelector<HTMLSelectElement>('[data-to-select]');
+        const amountInput = container.querySelector<HTMLInputElement>('[data-amount-input]');
+        const balanceHint = container.querySelector<HTMLElement>('[data-balance-hint]');
+        const errorEl = container.querySelector<HTMLElement>('[data-form-error]');
+        const submitBtn = container.querySelector<HTMLButtonElement>('[data-submit-transfer]');
+
+        if (!modal || !form || !fromSelect || !toSelect || !amountInput || !submitBtn) return;
+
+        // Filter "To" options based on "From" selection (same currency, different asset)
+        function updateToOptions() {
+          if (!fromSelect || !toSelect) return;
+          const selectedFrom = fromSelect.options[fromSelect.selectedIndex];
+          const fromCurrency = selectedFrom?.dataset.currency || '';
+          const fromId = fromSelect.value;
+
+          Array.from(toSelect.options).forEach((opt) => {
+            if (!opt.value) return; // skip placeholder
+            const optCurrency = opt.dataset.currency || '';
+            opt.hidden = optCurrency !== fromCurrency || opt.value === fromId;
+            if (opt.hidden && opt.selected) {
+              toSelect.value = '';
+            }
+          });
+
+          // Show balance hint
+          if (balanceHint && selectedFrom?.dataset.balance) {
+            const bal = parseFloat(selectedFrom.dataset.balance);
+            balanceHint.textContent = `Available: ${bal.toLocaleString()} ${fromCurrency}`;
+          }
+        }
+
+        fromSelect.addEventListener('change', updateToOptions);
+
+        // Cancel button
+        const cancelBtn = container.querySelector('[data-cancel-transfer]');
+        cancelBtn?.addEventListener('click', () => {
+          form.reset();
+          errorEl?.classList.add('hidden');
+          if (balanceHint) balanceHint.textContent = '';
+          modal.close();
+        });
+
+        // Form submission
+        form.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          errorEl?.classList.add('hidden');
+
+          const formData = new FormData(form);
+          const fromAssetId = formData.get('fromAssetId') as string;
+          const toAssetId = formData.get('toAssetId') as string;
+          const amount = formData.get('amount') as string;
+          const notes = (formData.get('notes') as string) || undefined;
+
+          if (!fromAssetId || !toAssetId) {
+            if (errorEl) {
+              errorEl.textContent = 'Please select both source and destination accounts';
+              errorEl.classList.remove('hidden');
+            }
+            return;
+          }
+
+          if (fromAssetId === toAssetId) {
+            if (errorEl) {
+              errorEl.textContent = 'Source and destination must be different';
+              errorEl.classList.remove('hidden');
+            }
+            return;
+          }
+
+          const parsedAmount = parseFloat(amount);
+          if (isNaN(parsedAmount) || parsedAmount <= 0) {
+            if (errorEl) {
+              errorEl.textContent = 'Amount must be a positive number';
+              errorEl.classList.remove('hidden');
+            }
+            return;
+          }
+
+          const originalText = submitBtn.textContent || 'Transfer';
+          submitBtn.disabled = true;
+          submitBtn.textContent = 'Transferring...';
+
+          try {
+            const response = await fetch('/api/assets/transfer', {
+              method: 'POST',
+              credentials: 'include',
+              headers: {
+                'Content-Type': 'application/json',
+                ...getCsrfHeaders(),
+              },
+              body: JSON.stringify({ fromAssetId, toAssetId, amount, notes }),
+            });
+
+            const result = await response.json();
+            if (!response.ok || !result.success) {
+              throw new Error(result.error?.message || 'Transfer failed');
+            }
+
+            addToast('Transfer completed successfully!', 'success');
+            form.reset();
+            if (balanceHint) balanceHint.textContent = '';
+            modal.close();
+
+            // Reload page to show updated balances
+            window.location.reload();
+          } catch (err) {
+            const message = err instanceof Error ? err.message : 'Transfer failed';
+            if (errorEl) {
+              errorEl.textContent = message;
+              errorEl.classList.remove('hidden');
+            }
+          } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = originalText;
+          }
+        });
+      });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initTransferModal);
+  } else {
+    initTransferModal();
+  }
+
+  document.addEventListener('astro:page-load', initTransferModal);
+</script>

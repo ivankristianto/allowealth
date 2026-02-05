@@ -235,6 +235,66 @@ export class AssetService {
   }
 
   /**
+   * Transfer balance between two assets of the same currency.
+   * Uses compensating transaction on failure to restore source balance.
+   */
+  async transfer(
+    fromId: string,
+    toId: string,
+    amount: string,
+    notes: string | undefined,
+    workspaceId: string
+  ): Promise<{ fromAsset: any; toAsset: any }> {
+    const fromAsset = await this.findById(fromId, workspaceId);
+    const toAsset = await this.findById(toId, workspaceId);
+
+    if (!fromAsset || !toAsset) {
+      throw new Error('Asset not found');
+    }
+
+    if (fromAsset.currency !== toAsset.currency) {
+      throw new Error('Cannot transfer between different currencies');
+    }
+
+    const transferAmount = parseFloat(amount);
+    const fromBalance = parseFloat(fromAsset.balance);
+
+    if (transferAmount <= 0) {
+      throw new Error('Transfer amount must be positive');
+    }
+
+    if (fromBalance < transferAmount) {
+      throw new Error('Insufficient balance');
+    }
+
+    const newFromBalance = (fromBalance - transferAmount).toString();
+    const newToBalance = (parseFloat(toAsset.balance) + transferAmount).toString();
+
+    // Deduct from source
+    const updatedFrom = await this.updateBalance(fromId, workspaceId, {
+      balance: newFromBalance,
+      notes: notes ? `Transfer out: ${notes}` : `Transfer to ${toAsset.name}`,
+    });
+
+    try {
+      // Add to target
+      const updatedTo = await this.updateBalance(toId, workspaceId, {
+        balance: newToBalance,
+        notes: notes ? `Transfer in: ${notes}` : `Transfer from ${fromAsset.name}`,
+      });
+
+      return { fromAsset: updatedFrom, toAsset: updatedTo };
+    } catch (error) {
+      // Compensating transaction: restore source balance
+      await this.updateBalance(fromId, workspaceId, {
+        balance: fromAsset.balance,
+        notes: 'Rollback: transfer failed',
+      });
+      throw error;
+    }
+  }
+
+  /**
    * Delete asset (soft delete)
    */
   async delete(id: string, workspaceId: string) {
