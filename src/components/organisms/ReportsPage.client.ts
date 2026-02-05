@@ -273,10 +273,8 @@ export function initReportsPage(): void {
   if (urlState.period) {
     currentState.period = urlState.period;
   } else {
-    // Try to read from MonthNavigator or YearNavigator
-    const monthInput = document.querySelector('[data-month-input]') as HTMLInputElement;
-    const yearInput = document.querySelector('[data-year-input]') as HTMLInputElement;
-    const periodInput = monthInput || yearInput;
+    // Try to read from PeriodNavigator
+    const periodInput = document.querySelector('[data-period-input]') as HTMLInputElement;
 
     if (periodInput && periodInput.value) {
       currentState.period = periodInput.value;

@@ -8,15 +8,17 @@
  */
 
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
-import AssetPageHeader from '@components/organisms/AssetPageHeader.astro';
+import AssetPageHeader from '@components/molecules/AssetPageHeader.astro';
 import AssetPortfolioSummary from '@components/organisms/AssetPortfolioSummary.astro';
 import AssetGroupCard from '@components/organisms/AssetGroupCard.astro';
-import AssetItemRow from '@components/organisms/AssetItemRow.astro';
+import AssetItemRow from '@components/molecules/AssetItemRow.astro';
 import AssetFormModal from '@components/organisms/AssetFormModal.astro';
 import AssetDeleteConfirmModal from '@components/organisms/AssetDeleteConfirmModal.astro';
 import AssetHistoryModal from '@components/organisms/AssetHistoryModal.astro';
+import AssetUpdateValueModal from '@components/organisms/AssetUpdateValueModal.astro';
 import AssetCategoryModal from '@components/organisms/AssetCategoryModal.astro';
 import EmptyState from '@components/atoms/EmptyState.astro';
+import { CalendarDays } from '@lucide/astro';
 import { assetService, assetCategoryService } from '@/services';
 import type { AssetOutput, AssetType } from '@/lib/types/asset';
 import { formatAssetType } from '@/lib/types/asset';
@@ -69,6 +71,37 @@ if (searchParams.currency === 'IDR' || searchParams.currency === 'USD') {
   filters.currency = searchParams.currency;
 }
 
+// Month navigation parameters
+const yearParam = url.searchParams.get('year');
+const monthParam = url.searchParams.get('month');
+const now = new Date();
+const selectedYear = yearParam ? parseInt(yearParam, 10) : now.getFullYear();
+const selectedMonth = monthParam ? parseInt(monthParam, 10) : now.getMonth() + 1;
+const isViewingCurrentMonth = !yearParam && !monthParam;
+
+// Build month navigation URL helper
+const buildMonthUrl = (year: number, month: number) => {
+  const params = new URLSearchParams();
+  params.set('year', year.toString());
+  params.set('month', month.toString());
+  // Preserve existing filters
+  if (searchParams.type) params.set('type', searchParams.type);
+  if (searchParams.categoryId) params.set('categoryId', searchParams.categoryId);
+  if (searchParams.currency) params.set('currency', searchParams.currency);
+  return `/assets?${params.toString()}`;
+};
+
+// Calculate prev/next month dates
+const prevMonthDate = new Date(selectedYear, selectedMonth - 2, 1);
+const nextMonthDate = new Date(selectedYear, selectedMonth, 1);
+const isNextMonthFuture = nextMonthDate > now;
+
+// Format current month for display
+const currentMonthDisplay = new Date(selectedYear, selectedMonth - 1).toLocaleDateString('en-US', {
+  month: 'long',
+  year: 'numeric',
+});
+
 // Fetch assets and categories from database
 const categories = await assetCategoryService.findAll(user.workspaceId);
 const categoriesById = new Map(categories.map((category) => [category.id, category]));
@@ -76,32 +109,71 @@ const defaultCategoryId =
   categories.find((category) => category.is_system && !category.is_liability)?.id ||
   categories[0]?.id ||
   '';
-const rawAssets = await assetService.findAll(user.workspaceId, filters, Astro.locals.perf);
+// Fetch assets - use snapshot for historical views, current data for present
+let assets: AssetOutput[];
 
-// Transform to AssetOutput format
-const assets: AssetOutput[] = rawAssets.map((asset) => {
-  const categoryName = asset.category_id
-    ? categoriesById.get(asset.category_id)?.name || null
-    : formatAssetType(asset.type);
+if (!isViewingCurrentMonth) {
+  // Historical view: get snapshot for the selected month
+  const snapshots = await assetService.getSnapshotForMonth(
+    user.workspaceId,
+    selectedYear,
+    selectedMonth,
+    filters,
+    Astro.locals.perf
+  );
+  assets = snapshots.map((snapshot) => {
+    const categoryName = snapshot.category_id
+      ? categoriesById.get(snapshot.category_id)?.name || null
+      : formatAssetType(snapshot.type);
 
-  return {
-    id: asset.id,
-    name: asset.name,
-    type: asset.type,
-    category_id: asset.category_id,
-    category_name: categoryName,
-    balance: asset.balance,
-    currency: asset.currency,
-    last_updated: asset.last_updated,
-    created_at: asset.created_at,
-    updated_at: asset.updated_at,
-  };
-});
+    return {
+      id: snapshot.id,
+      name: snapshot.name,
+      type: snapshot.type,
+      category_id: snapshot.category_id,
+      category_name: categoryName,
+      balance: snapshot.snapshot_balance,
+      initial_balance: snapshot.initial_balance || null,
+      currency: snapshot.currency,
+      last_updated: snapshot.snapshot_date || snapshot.last_updated,
+      created_at: snapshot.created_at,
+      updated_at: snapshot.updated_at,
+    };
+  });
+} else {
+  // Current view: use latest balance
+  const rawAssets = await assetService.findAll(user.workspaceId, filters, Astro.locals.perf);
+  assets = rawAssets.map((asset) => {
+    const categoryName = asset.category_id
+      ? categoriesById.get(asset.category_id)?.name || null
+      : formatAssetType(asset.type);
+
+    return {
+      id: asset.id,
+      name: asset.name,
+      type: asset.type,
+      category_id: asset.category_id,
+      category_name: categoryName,
+      balance: asset.balance,
+      initial_balance: asset.initial_balance || null,
+      currency: asset.currency,
+      last_updated: asset.last_updated,
+      created_at: asset.created_at,
+      updated_at: asset.updated_at,
+    };
+  });
+}
 
 // Calculate portfolio totals and allocation
 // @TODO: Wire with backend - Consider moving calculations to service layer
 const portfolioTotals = calculatePortfolioTotals(assets);
 const assetAllocation = calculateAssetAllocation(assets);
+
+// Find latest update date across all assets
+const latestUpdate = assets.reduce<Date | null>((latest, asset) => {
+  const updated = new Date(asset.last_updated);
+  return !latest || updated > latest ? updated : latest;
+}, null);
 
 // Group assets by type for display
 const assetsByType = groupAssetsByType(assets);
@@ -127,7 +199,28 @@ const sortedGroups = Object.entries(assetsByType)
 <ProtectedLayout title="Assets" currentPath={currentPath} subtitle="Your financial portfolio">
   <div class="max-w-7xl mx-auto sm:px-2 lg:px-6 space-y-6 sm:space-y-8" data-testid="assets-page">
     {/* Page Header */}
-    <AssetPageHeader defaultCategoryId={defaultCategoryId} />
+    <AssetPageHeader
+      defaultCategoryId={defaultCategoryId}
+      currentMonth={currentMonthDisplay}
+      prevMonthUrl={buildMonthUrl(prevMonthDate.getFullYear(), prevMonthDate.getMonth() + 1)}
+      nextMonthUrl={!isNextMonthFuture
+        ? buildMonthUrl(nextMonthDate.getFullYear(), nextMonthDate.getMonth() + 1)
+        : undefined}
+      isNextDisabled={isNextMonthFuture}
+      currentMonthResetUrl={!isViewingCurrentMonth ? '/assets' : undefined}
+      isHistoricalView={!isViewingCurrentMonth}
+    />
+
+    {/* Historical view indicator */}
+    {
+      !isViewingCurrentMonth && (
+        <div class="bg-warning/10 border border-warning/20 rounded-card px-4 py-3 text-sm text-warning font-medium flex items-center gap-2">
+          <CalendarDays size={16} class="stroke-current shrink-0" />
+          Showing portfolio values as of {currentMonthDisplay}. Update actions are disabled for
+          historical views.
+        </div>
+      )
+    }
 
     {
       assets.length > 0 ? (
@@ -138,6 +231,8 @@ const sortedGroups = Object.entries(assetsByType)
             totalUsd={portfolioTotals.totalUsd}
             distribution={assetAllocation}
             loading={false}
+            latestUpdate={latestUpdate}
+            isHistoricalView={!isViewingCurrentMonth}
           />
 
           {/* Asset Groups */}
@@ -163,7 +258,11 @@ const sortedGroups = Object.entries(assetsByType)
                       categoryName={asset.category_name}
                       currency={asset.currency}
                       balance={parseFloat(asset.balance)}
+                      initialBalance={
+                        asset.initial_balance ? parseFloat(asset.initial_balance) : undefined
+                      }
                       lastUpdated={asset.last_updated}
+                      isHistoricalView={!isViewingCurrentMonth}
                     />
                   ))}
                 </AssetGroupCard>
@@ -172,7 +271,7 @@ const sortedGroups = Object.entries(assetsByType)
           </div>
         </>
       ) : (
-        <div class="card bg-base-100 shadow border border-base-300 rounded-3xl">
+        <div class="card bg-base-100 shadow border border-base-300 rounded-card">
           <div class="card-body">
             <EmptyState
               title="No assets tracked yet"
@@ -194,4 +293,5 @@ const sortedGroups = Object.entries(assetsByType)
   <AssetCategoryModal id="asset-category-modal" />
   <AssetDeleteConfirmModal id="asset-delete-modal" />
   <AssetHistoryModal id="asset-history-modal" />
+  <AssetUpdateValueModal id="asset-update-value-modal" />
 </ProtectedLayout>

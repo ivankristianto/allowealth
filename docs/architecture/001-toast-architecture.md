@@ -6,20 +6,19 @@ Accepted
 
 ## Context
 
-The codebase contains two separate toast notification implementations:
+The codebase standardizes on a single toast notification implementation:
 
-- `Toast.astro` - Server-side renderable Astro component
 - `ToastContainer.astro` - Client-side implementation with Nano Stores
 
-This duplication created confusion about which implementation to use and potential state management inconsistencies.
+The previous `Toast.astro` component was unused and removed to avoid duplicated patterns.
 
 ## Decision
 
-**Retain both implementations with clearly documented use cases.**
+**Standardize on ToastContainer only and remove Toast.astro.**
 
 ### Implementation Summary
 
-#### ToastContainer.astro (Primary/Recommended)
+#### ToastContainer.astro
 
 Client-side toast system using Nano Stores for global state management.
 
@@ -45,60 +44,28 @@ addToast('Changes saved!', 'success');
 - App-wide notifications from any client-side script
 - When state needs to persist across page navigations
 
-#### Toast.astro (Alternative/Declarative)
-
-Server-side renderable Astro component with local state management.
-
-**Usage:**
-
-```astro
-<Toast id="welcome-toast" message="Welcome!" type="info" duration={5000} />
-```
-
-**Features:**
-
-- Server-side rendering
-- Self-contained animation and dismiss logic
-- Component-based declarative usage
-- No external state dependency
-
-**Use Cases:**
-
-- Static notification messages rendered at page load
-- Declarative template usage
-- Server-rendered pages without client-side initialization
-- Testing and storybook demonstrations
-
 ## Consequences
 
 ### Positive
 
-- Both implementations serve valid but different use cases
+- Single, consistent toast implementation across the app
 - ToastContainer provides sophisticated features for production use
-- Toast.astro enables SSR and declarative patterns
-- No breaking changes required
 
 ### Negative
 
-- Potential confusion about which to use
-- Maintenance burden for two implementations
-- Animation config must be kept in sync (addressed by shared config)
+- Loss of the declarative, SSR-only toast variant
 
 ### Mitigations
 
-- Documentation clearly explains use cases
 - Shared animation config (`@/lib/animations/toast.ts`) ensures consistency
-- ToastContainer is documented as primary implementation in AGENTS.md
+- ToastContainer remains documented as the primary implementation in AGENTS.md
 
 ## Future Considerations
 
-- Consider integrating Toast.astro with toastStore for state consistency
-- Evaluate deprecating Toast.astro if usage is minimal
-- Monitor for state synchronization issues between implementations
+- Monitor toast UX and performance as usage grows
 
 ## References
 
-- Toast.astro: src/components/molecules/Toast.astro
 - ToastContainer.astro: src/components/molecules/ToastContainer.astro
 - toastStore.ts: src/lib/stores/toastStore.ts
 - AGENTS.md: Toast notification guidelines

@@ -17,6 +17,7 @@ export * from './asset-snapshot-items';
 export * from './exchange-rates';
 export * from './audit-logs';
 export * from './budgets';
+export * from './api-keys';
 
 // Export all relations (centralized to avoid circular imports)
 export * from './relations';

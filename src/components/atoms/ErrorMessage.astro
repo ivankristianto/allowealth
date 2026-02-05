@@ -9,6 +9,7 @@
  * @param {string} variant - Style variant: alert, banner, inline
  * @param {boolean} dismissible - Show dismiss button
  * @param {string} className - Additional CSS classes
+ * @param {string} id - Optional element ID
  */
 
 import { CircleX, X } from '@lucide/astro';
@@ -19,9 +20,17 @@ export interface Props {
   variant?: 'alert' | 'banner' | 'inline';
   dismissible?: boolean;
   className?: string;
+  id?: string;
 }
 
-const { title = '', message, variant = 'alert', dismissible = false, className = '' } = Astro.props;
+const {
+  title = '',
+  message,
+  variant = 'alert',
+  dismissible = false,
+  className = '',
+  id = '',
+} = Astro.props;
 
 const variantClasses: Record<string, string> = {
   alert: 'alert alert-error',
@@ -34,11 +43,11 @@ const hasTitle = title && variant !== 'inline';
 
 {
   variant === 'inline' ? (
-    <span class={variantClasses[variant] + ' ' + className} role="alert">
+    <span id={id || undefined} class={variantClasses[variant] + ' ' + className} role="alert">
       {message}
     </span>
   ) : (
-    <div class={variantClasses[variant] + ' ' + className} role="alert">
+    <div id={id || undefined} class={variantClasses[variant] + ' ' + className} role="alert">
       <CircleX size={24} class="shrink-0" aria-hidden="true" />
       <div>
         {hasTitle && <h3 class="font-bold">{title}</h3>}

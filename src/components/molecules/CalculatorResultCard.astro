@@ -44,7 +44,7 @@ const cardClass = [variantStyles[variant], className].filter(Boolean).join(' ');
 const numericValue = typeof value === 'string' ? parseFloat(value) : value;
 ---
 
-<div id={id} class={['p-6 rounded-3xl border', cardClass].join(' ')}>
+<div id={id} class={['p-6 rounded-card border', cardClass].join(' ')}>
   <p class="text-[10px] font-bold uppercase tracking-widest mb-2 opacity-80">{label}</p>
   <h4 class="text-2xl font-bold">
     <Currency

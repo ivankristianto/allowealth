@@ -94,10 +94,10 @@ const createAssetDeleteModal = (args: AssetDeleteModalArgs): HTMLElement => {
 
           <!-- Title and description -->
           <div class="flex-1">
-            <h2 class="text-xl font-bold tracking-tight text-base-content leading-none">
+            <h2 class="text-2xl font-bold tracking-tight text-primary leading-none">
               Delete Asset
             </h2>
-            <p class="text-base-content/60 text-sm mt-2 font-medium">
+            <p class="text-neutral text-sm mt-2 font-medium">
               Are you sure you want to delete this asset?
             </p>
           </div>

@@ -21,7 +21,7 @@ import { TrendingUp, TrendingDown, Wallet } from '@lucide/astro';
 import { formatCurrency } from '@/lib/formatting';
 
 // Relative imports - components
-import StatLabel from '../atoms/StatLabel.astro';
+import StatCard from '../atoms/StatCard.astro';
 import Skeleton from '../atoms/Skeleton.astro';
 
 export interface Props {
@@ -49,12 +49,8 @@ const netSavingsClass = netSavings >= 0 ? 'text-success' : 'text-error';
 
 // Card base classes - responsive padding and rounded corners
 const cardClasses = [
-  'card bg-base-100 border border-base-300 rounded-2xl sm:rounded-3xl shadow-sm relative overflow-hidden group',
+  'card bg-base-100 border border-base-300 rounded-2xl sm:rounded-card shadow-sm relative overflow-hidden group',
   'transition-all hover:shadow-md',
-].join(' ');
-
-const iconContainerClasses = [
-  'absolute top-0 right-0 p-2 sm:p-4 opacity-5 group-hover:opacity-10 transition-opacity',
 ].join(' ');
 ---
 
@@ -94,72 +90,43 @@ const iconContainerClasses = [
       data-summary-container
       data-currency={currency}
     >
-      <div class={cardClasses} data-summary-card="income">
-        <div class={iconContainerClasses}>
-          <TrendingUp size={48} class="stroke-current text-success" aria-hidden="true" />
-        </div>
-        <div class="card-body p-4 sm:p-6 lg:p-8">
-          <StatLabel>Monthly Income</StatLabel>
-          <h3
-            class="text-xl sm:text-2xl lg:text-3xl font-bold text-success mt-3 sm:mt-4 leading-none tracking-tight"
-            data-summary-income
-          >
-            {formatCurrency(monthlyIncome, currency)}
-          </h3>
-          {periodLabel && (
-            <p
-              class="text-[10px] font-bold text-success/60 mt-2 sm:mt-3 uppercase tracking-wider"
-              data-summary-period
-            >
-              {periodLabel}
-            </p>
-          )}
-        </div>
-      </div>
+      <StatCard
+        title="Monthly Income"
+        value={formatCurrency(monthlyIncome, currency)}
+        subtitle={periodLabel || undefined}
+        valueColor="text-success"
+        subtitleColor="text-success/60"
+        iconVariant="success"
+        className="transition-all hover:shadow-md"
+        data-summary-card="income"
+      >
+        <TrendingUp slot="icon" size={48} class="stroke-current" aria-hidden="true" />
+      </StatCard>
 
-      <div class={cardClasses} data-summary-card="expenses">
-        <div class={iconContainerClasses}>
-          <TrendingDown size={48} class="stroke-current text-error" aria-hidden="true" />
-        </div>
-        <div class="card-body p-4 sm:p-6 lg:p-8">
-          <StatLabel>Monthly Expenses</StatLabel>
-          <h3
-            class="text-xl sm:text-2xl lg:text-3xl font-bold text-error mt-3 sm:mt-4 leading-none tracking-tight"
-            data-summary-expense
-          >
-            {formatCurrency(monthlyExpenses, currency)}
-          </h3>
-          <p
-            class="text-[10px] font-bold text-error/60 mt-2 sm:mt-3 uppercase tracking-wider"
-            data-summary-count
-          >
-            {transactionCount} items
-          </p>
-        </div>
-      </div>
+      <StatCard
+        title="Monthly Expenses"
+        value={formatCurrency(monthlyExpenses, currency)}
+        subtitle={`${transactionCount} items`}
+        valueColor="text-error"
+        subtitleColor="text-error/60"
+        iconVariant="error"
+        className="transition-all hover:shadow-md"
+        data-summary-card="expenses"
+      >
+        <TrendingDown slot="icon" size={48} class="stroke-current" aria-hidden="true" />
+      </StatCard>
 
-      <div class={cardClasses} data-summary-card="savings">
-        <div class={iconContainerClasses}>
-          <Wallet size={48} class="stroke-current text-primary" aria-hidden="true" />
-        </div>
-        <div class="card-body p-4 sm:p-6 lg:p-8">
-          <StatLabel>Net Savings</StatLabel>
-          <h3
-            class={`text-xl sm:text-2xl lg:text-3xl font-bold mt-3 sm:mt-4 leading-none tracking-tight ${netSavingsClass}`}
-            data-summary-net
-          >
-            {formatCurrency(netSavings, currency)}
-          </h3>
-          {periodLabel && (
-            <p
-              class="text-[10px] font-bold text-base-content/40 mt-2 sm:mt-3 uppercase tracking-wider"
-              data-summary-period
-            >
-              {periodLabel}
-            </p>
-          )}
-        </div>
-      </div>
+      <StatCard
+        title="Net Savings"
+        value={formatCurrency(netSavings, currency)}
+        subtitle={periodLabel || undefined}
+        valueColor={netSavingsClass}
+        subtitleColor="text-base-content/40"
+        className="transition-all hover:shadow-md"
+        data-summary-card="savings"
+      >
+        <Wallet slot="icon" size={48} class="stroke-current text-primary" aria-hidden="true" />
+      </StatCard>
     </div>
   )
 }

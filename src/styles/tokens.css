@@ -442,3 +442,45 @@
   --sidebar-bg: var(--color-slate-900);
   --sidebar-border: var(--color-slate-800);
 }
+
+.token-badge-padding {
+  padding: var(--spacing-1_5) var(--spacing-4);
+}
+
+.token-text-xs {
+  font-size: var(--text-xs);
+  line-height: var(--leading-none);
+}
+
+.token-text-sm {
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+}
+
+.token-mt-6 {
+  margin-top: var(--spacing-6);
+}
+
+.token-card-padding-lg {
+  padding: var(--spacing-card-lg);
+}
+
+.token-padding-md {
+  padding: var(--spacing-5);
+}
+
+.token-padding-sm {
+  padding: var(--spacing-form);
+}
+
+.token-gap-lg {
+  gap: var(--spacing-5);
+}
+
+.token-gap-md {
+  gap: var(--spacing-form);
+}
+
+.token-stack-sm > * + * {
+  margin-top: var(--spacing-3);
+}

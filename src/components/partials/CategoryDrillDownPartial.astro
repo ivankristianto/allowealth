@@ -9,9 +9,13 @@
  */
 
 import CategoryIcon from '../atoms/CategoryIcon.astro';
+import Badge from '../atoms/Badge.astro';
+import EmptyState from '../atoms/EmptyState.astro';
+import ProgressBar from '../atoms/ProgressBar.astro';
 import TransactionCard from '../molecules/TransactionCard.astro';
 import { TrendingUp, TrendingDown, TriangleAlert } from '@lucide/astro';
 import { formatCurrency } from '@/lib/formatting';
+import { getBudgetStatus } from '@/lib/utils/budget';
 
 import type { TransactionOutput } from '@/lib/types/transaction';
 
@@ -30,44 +34,39 @@ const { categoryName, categoryIcon, categoryColor, spent, budgetLimit, period, t
   Astro.props;
 
 // Budget calculations
-const hasBudget = budgetLimit !== null && budgetLimit !== undefined;
-const percentage = hasBudget ? (spent / budgetLimit) * 100 : 0;
-const remaining = hasBudget ? budgetLimit - spent : 0;
-const isOverBudget = percentage > 100;
+const hasBudget = typeof budgetLimit === 'number' && budgetLimit > 0;
+const resolvedBudgetLimit = hasBudget ? budgetLimit : 0;
+const percentage = hasBudget ? (spent / resolvedBudgetLimit) * 100 : 0;
+const remaining = hasBudget ? resolvedBudgetLimit - spent : 0;
+const budgetStatus = hasBudget ? getBudgetStatus(percentage) : null;
 
 // Badge styling
-let badgeClasses = '';
+let badgeVariant: 'neutral' | 'optimal' | 'review' | 'exceeded' = 'neutral';
+let badgeClassName =
+  'inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest';
 let badgeText = '';
 let showAlertIcon = false;
 let showTrendingUpIcon = false;
 let showTrendingDownIcon = false;
 
 if (!hasBudget) {
-  badgeClasses =
-    'flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest bg-base-300 text-base-content/60';
+  badgeVariant = 'neutral';
+  badgeClassName = `${badgeClassName} bg-base-300 text-base-content/60`;
   badgeText = 'NOT SET';
-} else if (isOverBudget) {
-  badgeClasses =
-    'flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest bg-error/10 text-error';
-  badgeText = `OVER BY ${percentage.toFixed(1)}%`;
-  showAlertIcon = true;
-} else if (percentage >= 80) {
-  badgeClasses =
-    'flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest bg-warning/10 text-warning';
-  badgeText = `${percentage.toFixed(1)}% USED`;
-  showTrendingUpIcon = true;
-} else {
-  badgeClasses =
-    'flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest bg-success/10 text-success';
-  badgeText = `${percentage.toFixed(1)}% USED`;
-  showTrendingDownIcon = true;
+} else if (budgetStatus) {
+  badgeVariant = budgetStatus.badgeVariant;
+  if (budgetStatus.status === 'danger') {
+    badgeText = `OVER BY ${percentage.toFixed(1)}%`;
+    showAlertIcon = true;
+  } else {
+    badgeText = `${percentage.toFixed(1)}% USED`;
+    showTrendingUpIcon = budgetStatus.status === 'warning';
+    showTrendingDownIcon = budgetStatus.status === 'ok';
+  }
 }
 
 // Progress bar
-const progressPercent = Math.min(percentage, 100);
-const progressBarClasses = `h-full transition-all duration-300 ${
-  isOverBudget ? 'bg-error' : percentage >= 80 ? 'bg-warning' : 'bg-success'
-}`;
+const progressStatus: 'ok' | 'warning' | 'danger' = budgetStatus?.status ?? 'ok';
 ---
 
 <div data-category-drilldown-content>
@@ -89,21 +88,23 @@ const progressBarClasses = `h-full transition-all duration-300 ${
       <p class="text-2xl md:text-3xl font-bold text-base-content tracking-tight">
         {formatCurrency(spent, 'IDR')}
       </p>
-      <div class={badgeClasses}>
-        {showAlertIcon && <TriangleAlert size={12} class="stroke-current" aria-hidden="true" />}
-        {showTrendingUpIcon && <TrendingUp size={12} class="stroke-current" aria-hidden="true" />}
-        {
-          showTrendingDownIcon && (
-            <TrendingDown size={12} class="stroke-current" aria-hidden="true" />
-          )
-        }
-        <span>{badgeText}</span>
+      <div class="mt-2">
+        <Badge variant={badgeVariant} size="sm" className={badgeClassName}>
+          {showAlertIcon && <TriangleAlert size={12} class="stroke-current" aria-hidden="true" />}
+          {showTrendingUpIcon && <TrendingUp size={12} class="stroke-current" aria-hidden="true" />}
+          {
+            showTrendingDownIcon && (
+              <TrendingDown size={12} class="stroke-current" aria-hidden="true" />
+            )
+          }
+          <span>{badgeText}</span>
+        </Badge>
       </div>
     </div>
   </div>
 
   {/* Budget Progress Section */}
-  <div class="bg-base-200/50 rounded-3xl p-6 border border-base-300/50">
+  <div class="bg-base-200/50 rounded-card p-6 border border-base-300/50">
     <div class="flex justify-between items-center mb-4">
       <h3 class="text-sm font-bold text-base-content/60 uppercase tracking-widest">
         Budget Overview
@@ -117,7 +118,9 @@ const progressBarClasses = `h-full transition-all duration-300 ${
       </div>
       <div class="flex justify-between items-center text-sm">
         <span class="text-base-content/60">Budget Limit</span>
-        <span class="font-bold">{hasBudget ? formatCurrency(budgetLimit, 'IDR') : 'Not Set'}</span>
+        <span class="font-bold">
+          {hasBudget ? formatCurrency(resolvedBudgetLimit, 'IDR') : 'Not Set'}
+        </span>
       </div>
       <div class="flex justify-between items-center text-sm">
         <span class="text-base-content/60">Remaining</span>
@@ -129,22 +132,17 @@ const progressBarClasses = `h-full transition-all duration-300 ${
       </div>
 
       {/* Progress Bar */}
-      <div class="w-full bg-base-300 rounded-full h-2 overflow-hidden">
-        <div
-          class={progressBarClasses}
-          style={`width: ${progressPercent}%`}
-          role="progressbar"
-          aria-valuenow={percentage.toFixed(1)}
-          aria-valuemin="0"
-          aria-valuemax="100"
-        >
-        </div>
-      </div>
+      <ProgressBar
+        value={percentage}
+        status={progressStatus}
+        size="sm"
+        ariaLabel={`Budget progress for ${categoryName}`}
+      />
     </div>
   </div>
 
   {/* Transactions Section */}
-  <div class="bg-base-200/50 rounded-3xl p-6 border border-base-300/50">
+  <div class="bg-base-200/50 rounded-card p-6 border border-base-300/50">
     <div class="flex justify-between items-center mb-6">
       <h3 class="text-sm font-bold text-base-content/60 uppercase tracking-widest">
         Transactions (<span>{transactions.length}</span>)
@@ -153,12 +151,14 @@ const progressBarClasses = `h-full transition-all duration-300 ${
 
     {
       transactions.length === 0 ? (
-        <div
-          class="flex flex-col items-center justify-center py-8"
-          role="status"
-          aria-live="polite"
-        >
-          <p class="text-base-content/50 text-sm">No transactions in this period</p>
+        <div role="status" aria-live="polite">
+          <EmptyState
+            title="No transactions"
+            message="No transactions in this period."
+            iconName="info"
+            variant="centered"
+            className="py-0"
+          />
         </div>
       ) : (
         <div class="space-y-3">

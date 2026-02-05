@@ -12,7 +12,7 @@
 import { db, getDatabaseConfig } from './index';
 import { nanoid } from 'nanoid';
 import { hashPassword } from '@/lib/auth/password';
-import { sql } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import {
   workspaces,
   workspaceMeta,
@@ -1107,6 +1107,7 @@ async function seedAssets(
       type: asset.type,
       category_id: categoryId,
       balance: amt(asset.balance),
+      initial_balance: amt(asset.balance),
       currency: asset.currency,
       is_cash_account: asset.is_cash_account,
       credit_limit: 'credit_limit' in asset ? amt(asset.credit_limit) : null,
@@ -1129,6 +1130,7 @@ async function seedAssets(
       type: asset.type,
       category_id: categoryId,
       balance: amt(asset.balance),
+      initial_balance: amt(asset.balance),
       currency: asset.currency,
       is_cash_account: false, // Investment assets are not cash accounts
       last_updated: now,
@@ -1146,34 +1148,80 @@ async function seedAssets(
 const ALL_ASSETS = [...PAYMENT_ASSETS, ...ASSET_TYPES];
 
 /**
- * Seed asset history (weekly updates for 12 weeks)
+ * Seed asset history (monthly entries for 6 months, plus biweekly for recent 2 months)
+ * Generates enough data so historical month navigation shows realistic values.
  */
 async function seedAssetHistory(assetMap: Map<string, string>): Promise<void> {
   console.log('📈 Seeding asset history...');
 
   let historyCount = 0;
+  const now = new Date();
 
   for (const [assetName, assetId] of assetMap.entries()) {
     const assetConfig = ALL_ASSETS.find((a) => a.name === assetName);
-    if (!assetConfig) continue; // Skip if asset not found
+    if (!assetConfig) continue;
 
-    // Generate weekly history for 12 weeks
-    for (let week = 0; week < 12; week++) {
-      const recordedAt = daysAgo(week * 7);
-      const baseBalance = parseFloat(assetConfig.balance.toString());
+    const baseBalance = parseFloat(assetConfig.balance.toString());
 
-      // Add some variation to the balance
-      const variation = (Math.random() - 0.5) * baseBalance * 0.1; // ±5% variation
-      const balance = amt(baseBalance + variation);
+    // Generate entries for each of the past 6 months
+    for (let monthsAgo = 6; monthsAgo >= 0; monthsAgo--) {
+      const monthDate = new Date(now.getFullYear(), now.getMonth() - monthsAgo, 1);
 
-      await db.insert(assetHistory).values({
-        id: nanoid(),
-        asset_id: assetId,
-        balance,
-        notes: `Weekly balance update - ${new Date(recordedAt).toLocaleDateString()}`,
-        recorded_at: recordedAt,
-      });
-      historyCount++;
+      // Simulate gradual growth/decline over time (older = further from current)
+      const growthFactor = 1 - monthsAgo * 0.03; // ~3% growth per month
+      const monthBaseBalance = baseBalance * growthFactor;
+
+      if (monthsAgo <= 2) {
+        // Recent months: biweekly entries (1st and 15th)
+        for (const day of [1, 15]) {
+          const recordedAt = new Date(
+            monthDate.getFullYear(),
+            monthDate.getMonth(),
+            day,
+            SEED_TIME_HOUR,
+            0,
+            0,
+            0
+          );
+          if (recordedAt > now) continue;
+
+          const variation = (Math.random() - 0.5) * monthBaseBalance * 0.04; // ±2% variation
+          const balance = amt(monthBaseBalance + variation);
+
+          await db.insert(assetHistory).values({
+            id: nanoid(),
+            asset_id: assetId,
+            balance,
+            notes: `Balance update - ${recordedAt.toLocaleDateString()}`,
+            recorded_at: recordedAt,
+          });
+          historyCount++;
+        }
+      } else {
+        // Older months: one entry mid-month
+        const recordedAt = new Date(
+          monthDate.getFullYear(),
+          monthDate.getMonth(),
+          15,
+          SEED_TIME_HOUR,
+          0,
+          0,
+          0
+        );
+        if (recordedAt > now) continue;
+
+        const variation = (Math.random() - 0.5) * monthBaseBalance * 0.06; // ±3% variation
+        const balance = amt(monthBaseBalance + variation);
+
+        await db.insert(assetHistory).values({
+          id: nanoid(),
+          asset_id: assetId,
+          balance,
+          notes: `Monthly balance update - ${recordedAt.toLocaleDateString()}`,
+          recorded_at: recordedAt,
+        });
+        historyCount++;
+      }
     }
   }
 
@@ -1311,6 +1359,46 @@ async function seedExchangeRates(): Promise<void> {
 }
 
 // ============================================================================
+// BACKFILL FUNCTIONS
+// ============================================================================
+
+/**
+ * Backfill initial_balance for existing assets that don't have it set.
+ * Uses the earliest asset_history entry as the initial balance.
+ * Falls back to current balance if no history exists.
+ */
+async function backfillInitialBalance(): Promise<void> {
+  console.log('🔄 Backfilling initial_balance for existing assets...');
+
+  const assetsWithoutInitial = await db
+    .select()
+    .from(assets)
+    .where(sql`${assets.initial_balance} IS NULL AND ${assets.deleted_at} IS NULL`);
+
+  if (assetsWithoutInitial.length === 0) {
+    console.log('✓ No assets need backfilling');
+    return;
+  }
+
+  let updated = 0;
+  for (const asset of assetsWithoutInitial) {
+    // Find the earliest history entry
+    const firstHistory = await db.query.assetHistory.findFirst({
+      where: eq(assetHistory.asset_id, asset.id),
+      orderBy: (h: any, { asc }: any) => [asc(h.recorded_at)],
+    });
+
+    const initialBalance = firstHistory?.balance || asset.balance;
+
+    await db.update(assets).set({ initial_balance: initialBalance }).where(eq(assets.id, asset.id));
+
+    updated++;
+  }
+
+  console.log(`✓ Backfilled initial_balance for ${updated} assets`);
+}
+
+// ============================================================================
 // MAIN SEED FUNCTION
 // ============================================================================
 
@@ -1346,6 +1434,10 @@ async function seed() {
     await seedAssetHistory(assetMap);
     await seedAssetUpdateReminders(workspaceId, userId, assetMap);
     await seedAssetSnapshots(workspaceId, userId, assetMap);
+
+    // Backfill initial_balance for any assets that don't have it
+    await backfillInitialBalance();
+
     await seedExchangeRates();
 
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);

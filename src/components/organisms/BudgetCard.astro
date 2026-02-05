@@ -51,9 +51,11 @@ import {
 
 // Internal aliases - lib
 import { formatCurrency } from '@/lib/formatting';
+import { getBudgetStatus } from '@/lib/utils/budget';
 import { getIconForCategory } from '@/lib/utils/categoryIcons';
 
 // Internal aliases - components
+import Badge from '@components/atoms/Badge.astro';
 import IconBadge from '@components/atoms/IconBadge.astro';
 import ProgressBar from '@components/atoms/ProgressBar.astro';
 import StatLabel from '@components/atoms/StatLabel.astro';
@@ -82,7 +84,6 @@ const {
   spent,
   budget,
   percentageUsed,
-  status = 'ok',
   currency = 'IDR',
   loading = false,
   className = '',
@@ -91,30 +92,9 @@ const {
 // Calculate remaining amount
 const remaining = budget - spent;
 
-// Map status to ProgressBar status and badge colors
-const progressStatus = status === 'exceeded' ? 'danger' : status === 'warning' ? 'warning' : 'ok';
-
-// Status badge styling based on percentage
-const getStatusBadgeClasses = (statusVal: 'ok' | 'warning' | 'exceeded'): string => {
-  const statusMap: Record<string, string> = {
-    ok: 'bg-success/10 text-success',
-    warning: 'bg-warning/10 text-warning',
-    exceeded: 'bg-error/10 text-error',
-  };
-  return statusMap[statusVal] || statusMap.ok;
-};
-
-// Icon badge variant based on status
-const getIconBadgeVariant = (
-  statusVal: 'ok' | 'warning' | 'exceeded'
-): 'success' | 'warning' | 'error' | 'neutral' => {
-  const variantMap: Record<string, 'success' | 'warning' | 'error' | 'neutral'> = {
-    ok: 'neutral',
-    warning: 'neutral',
-    exceeded: 'neutral',
-  };
-  return variantMap[statusVal] || 'neutral';
-};
+const budgetStatus = getBudgetStatus(percentageUsed);
+const progressStatus = budgetStatus.status;
+const iconBadgeVariant: 'success' | 'warning' | 'error' | 'neutral' = 'neutral';
 
 // Get the icon component using the shared utility
 // Resolve icon name from category name if not explicitly provided
@@ -241,7 +221,7 @@ const cardClasses = [
       <div class="flex justify-between items-start mb-3 md:mb-6 lg:mb-8">
         <div class="flex items-center gap-2 md:gap-3 lg:gap-4">
           <IconBadge
-            variant={getIconBadgeVariant(status)}
+            variant={iconBadgeVariant}
             size="sm"
             customColor={color}
             className="group-hover:scale-110 transition-transform md:!p-4"
@@ -254,11 +234,17 @@ const cardClasses = [
               {categoryName}
             </h3>
             <span
-              class={`inline-block mt-1 md:mt-2 px-2 py-0.5 rounded-md text-[9px] md:text-[10px] font-bold uppercase tracking-wider ${getStatusBadgeClasses(status)}`}
+              class="inline-block mt-1 md:mt-2"
               data-status-badge
               data-testid="budget-percentage"
             >
-              {Math.round(percentageUsed)}% Used
+              <Badge
+                variant={budgetStatus.badgeVariant}
+                size="sm"
+                className="text-[9px] md:text-[10px] uppercase tracking-wider"
+              >
+                {Math.round(percentageUsed)}% Used
+              </Badge>
             </span>
           </div>
         </div>
@@ -312,10 +298,10 @@ const cardClasses = [
         </div>
 
         {/* Footer: Only show warning when over budget or nearly exceeded */}
-        {(status === 'exceeded' || status === 'warning') && (
+        {(budgetStatus.status === 'danger' || budgetStatus.status === 'warning') && (
           <div
             class={`mt-auto p-2.5 md:p-4 rounded-xl md:rounded-2xl border ${
-              status === 'exceeded'
+              budgetStatus.status === 'danger'
                 ? 'bg-error/5 border-error/10 text-error'
                 : 'bg-warning/5 border-warning/10 text-warning'
             }`}
@@ -323,13 +309,13 @@ const cardClasses = [
           >
             <div class="flex justify-between items-center text-[10px] md:text-xs font-bold leading-none">
               <span class="uppercase tracking-widest" data-footer-label>
-                {status === 'exceeded' ? 'Over budget' : 'Almost exceeded'}
+                {budgetStatus.status === 'danger' ? 'Over budget' : 'Almost exceeded'}
               </span>
               <span
-                class={status === 'exceeded' ? 'text-error' : 'text-warning'}
+                class={budgetStatus.status === 'danger' ? 'text-error' : 'text-warning'}
                 data-footer-amount
               >
-                {status === 'exceeded'
+                {budgetStatus.status === 'danger'
                   ? formatCurrency(Math.abs(remaining), currency)
                   : `${Math.round(percentageUsed)}%`}
               </span>

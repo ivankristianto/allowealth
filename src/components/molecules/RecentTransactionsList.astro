@@ -1,0 +1,104 @@
+---
+/**
+ * Recent Transactions List Component (Organism)
+ *
+ * Displays the last 10 transactions with date, category, amount,
+ * and account. Shows income in green and expenses in red.
+ *
+ * @param {Array} transactions - Array of recent transactions
+ * @param {boolean} loading - Show loading skeleton
+ * @param {string} viewAllUrl - URL for "View All" link
+ * @param {string} className - Additional CSS classes
+ */
+
+import Card from '../atoms/Card.astro';
+import EmptyState from '../atoms/EmptyState.astro';
+import Skeleton from '../atoms/Skeleton.astro';
+import TransactionCard from '../molecules/TransactionCard.astro';
+import type { TransactionOutput } from '@/lib/types/transaction';
+
+export interface Props {
+  transactions?: TransactionOutput[];
+  loading?: boolean;
+  viewAllUrl?: string;
+  className?: string;
+}
+
+const {
+  transactions = [],
+  loading = false,
+  viewAllUrl = '/transactions',
+  className = '',
+} = Astro.props;
+
+const maxTransactions = 10;
+const displayTransactions = transactions.slice(0, maxTransactions);
+---
+
+<div
+  class={`space-y-5 ${className}`}
+  data-recent-transactions-list
+  data-testid="recent-transactions"
+>
+  <div class="flex items-center justify-between px-2">
+    <h2 class="text-lg font-bold tracking-tight leading-none">Recent activity</h2>
+    {
+      !loading && transactions.length > 0 && (
+        <a
+          href={viewAllUrl}
+          class="btn btn-outline btn-sm text-accent border-accent/20 hover:bg-accent/5 rounded-xl tracking-wide"
+          aria-label="View all transactions"
+        >
+          View all
+        </a>
+      )
+    }
+  </div>
+
+  <Card rounded="card-lg" padding="sm" className="p-0 overflow-hidden shadow-sm">
+    {
+      loading ? (
+        // Loading skeleton
+        <div
+          class="divide-y divide-base-200"
+          role="status"
+          aria-live="polite"
+          aria-label="Loading recent transactions"
+        >
+          {Array.from({ length: 10 }).map(() => (
+            <div class="flex items-center gap-5 p-5">
+              <Skeleton variant="rectangular" width="48px" height="48px" className="rounded-2xl" />
+              <div class="flex-1 space-y-2">
+                <Skeleton variant="rectangular" width="75%" height="16px" />
+                <Skeleton variant="rectangular" width="50%" height="12px" />
+              </div>
+              <div class="w-24 space-y-2">
+                <Skeleton variant="rectangular" width="100%" height="16px" />
+                <Skeleton variant="rectangular" width="100%" height="12px" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : displayTransactions.length === 0 ? (
+        // Empty state
+        <EmptyState
+          title="No transactions yet"
+          message="Start tracking by adding your first expense or income transaction."
+          iconName="plus"
+          actionLabel="Add Transaction"
+          actionHref="/transactions/add"
+          variant="compact"
+        />
+      ) : (
+        // Transactions list using unified TransactionCard component
+        <ul class="divide-y divide-base-200" role="list" aria-label="Recent transactions">
+          {displayTransactions.map((transaction) => (
+            <li>
+              <TransactionCard transaction={transaction} showActions={false} />
+            </li>
+          ))}
+        </ul>
+      )
+    }
+  </Card>
+</div>

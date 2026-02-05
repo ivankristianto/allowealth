@@ -1,0 +1,73 @@
+---
+/**
+ * FormField Component
+ *
+ * Wrapper for consistent form control layout: label + input + help/error.
+ *
+ * @param {string} label - Field label
+ * @param {string} htmlFor - ID of the form element this label is for
+ * @param {boolean} required - Show required indicator
+ * @param {string} helpText - Optional help text displayed below input
+ * @param {boolean} error - Show error state
+ * @param {string} errorMessage - Error message to display
+ * @param {string} errorId - ID for dynamic error message container
+ * @param {string} className - Additional CSS classes
+ */
+
+import Label from '../atoms/Label.astro';
+import ErrorMessage from '../atoms/ErrorMessage.astro';
+
+export interface Props {
+  label: string;
+  htmlFor: string;
+  required?: boolean;
+  helpText?: string;
+  error?: boolean;
+  errorMessage?: string;
+  errorId?: string;
+  className?: string;
+}
+
+const {
+  label,
+  htmlFor,
+  required = false,
+  helpText = '',
+  error = false,
+  errorMessage = '',
+  errorId = '',
+  className = '',
+} = Astro.props;
+
+const shouldShowError = error && !!errorMessage;
+const hasLabelSlot = Astro.slots.has('label');
+---
+
+<div class:list={['form-control', className]}>
+  {
+    hasLabelSlot ? (
+      <slot name="label" />
+    ) : (
+      <Label htmlFor={htmlFor} required={required}>
+        {label}
+      </Label>
+    )
+  }
+  <slot />
+  {helpText && <p class="text-xs text-base-content/50 mt-1">{helpText}</p>}
+  {
+    shouldShowError && (
+      <ErrorMessage
+        id={errorId || undefined}
+        message={errorMessage}
+        variant="inline"
+        className="mt-1"
+      />
+    )
+  }
+  {
+    errorId && !shouldShowError && (
+      <ErrorMessage id={errorId} message="" variant="inline" className="hidden mt-1" />
+    )
+  }
+</div>

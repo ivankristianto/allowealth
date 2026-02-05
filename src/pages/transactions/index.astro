@@ -9,11 +9,13 @@
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import TransactionCard from '@/components/molecules/TransactionCard.astro';
 import TransactionSummaryCards from '@/components/organisms/TransactionSummaryCards.astro';
-import TransactionActionsBar from '@/components/organisms/TransactionActionsBar.astro';
+import TransactionActionsBar from '@/components/molecules/TransactionActionsBar.astro';
 import TransactionFiltersBar from '@/components/organisms/TransactionFiltersBar.astro';
-import DeleteConfirmationModal from '@/components/organisms/DeleteConfirmationModal.astro';
+import ConfirmationModal from '@/components/molecules/ConfirmationModal.astro';
+import Skeleton from '@/components/atoms/Skeleton.astro';
 import { Receipt, RotateCcw } from '@lucide/astro';
 import type { TransactionOutput } from '@/lib/types/transaction';
+import { tokenClasses } from '@/lib/tokens';
 import { transactionService, categoryService } from '@/services';
 import {
   parseMonthKey,
@@ -129,8 +131,15 @@ const allUserTransactions = await transactionService.findAll(
 const availableMonthsWithLabels = extractAvailableMonths(allUserTransactions);
 const availableMonths = availableMonthsWithLabels.map((m) => m.key);
 
-// Current month key - prefer latest available month, fallback to today's month
-const currentMonthKey = availableMonths[availableMonths.length - 1] || todayMonthKey;
+// Current month key - always use today's month as the default
+const currentMonthKey = todayMonthKey;
+
+// Ensure current month is always in the available months list (even if no data)
+if (!availableMonthsWithLabels.some((m) => m.key === todayMonthKey)) {
+  const todayLabel = formatMonthKey(todayMonthKey);
+  availableMonthsWithLabels.push({ key: todayMonthKey, label: todayLabel });
+  availableMonths.push(todayMonthKey);
+}
 
 // Calculate summary from ALL transactions in the selected month (not filtered)
 // Summary only changes when month changes, not when filters change
@@ -187,7 +196,7 @@ const ssrData = {
     search: searchValue,
     category_id: categoryId,
     category_ids: categoryIds,
-    month: selectedMonth || currentMonthKey,
+    month: effectiveMonth,
     page,
   },
   currentMonth: currentMonthKey,
@@ -224,11 +233,11 @@ const ssrData = {
     >
       {
         Array.from({ length: 3 }).map(() => (
-          <div class="card bg-base-100 border border-base-300 rounded-3xl shadow-sm relative overflow-hidden">
-            <div class="card-body p-8">
-              <div class="h-3 bg-base-300 rounded w-1/2 mb-4 animate-pulse" />
-              <div class="h-9 bg-base-300 rounded w-4/5 mb-3 animate-pulse" />
-              <div class="h-3 bg-base-300 rounded w-2/5 animate-pulse" />
+          <div class="card bg-base-100 border border-base-300 rounded-card shadow-sm relative overflow-hidden">
+            <div class:list={['card-body', tokenClasses.cardPaddingLg, tokenClasses.stackSm]}>
+              <Skeleton variant="text" width="50%" />
+              <Skeleton variant="heading" width="80%" />
+              <Skeleton variant="text" width="40%" />
             </div>
           </div>
         ))
@@ -257,28 +266,28 @@ const ssrData = {
       <!-- Transaction List Card -->
       <div
         id="transaction-list-card"
-        class="card bg-base-100 border border-base-300 rounded-3xl shadow-sm overflow-hidden"
+        class="card bg-base-100 border border-base-300 rounded-card shadow-sm overflow-hidden"
       >
         <!-- Loading Skeleton (hidden by default, shown during fetch) -->
         <div id="transaction-list-skeleton" class="divide-y divide-base-200 hidden">
           {
             Array.from({ length: 5 }).map(() => (
-              <div class="flex items-center gap-5 p-5 animate-pulse">
+              <div class:list={['flex items-center', tokenClasses.gapLg, tokenClasses.paddingMd]}>
                 <div class="shrink-0 w-24">
-                  <div class="h-4 bg-base-200 rounded w-20" />
+                  <Skeleton width="80px" height="16px" />
                 </div>
-                <div class="flex-1 flex items-center gap-4">
-                  <div class="w-10 h-10 bg-base-200 rounded-2xl" />
+                <div class:list={['flex-1 flex items-center', tokenClasses.gapMd]}>
+                  <Skeleton variant="circular" width="40px" height="40px" />
                   <div class="flex-1">
-                    <div class="h-4 bg-base-200 rounded w-32 mb-2" />
-                    <div class="h-3 bg-base-200 rounded w-20" />
+                    <Skeleton width="128px" height="16px" className="mb-2" />
+                    <Skeleton width="80px" height="12px" />
                   </div>
                 </div>
                 <div class="shrink-0 hidden sm:block">
-                  <div class="h-3 bg-base-200 rounded w-16" />
+                  <Skeleton width="64px" height="12px" />
                 </div>
                 <div class="shrink-0 w-28">
-                  <div class="h-5 bg-base-200 rounded w-24 ml-auto" />
+                  <Skeleton width="96px" height="20px" className="ml-auto" />
                 </div>
               </div>
             ))
@@ -319,7 +328,10 @@ const ssrData = {
           data-page-size={pageSize}
           data-current-page={page}
         >
-          <div class="hidden sm:block text-sm text-base-content/60" data-pagination-info>
+          <div
+            class:list={['hidden sm:block text-base-content/60', tokenClasses.textSm]}
+            data-pagination-info
+          >
             Showing {(page - 1) * pageSize + 1} to {Math.min(page * pageSize, total)} of {total}{
               ' '
             }
@@ -335,7 +347,10 @@ const ssrData = {
               Previous
             </button>
 
-            <span class="btn btn-sm btn-ghost text-sm" data-pagination-current>
+            <span
+              class:list={['btn btn-sm btn-ghost', tokenClasses.textSm]}
+              data-pagination-current
+            >
               {page} / {Math.ceil(total / pageSize)}
             </span>
 
@@ -354,13 +369,25 @@ const ssrData = {
   </div>
 
   <!-- Delete Confirmation Modal -->
-  <DeleteConfirmationModal
+  <ConfirmationModal
     id="delete-dialog"
     title="Delete Transaction"
     description="Are you sure you want to delete this transaction? This action cannot be undone."
     confirmLabel="Delete Transaction"
+    confirmVariant="error"
+    confirmLoadingLabel="Deleting..."
     cancelLabel="Cancel"
-  />
+    iconVariant="error"
+    confirmTestId="confirm-delete-btn"
+  >
+    <div
+      slot="details"
+      id="delete-dialog-details"
+      class:list={['bg-base-200 rounded-2xl hidden', tokenClasses.paddingSm, tokenClasses.textSm]}
+      data-confirm-details
+    >
+    </div>
+  </ConfirmationModal>
 </ProtectedLayout>
 
 <script>

@@ -15,6 +15,7 @@
  */
 
 import Modal from '../molecules/Modal.astro';
+import FormField from '../molecules/FormField.astro';
 import { ChartNoAxesCombined } from '@lucide/astro';
 import { getMonthName } from '@/lib/utils/date';
 
@@ -45,7 +46,7 @@ const monthName = getMonthName(month);
 ---
 
 <div data-set-budget-modal-container data-id={id} data-testid="set-new-budget-modal">
-  <Modal id={id} title="" size="md" closable={false} className="[&_.modal-box]:rounded-3xl">
+  <Modal id={id} title="" size="md" closable={false} className="[&_.modal-box]:rounded-card">
     <div class="space-y-6">
       {/* Header with icon */}
       <div class="flex items-center gap-4">
@@ -68,13 +69,7 @@ const monthName = getMonthName(month);
       {/* Form */}
       <form id={`${id}-form`} class="space-y-6">
         {/* Category Select */}
-        <div class="space-y-2">
-          <label
-            for={`${id}-category`}
-            class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest ml-1"
-          >
-            Category
-          </label>
+        <FormField label="Category" htmlFor={`${id}-category`} required>
           <select
             id={`${id}-category`}
             name="category_id"
@@ -106,16 +101,10 @@ const monthName = getMonthName(month);
               >This category already has a budget set. Saving will update the existing budget.</span
             >
           </div>
-        </div>
+        </FormField>
 
         {/* Budget Amount */}
-        <div class="space-y-2">
-          <label
-            for={`${id}-amount`}
-            class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest ml-1"
-          >
-            Monthly Limit ({currency})
-          </label>
+        <FormField label={`Monthly Limit (${currency})`} htmlFor={`${id}-amount`} required>
           <input
             id={`${id}-amount`}
             name="budget_amount"
@@ -126,7 +115,7 @@ const monthName = getMonthName(month);
             placeholder={currency === 'IDR' ? 'e.g. 5,000,000' : 'e.g. 500'}
             class="input input-lg w-full bg-base-200 border border-base-300 rounded-2xl font-bold text-base-content focus:ring-2 focus:ring-accent focus:outline-none focus:border-accent placeholder:text-base-content/30 placeholder:font-normal"
           />
-        </div>
+        </FormField>
 
         {/* Hidden fields for currency, month, year */}
         <input type="hidden" name="currency" value={currency} />

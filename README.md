@@ -242,6 +242,39 @@ Settings can be configured during workspace creation or modified via the CLI com
 - Permission controls for different operations
 - Member removal and role changes
 
+## MCP Server (AI Assistant Integration)
+
+Allowealth includes an MCP (Model Context Protocol) server that lets AI assistants like Claude Desktop, Claude Code, and other MCP-compatible clients interact with your financial data — log expenses, check budgets, and query transactions via natural language.
+
+### Transport Options
+
+| Transport | Use Case                              | Setup                             |
+| --------- | ------------------------------------- | --------------------------------- |
+| **stdio** | Local MCP clients on the same machine | Runs as a Bun subprocess          |
+| **HTTP**  | Remote access from deployed app       | `POST /api/mcp` with Bearer token |
+
+### Quick Start
+
+```bash
+# 1. Create an API key
+bun run cli:create-api-key -- \
+  --workspace-id <id> --user-id <id> --name "Claude Desktop"
+
+# 2. Configure your MCP client (stdio example for Claude Desktop)
+# Add to ~/Library/Application Support/Claude/claude_desktop_config.json:
+{
+  "mcpServers": {
+    "allowealth": {
+      "command": "bun",
+      "args": ["run", "/path/to/allowealth/mcp-server/src/index.ts"],
+      "env": { "ALLOWEALTH_API_KEY": "aw_..." }
+    }
+  }
+}
+```
+
+For HTTP transport setup and full documentation, see [`mcp-server/README.md`](mcp-server/README.md).
+
 ## E2E Testing
 
 End-to-end tests use Playwright with a Page Object Model pattern.

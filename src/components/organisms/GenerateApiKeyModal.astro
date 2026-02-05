@@ -1,0 +1,319 @@
+---
+/**
+ * Generate API Key Modal
+ *
+ * Two-step modal following SetNewBudgetModal layout pattern:
+ * Step 1: Form with name (required) and optional expiration date
+ * Step 2: Shows the generated plain key with copy button and warning
+ *
+ * @param {string} id - Modal ID
+ */
+
+import Modal from '../molecules/Modal.astro';
+import { Cpu, Copy, Check, TriangleAlert } from '@lucide/astro';
+
+export interface Props {
+  id?: string;
+}
+
+const { id = 'generate-api-key-modal' } = Astro.props;
+---
+
+<div data-generate-key-modal-container data-id={id}>
+  <Modal id={id} title="" size="md" closable={false} className="[&_.modal-box]:rounded-3xl">
+    <div class="space-y-6">
+      {/* Header with icon */}
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 rounded-2xl flex items-center justify-center bg-info/10 text-info">
+          <Cpu size={24} class="stroke-current" aria-hidden="true" />
+        </div>
+        <div>
+          <h2 class="text-xl font-bold tracking-tight text-base-content leading-none">
+            Generate API Key
+          </h2>
+          <p class="text-base-content/60 text-sm mt-2 font-medium">
+            Create a key to connect AI assistants.
+          </p>
+        </div>
+      </div>
+
+      {/* Step 1: Form */}
+      <div data-step="form">
+        <form id={`${id}-form`} data-generate-key-form class="space-y-6">
+          <div class="space-y-2">
+            <label
+              for={`${id}-name`}
+              class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest ml-1"
+            >
+              Name <span class="text-error">*</span>
+            </label>
+            <input
+              id={`${id}-name`}
+              name="name"
+              type="text"
+              required
+              placeholder='e.g. "Claude Desktop"'
+              class="input input-lg w-full bg-base-200 border border-base-300 rounded-2xl font-bold text-base-content focus:ring-2 focus:ring-accent focus:outline-none focus:border-accent placeholder:text-base-content/30 placeholder:font-normal"
+            />
+          </div>
+
+          <div class="space-y-2">
+            <label
+              for={`${id}-expires`}
+              class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest ml-1"
+            >
+              Expiration
+            </label>
+            <input
+              type="date"
+              id={`${id}-expires`}
+              name="expires_at"
+              class="input input-lg w-full bg-base-200 border border-base-300 rounded-2xl font-bold text-base-content focus:ring-2 focus:ring-accent focus:outline-none focus:border-accent"
+            />
+            <p class="text-xs text-base-content/40 ml-1">Leave empty for no expiration.</p>
+          </div>
+
+          {/* Error message */}
+          <div
+            data-form-error
+            class="hidden alert alert-error text-sm rounded-xl"
+            role="alert"
+            aria-live="polite"
+          >
+          </div>
+
+          {/* Actions */}
+          <div class="flex items-center gap-4 pt-4">
+            <button
+              type="button"
+              class="flex-1 py-4 text-base-content/60 font-bold hover:bg-base-200 rounded-2xl transition-colors"
+              data-cancel-generate
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              class="flex-[2] btn btn-accent py-4 rounded-full font-bold text-base shadow-lg shadow-accent/20 hover:shadow-xl transition-all"
+              data-submit-generate
+            >
+              Generate Key
+            </button>
+          </div>
+        </form>
+      </div>
+
+      {/* Step 2: Key Display */}
+      <div data-step="result" class="hidden space-y-6">
+        <div class="flex items-start gap-3 p-4 rounded-2xl bg-warning/10 border border-warning/20">
+          <TriangleAlert
+            size={20}
+            class="stroke-current text-warning shrink-0 mt-0.5"
+            aria-hidden="true"
+          />
+          <span class="text-sm text-warning font-medium">
+            Save this key now — it won't be shown again.
+          </span>
+        </div>
+
+        <div class="relative">
+          <pre
+            class="bg-base-200 rounded-2xl p-5 pr-20 text-sm font-mono break-all whitespace-pre-wrap select-all min-h-[3.5rem] flex items-center"
+            data-plain-key>
+          </pre>
+          <button
+            type="button"
+            class="btn btn-ghost btn-sm absolute top-3 right-3 gap-1.5"
+            data-copy-key
+            aria-label="Copy API key"
+          >
+            <span data-copy-icon-default>
+              <Copy size={14} class="stroke-current" aria-hidden="true" />
+            </span>
+            <span data-copy-icon-success class="hidden">
+              <Check size={14} class="stroke-current text-success" aria-hidden="true" />
+            </span>
+            <span data-copy-label>Copy</span>
+          </button>
+        </div>
+
+        {/* Actions */}
+        <div class="flex items-center gap-4 pt-4">
+          <button
+            type="button"
+            class="flex-[2] btn btn-accent py-4 rounded-full font-bold text-base shadow-lg shadow-accent/20 hover:shadow-xl transition-all w-full"
+            data-close-after-generate
+          >
+            Done
+          </button>
+        </div>
+      </div>
+    </div>
+  </Modal>
+</div>
+
+<script>
+  import { addToast } from '@/lib/stores/toastStore';
+  import { getCsrfHeaders } from '@/lib/csrf-client';
+
+  const initializedContainers = new WeakSet<Element>();
+
+  function initGenerateKeyModal() {
+    document
+      .querySelectorAll<HTMLElement>('[data-generate-key-modal-container]')
+      .forEach((container) => {
+        if (initializedContainers.has(container)) return;
+        initializedContainers.add(container);
+
+        const id = container.getAttribute('data-id');
+        if (!id) return;
+
+        const modal = document.getElementById(id) as HTMLDialogElement | null;
+        const form = container.querySelector<HTMLFormElement>('[data-generate-key-form]');
+        const stepForm = container.querySelector<HTMLElement>('[data-step="form"]');
+        const stepResult = container.querySelector<HTMLElement>('[data-step="result"]');
+        const errorEl = container.querySelector<HTMLElement>('[data-form-error]');
+        const submitBtn = container.querySelector<HTMLButtonElement>('[data-submit-generate]');
+        const plainKeyEl = container.querySelector<HTMLElement>('[data-plain-key]');
+        const copyBtn = container.querySelector<HTMLButtonElement>('[data-copy-key]');
+        const copyLabel = container.querySelector<HTMLElement>('[data-copy-label]');
+        const copyIconDefault = container.querySelector<HTMLElement>('[data-copy-icon-default]');
+        const copyIconSuccess = container.querySelector<HTMLElement>('[data-copy-icon-success]');
+        const expiresInput = container.querySelector<HTMLInputElement>(`#${id}-expires`);
+
+        if (!modal || !form || !stepForm || !stepResult || !submitBtn || !plainKeyEl) return;
+
+        // Set min date to tomorrow for expiration
+        if (expiresInput) {
+          const tomorrow = new Date();
+          tomorrow.setDate(tomorrow.getDate() + 1);
+          expiresInput.min = tomorrow.toISOString().split('T')[0];
+        }
+
+        function resetModal() {
+          form!.reset();
+          stepForm!.classList.remove('hidden');
+          stepResult!.classList.add('hidden');
+          errorEl?.classList.add('hidden');
+          if (copyLabel) copyLabel.textContent = 'Copy';
+          if (copyIconDefault) copyIconDefault.classList.remove('hidden');
+          if (copyIconSuccess) copyIconSuccess.classList.add('hidden');
+        }
+
+        // Open modal event
+        document.addEventListener('apikey:open-generate', () => {
+          resetModal();
+        });
+
+        // Handle cancel button
+        const cancelBtn = container.querySelector('[data-cancel-generate]');
+        cancelBtn?.addEventListener('click', () => {
+          form.reset();
+          errorEl?.classList.add('hidden');
+          modal.close();
+        });
+
+        // Form submission
+        form.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          errorEl?.classList.add('hidden');
+
+          const formData = new FormData(form);
+          const name = formData.get('name') as string;
+          const expiresAt = formData.get('expires_at') as string;
+
+          if (!name.trim()) {
+            if (errorEl) {
+              errorEl.textContent = 'Name is required';
+              errorEl.classList.remove('hidden');
+            }
+            return;
+          }
+
+          const originalText = submitBtn.textContent || 'Generate Key';
+          submitBtn.disabled = true;
+          submitBtn.textContent = 'Generating...';
+
+          try {
+            const body: Record<string, string> = { name: name.trim() };
+            if (expiresAt) body.expires_at = expiresAt;
+
+            const response = await fetch('/api/user/api-keys', {
+              method: 'POST',
+              credentials: 'include',
+              headers: {
+                'Content-Type': 'application/json',
+                ...getCsrfHeaders(),
+              },
+              body: JSON.stringify(body),
+            });
+
+            const result = await response.json();
+            if (!response.ok || !result.success) {
+              throw new Error(result.error?.message || 'Failed to generate key');
+            }
+
+            // Show step 2 with the plain key
+            plainKeyEl.textContent = result.data.plain_key;
+            stepForm.classList.add('hidden');
+            stepResult.classList.remove('hidden');
+
+            addToast('API key generated', 'success');
+          } catch (err) {
+            const message = err instanceof Error ? err.message : 'Failed to generate key';
+            if (errorEl) {
+              errorEl.textContent = message;
+              errorEl.classList.remove('hidden');
+            }
+            addToast(message, 'error');
+          } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = originalText;
+          }
+        });
+
+        // Copy key
+        if (copyBtn && copyLabel) {
+          copyBtn.addEventListener('click', async () => {
+            const key = (plainKeyEl.textContent || '').trim();
+            try {
+              await navigator.clipboard.writeText(key);
+            } catch (error) {
+              const message =
+                error instanceof Error
+                  ? error.message
+                  : 'Unable to copy API key. Please copy it manually.';
+              addToast(message, 'error');
+              return;
+            }
+            copyLabel.textContent = 'Copied!';
+            if (copyIconDefault) copyIconDefault.classList.add('hidden');
+            if (copyIconSuccess) copyIconSuccess.classList.remove('hidden');
+            setTimeout(() => {
+              copyLabel.textContent = 'Copy';
+              if (copyIconDefault) copyIconDefault.classList.remove('hidden');
+              if (copyIconSuccess) copyIconSuccess.classList.add('hidden');
+            }, 2000);
+          });
+        }
+
+        // Done button
+        const closeDoneBtn = container.querySelector<HTMLButtonElement>(
+          '[data-close-after-generate]'
+        );
+        closeDoneBtn?.addEventListener('click', () => {
+          modal.close();
+          document.dispatchEvent(new CustomEvent('apikey:created'));
+        });
+      });
+  }
+
+  // Initialize on DOM ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initGenerateKeyModal);
+  } else {
+    initGenerateKeyModal();
+  }
+
+  // Re-initialize on Astro page transitions
+  document.addEventListener('astro:page-load', initGenerateKeyModal);
+</script>

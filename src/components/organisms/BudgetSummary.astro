@@ -20,11 +20,13 @@ import { Landmark, TriangleAlert } from '@lucide/astro';
 
 // Internal aliases - lib
 import { formatCurrency } from '@/lib/formatting';
-import { sanitizeColor } from '@/lib/utils/budget';
+import { getBudgetStatus, sanitizeColor } from '@/lib/utils/budget';
 
 // Internal aliases - components
+import Badge from '@components/atoms/Badge.astro';
 import StatLabel from '@components/atoms/StatLabel.astro';
 import Skeleton from '@components/atoms/Skeleton.astro';
+import AllocationBar from '@components/molecules/AllocationBar.astro';
 
 // P2: TODO - Consider importing AllocationDistribution type from budget utils
 // and aligning with DistributionItem interface
@@ -58,8 +60,11 @@ const {
 
 // Calculate derived values
 const remaining = totalAllocated - totalSpent;
-const isDeficit = remaining < 0;
 const overallUsage = totalAllocated > 0 ? (totalSpent / totalAllocated) * 100 : 0;
+const usageStatus = getBudgetStatus(overallUsage);
+const isDeficit = remaining < 0;
+const statusForDisplay = isDeficit ? 'danger' : usageStatus.status;
+const badgeVariant = isDeficit ? 'exceeded' : usageStatus.badgeVariant;
 
 // Sort distribution by weight (largest first)
 const sortedDistribution = [...distribution].sort((a, b) => b.weight - a.weight);
@@ -167,7 +172,11 @@ const cardClasses = [
                 <p
                   class:list={[
                     'text-2xl lg:text-3xl font-bold tracking-tight leading-none',
-                    totalSpent > totalAllocated ? 'text-error' : 'text-base-content',
+                    statusForDisplay === 'danger'
+                      ? 'text-error'
+                      : statusForDisplay === 'warning'
+                        ? 'text-warning'
+                        : 'text-base-content',
                   ]}
                 >
                   {formatCurrency(totalSpent, currency)}
@@ -191,16 +200,11 @@ const cardClasses = [
             ) : (
               <Landmark size={20} class="text-success shrink-0" aria-hidden="true" />
             )}
-            <p
-              class:list={[
-                'text-xs font-bold uppercase tracking-wide',
-                isDeficit ? 'text-error' : 'text-success',
-              ]}
-            >
+            <Badge variant={badgeVariant} size="sm" className="uppercase tracking-wide">
               {isDeficit
                 ? `Deficit of ${formatCurrency(Math.abs(remaining), currency)}`
                 : `Surplus of ${formatCurrency(remaining, currency)}`}
-            </p>
+            </Badge>
           </div>
         </div>
 
@@ -218,47 +222,25 @@ const cardClasses = [
 
           {/* Stacked Bar - P0: Colors sanitized, P1: Accessible description */}
           {/* Uses displayDistribution to match legend (top 7 + Others) */}
-          <div class="relative" data-allocation-bar>
-            <div
-              class="h-6 w-full bg-base-300 rounded-full overflow-hidden flex shadow-inner"
-              role="img"
-              aria-label={`Budget allocation: ${allocationDescription}`}
-            >
-              {displayDistribution.map((item) => {
-                const safeColor = sanitizeColor(item.color);
-                const safeWeight = Math.min(Math.max(item.weight, 0), 100);
-                return (
-                  <div
-                    class="h-full transition-all duration-500 relative group/segment cursor-pointer"
-                    style={`width: ${safeWeight}%; background-color: ${safeColor};`}
-                    data-segment-name={item.name}
-                    data-segment-weight={item.weight.toFixed(1)}
-                  >
-                    <div class="absolute inset-0 bg-white/10 opacity-0 group-hover/segment:opacity-100 transition-opacity" />
-                  </div>
-                );
-              })}
-            </div>
-            {/* Custom tooltip - positioned outside overflow-hidden */}
-            <div
-              class="absolute -top-10 left-1/2 -translate-x-1/2 px-3 py-1.5 bg-neutral text-neutral-content text-xs font-medium rounded-lg shadow-lg opacity-0 pointer-events-none transition-opacity z-50 whitespace-nowrap"
-              data-allocation-tooltip
-            >
-              <span data-tooltip-text />
-              <div class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-neutral rotate-45" />
-            </div>
-          </div>
+          <AllocationBar
+            segments={displayDistribution.map((item) => ({
+              label: item.name,
+              percentage: item.weight,
+              color: item.color,
+            }))}
+            height="md"
+            ariaLabel={`Budget allocation: ${allocationDescription}`}
+          />
 
           {/* Legend - P0: Colors sanitized, shows top 7 + Others */}
           <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 lg:gap-4">
             {displayDistribution.map((item) => {
-              const safeColor = sanitizeColor(item.color);
               return (
                 <div class="flex flex-col gap-1">
                   <div class="flex items-center gap-2">
                     <div
                       class="w-2 h-2 rounded-full shrink-0"
-                      style={`background-color: ${safeColor};`}
+                      style={`background-color: ${sanitizeColor(item.color)};`}
                       aria-hidden="true"
                     />
                     <span class="text-[10px] font-bold text-base-content/60 uppercase tracking-tight truncate">
@@ -277,46 +259,3 @@ const cardClasses = [
     </section>
   )
 }
-
-<script>
-  function initAllocationTooltips() {
-    document.querySelectorAll('[data-allocation-bar]').forEach((bar) => {
-      const tooltip = bar.querySelector('[data-allocation-tooltip]') as HTMLElement;
-      const tooltipText = bar.querySelector('[data-tooltip-text]') as HTMLElement;
-      if (!tooltip || !tooltipText) return;
-
-      const segments = bar.querySelectorAll('[data-segment-name]');
-
-      segments.forEach((segment) => {
-        segment.addEventListener('mouseenter', (e: MouseEvent) => {
-          const target = e.currentTarget as HTMLElement;
-          const name = target.dataset.segmentName || '';
-          const weight = target.dataset.segmentWeight || '0';
-          tooltipText.textContent = `${name}: ${weight}%`;
-
-          // Position tooltip above the hovered segment
-          const barRect = bar.getBoundingClientRect();
-          const segmentRect = target.getBoundingClientRect();
-          const segmentCenter = segmentRect.left + segmentRect.width / 2 - barRect.left;
-
-          tooltip.style.left = `${segmentCenter}px`;
-          tooltip.style.opacity = '1';
-        });
-
-        segment.addEventListener('mouseleave', () => {
-          tooltip.style.opacity = '0';
-        });
-      });
-    });
-  }
-
-  // Initialize on DOM ready
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initAllocationTooltips);
-  } else {
-    initAllocationTooltips();
-  }
-
-  // Re-initialize on Astro page transitions
-  document.addEventListener('astro:page-load', initAllocationTooltips);
-</script>

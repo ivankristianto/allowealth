@@ -8,7 +8,7 @@
 
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import { categoryService } from '@/services';
-import { Plus, Search, Pencil, Trash2 } from '@lucide/astro';
+import { Plus, Search, Pencil, Trash2, ListPlus } from '@lucide/astro';
 import CategoryIcon from '@/components/atoms/CategoryIcon.astro';
 import TabToggle from '@/components/atoms/TabToggle.astro';
 import CategoryModal from '@/components/organisms/CategoryModal.astro';
@@ -54,15 +54,26 @@ if (searchQuery) {
           Organizing {allCategories.length} custom labels for your family ledger
         </p>
       </div>
-      <button
-        class="btn btn-accent rounded-2xl font-bold text-sm flex items-center gap-2"
-        data-action="create-category"
-        data-type={typeFilter}
-        data-testid="create-category-btn"
-      >
-        <Plus size={18} class="stroke-current" aria-hidden="true" />
-        Create Category
-      </button>
+      <div class="flex items-center gap-3">
+        <button
+          class="btn btn-outline btn-accent rounded-2xl font-bold text-sm flex items-center gap-2"
+          data-action="bulk-add-categories"
+          data-type={typeFilter}
+          data-testid="bulk-add-btn"
+        >
+          <ListPlus size={18} class="stroke-current" aria-hidden="true" />
+          Bulk Add
+        </button>
+        <button
+          class="btn btn-accent rounded-2xl font-bold text-sm flex items-center gap-2"
+          data-action="create-category"
+          data-type={typeFilter}
+          data-testid="create-category-btn"
+        >
+          <Plus size={18} class="stroke-current" aria-hidden="true" />
+          Create Category
+        </button>
+      </div>
     </div>
 
     <!-- Search and Filters -->
@@ -98,7 +109,7 @@ if (searchQuery) {
     </div>
 
     <!-- Categories Table -->
-    <div class="bg-base-100 rounded-3xl border border-base-300 shadow-sm overflow-hidden">
+    <div class="bg-base-100 rounded-card border border-base-300 shadow-sm overflow-hidden">
       <div class="overflow-x-auto">
         {
           filteredCategories.length > 0 ? (
@@ -228,6 +239,80 @@ if (searchQuery) {
 
   <!-- Category Modal -->
   <CategoryModal id="category-modal" />
+
+  <!-- Bulk Add Modal -->
+  <dialog id="bulk-add-modal" class="modal" data-testid="bulk-add-modal">
+    <div class="modal-box max-w-lg rounded-card border border-base-300 shadow-xl p-0">
+      <div class="p-6 flex flex-col gap-6">
+        <!-- Header -->
+        <div class="flex items-center gap-4">
+          <div class="w-12 h-12 rounded-2xl flex items-center justify-center bg-accent/10">
+            <ListPlus size={24} class="stroke-current text-accent" aria-hidden="true" />
+          </div>
+          <div class="flex-1">
+            <h2 class="text-2xl font-bold tracking-tight text-primary leading-none">
+              Bulk Add Categories
+            </h2>
+            <p class="text-neutral text-sm mt-2 font-medium">
+              Type one category name per line. They will be created as <strong data-bulk-type-label
+                >{typeFilter}</strong
+              > categories.
+            </p>
+          </div>
+        </div>
+
+        <!-- Textarea -->
+        <div class="form-control">
+          <label class="label py-1" for="bulk-categories-input">
+            <span class="text-xs uppercase tracking-widest text-base-content/50 font-medium">
+              Category Names (one per line)
+            </span>
+          </label>
+          <textarea
+            id="bulk-categories-input"
+            class="textarea textarea-bordered w-full h-40 text-sm bg-base-200 focus:ring-2 focus:ring-accent focus:ring-opacity-20 focus:outline-none focus:ring-offset-2 rounded-xl"
+            placeholder={'Food & Groceries\nTransportation\nUtilities\nEntertainment\nHealth & Fitness'}
+            data-testid="bulk-categories-textarea"></textarea>
+          <span class="text-base-content/40 text-xs mt-1">
+            Default icon and color will be assigned. You can customize each category later.
+          </span>
+        </div>
+
+        <!-- Preview area -->
+        <div id="bulk-preview" class="hidden">
+          <p class="text-xs uppercase tracking-widest text-base-content/50 font-medium mb-2">
+            Preview (<span data-bulk-count>0</span> categories)
+          </p>
+          <div class="flex flex-wrap gap-2" data-bulk-preview-tags></div>
+        </div>
+
+        <!-- Error -->
+        <div id="bulk-error" class="hidden alert alert-error text-sm rounded-xl" role="alert"></div>
+
+        <!-- Actions -->
+        <div class="flex gap-4 pt-2">
+          <button
+            type="button"
+            class="flex-1 btn btn-ghost h-14 rounded-full font-bold"
+            data-bulk-cancel
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            class="flex-[2] btn btn-accent h-14 rounded-full font-bold"
+            data-bulk-submit
+            data-testid="bulk-submit-btn"
+          >
+            <span data-bulk-submit-text>Create Categories</span>
+          </button>
+        </div>
+      </div>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+      <button>close</button>
+    </form>
+  </dialog>
 
   <!-- Delete Confirmation Dialog -->
   <CategoryDeleteDialog id="delete-dialog" />

@@ -61,6 +61,10 @@ export function createMockDatabase(): IDatabase {
         findFirst: mock(() => Promise.resolve(undefined)),
         findMany: mock(() => Promise.resolve([])),
       },
+      apiKeys: {
+        findFirst: mock(() => Promise.resolve(undefined)),
+        findMany: mock(() => Promise.resolve([])),
+      },
     } as any,
 
     update: mock(() => ({
@@ -168,6 +172,7 @@ export function createMockAsset(overrides: Partial<Asset> = {}): Asset {
     type: 'bank_account',
     currency: 'IDR',
     balance: '1000000',
+    initial_balance: null,
     credit_limit: null,
     is_cash_account: false,
     last_updated: new Date('2026-01-01'),
@@ -234,6 +239,8 @@ export function resetMockDatabase(mockDb: IDatabase): void {
   (mockDb.query.budgets.findMany as any).mockClear();
   (mockDb.query.assets.findFirst as any).mockClear();
   (mockDb.query.assets.findMany as any).mockClear();
+  (mockDb.query.apiKeys.findFirst as any).mockClear();
+  (mockDb.query.apiKeys.findMany as any).mockClear();
   (mockDb.update as any).mockClear();
   (mockDb.select as any).mockClear();
   (mockDb.delete as any).mockClear();
