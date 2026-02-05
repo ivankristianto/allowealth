@@ -115,10 +115,12 @@ export const USD: StoryObj = {
   render: (args) => createCurrencyInput(args),
 };
 
-export const Error: StoryObj = {
+export const ErrorState: StoryObj = {
   args: { error: true },
   render: (args) => createCurrencyInput(args),
 };
+
+ErrorState.storyName = 'Error';
 
 export const Disabled: StoryObj = {
   args: { disabled: true, value: '250000' },

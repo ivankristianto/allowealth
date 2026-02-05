@@ -126,10 +126,12 @@ export const WithValue: StoryObj = {
   render: (args) => createAssetSelect(args),
 };
 
-export const Error: StoryObj = {
+export const ErrorState: StoryObj = {
   args: { error: true },
   render: (args) => createAssetSelect(args),
 };
+
+ErrorState.storyName = 'Error';
 
 export const Disabled: StoryObj = {
   args: { disabled: true, value: 'asset-1' },

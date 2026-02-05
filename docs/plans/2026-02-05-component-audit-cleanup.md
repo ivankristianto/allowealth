@@ -10,7 +10,7 @@
 
 ---
 
-### Task 1: Remove components referenced only by tests/comments
+## Task 1: Remove components referenced only by tests/comments
 
 **Files:**
 
@@ -52,7 +52,7 @@ git commit -m "refactor: remove unused toast and asset update components"
 
 ---
 
-### Task 2: Fix Storybook broken import
+## Task 2: Fix Storybook broken import
 
 **Files:**
 
@@ -79,7 +79,7 @@ git commit -m "fix(storybook): remove invalid Currency import"
 
 ---
 
-### Task 3: Add missing atom stories
+## Task 3: Add missing atom stories
 
 **Files:**
 
@@ -109,7 +109,7 @@ git commit -m "docs(storybook): add missing atom stories"
 
 ---
 
-### Task 4: Report obsolete component replacements
+## Task 4: Report obsolete component replacements
 
 **Files:**
 

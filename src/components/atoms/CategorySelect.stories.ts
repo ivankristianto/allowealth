@@ -137,10 +137,12 @@ export const IncomeOnly: StoryObj = {
   render: (args) => createCategorySelect(args),
 };
 
-export const Error: StoryObj = {
+export const ErrorState: StoryObj = {
   args: { error: true },
   render: (args) => createCategorySelect(args),
 };
+
+ErrorState.storyName = 'Error';
 
 export const Disabled: StoryObj = {
   args: { disabled: true, value: 'cat-1' },
