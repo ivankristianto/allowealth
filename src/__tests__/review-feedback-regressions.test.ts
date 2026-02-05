@@ -34,6 +34,11 @@ describe('review feedback regressions', () => {
     expect(content).toContain('showModal');
   });
 
+  it('transaction list delete modal should open via showModal', () => {
+    const content = read('src/components/organisms/TransactionList.client.ts');
+    expect(content).toContain('showModal');
+  });
+
   it('period navigator should compute selected option before currentIndex', () => {
     const content = read('src/components/molecules/PeriodNavigator.astro');
     const selectedIndex = content.indexOf('const selectedOption');
@@ -55,6 +60,12 @@ describe('review feedback regressions', () => {
     expect(content).toContain('if (nextBtn.disabled)');
   });
 
+  it('transactions page comment should reference PeriodNavigator', () => {
+    const content = read('src/components/organisms/TransactionsPage.client.ts');
+    expect(content).toContain('PeriodNavigator');
+    expect(content).not.toContain('MonthNavigator');
+  });
+
   it('budget history table should use budgetStatus for desktop progress and badge', () => {
     const content = read('src/components/partials/BudgetHistoryTablePartial.astro');
     expect(content).toContain('status={budgetStatus.status}');
@@ -73,5 +84,18 @@ describe('review feedback regressions', () => {
   it('category drilldown should guard against zero budget limit', () => {
     const content = read('src/components/partials/CategoryDrillDownPartial.astro');
     expect(content).toContain('budgetLimit > 0');
+  });
+
+  it('loading placeholders should not use animate-pulse in remaining components', () => {
+    const files = [
+      'src/components/organisms/AssetUpdateTodoList.astro',
+      'src/components/molecules/RecentTransactionsList.astro',
+      'src/components/molecules/TransactionCard.astro',
+    ];
+
+    files.forEach((path) => {
+      const content = read(path);
+      expect(content).not.toContain('animate-pulse');
+    });
   });
 });

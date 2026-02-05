@@ -5,6 +5,8 @@
  * Separated from component for explicit initialization after HTML injection.
  */
 
+import { PERIOD_CHANGE_EVENT } from '@/lib/constants/events';
+
 interface PeriodOption {
   value: string;
   label: string;
@@ -83,7 +85,7 @@ export function initPeriodNavigator() {
 
         // Dispatch custom event
         window.dispatchEvent(
-          new CustomEvent('periodChange', {
+          new CustomEvent(PERIOD_CHANGE_EVENT, {
             detail: { period: value, label: displayLabel },
           })
         );
@@ -109,7 +111,7 @@ export function initPeriodNavigator() {
 
           // Dispatch custom event
           window.dispatchEvent(
-            new CustomEvent('periodChange', {
+            new CustomEvent(PERIOD_CHANGE_EVENT, {
               detail: { period: prevOption.value, label: prevOption.label },
             })
           );
@@ -135,7 +137,7 @@ export function initPeriodNavigator() {
 
           // Dispatch custom event
           window.dispatchEvent(
-            new CustomEvent('periodChange', {
+            new CustomEvent(PERIOD_CHANGE_EVENT, {
               detail: { period: nextOption.value, label: nextOption.label },
             })
           );

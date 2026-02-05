@@ -281,6 +281,7 @@ const periodOptions = availableMonths.map((month) => ({
 </form>
 
 <script>
+  import { PERIOD_CHANGE_EVENT } from '@/lib/constants/events';
   // Track selected category IDs
   let selectedCategoryIds: string[] = [];
 
@@ -492,7 +493,7 @@ const periodOptions = availableMonths.map((month) => ({
   }
 
   // Listen for period changes from PeriodNavigator component
-  window.addEventListener('periodChange', (e: Event) => {
+  window.addEventListener(PERIOD_CHANGE_EVENT, (e: Event) => {
     const customEvent = e as CustomEvent;
     const { period } = customEvent.detail;
 

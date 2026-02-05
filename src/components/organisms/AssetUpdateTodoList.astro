@@ -15,6 +15,7 @@
 import Card from '../atoms/Card.astro';
 import Badge from '../atoms/Badge.astro';
 import EmptyState from '../atoms/EmptyState.astro';
+import Skeleton from '../atoms/Skeleton.astro';
 import { Calendar, Pencil, X, RefreshCw } from '@lucide/astro';
 import { formatCurrency } from '@/lib/formatting';
 
@@ -81,11 +82,11 @@ const sortedAssets = [...assets].sort((a, b) => {
       // Loading skeleton
       <div class="space-y-3" role="status" aria-live="polite" aria-label="Loading asset updates">
         {[1, 2, 3].map(() => (
-          <div class="flex items-center gap-4 p-3 bg-base-200 rounded-lg animate-pulse">
-            <div class="w-8 h-8 bg-base-300 rounded-full" aria-hidden="true" />
+          <div class="flex items-center gap-4 p-3 bg-base-200 rounded-lg">
+            <Skeleton variant="circular" width="32px" height="32px" />
             <div class="flex-1 space-y-2">
-              <div class="h-4 bg-base-300 rounded w-3/4" aria-hidden="true" />
-              <div class="h-3 bg-base-300 rounded w-1/2" aria-hidden="true" />
+              <Skeleton variant="rectangular" width="75%" height="16px" />
+              <Skeleton variant="rectangular" width="50%" height="12px" />
             </div>
           </div>
         ))}

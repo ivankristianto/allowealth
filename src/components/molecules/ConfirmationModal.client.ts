@@ -75,7 +75,6 @@ export function resetConfirmationModal(
 
 export function closeConfirmationModal(modal: HTMLDialogElement | null): void {
   if (!modal) return;
-  modal.classList.remove('modal-open');
   if (modal.open) {
     modal.close();
   }

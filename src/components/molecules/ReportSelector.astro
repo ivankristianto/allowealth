@@ -101,6 +101,7 @@ const yearlyOptions = yearlyPeriods.map((period) => ({
 </div>
 
 <script>
+  import { PERIOD_CHANGE_EVENT } from '@/lib/constants/events';
   // Store references to event listeners for cleanup
   const rangeClickHandlers = new Map<Element, () => void>();
 
@@ -123,7 +124,7 @@ const yearlyOptions = yearlyPeriods.map((period) => ({
     cleanupReportSelector();
 
     // Listen for period changes from PeriodNavigator
-    window.addEventListener('periodChange', handlePeriodChange);
+    window.addEventListener(PERIOD_CHANGE_EVENT, handlePeriodChange);
 
     // Handle range toggle button clicks
     document.querySelectorAll('[data-range]').forEach((btn) => {
@@ -163,7 +164,7 @@ const yearlyOptions = yearlyPeriods.map((period) => ({
     rangeClickHandlers.clear();
 
     // Remove change listeners
-    window.removeEventListener('periodChange', handlePeriodChange);
+    window.removeEventListener(PERIOD_CHANGE_EVENT, handlePeriodChange);
   }
 
   // Initialize on DOM ready

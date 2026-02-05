@@ -97,10 +97,10 @@ const chartId = `resource-allocation-chart-${Math.random().toString(36).slice(2,
             {Array.from({ length: 6 }).map(() => (
               <div class="flex items-center justify-between">
                 <div class="flex items-center gap-2">
-                  <div class="w-2 h-2 rounded-full bg-base-300 animate-pulse" />
-                  <div class="h-3 bg-base-300 rounded w-20 animate-pulse" />
+                  <Skeleton variant="circular" width="8px" height="8px" />
+                  <Skeleton variant="rectangular" width="80px" height="12px" />
                 </div>
-                <div class="h-3 bg-base-300 rounded w-10 animate-pulse" />
+                <Skeleton variant="rectangular" width="40px" height="12px" />
               </div>
             ))}
           </div>

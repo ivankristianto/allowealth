@@ -545,7 +545,7 @@ function setupEventListeners(): void {
   // filterChange events are handled by the global listener set up at module load time
   // This ensures events aren't lost if they fire before initialization completes
 
-  // Month navigation is handled by MonthNavigator.client.ts which dispatches
+  // Month navigation is handled by PeriodNavigator.client.ts which dispatches
   // 'monthChange' events caught by TransactionFiltersBar, then forwarded as
   // 'filterChange' events handled by the global listener above.
   // No duplicate handler needed here.

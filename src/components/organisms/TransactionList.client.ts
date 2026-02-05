@@ -83,8 +83,10 @@ document.addEventListener('DOMContentLoaded', () => {
         detailsDiv.classList.remove('hidden');
       }
 
-      // Show modal using modal-open class (triggers animations)
-      modal.classList.add('modal-open');
+      // Show modal using native dialog API (triggers animations)
+      if (!modal.open) {
+        modal.showModal();
+      }
     });
   });
 
