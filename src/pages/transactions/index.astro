@@ -129,8 +129,15 @@ const allUserTransactions = await transactionService.findAll(
 const availableMonthsWithLabels = extractAvailableMonths(allUserTransactions);
 const availableMonths = availableMonthsWithLabels.map((m) => m.key);
 
-// Current month key - prefer latest available month, fallback to today's month
-const currentMonthKey = availableMonths[availableMonths.length - 1] || todayMonthKey;
+// Current month key - always use today's month as the default
+const currentMonthKey = todayMonthKey;
+
+// Ensure current month is always in the available months list (even if no data)
+if (!availableMonthsWithLabels.some((m) => m.key === todayMonthKey)) {
+  const todayLabel = formatMonthKey(todayMonthKey);
+  availableMonthsWithLabels.push({ key: todayMonthKey, label: todayLabel });
+  availableMonths.push(todayMonthKey);
+}
 
 // Calculate summary from ALL transactions in the selected month (not filtered)
 // Summary only changes when month changes, not when filters change
@@ -187,7 +194,7 @@ const ssrData = {
     search: searchValue,
     category_id: categoryId,
     category_ids: categoryIds,
-    month: selectedMonth || currentMonthKey,
+    month: effectiveMonth,
     page,
   },
   currentMonth: currentMonthKey,
@@ -224,7 +231,7 @@ const ssrData = {
     >
       {
         Array.from({ length: 3 }).map(() => (
-          <div class="card bg-base-100 border border-base-300 rounded-3xl shadow-sm relative overflow-hidden">
+          <div class="card bg-base-100 border border-base-300 rounded-card shadow-sm relative overflow-hidden">
             <div class="card-body p-8">
               <div class="h-3 bg-base-300 rounded w-1/2 mb-4 animate-pulse" />
               <div class="h-9 bg-base-300 rounded w-4/5 mb-3 animate-pulse" />
@@ -257,7 +264,7 @@ const ssrData = {
       <!-- Transaction List Card -->
       <div
         id="transaction-list-card"
-        class="card bg-base-100 border border-base-300 rounded-3xl shadow-sm overflow-hidden"
+        class="card bg-base-100 border border-base-300 rounded-card shadow-sm overflow-hidden"
       >
         <!-- Loading Skeleton (hidden by default, shown during fetch) -->
         <div id="transaction-list-skeleton" class="divide-y divide-base-200 hidden">

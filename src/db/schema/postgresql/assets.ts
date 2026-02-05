@@ -32,6 +32,7 @@ export const assets = pgTable(
     }).notNull(),
     category_id: text('category_id').references(() => assetCategories.id),
     balance: text('balance').notNull(), // Stored as string for decimal precision
+    initial_balance: text('initial_balance'), // Original balance at creation, stored as string
     // P2: TODO - Consider using numeric type for PostgreSQL native decimal support
     currency: text('currency', { enum: ['IDR', 'USD'] }).notNull(),
     credit_limit: text('credit_limit'), // For credit cards only, stored as string for decimal precision

@@ -6,7 +6,7 @@
  * Displayed above the transaction filters bar.
  */
 
-import { Sparkles, Upload, Download } from '@lucide/astro';
+import { Sparkles, Upload, Download, CircleMinus, CirclePlus } from '@lucide/astro';
 
 export interface Props {
   className?: string;
@@ -17,22 +17,44 @@ const { className = '' } = Astro.props;
 
 <div
   class:list={[
-    'card bg-base-100 border border-base-300 rounded-3xl shadow-sm p-4 sm:p-6',
+    'card bg-base-100 border border-base-300 rounded-card shadow-sm p-4 sm:p-6',
     'flex flex-col sm:flex-row items-center justify-between gap-4',
     className,
   ]}
   data-transaction-actions-bar
 >
-  <!-- Left side: Scan Receipt -->
-  <button
-    type="button"
-    class="flex items-center gap-2 px-6 py-3 bg-accent/10 text-accent rounded-full text-sm font-bold border border-accent/20 transition-all hover:bg-accent/15 hover:border-accent/30 active:scale-95 group"
-    data-scan-receipt-button
-    aria-label="Scan receipt"
-  >
-    <Sparkles size={18} class="stroke-current group-hover:animate-pulse" aria-hidden="true" />
-    <span>Scan Receipt</span>
-  </button>
+  <!-- Left side: Add Expense / Income + Scan Receipt -->
+  <div class="flex items-center gap-3">
+    <button
+      type="button"
+      class="flex items-center gap-2 px-5 py-3 bg-error/10 text-error rounded-full text-sm font-bold border border-error/20 transition-all hover:bg-error/15 hover:border-error/30 active:scale-95 min-h-[44px]"
+      data-add-expense-button
+      aria-label="Add expense"
+    >
+      <CircleMinus size={18} class="stroke-current" aria-hidden="true" />
+      <span>Expense</span>
+    </button>
+
+    <button
+      type="button"
+      class="flex items-center gap-2 px-5 py-3 bg-success/10 text-success rounded-full text-sm font-bold border border-success/20 transition-all hover:bg-success/15 hover:border-success/30 active:scale-95 min-h-[44px]"
+      data-add-income-button
+      aria-label="Add income"
+    >
+      <CirclePlus size={18} class="stroke-current" aria-hidden="true" />
+      <span>Income</span>
+    </button>
+
+    <button
+      type="button"
+      class="flex items-center gap-2 px-5 py-3 bg-accent/10 text-accent rounded-full text-sm font-bold border border-accent/20 transition-all hover:bg-accent/15 hover:border-accent/30 active:scale-95 group min-h-[44px]"
+      data-scan-receipt-button
+      aria-label="Scan receipt"
+    >
+      <Sparkles size={18} class="stroke-current group-hover:animate-pulse" aria-hidden="true" />
+      <span class="hidden sm:inline">Scan Receipt</span>
+    </button>
+  </div>
 
   <!-- Right side: Import & Export -->
   <div class="flex items-center gap-3">
@@ -70,6 +92,24 @@ const { className = '' } = Astro.props;
     // Prevent duplicate initialization
     if (actionsBar.dataset.initialized === 'true') return;
     actionsBar.dataset.initialized = 'true';
+
+    // Add Expense button
+    const addExpenseBtn = actionsBar.querySelector('[data-add-expense-button]');
+    addExpenseBtn?.addEventListener('click', () => {
+      const modal = document.getElementById('expense-modal') as HTMLDialogElement | null;
+      if (modal) {
+        modal.showModal();
+      }
+    });
+
+    // Add Income button
+    const addIncomeBtn = actionsBar.querySelector('[data-add-income-button]');
+    addIncomeBtn?.addEventListener('click', () => {
+      const modal = document.getElementById('income-modal') as HTMLDialogElement | null;
+      if (modal) {
+        modal.showModal();
+      }
+    });
 
     // Scan Receipt button
     const scanBtn = actionsBar.querySelector('[data-scan-receipt-button]');

@@ -547,27 +547,10 @@ function setupEventListeners(): void {
   // filterChange events are handled by the global listener set up at module load time
   // This ensures events aren't lost if they fire before initialization completes
 
-  // Month navigation buttons
-  document.querySelectorAll('[data-month-nav]').forEach((btn) => {
-    btn.addEventListener('click', (e: Event) => {
-      e.preventDefault();
-      const direction = btn.getAttribute('data-month-nav');
-      const state = transactionsDataStore.get();
-      const currentMonth = transactionFiltersStore.get().month;
-
-      // Find current month index in available months
-      const currentIndex = state.availableMonths.findIndex((m) => m.key === currentMonth);
-      const newIndex = direction === 'prev' ? currentIndex - 1 : currentIndex + 1;
-
-      if (newIndex >= 0 && newIndex < state.availableMonths.length) {
-        const monthData = state.availableMonths[newIndex];
-        // Update the label in the dropdown (display label, not key)
-        const labelEl = document.querySelector('[data-month-label]');
-        if (labelEl) labelEl.textContent = monthData.label;
-        handleMonthFilterChange(monthData.key);
-      }
-    });
-  });
+  // Month navigation is handled by MonthNavigator.client.ts which dispatches
+  // 'monthChange' events caught by TransactionFiltersBar, then forwarded as
+  // 'filterChange' events handled by the global listener above.
+  // No duplicate handler needed here.
 
   // Search input
   const searchInput = document.getElementById('search-input');

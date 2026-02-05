@@ -172,6 +172,7 @@ export function createMockAsset(overrides: Partial<Asset> = {}): Asset {
     type: 'bank_account',
     currency: 'IDR',
     balance: '1000000',
+    initial_balance: null,
     credit_limit: null,
     is_cash_account: false,
     last_updated: new Date('2026-01-01'),

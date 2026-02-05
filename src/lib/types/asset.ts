@@ -35,6 +35,7 @@ export interface Asset {
   type: AssetType;
   category_id?: string | null;
   balance: string;
+  initial_balance: string | null;
   currency: Currency;
   credit_limit: string | null;
   is_cash_account: boolean;
@@ -54,6 +55,7 @@ export interface AssetOutput {
   category_id?: string | null;
   category_name?: string | null;
   balance: string;
+  initial_balance?: string | null;
   currency: Currency;
   credit_limit?: string | null;
   is_cash_account?: boolean;
