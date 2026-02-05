@@ -28,22 +28,22 @@ const { keys } = Astro.props;
           <Cpu size={20} class="stroke-current" aria-hidden="true" />
         </IconBadge>
         <div>
-          <h3 class="text-lg font-bold">API Keys</h3>
+          <h3 class="text-lg font-bold">MCP Access Tokens</h3>
           <p class="text-xs uppercase tracking-widest text-base-content/50">
-            AI & Integration Access
+            Model Context Protocol (MCP)
           </p>
         </div>
       </div>
       <span data-generate-key-btn>
         <Button type="button" variant="primary" size="sm">
           <Plus size={16} class="stroke-current" aria-hidden="true" />
-          Generate Key
+          Generate Token
         </Button>
       </span>
     </div>
 
     <p class="text-sm text-base-content/70">
-      Connect AI assistants and external tools to your financial data securely.
+      Connect AI assistants and MCP-compatible tools to your financial data securely.
     </p>
 
     <div data-api-keys-list>
@@ -54,10 +54,10 @@ const { keys } = Astro.props;
   <!-- Revoke Confirmation Modal -->
   <dialog id="revoke-key-modal" class="modal" data-revoke-key-modal>
     <div class="modal-box max-w-sm">
-      <h3 class="text-lg font-bold">Revoke API Key</h3>
+      <h3 class="text-lg font-bold">Revoke Access Token</h3>
       <p class="py-4 text-sm text-base-content/70">
         Are you sure you want to revoke <strong data-revoke-key-name></strong>? Any applications
-        using this key will lose access immediately.
+        using this token will lose access immediately.
       </p>
       <div class="modal-action">
         <form method="dialog">
@@ -135,7 +135,7 @@ const { keys } = Astro.props;
             throw new Error(result.error?.message || 'Failed to revoke key');
           }
 
-          addToast('API key revoked', 'success');
+          addToast('Access token revoked', 'success');
           revokeModal.close();
 
           // Remove the key row from DOM
