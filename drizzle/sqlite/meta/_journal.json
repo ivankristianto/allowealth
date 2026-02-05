@@ -15,6 +15,13 @@
       "when": 1770214072494,
       "tag": "0001_smiling_peter_parker",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1770253226435,
+      "tag": "0002_deep_komodo",
+      "breakpoints": true
     }
   ]
 }

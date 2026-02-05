@@ -61,6 +61,10 @@ export function createMockDatabase(): IDatabase {
         findFirst: mock(() => Promise.resolve(undefined)),
         findMany: mock(() => Promise.resolve([])),
       },
+      apiKeys: {
+        findFirst: mock(() => Promise.resolve(undefined)),
+        findMany: mock(() => Promise.resolve([])),
+      },
     } as any,
 
     update: mock(() => ({
@@ -235,6 +239,8 @@ export function resetMockDatabase(mockDb: IDatabase): void {
   (mockDb.query.budgets.findMany as any).mockClear();
   (mockDb.query.assets.findFirst as any).mockClear();
   (mockDb.query.assets.findMany as any).mockClear();
+  (mockDb.query.apiKeys.findFirst as any).mockClear();
+  (mockDb.query.apiKeys.findMany as any).mockClear();
   (mockDb.update as any).mockClear();
   (mockDb.select as any).mockClear();
   (mockDb.delete as any).mockClear();

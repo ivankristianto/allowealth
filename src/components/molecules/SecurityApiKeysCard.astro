@@ -1,0 +1,195 @@
+---
+/**
+ * Security API Keys Card
+ *
+ * Displays a list of API keys with generate and revoke actions.
+ * Follows the same layout pattern as SecurityPasskeysCard.
+ * Uses SecurityApiKeysListPartial for the key list (supports ?_render=html refresh).
+ */
+
+import Button from '@/components/atoms/Button.astro';
+import IconBadge from '@/components/atoms/IconBadge.astro';
+import { Cpu, Plus } from '@lucide/astro';
+import SecurityApiKeysListPartial from '@/components/partials/SecurityApiKeysListPartial.astro';
+import type { ApiKeyItem } from '@/components/partials/SecurityApiKeysListPartial.astro';
+
+export interface Props {
+  keys: ApiKeyItem[];
+}
+
+const { keys } = Astro.props;
+---
+
+<section class="card bg-base-100 shadow border border-base-300" data-api-keys-card>
+  <div class="card-body p-6 space-y-6">
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div class="flex items-center gap-4">
+        <IconBadge variant="info" size="sm">
+          <Cpu size={20} class="stroke-current" aria-hidden="true" />
+        </IconBadge>
+        <div>
+          <h3 class="text-lg font-bold">API Keys</h3>
+          <p class="text-xs uppercase tracking-widest text-base-content/50">
+            AI & Integration Access
+          </p>
+        </div>
+      </div>
+      <span data-generate-key-btn>
+        <Button type="button" variant="primary" size="sm">
+          <Plus size={16} class="stroke-current" aria-hidden="true" />
+          Generate Key
+        </Button>
+      </span>
+    </div>
+
+    <p class="text-sm text-base-content/70">
+      Connect AI assistants and external tools to your financial data securely.
+    </p>
+
+    <div data-api-keys-list>
+      <SecurityApiKeysListPartial keys={keys} />
+    </div>
+  </div>
+
+  <!-- Revoke Confirmation Modal -->
+  <dialog id="revoke-key-modal" class="modal" data-revoke-key-modal>
+    <div class="modal-box max-w-sm">
+      <h3 class="text-lg font-bold">Revoke API Key</h3>
+      <p class="py-4 text-sm text-base-content/70">
+        Are you sure you want to revoke <strong data-revoke-key-name></strong>? Any applications
+        using this key will lose access immediately.
+      </p>
+      <div class="modal-action">
+        <form method="dialog">
+          <button class="btn btn-ghost btn-sm">Cancel</button>
+        </form>
+        <button
+          type="button"
+          class="btn btn-error btn-sm"
+          data-confirm-revoke
+          data-revoking-key-id=""
+        >
+          Revoke
+        </button>
+      </div>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+      <button>close</button>
+    </form>
+  </dialog>
+</section>
+
+<script>
+  import { addToast } from '@/lib/stores/toastStore';
+  import { getCsrfHeaders } from '@/lib/csrf-client';
+  import { setButtonLoading } from '@/lib/client-utils';
+
+  const initializedCards = new WeakSet<Element>();
+
+  function initApiKeysCard() {
+    document.querySelectorAll<HTMLElement>('[data-api-keys-card]').forEach((card) => {
+      if (initializedCards.has(card)) return;
+      initializedCards.add(card);
+
+      const listContainer = card.querySelector<HTMLElement>('[data-api-keys-list]');
+      const revokeModal = card.querySelector<HTMLDialogElement>('[data-revoke-key-modal]');
+      const revokeNameEl = card.querySelector<HTMLElement>('[data-revoke-key-name]');
+      const confirmRevokeBtn = card.querySelector<HTMLButtonElement>('[data-confirm-revoke]');
+      const generateBtn = card.querySelector<HTMLButtonElement>('[data-generate-key-btn]');
+
+      if (!listContainer || !revokeModal || !revokeNameEl || !confirmRevokeBtn) return;
+
+      // Delegate revoke button clicks
+      card.addEventListener('click', (e) => {
+        const revokeBtn = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-revoke-key]');
+        if (!revokeBtn) return;
+
+        const keyId = revokeBtn.getAttribute('data-key-id') || '';
+        const keyName = revokeBtn.getAttribute('data-key-name') || '';
+
+        revokeNameEl.textContent = keyName;
+        confirmRevokeBtn.setAttribute('data-revoking-key-id', keyId);
+        revokeModal.showModal();
+      });
+
+      // Confirm revoke
+      confirmRevokeBtn.addEventListener('click', async () => {
+        const keyId = confirmRevokeBtn.getAttribute('data-revoking-key-id');
+        if (!keyId) return;
+
+        setButtonLoading(confirmRevokeBtn, true);
+
+        try {
+          const response = await fetch('/api/user/api-keys', {
+            method: 'DELETE',
+            credentials: 'include',
+            headers: {
+              'Content-Type': 'application/json',
+              ...getCsrfHeaders(),
+            },
+            body: JSON.stringify({ id: keyId }),
+          });
+
+          const result = await response.json();
+          if (!response.ok || !result.success) {
+            throw new Error(result.error?.message || 'Failed to revoke key');
+          }
+
+          addToast('API key revoked', 'success');
+          revokeModal.close();
+
+          // Remove the key row from DOM
+          const keyRow = listContainer.querySelector(
+            `[data-api-key-item][data-key-id="${CSS.escape(keyId)}"]`
+          );
+          if (keyRow) keyRow.remove();
+
+          // If no keys left, refresh the list to show empty state
+          const remaining = listContainer.querySelectorAll('[data-api-key-item]');
+          if (remaining.length === 0) {
+            await refreshKeyList(listContainer);
+          }
+        } catch (err) {
+          const message = err instanceof Error ? err.message : 'Failed to revoke key';
+          addToast(message, 'error');
+        } finally {
+          setButtonLoading(confirmRevokeBtn, false);
+        }
+      });
+
+      // Generate button opens the modal
+      if (generateBtn) {
+        generateBtn.addEventListener('click', () => {
+          const modal = document.getElementById('generate-api-key-modal') as HTMLDialogElement;
+          if (modal) {
+            document.dispatchEvent(new CustomEvent('apikey:open-generate'));
+            modal.showModal();
+          }
+        });
+      }
+
+      // Listen for key generation to refresh the list
+      document.addEventListener('apikey:created', () => {
+        refreshKeyList(listContainer);
+      });
+    });
+  }
+
+  async function refreshKeyList(container: HTMLElement) {
+    try {
+      const response = await fetch('/api/user/api-keys?_render=html', {
+        credentials: 'include',
+        headers: getCsrfHeaders(),
+      });
+      if (response.ok) {
+        const html = await response.text();
+        container.innerHTML = html;
+      }
+    } catch {
+      // Silently fail — list will refresh on next page load
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', initApiKeysCard);
+  document.addEventListener('astro:page-load', initApiKeysCard);
+</script>

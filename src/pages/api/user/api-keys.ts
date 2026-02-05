@@ -1,0 +1,173 @@
+import type { APIRoute } from 'astro';
+import { experimental_AstroContainer as AstroContainer } from 'astro/container';
+import { z } from 'zod';
+import { db } from '@/db';
+import { ApiKeyService } from '@/services/api-key.service';
+import {
+  successResponse,
+  errorResponse,
+  validateBody,
+  getAuthenticatedUser,
+  isValidationError,
+} from '@/lib/api-utils';
+import { createRenderHelper } from '@/lib/api/renderResponse';
+import { logError } from '@/lib/utils';
+import { checkRateLimit, createRateLimitResponse } from '@/lib/rate-limit';
+import { getCacheManager } from '@/lib/cache';
+import SecurityApiKeysListPartial from '@/components/partials/SecurityApiKeysListPartial.astro';
+
+const MAX_KEYS_PER_USER = 25;
+
+const generateKeySchema = z.object({
+  name: z.string().trim().min(1, 'Name is required').max(100),
+  expires_at: z
+    .string()
+    .refine((val) => !isNaN(new Date(val).getTime()), {
+      message: 'Invalid date format',
+    })
+    .optional(),
+});
+
+const revokeKeySchema = z.object({
+  id: z.string().min(1, 'Key ID is required'),
+});
+
+/**
+ * GET /api/user/api-keys
+ * List API keys for the current user.
+ * Supports ?_render=html for server-rendered list partial.
+ */
+export const GET: APIRoute = async (context) => {
+  const { url } = context;
+  const render = createRenderHelper(url);
+
+  try {
+    const auth = getAuthenticatedUser(context);
+    const service = new ApiKeyService(db);
+    const keys = await service.list(auth.workspaceId, auth.userId);
+
+    if (render.wantsHtml()) {
+      const container = await AstroContainer.create();
+      const html = await container.renderToString(SecurityApiKeysListPartial, {
+        props: { keys },
+      });
+      return render.html(html);
+    }
+
+    return successResponse({ keys });
+  } catch (error) {
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return errorResponse('Unauthorized', 401);
+    }
+    logError('Failed to list API keys', error);
+    return errorResponse('Failed to list API keys', 500);
+  }
+};
+
+/**
+ * POST /api/user/api-keys
+ * Generate a new API key.
+ * Rate limited: 10 per hour per user. Max 25 active keys per user.
+ */
+export const POST: APIRoute = async (context) => {
+  const rateLimitResult = checkRateLimit(context.request, {
+    maxRequests: 10,
+    windowMs: 60 * 60 * 1000,
+    keyGenerator: () => {
+      try {
+        const auth = getAuthenticatedUser(context);
+        return `apikey-gen:${auth.userId}`;
+      } catch {
+        return `apikey-gen:${context.clientAddress}`;
+      }
+    },
+    message: 'Too many API key generation requests. Please try again later.',
+  });
+  if (!rateLimitResult.allowed) {
+    return createRateLimitResponse(rateLimitResult);
+  }
+
+  try {
+    const auth = getAuthenticatedUser(context);
+    const validation = await validateBody(context.request, generateKeySchema);
+
+    if (isValidationError(validation)) {
+      return errorResponse('Validation failed', 400, 'VALIDATION_ERROR', validation.error.issues);
+    }
+
+    const service = new ApiKeyService(db);
+
+    // Enforce max active keys per user
+    const existingKeys = await service.list(auth.workspaceId, auth.userId);
+    if (existingKeys.length >= MAX_KEYS_PER_USER) {
+      return errorResponse(
+        `Maximum of ${MAX_KEYS_PER_USER} active API keys reached. Revoke unused keys first.`,
+        400
+      );
+    }
+
+    const result = await service.generate({
+      workspace_id: auth.workspaceId,
+      user_id: auth.userId,
+      name: validation.data.name,
+      expires_at: validation.data.expires_at ? new Date(validation.data.expires_at) : undefined,
+    });
+
+    return successResponse({
+      plain_key: result.plainKey,
+      api_key: result.apiKey,
+    });
+  } catch (error) {
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return errorResponse('Unauthorized', 401);
+    }
+    logError('Failed to generate API key', error);
+    return errorResponse('Failed to generate API key', 500);
+  }
+};
+
+/**
+ * DELETE /api/user/api-keys
+ * Revoke an API key. Only the key owner can revoke.
+ */
+export const DELETE: APIRoute = async (context) => {
+  try {
+    const auth = getAuthenticatedUser(context);
+    const validation = await validateBody(context.request, revokeKeySchema);
+
+    if (isValidationError(validation)) {
+      return errorResponse('Validation failed', 400, 'VALIDATION_ERROR', validation.error.issues);
+    }
+
+    // Verify the key belongs to this user by checking list filtered by userId
+    const service = new ApiKeyService(db);
+    const userKeys = await service.list(auth.workspaceId, auth.userId);
+    const ownsKey = userKeys.some((k) => k.id === validation.data.id);
+
+    if (!ownsKey) {
+      return errorResponse('API key not found', 404);
+    }
+
+    // Find the key prefix before revoking (needed for cache invalidation)
+    const keyToRevoke = userKeys.find((k) => k.id === validation.data.id);
+
+    const revoked = await service.revoke(validation.data.id, auth.workspaceId);
+    if (!revoked) {
+      return errorResponse('API key not found', 404);
+    }
+
+    // Invalidate cached API key auth context so revocation takes effect immediately
+    if (keyToRevoke?.key_prefix) {
+      const cache = getCacheManager();
+      await cache.invalidateByTags([`apikey:${keyToRevoke.key_prefix}`]);
+    }
+
+    return successResponse({ message: 'API key revoked' });
+  } catch (error) {
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return errorResponse('Unauthorized', 401);
+    }
+    logError('Failed to revoke API key', error);
+    return errorResponse('Failed to revoke API key', 500);
+  }
+};

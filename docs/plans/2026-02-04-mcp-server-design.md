@@ -11,35 +11,66 @@ Expose Allowealth's expense tracking, budget, and asset data via MCP (Model Cont
 
 ## Key Decisions
 
-| Decision        | Choice                                 | Rationale                                                     |
-| --------------- | -------------------------------------- | ------------------------------------------------------------- |
-| Authentication  | API key per user                       | Portable across MCP clients, easy to revoke                   |
-| Transport       | stdio only                             | Standard for local MCP clients, simplest to build             |
-| Receipt parsing | AI client handles it                   | Clients already excel at OCR; keeps server simple             |
-| Tool scope      | Standard (read + write, no delete)     | Enough for logging and querying; prevents accidental deletion |
-| Name resolution | Fuzzy matching on category/asset names | AI can use natural names without needing exact IDs            |
+| Decision         | Choice                                 | Rationale                                                     |
+| ---------------- | -------------------------------------- | ------------------------------------------------------------- |
+| Authentication   | API key per user                       | Portable across MCP clients, easy to revoke                   |
+| Transport        | stdio (local) + HTTP (remote)          | stdio for local clients, HTTP for Workers/remote access       |
+| HTTP mode        | Stateless (no MCP sessions)            | Natural fit for Workers; tools are request/response           |
+| HTTP integration | Astro API route in main app            | Reuses middleware stack, Hyperdrive, and deployment pipeline  |
+| Tool DI          | ToolContext parameter injection        | Enables shared tools across stdio and HTTP entry points       |
+| Auth caching     | Existing CacheManager (Upstash/Memory) | Avoids PBKDF2 per-request; reuses production cache infra      |
+| Receipt parsing  | AI client handles it                   | Clients already excel at OCR; keeps server simple             |
+| Tool scope       | Standard (read + write, no delete)     | Enough for logging and querying; prevents accidental deletion |
+| Name resolution  | Fuzzy matching on category/asset names | AI can use natural names without needing exact IDs            |
 
 ## Architecture
 
-The MCP server is a standalone package inside the repo that imports the existing service layer directly (no HTTP calls to the web app). It shares the same SQLite database file.
+The MCP server supports two transports that share the same tool logic via dependency injection:
+
+- **stdio** — for local MCP clients (Claude Desktop, Claude Code). Runs as a standalone process via `mcp-server/src/index.ts`.
+- **HTTP** — for remote access via Cloudflare Workers. Runs as an Astro API route at `/api/mcp` inside the main app.
+
+Both transports call the same tool handlers with a `ToolContext` parameter containing auth info and service instances.
 
 ```
 expenses/
-├── src/                    # Existing web app
-├── mcp-server/             # New MCP server package
+├── src/                         # Existing web app
+│   ├── pages/api/mcp.ts         # HTTP MCP endpoint (Astro API route)
+│   └── services/                # Existing services (shared)
+├── mcp-server/                  # Standalone MCP package (stdio)
 │   ├── src/
-│   │   ├── index.ts        # Entry point (stdio transport)
-│   │   ├── auth.ts         # API key validation
-│   │   ├── context.ts      # Workspace/user context from API key
-│   │   └── tools/          # MCP tool definitions
+│   │   ├── index.ts             # stdio entry point
+│   │   ├── auth.ts              # API key validation (env var)
+│   │   ├── context.ts           # Service factory: createServices(db)
+│   │   └── tools/               # Shared tool definitions
+│   │       ├── types.ts         # ToolContext interface
+│   │       ├── index.ts         # registerTools() + handleToolCall()
 │   │       ├── transactions.ts
 │   │       ├── budget.ts
 │   │       ├── assets.ts
 │   │       └── dashboard.ts
 │   ├── package.json
 │   └── tsconfig.json
-├── src/services/           # Existing services (shared)
-└── src/db/                 # Existing DB layer (shared)
+├── src/db/                      # Existing DB layer (shared)
+└── src/lib/cache/               # Existing cache (used for API key auth)
+```
+
+```
+┌─────────────────────────────────────────────────────┐
+│                   Tool Layer                         │
+│  registerTools() / handleToolCall(name, args, ctx)   │
+│  (mcp-server/src/tools/*)                            │
+└──────────────┬──────────────────────┬────────────────┘
+               │                      │
+    ┌──────────▼──────────┐  ┌────────▼──────────────────┐
+    │  stdio entry         │  │  HTTP entry                │
+    │  mcp-server/         │  │  src/pages/api/mcp.ts      │
+    │  src/index.ts        │  │                            │
+    │                      │  │  Auth: Bearer token         │
+    │  Auth: env var       │  │  DB: per-request (MW)       │
+    │  DB: singleton       │  │  Cache: CacheManager        │
+    │  Transport: stdio    │  │  Transport: JSON-RPC/HTTP   │
+    └──────────────────────┘  └────────────────────────────┘
 ```
 
 ## API Key System
@@ -373,20 +404,189 @@ AI:   "You've spent Rp 2.3M of your Rp 5M budget (46%).
         Transport is at 90% — only Rp 50K remaining."
 ```
 
+## HTTP Transport Design
+
+### Overview
+
+The HTTP transport exposes MCP tools via a single Astro API route (`/api/mcp`) that handles MCP JSON-RPC 2.0 messages over HTTP POST. It runs inside the main app and deploys to Cloudflare Workers alongside everything else.
+
+**Mode:** Stateless — no MCP session management (`Mcp-Session-Id` not used). Every request is independent: authenticate, process, respond. This is the natural fit for Workers (no state between requests).
+
+### ToolContext (Dependency Injection)
+
+Tool handlers are refactored to accept a `ToolContext` parameter instead of importing module-level singletons:
+
+```typescript
+// mcp-server/src/tools/types.ts
+interface ToolContext {
+  auth: {
+    workspaceId: string;
+    userId: string;
+    apiKeyId: string;
+  };
+  services: {
+    transaction: TransactionService;
+    budget: BudgetService;
+    asset: AssetService;
+    dashboard: DashboardService;
+    category: CategoryService;
+  };
+}
+```
+
+All handler signatures change from:
+
+```typescript
+handleListCategories(args); // reads singletons
+```
+
+to:
+
+```typescript
+handleListCategories(args, ctx); // receives injected context
+```
+
+The stdio entry point constructs `ToolContext` once on startup from its singletons. The HTTP entry point constructs it fresh per-request from the middleware-provided DB.
+
+### Authentication
+
+HTTP requests authenticate via `Authorization: Bearer aw_xxx` header.
+
+PBKDF2 validation is expensive (~100ms), so results are cached using the existing `CacheManager` infrastructure (Upstash in production, Memory in dev):
+
+```typescript
+const CACHE_TTL = 300; // 5 minutes
+
+async function validateWithCache(apiKey: string, db: IDatabase): Promise<AuthContext | null> {
+  const keyHash = simpleHash(apiKey); // hash of full key (not prefix)
+  const prefix = apiKey.slice(0, 8);
+  const cacheKey = `cache:apikey:${keyHash}`;
+  const cache = getCacheManager();
+
+  // 1. Try cache
+  const cached = await cache.get<AuthContext>(cacheKey);
+  if (cached) return cached;
+
+  // 2. Cache miss — full PBKDF2 validation
+  const service = new ApiKeyService(db);
+  const result = await service.validate(apiKey);
+  if (!result) return null;
+
+  // 3. Store in cache with prefix tag for invalidation on revoke
+  await cache.set(cacheKey, result, {
+    ttl: CACHE_TTL,
+    tags: [`apikey:${prefix}`],
+  });
+
+  return result;
+}
+```
+
+The cache key uses a hash of the full API key (preventing prefix-collision auth bypass), while the tag uses the prefix (enabling invalidation on revocation without the full key). When a key is revoked, invalidate with tag `apikey:{prefix}`.
+
+### MCP Message Dispatch
+
+The endpoint handles standard MCP JSON-RPC methods:
+
+| Method       | Response                                                           |
+| ------------ | ------------------------------------------------------------------ |
+| `initialize` | Server info + capabilities                                         |
+| `tools/list` | All 8 tool definitions                                             |
+| `tools/call` | Dispatches to shared handler via `handleToolCall(name, args, ctx)` |
+| Other        | JSON-RPC error (-32601 Method not found)                           |
+
+Notifications (`notifications/initialized`, `ping`) are accepted and ignored (return 202).
+
+### API Route
+
+```typescript
+// src/pages/api/mcp.ts
+export const POST: APIRoute = async (context) => {
+  // 1. Extract & validate API key (with cache)
+  // 2. Build ToolContext with per-request DB from middleware
+  // 3. Parse JSON-RPC body, dispatch to MCP handler
+  // 4. Return JSON-RPC response
+};
+
+// Reject non-POST methods (no SSE in stateless mode)
+export const ALL: APIRoute = () => new Response(null, { status: 405 });
+```
+
+The route participates in the existing middleware stack automatically:
+
+- `runtimeEnv` — sets Hyperdrive connection string
+- `database` — manages per-request DB lifecycle
+- `securityHeaders` — adds security headers
+
+It bypasses `authentication` (Lucia sessions) and `csrf` since it uses API key auth.
+
+### Client Configuration (HTTP)
+
+```json
+{
+  "mcpServers": {
+    "allowealth": {
+      "url": "https://allowealth.com/api/mcp",
+      "headers": {
+        "Authorization": "Bearer aw_..."
+      }
+    }
+  }
+}
+```
+
+### File Changes
+
+**New files:**
+
+- `mcp-server/src/tools/types.ts` — ToolContext interface
+- `src/pages/api/mcp.ts` — Astro API route
+
+**Modified files (tool refactor):**
+
+- `mcp-server/src/tools/index.ts` — handleToolCall accepts ToolContext
+- `mcp-server/src/tools/transactions.ts` — handlers accept ctx
+- `mcp-server/src/tools/assets.ts` — handlers accept ctx
+- `mcp-server/src/tools/budget.ts` — handler accepts ctx
+- `mcp-server/src/tools/dashboard.ts` — handlers accept ctx
+
+**Modified files (context refactor):**
+
+- `mcp-server/src/context.ts` — exports `createServices(db)` factory instead of singletons
+- `mcp-server/src/index.ts` — constructs ToolContext from singletons
+
+**Modified files (cache keys):**
+
+- `src/lib/cache/keys.ts` — add `CacheKeys.apiKey(prefix)`
+- `src/lib/cache/tags.ts` — add `CacheTags.API_KEYS`
+
 ## Implementation Phases
 
-### Phase 1: Core MCP Server
+### Phase 1: Core MCP Server (stdio)
 
 1. Add `api_keys` table (schema + migration)
-2. CLI command for API key generation
-3. MCP server scaffolding (stdio transport, auth)
-4. Implement all 8 tools
-5. Manual testing with Claude Desktop
+2. API Key Service (generate, validate, revoke)
+3. CLI command for API key generation
+4. Fuzzy matching utility
+5. MCP server scaffolding (stdio transport, auth)
+6. Transaction + asset tools (list + add)
+7. Budget + dashboard tools
+8. Integration test & manual verification
 
-### Phase 2: Polish (future)
+### Phase 2: HTTP Transport
+
+1. Refactor tools to accept `ToolContext` (dependency injection)
+2. Refactor `context.ts` to `createServices(db)` factory
+3. Update stdio entry point to construct and pass `ToolContext`
+4. Add cache keys/tags for API key auth caching
+5. Implement `src/pages/api/mcp.ts` (HTTP endpoint with JSON-RPC dispatch)
+6. Bypass Lucia/CSRF middleware for `/api/mcp` route
+7. Quality gates (lint, typecheck) and manual testing
+8. Test with HTTP-capable MCP client
+
+### Phase 3: Polish (future)
 
 - Settings page UI for API key management
-- HTTP transport for remote clients
 - Rate limiting
 - Audit logging of MCP actions
 
@@ -394,4 +594,5 @@ AI:   "You've spent Rp 2.3M of your Rp 5M budget (46%).
 
 - `@modelcontextprotocol/sdk` — MCP protocol implementation
 - Existing project services (TransactionService, BudgetService, AssetService, DashboardService)
-- Existing DB layer (Drizzle ORM + SQLite)
+- Existing DB layer (Drizzle ORM + SQLite/PostgreSQL)
+- Existing CacheManager (Upstash/Memory) — for API key auth caching

@@ -1750,3 +1750,740 @@ git commit -m "feat(mcp): add start scripts and finalize MCP server integration"
 **Total: 8 tasks, ~50 steps.**
 
 Each task is independently committable and testable. The order ensures no forward dependencies — each task builds on the previous one.
+
+---
+
+---
+
+# Phase 2: HTTP Transport Implementation Plan
+
+> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+
+**Goal:** Add HTTP transport to the MCP server so it can run on Cloudflare Workers via the main Astro app at `/api/mcp`, while keeping the existing stdio transport working.
+
+**Architecture:** Refactor tool handlers to accept a `ToolContext` parameter (dependency injection) instead of importing module-level singletons. Add a single Astro API route that handles MCP JSON-RPC messages over HTTP POST, authenticating via `Authorization: Bearer` header with cached PBKDF2 validation using the existing CacheManager.
+
+**Tech Stack:** Existing Astro API routes, existing CacheManager (Upstash/Memory), existing service layer, MCP JSON-RPC 2.0 protocol.
+
+**Design doc:** `docs/plans/2026-02-04-mcp-server-design.md` (HTTP Transport Design section)
+
+---
+
+## Task 9: Define ToolContext Interface
+
+**Files:**
+
+- Create: `mcp-server/src/tools/types.ts`
+
+**Step 1: Create the ToolContext type file**
+
+Create `mcp-server/src/tools/types.ts`:
+
+```typescript
+import type { TransactionService } from '@/services/transaction.service';
+import type { BudgetService } from '@/services/budget.service';
+import type { AssetService } from '@/services/asset.service';
+import type { DashboardService } from '@/services/dashboard.service';
+import type { CategoryService } from '@/services/category.service';
+
+export interface ToolContext {
+  auth: {
+    workspaceId: string;
+    userId: string;
+    apiKeyId: string;
+  };
+  services: {
+    transaction: TransactionService;
+    budget: BudgetService;
+    asset: AssetService;
+    dashboard: DashboardService;
+    category: CategoryService;
+  };
+}
+```
+
+**Step 2: Commit**
+
+```bash
+git add mcp-server/src/tools/types.ts
+git commit -m "feat(mcp): add ToolContext interface for dependency injection"
+```
+
+---
+
+## Task 10: Refactor Tool Handlers to Accept ToolContext
+
+**Files:**
+
+- Modify: `mcp-server/src/tools/assets.ts`
+- Modify: `mcp-server/src/tools/budget.ts`
+- Modify: `mcp-server/src/tools/dashboard.ts`
+- Modify: `mcp-server/src/tools/transactions.ts`
+- Modify: `mcp-server/src/tools/index.ts`
+
+This is a mechanical refactor: add `ctx: ToolContext` parameter to every handler, replace `await getAuthContext()` with `ctx.auth`, replace singleton service imports with `ctx.services.*`.
+
+**Step 1: Refactor `assets.ts`**
+
+In `mcp-server/src/tools/assets.ts`:
+
+1. Remove imports of `getAuthContext` and `categoryService, assetService` from context
+2. Add import of `ToolContext` from `./types.js`
+3. Change both handler signatures:
+
+```typescript
+import type { ToolContext } from './types.js';
+
+// Remove these imports:
+// import { getAuthContext } from '../auth.js';
+// import { categoryService, assetService } from '../context.js';
+
+export async function handleListCategories(args: Record<string, unknown>, ctx: ToolContext) {
+  const { workspaceId } = ctx.auth;
+  const input = listCategoriesSchema.parse(args);
+
+  const categories = await ctx.services.category.findAll(workspaceId, {
+    type: input.type,
+    is_active: true,
+  });
+  // ... rest unchanged
+}
+
+export async function handleListAssets(_args: Record<string, unknown>, ctx: ToolContext) {
+  const { workspaceId } = ctx.auth;
+  listAssetsSchema.parse(_args);
+
+  const assets = await ctx.services.asset.findAll(workspaceId);
+  // ... rest unchanged
+}
+```
+
+**Step 2: Refactor `budget.ts`**
+
+In `mcp-server/src/tools/budget.ts`:
+
+1. Remove imports of `getAuthContext` and `budgetService`
+2. Add import of `ToolContext`
+3. Change handler signature:
+
+```typescript
+import type { ToolContext } from './types.js';
+
+export async function handleGetBudgetSummary(args: Record<string, unknown>, ctx: ToolContext) {
+  const { workspaceId } = ctx.auth;
+  const input = budgetSummarySchema.parse(args);
+  // ...
+  const overview = await ctx.services.budget.getMonthlyOverview(
+    workspaceId,
+    year,
+    month,
+    input.currency
+  );
+  // ... rest unchanged
+}
+```
+
+**Step 3: Refactor `dashboard.ts`**
+
+In `mcp-server/src/tools/dashboard.ts`:
+
+1. Remove imports of `getAuthContext` and `dashboardService, assetService`
+2. Add import of `ToolContext`
+3. Change both handler signatures:
+
+```typescript
+import type { ToolContext } from './types.js';
+
+export async function handleGetDashboard(args: Record<string, unknown>, ctx: ToolContext) {
+  const { workspaceId } = ctx.auth;
+  const input = dashboardSchema.parse(args);
+  // ...
+  const data = await ctx.services.dashboard.getDashboardData(
+    workspaceId,
+    month,
+    year,
+    input.currency
+  );
+  // ... rest unchanged
+}
+
+export async function handleGetAssetSummary(args: Record<string, unknown>, ctx: ToolContext) {
+  const { workspaceId } = ctx.auth;
+  const input = assetSummarySchema.parse(args);
+
+  const [byCurrency, byType] = await Promise.all([
+    ctx.services.asset.getTotalByCurrency(workspaceId),
+    ctx.services.asset.getTotalByType(workspaceId),
+  ]);
+  // ... rest unchanged
+}
+```
+
+**Step 4: Refactor `transactions.ts`**
+
+In `mcp-server/src/tools/transactions.ts`:
+
+1. Remove imports of `getAuthContext` and `transactionService, categoryService, assetService`
+2. Add import of `ToolContext`
+3. Change handler signatures and internal helpers:
+
+```typescript
+import type { ToolContext } from './types.js';
+
+// Remove these imports:
+// import { getAuthContext } from '../auth.js';
+// import { transactionService, categoryService, assetService } from '../context.js';
+
+export async function handleListTransactions(args: Record<string, unknown>, ctx: ToolContext) {
+  const { workspaceId } = ctx.auth;
+  const input = listTransactionsSchema.parse(args);
+  // ...
+  const transactions = await ctx.services.transaction.findAll(filters);
+  const count = await ctx.services.transaction.count(filters);
+  // ... rest unchanged
+}
+
+// Internal helpers also need ctx:
+async function resolveCategory(
+  name: string,
+  type: 'expense' | 'income',
+  workspaceId: string,
+  ctx: ToolContext
+) {
+  const categories = await ctx.services.category.findAll(workspaceId, {
+    type,
+    is_active: true,
+  });
+  // ... rest unchanged
+}
+
+async function resolveAsset(name: string, workspaceId: string, ctx: ToolContext) {
+  const assets = await ctx.services.asset.findAll(workspaceId);
+  // ... rest unchanged
+}
+
+export async function handleAddTransaction(
+  args: Record<string, unknown>,
+  type: 'expense' | 'income',
+  ctx: ToolContext
+) {
+  const { workspaceId, userId } = ctx.auth;
+  const input = addTransactionSchema.parse(args);
+
+  const categoryResult = await resolveCategory(input.category_name, type, workspaceId, ctx);
+  // ...
+  const assetResult = await resolveAsset(input.asset_name, workspaceId, ctx);
+  // ...
+  const transaction = await ctx.services.transaction.create({
+    workspace_id: workspaceId,
+    created_by_user_id: userId,
+    // ... rest unchanged
+  });
+  // ... rest unchanged
+}
+```
+
+**Step 5: Update `index.ts` to pass ctx through**
+
+In `mcp-server/src/tools/index.ts`:
+
+```typescript
+import type { ToolContext } from './types.js';
+
+export async function handleToolCall(
+  name: string,
+  args: Record<string, unknown>,
+  ctx: ToolContext
+): Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }> {
+  try {
+    switch (name) {
+      case 'list_categories':
+        return await handleListCategories(args, ctx);
+      case 'list_assets':
+        return await handleListAssets(args, ctx);
+      case 'list_transactions':
+        return await handleListTransactions(args, ctx);
+      case 'add_expense':
+        return await handleAddTransaction(args, 'expense', ctx);
+      case 'add_income':
+        return await handleAddTransaction(args, 'income', ctx);
+      case 'get_budget_summary':
+        return await handleGetBudgetSummary(args, ctx);
+      case 'get_dashboard':
+        return await handleGetDashboard(args, ctx);
+      case 'get_asset_summary':
+        return await handleGetAssetSummary(args, ctx);
+      default:
+        return {
+          isError: true,
+          content: [{ type: 'text', text: `Unknown tool: ${name}` }],
+        };
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return {
+      isError: true,
+      content: [{ type: 'text', text: `Error: ${message}` }],
+    };
+  }
+}
+```
+
+Also re-export `ToolContext` for consumers:
+
+```typescript
+export type { ToolContext } from './types.js';
+```
+
+**Step 6: Run existing tests to verify nothing broke**
+
+Run: `bun test mcp-server/`
+Expected: All existing tests PASS (schema tests don't call handlers, so they're unaffected).
+
+**Step 7: Commit**
+
+```bash
+git add mcp-server/src/tools/
+git commit -m "refactor(mcp): inject ToolContext into all tool handlers"
+```
+
+---
+
+## Task 11: Refactor context.ts to Service Factory + Update stdio Entry Point
+
+**Files:**
+
+- Modify: `mcp-server/src/context.ts`
+- Modify: `mcp-server/src/index.ts`
+
+**Step 1: Convert context.ts to a factory function**
+
+Replace `mcp-server/src/context.ts` with:
+
+```typescript
+import type { IDatabase } from '@/db';
+import { TransactionService } from '@/services/transaction.service';
+import { BudgetService } from '@/services/budget.service';
+import { AssetService } from '@/services/asset.service';
+import { DashboardService } from '@/services/dashboard.service';
+import { CategoryService } from '@/services/category.service';
+
+export interface McpServices {
+  transaction: TransactionService;
+  budget: BudgetService;
+  asset: AssetService;
+  dashboard: DashboardService;
+  category: CategoryService;
+}
+
+export function createServices(db: IDatabase): McpServices {
+  return {
+    transaction: new TransactionService(db),
+    budget: new BudgetService(db),
+    asset: new AssetService(db),
+    dashboard: new DashboardService(db),
+    category: new CategoryService(db),
+  };
+}
+```
+
+**Step 2: Update stdio entry point to construct ToolContext**
+
+Replace `mcp-server/src/index.ts` with:
+
+```typescript
+import { Server } from '@modelcontextprotocol/sdk/server/index.js';
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { ListToolsRequestSchema, CallToolRequestSchema } from '@modelcontextprotocol/sdk/types.js';
+import { db } from '@/db';
+import { authenticate } from './auth.js';
+import { createServices } from './context.js';
+import { registerTools, handleToolCall } from './tools/index.js';
+import type { ToolContext } from './tools/types.js';
+
+const server = new Server(
+  { name: 'allowealth', version: '1.0.0' },
+  { capabilities: { tools: {} } }
+);
+
+server.setRequestHandler(ListToolsRequestSchema, async () => {
+  return { tools: registerTools() };
+});
+
+async function main(): Promise<void> {
+  const auth = await authenticate();
+  const services = createServices(db);
+  const ctx: ToolContext = { auth, services };
+
+  console.error(`Allowealth MCP server started (workspace: ${auth.workspaceId.slice(0, 8)}…)`);
+
+  server.setRequestHandler(CallToolRequestSchema, async (request) => {
+    return handleToolCall(request.params.name, request.params.arguments ?? {}, ctx);
+  });
+
+  const transport = new StdioServerTransport();
+  await server.connect(transport);
+}
+
+main().catch((err) => {
+  console.error('Failed to start MCP server:', err);
+  process.exit(1);
+});
+```
+
+Key change: `CallToolRequestSchema` handler is registered inside `main()` so it has access to the `ctx` closure. `ListToolsRequestSchema` stays outside since it doesn't need context.
+
+**Step 3: Run tests**
+
+Run: `bun test mcp-server/`
+Expected: All tests PASS.
+
+**Step 4: Commit**
+
+```bash
+git add mcp-server/src/context.ts mcp-server/src/index.ts
+git commit -m "refactor(mcp): convert context.ts to factory, wire ToolContext in stdio entry"
+```
+
+---
+
+## Task 12: Add API Key Cache Keys and Tags
+
+**Files:**
+
+- Modify: `src/lib/cache/keys.ts`
+- Modify: `src/lib/cache/tags.ts`
+
+**Step 1: Add `apiKey` to CacheKeys**
+
+In `src/lib/cache/keys.ts`, add inside the `CacheKeys` object (after the `layout` entry):
+
+```typescript
+  /** API key auth context: cache:apikey:{prefix} */
+  apiKey: (prefix: string): string => `${PREFIX}:apikey:${prefix}`,
+```
+
+**Step 2: Add `API_KEYS` to CacheTags**
+
+In `src/lib/cache/tags.ts`, add inside the `CacheTags` object (after `LAYOUT`):
+
+```typescript
+  API_KEYS: 'api_keys' as const,
+```
+
+**Step 3: Commit**
+
+```bash
+git add src/lib/cache/keys.ts src/lib/cache/tags.ts
+git commit -m "feat(mcp): add cache keys and tags for API key auth"
+```
+
+---
+
+## Task 13: Implement HTTP MCP Endpoint
+
+**Files:**
+
+- Create: `src/pages/api/mcp.ts`
+- Reference: `mcp-server/src/tools/index.ts` (registerTools, handleToolCall)
+- Reference: `mcp-server/src/context.ts` (createServices)
+- Reference: `src/services/api-key.service.ts` (validate)
+- Reference: `src/lib/cache/index.ts` (getCacheManager, CacheKeys, CacheTags)
+
+**Step 1: Create the API route**
+
+Create `src/pages/api/mcp.ts`:
+
+```typescript
+import type { APIRoute } from 'astro';
+import { getDb } from '@/db';
+import { ApiKeyService } from '@/services/api-key.service';
+import { getCacheManager, CacheKeys, CacheTags } from '@/lib/cache';
+import { createServices } from '../../mcp-server/src/context';
+import { registerTools, handleToolCall } from '../../mcp-server/src/tools/index';
+import type { ToolContext } from '../../mcp-server/src/tools/types';
+
+const API_KEY_CACHE_TTL = 300; // 5 minutes
+
+interface AuthContext {
+  workspaceId: string;
+  userId: string;
+  apiKeyId: string;
+}
+
+function extractBearerToken(request: Request): string | null {
+  const header = request.headers.get('Authorization');
+  if (!header?.startsWith('Bearer ')) return null;
+  return header.slice(7);
+}
+
+async function validateApiKeyWithCache(apiKey: string): Promise<AuthContext | null> {
+  if (!apiKey.startsWith('aw_')) return null;
+
+  const prefix = apiKey.slice(0, 8);
+  const cacheKey = CacheKeys.apiKey(prefix);
+  const cache = getCacheManager();
+
+  const cached = await cache.get<AuthContext>(cacheKey);
+  if (cached) return cached;
+
+  const db = getDb();
+  const service = new ApiKeyService(db);
+  const result = await service.validate(apiKey);
+  if (!result) return null;
+
+  await cache.set(cacheKey, result, {
+    ttl: API_KEY_CACHE_TTL,
+    tags: [CacheTags.API_KEYS, `apikey:${prefix}`],
+  });
+
+  return result;
+}
+
+interface JsonRpcRequest {
+  jsonrpc: string;
+  id?: string | number | null;
+  method: string;
+  params?: Record<string, unknown>;
+}
+
+interface JsonRpcResponse {
+  jsonrpc: '2.0';
+  id?: string | number | null;
+  result?: unknown;
+  error?: { code: number; message: string };
+}
+
+function jsonResponse(body: JsonRpcResponse, status = 200): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
+
+function errorResponse(status: number, message: string): Response {
+  return new Response(JSON.stringify({ error: message }), {
+    status,
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
+
+async function dispatchMcpMessage(
+  message: JsonRpcRequest,
+  ctx: ToolContext
+): Promise<JsonRpcResponse> {
+  switch (message.method) {
+    case 'initialize':
+      return {
+        jsonrpc: '2.0',
+        id: message.id,
+        result: {
+          protocolVersion: '2025-03-26',
+          capabilities: { tools: {} },
+          serverInfo: { name: 'allowealth', version: '1.0.0' },
+        },
+      };
+
+    case 'tools/list':
+      return {
+        jsonrpc: '2.0',
+        id: message.id,
+        result: { tools: registerTools() },
+      };
+
+    case 'tools/call': {
+      const params = message.params as { name: string; arguments?: Record<string, unknown> };
+      const result = await handleToolCall(params.name, params.arguments ?? {}, ctx);
+      return {
+        jsonrpc: '2.0',
+        id: message.id,
+        result,
+      };
+    }
+
+    case 'notifications/initialized':
+    case 'ping':
+      // Notifications don't need a response, but since we're stateless
+      // just acknowledge
+      return {
+        jsonrpc: '2.0',
+        id: message.id,
+        result: {},
+      };
+
+    default:
+      return {
+        jsonrpc: '2.0',
+        id: message.id,
+        error: { code: -32601, message: `Method not found: ${message.method}` },
+      };
+  }
+}
+
+export const POST: APIRoute = async (context) => {
+  // 1. Authenticate via Bearer token
+  const apiKey = extractBearerToken(context.request);
+  if (!apiKey) {
+    return errorResponse(401, 'Missing Authorization header. Use: Bearer aw_...');
+  }
+
+  const auth = await validateApiKeyWithCache(apiKey);
+  if (!auth) {
+    return errorResponse(401, 'Invalid API key');
+  }
+
+  // 2. Build ToolContext with current request's DB
+  const db = getDb();
+  const services = createServices(db);
+  const ctx: ToolContext = { auth, services };
+
+  // 3. Parse and dispatch JSON-RPC message
+  let body: JsonRpcRequest;
+  try {
+    body = await context.request.json();
+  } catch {
+    return errorResponse(400, 'Invalid JSON body');
+  }
+
+  if (!body.method) {
+    return errorResponse(400, 'Missing "method" field in JSON-RPC request');
+  }
+
+  const result = await dispatchMcpMessage(body, ctx);
+  return jsonResponse(result);
+};
+
+// Only POST is supported (stateless, no SSE)
+export const GET: APIRoute = async () => {
+  return errorResponse(405, 'Method not allowed. Use POST.');
+};
+
+export const DELETE: APIRoute = async () => {
+  return errorResponse(405, 'Method not allowed. Use POST.');
+};
+```
+
+**Step 2: Verify CSRF is naturally bypassed**
+
+The CSRF middleware at `src/middleware/csrf.ts:28` checks `isAuthenticated && isApiRequest && requiresCsrfProtection(method) && !isCsrfExempt(pathname)`. The `isAuthenticated` check uses `!!context.locals.session`. Since our MCP endpoint uses API key auth (not session cookies), `context.locals.session` is `null`, so `isAuthenticated` is `false`. CSRF validation is skipped automatically. No middleware changes needed.
+
+**Step 3: Verify route guard is naturally bypassed**
+
+The route guard at `src/middleware/route-guard.ts` only protects routes starting with `/dashboard`, `/transactions`, `/budget`, etc. The `/api/mcp` route is not in the protected list, so it passes through automatically. No middleware changes needed.
+
+**Step 4: Commit**
+
+```bash
+git add src/pages/api/mcp.ts
+git commit -m "feat(mcp): add HTTP MCP endpoint at /api/mcp"
+```
+
+---
+
+## Task 14: Quality Gates & Manual Testing
+
+**Step 1: Run lint and typecheck**
+
+Run: `bun run lint:fix && bun run format:fix && bun run typecheck`
+Expected: All pass. Fix any issues.
+
+**Step 2: Run all MCP tests**
+
+Run: `bun test mcp-server/`
+Expected: All existing tests PASS.
+
+**Step 3: Test stdio transport still works**
+
+Run the existing MCP server with a valid API key:
+
+```bash
+ALLOWEALTH_API_KEY=aw_<your-key> bun run mcp:start
+```
+
+Expected: `Allowealth MCP server started (workspace: ...)` printed to stderr. Press Ctrl+C.
+
+**Step 4: Test HTTP transport locally**
+
+Start the dev server:
+
+```bash
+bun run dev
+```
+
+Test `initialize`:
+
+```bash
+curl -s -X POST http://localhost:4321/api/mcp \
+  -H "Authorization: Bearer aw_<your-key>" \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"test","version":"1.0.0"}}}' | jq .
+```
+
+Expected: JSON response with `serverInfo.name: "allowealth"`.
+
+Test `tools/list`:
+
+```bash
+curl -s -X POST http://localhost:4321/api/mcp \
+  -H "Authorization: Bearer aw_<your-key>" \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' | jq .
+```
+
+Expected: JSON with all 8 tools.
+
+Test `tools/call` (list_categories):
+
+```bash
+curl -s -X POST http://localhost:4321/api/mcp \
+  -H "Authorization: Bearer aw_<your-key>" \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"list_categories","arguments":{}}}' | jq .
+```
+
+Expected: JSON with categories from your workspace.
+
+Test unauthorized:
+
+```bash
+curl -s -X POST http://localhost:4321/api/mcp \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize"}' | jq .
+```
+
+Expected: 401 `Missing Authorization header`.
+
+Test invalid key:
+
+```bash
+curl -s -X POST http://localhost:4321/api/mcp \
+  -H "Authorization: Bearer aw_invalidkey12345678901234567890" \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize"}' | jq .
+```
+
+Expected: 401 `Invalid API key`.
+
+**Step 5: Final commit**
+
+```bash
+git add -A
+git commit -m "chore(mcp): quality gates and verify HTTP transport"
+```
+
+---
+
+## Summary
+
+| Task | Description                                          | Estimated Size |
+| ---- | ---------------------------------------------------- | -------------- |
+| 9    | Define `ToolContext` interface                       | Small          |
+| 10   | Refactor all tool handlers to accept `ToolContext`   | Medium         |
+| 11   | Convert `context.ts` to factory + update stdio entry | Small          |
+| 12   | Add API key cache keys and tags                      | Small          |
+| 13   | Implement HTTP MCP endpoint (`/api/mcp`)             | Medium         |
+| 14   | Quality gates & manual testing                       | Small          |
+
+**Total: 6 tasks, ~20 steps.**
+
+Each task builds on the previous. Tasks 9-11 are the refactor (no new functionality). Tasks 12-13 add the HTTP transport. Task 14 verifies everything works.
