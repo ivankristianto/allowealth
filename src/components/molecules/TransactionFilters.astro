@@ -11,12 +11,12 @@
  * @param {number} count - Number of results
  */
 
-import Label from '../atoms/Label.astro';
 import Input from '../atoms/Input.astro';
 import CategorySelect from '../atoms/CategorySelect.astro';
 import AssetSelect from '../atoms/AssetSelect.astro';
 import DatePicker from '../atoms/DatePicker.astro';
 import Button from '../atoms/Button.astro';
+import FormField from '../molecules/FormField.astro';
 import { Search } from '@lucide/astro';
 
 export interface Props {
@@ -40,8 +40,7 @@ const { action, categories = [], assets = [], values = {}, count = 0 } = Astro.p
 
 <form action={action} method="GET" class="space-y-4">
   <!-- Search -->
-  <div class="form-control">
-    <Label htmlFor="search" id="search-label">Search</Label>
+  <FormField label="Search" htmlFor="search">
     <div class="join">
       <Input
         id="search"
@@ -55,57 +54,54 @@ const { action, categories = [], assets = [], values = {}, count = 0 } = Astro.p
         <Search size={16} class="stroke-current" aria-hidden="true" />
       </Button>
     </div>
-  </div>
+  </FormField>
 
   <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
     <!-- Type -->
-    <div class="form-control">
-      <Label htmlFor="type" id="type-label">Type</Label>
+    <FormField label="Type" htmlFor="type">
       <select id="type" name="type" class="select select-bordered">
         <option value="">All Types</option>
         <option value="expense" selected={values.type === 'expense'}>Expense</option>
         <option value="income" selected={values.type === 'income'}>Income</option>
       </select>
-    </div>
+    </FormField>
 
     <!-- Currency -->
-    <div class="form-control">
-      <Label htmlFor="currency" id="currency-label">Currency</Label>
+    <FormField label="Currency" htmlFor="currency">
       <select id="currency" name="currency" class="select select-bordered">
         <option value="">All Currencies</option>
         <option value="IDR" selected={values.currency === 'IDR'}>IDR</option>
         <option value="USD" selected={values.currency === 'USD'}>USD</option>
       </select>
-    </div>
+    </FormField>
 
     <!-- Category -->
-    <div class="form-control">
-      <Label htmlFor="category_id" id="category-label">Category</Label>
-      <CategorySelect
-        id="category_id"
-        categories={categories}
-        value={values.category_id || ''}
-        required={false}
-      />
-    </div>
+    <CategorySelect
+      id="category_id"
+      categories={categories}
+      value={values.category_id || ''}
+      required={false}
+      label="Category"
+    />
 
     <!-- Asset -->
-    <div class="form-control">
-      <Label htmlFor="asset_id" id="asset-label">Account</Label>
-      <AssetSelect id="asset_id" assets={assets} value={values.asset_id || ''} required={false} />
-    </div>
+    <AssetSelect
+      id="asset_id"
+      assets={assets}
+      value={values.asset_id || ''}
+      required={false}
+      label="Account"
+    />
 
     <!-- Start Date -->
-    <div class="form-control">
-      <Label htmlFor="start_date" id="start-label">From Date</Label>
+    <FormField label="From Date" htmlFor="start_date">
       <DatePicker id="start_date" name="start_date" value={values.start_date || ''} />
-    </div>
+    </FormField>
 
     <!-- End Date -->
-    <div class="form-control">
-      <Label htmlFor="end_date" id="end-label">To Date</Label>
+    <FormField label="To Date" htmlFor="end_date">
       <DatePicker id="end_date" name="end_date" value={values.end_date || ''} />
-    </div>
+    </FormField>
   </div>
 
   <!-- Actions -->

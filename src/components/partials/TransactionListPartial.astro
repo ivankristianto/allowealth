@@ -9,8 +9,9 @@
  * The client injects this directly into #transaction-list.
  */
 
+import EmptyState from '../atoms/EmptyState.astro';
 import TransactionCard from '../molecules/TransactionCard.astro';
-import { Receipt, RotateCcw } from '@lucide/astro';
+import { RotateCcw } from '@lucide/astro';
 import type { TransactionOutput } from '@/lib/types/transaction';
 
 export interface Props {
@@ -28,14 +29,14 @@ const { transactions, showActions = true } = Astro.props;
     ))
   ) : (
     <div id="empty-state" class="py-24 text-center">
-      <div class="w-20 h-20 bg-base-200 mx-auto rounded-3xl flex items-center justify-center text-base-content/30 mb-6 shadow-inner">
-        <Receipt size={40} class="stroke-current" aria-hidden="true" />
-      </div>
-      <h4 class="text-lg font-bold text-base-content mb-2">No matching transactions</h4>
-      <p class="text-base-content/60 font-medium max-w-xs mx-auto mb-6">
-        Try adjusting your filters or search terms to find what you're looking for.
-      </p>
-      <a href="/transactions" class="btn btn-outline btn-sm gap-2" data-reset-filters>
+      <EmptyState
+        title="No matching transactions"
+        message="Try adjusting your filters or search terms to find what you're looking for."
+        iconName="receipt"
+        variant="centered"
+        className="py-0"
+      />
+      <a href="/transactions" class="btn btn-outline btn-sm gap-2 mt-6" data-reset-filters>
         <RotateCcw size={16} class="stroke-current" aria-hidden="true" />
         Reset filters
       </a>

@@ -11,6 +11,8 @@
  */
 
 import Modal from '../molecules/Modal.astro';
+import FormField from '../molecules/FormField.astro';
+import Label from '../atoms/Label.astro';
 import { Plus, Pencil } from '@lucide/astro';
 
 export interface Props {
@@ -61,13 +63,13 @@ const subtitle = isEditMode
       <form data-asset-category-form class="flex flex-col gap-5">
         <input type="hidden" name="id" value={values.id || ''} />
 
-        <div class="form-control">
-          <label class="label py-1" for={`${id}-name`}>
-            <span class="text-xs uppercase tracking-widest text-base-content/50 font-medium">
-              Category Name
-              <span class="sr-only">(required)</span>
-            </span>
-          </label>
+        <FormField
+          label="Category Name"
+          htmlFor={`${id}-name`}
+          required
+          error={!!errors.name}
+          errorMessage={errors.name}
+        >
           <input
             type="text"
             name="name"
@@ -79,16 +81,18 @@ const subtitle = isEditMode
             value={values.name || ''}
             data-testid="asset-category-name-input"
           />
-          {errors.name && <span class="text-error text-xs mt-1">{errors.name}</span>}
-        </div>
+        </FormField>
 
-        <div class="form-control">
-          <label class="label py-1" for={`${id}-description`}>
-            <span class="text-xs uppercase tracking-widest text-base-content/50 font-medium">
-              Description
-              <span class="text-base-content/30">(optional)</span>
-            </span>
-          </label>
+        <FormField
+          label="Description"
+          htmlFor={`${id}-description`}
+          helpText="Max 500 characters"
+          error={!!errors.description}
+          errorMessage={errors.description}
+        >
+          <div slot="label">
+            <Label htmlFor={`${id}-description`} helpText="Optional"> Description </Label>
+          </div>
           <textarea
             name="description"
             id={`${id}-description`}
@@ -97,17 +101,15 @@ const subtitle = isEditMode
             placeholder="Short note about this category"
             data-testid="asset-category-description-input">{values.description || ''}</textarea
           >
-          <span class="text-base-content/40 text-xs mt-1">Max 500 characters</span>
-          {errors.description && <span class="text-error text-xs mt-1">{errors.description}</span>}
-        </div>
+        </FormField>
 
-        <div class="form-control">
-          <label class="label py-1" for={`${id}-type`}>
-            <span class="text-xs uppercase tracking-widest text-base-content/50 font-medium">
-              Type
-              <span class="sr-only">(required)</span>
-            </span>
-          </label>
+        <FormField
+          label="Type"
+          htmlFor={`${id}-type`}
+          required
+          error={!!errors.type}
+          errorMessage={errors.type}
+        >
           <select
             name="type"
             id={`${id}-type`}
@@ -120,8 +122,7 @@ const subtitle = isEditMode
             </option>
             <option value="liability" selected={values.type === 'liability'}>Liability</option>
           </select>
-          {errors.type && <span class="text-error text-xs mt-1">{errors.type}</span>}
-        </div>
+        </FormField>
 
         <!-- Global error -->
         <div class="hidden alert alert-error text-sm" role="alert" data-form-error></div>

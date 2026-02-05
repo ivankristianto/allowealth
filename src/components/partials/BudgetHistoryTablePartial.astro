@@ -10,8 +10,13 @@
  */
 
 import { formatCurrency, formatCurrencyCompact, formatPercentage } from '@/lib/formatting';
+import { getBudgetStatus } from '@/lib/utils/budget';
+import { tokenClasses } from '@/lib/tokens';
+import Badge from '../atoms/Badge.astro';
+import EmptyState from '../atoms/EmptyState.astro';
+import ProgressBar from '../atoms/ProgressBar.astro';
 import type { MonthlyBudgetHistory } from '@/services';
-import { Receipt, RotateCcw, Eye } from '@lucide/astro';
+import { RotateCcw, Eye } from '@lucide/astro';
 
 export interface Props {
   history: MonthlyBudgetHistory[];
@@ -24,12 +29,6 @@ const { history, currency, currentMonth, currentYear } = Astro.props;
 
 // Check if month has data (budget > 0)
 const hasData = (budgetAmount: number): boolean => budgetAmount > 0;
-
-// Status helpers
-const getStatusBadgeClass = (percentage: number): string => {
-  if (percentage >= 100) return 'bg-error text-white';
-  return 'bg-success text-white';
-};
 
 const getChangeIndicator = (
   current: number,
@@ -77,6 +76,7 @@ const sortedHistory = [...history].sort((a, b) => {
         const spentAmount = parseFloat(monthData.total_spent);
         const balance = parseFloat(monthData.total_balance);
         const percentageUsed = monthData.percentage_used;
+        const budgetStatus = getBudgetStatus(percentageUsed);
         const monthHasData = hasData(budgetAmount);
 
         // Get previous month for comparison
@@ -105,11 +105,13 @@ const sortedHistory = [...history].sort((a, b) => {
                   )}
                 </div>
                 {monthHasData ? (
-                  <div
-                    class={`px-4 py-1.5 rounded-full text-xs font-bold shadow-sm ${getStatusBadgeClass(percentageUsed)}`}
+                  <Badge
+                    variant={budgetStatus.badgeVariant}
+                    size="sm"
+                    className={`${tokenClasses.badgePadding} ${tokenClasses.textXs}`}
                   >
                     {percentageUsed.toFixed(2)}%
-                  </div>
+                  </Badge>
                 ) : (
                   <span class="text-xs font-bold text-base-content/30">No data</span>
                 )}
@@ -148,20 +150,12 @@ const sortedHistory = [...history].sort((a, b) => {
 
                   {/* Progress bar */}
                   <div class="pt-2">
-                    <div class="w-full bg-base-300 rounded-full h-2 overflow-hidden">
-                      <div
-                        class:list={[
-                          'h-full transition-all duration-300',
-                          percentageUsed >= 100 ? 'bg-error' : 'bg-success',
-                        ]}
-                        style={`width: ${Math.min(percentageUsed, 100)}%`}
-                        role="progressbar"
-                        aria-valuenow={percentageUsed}
-                        aria-valuemin={0}
-                        aria-valuemax={100}
-                        aria-label={`${monthData.month_name}: ${formatPercentage(percentageUsed)} of budget used`}
-                      />
-                    </div>
+                    <ProgressBar
+                      value={percentageUsed}
+                      status={budgetStatus.status}
+                      size="sm"
+                      ariaLabel={`${monthData.month_name}: ${formatPercentage(percentageUsed)} of budget used`}
+                    />
                   </div>
 
                   {/* Alerts summary */}
@@ -240,11 +234,13 @@ const sortedHistory = [...history].sort((a, b) => {
               <div class="px-8 py-8 text-center">
                 {monthHasData ? (
                   <div class="inline-flex flex-col items-center">
-                    <div
-                      class={`px-4 py-1.5 rounded-full text-xs font-bold shadow-sm ${getStatusBadgeClass(percentageUsed)}`}
+                    <Badge
+                      variant={budgetStatus.badgeVariant}
+                      size="sm"
+                      className={`${tokenClasses.badgePadding} ${tokenClasses.textXs}`}
                     >
                       {percentageUsed.toFixed(2)}%
-                    </div>
+                    </Badge>
                     {(monthData.categories_exceeded > 0 || monthData.categories_warning > 0) && (
                       <div class="mt-2 flex gap-2 justify-center">
                         {monthData.categories_exceeded > 0 && (
@@ -290,14 +286,17 @@ const sortedHistory = [...history].sort((a, b) => {
     </div>
   ) : (
     <div id="empty-state" class="py-24 text-center">
-      <div class="w-20 h-20 bg-base-200 mx-auto rounded-3xl flex items-center justify-center text-base-content/30 mb-6 shadow-inner">
-        <Receipt size={40} class="stroke-current" aria-hidden="true" />
-      </div>
-      <h4 class="text-lg font-bold mb-2">No budget history available</h4>
-      <p class="text-base-content/60 font-medium max-w-xs mx-auto mb-6">
-        Budget history will appear here as you track your spending over time.
-      </p>
-      <a href="/transactions/add" class="btn btn-outline btn-sm gap-2">
+      <EmptyState
+        title="No budget history available"
+        message="Budget history will appear here as you track your spending over time."
+        iconName="receipt"
+        variant="centered"
+        className="py-0"
+      />
+      <a
+        href="/transactions/add"
+        class={`btn btn-outline btn-sm gap-2 ${tokenClasses.marginTopLg}`}
+      >
         <RotateCcw size={16} class="stroke-current" aria-hidden="true" />
         Start Tracking
       </a>

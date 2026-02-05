@@ -50,22 +50,29 @@ formatCompactNumber(1500000); // "1.5M"
 ```typescript
 import { getBudgetStatusClass } from '@/lib/tokens';
 
-const statusClass = getBudgetStatusClass(percentage);
+const budgetStatus = getBudgetStatusClass(percentage);
 // Returns: 'status-ok' | 'status-warning' | 'status-danger'
 ```
 
-```html
-<span class="{getBudgetStatusClass(percentage)}">
+```astro
+---
+import ProgressBar from '@/components/atoms/ProgressBar.astro';
+import { getBudgetStatusClass } from '@/lib/tokens';
+
+const budgetStatus = getBudgetStatusClass(percentage);
+const progressStatus =
+  budgetStatus === 'status-danger'
+    ? 'danger'
+    : budgetStatus === 'status-warning'
+      ? 'warning'
+      : 'ok';
+---
+
+<span class={getBudgetStatusClass(percentage)}>
   {percentage < 80 ? 'Under budget' : percentage < 100 ? 'Near limit' : 'Over budget'}
 </span>
 
-<!-- Progress bar -->
-<div class="relative w-full h-2 bg-neutral-200 rounded-full">
-  <div class="{`h-full" rounded-full ${ percentage>
-    = 100 ? 'bg-status-danger' : percentage >= 80 ? 'bg-status-warning' : 'bg-status-ok' }`}
-    style={`width: ${Math.min(percentage, 100)}%`} >
-  </div>
-</div>
+<ProgressBar value={percentage} status={progressStatus} showLabel ariaLabel="Budget usage" />
 ```
 
 ## Tables
@@ -95,93 +102,93 @@ const statusClass = getBudgetStatusClass(percentage);
 
 ## Summary Cards
 
-```html
-<Card>
-  <div class="flex items-center justify-between">
-    <div>
-      <div class="text-sm text-neutral-500 uppercase">Total Income</div>
-      <div class="text-2xl font-bold mt-2">
-        <Currency amount="{totalIncome}" currency="IDR" />
-      </div>
-      <div class="text-sm text-success mt-1">
-        <Icon name="arrow-up" size="xs" />
-        +12% from last month
-      </div>
-    </div>
-    <div class="p-3 bg-success/10 rounded-lg">
-      <Icon name="trending-up" size="lg" className="text-success" />
-    </div>
-  </div>
-</Card>
+```astro
+---
+import StatCard from '@/components/atoms/StatCard.astro';
+import { TrendingUp } from '@lucide/astro';
+import { formatCurrency } from '@/lib/formatting';
+---
+
+<StatCard
+  title="Total Income"
+  value={formatCurrency(totalIncome, 'IDR')}
+  subtitle="+12% from last month"
+  subtitleIcon="trending-up"
+  iconVariant="success"
+>
+  <TrendingUp slot="icon" size={48} class="stroke-current" aria-hidden="true" />
+</StatCard>
 ```
 
 ## Charts
 
-**Use Chart.js** for financial charts.
-
-```typescript
-const chartColors = {
-  income: '#10b981',
-  expenses: '#ef4444',
-  categories: ['#10b981', '#3b82f6', '#f59e0b', '#8b5cf6'],
-};
-```
+Use `@/lib/chart-setup` and `createChartLifecycle` for initialization.
 
 ```astro
-<canvas id="chart"></canvas>
+---
+import { colors } from '@/lib/tokens';
+
+const chartColors = [colors.success, colors.info, colors.warning];
+
+const data = {
+  labels: ['Savings', 'Investments', 'Cash'],
+  datasets: [
+    {
+      data: [45, 35, 20],
+      backgroundColor: chartColors,
+      borderWidth: 0,
+    },
+  ],
+};
+---
+
+<div data-chart-data={JSON.stringify(data)} data-chart-colors={JSON.stringify(chartColors)}>
+  <div data-chart-container class="h-[180px] w-[180px]"></div>
+</div>
 
 <script>
-  import Chart from 'chart.js/auto';
+  import { Chart } from '@/lib/chart-setup';
+  import { createChartLifecycle } from '@/lib/utils/chart-lifecycle';
 
-  new Chart(document.getElementById('chart'), {
-    type: 'bar',
-    data: {
-      labels: ['Jan', 'Feb', 'Mar'],
-      datasets: [
-        {
-          label: 'Expenses',
-          data: [1500000, 1800000, 1600000],
-          backgroundColor: '#ef4444',
-        },
-      ],
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        tooltip: {
-          callbacks: {
-            label: (context) => `Rp ${context.parsed.y.toLocaleString('id-ID')}`,
-          },
-        },
-      },
+  const { init } = createChartLifecycle({
+    containerSelector: '[data-chart-container]',
+    onInit: (container, data) => {
+      new Chart(container, { type: 'doughnut', data });
     },
   });
+
+  document.addEventListener('astro:page-load', init);
 </script>
 ```
 
 ## Empty States
 
-```html
+```astro
+---
+import EmptyState from '@/components/atoms/EmptyState.astro';
+---
+
 <Card>
-  <div class="flex flex-col items-center justify-center py-12 text-center">
-    <Icon name="inbox" size="2xl" className="text-neutral-300 mb-4" />
-    <h3 class="text-lg font-semibold mb-2">No transactions yet</h3>
-    <p class="text-neutral-500 mb-4">Get started by adding your first transaction</p>
-    <button variant="primary" href="/transactions/add">Add Transaction</button>
-  </div>
+  <EmptyState
+    title="No transactions yet"
+    message="Get started by adding your first transaction"
+    iconName="inbox"
+    actionLabel="Add Transaction"
+    actionHref="/transactions/add"
+    variant="centered"
+  />
 </Card>
 ```
 
 ## Loading States
 
-```html
-<!-- Skeleton -->
-<div class="animate-pulse">
-  <div class="h-4 bg-neutral-200 rounded w-1/3 mb-3"></div>
-  <div class="h-8 bg-neutral-200 rounded w-1/2"></div>
-</div>
+```astro
+---
+import Skeleton from '@/components/atoms/Skeleton.astro';
+---
 
-<!-- Spinner -->
+<Skeleton variant="rectangular" width="60%" height="16px" />
+
 <span class="loading loading-spinner loading-lg text-primary"></span>
 ```
 

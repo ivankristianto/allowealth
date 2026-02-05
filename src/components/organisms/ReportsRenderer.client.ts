@@ -8,8 +8,7 @@
  */
 
 import { animate } from 'motion';
-import { initMonthNavigator } from '@/components/molecules/MonthNavigator.client';
-import { initYearNavigator } from '@/components/molecules/YearNavigator.client';
+import { initPeriodNavigator } from '@/components/molecules/PeriodNavigator.client';
 
 /**
  * Parse HTML partials from API response
@@ -140,18 +139,12 @@ export function renderSelectorHtml(html: string): void {
       // @ts-expect-error - Motion library type definition issue
       animate(container, { opacity: [0, 1] }, { duration: 0.3, easing: 'ease-in' });
 
-      // Re-initialize navigators after HTML injection
-      // Check which navigator is present and initialize it
+      // Re-initialize navigator after HTML injection
       requestAnimationFrame(() => {
-        const hasMonthNavigator = container.querySelector('[data-month-navigator]');
-        const hasYearNavigator = container.querySelector('[data-year-navigator]');
+        const hasPeriodNavigator = container.querySelector('[data-period-navigator]');
 
-        if (hasMonthNavigator) {
-          initMonthNavigator();
-        }
-
-        if (hasYearNavigator) {
-          initYearNavigator();
+        if (hasPeriodNavigator) {
+          initPeriodNavigator();
         }
 
         // Re-initialize ReportSelector script

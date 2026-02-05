@@ -24,6 +24,7 @@ import { sanitizeColor } from '@/lib/utils/budget';
 // Internal aliases - components
 import StatLabel from '@components/atoms/StatLabel.astro';
 import Skeleton from '@components/atoms/Skeleton.astro';
+import AllocationBar from '@components/molecules/AllocationBar.astro';
 
 // P2: TODO - Consider importing AssetAllocationDistribution type from asset utils
 export interface AllocationItem {
@@ -223,82 +224,18 @@ const cardClasses = [
             </div>
 
             {/* Stacked Bar - P0: Colors sanitized, P1: Accessible description */}
-            <div class="relative" data-allocation-bar>
-              <div
-                class="h-4 w-full bg-base-300 rounded-full overflow-hidden flex shadow-inner"
-                role="img"
-                aria-label={`Asset allocation: ${allocationDescription}`}
-              >
-                {displayDistribution.map((item) => {
-                  const safeColor = sanitizeColor(item.color);
-                  const safePercentage = Math.min(Math.max(item.percentage, 0), 100);
-                  return (
-                    <div
-                      class="h-full transition-all duration-500 relative group/segment cursor-pointer"
-                      style={`width: ${safePercentage}%; background-color: ${safeColor};`}
-                      data-segment-type={item.type}
-                      data-segment-percentage={item.percentage}
-                    >
-                      <div class="absolute inset-0 bg-white/10 opacity-0 group-hover/segment:opacity-100 transition-opacity" />
-                    </div>
-                  );
-                })}
-              </div>
-              {/* Custom tooltip - positioned outside overflow-hidden */}
-              <div
-                class="absolute -top-10 left-1/2 -translate-x-1/2 px-3 py-1.5 bg-neutral text-neutral-content text-xs font-medium rounded-lg shadow-lg opacity-0 pointer-events-none transition-opacity z-50 whitespace-nowrap"
-                data-allocation-tooltip
-              >
-                <span data-tooltip-text />
-                <div class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-neutral rotate-45" />
-              </div>
-            </div>
+            <AllocationBar
+              segments={displayDistribution.map((item) => ({
+                label: item.type,
+                percentage: item.percentage,
+                color: item.color,
+              }))}
+              height="sm"
+              ariaLabel={`Asset allocation: ${allocationDescription}`}
+            />
           </div>
         )}
       </div>
     </section>
   )
 }
-
-<script>
-  function initAllocationTooltips() {
-    document.querySelectorAll('[data-allocation-bar]').forEach((bar) => {
-      const tooltip = bar.querySelector('[data-allocation-tooltip]') as HTMLElement;
-      const tooltipText = bar.querySelector('[data-tooltip-text]') as HTMLElement;
-      if (!tooltip || !tooltipText) return;
-
-      const segments = bar.querySelectorAll('[data-segment-type]');
-
-      segments.forEach((segment) => {
-        segment.addEventListener('mouseenter', (e: MouseEvent) => {
-          const target = e.currentTarget as HTMLElement;
-          const type = target.dataset.segmentType || '';
-          const percentage = target.dataset.segmentPercentage || '0';
-          tooltipText.textContent = `${type}: ${percentage}%`;
-
-          // Position tooltip above the hovered segment
-          const barRect = bar.getBoundingClientRect();
-          const segmentRect = target.getBoundingClientRect();
-          const segmentCenter = segmentRect.left + segmentRect.width / 2 - barRect.left;
-
-          tooltip.style.left = `${segmentCenter}px`;
-          tooltip.style.opacity = '1';
-        });
-
-        segment.addEventListener('mouseleave', () => {
-          tooltip.style.opacity = '0';
-        });
-      });
-    });
-  }
-
-  // Initialize on DOM ready
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initAllocationTooltips);
-  } else {
-    initAllocationTooltips();
-  }
-
-  // Re-initialize on Astro page transitions
-  document.addEventListener('astro:page-load', initAllocationTooltips);
-</script>

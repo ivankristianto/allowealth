@@ -16,11 +16,14 @@
  * @param {string} className - Additional CSS classes
  */
 
-import { Landmark, TrendingUp, Wallet, Plus } from '@lucide/astro';
+import { Landmark, TrendingUp } from '@lucide/astro';
 import { formatCurrency } from '@/lib/formatting';
+import Badge from '@/components/atoms/Badge.astro';
+import EmptyState from '@/components/atoms/EmptyState.astro';
 import IconBadge from '@/components/atoms/IconBadge.astro';
-import StatLabel from '@/components/atoms/StatLabel.astro';
 import Card from '@/components/atoms/Card.astro';
+import StatCard from '@/components/atoms/StatCard.astro';
+import Skeleton from '@/components/atoms/Skeleton.astro';
 
 export interface Props {
   totalIDR: number;
@@ -53,11 +56,7 @@ const isEmpty = !totalIDR && !totalUSD && !localAssets && !globalAssets;
 const isPositiveGrowth = growthPercentage >= 0;
 const growthLabel = `${isPositiveGrowth ? '+' : ''}${growthPercentage.toFixed(1)}% growth`;
 
-// Growth badge classes - use explicit classes for Tailwind JIT compatibility
-const growthBadgeClasses = [
-  'text-xs font-bold px-3 py-1.5 rounded-full inline-flex items-center gap-1.5',
-  isPositiveGrowth ? 'bg-success/10 text-success' : 'bg-error/10 text-error',
-].join(' ');
+const growthBadgeVariant: 'success' | 'error' = isPositiveGrowth ? 'success' : 'error';
 
 // Card content classes
 const cardClasses = [
@@ -107,41 +106,37 @@ const ariaLabel = loading ? 'Loading net worth data...' : undefined;
       // Loading Skeleton State
       <div class="space-y-4" aria-hidden="true">
         <div class="flex justify-between items-start">
-          <div class="w-16 h-16 bg-success/10 rounded-2xl animate-pulse" aria-hidden="true" />
-          <div class="h-7 w-24 bg-success/10 rounded-full animate-pulse" aria-hidden="true" />
+          <Skeleton variant="rectangular" width="4rem" height="4rem" className="rounded-2xl" />
+          <Skeleton variant="rectangular" width="6rem" height="1.75rem" className="rounded-full" />
         </div>
         <div class="space-y-2">
-          <div class="h-4 w-32 bg-base-300/50 rounded animate-pulse" aria-hidden="true" />
-          <div class="h-10 w-48 bg-base-300/50 rounded animate-pulse" aria-hidden="true" />
-          <div class="h-7 w-36 bg-base-300/50 rounded animate-pulse" aria-hidden="true" />
+          <Skeleton variant="text" width="8rem" />
+          <Skeleton variant="heading" width="12rem" />
+          <Skeleton variant="rectangular" width="9rem" height="1.75rem" className="rounded" />
         </div>
         <div class="h-px bg-base-200" aria-hidden="true" />
         <div class="space-y-3">
           <div class="flex justify-between">
-            <div class="h-5 w-24 bg-base-300/50 rounded animate-pulse" aria-hidden="true" />
-            <div class="h-5 w-28 bg-base-300/50 rounded animate-pulse" aria-hidden="true" />
+            <Skeleton variant="text" width="6rem" />
+            <Skeleton variant="text" width="7rem" />
           </div>
           <div class="flex justify-between">
-            <div class="h-5 w-24 bg-base-300/50 rounded animate-pulse" aria-hidden="true" />
-            <div class="h-5 w-28 bg-base-300/50 rounded animate-pulse" aria-hidden="true" />
+            <Skeleton variant="text" width="6rem" />
+            <Skeleton variant="text" width="7rem" />
           </div>
         </div>
       </div>
     ) : isEmpty ? (
       // Empty State
-      <div class="flex flex-col items-center justify-center py-4 text-center">
-        <div class="w-16 h-16 rounded-2xl bg-base-200 flex items-center justify-center mb-4">
-          <Wallet size={32} class="stroke-base-content/40" aria-hidden="true" />
-        </div>
-        <h3 class="text-lg font-bold text-base-content mb-2">No assets yet</h3>
-        <p class="text-sm text-base-content/60 max-w-[200px] mb-4">
-          Add your first asset to start tracking your net worth.
-        </p>
-        <a href="/assets/add" class="btn btn-accent btn-sm gap-2">
-          <Plus size={16} aria-hidden="true" />
-          Add Asset
-        </a>
-      </div>
+      <EmptyState
+        title="No assets yet"
+        message="Add your first asset to start tracking your net worth."
+        iconName="wallet"
+        actionLabel="Add Asset"
+        actionHref="/assets/add"
+        variant="centered"
+        className="py-4"
+      />
     ) : (
       // Normal State
       <>
@@ -150,35 +145,29 @@ const ariaLabel = loading ? 'Loading net worth data...' : undefined;
           <IconBadge variant="success" size="md">
             <Landmark size={24} class="stroke-current" aria-hidden="true" />
           </IconBadge>
-          <span class={growthBadgeClasses} aria-label={`Net worth growth: ${growthLabel}`}>
-            <TrendingUp size={12} class="stroke-current" aria-hidden="true" />
-            {growthLabel}
+          <span aria-label={`Net worth growth: ${growthLabel}`}>
+            <Badge
+              variant={growthBadgeVariant}
+              size="sm"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs"
+            >
+              <TrendingUp size={12} class="stroke-current" aria-hidden="true" />
+              {growthLabel}
+            </Badge>
           </span>
         </div>
 
-        {/* Total Net Worth Label */}
-        <span id="net-worth-label">
-          <StatLabel size="sm" color="neutral">
-            Total net worth
-          </StatLabel>
+        <span id="net-worth-label" class="sr-only">
+          Total net worth
         </span>
 
-        {/* Primary Amount (IDR) */}
-        <div class="mt-3">
-          <h3
-            class="text-2xl sm:text-3xl font-bold text-base-content tracking-tighter leading-none"
-            aria-label={`Total net worth: ${formatCurrency(totalIDR, 'IDR')}`}
-          >
-            {formatCurrency(totalIDR, 'IDR')}
-          </h3>
-          {/* Secondary Amount (USD) */}
-          <p
-            class="text-base sm:text-lg font-semibold text-base-content/60 mt-1.5 tracking-tight"
-            aria-label={`Equivalent to ${formatCurrency(totalUSD, 'USD')} USD`}
-          >
-            {formatCurrency(totalUSD, 'USD')}
-          </p>
-        </div>
+        <StatCard
+          title="Total net worth"
+          value={formatCurrency(totalIDR, 'IDR')}
+          subtitle={formatCurrency(totalUSD, 'USD')}
+          subtitleColor="text-base-content/60"
+          className="bg-transparent border-0 shadow-none p-0 rounded-none"
+        />
 
         {/* Divider */}
         <div class="mt-6 pt-6 border-t border-base-200 space-y-3">

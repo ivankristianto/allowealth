@@ -13,6 +13,8 @@
  */
 
 import Modal from '../molecules/Modal.astro';
+import FormField from '../molecules/FormField.astro';
+import Label from '../atoms/Label.astro';
 import { Plus, Pencil } from '@lucide/astro';
 import CategoryIcon from '../atoms/CategoryIcon.astro';
 import {
@@ -46,19 +48,6 @@ const subtitle = isEditMode
 // Icon styling based on mode
 const iconBgClass = isEditMode ? 'bg-accent/10' : 'bg-accent/10';
 const iconColorClass = 'text-accent';
-
-// Color name mapping for human-readable labels
-const colorNameMap: Record<string, string> = {
-  'bg-primary': 'Slate Dark',
-  'bg-secondary': 'Slate',
-  'bg-accent': 'Forest Green',
-  'bg-neutral': 'Gray',
-  'bg-success': 'Emerald',
-  'bg-warning': 'Amber',
-  'bg-error': 'Rose',
-  'bg-info': 'Sky Blue',
-};
-const currentColorName = colorNameMap[values.color || 'bg-primary'] || 'Slate Dark';
 ---
 
 <div data-category-modal-container data-id={id} data-mode={mode} data-testid="category-modal">
@@ -99,13 +88,14 @@ const currentColorName = colorNameMap[values.color || 'bg-primary'] || 'Slate Da
         <input type="hidden" name="id" value={values.id || ''} />
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-          <div class="form-control md:col-span-2">
-            <label class="label py-1" for="category-name">
-              <span class="text-xs uppercase tracking-widest text-base-content/50 font-medium">
-                Category Name
-                <span class="sr-only">(required)</span>
-              </span>
-            </label>
+          <FormField
+            label="Category Name"
+            htmlFor="category-name"
+            required
+            error={!!errors.name}
+            errorMessage={errors.name}
+            className="md:col-span-2"
+          >
             <input
               type="text"
               name="name"
@@ -116,16 +106,19 @@ const currentColorName = colorNameMap[values.color || 'bg-primary'] || 'Slate Da
               value={values.name || ''}
               data-testid="category-name-input"
             />
-            {errors.name && <span class="text-error text-xs mt-1">{errors.name}</span>}
-          </div>
+          </FormField>
 
-          <div class="form-control md:col-span-2">
-            <label class="label py-1" for="category-description">
-              <span class="text-xs uppercase tracking-widest text-base-content/50 font-medium">
-                Description
-                <span class="text-base-content/30">(optional)</span>
-              </span>
-            </label>
+          <FormField
+            label="Description"
+            htmlFor="category-description"
+            helpText="Max 200 characters"
+            error={!!errors.description}
+            errorMessage={errors.description}
+            className="md:col-span-2"
+          >
+            <div slot="label">
+              <Label htmlFor="category-description" helpText="Optional"> Description </Label>
+            </div>
             <input
               type="text"
               name="description"
@@ -136,21 +129,15 @@ const currentColorName = colorNameMap[values.color || 'bg-primary'] || 'Slate Da
               value={values.description || ''}
               data-testid="category-description-input"
             />
-            <span class="text-base-content/40 text-xs mt-1">Max 200 characters</span>
-            {
-              errors.description && (
-                <span class="text-error text-xs mt-1">{errors.description}</span>
-              )
-            }
-          </div>
+          </FormField>
 
-          <div class="form-control">
-            <label class="label py-1" for="category-type">
-              <span class="text-xs uppercase tracking-widest text-base-content/50 font-medium">
-                Type
-                <span class="sr-only">(required)</span>
-              </span>
-            </label>
+          <FormField
+            label="Type"
+            htmlFor="category-type"
+            required
+            error={!!errors.type}
+            errorMessage={errors.type}
+          >
             <select
               name="type"
               id="category-type"
@@ -163,16 +150,15 @@ const currentColorName = colorNameMap[values.color || 'bg-primary'] || 'Slate Da
               </option>
               <option value="income" selected={values.type === 'income'}>Income</option>
             </select>
-            {errors.type && <span class="text-error text-xs mt-1">{errors.type}</span>}
-          </div>
+          </FormField>
 
-          <div class="form-control">
-            <label class="label py-1" for="category-icon">
-              <span class="text-xs uppercase tracking-widest text-base-content/50 font-medium">
-                Icon
-                <span class="sr-only">(required)</span>
-              </span>
-            </label>
+          <FormField
+            label="Icon"
+            htmlFor="category-icon"
+            required
+            error={!!errors.icon}
+            errorMessage={errors.icon}
+          >
             <div class="flex items-center gap-3">
               {/* Icon preview */}
               <div id="icon-preview" class="shrink-0">
@@ -219,16 +205,15 @@ const currentColorName = colorNameMap[values.color || 'bg-primary'] || 'Slate Da
                 </optgroup>
               </select>
             </div>
-            {errors.icon && <span class="text-error text-xs mt-1">{errors.icon}</span>}
-          </div>
+          </FormField>
 
-          <div class="form-control">
-            <label class="label py-1" for="category-color">
-              <span class="text-xs uppercase tracking-widest text-base-content/50 font-medium">
-                Color
-                <span class="sr-only">(required)</span>
-              </span>
-            </label>
+          <FormField
+            label="Color"
+            htmlFor="category-color"
+            required
+            error={!!errors.color}
+            errorMessage={errors.color}
+          >
             <select
               name="color"
               id="category-color"
@@ -250,22 +235,7 @@ const currentColorName = colorNameMap[values.color || 'bg-primary'] || 'Slate Da
               <option value="bg-error" selected={values.color === 'bg-error'}>Rose</option>
               <option value="bg-info" selected={values.color === 'bg-info'}>Sky Blue</option>
             </select>
-            {/* Color preview swatch */}
-            <div class="flex items-center gap-2 mt-2" data-color-preview-row>
-              <div
-                class:list={[
-                  'w-5 h-5 rounded-md shadow-inner border border-base-300',
-                  values.color || 'bg-primary',
-                ]}
-                data-color-swatch
-              >
-              </div>
-              <span class="text-xs text-base-content/50" data-color-name-label>
-                {currentColorName}
-              </span>
-            </div>
-            {errors.color && <span class="text-error text-xs mt-1">{errors.color}</span>}
-          </div>
+          </FormField>
         </div>
 
         <!-- Global error message -->

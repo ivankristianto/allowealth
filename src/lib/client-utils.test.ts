@@ -9,7 +9,7 @@
  */
 
 import { describe, it, expect, beforeEach } from 'bun:test';
-import { escapeHtml, setButtonLoading } from './client-utils';
+import { escapeHtml, safeParseJsonArray, setButtonLoading } from './client-utils';
 
 describe('escapeHtml', () => {
   it('should escape ampersand', () => {
@@ -60,6 +60,31 @@ describe('escapeHtml', () => {
   it('should handle special characters multiple times', () => {
     expect(escapeHtml('<<>>')).toBe('&lt;&lt;&gt;&gt;');
     expect(escapeHtml('&&')).toBe('&amp;&amp;');
+  });
+});
+
+describe('safeParseJsonArray', () => {
+  it('should return null for empty input', () => {
+    expect(safeParseJsonArray(null)).toBeNull();
+    expect(safeParseJsonArray(undefined)).toBeNull();
+    expect(safeParseJsonArray('')).toBeNull();
+  });
+
+  it('should return null for invalid JSON', () => {
+    expect(safeParseJsonArray('[')).toBeNull();
+    expect(safeParseJsonArray('{')).toBeNull();
+  });
+
+  it('should return null for non-array JSON', () => {
+    expect(safeParseJsonArray('"not-array"')).toBeNull();
+    expect(safeParseJsonArray('{"key":"value"}')).toBeNull();
+    expect(safeParseJsonArray('42')).toBeNull();
+  });
+
+  it('should return array for valid JSON array', () => {
+    expect(safeParseJsonArray('[]')).toEqual([]);
+    expect(safeParseJsonArray('[\"a\", \"b\"]')).toEqual(['a', 'b']);
+    expect(safeParseJsonArray('[1, 2, 3]')).toEqual([1, 2, 3]);
   });
 });
 

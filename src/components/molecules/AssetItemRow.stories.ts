@@ -5,13 +5,13 @@
  * Storybook's HTML framework cannot directly render Astro components.
  * When updating AssetItemRow.astro, ensure this file is updated to match.
  *
- * @see src/components/organisms/AssetItemRow.astro
+ * @see src/components/molecules/AssetItemRow.astro
  */
 import type { Meta, StoryObj } from '@storybook/html';
 import { formatCurrency } from '@/lib/formatting/currency-client';
 
 const meta: Meta = {
-  title: 'Organisms/AssetItemRow',
+  title: 'Molecules/AssetItemRow',
   tags: ['autodocs'],
   argTypes: {
     name: {

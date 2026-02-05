@@ -4,7 +4,6 @@
  * Shared animation constants for toast components using Motion library.
  * Matches styles.json toast animation specifications.
  *
- * @see Toast.astro
  * @see ToastContainer.astro
  */
 

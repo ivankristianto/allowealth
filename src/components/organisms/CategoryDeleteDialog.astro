@@ -9,78 +9,58 @@
  * @param {boolean} open - Whether dialog is open
  */
 
-import Modal from '../molecules/Modal.astro';
-import { Trash2 } from '@lucide/astro';
+import ConfirmationModal from '../molecules/ConfirmationModal.astro';
 
 export interface Props {
   id: string;
-  open?: boolean;
 }
 
-const { id, open = false } = Astro.props;
+const { id } = Astro.props;
 ---
 
 <div data-category-delete-dialog-container data-id={id} data-testid="category-delete-dialog">
-  <Modal id={id} open={open} size="sm" closable={false} backdropClose={true}>
-    <div slot="default" class="flex flex-col gap-6">
-      <!-- Header with icon -->
-      <div class="flex items-center gap-4">
-        <div class="w-12 h-12 rounded-2xl flex items-center justify-center bg-error/10">
-          <Trash2 size={24} class="stroke-current text-error" aria-hidden="true" />
+  <ConfirmationModal
+    id={id}
+    title="Delete Category"
+    description="This action cannot be undone."
+    confirmLabel="Delete"
+    confirmVariant="error"
+    confirmLoadingLabel="Deleting..."
+    iconVariant="error"
+    confirmTestId="confirm-delete-btn"
+  >
+    <div
+      slot="details"
+      id="delete-category-info"
+      class="p-4 bg-base-200/50 rounded-2xl border border-base-300"
+      data-category-info
+    >
+      <div class="flex items-center gap-3">
+        <div data-category-icon-container></div>
+        <div>
+          <p class="font-bold text-base-content" data-category-name></p>
         </div>
-        <div class="flex-1">
-          <h2 class="text-2xl font-bold tracking-tight text-error leading-none">Delete Category</h2>
-          <p class="text-neutral text-sm mt-2 font-medium">This action cannot be undone.</p>
-        </div>
-      </div>
-
-      <!-- Category Info -->
-      <div
-        id="delete-category-info"
-        class="p-4 bg-base-200/50 rounded-2xl border border-base-300"
-        data-category-info
-      >
-        <div class="flex items-center gap-3">
-          <div data-category-icon-container></div>
-          <div>
-            <p class="font-bold text-base-content" data-category-name></p>
-          </div>
-        </div>
-      </div>
-
-      <p class="text-base-content/70 text-sm">
-        Are you sure you want to delete this category? Existing transactions with this category will
-        remain unchanged.
-      </p>
-
-      <!-- Error message -->
-      <div id="delete-error" class="hidden alert alert-error text-sm" role="alert"></div>
-
-      <!-- Actions -->
-      <div class="flex gap-4 pt-4">
-        <button
-          type="button"
-          class="flex-1 btn btn-ghost h-14 rounded-full font-bold"
-          data-cancel-delete
-        >
-          Cancel
-        </button>
-        <button
-          type="button"
-          class="flex-1 btn btn-error h-14 rounded-full font-bold"
-          data-confirm-delete
-          data-testid="confirm-delete-btn"
-        >
-          Delete
-        </button>
       </div>
     </div>
-  </Modal>
+
+    <p slot="details" class="text-base-content/70 text-sm">
+      Are you sure you want to delete this category? Existing transactions with this category will
+      remain unchanged.
+    </p>
+  </ConfirmationModal>
 </div>
 
 <script>
   import { addToast } from '@/lib/stores/toastStore';
   import { getCsrfHeaders } from '@/lib/csrf-client';
+  import {
+    clearConfirmError,
+    closeConfirmationModal,
+    getConfirmationModalElements,
+    resetConfirmationModal,
+    setConfirmLoading,
+    showConfirmError,
+  } from '@/components/molecules/ConfirmationModal.client';
 
   // Track which dialog containers have been initialized
   const initializedContainers = new WeakSet<Element>();
@@ -98,33 +78,30 @@ const { id, open = false } = Astro.props;
       const id = container.getAttribute('data-id');
       if (!id) return;
 
-      const dialog = document.getElementById(id) as HTMLDialogElement;
-      const cancelBtn = container.querySelector('[data-cancel-delete]');
-      const confirmBtn = container.querySelector('[data-confirm-delete]');
-      const errorDiv = document.getElementById('delete-error');
+      const { modal, confirmButton, cancelButton, errorElement } = getConfirmationModalElements(
+        container,
+        id
+      );
       const categoryNameEl = container.querySelector('[data-category-name]');
       const categoryIconContainer = container.querySelector('[data-category-icon-container]');
 
-      if (!dialog) return;
+      if (!modal || !confirmButton) return;
 
       // Cancel button - close dialog
-      cancelBtn?.addEventListener('click', () => {
-        errorDiv?.classList.add('hidden');
-        dialog.close();
+      cancelButton?.addEventListener('click', () => {
+        resetConfirmationModal(confirmButton, errorElement);
+        closeConfirmationModal(modal);
       });
 
       // Confirm delete button
-      confirmBtn?.addEventListener('click', async () => {
+      confirmButton.addEventListener('click', async () => {
         if (!currentCategoryId) return;
 
-        const originalText = (confirmBtn as HTMLButtonElement).textContent;
-
         // Clear errors
-        errorDiv?.classList.add('hidden');
+        clearConfirmError(errorElement);
 
         // Show loading state
-        (confirmBtn as HTMLButtonElement).disabled = true;
-        (confirmBtn as HTMLButtonElement).textContent = 'Deleting...';
+        setConfirmLoading(confirmButton, true);
 
         try {
           const response = await fetch(`/api/categories/${currentCategoryId}`, {
@@ -139,22 +116,18 @@ const { id, open = false } = Astro.props;
 
           // Success
           addToast('Category deleted successfully!', 'success');
-          dialog.close();
+          closeConfirmationModal(modal);
 
           // Reload page to show updated categories
           const url = new URL(window.location.href);
           window.location.href = url.pathname + url.search;
         } catch (err) {
           const message = err instanceof Error ? err.message : 'Failed to delete category';
-          if (errorDiv) {
-            errorDiv.textContent = message;
-            errorDiv.classList.remove('hidden');
-          }
+          showConfirmError(errorElement, message);
           addToast(message, 'error');
         } finally {
           // Reset button state
-          (confirmBtn as HTMLButtonElement).disabled = false;
-          (confirmBtn as HTMLButtonElement).textContent = originalText || 'Delete';
+          setConfirmLoading(confirmButton, false);
         }
       });
 
@@ -166,26 +139,48 @@ const { id, open = false } = Astro.props;
         categoryColor: string
       ) => {
         currentCategoryId = categoryId;
-        errorDiv?.classList.add('hidden');
+        clearConfirmError(errorElement);
 
         // Populate category info
         if (categoryNameEl) {
           categoryNameEl.textContent = categoryName;
         }
 
-        if (categoryIconContainer) {
+        if (categoryIconContainer instanceof HTMLElement) {
           const colorClass = categoryColor.replace('bg-', '');
-          categoryIconContainer.innerHTML = `
-            <div class="w-10 h-10 rounded-xl ${categoryColor} text-${colorClass}-content flex items-center justify-center">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="stroke-current" aria-hidden="true">
-                <path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z"></path>
-                <path d="M7 7h.01"></path>
-              </svg>
-            </div>
-          `;
+          categoryIconContainer.textContent = '';
+
+          const iconWrapper = document.createElement('div');
+          iconWrapper.className = `w-10 h-10 rounded-xl ${categoryColor} text-${colorClass}-content flex items-center justify-center`;
+
+          const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+          svg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+          svg.setAttribute('width', '20');
+          svg.setAttribute('height', '20');
+          svg.setAttribute('viewBox', '0 0 24 24');
+          svg.setAttribute('fill', 'none');
+          svg.setAttribute('stroke', 'currentColor');
+          svg.setAttribute('stroke-width', '2');
+          svg.setAttribute('stroke-linecap', 'round');
+          svg.setAttribute('stroke-linejoin', 'round');
+          svg.setAttribute('class', 'stroke-current');
+          svg.setAttribute('aria-hidden', 'true');
+
+          const pathPrimary = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+          pathPrimary.setAttribute(
+            'd',
+            'M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z'
+          );
+
+          const pathDot = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+          pathDot.setAttribute('d', 'M7 7h.01');
+
+          svg.append(pathPrimary, pathDot);
+          iconWrapper.appendChild(svg);
+          categoryIconContainer.appendChild(iconWrapper);
         }
 
-        dialog.showModal();
+        modal.showModal();
       };
     });
   }

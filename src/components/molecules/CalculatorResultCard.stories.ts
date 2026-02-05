@@ -1,6 +1,4 @@
 import type { Meta, StoryObj } from '@storybook/html';
-import Currency from './Currency.astro';
-
 const meta: Meta = {
   title: 'Molecules/CalculatorResultCard',
   tags: ['autodocs'],

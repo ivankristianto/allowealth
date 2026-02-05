@@ -23,7 +23,7 @@ sm: 640px   md: 768px   lg: 1024px   xl: 1280px   2xl: 1536px
 
 ## Page Container Standard
 
-MainLayout provides base padding: `p-4 lg:p-6` (16px mobile, 24px desktop).
+MainLayout provides base padding and vertical offsets: `px-4 lg:px-6 pt-24 sm:pt-28 pb-24 lg:pb-6`.
 
 **Do NOT add extra horizontal padding on mobile** - use only MainLayout's padding.
 

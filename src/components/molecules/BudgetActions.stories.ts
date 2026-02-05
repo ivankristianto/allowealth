@@ -16,7 +16,7 @@ interface BudgetActionsArgs {
 }
 
 const meta: Meta<BudgetActionsArgs> = {
-  title: 'Organisms/BudgetActions',
+  title: 'Molecules/BudgetActions',
   tags: ['autodocs'],
   parameters: {
     layout: 'padded',

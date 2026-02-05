@@ -1,0 +1,121 @@
+---
+/**
+ * Confirmation Modal Component
+ *
+ * Reusable confirmation modal for destructive or sensitive actions.
+ *
+ * @param {string} id - Modal ID
+ * @param {string} title - Modal title
+ * @param {string} description - Optional description text
+ * @param {Component} icon - Lucide icon component (default: Trash2)
+ * @param {'error' | 'warning' | 'success' | 'info'} iconVariant - Icon background/text color
+ * @param {string} confirmLabel - Confirm button label
+ * @param {'error' | 'warning' | 'success'} confirmVariant - Confirm button color variant
+ * @param {string} cancelLabel - Cancel button label
+ * @param {string} confirmLoadingLabel - Confirm button loading label
+ * @param {string} confirmTestId - Optional test id for confirm button
+ */
+
+import Modal from './Modal.astro';
+import { Trash2 } from '@lucide/astro';
+
+export interface Props {
+  id: string;
+  title: string;
+  description?: string;
+  icon?: typeof Trash2;
+  iconVariant?: 'error' | 'warning' | 'success' | 'info';
+  confirmLabel?: string;
+  confirmVariant?: 'error' | 'warning' | 'success';
+  cancelLabel?: string;
+  confirmLoadingLabel?: string;
+  confirmTestId?: string;
+}
+
+const {
+  id,
+  title,
+  description,
+  icon: Icon = Trash2,
+  iconVariant = 'error',
+  confirmLabel = 'Delete',
+  confirmVariant = 'error',
+  cancelLabel = 'Cancel',
+  confirmLoadingLabel = 'Processing...',
+  confirmTestId,
+} = Astro.props;
+
+const iconVariants: Record<NonNullable<Props['iconVariant']>, string> = {
+  error: 'bg-error/10 text-error',
+  warning: 'bg-warning/10 text-warning',
+  success: 'bg-success/10 text-success',
+  info: 'bg-info/10 text-info',
+};
+
+const confirmVariants: Record<NonNullable<Props['confirmVariant']>, string> = {
+  error: 'btn-error',
+  warning: 'btn-warning',
+  success: 'btn-success',
+};
+---
+
+<Modal id={id} size="sm" closable={false} backdropClose={true}>
+  <div slot="default" class="flex flex-col gap-6">
+    <div class="flex items-center gap-4">
+      <div
+        class:list={[
+          'w-12 h-12 rounded-2xl flex items-center justify-center',
+          iconVariants[iconVariant],
+        ]}
+      >
+        <Icon size={24} class="stroke-current" aria-hidden="true" />
+      </div>
+      <div class="flex-1">
+        <h2 class="text-2xl font-bold tracking-tight text-primary leading-none" data-modal-title>
+          {title}
+        </h2>
+        {
+          description && (
+            <p class="text-neutral text-sm mt-2 font-medium" data-modal-subtitle>
+              {description}
+            </p>
+          )
+        }
+      </div>
+    </div>
+
+    {Astro.slots.has('details') && <slot name="details" />}
+
+    <div
+      id={`${id}-error`}
+      class="hidden alert alert-error text-sm rounded-2xl"
+      role="alert"
+      aria-live="polite"
+      data-confirm-error
+    >
+    </div>
+
+    <div class="flex gap-4 pt-2">
+      <button
+        type="button"
+        class="btn btn-ghost flex-1 h-14 rounded-full font-bold text-base-content hover:bg-base-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent"
+        data-confirm-cancel
+      >
+        {cancelLabel}
+      </button>
+      <button
+        type="button"
+        class:list={[
+          'btn flex-1 h-14 rounded-full font-bold',
+          confirmVariants[confirmVariant],
+          'focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent',
+        ]}
+        data-confirm-action
+        data-loading-text={confirmLoadingLabel}
+        data-testid={confirmTestId || undefined}
+      >
+        {confirmLabel}
+      </button>
+    </div>
+  </div>
+</Modal>

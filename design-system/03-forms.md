@@ -8,10 +8,9 @@ Form controls, validation, and submission patterns.
 <form id="form-id" class="space-y-4" novalidate>
   <div id="form-error" class="hidden alert alert-error" role="alert"></div>
 
-  <div class="form-control">
-    <Label htmlFor="name" required>Name</Label>
+  <FormField label="Name" htmlFor="name" required>
     <Input id="name" name="name" error={!!errors.name} errorMessage={errors.name} required />
-  </div>
+  </FormField>
 
   <div class="card-actions justify-end gap-2 mt-6">
     <a href="/cancel" class="btn btn-ghost">Cancel</a>
@@ -108,8 +107,9 @@ if (!result.success) {
 ### Error Display
 
 ```astro
-<!-- Field error -->
-<Input error={!!errors.email} errorMessage={errors.email} />
+<FormField label="Email" htmlFor="email" error={!!errors.email} errorMessage={errors.email}>
+  <Input id="email" name="email" type="email" error={!!errors.email} />
+</FormField>
 
 <!-- Form error -->
 <div id="form-error" class="hidden alert alert-error" role="alert"></div>

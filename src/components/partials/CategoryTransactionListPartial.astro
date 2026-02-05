@@ -8,6 +8,7 @@
  * @param {Array} transactions - Array of transaction data
  */
 
+import EmptyState from '@/components/atoms/EmptyState.astro';
 import TransactionCard from '@/components/molecules/TransactionCard.astro';
 import type { TransactionOutput } from '@/lib/types/transaction';
 
@@ -26,8 +27,14 @@ const { transactions = [] } = Astro.props;
       ))}
     </div>
   ) : (
-    <div class="flex flex-col items-center justify-center py-8" role="status" aria-live="polite">
-      <p class="text-base-content/50 text-sm">No transactions in this period</p>
+    <div role="status" aria-live="polite">
+      <EmptyState
+        title="No transactions"
+        message="No transactions in this period."
+        iconName="info"
+        variant="centered"
+        className="py-0"
+      />
     </div>
   )
 }

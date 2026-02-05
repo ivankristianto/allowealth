@@ -2,6 +2,8 @@
 
 Common page and component compositions.
 
+All icon examples use `@lucide/astro` (import the specific icons you need).
+
 ## Page Layouts
 
 ### Dashboard
@@ -33,7 +35,15 @@ Common page and component compositions.
   </div>
 
   <Card className="mb-6">
-    <TransactionFilters />
+    <TransactionFiltersBar
+      typeFilter={filters.type}
+      searchValue={filters.search}
+      categoryIds={filters.categoryIds}
+      categories={categories}
+      availableMonths={availableMonths}
+      selectedMonth={filters.month}
+      currentMonth={currentMonth}
+    />
   </Card>
 
   <TransactionList transactions={transactions} />
@@ -45,7 +55,7 @@ Common page and component compositions.
 ```astro
 <MainLayout title="Add Transaction">
   <a href="/transactions" class="text-primary hover:underline mb-6 inline-flex items-center gap-1">
-    <Icon name="arrow-left" size="sm" />
+    <ArrowLeft size={16} class="stroke-current" aria-hidden="true" />
     Back
   </a>
 
@@ -65,14 +75,14 @@ Common page and component compositions.
 <aside class="w-64 border-r">
   <nav class="p-4 space-y-2">
     <a href="/" class="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-neutral-100">
-      <Icon name="home" size="sm" />
+      <Home size={16} class="stroke-current" aria-hidden="true" />
       <span>Dashboard</span>
     </a>
     <a
       href="/transactions"
       class="flex items-center gap-3 px-4 py-2 rounded-lg bg-primary/10 text-primary"
     >
-      <Icon name="list" size="sm" />
+      <List size={16} class="stroke-current" aria-hidden="true" />
       <span>Transactions</span>
     </a>
   </nav>
@@ -83,48 +93,53 @@ Common page and component compositions.
 
 ### Simple List
 
-```html
+```astro
 <div class="space-y-3">
-  {items.map(item => (
-  <div class="flex items-center justify-between p-3 hover:bg-neutral-50 rounded-lg">
-    <div class="flex items-center gap-3">
-      <Icon name="{item.icon}" />
-      <div>
-        <div class="font-medium">{item.title}</div>
-        <div class="text-sm text-neutral-500">{item.subtitle}</div>
+  {
+    items.map(({ icon: Icon, title, subtitle, amount, currency }) => (
+      <div class="flex items-center justify-between p-3 hover:bg-neutral-50 rounded-lg">
+        <div class="flex items-center gap-3">
+          <Icon size={16} class="stroke-current text-base-content/60" aria-hidden="true" />
+          <div>
+            <div class="font-medium">{title}</div>
+            <div class="text-sm text-neutral-500">{subtitle}</div>
+          </div>
+        </div>
+        <Currency amount={amount} currency={currency} />
       </div>
-    </div>
-    <Currency amount="{item.amount}" currency="{item.currency}" />
-  </div>
-  ))}
+    ))
+  }
 </div>
 ```
 
 ### With Actions
 
-```html
+```astro
 <div class="flex items-center justify-between p-4 border rounded-lg">
   <div>{item.title}</div>
   <div class="flex gap-2">
-    <button variant="ghost" size="sm"><Icon name="edit" /></button>
-    <button variant="ghost" size="sm"><Icon name="trash" /></button>
+    <Button variant="ghost" size="sm" aria-label="Edit">
+      <Edit size={16} class="stroke-current" aria-hidden="true" />
+    </Button>
+    <Button variant="ghost" size="sm" aria-label="Delete">
+      <Trash2 size={16} class="stroke-current" aria-hidden="true" />
+    </Button>
   </div>
 </div>
 ```
 
 ## Filters
 
-```html
-<div class="flex flex-col md:flex-row gap-4">
-  <input type="text" placeholder="Search..." className="flex-1" />
-  <select class="select select-bordered w-full md:w-48">
-    <option value="">All Categories</option>
-  </select>
-  <select class="select select-bordered w-full md:w-48">
-    <option value="">All Time</option>
-  </select>
-  <button variant="outline" size="sm">Clear</button>
-</div>
+```astro
+<TransactionFiltersBar
+  typeFilter={filters.type}
+  searchValue={filters.search}
+  categoryIds={filters.categoryIds}
+  categories={categories}
+  availableMonths={availableMonths}
+  selectedMonth={filters.month}
+  currentMonth={currentMonth}
+/>
 ```
 
 ## Modals
@@ -132,13 +147,14 @@ Common page and component compositions.
 ### Confirmation
 
 ```astro
-<Modal id="confirm-delete" title="Confirm Deletion" size="sm">
-  <p>Are you sure? This cannot be undone.</p>
-  <div slot="actions">
-    <Button variant="secondary" onclick="close()">Cancel</Button>
-    <Button variant="danger" onclick="confirmDelete()">Delete</Button>
-  </div>
-</Modal>
+<ConfirmationModal
+  id="confirm-delete"
+  title="Confirm deletion"
+  description="Are you sure? This cannot be undone."
+  confirmLabel="Delete"
+  confirmVariant="error"
+  cancelLabel="Cancel"
+/>
 ```
 
 ### Form Modal
@@ -146,10 +162,9 @@ Common page and component compositions.
 ```astro
 <Modal id="add-category" title="Add Category">
   <form class="space-y-4">
-    <div class="form-control">
-      <Label htmlFor="name" required>Name</Label>
+    <FormField label="Name" htmlFor="name" required>
       <Input id="name" name="name" />
-    </div>
+    </FormField>
     <div class="flex gap-2 justify-end">
       <Button variant="secondary" onclick="close()">Cancel</Button>
       <Button variant="primary" type="submit">Add</Button>
@@ -170,7 +185,7 @@ Common page and component compositions.
 
 ```html
 <div class="alert alert-error mb-6" role="alert">
-  <Icon name="alert-circle" />
+  <AlertCircle size="{16}" class="stroke-current" aria-hidden="true" />
   <div>
     <div class="font-semibold">Error loading data</div>
     <div class="text-sm">Please try again</div>
@@ -303,14 +318,16 @@ Toasts use CSS transitions for smooth enter/exit animations:
 
 ## Loading
 
-```html
-<!-- Skeleton -->
-<div class="animate-pulse space-y-4">
-  <div class="h-6 bg-neutral-200 rounded w-1/3"></div>
-  <div class="h-4 bg-neutral-200 rounded w-2/3"></div>
+```astro
+---
+import Skeleton from '@/components/atoms/Skeleton.astro';
+---
+
+<div class="space-y-4">
+  <Skeleton variant="heading" width="33%" />
+  <Skeleton variant="text" width="66%" />
 </div>
 
-<!-- Spinner -->
 <div class="flex items-center justify-center py-12">
   <span class="loading loading-spinner loading-lg text-primary"></span>
 </div>
@@ -318,12 +335,12 @@ Toasts use CSS transitions for smooth enter/exit animations:
 
 ## Pagination
 
-```html
+```astro
 <div class="flex items-center justify-between mt-6">
   <div class="text-sm text-neutral-500">Showing {startItem} to {endItem} of {totalItems}</div>
   <div class="flex gap-2">
-    <button variant="outline" size="sm" disabled="{page" ="" ="" ="1}">Previous</button>
-    <button variant="outline" size="sm" disabled="{page" ="" ="" ="totalPages}">Next</button>
+    <Button variant="outline" size="sm" disabled={page === 1}>Previous</Button>
+    <Button variant="outline" size="sm" disabled={page === totalPages}>Next</Button>
   </div>
 </div>
 ```

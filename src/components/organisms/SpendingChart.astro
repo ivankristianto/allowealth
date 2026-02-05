@@ -91,10 +91,10 @@ const chartId = `spending-chart-${Math.random().toString(36).slice(2, 11)}`;
             {Array.from({ length: 4 }).map(() => (
               <div class="flex items-center justify-between p-3.5 rounded-2xl">
                 <div class="flex items-center gap-3">
-                  <div class="w-3.5 h-3.5 rounded-lg bg-base-300 animate-pulse" />
-                  <div class="h-4 bg-base-300 rounded w-24 animate-pulse" />
+                  <Skeleton variant="rectangular" width="14px" height="14px" />
+                  <Skeleton variant="rectangular" width="96px" height="16px" />
                 </div>
-                <div class="h-4 bg-base-300 rounded w-10 animate-pulse" />
+                <Skeleton variant="rectangular" width="40px" height="16px" />
               </div>
             ))}
           </div>
@@ -216,6 +216,8 @@ const chartId = `spending-chart-${Math.random().toString(36).slice(2, 11)}`;
 
 <script>
   import { Chart } from '@/lib/chart-setup';
+  import { safeParseJsonArray } from '@/lib/client-utils';
+  import { createChartLifecycle, isDarkTheme } from '@/lib/utils/chart-lifecycle';
 
   interface SpendingCategory {
     category: string;
@@ -224,84 +226,21 @@ const chartId = `spending-chart-${Math.random().toString(36).slice(2, 11)}`;
   }
 
   interface ChartData {
-    [chartId: string]: {
-      chart: Chart<'doughnut'>;
-      data: SpendingCategory[];
-      colors: string[];
-      activeIndex: number | null;
-    };
+    chart: Chart<'doughnut'>;
+    data: SpendingCategory[];
+    colors: string[];
+    activeIndex: number | null;
   }
 
   // Store chart instances globally for cleanup
-  const charts: ChartData = {};
-
-  // Store observer reference for cleanup
-  let chartObserver: IntersectionObserver | null = null;
-  let themeObserver: MutationObserver | null = null;
-  let systemThemeMediaQuery: MediaQueryList | null = null;
-
-  /**
-   * Cleanup all chart instances and observer
-   * Prevents memory leaks when component unmounts or page navigates away
-   */
-  function cleanupCharts(): void {
-    // Destroy all chart instances
-    Object.values(charts).forEach(({ chart }) => {
-      try {
-        chart.destroy();
-      } catch (e) {
-        // Chart may already be destroyed
-      }
-    });
-
-    // Clear the charts object
-    for (const key in charts) {
-      delete charts[key];
-    }
-
-    // Disconnect intersection observer
-    if (chartObserver) {
-      chartObserver.disconnect();
-      chartObserver = null;
-    }
-
-    // Disconnect theme observer
-    if (themeObserver) {
-      themeObserver.disconnect();
-      themeObserver = null;
-    }
-
-    // Remove system preference listener
-    if (systemThemeMediaQuery) {
-      systemThemeMediaQuery.removeEventListener('change', handleSystemThemeChange);
-      systemThemeMediaQuery = null;
-    }
-  }
-
-  /**
-   * Handle system theme preference change
-   * Called when user changes system preference (light/dark mode)
-   */
-  function handleSystemThemeChange(): void {
-    // Only update if no explicit theme is set
-    const explicitTheme = document.documentElement.getAttribute('data-theme');
-    if (!explicitTheme) {
-      updateChartThemeColors();
-    }
-  }
+  const charts: Record<string, ChartData> = {};
 
   /**
    * Update chart tooltip colors based on current theme
    * Called when theme changes via MutationObserver
    */
   function updateChartThemeColors(): void {
-    const isDark = (): boolean => {
-      const theme = document.documentElement.getAttribute('data-theme');
-      if (theme) return theme === 'dark';
-      return window.matchMedia('(prefers-color-scheme: dark)').matches;
-    };
-
-    const dark = isDark();
+    const dark = isDarkTheme();
 
     // Update all chart instances with new tooltip colors
     Object.values(charts).forEach(({ chart }) => {
@@ -314,37 +253,6 @@ const chartId = `spending-chart-${Math.random().toString(36).slice(2, 11)}`;
         chart.update('none'); // Update without animation
       }
     });
-  }
-
-  /**
-   * Initialize theme observer to watch for data-theme attribute changes
-   * and system preference changes via prefers-color-scheme media query
-   */
-  function initThemeObserver(): void {
-    // Cleanup existing observer
-    if (themeObserver) {
-      themeObserver.disconnect();
-    }
-
-    // Watch for explicit data-theme attribute changes
-    themeObserver = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        if (mutation.type === 'attributes' && mutation.attributeName === 'data-theme') {
-          updateChartThemeColors();
-        }
-      });
-    });
-
-    themeObserver.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ['data-theme'],
-    });
-
-    // Watch for system preference changes (when no explicit theme is set)
-    if (window.matchMedia) {
-      systemThemeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-      systemThemeMediaQuery.addEventListener('change', handleSystemThemeChange);
-    }
   }
 
   /**
@@ -370,11 +278,7 @@ const chartId = `spending-chart-${Math.random().toString(36).slice(2, 11)}`;
     const chartColors = data.map((d, i) => d.color || colors[i % colors.length]);
 
     // Detect dark mode for tooltip colors (using data-theme attribute)
-    const isDark = (): boolean => {
-      const theme = document.documentElement.getAttribute('data-theme');
-      if (theme) return theme === 'dark';
-      return window.matchMedia('(prefers-color-scheme: dark)').matches;
-    };
+    const dark = isDarkTheme();
 
     // Create new chart
     const ctx = canvas.getContext('2d');
@@ -407,9 +311,9 @@ const chartId = `spending-chart-${Math.random().toString(36).slice(2, 11)}`;
             display: false,
           },
           tooltip: {
-            backgroundColor: isDark() ? 'rgba(248, 250, 252, 0.95)' : 'rgba(15, 23, 42, 0.9)',
-            titleColor: isDark() ? '#0f172a' : '#fff',
-            bodyColor: isDark() ? '#0f172a' : '#fff',
+            backgroundColor: dark ? 'rgba(248, 250, 252, 0.95)' : 'rgba(15, 23, 42, 0.9)',
+            titleColor: dark ? '#0f172a' : '#fff',
+            bodyColor: dark ? '#0f172a' : '#fff',
             padding: 12,
             cornerRadius: 8,
             displayColors: true,
@@ -576,69 +480,65 @@ const chartId = `spending-chart-${Math.random().toString(36).slice(2, 11)}`;
     });
   }
 
-  /**
-   * Initialize all charts on page load with Intersection Observer
-   */
-  function initAllCharts(): void {
-    // Cleanup first to prevent memory leaks
-    cleanupCharts();
-
-    // Initialize theme observer
-    initThemeObserver();
-
-    const chartContainers = document.querySelectorAll('[id^="spending-chart-"][id$="-container"]');
-
-    chartObserver = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            const container = entry.target as HTMLElement;
-            const chartId = container.querySelector('canvas')?.id;
-
-            if (chartId && !charts[chartId]) {
-              // Get data from data attributes
-              const dataAttr = container
-                .closest('[data-chart-data]')
-                ?.getAttribute('data-chart-data');
-              const colorsAttr = container
-                .closest('[data-chart-colors]')
-                ?.getAttribute('data-chart-colors');
-              if (dataAttr && colorsAttr) {
-                try {
-                  const data = JSON.parse(dataAttr) as SpendingCategory[];
-                  const colors = JSON.parse(colorsAttr) as string[];
-                  initSpendingChart(chartId, data, colors);
-                } catch (e) {
-                  console.warn('Failed to parse chart data:', e);
-                }
-              }
-
-              // Stop observing after initialization
-              chartObserver?.unobserve(container);
-            }
-          }
-        });
-      },
-      { rootMargin: '50px' }
-    );
-
-    chartContainers.forEach((container) => {
-      if (chartObserver) chartObserver.observe(container);
-    });
+  function parseChartData(raw: unknown): SpendingCategory[] | null {
+    if (!Array.isArray(raw)) return null;
+    const validData = raw.filter(
+      (item) =>
+        typeof item?.percentage === 'number' &&
+        isFinite(item.percentage) &&
+        item.percentage >= 0 &&
+        typeof item?.category === 'string' &&
+        item.category.length > 0 &&
+        item.category.length <= 100
+    ) as SpendingCategory[];
+    return validData.length > 0 ? validData : null;
   }
 
-  // Initialize when DOM is ready
+  function parseChartColors(raw: unknown): string[] | null {
+    if (!Array.isArray(raw)) return null;
+    const validColors = raw.filter((color) => typeof color === 'string') as string[];
+    return validColors.length > 0 ? validColors : null;
+  }
+
+  const lifecycle = createChartLifecycle<{
+    data: SpendingCategory[];
+    colors: string[];
+  }>({
+    containerSelector: '[id^="spending-chart-"][id$="-container"]',
+    parseData: (raw) => {
+      const data = parseChartData(raw);
+      return data ? { data, colors: [] } : null;
+    },
+    onInit: (container, payload) => {
+      const colorsAttr = container.getAttribute('data-chart-colors');
+      const colors = parseChartColors(safeParseJsonArray(colorsAttr));
+      if (!colors) return;
+      const chartId = container.querySelector('canvas')?.id;
+      if (!chartId || charts[chartId]) return;
+      initSpendingChart(chartId, payload.data, colors);
+    },
+    onThemeChange: updateChartThemeColors,
+    onCleanup: () => {
+      Object.values(charts).forEach(({ chart }) => {
+        try {
+          chart.destroy();
+        } catch (e) {
+          // Chart may already be destroyed
+        }
+      });
+      for (const key in charts) {
+        delete charts[key];
+      }
+    },
+  });
+
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initAllCharts);
+    document.addEventListener('DOMContentLoaded', lifecycle.init);
   } else {
-    initAllCharts();
+    lifecycle.init();
   }
 
-  // Cleanup on page navigation/unload
-  window.addEventListener('beforeunload', cleanupCharts);
-
-  // For Astro View Transitions
-  // Cleanup BEFORE page swap, initialize AFTER
-  document.addEventListener('astro:before-swap', cleanupCharts);
-  document.addEventListener('astro:after-swap', initAllCharts);
+  window.addEventListener('beforeunload', lifecycle.cleanup);
+  document.addEventListener('astro:before-swap', lifecycle.cleanup);
+  document.addEventListener('astro:after-swap', lifecycle.init);
 </script>

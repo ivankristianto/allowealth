@@ -229,6 +229,19 @@ export const spacing = {
   form: '1rem', // 16px - form field gaps
 } as const;
 
+export const tokenClasses = {
+  badgePadding: 'token-badge-padding',
+  textXs: 'token-text-xs',
+  textSm: 'token-text-sm',
+  marginTopLg: 'token-mt-6',
+  cardPaddingLg: 'token-card-padding-lg',
+  paddingMd: 'token-padding-md',
+  paddingSm: 'token-padding-sm',
+  gapLg: 'token-gap-lg',
+  gapMd: 'token-gap-md',
+  stackSm: 'token-stack-sm',
+} as const;
+
 /* ========================================
  * BREAKPOINTS
  * ======================================== */

@@ -23,6 +23,12 @@ import {
 import { formatCurrency } from '@/lib/formatting/currency-client';
 import { addToast } from '@/lib/stores/toastStore';
 import {
+  clearConfirmError,
+  closeConfirmationModal,
+  setConfirmLoading,
+  showConfirmError,
+} from '@/components/molecules/ConfirmationModal.client';
+import {
   renderTransactionListHtml,
   renderSummaryCardsHtml,
   renderPaginationHtml,
@@ -299,8 +305,8 @@ function updateMonthNavigationUI(): void {
   const currentIndex = state.availableMonths.findIndex((m) => m.key === currentMonth);
   const totalMonths = state.availableMonths.length;
 
-  const prevBtn = document.querySelector('[data-month-nav="prev"]');
-  const nextBtn = document.querySelector('[data-month-nav="next"]');
+  const prevBtn = document.querySelector('[data-period-nav="prev"]');
+  const nextBtn = document.querySelector('[data-period-nav="next"]');
 
   if (prevBtn) {
     const hasPrev = currentIndex > 0;
@@ -362,10 +368,8 @@ function handlePageChange(page: number): void {
 async function handleDelete(transactionId: string, transactionDetails: string): Promise<void> {
   const dialog = document.getElementById('delete-dialog') as HTMLDialogElement | null;
   const deleteDetails = document.getElementById('delete-dialog-details') as HTMLElement | null;
-  const deleteError = document.getElementById('delete-dialog-error') as HTMLElement | null;
-  const confirmBtn = document.getElementById(
-    'delete-dialog-confirm-btn'
-  ) as HTMLButtonElement | null;
+  const deleteError = dialog?.querySelector('[data-confirm-error]') as HTMLElement | null;
+  const confirmBtn = dialog?.querySelector('[data-confirm-action]') as HTMLButtonElement | null;
 
   if (!dialog || !confirmBtn) return;
 
@@ -409,10 +413,7 @@ async function handleDelete(transactionId: string, transactionDetails: string): 
   }
 
   // Hide any previous error
-  if (deleteError) {
-    deleteError.classList.add('hidden');
-    deleteError.textContent = '';
-  }
+  clearConfirmError(deleteError);
 
   dialog.showModal();
 }
@@ -422,15 +423,14 @@ async function handleDelete(transactionId: string, transactionDetails: string): 
  */
 async function executeDelete(confirmBtn: HTMLButtonElement): Promise<void> {
   const dialog = document.getElementById('delete-dialog') as HTMLDialogElement | null;
-  const deleteError = document.getElementById('delete-dialog-error') as HTMLElement | null;
+  const deleteError = dialog?.querySelector('[data-confirm-error]') as HTMLElement | null;
 
   // Get transaction ID from button attribute (prevents race conditions)
   const transactionId = confirmBtn.getAttribute('data-pending-delete-id');
   if (!transactionId || !dialog) return;
 
   try {
-    confirmBtn.disabled = true;
-    confirmBtn.textContent = 'Deleting...';
+    setConfirmLoading(confirmBtn, true);
 
     await deleteTransaction(transactionId);
 
@@ -447,7 +447,7 @@ async function executeDelete(confirmBtn: HTMLButtonElement): Promise<void> {
     removeTransaction(transactionId);
 
     // Close dialog
-    dialog.close();
+    closeConfirmationModal(dialog);
 
     // Show success toast
     addToast('Transaction deleted successfully', 'success');
@@ -456,14 +456,12 @@ async function executeDelete(confirmBtn: HTMLButtonElement): Promise<void> {
     // This ensures consistency without duplicating rendering logic
     await fetchAndRender();
   } catch (error) {
-    if (deleteError) {
-      deleteError.textContent =
-        error instanceof Error ? error.message : 'Failed to delete transaction';
-      deleteError.classList.remove('hidden');
-    }
+    showConfirmError(
+      deleteError,
+      error instanceof Error ? error.message : 'Failed to delete transaction'
+    );
   } finally {
-    confirmBtn.disabled = false;
-    confirmBtn.textContent = 'Delete Transaction';
+    setConfirmLoading(confirmBtn, false);
     confirmBtn.removeAttribute('data-pending-delete-id');
   }
 }
@@ -547,7 +545,7 @@ function setupEventListeners(): void {
   // filterChange events are handled by the global listener set up at module load time
   // This ensures events aren't lost if they fire before initialization completes
 
-  // Month navigation is handled by MonthNavigator.client.ts which dispatches
+  // Month navigation is handled by PeriodNavigator.client.ts which dispatches
   // 'monthChange' events caught by TransactionFiltersBar, then forwarded as
   // 'filterChange' events handled by the global listener above.
   // No duplicate handler needed here.
@@ -608,14 +606,23 @@ function setupEventListeners(): void {
   });
 
   // Confirm delete button in dialog
-  const confirmDeleteBtn = document.getElementById(
-    'delete-dialog-confirm-btn'
+  const deleteDialog = document.getElementById('delete-dialog') as HTMLDialogElement | null;
+  const confirmDeleteBtn = deleteDialog?.querySelector(
+    '[data-confirm-action]'
   ) as HTMLButtonElement | null;
   if (confirmDeleteBtn) {
     confirmDeleteBtn.addEventListener('click', () => {
       executeDelete(confirmDeleteBtn);
     });
   }
+
+  const cancelDeleteBtn = deleteDialog?.querySelector(
+    '[data-confirm-cancel]'
+  ) as HTMLButtonElement | null;
+  cancelDeleteBtn?.addEventListener('click', () => {
+    clearConfirmError(deleteDialog?.querySelector('[data-confirm-error]') as HTMLElement | null);
+    closeConfirmationModal(deleteDialog);
+  });
 
   // Reset filters button
   document.addEventListener('click', (e) => {
@@ -655,7 +662,7 @@ function setupEventListeners(): void {
       const state = transactionsDataStore.get();
       const monthData = state.availableMonths.find((m) => m.key === currentMonth);
       if (monthData) {
-        const monthLabel = document.querySelector('[data-month-label]');
+        const monthLabel = document.querySelector('[data-period-label]');
         if (monthLabel) monthLabel.textContent = monthData.label;
       }
 

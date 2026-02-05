@@ -4,7 +4,7 @@ import { IconRenderers } from '../../../.storybook/lucide-icons';
 const { TriangleAlert, RefreshCw, Info } = IconRenderers;
 
 const meta: Meta = {
-  title: 'Organisms/DashboardError',
+  title: 'Molecules/DashboardError',
   tags: ['autodocs'],
   parameters: {
     docs: {

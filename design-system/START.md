@@ -1,6 +1,6 @@
 # Design System
 
-**Version:** 1.0.0 | **Framework:** Astro 5.x + Tailwind v4 + DaisyUI v5
+**Version:** 1.1.0 | **Framework:** Astro 5.x + Tailwind v4 + DaisyUI v5
 
 ## Quick Start
 
@@ -26,20 +26,27 @@ See `styles.json` for complete token definitions and theme configurations.
 ### Core Rules
 
 1. **Use design tokens** - Import from `@/lib/tokens` (never hardcode)
-2. **DaisyUI first** - Use DaisyUI classes, then Tailwind. Use @design-system/daisyui-llm.md as reference.
-3. **Accessibility required** - Keyboard nav + ARIA + contrast
-4. **Mobile-first** - Base styles for mobile, enhance for desktop
-5. **Server-side** - Astro components are SSR by default
-6. **Modern HTML** - Use semantic elements (`<button>`, `<nav>`, `<main>`, `<section>`, `<article>`)
-7. **Icons** - Use `@lucide/astro` for all icons (consistent, accessible)
-8. **Animations** - Use `motion` for complex animations and transitions
+2. **Use token classes** - Use `tokenClasses` for spacing/typography utilities
+3. **DaisyUI first** - Use DaisyUI classes, then Tailwind. Use `design-system/daisyui-llm.md`
+4. **Accessibility required** - Keyboard nav + ARIA + contrast
+5. **Mobile-first** - Base styles for mobile, enhance for desktop
+6. **Server-side** - Astro components are SSR by default
+7. **Modern HTML** - Use semantic elements (`<button>`, `<nav>`, `<main>`, `<section>`, `<article>`)
+8. **Icons** - Use `@lucide/astro` for all icons (consistent, accessible)
+9. **Loading** - Use `Skeleton` or `Spinner` (no raw `animate-pulse`)
+10. **Animations** - Use `motion` for complex animations and transitions
+11. **Charts** - Use `@/lib/chart-setup` + `createChartLifecycle`
 
 **DaisyUI v5 Note:** Themes are configured using CSS `@plugin` syntax in `src/styles/globals.css`, not in `tailwind.config.ts`. See the DaisyUI theme configuration section for details.
+
+### Component Inventory
+
+See the full component inventory in `design-system/02-components.md` (atoms, molecules, organisms).
 
 ### Import Tokens
 
 ```typescript
-import { colors, fontSizes, spacing } from '@/lib/tokens';
+import { colors, fontSizes, spacing, tokenClasses } from '@/lib/tokens';
 import {
   formatCurrency,
   formatCurrencyCompact,
@@ -58,6 +65,13 @@ import { X, Plus, Edit, Trash2 } from '@lucide/astro';
 
 ```typescript
 import { animate } from 'motion';
+```
+
+### Chart Setup
+
+```typescript
+import { Chart } from '@/lib/chart-setup';
+import { createChartLifecycle } from '@/lib/utils/chart-lifecycle';
 ```
 
 ## Token Quick Reference
@@ -136,6 +150,14 @@ spacing.card; // 24px - card padding
 spacing.section; // 32px - section gaps
 ```
 
+### Token Classes
+
+```typescript
+tokenClasses.badgePadding; // standardized badge padding
+tokenClasses.textXs; // standardized xs font size
+tokenClasses.marginTopLg; // standardized top spacing
+```
+
 ### Breakpoints
 
 ```typescript
@@ -150,6 +172,17 @@ formatCurrencyCompact(1500000, 'IDR'); // "Rp1.5M"
 formatPercentage(85.5, 2); // "85.50%"
 formatCompactNumber(1500000); // "1.5M"
 getBudgetStatusClass(percentage); // 'status-ok' | 'status-warning' | 'status-danger'
+```
+
+### Status Helpers
+
+```typescript
+import {
+  getBudgetStatusClass,
+  getProgressBarStatusColors,
+  getStatusBadgeClasses,
+  toBudgetStatusClassName,
+} from '@/lib/tokens';
 ```
 
 ## Component Pattern
@@ -284,10 +317,9 @@ import { animate } from 'motion';
 ### Form Field
 
 ```astro
-<div class="form-control">
-  <Label htmlFor="name" required>Name</Label>
+<FormField label="Name" htmlFor="name" required>
   <Input id="name" name="name" error={!!errors.name} errorMessage={errors.name} />
-</div>
+</FormField>
 ```
 
 ### Budget Status
@@ -306,10 +338,10 @@ import { animate } from 'motion';
 
 ### Loading State
 
-```html
-<div class="animate-pulse">
-  <div class="h-4 bg-neutral-200 rounded w-1/3"></div>
-</div>
+```astro
+import Skeleton from '@/components/atoms/Skeleton.astro';
+
+<Skeleton variant="rectangular" width="33%" height="16px" />
 ```
 
 ## DaisyUI Classes

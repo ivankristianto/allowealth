@@ -14,7 +14,7 @@ import { logError } from '@/lib/utils';
 const updateBalanceSchema = z.object({
   balance: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Balance must be a valid number'),
   notes: z.string().optional(),
-  recorded_at: z.string().datetime().optional(),
+  recorded_at: z.iso.datetime().optional(),
 });
 
 /**

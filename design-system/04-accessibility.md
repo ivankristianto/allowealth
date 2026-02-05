@@ -9,6 +9,14 @@ WCAG 2.1 AA compliance is **mandatory**.
 3. **Screen reader support** - Proper ARIA attributes
 4. **Visual accessibility** - Contrast ≥4.5:1, readable text
 
+## Disabled Controls
+
+Always use the native `disabled` attribute on buttons and inputs. `aria-disabled` alone is not sufficient.
+
+```astro
+<button type="button" disabled={isDisabled} aria-disabled={isDisabled}>Next</button>
+```
+
 ## Semantic HTML
 
 ```html
