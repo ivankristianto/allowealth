@@ -275,24 +275,49 @@ const { id = 'generate-api-key-modal' } = Astro.props;
         if (copyBtn && copyLabel) {
           copyBtn.addEventListener('click', async () => {
             const key = (plainKeyEl.textContent || '').trim();
-            try {
-              await navigator.clipboard.writeText(key);
-            } catch (error) {
-              const message =
-                error instanceof Error
-                  ? error.message
-                  : 'Unable to copy API key. Please copy it manually.';
-              addToast(message, 'error');
-              return;
+            let copied = false;
+
+            // Try modern clipboard API first
+            if (navigator.clipboard && window.isSecureContext) {
+              try {
+                await navigator.clipboard.writeText(key);
+                copied = true;
+              } catch {
+                // Fall through to fallback
+              }
             }
-            copyLabel.textContent = 'Copied!';
-            if (copyIconDefault) copyIconDefault.classList.add('hidden');
-            if (copyIconSuccess) copyIconSuccess.classList.remove('hidden');
-            setTimeout(() => {
-              copyLabel.textContent = 'Copy';
-              if (copyIconDefault) copyIconDefault.classList.remove('hidden');
-              if (copyIconSuccess) copyIconSuccess.classList.add('hidden');
-            }, 2000);
+
+            // Fallback: hidden textarea + execCommand
+            if (!copied) {
+              try {
+                const textarea = document.createElement('textarea');
+                textarea.value = key;
+                textarea.style.position = 'fixed';
+                textarea.style.left = '-9999px';
+                textarea.style.top = '-9999px';
+                document.body.appendChild(textarea);
+                textarea.focus();
+                textarea.select();
+                document.execCommand('copy');
+                textarea.remove();
+                copied = true;
+              } catch {
+                // Both methods failed
+              }
+            }
+
+            if (copied) {
+              copyLabel.textContent = 'Copied!';
+              if (copyIconDefault) copyIconDefault.classList.add('hidden');
+              if (copyIconSuccess) copyIconSuccess.classList.remove('hidden');
+              setTimeout(() => {
+                copyLabel.textContent = 'Copy';
+                if (copyIconDefault) copyIconDefault.classList.remove('hidden');
+                if (copyIconSuccess) copyIconSuccess.classList.add('hidden');
+              }, 2000);
+            } else {
+              addToast('Unable to copy. Please select and copy the key manually.', 'error');
+            }
           });
         }
 

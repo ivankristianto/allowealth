@@ -120,7 +120,7 @@ const { className = '' } = Astro.props;
     // Import CSV button
     const importBtn = actionsBar.querySelector('[data-import-csv-button]');
     importBtn?.addEventListener('click', () => {
-      addToast('CSV import coming soon!', 'info');
+      window.location.href = '/transactions/import';
     });
 
     // Export CSV button
