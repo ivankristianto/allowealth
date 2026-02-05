@@ -18,6 +18,15 @@ import { animate } from 'motion';
 ---
 ```
 
+Use design tokens for standard durations:
+
+```typescript
+import { animate } from 'motion';
+import { animationDuration } from '@/lib/tokens';
+
+animate(element, { opacity: [0, 1] }, { duration: animationDuration.normal, easing: 'easeOut' });
+```
+
 ## Standard Animation Durations
 
 | Duration | Time  | Use Case                          |
@@ -25,6 +34,8 @@ import { animate } from 'motion';
 | Fast     | 150ms | Micro-interactions (hover, focus) |
 | Normal   | 300ms | Enter animations, transitions     |
 | Slow     | 500ms | Page transitions, large elements  |
+
+Prefer `animationDuration.fast | normal | slow` from `@/lib/tokens`.
 
 ## Standard Easings
 
