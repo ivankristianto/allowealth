@@ -10,7 +10,7 @@
  */
 
 import Modal from '../molecules/Modal.astro';
-import { Cpu, Copy, Check, AlertTriangle } from '@lucide/astro';
+import { Cpu, Copy, Check, TriangleAlert } from '@lucide/astro';
 
 export interface Props {
   id?: string;
@@ -105,7 +105,7 @@ const { id = 'generate-api-key-modal' } = Astro.props;
       {/* Step 2: Key Display */}
       <div data-step="result" class="hidden space-y-6">
         <div class="flex items-start gap-3 p-4 rounded-2xl bg-warning/10 border border-warning/20">
-          <AlertTriangle
+          <TriangleAlert
             size={20}
             class="stroke-current text-warning shrink-0 mt-0.5"
             aria-hidden="true"
@@ -277,16 +277,13 @@ const { id = 'generate-api-key-modal' } = Astro.props;
             const key = (plainKeyEl.textContent || '').trim();
             try {
               await navigator.clipboard.writeText(key);
-            } catch {
-              // Fallback for non-secure contexts or dialog focus issues
-              const textarea = document.createElement('textarea');
-              textarea.value = key;
-              textarea.style.position = 'fixed';
-              textarea.style.opacity = '0';
-              document.body.appendChild(textarea);
-              textarea.select();
-              document.execCommand('copy');
-              document.body.removeChild(textarea);
+            } catch (error) {
+              const message =
+                error instanceof Error
+                  ? error.message
+                  : 'Unable to copy API key. Please copy it manually.';
+              addToast(message, 'error');
+              return;
             }
             copyLabel.textContent = 'Copied!';
             if (copyIconDefault) copyIconDefault.classList.add('hidden');

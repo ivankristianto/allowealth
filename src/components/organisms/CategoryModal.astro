@@ -48,19 +48,6 @@ const subtitle = isEditMode
 // Icon styling based on mode
 const iconBgClass = isEditMode ? 'bg-accent/10' : 'bg-accent/10';
 const iconColorClass = 'text-accent';
-
-// Color name mapping for human-readable labels
-const colorNameMap: Record<string, string> = {
-  'bg-primary': 'Slate Dark',
-  'bg-secondary': 'Slate',
-  'bg-accent': 'Forest Green',
-  'bg-neutral': 'Gray',
-  'bg-success': 'Emerald',
-  'bg-warning': 'Amber',
-  'bg-error': 'Rose',
-  'bg-info': 'Sky Blue',
-};
-const currentColorName = colorNameMap[values.color || 'bg-primary'] || 'Slate Dark';
 ---
 
 <div data-category-modal-container data-id={id} data-mode={mode} data-testid="category-modal">

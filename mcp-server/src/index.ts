@@ -1,4 +1,4 @@
-import { Server } from '@modelcontextprotocol/sdk/server/index.js';
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { ListToolsRequestSchema, CallToolRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { db } from '@/db';
@@ -7,12 +7,12 @@ import { createServices } from './context.js';
 import { registerTools, handleToolCall } from './tools/index.js';
 import type { ToolContext } from './tools/types.js';
 
-const server = new Server(
+const server = new McpServer(
   { name: 'allowealth', version: '1.0.0' },
   { capabilities: { tools: {} } }
 );
 
-server.setRequestHandler(ListToolsRequestSchema, async () => {
+server.server.setRequestHandler(ListToolsRequestSchema, async () => {
   return { tools: registerTools() };
 });
 
@@ -23,7 +23,7 @@ async function main(): Promise<void> {
 
   console.error(`Allowealth MCP server started (workspace: ${auth.workspaceId.slice(0, 8)}…)`);
 
-  server.setRequestHandler(CallToolRequestSchema, async (request) => {
+  server.server.setRequestHandler(CallToolRequestSchema, async (request) => {
     // Re-check key validity on each call (catches revocation/expiry without restart)
     const freshAuth = await getAuthContext();
     const freshCtx: ToolContext = { auth: freshAuth, services: ctx.services };
