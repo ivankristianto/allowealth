@@ -205,16 +205,15 @@ let filterDebounceTimer: ReturnType<typeof setTimeout> | null = null;
  */
 function filterBudgetCards(query: string): void {
   const normalizedQuery = query.toLowerCase().trim();
-  const cards = document.querySelectorAll('[data-budget-card]');
 
+  // Filter card view
+  const cards = document.querySelectorAll('[data-budget-card]');
   cards.forEach((card) => {
     const cardElement = card.closest('[role="listitem"]') || card.parentElement;
     if (!cardElement) return;
 
-    // Get category name from the card
     const categoryName = card.querySelector('h3')?.textContent?.toLowerCase() || '';
 
-    // Show/hide based on match
     if (!normalizedQuery || categoryName.includes(normalizedQuery)) {
       (cardElement as HTMLElement).style.display = '';
       (cardElement as HTMLElement).removeAttribute('aria-hidden');
@@ -224,32 +223,54 @@ function filterBudgetCards(query: string): void {
     }
   });
 
-  // Update empty state visibility
-  updateFilterEmptyState(normalizedQuery, cards.length);
+  // Filter table view
+  const tableRows = document.querySelectorAll('[data-budget-table-row]');
+  tableRows.forEach((row) => {
+    const categoryName = (row.getAttribute('data-category-name') || '').toLowerCase();
+
+    if (!normalizedQuery || categoryName.includes(normalizedQuery)) {
+      (row as HTMLElement).style.display = '';
+    } else {
+      (row as HTMLElement).style.display = 'none';
+    }
+  });
+
+  // Update empty state visibility for both views
+  updateFilterEmptyState(normalizedQuery, cards.length, tableRows.length);
 }
 
 /**
- * Show/hide empty state when all cards are filtered out
+ * Show/hide empty state when all items are filtered out
  *
- * Uses server-rendered "no results" element (hidden by default) to comply
- * with Interactive Page Architecture - no client-side DOM construction.
+ * Handles both card and table views. Uses server-rendered "no results"
+ * elements (hidden by default) to comply with Interactive Page Architecture.
  */
-function updateFilterEmptyState(query: string, totalCards: number): void {
-  const container = document.getElementById('budget-cards-container');
-  if (!container) return;
+function updateFilterEmptyState(query: string, totalCards: number, totalTableRows: number): void {
+  // Card view empty state
+  const cardContainer = document.getElementById('budget-cards-container');
+  if (cardContainer) {
+    const visibleCards = cardContainer.querySelectorAll(
+      '[role="listitem"]:not([style*="display: none"])'
+    ).length;
+    const noResultsEl = cardContainer.querySelector('[data-filter-no-results]');
+    if (noResultsEl) {
+      const shouldShow = query && visibleCards === 0 && totalCards > 0;
+      noResultsEl.classList.toggle('hidden', !shouldShow);
+    }
+  }
 
-  // Count visible cards
-  const visibleCards = container.querySelectorAll(
-    '[role="listitem"]:not([style*="display: none"])'
-  ).length;
-
-  // Get the server-rendered "no results" element
-  const noResultsEl = container.querySelector('[data-filter-no-results]');
-  if (!noResultsEl) return;
-
-  // Toggle visibility based on filter state
-  const shouldShow = query && visibleCards === 0 && totalCards > 0;
-  noResultsEl.classList.toggle('hidden', !shouldShow);
+  // Table view empty state
+  const tableContainer = document.querySelector('[data-view="table"]');
+  if (tableContainer) {
+    const visibleRows = tableContainer.querySelectorAll(
+      '[data-budget-table-row]:not([style*="display: none"])'
+    ).length;
+    const noResultsEl = tableContainer.querySelector('[data-table-filter-no-results]');
+    if (noResultsEl) {
+      const shouldShow = query && visibleRows === 0 && totalTableRows > 0;
+      (noResultsEl as HTMLElement).classList.toggle('hidden', !shouldShow);
+    }
+  }
 }
 
 /**

@@ -191,13 +191,49 @@ const { id, month, year, currency } = Astro.props;
         errorEl?.classList.add('hidden');
       }
 
+      /**
+       * Parse a single CSV line, handling quoted fields with commas and escaped quotes.
+       */
+      function parseCsvLine(line: string): string[] {
+        const fields: string[] = [];
+        let current = '';
+        let inQuotes = false;
+
+        for (let i = 0; i < line.length; i++) {
+          const ch = line[i];
+          if (inQuotes) {
+            if (ch === '"') {
+              if (i + 1 < line.length && line[i + 1] === '"') {
+                current += '"';
+                i++; // skip escaped quote
+              } else {
+                inQuotes = false;
+              }
+            } else {
+              current += ch;
+            }
+          } else {
+            if (ch === '"') {
+              inQuotes = true;
+            } else if (ch === ',') {
+              fields.push(current.trim());
+              current = '';
+            } else {
+              current += ch;
+            }
+          }
+        }
+        fields.push(current.trim());
+        return fields;
+      }
+
       function parseCSV(text: string) {
         const lines = text.split('\n').filter((l) => l.trim());
         if (lines.length < 2) {
           throw new Error('CSV must have a header row and at least one data row');
         }
 
-        const header = lines[0].split(',').map((h) => h.trim().toLowerCase().replace(/^"|"$/g, ''));
+        const header = parseCsvLine(lines[0]).map((h) => h.toLowerCase());
         const categoryIdx = header.indexOf('category');
         const budgetAmountIdx = header.indexOf('budget_amount');
 
@@ -207,7 +243,7 @@ const { id, month, year, currency } = Astro.props;
 
         const rows: Array<{ category: string; budget_amount: string }> = [];
         for (let i = 1; i < lines.length; i++) {
-          const cells = lines[i].split(',').map((c) => c.trim().replace(/^"|"$/g, ''));
+          const cells = parseCsvLine(lines[i]);
           const category = cells[categoryIdx];
           if (!category || category.toUpperCase() === 'TOTAL') continue;
           rows.push({
