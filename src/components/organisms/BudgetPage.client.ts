@@ -230,8 +230,10 @@ function filterBudgetCards(query: string): void {
 
     if (!normalizedQuery || categoryName.includes(normalizedQuery)) {
       (row as HTMLElement).style.display = '';
+      (row as HTMLElement).removeAttribute('aria-hidden');
     } else {
       (row as HTMLElement).style.display = 'none';
+      (row as HTMLElement).setAttribute('aria-hidden', 'true');
     }
   });
 

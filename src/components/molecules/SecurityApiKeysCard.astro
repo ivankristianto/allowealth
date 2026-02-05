@@ -30,13 +30,9 @@ const { keys } = Astro.props;
         <div>
           <div class="flex items-center gap-2">
             <h3 class="text-lg font-bold">MCP Access Tokens</h3>
-            <button
-              type="button"
-              class="btn btn-ghost btn-xs btn-circle"
-              aria-label="MCP setup instructions"
-              data-open-mcp-instructions
-            >
+            <button type="button" class="btn btn-ghost btn-sm gap-1" data-open-mcp-instructions>
               <CircleQuestionMark size={16} class="stroke-current" aria-hidden="true" />
+              <span class="text-xs font-normal">Setup help</span>
             </button>
           </div>
           <p class="text-xs uppercase tracking-widest text-base-content/50">

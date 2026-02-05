@@ -4,6 +4,7 @@ import { nanoid } from 'nanoid';
 import { AssetServiceError, ServiceErrorCode } from './service-errors';
 import type { AssetType, Currency } from '@/lib/types/asset';
 import { type PerfCollector, trackQuery } from '@/lib/perf';
+import { decimalCompare, decimalSubtract, decimalAdd } from '@/lib/utils/decimal';
 
 export interface CreateAssetInput {
   workspace_id: string;
@@ -256,19 +257,16 @@ export class AssetService {
       throw new Error('Cannot transfer between different currencies');
     }
 
-    const transferAmount = parseFloat(amount);
-    const fromBalance = parseFloat(fromAsset.balance);
-
-    if (transferAmount <= 0) {
+    if (decimalCompare(amount, '0') <= 0) {
       throw new Error('Transfer amount must be positive');
     }
 
-    if (fromBalance < transferAmount) {
+    if (decimalCompare(fromAsset.balance, amount) < 0) {
       throw new Error('Insufficient balance');
     }
 
-    const newFromBalance = (fromBalance - transferAmount).toString();
-    const newToBalance = (parseFloat(toAsset.balance) + transferAmount).toString();
+    const newFromBalance = decimalSubtract(fromAsset.balance, amount);
+    const newToBalance = decimalAdd(toAsset.balance, amount);
 
     // Deduct from source
     const updatedFrom = await this.updateBalance(fromId, workspaceId, {

@@ -538,20 +538,6 @@ export class BudgetService {
       allCategories.map((c: { id: string; name: string }) => [c.name.toLowerCase(), c.id])
     );
 
-    // If overwrite, delete existing budgets for this month/year/currency
-    if (overwrite) {
-      await this.db
-        .delete(this.schema.budgets)
-        .where(
-          and(
-            eq(this.schema.budgets.workspace_id, workspaceId),
-            eq(this.schema.budgets.month, targetMonth),
-            eq(this.schema.budgets.year, targetYear),
-            eq(this.schema.budgets.currency, currency)
-          )
-        );
-    }
-
     // Get existing budgets to check for duplicates (when not overwriting)
     const existingBudgets = overwrite
       ? []
@@ -568,9 +554,19 @@ export class BudgetService {
       existingBudgets.map((b: { category_id: string }) => b.category_id)
     );
 
-    let imported = 0;
+    // Validate rows and prepare insert values before touching the DB
     let skipped = 0;
     const errors: Array<{ row: number; message: string }> = [];
+    const validInserts: Array<{
+      id: string;
+      workspace_id: string;
+      created_by_user_id: string;
+      category_id: string;
+      month: number;
+      year: number;
+      budget_amount: string;
+      currency: string;
+    }> = [];
 
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
@@ -600,8 +596,7 @@ export class BudgetService {
         continue;
       }
 
-      // Create budget entry
-      await this.db.insert(this.schema.budgets).values({
+      validInserts.push({
         id: nanoid(),
         workspace_id: workspaceId,
         created_by_user_id: createdByUserId,
@@ -611,9 +606,29 @@ export class BudgetService {
         budget_amount: parsedAmount.toString(),
         currency,
       });
-
-      imported++;
     }
+
+    // Execute delete + inserts in a transaction for atomicity
+    let imported = 0;
+    await this.db.transaction(async (tx: any) => {
+      if (overwrite) {
+        await tx
+          .delete(this.schema.budgets)
+          .where(
+            and(
+              eq(this.schema.budgets.workspace_id, workspaceId),
+              eq(this.schema.budgets.month, targetMonth),
+              eq(this.schema.budgets.year, targetYear),
+              eq(this.schema.budgets.currency, currency)
+            )
+          );
+      }
+
+      for (const values of validInserts) {
+        await tx.insert(this.schema.budgets).values(values);
+        imported++;
+      }
+    });
 
     // Invalidate budget cache
     const cache = getCacheManager();
