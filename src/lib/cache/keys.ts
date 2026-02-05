@@ -46,6 +46,9 @@ export const CacheKeys = {
   /** Layout data (categories, assets, settings): cache:layout:{workspaceId}:{userId} */
   layout: (workspaceId: string, userId: string): string =>
     `${PREFIX}:layout:${workspaceId}:${userId}`,
+
+  /** API key auth context: cache:apikey:{prefix} */
+  apiKey: (prefix: string): string => `${PREFIX}:apikey:${prefix}`,
 } as const;
 
 /**
