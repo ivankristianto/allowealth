@@ -93,7 +93,13 @@ const rowClasses = [
   .join(' ');
 ---
 
-<div class={rowClasses} data-asset-row={id} data-testid="asset-item" data-asset-id={id}>
+<div
+  class={rowClasses}
+  data-asset-row={id}
+  data-testid="asset-item"
+  data-asset-id={id}
+  data-asset-name={name}
+>
   {/* Asset Info */}
   <div class="flex-1 min-w-0">
     <h4
@@ -161,6 +167,7 @@ const rowClasses = [
               data-testid="asset-inline-history-btn"
             >
               <History size={18} class="stroke-current" aria-hidden="true" />
+              <span class="sr-only">Toggle history</span>
             </button>
           </div>
 

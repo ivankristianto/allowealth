@@ -260,7 +260,7 @@ const { id, month, year, currency } = Astro.props;
       }
 
       function handleFile(file: File) {
-        if (!file.name.endsWith('.csv') && file.type !== 'text/csv') {
+        if (!file.name.toLowerCase().endsWith('.csv') && file.type !== 'text/csv') {
           if (errorEl) {
             errorEl.textContent = 'Please select a CSV file';
             errorEl.classList.remove('hidden');

@@ -632,7 +632,7 @@ export class BudgetService {
     // Execute delete + inserts in a transaction for atomicity
     let imported = 0;
     await this.db.transaction(async (tx: any) => {
-      if (overwrite) {
+      if (overwrite && validInserts.length > 0) {
         await tx
           .delete(this.schema.budgets)
           .where(
