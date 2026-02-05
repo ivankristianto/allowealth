@@ -1,7 +1,6 @@
 import { z } from 'zod';
 import type { Tool } from '@modelcontextprotocol/sdk/types.js';
-import { getAuthContext } from '../auth.js';
-import { dashboardService, assetService } from '../context.js';
+import type { ToolContext } from './types.js';
 
 export const dashboardSchema = z.object({
   month: z.number().min(1).max(12).optional(),
@@ -38,15 +37,20 @@ export const assetSummaryTool: Tool = {
   },
 };
 
-export async function handleGetDashboard(args: Record<string, unknown>) {
-  const { workspaceId } = await getAuthContext();
+export async function handleGetDashboard(args: Record<string, unknown>, ctx: ToolContext) {
+  const { workspaceId } = ctx.auth;
   const input = dashboardSchema.parse(args);
 
   const now = new Date();
   const month = input.month ?? now.getMonth() + 1;
   const year = input.year ?? now.getFullYear();
 
-  const data = await dashboardService.getDashboardData(workspaceId, month, year, input.currency);
+  const data = await ctx.services.dashboard.getDashboardData(
+    workspaceId,
+    month,
+    year,
+    input.currency
+  );
 
   const result = {
     month,
@@ -96,13 +100,13 @@ export async function handleGetDashboard(args: Record<string, unknown>) {
   };
 }
 
-export async function handleGetAssetSummary(args: Record<string, unknown>) {
-  const { workspaceId } = await getAuthContext();
+export async function handleGetAssetSummary(args: Record<string, unknown>, ctx: ToolContext) {
+  const { workspaceId } = ctx.auth;
   const input = assetSummarySchema.parse(args);
 
   const [byCurrency, byType] = await Promise.all([
-    assetService.getTotalByCurrency(workspaceId),
-    assetService.getTotalByType(workspaceId),
+    ctx.services.asset.getTotalByCurrency(workspaceId),
+    ctx.services.asset.getTotalByType(workspaceId),
   ]);
 
   const result = {

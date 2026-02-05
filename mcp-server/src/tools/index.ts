@@ -1,4 +1,5 @@
 import type { Tool } from '@modelcontextprotocol/sdk/types.js';
+import type { ToolContext } from './types.js';
 import { tools as assetTools, handleListCategories, handleListAssets } from './assets.js';
 import {
   listTransactionsTool,
@@ -29,26 +30,27 @@ export function registerTools(): Tool[] {
 
 export async function handleToolCall(
   name: string,
-  args: Record<string, unknown>
+  args: Record<string, unknown>,
+  ctx: ToolContext
 ): Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }> {
   try {
     switch (name) {
       case 'list_categories':
-        return await handleListCategories(args);
+        return await handleListCategories(args, ctx);
       case 'list_assets':
-        return await handleListAssets(args);
+        return await handleListAssets(args, ctx);
       case 'list_transactions':
-        return await handleListTransactions(args);
+        return await handleListTransactions(args, ctx);
       case 'add_expense':
-        return await handleAddTransaction(args, 'expense');
+        return await handleAddTransaction(args, 'expense', ctx);
       case 'add_income':
-        return await handleAddTransaction(args, 'income');
+        return await handleAddTransaction(args, 'income', ctx);
       case 'get_budget_summary':
-        return await handleGetBudgetSummary(args);
+        return await handleGetBudgetSummary(args, ctx);
       case 'get_dashboard':
-        return await handleGetDashboard(args);
+        return await handleGetDashboard(args, ctx);
       case 'get_asset_summary':
-        return await handleGetAssetSummary(args);
+        return await handleGetAssetSummary(args, ctx);
       default:
         return {
           isError: true,
@@ -63,3 +65,5 @@ export async function handleToolCall(
     };
   }
 }
+
+export type { ToolContext } from './types.js';

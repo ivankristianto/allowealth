@@ -1,7 +1,6 @@
 import { z } from 'zod';
 import type { Tool } from '@modelcontextprotocol/sdk/types.js';
-import { getAuthContext } from '../auth.js';
-import { transactionService, categoryService, assetService } from '../context.js';
+import type { ToolContext } from './types.js';
 import { fuzzyMatch } from '../utils/fuzzy-match.js';
 
 const isoDateString = z.string().refine((val) => !isNaN(new Date(val).getTime()), {
@@ -97,8 +96,8 @@ export const addIncomeTool: Tool = {
   },
 };
 
-export async function handleListTransactions(args: Record<string, unknown>) {
-  const { workspaceId } = await getAuthContext();
+export async function handleListTransactions(args: Record<string, unknown>, ctx: ToolContext) {
+  const { workspaceId } = ctx.auth;
   const input = listTransactionsSchema.parse(args);
 
   const filters: any = {
@@ -110,8 +109,8 @@ export async function handleListTransactions(args: Record<string, unknown>) {
   if (input.start_date) filters.start_date = new Date(input.start_date);
   if (input.end_date) filters.end_date = new Date(input.end_date);
 
-  const transactions = await transactionService.findAll(filters);
-  const count = await transactionService.count(filters);
+  const transactions = await ctx.services.transaction.findAll(filters);
+  const count = await ctx.services.transaction.count(filters);
 
   const result = transactions.map((t: any) => ({
     id: t.id,
@@ -137,8 +136,13 @@ export async function handleListTransactions(args: Record<string, unknown>) {
   };
 }
 
-async function resolveCategory(name: string, type: 'expense' | 'income', workspaceId: string) {
-  const categories = await categoryService.findAll(workspaceId, {
+async function resolveCategory(
+  name: string,
+  type: 'expense' | 'income',
+  workspaceId: string,
+  ctx: ToolContext
+) {
+  const categories = await ctx.services.category.findAll(workspaceId, {
     type,
     is_active: true,
   });
@@ -153,8 +157,8 @@ async function resolveCategory(name: string, type: 'expense' | 'income', workspa
   return { category };
 }
 
-async function resolveAsset(name: string, workspaceId: string) {
-  const assets = await assetService.findAll(workspaceId);
+async function resolveAsset(name: string, workspaceId: string, ctx: ToolContext) {
+  const assets = await ctx.services.asset.findAll(workspaceId);
   const names = assets.map((a: any) => a.name);
   const match = fuzzyMatch(name, names);
 
@@ -168,13 +172,14 @@ async function resolveAsset(name: string, workspaceId: string) {
 
 export async function handleAddTransaction(
   args: Record<string, unknown>,
-  type: 'expense' | 'income'
+  type: 'expense' | 'income',
+  ctx: ToolContext
 ) {
-  const { workspaceId, userId } = await getAuthContext();
+  const { workspaceId, userId } = ctx.auth;
   const input = addTransactionSchema.parse(args);
 
   // Resolve category
-  const categoryResult = await resolveCategory(input.category_name, type, workspaceId);
+  const categoryResult = await resolveCategory(input.category_name, type, workspaceId, ctx);
   if ('error' in categoryResult) {
     return {
       isError: true,
@@ -191,7 +196,7 @@ export async function handleAddTransaction(
   }
 
   // Resolve asset
-  const assetResult = await resolveAsset(input.asset_name, workspaceId);
+  const assetResult = await resolveAsset(input.asset_name, workspaceId, ctx);
   if ('error' in assetResult) {
     return {
       isError: true,
@@ -209,7 +214,7 @@ export async function handleAddTransaction(
 
   const transactionDate = input.date ? new Date(input.date) : new Date();
 
-  const transaction = await transactionService.create({
+  const transaction = await ctx.services.transaction.create({
     workspace_id: workspaceId,
     created_by_user_id: userId,
     type,

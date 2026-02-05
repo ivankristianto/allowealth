@@ -1,7 +1,6 @@
 import { z } from 'zod';
 import type { Tool } from '@modelcontextprotocol/sdk/types.js';
-import { getAuthContext } from '../auth.js';
-import { budgetService } from '../context.js';
+import type { ToolContext } from './types.js';
 
 export const budgetSummarySchema = z.object({
   month: z.number().min(1).max(12).optional(),
@@ -23,15 +22,20 @@ export const tool: Tool = {
   },
 };
 
-export async function handleGetBudgetSummary(args: Record<string, unknown>) {
-  const { workspaceId } = await getAuthContext();
+export async function handleGetBudgetSummary(args: Record<string, unknown>, ctx: ToolContext) {
+  const { workspaceId } = ctx.auth;
   const input = budgetSummarySchema.parse(args);
 
   const now = new Date();
   const month = input.month ?? now.getMonth() + 1;
   const year = input.year ?? now.getFullYear();
 
-  const overview = await budgetService.getMonthlyOverview(workspaceId, year, month, input.currency);
+  const overview = await ctx.services.budget.getMonthlyOverview(
+    workspaceId,
+    year,
+    month,
+    input.currency
+  );
 
   const result = {
     month,

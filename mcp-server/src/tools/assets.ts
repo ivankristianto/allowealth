@@ -1,7 +1,6 @@
 import { z } from 'zod';
 import type { Tool } from '@modelcontextprotocol/sdk/types.js';
-import { getAuthContext } from '../auth.js';
-import { categoryService, assetService } from '../context.js';
+import type { ToolContext } from './types.js';
 
 export const listCategoriesSchema = z.object({
   type: z.enum(['expense', 'income']).optional(),
@@ -36,11 +35,11 @@ export const tools: Tool[] = [
   },
 ];
 
-export async function handleListCategories(args: Record<string, unknown>) {
-  const { workspaceId } = await getAuthContext();
+export async function handleListCategories(args: Record<string, unknown>, ctx: ToolContext) {
+  const { workspaceId } = ctx.auth;
   const input = listCategoriesSchema.parse(args);
 
-  const categories = await categoryService.findAll(workspaceId, {
+  const categories = await ctx.services.category.findAll(workspaceId, {
     type: input.type,
     is_active: true,
   });
@@ -56,11 +55,11 @@ export async function handleListCategories(args: Record<string, unknown>) {
   };
 }
 
-export async function handleListAssets(_args: Record<string, unknown>) {
-  const { workspaceId } = await getAuthContext();
+export async function handleListAssets(_args: Record<string, unknown>, ctx: ToolContext) {
+  const { workspaceId } = ctx.auth;
   listAssetsSchema.parse(_args);
 
-  const assets = await assetService.findAll(workspaceId);
+  const assets = await ctx.services.asset.findAll(workspaceId);
 
   const result = assets.map((a: any) => ({
     name: a.name,
