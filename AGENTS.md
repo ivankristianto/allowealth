@@ -143,6 +143,32 @@ Agents must internalize:
 - ✅ Handle timestamps correctly: SQLite uses integers, PostgreSQL uses native timestamps
 - ❌ Check for double-prefix bugs during mass replace (`this.schema.this.schema` patterns)
 
+### Database Migrations (Dual Dialect)
+
+**CRITICAL:** All schema changes MUST generate migrations for **both** SQLite and PostgreSQL. See `docs/architecture/007-database-migrations.md` for full documentation.
+
+**When modifying any schema file:**
+
+1. Edit both `src/db/schema/sqlite/<table>.ts` and `src/db/schema/postgresql/<table>.ts`
+2. Generate migrations for both dialects:
+   ```bash
+   bun run db:generate          # SQLite
+   bun run db:generate:prod     # PostgreSQL
+   ```
+3. Apply locally: `bun run db:migrate`
+4. Commit both `drizzle/sqlite/` and `drizzle/postgresql/` directories
+5. Deploy: `bun run db:migrate:prod`
+
+**Rules:**
+
+- ✅ Always generate migrations for both SQLite and PostgreSQL when changing schema
+- ✅ Use `db:generate` + `db:migrate` for tracked, incremental changes
+- ✅ Commit migration files (`drizzle/sqlite/` and `drizzle/postgresql/`) to git
+- ✅ Use `db:push` only for local SQLite rapid iteration (never for production)
+- ❌ Never use `db:push` for PostgreSQL/Supabase (known drizzle-kit bug crashes it)
+- ❌ Never generate migrations for only one dialect and forget the other
+- ❌ Never manually edit migration SQL files
+
 ### Pre-Commit Checklist
 
 **Before every commit:**
