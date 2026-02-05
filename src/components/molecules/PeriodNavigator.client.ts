@@ -94,6 +94,7 @@ export function initPeriodNavigator() {
     if (prevBtn) {
       prevBtn.addEventListener('click', (e: Event) => {
         e.preventDefault();
+        if (prevBtn.disabled) return;
 
         const currentPeriod = periodInput.value;
         const currentIndex = availableOptions.findIndex((option) => option.value === currentPeriod);
@@ -119,6 +120,7 @@ export function initPeriodNavigator() {
     if (nextBtn) {
       nextBtn.addEventListener('click', (e: Event) => {
         e.preventDefault();
+        if (nextBtn.disabled) return;
 
         const currentPeriod = periodInput.value;
         const currentIndex = availableOptions.findIndex((option) => option.value === currentPeriod);

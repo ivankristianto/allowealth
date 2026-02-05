@@ -34,9 +34,10 @@ const { categoryName, categoryIcon, categoryColor, spent, budgetLimit, period, t
   Astro.props;
 
 // Budget calculations
-const hasBudget = budgetLimit !== null && budgetLimit !== undefined;
-const percentage = hasBudget ? (spent / budgetLimit) * 100 : 0;
-const remaining = hasBudget ? budgetLimit - spent : 0;
+const hasBudget = typeof budgetLimit === 'number' && budgetLimit > 0;
+const resolvedBudgetLimit = hasBudget ? budgetLimit : 0;
+const percentage = hasBudget ? (spent / resolvedBudgetLimit) * 100 : 0;
+const remaining = hasBudget ? resolvedBudgetLimit - spent : 0;
 const budgetStatus = hasBudget ? getBudgetStatus(percentage) : null;
 
 // Badge styling
@@ -117,7 +118,9 @@ const progressStatus: 'ok' | 'warning' | 'danger' = budgetStatus?.status ?? 'ok'
       </div>
       <div class="flex justify-between items-center text-sm">
         <span class="text-base-content/60">Budget Limit</span>
-        <span class="font-bold">{hasBudget ? formatCurrency(budgetLimit, 'IDR') : 'Not Set'}</span>
+        <span class="font-bold">
+          {hasBudget ? formatCurrency(resolvedBudgetLimit, 'IDR') : 'Not Set'}
+        </span>
       </div>
       <div class="flex justify-between items-center text-sm">
         <span class="text-base-content/60">Remaining</span>

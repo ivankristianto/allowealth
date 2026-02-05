@@ -11,6 +11,7 @@
 
 import { formatCurrency, formatCurrencyCompact, formatPercentage } from '@/lib/formatting';
 import { getBudgetStatus } from '@/lib/utils/budget';
+import { tokenClasses } from '@/lib/tokens';
 import Badge from '../atoms/Badge.astro';
 import EmptyState from '../atoms/EmptyState.astro';
 import ProgressBar from '../atoms/ProgressBar.astro';
@@ -107,7 +108,7 @@ const sortedHistory = [...history].sort((a, b) => {
                   <Badge
                     variant={budgetStatus.badgeVariant}
                     size="sm"
-                    className="px-4 py-1.5 text-xs"
+                    className={`${tokenClasses.badgePadding} ${tokenClasses.textXs}`}
                   >
                     {percentageUsed.toFixed(2)}%
                   </Badge>
@@ -151,7 +152,7 @@ const sortedHistory = [...history].sort((a, b) => {
                   <div class="pt-2">
                     <ProgressBar
                       value={percentageUsed}
-                      status={percentageUsed >= 100 ? 'danger' : 'ok'}
+                      status={budgetStatus.status}
                       size="sm"
                       ariaLabel={`${monthData.month_name}: ${formatPercentage(percentageUsed)} of budget used`}
                     />
@@ -234,9 +235,9 @@ const sortedHistory = [...history].sort((a, b) => {
                 {monthHasData ? (
                   <div class="inline-flex flex-col items-center">
                     <Badge
-                      variant={percentageUsed >= 100 ? 'exceeded' : 'optimal'}
+                      variant={budgetStatus.badgeVariant}
                       size="sm"
-                      className="px-4 py-1.5 text-xs"
+                      className={`${tokenClasses.badgePadding} ${tokenClasses.textXs}`}
                     >
                       {percentageUsed.toFixed(2)}%
                     </Badge>
@@ -292,7 +293,10 @@ const sortedHistory = [...history].sort((a, b) => {
         variant="centered"
         className="py-0"
       />
-      <a href="/transactions/add" class="btn btn-outline btn-sm gap-2 mt-6">
+      <a
+        href="/transactions/add"
+        class={`btn btn-outline btn-sm gap-2 ${tokenClasses.marginTopLg}`}
+      >
         <RotateCcw size={16} class="stroke-current" aria-hidden="true" />
         Start Tracking
       </a>

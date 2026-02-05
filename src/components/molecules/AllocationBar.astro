@@ -81,9 +81,13 @@ const sanitizedSegments = segments.map((segment) => ({
 </div>
 
 <script>
+  const initializedBars = new WeakSet<Element>();
+
   function initAllocationTooltips() {
     document.querySelectorAll('[data-allocation-bar]').forEach((bar) => {
       if (!(bar instanceof HTMLElement)) return;
+      if (initializedBars.has(bar)) return;
+      initializedBars.add(bar);
       const tooltipEnabled = bar.getAttribute('data-tooltip-enabled') === 'true';
       if (!tooltipEnabled) return;
 

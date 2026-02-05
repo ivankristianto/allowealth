@@ -229,6 +229,12 @@ export const spacing = {
   form: '1rem', // 16px - form field gaps
 } as const;
 
+export const tokenClasses = {
+  badgePadding: 'token-badge-padding',
+  textXs: 'token-text-xs',
+  marginTopLg: 'token-mt-6',
+} as const;
+
 /* ========================================
  * BREAKPOINTS
  * ======================================== */

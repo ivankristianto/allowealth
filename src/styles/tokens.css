@@ -442,3 +442,16 @@
   --sidebar-bg: var(--color-slate-900);
   --sidebar-border: var(--color-slate-800);
 }
+
+.token-badge-padding {
+  padding: var(--spacing-1_5) var(--spacing-4);
+}
+
+.token-text-xs {
+  font-size: var(--text-xs);
+  line-height: var(--leading-none);
+}
+
+.token-mt-6 {
+  margin-top: var(--spacing-6);
+}

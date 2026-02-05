@@ -93,7 +93,9 @@ export function createChartLifecycle<TData>({
           const container = entry.target as HTMLElement;
           observer?.unobserve(container);
 
-          const dataAttr = container.getAttribute('data-chart-data');
+          const dataSource =
+            (container.closest('[data-chart-data]') as HTMLElement | null) || container;
+          const dataAttr = dataSource.getAttribute('data-chart-data');
           if (!dataAttr) return;
 
           try {

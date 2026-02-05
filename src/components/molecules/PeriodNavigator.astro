@@ -43,17 +43,18 @@ const {
   className = '',
 } = Astro.props;
 
-const currentIndex = options.findIndex((option) => option.value === selected);
+const selectedOption = options.find((option) => option.value === selected) || options.at(-1);
+const currentIndex = selectedOption
+  ? options.findIndex((option) => option.value === selectedOption.value)
+  : -1;
 const hasPrevOption = currentIndex > 0;
-const hasNextOption = currentIndex < options.length - 1;
+const hasNextOption = currentIndex >= 0 && currentIndex < options.length - 1;
 
 const isPrevDisabled = prevDisabled ?? !hasPrevOption;
 const isNextDisabled = nextDisabled ?? !hasNextOption;
 
-const selectedOption = options.find((option) => option.value === selected);
 const currentLabel =
   selectedOption?.label ||
-  options[options.length - 1]?.label ||
   new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 ---
 
@@ -75,6 +76,7 @@ const currentLabel =
         }`}
         aria-label="Previous period"
         aria-disabled={isPrevDisabled}
+        disabled={isPrevDisabled}
         data-period-nav="prev"
         data-has-prev={isPrevDisabled ? 'false' : 'true'}
       >
@@ -124,6 +126,7 @@ const currentLabel =
         }`}
         aria-label="Next period"
         aria-disabled={isNextDisabled}
+        disabled={isNextDisabled}
         data-period-nav="next"
         data-has-next={isNextDisabled ? 'false' : 'true'}
       >

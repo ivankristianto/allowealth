@@ -137,7 +137,9 @@ const iconComponent = isDeactivate ? Ban : RefreshCw;
       (window as any)[fnName] = (methodId: string) => {
         currentMethodId = methodId;
         clearConfirmError(errorElement);
-        modal.classList.add('modal-open');
+        if (!modal.open) {
+          modal.showModal();
+        }
       };
     });
   }
