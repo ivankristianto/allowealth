@@ -5,4 +5,4 @@ export const workspaces = pgTable('workspaces', {
   name: text('name').notNull(),
   created_at: timestamp('created_at').defaultNow().notNull(),
   updated_at: timestamp('updated_at').defaultNow().notNull(),
-});
+}).enableRLS();

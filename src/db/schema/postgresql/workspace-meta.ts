@@ -14,4 +14,4 @@ export const workspaceMeta = pgTable(
     updated_at: timestamp('updated_at').defaultNow().notNull(),
   },
   (table) => [unique('workspace_meta_unique').on(table.workspace_id, table.meta_key)]
-);
+).enableRLS();

@@ -8,6 +8,13 @@
       "when": 1770282921696,
       "tag": "0000_panoramic_lady_ursula",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1770283505526,
+      "tag": "0001_perfect_corsair",
+      "breakpoints": true
     }
   ]
 }

@@ -22,4 +22,4 @@ export const categories = pgTable(
     updated_at: timestamp('updated_at').defaultNow().notNull(),
   },
   (table) => [index('budget_categories_workspace_id_idx').on(table.workspace_id)]
-);
+).enableRLS();

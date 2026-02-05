@@ -28,4 +28,4 @@ export const userMeta = pgTable(
     unique('user_meta_user_key_unique').on(table.user_id, table.meta_key),
     index('idx_user_meta_user_id').on(table.user_id),
   ]
-);
+).enableRLS();

@@ -24,4 +24,4 @@ export const auditLogs = pgTable(
     index('audit_logs_user_id_idx').on(table.user_id),
     index('audit_logs_created_at_idx').on(table.created_at),
   ]
-);
+).enableRLS();

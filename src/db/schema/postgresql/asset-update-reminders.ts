@@ -21,4 +21,4 @@ export const assetUpdateReminders = pgTable('asset_update_reminders', {
   next_reminder: timestamp('next_reminder'),
   is_dismissed: boolean('is_dismissed').default(false).notNull(),
   created_at: timestamp('created_at').defaultNow().notNull(),
-});
+}).enableRLS();

@@ -24,4 +24,4 @@ export const apiKeys = pgTable(
     index('api_keys_workspace_id_idx').on(table.workspace_id),
     index('api_keys_key_prefix_idx').on(table.key_prefix),
   ]
-);
+).enableRLS();

@@ -27,4 +27,4 @@ export const sessions = pgTable(
     expiresAt: timestamp('expires_at', { withTimezone: true, mode: 'string' }).notNull(),
   },
   (table) => [index('sessions_expires_at_idx').on(table.expiresAt)]
-);
+).enableRLS();

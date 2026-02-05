@@ -14,4 +14,4 @@ export const assetHistory = pgTable(
     recorded_at: timestamp('recorded_at').defaultNow().notNull(),
   },
   (table) => [index('asset_history_recorded_at_idx').on(table.recorded_at)]
-);
+).enableRLS();

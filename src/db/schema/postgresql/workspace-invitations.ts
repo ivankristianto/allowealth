@@ -13,4 +13,4 @@ export const workspaceInvitations = pgTable('workspace_invitations', {
   expires_at: timestamp('expires_at').notNull(),
   accepted_at: timestamp('accepted_at'),
   created_at: timestamp('created_at').defaultNow().notNull(),
-});
+}).enableRLS();

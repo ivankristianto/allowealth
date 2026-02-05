@@ -35,4 +35,4 @@ export const transactions = pgTable(
     index('transactions_transaction_date_idx').on(table.transaction_date),
     index('transactions_category_id_idx').on(table.category_id),
   ]
-);
+).enableRLS();

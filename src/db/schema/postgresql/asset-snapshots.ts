@@ -15,4 +15,4 @@ export const assetSnapshots = pgTable('asset_snapshots', {
   year: integer('year').notNull(),
   notes: text('notes'),
   created_at: timestamp('created_at').defaultNow().notNull(),
-});
+}).enableRLS();
