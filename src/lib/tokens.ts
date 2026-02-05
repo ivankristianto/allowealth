@@ -232,7 +232,14 @@ export const spacing = {
 export const tokenClasses = {
   badgePadding: 'token-badge-padding',
   textXs: 'token-text-xs',
+  textSm: 'token-text-sm',
   marginTopLg: 'token-mt-6',
+  cardPaddingLg: 'token-card-padding-lg',
+  paddingMd: 'token-padding-md',
+  paddingSm: 'token-padding-sm',
+  gapLg: 'token-gap-lg',
+  gapMd: 'token-gap-md',
+  stackSm: 'token-stack-sm',
 } as const;
 
 /* ========================================

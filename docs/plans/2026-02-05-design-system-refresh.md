@@ -8,7 +8,7 @@
 
 **Tech Stack:** Astro 5, DaisyUI v5, Tailwind v4, Lucide icons, Motion, design tokens in `@/lib/tokens`.
 
-### Task 1: Update `START.md` core rules and examples
+## Task 1: Update `START.md` core rules and examples
 
 **Files:**
 
@@ -121,7 +121,7 @@ git add design-system/START.md
 git commit -m "docs: refresh design system start guide"
 ```
 
-### Task 2: Update `01-foundations.md` for tokens and status mapping
+## Task 2: Update `01-foundations.md` for tokens and status mapping
 
 **Files:**
 
@@ -187,7 +187,7 @@ git add design-system/01-foundations.md
 git commit -m "docs: update foundations tokens"
 ````
 
-### Task 3: Add full component inventory and key component examples
+## Task 3: Add full component inventory and key component examples
 
 **Files:**
 
@@ -389,7 +389,7 @@ git add design-system/02-components.md
 git commit -m "docs: add component inventory"
 ````
 
-### Task 4: Refresh Forms, Accessibility, and Responsive docs
+## Task 4: Refresh Forms, Accessibility, and Responsive docs
 
 **Files:**
 
@@ -461,7 +461,7 @@ git add design-system/03-forms.md design-system/04-accessibility.md design-syste
 git commit -m "docs: refresh forms and accessibility"
 ```
 
-### Task 5: Refresh data visualization, patterns, and animations
+## Task 5: Refresh data visualization, patterns, and animations
 
 **Files:**
 

@@ -105,7 +105,7 @@ All icon examples use `@lucide/astro` (import the specific icons you need).
             <div class="text-sm text-neutral-500">{subtitle}</div>
           </div>
         </div>
-        <Currency amount="{amount}" currency="{currency}" />
+        <Currency amount={amount} currency={currency} />
       </div>
     ))
   }
