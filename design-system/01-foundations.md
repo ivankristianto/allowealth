@@ -136,6 +136,9 @@ fontSizes.lg; // 1rem (16px) - emphasized
 fontSizes.xl; // 1.25rem  (20px) - section headings
 fontSizes['2xl']; // 1.5rem   (24px) - page headings
 fontSizes['3xl']; // 1.875rem (30px) - hero
+fontSizes['4xl']; // 2.25rem (36px) - display
+fontSizes['5xl']; // 3rem (48px) - display
+fontSizes['6xl']; // 3.75rem (60px) - display
 ```
 
 ### Weights
@@ -168,8 +171,27 @@ fontWeights.bold; // 700 - primary headings
 
 ```typescript
 spacing.card; // 1.5rem (24px) - card padding
+spacing.cardLg; // 2rem (32px) - large card padding
 spacing.section; // 2rem   (32px) - section gaps
 spacing.form; // 1rem   (16px) - form field gaps
+```
+
+## Token Classes
+
+```typescript
+import { tokenClasses } from '@/lib/tokens';
+
+const classes = `${tokenClasses.badgePadding} ${tokenClasses.textXs}`;
+```
+
+## Budget Status Mapping
+
+```typescript
+import { type BudgetStatus } from '@/lib/utils/budget';
+import { toBudgetStatusClassName } from '@/lib/tokens';
+
+const status: BudgetStatus = 'exceeded';
+const className = toBudgetStatusClassName(status); // status-danger
 ```
 
 ### Full Scale
