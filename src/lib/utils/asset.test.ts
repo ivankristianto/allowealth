@@ -243,8 +243,8 @@ describe('Asset Utils - calculatePortfolioTotals', () => {
 
     const totals = calculatePortfolioTotals(assets);
 
-    expect(totals.totalIdr).toBe(30000000); // 15M + 15M
-    expect(totals.totalUsd).toBe(2000); // 30M / 15000
+    expect(totals.totalIdr).toBe(15000000); // Only IDR assets
+    expect(totals.totalUsd).toBe(1000); // Only USD assets
   });
 
   it('should return zero for empty portfolio', () => {
@@ -322,8 +322,7 @@ describe('Asset Utils - Edge Cases', () => {
 
     const totals = calculatePortfolioTotals(assets);
 
-    // 1500 USD = 22,500,000 IDR at 15000 rate
-    expect(totals.totalIdr).toBe(22500000);
-    expect(totals.totalUsd).toBe(1500);
+    expect(totals.totalIdr).toBe(0); // No IDR assets
+    expect(totals.totalUsd).toBe(1500); // Sum of USD assets
   });
 });

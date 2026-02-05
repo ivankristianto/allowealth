@@ -190,6 +190,12 @@ function handleContentUpdated(): void {
   if (filterInput?.value) {
     filterBudgetCards(filterInput.value);
   }
+
+  // Re-apply sort if a sort option is selected
+  const sortSelect = document.getElementById('budget-sort-select') as HTMLSelectElement | null;
+  if (sortSelect?.value) {
+    sortBudgets(sortSelect.value);
+  }
 }
 
 // =============================================================================
@@ -353,23 +359,16 @@ function sortBudgets(sortKey: string): void {
     const rows = Array.from(tableBody.querySelectorAll<HTMLElement>('[data-budget-table-row]'));
     rows.sort((a, b) => {
       if (sortKey === 'title-asc') {
-        return (a.dataset.categoryName || '').localeCompare(b.dataset.categoryName || '');
+        return (a.dataset.sortTitle || '').localeCompare(b.dataset.sortTitle || '');
       }
       if (sortKey === 'title-desc') {
-        return (b.dataset.categoryName || '').localeCompare(a.dataset.categoryName || '');
+        return (b.dataset.sortTitle || '').localeCompare(a.dataset.sortTitle || '');
       }
-      // For spent/budget, parse from the table cell text
-      const aCells = a.querySelectorAll('td');
-      const bCells = b.querySelectorAll('td');
       if (sortKey === 'spent-desc') {
-        const aSpent = parseFloat((aCells[2]?.textContent || '0').replace(/[^\d.-]/g, ''));
-        const bSpent = parseFloat((bCells[2]?.textContent || '0').replace(/[^\d.-]/g, ''));
-        return bSpent - aSpent;
+        return parseFloat(b.dataset.sortSpent || '0') - parseFloat(a.dataset.sortSpent || '0');
       }
       // budget-desc
-      const aBudget = parseFloat((aCells[1]?.textContent || '0').replace(/[^\d.-]/g, ''));
-      const bBudget = parseFloat((bCells[1]?.textContent || '0').replace(/[^\d.-]/g, ''));
-      return bBudget - aBudget;
+      return parseFloat(b.dataset.sortBudget || '0') - parseFloat(a.dataset.sortBudget || '0');
     });
     for (const row of rows) {
       tableBody.appendChild(row);

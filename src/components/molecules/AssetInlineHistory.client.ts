@@ -116,7 +116,7 @@ export function initInlineHistory() {
     if (initializedRows.has(row)) return;
     initializedRows.add(row);
 
-    row.style.cursor = 'pointer';
+    row.classList.add('cursor-pointer');
     row.addEventListener('click', (e) => {
       const target = e.target as HTMLElement;
       // Don't toggle if clicking a button, link, or within one
