@@ -178,6 +178,79 @@ paths:
         '500':
           $ref: '../responses/common.yml#/InternalServerError'
 
+  /api/budget/import:
+    post:
+      tags: [Budget]
+      summary: Import budgets from CSV
+      description: Import budgets from a CSV file with category and budget_amount columns
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [csv_file, month, year, currency]
+              properties:
+                csv_file:
+                  type: string
+                  format: binary
+                  description: CSV file with "category" and "budget_amount" columns
+                overwrite:
+                  type: string
+                  enum: ['true', 'false']
+                  default: 'false'
+                  description: Whether to overwrite existing budgets for the month
+                month:
+                  type: integer
+                  minimum: 1
+                  maximum: 12
+                  description: Target month
+                year:
+                  type: integer
+                  minimum: 2000
+                  maximum: 2100
+                  description: Target year
+                currency:
+                  type: string
+                  enum: [IDR, USD]
+                  description: Target currency
+      responses:
+        '200':
+          description: Import completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      imported:
+                        type: integer
+                        description: Number of budgets imported
+                      skipped:
+                        type: integer
+                        description: Number of budgets skipped (already exist)
+                      errors:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            row:
+                              type: integer
+                            message:
+                              type: string
+        '400':
+          $ref: '../responses/common.yml#/BadRequest'
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'
+
   /api/budget/export:
     get:
       tags: [Budget]

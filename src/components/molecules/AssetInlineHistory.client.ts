@@ -10,7 +10,16 @@ interface HistoryEntry {
 let activeAssetId: string | null = null;
 const initializedButtons = new WeakSet<Element>();
 
+function escapeHtml(str: string): string {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
 export function initInlineHistory() {
+  // Reset stale state from previous page navigations
+  activeAssetId = null;
+
   document.querySelectorAll<HTMLElement>('[data-toggle-history]').forEach((btn) => {
     if (initializedButtons.has(btn)) return;
     initializedButtons.add(btn);
@@ -81,12 +90,12 @@ export function initInlineHistory() {
             <td class="text-sm">${date}</td>
             <td class="text-sm text-right font-mono">${balance.toLocaleString()}</td>
             <td class="text-sm text-right font-mono ${changeClass}">${i < entries.length - 1 ? changePrefix + change.toLocaleString() : '—'}</td>
-            <td class="text-sm text-base-content/60 truncate max-w-32">${entry.notes || '—'}</td>
+            <td class="text-sm text-base-content/60 truncate max-w-32">${entry.notes ? escapeHtml(entry.notes) : '—'}</td>
           </tr>`;
         }
 
         html += '</tbody></table>';
-        html += `<div class="text-center mt-2"><a href="/assets/history" class="link link-accent text-sm">View all history</a></div>`;
+        html += `<div class="text-center mt-2"><a href="/assets/history/${encodeURIComponent(assetId)}" class="link link-accent text-sm">View all history</a></div>`;
         container.innerHTML = html;
       } catch {
         container.innerHTML =

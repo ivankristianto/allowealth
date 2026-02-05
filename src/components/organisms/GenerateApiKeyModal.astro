@@ -310,7 +310,7 @@ const { id = 'generate-api-key-modal' } = Astro.props;
               if (copyIconDefault) copyIconDefault.classList.add('hidden');
               if (copyIconSuccess) copyIconSuccess.classList.remove('hidden');
               setTimeout(() => {
-                copyLabel.textContent = 'Copy';
+                copyLabel.textContent = 'Copy Token';
                 if (copyIconDefault) copyIconDefault.classList.remove('hidden');
                 if (copyIconSuccess) copyIconSuccess.classList.add('hidden');
               }, 2000);

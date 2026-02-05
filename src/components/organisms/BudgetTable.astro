@@ -17,7 +17,7 @@ export interface Props {
   currency?: 'IDR' | 'USD';
 }
 
-const { budgets = [] } = Astro.props;
+const { budgets = [], currency = 'IDR' } = Astro.props;
 
 const sortedBudgets = [...budgets].sort((a, b) => {
   const amountA =
@@ -27,9 +27,11 @@ const sortedBudgets = [...budgets].sort((a, b) => {
   return amountB - amountA;
 });
 
+const locale = currency === 'USD' ? 'en-US' : 'id-ID';
+
 function formatAmount(val: string | number): string {
   const num = typeof val === 'string' ? parseFloat(val) : val;
-  return num.toLocaleString('id-ID');
+  return num.toLocaleString(locale);
 }
 
 function getStatusBadge(status: string): string {

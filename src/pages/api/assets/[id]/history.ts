@@ -19,7 +19,8 @@ export const GET: APIRoute = async (context) => {
 
     // Parse optional limit param
     const limitParam = context.url.searchParams.get('limit');
-    const limit = limitParam ? Math.min(Math.max(parseInt(limitParam, 10), 1), 100) : undefined;
+    const parsedLimit = limitParam ? parseInt(limitParam, 10) : NaN;
+    const limit = !isNaN(parsedLimit) ? Math.min(Math.max(parsedLimit, 1), 100) : undefined;
 
     const history = await assetService.getHistory(id, auth.workspaceId, perf, limit);
 
