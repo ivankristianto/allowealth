@@ -46,6 +46,7 @@
     "cli:delete-workspace:prod": "bun --env-file=.env.production run src/cli/delete-workspace.ts",
     "cli:create-api-key": "bun run src/cli/create-api-key.ts",
     "cli:create-api-key:prod": "bun --env-file=.env.production run src/cli/create-api-key.ts",
+    "cli:rotate-db-password": "bun --env-file=.env.production run src/cli/rotate-db-password.ts",
     "cli:generate-email-key": "bun run scripts/generate-email-key.ts",
     "mcp:start": "bun run mcp-server/src/index.ts",
     "mcp:start:prod": "bun --env-file=.env.production run mcp-server/src/index.ts",
