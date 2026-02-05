@@ -11,7 +11,7 @@
  * @param {string} className - Additional CSS classes
  */
 
-import { Sparkles, History, Plus, Copy, Tags } from '@lucide/astro';
+import { Sparkles, History, Plus, Copy, Tags, Download, Upload } from '@lucide/astro';
 import Modal from '@components/molecules/Modal.astro';
 
 export interface Props {
@@ -99,6 +99,34 @@ const containerClasses = [
         </button>
       )
     }
+
+    {/* Export */}
+    <button
+      type="button"
+      class="btn btn-ghost btn-sm md:btn-md gap-1 md:gap-2 rounded-lg md:rounded-xl text-base-content/70 hover:text-base-content hover:bg-base-200 px-2 md:px-4"
+      aria-label="Export budgets to CSV"
+      title="Export"
+      data-budget-export-btn
+      data-testid="budget-export-btn"
+    >
+      <Download size={16} class="stroke-current md:hidden" aria-hidden="true" />
+      <Download size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+      <span class="hidden md:inline">Export</span>
+    </button>
+
+    {/* Import */}
+    <button
+      type="button"
+      class="btn btn-ghost btn-sm md:btn-md gap-1 md:gap-2 rounded-lg md:rounded-xl text-base-content/70 hover:text-base-content hover:bg-base-200 px-2 md:px-4"
+      aria-label="Import budgets from CSV"
+      title="Import"
+      data-budget-import-btn
+      data-testid="budget-import-btn"
+    >
+      <Upload size={16} class="stroke-current md:hidden" aria-hidden="true" />
+      <Upload size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+      <span class="hidden md:inline">Import</span>
+    </button>
   </div>
 
   {/* Primary Action - Pushed to right */}

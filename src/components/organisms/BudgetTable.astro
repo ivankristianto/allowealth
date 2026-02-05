@@ -1,0 +1,110 @@
+---
+/**
+ * BudgetTable Component
+ *
+ * Table view for budget data as an alternative to BudgetCardGrid.
+ * Shows categories with budget, spent, remaining, percentage, and status columns.
+ *
+ * @param {BudgetData[]} budgets - Array of budget data
+ * @param {string} currency - Currency code (IDR or USD)
+ */
+
+import type { BudgetData } from './BudgetCardGrid.astro';
+import { Wallet } from '@lucide/astro';
+
+export interface Props {
+  budgets: BudgetData[];
+  currency?: 'IDR' | 'USD';
+}
+
+const { budgets = [] } = Astro.props;
+
+const sortedBudgets = [...budgets].sort((a, b) => {
+  const amountA =
+    typeof a.budget_amount === 'string' ? parseFloat(a.budget_amount) : a.budget_amount;
+  const amountB =
+    typeof b.budget_amount === 'string' ? parseFloat(b.budget_amount) : b.budget_amount;
+  return amountB - amountA;
+});
+
+function formatAmount(val: string | number): string {
+  const num = typeof val === 'string' ? parseFloat(val) : val;
+  return num.toLocaleString('id-ID');
+}
+
+function getStatusBadge(status: string): string {
+  if (status === 'exceeded') return 'badge-error';
+  if (status === 'warning') return 'badge-warning';
+  return 'badge-success';
+}
+---
+
+{
+  budgets.length === 0 ? (
+    <div class="flex flex-col items-center justify-center py-16 text-center">
+      <div class="w-16 h-16 rounded-2xl bg-base-200 flex items-center justify-center mb-4">
+        <Wallet size={32} class="stroke-base-content/40" aria-hidden="true" />
+      </div>
+      <h3 class="text-lg font-bold text-base-content mb-2">No budgets set</h3>
+      <p class="text-sm text-base-content/60 max-w-sm">
+        Set up spending limits for your expense categories to start tracking your budget progress.
+      </p>
+    </div>
+  ) : (
+    <div
+      class="overflow-x-auto bg-base-100 rounded-card border border-base-300 shadow-sm"
+      data-budget-table
+    >
+      <table class="table table-sm w-full">
+        <thead>
+          <tr class="text-base-content/60">
+            <th>Category</th>
+            <th class="text-right">Budget</th>
+            <th class="text-right">Spent</th>
+            <th class="text-right">Remaining</th>
+            <th class="text-right">% Used</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {sortedBudgets.map((budget) => {
+            const budgetAmt =
+              typeof budget.budget_amount === 'string'
+                ? parseFloat(budget.budget_amount)
+                : budget.budget_amount;
+            const spentAmt =
+              typeof budget.spent_amount === 'string'
+                ? parseFloat(budget.spent_amount)
+                : budget.spent_amount;
+            const remaining = budgetAmt - spentAmt;
+            return (
+              <tr class="hover" data-budget-table-row data-category-name={budget.category_name}>
+                <td class="font-medium">{budget.category_name}</td>
+                <td class="text-right font-mono">{formatAmount(budgetAmt)}</td>
+                <td class="text-right font-mono">{formatAmount(spentAmt)}</td>
+                <td class={`text-right font-mono ${remaining < 0 ? 'text-error' : ''}`}>
+                  {formatAmount(remaining)}
+                </td>
+                <td class="text-right">{budget.percentage_used}%</td>
+                <td>
+                  <span class={`badge badge-sm ${getStatusBadge(budget.status)}`}>
+                    {budget.status}
+                  </span>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+      {/* Hidden "no results" element for client-side filter */}
+      <div
+        data-table-filter-no-results
+        class="hidden text-center py-12 text-base-content/60"
+        aria-live="polite"
+      >
+        <p class="text-lg font-medium">No budgets match your filter</p>
+        <p class="text-sm mt-1">Try a different search term</p>
+      </div>
+    </div>
+  )
+}

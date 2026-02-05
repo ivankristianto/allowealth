@@ -1,0 +1,403 @@
+---
+/**
+ * BudgetImportModal Component
+ *
+ * Modal for importing budgets from CSV file.
+ * 3-step flow: Upload → Preview → Results.
+ * Uses inline error display (no toasts for errors).
+ *
+ * @param {string} id - Modal ID
+ * @param {number} month - Target month
+ * @param {number} year - Target year
+ * @param {string} currency - Target currency
+ */
+
+import Modal from '../molecules/Modal.astro';
+import { Upload } from '@lucide/astro';
+
+export interface Props {
+  id: string;
+  month: number;
+  year: number;
+  currency: 'IDR' | 'USD';
+}
+
+const { id, month, year, currency } = Astro.props;
+---
+
+<div data-import-modal-container data-id={id}>
+  <Modal id={id} title="" size="lg" closable={false} className="[&_.modal-box]:rounded-3xl">
+    <div class="space-y-6">
+      {/* Header with icon */}
+      <div class="flex items-center gap-4">
+        <div
+          class="w-12 h-12 rounded-2xl flex items-center justify-center bg-accent/10 text-accent"
+        >
+          <Upload size={24} class="stroke-current" aria-hidden="true" />
+        </div>
+        <div>
+          <h2 class="text-xl font-bold tracking-tight text-base-content leading-none">
+            Import Budgets from CSV
+          </h2>
+          <p class="text-base-content/60 text-sm mt-2 font-medium">
+            Upload a CSV file with "category" and "budget_amount" columns.
+          </p>
+        </div>
+      </div>
+
+      {/* Step 1: Upload */}
+      <div data-step="upload">
+        <div
+          class="border-2 border-dashed border-base-300 rounded-2xl p-8 text-center hover:border-accent/50 transition-colors cursor-pointer"
+          data-drop-zone
+        >
+          <Upload size={32} class="stroke-base-content/40 mx-auto mb-3" aria-hidden="true" />
+          <p class="text-base-content/70 font-medium">
+            Drop CSV file here or <span class="text-accent">browse</span>
+          </p>
+          <p class="text-xs text-base-content/40 mt-1">Expects columns: category, budget_amount</p>
+          <input type="file" accept=".csv,text/csv" class="hidden" data-file-input />
+        </div>
+      </div>
+
+      {/* Step 2: Preview */}
+      <div data-step="preview" class="hidden space-y-4">
+        <div class="flex items-center justify-between">
+          <span class="text-sm font-medium text-base-content/70" data-file-name></span>
+          <button type="button" class="btn btn-ghost btn-xs" data-change-file> Change file </button>
+        </div>
+
+        <div class="overflow-x-auto max-h-60 rounded-xl border border-base-300">
+          <table class="table table-sm w-full">
+            <thead class="sticky top-0 bg-base-200">
+              <tr>
+                <th>Category</th>
+                <th class="text-right">Budget Amount</th>
+              </tr>
+            </thead>
+            <tbody data-preview-body></tbody>
+          </table>
+        </div>
+
+        <label class="flex items-center gap-3 cursor-pointer">
+          <input
+            type="checkbox"
+            class="checkbox checkbox-sm checkbox-accent"
+            data-overwrite-checkbox
+          />
+          <span class="text-sm text-base-content/70">
+            Overwrite existing budgets for this month
+          </span>
+        </label>
+      </div>
+
+      {/* Step 3: Results */}
+      <div data-step="results" class="hidden space-y-4">
+        <div data-results-content></div>
+      </div>
+
+      {/* Error message */}
+      <div
+        data-form-error
+        class="hidden alert alert-error text-sm rounded-xl"
+        role="alert"
+        aria-live="polite"
+      >
+      </div>
+
+      {/* Hidden form data */}
+      <input type="hidden" data-import-month value={month} />
+      <input type="hidden" data-import-year value={year} />
+      <input type="hidden" data-import-currency value={currency} />
+
+      {/* Actions */}
+      <div class="flex items-center gap-4 pt-4">
+        <button
+          type="button"
+          class="flex-1 py-4 text-base-content/60 font-bold hover:bg-base-200 rounded-2xl transition-colors"
+          data-cancel-import
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          class="hidden flex-[2] btn btn-accent py-4 rounded-full font-bold text-base shadow-lg shadow-accent/20 hover:shadow-xl transition-all"
+          data-submit-import
+        >
+          Import
+        </button>
+        <button
+          type="button"
+          class="hidden flex-[2] btn btn-accent py-4 rounded-full font-bold text-base shadow-lg shadow-accent/20 hover:shadow-xl transition-all"
+          data-close-results
+        >
+          Done
+        </button>
+      </div>
+    </div>
+  </Modal>
+</div>
+
+<script>
+  import { addToast } from '@/lib/stores/toastStore';
+  import { getCsrfHeaders } from '@/lib/csrf-client';
+
+  const initializedContainers = new WeakSet<Element>();
+
+  function initImportModal() {
+    document.querySelectorAll<HTMLElement>('[data-import-modal-container]').forEach((container) => {
+      if (initializedContainers.has(container)) return;
+      initializedContainers.add(container);
+
+      const id = container.getAttribute('data-id');
+      if (!id) return;
+
+      const modal = document.getElementById(id) as HTMLDialogElement | null;
+      const dropZone = container.querySelector<HTMLElement>('[data-drop-zone]');
+      const fileInput = container.querySelector<HTMLInputElement>('[data-file-input]');
+      const errorEl = container.querySelector<HTMLElement>('[data-form-error]');
+      const submitBtn = container.querySelector<HTMLButtonElement>('[data-submit-import]');
+      const closeBtn = container.querySelector<HTMLButtonElement>('[data-close-results]');
+      const cancelBtn = container.querySelector<HTMLButtonElement>('[data-cancel-import]');
+      const changeFileBtn = container.querySelector<HTMLButtonElement>('[data-change-file]');
+      const previewBody = container.querySelector<HTMLElement>('[data-preview-body]');
+      const fileNameEl = container.querySelector<HTMLElement>('[data-file-name]');
+      const overwriteCheckbox = container.querySelector<HTMLInputElement>(
+        '[data-overwrite-checkbox]'
+      );
+      const resultsContent = container.querySelector<HTMLElement>('[data-results-content]');
+
+      if (!modal || !dropZone || !fileInput || !submitBtn || !cancelBtn) return;
+
+      let parsedRows: Array<{ category: string; budget_amount: string }> = [];
+      let selectedFile: File | null = null;
+
+      function showStep(step: 'upload' | 'preview' | 'results') {
+        container.querySelectorAll<HTMLElement>('[data-step]').forEach((el) => {
+          el.classList.toggle('hidden', el.dataset.step !== step);
+        });
+        if (submitBtn) submitBtn.classList.toggle('hidden', step !== 'preview');
+        if (closeBtn) closeBtn.classList.toggle('hidden', step !== 'results');
+        errorEl?.classList.add('hidden');
+      }
+
+      function resetModal() {
+        showStep('upload');
+        parsedRows = [];
+        selectedFile = null;
+        if (fileInput) fileInput.value = '';
+        if (previewBody) previewBody.innerHTML = '';
+        if (overwriteCheckbox) overwriteCheckbox.checked = false;
+        errorEl?.classList.add('hidden');
+      }
+
+      function parseCSV(text: string) {
+        const lines = text.split('\n').filter((l) => l.trim());
+        if (lines.length < 2) {
+          throw new Error('CSV must have a header row and at least one data row');
+        }
+
+        const header = lines[0].split(',').map((h) => h.trim().toLowerCase().replace(/^"|"$/g, ''));
+        const categoryIdx = header.indexOf('category');
+        const budgetAmountIdx = header.indexOf('budget_amount');
+
+        if (categoryIdx === -1 || budgetAmountIdx === -1) {
+          throw new Error('CSV must contain "category" and "budget_amount" columns');
+        }
+
+        const rows: Array<{ category: string; budget_amount: string }> = [];
+        for (let i = 1; i < lines.length; i++) {
+          const cells = lines[i].split(',').map((c) => c.trim().replace(/^"|"$/g, ''));
+          const category = cells[categoryIdx];
+          if (!category || category.toUpperCase() === 'TOTAL') continue;
+          rows.push({
+            category,
+            budget_amount: cells[budgetAmountIdx] || '0',
+          });
+        }
+
+        if (rows.length === 0) {
+          throw new Error('No valid data rows found');
+        }
+
+        return rows;
+      }
+
+      function handleFile(file: File) {
+        if (!file.name.endsWith('.csv') && file.type !== 'text/csv') {
+          if (errorEl) {
+            errorEl.textContent = 'Please select a CSV file';
+            errorEl.classList.remove('hidden');
+          }
+          return;
+        }
+
+        selectedFile = file;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          try {
+            const text = e.target?.result as string;
+            parsedRows = parseCSV(text);
+
+            // Show preview
+            if (fileNameEl) fileNameEl.textContent = file.name;
+            if (previewBody) {
+              previewBody.innerHTML = parsedRows
+                .map(
+                  (row) =>
+                    `<tr><td>${escapeHtml(row.category)}</td><td class="text-right font-mono">${escapeHtml(row.budget_amount)}</td></tr>`
+                )
+                .join('');
+            }
+
+            showStep('preview');
+          } catch (err) {
+            if (errorEl) {
+              errorEl.textContent = err instanceof Error ? err.message : 'Failed to parse CSV';
+              errorEl.classList.remove('hidden');
+            }
+          }
+        };
+        reader.readAsText(file);
+      }
+
+      function escapeHtml(str: string): string {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+      }
+
+      // Drop zone click
+      dropZone.addEventListener('click', () => fileInput?.click());
+
+      // File input change
+      fileInput.addEventListener('change', () => {
+        const file = fileInput.files?.[0];
+        if (file) handleFile(file);
+      });
+
+      // Drag and drop
+      dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('border-accent');
+      });
+
+      dropZone.addEventListener('dragleave', () => {
+        dropZone.classList.remove('border-accent');
+      });
+
+      dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('border-accent');
+        const file = e.dataTransfer?.files[0];
+        if (file) handleFile(file);
+      });
+
+      // Change file button
+      changeFileBtn?.addEventListener('click', () => {
+        resetModal();
+      });
+
+      // Cancel button
+      cancelBtn.addEventListener('click', () => {
+        resetModal();
+        modal.close();
+      });
+
+      // Close results button
+      closeBtn?.addEventListener('click', () => {
+        resetModal();
+        modal.close();
+        window.location.reload();
+      });
+
+      // Submit import
+      submitBtn.addEventListener('click', async () => {
+        if (!selectedFile || parsedRows.length === 0) return;
+
+        errorEl?.classList.add('hidden');
+        const originalText = submitBtn.textContent || 'Import';
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Importing...';
+
+        const monthInput = container.querySelector<HTMLInputElement>('[data-import-month]');
+        const yearInput = container.querySelector<HTMLInputElement>('[data-import-year]');
+        const currencyInput = container.querySelector<HTMLInputElement>('[data-import-currency]');
+
+        const formData = new FormData();
+        formData.append('csv_file', selectedFile);
+        formData.append('overwrite', overwriteCheckbox?.checked ? 'true' : 'false');
+        formData.append('month', monthInput?.value || '');
+        formData.append('year', yearInput?.value || '');
+        formData.append('currency', currencyInput?.value || 'IDR');
+
+        try {
+          const response = await fetch('/api/budget/import', {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+              ...getCsrfHeaders(),
+            },
+            body: formData,
+          });
+
+          const result = await response.json();
+          if (!response.ok || !result.success) {
+            throw new Error(result.error?.message || 'Import failed');
+          }
+
+          const data = result.data;
+
+          // Show results
+          let html = '<div class="space-y-3">';
+          html += `<div class="flex items-center gap-3">
+              <span class="badge badge-success badge-lg">${data.imported}</span>
+              <span class="text-sm font-medium">budgets imported</span>
+            </div>`;
+
+          if (data.skipped > 0) {
+            html += `<div class="flex items-center gap-3">
+                <span class="badge badge-warning badge-lg">${data.skipped}</span>
+                <span class="text-sm font-medium">skipped (already exist)</span>
+              </div>`;
+          }
+
+          if (data.errors && data.errors.length > 0) {
+            html += `<div class="mt-2">
+                <p class="text-sm font-medium text-error mb-1">Errors:</p>
+                <ul class="text-sm text-base-content/60 space-y-1">
+                  ${data.errors.map((e: { row: number; message: string }) => `<li>Row ${e.row}: ${escapeHtml(e.message)}</li>`).join('')}
+                </ul>
+              </div>`;
+          }
+
+          html += '</div>';
+
+          if (resultsContent) resultsContent.innerHTML = html;
+          showStep('results');
+
+          if (data.imported > 0) {
+            addToast(`${data.imported} budget(s) imported successfully!`, 'success');
+          }
+        } catch (err) {
+          const message = err instanceof Error ? err.message : 'Import failed';
+          if (errorEl) {
+            errorEl.textContent = message;
+            errorEl.classList.remove('hidden');
+          }
+        } finally {
+          submitBtn.disabled = false;
+          submitBtn.textContent = originalText;
+        }
+      });
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initImportModal);
+  } else {
+    initImportModal();
+  }
+
+  document.addEventListener('astro:page-load', initImportModal);
+</script>

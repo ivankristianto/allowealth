@@ -509,6 +509,119 @@ export class BudgetService {
       .join('\n');
   }
 
+  /**
+   * Import budgets from parsed CSV rows.
+   * Matches category names to existing categories. Optionally overwrites existing budgets.
+   */
+  async importFromCSV(
+    workspaceId: string,
+    createdByUserId: string,
+    rows: Array<{ category: string; budget_amount: string }>,
+    overwrite: boolean,
+    targetMonth: number,
+    targetYear: number,
+    currency: 'IDR' | 'USD'
+  ): Promise<{
+    imported: number;
+    skipped: number;
+    errors: Array<{ row: number; message: string }>;
+  }> {
+    // Get all categories for name → ID mapping
+    const allCategories = await this.db.query.categories.findMany({
+      where: and(
+        eq(this.schema.categories.workspace_id, workspaceId),
+        eq(this.schema.categories.is_active, true)
+      ),
+    });
+
+    const categoryMap = new Map(
+      allCategories.map((c: { id: string; name: string }) => [c.name.toLowerCase(), c.id])
+    );
+
+    // If overwrite, delete existing budgets for this month/year/currency
+    if (overwrite) {
+      await this.db
+        .delete(this.schema.budgets)
+        .where(
+          and(
+            eq(this.schema.budgets.workspace_id, workspaceId),
+            eq(this.schema.budgets.month, targetMonth),
+            eq(this.schema.budgets.year, targetYear),
+            eq(this.schema.budgets.currency, currency)
+          )
+        );
+    }
+
+    // Get existing budgets to check for duplicates (when not overwriting)
+    const existingBudgets = overwrite
+      ? []
+      : await this.db.query.budgets.findMany({
+          where: and(
+            eq(this.schema.budgets.workspace_id, workspaceId),
+            eq(this.schema.budgets.month, targetMonth),
+            eq(this.schema.budgets.year, targetYear),
+            eq(this.schema.budgets.currency, currency)
+          ),
+        });
+
+    const existingCategoryIds = new Set(
+      existingBudgets.map((b: { category_id: string }) => b.category_id)
+    );
+
+    let imported = 0;
+    let skipped = 0;
+    const errors: Array<{ row: number; message: string }> = [];
+
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      const categoryName = row.category?.trim();
+      const budgetAmount = row.budget_amount?.trim();
+
+      if (!categoryName) {
+        errors.push({ row: i + 1, message: 'Missing category name' });
+        continue;
+      }
+
+      const categoryId = categoryMap.get(categoryName.toLowerCase());
+      if (!categoryId) {
+        errors.push({ row: i + 1, message: `Category "${categoryName}" not found` });
+        continue;
+      }
+
+      const parsedAmount = parseFloat(budgetAmount);
+      if (isNaN(parsedAmount) || parsedAmount < 0) {
+        errors.push({ row: i + 1, message: `Invalid amount "${budgetAmount}"` });
+        continue;
+      }
+
+      // Skip if budget already exists for this category (when not overwriting)
+      if (!overwrite && existingCategoryIds.has(categoryId)) {
+        skipped++;
+        continue;
+      }
+
+      // Create budget entry
+      await this.db.insert(this.schema.budgets).values({
+        id: nanoid(),
+        workspace_id: workspaceId,
+        created_by_user_id: createdByUserId,
+        category_id: categoryId,
+        month: targetMonth,
+        year: targetYear,
+        budget_amount: parsedAmount.toString(),
+        currency,
+      });
+
+      imported++;
+    }
+
+    // Invalidate budget cache
+    const cache = getCacheManager();
+    await cache.invalidateByTags([CacheTags.workspace(workspaceId), CacheTags.BUDGET]);
+
+    return { imported, skipped, errors };
+  }
+
   // ============================================
   // CRUD Methods for Budgets Table
   // ============================================
