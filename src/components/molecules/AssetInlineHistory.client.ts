@@ -111,12 +111,16 @@ export function initInlineHistory() {
     });
   });
 
-  // Row click to toggle history (skip if clicking buttons/links)
+  // Row click/keyboard to toggle history (skip if clicking buttons/links)
   document.querySelectorAll<HTMLElement>('[data-asset-row]').forEach((row) => {
     if (initializedRows.has(row)) return;
     initializedRows.add(row);
 
     row.classList.add('cursor-pointer');
+    row.tabIndex = 0;
+    row.setAttribute('role', 'button');
+    row.setAttribute('aria-label', `Toggle ${row.dataset.assetName || 'asset'} history`);
+
     row.addEventListener('click', (e) => {
       const target = e.target as HTMLElement;
       // Don't toggle if clicking a button, link, or within one
@@ -124,6 +128,17 @@ export function initInlineHistory() {
 
       const assetId = row.dataset.assetId;
       if (assetId) toggleHistory(assetId);
+    });
+
+    row.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        const assetId = row.dataset.assetId;
+        if (assetId) toggleHistory(assetId);
+      } else if (e.key === 'Escape') {
+        const assetId = row.dataset.assetId;
+        if (assetId && activeAssetId === assetId) toggleHistory(assetId);
+      }
     });
   });
 }

@@ -274,38 +274,8 @@ const { id = 'generate-api-key-modal' } = Astro.props;
         if (copyBtn && copyLabel) {
           copyBtn.addEventListener('click', async () => {
             const key = (plainKeyEl.textContent || '').trim();
-            let copied = false;
-
-            // Try modern clipboard API first
-            if (navigator.clipboard) {
-              try {
-                await navigator.clipboard.writeText(key);
-                copied = true;
-              } catch {
-                // Fall through to fallback
-              }
-            }
-
-            // Fallback: hidden textarea + execCommand
-            if (!copied) {
-              try {
-                const textarea = document.createElement('textarea');
-                textarea.value = key;
-                textarea.style.position = 'fixed';
-                textarea.style.left = '-9999px';
-                textarea.style.top = '-9999px';
-                document.body.appendChild(textarea);
-                textarea.focus();
-                textarea.select();
-                document.execCommand('copy');
-                textarea.remove();
-                copied = true;
-              } catch {
-                // Both methods failed
-              }
-            }
-
-            if (copied) {
+            try {
+              await navigator.clipboard.writeText(key);
               copyLabel.textContent = 'Copied!';
               if (copyIconDefault) copyIconDefault.classList.add('hidden');
               if (copyIconSuccess) copyIconSuccess.classList.remove('hidden');
@@ -314,8 +284,8 @@ const { id = 'generate-api-key-modal' } = Astro.props;
                 if (copyIconDefault) copyIconDefault.classList.remove('hidden');
                 if (copyIconSuccess) copyIconSuccess.classList.add('hidden');
               }, 2000);
-            } else {
-              addToast('Unable to copy. Please select and copy the key manually.', 'error');
+            } catch {
+              addToast('Unable to copy. Please select and copy the token manually.', 'error');
             }
           });
         }

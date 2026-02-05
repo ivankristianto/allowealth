@@ -118,19 +118,22 @@ export function renderSummaryHtml(html: string): void {
 
 /**
  * Render budget cards grid from server-rendered HTML
+ * Injects into the [data-view="card"] sub-container to preserve sibling views.
  */
 export function renderCardsHtml(html: string): void {
-  const container = document.getElementById('budget-cards-container');
-  if (!container) {
-    console.error('[BudgetRenderer] #budget-cards-container not found!');
+  const cardView = document.querySelector(
+    '#budget-cards-container [data-view="card"]'
+  ) as HTMLElement;
+  if (!cardView) {
+    console.error('[BudgetRenderer] #budget-cards-container [data-view="card"] not found!');
     return;
   }
 
-  container.innerHTML = html;
+  cardView.innerHTML = html;
 
   // Animate cards with stagger effect
   if (!prefersReducedMotion()) {
-    const cards = container.querySelectorAll('[data-budget-card]');
+    const cards = cardView.querySelectorAll('[data-budget-card]');
     cards.forEach((card, index) => {
       animate(
         card as HTMLElement,
@@ -140,10 +143,26 @@ export function renderCardsHtml(html: string): void {
     });
   }
 
-  const cardCount = container.querySelectorAll('[data-budget-card]').length;
+  const cardCount = cardView.querySelectorAll('[data-budget-card]').length;
   announceToScreenReader(
     cardCount > 0 ? `${cardCount} budget cards loaded` : 'No budget categories found'
   );
+}
+
+/**
+ * Render budget table from server-rendered HTML
+ * Injects into the [data-view="table"] sub-container to preserve sibling views.
+ */
+export function renderTableHtml(html: string): void {
+  const tableView = document.querySelector(
+    '#budget-cards-container [data-view="table"]'
+  ) as HTMLElement;
+  if (!tableView) {
+    console.error('[BudgetRenderer] #budget-cards-container [data-view="table"] not found!');
+    return;
+  }
+
+  tableView.innerHTML = html;
 }
 
 /**
@@ -178,6 +197,10 @@ export function renderFromHtmlResponse(response: FetchBudgetOverviewHtmlResponse
 
   if (partials.cards) {
     renderCardsHtml(partials.cards);
+  }
+
+  if (partials.table) {
+    renderTableHtml(partials.table);
   }
 
   if (partials.advice !== undefined) {

@@ -246,6 +246,12 @@ export class AssetService {
     notes: string | undefined,
     workspaceId: string
   ): Promise<{ fromAsset: any; toAsset: any }> {
+    if (fromId === toId) {
+      throw new Error(
+        `Cannot transfer an asset to itself (assetId: ${fromId}, workspaceId: ${workspaceId})`
+      );
+    }
+
     const fromAsset = await this.findById(fromId, workspaceId);
     const toAsset = await this.findById(toId, workspaceId);
 

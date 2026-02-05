@@ -526,6 +526,14 @@ export class BudgetService {
     skipped: number;
     errors: Array<{ row: number; message: string }>;
   }> {
+    // Validate inputs (consistent with getMonthlyOverview and hasBudgetsForMonth)
+    if (!Number.isInteger(targetYear) || targetYear < 2000 || targetYear > 2100) {
+      throw new Error('Invalid year parameter');
+    }
+    if (!Number.isInteger(targetMonth) || targetMonth < 1 || targetMonth > 12) {
+      throw new Error('Invalid month parameter');
+    }
+
     // Get all categories for name → ID mapping
     const allCategories = await this.db.query.categories.findMany({
       where: and(
@@ -568,6 +576,8 @@ export class BudgetService {
       currency: string;
     }> = [];
 
+    const seenBatchCategoryIds = new Set<string>();
+
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
       const categoryName = row.category?.trim();
@@ -578,11 +588,22 @@ export class BudgetService {
         continue;
       }
 
-      const categoryId = categoryMap.get(categoryName.toLowerCase());
+      const categoryKey = categoryName.toLowerCase();
+      const categoryId = categoryMap.get(categoryKey);
       if (!categoryId) {
         errors.push({ row: i + 1, message: `Category "${categoryName}" not found` });
         continue;
       }
+
+      // Check for duplicate categories within the same CSV batch
+      if (seenBatchCategoryIds.has(categoryKey)) {
+        errors.push({
+          row: i + 1,
+          message: `Duplicate category "${categoryName}" in CSV for same month/year/currency`,
+        });
+        continue;
+      }
+      seenBatchCategoryIds.add(categoryKey);
 
       const parsedAmount = parseFloat(budgetAmount);
       if (isNaN(parsedAmount) || parsedAmount < 0) {

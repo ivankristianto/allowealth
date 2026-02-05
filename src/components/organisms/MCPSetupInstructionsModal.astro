@@ -154,38 +154,9 @@ import { BookOpen, Copy, Check } from '@lucide/astro';
 
       copyBtn.addEventListener('click', async () => {
         const text = configText.textContent || '';
-        let copied = false;
 
-        // Try modern clipboard API first
-        if (navigator.clipboard) {
-          try {
-            await navigator.clipboard.writeText(text);
-            copied = true;
-          } catch {
-            // Fall through to fallback
-          }
-        }
-
-        // Fallback: hidden textarea + execCommand
-        if (!copied) {
-          try {
-            const textarea = document.createElement('textarea');
-            textarea.value = text;
-            textarea.style.position = 'fixed';
-            textarea.style.left = '-9999px';
-            textarea.style.top = '-9999px';
-            document.body.appendChild(textarea);
-            textarea.focus();
-            textarea.select();
-            document.execCommand('copy');
-            textarea.remove();
-            copied = true;
-          } catch {
-            // Both methods failed
-          }
-        }
-
-        if (copied) {
+        try {
+          await navigator.clipboard.writeText(text);
           const defaultIcon = copyBtn.querySelector('[data-copy-icon-default]');
           const successIcon = copyBtn.querySelector('[data-copy-icon-success]');
           defaultIcon?.classList.add('hidden');
@@ -195,7 +166,7 @@ import { BookOpen, Copy, Check } from '@lucide/astro';
             defaultIcon?.classList.remove('hidden');
             successIcon?.classList.add('hidden');
           }, 2000);
-        } else {
+        } catch {
           const { addToast } = await import('@/lib/stores/toastStore');
           addToast('Unable to copy. Please select and copy manually.', 'error');
         }
