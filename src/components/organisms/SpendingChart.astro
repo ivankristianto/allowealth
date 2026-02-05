@@ -510,7 +510,8 @@ const chartId = `spending-chart-${Math.random().toString(36).slice(2, 11)}`;
       return data ? { data, colors: [] } : null;
     },
     onInit: (container, payload) => {
-      const colorsAttr = container.getAttribute('data-chart-colors');
+      const dataSource = container.closest('[data-chart-colors]') ?? container;
+      const colorsAttr = dataSource.getAttribute('data-chart-colors');
       const colors = parseChartColors(safeParseJsonArray(colorsAttr));
       if (!colors) return;
       const chartId = container.querySelector('canvas')?.id;

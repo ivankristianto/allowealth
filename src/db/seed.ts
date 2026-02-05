@@ -70,6 +70,31 @@ const DEMO_MEMBER = {
 const SEED_TIME_HOUR = 10; // 10 AM to avoid timezone boundary issues
 const SNAPSHOT_GROWTH_RATE = 0.05; // 5% growth per month for snapshots
 
+/**
+ * Compute the 3 months to seed: current month + 2 previous months
+ * Uses dynamic dates so seed data always includes the current month.
+ */
+function getSeedMonths(): Array<{ year: number; month: number }> {
+  const now = new Date();
+  const currentMonth = now.getMonth() + 1; // 1-indexed
+  const currentYear = now.getFullYear();
+
+  return [
+    // 2 months ago
+    {
+      year: currentMonth <= 2 ? currentYear - 1 : currentYear,
+      month: currentMonth <= 2 ? currentMonth + 10 : currentMonth - 2,
+    },
+    // 1 month ago
+    {
+      year: currentMonth === 1 ? currentYear - 1 : currentYear,
+      month: currentMonth === 1 ? 12 : currentMonth - 1,
+    },
+    // Current month
+    { year: currentYear, month: currentMonth },
+  ];
+}
+
 // ============================================================================
 // HELPERS
 // ============================================================================
@@ -256,32 +281,37 @@ const PAYMENT_ASSETS = [
   },
 ];
 
-// Income transactions with amounts and dates
-const INCOME_TRANSACTIONS = [
-  // January 2026
-  { description: 'Dad Salary', amount: 15000000, day: 25, month: 1, year: 2026 },
-  { description: 'Side Business', amount: 3500000, day: 5, month: 1, year: 2026 },
-  { description: 'Side Business', amount: 2500000, day: 10, month: 1, year: 2026 },
-  { description: 'Dad Salary', amount: 5000000, day: 15, month: 1, year: 2026 },
-  { description: 'Dad Salary', amount: 3000000, day: 20, month: 1, year: 2026 },
-  { description: 'Dividend', amount: 1500000, day: 8, month: 1, year: 2026 },
-  { description: 'Dividend', amount: 800000, day: 12, month: 1, year: 2026 },
-
-  // December 2025
-  { description: 'Dad Salary', amount: 15000000, day: 25, month: 12, year: 2025 },
-  { description: 'Side Business', amount: 2000000, day: 5, month: 12, year: 2025 },
-  { description: 'Side Business', amount: 4000000, day: 10, month: 12, year: 2025 },
-  { description: 'Mom Salary', amount: 3500000, day: 15, month: 12, year: 2025 },
-  { description: 'Mom Salary', amount: 2500000, day: 20, month: 12, year: 2025 },
-  { description: 'Side Business', amount: 3500000, day: 8, month: 12, year: 2025 },
-
-  // November 2025
-  { description: 'Dad Salary', amount: 15000000, day: 25, month: 11, year: 2025 },
-  { description: 'Side Business', amount: 2500000, day: 5, month: 11, year: 2025 },
-  { description: 'Dad Salary', amount: 5000000, day: 12, month: 11, year: 2025 },
-  { description: 'Dad Salary', amount: 3000000, day: 18, month: 11, year: 2025 },
-  { description: 'Dividend', amount: 1500000, day: 8, month: 11, year: 2025 },
-  { description: 'Dividend', amount: 800000, day: 15, month: 11, year: 2025 },
+// Income transaction templates (repeated for each seeded month)
+// Day values are capped to the month's last day automatically
+const INCOME_TEMPLATES = [
+  // Pattern A: current month
+  [
+    { description: 'Dad Salary', amount: 15000000, day: 25 },
+    { description: 'Side Business', amount: 3500000, day: 5 },
+    { description: 'Side Business', amount: 2500000, day: 10 },
+    { description: 'Dad Salary', amount: 5000000, day: 15 },
+    { description: 'Dad Salary', amount: 3000000, day: 20 },
+    { description: 'Dividend', amount: 1500000, day: 8 },
+    { description: 'Dividend', amount: 800000, day: 12 },
+  ],
+  // Pattern B: 1 month ago
+  [
+    { description: 'Dad Salary', amount: 15000000, day: 25 },
+    { description: 'Side Business', amount: 2000000, day: 5 },
+    { description: 'Side Business', amount: 4000000, day: 10 },
+    { description: 'Mom Salary', amount: 3500000, day: 15 },
+    { description: 'Mom Salary', amount: 2500000, day: 20 },
+    { description: 'Side Business', amount: 3500000, day: 8 },
+  ],
+  // Pattern C: 2 months ago
+  [
+    { description: 'Dad Salary', amount: 15000000, day: 25 },
+    { description: 'Side Business', amount: 2500000, day: 5 },
+    { description: 'Dad Salary', amount: 5000000, day: 12 },
+    { description: 'Dad Salary', amount: 3000000, day: 18 },
+    { description: 'Dividend', amount: 1500000, day: 8 },
+    { description: 'Dividend', amount: 800000, day: 15 },
+  ],
 ];
 
 // Expense transactions with categories and amounts
@@ -819,24 +849,7 @@ async function seedBudgets(
   console.log('📊 Seeding budgets...');
 
   const now = new Date();
-  const currentMonth = now.getMonth() + 1; // 1-indexed
-  const currentYear = now.getFullYear();
-
-  // Seed budgets for current month and 2 previous months
-  const monthsToSeed = [
-    // 2 months ago
-    {
-      year: currentMonth <= 2 ? currentYear - 1 : currentYear,
-      month: currentMonth <= 2 ? currentMonth + 10 : currentMonth - 2,
-    },
-    // 1 month ago
-    {
-      year: currentMonth === 1 ? currentYear - 1 : currentYear,
-      month: currentMonth === 1 ? 12 : currentMonth - 1,
-    },
-    // Current month
-    { year: currentYear, month: currentMonth },
-  ];
+  const monthsToSeed = getSeedMonths();
 
   // P2 TODO: Consider using schema-derived type for currency (e.g., 'IDR' as const)
   const budgetRecords: Array<{
@@ -898,59 +911,71 @@ async function seedIncomeTransactions(
   // Use only payment assets for transactions (cash, bank accounts, e-wallets)
   const paymentAssetNames = PAYMENT_ASSETS.map((a) => a.name);
   const now = new Date();
+  const seedMonths = getSeedMonths();
 
-  for (const income of INCOME_TRANSACTIONS) {
-    const categoryId = categoryMap.get(income.description);
-    if (!categoryId) {
-      // Create category if it doesn't exist
-      const newId = nanoid();
-      const style = CATEGORY_STYLES[income.description] || {
-        icon: 'circle-dot',
-        color: 'bg-slate-500',
-      };
-      await db.insert(categories).values({
-        id: newId,
+  for (let i = 0; i < seedMonths.length; i++) {
+    const { year, month } = seedMonths[i];
+    // Use templates in reverse order: index 0 = current month, 1 = 1 month ago, 2 = 2 months ago
+    const templateIndex = seedMonths.length - 1 - i;
+    const template = INCOME_TEMPLATES[templateIndex] || INCOME_TEMPLATES[0];
+
+    for (const income of template) {
+      const categoryId = categoryMap.get(income.description);
+      if (!categoryId) {
+        // Create category if it doesn't exist
+        const newId = nanoid();
+        const style = CATEGORY_STYLES[income.description] || {
+          icon: 'circle-dot',
+          color: 'bg-slate-500',
+        };
+        await db.insert(categories).values({
+          id: newId,
+          workspace_id: workspaceId,
+          created_by_user_id: userId,
+          name: income.description,
+          type: 'income',
+          description: style.description || null,
+          icon: style.icon,
+          color: style.color,
+          is_active: true,
+          created_at: now,
+          updated_at: now,
+        });
+        categoryMap.set(income.description, newId);
+      }
+
+      const finalCategoryId = categoryMap.get(income.description)!;
+      // Pick a random payment asset (prefer bank accounts for income)
+      const assetName = paymentAssetNames[Math.floor(Math.random() * paymentAssetNames.length)];
+      const assetId = assetMap.get(assetName || 'Transfer')!;
+
+      // Cap day to the number of days in the month
+      const daysInMonth = new Date(year, month, 0).getDate();
+      const day = Math.min(income.day, daysInMonth);
+
+      const transactionDate = specificDate(year, month, day);
+      // Skip if date would be in the future
+      if (!transactionDate) continue;
+
+      // Add some random time variation
+      transactionDate.setHours(SEED_TIME_HOUR + Math.floor(Math.random() * 8), 0, 0, 0);
+
+      await db.insert(transactions).values({
+        id: nanoid(),
         workspace_id: workspaceId,
         created_by_user_id: userId,
-        name: income.description,
+        category_id: finalCategoryId,
+        asset_id: assetId,
         type: 'income',
-        description: style.description || null,
-        icon: style.icon,
-        color: style.color,
-        is_active: true,
-        created_at: now,
-        updated_at: now,
+        amount: amt(income.amount),
+        currency: 'IDR',
+        description: income.description,
+        transaction_date: transactionDate,
+        created_at: transactionDate,
+        updated_at: transactionDate,
       });
-      categoryMap.set(income.description, newId);
+      count++;
     }
-
-    const finalCategoryId = categoryMap.get(income.description)!;
-    // Pick a random payment asset (prefer bank accounts for income)
-    const assetName = paymentAssetNames[Math.floor(Math.random() * paymentAssetNames.length)];
-    const assetId = assetMap.get(assetName || 'Transfer')!;
-
-    const transactionDate = specificDate(income.year, income.month, income.day);
-    // Skip if date would be in the future
-    if (!transactionDate) continue;
-
-    // Add some random time variation
-    transactionDate.setHours(SEED_TIME_HOUR + Math.floor(Math.random() * 8), 0, 0, 0);
-
-    await db.insert(transactions).values({
-      id: nanoid(),
-      workspace_id: workspaceId,
-      created_by_user_id: userId,
-      category_id: finalCategoryId,
-      asset_id: assetId,
-      type: 'income',
-      amount: amt(income.amount),
-      currency: 'IDR',
-      description: income.description,
-      transaction_date: transactionDate,
-      created_at: transactionDate,
-      updated_at: transactionDate,
-    });
-    count++;
   }
 
   console.log(`✓ Created ${count} income transactions`);
@@ -969,11 +994,7 @@ async function seedExpenseTransactions(
   console.log('💸 Seeding expense transactions...');
 
   let count = 0;
-  const monthsToSeed = [
-    { year: 2025, month: 11 }, // November 2025
-    { year: 2025, month: 12 }, // December 2025
-    { year: 2026, month: 1 }, // January 2026
-  ];
+  const monthsToSeed = getSeedMonths();
 
   // Use only payment assets for transactions
   const paymentAssetNames = PAYMENT_ASSETS.map((a) => a.name);
