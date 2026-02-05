@@ -13,4 +13,4 @@ export const users = pgTable('users', {
   deleted_at: timestamp('deleted_at'),
   created_at: timestamp('created_at').defaultNow().notNull(),
   updated_at: timestamp('updated_at').defaultNow().notNull(),
-});
+}).enableRLS();

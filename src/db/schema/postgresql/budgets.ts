@@ -28,4 +28,4 @@ export const budgets = pgTable(
   (table) => [
     unique('budgets_unique').on(table.workspace_id, table.category_id, table.month, table.year),
   ]
-);
+).enableRLS();

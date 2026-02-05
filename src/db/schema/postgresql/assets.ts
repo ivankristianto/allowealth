@@ -43,4 +43,4 @@ export const assets = pgTable(
     updated_at: timestamp('updated_at').defaultNow().notNull(),
   },
   (table) => [index('assets_workspace_id_idx').on(table.workspace_id)]
-);
+).enableRLS();

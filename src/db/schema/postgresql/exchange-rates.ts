@@ -7,4 +7,4 @@ export const exchangeRates = pgTable('exchange_rates', {
   rate: text('rate').notNull(), // Stored as string for decimal precision
   effective_date: timestamp('effective_date').notNull(),
   created_at: timestamp('created_at').defaultNow().notNull(),
-});
+}).enableRLS();

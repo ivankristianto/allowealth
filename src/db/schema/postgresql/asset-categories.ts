@@ -32,4 +32,4 @@ export const assetCategories = pgTable(
     index('asset_categories_workspace_id_idx').on(table.workspace_id),
     uniqueIndex('asset_categories_workspace_name_unique').on(table.workspace_id, table.name),
   ]
-);
+).enableRLS();
