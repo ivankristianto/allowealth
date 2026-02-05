@@ -37,7 +37,8 @@
       "@layouts/*": ["src/layouts/*"],
       "@services/*": ["src/services/*"],
       "@styles/*": ["src/styles/*"],
-      "@src-types/*": ["src/types/*"]
+      "@src-types/*": ["src/types/*"],
+      "@mcp-server/*": ["mcp-server/src/*"]
     },
     "plugins": [
       {
@@ -45,6 +46,6 @@
       }
     ]
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "mcp-server/src/**/*"],
   "exclude": ["node_modules", "dist", "src/**/*.stories.ts"]
 }

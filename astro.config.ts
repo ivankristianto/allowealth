@@ -152,6 +152,7 @@ export default defineConfig({
         '@services': fileURLToPath(new URL('./src/services', import.meta.url)),
         '@styles': fileURLToPath(new URL('./src/styles', import.meta.url)),
         '@layouts': fileURLToPath(new URL('./src/layouts', import.meta.url)),
+        '@mcp-server': fileURLToPath(new URL('./mcp-server/src', import.meta.url)),
       },
     },
   },
