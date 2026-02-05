@@ -9,7 +9,7 @@
 
 import Button from '@/components/atoms/Button.astro';
 import IconBadge from '@/components/atoms/IconBadge.astro';
-import { Cpu, Plus } from '@lucide/astro';
+import { Cpu, Plus, CircleQuestionMark } from '@lucide/astro';
 import SecurityApiKeysListPartial from '@/components/partials/SecurityApiKeysListPartial.astro';
 import type { ApiKeyItem } from '@/components/partials/SecurityApiKeysListPartial.astro';
 
@@ -28,7 +28,17 @@ const { keys } = Astro.props;
           <Cpu size={20} class="stroke-current" aria-hidden="true" />
         </IconBadge>
         <div>
-          <h3 class="text-lg font-bold">MCP Access Tokens</h3>
+          <div class="flex items-center gap-2">
+            <h3 class="text-lg font-bold">MCP Access Tokens</h3>
+            <button
+              type="button"
+              class="btn btn-ghost btn-xs btn-circle"
+              aria-label="MCP setup instructions"
+              data-open-mcp-instructions
+            >
+              <CircleQuestionMark size={16} class="stroke-current" aria-hidden="true" />
+            </button>
+          </div>
           <p class="text-xs uppercase tracking-widest text-base-content/50">
             Model Context Protocol (MCP)
           </p>
@@ -165,6 +175,17 @@ const { keys } = Astro.props;
             document.dispatchEvent(new CustomEvent('apikey:open-generate'));
             modal.showModal();
           }
+        });
+      }
+
+      // MCP instructions button
+      const mcpInfoBtn = card.querySelector<HTMLButtonElement>('[data-open-mcp-instructions]');
+      if (mcpInfoBtn) {
+        mcpInfoBtn.addEventListener('click', () => {
+          const modal = document.getElementById(
+            'mcp-setup-instructions-modal'
+          ) as HTMLDialogElement;
+          if (modal) modal.showModal();
         });
       }
 

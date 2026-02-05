@@ -1,0 +1,192 @@
+---
+/**
+ * MCPSetupInstructionsModal Component
+ *
+ * Help dialog explaining how to configure MCP with an access token.
+ * Shows configuration examples for Claude Desktop and Claude Code.
+ */
+
+import Modal from '../molecules/Modal.astro';
+import { BookOpen, Copy, Check } from '@lucide/astro';
+---
+
+<Modal
+  id="mcp-setup-instructions-modal"
+  title=""
+  size="lg"
+  closable={true}
+  backdropClose={true}
+  className="[&_.modal-box]:rounded-3xl"
+>
+  <div class="space-y-6" data-mcp-instructions>
+    {/* Header with icon */}
+    <div class="flex items-center gap-4">
+      <div class="w-12 h-12 rounded-2xl flex items-center justify-center bg-info/10 text-info">
+        <BookOpen size={24} class="stroke-current" aria-hidden="true" />
+      </div>
+      <div>
+        <h2 class="text-xl font-bold tracking-tight text-base-content leading-none">
+          MCP Setup Instructions
+        </h2>
+        <p class="text-base-content/60 text-sm mt-2 font-medium">
+          Connect AI assistants to your financial data
+        </p>
+      </div>
+    </div>
+
+    {/* What is MCP */}
+    <div class="bg-base-200/50 rounded-2xl p-4">
+      <p class="text-sm text-base-content/80">
+        <strong>Model Context Protocol (MCP)</strong> lets AI assistants like Claude, Gemini, and ChatGPT
+        interact with your Allowealth data — logging transactions, querying budgets, and managing assets
+        on your behalf.
+      </p>
+    </div>
+
+    {/* Step 1: Generate Token */}
+    <div class="space-y-2">
+      <h3 class="text-sm font-bold text-base-content uppercase tracking-wider">
+        Step 1: Generate a Token
+      </h3>
+      <p class="text-sm text-base-content/70">
+        Click <strong>"Generate Token"</strong> above to create an MCP access token. Copy it — you won't
+        be able to see it again.
+      </p>
+    </div>
+
+    {/* Step 2: Configure */}
+    <div class="space-y-3">
+      <h3 class="text-sm font-bold text-base-content uppercase tracking-wider">
+        Step 2: Add to Your AI Client
+      </h3>
+
+      {/* Claude Desktop */}
+      <div class="space-y-2">
+        <p class="text-sm font-medium text-base-content/80">Claude Desktop</p>
+        <p class="text-xs text-base-content/60">
+          Add to <code class="bg-base-200 px-1.5 py-0.5 rounded text-xs"
+            >claude_desktop_config.json</code
+          >:
+        </p>
+        <div class="relative">
+          <pre
+            class="bg-base-200 rounded-xl p-4 text-xs font-mono overflow-x-auto whitespace-pre"><code data-config-text>{`{
+  "mcpServers": {
+    "allowealth": {
+      "command": "npx",
+      "args": ["allowealth-mcp"],
+      "env": {
+        "ALLOWEALTH_API_KEY": "<your-token-here>"
+      }
+    }
+  }
+}`}</code></pre>
+          <button
+            type="button"
+            class="absolute top-2 right-2 btn btn-ghost btn-xs gap-1"
+            data-copy-config
+            aria-label="Copy configuration"
+          >
+            <Copy size={14} class="stroke-current" aria-hidden="true" data-copy-icon-default />
+            <Check
+              size={14}
+              class="stroke-current hidden"
+              aria-hidden="true"
+              data-copy-icon-success
+            />
+            <span class="text-xs">Copy</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Claude Code */}
+      <div class="space-y-2">
+        <p class="text-sm font-medium text-base-content/80">Claude Code</p>
+        <p class="text-xs text-base-content/60">Run this command in your terminal:</p>
+        <div class="relative">
+          <pre
+            class="bg-base-200 rounded-xl p-4 text-xs font-mono overflow-x-auto whitespace-pre"><code>claude mcp add allowealth -- npx allowealth-mcp</code></pre>
+          <p class="text-xs text-base-content/50 mt-1">
+            Then set <code class="bg-base-200 px-1.5 py-0.5 rounded text-xs"
+              >ALLOWEALTH_API_KEY</code
+            > in your environment.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    {/* Step 3: Use */}
+    <div class="space-y-2">
+      <h3 class="text-sm font-bold text-base-content uppercase tracking-wider">
+        Step 3: Start Using
+      </h3>
+      <p class="text-sm text-base-content/70">
+        Once configured, you can ask your AI assistant to log expenses, check budgets, view asset
+        balances, and more.
+      </p>
+      <div class="bg-base-200/50 rounded-xl p-3">
+        <p class="text-sm text-base-content/60 italic">
+          "Log a coffee expense for 45,000 IDR from my GoPay wallet"
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div slot="actions" class="modal-action justify-center">
+    <form method="dialog">
+      <button class="btn btn-ghost rounded-xl">Close</button>
+    </form>
+  </div>
+</Modal>
+
+<script>
+  const initializedContainers = new WeakSet<Element>();
+
+  function initMCPInstructions() {
+    document.querySelectorAll<HTMLElement>('[data-mcp-instructions]').forEach((container) => {
+      if (initializedContainers.has(container)) return;
+      initializedContainers.add(container);
+
+      const copyBtn = container.querySelector<HTMLButtonElement>('[data-copy-config]');
+      const configText = container.querySelector<HTMLElement>('[data-config-text]');
+
+      if (!copyBtn || !configText) return;
+
+      copyBtn.addEventListener('click', async () => {
+        const text = configText.textContent || '';
+        try {
+          await navigator.clipboard.writeText(text);
+        } catch {
+          // Fallback for non-secure contexts
+          const textarea = document.createElement('textarea');
+          textarea.value = text;
+          textarea.style.position = 'fixed';
+          textarea.style.opacity = '0';
+          document.body.appendChild(textarea);
+          textarea.select();
+          document.execCommand('copy');
+          document.body.removeChild(textarea);
+        }
+
+        // Toggle icons
+        const defaultIcon = copyBtn.querySelector('[data-copy-icon-default]');
+        const successIcon = copyBtn.querySelector('[data-copy-icon-success]');
+        defaultIcon?.classList.add('hidden');
+        successIcon?.classList.remove('hidden');
+
+        setTimeout(() => {
+          defaultIcon?.classList.remove('hidden');
+          successIcon?.classList.add('hidden');
+        }, 2000);
+      });
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initMCPInstructions);
+  } else {
+    initMCPInstructions();
+  }
+
+  document.addEventListener('astro:page-load', initMCPInstructions);
+</script>
