@@ -29,11 +29,6 @@ describe('review feedback regressions', () => {
     expect(content).not.toContain('innerHTML');
   });
 
-  it('payment method confirm modal should open via showModal', () => {
-    const content = read('src/components/organisms/PaymentMethodConfirmModal.astro');
-    expect(content).toContain('showModal');
-  });
-
   it('transaction list delete modal should open via showModal', () => {
     const content = read('src/components/organisms/TransactionList.client.ts');
     expect(content).toContain('showModal');
@@ -88,7 +83,6 @@ describe('review feedback regressions', () => {
 
   it('loading placeholders should not use animate-pulse in remaining components', () => {
     const files = [
-      'src/components/organisms/AssetUpdateTodoList.astro',
       'src/components/molecules/RecentTransactionsList.astro',
       'src/components/molecules/TransactionCard.astro',
     ];

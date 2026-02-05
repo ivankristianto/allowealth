@@ -70,7 +70,6 @@ Component patterns for atoms, molecules, and organisms.
 | SecurityMfaCard               | `src/components/molecules/SecurityMfaCard.astro`               | MFA card                 |
 | SecurityPasskeysCard          | `src/components/molecules/SecurityPasskeysCard.astro`          | Passkeys card            |
 | TabSwitcher                   | `src/components/molecules/TabSwitcher.astro`                   | Tab switcher             |
-| Toast                         | `src/components/molecules/Toast.astro`                         | Toast notification       |
 | ToastContainer                | `src/components/molecules/ToastContainer.astro`                | Toast container          |
 | TransactionActionsBar         | `src/components/molecules/TransactionActionsBar.astro`         | Transaction action bar   |
 | TransactionCard               | `src/components/molecules/TransactionCard.astro`               | Transaction display      |
@@ -90,7 +89,6 @@ Component patterns for atoms, molecules, and organisms.
 | AssetGroupCard            | `src/components/organisms/AssetGroupCard.astro`            | Asset group card          |
 | AssetHistoryModal         | `src/components/organisms/AssetHistoryModal.astro`         | Asset history modal       |
 | AssetPortfolioSummary     | `src/components/organisms/AssetPortfolioSummary.astro`     | Portfolio summary         |
-| AssetUpdateTodoList       | `src/components/organisms/AssetUpdateTodoList.astro`       | Asset update list         |
 | AssetUpdateValueModal     | `src/components/organisms/AssetUpdateValueModal.astro`     | Update value modal        |
 | BudgetAdviceBanner        | `src/components/organisms/BudgetAdviceBanner.astro`        | Budget advice             |
 | BudgetCard                | `src/components/organisms/BudgetCard.astro`                | Budget summary card       |
@@ -110,7 +108,6 @@ Component patterns for atoms, molecules, and organisms.
 | ManageAccountForms        | `src/components/organisms/ManageAccountForms.astro`        | Account forms             |
 | MemberList                | `src/components/organisms/MemberList.astro`                | Member list               |
 | NetWorthWidget            | `src/components/organisms/NetWorthWidget.astro`            | Net worth widget          |
-| PaymentMethodConfirmModal | `src/components/organisms/PaymentMethodConfirmModal.astro` | Payment confirm modal     |
 | PaymentMethodFormModal    | `src/components/organisms/PaymentMethodFormModal.astro`    | Payment form modal        |
 | ResourceAllocationChart   | `src/components/organisms/ResourceAllocationChart.astro`   | Allocation chart          |
 | SetNewBudgetModal         | `src/components/organisms/SetNewBudgetModal.astro`         | New budget modal          |
