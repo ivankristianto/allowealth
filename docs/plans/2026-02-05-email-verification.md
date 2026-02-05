@@ -1847,22 +1847,94 @@ git commit -m "docs(api): add email verification endpoints to OpenAPI
 
 ---
 
-## Task 16: E2E Test - Standard Registration Flow
+## Task 16: E2E Test - Complete Email Verification Flow
 
 **Files:**
 
 - Create: `tests/e2e/email-verification.spec.ts`
+- Create: `tests/helpers/email-capture.ts`
 
-**Step 1: Write E2E test for standard registration**
+**Step 1: Create email capture helper**
+
+Create `tests/helpers/email-capture.ts`:
+
+```typescript
+/**
+ * Email Capture Helper for E2E Tests
+ *
+ * Captures verification URLs from email sending for testing
+ */
+
+import { db, getActiveSchema } from '@/db';
+import { eq } from 'drizzle-orm';
+
+const schema = getActiveSchema();
+
+/**
+ * Get the latest verification token for a user
+ * @param email - User email
+ * @returns Verification URL or null
+ */
+export async function getVerificationUrl(email: string): Promise<string | null> {
+  // Get user
+  const users = await db
+    .select()
+    .from(schema.users)
+    .where(eq(schema.users.email, email.toLowerCase()))
+    .limit(1);
+
+  if (users.length === 0) return null;
+
+  const userId = users[0].id;
+
+  // Get latest token
+  const tokens = await db
+    .select()
+    .from(schema.emailVerificationTokens)
+    .where(eq(schema.emailVerificationTokens.userId, userId))
+    .orderBy(schema.emailVerificationTokens.createdAt)
+    .limit(1);
+
+  if (tokens.length === 0) return null;
+
+  const baseUrl = process.env.PUBLIC_URL || 'http://localhost:4321';
+  return `${baseUrl}/api/auth/verify-email?token=${tokens[0].token}`;
+}
+
+/**
+ * Mark a token as expired (for testing expired token flow)
+ * @param email - User email
+ */
+export async function expireVerificationToken(email: string): Promise<void> {
+  const users = await db
+    .select()
+    .from(schema.users)
+    .where(eq(schema.users.email, email.toLowerCase()))
+    .limit(1);
+
+  if (users.length === 0) return;
+
+  const userId = users[0].id;
+  const pastTime = new Date(Date.now() - 25 * 60 * 60 * 1000); // 25 hours ago
+
+  await db
+    .update(schema.emailVerificationTokens)
+    .set({ expiresAt: pastTime })
+    .where(eq(schema.emailVerificationTokens.userId, userId));
+}
+```
+
+**Step 2: Write comprehensive E2E tests**
 
 Create `tests/e2e/email-verification.spec.ts`:
 
 ```typescript
 import { test, expect } from '@playwright/test';
 import { nanoid } from 'nanoid';
+import { getVerificationUrl, expireVerificationToken } from '../helpers/email-capture';
 
 test.describe('Email Verification', () => {
-  test('standard registration flow requires verification', async ({ page }) => {
+  test('complete registration and verification flow', async ({ page }) => {
     const email = `test-${nanoid()}@example.com`;
     const password = 'Password123!';
     const name = 'Test User';
@@ -1885,7 +1957,7 @@ test.describe('Email Verification', () => {
       'Check your email to verify your account before logging in'
     );
 
-    // Step 2: Try to login without verification
+    // Step 2: Try to login without verification - should fail
     await page.fill('input[name="email"]', email);
     await page.fill('input[name="password"]', password);
     await page.click('button[type="submit"]');
@@ -1894,10 +1966,47 @@ test.describe('Email Verification', () => {
     await expect(page.locator('#login-error')).toContainText('Please verify your email to log in');
     await expect(page.locator('[data-resend-email]')).toBeVisible();
 
-    // Step 3: Get verification token from database
-    // (In real test, would check email or mock email service)
-    // For now, verify that token was created
-    // TODO: Add email service mock and verification flow
+    // Step 3: Get verification URL and verify email
+    const verificationUrl = await getVerificationUrl(email);
+    expect(verificationUrl).toBeTruthy();
+
+    await page.goto(verificationUrl!);
+
+    // Should redirect to login with success message
+    await page.waitForURL('/login?verified=true');
+    await expect(page.locator('.alert-success')).toContainText('Email verified');
+
+    // Step 4: Login should now work
+    await page.fill('input[name="email"]', email);
+    await page.fill('input[name="password"]', password);
+    await page.click('button[type="submit"]');
+
+    // Should redirect to dashboard
+    await page.waitForURL('/dashboard');
+    await expect(page).toHaveURL('/dashboard');
+  });
+
+  test('login blocked until verification', async ({ page }) => {
+    const email = `test-${nanoid()}@example.com`;
+    const password = 'Password123!';
+
+    // Register user
+    await page.goto('/signup');
+    await page.fill('input[name="email"]', email);
+    await page.fill('input[name="password"]', password);
+    await page.fill('input[name="name"]', 'Test User');
+    await page.click('button[type="submit"]');
+
+    await page.waitForURL('/login?registered=true');
+
+    // Try to login (will fail)
+    await page.fill('input[name="email"]', email);
+    await page.fill('input[name="password"]', password);
+    await page.click('button[type="submit"]');
+
+    // Should show error
+    await expect(page.locator('#login-error')).toContainText('Please verify your email to log in');
+    await expect(page.locator('[data-resend-email]')).toBeVisible();
   });
 
   test('resend verification email works', async ({ page }) => {
@@ -1924,24 +2033,155 @@ test.describe('Email Verification', () => {
 
     // Should show success toast
     await expect(page.locator('.toast')).toContainText('Verification email sent');
+
+    // Should be able to get new verification URL
+    const verificationUrl = await getVerificationUrl(email);
+    expect(verificationUrl).toBeTruthy();
+  });
+
+  test('expired token shows error and resend option', async ({ page }) => {
+    const email = `test-${nanoid()}@example.com`;
+    const password = 'Password123!';
+
+    // Register user
+    await page.goto('/signup');
+    await page.fill('input[name="email"]', email);
+    await page.fill('input[name="password"]', password);
+    await page.fill('input[name="name"]', 'Test User');
+    await page.click('button[type="submit"]');
+
+    await page.waitForURL('/login?registered=true');
+
+    // Get verification URL
+    const verificationUrl = await getVerificationUrl(email);
+    expect(verificationUrl).toBeTruthy();
+
+    // Expire the token
+    await expireVerificationToken(email);
+
+    // Try to verify with expired token
+    await page.goto(verificationUrl!);
+
+    // Should redirect to login with expired error
+    await expect.poll(() => page.url()).toContain('error=expired_token');
+    await expect(page.locator('.alert-error')).toContainText('Verification link expired');
+    await expect(page.locator('[data-resend-email]')).toBeVisible();
+  });
+
+  test('invalid token shows error', async ({ page }) => {
+    await page.goto('/api/auth/verify-email?token=invalid-token-12345');
+
+    // Should redirect to login with error
+    await page.waitForURL('/login?error=invalid_token');
+    await expect(page.locator('.alert-error')).toContainText('Invalid verification link');
+  });
+
+  test('already verified user can login again with same link', async ({ page }) => {
+    const email = `test-${nanoid()}@example.com`;
+    const password = 'Password123!';
+
+    // Register and verify
+    await page.goto('/signup');
+    await page.fill('input[name="email"]', email);
+    await page.fill('input[name="password"]', password);
+    await page.fill('input[name="name"]', 'Test User');
+    await page.click('button[type="submit"]');
+
+    await page.waitForURL('/login?registered=true');
+
+    const verificationUrl = await getVerificationUrl(email);
+    await page.goto(verificationUrl!);
+    await page.waitForURL('/login?verified=true');
+
+    // Try to verify again with same link
+    await page.goto(verificationUrl!);
+
+    // Should redirect to login with info message (idempotent)
+    await expect.poll(() => page.url()).toContain('login');
+  });
+
+  test('workspace activated after owner verification', async ({ page }) => {
+    const email = `test-${nanoid()}@example.com`;
+    const password = 'Password123!';
+
+    // Register user (creates inactive workspace)
+    await page.goto('/signup');
+    await page.fill('input[name="email"]', email);
+    await page.fill('input[name="password"]', password);
+    await page.fill('input[name="name"]', 'Test User');
+    await page.click('button[type="submit"]');
+
+    await page.waitForURL('/login?registered=true');
+
+    // Verify email
+    const verificationUrl = await getVerificationUrl(email);
+    await page.goto(verificationUrl!);
+    await page.waitForURL('/login?verified=true');
+
+    // Login
+    await page.fill('input[name="email"]', email);
+    await page.fill('input[name="password"]', password);
+    await page.click('button[type="submit"]');
+
+    // Should reach dashboard (workspace is active)
+    await page.waitForURL('/dashboard');
+    await expect(page).toHaveURL('/dashboard');
+  });
+
+  test('rate limiting on resend verification', async ({ page }) => {
+    const email = `test-${nanoid()}@example.com`;
+    const password = 'Password123!';
+
+    // Register user
+    await page.goto('/signup');
+    await page.fill('input[name="email"]', email);
+    await page.fill('input[name="password"]', password);
+    await page.fill('input[name="name"]', 'Test User');
+    await page.click('button[type="submit"]');
+
+    await page.waitForURL('/login?registered=true');
+
+    // Try to login to get resend button
+    await page.fill('input[name="email"]', email);
+    await page.fill('input[name="password"]', password);
+    await page.click('button[type="submit"]');
+
+    // Click resend button 3 times (email limit is 3/hour)
+    const resendButton = page.locator('[data-resend-email]');
+
+    for (let i = 0; i < 3; i++) {
+      await resendButton.click();
+      await expect(page.locator('.toast')).toContainText('Verification email sent');
+      // Wait for toast to disappear
+      await page.waitForTimeout(1000);
+    }
+
+    // 4th attempt should be rate limited
+    await resendButton.click();
+    await expect(page.locator('.toast')).toContainText('Too many requests');
   });
 });
 ```
 
-**Step 2: Run E2E test**
+**Step 3: Run E2E tests**
 
 Run: `bun run test:e2e tests/e2e/email-verification.spec.ts`
-Expected: PASS (or identify missing pieces)
+Expected: PASS
 
-**Step 3: Commit**
+**Step 4: Commit**
 
 ```bash
-git add tests/e2e/email-verification.spec.ts
-git commit -m "test(e2e): add email verification flow tests
+git add tests/e2e/email-verification.spec.ts tests/helpers/email-capture.ts
+git commit -m "test(e2e): add comprehensive email verification tests
 
-- Test standard registration blocks login
-- Test resend verification email
-- TODO: Add email service mock for full flow"
+- Complete registration to login flow
+- Email verification with token capture
+- Expired token handling
+- Invalid token handling
+- Already verified user (idempotent)
+- Workspace activation verification
+- Rate limiting on resend
+- Helper for capturing verification URLs from DB"
 ```
 
 ---
