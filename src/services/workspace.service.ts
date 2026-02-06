@@ -88,6 +88,29 @@ export class WorkspaceService {
   }
 
   /**
+   * Activate workspace after owner email verification
+   * @param workspaceId - Workspace ID to activate
+   */
+  async activateWorkspace(workspaceId: string): Promise<void> {
+    await this.db
+      .update(this.schema.workspaces)
+      .set({ status: 'active', updated_at: new Date() })
+      .where(eq(this.schema.workspaces.id, workspaceId));
+  }
+
+  /**
+   * Check if workspace is active
+   * @param workspaceId - Workspace ID to check
+   */
+  async isWorkspaceActive(workspaceId: string): Promise<boolean> {
+    const workspace = await this.db.query.workspaces.findFirst({
+      where: eq(this.schema.workspaces.id, workspaceId),
+    });
+
+    return workspace != null && workspace.status === 'active';
+  }
+
+  /**
    * Find workspace by ID
    *
    * @param id - Workspace ID
