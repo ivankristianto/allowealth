@@ -8,6 +8,7 @@ import {
   type UpdateAssetCategoryInput,
 } from '@/lib/validation/asset-categories';
 import { AssetCategoryServiceError, ServiceErrorCode } from './service-errors';
+import { DEFAULT_ASSET_CATEGORIES } from '@/lib/constants';
 
 export { type CreateAssetCategoryInput, type UpdateAssetCategoryInput };
 
@@ -263,5 +264,29 @@ export class AssetCategoryService {
       );
 
     return result?.count ?? 0;
+  }
+
+  /**
+   * Seed default asset categories for a workspace
+   * Called after email verification for workspace owner
+   */
+  async seedDefaultCategories(workspaceId: string, userId: string): Promise<void> {
+    const now = new Date();
+
+    for (const category of DEFAULT_ASSET_CATEGORIES) {
+      const id = nanoid();
+      await this.db.insert(this.schema.assetCategories).values({
+        id,
+        workspace_id: workspaceId,
+        created_by_user_id: userId,
+        name: category.name,
+        description: category.description,
+        is_liability: category.isLiability,
+        is_system: true,
+        sort_order: category.sortOrder,
+        created_at: now,
+        updated_at: now,
+      });
+    }
   }
 }
