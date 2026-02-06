@@ -17,9 +17,11 @@ import BudgetCardGrid, { type BudgetData } from '@components/organisms/BudgetCar
 export interface Props {
   budgets: BudgetData[];
   currency: 'IDR' | 'USD';
+  month?: number;
+  year?: number;
 }
 
-const { budgets, currency } = Astro.props;
+const { budgets, currency, month, year } = Astro.props;
 ---
 
-<BudgetCardGrid budgets={budgets} currency={currency} loading={false} />
+<BudgetCardGrid budgets={budgets} currency={currency} month={month} year={year} loading={false} />

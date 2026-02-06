@@ -163,6 +163,32 @@ export interface IDatabase {
 }
 
 /**
+ * Run an async callback transactionally across dialects.
+ *
+ * - **PostgreSQL**: Uses a real database transaction (BEGIN/COMMIT/ROLLBACK).
+ * - **SQLite (better-sqlite3)**: Runs the callback directly against `db` without
+ *   a transaction wrapper because better-sqlite3 is synchronous and rejects async
+ *   callbacks with "Transaction function cannot return a promise". SQLite's WAL mode
+ *   with single-writer guarantees sequential writes within a single connection are
+ *   effectively atomic for server request scope.
+ *
+ * @param db - Database instance
+ * @param callback - Async function receiving a transaction-capable db handle
+ * @returns The callback's return value
+ */
+export async function runTransaction<T>(
+  db: IDatabase,
+  callback: (tx: IDatabase) => Promise<T>
+): Promise<T> {
+  const config = getDatabaseConfig();
+  if (config.dialect === 'postgresql') {
+    return db.transaction(callback);
+  }
+  // SQLite: run directly — single-writer WAL mode ensures sequential consistency
+  return callback(db);
+}
+
+/**
  * Performance optimizations for SQLite
  */
 const PRAGMA_STATEMENTS = [

@@ -34,6 +34,10 @@ export interface BudgetData {
 export interface Props {
   budgets: BudgetData[];
   currency?: 'IDR' | 'USD';
+  /** Selected month (1-12) for transaction link context */
+  month?: number;
+  /** Selected year for transaction link context */
+  year?: number;
   loading?: boolean;
   /** Number of skeleton cards to show during loading (default: 6 for 2 rows in 3-column grid) */
   skeletonCount?: number;
@@ -44,6 +48,8 @@ export interface Props {
 const {
   budgets = [],
   currency = 'IDR',
+  month,
+  year,
   loading = false,
   skeletonCount = 6,
   error,
@@ -116,29 +122,47 @@ const gridClasses = [
       aria-label="Budget categories"
       aria-rowcount={sortedBudgets.length}
     >
-      {sortedBudgets.map((budget) => (
-        <div role="listitem" class="h-full">
-          <BudgetCard
-            categoryId={budget.category_id}
-            categoryName={budget.category_name}
-            icon={budget.category_icon || getIconForCategory(budget.category_name, budget.icon)}
-            color={budget.category_color}
-            spent={
-              typeof budget.spent_amount === 'string'
-                ? parseFloat(budget.spent_amount)
-                : budget.spent_amount
-            }
-            budget={
-              typeof budget.budget_amount === 'string'
-                ? parseFloat(budget.budget_amount)
-                : budget.budget_amount
-            }
-            percentageUsed={budget.percentage_used}
-            status={budget.status}
-            currency={currency}
-          />
-        </div>
-      ))}
+      {sortedBudgets.map((budget) => {
+        const budgetAmt =
+          typeof budget.budget_amount === 'string'
+            ? parseFloat(budget.budget_amount)
+            : budget.budget_amount;
+        const spentAmt =
+          typeof budget.spent_amount === 'string'
+            ? parseFloat(budget.spent_amount)
+            : budget.spent_amount;
+        return (
+          <div
+            role="listitem"
+            class="h-full"
+            data-sort-title={budget.category_name}
+            data-sort-budget={budgetAmt}
+            data-sort-spent={spentAmt}
+          >
+            <BudgetCard
+              categoryId={budget.category_id}
+              categoryName={budget.category_name}
+              icon={budget.category_icon || getIconForCategory(budget.category_name, budget.icon)}
+              color={budget.category_color}
+              spent={
+                typeof budget.spent_amount === 'string'
+                  ? parseFloat(budget.spent_amount)
+                  : budget.spent_amount
+              }
+              budget={
+                typeof budget.budget_amount === 'string'
+                  ? parseFloat(budget.budget_amount)
+                  : budget.budget_amount
+              }
+              percentageUsed={budget.percentage_used}
+              status={budget.status}
+              currency={currency}
+              month={month}
+              year={year}
+            />
+          </div>
+        );
+      })}
       {/* Hidden "no results" element for client-side filter - shown via JS when no cards match */}
       <div
         data-filter-no-results

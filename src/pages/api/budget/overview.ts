@@ -11,6 +11,7 @@ import { calculateAllocationDistribution } from '@/lib/utils/budget';
 import BudgetSummaryPartial from '@/components/partials/BudgetSummaryPartial.astro';
 import BudgetCardGridPartial from '@/components/partials/BudgetCardGridPartial.astro';
 import BudgetAdviceBannerPartial from '@/components/partials/BudgetAdviceBannerPartial.astro';
+import BudgetTable from '@/components/organisms/BudgetTable.astro';
 
 /**
  * GET /api/budget/overview
@@ -101,9 +102,22 @@ export const GET: APIRoute = async (context) => {
           props: {
             budgets: budgetData.categories,
             currency: selectedCurrency,
+            month,
+            year,
           },
         });
         htmlParts.push(`<!-- PARTIAL:cards -->\n${cardsHtml}`);
+
+        // Render table partial alongside cards (same data, different view)
+        const tableHtml = await container.renderToString(BudgetTable, {
+          props: {
+            budgets: budgetData.categories,
+            currency: selectedCurrency,
+            month,
+            year,
+          },
+        });
+        htmlParts.push(`<!-- PARTIAL:table -->\n${tableHtml}`);
       }
 
       // Render advice partial

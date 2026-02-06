@@ -20,6 +20,7 @@
 // External packages
 import {
   Pencil,
+  Eye,
   House,
   ShoppingCart,
   Utensils,
@@ -72,6 +73,10 @@ export interface Props {
   percentageUsed: number;
   status?: 'ok' | 'warning' | 'exceeded';
   currency?: 'IDR' | 'USD';
+  /** Selected month (1-12) for transaction link context */
+  month?: number;
+  /** Selected year for transaction link context */
+  year?: number;
   loading?: boolean;
   className?: string;
 }
@@ -85,9 +90,20 @@ const {
   budget,
   percentageUsed,
   currency = 'IDR',
+  month,
+  year,
   loading = false,
   className = '',
 } = Astro.props;
+
+// Build transaction link with optional period context
+const transactionParams = new URLSearchParams({
+  category_id: categoryId || '',
+  type: 'expense',
+});
+if (month) transactionParams.set('month', String(month));
+if (year) transactionParams.set('year', String(year));
+const transactionUrl = `/transactions?${transactionParams.toString()}`;
 
 // Calculate remaining amount
 const remaining = budget - spent;
@@ -224,10 +240,10 @@ const cardClasses = [
             variant={iconBadgeVariant}
             size="sm"
             customColor={color}
-            className="group-hover:scale-110 transition-transform md:!p-4"
+            className="group-hover:scale-110 transition-transform !p-2 md:!p-3"
           >
-            <IconComponent size={20} class="stroke-current md:hidden" aria-hidden="true" />
-            <IconComponent size={24} class="stroke-current hidden md:block" aria-hidden="true" />
+            <IconComponent size={16} class="stroke-current md:hidden" aria-hidden="true" />
+            <IconComponent size={20} class="stroke-current hidden md:block" aria-hidden="true" />
           </IconBadge>
           <div>
             <h3 class="font-bold text-sm md:text-base text-base-content tracking-tight leading-none">
@@ -248,15 +264,25 @@ const cardClasses = [
             </span>
           </div>
         </div>
-        <button
-          type="button"
-          class="text-base-content/30 hover:text-base-content/60 transition-colors p-1 rounded-lg hover:bg-base-200"
-          aria-label={`Edit ${categoryName} budget`}
-          data-edit-budget={categoryId}
-        >
-          <Pencil size={16} class="stroke-current md:hidden" aria-hidden="true" />
-          <Pencil size={18} class="stroke-current hidden md:block" aria-hidden="true" />
-        </button>
+        <div class="flex items-center gap-1">
+          <a
+            href={transactionUrl}
+            class="inline-flex items-center gap-1 text-base-content/30 hover:text-base-content/60 transition-colors min-h-[44px] min-w-[44px] justify-center rounded-lg hover:bg-base-200 text-xs font-medium"
+            aria-label={`View ${categoryName} transactions`}
+          >
+            <Eye size={16} class="stroke-current" aria-hidden="true" />
+            <span class="hidden md:inline">View</span>
+          </a>
+          <button
+            type="button"
+            class="inline-flex items-center gap-1 text-base-content/30 hover:text-base-content/60 transition-colors min-h-[44px] min-w-[44px] justify-center rounded-lg hover:bg-base-200 text-xs font-medium"
+            aria-label={`Edit ${categoryName} budget`}
+            data-edit-budget={categoryId}
+          >
+            <Pencil size={16} class="stroke-current" aria-hidden="true" />
+            <span class="hidden md:inline">Edit</span>
+          </button>
+        </div>
       </div>
 
       {/* Body: Spent/Budget amounts and Progress bar */}

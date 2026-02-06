@@ -1,4 +1,4 @@
-import { type IDatabase, getActiveSchema } from '@/db';
+import { type IDatabase, getActiveSchema, runTransaction } from '@/db';
 import { eq, and, gte, lte, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import {
@@ -25,6 +25,7 @@ import { getCacheManager, CacheKeys, CacheTags } from '@/lib/cache';
 import { type PerfCollector, trackQuery } from '@/lib/perf';
 
 export interface BudgetOverview {
+  budget_id: string;
   category_id: string;
   category_name: string;
   category_type: 'expense' | 'income';
@@ -207,6 +208,7 @@ export class BudgetService {
       }
 
       return {
+        budget_id: budget.id,
         category_id: budget.category_id,
         category_name: budget.category?.name ?? 'Unknown',
         category_type: (budget.category?.type ?? 'expense') as 'expense' | 'income',
@@ -402,77 +404,34 @@ export class BudgetService {
     workspaceId: string,
     year: number,
     month: number,
-    currency: 'IDR' | 'USD',
-    sortBy?: 'category' | 'percentage' | 'budget' | 'spent' | 'balance' | 'status',
-    sortOrder?: 'asc' | 'desc'
+    currency: 'IDR' | 'USD'
   ): Promise<string> {
-    const overview = await this.getMonthlyOverview(workspaceId, year, month, currency);
+    // Query budgets directly to guarantee the id field is present
+    const monthBudgets = await this.db.query.budgets.findMany({
+      where: and(
+        eq(this.schema.budgets.workspace_id, workspaceId),
+        eq(this.schema.budgets.month, month),
+        eq(this.schema.budgets.year, year),
+        eq(this.schema.budgets.currency, currency)
+      ),
+      with: {
+        category: true,
+      },
+    });
 
-    // Sort categories based on sortBy and sortOrder (same logic as BudgetOverviewTable)
-    let sortedCategories = [...overview.categories];
-    if (sortBy && sortOrder) {
-      sortedCategories = sortedCategories.sort((a, b) => {
-        let comparison = 0;
+    // Filter to active expense categories only
+    const activeBudgets = monthBudgets.filter(
+      (b) => b.category?.type === 'expense' && b.category?.is_active === true
+    );
 
-        switch (sortBy) {
-          case 'category':
-            comparison = a.category_name.localeCompare(b.category_name);
-            break;
-          case 'percentage':
-            comparison = a.percentage_used - b.percentage_used;
-            break;
-          case 'budget':
-            comparison = parseFloat(a.budget_amount) - parseFloat(b.budget_amount);
-            break;
-          case 'spent':
-            comparison = parseFloat(a.spent_amount) - parseFloat(b.spent_amount);
-            break;
-          case 'balance':
-            comparison = parseFloat(a.balance) - parseFloat(b.balance);
-            break;
-          case 'status':
-            const statusOrder = { exceeded: 0, warning: 1, ok: 2 };
-            comparison = statusOrder[a.status] - statusOrder[b.status];
-            break;
-          default:
-            comparison = 0;
-        }
+    // CSV header — template format for re-import
+    const headers = ['budget_id', 'budget_name', 'budget_amount'];
 
-        return sortOrder === 'asc' ? comparison : -comparison;
-      });
-    }
-
-    // CSV header
-    const headers = [
-      'category',
-      'percentage',
-      'budget_amount',
-      'spent_amount',
-      'balance',
-      'status',
-      'percentage_used',
-    ];
-
-    // Build CSV rows from sorted categories
-    const csvRows = sortedCategories.map((cat) => [
-      cat.category_name,
-      cat.percentage,
-      cat.budget_amount,
-      cat.spent_amount,
-      cat.balance,
-      cat.status,
-      cat.percentage_used.toString(),
-    ]);
-
-    // Add totals row
-    csvRows.push([
-      'TOTAL',
-      '100',
-      overview.total_budget,
-      overview.total_spent,
-      overview.total_balance,
-      '',
-      '',
+    // Build CSV rows directly from budget records
+    const csvRows = activeBudgets.map((b) => [
+      b.id,
+      b.category?.name ?? 'Unknown',
+      b.budget_amount,
     ]);
 
     // Combine header and rows
@@ -493,6 +452,133 @@ export class BudgetService {
           .join(',')
       )
       .join('\n');
+  }
+
+  /**
+   * Import budget amounts from parsed CSV rows.
+   * Validates that each budget_id belongs to the target month/year/currency,
+   * then updates the budget amount. Rejects IDs not found in current month.
+   */
+  async importFromCSV(
+    workspaceId: string,
+    rows: Array<{ budget_id: string; budget_amount: string }>,
+    targetMonth: number,
+    targetYear: number,
+    currency: 'IDR' | 'USD'
+  ): Promise<{
+    updated: number;
+    errors: Array<{ row: number; message: string }>;
+  }> {
+    // Validate inputs
+    if (!Number.isInteger(targetYear) || targetYear < 2000 || targetYear > 2100) {
+      throw new Error('Invalid year parameter');
+    }
+    if (!Number.isInteger(targetMonth) || targetMonth < 1 || targetMonth > 12) {
+      throw new Error('Invalid month parameter');
+    }
+
+    // Get existing budgets for the target month to build valid ID set
+    const existingBudgets = await this.db.query.budgets.findMany({
+      where: and(
+        eq(this.schema.budgets.workspace_id, workspaceId),
+        eq(this.schema.budgets.month, targetMonth),
+        eq(this.schema.budgets.year, targetYear),
+        eq(this.schema.budgets.currency, currency)
+      ),
+    });
+
+    const validBudgetIds = new Set(existingBudgets.map((b: { id: string }) => b.id));
+    const closedBudgetIds = new Set(
+      existingBudgets
+        .filter((b: { id: string; is_closed: boolean }) => b.is_closed)
+        .map((b: { id: string }) => b.id)
+    );
+
+    // Validate rows and prepare updates
+    const errors: Array<{ row: number; message: string }> = [];
+    const validUpdates: Array<{ id: string; budget_amount: string }> = [];
+    const seenIds = new Set<string>();
+
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      const budgetId = row.budget_id?.trim();
+      const budgetAmount = (row.budget_amount ?? '').trim();
+
+      if (!budgetId) {
+        errors.push({ row: i + 1, message: 'Missing budget ID' });
+        continue;
+      }
+
+      if (!budgetAmount) {
+        errors.push({ row: i + 1, message: 'Missing budget amount' });
+        continue;
+      }
+
+      if (!validBudgetIds.has(budgetId)) {
+        errors.push({
+          row: i + 1,
+          message: `Budget ID "${budgetId}" not found in ${targetYear}-${String(targetMonth).padStart(2, '0')}`,
+        });
+        continue;
+      }
+
+      if (closedBudgetIds.has(budgetId)) {
+        errors.push({
+          row: i + 1,
+          message: `Budget ID "${budgetId}" is closed and cannot be updated`,
+        });
+        continue;
+      }
+
+      if (seenIds.has(budgetId)) {
+        errors.push({ row: i + 1, message: `Duplicate budget ID "${budgetId}" in CSV` });
+        continue;
+      }
+      seenIds.add(budgetId);
+
+      if (!/^\d+(\.\d+)?$/.test(budgetAmount)) {
+        errors.push({
+          row: i + 1,
+          message: `Invalid amount "${budgetAmount}" — must be a plain number (e.g. 100000 or 100000.50)`,
+        });
+        continue;
+      }
+      const parsedAmount = Number(budgetAmount);
+      if (!Number.isFinite(parsedAmount) || parsedAmount < 0) {
+        errors.push({ row: i + 1, message: `Invalid amount "${budgetAmount}"` });
+        continue;
+      }
+
+      validUpdates.push({
+        id: budgetId,
+        budget_amount: parsedAmount.toString(),
+      });
+    }
+
+    // Execute updates in a transaction (PostgreSQL) or sequentially (SQLite)
+    let updated = 0;
+    if (validUpdates.length > 0) {
+      await runTransaction(this.db, async (tx) => {
+        for (const update of validUpdates) {
+          await tx
+            .update(this.schema.budgets)
+            .set({ budget_amount: update.budget_amount })
+            .where(
+              and(
+                eq(this.schema.budgets.id, update.id),
+                eq(this.schema.budgets.workspace_id, workspaceId)
+              )
+            );
+        }
+        updated = validUpdates.length;
+      });
+    }
+
+    // Invalidate budget cache
+    const cache = getCacheManager();
+    await cache.invalidateByTags([CacheTags.workspace(workspaceId), CacheTags.BUDGET]);
+
+    return { updated, errors };
   }
 
   // ============================================

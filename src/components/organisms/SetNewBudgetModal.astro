@@ -82,11 +82,13 @@ const monthName = getMonthName(month);
                 return (
                   <option
                     value={category.id}
-                    selected={index === 0}
+                    selected={!existingBudget && index === 0}
+                    disabled={!!existingBudget}
                     data-budget-id={existingBudget?.id || ''}
                     data-budget-amount={existingBudget?.budget_amount || '0'}
                   >
                     {category.name}
+                    {existingBudget ? ' (already set)' : ''}
                   </option>
                 );
               })
@@ -194,6 +196,12 @@ const monthName = getMonthName(month);
 
       // Check on category change
       categorySelect.addEventListener('change', checkExistingBudget);
+
+      // Auto-select first available (non-disabled) option
+      const firstAvailable = categorySelect.querySelector(
+        'option:not([disabled])'
+      ) as HTMLOptionElement;
+      if (firstAvailable) firstAvailable.selected = true;
 
       // Check initial state
       checkExistingBudget();
@@ -326,7 +334,6 @@ const monthName = getMonthName(month);
             errorDiv.textContent = message;
             errorDiv.classList.remove('hidden');
           }
-          addToast(message, 'error');
         } finally {
           // Reset button state
           if (submitBtn) {

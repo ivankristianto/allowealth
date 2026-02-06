@@ -225,17 +225,22 @@ export interface PortfolioTotals {
 
 export function calculatePortfolioTotals(assets: AssetOutput[]): PortfolioTotals {
   let totalIdr = 0;
+  let totalUsd = 0;
 
   for (const asset of assets) {
     const balance = parseFloat(asset.balance || '0');
     if (isNaN(balance) || balance <= 0) continue;
 
-    totalIdr += convertToIdr(balance, asset.currency);
+    if (asset.currency === 'USD') {
+      totalUsd += balance;
+    } else {
+      totalIdr += balance;
+    }
   }
 
   return {
     totalIdr,
-    totalUsd: convertIdrToUsd(totalIdr),
+    totalUsd,
   };
 }
 
