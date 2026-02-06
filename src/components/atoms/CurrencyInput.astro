@@ -53,12 +53,12 @@ const currencyId = `${name}-currency`;
 const errorId = `${name}-error`;
 ---
 
-<div class="join w-full">
+<div class="join w-full rounded-lg">
   <!-- Currency Selector -->
   <select
     id={currencyId}
     name={currencyName}
-    class="select select-bordered join-item h-14 w-20 min-w-20 bg-base-200 text-sm font-bold rounded-l-full border-0 focus:ring-2 focus:ring-accent focus:ring-opacity-20 focus:outline-none focus:ring-offset-2"
+    class="select select-bordered join-item h-14 w-20 min-w-20 rounded-l-lg border border-base-300 bg-base-200 text-sm font-bold focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
     disabled={disabled}
     aria-label="Currency"
   >
@@ -83,8 +83,8 @@ const errorId = `${name}-error`;
     disabled={disabled}
     placeholder="0.00"
     class:list={[
-      'input input-bordered join-item w-full h-14 bg-base-200 text-base font-bold rounded-r-full border-0',
-      'focus:ring-2 focus:ring-accent focus:ring-opacity-20 focus:outline-none focus:ring-offset-2',
+      'input input-bordered join-item w-full h-14 rounded-r-lg border border-base-300 bg-base-200 text-base font-bold',
+      'focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2',
       error && 'input-error',
       disabled && 'opacity-50 cursor-not-allowed',
       className,

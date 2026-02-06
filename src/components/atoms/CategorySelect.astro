@@ -94,8 +94,8 @@ const ariaDescribeIds = [error && errorMessage && inputId ? `${inputId}-error` :
       'py-4 pl-6 pr-10', // Larger padding for premium look
       'text-base font-bold', // Larger, bolder text
       'bg-base-200', // Theme-aware background
-      'rounded-full border-0', // Pill shape, no border
-      'focus:ring-2 focus:ring-accent focus:ring-opacity-20 focus:outline-none focus:ring-offset-2', // 2px accent focus ring with 2px offset
+      'rounded-lg border border-base-300',
+      'focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2',
       error && 'select-error border-error', // Error state with border-error
       disabled && 'opacity-50 cursor-not-allowed',
       className,
