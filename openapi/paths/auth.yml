@@ -4,7 +4,10 @@ paths:
     post:
       tags: [Authentication]
       summary: Register a new user
-      description: Create a new user account with email, password, and name
+      description: |
+        Create a new user account with email, password, and name.
+        A verification email is sent to the provided email address.
+        The user must verify their email before they can log in.
       security: []
       requestBody:
         required: true
@@ -14,7 +17,7 @@ paths:
               $ref: '../schemas/SignupRequest.yml#/SignupRequest'
       responses:
         '201':
-          description: User created successfully
+          description: User created successfully. Verification email sent to the provided address.
           content:
             application/json:
               schema:
@@ -70,6 +73,54 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+        '403':
+          description: |
+            Account access denied. Possible reasons:
+            - EMAIL_NOT_VERIFIED: User has not verified their email address
+            - WORKSPACE_INACTIVE: The user's workspace is inactive
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: object
+                    description: Email not verified
+                    required: [success, error]
+                    properties:
+                      success:
+                        type: boolean
+                        example: false
+                      error:
+                        type: object
+                        required: [message, code, email]
+                        properties:
+                          message:
+                            type: string
+                            example: Email not verified
+                          code:
+                            type: string
+                            example: EMAIL_NOT_VERIFIED
+                          email:
+                            type: string
+                            format: email
+                            description: The unverified email address (for resend verification flow)
+                            example: user@example.com
+                  - type: object
+                    description: Workspace inactive
+                    required: [success, error]
+                    properties:
+                      success:
+                        type: boolean
+                        example: false
+                      error:
+                        type: object
+                        required: [message, code]
+                        properties:
+                          message:
+                            type: string
+                            example: Workspace is inactive
+                          code:
+                            type: string
+                            example: WORKSPACE_INACTIVE
         '500':
           $ref: '../responses/common.yml#/InternalServerError'
 
@@ -140,5 +191,104 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'
+
+  /api/auth/verify-email:
+    get:
+      tags: [Authentication]
+      summary: Verify user email
+      description: |
+        Verify a user's email address using a token sent via verification email.
+        On success or failure, redirects to the login page with a status query parameter
+        indicating the result (e.g., ?verified=true or ?error=invalid_token).
+      security: []
+      parameters:
+        - name: token
+          in: query
+          required: true
+          description: Email verification token from the verification email link
+          schema:
+            type: string
+      responses:
+        '302':
+          description: |
+            Redirects to login page with verification status.
+            Possible redirect targets:
+            - /login?verified=true - Email verified successfully
+            - /login?error=invalid_token - Token is invalid or expired
+            - /login?error=already_verified - Email was already verified
+          headers:
+            Location:
+              description: Redirect URL to login page with status
+              schema:
+                type: string
+                example: /login?verified=true
+
+  /api/auth/resend-verification:
+    post:
+      tags: [Authentication]
+      summary: Resend verification email
+      description: |
+        Resend the email verification link. For security reasons, this endpoint
+        always returns a success response regardless of whether the email
+        exists in the system. This prevents email enumeration attacks.
+
+        Rate limited to 3 requests per hour per IP address.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/ResendVerificationRequest.yml#/ResendVerificationRequest'
+      responses:
+        '200':
+          description: |
+            Verification email request processed. This response is returned
+            regardless of whether the email exists or is already verified.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [success, data]
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    required: [message]
+                    properties:
+                      message:
+                        type: string
+                        example: If an account exists with this email, a verification link has been sent
+        '400':
+          description: Invalid input (e.g., malformed email format)
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+        '429':
+          description: Rate limit exceeded. Maximum 3 requests per hour per IP.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [success, error]
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  error:
+                    type: object
+                    required: [message, code]
+                    properties:
+                      message:
+                        type: string
+                        example: Too many verification requests. Please try again later.
+                      code:
+                        type: string
+                        example: RATE_LIMIT_EXCEEDED
         '500':
           $ref: '../responses/common.yml#/InternalServerError'

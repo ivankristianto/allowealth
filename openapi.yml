@@ -65,6 +65,10 @@ paths:
     $ref: './openapi/paths/auth.yml#/paths/~1api~1auth~1logout'
   /api/auth/forgot-password:
     $ref: './openapi/paths/auth.yml#/paths/~1api~1auth~1forgot-password'
+  /api/auth/verify-email:
+    $ref: './openapi/paths/auth.yml#/paths/~1api~1auth~1verify-email'
+  /api/auth/resend-verification:
+    $ref: './openapi/paths/auth.yml#/paths/~1api~1auth~1resend-verification'
 
   /api/user/profile:
     $ref: './openapi/paths/user.yml#/paths/~1api~1user~1profile'
@@ -186,6 +190,8 @@ components:
       $ref: './openapi/schemas/ForgotPasswordResponse.yml#/ForgotPasswordResponse'
     AuthSuccessResponse:
       $ref: './openapi/schemas/AuthSuccessResponse.yml#/AuthSuccessResponse'
+    ResendVerificationRequest:
+      $ref: './openapi/schemas/ResendVerificationRequest.yml#/ResendVerificationRequest'
 
     # User Schemas
     UpdateUserProfileRequest:
