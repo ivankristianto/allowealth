@@ -1,4 +1,4 @@
-import { type IDatabase, getActiveSchema, assets as assetsTable } from '@/db';
+import { type IDatabase, getActiveSchema, runTransaction, assets as assetsTable } from '@/db';
 import { eq, and, lte, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { AssetServiceError, ServiceErrorCode } from './service-errors';
@@ -280,7 +280,7 @@ export class AssetService {
     const fromNote = notes ? `Transfer out: ${notes}` : `Transfer to ${toAsset.name}`;
     const toNote = notes ? `Transfer in: ${notes}` : `Transfer from ${fromAsset.name}`;
 
-    await this.db.transaction(async (tx: IDatabase) => {
+    await runTransaction(this.db, async (tx) => {
       // Deduct from source
       await tx
         .update(this.schema.assets)

@@ -85,7 +85,8 @@ export const POST: APIRoute = async (context) => {
       return errorResponse('Unauthorized', 401);
     }
     logError('Error importing budget', error);
-    return errorResponse('Failed to import budget', 500);
+    const message = error instanceof Error ? error.message : 'Failed to import budget';
+    return errorResponse(message, 500);
   }
 };
 

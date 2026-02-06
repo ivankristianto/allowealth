@@ -1,4 +1,4 @@
-import { type IDatabase, getActiveSchema } from '@/db';
+import { type IDatabase, getActiveSchema, runTransaction } from '@/db';
 import { eq, and, gte, lte, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import {
@@ -502,6 +502,11 @@ export class BudgetService {
     });
 
     const validBudgetIds = new Set(existingBudgets.map((b: { id: string }) => b.id));
+    const closedBudgetIds = new Set(
+      existingBudgets
+        .filter((b: { id: string; is_closed: boolean }) => b.is_closed)
+        .map((b: { id: string }) => b.id)
+    );
 
     // Validate rows and prepare updates
     const errors: Array<{ row: number; message: string }> = [];
@@ -531,6 +536,14 @@ export class BudgetService {
         continue;
       }
 
+      if (closedBudgetIds.has(budgetId)) {
+        errors.push({
+          row: i + 1,
+          message: `Budget ID "${budgetId}" is closed and cannot be updated`,
+        });
+        continue;
+      }
+
       if (seenIds.has(budgetId)) {
         errors.push({ row: i + 1, message: `Duplicate budget ID "${budgetId}" in CSV` });
         continue;
@@ -556,10 +569,10 @@ export class BudgetService {
       });
     }
 
-    // Execute updates in a transaction
+    // Execute updates in a transaction (PostgreSQL) or sequentially (SQLite)
     let updated = 0;
     if (validUpdates.length > 0) {
-      await this.db.transaction(async (tx: any) => {
+      await runTransaction(this.db, async (tx) => {
         for (const update of validUpdates) {
           await tx
             .update(this.schema.budgets)
