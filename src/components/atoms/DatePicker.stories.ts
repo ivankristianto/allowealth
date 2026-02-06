@@ -47,7 +47,7 @@ const createDatePicker = (args: {
   // Styles aligned with Oasis Finance v1.0.0 design system
   // Height: h-10 (2.5rem/40px), Font size: text-xs (0.75rem/12px)
   // Background: bg-base-200, Focus ring: 2px accent color with 2px offset
-  input.className = `input input-bordered w-full h-10 bg-base-200 text-xs focus:ring-2 focus:ring-accent focus:ring-opacity-20 focus:outline-none focus:ring-offset-2 ${error ? 'input-error' : ''}`;
+  input.className = `input input-bordered w-full h-14 rounded-lg border border-base-300 bg-base-200 px-6 text-base font-bold focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 ${error ? 'input-error' : ''}`;
   if (error) input.setAttribute('aria-invalid', 'true');
 
   container.appendChild(input);

@@ -312,6 +312,12 @@ Lucide icons use a default stroke-width of 2, which provides good visual clarity
 
 ### Button (`src/components/atoms/Button.astro`)
 
+**Button Standards**
+
+- Actionable buttons use `rounded-2xl` by default.
+- Outline/ghost buttons must keep accessible borders (`border-accent` or `border-base-300` variants), not low-opacity-only borders like `border-accent/10`.
+- `rounded-full` is only for intentional circular non-action UI (status dots, avatars, progress markers), not action buttons.
+
 ```astro
 <Button variant="primary" type="submit">Save</Button>
 <Button variant="outline" size="sm">Filter</Button>

@@ -21,6 +21,14 @@ Form controls, validation, and submission patterns.
 
 ## Form Controls
 
+### Control Standards
+
+- Form controls use `rounded-lg` by default (`input`, `select`, `textarea`).
+- Keep visible borders on interactive controls: `border border-base-300` (never `border-0`).
+- Use visible focus states: `focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2`.
+- Joined controls (currency prefix/suffix) use `rounded-l-lg` and `rounded-r-lg`.
+- `rounded-full` is reserved for non-control indicators (avatars, status dots, progress markers).
+
 ```astro
 <!-- Text -->
 <Input id="name" name="name" type="text" placeholder="Enter name" />
@@ -35,14 +43,21 @@ Form controls, validation, and submission patterns.
 <DatePicker id="date" name="date" max={today} />
 
 <!-- Select -->
-<select id="category" name="category_id" class="select select-bordered w-full">
+<select
+  id="category"
+  name="category_id"
+  class="select select-bordered w-full rounded-lg border border-base-300"
+>
   <option value="">Select...</option>
   {categories.map((cat) => <option value={cat.id}>{cat.name}</option>)}
 </select>
 
 <!-- Textarea -->
-<textarea id="description" name="description" class="textarea textarea-bordered" rows="3"
-></textarea>
+<textarea
+  id="description"
+  name="description"
+  class="textarea textarea-bordered w-full rounded-lg border border-base-300"
+  rows="3"></textarea>
 
 <!-- Checkbox -->
 <Checkbox id="recurring" name="is_recurring" checked={values.is_recurring} />
