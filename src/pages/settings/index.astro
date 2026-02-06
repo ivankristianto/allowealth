@@ -220,7 +220,7 @@ const dataActions = [
       </div>
       <button
         type="button"
-        class="btn btn-accent h-14 rounded-full gap-2 font-bold shadow-sm"
+        class="btn btn-accent h-14 rounded-2xl gap-2 font-bold shadow-sm"
         id="save-settings-btn"
       >
         <Save size={18} class="stroke-current" aria-hidden="true" />
@@ -251,7 +251,7 @@ const dataActions = [
                     'duration-200',
                     'border',
                     item.id === activeSection
-                      ? 'bg-accent/10 text-accent font-bold border-accent/20'
+                      ? 'bg-accent/10 text-accent font-bold border-accent'
                       : 'text-base-content/60 hover:text-base-content font-medium border-transparent',
                   ]
                     .filter(Boolean)
@@ -317,7 +317,7 @@ const dataActions = [
                             id="workspace-name"
                             name="workspaceName"
                             value={workspaceData.name}
-                            class="input input-bordered flex-1 h-14 py-4 px-6 text-base font-bold bg-base-200 rounded-full border-0 focus:ring-2 focus:ring-accent focus:ring-opacity-20 focus:outline-none focus:ring-offset-2"
+                            class="input input-bordered flex-1 h-14 rounded-lg border border-base-300 bg-base-200 py-4 px-6 text-base font-bold focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
                             placeholder="My Workspace"
                           />
                         </div>
@@ -333,7 +333,7 @@ const dataActions = [
                     !isAdmin && (
                       <div class="form-control">
                         <Label>Workspace Name</Label>
-                        <div class="flex items-center gap-3 h-14 py-4 px-6 bg-base-200 rounded-full">
+                        <div class="flex items-center gap-3 h-14 rounded-lg border border-base-300 bg-base-200 py-4 px-6">
                           <Building2
                             size={20}
                             class="stroke-current text-base-content/50"
@@ -354,7 +354,7 @@ const dataActions = [
                       <select
                         id="primary-currency"
                         name="currency"
-                        class="select select-bordered w-full h-14 py-4 pl-6 pr-10 text-base font-bold bg-base-200 rounded-full border-0 focus:ring-2 focus:ring-accent focus:ring-opacity-20 focus:outline-none focus:ring-offset-2"
+                        class="select select-bordered w-full h-14 rounded-lg border border-base-300 bg-base-200 py-4 pl-6 pr-10 text-base font-bold focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
                       >
                         {
                           currencyOptions.map((currency) => (
@@ -374,7 +374,7 @@ const dataActions = [
                       <select
                         id="week-starts"
                         name="weekStart"
-                        class="select select-bordered w-full h-14 py-4 pl-6 pr-10 text-base font-bold bg-base-200 rounded-full border-0 focus:ring-2 focus:ring-accent focus:ring-opacity-20 focus:outline-none focus:ring-offset-2"
+                        class="select select-bordered w-full h-14 rounded-lg border border-base-300 bg-base-200 py-4 pl-6 pr-10 text-base font-bold focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
                       >
                         {
                           weekStartOptions.map((option) => (
@@ -547,7 +547,7 @@ const dataActions = [
                         <select
                           id="email-provider"
                           name="provider"
-                          class="select select-bordered w-full h-14 py-4 pl-6 pr-10 text-base font-bold bg-base-200 rounded-full border-0 focus:ring-2 focus:ring-accent focus:ring-opacity-20 focus:outline-none focus:ring-offset-2"
+                          class="select select-bordered w-full h-14 rounded-lg border border-base-300 bg-base-200 py-4 pl-6 pr-10 text-base font-bold focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
                         >
                           <option value="" selected={!emailSettings.provider}>
                             Select a provider...
@@ -569,7 +569,7 @@ const dataActions = [
                             type="password"
                             id="email-api-key"
                             name="apiKey"
-                            class="input input-bordered w-full h-14 py-4 px-6 pr-12 text-base font-bold bg-base-200 rounded-full border-0 focus:ring-2 focus:ring-accent focus:ring-opacity-20 focus:outline-none focus:ring-offset-2"
+                            class="input input-bordered w-full h-14 rounded-lg border border-base-300 bg-base-200 py-4 px-6 pr-12 text-base font-bold focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
                             placeholder={
                               emailSettings.hasApiKey ? '••••••••••••' : 'Enter your API key'
                             }
@@ -633,7 +633,7 @@ const dataActions = [
                           id="email-sender-name"
                           name="senderName"
                           value={emailSettings.senderName || ''}
-                          class="input input-bordered w-full h-14 py-4 px-6 text-base font-bold bg-base-200 rounded-full border-0 focus:ring-2 focus:ring-accent focus:ring-opacity-20 focus:outline-none focus:ring-offset-2"
+                          class="input input-bordered w-full h-14 rounded-lg border border-base-300 bg-base-200 py-4 px-6 text-base font-bold focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
                           placeholder="Expenses App"
                         />
                       </div>
@@ -646,7 +646,7 @@ const dataActions = [
                           id="email-sender-address"
                           name="senderAddress"
                           value={emailSettings.senderAddress || ''}
-                          class="input input-bordered w-full h-14 py-4 px-6 text-base font-bold bg-base-200 rounded-full border-0 focus:ring-2 focus:ring-accent focus:ring-opacity-20 focus:outline-none focus:ring-offset-2"
+                          class="input input-bordered w-full h-14 rounded-lg border border-base-300 bg-base-200 py-4 px-6 text-base font-bold focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
                           placeholder="noreply@yourdomain.com"
                         />
                         <p class="text-xs text-base-content/50 mt-2 ml-4">
@@ -659,7 +659,7 @@ const dataActions = [
                         <button
                           type="button"
                           id="test-email-btn"
-                          class="btn btn-ghost h-14 rounded-full gap-2"
+                          class="btn btn-ghost h-14 rounded-2xl gap-2"
                           disabled={!emailSettings.isConfigured}
                         >
                           <Mail size={18} class="stroke-current" aria-hidden="true" />
@@ -668,7 +668,7 @@ const dataActions = [
                         <button
                           type="button"
                           id="save-email-btn"
-                          class="btn btn-accent h-14 rounded-full gap-2 font-bold shadow-sm"
+                          class="btn btn-accent h-14 rounded-2xl gap-2 font-bold shadow-sm"
                         >
                           <Save size={18} class="stroke-current" aria-hidden="true" />
                           Save Email Settings
@@ -818,11 +818,11 @@ const dataActions = [
       </p>
       <div class="modal-action">
         <form method="dialog">
-          <button class="btn btn-ghost rounded-full">Keep Invitation</button>
+          <button class="btn btn-ghost rounded-2xl">Keep Invitation</button>
         </form>
         <button
           type="button"
-          class="btn btn-warning rounded-full"
+          class="btn btn-warning rounded-2xl"
           data-confirm-cancel-invitation
           data-canceling-invitation-id=""
         >

@@ -55,14 +55,14 @@ const Tag = href ? 'a' : 'button';
 // Base classes - focus ring uses accent color for theme-aware consistency
 // rounded-2xl (1rem) follows design system borderRadius.2xl
 const baseClasses =
-  'btn inline-flex items-center justify-center gap-2 font-medium rounded-2xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent';
+  'btn-contract-base transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent';
 
 // Variant classes - primary and accent both use btn-accent (indigo) for CTAs per Oasis Finance v1.0.0
 const variantClasses: Record<string, string> = {
   primary: 'btn-accent shadow-accent-glow',
   accent: 'btn-accent shadow-accent-glow',
   secondary: 'btn-secondary border border-base-300',
-  outline: 'btn-outline border border-accent text-accent hover:bg-accent/5',
+  outline: 'btn-contract-outline',
   ghost: 'btn-ghost text-base-content border border-base-300 hover:bg-base-200',
   danger: 'btn-error',
   warning: 'btn-warning',
