@@ -13,7 +13,7 @@
 
 import { auth, type User, type Session } from '@/lib/auth/lucia';
 import { hashPassword, verifyPassword } from '@/lib/auth/password';
-import { db, type IDatabase, getActiveSchema } from '@/db';
+import { db, getActiveSchema } from '@/db';
 import { createLogger } from '@/lib/logger';
 
 const log = createLogger('auth');
@@ -165,45 +165,34 @@ export async function register(email: string, password: string, name: string): P
     const workspaceId = nanoid();
     const userId = nanoid();
 
-    const newUser = await db.transaction(async (tx: IDatabase) => {
-      // Create workspace as INACTIVE (activated after email verification)
-      await tx
-        .insert(schema.workspaces)
-        .values({
-          id: workspaceId,
-          name: `${name.trim()}'s Workspace`,
-          status: 'inactive',
-          created_at: new Date(),
-          updated_at: new Date(),
-        })
-        .returning();
-
-      // Create user (emailVerifiedAt = null by default)
-      const [createdUser] = await tx
-        .insert(schema.users)
-        .values({
-          id: userId,
-          workspace_id: workspaceId,
-          email: email.toLowerCase(),
-          password_hash: passwordHash,
-          name: name.trim(),
-          role: 'admin',
-        })
-        .returning();
-
-      if (!createdUser) {
-        throw new AuthError(AUTH_ERRORS.DATABASE_ERROR, 'Failed to create user');
-      }
-
-      // NOTE: Asset category seeding deferred until email verification
-      // (handled in verify-email endpoint)
-
-      return createdUser;
+    // Create workspace as INACTIVE (activated after email verification)
+    await db.insert(schema.workspaces).values({
+      id: workspaceId,
+      name: `${name.trim()}'s Workspace`,
+      status: 'inactive',
+      created_at: new Date(),
+      updated_at: new Date(),
     });
+
+    // Create user (emailVerifiedAt = null by default)
+    const [newUser] = await db
+      .insert(schema.users)
+      .values({
+        id: userId,
+        workspace_id: workspaceId,
+        email: email.toLowerCase(),
+        password_hash: passwordHash,
+        name: name.trim(),
+        role: 'admin',
+      })
+      .returning();
 
     if (!newUser) {
       throw new AuthError(AUTH_ERRORS.DATABASE_ERROR, 'Failed to create user');
     }
+
+    // NOTE: Asset category seeding deferred until email verification
+    // (handled in verify-email endpoint)
 
     // Send verification email (non-blocking - don't fail registration if email fails)
     try {

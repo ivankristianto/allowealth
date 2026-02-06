@@ -13,8 +13,6 @@
  * Usage: bun run backfill:email-verification
  */
 
- 
-
 import { db, getActiveSchema } from '@/db';
 import { createLogger } from '@/lib/logger';
 import { eq, isNull } from 'drizzle-orm';
