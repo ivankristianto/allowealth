@@ -22,8 +22,7 @@ import { eq } from 'drizzle-orm';
 // Get the correct schema for the current database dialect
 const schema = getActiveSchema();
 import { nanoid } from 'nanoid';
-import { DEFAULT_ASSET_CATEGORIES } from '@/lib/constants';
-import { AssetCategoryService } from './asset-category.service';
+import { EmailVerificationService } from './email-verification.service';
 
 /**
  * Error codes for authentication operations
@@ -35,6 +34,8 @@ export const AUTH_ERRORS = {
   DATABASE_ERROR: 'DATABASE_ERROR',
   NOT_AUTHENTICATED: 'NOT_AUTHENTICATED',
   SESSION_NOT_FOUND: 'SESSION_NOT_FOUND',
+  EMAIL_NOT_VERIFIED: 'EMAIL_NOT_VERIFIED',
+  WORKSPACE_INACTIVE: 'WORKSPACE_INACTIVE',
 } as const;
 
 /**
@@ -165,17 +166,19 @@ export async function register(email: string, password: string, name: string): P
     const userId = nanoid();
 
     const newUser = await db.transaction(async (tx: IDatabase) => {
-      // Create workspace for the new user - use returning() to ensure execution
+      // Create workspace as INACTIVE (activated after email verification)
       await tx
         .insert(schema.workspaces)
         .values({
           id: workspaceId,
           name: `${name.trim()}'s Workspace`,
+          status: 'inactive',
           created_at: new Date(),
           updated_at: new Date(),
         })
         .returning();
 
+      // Create user (emailVerifiedAt = null by default)
       const [createdUser] = await tx
         .insert(schema.users)
         .values({
@@ -192,19 +195,8 @@ export async function register(email: string, password: string, name: string): P
         throw new AuthError(AUTH_ERRORS.DATABASE_ERROR, 'Failed to create user');
       }
 
-      const assetCategoryService = new AssetCategoryService(tx);
-
-      for (const category of DEFAULT_ASSET_CATEGORIES) {
-        await assetCategoryService.create({
-          workspace_id: workspaceId,
-          created_by_user_id: createdUser.id,
-          name: category.name,
-          description: category.description,
-          is_liability: category.isLiability,
-          is_system: true,
-          sort_order: category.sortOrder,
-        });
-      }
+      // NOTE: Asset category seeding deferred until email verification
+      // (handled in verify-email endpoint)
 
       return createdUser;
     });
@@ -212,6 +204,20 @@ export async function register(email: string, password: string, name: string): P
     if (!newUser) {
       throw new AuthError(AUTH_ERRORS.DATABASE_ERROR, 'Failed to create user');
     }
+
+    // Send verification email (non-blocking - don't fail registration if email fails)
+    try {
+      const emailVerificationService = new EmailVerificationService(db);
+      await emailVerificationService.sendVerificationEmail(newUser.id);
+    } catch (emailError) {
+      log.error('Failed to send verification email', { userId: newUser.id, error: emailError });
+    }
+
+    log.info('User registered (unverified)', {
+      userId: newUser.id,
+      email: newUser.email,
+      workspaceId,
+    });
 
     // Return user in Lucia format
     return {
@@ -291,6 +297,23 @@ export async function registerWithInvitation(
     if (!newUser) {
       throw new AuthError(AUTH_ERRORS.DATABASE_ERROR, 'Failed to create user');
     }
+
+    // Send verification email (non-blocking - don't fail registration if email fails)
+    try {
+      const emailVerificationService = new EmailVerificationService(db);
+      await emailVerificationService.sendVerificationEmail(newUser.id);
+    } catch (emailError) {
+      log.error('Failed to send verification email for invited user', {
+        userId: newUser.id,
+        error: emailError,
+      });
+    }
+
+    log.info('User registered via invitation (unverified)', {
+      userId: newUser.id,
+      email: newUser.email,
+      workspaceId,
+    });
 
     // Return user in Lucia format
     return {
