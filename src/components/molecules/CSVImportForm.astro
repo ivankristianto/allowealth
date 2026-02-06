@@ -355,6 +355,11 @@ const cspNonce = Astro.locals.cspNonce || '';
     const importForm = document.getElementById('csv-import-form');
     const action = importForm ? importForm.getAttribute('data-action') || '' : '';
 
+    if (!action) {
+      console.error('CSVImportForm: missing data-action attribute on #csv-import-form');
+      return;
+    }
+
     // DOM Elements - Upload Step
     const fileInput = document.getElementById('csv-file-input');
     const fileError = document.getElementById('file-error');
@@ -956,12 +961,16 @@ const cspNonce = Astro.locals.cspNonce || '';
         });
 
         // Get CSRF token from cookie (inline — can't import csrf-client)
-        var csrfToken = '';
-        var cookies = document.cookie.split(';');
-        for (var ci = 0; ci < cookies.length; ci++) {
-          var parts = cookies[ci].trim().split('=');
-          if (parts[0] === 'csrf_token') {
-            csrfToken = decodeURIComponent(parts[1]);
+        let csrfToken = '';
+        const cookies = document.cookie.split(';');
+        for (let ci = 0; ci < cookies.length; ci++) {
+          const cookie = cookies[ci].trim();
+          const eqIdx = cookie.indexOf('=');
+          if (eqIdx === -1) continue;
+          const name = cookie.substring(0, eqIdx);
+          const value = cookie.substring(eqIdx + 1);
+          if (name === 'csrf_token') {
+            csrfToken = decodeURIComponent(value);
             break;
           }
         }

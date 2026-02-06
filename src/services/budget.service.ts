@@ -516,7 +516,7 @@ export class BudgetService {
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
       const budgetId = row.budget_id?.trim();
-      const budgetAmount = row.budget_amount?.trim();
+      const budgetAmount = (row.budget_amount ?? '').trim();
 
       if (!budgetId) {
         errors.push({ row: i + 1, message: 'Missing budget ID' });

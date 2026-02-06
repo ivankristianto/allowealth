@@ -267,20 +267,20 @@ const cardClasses = [
         <div class="flex items-center gap-1">
           <a
             href={transactionUrl}
-            class="text-base-content/30 hover:text-base-content/60 transition-colors p-1 rounded-lg hover:bg-base-200"
+            class="inline-flex items-center gap-1 text-base-content/30 hover:text-base-content/60 transition-colors min-h-[44px] min-w-[44px] justify-center rounded-lg hover:bg-base-200 text-xs font-medium"
             aria-label={`View ${categoryName} transactions`}
           >
-            <Eye size={16} class="stroke-current md:hidden" aria-hidden="true" />
-            <Eye size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+            <Eye size={16} class="stroke-current" aria-hidden="true" />
+            <span class="hidden md:inline">View</span>
           </a>
           <button
             type="button"
-            class="text-base-content/30 hover:text-base-content/60 transition-colors p-1 rounded-lg hover:bg-base-200"
+            class="inline-flex items-center gap-1 text-base-content/30 hover:text-base-content/60 transition-colors min-h-[44px] min-w-[44px] justify-center rounded-lg hover:bg-base-200 text-xs font-medium"
             aria-label={`Edit ${categoryName} budget`}
             data-edit-budget={categoryId}
           >
-            <Pencil size={16} class="stroke-current md:hidden" aria-hidden="true" />
-            <Pencil size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+            <Pencil size={16} class="stroke-current" aria-hidden="true" />
+            <span class="hidden md:inline">Edit</span>
           </button>
         </div>
       </div>

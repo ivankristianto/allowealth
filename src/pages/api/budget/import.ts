@@ -67,9 +67,12 @@ export const POST: APIRoute = async (context) => {
       const budgetId = cells[idIdx]?.trim();
       if (!budgetId) continue;
 
+      const budgetAmount = cells[amountIdx]?.trim();
+      if (!budgetAmount) continue; // skip rows with empty amounts — service layer validates further
+
       rows.push({
         budget_id: budgetId,
-        budget_amount: cells[amountIdx]?.trim() || '0',
+        budget_amount: budgetAmount,
       });
     }
 
