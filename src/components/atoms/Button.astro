@@ -54,15 +54,18 @@ const Tag = href ? 'a' : 'button';
 
 // Base classes - focus ring uses accent color for theme-aware consistency
 // rounded-2xl (1rem) follows design system borderRadius.2xl
+// NOTE: Do NOT use @apply with DaisyUI component classes in globals.css.
+// Tailwind v4 + DaisyUI v5 @apply expands btn styles at a late position in the CSS,
+// causing --btn-fg to override btn-accent's --btn-fg due to source order cascade.
 const baseClasses =
-  'btn-contract-base transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent';
+  'btn inline-flex items-center justify-center gap-2 font-medium rounded-2xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent';
 
 // Variant classes - primary and accent both use btn-accent (indigo) for CTAs per Oasis Finance v1.0.0
 const variantClasses: Record<string, string> = {
   primary: 'btn-accent shadow-accent-glow',
   accent: 'btn-accent shadow-accent-glow',
   secondary: 'btn-secondary border border-base-300',
-  outline: 'btn-contract-outline',
+  outline: 'btn-outline border border-accent text-accent hover:bg-accent/10 hover:border-accent',
   ghost: 'btn-ghost text-base-content border border-base-300 hover:bg-base-200',
   danger: 'btn-error',
   warning: 'btn-warning',
