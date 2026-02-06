@@ -138,11 +138,11 @@ describe('EmailVerificationService', () => {
     });
 
     it('should delete all tokens after verification', async () => {
-      const token = await service.createVerificationToken(testUserId);
-      // Create a second token
+      // Creating a new token replaces any existing tokens
       await service.createVerificationToken(testUserId);
+      const token2 = await service.createVerificationToken(testUserId);
 
-      await service.verifyEmail(token);
+      await service.verifyEmail(token2);
 
       // All tokens should be deleted
       const remainingTokens = await db

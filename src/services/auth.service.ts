@@ -13,7 +13,7 @@
 
 import { auth, type User, type Session } from '@/lib/auth/lucia';
 import { hashPassword, verifyPassword } from '@/lib/auth/password';
-import { db, getActiveSchema } from '@/db';
+import { db, getActiveSchema, getDatabaseConfig } from '@/db';
 import { createLogger } from '@/lib/logger';
 
 const log = createLogger('auth');
@@ -22,7 +22,6 @@ import { eq } from 'drizzle-orm';
 // Get the correct schema for the current database dialect
 const schema = getActiveSchema();
 import { nanoid } from 'nanoid';
-import { EmailVerificationService } from './email-verification.service';
 
 /**
  * Error codes for authentication operations
@@ -42,6 +41,8 @@ export const AUTH_ERRORS = {
  * Auth error class
  */
 export class AuthError extends Error {
+  public email?: string;
+
   constructor(
     public code: string,
     message: string
@@ -165,27 +166,40 @@ export async function register(email: string, password: string, name: string): P
     const workspaceId = nanoid();
     const userId = nanoid();
 
-    // Create workspace as INACTIVE (activated after email verification)
-    await db.insert(schema.workspaces).values({
+    const workspaceValues = {
       id: workspaceId,
       name: `${name.trim()}'s Workspace`,
-      status: 'inactive',
+      status: 'inactive' as const,
       created_at: new Date(),
       updated_at: new Date(),
-    });
+    };
 
-    // Create user (emailVerifiedAt = null by default)
-    const [newUser] = await db
-      .insert(schema.users)
-      .values({
-        id: userId,
-        workspace_id: workspaceId,
-        email: email.toLowerCase(),
-        password_hash: passwordHash,
-        name: name.trim(),
-        role: 'admin',
-      })
-      .returning();
+    const userValues = {
+      id: userId,
+      workspace_id: workspaceId,
+      email: email.toLowerCase(),
+      password_hash: passwordHash,
+      name: name.trim(),
+      role: 'admin' as const,
+    };
+
+    let newUser;
+    const { dialect } = getDatabaseConfig();
+
+    if (dialect === 'postgresql') {
+      // PostgreSQL: use transaction for atomicity (prevents orphaned workspaces)
+      const result = await (db as any).transaction(async (tx: any) => {
+        await tx.insert(schema.workspaces).values(workspaceValues);
+        const [user] = await tx.insert(schema.users).values(userValues).returning();
+        return user;
+      });
+      newUser = result;
+    } else {
+      // SQLite: sequential inserts (better-sqlite3 doesn't support async transactions)
+      await db.insert(schema.workspaces).values(workspaceValues);
+      const [user] = await db.insert(schema.users).values(userValues).returning();
+      newUser = user;
+    }
 
     if (!newUser) {
       throw new AuthError(AUTH_ERRORS.DATABASE_ERROR, 'Failed to create user');
@@ -193,14 +207,7 @@ export async function register(email: string, password: string, name: string): P
 
     // NOTE: Asset category seeding deferred until email verification
     // (handled in verify-email endpoint)
-
-    // Send verification email (non-blocking - don't fail registration if email fails)
-    try {
-      const emailVerificationService = new EmailVerificationService(db);
-      await emailVerificationService.sendVerificationEmail(newUser.id);
-    } catch (emailError) {
-      log.error('Failed to send verification email', { userId: newUser.id, error: emailError });
-    }
+    // NOTE: Verification email is sent by the caller (signup endpoint)
 
     log.info('User registered (unverified)', {
       userId: newUser.id,
@@ -287,16 +294,7 @@ export async function registerWithInvitation(
       throw new AuthError(AUTH_ERRORS.DATABASE_ERROR, 'Failed to create user');
     }
 
-    // Send verification email (non-blocking - don't fail registration if email fails)
-    try {
-      const emailVerificationService = new EmailVerificationService(db);
-      await emailVerificationService.sendVerificationEmail(newUser.id);
-    } catch (emailError) {
-      log.error('Failed to send verification email for invited user', {
-        userId: newUser.id,
-        error: emailError,
-      });
-    }
+    // NOTE: Verification email is sent by the caller (signup endpoint)
 
     log.info('User registered via invitation (unverified)', {
       userId: newUser.id,
@@ -351,19 +349,20 @@ export async function login(
       throw new AuthError(AUTH_ERRORS.INVALID_CREDENTIALS, 'Invalid email or password');
     }
 
+    // Check if email is verified BEFORE password check
+    // (prevents timing oracle that reveals account existence + password validity)
+    if (!user.email_verified_at) {
+      log.warn('Login attempt with unverified email', { email });
+      const err = new AuthError(AUTH_ERRORS.EMAIL_NOT_VERIFIED, 'Email not verified');
+      err.email = user.email;
+      throw err;
+    }
+
     // Verify password
     const isValidPassword = await verifyPassword(password, user.password_hash);
 
     if (!isValidPassword) {
       throw new AuthError(AUTH_ERRORS.INVALID_CREDENTIALS, 'Invalid email or password');
-    }
-
-    // Check if email is verified
-    if (!user.email_verified_at) {
-      log.warn('Login attempt with unverified email', { email });
-      const err = new AuthError(AUTH_ERRORS.EMAIL_NOT_VERIFIED, 'Email not verified');
-      (err as any).email = user.email;
-      throw err;
     }
 
     // Check if workspace is active

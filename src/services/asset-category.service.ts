@@ -271,6 +271,15 @@ export class AssetCategoryService {
    * Called after email verification for workspace owner
    */
   async seedDefaultCategories(workspaceId: string, userId: string): Promise<void> {
+    // Idempotency guard: skip if categories already exist for this workspace
+    const existing = await this.db.query.assetCategories.findFirst({
+      where: eq(this.schema.assetCategories.workspace_id, workspaceId),
+    });
+
+    if (existing) {
+      return;
+    }
+
     const now = new Date();
 
     for (const category of DEFAULT_ASSET_CATEGORIES) {

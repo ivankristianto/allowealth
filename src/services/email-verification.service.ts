@@ -11,11 +11,14 @@ import { getEnv } from '@/lib/env';
 import { nanoid } from 'nanoid';
 import { eq } from 'drizzle-orm';
 import type { EmailService } from '@/services/email';
+import type { users } from '@/db/schema/sqlite/users';
 
 const log = createLogger('email-verification');
 
+type UserRecord = typeof users.$inferSelect;
+
 export type VerifyEmailResult =
-  | { success: true; user: any }
+  | { success: true; user: UserRecord }
   | { success: false; error: string; email?: string };
 
 export class EmailVerificationService {
@@ -32,6 +35,11 @@ export class EmailVerificationService {
    * @returns Generated token string
    */
   async createVerificationToken(userId: string): Promise<string> {
+    // Delete any existing tokens for this user before creating a new one
+    await this.db
+      .delete(this.schema.emailVerificationTokens)
+      .where(eq(this.schema.emailVerificationTokens.user_id, userId));
+
     const token = nanoid(64);
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
@@ -60,6 +68,11 @@ export class EmailVerificationService {
 
     if (!user) {
       throw new Error('User not found');
+    }
+
+    if (user.deleted_at) {
+      log.warn('Skipping verification email for soft-deleted user', { userId });
+      return;
     }
 
     // Build verification URL
@@ -123,6 +136,12 @@ export class EmailVerificationService {
     if (!user) {
       log.error('User not found for verification token', { userId });
       return { success: false, error: 'USER_NOT_FOUND' };
+    }
+
+    // Block verification for soft-deleted users
+    if (user.deleted_at) {
+      log.warn('Verification attempted for soft-deleted user', { userId });
+      return { success: false, error: 'INVALID_TOKEN' };
     }
 
     // Check if already verified (idempotent)

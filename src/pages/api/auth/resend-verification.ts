@@ -16,6 +16,7 @@ import { EmailVerificationService } from '@/services/email-verification.service'
 import { emailService } from '@/services';
 import {
   checkRateLimit,
+  checkRateLimitByKey,
   createRateLimitResponse,
   applyRateLimitHeaders,
   RATE_LIMIT_PRESETS,
@@ -60,6 +61,18 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
       status: 400,
       headers: STANDARD_RESPONSE_HEADERS,
     });
+  }
+
+  // Per-email rate limit: 3 per hour per email address
+  const perEmailResult = checkRateLimitByKey(
+    `resend-verification:${email.toLowerCase()}`,
+    RATE_LIMIT_PRESETS.resendVerificationPerEmail
+  );
+  if (!perEmailResult.allowed) {
+    return createRateLimitResponse(
+      perEmailResult,
+      RATE_LIMIT_PRESETS.resendVerificationPerEmail.message
+    );
   }
 
   // Look up user (don't reveal if user exists)

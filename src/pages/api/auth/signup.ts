@@ -40,7 +40,7 @@ import {
   applyRateLimitHeaders,
   RATE_LIMIT_PRESETS,
 } from '@/lib/rate-limit';
-import { workspaceInvitationService } from '@/services';
+import { workspaceInvitationService, emailVerificationService } from '@/services';
 import { WorkspaceInvitationServiceError, ServiceErrorCode } from '@/services/service-errors';
 
 export const prerender = false;
@@ -91,6 +91,13 @@ export const POST: APIRoute = async (context) => {
     } else {
       // Standard signup - creates new workspace with user as admin
       user = await register(email, password, name);
+    }
+
+    // Send verification email (non-blocking - don't fail registration if email fails)
+    try {
+      await emailVerificationService.sendVerificationEmail(user.id);
+    } catch (emailError) {
+      logError('Failed to send verification email', emailError);
     }
 
     // Return success response with standardized headers

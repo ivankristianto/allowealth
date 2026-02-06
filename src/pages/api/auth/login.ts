@@ -118,7 +118,7 @@ export const POST: APIRoute = async (context) => {
             JSON.stringify({
               error: 'Email not verified',
               code: AUTH_ERRORS.EMAIL_NOT_VERIFIED,
-              email: (authError as any).email || email,
+              email: authError.email || email,
             }),
             {
               status: 403,

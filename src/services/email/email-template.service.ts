@@ -50,6 +50,16 @@ export interface TestEmailOptions {
 /**
  * Email Template Service
  */
+/** Escape HTML special characters to prevent injection */
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 export class EmailTemplateService {
   private readonly primaryColor = '#2563eb';
   private readonly appName = 'Expenses App';
@@ -125,7 +135,7 @@ export class EmailTemplateService {
   Verify your email
 </h1>
 <p style="margin: 0 0 16px 0; font-size: 14px; line-height: 1.6; color: #3f3f46;">
-  Hi ${userName}, thanks for signing up! Please verify your email address to activate your account.
+  Hi ${escapeHtml(userName)}, thanks for signing up! Please verify your email address to activate your account.
 </p>
 ${this.button('Verify Email', verificationUrl)}
 <p style="margin: 0 0 8px 0; font-size: 13px; color: #71717a;">
@@ -181,7 +191,7 @@ ${this.button('Reset Password', resetUrl)}
   You're invited!
 </h1>
 <p style="margin: 0 0 16px 0; font-size: 14px; line-height: 1.6; color: #3f3f46;">
-  <strong>${inviterName}</strong> has invited you to join <strong>${workspaceName}</strong> on ${this.appName}.
+  <strong>${escapeHtml(inviterName)}</strong> has invited you to join <strong>${escapeHtml(workspaceName)}</strong> on ${this.appName}.
 </p>
 ${this.button('Accept Invitation', inviteUrl)}
 <p style="margin: 0; font-size: 13px; color: #71717a;">
@@ -190,7 +200,7 @@ ${this.button('Accept Invitation', inviteUrl)}
 `.trim();
 
     return {
-      subject: `You've been invited to join ${workspaceName}`,
+      subject: `You've been invited to join ${escapeHtml(workspaceName)}`,
       html: this.wrap(content),
     };
   }
@@ -212,16 +222,16 @@ ${this.button('Accept Invitation', inviteUrl)}
   <tr>
     <td style="padding: 8px 16px;">
       <p style="margin: 0 0 8px 0; font-size: 13px; color: #71717a;">
-        <strong style="color: #3f3f46;">Provider:</strong> ${provider}
+        <strong style="color: #3f3f46;">Provider:</strong> ${escapeHtml(provider)}
       </p>
       <p style="margin: 0; font-size: 13px; color: #71717a;">
-        <strong style="color: #3f3f46;">Sender:</strong> ${senderEmail}
+        <strong style="color: #3f3f46;">Sender:</strong> ${escapeHtml(senderEmail)}
       </p>
     </td>
   </tr>
 </table>
 <p style="margin: 0; font-size: 13px; color: #71717a;">
-  Emails from ${workspaceName} will be sent using this configuration.
+  Emails from ${escapeHtml(workspaceName)} will be sent using this configuration.
 </p>
 `.trim();
 
