@@ -252,6 +252,9 @@ const rowClasses = [
       data-history-container
       data-asset-id={id}
       class="hidden bg-base-200/50 rounded-xl p-4 mt-2 mb-2 mx-4 lg:mx-8"
+      role="region"
+      aria-label={`Value history for ${name}`}
+      aria-live="polite"
     />
   )
 }

@@ -645,9 +645,9 @@ export class BudgetService {
           );
       }
 
-      for (const values of validInserts) {
-        await tx.insert(this.schema.budgets).values(values);
-        imported++;
+      if (validInserts.length > 0) {
+        await tx.insert(this.schema.budgets).values(validInserts);
+        imported = validInserts.length;
       }
     });
 

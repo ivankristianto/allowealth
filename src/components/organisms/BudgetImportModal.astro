@@ -48,12 +48,15 @@ const { id, month, year, currency } = Astro.props;
       {/* Step 1: Upload */}
       <div data-step="upload">
         <div
-          class="border-2 border-dashed border-base-300 rounded-2xl p-8 text-center hover:border-accent/50 transition-colors cursor-pointer"
+          class="border-2 border-dashed border-base-300 rounded-2xl p-8 text-center hover:border-accent/50 focus-visible:outline-2 focus-visible:outline-accent transition-colors cursor-pointer"
           data-drop-zone
+          tabindex="0"
+          role="button"
+          aria-label="Upload CSV file. Drop a file or press Enter to browse"
         >
           <Upload size={32} class="stroke-base-content/40 mx-auto mb-3" aria-hidden="true" />
           <p class="text-base-content/70 font-medium">
-            Drop CSV file here or <span class="text-accent">browse</span>
+            Drop CSV file here or <span class="text-accent underline">browse</span>
           </p>
           <p class="text-xs text-base-content/40 mt-1">Expects columns: category, budget_amount</p>
           <input type="file" accept=".csv,text/csv" class="hidden" data-file-input />
@@ -305,6 +308,14 @@ const { id, month, year, currency } = Astro.props;
 
       // Drop zone click
       dropZone.addEventListener('click', () => fileInput?.click());
+
+      // Drop zone keyboard support (Enter/Space open file picker)
+      dropZone.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          fileInput?.click();
+        }
+      });
 
       // File input change
       fileInput.addEventListener('change', () => {
