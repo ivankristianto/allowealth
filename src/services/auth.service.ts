@@ -369,6 +369,27 @@ export async function login(
       throw new AuthError(AUTH_ERRORS.INVALID_CREDENTIALS, 'Invalid email or password');
     }
 
+    // Check if email is verified
+    if (!user.email_verified_at) {
+      log.warn('Login attempt with unverified email', { email });
+      const err = new AuthError(AUTH_ERRORS.EMAIL_NOT_VERIFIED, 'Email not verified');
+      (err as any).email = user.email;
+      throw err;
+    }
+
+    // Check if workspace is active
+    const workspace = await db.query.workspaces.findFirst({
+      where: eq(schema.workspaces.id, user.workspace_id),
+    });
+
+    if (!workspace || workspace.status !== 'active') {
+      log.warn('Login attempt with inactive workspace', {
+        email,
+        workspaceId: user.workspace_id,
+      });
+      throw new AuthError(AUTH_ERRORS.WORKSPACE_INACTIVE, 'Workspace inactive');
+    }
+
     // Check if user has been soft-deleted
     const isDeleted = user.deleted_at !== null;
 
