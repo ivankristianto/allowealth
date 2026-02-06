@@ -1,0 +1,191 @@
+---
+/**
+ * BudgetTable Component
+ *
+ * Table view for budget data as an alternative to BudgetCardGrid.
+ * Shows categories with budget, spent, remaining, percentage, status, and actions.
+ * Follows the CategoryIntelligenceTable design pattern.
+ *
+ * @param {BudgetData[]} budgets - Array of budget data
+ * @param {string} currency - Currency code (IDR or USD)
+ * @param {number} month - Current month (1-12) for See Details link
+ * @param {number} year - Current year for See Details link
+ */
+
+import type { BudgetData } from './BudgetCardGrid.astro';
+import { Wallet, Pencil, Eye } from '@lucide/astro';
+import { formatCurrency } from '@/lib/formatting';
+
+export interface Props {
+  budgets: BudgetData[];
+  currency?: 'IDR' | 'USD';
+  month?: number;
+  year?: number;
+}
+
+const { budgets = [], currency = 'IDR', month, year } = Astro.props;
+
+const sortedBudgets = [...budgets].sort((a, b) => {
+  const amountA =
+    typeof a.budget_amount === 'string' ? parseFloat(a.budget_amount) : a.budget_amount;
+  const amountB =
+    typeof b.budget_amount === 'string' ? parseFloat(b.budget_amount) : b.budget_amount;
+  return amountB - amountA;
+});
+---
+
+{
+  budgets.length === 0 ? (
+    <div class="flex flex-col items-center justify-center py-16 text-center">
+      <div class="w-16 h-16 rounded-2xl bg-base-200 flex items-center justify-center mb-4">
+        <Wallet size={32} class="stroke-base-content/40" aria-hidden="true" />
+      </div>
+      <h3 class="text-lg font-bold text-base-content mb-2">No budgets set</h3>
+      <p class="text-sm text-base-content/60 max-w-sm">
+        Set up spending limits for your expense categories to start tracking your budget progress.
+      </p>
+    </div>
+  ) : (
+    <div class="bg-base-100 rounded-card border border-base-300 shadow-sm" data-budget-table>
+      <div class="overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-base-200/50 border-b border-base-300">
+                <th class="px-6 md:px-8 py-4 md:py-5 text-[10px] font-bold text-base-content/40 uppercase tracking-widest">
+                  Category
+                </th>
+                <th class="px-6 md:px-8 py-4 md:py-5 text-[10px] font-bold text-base-content/40 uppercase tracking-widest text-right">
+                  Budget
+                </th>
+                <th class="px-6 md:px-8 py-4 md:py-5 text-[10px] font-bold text-base-content/40 uppercase tracking-widest text-right">
+                  Spent
+                </th>
+                <th class="px-6 md:px-8 py-4 md:py-5 text-[10px] font-bold text-base-content/40 uppercase tracking-widest text-right">
+                  Remaining
+                </th>
+                <th class="px-6 md:px-8 py-4 md:py-5 text-[10px] font-bold text-base-content/40 uppercase tracking-widest text-center">
+                  Status
+                </th>
+                <th class="px-6 md:px-8 py-4 md:py-5 text-[10px] font-bold text-base-content/40 uppercase tracking-widest text-right">
+                  Action
+                </th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-base-300">
+              {sortedBudgets.map((budget) => {
+                const budgetAmt =
+                  typeof budget.budget_amount === 'string'
+                    ? parseFloat(budget.budget_amount)
+                    : budget.budget_amount;
+                const spentAmt =
+                  typeof budget.spent_amount === 'string'
+                    ? parseFloat(budget.spent_amount)
+                    : budget.spent_amount;
+                const remaining = budgetAmt - spentAmt;
+                const percentage = budget.percentage_used;
+                // Build "See Details" URL
+                const detailsParams = new URLSearchParams({
+                  category_id: budget.category_id,
+                  type: 'expense',
+                });
+                if (month) detailsParams.set('month', String(month));
+                if (year) detailsParams.set('year', String(year));
+                const detailsUrl = `/transactions?${detailsParams.toString()}`;
+
+                return (
+                  <tr
+                    class="group hover:bg-base-200/30 transition-colors"
+                    data-budget-table-row
+                    data-category-name={budget.category_name}
+                    data-category-id={budget.category_id}
+                    data-sort-title={budget.category_name}
+                    data-sort-budget={budgetAmt}
+                    data-sort-spent={spentAmt}
+                  >
+                    <td class="px-6 md:px-8 py-5 md:py-6">
+                      <span class="text-sm font-bold text-base-content">
+                        {budget.category_name}
+                      </span>
+                    </td>
+                    <td class="px-6 md:px-8 py-5 md:py-6 text-right">
+                      <span class="text-sm font-bold text-base-content">
+                        {formatCurrency(budgetAmt, currency)}
+                      </span>
+                    </td>
+                    <td class="px-6 md:px-8 py-5 md:py-6 text-right">
+                      <span class="text-sm font-bold text-base-content">
+                        {formatCurrency(spentAmt, currency)}
+                      </span>
+                    </td>
+                    <td class="px-6 md:px-8 py-5 md:py-6 text-right">
+                      <span
+                        class:list={[
+                          'text-sm font-bold',
+                          remaining < 0 ? 'text-error' : 'text-base-content/60',
+                        ]}
+                      >
+                        {formatCurrency(remaining, currency)}
+                      </span>
+                    </td>
+                    <td class="px-6 md:px-8 py-5 md:py-6 text-center">
+                      <div class="inline-flex items-center gap-2">
+                        <div class="w-16 h-1.5 bg-base-200 rounded-full overflow-hidden">
+                          <div
+                            class={`h-full ${percentage > 100 ? 'bg-error' : percentage > 80 ? 'bg-warning' : 'bg-accent'} transition-all duration-300`}
+                            style={`width: ${Math.min(percentage, 100)}%`}
+                            role="progressbar"
+                            aria-valuenow={Math.round(percentage)}
+                            aria-valuemin={0}
+                            aria-valuemax={100}
+                            aria-label={`${Math.round(percentage)}% of budget used`}
+                          />
+                        </div>
+                        <span
+                          class={`text-[10px] font-bold ${percentage > 100 ? 'text-error' : 'text-base-content/60'}`}
+                        >
+                          {Math.round(percentage)}%
+                        </span>
+                      </div>
+                    </td>
+                    <td class="px-6 md:px-8 py-5 md:py-6 text-right">
+                      <div class="inline-flex items-center gap-2">
+                        <button
+                          type="button"
+                          data-edit-budget={budget.category_id}
+                          class="inline-flex items-center gap-1.5 text-base-content/40 hover:text-base-content hover:bg-base-200/50 px-3 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                          aria-label={`Edit ${budget.category_name} budget`}
+                        >
+                          <Pencil size={12} class="stroke-current" aria-hidden="true" />
+                          <span>Edit</span>
+                        </button>
+                        <a
+                          href={detailsUrl}
+                          class="inline-flex items-center gap-1.5 text-base-content/40 hover:text-base-content hover:bg-base-200/50 px-3 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                          aria-label={`View transactions for ${budget.category_name}`}
+                        >
+                          <Eye size={12} class="stroke-current" aria-hidden="true" />
+                          <span>Details</span>
+                        </a>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Hidden "no results" element for client-side filter */}
+        <div
+          data-table-filter-no-results
+          class="hidden text-center py-12 text-base-content/60"
+          aria-live="polite"
+        >
+          <p class="text-lg font-medium">No budgets match your filter</p>
+          <p class="text-sm mt-1">Try a different search term</p>
+        </div>
+      </div>
+    </div>
+  )
+}

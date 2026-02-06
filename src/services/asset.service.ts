@@ -1,9 +1,13 @@
-import { type IDatabase, getActiveSchema } from '@/db';
+import { type IDatabase, getActiveSchema, runTransaction, assets as assetsTable } from '@/db';
 import { eq, and, lte, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { AssetServiceError, ServiceErrorCode } from './service-errors';
 import type { AssetType, Currency } from '@/lib/types/asset';
 import { type PerfCollector, trackQuery } from '@/lib/perf';
+import { decimalCompare, decimalSubtract, decimalAdd } from '@/lib/utils/decimal';
+
+/** Inferred row type for an asset record */
+export type AssetRow = typeof assetsTable.$inferSelect;
 
 export interface CreateAssetInput {
   workspace_id: string;
@@ -235,6 +239,89 @@ export class AssetService {
   }
 
   /**
+   * Transfer balance between two assets of the same currency.
+   * Uses a database transaction for atomicity.
+   */
+  async transfer(
+    fromId: string,
+    toId: string,
+    amount: string,
+    notes: string | undefined,
+    workspaceId: string
+  ): Promise<{ fromAsset: AssetRow | undefined; toAsset: AssetRow | undefined }> {
+    if (fromId === toId) {
+      throw new Error(
+        `Cannot transfer an asset to itself (assetId: ${fromId}, workspaceId: ${workspaceId})`
+      );
+    }
+
+    const fromAsset = await this.findById(fromId, workspaceId);
+    const toAsset = await this.findById(toId, workspaceId);
+
+    if (!fromAsset || !toAsset) {
+      throw new Error('Asset not found');
+    }
+
+    if (fromAsset.currency !== toAsset.currency) {
+      throw new Error('Cannot transfer between different currencies');
+    }
+
+    if (decimalCompare(amount, '0') <= 0) {
+      throw new Error('Transfer amount must be positive');
+    }
+
+    if (decimalCompare(fromAsset.balance, amount) < 0) {
+      throw new Error('Insufficient balance');
+    }
+
+    const newFromBalance = decimalSubtract(fromAsset.balance, amount);
+    const newToBalance = decimalAdd(toAsset.balance, amount);
+    const now = new Date();
+    const fromNote = notes ? `Transfer out: ${notes}` : `Transfer to ${toAsset.name}`;
+    const toNote = notes ? `Transfer in: ${notes}` : `Transfer from ${fromAsset.name}`;
+
+    await runTransaction(this.db, async (tx) => {
+      // Deduct from source
+      await tx
+        .update(this.schema.assets)
+        .set({ balance: newFromBalance, last_updated: now, updated_at: now })
+        .where(
+          and(eq(this.schema.assets.id, fromId), eq(this.schema.assets.workspace_id, workspaceId))
+        );
+
+      await (tx as any).insert(this.schema.assetHistory).values({
+        id: nanoid(),
+        asset_id: fromId,
+        balance: newFromBalance,
+        notes: fromNote,
+        recorded_at: now,
+      });
+
+      // Add to target
+      await tx
+        .update(this.schema.assets)
+        .set({ balance: newToBalance, last_updated: now, updated_at: now })
+        .where(
+          and(eq(this.schema.assets.id, toId), eq(this.schema.assets.workspace_id, workspaceId))
+        );
+
+      await (tx as any).insert(this.schema.assetHistory).values({
+        id: nanoid(),
+        asset_id: toId,
+        balance: newToBalance,
+        notes: toNote,
+        recorded_at: now,
+      });
+    });
+
+    // Return updated assets after the transaction
+    const updatedFrom = await this.findById(fromId, workspaceId);
+    const updatedTo = await this.findById(toId, workspaceId);
+
+    return { fromAsset: updatedFrom, toAsset: updatedTo };
+  }
+
+  /**
    * Delete asset (soft delete)
    */
   async delete(id: string, workspaceId: string) {
@@ -258,7 +345,7 @@ export class AssetService {
   /**
    * Get asset history
    */
-  async getHistory(asset_id: string, workspaceId: string, perf?: PerfCollector) {
+  async getHistory(asset_id: string, workspaceId: string, perf?: PerfCollector, limit?: number) {
     // Verify asset belongs to workspace
     const asset = await this.findById(asset_id, workspaceId);
     if (!asset) {
@@ -269,6 +356,7 @@ export class AssetService {
       const history = await this.db.query.assetHistory.findMany({
         where: eq(this.schema.assetHistory.asset_id, asset_id),
         orderBy: (assetHistory: any, { desc }: any) => [desc(assetHistory.recorded_at)],
+        ...(limit ? { limit } : {}),
       });
 
       return history;

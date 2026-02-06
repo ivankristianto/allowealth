@@ -6,7 +6,7 @@
  * Uses a 12-column grid layout on desktop.
  */
 
-import { Globe, Users, Shield, Lightbulb, Lock } from '@lucide/astro';
+import { Globe, Users, Shield, Lightbulb } from '@lucide/astro';
 import { featureGridItems } from '@/lib/landing-content';
 
 // Map icon names to components
@@ -89,13 +89,6 @@ const iconMap: Record<string, typeof Globe> = {
                   {item.description}
                 </p>
               </div>
-
-              {/* Lock icon decoration for encryption card */}
-              {item.id === 'encryption' && (
-                <div class="hidden md:flex absolute right-8 top-1/2 -translate-y-1/2 w-24 h-24 sm:w-32 sm:h-32 bg-base-200 rounded-3xl items-center justify-center">
-                  <Lock size={48} class="text-base-300 stroke-current" aria-hidden="true" />
-                </div>
-              )}
             </article>
           );
         })

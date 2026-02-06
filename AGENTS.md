@@ -24,6 +24,48 @@ Agents must internalize:
 
 **If constitution conflicts with task instructions, constitution wins.**
 
+## Fix Quality
+
+When fixing bugs, always verify the fix doesn't break existing functionality by running the build and any related tests before presenting the solution. If a fix introduces new errors, diagnose those before suggesting the fix.
+
+- ✅ Run `bun run build` after bug fixes to verify no new errors
+- ✅ Run relevant tests (`bun test`, e2e tests, or integration tests) related to the fix
+- ✅ Test the fix in the browser/application to confirm it works as expected
+- ✅ Check all usages of changed code to ensure no downstream breakage
+- ✅ Run quality gates before committing (lint, typecheck, format)
+- ❌ Suggest fixes without verification
+- ❌ Claim bugs are fixed without running tests
+- ❌ Ignore new errors introduced by fixes
+- ❌ Skip quality gates to move faster
+
+## Planning & Research
+
+When asked to plan or brainstorm (e.g., version upgrades, migration strategies), produce a concrete written plan with actionable steps within the first response. Do not spend the entire session only reading files — summarize findings and deliver the plan incrementally.
+
+- ✅ Deliver a written plan in the first response (not after extensive exploration)
+- ✅ Include actionable steps, timelines, and dependencies
+- ✅ Summarize findings incrementally as you research
+- ✅ Provide context and rationale for recommendations
+- ✅ Update the plan as new information emerges
+- ❌ Spend entire session reading without producing a plan
+- ❌ Delay planning until all possible research is complete
+- ❌ Create vague plans without concrete next steps
+
+## Language & Stack
+
+This is a **TypeScript-primary codebase**. Always prefer TypeScript idioms, use strict types, and ensure any code changes pass `tsc --noEmit` before considering a task complete.
+
+- ✅ Write code in TypeScript with strict type checking
+- ✅ Use `tsc --noEmit` to verify type correctness
+- ✅ Prefer TypeScript over plain JavaScript
+- ✅ Use strict mode and enable `strict: true` in tsconfig
+- ✅ Define explicit types instead of using `any`
+- ✅ Use type inference where appropriate (avoid redundant type annotations)
+- ✅ Import and use project types (`@/lib/auth/lucia`, etc.)
+- ❌ Use `any` type without justification
+- ❌ Skip typecheck in pre-commit
+- ❌ Leave `tsc --noEmit` errors unfixed
+
 ## Do & Don't
 
 ### Session Rules (Every Agent Session)

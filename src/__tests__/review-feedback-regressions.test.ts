@@ -133,16 +133,21 @@ describe('review feedback regressions', () => {
     });
   });
 
-  it('button atom should use CSS utility contracts instead of controlStyles ts constants', () => {
+  it('button atom should use DaisyUI btn class directly (not @apply contracts)', () => {
     const buttonContent = read('src/components/atoms/Button.astro');
     const globalStylesContent = read('src/styles/globals.css');
 
+    // Must NOT use @apply with DaisyUI component classes — breaks CSS cascade
+    // (Tailwind v4 + DaisyUI v5 @apply expands at late CSS position, causing
+    // --btn-fg to override btn-accent text color via source order)
     expect(buttonContent).not.toContain("from '@/lib/ui/controlStyles'");
-    expect(buttonContent).toContain('btn-contract-base');
-    expect(buttonContent).toContain('btn-contract-outline');
-    expect(globalStylesContent).toContain('.btn-contract-base');
-    expect(globalStylesContent).toContain('.btn-contract-outline');
-    expect(globalStylesContent).toContain('@apply');
+    expect(buttonContent).not.toContain('btn-contract-base');
+    expect(buttonContent).not.toContain('btn-contract-outline');
+    expect(globalStylesContent).not.toContain('.btn-contract-base');
+    expect(globalStylesContent).not.toContain('.btn-contract-outline');
+
+    // Must use DaisyUI btn class directly as utility
+    expect(buttonContent).toContain("'btn ");
   });
 
   it('date picker story should use token classes for input styling', () => {

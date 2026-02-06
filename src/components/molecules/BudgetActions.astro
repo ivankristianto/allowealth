@@ -2,122 +2,113 @@
 /**
  * BudgetActions Component
  *
- * Action buttons row for the Budget page containing View History,
- * AI Rebalancer, Copy to Next Month, and Set New Budget buttons.
- * Extracted from BudgetPageHeader for better separation of concerns.
+ * Action buttons row for the Budget page.
+ * Left: Categories, Import, Export, AI Rebalancer
+ * Right: New Budget (accent ghost)
+ * Uses ActionBar for consistent layout.
+ *
+ * Note: History and Copy buttons are in BudgetPageHeader (left of month picker).
  *
  * @param {boolean} showAiRebalancer - Show AI Rebalancer button
- * @param {boolean} showCopyButton - Show Copy to Next Month button
  * @param {string} className - Additional CSS classes
  */
 
-import { Sparkles, History, Plus, Copy, Tags } from '@lucide/astro';
+import { Sparkles, Plus, Tags, Download, Upload } from '@lucide/astro';
 import Modal from '@components/molecules/Modal.astro';
+import ActionBar from './ActionBar.astro';
 
 export interface Props {
   showAiRebalancer?: boolean;
-  showCopyButton?: boolean;
   className?: string;
 }
 
-const { showAiRebalancer = true, showCopyButton = false, className = '' } = Astro.props;
+const { showAiRebalancer = true, className = '' } = Astro.props;
 
-const containerClasses = [
-  // Card styling
-  'bg-base-100 rounded-card border border-base-300 shadow-sm',
-  // Responsive padding - compact on mobile
-  'p-2 md:p-4 lg:p-6',
-  // Layout - nowrap on mobile for single row, wrap on larger screens
-  'flex items-center gap-1 md:gap-3 md:flex-wrap',
-  // Additional classes
-  className,
-]
-  .filter(Boolean)
-  .join(' ');
+const ghostBtn =
+  'btn btn-ghost btn-sm md:btn-md min-h-[44px] min-w-[44px] gap-1 md:gap-2 rounded-lg md:rounded-xl text-base-content/70 hover:text-base-content hover:bg-base-200 px-2 md:px-4';
+
+const accentGhostBtn =
+  'btn btn-ghost btn-sm md:btn-md min-h-[44px] min-w-[44px] gap-1 md:gap-2 rounded-lg md:rounded-xl text-accent hover:text-accent hover:bg-accent/10 px-2 md:px-4 font-semibold';
 ---
 
-{/* P2 TODO: Consider using <nav aria-label="Budget actions"> for better semantics */}
-<div class={containerClasses}>
-  {/* Secondary Actions - Ghost style, icon-only on mobile */}
-  <div class="flex items-center gap-1 md:gap-2">
-    {/* View History */}
-    <a
-      href="/budget/history"
-      class="btn btn-ghost btn-sm md:btn-md gap-1 md:gap-2 rounded-lg md:rounded-xl text-base-content/70 hover:text-base-content hover:bg-base-200 px-2 md:px-4"
-      aria-label="View budget history"
-      title="History"
-    >
-      <History size={16} class="stroke-current md:hidden" aria-hidden="true" />
-      <History size={18} class="stroke-current hidden md:block" aria-hidden="true" />
-      <span class="hidden md:inline">History</span>
-    </a>
-
-    {/* Categories */}
-    <a
-      href="/budget/categories"
-      class="btn btn-ghost btn-sm md:btn-md gap-1 md:gap-2 rounded-lg md:rounded-xl text-base-content/70 hover:text-base-content hover:bg-base-200 px-2 md:px-4"
-      aria-label="Manage categories"
-      title="Categories"
-    >
+<ActionBar className={className} ariaLabel="Budget actions">
+  {/* Categories */}
+  <div class="tooltip tooltip-bottom" data-tip="Manage categories">
+    <a href="/budget/categories" class={ghostBtn} aria-label="Manage categories">
       <Tags size={16} class="stroke-current md:hidden" aria-hidden="true" />
       <Tags size={18} class="stroke-current hidden md:block" aria-hidden="true" />
       <span class="hidden md:inline">Categories</span>
     </a>
+  </div>
 
-    {/* AI Rebalancer */}
-    {
-      showAiRebalancer && (
+  {/* Import */}
+  <div class="tooltip tooltip-bottom" data-tip="Import budgets from CSV">
+    <button
+      type="button"
+      class={ghostBtn}
+      aria-label="Import budgets from CSV"
+      data-budget-import-btn
+      data-testid="budget-import-btn"
+    >
+      <Upload size={16} class="stroke-current md:hidden" aria-hidden="true" />
+      <Upload size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+      <span>Import</span>
+    </button>
+  </div>
+
+  {/* Export */}
+  <div class="tooltip tooltip-bottom" data-tip="Export budgets to CSV">
+    <button
+      type="button"
+      class={ghostBtn}
+      aria-label="Export budgets to CSV"
+      data-budget-export-btn
+      data-testid="budget-export-btn"
+    >
+      <Download size={16} class="stroke-current md:hidden" aria-hidden="true" />
+      <Download size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+      <span>Export</span>
+    </button>
+  </div>
+
+  {/* AI Rebalancer */}
+  {
+    showAiRebalancer && (
+      <div class="tooltip tooltip-bottom" data-tip="AI budget rebalancer">
         <button
           type="button"
-          class="btn btn-ghost btn-sm md:btn-md gap-1 md:gap-2 rounded-lg md:rounded-xl text-accent hover:text-accent hover:bg-accent/10 px-2 md:px-4"
+          class="btn btn-ghost btn-sm md:btn-md min-h-[44px] min-w-[44px] gap-1 md:gap-2 rounded-lg md:rounded-xl text-accent hover:text-accent hover:bg-accent/10 px-2 md:px-4"
           id="ai-rebalancer-btn"
           data-target-modal="ai-rebalancer-modal"
           aria-label="AI budget rebalancer"
-          title="AI Rebalancer"
         >
           <Sparkles size={16} class="stroke-current md:hidden" aria-hidden="true" />
           <Sparkles size={18} class="stroke-current hidden md:block" aria-hidden="true" />
           <span class="hidden md:inline">AI Rebalancer</span>
         </button>
-      )
-    }
+      </div>
+    )
+  }
 
-    {/* Copy to Next Month */}
-    {
-      showCopyButton && (
-        <button
-          type="button"
-          class="btn btn-ghost btn-sm md:btn-md gap-1 md:gap-2 rounded-lg md:rounded-xl text-base-content/70 hover:text-base-content hover:bg-base-200 px-2 md:px-4"
-          id="copy-budgets-btn"
-          data-target-modal="copy-budget-modal"
-          aria-label="Copy budgets to next month"
-          title="Copy to Next Month"
-        >
-          <Copy size={16} class="stroke-current md:hidden" aria-hidden="true" />
-          <Copy size={18} class="stroke-current hidden md:block" aria-hidden="true" />
-          <span class="hidden md:inline">Copy</span>
-        </button>
-      )
-    }
+  {/* Primary Action - New Budget */}
+  <div slot="primary" class="tooltip tooltip-bottom" data-tip="Set new budget">
+    <button
+      type="button"
+      class={accentGhostBtn}
+      id="set-new-budget-btn"
+      data-testid="set-new-budget-btn"
+      data-target-modal="set-new-budget-modal"
+      aria-label="Set new budget"
+    >
+      <Plus size={16} class="stroke-current md:hidden" aria-hidden="true" />
+      <Plus size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+      <span class="hidden sm:inline">New Budget</span>
+      <span class="sm:hidden">New</span>
+    </button>
   </div>
+</ActionBar>
 
-  {/* Primary Action - Pushed to right */}
-  <button
-    type="button"
-    class="btn btn-accent btn-sm md:btn-md ml-auto gap-1 md:gap-2 rounded-lg md:rounded-xl font-semibold px-3 md:px-4"
-    id="set-new-budget-btn"
-    data-testid="set-new-budget-btn"
-    data-target-modal="set-new-budget-modal"
-    aria-label="Set new budget"
-  >
-    <Plus size={16} class="stroke-current md:hidden" aria-hidden="true" />
-    <Plus size={18} class="stroke-current hidden md:block" aria-hidden="true" />
-    <span class="hidden sm:inline">New Budget</span>
-    <span class="sm:hidden">New</span>
-  </button>
-</div>
-
-{/* AI Rebalancer Coming Soon Modal - Using Modal Component */}
+{/* AI Rebalancer Coming Soon Modal */}
 {
   showAiRebalancer && (
     <Modal
@@ -149,16 +140,12 @@ const containerClasses = [
 }
 
 <script>
-  // P3 TODO: Consider moving this script to a separate .client.ts file for better TypeScript support
-  // P1: Use data-target-modal attribute to decouple from hardcoded modal IDs
-  // Store handler references for cleanup to prevent memory leaks
   const handlerMap = new WeakMap<HTMLElement, (e: Event) => void>();
 
   function initModalTriggerButton(buttonId: string) {
     const btn = document.getElementById(buttonId);
     if (!btn) return;
 
-    // Skip if already initialized
     if (handlerMap.has(btn)) return;
 
     const handler = (e: Event) => {
@@ -177,7 +164,7 @@ const containerClasses = [
   }
 
   function cleanupBudgetActionButtons() {
-    ['set-new-budget-btn', 'copy-budgets-btn', 'ai-rebalancer-btn'].forEach((buttonId) => {
+    ['set-new-budget-btn', 'ai-rebalancer-btn'].forEach((buttonId) => {
       const btn = document.getElementById(buttonId);
       if (btn) {
         const handler = handlerMap.get(btn);
@@ -191,20 +178,16 @@ const containerClasses = [
 
   function initBudgetActionButtons() {
     initModalTriggerButton('set-new-budget-btn');
-    initModalTriggerButton('copy-budgets-btn');
     initModalTriggerButton('ai-rebalancer-btn');
   }
 
-  // Register cleanup handler (must re-register after each page load since it's once)
   function registerCleanup() {
     document.addEventListener('astro:before-swap', cleanupBudgetActionButtons, { once: true });
   }
 
-  // Initialize
   initBudgetActionButtons();
   registerCleanup();
 
-  // Re-initialize on Astro page transitions
   document.addEventListener('astro:page-load', () => {
     initBudgetActionButtons();
     registerCleanup();

@@ -13,6 +13,7 @@ import AssetPortfolioSummary from '@components/organisms/AssetPortfolioSummary.a
 import AssetGroupCard from '@components/organisms/AssetGroupCard.astro';
 import AssetItemRow from '@components/molecules/AssetItemRow.astro';
 import AssetFormModal from '@components/organisms/AssetFormModal.astro';
+import AssetTransferModal from '@components/organisms/AssetTransferModal.astro';
 import AssetDeleteConfirmModal from '@components/organisms/AssetDeleteConfirmModal.astro';
 import AssetHistoryModal from '@components/organisms/AssetHistoryModal.astro';
 import AssetUpdateValueModal from '@components/organisms/AssetUpdateValueModal.astro';
@@ -289,9 +290,34 @@ const sortedGroups = Object.entries(assetsByType)
   </div>
 
   {/* Asset Modals */}
+  <AssetTransferModal
+    id="asset-transfer-modal"
+    assets={assets.map((a) => ({
+      id: a.id,
+      name: a.name,
+      currency: a.currency,
+      balance: a.balance,
+    }))}
+  />
   <AssetFormModal id="asset-form-modal" mode="add" categories={categories} />
   <AssetCategoryModal id="asset-category-modal" />
   <AssetDeleteConfirmModal id="asset-delete-modal" />
   <AssetHistoryModal id="asset-history-modal" />
   <AssetUpdateValueModal id="asset-update-value-modal" />
 </ProtectedLayout>
+
+<script>
+  import { initInlineHistory } from '@/components/molecules/AssetInlineHistory.client';
+
+  function init() {
+    initInlineHistory();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+
+  document.addEventListener('astro:page-load', init);
+</script>

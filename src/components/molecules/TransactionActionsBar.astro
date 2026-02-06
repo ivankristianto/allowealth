@@ -2,83 +2,84 @@
 /**
  * Transaction Actions Bar Component
  *
- * Action bar with Scan Receipt, Import CSV, and Export CSV buttons.
- * Displayed above the transaction filters bar.
+ * Action bar with Add Expense, Add Income, Scan Receipt, Import CSV,
+ * and Export CSV buttons. Uses ActionBar for consistent layout.
  */
 
 import { Sparkles, Upload, Download, CircleMinus, CirclePlus } from '@lucide/astro';
+import ActionBar from './ActionBar.astro';
 
 export interface Props {
   className?: string;
 }
 
 const { className = '' } = Astro.props;
+
+const ghostBtn =
+  'btn btn-ghost btn-sm md:btn-md min-h-[44px] min-w-[44px] gap-1 md:gap-2 rounded-lg md:rounded-xl text-base-content/70 hover:text-base-content hover:bg-base-200 px-2 md:px-4';
+
+const accentGhostBtn =
+  'btn btn-ghost btn-sm md:btn-md min-h-[44px] min-w-[44px] gap-1 md:gap-2 rounded-lg md:rounded-xl text-accent hover:text-accent hover:bg-accent/10 px-2 md:px-4 font-semibold';
 ---
 
-<div
-  class:list={[
-    'card bg-base-100 border border-base-300 rounded-card shadow-sm p-4 sm:p-6',
-    'flex flex-col sm:flex-row items-center justify-between gap-4',
-    className,
-  ]}
-  data-transaction-actions-bar
->
-  <!-- Left side: Add Expense / Income + Scan Receipt -->
-  <div class="flex items-center gap-3">
+<ActionBar className={className} ariaLabel="Transaction actions">
+  {/* Import CSV */}
+  <div class="tooltip tooltip-bottom" data-tip="Import transactions from CSV">
     <button
       type="button"
-      class="flex items-center gap-2 px-5 py-3 bg-error/10 text-error rounded-full text-sm font-bold border border-error/20 transition-all hover:bg-error/15 hover:border-error/30 active:scale-95 min-h-[44px]"
-      data-add-expense-button
-      aria-label="Add expense"
+      class={ghostBtn}
+      data-import-csv-button
+      aria-label="Import CSV"
+      data-transaction-actions-bar
     >
-      <CircleMinus size={18} class="stroke-current" aria-hidden="true" />
-      <span>Expense</span>
+      <Upload size={16} class="stroke-current md:hidden" aria-hidden="true" />
+      <Upload size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+      <span class="hidden md:inline">Import</span>
     </button>
+  </div>
 
+  {/* Export CSV */}
+  <div class="tooltip tooltip-bottom" data-tip="Export transactions to CSV">
+    <button type="button" class={ghostBtn} data-export-csv-button aria-label="Export CSV">
+      <Download size={16} class="stroke-current md:hidden" aria-hidden="true" />
+      <Download size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+      <span class="hidden md:inline">Export</span>
+    </button>
+  </div>
+
+  {/* Scan Receipt */}
+  <div class="tooltip tooltip-bottom" data-tip="Scan receipt with AI">
     <button
       type="button"
-      class="flex items-center gap-2 px-5 py-3 bg-success/10 text-success rounded-2xl text-sm font-bold border border-success transition-all hover:bg-success/15 hover:border-success active:scale-95 min-h-[44px]"
-      data-add-income-button
-      aria-label="Add income"
-    >
-      <CirclePlus size={18} class="stroke-current" aria-hidden="true" />
-      <span>Income</span>
-    </button>
-
-    <button
-      type="button"
-      class="flex items-center gap-2 px-5 py-3 bg-accent/10 text-accent rounded-2xl text-sm font-bold border border-accent transition-all hover:bg-accent/15 hover:border-accent active:scale-95 group min-h-[44px]"
+      class="btn btn-ghost btn-sm md:btn-md min-h-[44px] min-w-[44px] gap-1 md:gap-2 rounded-lg md:rounded-xl text-accent hover:text-accent hover:bg-accent/10 px-2 md:px-4"
       data-scan-receipt-button
       aria-label="Scan receipt"
     >
-      <Sparkles size={18} class="stroke-current group-hover:animate-pulse" aria-hidden="true" />
-      <span class="hidden sm:inline">Scan Receipt</span>
+      <Sparkles size={16} class="stroke-current md:hidden" aria-hidden="true" />
+      <Sparkles size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+      <span class="hidden md:inline">Scan Receipt</span>
     </button>
   </div>
 
-  <!-- Right side: Import & Export -->
-  <div class="flex items-center gap-3">
-    <button
-      type="button"
-      class="btn btn-soft rounded-2xl px-5 h-12 text-sm font-bold transition-all active:scale-95"
-      data-import-csv-button
-      aria-label="Import CSV"
-    >
-      <Upload size={16} class="stroke-current" aria-hidden="true" />
-      <span>Import CSV</span>
-    </button>
+  {/* Right side: Expense + Income with accent ghost style */}
+  <div slot="primary" class="flex items-center gap-1 md:gap-2">
+    <div class="tooltip tooltip-bottom" data-tip="Add new expense">
+      <button type="button" class={accentGhostBtn} data-add-expense-button aria-label="Add expense">
+        <CircleMinus size={16} class="stroke-current md:hidden" aria-hidden="true" />
+        <CircleMinus size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+        <span class="hidden md:inline">Expense</span>
+      </button>
+    </div>
 
-    <button
-      type="button"
-      class="btn btn-soft rounded-2xl px-5 h-12 text-sm font-bold transition-all active:scale-95"
-      data-export-csv-button
-      aria-label="Export CSV"
-    >
-      <Download size={16} class="stroke-current" aria-hidden="true" />
-      <span>Export CSV</span>
-    </button>
+    <div class="tooltip tooltip-bottom" data-tip="Add new income">
+      <button type="button" class={accentGhostBtn} data-add-income-button aria-label="Add income">
+        <CirclePlus size={16} class="stroke-current md:hidden" aria-hidden="true" />
+        <CirclePlus size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+        <span class="hidden md:inline">Income</span>
+      </button>
+    </div>
   </div>
-</div>
+</ActionBar>
 
 <script>
   import { addToast } from '@/lib/stores/toastStore';
@@ -89,12 +90,16 @@ const { className = '' } = Astro.props;
     ) as HTMLElement | null;
     if (!actionsBar) return;
 
+    // Use closest ActionBar container for scoped queries
+    const container = actionsBar.closest('[role="toolbar"]');
+    if (!container) return;
+
     // Prevent duplicate initialization
-    if (actionsBar.dataset.initialized === 'true') return;
-    actionsBar.dataset.initialized = 'true';
+    if ((container as HTMLElement).dataset.initialized === 'true') return;
+    (container as HTMLElement).dataset.initialized = 'true';
 
     // Add Expense button
-    const addExpenseBtn = actionsBar.querySelector('[data-add-expense-button]');
+    const addExpenseBtn = container.querySelector('[data-add-expense-button]');
     addExpenseBtn?.addEventListener('click', () => {
       const modal = document.getElementById('expense-modal') as HTMLDialogElement | null;
       if (modal) {
@@ -103,7 +108,7 @@ const { className = '' } = Astro.props;
     });
 
     // Add Income button
-    const addIncomeBtn = actionsBar.querySelector('[data-add-income-button]');
+    const addIncomeBtn = container.querySelector('[data-add-income-button]');
     addIncomeBtn?.addEventListener('click', () => {
       const modal = document.getElementById('income-modal') as HTMLDialogElement | null;
       if (modal) {
@@ -112,19 +117,19 @@ const { className = '' } = Astro.props;
     });
 
     // Scan Receipt button
-    const scanBtn = actionsBar.querySelector('[data-scan-receipt-button]');
+    const scanBtn = container.querySelector('[data-scan-receipt-button]');
     scanBtn?.addEventListener('click', () => {
       addToast('Receipt scanning coming soon!', 'info');
     });
 
     // Import CSV button
-    const importBtn = actionsBar.querySelector('[data-import-csv-button]');
+    const importBtn = container.querySelector('[data-import-csv-button]');
     importBtn?.addEventListener('click', () => {
-      addToast('CSV import coming soon!', 'info');
+      window.location.href = '/transactions/import';
     });
 
     // Export CSV button
-    const exportBtn = actionsBar.querySelector('[data-export-csv-button]');
+    const exportBtn = container.querySelector('[data-export-csv-button]');
     exportBtn?.addEventListener('click', async () => {
       try {
         // Get current filters from URL

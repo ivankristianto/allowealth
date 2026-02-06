@@ -249,11 +249,7 @@ body {
   max-width: var(--layout-container-max-width);
 }
 
-/* Button style contracts (shared class groups) */
-.btn-contract-base {
-  @apply btn inline-flex items-center justify-center gap-2 rounded-2xl font-medium;
-}
-
-.btn-contract-outline {
-  @apply btn-outline border border-accent text-accent hover:bg-accent/10 hover:border-accent;
-}
+/* NOTE: Do NOT use @apply with DaisyUI component classes (btn, btn-outline, etc.).
+   Tailwind v4 + DaisyUI v5 @apply expands these styles at a late CSS position,
+   causing cascade ordering issues (e.g. --btn-fg override breaks btn-accent text color).
+   Always use DaisyUI classes directly as utility classes on elements. */
