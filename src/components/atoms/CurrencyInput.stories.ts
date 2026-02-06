@@ -52,11 +52,11 @@ const createCurrencyInput = (args: {
   }
 
   const join = document.createElement('div');
-  join.className = 'join w-full';
+  join.className = 'join w-full rounded-lg';
 
   const currencySelect = document.createElement('select');
   currencySelect.className =
-    'select select-bordered join-item h-14 w-20 min-w-20 bg-base-200 text-sm font-bold rounded-l-full border-0 focus:ring-2 focus:ring-accent focus:ring-opacity-20 focus:outline-none focus:ring-offset-2';
+    'select select-bordered join-item h-14 w-20 min-w-20 rounded-l-lg border border-base-300 bg-base-200 text-sm font-bold focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2';
   currencySelect.disabled = disabled;
   currencySelect.setAttribute('aria-label', 'Currency');
 
@@ -78,8 +78,8 @@ const createCurrencyInput = (args: {
   amountInput.disabled = disabled;
   amountInput.placeholder = '0.00';
   amountInput.className = [
-    'input input-bordered join-item w-full h-14 bg-base-200 text-base font-bold rounded-r-full border-0',
-    'focus:ring-2 focus:ring-accent focus:ring-opacity-20 focus:outline-none focus:ring-offset-2',
+    'input input-bordered join-item w-full h-14 rounded-r-lg border border-base-300 bg-base-200 text-base font-bold',
+    'focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2',
     error ? 'input-error' : '',
     disabled ? 'opacity-50 cursor-not-allowed' : '',
   ]

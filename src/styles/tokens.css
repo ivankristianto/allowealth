@@ -457,6 +457,11 @@
   line-height: var(--leading-normal);
 }
 
+.token-text-base {
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
+}
+
 .token-mt-6 {
   margin-top: var(--spacing-6);
 }
@@ -483,4 +488,43 @@
 
 .token-stack-sm > * + * {
   margin-top: var(--spacing-3);
+}
+
+.token-input-surface-base {
+  @apply border border-base-300 bg-base-200 text-base-content;
+}
+
+.token-input-surface-default {
+  @apply border border-base-300 bg-base-100 text-base-content;
+}
+
+.token-input-focus-accent {
+  @apply focus:outline-none focus:border-accent focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2;
+}
+
+.token-input-height-xl {
+  height: var(--spacing-14);
+}
+
+.token-input-padding-xl {
+  padding-left: var(--spacing-6);
+  padding-right: var(--spacing-6);
+}
+
+.token-input-padding-search-compact {
+  padding: var(--spacing-2) var(--spacing-3) var(--spacing-2) var(--spacing-8);
+}
+
+.token-input-padding-search-default {
+  padding: var(--spacing-2_5) var(--spacing-3) var(--spacing-2_5) var(--spacing-10);
+}
+
+@media (width >= 640px) {
+  .token-input-padding-search-default {
+    padding: var(--spacing-3) var(--spacing-4) var(--spacing-3) var(--spacing-11);
+  }
+}
+
+.token-placeholder-muted {
+  @apply placeholder:text-base-content/40;
 }

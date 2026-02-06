@@ -82,8 +82,8 @@ const createCategorySelect = (args: {
     'py-4 pl-6 pr-10',
     'text-base font-bold',
     'bg-base-200',
-    'rounded-full border-0',
-    'focus:ring-2 focus:ring-accent focus:ring-opacity-20 focus:outline-none focus:ring-offset-2',
+    'rounded-lg border border-base-300',
+    'focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2',
     error ? 'select-error border-error' : '',
     disabled ? 'opacity-50 cursor-not-allowed' : '',
   ]
