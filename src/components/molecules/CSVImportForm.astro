@@ -36,6 +36,7 @@ import {
   List,
   CircleX,
   TriangleAlert,
+  Upload,
 } from '@lucide/astro';
 
 export interface Props {
@@ -51,7 +52,7 @@ const cspNonce = Astro.locals.cspNonce || '';
 <!-- Hidden form for actual submission -->
 <form
   id="csv-import-form"
-  action={action}
+  data-action={action}
   method="POST"
   enctype="multipart/form-data"
   class="hidden"
@@ -85,25 +86,22 @@ const cspNonce = Astro.locals.cspNonce || '';
       >
         Upload CSV File
       </Label>
-      <input
-        id="csv-file-input"
-        name="csv_file"
-        type="file"
-        accept=".csv"
-        class="file-input file-input-bordered w-full"
+      <div
+        id="csv-drop-zone"
+        class="border-2 border-dashed border-base-300 rounded-2xl p-8 text-center hover:border-accent/50 focus-visible:outline-2 focus-visible:outline-accent transition-colors cursor-pointer"
+        tabindex="0"
+        role="button"
+        aria-label="Upload CSV file. Drop a file or press Enter to browse"
         aria-describedby="file-error"
-      />
-      <div class="text-sm text-base-content/60 mt-2">
-        <p class="font-medium mb-1">Expected CSV format:</p>
-        <ul class="list-disc list-inside space-y-0.5 text-xs">
-          <li>date (YYYY-MM-DD format)</li>
-          <li>type (expense or income)</li>
-          <li>amount (numeric value)</li>
-          <li>currency (IDR or USD)</li>
-          <li>category (category name)</li>
-          <li>asset (asset/account name)</li>
-          <li>description (optional notes)</li>
-        </ul>
+      >
+        <Upload size={32} class="stroke-base-content/40 mx-auto mb-3" aria-hidden="true" />
+        <p class="text-base-content/70 font-medium">
+          Drop CSV file here or <span class="text-accent underline">browse</span>
+        </p>
+        <p class="text-xs text-base-content/40 mt-2">
+          Expected columns: date, type, amount, currency, category, asset, description
+        </p>
+        <input id="csv-file-input" name="csv_file" type="file" accept=".csv" class="hidden" />
       </div>
       <!-- Error message container -->
       <div id="file-error" class="text-error text-sm mt-2 hidden" role="alert"></div>
@@ -353,9 +351,19 @@ const cspNonce = Astro.locals.cspNonce || '';
       return clone;
     }
 
+    // Get action URL from the hidden form's data attribute
+    const importForm = document.getElementById('csv-import-form');
+    const action = importForm ? importForm.getAttribute('data-action') || '' : '';
+
+    if (!action) {
+      console.error('CSVImportForm: missing data-action attribute on #csv-import-form');
+      return;
+    }
+
     // DOM Elements - Upload Step
     const fileInput = document.getElementById('csv-file-input');
     const fileError = document.getElementById('file-error');
+    const dropZone = document.getElementById('csv-drop-zone');
     const stepUpload = document.getElementById('step-upload');
     const loadingState = document.getElementById('loading-state');
     const previewSection = document.getElementById('preview-section');
@@ -417,14 +425,14 @@ const cspNonce = Astro.locals.cspNonce || '';
     function showError(message) {
       fileError.textContent = message;
       fileError.classList.remove('hidden');
-      fileInput.classList.add('input-error');
+      dropZone.classList.add('border-error');
     }
 
     // Hide error message
     function hideError() {
       fileError.textContent = '';
       fileError.classList.add('hidden');
-      fileInput.classList.remove('input-error');
+      dropZone.classList.remove('border-error');
     }
 
     // CSV Parser
@@ -805,58 +813,90 @@ const cspNonce = Astro.locals.cspNonce || '';
       }
     }
 
-    // Handle file selection
-    fileInput.addEventListener('change', async function (e) {
-      const file = e.target.files[0];
+    // Drop zone: click to browse
+    dropZone.addEventListener('click', function () {
+      fileInput.click();
+    });
 
-      if (!file) {
-        return;
+    // Drop zone: keyboard support (Enter/Space)
+    dropZone.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        fileInput.click();
       }
+    });
 
+    // Drop zone: drag events
+    dropZone.addEventListener('dragover', function (e) {
+      e.preventDefault();
+      dropZone.classList.add('border-accent');
+    });
+
+    dropZone.addEventListener('dragleave', function () {
+      dropZone.classList.remove('border-accent');
+    });
+
+    dropZone.addEventListener('drop', function (e) {
+      e.preventDefault();
+      dropZone.classList.remove('border-accent');
+      var file = e.dataTransfer && e.dataTransfer.files[0];
+      if (file) {
+        // Validate file type
+        if (!file.name.toLowerCase().endsWith('.csv')) {
+          showError('Please select a CSV file');
+          return;
+        }
+        handleFile(file);
+      }
+    });
+
+    // Shared file handler
+    function handleFile(file) {
       hideError();
       loadingState.classList.remove('hidden');
       previewSection.classList.add('hidden');
 
-      try {
-        const text = await file.text();
+      file
+        .text()
+        .then(function (text) {
+          if (!text.trim()) {
+            throw new Error('File is empty');
+          }
 
-        if (!text.trim()) {
-          throw new Error('File is empty');
-        }
+          var lines = parseCSV(text);
 
-        // Parse CSV
-        const lines = parseCSV(text);
+          if (lines.length < 2) {
+            throw new Error('CSV file must contain at least a header row and one data row');
+          }
 
-        if (lines.length < 2) {
-          throw new Error('CSV file must contain at least a header row and one data row');
-        }
+          var headers = lines[0].map(function (h) {
+            return h.trim();
+          });
+          var rows = lines.slice(1);
 
-        const headers = lines[0].map((h) => h.trim());
-        const rows = lines.slice(1);
+          csvData = { file: file, headers: headers, rows: rows };
 
-        // Store CSV data
-        csvData = {
-          file: file,
-          headers: headers,
-          rows: rows,
-        };
+          var issues = validateCSVStructure(headers, rows);
 
-        // Validate structure
-        const issues = validateCSVStructure(headers, rows);
+          fileInfoText.textContent =
+            'Found ' + rows.length + ' rows with ' + headers.length + ' columns';
+          renderPreview(headers, rows);
+          renderValidation(issues);
 
-        // Update UI
-        fileInfoText.textContent = `Found ${rows.length} rows with ${headers.length} columns`;
-        renderPreview(headers, rows);
-        renderValidation(issues);
+          loadingState.classList.add('hidden');
+          showStep('preview');
+        })
+        .catch(function (err) {
+          loadingState.classList.add('hidden');
+          showStep('upload');
+          showError(err.message || 'Failed to parse CSV file');
+        });
+    }
 
-        // Show preview step
-        loadingState.classList.add('hidden');
-        showStep('preview');
-      } catch (err) {
-        loadingState.classList.add('hidden');
-        showStep('upload');
-        showError(err.message || 'Failed to parse CSV file');
-      }
+    // Handle file selection via input
+    fileInput.addEventListener('change', function (e) {
+      var file = e.target.files[0];
+      if (file) handleFile(file);
     });
 
     // Reset button
@@ -920,16 +960,25 @@ const cspNonce = Astro.locals.cspNonce || '';
           formData.append(`map_${key}`, value);
         });
 
-        // Get CSRF token from cookie (inline since this is an is:inline script)
-        const csrfToken =
-          document.cookie
-            .split('; ')
-            .find((row) => row.startsWith('csrf_token='))
-            ?.split('=')[1] || '';
+        // Get CSRF token from cookie (inline — can't import csrf-client)
+        let csrfToken = '';
+        const cookies = document.cookie.split(';');
+        for (let ci = 0; ci < cookies.length; ci++) {
+          const cookie = cookies[ci].trim();
+          const eqIdx = cookie.indexOf('=');
+          if (eqIdx === -1) continue;
+          const name = cookie.substring(0, eqIdx);
+          const value = cookie.substring(eqIdx + 1);
+          if (name === 'csrf_token') {
+            csrfToken = decodeURIComponent(value);
+            break;
+          }
+        }
 
         // Send import request
         const response = await fetch(action, {
           method: 'POST',
+          credentials: 'include',
           headers: {
             'X-CSRF-Token': csrfToken,
           },

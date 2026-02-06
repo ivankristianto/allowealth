@@ -56,7 +56,7 @@ const historyEntries: AssetHistoryOutput[] = history.map((entry) => ({
       </a>
       <div>
         <h2 class="text-2xl font-bold">{asset.name} - History</h2>
-        <p class="text-neutral-600">
+        <p class="text-base-content/70">
           {formatAssetType(asset.type)} • {asset.currency}
         </p>
       </div>
@@ -66,14 +66,14 @@ const historyEntries: AssetHistoryOutput[] = history.map((entry) => ({
     <div class="card bg-base-100 shadow border border-base-300">
       <div class="card-body py-4">
         <div class="flex items-center justify-between">
-          <span class="text-neutral-600">Current Balance</span>
+          <span class="text-base-content/70">Current Balance</span>
           <span
             class={`text-3xl font-bold ${asset.currency === 'IDR' ? 'text-success' : 'text-info'}`}
           >
             {formatCurrency(asset.balance, asset.currency)}
           </span>
         </div>
-        <div class="text-sm text-neutral-500 mt-2">
+        <div class="text-sm text-base-content/60 mt-2">
           Last updated: {new Date(asset.last_updated).toLocaleString()}
         </div>
       </div>
@@ -96,7 +96,7 @@ const historyEntries: AssetHistoryOutput[] = history.map((entry) => ({
               {historyEntries.map((entry, index) => (
                 <div class="px-6 py-4 space-y-2">
                   <div class="flex items-center justify-between">
-                    <span class="text-sm text-neutral-500">
+                    <span class="text-sm text-base-content/60">
                       Entry #{historyEntries.length - index}
                     </span>
                     <span
@@ -106,12 +106,12 @@ const historyEntries: AssetHistoryOutput[] = history.map((entry) => ({
                     </span>
                   </div>
                   <div class="flex items-center justify-between text-sm">
-                    <span class="text-neutral-600">Date</span>
+                    <span class="text-base-content/70">Date</span>
                     <span>{new Date(entry.recorded_at).toLocaleString()}</span>
                   </div>
                   {entry.notes && (
                     <div class="text-sm">
-                      <span class="text-neutral-600">Notes:</span>
+                      <span class="text-base-content/70">Notes:</span>
                       <span class="ml-2">{entry.notes}</span>
                     </div>
                   )}
@@ -133,14 +133,14 @@ const historyEntries: AssetHistoryOutput[] = history.map((entry) => ({
                 <tbody>
                   {historyEntries.map((entry, index) => (
                     <tr>
-                      <td class="text-neutral-500">{historyEntries.length - index}</td>
+                      <td class="text-base-content/60">{historyEntries.length - index}</td>
                       <td>{new Date(entry.recorded_at).toLocaleString()}</td>
                       <td
                         class={`font-semibold ${asset.currency === 'IDR' ? 'text-success' : 'text-info'}`}
                       >
                         {formatCurrency(entry.balance, asset.currency)}
                       </td>
-                      <td class="text-neutral-600">{entry.notes || '-'}</td>
+                      <td class="text-base-content/70">{entry.notes || '-'}</td>
                     </tr>
                   ))}
                 </tbody>

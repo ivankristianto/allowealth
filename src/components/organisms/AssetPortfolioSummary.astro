@@ -153,11 +153,11 @@ const cardClasses = [
       <div class="space-y-8">
         {/* Total Values */}
         <div class="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
-          {/* Total Value (IDR) */}
+          {/* Total Assets (IDR) */}
           <div class="flex items-center justify-between" data-testid="portfolio-total-idr">
             <div>
               <StatLabel size="sm" className="uppercase tracking-widest">
-                Total Value (IDR)
+                Total Assets (IDR)
               </StatLabel>
               <p class="text-2xl lg:text-3xl font-bold mt-2 lg:mt-3 text-success tracking-tight leading-none">
                 {formatCurrency(totalIdr, 'IDR')}
@@ -168,11 +168,11 @@ const cardClasses = [
             </div>
           </div>
 
-          {/* Total Value (USD) */}
+          {/* Total Assets (USD) */}
           <div class="flex items-center justify-between" data-testid="portfolio-total-usd">
             <div>
               <StatLabel size="sm" className="uppercase tracking-widest">
-                Total Value (USD)
+                Total Assets (USD)
               </StatLabel>
               <p class="text-2xl lg:text-3xl font-bold mt-2 lg:mt-3 text-info tracking-tight leading-none">
                 {formatCurrency(totalUsd, 'USD')}
@@ -198,29 +198,27 @@ const cardClasses = [
         {/* Asset Allocation */}
         {displayDistribution.length > 0 && (
           <div class="space-y-4 pt-6 border-t border-base-200">
-            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-              <h3 class="font-bold text-sm uppercase tracking-wider text-base-content">
-                Asset Allocation
-              </h3>
+            <h3 class="font-bold text-sm uppercase tracking-wider text-base-content">
+              Asset Allocation
+            </h3>
 
-              {/* Legend - horizontal scrollable on mobile */}
-              <div class="flex gap-4 lg:gap-6 overflow-x-auto hide-scrollbar pb-1 w-full sm:w-auto">
-                {displayDistribution.map((item) => {
-                  const safeColor = sanitizeColor(item.color);
-                  return (
-                    <div class="flex items-center gap-1.5 shrink-0">
-                      <div
-                        class="w-2 h-2 rounded-full"
-                        style={`background-color: ${safeColor};`}
-                        aria-hidden="true"
-                      />
-                      <span class="text-[10px] font-bold text-base-content/60 uppercase tracking-widest whitespace-nowrap">
-                        {item.type} ({item.percentage}%)
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
+            {/* Legend */}
+            <div class="flex flex-wrap gap-3 lg:gap-4">
+              {displayDistribution.map((item) => {
+                const safeColor = sanitizeColor(item.color);
+                return (
+                  <div class="flex items-center gap-1.5">
+                    <div
+                      class="w-2 h-2 rounded-full"
+                      style={`background-color: ${safeColor};`}
+                      aria-hidden="true"
+                    />
+                    <span class="text-[10px] font-bold text-base-content/60 uppercase tracking-widest whitespace-nowrap">
+                      {item.type} ({item.percentage}%)
+                    </span>
+                  </div>
+                );
+              })}
             </div>
 
             {/* Stacked Bar - P0: Colors sanitized, P1: Accessible description */}

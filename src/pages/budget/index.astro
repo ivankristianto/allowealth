@@ -13,6 +13,8 @@ import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import BudgetPageHeader from '@components/organisms/BudgetPageHeader.astro';
 import SetNewBudgetModal from '@components/organisms/SetNewBudgetModal.astro';
 import CopyBudgetModal from '@components/organisms/CopyBudgetModal.astro';
+import BudgetImportModal from '@components/organisms/BudgetImportModal.astro';
+import BudgetTable from '@components/organisms/BudgetTable.astro';
 
 // Partials for Interactive Page Architecture
 import BudgetSummaryPartial from '@components/partials/BudgetSummaryPartial.astro';
@@ -25,7 +27,7 @@ import {
 } from '@/services';
 import { formatCurrency } from '@/lib/formatting';
 import { calculateAllocationDistribution } from '@/lib/utils/budget';
-import { CircleX, Search } from '@lucide/astro';
+import { CircleX, Search, LayoutGrid, Table as TableIcon } from '@lucide/astro';
 
 const user = Astro.locals.user;
 const currentPath = '/budget';
@@ -284,32 +286,79 @@ const budgetCount =
             )}
           </div>
 
-          {/* Budget Filter and Card Grid */}
+          {/* Budget Filter and View Toggle */}
           {budgetData && budgetData.categories.length > 0 && (
-            <div class="relative max-w-md">
-              <span
-                class="absolute left-4 top-1/2 -translate-y-1/2 text-base-content/40 pointer-events-none"
-                aria-hidden="true"
+            <div class="flex items-center gap-3">
+              <div class="relative flex-1">
+                <span
+                  class="absolute left-4 top-1/2 -translate-y-1/2 text-base-content/40 pointer-events-none"
+                  aria-hidden="true"
+                >
+                  <Search size={20} />
+                </span>
+                <input
+                  type="search"
+                  id="budget-filter-input"
+                  data-testid="budget-filter-input"
+                  placeholder="Filter budgets..."
+                  class="w-full pl-12 pr-4 py-3 bg-base-100 border border-base-300 focus:border-primary focus:ring-0 rounded-2xl text-base font-medium text-base-content shadow-sm"
+                  aria-label="Filter budgets by category name"
+                />
+              </div>
+              <select
+                id="budget-sort-select"
+                class="select select-bordered select-sm rounded-xl bg-base-100 text-xs font-bold uppercase tracking-wider min-w-[140px]"
+                aria-label="Sort budgets"
               >
-                <Search size={20} />
-              </span>
-              <input
-                type="search"
-                id="budget-filter-input"
-                data-testid="budget-filter-input"
-                placeholder="Filter budgets..."
-                class="w-full pl-12 pr-4 py-3 bg-base-100 border border-base-300 focus:border-primary focus:ring-0 rounded-2xl text-base font-medium text-base-content shadow-sm"
-                aria-label="Filter budgets by category name"
-              />
+                <option value="budget-desc">Budget ↓</option>
+                <option value="spent-desc">Spent ↓</option>
+                <option value="title-asc">Title A-Z</option>
+                <option value="title-desc">Title Z-A</option>
+              </select>
+              <div
+                class="flex items-center gap-1 bg-base-100 border border-base-300 rounded-xl p-1"
+                data-view-toggle
+              >
+                <button
+                  type="button"
+                  class="btn btn-sm btn-ghost rounded-lg btn-active"
+                  data-view-mode="card"
+                  aria-label="Card view"
+                  aria-pressed="true"
+                >
+                  <LayoutGrid size={16} class="stroke-current" aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-sm btn-ghost rounded-lg"
+                  data-view-mode="table"
+                  aria-label="Table view"
+                  aria-pressed="false"
+                >
+                  <TableIcon size={16} class="stroke-current" aria-hidden="true" />
+                </button>
+              </div>
             </div>
           )}
 
           {/* Budget Card Grid - Container for HTML injection */}
           <div id="budget-cards-container">
-            <BudgetCardGridPartial
-              budgets={budgetData?.categories || []}
-              currency={selectedCurrency}
-            />
+            <div data-view="card">
+              <BudgetCardGridPartial
+                budgets={budgetData?.categories || []}
+                currency={selectedCurrency}
+                month={selectedMonth}
+                year={selectedYear}
+              />
+            </div>
+            <div data-view="table" class="hidden">
+              <BudgetTable
+                budgets={budgetData?.categories || []}
+                currency={selectedCurrency}
+                month={selectedMonth}
+                year={selectedYear}
+              />
+            </div>
           </div>
 
           {/* AI Advice Banner - Container for HTML injection */}
@@ -340,6 +389,14 @@ const budgetCount =
     targetYear={nextMonthYear}
     budgetCount={budgetCount}
   />
+
+  {/* Budget Import Modal */}
+  <BudgetImportModal
+    id="budget-import-modal"
+    month={selectedMonth}
+    year={selectedYear}
+    currency={selectedCurrency}
+  />
 </ProtectedLayout>
 
 <script>
@@ -355,12 +412,92 @@ const budgetCount =
    * - Edit budget handlers: Opens the modal with pre-filled data
    */
   import { initBudgetPage, cleanup } from '@components/organisms/BudgetPage.client';
+  import { addToast } from '@/lib/stores/toastStore';
 
   // Track if page-load listener is registered to prevent accumulation
   const PAGE_LOAD_KEY = '__budgetPageLoadListenerRegistered';
 
+  function initBudgetExtras() {
+    // Export button
+    const exportBtn = document.querySelector('[data-budget-export-btn]');
+    if (exportBtn && !(exportBtn as HTMLElement).dataset.initialized) {
+      (exportBtn as HTMLElement).dataset.initialized = 'true';
+      exportBtn.addEventListener('click', async () => {
+        const container = document.querySelector('[data-budget-page]') as HTMLElement;
+        const year = container?.dataset.year;
+        const month = container?.dataset.month;
+        const currency = container?.dataset.currency || 'IDR';
+
+        try {
+          const res = await fetch(
+            `/api/budget/export?year=${year}&month=${month}&currency=${currency}`
+          );
+          if (!res.ok) throw new Error('Export failed');
+          const blob = await res.blob();
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `budget_${year}-${String(month).padStart(2, '0')}.csv`;
+          a.click();
+          URL.revokeObjectURL(url);
+          addToast('Budget exported successfully!', 'success');
+        } catch {
+          addToast('Failed to export budget.', 'error');
+        }
+      });
+    }
+
+    // Import button
+    const importBtn = document.querySelector('[data-budget-import-btn]');
+    if (importBtn && !(importBtn as HTMLElement).dataset.initialized) {
+      (importBtn as HTMLElement).dataset.initialized = 'true';
+      importBtn.addEventListener('click', () => {
+        const modal = document.getElementById('budget-import-modal') as HTMLDialogElement;
+        if (modal) modal.showModal();
+      });
+    }
+
+    // View toggle (Card/Table)
+    const viewToggle = document.querySelector('[data-view-toggle]');
+    if (viewToggle && !(viewToggle as HTMLElement).dataset.initialized) {
+      (viewToggle as HTMLElement).dataset.initialized = 'true';
+      viewToggle.querySelectorAll<HTMLButtonElement>('button').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const mode = btn.dataset.viewMode;
+          const cardView = document.querySelector('[data-view="card"]') as HTMLElement;
+          const tableView = document.querySelector('[data-view="table"]') as HTMLElement;
+
+          if (mode === 'table') {
+            cardView?.classList.add('hidden');
+            tableView?.classList.remove('hidden');
+          } else {
+            cardView?.classList.remove('hidden');
+            tableView?.classList.add('hidden');
+          }
+
+          // Update aria-pressed and active state
+          viewToggle.querySelectorAll<HTMLButtonElement>('button').forEach((b) => {
+            b.setAttribute('aria-pressed', b.dataset.viewMode === mode ? 'true' : 'false');
+            b.classList.toggle('btn-active', b.dataset.viewMode === mode);
+          });
+
+          // Persist preference
+          localStorage.setItem('budget-view-mode', mode || 'card');
+        });
+      });
+
+      // Restore preference
+      const savedMode = localStorage.getItem('budget-view-mode');
+      if (savedMode === 'table') {
+        const tableBtn = viewToggle.querySelector('[data-view-mode="table"]') as HTMLButtonElement;
+        tableBtn?.click();
+      }
+    }
+  }
+
   // Initialize the budget page orchestrator
   initBudgetPage();
+  initBudgetExtras();
 
   // Register cleanup handler (must re-register after each page load since it's once)
   function registerCleanup() {
@@ -373,6 +510,7 @@ const budgetCount =
     (window as unknown as Record<string, boolean>)[PAGE_LOAD_KEY] = true;
     document.addEventListener('astro:page-load', () => {
       initBudgetPage();
+      initBudgetExtras();
       registerCleanup();
     });
   }

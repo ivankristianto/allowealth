@@ -29,10 +29,10 @@ const { id = 'generate-api-key-modal' } = Astro.props;
         </div>
         <div>
           <h2 class="text-xl font-bold tracking-tight text-base-content leading-none">
-            Generate API Key
+            Generate MCP Access Token
           </h2>
           <p class="text-base-content/60 text-sm mt-2 font-medium">
-            Create a key to connect AI assistants.
+            Create a token to connect MCP-compatible AI assistants.
           </p>
         </div>
       </div>
@@ -93,10 +93,10 @@ const { id = 'generate-api-key-modal' } = Astro.props;
             </button>
             <button
               type="submit"
-              class="flex-[2] btn btn-accent py-4 rounded-full font-bold text-base shadow-lg shadow-accent/20 hover:shadow-xl transition-all"
+              class="flex-[2] btn btn-accent py-4 rounded-2xl font-bold text-base shadow-lg shadow-accent/20 hover:shadow-xl transition-all"
               data-submit-generate
             >
-              Generate Key
+              Generate Token
             </button>
           </div>
         </form>
@@ -111,7 +111,7 @@ const { id = 'generate-api-key-modal' } = Astro.props;
             aria-hidden="true"
           />
           <span class="text-sm text-warning font-medium">
-            Save this key now — it won't be shown again.
+            Save this token now — it won't be shown again.
           </span>
         </div>
 
@@ -124,7 +124,7 @@ const { id = 'generate-api-key-modal' } = Astro.props;
             type="button"
             class="btn btn-ghost btn-sm absolute top-3 right-3 gap-1.5"
             data-copy-key
-            aria-label="Copy API key"
+            aria-label="Copy access token"
           >
             <span data-copy-icon-default>
               <Copy size={14} class="stroke-current" aria-hidden="true" />
@@ -132,7 +132,7 @@ const { id = 'generate-api-key-modal' } = Astro.props;
             <span data-copy-icon-success class="hidden">
               <Check size={14} class="stroke-current text-success" aria-hidden="true" />
             </span>
-            <span data-copy-label>Copy</span>
+            <span data-copy-label>Copy Token</span>
           </button>
         </div>
 
@@ -140,7 +140,7 @@ const { id = 'generate-api-key-modal' } = Astro.props;
         <div class="flex items-center gap-4 pt-4">
           <button
             type="button"
-            class="flex-[2] btn btn-accent py-4 rounded-full font-bold text-base shadow-lg shadow-accent/20 hover:shadow-xl transition-all w-full"
+            class="flex-[2] btn btn-accent py-4 rounded-2xl font-bold text-base shadow-lg shadow-accent/20 hover:shadow-xl transition-all w-full"
             data-close-after-generate
           >
             Done
@@ -194,7 +194,7 @@ const { id = 'generate-api-key-modal' } = Astro.props;
           stepForm!.classList.remove('hidden');
           stepResult!.classList.add('hidden');
           errorEl?.classList.add('hidden');
-          if (copyLabel) copyLabel.textContent = 'Copy';
+          if (copyLabel) copyLabel.textContent = 'Copy Token';
           if (copyIconDefault) copyIconDefault.classList.remove('hidden');
           if (copyIconSuccess) copyIconSuccess.classList.add('hidden');
         }
@@ -229,7 +229,7 @@ const { id = 'generate-api-key-modal' } = Astro.props;
             return;
           }
 
-          const originalText = submitBtn.textContent || 'Generate Key';
+          const originalText = submitBtn.textContent || 'Generate Token';
           submitBtn.disabled = true;
           submitBtn.textContent = 'Generating...';
 
@@ -249,7 +249,7 @@ const { id = 'generate-api-key-modal' } = Astro.props;
 
             const result = await response.json();
             if (!response.ok || !result.success) {
-              throw new Error(result.error?.message || 'Failed to generate key');
+              throw new Error(result.error?.message || 'Failed to generate token');
             }
 
             // Show step 2 with the plain key
@@ -257,14 +257,13 @@ const { id = 'generate-api-key-modal' } = Astro.props;
             stepForm.classList.add('hidden');
             stepResult.classList.remove('hidden');
 
-            addToast('API key generated', 'success');
+            addToast('Access token generated', 'success');
           } catch (err) {
-            const message = err instanceof Error ? err.message : 'Failed to generate key';
+            const message = err instanceof Error ? err.message : 'Failed to generate token';
             if (errorEl) {
               errorEl.textContent = message;
               errorEl.classList.remove('hidden');
             }
-            addToast(message, 'error');
           } finally {
             submitBtn.disabled = false;
             submitBtn.textContent = originalText;
@@ -277,22 +276,17 @@ const { id = 'generate-api-key-modal' } = Astro.props;
             const key = (plainKeyEl.textContent || '').trim();
             try {
               await navigator.clipboard.writeText(key);
-            } catch (error) {
-              const message =
-                error instanceof Error
-                  ? error.message
-                  : 'Unable to copy API key. Please copy it manually.';
-              addToast(message, 'error');
-              return;
+              copyLabel.textContent = 'Copied!';
+              if (copyIconDefault) copyIconDefault.classList.add('hidden');
+              if (copyIconSuccess) copyIconSuccess.classList.remove('hidden');
+              setTimeout(() => {
+                copyLabel.textContent = 'Copy Token';
+                if (copyIconDefault) copyIconDefault.classList.remove('hidden');
+                if (copyIconSuccess) copyIconSuccess.classList.add('hidden');
+              }, 2000);
+            } catch {
+              addToast('Unable to copy. Please select and copy the token manually.', 'error');
             }
-            copyLabel.textContent = 'Copied!';
-            if (copyIconDefault) copyIconDefault.classList.add('hidden');
-            if (copyIconSuccess) copyIconSuccess.classList.remove('hidden');
-            setTimeout(() => {
-              copyLabel.textContent = 'Copy';
-              if (copyIconDefault) copyIconDefault.classList.remove('hidden');
-              if (copyIconSuccess) copyIconSuccess.classList.add('hidden');
-            }, 2000);
           });
         }
 

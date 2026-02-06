@@ -16,15 +16,6 @@ export const GET: APIRoute = async (context) => {
     const yearParam = url.searchParams.get('year');
     const monthParam = url.searchParams.get('month');
     const currency = url.searchParams.get('currency') as 'IDR' | 'USD' | null;
-    const sortBy = url.searchParams.get('sort') as
-      | 'category'
-      | 'percentage'
-      | 'budget'
-      | 'spent'
-      | 'balance'
-      | 'status'
-      | null;
-    const sortOrder = url.searchParams.get('order') as 'asc' | 'desc' | null;
 
     // Default to current month if not specified
     const now = new Date();
@@ -45,15 +36,8 @@ export const GET: APIRoute = async (context) => {
       return errorResponse('Invalid currency parameter', 400);
     }
 
-    // Generate CSV with optional sorting
-    const csv = await budgetService.exportToCSV(
-      auth.workspaceId,
-      year,
-      month,
-      selectedCurrency,
-      sortBy || undefined,
-      sortOrder || undefined
-    );
+    // Generate CSV template
+    const csv = await budgetService.exportToCSV(auth.workspaceId, year, month, selectedCurrency);
 
     // Generate filename with date in budget-YYYY-MM.csv format
     const monthPadded = month.toString().padStart(2, '0');

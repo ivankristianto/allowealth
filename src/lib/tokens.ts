@@ -233,6 +233,7 @@ export const tokenClasses = {
   badgePadding: 'token-badge-padding',
   textXs: 'token-text-xs',
   textSm: 'token-text-sm',
+  textBase: 'token-text-base',
   marginTopLg: 'token-mt-6',
   cardPaddingLg: 'token-card-padding-lg',
   paddingMd: 'token-padding-md',
@@ -240,6 +241,14 @@ export const tokenClasses = {
   gapLg: 'token-gap-lg',
   gapMd: 'token-gap-md',
   stackSm: 'token-stack-sm',
+  inputSurfaceBase: 'token-input-surface-base',
+  inputSurfaceDefault: 'token-input-surface-default',
+  inputFocusAccent: 'token-input-focus-accent',
+  inputHeightXl: 'token-input-height-xl',
+  inputPaddingXl: 'token-input-padding-xl',
+  inputPaddingSearchCompact: 'token-input-padding-search-compact',
+  inputPaddingSearchDefault: 'token-input-padding-search-default',
+  placeholderMuted: 'token-placeholder-muted',
 } as const;
 
 /* ========================================

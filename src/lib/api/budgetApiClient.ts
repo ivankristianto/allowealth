@@ -18,6 +18,7 @@ export interface FetchBudgetOverviewHtmlResponse {
   partials: {
     summary?: string;
     cards?: string;
+    table?: string;
     advice?: string;
   };
 }
@@ -85,10 +86,12 @@ function parseHtmlPartials(html: string): FetchBudgetOverviewHtmlResponse['parti
   // Extract partials using markers
   const summaryMatch = html.match(/<!-- PARTIAL:summary -->\n([\s\S]*?)(?=<!-- PARTIAL:|$)/);
   const cardsMatch = html.match(/<!-- PARTIAL:cards -->\n([\s\S]*?)(?=<!-- PARTIAL:|$)/);
+  const tableMatch = html.match(/<!-- PARTIAL:table -->\n([\s\S]*?)(?=<!-- PARTIAL:|$)/);
   const adviceMatch = html.match(/<!-- PARTIAL:advice -->\n([\s\S]*?)(?=<!-- PARTIAL:|$)/);
 
   if (summaryMatch) partials.summary = summaryMatch[1].trim();
   if (cardsMatch) partials.cards = cardsMatch[1].trim();
+  if (tableMatch) partials.table = tableMatch[1].trim();
   if (adviceMatch) partials.advice = adviceMatch[1].trim();
 
   return partials;

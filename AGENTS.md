@@ -24,6 +24,48 @@ Agents must internalize:
 
 **If constitution conflicts with task instructions, constitution wins.**
 
+## Fix Quality
+
+When fixing bugs, always verify the fix doesn't break existing functionality by running the build and any related tests before presenting the solution. If a fix introduces new errors, diagnose those before suggesting the fix.
+
+- ✅ Run `bun run build` after bug fixes to verify no new errors
+- ✅ Run relevant tests (`bun test`, e2e tests, or integration tests) related to the fix
+- ✅ Test the fix in the browser/application to confirm it works as expected
+- ✅ Check all usages of changed code to ensure no downstream breakage
+- ✅ Run quality gates before committing (lint, typecheck, format)
+- ❌ Suggest fixes without verification
+- ❌ Claim bugs are fixed without running tests
+- ❌ Ignore new errors introduced by fixes
+- ❌ Skip quality gates to move faster
+
+## Planning & Research
+
+When asked to plan or brainstorm (e.g., version upgrades, migration strategies), produce a concrete written plan with actionable steps within the first response. Do not spend the entire session only reading files — summarize findings and deliver the plan incrementally.
+
+- ✅ Deliver a written plan in the first response (not after extensive exploration)
+- ✅ Include actionable steps, timelines, and dependencies
+- ✅ Summarize findings incrementally as you research
+- ✅ Provide context and rationale for recommendations
+- ✅ Update the plan as new information emerges
+- ❌ Spend entire session reading without producing a plan
+- ❌ Delay planning until all possible research is complete
+- ❌ Create vague plans without concrete next steps
+
+## Language & Stack
+
+This is a **TypeScript-primary codebase**. Always prefer TypeScript idioms, use strict types, and ensure any code changes pass `tsc --noEmit` before considering a task complete.
+
+- ✅ Write code in TypeScript with strict type checking
+- ✅ Use `tsc --noEmit` to verify type correctness
+- ✅ Prefer TypeScript over plain JavaScript
+- ✅ Use strict mode and enable `strict: true` in tsconfig
+- ✅ Define explicit types instead of using `any`
+- ✅ Use type inference where appropriate (avoid redundant type annotations)
+- ✅ Import and use project types (`@/lib/auth/lucia`, etc.)
+- ❌ Use `any` type without justification
+- ❌ Skip typecheck in pre-commit
+- ❌ Leave `tsc --noEmit` errors unfixed
+
 ## Do & Don't
 
 ### Session Rules (Every Agent Session)
@@ -97,8 +139,54 @@ Agents must internalize:
 - ✅ Test after every code change
 - ✅ Check all usages after changing types or imports (`grep` the codebase)
 - ✅ Verify root cause is fixed, not just symptoms
+- ✅ Stop and ask when blocked or unclear - Don't guess, don't force through
+- ✅ Report actual state, not agent claims - Check VCS diff to verify changes
 - ❌ Suppress warnings with `@ts-expect-error` or `eslint-disable`
 - ❌ Remove `await` just because TypeScript says "no effect" (runtime differs)
+- ❌ Don't attempt fix #4 without questioning architecture - 3+ failures = wrong approach
+- ❌ Don't fix multiple things at once - Changes must be isolated
+
+### Input Validation & Data Handling
+
+- ✅ **Use `Number()` instead of `parseFloat()` for validation** - `parseFloat("1,000")` returns `1`, `parseFloat("100abc")` returns `100` (silently corrupts data)
+- ✅ **Parse CSV with proper parser, not `split(',')`** - Handles quoted fields containing commas
+- ✅ **Strip BOM from CSV files before parsing** - Excel UTF-8 exports include BOM (`\uFEFF`)
+- ✅ **Read CSRF token with proper decoding loop** - Don't use single-line `split('=')[1]` (breaks on base64)
+- ✅ **Surface actual error messages in API responses** - Include details for debugging, not generic "Failed to X"
+- ✅ **Extract `data-action` from DOM, don't use `define:vars`** - NPM imports break with `define:vars/is:inline`
+- ❌ **Don't use `parseFloat()` for currency validation** - Accepts malformed input like `"1,000"` or `"100abc"`
+- ❌ **Don't use `split(',')` for CSV parsing** - Breaks on quoted fields like `"Company, Inc."`
+- ❌ **Don't use `split('=')[1]` for CSRF token** - Base64 tokens contain `=` characters
+- ❌ **Don't default empty amounts to `'0'`** - Silently zeros out budgets, corrupts user data
+
+### Database Transactions & Queries
+
+- ✅ **Use sync callbacks with better-sqlite3 transactions** - `db.transaction((tx) => { /* sync code */ })`
+- ✅ **Wrap multi-step DB operations in transactions** - Ensures atomicity (delete + insert must both succeed)
+- ✅ **Query budgets directly instead of cached overview** - Guarantees schema fields like `id` are present
+- ❌ **Don't use `async/await` in better-sqlite3 transactions** - Driver is synchronous, throws "Transaction function cannot return a promise"
+- ❌ **Don't use `db.transaction(async (tx) => { await ... })` with better-sqlite3** - Works on PostgreSQL, crashes on SQLite
+- ❌ **Don't rely on cached data when schema fields are critical** - Cache may be stale or incomplete
+
+### CSS & Styling Patterns
+
+- ✅ **Use DaisyUI classes directly on elements** - `<button class="btn btn-accent">` works correctly
+- ✅ **Use design token constants from `@/lib/tokens`** - Not inline Tailwind utilities like `px-2 md:px-4`
+- ✅ **Use semantic size classes** - `text-sm`, `text-base`, not `text-[10px]`
+- ❌ **Don't use `@apply btn` in custom classes** - Creates CSS cascade issues (source order determines precedence)
+- ❌ **Don't create `.btn-contract-base` with `@apply btn`** - Base class appears later in CSS, overrides modifiers like `.btn-accent`
+- ❌ **Don't hardcode sizes like `text-[10px]`** - Breaks design system consistency
+- ❌ **Don't use inline styles for interactive states** - Use CSS classes instead of `element.style.cursor = 'pointer'`
+
+### Communication & Workflow
+
+- ✅ **Understand all requirements before implementing** - Clarify unclear items upfront
+- ✅ **Push back with technical reasoning if reviewer is wrong** - Technical correctness > comfort
+- ✅ **Admit when you're wrong quickly** - State the correction and reason, move on
+- ❌ **Don't implement partial lists** - Complete all items or clarify first, not "do 1,2,3,6, ask about 4,5 later"
+- ❌ **Don't use gratitude expressions** - No "Thanks!", "Great point!", "You're absolutely right!"
+- ❌ **Don't apologize excessively** - Just fix and move on
+- ❌ **Don't defend why you pushed back** - State technical facts only
 
 ### TypeScript Best Practices
 

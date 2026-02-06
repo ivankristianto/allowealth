@@ -181,6 +181,60 @@ paths:
         '500':
           $ref: '../responses/common.yml#/InternalServerError'
 
+  /api/assets/transfer:
+    post:
+      tags: [Assets]
+      summary: Transfer balance between assets
+      description: Transfer balance from one asset to another of the same currency
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [fromAssetId, toAssetId, amount]
+              properties:
+                fromAssetId:
+                  type: string
+                  description: Source asset ID
+                toAssetId:
+                  type: string
+                  description: Destination asset ID (must differ from source)
+                amount:
+                  type: string
+                  description: Transfer amount (must be positive)
+                notes:
+                  type: string
+                  maxLength: 500
+                  description: Optional transfer notes
+      responses:
+        '200':
+          description: Transfer completed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      fromAsset:
+                        $ref: '../schemas/AssetResponse.yml#/AssetResponse'
+                      toAsset:
+                        $ref: '../schemas/AssetResponse.yml#/AssetResponse'
+        '400':
+          $ref: '../responses/common.yml#/BadRequest'
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '404':
+          $ref: '../responses/common.yml#/NotFound'
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'
+
   /api/assets/{id}/history:
     get:
       tags: [Assets]
@@ -190,6 +244,13 @@ paths:
         - sessionAuth: []
       parameters:
         - $ref: '../parameters/common.yml#/IdParameter'
+        - name: limit
+          in: query
+          description: Maximum number of history entries to return (1-100)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
       responses:
         '200':
           description: Successful response

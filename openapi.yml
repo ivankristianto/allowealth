@@ -118,6 +118,8 @@ paths:
     $ref: './openapi/paths/assets.yml#/paths/~1api~1assets~1{id}~1balance'
   /api/assets/{id}/history:
     $ref: './openapi/paths/assets.yml#/paths/~1api~1assets~1{id}~1history'
+  /api/assets/transfer:
+    $ref: './openapi/paths/assets.yml#/paths/~1api~1assets~1transfer'
   /api/assets/summary:
     $ref: './openapi/paths/assets.yml#/paths/~1api~1assets~1summary'
 
@@ -138,6 +140,8 @@ paths:
     $ref: './openapi/paths/budget.yml#/paths/~1api~1budget~1history'
   /api/budget/category/{id}/remaining:
     $ref: './openapi/paths/budget.yml#/paths/~1api~1budget~1category~1{id}~1remaining'
+  /api/budget/import:
+    $ref: './openapi/paths/budget.yml#/paths/~1api~1budget~1import'
   /api/budget/export:
     $ref: './openapi/paths/budget.yml#/paths/~1api~1budget~1export'
 

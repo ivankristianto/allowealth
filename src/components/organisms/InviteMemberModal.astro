@@ -54,7 +54,7 @@ const { id } = Astro.props;
             type="email"
             required
             placeholder="colleague@example.com"
-            className="rounded-full py-4 px-6 h-14 text-base font-bold border border-base-300"
+            className="rounded-lg py-4 px-6 h-14 text-base font-bold border border-base-300"
           />
         </div>
 
@@ -63,7 +63,7 @@ const { id } = Astro.props;
           <select
             name="role"
             id={`${id}-role`}
-            class="select select-bordered w-full h-14 py-4 pl-6 pr-10 text-base font-bold bg-base-200 rounded-full border-0 focus:ring-2 focus:ring-accent focus:ring-opacity-20 focus:outline-none focus:ring-offset-2"
+            class="select select-bordered w-full h-14 rounded-lg border border-base-300 bg-base-200 py-4 pl-6 pr-10 text-base font-bold focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
             required
           >
             <option value="member">Member - Can view and add transactions</option>
@@ -99,12 +99,12 @@ const { id } = Astro.props;
         <div class="flex gap-4 pt-2">
           <button
             type="button"
-            class="btn btn-ghost flex-1 h-14 rounded-full font-bold text-base-content hover:bg-base-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent"
+            class="btn btn-ghost flex-1 h-14 rounded-2xl font-bold text-base-content hover:bg-base-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent"
             data-close-modal
           >
             Cancel
           </button>
-          <button type="submit" class="btn btn-accent flex-[2] h-14 rounded-full font-bold">
+          <button type="submit" class="btn btn-accent flex-[2] h-14 rounded-2xl font-bold">
             Send Invitation
           </button>
         </div>

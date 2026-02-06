@@ -37,14 +37,12 @@ const user = Astro.locals.user! as User;
   const profileForm = document.getElementById('profile-form');
   const profileNameInput = document.getElementById('full-name');
   const profileEmailInput = document.getElementById('email');
-  const profileCurrencyInput = document.getElementById('currency');
   const profileSubmitButton = profileForm?.querySelector('button[type="submit"]');
 
   if (
     profileForm instanceof HTMLFormElement &&
     profileNameInput instanceof HTMLInputElement &&
     profileEmailInput instanceof HTMLInputElement &&
-    profileCurrencyInput instanceof HTMLSelectElement &&
     profileSubmitButton instanceof HTMLButtonElement
   ) {
     profileForm.addEventListener('submit', async (e) => {
@@ -58,10 +56,6 @@ const user = Astro.locals.user! as User;
 
       if (!profileEmailInput.value || !profileEmailInput.checkValidity()) {
         errors.push('Please enter a valid email address');
-      }
-
-      if (!profileCurrencyInput.value) {
-        errors.push('Please select a currency');
       }
 
       if (errors.length > 0) {
@@ -80,7 +74,6 @@ const user = Astro.locals.user! as User;
           email: formData.get('email'),
           phone: formData.get('phone') || '',
           bio: formData.get('bio') || '',
-          currency: formData.get('primaryCurrency'),
         };
 
         const response = await fetch(API_PROFILE_URL, {

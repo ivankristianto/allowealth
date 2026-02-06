@@ -14,6 +14,10 @@ BudgetOverviewResponse:
               items:
                 type: object
                 properties:
+                  budget_id:
+                    type: string
+                    format: nanoid
+                    description: Budget record ID
                   category_id:
                     type: string
                     format: uuid
