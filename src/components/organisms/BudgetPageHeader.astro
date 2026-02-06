@@ -18,7 +18,7 @@
  * @param {string} className - Additional CSS classes
  */
 
-import { ChevronLeft, ChevronRight, CalendarDays } from '@lucide/astro';
+import { ChevronLeft, ChevronRight, CalendarDays, History, Copy } from '@lucide/astro';
 
 import BudgetActions from '@components/molecules/BudgetActions.astro';
 
@@ -69,8 +69,39 @@ const headerClasses = ['flex flex-col gap-4', className].filter(Boolean).join(' 
       <p class="text-sm text-base-content/60 mt-2 font-medium">{displaySubtitle}</p>
     </div>
 
-    {/* Month Navigation */}
+    {/* Header actions + Month Navigation */}
     <div class="flex items-center gap-1" data-testid="budget-month-selector">
+      {/* History */}
+      <a
+        href="/budget/history"
+        class="btn btn-sm btn-square bg-base-100 border border-base-300 hover:border-accent/30 hover:text-accent rounded-xl transition-all"
+        aria-label="Budget history"
+        title="History"
+        data-testid="budget-history-btn"
+      >
+        <History size={18} class="stroke-current" aria-hidden="true" />
+      </a>
+
+      {/* Copy to Next Month */}
+      {
+        showCopyButton && (
+          <button
+            type="button"
+            class="btn btn-sm btn-square bg-base-100 border border-base-300 hover:border-accent/30 hover:text-accent rounded-xl transition-all"
+            id="copy-budget-btn"
+            data-target-modal="copy-budget-modal"
+            aria-label="Copy budgets to next month"
+            title="Copy to Next Month"
+            data-testid="budget-copy-btn"
+          >
+            <Copy size={18} class="stroke-current" aria-hidden="true" />
+          </button>
+        )
+      }
+
+      {/* Separator */}
+      <div class="w-px h-6 bg-base-300 mx-1"></div>
+
       <a
         href={prevMonthUrl}
         class="btn btn-sm btn-square bg-base-100 border border-base-300 hover:border-accent/30 hover:text-accent rounded-xl transition-all"
@@ -127,5 +158,49 @@ const headerClasses = ['flex flex-col gap-4', className].filter(Boolean).join(' 
   </div>
 
   {/* Second row: Action buttons */}
-  <BudgetActions showAiRebalancer={showAiRebalancer} showCopyButton={showCopyButton} />
+  <BudgetActions showAiRebalancer={showAiRebalancer} />
 </header>
+
+<script>
+  const handlerMap = new WeakMap<HTMLElement, (e: Event) => void>();
+
+  function initCopyBudgetButton() {
+    const btn = document.getElementById('copy-budget-btn');
+    if (!btn || handlerMap.has(btn)) return;
+
+    const handler = (e: Event) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const targetId = btn.getAttribute('data-target-modal');
+      if (!targetId) return;
+      const modal = document.getElementById(targetId) as HTMLDialogElement;
+      if (modal) modal.showModal();
+    };
+
+    handlerMap.set(btn, handler);
+    btn.addEventListener('click', handler);
+  }
+
+  function cleanupCopyBudgetButton() {
+    const btn = document.getElementById('copy-budget-btn');
+    if (btn) {
+      const handler = handlerMap.get(btn);
+      if (handler) {
+        btn.removeEventListener('click', handler);
+        handlerMap.delete(btn);
+      }
+    }
+  }
+
+  function registerCleanup() {
+    document.addEventListener('astro:before-swap', cleanupCopyBudgetButton, { once: true });
+  }
+
+  initCopyBudgetButton();
+  registerCleanup();
+
+  document.addEventListener('astro:page-load', () => {
+    initCopyBudgetButton();
+    registerCleanup();
+  });
+</script>

@@ -1,0 +1,52 @@
+---
+/**
+ * ActionBar Component (Molecule)
+ *
+ * Reusable action bar providing consistent card layout for page-level actions.
+ * Uses BudgetActions pattern: ghost buttons on the left, primary action pushed right.
+ *
+ * Slots:
+ * - default: Secondary action buttons (left-aligned, btn-ghost style)
+ * - primary: Primary action button (right-aligned with ml-auto, btn-accent style)
+ *
+ * @param {string} className - Additional CSS classes
+ * @param {string} ariaLabel - Accessible label for the action bar
+ */
+
+export interface Props {
+  className?: string;
+  ariaLabel?: string;
+}
+
+const { className = '', ariaLabel = 'Page actions' } = Astro.props;
+
+const hasPrimary = Astro.slots.has('primary');
+
+const containerClasses = [
+  // Card styling
+  'bg-base-100 rounded-card border border-base-300 shadow-sm',
+  // Responsive padding — compact on mobile
+  'p-2 md:p-4 lg:p-6',
+  // Layout — nowrap on mobile for single row, wrap on larger screens
+  'flex items-center gap-1 md:gap-3 md:flex-wrap',
+  className,
+]
+  .filter(Boolean)
+  .join(' ');
+---
+
+<div class={containerClasses} role="toolbar" aria-label={ariaLabel}>
+  {/* Secondary Actions — Ghost style, icon-only on mobile */}
+  <div class="flex items-center gap-1 md:gap-2">
+    <slot />
+  </div>
+
+  {/* Primary Action — Pushed to right */}
+  {
+    hasPrimary && (
+      <div class="ml-auto">
+        <slot name="primary" />
+      </div>
+    )
+  }
+</div>

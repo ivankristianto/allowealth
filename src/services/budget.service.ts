@@ -24,6 +24,7 @@ import { getCacheManager, CacheKeys, CacheTags } from '@/lib/cache';
 import { type PerfCollector, trackQuery } from '@/lib/perf';
 
 export interface BudgetOverview {
+  budget_id: string;
   category_id: string;
   category_name: string;
   category_type: 'expense' | 'income';
@@ -206,6 +207,7 @@ export class BudgetService {
       }
 
       return {
+        budget_id: budget.id,
         category_id: budget.category_id,
         category_name: budget.category?.name ?? 'Unknown',
         category_type: (budget.category?.type ?? 'expense') as 'expense' | 'income',
@@ -416,77 +418,34 @@ export class BudgetService {
     workspaceId: string,
     year: number,
     month: number,
-    currency: 'IDR' | 'USD',
-    sortBy?: 'category' | 'percentage' | 'budget' | 'spent' | 'balance' | 'status',
-    sortOrder?: 'asc' | 'desc'
+    currency: 'IDR' | 'USD'
   ): Promise<string> {
-    const overview = await this.getMonthlyOverview(workspaceId, year, month, currency);
+    // Query budgets directly to guarantee the id field is present
+    const monthBudgets = await this.db.query.budgets.findMany({
+      where: and(
+        eq(this.schema.budgets.workspace_id, workspaceId),
+        eq(this.schema.budgets.month, month),
+        eq(this.schema.budgets.year, year),
+        eq(this.schema.budgets.currency, currency)
+      ),
+      with: {
+        category: true,
+      },
+    });
 
-    // Sort categories based on sortBy and sortOrder (same logic as BudgetOverviewTable)
-    let sortedCategories = [...overview.categories];
-    if (sortBy && sortOrder) {
-      sortedCategories = sortedCategories.sort((a, b) => {
-        let comparison = 0;
+    // Filter to active expense categories only
+    const activeBudgets = monthBudgets.filter(
+      (b) => b.category?.type === 'expense' && b.category?.is_active === true
+    );
 
-        switch (sortBy) {
-          case 'category':
-            comparison = a.category_name.localeCompare(b.category_name);
-            break;
-          case 'percentage':
-            comparison = a.percentage_used - b.percentage_used;
-            break;
-          case 'budget':
-            comparison = parseFloat(a.budget_amount) - parseFloat(b.budget_amount);
-            break;
-          case 'spent':
-            comparison = parseFloat(a.spent_amount) - parseFloat(b.spent_amount);
-            break;
-          case 'balance':
-            comparison = parseFloat(a.balance) - parseFloat(b.balance);
-            break;
-          case 'status':
-            const statusOrder = { exceeded: 0, warning: 1, ok: 2 };
-            comparison = statusOrder[a.status] - statusOrder[b.status];
-            break;
-          default:
-            comparison = 0;
-        }
+    // CSV header — template format for re-import
+    const headers = ['budget_id', 'budget_name', 'budget_amount'];
 
-        return sortOrder === 'asc' ? comparison : -comparison;
-      });
-    }
-
-    // CSV header
-    const headers = [
-      'category',
-      'percentage',
-      'budget_amount',
-      'spent_amount',
-      'balance',
-      'status',
-      'percentage_used',
-    ];
-
-    // Build CSV rows from sorted categories
-    const csvRows = sortedCategories.map((cat) => [
-      cat.category_name,
-      cat.percentage,
-      cat.budget_amount,
-      cat.spent_amount,
-      cat.balance,
-      cat.status,
-      cat.percentage_used.toString(),
-    ]);
-
-    // Add totals row
-    csvRows.push([
-      'TOTAL',
-      '100',
-      overview.total_budget,
-      overview.total_spent,
-      overview.total_balance,
-      '',
-      '',
+    // Build CSV rows directly from budget records
+    const csvRows = activeBudgets.map((b) => [
+      b.id,
+      b.category?.name ?? 'Unknown',
+      b.budget_amount,
     ]);
 
     // Combine header and rows
@@ -510,23 +469,21 @@ export class BudgetService {
   }
 
   /**
-   * Import budgets from parsed CSV rows.
-   * Matches category names to existing categories. Optionally overwrites existing budgets.
+   * Import budget amounts from parsed CSV rows.
+   * Validates that each budget_id belongs to the target month/year/currency,
+   * then updates the budget amount. Rejects IDs not found in current month.
    */
   async importFromCSV(
     workspaceId: string,
-    createdByUserId: string,
-    rows: Array<{ category: string; budget_amount: string }>,
-    overwrite: boolean,
+    rows: Array<{ budget_id: string; budget_amount: string }>,
     targetMonth: number,
     targetYear: number,
     currency: 'IDR' | 'USD'
   ): Promise<{
-    imported: number;
-    skipped: number;
+    updated: number;
     errors: Array<{ row: number; message: string }>;
   }> {
-    // Validate inputs (consistent with getMonthlyOverview and hasBudgetsForMonth)
+    // Validate inputs
     if (!Number.isInteger(targetYear) || targetYear < 2000 || targetYear > 2100) {
       throw new Error('Invalid year parameter');
     }
@@ -534,128 +491,91 @@ export class BudgetService {
       throw new Error('Invalid month parameter');
     }
 
-    // Get all categories for name → ID mapping
-    const allCategories = await this.db.query.categories.findMany({
+    // Get existing budgets for the target month to build valid ID set
+    const existingBudgets = await this.db.query.budgets.findMany({
       where: and(
-        eq(this.schema.categories.workspace_id, workspaceId),
-        eq(this.schema.categories.is_active, true)
+        eq(this.schema.budgets.workspace_id, workspaceId),
+        eq(this.schema.budgets.month, targetMonth),
+        eq(this.schema.budgets.year, targetYear),
+        eq(this.schema.budgets.currency, currency)
       ),
     });
 
-    const categoryMap = new Map(
-      allCategories.map((c: { id: string; name: string }) => [c.name.toLowerCase(), c.id])
-    );
+    const validBudgetIds = new Set(existingBudgets.map((b: { id: string }) => b.id));
 
-    // Get existing budgets to check for duplicates (when not overwriting)
-    const existingBudgets = overwrite
-      ? []
-      : await this.db.query.budgets.findMany({
-          where: and(
-            eq(this.schema.budgets.workspace_id, workspaceId),
-            eq(this.schema.budgets.month, targetMonth),
-            eq(this.schema.budgets.year, targetYear),
-            eq(this.schema.budgets.currency, currency)
-          ),
-        });
-
-    const existingCategoryIds = new Set(
-      existingBudgets.map((b: { category_id: string }) => b.category_id)
-    );
-
-    // Validate rows and prepare insert values before touching the DB
-    let skipped = 0;
+    // Validate rows and prepare updates
     const errors: Array<{ row: number; message: string }> = [];
-    const validInserts: Array<{
-      id: string;
-      workspace_id: string;
-      created_by_user_id: string;
-      category_id: string;
-      month: number;
-      year: number;
-      budget_amount: string;
-      currency: string;
-    }> = [];
-
-    const seenBatchCategories = new Set<string>();
+    const validUpdates: Array<{ id: string; budget_amount: string }> = [];
+    const seenIds = new Set<string>();
 
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
-      const categoryName = row.category?.trim();
+      const budgetId = row.budget_id?.trim();
       const budgetAmount = row.budget_amount?.trim();
 
-      if (!categoryName) {
-        errors.push({ row: i + 1, message: 'Missing category name' });
+      if (!budgetId) {
+        errors.push({ row: i + 1, message: 'Missing budget ID' });
         continue;
       }
 
-      const categoryKey = categoryName.toLowerCase();
-      const categoryId = categoryMap.get(categoryKey);
-      if (!categoryId) {
-        errors.push({ row: i + 1, message: `Category "${categoryName}" not found` });
-        continue;
-      }
-
-      // Check for duplicate categories within the same CSV batch
-      if (seenBatchCategories.has(categoryKey)) {
+      if (!validBudgetIds.has(budgetId)) {
         errors.push({
           row: i + 1,
-          message: `Duplicate category "${categoryName}" in CSV for same month/year/currency`,
+          message: `Budget ID "${budgetId}" not found in ${targetYear}-${String(targetMonth).padStart(2, '0')}`,
         });
         continue;
       }
-      seenBatchCategories.add(categoryKey);
 
-      const parsedAmount = parseFloat(budgetAmount);
-      if (isNaN(parsedAmount) || parsedAmount < 0) {
+      if (seenIds.has(budgetId)) {
+        errors.push({ row: i + 1, message: `Duplicate budget ID "${budgetId}" in CSV` });
+        continue;
+      }
+      seenIds.add(budgetId);
+
+      const trimmedAmount = budgetAmount.trim();
+      if (!/^\d+(\.\d+)?$/.test(trimmedAmount)) {
+        errors.push({
+          row: i + 1,
+          message: `Invalid amount "${budgetAmount}" — must be a plain number (e.g. 100000 or 100000.50)`,
+        });
+        continue;
+      }
+      const parsedAmount = Number(trimmedAmount);
+      if (!Number.isFinite(parsedAmount) || parsedAmount < 0) {
         errors.push({ row: i + 1, message: `Invalid amount "${budgetAmount}"` });
         continue;
       }
 
-      // Skip if budget already exists for this category (when not overwriting)
-      if (!overwrite && existingCategoryIds.has(categoryId)) {
-        skipped++;
-        continue;
-      }
-
-      validInserts.push({
-        id: nanoid(),
-        workspace_id: workspaceId,
-        created_by_user_id: createdByUserId,
-        category_id: categoryId,
-        month: targetMonth,
-        year: targetYear,
+      validUpdates.push({
+        id: budgetId,
         budget_amount: parsedAmount.toString(),
-        currency,
       });
     }
 
-    // Execute delete + inserts in a transaction for atomicity
-    let imported = 0;
-    await this.db.transaction(async (tx: any) => {
-      if (overwrite && validInserts.length > 0) {
-        await tx
-          .delete(this.schema.budgets)
-          .where(
-            and(
-              eq(this.schema.budgets.workspace_id, workspaceId),
-              eq(this.schema.budgets.month, targetMonth),
-              eq(this.schema.budgets.year, targetYear),
-              eq(this.schema.budgets.currency, currency)
-            )
-          );
-      }
-
-      if (validInserts.length > 0) {
-        await tx.insert(this.schema.budgets).values(validInserts);
-        imported = validInserts.length;
-      }
-    });
+    // Execute updates in a transaction
+    let updated = 0;
+    if (validUpdates.length > 0) {
+      await this.db.transaction(async (tx: any) => {
+        for (const update of validUpdates) {
+          await tx
+            .update(this.schema.budgets)
+            .set({ budget_amount: update.budget_amount })
+            .where(
+              and(
+                eq(this.schema.budgets.id, update.id),
+                eq(this.schema.budgets.workspace_id, workspaceId)
+              )
+            );
+        }
+        updated = validUpdates.length;
+      });
+    }
 
     // Invalidate budget cache
     const cache = getCacheManager();
     await cache.invalidateByTags([CacheTags.workspace(workspaceId), CacheTags.BUDGET]);
 
-    return { imported, skipped, errors };
+    return { updated, errors };
   }
 
   // ============================================

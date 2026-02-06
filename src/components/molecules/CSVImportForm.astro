@@ -51,7 +51,7 @@ const cspNonce = Astro.locals.cspNonce || '';
 <!-- Hidden form for actual submission -->
 <form
   id="csv-import-form"
-  action={action}
+  data-action={action}
   method="POST"
   enctype="multipart/form-data"
   class="hidden"
@@ -352,6 +352,10 @@ const cspNonce = Astro.locals.cspNonce || '';
       clone.setAttribute('aria-hidden', 'true');
       return clone;
     }
+
+    // Get action URL from the hidden form's data attribute
+    const importForm = document.getElementById('csv-import-form');
+    const action = importForm ? importForm.getAttribute('data-action') || '' : '';
 
     // DOM Elements - Upload Step
     const fileInput = document.getElementById('csv-file-input');
@@ -920,16 +924,21 @@ const cspNonce = Astro.locals.cspNonce || '';
           formData.append(`map_${key}`, value);
         });
 
-        // Get CSRF token from cookie (inline since this is an is:inline script)
-        const csrfToken =
-          document.cookie
-            .split('; ')
-            .find((row) => row.startsWith('csrf_token='))
-            ?.split('=')[1] || '';
+        // Get CSRF token from cookie (inline — can't import csrf-client)
+        var csrfToken = '';
+        var cookies = document.cookie.split(';');
+        for (var ci = 0; ci < cookies.length; ci++) {
+          var parts = cookies[ci].trim().split('=');
+          if (parts[0] === 'csrf_token') {
+            csrfToken = decodeURIComponent(parts[1]);
+            break;
+          }
+        }
 
         // Send import request
         const response = await fetch(action, {
           method: 'POST',
+          credentials: 'include',
           headers: {
             'X-CSRF-Token': csrfToken,
           },

@@ -5,8 +5,8 @@ import { logError } from '@/lib/utils';
 
 /**
  * POST /api/budget/import
- * Import budgets from CSV file
- * FormData: csv_file, overwrite, month, year, currency
+ * Import budget amounts from CSV file (update existing budgets by ID)
+ * FormData: csv_file, month, year, currency
  */
 export const POST: APIRoute = async (context) => {
   try {
@@ -14,7 +14,6 @@ export const POST: APIRoute = async (context) => {
 
     const formData = await context.request.formData();
     const csvFile = formData.get('csv_file') as File | null;
-    const overwrite = formData.get('overwrite') === 'true';
     const month = parseInt(formData.get('month') as string, 10);
     const year = parseInt(formData.get('year') as string, 10);
     const currency = formData.get('currency') as 'IDR' | 'USD';
@@ -40,33 +39,37 @@ export const POST: APIRoute = async (context) => {
       return errorResponse('Invalid currency parameter', 400);
     }
 
-    // Parse CSV
-    const csvText = await csvFile.text();
+    // Parse CSV — strip BOM, normalize line endings
+    const rawText = await csvFile.text();
+    const csvText = rawText
+      .replace(/^\uFEFF/, '')
+      .replace(/\r\n/g, '\n')
+      .replace(/\r/g, '\n');
     const lines = csvText.split('\n').filter((line) => line.trim());
 
     if (lines.length < 2) {
       return errorResponse('CSV file must have a header row and at least one data row', 400);
     }
 
-    // Parse header
-    const header = lines[0].split(',').map((h) => h.trim().toLowerCase().replace(/^"|"$/g, ''));
-    const categoryIdx = header.indexOf('category');
-    const budgetAmountIdx = header.indexOf('budget_amount');
+    // Parse header using the same CSV parser as data rows
+    const header = parseCsvLine(lines[0]).map((h) => h.trim().toLowerCase());
+    const idIdx = header.indexOf('budget_id');
+    const amountIdx = header.indexOf('budget_amount');
 
-    if (categoryIdx === -1 || budgetAmountIdx === -1) {
-      return errorResponse('CSV must contain "category" and "budget_amount" columns', 400);
+    if (idIdx === -1 || amountIdx === -1) {
+      return errorResponse('CSV must contain "budget_id" and "budget_amount" columns', 400);
     }
 
-    // Parse rows (skip header, skip TOTAL row)
-    const rows: Array<{ category: string; budget_amount: string }> = [];
+    // Parse rows (skip header)
+    const rows: Array<{ budget_id: string; budget_amount: string }> = [];
     for (let i = 1; i < lines.length; i++) {
       const cells = parseCsvLine(lines[i]);
-      const category = cells[categoryIdx]?.trim();
-      if (!category || category.toUpperCase() === 'TOTAL') continue;
+      const budgetId = cells[idIdx]?.trim();
+      if (!budgetId) continue;
 
       rows.push({
-        category,
-        budget_amount: cells[budgetAmountIdx]?.trim() || '0',
+        budget_id: budgetId,
+        budget_amount: cells[amountIdx]?.trim() || '0',
       });
     }
 
@@ -74,15 +77,7 @@ export const POST: APIRoute = async (context) => {
       return errorResponse('No valid data rows found in CSV', 400);
     }
 
-    const result = await budgetService.importFromCSV(
-      auth.workspaceId,
-      auth.userId,
-      rows,
-      overwrite,
-      month,
-      year,
-      currency
-    );
+    const result = await budgetService.importFromCSV(auth.workspaceId, rows, month, year, currency);
 
     return successResponse(result);
   } catch (error) {

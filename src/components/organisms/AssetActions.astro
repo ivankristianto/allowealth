@@ -3,7 +3,7 @@
  * AssetActions Component
  *
  * Action buttons row for the Assets page containing Categories link
- * and Add Asset button. Follows the same layout pattern as BudgetActions.
+ * and Add Asset button. Uses ActionBar for consistent layout.
  *
  * @param {boolean} isHistoricalView - Disable mutation actions for historical views
  * @param {string} defaultCategoryId - Default category ID for new assets
@@ -11,6 +11,7 @@
  */
 
 import { Plus, Settings, ArrowRightLeft } from '@lucide/astro';
+import ActionBar from '@components/molecules/ActionBar.astro';
 
 export interface Props {
   isHistoricalView?: boolean;
@@ -20,74 +21,66 @@ export interface Props {
 
 const { isHistoricalView = false, defaultCategoryId = '', className = '' } = Astro.props;
 
-const containerClasses = [
-  // Card styling
-  'bg-base-100 rounded-card border border-base-300 shadow-sm',
-  // Responsive padding - compact on mobile
-  'p-2 md:p-4 lg:p-6',
-  // Layout - nowrap on mobile for single row, wrap on larger screens
-  'flex items-center gap-1 md:gap-3 md:flex-wrap',
-  // Additional classes
-  className,
-]
-  .filter(Boolean)
-  .join(' ');
+const ghostBtn =
+  'btn btn-ghost btn-sm md:btn-md gap-1 md:gap-2 rounded-lg md:rounded-xl text-base-content/70 hover:text-base-content hover:bg-base-200 px-2 md:px-4';
+
+const accentGhostBtn =
+  'btn btn-ghost btn-sm md:btn-md gap-1 md:gap-2 rounded-lg md:rounded-xl text-accent hover:text-accent hover:bg-accent/10 px-2 md:px-4 font-semibold';
 ---
 
-<div class={containerClasses}>
-  {/* Secondary Actions - Ghost style, icon-only on mobile */}
-  <div class="flex items-center gap-1 md:gap-2">
-    {/* Categories */}
-    <a
-      href="/assets/categories"
-      class="btn btn-ghost btn-sm md:btn-md gap-1 md:gap-2 rounded-lg md:rounded-xl text-base-content/70 hover:text-base-content hover:bg-base-200 px-2 md:px-4"
-      aria-label="Manage asset categories"
-      title="Categories"
-      data-testid="manage-asset-categories-btn"
-    >
-      <Settings size={16} class="stroke-current md:hidden" aria-hidden="true" />
-      <Settings size={18} class="stroke-current hidden md:block" aria-hidden="true" />
-      <span class="hidden md:inline">Categories</span>
-    </a>
+<ActionBar className={className} ariaLabel="Asset actions">
+  {/* Categories */}
+  <a
+    href="/assets/categories"
+    class={ghostBtn}
+    aria-label="Manage asset categories"
+    title="Categories"
+    data-testid="manage-asset-categories-btn"
+  >
+    <Settings size={16} class="stroke-current md:hidden" aria-hidden="true" />
+    <Settings size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+    <span class="hidden md:inline">Categories</span>
+  </a>
 
-    {/* Transfer */}
-    {
-      !isHistoricalView && (
-        <button
-          type="button"
-          class="btn btn-ghost btn-sm md:btn-md gap-1 md:gap-2 rounded-lg md:rounded-xl text-base-content/70 hover:text-base-content hover:bg-base-200 px-2 md:px-4"
-          aria-label="Transfer between assets"
-          title="Transfer"
-          data-transfer-btn
-          data-testid="asset-transfer-btn"
-        >
-          <ArrowRightLeft size={16} class="stroke-current md:hidden" aria-hidden="true" />
-          <ArrowRightLeft size={18} class="stroke-current hidden md:block" aria-hidden="true" />
-          <span class="hidden md:inline">Transfer</span>
-        </button>
-      )
-    }
-  </div>
+  {/* Transfer */}
+  {
+    !isHistoricalView && (
+      <button
+        type="button"
+        class={ghostBtn}
+        aria-label="Transfer between assets"
+        title="Transfer"
+        data-transfer-btn
+        data-testid="asset-transfer-btn"
+      >
+        <ArrowRightLeft size={16} class="stroke-current md:hidden" aria-hidden="true" />
+        <ArrowRightLeft size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+        <span class="hidden md:inline">Transfer</span>
+      </button>
+    )
+  }
 
-  {/* Primary Action - Pushed to right */}
+  {/* Primary Action - Add Asset */}
   {
     isHistoricalView ? (
       <button
+        slot="primary"
         type="button"
-        class="btn btn-accent btn-sm md:btn-md ml-auto gap-1 md:gap-2 rounded-lg md:rounded-xl font-semibold px-3 md:px-4 opacity-40 cursor-not-allowed"
+        class={`${accentGhostBtn} opacity-40 cursor-not-allowed`}
         disabled
         aria-label="Add new asset (disabled for historical view)"
         data-testid="add-asset-btn"
       >
         <Plus size={16} class="stroke-current md:hidden" aria-hidden="true" />
         <Plus size={18} class="stroke-current hidden md:block" aria-hidden="true" />
-        <span class="hidden sm:inline">Add Asset</span>
-        <span class="sm:hidden">Add</span>
+        <span class="hidden sm:inline">New Asset</span>
+        <span class="sm:hidden">New</span>
       </button>
     ) : (
       <button
+        slot="primary"
         type="button"
-        class="btn btn-accent btn-sm md:btn-md ml-auto gap-1 md:gap-2 rounded-lg md:rounded-xl font-semibold px-3 md:px-4"
+        class={accentGhostBtn}
         aria-label="Add new asset"
         data-add-asset-btn
         data-default-category-id={defaultCategoryId}
@@ -95,12 +88,12 @@ const containerClasses = [
       >
         <Plus size={16} class="stroke-current md:hidden" aria-hidden="true" />
         <Plus size={18} class="stroke-current hidden md:block" aria-hidden="true" />
-        <span class="hidden sm:inline">Add Asset</span>
-        <span class="sm:hidden">Add</span>
+        <span class="hidden sm:inline">New Asset</span>
+        <span class="sm:hidden">New</span>
       </button>
     )
   }
-</div>
+</ActionBar>
 
 <script>
   const handlerMap = new WeakMap<HTMLElement, (e: Event) => void>();

@@ -40,7 +40,7 @@ const { id, month, year, currency } = Astro.props;
             Import Budgets from CSV
           </h2>
           <p class="text-base-content/60 text-sm mt-2 font-medium">
-            Upload a CSV file with "category" and "budget_amount" columns.
+            Upload a CSV exported from the budget page to update amounts.
           </p>
         </div>
       </div>
@@ -58,7 +58,9 @@ const { id, month, year, currency } = Astro.props;
           <p class="text-base-content/70 font-medium">
             Drop CSV file here or <span class="text-accent underline">browse</span>
           </p>
-          <p class="text-xs text-base-content/40 mt-1">Expects columns: category, budget_amount</p>
+          <p class="text-xs text-base-content/40 mt-1">
+            Expects columns: budget_id, budget_name, budget_amount
+          </p>
           <input type="file" accept=".csv,text/csv" class="hidden" data-file-input />
         </div>
       </div>
@@ -74,7 +76,7 @@ const { id, month, year, currency } = Astro.props;
           <table class="table table-sm w-full">
             <thead class="sticky top-0 bg-base-200">
               <tr>
-                <th>Category</th>
+                <th>Budget Name</th>
                 <th class="text-right">Budget Amount</th>
               </tr>
             </thead>
@@ -82,16 +84,9 @@ const { id, month, year, currency } = Astro.props;
           </table>
         </div>
 
-        <label class="flex items-center gap-3 cursor-pointer">
-          <input
-            type="checkbox"
-            class="checkbox checkbox-sm checkbox-accent"
-            data-overwrite-checkbox
-          />
-          <span class="text-sm text-base-content/70">
-            Overwrite existing budgets for this month
-          </span>
-        </label>
+        <p class="text-sm text-base-content/60">
+          Budget amounts will be updated for the current month.
+        </p>
       </div>
 
       {/* Step 3: Results */}
@@ -165,14 +160,11 @@ const { id, month, year, currency } = Astro.props;
       const changeFileBtn = container.querySelector<HTMLButtonElement>('[data-change-file]');
       const previewBody = container.querySelector<HTMLElement>('[data-preview-body]');
       const fileNameEl = container.querySelector<HTMLElement>('[data-file-name]');
-      const overwriteCheckbox = container.querySelector<HTMLInputElement>(
-        '[data-overwrite-checkbox]'
-      );
       const resultsContent = container.querySelector<HTMLElement>('[data-results-content]');
 
       if (!modal || !dropZone || !fileInput || !submitBtn || !cancelBtn) return;
 
-      let parsedRows: Array<{ category: string; budget_amount: string }> = [];
+      let parsedRows: Array<{ budget_id: string; budget_name: string; budget_amount: string }> = [];
       let selectedFile: File | null = null;
 
       function showStep(step: 'upload' | 'preview' | 'results') {
@@ -190,7 +182,6 @@ const { id, month, year, currency } = Astro.props;
         selectedFile = null;
         if (fileInput) fileInput.value = '';
         if (previewBody) previewBody.innerHTML = '';
-        if (overwriteCheckbox) overwriteCheckbox.checked = false;
         errorEl?.classList.add('hidden');
       }
 
@@ -237,21 +228,23 @@ const { id, month, year, currency } = Astro.props;
         }
 
         const header = parseCsvLine(lines[0]).map((h) => h.toLowerCase());
-        const categoryIdx = header.indexOf('category');
-        const budgetAmountIdx = header.indexOf('budget_amount');
+        const idIdx = header.indexOf('budget_id');
+        const nameIdx = header.indexOf('budget_name');
+        const amountIdx = header.indexOf('budget_amount');
 
-        if (categoryIdx === -1 || budgetAmountIdx === -1) {
-          throw new Error('CSV must contain "category" and "budget_amount" columns');
+        if (idIdx === -1 || amountIdx === -1) {
+          throw new Error('CSV must contain "budget_id" and "budget_amount" columns');
         }
 
-        const rows: Array<{ category: string; budget_amount: string }> = [];
+        const rows: Array<{ budget_id: string; budget_name: string; budget_amount: string }> = [];
         for (let i = 1; i < lines.length; i++) {
           const cells = parseCsvLine(lines[i]);
-          const category = cells[categoryIdx];
-          if (!category || category.toUpperCase() === 'TOTAL') continue;
+          const budgetId = cells[idIdx];
+          if (!budgetId) continue;
           rows.push({
-            category,
-            budget_amount: cells[budgetAmountIdx] || '0',
+            budget_id: budgetId,
+            budget_name: nameIdx !== -1 ? cells[nameIdx] || '' : '',
+            budget_amount: cells[amountIdx] || '0',
           });
         }
 
@@ -284,7 +277,7 @@ const { id, month, year, currency } = Astro.props;
               previewBody.innerHTML = parsedRows
                 .map(
                   (row) =>
-                    `<tr><td>${escapeHtml(row.category)}</td><td class="text-right font-mono">${escapeHtml(row.budget_amount)}</td></tr>`
+                    `<tr><td>${escapeHtml(row.budget_name)}</td><td class="text-right font-mono">${escapeHtml(row.budget_amount)}</td></tr>`
                 )
                 .join('');
             }
@@ -373,7 +366,6 @@ const { id, month, year, currency } = Astro.props;
 
         const formData = new FormData();
         formData.append('csv_file', selectedFile);
-        formData.append('overwrite', overwriteCheckbox?.checked ? 'true' : 'false');
         formData.append('month', monthInput?.value || '');
         formData.append('year', yearInput?.value || '');
         formData.append('currency', currencyInput?.value || 'IDR');
@@ -398,16 +390,9 @@ const { id, month, year, currency } = Astro.props;
           // Show results
           let html = '<div class="space-y-3">';
           html += `<div class="flex items-center gap-3">
-              <span class="badge badge-success badge-lg">${data.imported}</span>
-              <span class="text-sm font-medium">budgets imported</span>
+              <span class="badge badge-success badge-lg">${data.updated}</span>
+              <span class="text-sm font-medium">budgets updated</span>
             </div>`;
-
-          if (data.skipped > 0) {
-            html += `<div class="flex items-center gap-3">
-                <span class="badge badge-warning badge-lg">${data.skipped}</span>
-                <span class="text-sm font-medium">skipped (already exist)</span>
-              </div>`;
-          }
 
           if (data.errors && data.errors.length > 0) {
             html += `<div class="mt-2">
@@ -423,8 +408,8 @@ const { id, month, year, currency } = Astro.props;
           if (resultsContent) resultsContent.innerHTML = html;
           showStep('results');
 
-          if (data.imported > 0) {
-            addToast(`${data.imported} budget(s) imported successfully!`, 'success');
+          if (data.updated > 0) {
+            addToast(`${data.updated} budget(s) updated successfully!`, 'success');
           }
         } catch (err) {
           const message = err instanceof Error ? err.message : 'Import failed';
