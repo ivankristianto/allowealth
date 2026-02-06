@@ -518,6 +518,11 @@ export class BudgetService {
         continue;
       }
 
+      if (!budgetAmount) {
+        errors.push({ row: i + 1, message: 'Missing budget amount' });
+        continue;
+      }
+
       if (!validBudgetIds.has(budgetId)) {
         errors.push({
           row: i + 1,
@@ -532,15 +537,14 @@ export class BudgetService {
       }
       seenIds.add(budgetId);
 
-      const trimmedAmount = budgetAmount.trim();
-      if (!/^\d+(\.\d+)?$/.test(trimmedAmount)) {
+      if (!/^\d+(\.\d+)?$/.test(budgetAmount)) {
         errors.push({
           row: i + 1,
           message: `Invalid amount "${budgetAmount}" — must be a plain number (e.g. 100000 or 100000.50)`,
         });
         continue;
       }
-      const parsedAmount = Number(trimmedAmount);
+      const parsedAmount = Number(budgetAmount);
       if (!Number.isFinite(parsedAmount) || parsedAmount < 0) {
         errors.push({ row: i + 1, message: `Invalid amount "${budgetAmount}"` });
         continue;

@@ -72,30 +72,34 @@ const headerClasses = ['flex flex-col gap-4', className].filter(Boolean).join(' 
     {/* Header actions + Month Navigation */}
     <div class="flex items-center gap-1" data-testid="budget-month-selector">
       {/* History */}
-      <a
-        href="/budget/history"
-        class="btn btn-sm btn-square bg-base-100 border border-base-300 hover:border-accent/30 hover:text-accent rounded-xl transition-all"
-        aria-label="Budget history"
-        title="History"
-        data-testid="budget-history-btn"
-      >
-        <History size={18} class="stroke-current" aria-hidden="true" />
-      </a>
+      <div class="tooltip tooltip-bottom" data-tip="View budget history">
+        <a
+          href="/budget/history"
+          class="btn btn-sm bg-base-100 border border-base-300 hover:border-accent/30 hover:text-accent rounded-xl transition-all gap-1"
+          aria-label="Budget history"
+          data-testid="budget-history-btn"
+        >
+          <History size={16} class="stroke-current" aria-hidden="true" />
+          <span class="hidden md:inline text-xs">History</span>
+        </a>
+      </div>
 
       {/* Copy to Next Month */}
       {
         showCopyButton && (
-          <button
-            type="button"
-            class="btn btn-sm btn-square bg-base-100 border border-base-300 hover:border-accent/30 hover:text-accent rounded-xl transition-all"
-            id="copy-budget-btn"
-            data-target-modal="copy-budget-modal"
-            aria-label="Copy budgets to next month"
-            title="Copy to Next Month"
-            data-testid="budget-copy-btn"
-          >
-            <Copy size={18} class="stroke-current" aria-hidden="true" />
-          </button>
+          <div class="tooltip tooltip-bottom" data-tip="Copy budgets to next month">
+            <button
+              type="button"
+              class="btn btn-sm bg-base-100 border border-base-300 hover:border-accent/30 hover:text-accent rounded-xl transition-all gap-1"
+              id="copy-budget-btn"
+              data-target-modal="copy-budget-modal"
+              aria-label="Copy budgets to next month"
+              data-testid="budget-copy-btn"
+            >
+              <Copy size={16} class="stroke-current" aria-hidden="true" />
+              <span class="hidden md:inline text-xs">Copy</span>
+            </button>
+          </div>
         )
       }
 

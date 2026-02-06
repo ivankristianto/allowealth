@@ -33,73 +33,79 @@ const accentGhostBtn =
 
 <ActionBar className={className} ariaLabel="Budget actions">
   {/* Categories */}
-  <a href="/budget/categories" class={ghostBtn} aria-label="Manage categories" title="Categories">
-    <Tags size={16} class="stroke-current md:hidden" aria-hidden="true" />
-    <Tags size={18} class="stroke-current hidden md:block" aria-hidden="true" />
-    <span class="hidden md:inline">Categories</span>
-  </a>
+  <div class="tooltip tooltip-bottom" data-tip="Manage categories">
+    <a href="/budget/categories" class={ghostBtn} aria-label="Manage categories">
+      <Tags size={16} class="stroke-current md:hidden" aria-hidden="true" />
+      <Tags size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+      <span class="hidden md:inline">Categories</span>
+    </a>
+  </div>
 
   {/* Import */}
-  <button
-    type="button"
-    class={ghostBtn}
-    aria-label="Import budgets from CSV"
-    title="Import"
-    data-budget-import-btn
-    data-testid="budget-import-btn"
-  >
-    <Upload size={16} class="stroke-current md:hidden" aria-hidden="true" />
-    <Upload size={18} class="stroke-current hidden md:block" aria-hidden="true" />
-    <span>Import</span>
-  </button>
+  <div class="tooltip tooltip-bottom" data-tip="Import budgets from CSV">
+    <button
+      type="button"
+      class={ghostBtn}
+      aria-label="Import budgets from CSV"
+      data-budget-import-btn
+      data-testid="budget-import-btn"
+    >
+      <Upload size={16} class="stroke-current md:hidden" aria-hidden="true" />
+      <Upload size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+      <span>Import</span>
+    </button>
+  </div>
 
   {/* Export */}
-  <button
-    type="button"
-    class={ghostBtn}
-    aria-label="Export budgets to CSV"
-    title="Export"
-    data-budget-export-btn
-    data-testid="budget-export-btn"
-  >
-    <Download size={16} class="stroke-current md:hidden" aria-hidden="true" />
-    <Download size={18} class="stroke-current hidden md:block" aria-hidden="true" />
-    <span>Export</span>
-  </button>
+  <div class="tooltip tooltip-bottom" data-tip="Export budgets to CSV">
+    <button
+      type="button"
+      class={ghostBtn}
+      aria-label="Export budgets to CSV"
+      data-budget-export-btn
+      data-testid="budget-export-btn"
+    >
+      <Download size={16} class="stroke-current md:hidden" aria-hidden="true" />
+      <Download size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+      <span>Export</span>
+    </button>
+  </div>
 
   {/* AI Rebalancer */}
   {
     showAiRebalancer && (
-      <button
-        type="button"
-        class="btn btn-ghost btn-sm md:btn-md gap-1 md:gap-2 rounded-lg md:rounded-xl text-accent hover:text-accent hover:bg-accent/10 px-2 md:px-4"
-        id="ai-rebalancer-btn"
-        data-target-modal="ai-rebalancer-modal"
-        aria-label="AI budget rebalancer"
-        title="AI Rebalancer"
-      >
-        <Sparkles size={16} class="stroke-current md:hidden" aria-hidden="true" />
-        <Sparkles size={18} class="stroke-current hidden md:block" aria-hidden="true" />
-        <span class="hidden md:inline">AI Rebalancer</span>
-      </button>
+      <div class="tooltip tooltip-bottom" data-tip="AI budget rebalancer">
+        <button
+          type="button"
+          class="btn btn-ghost btn-sm md:btn-md gap-1 md:gap-2 rounded-lg md:rounded-xl text-accent hover:text-accent hover:bg-accent/10 px-2 md:px-4"
+          id="ai-rebalancer-btn"
+          data-target-modal="ai-rebalancer-modal"
+          aria-label="AI budget rebalancer"
+        >
+          <Sparkles size={16} class="stroke-current md:hidden" aria-hidden="true" />
+          <Sparkles size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+          <span class="hidden md:inline">AI Rebalancer</span>
+        </button>
+      </div>
     )
   }
 
   {/* Primary Action - New Budget */}
-  <button
-    slot="primary"
-    type="button"
-    class={accentGhostBtn}
-    id="set-new-budget-btn"
-    data-testid="set-new-budget-btn"
-    data-target-modal="set-new-budget-modal"
-    aria-label="Set new budget"
-  >
-    <Plus size={16} class="stroke-current md:hidden" aria-hidden="true" />
-    <Plus size={18} class="stroke-current hidden md:block" aria-hidden="true" />
-    <span class="hidden sm:inline">New Budget</span>
-    <span class="sm:hidden">New</span>
-  </button>
+  <div slot="primary" class="tooltip tooltip-bottom" data-tip="Set new budget">
+    <button
+      type="button"
+      class={accentGhostBtn}
+      id="set-new-budget-btn"
+      data-testid="set-new-budget-btn"
+      data-target-modal="set-new-budget-modal"
+      aria-label="Set new budget"
+    >
+      <Plus size={16} class="stroke-current md:hidden" aria-hidden="true" />
+      <Plus size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+      <span class="hidden sm:inline">New Budget</span>
+      <span class="sm:hidden">New</span>
+    </button>
+  </div>
 </ActionBar>
 
 {/* AI Rebalancer Coming Soon Modal */}

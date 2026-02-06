@@ -7,15 +7,9 @@
 
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import CSVImportForm from '../../components/molecules/CSVImportForm.astro';
-import { Info, Download } from '@lucide/astro';
+import { Download } from '@lucide/astro';
 
 const currentPath = '/transactions/import';
-
-// TODO: In Phase 2/3, this will:
-// 1. Handle CSV file upload
-// 2. Parse and preview data
-// 3. Allow column mapping
-// 4. Validate and import via service layer
 ---
 
 <ProtectedLayout title="Import" currentPath={currentPath} subtitle="Upload transactions">
@@ -27,28 +21,6 @@ const currentPath = '/transactions/import';
 
     <div class="card bg-base-100 shadow border border-base-300">
       <div class="card-body">
-        <!-- Instructions -->
-        <div class="alert alert-info mb-6">
-          <Info size={16} class="stroke-current shrink-0" aria-hidden="true" />
-          <div>
-            <h3 class="font-bold">CSV Format Requirements</h3>
-            <div class="text-sm mt-2">
-              <p class="mb-2">Your CSV file should include these columns:</p>
-              <ul class="list-disc list-inside space-y-1">
-                <li><strong>date:</strong> Transaction date (YYYY-MM-DD format)</li>
-                <li><strong>type:</strong> "expense" or "income"</li>
-                <li><strong>amount:</strong> Transaction amount (e.g., 100000.00)</li>
-                <li><strong>currency:</strong> "IDR" or "USD"</li>
-                <li><strong>category:</strong> Category name (must match existing categories)</li>
-                <li>
-                  <strong>asset:</strong> Asset name (must match existing assets)
-                </li>
-                <li><strong>description:</strong> Optional notes</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-
         <!-- Import Form -->
         <CSVImportForm action="/api/transactions/import" />
 
@@ -58,7 +30,10 @@ const currentPath = '/transactions/import';
           <p class="text-sm text-base-content/60 mb-3">
             Download a sample CSV file to see the expected format.
           </p>
-          <a href="/api/transactions/template" class="btn btn-outline btn-sm">
+          <a
+            href="/api/transactions/template"
+            class="btn btn-ghost btn-sm gap-1 rounded-xl text-base-content/70 hover:text-base-content hover:bg-base-200"
+          >
             <Download size={16} class="stroke-current" aria-hidden="true" />
             Download CSV Template
           </a>

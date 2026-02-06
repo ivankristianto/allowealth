@@ -24,70 +24,60 @@ const accentGhostBtn =
 
 <ActionBar className={className} ariaLabel="Transaction actions">
   {/* Import CSV */}
-  <button
-    type="button"
-    class={ghostBtn}
-    data-import-csv-button
-    aria-label="Import CSV"
-    title="Import CSV"
-    data-transaction-actions-bar
-  >
-    <Upload size={16} class="stroke-current md:hidden" aria-hidden="true" />
-    <Upload size={18} class="stroke-current hidden md:block" aria-hidden="true" />
-    <span class="hidden md:inline">Import</span>
-  </button>
+  <div class="tooltip tooltip-bottom" data-tip="Import transactions from CSV">
+    <button
+      type="button"
+      class={ghostBtn}
+      data-import-csv-button
+      aria-label="Import CSV"
+      data-transaction-actions-bar
+    >
+      <Upload size={16} class="stroke-current md:hidden" aria-hidden="true" />
+      <Upload size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+      <span class="hidden md:inline">Import</span>
+    </button>
+  </div>
 
   {/* Export CSV */}
-  <button
-    type="button"
-    class={ghostBtn}
-    data-export-csv-button
-    aria-label="Export CSV"
-    title="Export CSV"
-  >
-    <Download size={16} class="stroke-current md:hidden" aria-hidden="true" />
-    <Download size={18} class="stroke-current hidden md:block" aria-hidden="true" />
-    <span class="hidden md:inline">Export</span>
-  </button>
+  <div class="tooltip tooltip-bottom" data-tip="Export transactions to CSV">
+    <button type="button" class={ghostBtn} data-export-csv-button aria-label="Export CSV">
+      <Download size={16} class="stroke-current md:hidden" aria-hidden="true" />
+      <Download size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+      <span class="hidden md:inline">Export</span>
+    </button>
+  </div>
 
   {/* Scan Receipt */}
-  <button
-    type="button"
-    class="btn btn-ghost btn-sm md:btn-md gap-1 md:gap-2 rounded-lg md:rounded-xl text-accent hover:text-accent hover:bg-accent/10 px-2 md:px-4"
-    data-scan-receipt-button
-    aria-label="Scan receipt"
-    title="Scan Receipt"
-  >
-    <Sparkles size={16} class="stroke-current md:hidden" aria-hidden="true" />
-    <Sparkles size={18} class="stroke-current hidden md:block" aria-hidden="true" />
-    <span class="hidden md:inline">Scan Receipt</span>
-  </button>
+  <div class="tooltip tooltip-bottom" data-tip="Scan receipt with AI">
+    <button
+      type="button"
+      class="btn btn-ghost btn-sm md:btn-md gap-1 md:gap-2 rounded-lg md:rounded-xl text-accent hover:text-accent hover:bg-accent/10 px-2 md:px-4"
+      data-scan-receipt-button
+      aria-label="Scan receipt"
+    >
+      <Sparkles size={16} class="stroke-current md:hidden" aria-hidden="true" />
+      <Sparkles size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+      <span class="hidden md:inline">Scan Receipt</span>
+    </button>
+  </div>
 
   {/* Right side: Expense + Income with accent ghost style */}
   <div slot="primary" class="flex items-center gap-1 md:gap-2">
-    <button
-      type="button"
-      class={accentGhostBtn}
-      data-add-expense-button
-      aria-label="Add expense"
-      title="Expense"
-    >
-      <CircleMinus size={16} class="stroke-current md:hidden" aria-hidden="true" />
-      <CircleMinus size={18} class="stroke-current hidden md:block" aria-hidden="true" />
-      <span class="hidden md:inline">Expense</span>
-    </button>
+    <div class="tooltip tooltip-bottom" data-tip="Add new expense">
+      <button type="button" class={accentGhostBtn} data-add-expense-button aria-label="Add expense">
+        <CircleMinus size={16} class="stroke-current md:hidden" aria-hidden="true" />
+        <CircleMinus size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+        <span class="hidden md:inline">Expense</span>
+      </button>
+    </div>
 
-    <button
-      type="button"
-      class={accentGhostBtn}
-      data-add-income-button
-      aria-label="Add income"
-      title="Income"
-    >
-      <CirclePlus size={16} class="stroke-current md:hidden" aria-hidden="true" />
-      <CirclePlus size={18} class="stroke-current hidden md:block" aria-hidden="true" />
-      <span class="hidden md:inline">Income</span>
-    </button>
+    <div class="tooltip tooltip-bottom" data-tip="Add new income">
+      <button type="button" class={accentGhostBtn} data-add-income-button aria-label="Add income">
+        <CirclePlus size={16} class="stroke-current md:hidden" aria-hidden="true" />
+        <CirclePlus size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+        <span class="hidden md:inline">Income</span>
+      </button>
+    </div>
   </div>
 </ActionBar>
 

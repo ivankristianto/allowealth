@@ -30,67 +30,71 @@ const accentGhostBtn =
 
 <ActionBar className={className} ariaLabel="Asset actions">
   {/* Categories */}
-  <a
-    href="/assets/categories"
-    class={ghostBtn}
-    aria-label="Manage asset categories"
-    title="Categories"
-    data-testid="manage-asset-categories-btn"
-  >
-    <Settings size={16} class="stroke-current md:hidden" aria-hidden="true" />
-    <Settings size={18} class="stroke-current hidden md:block" aria-hidden="true" />
-    <span class="hidden md:inline">Categories</span>
-  </a>
+  <div class="tooltip tooltip-bottom" data-tip="Manage asset categories">
+    <a
+      href="/assets/categories"
+      class={ghostBtn}
+      aria-label="Manage asset categories"
+      data-testid="manage-asset-categories-btn"
+    >
+      <Settings size={16} class="stroke-current md:hidden" aria-hidden="true" />
+      <Settings size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+      <span class="hidden md:inline">Categories</span>
+    </a>
+  </div>
 
   {/* Transfer */}
   {
     !isHistoricalView && (
-      <button
-        type="button"
-        class={ghostBtn}
-        aria-label="Transfer between assets"
-        title="Transfer"
-        data-transfer-btn
-        data-testid="asset-transfer-btn"
-      >
-        <ArrowRightLeft size={16} class="stroke-current md:hidden" aria-hidden="true" />
-        <ArrowRightLeft size={18} class="stroke-current hidden md:block" aria-hidden="true" />
-        <span class="hidden md:inline">Transfer</span>
-      </button>
+      <div class="tooltip tooltip-bottom" data-tip="Transfer between assets">
+        <button
+          type="button"
+          class={ghostBtn}
+          aria-label="Transfer between assets"
+          data-transfer-btn
+          data-testid="asset-transfer-btn"
+        >
+          <ArrowRightLeft size={16} class="stroke-current md:hidden" aria-hidden="true" />
+          <ArrowRightLeft size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+          <span class="hidden md:inline">Transfer</span>
+        </button>
+      </div>
     )
   }
 
   {/* Primary Action - Add Asset */}
   {
     isHistoricalView ? (
-      <button
-        slot="primary"
-        type="button"
-        class={`${accentGhostBtn} opacity-40 cursor-not-allowed`}
-        disabled
-        aria-label="Add new asset (disabled for historical view)"
-        data-testid="add-asset-btn"
-      >
-        <Plus size={16} class="stroke-current md:hidden" aria-hidden="true" />
-        <Plus size={18} class="stroke-current hidden md:block" aria-hidden="true" />
-        <span class="hidden sm:inline">New Asset</span>
-        <span class="sm:hidden">New</span>
-      </button>
+      <div slot="primary" class="tooltip tooltip-bottom" data-tip="Add new asset (disabled)">
+        <button
+          type="button"
+          class={`${accentGhostBtn} opacity-40 cursor-not-allowed`}
+          disabled
+          aria-label="Add new asset (disabled for historical view)"
+          data-testid="add-asset-btn"
+        >
+          <Plus size={16} class="stroke-current md:hidden" aria-hidden="true" />
+          <Plus size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+          <span class="hidden sm:inline">New Asset</span>
+          <span class="sm:hidden">New</span>
+        </button>
+      </div>
     ) : (
-      <button
-        slot="primary"
-        type="button"
-        class={accentGhostBtn}
-        aria-label="Add new asset"
-        data-add-asset-btn
-        data-default-category-id={defaultCategoryId}
-        data-testid="add-asset-btn"
-      >
-        <Plus size={16} class="stroke-current md:hidden" aria-hidden="true" />
-        <Plus size={18} class="stroke-current hidden md:block" aria-hidden="true" />
-        <span class="hidden sm:inline">New Asset</span>
-        <span class="sm:hidden">New</span>
-      </button>
+      <div slot="primary" class="tooltip tooltip-bottom" data-tip="Add new asset">
+        <button
+          type="button"
+          class={accentGhostBtn}
+          aria-label="Add new asset"
+          data-add-asset-btn
+          data-default-category-id={defaultCategoryId}
+          data-testid="add-asset-btn"
+        >
+          <Plus size={16} class="stroke-current md:hidden" aria-hidden="true" />
+          <Plus size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+          <span class="hidden sm:inline">New Asset</span>
+          <span class="sm:hidden">New</span>
+        </button>
+      </div>
     )
   }
 </ActionBar>
