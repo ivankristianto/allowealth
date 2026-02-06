@@ -1,0 +1,1 @@
+DROP INDEX `email_verification_tokens_token_idx`;

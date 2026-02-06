@@ -44,7 +44,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     return createRateLimitResponse(rateLimitResult, RATE_LIMIT_PRESETS.resendVerification.message);
   }
 
-  let body;
+  let body: unknown;
   try {
     body = await request.json();
   } catch {
@@ -54,9 +54,22 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     });
   }
 
-  const { email } = body;
+  if (!body || typeof body !== 'object' || Array.isArray(body)) {
+    return new Response(JSON.stringify({ error: 'Invalid request body' }), {
+      status: 400,
+      headers: STANDARD_RESPONSE_HEADERS,
+    });
+  }
 
-  if (!email || typeof email !== 'string') {
+  const emailRaw = (body as Record<string, unknown>).email;
+  if (typeof emailRaw !== 'string') {
+    return new Response(JSON.stringify({ error: 'Email is required' }), {
+      status: 400,
+      headers: STANDARD_RESPONSE_HEADERS,
+    });
+  }
+  const email = emailRaw.trim().toLowerCase();
+  if (!email) {
     return new Response(JSON.stringify({ error: 'Email is required' }), {
       status: 400,
       headers: STANDARD_RESPONSE_HEADERS,
@@ -65,7 +78,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 
   // Per-email rate limit: 3 per hour per email address
   const perEmailResult = checkRateLimitByKey(
-    `resend-verification:${email.toLowerCase()}`,
+    `resend-verification:${email}`,
     RATE_LIMIT_PRESETS.resendVerificationPerEmail
   );
   if (!perEmailResult.allowed) {
@@ -77,7 +90,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
 
   // Look up user (don't reveal if user exists)
   const user = await db.query.users.findFirst({
-    where: eq(schema.users.email, email.toLowerCase()),
+    where: eq(schema.users.email, email),
   });
 
   if (!user) {

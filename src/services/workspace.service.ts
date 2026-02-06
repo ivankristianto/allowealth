@@ -92,6 +92,15 @@ export class WorkspaceService {
    * @param workspaceId - Workspace ID to activate
    */
   async activateWorkspace(workspaceId: string): Promise<void> {
+    const workspace = await this.findById(workspaceId);
+    if (!workspace) {
+      throw new WorkspaceServiceError(
+        ServiceErrorCode.WORKSPACE_NOT_FOUND,
+        'Workspace not found',
+        404
+      );
+    }
+
     await this.db
       .update(this.schema.workspaces)
       .set({ status: 'active', updated_at: new Date() })

@@ -161,7 +161,8 @@ bun run cli:rotate-db-password -- --ask --hyperdrive
 
 ```bash
 # Backfill existing users as verified (run once after deployment)
-bun run backfill:email-verification
+bun run backfill:email-verification           # Local/dev
+bun run backfill:email-verification:prod      # Production
 ```
 
 Marks all existing users' emails as verified and activates all workspaces.

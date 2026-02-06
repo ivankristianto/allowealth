@@ -349,17 +349,17 @@ export async function login(
       throw new AuthError(AUTH_ERRORS.INVALID_CREDENTIALS, 'Invalid email or password');
     }
 
-    // Check if email is verified BEFORE password check
-    // (prevents timing oracle that reveals account existence + password validity)
+    // Always verify password first to maintain constant timing
+    // (prevents timing oracle that could distinguish verified vs unverified accounts)
+    const isValidPassword = await verifyPassword(password, user.password_hash);
+
+    // Check email verification after password check
     if (!user.email_verified_at) {
       log.warn('Login attempt with unverified email', { email });
       const err = new AuthError(AUTH_ERRORS.EMAIL_NOT_VERIFIED, 'Email not verified');
       err.email = user.email;
       throw err;
     }
-
-    // Verify password
-    const isValidPassword = await verifyPassword(password, user.password_hash);
 
     if (!isValidPassword) {
       throw new AuthError(AUTH_ERRORS.INVALID_CREDENTIALS, 'Invalid email or password');

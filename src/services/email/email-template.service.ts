@@ -60,6 +60,11 @@ function escapeHtml(str: string): string {
     .replace(/'/g, '&#39;');
 }
 
+/** Sanitize email subject — strip CR/LF to prevent header injection */
+function sanitizeSubject(str: string): string {
+  return str.replace(/[\r\n]+/g, ' ').trim();
+}
+
 export class EmailTemplateService {
   private readonly primaryColor = '#2563eb';
   private readonly appName = 'Expenses App';
@@ -200,7 +205,7 @@ ${this.button('Accept Invitation', inviteUrl)}
 `.trim();
 
     return {
-      subject: `You've been invited to join ${escapeHtml(workspaceName)}`,
+      subject: `You've been invited to join ${sanitizeSubject(workspaceName)}`,
       html: this.wrap(content),
     };
   }
@@ -236,7 +241,7 @@ ${this.button('Accept Invitation', inviteUrl)}
 `.trim();
 
     return {
-      subject: `Test email from ${workspaceName}`,
+      subject: `Test email from ${sanitizeSubject(workspaceName)}`,
       html: this.wrap(content),
     };
   }

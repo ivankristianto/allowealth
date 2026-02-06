@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type APIRequestContext } from '@playwright/test';
 import {
   getVerificationToken,
   expireVerificationToken,
@@ -35,7 +35,7 @@ function uniqueEmail(): string {
 
 /** Register a user via the signup API and return the email */
 async function registerUser(
-  request: any,
+  request: APIRequestContext,
   overrides?: { email?: string; password?: string; name?: string }
 ): Promise<{ email: string; password: string }> {
   const email = overrides?.email ?? uniqueEmail();
