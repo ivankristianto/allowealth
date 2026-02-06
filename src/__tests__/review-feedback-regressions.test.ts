@@ -132,4 +132,61 @@ describe('review feedback regressions', () => {
       expect(content).not.toMatch(pattern);
     });
   });
+
+  it('button atom should use CSS utility contracts instead of controlStyles ts constants', () => {
+    const buttonContent = read('src/components/atoms/Button.astro');
+    const globalStylesContent = read('src/styles/globals.css');
+
+    expect(buttonContent).not.toContain("from '@/lib/ui/controlStyles'");
+    expect(buttonContent).toContain('btn-contract-base');
+    expect(buttonContent).toContain('btn-contract-outline');
+    expect(globalStylesContent).toContain('.btn-contract-base');
+    expect(globalStylesContent).toContain('.btn-contract-outline');
+    expect(globalStylesContent).toContain('@apply');
+  });
+
+  it('date picker story should use token classes for input styling', () => {
+    const content = read('src/components/atoms/DatePicker.stories.ts');
+
+    expect(content).toContain("from '@/lib/tokens'");
+    expect(content).toContain('tokenClasses');
+    expect(content).toContain('tokenClasses.inputSurfaceBase');
+    expect(content).toContain('tokenClasses.inputFocusAccent');
+    expect(content).toContain('tokenClasses.inputPaddingXl');
+    expect(content).toContain('tokenClasses.inputHeightXl');
+    expect(content).not.toContain(
+      'h-14 rounded-lg border border-base-300 bg-base-200 px-6 text-base font-bold'
+    );
+  });
+
+  it('transaction filters category search should have visible label and tokenized input classes', () => {
+    const content = read('src/components/organisms/TransactionFiltersBar.astro');
+    const inputSegments = content.match(/<input\b[\s\S]*?>/g) ?? [];
+    const categorySearchSegment = inputSegments.find((segment) =>
+      segment.includes('data-category-search')
+    );
+    const mainSearchSegment = inputSegments.find((segment) =>
+      segment.includes('data-filter-search')
+    );
+
+    expect(content).toContain('<label for="category-search"');
+    expect(content).toContain('Search categories');
+    expect(content).toContain('id="category-search"');
+    expect(content).toContain('data-category-search');
+    expect(content).toContain('tokenClasses.inputSurfaceBase');
+    expect(content).toContain('tokenClasses.inputFocusAccent');
+    expect(content).toContain('tokenClasses.inputPaddingSearchCompact');
+    expect(content).toContain('tokenClasses.inputPaddingSearchDefault');
+
+    expect(categorySearchSegment).toBeDefined();
+    expect(mainSearchSegment).toBeDefined();
+    expect(categorySearchSegment).not.toContain('input-sm');
+    expect(categorySearchSegment).not.toContain('pl-8');
+    expect(categorySearchSegment).not.toContain('pr-3');
+    expect(categorySearchSegment).not.toContain('py-2');
+    expect(mainSearchSegment).not.toContain('pl-10');
+    expect(mainSearchSegment).not.toContain('pr-3');
+    expect(mainSearchSegment).not.toContain('sm:pl-11');
+    expect(mainSearchSegment).not.toContain('sm:pr-4');
+  });
 });

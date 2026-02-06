@@ -14,6 +14,7 @@
 
 import { Search, ChevronDown, Tag, Check, RotateCcw } from '@lucide/astro';
 import PeriodNavigator from '@/components/molecules/PeriodNavigator.astro';
+import { tokenClasses } from '@/lib/tokens';
 
 export interface Props {
   typeFilter?: 'income' | 'expense';
@@ -86,6 +87,24 @@ const periodOptions = availableMonths.map((month) => ({
   value: month.key,
   label: month.label,
 }));
+
+const categorySearchLabelClass = ['mb-1 block text-base-content/70', tokenClasses.textXs].join(' ');
+const categorySearchInputClass = [
+  'input w-full rounded-lg',
+  tokenClasses.inputSurfaceBase,
+  tokenClasses.inputFocusAccent,
+  tokenClasses.inputPaddingSearchCompact,
+  tokenClasses.textXs,
+  tokenClasses.placeholderMuted,
+].join(' ');
+const mainSearchInputClass = [
+  'input w-full rounded-lg font-medium shadow-sm',
+  tokenClasses.inputSurfaceDefault,
+  tokenClasses.inputFocusAccent,
+  tokenClasses.inputPaddingSearchDefault,
+  tokenClasses.textSm,
+  tokenClasses.placeholderMuted,
+].join(' ');
 
 // Period navigator logic moved to PeriodNavigator component
 ---
@@ -176,18 +195,24 @@ const periodOptions = availableMonths.map((month) => ({
             aria-label="Select categories"
           >
             {/* Search input */}
-            <div class="relative mb-2">
-              <Search
-                size={14}
-                class="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/40 stroke-current pointer-events-none"
-                aria-hidden="true"
-              />
-              <input
-                type="text"
-                placeholder="Search categories..."
-                class="input input-sm w-full pl-8 pr-3 py-2 bg-base-200 border-0 rounded-xl text-xs placeholder:text-base-content/40 focus:outline-none focus:ring-1 focus:ring-accent"
-                data-category-search
-              />
+            <div class="mb-2">
+              <label for="category-search" class={categorySearchLabelClass}>
+                Search categories
+              </label>
+              <div class="relative">
+                <Search
+                  size={14}
+                  class="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/40 stroke-current pointer-events-none"
+                  aria-hidden="true"
+                />
+                <input
+                  id="category-search"
+                  type="text"
+                  placeholder="Search categories..."
+                  class={categorySearchInputClass}
+                  data-category-search
+                />
+              </div>
             </div>
             {/* Clear All / Count */}
             <div class="flex items-center justify-between pb-2 mb-2 border-b border-base-200">
@@ -261,7 +286,7 @@ const periodOptions = availableMonths.map((month) => ({
         name="search"
         value={searchValue}
         placeholder="Search..."
-        class="input w-full pl-10 sm:pl-11 pr-3 sm:pr-4 py-2.5 sm:py-3 bg-base-100 border border-base-300 rounded-xl sm:rounded-2xl text-sm font-medium shadow-sm placeholder:text-base-content/40 focus:outline-none focus:border-accent"
+        class={mainSearchInputClass}
         data-filter-search
       />
     </div>

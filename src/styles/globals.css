@@ -248,3 +248,12 @@ body {
 .container-app {
   max-width: var(--layout-container-max-width);
 }
+
+/* Button style contracts (shared class groups) */
+.btn-contract-base {
+  @apply btn inline-flex items-center justify-center gap-2 rounded-2xl font-medium;
+}
+
+.btn-contract-outline {
+  @apply btn-outline border border-accent text-accent hover:bg-accent/10 hover:border-accent;
+}

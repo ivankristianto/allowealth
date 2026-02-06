@@ -78,12 +78,12 @@ const hasIcon = icon || Astro.slots.has('icon');
 // Base input styles aligned with Oasis Finance v1.0.0 design system
 // Height: 2.5rem (40px), Font size: 0.75rem (12px), Border radius: var(--radius-field)
 const inputClasses = [
-  'input input-bordered w-full h-10',
+  'input input-bordered w-full h-10 rounded-lg border border-base-300',
   // Adjust padding based on icon presence
   hasIcon ? 'pt-2 pb-2 pl-10 pr-3' : 'pt-2 pb-2 pl-3 pr-10',
   'text-xs', // Font size: 0.75rem (12px)
   'bg-base-200', // Theme-aware background
-  'focus:ring-2 focus:ring-accent focus:ring-opacity-20 focus:outline-none focus:ring-offset-2', // 2px accent focus ring with 2px offset
+  'focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2',
   error && 'input-error border-error', // Error state with border-error
   disabled && 'opacity-50 cursor-not-allowed',
   className,
