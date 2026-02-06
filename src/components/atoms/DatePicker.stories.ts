@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/html';
+import { tokenClasses } from '@/lib/tokens';
 
 const meta: Meta = {
   title: 'Atoms/DatePicker',
@@ -44,10 +45,17 @@ const createDatePicker = (args: {
   if (min) input.min = min;
   if (max) input.max = max;
   input.required = required;
-  // Styles aligned with Oasis Finance v1.0.0 design system
-  // Height: h-10 (2.5rem/40px), Font size: text-xs (0.75rem/12px)
-  // Background: bg-base-200, Focus ring: 2px accent color with 2px offset
-  input.className = `input input-bordered w-full h-14 rounded-lg border border-base-300 bg-base-200 px-6 text-base font-bold focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 ${error ? 'input-error' : ''}`;
+  input.className = [
+    'input input-bordered w-full rounded-lg font-bold',
+    tokenClasses.inputHeightXl,
+    tokenClasses.inputPaddingXl,
+    tokenClasses.textBase,
+    tokenClasses.inputSurfaceBase,
+    tokenClasses.inputFocusAccent,
+    error ? 'input-error' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
   if (error) input.setAttribute('aria-invalid', 'true');
 
   container.appendChild(input);

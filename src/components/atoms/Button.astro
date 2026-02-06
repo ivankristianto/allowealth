@@ -37,8 +37,6 @@ export interface Props {
   'data-testid'?: string;
 }
 
-import { BUTTON_ACCESSIBLE_OUTLINE_CLASSES, BUTTON_BASE_CLASSES } from '@/lib/ui/controlStyles';
-
 const {
   variant = 'primary',
   size = 'md',
@@ -56,14 +54,15 @@ const Tag = href ? 'a' : 'button';
 
 // Base classes - focus ring uses accent color for theme-aware consistency
 // rounded-2xl (1rem) follows design system borderRadius.2xl
-const baseClasses = `${BUTTON_BASE_CLASSES} transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent`;
+const baseClasses =
+  'btn-contract-base transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent';
 
 // Variant classes - primary and accent both use btn-accent (indigo) for CTAs per Oasis Finance v1.0.0
 const variantClasses: Record<string, string> = {
   primary: 'btn-accent shadow-accent-glow',
   accent: 'btn-accent shadow-accent-glow',
   secondary: 'btn-secondary border border-base-300',
-  outline: BUTTON_ACCESSIBLE_OUTLINE_CLASSES,
+  outline: 'btn-contract-outline',
   ghost: 'btn-ghost text-base-content border border-base-300 hover:bg-base-200',
   danger: 'btn-error',
   warning: 'btn-warning',

@@ -10,8 +10,10 @@ const actionButtonFiles = [
   'src/components/organisms/AssetFormModal.astro',
   'src/components/organisms/AssetUpdateValueModal.astro',
   'src/components/organisms/InviteMemberModal.astro',
+  'src/components/partials/PaginationPartial.astro',
   'src/pages/settings/index.astro',
   'src/pages/budget/categories/index.astro',
+  'src/pages/transactions/index.astro',
 ];
 
 const formControlFiles = [

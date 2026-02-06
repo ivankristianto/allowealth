@@ -174,6 +174,8 @@ const buildBaseUrl = () => {
 };
 
 const baseUrl = buildBaseUrl();
+const paginationCurrentClass =
+  'inline-flex items-center justify-center min-h-[44px] rounded-2xl border border-base-300 bg-base-200 px-3 font-medium text-base-content';
 
 // Serialize SSR data for client-side hydration
 const ssrData = {
@@ -339,7 +341,7 @@ const ssrData = {
           </div>
           <div class="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
             <button
-              class="btn btn-sm btn-outline min-h-[44px] min-w-[44px] sm:min-w-0"
+              class="btn btn-sm rounded-2xl border border-base-300 bg-base-100 text-base-content hover:bg-base-200 hover:border-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 min-h-[44px] min-w-[44px] sm:min-w-0"
               disabled={page <= 1}
               data-pagination-prev
               aria-label="Previous page"
@@ -348,14 +350,14 @@ const ssrData = {
             </button>
 
             <span
-              class:list={['btn btn-sm btn-ghost', tokenClasses.textSm]}
+              class:list={[paginationCurrentClass, tokenClasses.textSm]}
               data-pagination-current
             >
               {page} / {Math.ceil(total / pageSize)}
             </span>
 
             <button
-              class="btn btn-sm btn-outline min-h-[44px] min-w-[44px] sm:min-w-0"
+              class="btn btn-sm rounded-2xl border border-base-300 bg-base-100 text-base-content hover:bg-base-200 hover:border-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 min-h-[44px] min-w-[44px] sm:min-w-0"
               disabled={page >= Math.ceil(total / pageSize)}
               data-pagination-next
               aria-label="Next page"
