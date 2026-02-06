@@ -31,6 +31,14 @@ export interface WorkspaceInvitationOptions {
 }
 
 /**
+ * Email verification template options
+ */
+export interface EmailVerificationOptions {
+  verificationUrl: string;
+  userName: string;
+}
+
+/**
  * Test email template options
  */
 export interface TestEmailOptions {
@@ -104,6 +112,34 @@ export class EmailTemplateService {
   </tr>
 </table>
 `.trim();
+  }
+
+  /**
+   * Generate email verification template
+   */
+  emailVerification(options: EmailVerificationOptions): EmailTemplate {
+    const { verificationUrl, userName } = options;
+
+    const content = `
+<h1 style="margin: 0 0 16px 0; font-size: 24px; font-weight: 600; color: #18181b;">
+  Verify your email
+</h1>
+<p style="margin: 0 0 16px 0; font-size: 14px; line-height: 1.6; color: #3f3f46;">
+  Hi ${userName}, thanks for signing up! Please verify your email address to activate your account.
+</p>
+${this.button('Verify Email', verificationUrl)}
+<p style="margin: 0 0 8px 0; font-size: 13px; color: #71717a;">
+  This link expires in 24 hours.
+</p>
+<p style="margin: 0; font-size: 13px; color: #71717a;">
+  If you didn't create an account, you can safely ignore this email.
+</p>
+`.trim();
+
+    return {
+      subject: 'Verify your email',
+      html: this.wrap(content),
+    };
   }
 
   /**

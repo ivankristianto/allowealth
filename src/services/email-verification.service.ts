@@ -7,8 +7,10 @@
 
 import { type IDatabase, getActiveSchema } from '@/db';
 import { createLogger } from '@/lib/logger';
+import { getEnv } from '@/lib/env';
 import { nanoid } from 'nanoid';
 import { eq } from 'drizzle-orm';
+import type { EmailService } from '@/services/email';
 
 const log = createLogger('email-verification');
 
@@ -19,7 +21,10 @@ export type VerifyEmailResult =
 export class EmailVerificationService {
   private schema = getActiveSchema();
 
-  constructor(private db: IDatabase) {}
+  constructor(
+    private db: IDatabase,
+    private emailSvc?: EmailService
+  ) {}
 
   /**
    * Create verification token for user
@@ -39,6 +44,41 @@ export class EmailVerificationService {
 
     log.info('Created verification token for user', { userId });
     return token;
+  }
+
+  /**
+   * Send verification email to user
+   * @param userId - User ID
+   */
+  async sendVerificationEmail(userId: string): Promise<void> {
+    const token = await this.createVerificationToken(userId);
+
+    // Get user details
+    const user = await this.db.query.users.findFirst({
+      where: eq(this.schema.users.id, userId),
+    });
+
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    // Build verification URL
+    const baseUrl = getEnv('PUBLIC_URL') || 'http://localhost:4321';
+    const verificationUrl = `${baseUrl}/api/auth/verify-email?token=${token}`;
+
+    if (!this.emailSvc) {
+      log.warn('No email service configured, skipping verification email');
+      return;
+    }
+
+    // Send email via workspace email service
+    await this.emailSvc.sendEmailVerification(user.workspace_id, {
+      to: user.email,
+      userName: user.name,
+      verificationUrl,
+    });
+
+    log.info('Verification email sent', { userId, email: user.email });
   }
 
   /**

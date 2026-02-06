@@ -28,6 +28,7 @@ import { WorkspaceService } from './workspace.service';
 import { WorkspaceMetaService } from './workspace-meta.service';
 import { WorkspaceInvitationService } from './workspace-invitation.service';
 import { EmailService } from './email';
+import { EmailVerificationService } from './email-verification.service';
 
 // Re-export types and utilities
 export * from './transaction.service';
@@ -45,6 +46,7 @@ export * from './workspace-meta.service';
 export * from './workspace-invitation.service';
 export * from './service-errors';
 export * from './email';
+export * from './email-verification.service';
 
 // Export singleton instances with real database
 export const categoryService = new CategoryService(db);
@@ -60,3 +62,4 @@ export const workspaceService = new WorkspaceService(db);
 export const workspaceMetaService = new WorkspaceMetaService(db);
 export const workspaceInvitationService = new WorkspaceInvitationService(db);
 export const emailService = new EmailService(workspaceMetaService);
+export const emailVerificationService = new EmailVerificationService(db, emailService);
