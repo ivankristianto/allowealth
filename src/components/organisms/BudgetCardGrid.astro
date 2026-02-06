@@ -34,6 +34,10 @@ export interface BudgetData {
 export interface Props {
   budgets: BudgetData[];
   currency?: 'IDR' | 'USD';
+  /** Selected month (1-12) for transaction link context */
+  month?: number;
+  /** Selected year for transaction link context */
+  year?: number;
   loading?: boolean;
   /** Number of skeleton cards to show during loading (default: 6 for 2 rows in 3-column grid) */
   skeletonCount?: number;
@@ -44,6 +48,8 @@ export interface Props {
 const {
   budgets = [],
   currency = 'IDR',
+  month,
+  year,
   loading = false,
   skeletonCount = 6,
   error,
@@ -151,6 +157,8 @@ const gridClasses = [
               percentageUsed={budget.percentage_used}
               status={budget.status}
               currency={currency}
+              month={month}
+              year={year}
             />
           </div>
         );

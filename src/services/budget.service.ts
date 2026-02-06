@@ -576,7 +576,7 @@ export class BudgetService {
       currency: string;
     }> = [];
 
-    const seenBatchCategoryIds = new Set<string>();
+    const seenBatchCategories = new Set<string>();
 
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
@@ -596,14 +596,14 @@ export class BudgetService {
       }
 
       // Check for duplicate categories within the same CSV batch
-      if (seenBatchCategoryIds.has(categoryKey)) {
+      if (seenBatchCategories.has(categoryKey)) {
         errors.push({
           row: i + 1,
           message: `Duplicate category "${categoryName}" in CSV for same month/year/currency`,
         });
         continue;
       }
-      seenBatchCategoryIds.add(categoryKey);
+      seenBatchCategories.add(categoryKey);
 
       const parsedAmount = parseFloat(budgetAmount);
       if (isNaN(parsedAmount) || parsedAmount < 0) {

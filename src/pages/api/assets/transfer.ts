@@ -14,7 +14,12 @@ const transferSchema = z
   .object({
     fromAssetId: z.string().min(1),
     toAssetId: z.string().min(1),
-    amount: z.string().refine((v) => parseFloat(v) > 0, 'Amount must be positive'),
+    amount: z
+      .string()
+      .refine(
+        (v) => /^\d+(\.\d+)?$/.test(v.trim()) && parseFloat(v) > 0,
+        'Amount must be a valid positive number'
+      ),
     notes: z.string().max(500).optional(),
   })
   .refine((d) => d.fromAssetId !== d.toAssetId, {

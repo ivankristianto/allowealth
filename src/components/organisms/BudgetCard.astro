@@ -73,6 +73,10 @@ export interface Props {
   percentageUsed: number;
   status?: 'ok' | 'warning' | 'exceeded';
   currency?: 'IDR' | 'USD';
+  /** Selected month (1-12) for transaction link context */
+  month?: number;
+  /** Selected year for transaction link context */
+  year?: number;
   loading?: boolean;
   className?: string;
 }
@@ -86,9 +90,20 @@ const {
   budget,
   percentageUsed,
   currency = 'IDR',
+  month,
+  year,
   loading = false,
   className = '',
 } = Astro.props;
+
+// Build transaction link with optional period context
+const transactionParams = new URLSearchParams({
+  category_id: categoryId || '',
+  type: 'expense',
+});
+if (month) transactionParams.set('month', String(month));
+if (year) transactionParams.set('year', String(year));
+const transactionUrl = `/transactions?${transactionParams.toString()}`;
 
 // Calculate remaining amount
 const remaining = budget - spent;
@@ -251,7 +266,7 @@ const cardClasses = [
         </div>
         <div class="flex items-center gap-1">
           <a
-            href={`/transactions?category_id=${categoryId}&type=expense`}
+            href={transactionUrl}
             class="text-base-content/30 hover:text-base-content/60 transition-colors p-1 rounded-lg hover:bg-base-200"
             aria-label={`View ${categoryName} transactions`}
           >

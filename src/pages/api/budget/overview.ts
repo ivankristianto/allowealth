@@ -102,6 +102,8 @@ export const GET: APIRoute = async (context) => {
           props: {
             budgets: budgetData.categories,
             currency: selectedCurrency,
+            month,
+            year,
           },
         });
         htmlParts.push(`<!-- PARTIAL:cards -->\n${cardsHtml}`);

@@ -23,6 +23,11 @@ export const POST: APIRoute = async (context) => {
       return errorResponse('CSV file is required', 400);
     }
 
+    // Limit file size to 1MB to prevent memory issues
+    if (csvFile.size > 1_000_000) {
+      return errorResponse('CSV file too large (max 1MB)', 413);
+    }
+
     if (isNaN(month) || month < 1 || month > 12) {
       return errorResponse('Invalid month parameter', 400);
     }

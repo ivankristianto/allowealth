@@ -265,10 +265,15 @@ const cardClasses = [
 }
 
 <script>
+  const initializedDetails = new WeakSet<Element>();
+
   function initBudgetAllocations() {
     document
       .querySelectorAll<HTMLDetailsElement>('[data-budget-allocations]')
       .forEach((details) => {
+        if (initializedDetails.has(details)) return;
+        initializedDetails.add(details);
+
         // Open by default on desktop (lg breakpoint = 1024px)
         const mq = window.matchMedia('(min-width: 1024px)');
         if (mq.matches) details.open = true;
