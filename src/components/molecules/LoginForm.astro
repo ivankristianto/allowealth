@@ -66,7 +66,15 @@ const cspNonce = Astro.locals.cspNonce || '';
       {errorMessage && <ErrorMessage message={errorMessage} />}
     </div>
 
-    <form id="login-form" data-testid="login-form" class="space-y-5" novalidate>
+    <form
+      id="login-form"
+      data-testid="login-form"
+      class="space-y-5"
+      novalidate
+      data-redirect={redirectTo}
+      data-api-login="/api/auth/login"
+      data-resend-api="/api/auth/resend-verification"
+    >
       <!-- Email Field -->
       <FormField label="Email" htmlFor="email" required>
         <Input
@@ -139,15 +147,13 @@ const cspNonce = Astro.locals.cspNonce || '';
   </div>
 </div>
 
-<script
-  define:vars={{
-    redirectTo,
-    apiLoginUrl: '/api/auth/login',
-    resendApiUrl: '/api/auth/resend-verification',
-  }}
-  nonce={cspNonce}
-  is:inline
->
+<script nonce={cspNonce} is:inline>
+  // Read server values from data attributes
+  const loginForm = document.getElementById('login-form');
+  const redirectTo = loginForm?.dataset.redirect || '';
+  const apiLoginUrl = loginForm?.dataset.apiLogin || '/api/auth/login';
+  const resendApiUrl = loginForm?.dataset.resendApi || '/api/auth/resend-verification';
+
   // Helper function to clone icon from template
   const getErrorIcon = () => {
     const template = document.getElementById('icon-error-template');
@@ -241,7 +247,7 @@ const cspNonce = Astro.locals.cspNonce || '';
     }
   });
 
-  const form = document.getElementById('login-form');
+  const form = loginForm;
   const messagesContainer = document.getElementById('login-messages');
   const emailInput = document.getElementById('email');
   const passwordInput = document.getElementById('password');

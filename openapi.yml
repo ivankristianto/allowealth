@@ -6,8 +6,13 @@ info:
     asset management, and financial forecasting.
 
     **Authentication:**
-    All endpoints require session-based authentication. The session token should be
-    included in HTTP-only cookies.
+    Most endpoints require session-based authentication via HTTP-only session cookies.
+    The following endpoints are public (no authentication required):
+    - `POST /api/auth/signup`
+    - `POST /api/auth/login`
+    - `POST /api/auth/forgot-password`
+    - `GET /api/auth/verify-email`
+    - `POST /api/auth/resend-verification`
 
     **Response Format:**
     All responses follow a standard format:
