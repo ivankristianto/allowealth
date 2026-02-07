@@ -11,5 +11,8 @@
       "Skill(k2-dev:*)",
       "Bash(bd comments:*)"
     ]
+  },
+  "remote": {
+    "defaultEnvironmentId": "env_01FHJM9bNLk3FW2W4X5qoMcu"
   }
 }
