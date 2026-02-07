@@ -15,6 +15,34 @@ bun run db:reset
 bun run dev
 ```
 
+## Development Environment Setup
+
+For branch-based local development (useful when working on multiple branches simultaneously):
+
+1. **Copy environment file:**
+
+   ```bash
+   cp .env.example .env
+   ```
+
+2. **Configure host and port:**
+   Edit `.env` and set:
+   - `DEV_HOST` to `{branch}.expenses.local` (e.g., `feature-auth.expenses.local`)
+   - `PORT` to an unused port between `4322-4330` (default is `4321`)
+
+3. **Run setup script:**
+   ```bash
+   ./scripts/setup.sh
+   ```
+
+This script will:
+
+- Check Bun version
+- Install dependencies
+- Reset and seed the database
+
+After setup completes, start the dev server with `bun run dev` and access the app at `http://{branch}.expenses.local:{port}`.
+
 ## Database Seeding
 
 ### Demo User Credentials
