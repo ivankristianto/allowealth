@@ -7,6 +7,7 @@ import { logError } from '@/lib/utils';
 import { createRenderHelper } from '@/lib/api/renderResponse';
 import { safeParseDecimal } from '@/lib/utils/decimal';
 import { validatePeriod } from '@/lib/utils/period-validation';
+import { MONTH_NAMES_SHORT } from '@/lib/utils/date';
 
 // Import partial components for HTML rendering
 import ReportSummaryCardsPartial from '@/components/partials/ReportSummaryCardsPartial.astro';
@@ -198,21 +199,7 @@ export const GET: APIRoute = async (context) => {
           const month = date.getMonth() + 1;
           const monthStr = month.toString().padStart(2, '0');
 
-          const monthNames = [
-            'Jan',
-            'Feb',
-            'Mar',
-            'Apr',
-            'May',
-            'Jun',
-            'Jul',
-            'Aug',
-            'Sep',
-            'Oct',
-            'Nov',
-            'Dec',
-          ];
-          const label = `${monthNames[month - 1]} ${year}`;
+          const label = `${MONTH_NAMES_SHORT[month - 1]} ${year}`;
 
           return {
             key: `${year}-${monthStr}`,

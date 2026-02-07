@@ -27,6 +27,7 @@ import RecentTransactionsList from '@/components/molecules/RecentTransactionsLis
 import DashboardError from '@/components/molecules/DashboardError.astro';
 import type { TransactionOutput } from '@/lib/types/transaction';
 import type { CashFlowEntry, CashFlowIconName } from '@/lib/cash-flow';
+import { MONTH_NAMES_SHORT } from '@/lib/utils/date';
 
 const currentPath = '/dashboard';
 const user = Astro.locals.user;
@@ -67,21 +68,7 @@ try {
 // Categories and assets for transaction modals are provided by ProtectedLayout
 
 // Get month name for remaining label
-const monthNames = [
-  'Jan',
-  'Feb',
-  'Mar',
-  'Apr',
-  'May',
-  'Jun',
-  'Jul',
-  'Aug',
-  'Sep',
-  'Oct',
-  'Nov',
-  'Dec',
-];
-const currentMonthName = monthNames[currentMonth - 1];
+const currentMonthName = MONTH_NAMES_SHORT[currentMonth - 1];
 
 // Transform recent transactions to match component format
 const recentTransactions: TransactionOutput[] =

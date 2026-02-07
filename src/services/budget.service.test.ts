@@ -7,6 +7,7 @@
 
 import { describe, it, expect, beforeEach, mock } from 'bun:test';
 import { BudgetService } from './budget.service';
+import { MONTH_NAMES } from '@/lib/utils/date';
 import {
   createMockDatabase,
   createMockCategory,
@@ -578,21 +579,7 @@ describe('BudgetService', () => {
 
       expect(history).toHaveLength(3);
       // Month name depends on current date
-      const monthNames = [
-        'January',
-        'February',
-        'March',
-        'April',
-        'May',
-        'June',
-        'July',
-        'August',
-        'September',
-        'October',
-        'November',
-        'December',
-      ];
-      expect(history[0].month_name).toBe(monthNames[now.getMonth()]);
+      expect(history[0].month_name).toBe(MONTH_NAMES[now.getMonth()]);
       expect(history[0].total_budget).toBe('6000000');
     });
 

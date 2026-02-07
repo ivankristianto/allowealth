@@ -17,6 +17,7 @@
 import Modal from '../molecules/Modal.astro';
 import FormField from '../molecules/FormField.astro';
 import { ChartNoAxesCombined } from '@lucide/astro';
+import { getMonthName } from '@/lib/utils/date';
 
 interface BudgetRecord {
   id: string;
@@ -41,23 +42,7 @@ const expenseCategories = categories.filter((c) => c.type === 'expense');
 // Create a map of category_id -> budget for quick lookup
 const budgetMap = new Map(budgets.map((b) => [b.category_id, b]));
 
-// P3: TODO - Extract monthNames to shared utility (src/lib/utils/date.ts)
-// This array is duplicated in SetNewBudgetModal, CopyBudgetModal, and budget/index.astro
-const monthNames = [
-  'January',
-  'February',
-  'March',
-  'April',
-  'May',
-  'June',
-  'July',
-  'August',
-  'September',
-  'October',
-  'November',
-  'December',
-];
-const monthName = monthNames[month - 1] || `Month ${month}`;
+const monthName = getMonthName(month);
 ---
 
 <div data-set-budget-modal-container data-id={id} data-testid="set-new-budget-modal">
