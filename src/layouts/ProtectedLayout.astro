@@ -33,6 +33,7 @@
 
 import MainLayout from './MainLayout.astro';
 import TransactionModal from '@/components/organisms/TransactionModal.astro';
+import TransactionDrawer from '@/components/organisms/TransactionDrawer.astro';
 import { categoryService, assetService, userMetaService } from '@/services';
 import { DEFAULT_USER_SETTINGS, type UserSettings } from '@/lib/constants/user-meta-keys';
 import { getCacheManager, CacheKeys, CacheTags } from '@/lib/cache';
@@ -152,6 +153,9 @@ Astro.locals.userSettings = Object.freeze({ ...userSettings });
   categories={categories}
   assets={assets}
 />
+
+<!-- Bulk Transaction Drawer -->
+<TransactionDrawer categories={categories} assets={assets} />
 
 <!-- Client-side script for edit modal handling -->
 <script>

@@ -1,0 +1,232 @@
+---
+/**
+ * Drawer Component
+ *
+ * Slide-over drawer for secondary actions or details.
+ * Positioned on the right side of the screen.
+ *
+ * Uses Motion library for smooth enter/exit animations per styles.json specification.
+ * Respects prefers-reduced-motion for accessibility.
+ *
+ * @param {string} id - Unique ID for the drawer
+ * @param {string} title - Drawer title
+ * @param {boolean} open - Whether the drawer is open
+ * @param {boolean} backdropClose - Close when clicking backdrop
+ * @param {string} className - Additional CSS classes
+ */
+
+import { X } from '@lucide/astro';
+
+interface Props {
+  id: string;
+  title?: string;
+  open?: boolean;
+  backdropClose?: boolean;
+  className?: string;
+  width?: string;
+}
+
+const {
+  id,
+  title = '',
+  open = false,
+  backdropClose = true,
+  className = '',
+  width = 'max-w-md',
+} = Astro.props;
+
+// Generate unique ID for title element to link with aria-labelledby
+const titleId = title ? `${id}-title` : undefined;
+---
+
+<!-- Drawer Container -->
+<div
+  id={id}
+  class:list={['fixed inset-0 z-50 overflow-hidden hidden', open && 'drawer-open', className]}
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby={titleId}
+  data-drawer
+  data-backdrop-close={backdropClose ? 'true' : 'false'}
+>
+  <!-- Backdrop with blur effect -->
+  <div
+    class="absolute inset-0 bg-base-content/20 backdrop-blur-sm transition-opacity"
+    data-drawer-backdrop
+    aria-hidden="true"
+  >
+  </div>
+
+  <!-- Drawer content -->
+  <div
+    class:list={['absolute inset-y-0 right-0 max-w-full flex w-full pointer-events-none', width]}
+  >
+    <div
+      class="pointer-events-auto w-full h-full bg-base-100 shadow-xl flex flex-col transform transition-transform"
+      data-drawer-content
+    >
+      <!-- Header -->
+      <div class="px-6 py-4 flex items-center justify-between border-b border-base-200">
+        {
+          title && (
+            <h2 id={titleId} class="text-lg font-bold text-primary">
+              {title}
+            </h2>
+          )
+        }
+        <button
+          type="button"
+          class="btn btn-sm btn-circle btn-ghost hover:bg-accent/10 hover:text-accent"
+          aria-label="Close drawer"
+          data-close-drawer
+        >
+          <X size={20} class="stroke-current" aria-hidden="true" />
+        </button>
+      </div>
+
+      <!-- Content -->
+      <div class="flex-1 overflow-y-auto p-6">
+        <slot />
+      </div>
+
+      <!-- Footer (if provided) -->
+      <slot name="footer" />
+    </div>
+  </div>
+</div>
+
+<script>
+  import { animate } from 'motion';
+  import { DRAWER_ANIMATION_CONFIG, DRAWER_CONTENT_INITIAL_STYLES } from '@/lib/animations';
+
+  // Track which drawers have been initialized
+  const initializedDrawers = new WeakSet<Element>();
+
+  function initDrawer(drawer: HTMLElement) {
+    if (initializedDrawers.has(drawer)) return;
+    initializedDrawers.add(drawer);
+
+    const backdropClose = drawer.dataset.backdropClose === 'true';
+
+    // Check motion preference
+    const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    let prefersReducedMotion = motionQuery.matches;
+
+    motionQuery.addEventListener('change', (e) => {
+      prefersReducedMotion = e.matches;
+    });
+
+    const getBackdrop = () => drawer.querySelector('[data-drawer-backdrop]') as HTMLElement | null;
+    const getContent = () => drawer.querySelector('[data-drawer-content]') as HTMLElement | null;
+    const getCloseButton = () => drawer.querySelector('[data-close-drawer]') as HTMLElement | null;
+
+    let isAnimating = false;
+
+    // Open Drawer
+    const openDrawer = async () => {
+      if (isAnimating) return;
+      isAnimating = true;
+
+      drawer.classList.remove('hidden');
+      drawer.classList.add('drawer-open');
+      document.body.style.overflow = 'hidden'; // Prevent body scroll
+
+      const backdrop = getBackdrop();
+      const content = getContent();
+
+      if (prefersReducedMotion) {
+        if (backdrop) backdrop.style.opacity = '1';
+        if (content) content.style.transform = 'translateX(0%)';
+      } else {
+        if (backdrop) backdrop.style.opacity = '0';
+        if (content) {
+          Object.assign(content.style, DRAWER_CONTENT_INITIAL_STYLES);
+        }
+
+        const enterKeyframes = DRAWER_ANIMATION_CONFIG.content.enter.keyframes as Parameters<
+          typeof animate
+        >[1];
+
+        await Promise.all([
+          backdrop
+            ? animate(backdrop, { opacity: [0, 1] }, DRAWER_ANIMATION_CONFIG.backdrop.options)
+            : Promise.resolve(),
+          content
+            ? animate(content, enterKeyframes, DRAWER_ANIMATION_CONFIG.content.enter.options)
+            : Promise.resolve(),
+        ]);
+      }
+
+      isAnimating = false;
+
+      // Dispatch open event
+      drawer.dispatchEvent(new CustomEvent('drawer-opened'));
+    };
+
+    // Close Drawer
+    const closeDrawer = async () => {
+      if (isAnimating) return;
+      isAnimating = true;
+
+      const backdrop = getBackdrop();
+      const content = getContent();
+
+      if (prefersReducedMotion) {
+        // No animation
+      } else {
+        const exitKeyframes = DRAWER_ANIMATION_CONFIG.content.exit.keyframes as Parameters<
+          typeof animate
+        >[1];
+
+        await Promise.all([
+          backdrop
+            ? animate(backdrop, { opacity: [1, 0] }, DRAWER_ANIMATION_CONFIG.backdrop.options)
+            : Promise.resolve(),
+          content
+            ? animate(content, exitKeyframes, DRAWER_ANIMATION_CONFIG.content.exit.options)
+            : Promise.resolve(),
+        ]);
+      }
+
+      drawer.classList.remove('drawer-open');
+      drawer.classList.add('hidden');
+      document.body.style.overflow = ''; // Restore body scroll
+
+      isAnimating = false;
+
+      // Dispatch close event
+      drawer.dispatchEvent(new CustomEvent('drawer-closed'));
+    };
+
+    // Expose methods to element
+    (drawer as any).open = openDrawer;
+    (drawer as any).close = closeDrawer;
+
+    // Event Listeners
+    if (backdropClose) {
+      getBackdrop()?.addEventListener('click', closeDrawer);
+    }
+    getCloseButton()?.addEventListener('click', closeDrawer);
+
+    // Escape key
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && drawer.classList.contains('drawer-open')) {
+        closeDrawer();
+      }
+    };
+    document.addEventListener('keydown', handleEsc);
+  }
+
+  // Initialize
+  function initAllDrawers() {
+    document.querySelectorAll<HTMLElement>('[data-drawer]').forEach(initDrawer);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initAllDrawers);
+  } else {
+    initAllDrawers();
+  }
+
+  document.addEventListener('astro:page-load', initAllDrawers);
+</script>

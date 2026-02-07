@@ -35,6 +35,7 @@ export interface Props {
    * Test ID for E2E testing
    */
   'data-testid'?: string;
+  [key: string]: any;
 }
 
 const {
@@ -47,6 +48,7 @@ const {
   id = '',
   href = '',
   'data-testid': dataTestId = '',
+  ...rest
 } = Astro.props;
 
 const isDisabled = disabled || loading;
@@ -108,6 +110,7 @@ const hrefAttr = Tag === 'a' ? href : undefined;
   aria-disabled={isDisabled}
   aria-busy={loading}
   data-testid={dataTestId || undefined}
+  {...rest}
 >
   {loading && <span class="loading loading-spinner loading-sm" aria-hidden="true" />}
   <slot />
