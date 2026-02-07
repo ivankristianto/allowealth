@@ -78,3 +78,6 @@ test-results/
 .vercel/
 .netlify/
 .astro/
+
+# Git worktrees
+expenses.worktrees/
