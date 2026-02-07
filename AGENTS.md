@@ -105,6 +105,9 @@ This is a **TypeScript-primary codebase**. Always prefer TypeScript idioms, use 
 | **Chart.js**            | `@/lib/chart-setup` (tree-shaken)        | `chart.js/auto`                  | `005-bundle-performance.md`       |
 | **Server Libraries**    | Type-only imports (`import type`)        | Runtime imports in client        | `005-bundle-performance.md`       |
 | **Password Hashing**    | PBKDF2-SHA256 (Web Crypto API)           | oslo/argon2 (native addon)       | Cross-runtime compatibility       |
+| **Caching**             | CacheManager + Tag-based drivers         | Direct Redis or local-only cache | `008-cache-abstraction.md`        |
+| **Logging**             | Structured consola loggers               | `console.log`                    | `009-logger-abstraction.md`       |
+| **MCP Server**          | Hybrid (stdio + HTTP) with shared tools  | Logic scattered in routes        | `010-mcp-server-architecture.md`  |
 
 ### Design System Compliance
 

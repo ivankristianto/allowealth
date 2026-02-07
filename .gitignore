@@ -37,6 +37,7 @@ docs/prompt.md
 .vscode/
 .codex/
 .cursor/
+.gemini/
 .idea/
 *.swp
 *.swo
