@@ -94,18 +94,7 @@ const { categories, assets } = Astro.props;
   <div
     class="w-10 h-10 rounded-xl flex items-center justify-center bg-error/10 text-error shrink-0"
   >
-    <svg
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      stroke-width="2"
-      stroke-linecap="round"
-      stroke-linejoin="round"
-      class="lucide lucide-circle-minus"
-      ><circle cx="12" cy="12" r="10"></circle><path d="M8 12h8"></path></svg
-    >
+    <CircleMinus size={20} class="stroke-current" aria-hidden="true" />
   </div>
 </template>
 
@@ -113,160 +102,10 @@ const { categories, assets } = Astro.props;
   <div
     class="w-10 h-10 rounded-xl flex items-center justify-center bg-success/10 text-success shrink-0"
   >
-    <svg
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      stroke-width="2"
-      stroke-linecap="round"
-      stroke-linejoin="round"
-      class="lucide lucide-circle-plus"
-      ><circle cx="12" cy="12" r="10"></circle><path d="M8 12h8"></path><path d="M12 8v8"
-      ></path></svg
-    >
+    <CirclePlus size={20} class="stroke-current" aria-hidden="true" />
   </div>
 </template>
 
 <script>
-  import { animate } from 'motion';
-  import { formatCurrency } from '@/lib/formatting'; // Import might not work in inline script? It works if bundling.
-
-  // Tab Logic
-  const drawer = document.getElementById('transaction-drawer');
-
-  function initDrawerLogic() {
-    if (!drawer) return;
-
-    const expenseBtn = drawer.querySelector('[data-tab="expense"]');
-    const incomeBtn = drawer.querySelector('[data-tab="income"]');
-    const expenseForm = document.getElementById('drawer-expense-form');
-    const incomeForm = document.getElementById('drawer-income-form');
-
-    if (!expenseBtn || !incomeBtn || !expenseForm || !incomeForm) return;
-
-    function setActiveTab(type: 'expense' | 'income') {
-      if (type === 'expense') {
-        expenseBtn?.classList.remove('bg-transparent', 'text-neutral', 'bg-base-300');
-        expenseBtn?.classList.add('bg-white', 'shadow-sm', 'text-primary');
-
-        incomeBtn?.classList.remove('bg-white', 'shadow-sm', 'text-primary');
-        incomeBtn?.classList.add('bg-transparent', 'text-neutral');
-
-        expenseForm?.classList.remove('hidden');
-        incomeForm?.classList.add('hidden');
-      } else {
-        incomeBtn?.classList.remove('bg-transparent', 'text-neutral', 'bg-base-300');
-        incomeBtn?.classList.add('bg-white', 'shadow-sm', 'text-primary');
-
-        expenseBtn?.classList.remove('bg-white', 'shadow-sm', 'text-primary');
-        expenseBtn?.classList.add('bg-transparent', 'text-neutral');
-
-        incomeForm?.classList.remove('hidden');
-        expenseForm?.classList.add('hidden');
-      }
-    }
-
-    expenseBtn.addEventListener('click', () => setActiveTab('expense'));
-    incomeBtn.addEventListener('click', () => setActiveTab('income'));
-
-    // List Logic
-    const list = document.getElementById('drawer-recent-list');
-    const emptyState = document.getElementById('empty-state-message');
-    const countBadge = document.getElementById('session-count');
-    const expenseIconTemplate = document.getElementById('icon-expense') as HTMLTemplateElement;
-    const incomeIconTemplate = document.getElementById('icon-income') as HTMLTemplateElement;
-
-    let sessionCount = 0;
-
-    // Helper for currency formatting if import fails or is unavailable
-    // Helper for currency formatting
-    const formatMoney = (amount: number | string, currency = 'IDR') => {
-      return formatCurrency(Number(amount), currency);
-    };
-
-    // Use event delegation on the drawer itself since it wraps the forms
-    // The event bubbles up from the form
-    const forms = drawer.querySelectorAll('form[data-bulk="true"]');
-
-    forms.forEach((form) => {
-      form.addEventListener('transaction-submitted', ((e: CustomEvent) => {
-        const data = e.detail;
-
-        if (!list || !emptyState || !countBadge) return;
-
-        // Hide empty state
-        emptyState.classList.add('hidden');
-        emptyState.classList.remove('flex'); // it has flex class
-        list.classList.remove('hidden');
-
-        // Get template content
-        const template = data.type === 'expense' ? expenseIconTemplate : incomeIconTemplate;
-        const iconClone = template.content.cloneNode(true);
-
-        // Create list item
-        const li = document.createElement('li');
-        li.className =
-          'bg-base-100 rounded-2xl shadow-sm border border-base-200 p-3 flex items-center justify-between gap-3 overflow-hidden relative';
-
-        const contentDiv = document.createElement('div');
-        contentDiv.className = 'flex items-center gap-3 min-w-0 flex-1';
-
-        const iconContainer = document.createElement('div');
-        iconContainer.appendChild(iconClone);
-        contentDiv.appendChild(iconContainer);
-
-        const detailsDiv = document.createElement('div');
-        detailsDiv.className = 'min-w-0 flex-1';
-        detailsDiv.innerHTML = `
-               <div class="font-bold text-sm text-primary truncate">${data.description || data.title}</div>
-               <div class="text-xs text-neutral font-medium">${data.transaction_date} • ${data.category_id}</div> <!-- @TODO: Map ID to Name if possible, but ID is what we have unless we look it up from select options -->
-            `;
-        // Try to map category ID to name
-        const categorySelect = form.querySelector(
-          'select[name="category_id"]'
-        ) as HTMLSelectElement;
-        if (categorySelect) {
-          const option = categorySelect.querySelector(`option[value="${data.category_id}"]`);
-          if (option) {
-            const categoryName = option.textContent;
-            detailsDiv.innerHTML = `
-                       <div class="font-bold text-sm text-primary truncate">${data.description || data.title}</div>
-                       <div class="text-xs text-neutral font-medium">${data.transaction_date} • ${categoryName}</div>
-                   `;
-          }
-        }
-
-        contentDiv.appendChild(detailsDiv);
-        li.appendChild(contentDiv);
-
-        const amountDiv = document.createElement('div');
-        amountDiv.className = `font-bold text-sm whitespace-nowrap ${data.type === 'expense' ? 'text-error' : 'text-success'}`;
-        amountDiv.innerText = `${data.type === 'expense' ? '-' : '+'} ${formatMoney(data.amount, data.currency)}`;
-        li.appendChild(amountDiv);
-
-        // Prepend
-        list.insertBefore(li, list.firstChild);
-
-        // Animate
-        animate(li, { opacity: [0, 1], x: [20, 0], height: [0, 'auto'] }, { duration: 0.4 });
-
-        // Update count
-        sessionCount++;
-        countBadge.innerText = String(sessionCount);
-      }) as EventListener);
-    });
-
-    // Listen for open request
-    document.addEventListener('open-transaction-drawer', () => {
-      if (drawer && (drawer as any).open) {
-        (drawer as any).open();
-      }
-    });
-  }
-
-  // Initialize
-  initDrawerLogic();
-  document.addEventListener('astro:page-load', initDrawerLogic);
+  import './TransactionDrawer.client';
 </script>

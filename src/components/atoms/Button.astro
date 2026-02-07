@@ -14,7 +14,15 @@
  * @param {string} id - Element ID
  */
 
-export interface Props {
+import type { HTMLAttributes } from 'astro/types';
+
+type ButtonAttributes = Omit<
+  HTMLAttributes<'button'>,
+  'class' | 'type' | 'disabled' | 'id' | 'href'
+>;
+type AnchorAttributes = Omit<HTMLAttributes<'a'>, 'class' | 'id' | 'href'>;
+
+export interface Props extends ButtonAttributes, AnchorAttributes {
   variant?:
     | 'primary'
     | 'accent'
@@ -35,7 +43,6 @@ export interface Props {
    * Test ID for E2E testing
    */
   'data-testid'?: string;
-  [key: string]: any;
 }
 
 const {
