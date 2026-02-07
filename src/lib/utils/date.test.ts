@@ -40,8 +40,18 @@ describe('month name constants', () => {
 
     test('contains all full month names in order', () => {
       const expected = [
-        'January', 'February', 'March', 'April', 'May', 'June',
-        'July', 'August', 'September', 'October', 'November', 'December',
+        'January',
+        'February',
+        'March',
+        'April',
+        'May',
+        'June',
+        'July',
+        'August',
+        'September',
+        'October',
+        'November',
+        'December',
       ];
       expect([...MONTH_NAMES]).toEqual(expected);
     });
@@ -59,8 +69,18 @@ describe('month name constants', () => {
 
     test('contains all abbreviated month names in order', () => {
       const expected = [
-        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec',
       ];
       expect([...MONTH_NAMES_SHORT]).toEqual(expected);
     });
@@ -88,6 +108,19 @@ describe('month name constants', () => {
     test('returns fallback for out-of-range short format', () => {
       expect(getMonthName(0, 'short')).toBe('Month 0');
       expect(getMonthName(13, 'short')).toBe('Month 13');
+    });
+
+    test('handles edge cases: NaN, decimals, Infinity', () => {
+      expect(getMonthName(NaN)).toBe('Month NaN');
+      expect(getMonthName(1.5)).toBe('Month 1.5');
+      expect(getMonthName(Infinity)).toBe('Month Infinity');
+      expect(getMonthName(-Infinity)).toBe('Month -Infinity');
+    });
+
+    test('handles edge cases with short format', () => {
+      expect(getMonthName(NaN, 'short')).toBe('Month NaN');
+      expect(getMonthName(1.5, 'short')).toBe('Month 1.5');
+      expect(getMonthName(Infinity, 'short')).toBe('Month Infinity');
     });
   });
 });

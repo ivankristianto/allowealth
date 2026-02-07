@@ -27,7 +27,7 @@ import {
 } from '@/services';
 import { formatCurrency } from '@/lib/formatting';
 import { calculateAllocationDistribution } from '@/lib/utils/budget';
-import { MONTH_NAMES } from '@/lib/utils/date';
+import { getMonthName } from '@/lib/utils/date';
 import { CircleX, Search, LayoutGrid, Table as TableIcon } from '@lucide/astro';
 
 const user = Astro.locals.user;
@@ -45,15 +45,38 @@ const yearParam = url.searchParams.get('year');
 const monthParam = url.searchParams.get('month');
 const currencyParam = url.searchParams.get('currency') as 'IDR' | 'USD' | null;
 
-// Default to current month if not specified
+// Parse and validate year/month parameters with strict numeric validation
 const now = new Date();
-const selectedYear = yearParam ? parseInt(yearParam, 10) : now.getFullYear();
-const parsedMonth = monthParam ? parseInt(monthParam, 10) : now.getMonth() + 1;
-const selectedMonth =
-  Number.isInteger(parsedMonth) && parsedMonth >= 1 && parsedMonth <= 12
-    ? parsedMonth
-    : now.getMonth() + 1;
+const currentYear = now.getFullYear();
+const currentMonth = now.getMonth() + 1;
+
+// Use Number() for strict validation (rejects "1abc", "1.9", etc.)
+const parsedYear = yearParam ? Number(yearParam) : null;
+const parsedMonth = monthParam ? Number(monthParam) : null;
+
+// Validate year: must be integer in reasonable range (1900-2100)
+const isValidYear =
+  parsedYear !== null && Number.isInteger(parsedYear) && parsedYear >= 1900 && parsedYear <= 2100;
+const selectedYear = isValidYear ? parsedYear : currentYear;
+
+// Validate month: must be integer 1-12
+const isValidMonth =
+  parsedMonth !== null && Number.isInteger(parsedMonth) && parsedMonth >= 1 && parsedMonth <= 12;
+const selectedMonth = isValidMonth ? parsedMonth : currentMonth;
+
 const selectedCurrency = currencyParam || 'IDR';
+
+// Canonicalize URL if invalid params were provided
+const hasInvalidParams =
+  (yearParam !== null && !isValidYear) || (monthParam !== null && !isValidMonth);
+
+if (hasInvalidParams) {
+  const canonicalUrl = new URL(Astro.request.url);
+  canonicalUrl.searchParams.set('year', selectedYear.toString());
+  canonicalUrl.searchParams.set('month', selectedMonth.toString());
+  canonicalUrl.searchParams.set('currency', selectedCurrency);
+  return Astro.redirect(canonicalUrl.pathname + '?' + canonicalUrl.searchParams.toString());
+}
 
 // Get budget data from service
 let budgetData: BudgetSummaryType | null = null;
@@ -84,7 +107,7 @@ const allocationDistribution = budgetData
     )
   : [];
 
-const currentMonthName = MONTH_NAMES[selectedMonth - 1];
+const currentMonthName = getMonthName(selectedMonth);
 const currentMonthDisplay = `${currentMonthName} ${selectedYear}`;
 
 // Build URLs for month navigation
@@ -106,9 +129,6 @@ const nextMonthYear = nextMonthDate.getFullYear();
 const nextMonth = nextMonthDate.getMonth() + 1;
 
 // Check if we're viewing the current month (for showing "Current Month" button)
-const nowDate = new Date();
-const currentYear = nowDate.getFullYear();
-const currentMonth = nowDate.getMonth() + 1;
 const isViewingCurrentMonth = selectedYear === currentYear && selectedMonth === currentMonth;
 
 // Check if next month is in the future
