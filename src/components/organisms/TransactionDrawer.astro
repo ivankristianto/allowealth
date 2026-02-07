@@ -20,19 +20,33 @@ const { categories, assets } = Astro.props;
 
 <Drawer id="transaction-drawer" title="Bulk Transaction Entry" width="w-full sm:max-w-md">
   <!-- Tabs -->
-  <div class="grid grid-cols-2 gap-2 p-1 bg-base-200 rounded-xl mb-6">
+  <div
+    class="grid grid-cols-2 gap-2 p-1 bg-base-200 rounded-xl mb-6"
+    role="tablist"
+    aria-label="Transaction type"
+  >
     <button
+      id="drawer-tab-expense"
       type="button"
       class="btn btn-sm h-10 rounded-lg border-none bg-white shadow-sm text-primary font-bold transition-all hover:bg-white flex gap-2"
       data-tab="expense"
+      role="tab"
+      aria-selected="true"
+      aria-controls="drawer-expense-form"
+      tabindex="0"
     >
       <CircleMinus size={18} class="text-error" />
       <span>Expense</span>
     </button>
     <button
+      id="drawer-tab-income"
       type="button"
       class="btn btn-sm h-10 rounded-lg border-none bg-transparent text-neutral font-medium hover:bg-base-300 transition-all flex gap-2"
       data-tab="income"
+      role="tab"
+      aria-selected="false"
+      aria-controls="drawer-income-form"
+      tabindex="-1"
     >
       <CirclePlus size={18} class="text-success" />
       <span>Income</span>
@@ -41,7 +55,13 @@ const { categories, assets } = Astro.props;
 
   <!-- Forms -->
   <!-- Expense Form -->
-  <div id="drawer-expense-form" class="block animate-in fade-in slide-in-from-right-4 duration-300">
+  <div
+    id="drawer-expense-form"
+    class="block animate-in fade-in slide-in-from-right-4 duration-300"
+    role="tabpanel"
+    aria-labelledby="drawer-tab-expense"
+    aria-hidden="false"
+  >
     <TransactionEntryForm
       type="expense"
       mode="create"
@@ -54,7 +74,13 @@ const { categories, assets } = Astro.props;
   </div>
 
   <!-- Income Form -->
-  <div id="drawer-income-form" class="hidden animate-in fade-in slide-in-from-right-4 duration-300">
+  <div
+    id="drawer-income-form"
+    class="hidden animate-in fade-in slide-in-from-right-4 duration-300"
+    role="tabpanel"
+    aria-labelledby="drawer-tab-income"
+    aria-hidden="true"
+  >
     <TransactionEntryForm
       type="income"
       mode="create"

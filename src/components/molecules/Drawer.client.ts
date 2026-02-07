@@ -43,6 +43,7 @@ function initDrawer(drawerElement: Element): void {
 
   let isAnimating = false;
   let lastFocusedElement: HTMLElement | null = null;
+  let previousBodyOverflow: string | null = null;
 
   const openDrawer = async (): Promise<void> => {
     if (isAnimating || drawer.classList.contains('drawer-open')) return;
@@ -53,6 +54,9 @@ function initDrawer(drawerElement: Element): void {
     try {
       drawer.classList.remove('hidden');
       drawer.classList.add('drawer-open');
+      if (previousBodyOverflow === null) {
+        previousBodyOverflow = document.body.style.overflow;
+      }
       document.body.style.overflow = 'hidden';
 
       const backdrop = getBackdrop();
@@ -113,7 +117,8 @@ function initDrawer(drawerElement: Element): void {
     } finally {
       drawer.classList.remove('drawer-open');
       drawer.classList.add('hidden');
-      document.body.style.overflow = '';
+      document.body.style.overflow = previousBodyOverflow ?? '';
+      previousBodyOverflow = null;
       isAnimating = false;
     }
 

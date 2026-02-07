@@ -81,6 +81,7 @@ const { title, subtitle, showMenuToggle = true, user } = Astro.props;
       user && (
         <Button
           id="bulk-entry-button"
+          data-open-transaction-drawer
           variant="accent"
           size="md"
           className="px-4 sm:px-6 active:scale-95"
@@ -95,9 +96,5 @@ const { title, subtitle, showMenuToggle = true, user } = Astro.props;
 </header>
 
 <script>
-  // Bulk Entry button - opens drawer
-  const bulkEntryButton = document.getElementById('bulk-entry-button');
-  bulkEntryButton?.addEventListener('click', () => {
-    document.dispatchEvent(new CustomEvent('open-transaction-drawer'));
-  });
+  import './Header.client';
 </script>

@@ -114,6 +114,25 @@ function isValidSSRData(data: unknown): data is SSRData {
 }
 
 /**
+ * Validate transaction payload for edit modal hydration.
+ */
+function isTransactionFormData(value: unknown): value is TransactionFormData {
+  if (!value || typeof value !== 'object') return false;
+
+  const parsedValue = value as Partial<TransactionFormData>;
+  return (
+    typeof parsedValue.id === 'string' &&
+    (parsedValue.type === 'expense' || parsedValue.type === 'income') &&
+    typeof parsedValue.title === 'string' &&
+    typeof parsedValue.amount === 'string' &&
+    typeof parsedValue.currency === 'string' &&
+    typeof parsedValue.category_id === 'string' &&
+    typeof parsedValue.asset_id === 'string' &&
+    typeof parsedValue.transaction_date === 'string'
+  );
+}
+
+/**
  * Parse SSR data from the page container
  */
 function parseSSRData(): SSRData | null {
@@ -652,8 +671,13 @@ function setupEventListeners(): void {
       if (!transactionData) return;
 
       try {
-        const data = JSON.parse(transactionData) as TransactionFormData;
-        openEditModal(data);
+        const parsed = JSON.parse(transactionData);
+        if (!isTransactionFormData(parsed)) {
+          console.error('Invalid transaction payload:', parsed);
+          addToast('Failed to load transaction details', 'error');
+          return;
+        }
+        openEditModal(parsed);
       } catch (error) {
         console.error('Failed to parse transaction data:', error);
         addToast('Failed to load transaction details', 'error');

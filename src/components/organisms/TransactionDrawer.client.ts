@@ -13,6 +13,9 @@ interface SubmittedTransaction {
   currency?: string;
 }
 
+const ACTIVE_TAB_CLASSES = ['bg-white', 'shadow-sm', 'text-primary'] as const;
+const INACTIVE_TAB_CLASSES = ['bg-transparent', 'text-neutral'] as const;
+
 function initTransactionDrawer(): void {
   const drawer = document.getElementById('transaction-drawer');
   if (!(drawer instanceof HTMLElement)) return;
@@ -28,25 +31,37 @@ function initTransactionDrawer(): void {
 
   const setActiveTab = (type: TransactionType): void => {
     if (type === 'expense') {
-      expenseBtn.classList.remove('bg-transparent', 'text-neutral', 'bg-base-300');
-      expenseBtn.classList.add('bg-white', 'shadow-sm', 'text-primary');
+      expenseBtn.classList.remove(...INACTIVE_TAB_CLASSES, 'bg-base-300');
+      expenseBtn.classList.add(...ACTIVE_TAB_CLASSES);
+      expenseBtn.setAttribute('aria-selected', 'true');
+      expenseBtn.setAttribute('tabindex', '0');
 
-      incomeBtn.classList.remove('bg-white', 'shadow-sm', 'text-primary');
-      incomeBtn.classList.add('bg-transparent', 'text-neutral');
+      incomeBtn.classList.remove(...ACTIVE_TAB_CLASSES);
+      incomeBtn.classList.add(...INACTIVE_TAB_CLASSES);
+      incomeBtn.setAttribute('aria-selected', 'false');
+      incomeBtn.setAttribute('tabindex', '-1');
 
       expenseForm.classList.remove('hidden');
+      expenseForm.setAttribute('aria-hidden', 'false');
       incomeForm.classList.add('hidden');
+      incomeForm.setAttribute('aria-hidden', 'true');
       return;
     }
 
-    incomeBtn.classList.remove('bg-transparent', 'text-neutral', 'bg-base-300');
-    incomeBtn.classList.add('bg-white', 'shadow-sm', 'text-primary');
+    incomeBtn.classList.remove(...INACTIVE_TAB_CLASSES, 'bg-base-300');
+    incomeBtn.classList.add(...ACTIVE_TAB_CLASSES);
+    incomeBtn.setAttribute('aria-selected', 'true');
+    incomeBtn.setAttribute('tabindex', '0');
 
-    expenseBtn.classList.remove('bg-white', 'shadow-sm', 'text-primary');
-    expenseBtn.classList.add('bg-transparent', 'text-neutral');
+    expenseBtn.classList.remove(...ACTIVE_TAB_CLASSES);
+    expenseBtn.classList.add(...INACTIVE_TAB_CLASSES);
+    expenseBtn.setAttribute('aria-selected', 'false');
+    expenseBtn.setAttribute('tabindex', '-1');
 
     incomeForm.classList.remove('hidden');
+    incomeForm.setAttribute('aria-hidden', 'false');
     expenseForm.classList.add('hidden');
+    expenseForm.setAttribute('aria-hidden', 'true');
   };
 
   expenseBtn.addEventListener('click', () => setActiveTab('expense'));
