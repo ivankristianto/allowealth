@@ -41,6 +41,8 @@ export interface Props {
   assets: Array<{ id: string; name: string; type: string }>;
   errors?: Record<string, string>;
   modalId?: string;
+  bulk?: boolean;
+  formId?: string;
 }
 
 const {
@@ -53,6 +55,8 @@ const {
   assets = [],
   errors = {},
   modalId = '',
+  bulk = false,
+  formId: propFormId,
 } = Astro.props;
 
 const isEditMode = mode === 'edit';
@@ -74,7 +78,7 @@ const categoriesJson = JSON.stringify(
 const assetsJson = JSON.stringify(assets.map((a) => ({ id: a.id, name: a.name, type: a.type })));
 
 // Generate unique form ID
-const formId = `transaction-entry-form-${type}`;
+const formId = propFormId || `transaction-entry-form-${type}`;
 ---
 
 <form
@@ -88,6 +92,7 @@ const formId = `transaction-entry-form-${type}`;
   data-modal-id={modalId}
   data-categories-json={categoriesJson}
   data-assets-json={assetsJson}
+  data-bulk={bulk ? 'true' : 'false'}
   class="flex flex-col gap-5"
   novalidate
 >
@@ -521,12 +526,57 @@ const formId = `transaction-entry-form-${type}`;
             `${transactionType === 'expense' ? 'Expense' : 'Income'} ${actionWord} successfully!`,
             'success'
           );
-          closeModal();
 
-          // Refresh page to show new transaction
-          setTimeout(() => {
-            window.location.reload();
-          }, 300);
+          const isBulk = form.dataset.bulk === 'true';
+
+          if (isBulk) {
+            // Dispatch event for bulk handling
+            form.dispatchEvent(
+              new CustomEvent('transaction-submitted', {
+                detail: result.data,
+                bubbles: true,
+              })
+            );
+
+            // Reset form but keep date and account for convenience
+            const dateInput = form.querySelector(
+              'input[name="transaction_date"]'
+            ) as HTMLInputElement;
+            const assetSelect = form.querySelector('select[name="asset_id"]') as HTMLSelectElement;
+            const categorySelect = form.querySelector(
+              'select[name="category_id"]'
+            ) as HTMLSelectElement;
+
+            const prevDate = dateInput?.value;
+            const prevAsset = assetSelect?.value;
+            // Also keep category if user is entering multiple items for same category?
+            // The prompt says "fill in expense... bulk one by one". Keeping category is often helpful.
+            const prevCategory = categorySelect?.value;
+
+            form.reset();
+
+            // Restore values
+            if (dateInput && prevDate) dateInput.value = prevDate;
+            if (assetSelect && prevAsset) assetSelect.value = prevAsset;
+            if (categorySelect && prevCategory) {
+              categorySelect.value = prevCategory;
+              // Trigger change to update currency if needed
+              categorySelect.dispatchEvent(new Event('change'));
+            }
+
+            // Update UI state
+            updateSubmitButton();
+            // Re-focus title for rapid entry
+            const titleInput = form.querySelector('input[name="title"]') as HTMLInputElement;
+            titleInput?.focus();
+          } else {
+            closeModal();
+
+            // Refresh page to show new transaction
+            setTimeout(() => {
+              window.location.reload();
+            }, 300);
+          }
         }
       } catch (err) {
         if (formError) {
