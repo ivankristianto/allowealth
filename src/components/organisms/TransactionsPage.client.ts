@@ -36,6 +36,7 @@ import {
   hideLoadingState,
   animateRowRemoval,
 } from './TransactionsRenderer.client';
+import type { TransactionFormData } from '@/lib/types/transaction';
 
 // Debounce timer for search
 let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
@@ -109,6 +110,25 @@ function isValidSSRData(data: unknown): data is SSRData {
     Array.isArray(d.categories) &&
     Array.isArray(d.availableMonths) &&
     (d.currency === 'IDR' || d.currency === 'USD')
+  );
+}
+
+/**
+ * Validate transaction payload for edit modal hydration.
+ */
+function isTransactionFormData(value: unknown): value is TransactionFormData {
+  if (!value || typeof value !== 'object') return false;
+
+  const parsedValue = value as Partial<TransactionFormData>;
+  return (
+    typeof parsedValue.id === 'string' &&
+    (parsedValue.type === 'expense' || parsedValue.type === 'income') &&
+    typeof parsedValue.title === 'string' &&
+    typeof parsedValue.amount === 'string' &&
+    typeof parsedValue.currency === 'string' &&
+    typeof parsedValue.category_id === 'string' &&
+    typeof parsedValue.asset_id === 'string' &&
+    typeof parsedValue.transaction_date === 'string'
   );
 }
 
@@ -419,6 +439,55 @@ async function handleDelete(transactionId: string, transactionDetails: string): 
 }
 
 /**
+ * Open edit transaction modal and hydrate form values.
+ */
+function openEditModal(data: TransactionFormData): void {
+  const modal = document.getElementById('edit-transaction-modal') as HTMLDialogElement | null;
+  if (!modal) return;
+
+  const form = modal.querySelector('[data-transaction-form]') as HTMLFormElement | null;
+  if (!form) return;
+
+  form.dataset.type = data.type;
+  form.dataset.transactionId = data.id;
+  form.dataset.mode = 'edit';
+
+  const typeInput = form.querySelector('input[name="type"]') as HTMLInputElement | null;
+  if (typeInput) typeInput.value = data.type;
+
+  const titleInput = form.querySelector('input[name="title"]') as HTMLInputElement | null;
+  if (titleInput) titleInput.value = data.title || '';
+
+  const amountInput = form.querySelector('input[name="amount"]') as HTMLInputElement | null;
+  if (amountInput) amountInput.value = data.amount || '';
+
+  const currencySelect = form.querySelector('select[name="currency"]') as HTMLSelectElement | null;
+  if (currencySelect) currencySelect.value = data.currency || 'IDR';
+
+  const dateInput = form.querySelector('input[name="transaction_date"]') as HTMLInputElement | null;
+  if (dateInput) dateInput.value = data.transaction_date || '';
+
+  const categorySelect = form.querySelector(
+    'select[name="category_id"]'
+  ) as HTMLSelectElement | null;
+  if (categorySelect) categorySelect.value = data.category_id || '';
+
+  const assetSelect = form.querySelector('select[name="asset_id"]') as HTMLSelectElement | null;
+  if (assetSelect) assetSelect.value = data.asset_id || '';
+
+  const modalTitle = modal.querySelector('[data-modal-title]');
+  const modalSubtitle = modal.querySelector('[data-modal-subtitle]');
+  if (modalTitle) {
+    modalTitle.textContent = data.type === 'expense' ? 'Edit Expense' : 'Edit Income';
+  }
+  if (modalSubtitle) {
+    modalSubtitle.textContent = 'Update the transaction details.';
+  }
+
+  modal.showModal();
+}
+
+/**
  * Execute the confirmed delete action
  */
 async function executeDelete(confirmBtn: HTMLButtonElement): Promise<void> {
@@ -594,6 +663,28 @@ function setupEventListeners(): void {
   // Delete buttons (use event delegation for dynamically rendered rows)
   document.addEventListener('click', (e) => {
     const target = e.target as HTMLElement;
+
+    const editBtn = target.closest('[data-edit-transaction]');
+    if (editBtn) {
+      e.preventDefault();
+      const transactionData = editBtn.getAttribute('data-transaction-data');
+      if (!transactionData) return;
+
+      try {
+        const parsed = JSON.parse(transactionData);
+        if (!isTransactionFormData(parsed)) {
+          console.error('Invalid transaction payload:', parsed);
+          addToast('Failed to load transaction details', 'error');
+          return;
+        }
+        openEditModal(parsed);
+      } catch (error) {
+        console.error('Failed to parse transaction data:', error);
+        addToast('Failed to load transaction details', 'error');
+      }
+      return;
+    }
+
     const deleteBtn = target.closest('[data-delete-transaction]');
     if (deleteBtn) {
       e.preventDefault();

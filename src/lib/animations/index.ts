@@ -59,3 +59,14 @@ export type {
   AnimationPreset,
   ComponentAnimation,
 } from '../animation-utils';
+
+// Drawer animations
+export {
+  DRAWER_BACKDROP_ANIMATION_OPTIONS,
+  DRAWER_CONTENT_ENTER_KEYFRAMES,
+  DRAWER_CONTENT_EXIT_KEYFRAMES,
+  DRAWER_CONTENT_ENTER_OPTIONS,
+  DRAWER_CONTENT_EXIT_OPTIONS,
+  DRAWER_ANIMATION_CONFIG,
+  DRAWER_CONTENT_INITIAL_STYLES,
+} from './drawer';

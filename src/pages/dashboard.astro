@@ -24,7 +24,6 @@ import SpendingChart from '@/components/organisms/SpendingChart.astro';
 import NetWorthWidget from '@/components/organisms/NetWorthWidget.astro';
 import CashFlowWidget from '@/components/organisms/CashFlowWidget.astro';
 import RecentTransactionsList from '@/components/molecules/RecentTransactionsList.astro';
-import QuickActions from '@/components/molecules/QuickActions.astro';
 import DashboardError from '@/components/molecules/DashboardError.astro';
 import type { TransactionOutput } from '@/lib/types/transaction';
 import type { CashFlowEntry, CashFlowIconName } from '@/lib/cash-flow';
@@ -171,9 +170,6 @@ const spendingCategories =
     {
       !error && (
         <>
-          {/* Quick Actions - Direct rendering, no wrapper */}
-          <QuickActions />
-
           {/* Spending Summary Card & Spending Analysis Chart (side by side) */}
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
             <SpendingCard
