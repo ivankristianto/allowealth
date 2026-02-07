@@ -39,7 +39,7 @@ describe('month name constants', () => {
     });
 
     test('contains all full month names in order', () => {
-      const expected = [
+      const expected: ReadonlyArray<string> = [
         'January',
         'February',
         'March',
@@ -68,7 +68,7 @@ describe('month name constants', () => {
     });
 
     test('contains all abbreviated month names in order', () => {
-      const expected = [
+      const expected: ReadonlyArray<string> = [
         'Jan',
         'Feb',
         'Mar',
