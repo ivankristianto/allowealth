@@ -1,8 +1,8 @@
 blank_issues_enabled: true
 contact_links:
   - name: Architecture Documentation
-    url: https://github.com/YOUR_USERNAME/expenses/tree/main/docs/architecture
+    url: https://github.com/ivankristianto/allowealth/tree/main/docs/architecture
     about: Review ADRs and design decisions before filing issues
   - name: Constitution
-    url: https://github.com/YOUR_USERNAME/expenses/blob/main/docs/constitution.md
+    url: https://github.com/ivankristianto/allowealth/blob/main/docs/constitution.md
     about: Development principles and quality standards
