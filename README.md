@@ -15,7 +15,7 @@ bun run db:reset
 bun run dev
 ```
 
-## Development Environment Setup
+## New Worktree Initial Setup
 
 For branch-based local development (useful when working on multiple branches simultaneously):
 
