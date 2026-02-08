@@ -24,6 +24,10 @@ export type AssetType =
  */
 export type Currency = 'IDR' | 'USD';
 
+/** Asset lifecycle status */
+export const ASSET_STATUSES = ['active', 'closed'] as const;
+export type AssetStatus = (typeof ASSET_STATUSES)[number];
+
 /**
  * Raw asset from database
  */
@@ -39,6 +43,9 @@ export interface Asset {
   currency: Currency;
   credit_limit: string | null;
   is_cash_account: boolean;
+  status: AssetStatus;
+  closed_at: Date | null;
+  closed_by_user_id: string | null;
   last_updated: Date;
   deleted_at: Date | null;
   created_at: Date;
@@ -59,6 +66,9 @@ export interface AssetOutput {
   currency: Currency;
   credit_limit?: string | null;
   is_cash_account?: boolean;
+  status?: AssetStatus;
+  closed_at?: Date | null;
+  closed_by_user_id?: string | null;
   last_updated: Date;
   created_at: Date;
   updated_at: Date;

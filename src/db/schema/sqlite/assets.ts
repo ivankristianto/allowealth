@@ -35,6 +35,11 @@ export const assets = sqliteTable('assets', {
   currency: text('currency', { enum: ['IDR', 'USD'] }).notNull(),
   credit_limit: text('credit_limit'), // For credit cards only, stored as string for decimal precision
   is_cash_account: integer('is_cash_account', { mode: 'boolean' }).default(false).notNull(), // Flag for cash-type accounts
+  status: text('status', { enum: ['active', 'closed'] })
+    .notNull()
+    .default('active'),
+  closed_at: integer('closed_at', { mode: 'timestamp' }),
+  closed_by_user_id: text('closed_by_user_id').references(() => users.id),
   last_updated: integer('last_updated', { mode: 'timestamp' })
     .default(sqliteTimestampNow)
     .notNull(),

@@ -37,6 +37,11 @@ export const assets = pgTable(
     currency: text('currency', { enum: ['IDR', 'USD'] }).notNull(),
     credit_limit: text('credit_limit'), // For credit cards only, stored as string for decimal precision
     is_cash_account: boolean('is_cash_account').default(false).notNull(), // Flag for cash-type accounts
+    status: text('status', { enum: ['active', 'closed'] })
+      .notNull()
+      .default('active'),
+    closed_at: timestamp('closed_at'),
+    closed_by_user_id: text('closed_by_user_id').references(() => users.id),
     last_updated: timestamp('last_updated').defaultNow().notNull(),
     deleted_at: timestamp('deleted_at'),
     created_at: timestamp('created_at').defaultNow().notNull(),
