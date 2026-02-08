@@ -110,6 +110,7 @@
     "eslint-plugin-astro": "^1.5.0",
     "eslint-plugin-prettier": "^5.5.5",
     "husky": "^8.0.3",
+    "lint-staged": "^16.2.7",
     "prettier": "^3.8.1",
     "prettier-plugin-astro": "^0.14.1",
     "rollup-plugin-visualizer": "^6.0.5",
@@ -122,5 +123,18 @@
   },
   "patchedDependencies": {
     "astro@5.16.15": "patches/astro@5.16.15.patch"
+  },
+  "lint-staged": {
+    "*.{js,ts,astro,mjs,cjs}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.css": [
+      "stylelint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,yml,yaml}": [
+      "prettier --write"
+    ]
   }
 }
