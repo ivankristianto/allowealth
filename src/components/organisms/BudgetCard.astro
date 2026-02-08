@@ -304,9 +304,14 @@ const cardClasses = [
               Budget
             </StatLabel>
             <p
-              class="text-xs md:text-sm font-bold mt-0.5 md:mt-1 text-base-content/60 leading-none"
+              class="text-xs md:text-sm font-bold mt-0.5 md:mt-1 text-base-content/60 leading-none cursor-pointer hover:text-base-content hover:underline hover:decoration-dotted transition-colors"
               data-budget-amount
               data-testid="budget-amount"
+              data-budget-editable={categoryId}
+              data-budget-raw={budget}
+              role="button"
+              tabindex="0"
+              aria-label={`Edit ${categoryName} budget: ${formatCurrency(budget, currency)}. Click to edit.`}
             >
               {formatCurrency(budget, currency)}
             </p>
