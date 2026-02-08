@@ -146,7 +146,7 @@ test.describe('Asset Management', () => {
     const asset2Balance = 1500000; // 1.5M IDR
     const asset2Data = generateAssetData({
       name: `Asset Two ${generateTestId()}`,
-      type: 'cash',
+      type: 'e_wallet',
       balance: asset2Balance,
       currency: 'IDR',
     });
@@ -279,19 +279,19 @@ test.describe('Asset Management', () => {
     // Navigate to assets page
     await assetsPage.goto();
 
-    // Create cash asset
-    const cashAsset = generateAssetData({
-      name: `Cash Wallet ${generateTestId()}`,
-      type: 'cash',
+    // Create e-wallet asset
+    const eWalletAsset = generateAssetData({
+      name: `E-Wallet ${generateTestId()}`,
+      type: 'e_wallet',
       balance: 500000,
       currency: 'IDR',
     });
 
     await assetsPage.createAsset({
-      name: cashAsset.name,
-      type: cashAsset.type,
-      currency: cashAsset.currency,
-      initialBalance: cashAsset.balance,
+      name: eWalletAsset.name,
+      type: eWalletAsset.type,
+      currency: eWalletAsset.currency,
+      initialBalance: eWalletAsset.balance,
     });
 
     await assetsPage.waitForPageLoad();
@@ -331,7 +331,7 @@ test.describe('Asset Management', () => {
     await assetsPage.waitForPageLoad();
 
     // Verify all assets appear in list
-    await assetsPage.expectAssetExists(cashAsset.name);
+    await assetsPage.expectAssetExists(eWalletAsset.name);
     await assetsPage.expectAssetExists(investmentAsset.name);
     await assetsPage.expectAssetExists(otherAsset.name);
   });
