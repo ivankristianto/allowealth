@@ -12,12 +12,11 @@ import TransactionSummaryCards from '@/components/organisms/TransactionSummaryCa
 import TransactionActionsBar from '@/components/molecules/TransactionActionsBar.astro';
 import TransactionFiltersBar from '@/components/organisms/TransactionFiltersBar.astro';
 import ConfirmationModal from '@/components/molecules/ConfirmationModal.astro';
-import TransactionModal from '@/components/organisms/TransactionModal.astro';
 import Skeleton from '@/components/atoms/Skeleton.astro';
 import { Receipt, RotateCcw } from '@lucide/astro';
 import type { TransactionOutput } from '@/lib/types/transaction';
 import { tokenClasses } from '@/lib/tokens';
-import { transactionService, categoryService, assetService } from '@/services';
+import { transactionService, categoryService } from '@/services';
 import {
   parseMonthKey,
   formatMonthKey,
@@ -116,11 +115,8 @@ const transactions: TransactionOutput[] = rawTransactions.map((t: any) => ({
 const { limit, offset: _, ...countFilters } = filters;
 const total = await transactionService.count(countFilters, perf);
 
-// Fetch categories for filter dropdowns and transaction modals
-const [categories, assets] = await Promise.all([
-  categoryService.findAll(user.workspaceId, { is_active: true }),
-  assetService.findAll(user.workspaceId),
-]);
+// Fetch categories for filter dropdowns
+const categories = await categoryService.findAll(user.workspaceId, { is_active: true });
 
 // For month selector, fetch all months available (optimized query)
 const allUserTransactions = await transactionService.findAll(
@@ -394,35 +390,6 @@ const ssrData = {
     >
     </div>
   </ConfirmationModal>
-
-  <!-- Transaction Modals (scoped to transactions page actions/edit flow) -->
-  <TransactionModal
-    id="expense-modal"
-    type="expense"
-    mode="create"
-    open={false}
-    action="/api/transactions"
-    categories={categories}
-    assets={assets}
-  />
-  <TransactionModal
-    id="income-modal"
-    type="income"
-    mode="create"
-    open={false}
-    action="/api/transactions"
-    categories={categories}
-    assets={assets}
-  />
-  <TransactionModal
-    id="edit-transaction-modal"
-    type="expense"
-    mode="edit"
-    open={false}
-    action="/api/transactions"
-    categories={categories}
-    assets={assets}
-  />
 </ProtectedLayout>
 
 <script>

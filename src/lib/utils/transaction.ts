@@ -39,6 +39,10 @@ export interface DrizzleTransactionResult {
     name: string;
     type: string;
   } | null;
+  createdBy?: {
+    id: string;
+    name: string;
+  } | null;
 }
 
 /**
@@ -81,6 +85,7 @@ export function transformTransaction(t: DrizzleTransactionResult): TransactionOu
           type: t.toAsset.type,
         }
       : null,
+    created_by_user_name: t.createdBy?.name,
   };
 }
 

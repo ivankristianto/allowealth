@@ -137,10 +137,8 @@ const { actions = defaultActions, className = '' } = Astro.props;
 </style>
 
 <script>
-  // TODO: Temporary modal integration - Open transaction modals when quick action buttons are clicked
-  // This should be replaced with proper modal state management
   (function () {
-    function initModalHandlers() {
+    function initQuickActionHandlers() {
       const quickActionsContainer = document.querySelector('[data-quick-actions]');
       if (!quickActionsContainer) return;
 
@@ -150,20 +148,18 @@ const { actions = defaultActions, className = '' } = Astro.props;
         if (!button) return;
 
         const actionType = button.getAttribute('data-quick-action');
-        const modalId = actionType === 'expense' ? 'expense-modal' : 'income-modal';
-        const modal = document.getElementById(modalId) as HTMLDialogElement | null;
-
-        if (modal) {
-          modal.showModal();
-        }
+        document.dispatchEvent(
+          new CustomEvent('open-transaction-drawer', {
+            detail: { type: actionType === 'income' ? 'income' : 'expense' },
+          })
+        );
       });
     }
 
-    // Initialize on DOM ready
     if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', initModalHandlers);
+      document.addEventListener('DOMContentLoaded', initQuickActionHandlers);
     } else {
-      initModalHandlers();
+      initQuickActionHandlers();
     }
   })();
 </script>

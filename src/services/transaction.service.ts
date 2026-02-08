@@ -286,6 +286,12 @@ export class TransactionService {
         category: true,
         asset: true,
         toAsset: true,
+        createdBy: {
+          columns: {
+            id: true,
+            name: true,
+          },
+        },
       },
       orderBy: [
         desc(this.schema.transactions.transaction_date),
@@ -865,5 +871,29 @@ export class TransactionService {
       totalEdits,
       showingEdits: displayedEdits.length,
     };
+  }
+
+  /**
+   * Get set of transaction IDs that have audit log entries
+   * Used to conditionally show the history icon on transaction cards
+   */
+  async getTransactionIdsWithHistory(
+    workspaceId: string,
+    transactionIds: string[]
+  ): Promise<Set<string>> {
+    if (transactionIds.length === 0) return new Set();
+
+    const results = await (this as any).db
+      .selectDistinct({ entity_id: this.schema.auditLogs.entity_id })
+      .from(this.schema.auditLogs)
+      .where(
+        and(
+          eq(this.schema.auditLogs.entity_type, 'transaction'),
+          eq(this.schema.auditLogs.workspace_id, workspaceId),
+          inArray(this.schema.auditLogs.entity_id, transactionIds)
+        )
+      );
+
+    return new Set(results.map((r: { entity_id: string }) => r.entity_id));
   }
 }

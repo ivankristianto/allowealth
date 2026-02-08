@@ -30,6 +30,7 @@ const { transaction, showActions = true, loading = false, className = '' } = Ast
 const amount = transaction ? parseFloat(transaction.amount) || 0 : 0;
 const isExpense = transaction?.type === 'expense';
 const isDeleted = !!transaction?.deleted_at;
+const hasHistory = !!transaction?.has_history;
 const date = transaction ? new Date(transaction.transaction_date) : new Date();
 
 // Format date with relative context
@@ -59,6 +60,7 @@ const formatDate = (d: Date): string => {
 
 const formattedDate = formatDate(date);
 const primaryText = transaction?.description?.trim() || transaction?.category?.name || '';
+const createdByName = transaction?.created_by_user_name;
 
 // Get category display properties from database, with fallbacks
 const categoryIcon = transaction?.category?.icon || 'credit-card';
@@ -144,14 +146,16 @@ const cardClasses = [
 
           {transaction && (
             <div class="flex items-center gap-1">
-              <button
-                type="button"
-                class="btn btn-ghost btn-sm btn-square min-h-[44px] min-w-[44px]"
-                aria-label={`View history for: ${primaryText}`}
-                data-toggle-history={transaction.id}
-              >
-                <History size={16} class="stroke-current" aria-hidden="true" />
-              </button>
+              {hasHistory && (
+                <button
+                  type="button"
+                  class="btn btn-ghost btn-sm btn-square min-h-[44px] min-w-[44px]"
+                  aria-label={`View history for: ${primaryText}`}
+                  data-toggle-history={transaction.id}
+                >
+                  <History size={16} class="stroke-current" aria-hidden="true" />
+                </button>
+              )}
               {showActions && !isDeleted && (
                 <div class="dropdown dropdown-end">
                   <button
@@ -209,6 +213,12 @@ const cardClasses = [
             <div class="flex items-center gap-1.5 uppercase tracking-widest">
               <CreditCard size={12} class="stroke-current" aria-hidden="true" />
               <span>{transaction?.asset?.name}</span>
+              {createdByName && (
+                <>
+                  <span aria-hidden="true">&middot;</span>
+                  <span>{createdByName}</span>
+                </>
+              )}
             </div>
           </div>
 
@@ -225,9 +235,12 @@ const cardClasses = [
 
       {/* Desktop Layout (horizontal with inline buttons) - shown at sm and above */}
       <div class="hidden sm:flex items-center gap-4 lg:gap-5">
-        {/* Date */}
+        {/* Date & User */}
         <div class="flex-shrink-0 w-20 lg:w-24 text-sm">
           <div class="font-medium">{formattedDate}</div>
+          {createdByName && (
+            <div class="text-xs text-base-content/50 truncate mt-0.5">{createdByName}</div>
+          )}
         </div>
 
         {/* Category & Description */}
@@ -277,16 +290,18 @@ const cardClasses = [
         </div>
 
         {/* Actions (inline buttons on desktop) */}
-        {transaction && (
+        {transaction && (hasHistory || (showActions && !isDeleted)) && (
           <div class="flex-shrink-0 flex gap-1">
-            <button
-              type="button"
-              class="btn btn-ghost btn-sm"
-              aria-label={`View history for: ${primaryText}`}
-              data-toggle-history={transaction.id}
-            >
-              <History size={16} class="stroke-current" aria-hidden="true" />
-            </button>
+            {hasHistory && (
+              <button
+                type="button"
+                class="btn btn-ghost btn-sm"
+                aria-label={`View history for: ${primaryText}`}
+                data-toggle-history={transaction.id}
+              >
+                <History size={16} class="stroke-current" aria-hidden="true" />
+              </button>
+            )}
             {showActions && !isDeleted && (
               <>
                 <button
@@ -314,7 +329,7 @@ const cardClasses = [
       </div>
 
       {/* Expandable history container */}
-      {transaction && (
+      {transaction && hasHistory && (
         <div
           class="hidden"
           data-history-container={transaction.id}

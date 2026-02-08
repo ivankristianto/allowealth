@@ -55,10 +55,12 @@ export interface TransactionOutput extends Omit<
     name: string;
     type: string;
   } | null;
+  has_history?: boolean;
+  created_by_user_name?: string;
 }
 
 /**
- * Data structure for edit transaction modal form population.
+ * Data structure for edit transaction drawer form population.
  * Represents the serialized transaction data passed via data-transaction-data attribute.
  */
 export interface TransactionFormData {

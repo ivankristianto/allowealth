@@ -154,10 +154,112 @@ function initTransactionDrawer(): void {
     form.addEventListener('transaction-submitted', handleTransactionSubmitted);
   });
 
-  drawer.addEventListener('drawer-closed', resetSessionState);
-
-  document.addEventListener('open-transaction-drawer', () => {
+  // Open drawer in create mode
+  document.addEventListener('open-transaction-drawer', ((event: CustomEvent) => {
+    resetEditMode();
+    // If a specific tab is requested, switch to it
+    const requestedType = event.detail?.type;
+    if (requestedType === 'expense' || requestedType === 'income') {
+      setActiveTab(requestedType);
+    }
     drawer.dispatchEvent(new CustomEvent('drawer:open'));
+  }) as EventListener);
+
+  // Open drawer in edit mode with transaction data
+  document.addEventListener('edit-transaction-drawer', ((event: CustomEvent) => {
+    const data = event.detail;
+    if (!data?.id) return;
+
+    const type: TransactionType = data.type === 'income' ? 'income' : 'expense';
+    setActiveTab(type);
+
+    // Hide tabs and recent items for edit mode
+    const tabContainer = drawer.querySelector('[role="tablist"]');
+    const recentSection = drawer.querySelector('.mt-8.pt-6');
+    if (tabContainer) (tabContainer as HTMLElement).classList.add('hidden');
+    if (recentSection) (recentSection as HTMLElement).classList.add('hidden');
+
+    // Get the active form
+    const formContainer = type === 'expense' ? expenseForm : incomeForm;
+    const form = formContainer?.querySelector(
+      'form[data-transaction-form]'
+    ) as HTMLFormElement | null;
+    if (!form) return;
+
+    // Set edit mode on form
+    form.dataset.mode = 'edit';
+    form.dataset.transactionId = data.id;
+
+    // Populate form fields
+    const setInput = (name: string, value: string) => {
+      const input = form.querySelector(`[name="${name}"]`) as
+        | HTMLInputElement
+        | HTMLSelectElement
+        | null;
+      if (input) {
+        input.value = value;
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+    };
+
+    setInput('title', data.title || data.description || '');
+    setInput('amount', data.amount || '');
+    setInput('currency', data.currency || 'IDR');
+    setInput('category_id', data.category_id || '');
+    setInput('asset_id', data.asset_id || '');
+    setInput('transaction_date', data.transaction_date || '');
+
+    // Update submit button text
+    const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement | null;
+    if (submitBtn) submitBtn.textContent = 'Save Changes';
+
+    // Update cancel button to close drawer
+    const cancelBtn = form.querySelector('[data-close-modal]') as HTMLButtonElement | null;
+    if (cancelBtn) {
+      cancelBtn.onclick = (e) => {
+        e.preventDefault();
+        resetEditMode();
+        drawer.dispatchEvent(new CustomEvent('drawer:close'));
+      };
+    }
+
+    // Update drawer title
+    const titleEl = drawer.querySelector('[id$="-title"]');
+    if (titleEl) titleEl.textContent = `Edit ${type === 'expense' ? 'Expense' : 'Income'}`;
+
+    drawer.dispatchEvent(new CustomEvent('drawer:open'));
+  }) as EventListener);
+
+  function resetEditMode(): void {
+    // Restore tabs and recent section
+    const tabContainer = drawer.querySelector('[role="tablist"]');
+    const recentSection = drawer.querySelector('.mt-8.pt-6');
+    if (tabContainer) (tabContainer as HTMLElement).classList.remove('hidden');
+    if (recentSection) (recentSection as HTMLElement).classList.remove('hidden');
+
+    // Reset all forms back to create mode
+    drawer.querySelectorAll('form[data-transaction-form]').forEach((form) => {
+      const f = form as HTMLFormElement;
+      f.dataset.mode = 'create';
+      f.dataset.transactionId = '';
+      f.reset();
+
+      const submitBtn = f.querySelector('button[type="submit"]') as HTMLButtonElement | null;
+      if (submitBtn) submitBtn.textContent = 'Save Entry';
+
+      const cancelBtn = f.querySelector('[data-close-modal]') as HTMLButtonElement | null;
+      if (cancelBtn) cancelBtn.onclick = null;
+    });
+
+    // Restore drawer title
+    const titleEl = drawer.querySelector('[id$="-title"]');
+    if (titleEl) titleEl.textContent = 'Add Transaction';
+  }
+
+  // Reset when drawer closes
+  drawer.addEventListener('drawer-closed', () => {
+    resetEditMode();
+    resetSessionState();
   });
 }
 

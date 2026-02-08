@@ -116,7 +116,7 @@ Component patterns for atoms, molecules, and organisms.
 | SummaryCards              | `src/components/organisms/SummaryCards.astro`              | Dashboard summary cards   |
 | TransactionFiltersBar     | `src/components/organisms/TransactionFiltersBar.astro`     | Filters bar               |
 | TransactionList           | `src/components/organisms/TransactionList.astro`           | Transactions list         |
-| TransactionModal          | `src/components/organisms/TransactionModal.astro`          | Transaction modal         |
+| TransactionDrawer         | `src/components/organisms/TransactionDrawer.astro`         | Transaction drawer        |
 | TransactionSummaryCards   | `src/components/organisms/TransactionSummaryCards.astro`   | Transaction summary cards |
 | WealthTrajectory          | `src/components/organisms/WealthTrajectory.astro`          | Wealth trajectory chart   |
 
@@ -357,7 +357,7 @@ Lucide icons use a default stroke-width of 2, which provides good visual clarity
 - ARIA-compliant with proper labels
 - Responsive with mobile-first design
 
-**Reference Implementation:** `src/components/organisms/TransactionModal.astro` - Best practice example
+**Reference Implementation:** `src/components/organisms/TransactionDrawer.astro` - Best practice example
 
 ### ConfirmationModal (`src/components/molecules/ConfirmationModal.astro`)
 
@@ -477,7 +477,7 @@ import { Trash2 } from '@lucide/astro';
 </script>
 ```
 
-#### Pattern 2: Form Modal (TransactionModal Pattern)
+#### Pattern 2: Form Drawer (TransactionDrawer Pattern)
 
 **Best Practice:** Use custom header with icon, type-specific styling, and form integration.
 
@@ -719,7 +719,7 @@ import { CirclePlus, Sparkles } from '@lucide/astro';
 | Pattern      | Size | Use Case                        | Example                 |
 | ------------ | ---- | ------------------------------- | ----------------------- |
 | Confirmation | `sm` | Delete, logout, discard changes | DeleteConfirmationModal |
-| Form         | `md` | Add/edit items, settings        | TransactionModal        |
+| Form         | `md` | Add/edit items, settings        | TransactionDrawer       |
 | Details      | `lg` | View details with actions       | TransactionDetailsModal |
 | Complex Form | `xl` | Multi-field forms, data entry   | BudgetPlanningModal     |
 | Multi-Step   | `lg` | Wizards, onboarding             | SetupWizardModal        |

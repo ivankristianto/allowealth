@@ -96,6 +96,16 @@ export const GET: APIRoute = async (context) => {
     // Transform to TransactionOutput format
     const transactions = rawTransactions.map(transformTransaction);
 
+    // Enrich with has_history flag for conditional history icon
+    const transactionIds = transactions.map((t) => t.id);
+    const idsWithHistory = await transactionService.getTransactionIdsWithHistory(
+      auth.workspaceId,
+      transactionIds
+    );
+    for (const t of transactions) {
+      t.has_history = idsWithHistory.has(t.id);
+    }
+
     // Calculate month-based summary (only uses date range, not other filters)
     // This summary stays constant regardless of type/category/search filters
     let monthSummary = null;
