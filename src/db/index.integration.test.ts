@@ -533,14 +533,15 @@ describe('Database Runtime-Agnostic Integration Tests', () => {
       // Service should be able to use the database
       expect(service).toBeDefined();
 
-      // Call a service method that uses the database
-      const result = await service.getTotalAssets('test-user-runtime-agnostic');
+      // Call the consolidated dashboard method that uses the database
+      const result = await service.getDashboardData('test-user-runtime-agnostic');
 
       // Should return default values for non-existent data
-      expect(result).toHaveProperty('idr');
-      expect(result).toHaveProperty('usd');
-      expect(result).toHaveProperty('converted');
-      expect(result.idr).toBe('0');
+      expect(result).toHaveProperty('totalAssets');
+      expect(result.totalAssets).toHaveProperty('idr');
+      expect(result.totalAssets).toHaveProperty('usd');
+      expect(result.totalAssets).toHaveProperty('converted');
+      expect(result.totalAssets.idr).toBe('0');
     });
 
     it('should allow services to be imported in middleware context', async () => {

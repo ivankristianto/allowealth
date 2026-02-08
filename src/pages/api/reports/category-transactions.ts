@@ -138,6 +138,7 @@ export const GET: APIRoute = async (context) => {
           updated_by_user_id: null,
           deleted_by_user_id: null,
           deleted_at: null,
+          created_by_user_name: txn.createdByName,
         })
       );
 

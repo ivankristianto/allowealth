@@ -145,34 +145,38 @@ const cardClasses = [
           </div>
 
           {transaction && (
-            <div class="flex items-center gap-1">
-              {hasHistory && (
-                <button
-                  type="button"
-                  class="btn btn-ghost btn-sm min-h-[44px] min-w-[44px] gap-1"
-                  aria-label={`View history for: ${primaryText}`}
-                  data-toggle-history={transaction.id}
-                >
-                  <History size={16} class="stroke-current" aria-hidden="true" />
-                  <span class="sr-only">History</span>
-                </button>
-              )}
-              {showActions && !isDeleted && (
-                <div class="dropdown dropdown-end">
+            <div class="dropdown dropdown-end">
+              <button
+                type="button"
+                tabindex={0}
+                class="btn btn-ghost btn-sm btn-square min-h-[44px] min-w-[44px]"
+                aria-label="Transaction actions"
+                aria-haspopup="menu"
+              >
+                <Ellipsis size={18} class="stroke-current" aria-hidden="true" />
+              </button>
+              <ul
+                tabindex={0}
+                class="dropdown-content z-50 menu p-2 shadow-lg bg-base-100 rounded-xl w-40 border border-base-300"
+                role="menu"
+              >
+                <li role="none" class:list={[!hasHistory && 'disabled opacity-40']}>
                   <button
                     type="button"
-                    tabindex={0}
-                    class="btn btn-ghost btn-sm btn-square min-h-[44px] min-w-[44px]"
-                    aria-label="Transaction actions"
-                    aria-haspopup="menu"
+                    role="menuitem"
+                    class="flex items-center gap-2"
+                    aria-label={
+                      hasHistory ? `View history for: ${primaryText}` : 'No history available'
+                    }
+                    aria-disabled={!hasHistory}
+                    {...(hasHistory ? { 'data-toggle-history': transaction.id } : {})}
                   >
-                    <Ellipsis size={18} class="stroke-current" aria-hidden="true" />
+                    <History size={16} class="stroke-current" aria-hidden="true" />
+                    History
                   </button>
-                  <ul
-                    tabindex={0}
-                    class="dropdown-content z-50 menu p-2 shadow-lg bg-base-100 rounded-xl w-40 border border-base-300"
-                    role="menu"
-                  >
+                </li>
+                {showActions && !isDeleted && (
+                  <>
                     <li role="none">
                       <button
                         type="button"
@@ -199,9 +203,9 @@ const cardClasses = [
                         Delete
                       </button>
                     </li>
-                  </ul>
-                </div>
-              )}
+                  </>
+                )}
+              </ul>
             </div>
           )}
         </div>
@@ -290,44 +294,53 @@ const cardClasses = [
           />
         </div>
 
-        {/* Actions (inline buttons on desktop) */}
-        {transaction && (hasHistory || (showActions && !isDeleted)) && (
-          <div class="flex-shrink-0 flex gap-1">
-            {hasHistory && (
+        {/* Actions (fixed-width column for alignment) */}
+        <div class="flex-shrink-0 w-24 flex justify-end gap-0.5">
+          {transaction && (
+            <div class="tooltip tooltip-bottom" data-tip={hasHistory ? 'History' : 'No history'}>
               <button
                 type="button"
-                class="btn btn-ghost btn-sm gap-1"
-                aria-label={`View history for: ${primaryText}`}
-                data-toggle-history={transaction.id}
+                class:list={[
+                  'btn btn-ghost btn-sm btn-square',
+                  !hasHistory && 'btn-disabled opacity-30',
+                ]}
+                aria-label={
+                  hasHistory ? `View history for: ${primaryText}` : 'No history available'
+                }
+                aria-disabled={!hasHistory}
+                {...(hasHistory ? { 'data-toggle-history': transaction.id } : {})}
               >
                 <History size={16} class="stroke-current" aria-hidden="true" />
-                <span class="text-xs">History</span>
               </button>
-            )}
-            {showActions && !isDeleted && (
-              <>
+            </div>
+          )}
+          {transaction && showActions && !isDeleted && (
+            <>
+              <div class="tooltip tooltip-bottom" data-tip="Edit">
                 <button
                   type="button"
-                  class="btn btn-ghost btn-sm"
+                  class="btn btn-ghost btn-sm btn-square"
                   aria-label={`Edit transaction: ${primaryText}`}
                   data-edit-transaction={transaction.id}
                   data-transaction-data={transactionDataJson}
                 >
                   <Pencil size={16} class="stroke-current" aria-hidden="true" />
                 </button>
+              </div>
+              <div class="tooltip tooltip-bottom" data-tip="Delete">
                 <button
                   type="button"
-                  class="btn btn-ghost btn-sm text-error"
+                  class="btn btn-ghost btn-sm btn-square text-error"
                   aria-label={`Delete transaction: ${primaryText}`}
                   data-delete-transaction={transaction.id}
                   data-transaction-details={transactionDetailsJson}
                 >
                   <Trash2 size={16} class="stroke-current" aria-hidden="true" />
                 </button>
-              </>
-            )}
-          </div>
-        )}
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Expandable history container */}
@@ -343,7 +356,7 @@ const cardClasses = [
 }
 
 <script>
-  // Keyboard navigation for dropdown menus (mobile only)
+  // Keyboard navigation for dropdown menus (mobile)
   document.querySelectorAll('[data-transaction-card] .dropdown').forEach((dropdown) => {
     const menu = dropdown.querySelector('[role="menu"]');
     if (!menu) return;

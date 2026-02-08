@@ -896,8 +896,9 @@ export class TransactionService {
   }
 
   /**
-   * Get set of transaction IDs that have audit log entries
-   * Used to conditionally show the history icon on transaction cards
+   * Get set of transaction IDs that have audit log entries beyond initial creation.
+   * Only matches 'update' and 'delete' actions — the initial 'create' entry
+   * is not meaningful history worth surfacing to the user.
    */
   async getTransactionIdsWithHistory(
     workspaceId: string,
@@ -912,7 +913,8 @@ export class TransactionService {
         and(
           eq(this.schema.auditLogs.entity_type, 'transaction'),
           eq(this.schema.auditLogs.workspace_id, workspaceId),
-          inArray(this.schema.auditLogs.entity_id, transactionIds)
+          inArray(this.schema.auditLogs.entity_id, transactionIds),
+          inArray(this.schema.auditLogs.action, ['update', 'delete'])
         )
       );
 

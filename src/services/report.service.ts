@@ -92,6 +92,7 @@ export interface CategoryTransaction {
   description: string | null;
   transactionDate: Date;
   assetName: string;
+  createdByName?: string;
 }
 
 /**
@@ -342,6 +343,7 @@ export class ReportService {
         ),
         with: {
           asset: true,
+          createdBy: { columns: { id: true, name: true } },
         },
         orderBy: [sql`${this.schema.transactions.transaction_date} DESC`],
       });
@@ -358,6 +360,7 @@ export class ReportService {
         description: tx.description,
         transactionDate: tx.transaction_date,
         assetName: tx.asset?.name || 'Unknown',
+        createdByName: tx.createdBy?.name,
       }));
 
       return {
