@@ -19,6 +19,7 @@ import {
   renderFromHtmlResponse,
   reinitializeEventHandlers,
 } from './BudgetRenderer.client';
+import type { Currency } from '@/lib/enums';
 import { addToast } from '@/lib/stores/toastStore';
 import {
   setupInlineEditHandlers,
@@ -187,18 +188,16 @@ function handleBudgetsCopied(
  * Reloads the page to refresh button state, modal, and data attributes.
  */
 function handleBudgetsInitialized(
-  event: CustomEvent<{
+  _event: CustomEvent<{
     month: number;
     year: number;
-    currency: string;
+    currency: Currency;
     initializedCount: number;
   }>
 ): void {
-  const { initializedCount } = event.detail;
-
-  if (initializedCount > 0) {
-    window.location.reload();
-  }
+  // Always reload on successful initialize — another session may have
+  // initialized first, leaving initialized_count=0 but stale UI.
+  window.location.reload();
 }
 
 /**

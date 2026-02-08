@@ -9,7 +9,7 @@
  */
 
 import type { Currency } from '@/lib/enums';
-import type { CategoryType } from '@/lib/types/category';
+import type { Category, CategoryType } from '@/lib/types/category';
 
 // Re-export for convenience
 export type { Currency };
@@ -80,5 +80,5 @@ export interface CopyBudgetsResult {
 // Result of initialize all budgets operation
 export interface InitializeBudgetsResult {
   initialized_count: number;
-  categories: Array<{ id: string; name: string }>;
+  categories: Array<Pick<Category, 'id' | 'name'>>;
 }

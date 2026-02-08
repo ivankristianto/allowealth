@@ -931,7 +931,7 @@ document.addEventListener('budgets-initialized', ((e: CustomEvent) => {
 }) as EventListener);
 ```
 
-Note: A full page reload is the simplest approach here because:
+Note: A full-page reload is the simplest approach here because:
 
 1. The Initialize button state needs to change (enabled → disabled)
 2. The modal component's category list needs to update

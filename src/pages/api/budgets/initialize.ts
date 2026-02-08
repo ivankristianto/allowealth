@@ -39,6 +39,7 @@ export const POST: APIRoute = async (context) => {
       return errorResponse(error.message, error.statusCode, error.code);
     }
     logError('Error initializing budgets', error);
-    return errorResponse('Failed to initialize budgets', 500);
+    const message = error instanceof Error ? error.message : 'Failed to initialize budgets';
+    return errorResponse(message, 500);
   }
 };
