@@ -228,4 +228,36 @@ describe('review feedback regressions', () => {
     expect(content).toContain('if (!isTransactionFormData(parsed))');
     expect(content).toContain('Failed to load transaction details');
   });
+
+  it('transaction count should include deleted rows by default with opt-out support', () => {
+    const content = read('src/services/transaction.service.ts');
+    const countStart = content.indexOf('async count(');
+    const countEnd = content.indexOf('async importFromCSV(');
+
+    expect(countStart).toBeGreaterThanOrEqual(0);
+    expect(countEnd).toBeGreaterThan(countStart);
+
+    const countMethod = content.slice(countStart, countEnd);
+    expect(countMethod).toContain('filters.include_deleted ?? true');
+    expect(countMethod).toContain('if (!includeDeleted)');
+  });
+
+  it('transaction history toggle should cache first HTML fetch and reuse it', () => {
+    const content = read('src/components/organisms/TransactionsPage.client.ts');
+
+    expect(content).toContain('dataset.historyLoaded');
+  });
+
+  it('openapi should document transaction history endpoint', () => {
+    const rootSpec = read('openapi.yml');
+    const transactionsPathSpec = read('openapi/paths/transactions.yml');
+
+    expect(rootSpec).toContain('/api/transactions/{id}/history:');
+    expect(transactionsPathSpec).toContain('/api/transactions/{id}/history:');
+  });
+
+  it('monthly transactions summary should exclude soft-deleted rows', () => {
+    const content = read('src/pages/api/transactions/index.ts');
+    expect(content).toContain('include_deleted: false');
+  });
 });

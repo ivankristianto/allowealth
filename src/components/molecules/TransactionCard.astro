@@ -14,7 +14,7 @@
 
 import Currency from '../atoms/Currency.astro';
 import CategoryIcon from '../atoms/CategoryIcon.astro';
-import { CreditCard, Ellipsis, Pencil, Trash2 } from '@lucide/astro';
+import { CreditCard, Ellipsis, History, Pencil, Trash2 } from '@lucide/astro';
 import type { TransactionOutput } from '@/lib/types/transaction';
 
 export interface Props {
@@ -29,6 +29,7 @@ const { transaction, showActions = true, loading = false, className = '' } = Ast
 // Safely extract transaction data (only when not loading)
 const amount = transaction ? parseFloat(transaction.amount) || 0 : 0;
 const isExpense = transaction?.type === 'expense';
+const isDeleted = !!transaction?.deleted_at;
 const date = transaction ? new Date(transaction.transaction_date) : new Date();
 
 // Format date with relative context
@@ -82,9 +83,10 @@ const transactionDetailsJson = transaction ? JSON.stringify(transaction) : '';
 const cardClasses = [
   'group p-3 sm:p-4 transition-all',
   'border-l-4 border-transparent',
-  !loading && isExpense && 'hover:border-error/30 active:border-error/30',
-  !loading && !isExpense && 'hover:border-success/30 active:border-success/30',
-  !loading && 'hover:bg-base-200/40 active:bg-base-200/40',
+  !loading && !isDeleted && isExpense && 'hover:border-error/30 active:border-error/30',
+  !loading && !isDeleted && !isExpense && 'hover:border-success/30 active:border-success/30',
+  !loading && !isDeleted && 'hover:bg-base-200/40 active:bg-base-200/40',
+  isDeleted && 'opacity-50',
   className,
 ]
   .filter(Boolean)
@@ -124,59 +126,77 @@ const cardClasses = [
           <CategoryIcon icon={categoryIcon} color={categoryColor} size="sm" className="shrink-0" />
 
           <div class="flex-1 min-w-0">
-            <div class="font-bold text-base tracking-tight leading-tight break-words">
+            <div
+              class:list={[
+                'font-bold text-base tracking-tight leading-tight break-words',
+                isDeleted && 'line-through',
+              ]}
+            >
               {primaryText}
             </div>
-            <div class="mt-1">
+            <div class="mt-1 flex items-center gap-2">
               <span class="font-bold tracking-widest uppercase text-xs bg-base-200 px-1.5 py-0.5 rounded text-base-content/60">
                 {transaction?.category?.name}
               </span>
+              {isDeleted && <span class="badge badge-ghost badge-sm text-xs">Deleted</span>}
             </div>
           </div>
 
-          {showActions && transaction && (
-            <div class="dropdown dropdown-end">
+          {transaction && (
+            <div class="flex items-center gap-1">
               <button
                 type="button"
-                tabindex={0}
                 class="btn btn-ghost btn-sm btn-square min-h-[44px] min-w-[44px]"
-                aria-label="Transaction actions"
-                aria-haspopup="menu"
+                aria-label={`View history for: ${primaryText}`}
+                data-toggle-history={transaction.id}
               >
-                <Ellipsis size={18} class="stroke-current" aria-hidden="true" />
+                <History size={16} class="stroke-current" aria-hidden="true" />
               </button>
-              <ul
-                tabindex={0}
-                class="dropdown-content z-50 menu p-2 shadow-lg bg-base-100 rounded-xl w-40 border border-base-300"
-                role="menu"
-              >
-                <li role="none">
+              {showActions && !isDeleted && (
+                <div class="dropdown dropdown-end">
                   <button
                     type="button"
-                    role="menuitem"
-                    class="flex items-center gap-2"
-                    aria-label={`Edit transaction: ${primaryText}`}
-                    data-edit-transaction={transaction.id}
-                    data-transaction-data={transactionDataJson}
+                    tabindex={0}
+                    class="btn btn-ghost btn-sm btn-square min-h-[44px] min-w-[44px]"
+                    aria-label="Transaction actions"
+                    aria-haspopup="menu"
                   >
-                    <Pencil size={16} class="stroke-current" aria-hidden="true" />
-                    Edit
+                    <Ellipsis size={18} class="stroke-current" aria-hidden="true" />
                   </button>
-                </li>
-                <li role="none">
-                  <button
-                    type="button"
-                    role="menuitem"
-                    class="flex items-center gap-2 text-error"
-                    aria-label={`Delete transaction: ${primaryText}`}
-                    data-delete-transaction={transaction.id}
-                    data-transaction-details={transactionDetailsJson}
+                  <ul
+                    tabindex={0}
+                    class="dropdown-content z-50 menu p-2 shadow-lg bg-base-100 rounded-xl w-40 border border-base-300"
+                    role="menu"
                   >
-                    <Trash2 size={16} class="stroke-current" aria-hidden="true" />
-                    Delete
-                  </button>
-                </li>
-              </ul>
+                    <li role="none">
+                      <button
+                        type="button"
+                        role="menuitem"
+                        class="flex items-center gap-2"
+                        aria-label={`Edit transaction: ${primaryText}`}
+                        data-edit-transaction={transaction.id}
+                        data-transaction-data={transactionDataJson}
+                      >
+                        <Pencil size={16} class="stroke-current" aria-hidden="true" />
+                        Edit
+                      </button>
+                    </li>
+                    <li role="none">
+                      <button
+                        type="button"
+                        role="menuitem"
+                        class="flex items-center gap-2 text-error"
+                        aria-label={`Delete transaction: ${primaryText}`}
+                        data-delete-transaction={transaction.id}
+                        data-transaction-details={transactionDetailsJson}
+                      >
+                        <Trash2 size={16} class="stroke-current" aria-hidden="true" />
+                        Delete
+                      </button>
+                    </li>
+                  </ul>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -198,7 +218,7 @@ const cardClasses = [
             showSign={false}
             variant={isExpense ? 'negative' : 'positive'}
             size="md"
-            className="font-bold tracking-tight"
+            className={`font-bold tracking-tight${isDeleted ? ' line-through' : ''}`}
           />
         </div>
       </div>
@@ -219,13 +239,19 @@ const cardClasses = [
             className="transition-transform group-hover:rotate-2"
           />
           <div class="min-w-0">
-            <div class="font-bold tracking-tight truncate text-base leading-none">
+            <div
+              class:list={[
+                'font-bold tracking-tight truncate text-base leading-none',
+                isDeleted && 'line-through',
+              ]}
+            >
               {primaryText}
             </div>
             <div class="mt-2 flex flex-wrap items-center gap-2 leading-none">
               <span class="text-xs font-bold tracking-widest uppercase text-base-content/60 bg-base-200 px-2 py-0.5 rounded">
                 {transaction?.category?.name}
               </span>
+              {isDeleted && <span class="badge badge-ghost badge-sm text-xs">Deleted</span>}
             </div>
           </div>
         </div>
@@ -246,34 +272,55 @@ const cardClasses = [
             showSign={false}
             variant={isExpense ? 'negative' : 'positive'}
             size="md"
-            className="font-bold tracking-tight"
+            className={`font-bold tracking-tight${isDeleted ? ' line-through' : ''}`}
           />
         </div>
 
         {/* Actions (inline buttons on desktop) */}
-        {showActions && transaction && (
+        {transaction && (
           <div class="flex-shrink-0 flex gap-1">
             <button
               type="button"
               class="btn btn-ghost btn-sm"
-              aria-label={`Edit transaction: ${primaryText}`}
-              data-edit-transaction={transaction.id}
-              data-transaction-data={transactionDataJson}
+              aria-label={`View history for: ${primaryText}`}
+              data-toggle-history={transaction.id}
             >
-              <Pencil size={16} class="stroke-current" aria-hidden="true" />
+              <History size={16} class="stroke-current" aria-hidden="true" />
             </button>
-            <button
-              type="button"
-              class="btn btn-ghost btn-sm text-error"
-              aria-label={`Delete transaction: ${primaryText}`}
-              data-delete-transaction={transaction.id}
-              data-transaction-details={transactionDetailsJson}
-            >
-              <Trash2 size={16} class="stroke-current" aria-hidden="true" />
-            </button>
+            {showActions && !isDeleted && (
+              <>
+                <button
+                  type="button"
+                  class="btn btn-ghost btn-sm"
+                  aria-label={`Edit transaction: ${primaryText}`}
+                  data-edit-transaction={transaction.id}
+                  data-transaction-data={transactionDataJson}
+                >
+                  <Pencil size={16} class="stroke-current" aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-ghost btn-sm text-error"
+                  aria-label={`Delete transaction: ${primaryText}`}
+                  data-delete-transaction={transaction.id}
+                  data-transaction-details={transactionDetailsJson}
+                >
+                  <Trash2 size={16} class="stroke-current" aria-hidden="true" />
+                </button>
+              </>
+            )}
           </div>
         )}
       </div>
+
+      {/* Expandable history container */}
+      {transaction && (
+        <div
+          class="hidden"
+          data-history-container={transaction.id}
+          aria-label={`Transaction history for: ${primaryText}`}
+        />
+      )}
     </article>
   )
 }

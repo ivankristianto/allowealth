@@ -2,7 +2,7 @@ import { type IDatabase, getActiveSchema } from '@/db';
 import { createLogger } from '@/lib/logger';
 
 const log = createLogger('transaction');
-import { eq, and, gte, lte, desc, sql, like, inArray } from 'drizzle-orm';
+import { eq, and, gte, lte, desc, asc, sql, like, inArray } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { CategoryService } from './category.service';
 import { AssetService } from './asset.service';
@@ -15,6 +15,7 @@ import {
 import { TransactionServiceError, ServiceErrorCode } from './service-errors';
 import { getCacheManager, CacheKeys, CacheTags, hashFilters } from '@/lib/cache';
 import { type PerfCollector, trackQuery } from '@/lib/perf';
+import { logAuditEvent } from '@/lib/audit-log';
 
 export { type CreateTransactionInput, type UpdateTransactionInput };
 
@@ -45,6 +46,7 @@ export interface TransactionFilters {
   start_date?: Date;
   end_date?: Date;
   search?: string;
+  include_deleted?: boolean;
   limit?: number;
   offset?: number;
 }
@@ -136,6 +138,25 @@ export class TransactionService {
       })
       .returning();
 
+    // Log audit event for transaction creation
+    await logAuditEvent({
+      workspaceId: validated.workspace_id,
+      userId: validated.created_by_user_id,
+      action: 'create',
+      entityType: 'transaction',
+      entityId: id,
+      newValue: {
+        type: validated.type,
+        amount: validated.amount,
+        currency: validated.currency,
+        category_id: validated.category_id || null,
+        asset_id: validated.asset_id,
+        to_asset_id: validated.to_asset_id || null,
+        description: validated.description || null,
+        transaction_date: validated.transaction_date.toISOString(),
+      },
+    });
+
     // Invalidate caches affected by transaction changes
     const cache = getCacheManager();
     await cache.invalidateByTags([
@@ -214,12 +235,15 @@ export class TransactionService {
 
   /**
    * Fetch transactions from database (no caching)
+   * Includes soft-deleted transactions for audit trail visibility
    */
   private async fetchTransactionsFromDb(filters: TransactionFilters) {
-    const conditions = [
-      eq(this.schema.transactions.workspace_id, filters.workspace_id),
-      sql`${this.schema.transactions.deleted_at} IS NULL`,
-    ];
+    const conditions = [eq(this.schema.transactions.workspace_id, filters.workspace_id)];
+    const includeDeleted = filters.include_deleted ?? true;
+
+    if (!includeDeleted) {
+      conditions.push(sql`${this.schema.transactions.deleted_at} IS NULL`);
+    }
 
     if (filters.type) {
       conditions.push(eq(this.schema.transactions.type, filters.type));
@@ -277,9 +301,19 @@ export class TransactionService {
   /**
    * Update transaction
    */
-  async update(id: string, workspaceId: string, input: UpdateTransactionInput) {
+  async update(id: string, workspaceId: string, input: UpdateTransactionInput, userId?: string) {
     // Validate input using Zod schema
     const validated = updateTransactionSchema.parse(input);
+
+    // Fetch current transaction for diff computation
+    const existing = await this.findById(id, workspaceId);
+    if (!existing) {
+      throw new TransactionServiceError(
+        ServiceErrorCode.TRANSACTION_NOT_FOUND,
+        'Transaction not found',
+        404
+      );
+    }
 
     // Verify category if being updated
     if (validated.category_id !== undefined) {
@@ -320,9 +354,46 @@ export class TransactionService {
       }
     }
 
+    // Compute field-level diff
+    const diffFields = [
+      'type',
+      'amount',
+      'currency',
+      'category_id',
+      'asset_id',
+      'to_asset_id',
+      'description',
+      'transaction_date',
+    ] as const;
+
+    const oldValues: Record<string, unknown> = {};
+    const newValues: Record<string, unknown> = {};
+
+    for (const field of diffFields) {
+      if (validated[field] !== undefined) {
+        const existingVal =
+          field === 'transaction_date'
+            ? (existing as any)[field]?.toISOString()
+            : (existing as any)[field];
+        const newVal =
+          field === 'transaction_date'
+            ? (validated[field] as Date)?.toISOString()
+            : validated[field];
+
+        if (String(existingVal ?? '') !== String(newVal ?? '')) {
+          oldValues[field] = existingVal ?? null;
+          newValues[field] = newVal ?? null;
+        }
+      }
+    }
+
     const updateData: Record<string, any> = {
       updated_at: new Date(),
     };
+
+    if (userId) {
+      updateData.updated_by_user_id = userId;
+    }
 
     if (validated.type !== undefined) updateData.type = validated.type;
     if (validated.amount !== undefined) updateData.amount = validated.amount;
@@ -344,6 +415,19 @@ export class TransactionService {
         )
       );
 
+    // Log audit event only if something actually changed
+    if (userId && Object.keys(oldValues).length > 0) {
+      await logAuditEvent({
+        workspaceId,
+        userId,
+        action: 'update',
+        entityType: 'transaction',
+        entityId: id,
+        oldValue: oldValues,
+        newValue: newValues,
+      });
+    }
+
     // Invalidate caches affected by transaction changes
     const cache = getCacheManager();
     await cache.invalidateByTags([
@@ -359,7 +443,7 @@ export class TransactionService {
   /**
    * Soft delete transaction
    */
-  async delete(id: string, workspaceId: string) {
+  async delete(id: string, workspaceId: string, userId?: string) {
     // Check if transaction exists
     const transaction = await this.findById(id, workspaceId);
     if (!transaction) {
@@ -370,18 +454,45 @@ export class TransactionService {
       );
     }
 
+    const deleteData: Record<string, any> = {
+      deleted_at: new Date(),
+      updated_at: new Date(),
+    };
+
+    if (userId) {
+      deleteData.deleted_by_user_id = userId;
+    }
+
     await (this as any).db
       .update(this.schema.transactions)
-      .set({
-        deleted_at: new Date(),
-        updated_at: new Date(),
-      })
+      .set(deleteData)
       .where(
         and(
           eq(this.schema.transactions.id, id),
           eq(this.schema.transactions.workspace_id, workspaceId)
         )
       );
+
+    // Log audit event for deletion with full snapshot
+    if (userId) {
+      await logAuditEvent({
+        workspaceId,
+        userId,
+        action: 'delete',
+        entityType: 'transaction',
+        entityId: id,
+        oldValue: {
+          type: (transaction as any).type,
+          amount: (transaction as any).amount,
+          currency: (transaction as any).currency,
+          category_id: (transaction as any).category_id,
+          asset_id: (transaction as any).asset_id,
+          to_asset_id: (transaction as any).to_asset_id,
+          description: (transaction as any).description,
+          transaction_date: (transaction as any).transaction_date?.toISOString(),
+        },
+      });
+    }
 
     // Invalidate caches affected by transaction changes
     const cache = getCacheManager();
@@ -399,10 +510,12 @@ export class TransactionService {
    * Get transaction count
    */
   async count(filters: Omit<TransactionFilters, 'limit' | 'offset'>, perf?: PerfCollector) {
-    const conditions = [
-      eq(this.schema.transactions.workspace_id, filters.workspace_id),
-      sql`${this.schema.transactions.deleted_at} IS NULL`,
-    ];
+    const conditions = [eq(this.schema.transactions.workspace_id, filters.workspace_id)];
+    const includeDeleted = filters.include_deleted ?? true;
+
+    if (!includeDeleted) {
+      conditions.push(sql`${this.schema.transactions.deleted_at} IS NULL`);
+    }
 
     if (filters.type) {
       conditions.push(eq(this.schema.transactions.type, filters.type));
@@ -447,6 +560,48 @@ export class TransactionService {
 
       return result[0]?.count || 0;
     });
+  }
+
+  private parseAuditValue(value: string | null): Record<string, unknown> | null {
+    if (!value) return null;
+
+    try {
+      const parsed = JSON.parse(value);
+      return parsed && typeof parsed === 'object' ? (parsed as Record<string, unknown>) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  private resolveAuditReferences(
+    payload: Record<string, unknown> | null,
+    categoryNames: Map<string, string>,
+    assetNames: Map<string, string>
+  ): Record<string, unknown> | null {
+    if (!payload) return null;
+
+    const resolved: Record<string, unknown> = {};
+
+    for (const [key, value] of Object.entries(payload)) {
+      if (typeof value !== 'string') {
+        resolved[key] = value;
+        continue;
+      }
+
+      if (key === 'category_id') {
+        resolved[key] = categoryNames.get(value) ?? value;
+        continue;
+      }
+
+      if (key === 'asset_id' || key === 'to_asset_id') {
+        resolved[key] = assetNames.get(value) ?? value;
+        continue;
+      }
+
+      resolved[key] = value;
+    }
+
+    return resolved;
   }
 
   /**
@@ -625,5 +780,90 @@ export class TransactionService {
           .join(',')
       )
       .join('\n');
+  }
+
+  /**
+   * Get audit history for a transaction
+   * Returns create + last N edits + delete event (if exists)
+   */
+  async getHistory(transactionId: string, workspaceId: string, showAll = false) {
+    const [results, categories, assets] = await Promise.all([
+      (this as any).db.query.auditLogs.findMany({
+        where: and(
+          eq(this.schema.auditLogs.entity_type, 'transaction'),
+          eq(this.schema.auditLogs.entity_id, transactionId),
+          eq(this.schema.auditLogs.workspace_id, workspaceId)
+        ),
+        with: {
+          user: {
+            columns: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+        orderBy: [asc(this.schema.auditLogs.created_at)],
+      }),
+      (this as any).db.query.categories.findMany({
+        where: eq(this.schema.categories.workspace_id, workspaceId),
+        columns: {
+          id: true,
+          name: true,
+        },
+      }),
+      (this as any).db.query.assets.findMany({
+        where: eq(this.schema.assets.workspace_id, workspaceId),
+        columns: {
+          id: true,
+          name: true,
+        },
+      }),
+    ]);
+
+    const categoryNames = new Map<string, string>(
+      categories.map((category: { id: string; name: string }) => [category.id, category.name])
+    );
+    const assetNames = new Map<string, string>(
+      assets.map((asset: { id: string; name: string }) => [asset.id, asset.name])
+    );
+
+    // Separate into create, updates, and delete
+    const createEvent = results.find((r: any) => r.action === 'create');
+    const deleteEvent = results.find((r: any) => r.action === 'delete');
+    const updateEvents = results.filter((r: any) => r.action === 'update');
+
+    const totalEdits = updateEvents.length;
+
+    // Cap edits to last 5 unless showAll
+    const displayedEdits = showAll ? updateEvents : updateEvents.slice(-5);
+
+    // Combine in chronological order
+    const history = [
+      ...(createEvent ? [createEvent] : []),
+      ...displayedEdits,
+      ...(deleteEvent ? [deleteEvent] : []),
+    ].map((entry: any) => ({
+      id: entry.id,
+      action: entry.action as 'create' | 'update' | 'delete',
+      userName: entry.user?.name || 'Unknown',
+      userId: entry.user_id,
+      createdAt: entry.created_at,
+      oldValue: this.resolveAuditReferences(
+        this.parseAuditValue(entry.old_value),
+        categoryNames,
+        assetNames
+      ),
+      newValue: this.resolveAuditReferences(
+        this.parseAuditValue(entry.new_value),
+        categoryNames,
+        assetNames
+      ),
+    }));
+
+    return {
+      history,
+      totalEdits,
+      showingEdits: displayedEdits.length,
+    };
   }
 }

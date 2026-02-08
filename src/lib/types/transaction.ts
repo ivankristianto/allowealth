@@ -26,6 +26,8 @@ export interface Transaction {
   currency: Currency;
   description: string | null;
   transaction_date: Date;
+  updated_by_user_id: string | null;
+  deleted_by_user_id: string | null;
   deleted_at: Date | null;
   created_at: Date;
   updated_at: Date;
@@ -68,6 +70,23 @@ export interface TransactionFormData {
   category_id: string;
   asset_id: string;
   transaction_date: string;
+}
+
+// Audit history entry for transaction timeline
+export interface TransactionHistoryEntry {
+  id: string;
+  action: 'create' | 'update' | 'delete';
+  userName: string;
+  userId: string;
+  createdAt: Date;
+  oldValue: Record<string, unknown> | null;
+  newValue: Record<string, unknown> | null;
+}
+
+export interface TransactionHistoryResponse {
+  history: TransactionHistoryEntry[];
+  totalEdits: number;
+  showingEdits: number;
 }
 
 // Summary types for dashboard

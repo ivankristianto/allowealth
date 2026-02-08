@@ -28,6 +28,19 @@ Transaction:
       oneOf:
         - type: string
         - type: 'null'
+    updated_by_user_id:
+      oneOf:
+        - type: string
+        - type: 'null'
+    deleted_by_user_id:
+      oneOf:
+        - type: string
+        - type: 'null'
+    deleted_at:
+      oneOf:
+        - type: string
+          format: date-time
+        - type: 'null'
     created_at:
       type: string
       format: date-time

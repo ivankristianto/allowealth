@@ -135,6 +135,8 @@ export const GET: APIRoute = async (context) => {
           },
           created_at: txn.transactionDate,
           updated_at: txn.transactionDate,
+          updated_by_user_id: null,
+          deleted_by_user_id: null,
           deleted_at: null,
         })
       );

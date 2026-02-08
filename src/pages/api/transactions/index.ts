@@ -102,6 +102,7 @@ export const GET: APIRoute = async (context) => {
         workspace_id: auth.workspaceId,
         start_date: filters.start_date,
         end_date: filters.end_date,
+        include_deleted: false,
         limit: PAGINATION.MAX_MONTH_TRANSACTIONS,
       });
 

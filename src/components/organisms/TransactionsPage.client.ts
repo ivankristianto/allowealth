@@ -34,7 +34,6 @@ import {
   renderPaginationHtml,
   showLoadingState,
   hideLoadingState,
-  animateRowRemoval,
 } from './TransactionsRenderer.client';
 import type { TransactionFormData } from '@/lib/types/transaction';
 
@@ -506,12 +505,6 @@ async function executeDelete(confirmBtn: HTMLButtonElement): Promise<void> {
     // Invalidate cache since data changed
     invalidateAllCache();
 
-    // Optimistic UI update - animate row removal
-    const row = document.querySelector(`[data-transaction-id="${transactionId}"]`);
-    if (row) {
-      await animateRowRemoval(row as HTMLElement);
-    }
-
     // Update store
     removeTransaction(transactionId);
 
@@ -521,8 +514,7 @@ async function executeDelete(confirmBtn: HTMLButtonElement): Promise<void> {
     // Show success toast
     addToast('Transaction deleted successfully', 'success');
 
-    // Re-fetch and render using server HTML to update summary and pagination
-    // This ensures consistency without duplicating rendering logic
+    // Re-fetch and render using server HTML to update list with deleted state (strikethrough)
     await fetchAndRender();
   } catch (error) {
     showConfirmError(
@@ -532,6 +524,65 @@ async function executeDelete(confirmBtn: HTMLButtonElement): Promise<void> {
   } finally {
     setConfirmLoading(confirmBtn, false);
     confirmBtn.removeAttribute('data-pending-delete-id');
+  }
+}
+
+/**
+ * Toggle transaction history timeline
+ * Fetches history HTML on first expand, shows/hides on subsequent toggles
+ */
+async function toggleHistory(transactionId: string, showAll = false): Promise<void> {
+  const container = document.querySelector(
+    `[data-history-container="${transactionId}"]`
+  ) as HTMLElement | null;
+  if (!container) return;
+
+  const isVisible = !container.classList.contains('hidden');
+  const hasLoaded = container.dataset.historyLoaded === 'true';
+  const hasLoadedAll = container.dataset.historyAllLoaded === 'true';
+
+  // If already visible and not requesting "show all", just hide
+  if (isVisible && !showAll) {
+    container.classList.add('hidden');
+    return;
+  }
+
+  // Reuse cached HTML when possible
+  if (!showAll && hasLoaded) {
+    container.classList.remove('hidden');
+    return;
+  }
+
+  if (showAll && hasLoadedAll) {
+    container.classList.remove('hidden');
+    return;
+  }
+
+  // Fetch history HTML
+  try {
+    const allParam = showAll ? '&all=true' : '';
+    const response = await fetch(
+      `/api/transactions/${transactionId}/history?_render=html${allParam}`,
+      {
+        method: 'GET',
+        headers: { Accept: 'text/html' },
+      }
+    );
+
+    if (!response.ok) {
+      addToast('Failed to load transaction history', 'error');
+      return;
+    }
+
+    const html = await response.text();
+    container.innerHTML = html;
+    container.classList.remove('hidden');
+    container.dataset.historyLoaded = 'true';
+    if (showAll) {
+      container.dataset.historyAllLoaded = 'true';
+    }
+  } catch {
+    addToast('Failed to load transaction history', 'error');
   }
 }
 
@@ -693,6 +744,27 @@ function setupEventListeners(): void {
       if (transactionId) {
         handleDelete(transactionId, transactionDetails);
       }
+      return;
+    }
+
+    const historyBtn = target.closest('[data-toggle-history]');
+    if (historyBtn) {
+      e.preventDefault();
+      const transactionId = historyBtn.getAttribute('data-toggle-history');
+      if (transactionId) {
+        toggleHistory(transactionId);
+      }
+      return;
+    }
+
+    const showAllBtn = target.closest('[data-show-all-history]');
+    if (showAllBtn) {
+      e.preventDefault();
+      const transactionId = showAllBtn.getAttribute('data-show-all-history');
+      if (transactionId) {
+        toggleHistory(transactionId, true);
+      }
+      return;
     }
   });
 
