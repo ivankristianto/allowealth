@@ -149,8 +149,6 @@ function enterEditMode(element: HTMLElement, categoryId: string): void {
   element.innerHTML = '';
   element.appendChild(wrapper);
   element.classList.remove('cursor-pointer');
-  element.removeAttribute('role');
-  element.removeAttribute('tabindex');
 
   // Focus the input and select all text
   input.focus();
@@ -178,18 +176,24 @@ function enterEditMode(element: HTMLElement, categoryId: string): void {
 
 /**
  * Cancel edit mode and restore the original content.
+ *
+ * Exported so the page orchestrator can call it when DOM is replaced
+ * (e.g., after budget-updated refresh), preventing orphaned edit state.
  */
-function cancelEditMode(): void {
+export function cancelEditMode(): void {
+  const elementToFocus = activeEditElement;
+
   if (activeEditElement && originalElementHtml !== null) {
     activeEditElement.innerHTML = originalElementHtml;
     activeEditElement.classList.add('cursor-pointer');
-    activeEditElement.setAttribute('role', 'button');
-    activeEditElement.setAttribute('tabindex', '0');
   }
 
   activeEditCategoryId = null;
   originalElementHtml = null;
   activeEditElement = null;
+
+  // Return focus to the trigger element so keyboard users don't lose position
+  elementToFocus?.focus();
 }
 
 /**
@@ -234,14 +238,14 @@ async function handleSave(
       throw new Error((errorData as { message?: string }).message || 'Failed to update budget');
     }
 
-    // Reset edit state before refresh (refresh replaces DOM)
-    activeEditCategoryId = null;
-    originalElementHtml = null;
-    activeEditElement = null;
-
     addToast('Budget updated successfully!', 'success');
 
-    // Dispatch event for page orchestrator
+    // Restore display mode before refresh — if the refresh fails or is slow,
+    // the user sees the original amount (stale but interactive) instead of
+    // permanently disabled controls. The refresh will overwrite this anyway.
+    cancelEditMode();
+
+    // Dispatch event for page orchestrator to refresh all partials
     document.dispatchEvent(
       new CustomEvent('budget-updated', {
         detail: { categoryId, budgetId, budgetAmount: value },

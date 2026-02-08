@@ -20,7 +20,11 @@ import {
   reinitializeEventHandlers,
 } from './BudgetRenderer.client';
 import { addToast } from '@/lib/stores/toastStore';
-import { setupInlineEditHandlers, cleanupInlineEdit } from './BudgetInlineEdit.client';
+import {
+  setupInlineEditHandlers,
+  cleanupInlineEdit,
+  cancelEditMode,
+} from './BudgetInlineEdit.client';
 
 // =============================================================================
 // STATE MANAGEMENT
@@ -138,7 +142,7 @@ export async function refreshPartial(partial: 'summary' | 'cards' | 'advice'): P
 /**
  * Handle budget-updated event
  *
- * Fired when a budget is created, updated, or deleted via modal.
+ * Fired when a budget is created via modal or updated via inline editing.
  * Refreshes the entire budget view to ensure consistency.
  */
 async function handleBudgetUpdated(
@@ -182,6 +186,9 @@ function handleBudgetsCopied(
  * Re-initializes edit button handlers and filter after new content is injected.
  */
 function handleContentUpdated(): void {
+  // Cancel any active inline edit before re-initializing — DOM was replaced,
+  // so the edit UI is gone but module state (activeEditCategoryId) may linger.
+  cancelEditMode();
   setupInlineEditHandlers();
   setupFilterHandler();
   setupSortHandler();

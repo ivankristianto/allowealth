@@ -201,7 +201,7 @@ const monthName = getMonthName(month);
         const year = parseInt(formData.get('year') as string, 10);
 
         // Client-side validation
-        const parsedAmount = parseFloat(budgetAmount);
+        const parsedAmount = Number(budgetAmount);
         if (isNaN(parsedAmount) || parsedAmount <= 0) {
           if (errorDiv) {
             errorDiv.textContent = 'Budget amount must be a positive number';
