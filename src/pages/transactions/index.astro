@@ -24,6 +24,7 @@ import {
   createMonthKey,
   safeParseAmount,
   extractAvailableMonths,
+  transformTransaction,
 } from '@/lib/utils';
 import { PAGINATION } from '@/lib/constants/pagination';
 
@@ -77,39 +78,8 @@ const filters = {
 // Fetch transactions from database
 const rawTransactions = await transactionService.findAll(filters, perf);
 
-// Transform Drizzle result to TransactionOutput format
-const transactions: TransactionOutput[] = rawTransactions.map((t: any) => ({
-  id: t.id,
-  type: t.type,
-  amount: t.amount,
-  currency: t.currency,
-  description: t.description,
-  transaction_date: t.transaction_date,
-  deleted_at: t.deleted_at,
-  created_at: t.created_at,
-  updated_at: t.updated_at,
-  category: t.category
-    ? {
-        id: t.category.id,
-        name: t.category.name,
-        type: t.category.type,
-        icon: t.category.icon ?? 'tag',
-        color: t.category.color ?? 'bg-base-300',
-      }
-    : null,
-  asset: {
-    id: t.asset.id,
-    name: t.asset.name,
-    type: t.asset.type,
-  },
-  toAsset: t.toAsset
-    ? {
-        id: t.toAsset.id,
-        name: t.toAsset.name,
-        type: t.toAsset.type,
-      }
-    : null,
-}));
+// Transform Drizzle result to TransactionOutput format (shared with API endpoint)
+const transactions: TransactionOutput[] = rawTransactions.map(transformTransaction);
 
 // Get total count for pagination (without limit/offset)
 const { limit, offset: _, ...countFilters } = filters;

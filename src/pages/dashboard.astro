@@ -96,6 +96,7 @@ const recentTransactions: TransactionOutput[] =
       name: tx.asset.name,
       type: tx.asset.type,
     },
+    created_by_user_name: tx.createdByName,
   })) || [];
 
 const formatCashFlowDate = (date: Date | string): string => {

@@ -141,6 +141,7 @@ export interface DashboardData {
       name: string;
       type: string;
     };
+    createdByName?: string;
   }>;
 }
 
@@ -726,6 +727,7 @@ export class DashboardService {
         with: {
           category: true,
           asset: true,
+          createdBy: { columns: { id: true, name: true } },
         },
         orderBy: [
           desc(this.schema.transactions.transaction_date),
@@ -754,6 +756,7 @@ export class DashboardService {
           name: tx.asset.name,
           type: tx.asset.type,
         },
+        createdByName: tx.createdBy?.name,
       }));
     } catch (error) {
       log.error('error getting recent transactions:', error);
@@ -1244,6 +1247,7 @@ export class DashboardService {
             with: {
               category: true,
               asset: true,
+              createdBy: { columns: { id: true, name: true } },
             },
             orderBy: [
               desc(this.schema.transactions.transaction_date),
@@ -1273,6 +1277,7 @@ export class DashboardService {
           name: tx.asset.name,
           type: tx.asset.type,
         },
+        createdByName: tx.createdBy?.name,
       }));
     } catch (error) {
       log.error('error getting recent transactions:', error);

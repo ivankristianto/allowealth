@@ -58,6 +58,18 @@ export class TransactionService {
   private assetService: AssetService;
 
   /**
+   * Safely convert Date/number/string to ISO string.
+   * SQLite may return integers instead of Date objects depending on driver config.
+   */
+  private toIsoString(value: Date | number | string | null | undefined): string | null {
+    if (value == null) return null;
+    if (value instanceof Date) return value.toISOString();
+    if (typeof value === 'number') return new Date(value).toISOString();
+    const asDate = new Date(value);
+    return Number.isNaN(asDate.getTime()) ? null : asDate.toISOString();
+  }
+
+  /**
    * Create a new TransactionService with database injection
    * @param db - Database instance (injected for testability)
    */
@@ -308,7 +320,12 @@ export class TransactionService {
   /**
    * Update transaction
    */
-  async update(id: string, workspaceId: string, input: UpdateTransactionInput, userId?: string) {
+  async update(
+    id: string,
+    workspaceId: string,
+    input: UpdateTransactionInput,
+    userId?: string
+  ): ReturnType<typeof this.findById> {
     // Validate input using Zod schema
     const validated = updateTransactionSchema.parse(input);
 
@@ -380,11 +397,11 @@ export class TransactionService {
       if (validated[field] !== undefined) {
         const existingVal =
           field === 'transaction_date'
-            ? (existing as any)[field]?.toISOString()
+            ? this.toIsoString((existing as any)[field])
             : (existing as any)[field];
         const newVal =
           field === 'transaction_date'
-            ? (validated[field] as Date)?.toISOString()
+            ? this.toIsoString(validated[field] as Date | string | number)
             : validated[field];
 
         if (String(existingVal ?? '') !== String(newVal ?? '')) {
@@ -496,7 +513,7 @@ export class TransactionService {
           asset_id: (transaction as any).asset_id,
           to_asset_id: (transaction as any).to_asset_id,
           description: (transaction as any).description,
-          transaction_date: (transaction as any).transaction_date?.toISOString(),
+          transaction_date: this.toIsoString((transaction as any).transaction_date),
         },
       });
     }
