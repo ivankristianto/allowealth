@@ -19,6 +19,7 @@ import {
   renderFromHtmlResponse,
   reinitializeEventHandlers,
 } from './BudgetRenderer.client';
+import type { Currency } from '@/lib/enums';
 import { addToast } from '@/lib/stores/toastStore';
 import {
   setupInlineEditHandlers,
@@ -178,6 +179,25 @@ function handleBudgetsCopied(
     params.set('currency', state.currency);
     window.location.href = `/budget?${params.toString()}`;
   }
+}
+
+/**
+ * Handle budgets-initialized event
+ *
+ * Fired when all uninitialized budgets are created with amount=0.
+ * Reloads the page to refresh button state, modal, and data attributes.
+ */
+function handleBudgetsInitialized(
+  _event: CustomEvent<{
+    month: number;
+    year: number;
+    currency: Currency;
+    initializedCount: number;
+  }>
+): void {
+  // Always reload on successful initialize — another session may have
+  // initialized first, leaving initialized_count=0 but stale UI.
+  window.location.reload();
 }
 
 /**
@@ -452,6 +472,8 @@ export function initBudgetPage(): void {
   // Listen for budgets copied
   document.addEventListener('budgets-copied', handleBudgetsCopied as EventListener);
 
+  // Listen for budgets initialized
+  document.addEventListener('budgets-initialized', handleBudgetsInitialized as EventListener);
   // Listen for content updates (for re-initializing handlers)
   document.addEventListener('budget-content-updated', handleContentUpdated);
 }
@@ -475,6 +497,7 @@ export function cleanup(): void {
   document.removeEventListener('budget-updated', handleBudgetUpdated as EventListener);
   document.removeEventListener('budgets-copied', handleBudgetsCopied as EventListener);
   document.removeEventListener('budget-content-updated', handleContentUpdated);
+  document.removeEventListener('budgets-initialized', handleBudgetsInitialized as EventListener);
   state = null;
 }
 

@@ -1,0 +1,292 @@
+---
+/**
+ * InitializeBudgetsModal Component
+ *
+ * Confirmation modal for initializing budgets for all uninitialized expense categories.
+ * Creates budget entries with amount=0 for each category. Users can edit amounts afterwards.
+ * Uses POST /api/budgets/initialize endpoint.
+ *
+ * @param {string} id - Modal ID
+ * @param {Array} categories - Uninitialized categories to display
+ * @param {number} month - Selected month (1-12)
+ * @param {number} year - Selected year
+ * @param {'IDR' | 'USD'} currency - Selected currency
+ */
+
+import Modal from '../molecules/Modal.astro';
+import { Zap } from '@lucide/astro';
+import { getMonthName } from '@/lib/utils/date';
+
+export interface Props {
+  id: string;
+  categories: Array<{ id: string; name: string; icon: string; color: string }>;
+  month: number;
+  year: number;
+  currency: 'IDR' | 'USD';
+}
+
+const { id, categories, month, year, currency } = Astro.props;
+
+const categoryCount = categories.length;
+const monthName = getMonthName(month);
+
+// Validate hex color to prevent XSS attacks via style injection
+const isValidHexColor = (color: string): boolean => {
+  return /^#[0-9A-Fa-f]{3,8}$/.test(color);
+};
+
+// Pre-compute validated colors for template use
+const categoriesWithColors = categories.map((cat) => ({
+  ...cat,
+  validColor: cat.color && isValidHexColor(cat.color) ? cat.color : null,
+}));
+---
+
+<div
+  data-initialize-budgets-modal-container
+  data-id={id}
+  data-month={month}
+  data-year={year}
+  data-currency={currency}
+>
+  <Modal id={id} title="" size="md" closable={false} className="[&_.modal-box]:rounded-card">
+    <div class="space-y-6">
+      {/* Header with icon */}
+      <div class="flex items-center gap-4">
+        <div
+          class="w-12 h-12 rounded-2xl flex items-center justify-center bg-accent/10 text-accent"
+        >
+          <Zap size={24} class="stroke-current" aria-hidden="true" />
+        </div>
+        <div>
+          <h2 class="text-xl font-bold tracking-tight text-base-content leading-none">
+            Initialize Budgets?
+          </h2>
+          <p class="text-base-content/60 text-sm mt-2 font-medium">
+            Create budget entries for {monthName}
+            {year}.
+          </p>
+        </div>
+      </div>
+
+      {/* Category list */}
+      <div
+        class="max-h-48 overflow-y-auto rounded-2xl border border-base-300 bg-base-200/50 divide-y divide-base-300"
+        role="list"
+        aria-label="Categories to initialize"
+      >
+        {
+          categoriesWithColors.map((cat) => (
+            <div class="flex items-center gap-3 px-4 py-3" role="listitem">
+              {cat.validColor ? (
+                <span
+                  class="w-3 h-3 rounded-full shrink-0"
+                  style={`background-color: ${cat.validColor};`}
+                  aria-hidden="true"
+                />
+              ) : (
+                <span class="w-3 h-3 rounded-full shrink-0 bg-base-content/30" aria-hidden="true" />
+              )}
+              <span class="text-sm font-medium text-base-content">{cat.name}</span>
+            </div>
+          ))
+        }
+      </div>
+
+      {/* Count badge */}
+      <div class="flex items-center gap-2">
+        <span class="badge badge-accent badge-outline text-xs font-bold">
+          {categoryCount}
+          {categoryCount === 1 ? 'category' : 'categories'}
+        </span>
+      </div>
+
+      {/* Helper text */}
+      <div class="text-sm text-base-content/70 bg-info/5 border border-info/10 rounded-xl p-4">
+        <p>
+          All budgets will be set to <span class="font-bold text-base-content">0 ({currency})</span
+          >. You can edit amounts afterwards.
+        </p>
+      </div>
+
+      {/* Error message container */}
+      <div id={`${id}-error`} class="hidden alert alert-error text-sm rounded-xl" role="alert">
+      </div>
+
+      {/* ARIA live region for screen reader announcements */}
+      <div id={`${id}-status`} class="sr-only" role="status" aria-live="polite"></div>
+
+      {/* Actions */}
+      <div class="flex items-center gap-4 pt-4">
+        <button
+          type="button"
+          class="flex-1 py-4 text-base-content/60 font-bold hover:bg-base-200 rounded-2xl transition-colors"
+          data-cancel-initialize
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          class="flex-[2] btn btn-accent py-4 rounded-2xl font-bold text-base shadow-lg shadow-accent/20 hover:shadow-xl transition-all"
+          data-confirm-initialize
+          disabled={categoryCount === 0}
+        >
+          Initialize
+        </button>
+      </div>
+    </div>
+  </Modal>
+</div>
+
+<script>
+  import { addToast } from '@lib/stores/toastStore';
+  import { getCsrfHeaders } from '@/lib/csrf-client';
+
+  const PENDING_BUDGET_INIT_TOAST_KEY = 'budget-initialize-pending-toast';
+
+  // Track initialized modals to avoid duplicate handlers
+  const initializedModals = new WeakSet<Element>();
+
+  function initInitializeBudgetsModal() {
+    document.querySelectorAll('[data-initialize-budgets-modal-container]').forEach((container) => {
+      // Skip if already initialized
+      if (initializedModals.has(container)) return;
+      initializedModals.add(container);
+
+      const id = container.getAttribute('data-id');
+      if (!id) return;
+
+      const modal = document.getElementById(id) as HTMLDialogElement | null;
+      const cancelBtn = container.querySelector('[data-cancel-initialize]');
+      const confirmBtn = container.querySelector(
+        '[data-confirm-initialize]'
+      ) as HTMLButtonElement | null;
+      const errorDiv = document.getElementById(`${id}-error`);
+      const statusDiv = document.getElementById(`${id}-status`);
+
+      // Get data from container attributes
+      const month = parseInt(container.getAttribute('data-month') || '0', 10);
+      const year = parseInt(container.getAttribute('data-year') || '0', 10);
+      const currency = container.getAttribute('data-currency') || 'IDR';
+
+      if (!modal || !confirmBtn) return;
+
+      // Validate month/year ranges
+      const isValidMonth = (m: number) => m >= 1 && m <= 12;
+      const isValidYear = (y: number) => y >= 2000 && y <= 2100;
+
+      if (!isValidMonth(month) || !isValidYear(year)) {
+        console.error('Invalid month/year values in InitializeBudgetsModal');
+        confirmBtn.disabled = true;
+        return;
+      }
+
+      // Handle cancel button
+      cancelBtn?.addEventListener('click', () => {
+        if (errorDiv) {
+          errorDiv.textContent = '';
+          errorDiv.classList.add('hidden');
+        }
+        modal.close();
+      });
+
+      // Handle confirm button
+      confirmBtn.addEventListener('click', async () => {
+        const originalText = confirmBtn.textContent || 'Initialize';
+
+        // Clear previous errors
+        if (errorDiv) {
+          errorDiv.textContent = '';
+          errorDiv.classList.add('hidden');
+        }
+
+        // Show loading state and announce to screen readers
+        confirmBtn.disabled = true;
+        confirmBtn.textContent = 'Initializing...';
+        if (statusDiv) {
+          statusDiv.textContent = 'Initializing budgets...';
+        }
+
+        try {
+          const response = await fetch('/api/budgets/initialize', {
+            method: 'POST',
+            headers: getCsrfHeaders({
+              'Content-Type': 'application/json',
+            }),
+            body: JSON.stringify({ month, year, currency }),
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error?.message || 'Failed to initialize budgets');
+          }
+
+          const data = await response.json();
+          const result = data.data;
+
+          const initializedCount = result.initialized_count || 0;
+
+          let successMessage: string;
+          if (initializedCount === 0) {
+            successMessage = 'All categories already have budgets';
+          } else {
+            successMessage = `Initialized ${initializedCount} ${initializedCount === 1 ? 'budget' : 'budgets'} successfully!`;
+          }
+
+          // Announce to screen readers
+          if (statusDiv) {
+            statusDiv.textContent = successMessage;
+          }
+
+          // Persist success toast across hard reload.
+          if (initializedCount > 0) {
+            try {
+              sessionStorage.setItem(
+                PENDING_BUDGET_INIT_TOAST_KEY,
+                JSON.stringify({ message: successMessage, type: 'success' })
+              );
+            } catch {
+              // Ignore storage errors and continue with reload flow.
+            }
+          } else {
+            addToast(successMessage, 'success');
+          }
+          modal.close();
+
+          // Dispatch custom event so page can update
+          document.dispatchEvent(
+            new CustomEvent('budgets-initialized', {
+              detail: {
+                month,
+                year,
+                currency,
+                initializedCount,
+              },
+            })
+          );
+        } catch (err) {
+          const message = err instanceof Error ? err.message : 'Failed to initialize budgets';
+          if (errorDiv) {
+            errorDiv.textContent = message;
+            errorDiv.classList.remove('hidden');
+          }
+          addToast(message, 'error');
+        } finally {
+          // Reset button state
+          confirmBtn.disabled = false;
+          confirmBtn.textContent = originalText;
+        }
+      });
+    });
+  }
+
+  // Initialize on DOM ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initInitializeBudgetsModal);
+  } else {
+    initInitializeBudgetsModal();
+  }
+
+  // Re-initialize on Astro page transitions
+  document.addEventListener('astro:page-load', initInitializeBudgetsModal);
+</script>

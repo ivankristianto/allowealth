@@ -19,8 +19,15 @@
     {
       "idx": 2,
       "version": "7",
+      "when": 1770543859175,
+      "tag": "0002_brief_apocalypse",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
       "when": 1770543617263,
-      "tag": "0002_nebulous_maestro",
+      "tag": "0003_asset_lifecycle_merged",
       "breakpoints": true
     }
   ]

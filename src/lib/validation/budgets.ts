@@ -140,3 +140,23 @@ export const budgetFilterSchema = z.object({
 });
 
 export type BudgetFilter = z.infer<typeof budgetFilterSchema>;
+
+// Schema for initializing all budgets (for service layer)
+export const initializeBudgetsSchema = z.object({
+  workspace_id: z.string().min(1, 'Workspace ID is required'),
+  created_by_user_id: z.string().min(1, 'Created by user ID is required'),
+  month: monthValidation,
+  year: yearValidation,
+  currency: currencyEnum,
+});
+
+export type InitializeBudgetsInput = z.infer<typeof initializeBudgetsSchema>;
+
+// API-specific schema (workspace_id and user_id come from auth context)
+export const initializeBudgetsAPISchema = z.object({
+  month: monthValidation,
+  year: yearValidation,
+  currency: currencyEnum,
+});
+
+export type InitializeBudgetsAPIInput = z.infer<typeof initializeBudgetsAPISchema>;

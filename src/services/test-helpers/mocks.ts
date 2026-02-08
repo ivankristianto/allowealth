@@ -27,17 +27,21 @@ import type { Budget, BudgetWithCategory } from '@/lib/types/budget';
  * ```
  */
 export function createMockDatabase(): IDatabase {
-  return {
+  const db: any = {
     insert: mock(() => ({
       values: mock(() => ({
         returning: mock(() => Promise.resolve([])),
         onConflictDoNothing: mock(() => Promise.resolve()),
         onConflictDoUpdate: mock(() => Promise.resolve()),
       })),
-    })) as any,
+    })),
 
     query: {
       transactions: {
+        findFirst: mock(() => Promise.resolve(undefined)),
+        findMany: mock(() => Promise.resolve([])),
+      },
+      auditLogs: {
         findFirst: mock(() => Promise.resolve(undefined)),
         findMany: mock(() => Promise.resolve([])),
       },
@@ -65,14 +69,14 @@ export function createMockDatabase(): IDatabase {
         findFirst: mock(() => Promise.resolve(undefined)),
         findMany: mock(() => Promise.resolve([])),
       },
-    } as any,
+    },
 
     update: mock(() => ({
       set: mock(() => ({
         where: mock(() => Promise.resolve(undefined)),
         returning: mock(() => Promise.resolve([])),
       })),
-    })) as any,
+    })),
 
     select: mock(() => ({
       from: mock(() => ({
@@ -80,14 +84,16 @@ export function createMockDatabase(): IDatabase {
         groupBy: mock(() => Promise.resolve([])),
         orderBy: mock(() => Promise.resolve([])),
       })),
-    })) as any,
+    })),
 
     delete: mock(() => ({
       where: mock(() => Promise.resolve(undefined)),
-    })) as any,
+    })),
 
-    transaction: mock(<T>(callback: (tx: any) => Promise<T>) => callback({})) as any,
+    // Pass db itself as tx so mocked queries work inside runTransaction
+    transaction: mock(<T>(callback: (tx: any) => Promise<T>) => callback(db)),
   };
+  return db as IDatabase;
 }
 
 /**
@@ -202,6 +208,8 @@ export function createMockTransaction(overrides: Partial<Transaction> = {}): Tra
     currency: 'IDR',
     description: 'Lunch',
     transaction_date: new Date('2026-01-05'),
+    updated_by_user_id: null,
+    deleted_by_user_id: null,
     deleted_at: null,
     created_at: new Date('2026-01-05'),
     updated_at: new Date('2026-01-05'),
@@ -236,6 +244,8 @@ export function resetMockDatabase(mockDb: IDatabase): void {
   (mockDb.insert as any).mockClear();
   (mockDb.query.transactions.findFirst as any).mockClear();
   (mockDb.query.transactions.findMany as any).mockClear();
+  (mockDb.query.auditLogs.findFirst as any).mockClear();
+  (mockDb.query.auditLogs.findMany as any).mockClear();
   (mockDb.query.categories.findFirst as any).mockClear();
   (mockDb.query.categories.findMany as any).mockClear();
   (mockDb.query.budgets.findFirst as any).mockClear();

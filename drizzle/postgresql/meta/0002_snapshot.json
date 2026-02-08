@@ -1,6 +1,6 @@
 {
-  "id": "a65e5b97-f878-469b-a2fd-8789f2f57ee1",
-  "prevId": "5c44563a-5033-4b04-8788-c1b4a70e3ffe",
+  "id": "59060882-e323-4807-b033-f2dba79112ee",
+  "prevId": "ede758fd-7299-465f-8db9-50a9463a4f01",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -1000,7 +1000,7 @@
         "budgets_unique": {
           "name": "budgets_unique",
           "nullsNotDistinct": false,
-          "columns": ["workspace_id", "category_id", "month", "year"]
+          "columns": ["workspace_id", "category_id", "month", "year", "currency"]
         }
       },
       "policies": {},
@@ -1767,6 +1767,18 @@
           "primaryKey": false,
           "notNull": true
         },
+        "updated_by_user_id": {
+          "name": "updated_by_user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "deleted_by_user_id": {
+          "name": "deleted_by_user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "deleted_at": {
           "name": "deleted_at",
           "type": "timestamp",
@@ -1892,6 +1904,24 @@
           "tableFrom": "transactions",
           "tableTo": "assets",
           "columnsFrom": ["to_asset_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "transactions_updated_by_user_id_users_id_fk": {
+          "name": "transactions_updated_by_user_id_users_id_fk",
+          "tableFrom": "transactions",
+          "tableTo": "users",
+          "columnsFrom": ["updated_by_user_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "transactions_deleted_by_user_id_users_id_fk": {
+          "name": "transactions_deleted_by_user_id_users_id_fk",
+          "tableFrom": "transactions",
+          "tableTo": "users",
+          "columnsFrom": ["deleted_by_user_id"],
           "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"

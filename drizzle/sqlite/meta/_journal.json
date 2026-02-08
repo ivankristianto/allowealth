@@ -26,8 +26,15 @@
     {
       "idx": 3,
       "version": "6",
+      "when": 1770543803295,
+      "tag": "0003_redundant_black_bolt",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
       "when": 1770543578634,
-      "tag": "0003_common_turbo",
+      "tag": "0004_asset_lifecycle_merged",
       "breakpoints": true
     }
   ]

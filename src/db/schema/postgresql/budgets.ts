@@ -26,6 +26,12 @@ export const budgets = pgTable(
     updated_at: timestamp('updated_at').defaultNow().notNull(),
   },
   (table) => [
-    unique('budgets_unique').on(table.workspace_id, table.category_id, table.month, table.year),
+    unique('budgets_unique').on(
+      table.workspace_id,
+      table.category_id,
+      table.month,
+      table.year,
+      table.currency
+    ),
   ]
 ).enableRLS();

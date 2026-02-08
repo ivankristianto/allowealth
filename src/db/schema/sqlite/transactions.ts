@@ -23,6 +23,8 @@ export const transactions = sqliteTable('transactions', {
   currency: text('currency', { enum: ['IDR', 'USD'] }).notNull(),
   description: text('description'),
   transaction_date: integer('transaction_date', { mode: 'timestamp' }).notNull(),
+  updated_by_user_id: text('updated_by_user_id').references(() => users.id),
+  deleted_by_user_id: text('deleted_by_user_id').references(() => users.id),
   deleted_at: integer('deleted_at', { mode: 'timestamp' }),
   created_at: integer('created_at', { mode: 'timestamp' }).default(sqliteTimestampNow).notNull(),
   updated_at: integer('updated_at', { mode: 'timestamp' }).default(sqliteTimestampNow).notNull(),

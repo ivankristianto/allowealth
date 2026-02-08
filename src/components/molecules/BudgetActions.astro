@@ -3,26 +3,28 @@
  * BudgetActions Component
  *
  * Action buttons row for the Budget page.
- * Left: Categories, Import, Export, AI Rebalancer
+ * Left: Categories, Import, Export, Initialize All, AI Rebalancer
  * Right: New Budget (accent ghost)
  * Uses ActionBar for consistent layout.
  *
  * Note: History and Copy buttons are in BudgetPageHeader (left of month picker).
  *
  * @param {boolean} showAiRebalancer - Show AI Rebalancer button
+ * @param {number} uninitializedCount - Number of categories without budgets
  * @param {string} className - Additional CSS classes
  */
 
-import { Sparkles, Plus, Tags, Download, Upload } from '@lucide/astro';
+import { Sparkles, Plus, Tags, Download, Upload, Zap } from '@lucide/astro';
 import Modal from '@components/molecules/Modal.astro';
 import ActionBar from './ActionBar.astro';
 
 export interface Props {
   showAiRebalancer?: boolean;
+  uninitializedCount?: number;
   className?: string;
 }
 
-const { showAiRebalancer = true, className = '' } = Astro.props;
+const { showAiRebalancer = true, uninitializedCount = 0, className = '' } = Astro.props;
 
 const ghostBtn =
   'btn btn-ghost btn-sm md:btn-md min-h-[44px] min-w-[44px] gap-1 md:gap-2 rounded-lg md:rounded-xl text-base-content/70 hover:text-base-content hover:bg-base-200 px-2 md:px-4';
@@ -70,6 +72,41 @@ const accentGhostBtn =
       <span>Export</span>
     </button>
   </div>
+
+  {/* Initialize All Budgets */}
+  {
+    uninitializedCount > 0 ? (
+      <div class="tooltip tooltip-bottom" data-tip="Initialize all uninitialized budgets">
+        <button
+          type="button"
+          class={ghostBtn}
+          id="initialize-budgets-btn"
+          data-target-modal="initialize-budgets-modal"
+          aria-label="Initialize all budgets"
+          data-testid="initialize-budgets-btn"
+        >
+          <Zap size={16} class="stroke-current md:hidden" aria-hidden="true" />
+          <Zap size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+          <span class="text-xs sm:text-sm">Initialize All</span>
+        </button>
+      </div>
+    ) : (
+      <div class="tooltip tooltip-bottom" data-tip="All categories already have budgets">
+        <button
+          type="button"
+          class={ghostBtn + ' opacity-30 cursor-not-allowed'}
+          disabled
+          aria-label="Initialize all budgets (all categories already have budgets)"
+          aria-disabled="true"
+          data-testid="initialize-budgets-btn"
+        >
+          <Zap size={16} class="stroke-current md:hidden" aria-hidden="true" />
+          <Zap size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+          <span class="text-xs sm:text-sm">Initialize All</span>
+        </button>
+      </div>
+    )
+  }
 
   {/* AI Rebalancer */}
   {
@@ -164,7 +201,7 @@ const accentGhostBtn =
   }
 
   function cleanupBudgetActionButtons() {
-    ['set-new-budget-btn', 'ai-rebalancer-btn'].forEach((buttonId) => {
+    ['set-new-budget-btn', 'ai-rebalancer-btn', 'initialize-budgets-btn'].forEach((buttonId) => {
       const btn = document.getElementById(buttonId);
       if (btn) {
         const handler = handlerMap.get(btn);
@@ -179,6 +216,7 @@ const accentGhostBtn =
   function initBudgetActionButtons() {
     initModalTriggerButton('set-new-budget-btn');
     initModalTriggerButton('ai-rebalancer-btn');
+    initModalTriggerButton('initialize-budgets-btn');
   }
 
   function registerCleanup() {

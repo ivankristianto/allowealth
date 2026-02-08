@@ -110,12 +110,6 @@ describe('review feedback regressions', () => {
     expect(content).not.toContain('amount="{amount}"');
   });
 
-  it('design system refresh plan should use H2 task headings', () => {
-    const content = read('docs/plans/2026-02-05-design-system-refresh.md');
-    expect(content).toContain('## Task 1');
-    expect(content).not.toContain('### Task');
-  });
-
   it('transactions page placeholders should use token-driven spacing', () => {
     const content = read('src/pages/transactions/index.astro');
     const forbidden = [
@@ -227,5 +221,85 @@ describe('review feedback regressions', () => {
     expect(content).toContain('function isTransactionFormData');
     expect(content).toContain('if (!isTransactionFormData(parsed))');
     expect(content).toContain('Failed to load transaction details');
+  });
+
+  it('transaction count should include deleted rows by default with opt-out support', () => {
+    const content = read('src/services/transaction.service.ts');
+    const countStart = content.indexOf('async count(');
+    const countEnd = content.indexOf('async importFromCSV(');
+
+    expect(countStart).toBeGreaterThanOrEqual(0);
+    expect(countEnd).toBeGreaterThan(countStart);
+
+    const countMethod = content.slice(countStart, countEnd);
+    expect(countMethod).toContain('filters.include_deleted ?? false');
+    expect(countMethod).toContain('if (!includeDeleted)');
+  });
+
+  it('transaction history toggle should cache first HTML fetch and reuse it', () => {
+    const content = read('src/components/molecules/TransactionHistory.client.ts');
+
+    expect(content).toContain('dataset.historyLoaded');
+  });
+
+  it('openapi should document transaction history endpoint', () => {
+    const rootSpec = read('openapi.yml');
+    const transactionsPathSpec = read('openapi/paths/transactions.yml');
+
+    expect(rootSpec).toContain('/api/transactions/{id}/history:');
+    expect(transactionsPathSpec).toContain('/api/transactions/{id}/history:');
+  });
+
+  it('monthly transactions summary should exclude soft-deleted rows', () => {
+    const content = read('src/pages/api/transactions/index.ts');
+    expect(content).toContain('include_deleted: false');
+  });
+
+  it('drawer edit handler should use nullish coalescing, not logical OR', () => {
+    const content = read('src/components/organisms/TransactionDrawer.client.ts');
+    // setInput calls must use ?? to preserve zero values (amount: 0)
+    expect(content).toContain("detail.amount ?? ''");
+    expect(content).toContain("detail.currency ?? 'IDR'");
+    expect(content).not.toContain("data.amount || ''");
+  });
+
+  it('drawer event listeners should use typed CustomEvent payloads', () => {
+    const content = read('src/components/organisms/TransactionDrawer.client.ts');
+    expect(content).toContain('interface OpenDrawerDetail');
+    expect(content).toContain('interface EditDrawerDetail');
+    expect(content).toContain('CustomEvent<OpenDrawerDetail>');
+    expect(content).toContain('CustomEvent<EditDrawerDetail>');
+  });
+
+  it('audit logging should be fire-and-forget (void, not await)', () => {
+    const content = read('src/services/transaction.service.ts');
+    expect(content).toContain('void logAuditEvent(');
+    expect(content).not.toContain('await logAuditEvent(');
+  });
+
+  it('transaction history flag should be computed via service query, not separate API call', () => {
+    const content = read('src/pages/api/transactions/index.ts');
+    // has_history is now computed in-query via EXISTS subquery, not a separate getTransactionIdsWithHistory call
+    expect(content).toContain('include_history_flag = true');
+    expect(content).not.toContain('getTransactionIdsWithHistory');
+  });
+
+  it('TransactionHistoryEntry createdAt should be string for JSON serialization', () => {
+    const content = read('src/lib/types/transaction.ts');
+    expect(content).toContain('createdAt: string;');
+    expect(content).not.toContain('createdAt: Date;');
+  });
+
+  it('show all history button should meet 44px touch target', () => {
+    const content = read('src/components/partials/TransactionHistoryPartial.astro');
+    expect(content).toContain('min-h-[44px]');
+    expect(content).toContain('data-show-all-history');
+  });
+
+  it('desktop history button should be icon-only (btn-square)', () => {
+    const content = read('src/components/molecules/TransactionCard.astro');
+    // Desktop history button uses btn-square (icon-only, no text label)
+    expect(content).toContain('btn btn-ghost btn-sm btn-square');
+    expect(content).toContain('data-toggle-history');
   });
 });

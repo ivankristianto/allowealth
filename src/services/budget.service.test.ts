@@ -49,45 +49,27 @@ describe('BudgetService', () => {
         ),
       ];
 
-      // Mock budgets query with category relations
       (mockDb.query.budgets.findMany as any).mockResolvedValue(mockBudgets);
-
-      // Mock transaction query for spent amounts
-      (mockDb.select as any).mockReturnValue({
-        from: mock(() => ({
-          where: mock(() => ({
-            groupBy: mock(() =>
-              Promise.resolve([
-                { category_id: 'cat-1', total: '3000000' },
-                { category_id: 'cat-2', total: '2000000' },
-              ])
-            ),
-          })),
-        })),
-      });
 
       const csv = await budgetService.exportToCSV(userId, year, month, currency);
 
       expect(csv).toBeDefined();
       expect(typeof csv).toBe('string');
 
-      // Check CSV header
+      // Check CSV header — re-import template format
       const lines = csv.split('\n');
-      expect(lines[0]).toBe(
-        'category,percentage,budget_amount,spent_amount,balance,status,percentage_used'
-      );
+      expect(lines[0]).toBe('budget_id,budget_name,budget_amount');
 
       // Check category rows
+      expect(lines[1]).toContain('budget-1');
       expect(lines[1]).toContain('Food & Groceries');
-      expect(lines[1]).toContain('60.00');
       expect(lines[1]).toContain('6000000');
-      expect(lines[1]).toContain('3000000');
-
-      // Check totals row
-      expect(lines[lines.length - 1]).toContain('TOTAL');
+      expect(lines[2]).toContain('budget-2');
+      expect(lines[2]).toContain('Transportation');
+      expect(lines[2]).toContain('4000000');
     });
 
-    it('should include totals row in CSV export', async () => {
+    it('should include all budget rows in CSV export', async () => {
       const userId = 'user-1';
       const year = 2026;
       const month = 1;
@@ -106,27 +88,15 @@ describe('BudgetService', () => {
 
       (mockDb.query.budgets.findMany as any).mockResolvedValue(mockBudgets);
 
-      (mockDb.select as any).mockReturnValue({
-        from: mock(() => ({
-          where: mock(() => ({
-            groupBy: mock(() =>
-              Promise.resolve([
-                { category_id: 'cat-1', total: '2500000' },
-                { category_id: 'cat-2', total: '3000000' },
-              ])
-            ),
-          })),
-        })),
-      });
-
       const csv = await budgetService.exportToCSV(userId, year, month, currency);
       const lines = csv.split('\n');
 
-      // Last line should be totals
-      const totalsLine = lines[lines.length - 1];
-      expect(totalsLine).toContain('TOTAL');
-      expect(totalsLine).toContain('10000000'); // Total budget
-      expect(totalsLine).toContain('5500000'); // Total spent
+      // Header + 2 data rows
+      expect(lines).toHaveLength(3);
+      expect(lines[1]).toContain('Food');
+      expect(lines[1]).toContain('5000000');
+      expect(lines[2]).toContain('Transport');
+      expect(lines[2]).toContain('5000000');
     });
 
     it('should properly escape CSV special characters', async () => {
@@ -158,7 +128,7 @@ describe('BudgetService', () => {
       expect(csv).toContain('"Food, Drinks & ""Snacks"""');
     });
 
-    it('should handle categories with no spending', async () => {
+    it('should handle categories with no special characters', async () => {
       const userId = 'user-1';
       const year = 2026;
       const month = 1;
@@ -173,23 +143,13 @@ describe('BudgetService', () => {
 
       (mockDb.query.budgets.findMany as any).mockResolvedValue(mockBudgets);
 
-      (mockDb.select as any).mockReturnValue({
-        from: mock(() => ({
-          where: mock(() => ({
-            groupBy: mock(() => Promise.resolve([])), // No transactions
-          })),
-        })),
-      });
-
       const csv = await budgetService.exportToCSV(userId, year, month, currency);
       const lines = csv.split('\n');
 
-      expect(lines[1]).toContain('Savings');
-      expect(lines[1]).toContain('8000000'); // Budget
-      expect(lines[1]).toContain('0'); // No spending
+      expect(lines[1]).toBe('budget-1,Savings,8000000');
     });
 
-    it('should use correct decimal values for balance calculation', async () => {
+    it('should preserve decimal values in budget amounts', async () => {
       const userId = 'user-1';
       const year = 2026;
       const month = 1;
@@ -204,21 +164,10 @@ describe('BudgetService', () => {
 
       (mockDb.query.budgets.findMany as any).mockResolvedValue(mockBudgets);
 
-      (mockDb.select as any).mockReturnValue({
-        from: mock(() => ({
-          where: mock(() => ({
-            groupBy: mock(() => Promise.resolve([{ category_id: 'cat-1', total: '500000.25' }])),
-          })),
-        })),
-      });
-
       const csv = await budgetService.exportToCSV(userId, year, month, currency);
       const lines = csv.split('\n');
 
-      // Balance should be budget - spent = 1000000.50 - 500000.25 = 500000.25
-      expect(lines[1]).toContain('1000000.50'); // Budget
-      expect(lines[1]).toContain('500000.25'); // Spent
-      expect(lines[1]).toContain('500000.25'); // Balance
+      expect(lines[1]).toContain('1000000.50');
     });
 
     it('should work with USD currency', async () => {
@@ -243,22 +192,13 @@ describe('BudgetService', () => {
 
       (mockDb.query.budgets.findMany as any).mockResolvedValue(mockBudgets);
 
-      (mockDb.select as any).mockReturnValue({
-        from: mock(() => ({
-          where: mock(() => ({
-            groupBy: mock(() => Promise.resolve([{ category_id: 'cat-1', total: '250.00' }])),
-          })),
-        })),
-      });
-
       const csv = await budgetService.exportToCSV(userId, year, month, currency);
 
       expect(csv).toContain('Groceries');
       expect(csv).toContain('500.00');
-      expect(csv).toContain('250.00');
     });
 
-    it('should include percentage_used in CSV', async () => {
+    it('should filter to active expense categories only', async () => {
       const userId = 'user-1';
       const year = 2026;
       const month = 1;
@@ -269,24 +209,21 @@ describe('BudgetService', () => {
           { id: 'budget-1', category_id: 'cat-1', budget_amount: '1000000', month, year },
           { id: 'cat-1', name: 'Food', type: 'expense', is_active: true }
         ),
+        createMockBudgetWithCategory(
+          { id: 'budget-2', category_id: 'cat-2', budget_amount: '500000', month, year },
+          { id: 'cat-2', name: 'Salary', type: 'income', is_active: true }
+        ),
       ];
 
       (mockDb.query.budgets.findMany as any).mockResolvedValue(mockBudgets);
 
-      // 80% spent
-      (mockDb.select as any).mockReturnValue({
-        from: mock(() => ({
-          where: mock(() => ({
-            groupBy: mock(() => Promise.resolve([{ category_id: 'cat-1', total: '800000' }])),
-          })),
-        })),
-      });
-
       const csv = await budgetService.exportToCSV(userId, year, month, currency);
       const lines = csv.split('\n');
 
-      // percentage_used should be 80
-      expect(lines[1]).toContain('80');
+      // Only expense category, not income
+      expect(lines).toHaveLength(2); // header + 1 data row
+      expect(csv).toContain('Food');
+      expect(csv).not.toContain('Salary');
     });
   });
 
@@ -741,6 +678,246 @@ describe('BudgetService', () => {
       await expect(budgetService.hasBudgetsForMonth('user-1', 2026, 1.5)).rejects.toThrow(
         'Invalid month parameter'
       );
+    });
+  });
+
+  describe('initializeAllBudgets', () => {
+    const workspaceId = 'workspace-1';
+    const userId = 'user-1';
+    const month = 2;
+    const year = 2026;
+    const currency = 'IDR' as const;
+
+    const mockConflictSafeInsert = () => {
+      const onConflictDoNothing = mock(() => Promise.resolve());
+      (mockDb.insert as any).mockReturnValue({
+        values: mock(() => ({
+          onConflictDoNothing,
+        })),
+      });
+      return onConflictDoNothing;
+    };
+
+    it('creates budgets for categories without existing budgets', async () => {
+      const allCategories = [
+        createMockCategory({ id: 'cat-1', name: 'Food', type: 'expense', is_active: true }),
+        createMockCategory({ id: 'cat-2', name: 'Transport', type: 'expense', is_active: true }),
+        createMockCategory({
+          id: 'cat-3',
+          name: 'Entertainment',
+          type: 'expense',
+          is_active: true,
+        }),
+      ];
+
+      const existingBudgets = [
+        createMockBudget({ id: 'budget-1', category_id: 'cat-1', month, year, currency }),
+      ];
+
+      (mockDb.query.categories.findMany as any).mockResolvedValue(allCategories);
+      (mockDb.query.budgets.findMany as any)
+        .mockResolvedValueOnce(existingBudgets)
+        .mockResolvedValueOnce([
+          ...existingBudgets,
+          createMockBudget({ id: 'budget-2', category_id: 'cat-2', month, year, currency }),
+          createMockBudget({ id: 'budget-3', category_id: 'cat-3', month, year, currency }),
+        ]);
+
+      const insertValues: any[] = [];
+      const onConflictDoNothing = mock(() => Promise.resolve());
+      (mockDb.insert as any).mockReturnValue({
+        values: mock((vals: any) => {
+          insertValues.push(...(Array.isArray(vals) ? vals : [vals]));
+          return { onConflictDoNothing };
+        }),
+      });
+
+      const result = await budgetService.initializeAllBudgets({
+        workspace_id: workspaceId,
+        created_by_user_id: userId,
+        month,
+        year,
+        currency,
+      });
+
+      expect(result.initialized_count).toBe(2);
+      expect(result.categories).toHaveLength(2);
+      expect(result.categories.map((c) => c.name)).toContain('Transport');
+      expect(result.categories.map((c) => c.name)).toContain('Entertainment');
+      expect(onConflictDoNothing).toHaveBeenCalledTimes(1);
+
+      expect(insertValues).toHaveLength(2);
+      for (const val of insertValues) {
+        expect(val.budget_amount).toBe('0');
+        expect(val.workspace_id).toBe(workspaceId);
+        expect(val.created_by_user_id).toBe(userId);
+        expect(val.month).toBe(month);
+        expect(val.year).toBe(year);
+        expect(val.currency).toBe(currency);
+        expect(val.is_closed).toBe(false);
+      }
+    });
+
+    it('skips categories that already have budgets', async () => {
+      const allCategories = [
+        createMockCategory({ id: 'cat-1', name: 'Food', type: 'expense', is_active: true }),
+      ];
+      const existingBudgets = [
+        createMockBudget({ id: 'budget-1', category_id: 'cat-1', month, year, currency }),
+      ];
+
+      (mockDb.query.categories.findMany as any).mockResolvedValue(allCategories);
+      (mockDb.query.budgets.findMany as any).mockResolvedValue(existingBudgets);
+
+      const result = await budgetService.initializeAllBudgets({
+        workspace_id: workspaceId,
+        created_by_user_id: userId,
+        month,
+        year,
+        currency,
+      });
+
+      expect(result.initialized_count).toBe(0);
+      expect(result.categories).toHaveLength(0);
+      expect(mockDb.insert).not.toHaveBeenCalled();
+    });
+
+    it('handles empty category list gracefully', async () => {
+      (mockDb.query.categories.findMany as any).mockResolvedValue([]);
+      (mockDb.query.budgets.findMany as any).mockResolvedValue([]);
+
+      const result = await budgetService.initializeAllBudgets({
+        workspace_id: workspaceId,
+        created_by_user_id: userId,
+        month,
+        year,
+        currency,
+      });
+
+      expect(result.initialized_count).toBe(0);
+      expect(result.categories).toHaveLength(0);
+      expect(mockDb.insert).not.toHaveBeenCalled();
+    });
+
+    it('filters out income categories and inactive categories', async () => {
+      const allCategories = [
+        createMockCategory({ id: 'cat-1', name: 'Food', type: 'expense', is_active: true }),
+        createMockCategory({ id: 'cat-2', name: 'Salary', type: 'income', is_active: true }),
+        createMockCategory({ id: 'cat-3', name: 'Old Expense', type: 'expense', is_active: false }),
+      ];
+
+      (mockDb.query.categories.findMany as any).mockResolvedValue(allCategories);
+      (mockDb.query.budgets.findMany as any)
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([
+          createMockBudget({ id: 'budget-1', category_id: 'cat-1', month, year, currency }),
+        ]);
+
+      const insertValues: any[] = [];
+      const onConflictDoNothing = mock(() => Promise.resolve());
+      (mockDb.insert as any).mockReturnValue({
+        values: mock((vals: any) => {
+          insertValues.push(...(Array.isArray(vals) ? vals : [vals]));
+          return { onConflictDoNothing };
+        }),
+      });
+
+      const result = await budgetService.initializeAllBudgets({
+        workspace_id: workspaceId,
+        created_by_user_id: userId,
+        month,
+        year,
+        currency,
+      });
+
+      expect(result.initialized_count).toBe(1);
+      expect(result.categories[0].name).toBe('Food');
+      expect(insertValues).toHaveLength(1);
+      expect(onConflictDoNothing).toHaveBeenCalledTimes(1);
+    });
+
+    it('returns actual initialized count after conflict-safe insert', async () => {
+      const allCategories = [
+        createMockCategory({ id: 'cat-1', name: 'Food', type: 'expense', is_active: true }),
+        createMockCategory({ id: 'cat-2', name: 'Transport', type: 'expense', is_active: true }),
+      ];
+
+      (mockDb.query.categories.findMany as any).mockResolvedValue(allCategories);
+      (mockDb.query.budgets.findMany as any)
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([
+          createMockBudget({ id: 'budget-1', category_id: 'cat-1', month, year, currency }),
+        ]);
+
+      const onConflictDoNothing = mockConflictSafeInsert();
+
+      const result = await budgetService.initializeAllBudgets({
+        workspace_id: workspaceId,
+        created_by_user_id: userId,
+        month,
+        year,
+        currency,
+      });
+
+      expect(onConflictDoNothing).toHaveBeenCalledTimes(1);
+      expect(mockDb.query.budgets.findMany as any).toHaveBeenCalledTimes(2);
+      expect(result.initialized_count).toBe(1);
+      expect(result.categories).toHaveLength(1);
+      expect(result.categories[0]).toEqual({ id: 'cat-1', name: 'Food' });
+    });
+
+    it('initializes category for target currency when no target-currency budget exists', async () => {
+      const allCategories = [
+        createMockCategory({ id: 'cat-1', name: 'Food', type: 'expense', is_active: true }),
+      ];
+
+      (mockDb.query.categories.findMany as any).mockResolvedValue(allCategories);
+      (mockDb.query.budgets.findMany as any).mockResolvedValueOnce([]).mockResolvedValueOnce([
+        createMockBudget({
+          id: 'budget-idr-1',
+          category_id: 'cat-1',
+          month,
+          year,
+          currency: 'IDR',
+        }),
+      ]);
+
+      mockConflictSafeInsert();
+
+      const result = await budgetService.initializeAllBudgets({
+        workspace_id: workspaceId,
+        created_by_user_id: userId,
+        month,
+        year,
+        currency: 'IDR',
+      });
+
+      expect(result.initialized_count).toBe(1);
+      expect(result.categories).toEqual([{ id: 'cat-1', name: 'Food' }]);
+    });
+
+    it('validates month parameter', async () => {
+      await expect(
+        budgetService.initializeAllBudgets({
+          workspace_id: workspaceId,
+          created_by_user_id: userId,
+          month: 13,
+          year,
+          currency,
+        })
+      ).rejects.toThrow();
+    });
+
+    it('validates year parameter', async () => {
+      await expect(
+        budgetService.initializeAllBudgets({
+          workspace_id: workspaceId,
+          created_by_user_id: userId,
+          month,
+          year: 1999,
+          currency,
+        })
+      ).rejects.toThrow();
     });
   });
 });
