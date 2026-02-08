@@ -147,7 +147,8 @@ export const PUT: APIRoute = async (context) => {
       return errorResponse(error.message, error.statusCode, error.code);
     }
     logError('Error updating asset', error);
-    return errorResponse('Failed to update asset', 500);
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return errorResponse(message, 500);
   }
 };
 
@@ -164,7 +165,7 @@ export const DELETE: APIRoute = async (context) => {
       return errorResponse('Asset ID is required', 400);
     }
 
-    await assetService.delete(id, auth.workspaceId, auth.userId);
+    await assetService.close(id, auth.workspaceId, auth.userId);
 
     // Invalidate layout cache since assets changed (best-effort)
     try {
@@ -189,7 +190,8 @@ export const DELETE: APIRoute = async (context) => {
     if (error instanceof AssetServiceError) {
       return errorResponse(error.message, error.statusCode, error.code);
     }
-    logError('Error deleting asset', error);
-    return errorResponse('Failed to delete asset', 500);
+    logError('Error closing asset', error);
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return errorResponse(message, 500);
   }
 };

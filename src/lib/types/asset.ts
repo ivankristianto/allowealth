@@ -66,9 +66,9 @@ export interface AssetOutput {
   currency: Currency;
   credit_limit?: string | null;
   is_cash_account?: boolean;
-  status?: AssetStatus;
-  closed_at?: Date | null;
-  closed_by_user_id?: string | null;
+  status: AssetStatus;
+  closed_at: Date | null;
+  closed_by_user_id: string | null;
   last_updated: Date;
   created_at: Date;
   updated_at: Date;

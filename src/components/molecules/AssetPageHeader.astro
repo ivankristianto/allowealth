@@ -28,6 +28,7 @@ export interface Props {
   subtitle?: string;
   className?: string;
   defaultCategoryId?: string;
+  closedCount?: number;
   currentMonth?: string;
   prevMonthUrl?: string;
   nextMonthUrl?: string;
@@ -41,6 +42,7 @@ const {
   subtitle = 'Manage and track your distributed household wealth.',
   className = '',
   defaultCategoryId = '',
+  closedCount = 0,
   currentMonth,
   prevMonthUrl,
   nextMonthUrl,
@@ -127,5 +129,9 @@ const headerClasses = ['flex flex-col gap-4', className].filter(Boolean).join(' 
   </div>
 
   {/* Second row: Action buttons */}
-  <AssetActions isHistoricalView={isHistoricalView} defaultCategoryId={defaultCategoryId} />
+  <AssetActions
+    isHistoricalView={isHistoricalView}
+    defaultCategoryId={defaultCategoryId}
+    closedCount={closedCount}
+  />
 </header>

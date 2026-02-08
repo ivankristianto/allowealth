@@ -19,7 +19,7 @@ import AssetHistoryModal from '@components/organisms/AssetHistoryModal.astro';
 import AssetUpdateValueModal from '@components/organisms/AssetUpdateValueModal.astro';
 import AssetCategoryModal from '@components/organisms/AssetCategoryModal.astro';
 import EmptyState from '@components/atoms/EmptyState.astro';
-import { CalendarDays, Archive } from '@lucide/astro';
+import { CalendarDays } from '@lucide/astro';
 import { assetService, assetCategoryService } from '@/services';
 import type { AssetOutput, AssetType } from '@/lib/types/asset';
 import { formatAssetType } from '@/lib/types/asset';
@@ -139,6 +139,9 @@ if (!isViewingCurrentMonth) {
       balance: snapshot.snapshot_balance,
       initial_balance: snapshot.initial_balance || null,
       currency: snapshot.currency,
+      status: snapshot.status ?? 'active',
+      closed_at: snapshot.closed_at ?? null,
+      closed_by_user_id: snapshot.closed_by_user_id ?? null,
       last_updated: snapshot.snapshot_date || snapshot.last_updated,
       created_at: snapshot.created_at,
       updated_at: snapshot.updated_at,
@@ -161,6 +164,9 @@ if (!isViewingCurrentMonth) {
       balance: asset.balance,
       initial_balance: asset.initial_balance || null,
       currency: asset.currency,
+      status: asset.status ?? 'active',
+      closed_at: asset.closed_at ?? null,
+      closed_by_user_id: asset.closed_by_user_id ?? null,
       last_updated: asset.last_updated,
       created_at: asset.created_at,
       updated_at: asset.updated_at,
@@ -205,6 +211,7 @@ const sortedGroups = Object.entries(assetsByType)
     {/* Page Header */}
     <AssetPageHeader
       defaultCategoryId={defaultCategoryId}
+      closedCount={closedCount}
       currentMonth={currentMonthDisplay}
       prevMonthUrl={buildMonthUrl(prevMonthDate.getFullYear(), prevMonthDate.getMonth() + 1)}
       nextMonthUrl={!isNextMonthFuture
@@ -273,20 +280,6 @@ const sortedGroups = Object.entries(assetsByType)
               );
             })}
           </div>
-
-          {/* View Closed Accounts Link */}
-          {closedCount > 0 && (
-            <div class="flex justify-center">
-              <a
-                href="/assets/closed"
-                class="link link-accent text-sm font-medium flex items-center gap-1.5"
-              >
-                <Archive size={14} class="stroke-current" aria-hidden="true" />
-                View Closed Accounts
-                <span class="badge badge-sm badge-ghost">{closedCount}</span>
-              </a>
-            </div>
-          )}
         </>
       ) : (
         <div class="card bg-base-100 shadow border border-base-300 rounded-card">

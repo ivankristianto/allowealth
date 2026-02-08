@@ -39,7 +39,7 @@ export const assets = sqliteTable('assets', {
     .notNull()
     .default('active'),
   closed_at: integer('closed_at', { mode: 'timestamp' }),
-  closed_by_user_id: text('closed_by_user_id').references(() => users.id),
+  closed_by_user_id: text('closed_by_user_id').references(() => users.id, { onDelete: 'set null' }),
   last_updated: integer('last_updated', { mode: 'timestamp' })
     .default(sqliteTimestampNow)
     .notNull(),

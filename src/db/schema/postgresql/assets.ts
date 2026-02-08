@@ -41,7 +41,9 @@ export const assets = pgTable(
       .notNull()
       .default('active'),
     closed_at: timestamp('closed_at'),
-    closed_by_user_id: text('closed_by_user_id').references(() => users.id),
+    closed_by_user_id: text('closed_by_user_id').references(() => users.id, {
+      onDelete: 'set null',
+    }),
     last_updated: timestamp('last_updated').defaultNow().notNull(),
     deleted_at: timestamp('deleted_at'),
     created_at: timestamp('created_at').defaultNow().notNull(),

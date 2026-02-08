@@ -26,12 +26,9 @@ describe('AssetService - closed account protection', () => {
 
     (mockDb.query.assets.findFirst as any).mockResolvedValueOnce(closedAsset);
 
-    try {
-      await assetService.updateBalance('asset-1', 'workspace-1', { balance: '500' });
-      expect(true).toBe(false);
-    } catch (error: any) {
-      expect(error.code).toBe(ServiceErrorCode.ACCOUNT_CLOSED);
-    }
+    await expect(
+      assetService.updateBalance('asset-1', 'workspace-1', { balance: '500' })
+    ).rejects.toMatchObject({ code: ServiceErrorCode.ACCOUNT_CLOSED });
   });
 
   it('should throw ACCOUNT_CLOSED when transferring from closed account', async () => {
@@ -57,12 +54,9 @@ describe('AssetService - closed account protection', () => {
       .mockResolvedValueOnce(closedAsset)
       .mockResolvedValueOnce(activeAsset);
 
-    try {
-      await assetService.transfer('asset-1', 'asset-2', '100', undefined, 'workspace-1');
-      expect(true).toBe(false);
-    } catch (error: any) {
-      expect(error.code).toBe(ServiceErrorCode.ACCOUNT_CLOSED);
-    }
+    await expect(
+      assetService.transfer('asset-1', 'asset-2', '100', undefined, 'workspace-1')
+    ).rejects.toMatchObject({ code: ServiceErrorCode.ACCOUNT_CLOSED });
   });
 
   it('should throw ACCOUNT_CLOSED when transferring to closed account', async () => {
@@ -88,11 +82,8 @@ describe('AssetService - closed account protection', () => {
       .mockResolvedValueOnce(activeAsset)
       .mockResolvedValueOnce(closedAsset);
 
-    try {
-      await assetService.transfer('asset-1', 'asset-2', '100', undefined, 'workspace-1');
-      expect(true).toBe(false);
-    } catch (error: any) {
-      expect(error.code).toBe(ServiceErrorCode.ACCOUNT_CLOSED);
-    }
+    await expect(
+      assetService.transfer('asset-1', 'asset-2', '100', undefined, 'workspace-1')
+    ).rejects.toMatchObject({ code: ServiceErrorCode.ACCOUNT_CLOSED });
   });
 });

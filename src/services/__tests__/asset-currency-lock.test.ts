@@ -15,7 +15,7 @@ describe('AssetService.update() - currency lock', () => {
     assetService = new AssetService(mockDb);
   });
 
-  it('should throw CURRENCY_LOCKED when changing currency with history', async () => {
+  it('should throw CURRENCY_LOCKED when changing currency with history beyond initial entry', async () => {
     const asset = createMockAsset({
       id: 'asset-1',
       currency: 'IDR',
@@ -25,23 +25,55 @@ describe('AssetService.update() - currency lock', () => {
     // findById returns asset
     (mockDb.query.assets.findFirst as any).mockResolvedValueOnce(asset);
 
-    // select().from().where() returns history count > 0
+    // select().from().where() returns history count > 1 (has real history beyond initial)
     (mockDb.select as any).mockReturnValue({
       from: mock(() => ({
         where: mock(() => Promise.resolve([{ count: 5 }])),
       })),
     });
 
-    try {
-      await assetService.update('asset-1', 'workspace-1', { currency: 'USD' });
-      expect(true).toBe(false);
-    } catch (error: any) {
-      expect(error.code).toBe(ServiceErrorCode.CURRENCY_LOCKED);
-      expect(error.statusCode).toBe(400);
-    }
+    await expect(
+      assetService.update('asset-1', 'workspace-1', { currency: 'USD' })
+    ).rejects.toMatchObject({
+      code: ServiceErrorCode.CURRENCY_LOCKED,
+      statusCode: 400,
+    });
   });
 
-  it('should allow currency change when no history exists', async () => {
+  it('should allow currency change when only initial history entry exists', async () => {
+    const asset = createMockAsset({
+      id: 'asset-1',
+      currency: 'IDR',
+      workspace_id: 'workspace-1',
+    });
+
+    const updatedAsset = { ...asset, currency: 'USD' as const };
+
+    // findById returns asset (for currency check), then updated asset
+    (mockDb.query.assets.findFirst as any)
+      .mockResolvedValueOnce(asset)
+      .mockResolvedValueOnce(updatedAsset);
+
+    // select().from().where() returns history count = 1 (only initial entry)
+    (mockDb.select as any).mockReturnValue({
+      from: mock(() => ({
+        where: mock(() => Promise.resolve([{ count: 1 }])),
+      })),
+    });
+
+    // update mock
+    (mockDb.update as any).mockReturnValue({
+      set: mock(() => ({
+        where: mock(() => Promise.resolve()),
+      })),
+    });
+
+    const result = await assetService.update('asset-1', 'workspace-1', { currency: 'USD' });
+
+    expect(result?.currency).toBe('USD');
+  });
+
+  it('should allow currency change when no history exists at all', async () => {
     const asset = createMockAsset({
       id: 'asset-1',
       currency: 'IDR',

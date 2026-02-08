@@ -174,14 +174,15 @@ export class AssetService {
       );
     }
 
-    // Currency lock: prevent changing currency if history exists
+    // Currency lock: prevent changing currency if asset has history beyond the initial entry
+    // Every asset starts with 1 history record (initial balance), so threshold is > 1
     if (input.currency !== undefined && input.currency !== currentAsset.currency) {
       const historyCount = await (this.db as any)
         .select({ count: sql<number>`count(*)` })
         .from(this.schema.assetHistory)
         .where(eq(this.schema.assetHistory.asset_id, id));
 
-      if (historyCount[0]?.count > 0) {
+      if (historyCount[0]?.count > 1) {
         throw new AssetServiceError(
           ServiceErrorCode.CURRENCY_LOCKED,
           'Cannot change currency — account has transaction history',
@@ -451,14 +452,6 @@ export class AssetService {
         sql`${this.schema.assets.deleted_at} IS NULL`
       ),
     });
-  }
-
-  /**
-   * Delete asset (backward-compatible alias for close)
-   */
-  async delete(id: string, workspaceId: string, closedByUserId?: string) {
-    await this.close(id, workspaceId, closedByUserId ?? null);
-    return { success: true };
   }
 
   /**

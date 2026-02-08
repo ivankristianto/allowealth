@@ -7,7 +7,7 @@ import {
   getQueryParams,
 } from '@/lib/api-utils';
 import { logError } from '@/lib/utils';
-import type { AssetType, Currency } from '@/lib/types/asset';
+import { ASSET_TYPE_LABELS, type AssetType, type Currency } from '@/lib/types/asset';
 
 /**
  * GET /api/assets/closed
@@ -18,9 +18,13 @@ export const GET: APIRoute = async (context) => {
     const auth = getAuthenticatedUser(context);
     const params = getQueryParams(new URL(context.request.url));
 
+    const validTypes = Object.keys(ASSET_TYPE_LABELS);
+    const validCurrencies = ['IDR', 'USD'];
+
     const filters: { type?: AssetType; currency?: Currency } = {};
-    if (params.type) filters.type = params.type as AssetType;
-    if (params.currency) filters.currency = params.currency as Currency;
+    if (params.type && validTypes.includes(params.type)) filters.type = params.type as AssetType;
+    if (params.currency && validCurrencies.includes(params.currency))
+      filters.currency = params.currency as Currency;
 
     const assets = await assetService.findAllClosed(auth.workspaceId, filters);
 
