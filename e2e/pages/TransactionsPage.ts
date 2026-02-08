@@ -49,14 +49,14 @@ export class TransactionsPage extends BasePage {
     const now = new Date();
     const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
-    // Open month dropdown
+    // Open month dropdown via PeriodNavigator trigger
     const monthTrigger = this.page
       .locator(this.monthSelector)
-      .or(this.page.locator('[data-month-trigger]'));
+      .or(this.page.locator('[data-period-trigger]'));
     await monthTrigger.click();
 
     // Select the current month option
-    const monthOption = this.page.locator(`[data-month-option="${monthKey}"]`);
+    const monthOption = this.page.locator(`[data-period-option="${monthKey}"]`);
     if (await monthOption.isVisible()) {
       await monthOption.click();
     } else {

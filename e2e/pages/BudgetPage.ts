@@ -82,7 +82,7 @@ export class BudgetPage extends BasePage {
    * @param categoryId - The category ID to edit
    */
   async openEditModal(categoryId: string): Promise<void> {
-    const editButton = this.getEditButton(categoryId);
+    const editButton = this.getEditButton(categoryId).and(this.page.locator(':visible')).first();
     await editButton.click();
     await expect(this.getModal()).toBeVisible();
   }
@@ -93,12 +93,12 @@ export class BudgetPage extends BasePage {
    * @param amount - The budget amount to set
    */
   async setBudget(categoryId: string, amount: number): Promise<void> {
-    // Open the modal by clicking the edit button
+    // Open the modal by clicking the edit button (which pre-selects the category)
     await this.openEditModal(categoryId);
 
-    // Select the category in the dropdown
+    // Verify the category is pre-selected (edit button handler sets this)
     const categorySelect = this.page.locator(this.modalCategorySelect);
-    await categorySelect.selectOption(categoryId);
+    await expect(categorySelect).toHaveValue(categoryId);
 
     // Fill in the budget amount
     const amountInput = this.page.locator(this.modalAmountInput);

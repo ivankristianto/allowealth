@@ -84,11 +84,15 @@ export class AssetsPage extends BasePage {
     await addBtn.first().click();
     await expect(modal).toBeVisible({ timeout: 5000 });
 
+    // Wait for modal content animation to complete (opacity transitions from 0 to 1)
+    const modalContent = modal.locator('[data-modal-content]');
+    await expect(modalContent).toBeVisible({ timeout: 5000 });
+
     // Wait for form to be ready inside the modal
     const nameInput = modal
       .locator('[data-testid="asset-name-input"]')
       .or(modal.locator('[name="name"]').first());
-    await expect(nameInput).toBeVisible();
+    await expect(nameInput).toBeVisible({ timeout: 5000 });
   }
 
   /**
@@ -109,7 +113,6 @@ export class AssetsPage extends BasePage {
     // Select asset type - scoped within modal
     // Map legacy type values to human-readable labels for the select
     const typeToLabel: Record<string, string> = {
-      cash: 'Cash',
       bank_account: 'Bank Account',
       e_wallet: 'E-Wallet',
       mutual_fund: 'Mutual Fund',
@@ -124,6 +127,9 @@ export class AssetsPage extends BasePage {
     const typeSelect = modal
       .locator('[data-testid="asset-category-select"]')
       .or(modal.locator('select[name="type"]'));
+
+    // Wait for the select to be visible (modal animation may still be in progress)
+    await expect(typeSelect).toBeVisible({ timeout: 5000 });
     await typeSelect.selectOption({ label: typeLabel });
 
     // Select currency - scoped within modal
@@ -144,6 +150,7 @@ export class AssetsPage extends BasePage {
 
   /**
    * Submit the asset form.
+   * The asset form reloads the page after a 500ms delay on success.
    */
   async submitAssetForm(): Promise<void> {
     // Scope within the asset form modal dialog
@@ -156,13 +163,13 @@ export class AssetsPage extends BasePage {
     await expect(submitBtn).toBeVisible();
     await expect(submitBtn).toBeEnabled();
 
-    // Click submit and wait for the page to reload
-    await submitBtn.click();
+    // Click submit and wait for the page to reload (triggered by setTimeout 500ms after success)
+    await Promise.all([this.page.waitForNavigation({ timeout: 15000 }), submitBtn.click()]);
 
-    // Wait for navigation to complete (page reloads after successful submission)
-    await this.page.waitForURL(/.*\/assets.*/, { timeout: 15000 });
+    // Wait for the page to be fully loaded after reload
+    await this.waitForPageLoad();
 
-    // Wait for the add asset button to be visible again (indicates page reload complete)
+    // Wait for the add asset button to be visible again (indicates page is ready)
     const addBtn = this.page
       .locator(this.addAssetBtn)
       .or(this.page.locator('[data-add-asset-btn]'));
@@ -217,7 +224,6 @@ export class AssetsPage extends BasePage {
     if (updates.type !== undefined) {
       // Map legacy type values to human-readable labels for the select
       const typeToLabel: Record<string, string> = {
-        cash: 'Cash',
         bank_account: 'Bank Account',
         e_wallet: 'E-Wallet',
         mutual_fund: 'Mutual Fund',
