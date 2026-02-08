@@ -37,16 +37,39 @@ jobs:
         env:
           NODE_ENV: production
 
+      - name: Get deployment metadata
+        id: metadata
+        run: |
+          # Extract version from git tag or use commit SHA
+          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            VERSION="${{ github.ref_name }}"
+          else
+            VERSION="commit-${{ github.sha:0:7 }}"
+          fi
+
+          # Get commit message (first line)
+          COMMIT_MSG=$(git log -1 --pretty=%s)
+
+          # Create deployment message
+          MESSAGE="Deploy ${VERSION}: ${COMMIT_MSG}"
+
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "message=${MESSAGE}" >> $GITHUB_OUTPUT
+          echo "Deployment message: ${MESSAGE}"
+
       - name: Deploy to Cloudflare Workers
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: deploy
+          command: deploy --message "${{ steps.metadata.outputs.message }}"
 
       - name: Deployment Summary
         run: |
           echo "## 🚀 Deployment Successful" >> $GITHUB_STEP_SUMMARY
-          echo "Deployed to: https://allowealth.io" >> $GITHUB_STEP_SUMMARY
-          echo "Trigger: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
-          echo "Ref: ${{ github.ref }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** ${{ steps.metadata.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Message:** ${{ steps.metadata.outputs.message }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Deployed to:** https://allowealth.io" >> $GITHUB_STEP_SUMMARY
+          echo "**Trigger:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Ref:** ${{ github.ref }}" >> $GITHUB_STEP_SUMMARY
