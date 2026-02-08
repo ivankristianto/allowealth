@@ -154,10 +154,11 @@ export class EmailVerificationService {
       return { success: true, user };
     }
 
-    // Mark user as verified
+    // Mark user as verified (use single timestamp for both DB and response)
+    const verifiedAt = new Date();
     await this.db
       .update(this.schema.users)
-      .set({ email_verified_at: new Date() })
+      .set({ email_verified_at: verifiedAt })
       .where(eq(this.schema.users.id, userId));
 
     // Delete all verification tokens for this user
@@ -167,7 +168,7 @@ export class EmailVerificationService {
 
     log.info('Email verified successfully', { userId });
 
-    const verifiedUser = { ...user, email_verified_at: new Date() };
+    const verifiedUser = { ...user, email_verified_at: verifiedAt };
     return { success: true, user: verifiedUser };
   }
 }

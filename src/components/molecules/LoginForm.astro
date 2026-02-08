@@ -54,7 +54,7 @@ const cspNonce = Astro.locals.cspNonce || '';
           {bannerType === 'error' && <CircleX size={20} class="stroke-current shrink-0" />}
           <span>{bannerMessage}</span>
           {resendEmail && (
-            <button type="button" class="btn btn-sm btn-ghost" data-resend-email={resendEmail}>
+            <button type="button" class="btn btn-ghost" data-resend-email={resendEmail}>
               Resend
             </button>
           )}
@@ -207,7 +207,7 @@ const cspNonce = Astro.locals.cspNonce || '';
 
     const resendBtn = document.createElement('button');
     resendBtn.type = 'button';
-    resendBtn.className = 'btn btn-sm btn-ghost';
+    resendBtn.className = 'btn btn-ghost';
     resendBtn.textContent = 'Resend verification email';
     resendBtn.dataset.resendEmail = email;
     alertDiv.appendChild(resendBtn);
@@ -235,7 +235,7 @@ const cspNonce = Astro.locals.cspNonce || '';
 
       if (res.ok) {
         target.textContent = 'Sent! Check your inbox';
-        target.className = 'btn btn-sm btn-ghost btn-disabled';
+        target.className = 'btn btn-ghost btn-disabled';
       } else {
         const data = await res.json();
         target.textContent = data.error?.message || 'Failed to send';

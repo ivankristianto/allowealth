@@ -13,7 +13,7 @@
 
 import { auth, type User, type Session } from '@/lib/auth/lucia';
 import { hashPassword, verifyPassword } from '@/lib/auth/password';
-import { db, getActiveSchema, getDatabaseConfig } from '@/db';
+import { db, getActiveSchema, runTransaction } from '@/db';
 import { createLogger } from '@/lib/logger';
 
 const log = createLogger('auth');
@@ -183,23 +183,12 @@ export async function register(email: string, password: string, name: string): P
       role: 'admin' as const,
     };
 
-    let newUser: typeof schema.users.$inferSelect;
-    const { dialect } = getDatabaseConfig();
-
-    if (dialect === 'postgresql') {
-      // PostgreSQL: use transaction for atomicity (prevents orphaned workspaces)
-      const result = await (db as any).transaction(async (tx: any) => {
-        await tx.insert(schema.workspaces).values(workspaceValues);
-        const [user] = await tx.insert(schema.users).values(userValues).returning();
-        return user;
-      });
-      newUser = result;
-    } else {
-      // SQLite: sequential inserts (better-sqlite3 doesn't support async transactions)
-      await db.insert(schema.workspaces).values(workspaceValues);
-      const [user] = await db.insert(schema.users).values(userValues).returning();
-      newUser = user;
-    }
+    // Use transaction for atomicity (prevents orphaned workspaces)
+    const newUser: typeof schema.users.$inferSelect = await runTransaction(db, async (tx) => {
+      await Promise.resolve(tx.insert(schema.workspaces).values(workspaceValues));
+      const [user] = await tx.insert(schema.users).values(userValues).returning();
+      return user;
+    });
 
     if (!newUser) {
       throw new AuthError(AUTH_ERRORS.DATABASE_ERROR, 'Failed to create user');
@@ -353,16 +342,17 @@ export async function login(
     // (prevents timing oracle that could distinguish verified vs unverified accounts)
     const isValidPassword = await verifyPassword(password, user.password_hash);
 
+    // Check password validity before revealing email verification status
+    if (!isValidPassword) {
+      throw new AuthError(AUTH_ERRORS.INVALID_CREDENTIALS, 'Invalid email or password');
+    }
+
     // Check email verification after password check
     if (!user.email_verified_at) {
       log.warn('Login attempt with unverified email', { email });
       const err = new AuthError(AUTH_ERRORS.EMAIL_NOT_VERIFIED, 'Email not verified');
       err.email = user.email;
       throw err;
-    }
-
-    if (!isValidPassword) {
-      throw new AuthError(AUTH_ERRORS.INVALID_CREDENTIALS, 'Invalid email or password');
     }
 
     // Check if workspace is active
