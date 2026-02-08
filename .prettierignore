@@ -58,4 +58,5 @@ test-results/
 # Markdown files with embedded code that Prettier misparses as JSX
 docs/plans/2026-02-04-ui-consistency-and-asset-redesign.md
 docs/plans/future-database-per-workspace.md
+docs/plans/2026-02-08-totp-mfa.md
 specs/execution-plan.md
