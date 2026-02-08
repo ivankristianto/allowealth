@@ -96,8 +96,7 @@ const createCashFlowItem = (args: {
   nameEl.textContent = name;
 
   const dateEl = document.createElement('span');
-  dateEl.className =
-    'text-[10px] font-bold text-base-content/50 tracking-widest uppercase mt-1 block';
+  dateEl.className = 'text-xs font-bold text-base-content/50 tracking-widest uppercase mt-1 block';
   dateEl.textContent = date.toUpperCase();
 
   textDiv.appendChild(nameEl);

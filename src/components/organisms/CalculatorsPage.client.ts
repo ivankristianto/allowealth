@@ -38,11 +38,11 @@ function renderResults(data: {
   const summaryCardsHtml = `
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
       <div id="total-interest-card" class="p-6 rounded-3xl border bg-success/10 border-success/20 text-success">
-        <p class="text-[10px] font-bold uppercase tracking-widest mb-2 opacity-80">Total Interest</p>
+        <p class="text-xs font-bold uppercase tracking-widest mb-2 opacity-80">Total Interest</p>
         <h4 class="text-2xl font-bold">${formatCurrency(totalInterest, currency)}</h4>
       </div>
       <div id="final-balance-card" class="p-6 rounded-3xl border bg-primary/10 border-primary/20 text-primary">
-        <p class="text-[10px] font-bold uppercase tracking-widest mb-2 opacity-80">Final Balance</p>
+        <p class="text-xs font-bold uppercase tracking-widest mb-2 opacity-80">Final Balance</p>
         <h4 class="text-2xl font-bold">${formatCurrency(finalBalance, currency)}</h4>
       </div>
     </div>
@@ -81,7 +81,7 @@ function renderResults(data: {
     <div id="growth-schedule-table" class="bg-base-100 rounded-card border border-base-300 overflow-hidden">
       <div class="p-6 border-b border-base-300">
         <h4 class="font-bold text-base-content tracking-tight">Growth Schedule</h4>
-        <p class="text-[10px] font-bold uppercase tracking-widest text-base-content/50 mt-1">
+        <p class="text-xs font-bold uppercase tracking-widest text-base-content/50 mt-1">
           Yearly breakdown of interest compounding
         </p>
       </div>
@@ -89,16 +89,16 @@ function renderResults(data: {
         <table class="table table-zebra w-full text-left">
           <thead>
             <tr class="bg-base-200">
-              <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-base-content/50">
+              <th class="px-6 py-4 text-xs font-bold uppercase tracking-widest text-base-content/50">
                 Year
               </th>
-              <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-base-content/50 text-right">
+              <th class="px-6 py-4 text-xs font-bold uppercase tracking-widest text-base-content/50 text-right">
                 Opening Balance
               </th>
-              <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-success text-right">
+              <th class="px-6 py-4 text-xs font-bold uppercase tracking-widest text-success text-right">
                 Interest Earned
               </th>
-              <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-base-content text-right">
+              <th class="px-6 py-4 text-xs font-bold uppercase tracking-widest text-base-content text-right">
                 Closing Balance
               </th>
             </tr>

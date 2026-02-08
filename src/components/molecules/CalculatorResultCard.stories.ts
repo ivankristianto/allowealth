@@ -12,7 +12,7 @@ const meta: Meta = {
 |----------|-------|-------|
 | Container Padding | 24px | \`p-6\` |
 | Border Radius | 24px | \`rounded-3xl\` |
-| Label Font | 10px bold uppercase | \`text-[10px] font-bold uppercase tracking-widest\` |
+| Label Font | 10px bold uppercase | \`text-xs font-bold uppercase tracking-widest\` |
 | Label Opacity | 80% | \`opacity-80\` |
 | Label Margin | 8px bottom | \`mb-2\` |
 | Value Font | 1.5rem bold | \`text-2xl font-bold\` |
@@ -112,7 +112,7 @@ function createCalculatorResultCard(args: {
   card.className = cardClass;
 
   const labelEl = document.createElement('p');
-  labelEl.className = 'text-[10px] font-bold uppercase tracking-widest mb-2 opacity-80';
+  labelEl.className = 'text-xs font-bold uppercase tracking-widest mb-2 opacity-80';
   labelEl.textContent = label;
   card.appendChild(labelEl);
 

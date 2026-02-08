@@ -6,7 +6,7 @@
  * Version: 1.1.0 - Oasis Finance Design System (Forest Green)
  * Color semantic model:
  * - primary = slate-900 → headings, primary text, secondary buttons
- * - accent = forest-600 (#16a34a) → CTAs, interactive elements, active states
+ * - accent = forest-700 (#15803d) → CTAs, interactive elements, active states
  * - success = emerald-500 → positive status, confirmations
  * - warning = amber-500 → budget alerts, caution states
  * - error = rose-500 → over budget, destructive actions
@@ -76,9 +76,9 @@ export const colors = {
   primary: '#0f172a',
   primaryLight: '#f1f5f9',
 
-  // Accent color - forest-600 (CTAs, interactive elements, active states)
-  accent: '#16a34a',
-  accentHover: '#15803d',
+  // Accent color - forest-700 (CTAs, interactive elements, WCAG AA compliant)
+  accent: '#15803d',
+  accentHover: '#166534',
   accentContent: '#ffffff',
 
   warning: '#f59e0b',
@@ -194,13 +194,13 @@ export const fonts = {
   mono: "'SF Mono', Monaco, 'Cascadia Code', monospace",
 } as const;
 
-// Accessibility-adjusted font sizes (WCAG compliance: min 12px for xs)
+// Accessibility-adjusted font sizes (min 13px for readability)
 export const fontSizes = {
-  xs: '0.75rem', // 12px - minimum accessible size
-  sm: '0.8125rem', // 13px
-  base: '0.875rem', // 14px - accessible body text
-  md: '0.9375rem', // 15px
-  lg: '1rem', // 16px
+  xs: '0.8125rem', // 13px - minimum accessible size
+  sm: '0.875rem', // 14px
+  base: '0.9375rem', // 15px - accessible body text
+  md: '1rem', // 16px
+  lg: '1.0625rem', // 17px
   xl: '1.25rem', // 20px
   '2xl': '1.5rem', // 24px
   '3xl': '1.875rem', // 30px

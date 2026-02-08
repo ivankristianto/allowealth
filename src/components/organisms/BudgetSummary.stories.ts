@@ -136,7 +136,7 @@ const createBudgetSummary = (args: BudgetSummaryArgs): HTMLElement => {
           <div class="grid flex flex-col gap-6">
             <!-- Total Monthly Pot -->
             <div>
-              <span class="label-premium uppercase tracking-widest font-semibold text-[10px] text-base-content/60">Total Monthly Pot</span>
+              <span class="label-premium uppercase tracking-widest font-semibold text-xs text-base-content/60">Total Monthly Pot</span>
               <p class="text-2xl lg:text-3xl font-bold mt-2 lg:mt-3 text-base-content tracking-tight leading-none">
                 ${formatCurrency(totalAllocated, currency)}
               </p>
@@ -144,7 +144,7 @@ const createBudgetSummary = (args: BudgetSummaryArgs): HTMLElement => {
 
             <!-- Aggregate Spending -->
             <div>
-              <span class="label-premium uppercase tracking-widest font-semibold text-[10px] text-warning">Aggregate Spending</span>
+              <span class="label-premium uppercase tracking-widest font-semibold text-xs text-warning">Aggregate Spending</span>
               <div class="flex items-baseline gap-2 mt-2 lg:mt-3">
                 <p class="text-2xl lg:text-3xl font-bold tracking-tight leading-none ${totalSpent > totalAllocated ? 'text-error' : 'text-base-content'}">
                   ${formatCurrency(totalSpent, currency)}
@@ -174,7 +174,7 @@ const createBudgetSummary = (args: BudgetSummaryArgs): HTMLElement => {
           <!-- Header -->
           <div class="flex justify-between items-end">
             <h3 class="font-bold text-base-content tracking-tight text-base lg:text-lg leading-none">Allocation Mix</h3>
-            <span class="label-premium uppercase tracking-widest font-semibold text-[10px] text-base-content/60 hidden sm:block">Total Share Distribution</span>
+            <span class="label-premium uppercase tracking-widest font-semibold text-xs text-base-content/60 hidden sm:block">Total Share Distribution</span>
           </div>
 
           <!-- Stacked Bar with Custom Tooltip -->
@@ -213,7 +213,7 @@ const createBudgetSummary = (args: BudgetSummaryArgs): HTMLElement => {
               <div class="flex flex-col gap-1">
                 <div class="flex items-center gap-2">
                   <div class="w-2 h-2 rounded-full shrink-0" style="background-color: ${item.color};" aria-hidden="true"></div>
-                  <span class="text-[10px] font-bold text-base-content/60 uppercase tracking-tight truncate">${item.name}</span>
+                  <span class="text-xs font-bold text-base-content/60 uppercase tracking-tight truncate">${item.name}</span>
                 </div>
                 <p class="text-xs font-bold text-base-content leading-none ml-4">${item.weight.toFixed(1)}%</p>
               </div>
@@ -233,7 +233,7 @@ const createBudgetSummary = (args: BudgetSummaryArgs): HTMLElement => {
 const defaultDistribution: DistributionItem[] = [
   { name: 'Housing', weight: 67.8, color: '#ea580c' },
   { name: 'Groceries', weight: 13.6, color: '#3b82f6' },
-  { name: 'Utilities', weight: 6.8, color: '#16a34a' },
+  { name: 'Utilities', weight: 6.8, color: '#15803d' },
   { name: 'Dining', weight: 5.1, color: '#8b5cf6' },
   { name: 'Transport', weight: 4.2, color: '#a855f7' },
   { name: 'Entertainment', weight: 2.5, color: '#ec4899' },
@@ -290,7 +290,7 @@ export const USD: StoryObj = {
     distribution: [
       { name: 'Housing', weight: 60, color: '#ea580c' },
       { name: 'Groceries', weight: 15, color: '#3b82f6' },
-      { name: 'Utilities', weight: 10, color: '#16a34a' },
+      { name: 'Utilities', weight: 10, color: '#15803d' },
       { name: 'Dining', weight: 8, color: '#8b5cf6' },
       { name: 'Transport', weight: 5, color: '#a855f7' },
       { name: 'Entertainment', weight: 2, color: '#ec4899' },
@@ -323,7 +323,7 @@ export const ManyCategories: StoryObj = {
     distribution: [
       { name: 'Housing', weight: 45, color: '#ea580c' },
       { name: 'Groceries', weight: 15, color: '#3b82f6' },
-      { name: 'Utilities', weight: 10, color: '#16a34a' },
+      { name: 'Utilities', weight: 10, color: '#15803d' },
       { name: 'Dining', weight: 8, color: '#8b5cf6' },
       { name: 'Transport', weight: 6, color: '#a855f7' },
       { name: 'Entertainment', weight: 5, color: '#ec4899' },

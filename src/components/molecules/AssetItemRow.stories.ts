@@ -65,7 +65,7 @@ const createAssetItemRow = (args: AssetItemRowArgs): HTMLElement => {
       <div class="flex-1 min-w-0">
         <h4 class="text-base lg:text-lg font-bold text-base-content leading-none tracking-tight truncate">${name}</h4>
         <div class="flex items-center gap-3 mt-2 lg:mt-3">
-          <span class="px-2 py-0.5 rounded-md text-[10px] font-bold tracking-wider uppercase ${currencyBadgeClasses}">${currency}</span>
+          <span class="px-2 py-0.5 rounded-md text-xs font-bold tracking-wider uppercase ${currencyBadgeClasses}">${currency}</span>
           <span class="text-xs text-base-content/50 font-medium tracking-tight">Updated: ${lastUpdated}</span>
         </div>
       </div>

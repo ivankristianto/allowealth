@@ -52,7 +52,7 @@ const { id } = Astro.props;
             Rp 0
           </p>
           <div
-            class="flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest"
+            class="flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest"
             data-change-badge
           >
             <span class="hidden" data-arrow-up>
@@ -76,14 +76,14 @@ const { id } = Astro.props;
           <div class="flex bg-base-100 p-1 rounded-xl shadow-sm border border-base-300/50">
             <button
               type="button"
-              class="px-4 py-2 text-[10px] font-bold rounded-lg uppercase tracking-widest transition-all text-base-content/50"
+              class="px-4 py-2 text-xs font-bold rounded-lg uppercase tracking-widest transition-all text-base-content/50"
               data-timeframe="weekly"
             >
               7 Days
             </button>
             <button
               type="button"
-              class="px-4 py-2 text-[10px] font-bold rounded-lg uppercase tracking-widest transition-all bg-accent text-white shadow-sm"
+              class="px-4 py-2 text-xs font-bold rounded-lg uppercase tracking-widest transition-all bg-accent text-white shadow-sm"
               data-timeframe="monthly"
             >
               30 Days
@@ -110,7 +110,7 @@ const { id } = Astro.props;
 
           {/* SVG Chart */}
           {
-            /* P2: TODO - Hardcoded accent color #16a34a should use CSS variables for theme support */
+            /* P2: TODO - Hardcoded accent color #15803d should use CSS variables for theme support */
           }
           <svg
             class="w-full h-full hidden"
@@ -120,8 +120,8 @@ const { id } = Astro.props;
           >
             <defs>
               <linearGradient id={`${id}-gradient`} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stop-color="#16a34a" stop-opacity="0.3"></stop>
-                <stop offset="100%" stop-color="#16a34a" stop-opacity="0"></stop>
+                <stop offset="0%" stop-color="#15803d" stop-opacity="0.3"></stop>
+                <stop offset="100%" stop-color="#15803d" stop-opacity="0"></stop>
               </linearGradient>
             </defs>
 
@@ -168,7 +168,7 @@ const { id } = Astro.props;
             <path
               data-chart-line
               fill="none"
-              stroke="#16a34a"
+              stroke="#15803d"
               stroke-width="3"
               stroke-linecap="round"
               stroke-linejoin="round"></path>
@@ -179,7 +179,7 @@ const { id } = Astro.props;
 
           {/* X-axis labels */}
           <div
-            class="absolute bottom-0 left-0 right-0 flex justify-between px-2 text-[10px] font-bold text-base-content/40 uppercase tracking-wider hidden"
+            class="absolute bottom-0 left-0 right-0 flex justify-between px-2 text-xs font-bold text-base-content/40 uppercase tracking-wider hidden"
             data-x-labels
           >
           </div>
@@ -192,7 +192,7 @@ const { id } = Astro.props;
           >
             <div
               data-tooltip-date
-              class="text-[10px] text-neutral-content/60 uppercase tracking-wider mb-1"
+              class="text-xs text-neutral-content/60 uppercase tracking-wider mb-1"
             >
             </div>
             <div data-tooltip-value class="font-bold"></div>
@@ -374,7 +374,7 @@ const { id } = Astro.props;
           dot.setAttribute('cx', String(p.x));
           dot.setAttribute('cy', String(p.y));
           dot.setAttribute('r', '3.5');
-          dot.setAttribute('fill', '#16a34a');
+          dot.setAttribute('fill', '#15803d');
           dot.setAttribute('stroke', 'white');
           dot.setAttribute('stroke-width', '1.5');
           g.appendChild(dot);
@@ -451,7 +451,7 @@ const { id } = Astro.props;
         const isPositive = changePercent >= 0;
 
         if (changeBadge) {
-          changeBadge.className = `flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${
+          changeBadge.className = `flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest ${
             isPositive ? 'bg-success/10 text-success' : 'bg-error/10 text-error'
           }`;
         }
@@ -466,10 +466,10 @@ const { id } = Astro.props;
           const activeClasses = 'bg-accent text-white shadow-sm';
           const inactiveClasses = 'text-base-content/50';
 
-          weeklyBtn.className = `px-4 py-2 text-[10px] font-bold rounded-lg uppercase tracking-widest transition-all ${
+          weeklyBtn.className = `px-4 py-2 text-xs font-bold rounded-lg uppercase tracking-widest transition-all ${
             timeframe === 'weekly' ? activeClasses : inactiveClasses
           }`;
-          monthlyBtn.className = `px-4 py-2 text-[10px] font-bold rounded-lg uppercase tracking-widest transition-all ${
+          monthlyBtn.className = `px-4 py-2 text-xs font-bold rounded-lg uppercase tracking-widest transition-all ${
             timeframe === 'monthly' ? activeClasses : inactiveClasses
           }`;
         }

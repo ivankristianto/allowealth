@@ -35,7 +35,7 @@ const { data, currency = 'IDR', className = '', id = '' } = Astro.props;
 >
   <div class="p-6 border-b border-base-300">
     <h4 class="font-bold text-base-content tracking-tight">Growth Schedule</h4>
-    <p class="text-[10px] font-bold uppercase tracking-widest text-base-content/50 mt-1">
+    <p class="text-xs font-bold uppercase tracking-widest text-base-content/50 mt-1">
       Yearly breakdown of interest compounding
     </p>
   </div>
@@ -44,23 +44,19 @@ const { data, currency = 'IDR', className = '', id = '' } = Astro.props;
     <table class="table table-zebra w-full text-left">
       <thead>
         <tr class="bg-base-200">
-          <th
-            class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-base-content/50"
-          >
+          <th class="px-6 py-4 text-xs font-bold uppercase tracking-widest text-base-content/50">
             Year
           </th>
           <th
-            class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-base-content/50 text-right"
+            class="px-6 py-4 text-xs font-bold uppercase tracking-widest text-base-content/50 text-right"
           >
             Opening Balance
           </th>
-          <th
-            class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-success text-right"
-          >
+          <th class="px-6 py-4 text-xs font-bold uppercase tracking-widest text-success text-right">
             Interest Earned
           </th>
           <th
-            class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-base-content text-right"
+            class="px-6 py-4 text-xs font-bold uppercase tracking-widest text-base-content text-right"
           >
             Closing Balance
           </th>

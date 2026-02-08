@@ -128,7 +128,7 @@ const cardClasses = [
               {primaryText}
             </div>
             <div class="mt-1">
-              <span class="font-bold tracking-widest uppercase text-[10px] bg-base-200 px-1.5 py-0.5 rounded text-base-content/60">
+              <span class="font-bold tracking-widest uppercase text-xs bg-base-200 px-1.5 py-0.5 rounded text-base-content/60">
                 {transaction?.category?.name}
               </span>
             </div>
@@ -182,7 +182,7 @@ const cardClasses = [
         </div>
 
         <div class="mt-2.5 flex items-end justify-between pl-[52px]">
-          <div class="text-[10px] text-base-content/50 space-y-1">
+          <div class="text-xs text-base-content/50 space-y-1">
             <time datetime={date.toISOString()} class="block font-medium uppercase tracking-widest">
               {formattedDate}
             </time>
@@ -223,7 +223,7 @@ const cardClasses = [
               {primaryText}
             </div>
             <div class="mt-2 flex flex-wrap items-center gap-2 leading-none">
-              <span class="text-[10px] font-bold tracking-widest uppercase text-base-content/60 bg-base-200 px-2 py-0.5 rounded">
+              <span class="text-xs font-bold tracking-widest uppercase text-base-content/60 bg-base-200 px-2 py-0.5 rounded">
                 {transaction?.category?.name}
               </span>
             </div>
@@ -232,7 +232,7 @@ const cardClasses = [
 
         {/* Asset */}
         <div class="flex-shrink-0">
-          <div class="flex items-center gap-1.5 text-[10px] uppercase tracking-widest text-base-content/60">
+          <div class="flex items-center gap-1.5 text-xs uppercase tracking-widest text-base-content/60">
             <CreditCard size={12} class="stroke-current" aria-hidden="true" />
             <span>{transaction?.asset?.name}</span>
           </div>

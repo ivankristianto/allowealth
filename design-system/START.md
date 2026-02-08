@@ -15,7 +15,7 @@ This guide reflects the **Oasis Finance** design system (v1.0.0).
 **Color system update (v1.1.0 - Forest Green):**
 
 - **Primary:** `#0f172a` (slate-900) - main brand color, text, borders
-- **Accent:** `#16a34a` (forest-600) - interactive elements, CTAs, focus states
+- **Accent:** `#15803d` (forest-700) - interactive elements, CTAs, focus states (WCAG AA)
 - **Success:** `#10b981` (emerald-500) - confirmations, positive states, IDR currency
 - **Warning:** `#f59e0b` (amber-500) - budget alerts, caution states
 - **Error:** `#f43f5e` (rose-500) - errors, over budget, danger states
@@ -86,8 +86,8 @@ colors.primary; // #0f172a (slate-900 - headings, text)
 colors.primaryLight; // #f1f5f9 (slate-100 - backgrounds)
 
 // Accent color (forest green) - CTAs, interactive elements, active states
-colors.accent; // #16a34a (forest-600 - CTAs, interactive)
-colors.accentHover; // #15803d (forest-700)
+colors.accent; // #15803d (forest-700 - CTAs, WCAG AA compliant)
+colors.accentHover; // #166534 (forest-800)
 
 colors.warning; // #f59e0b (amber - budget alerts)
 colors.error; // #f43f5e (rose - over budget)
@@ -131,12 +131,12 @@ colors.status.danger; // #f43f5e (≥100%)
 ### Typography
 
 ```typescript
-// Accessibility-adjusted sizes (WCAG AA compliant minimums)
-fontSizes.xs; // 0.75rem (12px) - labels, helper - minimum accessible size
-fontSizes.sm; // 0.8125rem (13px) - body (small)
-fontSizes.base; // 0.875rem (14px) - body (default) - accessible body text
-fontSizes.md; // 0.9375rem (15px) - emphasized
-fontSizes.lg; // 1rem (16px) - emphasized
+// Readability-adjusted sizes (minimum 13px for improved legibility)
+fontSizes.xs; // 0.8125rem (13px) - labels, helper - minimum accessible size
+fontSizes.sm; // 0.875rem (14px) - body (small)
+fontSizes.base; // 0.9375rem (15px) - body (default) - accessible body text
+fontSizes.md; // 1rem (16px) - emphasized
+fontSizes.lg; // 1.0625rem (17px) - emphasized
 fontSizes.xl; // 1.25rem (20px) - section headings
 fontSizes['2xl']; // 1.5rem (24px) - page headings
 fontSizes['3xl']; // 1.875rem (30px) - hero

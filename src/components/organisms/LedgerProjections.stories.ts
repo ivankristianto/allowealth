@@ -66,7 +66,7 @@ export const Default: Story = {
           <h3 class="text-xl font-bold text-base-content tracking-tight leading-none">
             Ledger Projections
           </h3>
-          <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest mt-1">
+          <p class="text-xs font-bold text-base-content/40 uppercase tracking-widest mt-1">
             120 MONTH DETAILED BREAKDOWN
           </p>
         </div>
@@ -76,19 +76,19 @@ export const Default: Story = {
             <thead class="bg-base-200/50">
               <tr class="border-b border-base-300">
                 <th class="px-8 py-5 text-left">
-                  <span class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest">PERIOD</span>
+                  <span class="text-xs font-bold text-base-content/40 uppercase tracking-widest">PERIOD</span>
                 </th>
                 <th class="px-8 py-5 text-right">
-                  <span class="text-[10px] font-bold text-accent uppercase tracking-widest">FORECAST INTEREST</span>
+                  <span class="text-xs font-bold text-accent uppercase tracking-widest">FORECAST INTEREST</span>
                 </th>
                 <th class="px-8 py-5 text-right">
-                  <span class="text-[10px] font-bold text-accent uppercase tracking-widest">FORECAST BALANCE</span>
+                  <span class="text-xs font-bold text-accent uppercase tracking-widest">FORECAST BALANCE</span>
                 </th>
                 <th class="px-8 py-5 text-right">
-                  <span class="text-[10px] font-bold text-success uppercase tracking-widest">REAL INTEREST</span>
+                  <span class="text-xs font-bold text-success uppercase tracking-widest">REAL INTEREST</span>
                 </th>
                 <th class="px-8 py-5 text-right">
-                  <span class="text-[10px] font-bold text-success uppercase tracking-widest">REAL BALANCE</span>
+                  <span class="text-xs font-bold text-success uppercase tracking-widest">REAL BALANCE</span>
                 </th>
               </tr>
             </thead>
@@ -143,7 +143,7 @@ export const Loading: Story = {
       <div class="rounded-3xl border border-base-300 shadow-sm bg-base-100">
         <div class="p-8 border-b border-base-300">
           <h3 class="text-xl font-bold">Ledger Projections</h3>
-          <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest mt-1">
+          <p class="text-xs font-bold text-base-content/40 uppercase tracking-widest mt-1">
             LOADING DATA...
           </p>
         </div>
@@ -179,7 +179,7 @@ export const Error: Story = {
       <div class="rounded-3xl border border-base-300 shadow-sm bg-base-100">
         <div class="p-8 border-b border-base-300">
           <h3 class="text-xl font-bold">Ledger Projections</h3>
-          <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest mt-1">
+          <p class="text-xs font-bold text-base-content/40 uppercase tracking-widest mt-1">
             120 MONTH DETAILED BREAKDOWN
           </p>
         </div>
@@ -203,7 +203,7 @@ export const Empty: Story = {
       <div class="rounded-3xl border border-base-300 shadow-sm bg-base-100">
         <div class="p-8 border-b border-base-300">
           <h3 class="text-xl font-bold">Ledger Projections</h3>
-          <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest mt-1">
+          <p class="text-xs font-bold text-base-content/40 uppercase tracking-widest mt-1">
             120 MONTH DETAILED BREAKDOWN
           </p>
         </div>
@@ -233,7 +233,7 @@ export const ForecastOnly: Story = {
       <div class="rounded-3xl border border-base-300 shadow-sm bg-base-100 overflow-hidden">
         <div class="p-8 border-b border-base-300">
           <h3 class="text-xl font-bold">Ledger Projections</h3>
-          <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest mt-1">
+          <p class="text-xs font-bold text-base-content/40 uppercase tracking-widest mt-1">
             FORECAST ONLY (NO HISTORICAL DATA)
           </p>
         </div>
@@ -243,19 +243,19 @@ export const ForecastOnly: Story = {
             <thead class="bg-base-200/50">
               <tr class="border-b border-base-300">
                 <th class="px-8 py-5 text-left">
-                  <span class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest">PERIOD</span>
+                  <span class="text-xs font-bold text-base-content/40 uppercase tracking-widest">PERIOD</span>
                 </th>
                 <th class="px-8 py-5 text-right">
-                  <span class="text-[10px] font-bold text-accent uppercase tracking-widest">FORECAST INTEREST</span>
+                  <span class="text-xs font-bold text-accent uppercase tracking-widest">FORECAST INTEREST</span>
                 </th>
                 <th class="px-8 py-5 text-right">
-                  <span class="text-[10px] font-bold text-accent uppercase tracking-widest">FORECAST BALANCE</span>
+                  <span class="text-xs font-bold text-accent uppercase tracking-widest">FORECAST BALANCE</span>
                 </th>
                 <th class="px-8 py-5 text-right">
-                  <span class="text-[10px] font-bold text-success uppercase tracking-widest">REAL INTEREST</span>
+                  <span class="text-xs font-bold text-success uppercase tracking-widest">REAL INTEREST</span>
                 </th>
                 <th class="px-8 py-5 text-right">
-                  <span class="text-[10px] font-bold text-success uppercase tracking-widest">REAL BALANCE</span>
+                  <span class="text-xs font-bold text-success uppercase tracking-widest">REAL BALANCE</span>
                 </th>
               </tr>
             </thead>

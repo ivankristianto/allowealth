@@ -161,7 +161,7 @@ const createBudgetCard = (args: {
           </div>
           <div>
             <h3 class="font-bold text-base-content tracking-tight leading-none">${categoryName}</h3>
-            <span class="inline-block mt-2 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${statusStyle.badge}">
+            <span class="inline-block mt-2 px-2 py-0.5 rounded-md text-xs font-bold uppercase tracking-wider ${statusStyle.badge}">
               ${Math.round(percentageUsed)}% Used
             </span>
           </div>
@@ -173,11 +173,11 @@ const createBudgetCard = (args: {
       <div class="space-y-4">
         <div class="flex justify-between items-end">
           <div>
-            <span class="label-premium uppercase tracking-widest font-semibold text-[10px] text-base-content/60">Spent</span>
+            <span class="label-premium uppercase tracking-widest font-semibold text-xs text-base-content/60">Spent</span>
             <p class="text-lg font-bold mt-1 text-base-content leading-none">${formatCurrency(spent, currency)}</p>
           </div>
           <div class="text-right">
-            <span class="label-premium uppercase tracking-widest font-semibold text-[10px] text-base-content/60">Budget</span>
+            <span class="label-premium uppercase tracking-widest font-semibold text-xs text-base-content/60">Budget</span>
             <p class="text-sm font-bold mt-1 text-base-content/60 leading-none">${formatCurrency(budget, currency)}</p>
           </div>
         </div>

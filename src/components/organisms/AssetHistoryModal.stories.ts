@@ -139,7 +139,7 @@ const createAssetHistoryModal = (args: AssetHistoryModalArgs): HTMLElement => {
 
           <div class="flex flex-col items-start md:items-end">
             <p class="text-2xl md:text-3xl font-bold text-base-content tracking-tight">${formatCurrency(balance, currency)}</p>
-            <div class="flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${changeBadgeClasses}">
+            <div class="flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest ${changeBadgeClasses}">
               ${
                 isPositive
                   ? `
@@ -170,13 +170,13 @@ const createAssetHistoryModal = (args: AssetHistoryModalArgs): HTMLElement => {
             <div class="flex bg-base-100 p-1 rounded-xl shadow-sm border border-base-300/50">
               <button
                 type="button"
-                class="px-4 py-2 text-[10px] font-bold rounded-lg uppercase tracking-widest transition-all ${timeframe === 'weekly' ? 'bg-accent text-white shadow-sm' : 'text-base-content/50'}"
+                class="px-4 py-2 text-xs font-bold rounded-lg uppercase tracking-widest transition-all ${timeframe === 'weekly' ? 'bg-accent text-white shadow-sm' : 'text-base-content/50'}"
               >
                 7 Days
               </button>
               <button
                 type="button"
-                class="px-4 py-2 text-[10px] font-bold rounded-lg uppercase tracking-widest transition-all ${timeframe === 'monthly' ? 'bg-accent text-white shadow-sm' : 'text-base-content/50'}"
+                class="px-4 py-2 text-xs font-bold rounded-lg uppercase tracking-widest transition-all ${timeframe === 'monthly' ? 'bg-accent text-white shadow-sm' : 'text-base-content/50'}"
               >
                 30 Days
               </button>
@@ -205,8 +205,8 @@ const createAssetHistoryModal = (args: AssetHistoryModalArgs): HTMLElement => {
               <svg class="w-full h-full" viewBox="0 0 800 300" preserveAspectRatio="none">
                 <defs>
                   <linearGradient id="gradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stop-color="#16a34a" stop-opacity="0.3"></stop>
-                    <stop offset="100%" stop-color="#16a34a" stop-opacity="0"></stop>
+                    <stop offset="0%" stop-color="#15803d" stop-opacity="0.3"></stop>
+                    <stop offset="100%" stop-color="#15803d" stop-opacity="0"></stop>
                   </linearGradient>
                 </defs>
 
@@ -222,11 +222,11 @@ const createAssetHistoryModal = (args: AssetHistoryModalArgs): HTMLElement => {
                 <path d="${areaPath}" fill="url(#gradient)"></path>
 
                 <!-- Line -->
-                <path d="${linePath}" fill="none" stroke="#16a34a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path>
+                <path d="${linePath}" fill="none" stroke="#15803d" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path>
               </svg>
 
               <!-- X-axis labels -->
-              <div class="absolute bottom-0 left-0 right-0 flex justify-between px-2 text-[10px] font-bold text-base-content/40 uppercase tracking-wider">
+              <div class="absolute bottom-0 left-0 right-0 flex justify-between px-2 text-xs font-bold text-base-content/40 uppercase tracking-wider">
                 ${xLabels.map((label) => `<span>${label}</span>`).join('')}
               </div>
             `

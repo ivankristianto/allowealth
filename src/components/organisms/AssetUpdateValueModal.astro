@@ -39,7 +39,7 @@ const { id } = Astro.props;
               Update Value
             </h2>
             <span
-              class="px-2 py-0.5 rounded-md text-[10px] font-bold tracking-wider uppercase bg-base-200 text-base-content/50 hidden"
+              class="px-2 py-0.5 rounded-md text-xs font-bold tracking-wider uppercase bg-base-200 text-base-content/50 hidden"
               data-modal-currency-badge></span>
           </div>
           <p class="text-neutral text-sm mt-2 font-medium" data-modal-subtitle>
@@ -56,7 +56,7 @@ const { id } = Astro.props;
         <div class="space-y-2">
           <label
             for={`${id}-date`}
-            class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest ml-1"
+            class="text-xs font-bold text-base-content/40 uppercase tracking-widest ml-1"
           >
             Date
           </label>
@@ -74,7 +74,7 @@ const { id } = Astro.props;
         <div class="space-y-2">
           <label
             for={`${id}-balance`}
-            class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest ml-1"
+            class="text-xs font-bold text-base-content/40 uppercase tracking-widest ml-1"
             data-balance-label
           >
             New Balance
@@ -96,7 +96,7 @@ const { id } = Astro.props;
         <div class="space-y-2">
           <label
             for={`${id}-notes`}
-            class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest ml-1"
+            class="text-xs font-bold text-base-content/40 uppercase tracking-widest ml-1"
           >
             Notes <span class="text-base-content/30">(optional)</span>
           </label>
@@ -199,7 +199,7 @@ const { id } = Astro.props;
           currencyBadge.classList.remove('hidden');
           // Currency colors: IDR=success, USD=info (only two currencies per schema enum)
           currencyBadge.className =
-            'px-2 py-0.5 rounded-md text-[10px] font-bold tracking-wider uppercase ' +
+            'px-2 py-0.5 rounded-md text-xs font-bold tracking-wider uppercase ' +
             (e.detail.currency === 'IDR' ? 'bg-success/10 text-success' : 'bg-info/10 text-info');
         }
         if (balanceLabel) {

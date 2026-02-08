@@ -14,7 +14,7 @@ const meta: Meta = {
 | Container | Card with border | \`bg-base-100 rounded-card border border-base-300 overflow-hidden\` |
 | Header Padding | 24px | \`p-6 border-b border-base-300\` |
 | Cell Padding | 24px x 16px | \`px-6 py-4\` |
-| Header Font | 10px bold uppercase | \`text-[10px] font-bold uppercase tracking-widest\` |
+| Header Font | 10px bold uppercase | \`text-xs font-bold uppercase tracking-widest\` |
 | Table Style | DaisyUI zebra | \`table table-zebra w-full text-left\` |
 
 ### Table Columns
@@ -28,7 +28,7 @@ const meta: Meta = {
 
 ### Header Section
 - Title: "Growth Schedule" (\`font-bold text-base-content tracking-tight\`)
-- Subtitle: "Yearly breakdown..." (\`text-[10px] uppercase tracking-widest text-base-content/50\`)
+- Subtitle: "Yearly breakdown..." (\`text-xs uppercase tracking-widest text-base-content/50\`)
 
 ### Interactive States
 - Row hover: \`hover:bg-base-200/50 transition-colors\`
@@ -119,7 +119,7 @@ function createGrowthScheduleTable(args: {
   header.appendChild(title);
 
   const subtitle = document.createElement('p');
-  subtitle.className = 'text-[10px] font-bold uppercase tracking-widest text-base-content/50 mt-1';
+  subtitle.className = 'text-xs font-bold uppercase tracking-widest text-base-content/50 mt-1';
   subtitle.textContent = 'Yearly breakdown of interest compounding';
   header.appendChild(subtitle);
 
@@ -146,7 +146,7 @@ function createGrowthScheduleTable(args: {
 
   headers.forEach(({ text, class: headerClass }) => {
     const th = document.createElement('th');
-    th.className = `px-6 py-4 text-[10px] font-bold uppercase tracking-widest ${headerClass}`;
+    th.className = `px-6 py-4 text-xs font-bold uppercase tracking-widest ${headerClass}`;
     th.textContent = text;
     headerRow.appendChild(th);
   });

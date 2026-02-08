@@ -36,7 +36,7 @@ const { data = [], subtitle = 'EXPENSE MIX', loading = false, error, className =
 // @TODO: P1 - Move chart colors to design tokens (@/lib/tokens)
 // Chart colors from design system (v1.1.0 - Forest Green)
 const DEFAULT_COLORS = [
-  '#16a34a', // forest - Utilities (accent)
+  '#15803d', // forest - Utilities (accent)
   '#3b82f6', // blue - Groceries/Dining
   '#10b981', // emerald - Health
   '#f59e0b', // amber - Transport
@@ -143,11 +143,11 @@ const chartId = `resource-allocation-chart-${Math.random().toString(36).slice(2,
                     style={`background-color: ${item.color}`}
                     aria-hidden="true"
                   />
-                  <span class="text-base-content/60 uppercase tracking-tight text-[10px]">
+                  <span class="text-base-content/60 uppercase tracking-tight text-xs">
                     {item.name}
                   </span>
                 </div>
-                <span class="text-base-content text-[10px]">{item.percentage}%</span>
+                <span class="text-base-content text-xs">{item.percentage}%</span>
               </div>
             ))}
           </div>

@@ -106,7 +106,7 @@ const createBudgetAdviceBanner = (args: {
 
       <!-- Content -->
       <div class="flex-1 min-w-0">
-        <span class="label-premium uppercase tracking-widest font-semibold text-[10px] text-base-content/60 mb-2 block">${escapeHtml(title)}</span>
+        <span class="label-premium uppercase tracking-widest font-semibold text-xs text-base-content/60 mb-2 block">${escapeHtml(title)}</span>
         <p class="text-sm text-base-content leading-relaxed">
           ${messageContent}
         </p>

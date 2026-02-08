@@ -87,7 +87,7 @@ const createNotificationDropdown = (args: { isOpen?: boolean }): HTMLElement => 
     headerDiv.appendChild(titleEl);
 
     const timeEl = document.createElement('span');
-    timeEl.className = 'text-[10px] font-bold text-neutral uppercase tracking-widest';
+    timeEl.className = 'text-xs font-bold text-neutral uppercase tracking-widest';
     timeEl.textContent = notif.time;
     headerDiv.appendChild(timeEl);
 

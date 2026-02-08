@@ -71,7 +71,7 @@ const renderItem = (item: CashFlowItem): string => {
         </div>
         <div class="min-w-0">
           <p class="text-base font-bold tracking-tight leading-tight text-base-content truncate">${item.name}</p>
-          <span class="text-[10px] font-bold text-base-content/50 tracking-widest uppercase mt-1 block">${item.date.toUpperCase()}</span>
+          <span class="text-xs font-bold text-base-content/50 tracking-widest uppercase mt-1 block">${item.date.toUpperCase()}</span>
         </div>
       </div>
       <div class="text-right leading-none shrink-0">
@@ -91,7 +91,7 @@ const createCashFlowWidget = (args: { loading?: boolean; empty?: boolean }): HTM
     container.innerHTML = `
       <div class="bg-base-100 rounded-3xl border border-base-300 shadow-premium p-8">
         <div class="space-y-6">
-          <span class="text-[10px] font-semibold uppercase tracking-widest text-base-content/60">Cash flow analysis</span>
+          <span class="text-xs font-semibold uppercase tracking-widest text-base-content/60">Cash flow analysis</span>
           <div class="space-y-5">
             ${[1, 2]
               .map(
@@ -120,7 +120,7 @@ const createCashFlowWidget = (args: { loading?: boolean; empty?: boolean }): HTM
     container.innerHTML = `
       <div class="bg-base-100 rounded-3xl border border-base-300 shadow-premium p-8">
         <div class="space-y-4">
-          <span class="text-[10px] font-semibold uppercase tracking-widest text-base-content/60">Cash flow analysis</span>
+          <span class="text-xs font-semibold uppercase tracking-widest text-base-content/60">Cash flow analysis</span>
           <p class="text-sm text-base-content/60">
             No cash flow entries yet. Add income or expenses to see upcoming activity.
           </p>
@@ -133,7 +133,7 @@ const createCashFlowWidget = (args: { loading?: boolean; empty?: boolean }): HTM
   container.innerHTML = `
     <div class="bg-base-100 rounded-3xl border border-base-300 shadow-premium p-8">
       <div class="space-y-6">
-        <span class="text-[10px] font-semibold uppercase tracking-widest text-base-content/60">Cash flow analysis</span>
+        <span class="text-xs font-semibold uppercase tracking-widest text-base-content/60">Cash flow analysis</span>
         <div class="space-y-5">
           ${sampleItems.map(renderItem).join('')}
         </div>

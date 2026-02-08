@@ -9,7 +9,7 @@ import type { AssetOutput } from '@/lib/types/asset';
  * Colors are chosen for accessibility and visual distinction.
  */
 const ASSET_TYPE_COLORS: Record<string, string> = {
-  stock: '#16a34a', // forest-600 (accent)
+  stock: '#15803d', // forest-600 (accent)
   bank_account: '#0ea5e9', // sky-500 (info)
   mutual_fund: '#f59e0b', // amber-500
   bond: '#3b82f6', // blue-500

@@ -90,7 +90,7 @@ export const Default: Story = {
               </div>
               <div class="flex flex-wrap gap-6 items-end">
                 <div class="flex-1 min-w-[140px] space-y-2">
-                  <label class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest">
+                  <label class="text-xs font-bold text-base-content/40 uppercase tracking-widest">
                     MONTHLY TOP-UP (IDR)
                   </label>
                   <input
@@ -100,7 +100,7 @@ export const Default: Story = {
                   />
                 </div>
                 <div class="flex-1 min-w-[120px] space-y-2">
-                  <label class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest">
+                  <label class="text-xs font-bold text-base-content/40 uppercase tracking-widest">
                     EXPECTED APY (%)
                   </label>
                   <input
@@ -119,19 +119,19 @@ export const Default: Story = {
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div class="p-6 bg-base-200/40 rounded-3xl border border-base-300/50">
-                <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest mb-2">
+                <p class="text-xs font-bold text-base-content/40 uppercase tracking-widest mb-2">
                   YEAR 10 TARGET
                 </p>
                 <h3 class="text-2xl font-bold text-base-content">Rp2.98B</h3>
               </div>
               <div class="p-6 bg-base-200/40 rounded-3xl border border-base-300/50">
-                <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest mb-2">
+                <p class="text-xs font-bold text-base-content/40 uppercase tracking-widest mb-2">
                   TOTAL INTEREST EARNED
                 </p>
                 <h3 class="text-2xl font-bold text-accent">Rp1.34B</h3>
               </div>
               <div class="p-6 bg-base-200/40 rounded-3xl border border-base-300/50">
-                <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest mb-2">
+                <p class="text-xs font-bold text-base-content/40 uppercase tracking-widest mb-2">
                   GROWTH MULTIPLE
                 </p>
                 <h3 class="text-2xl font-bold text-success">2.86x</h3>

@@ -33,7 +33,7 @@ const createMockAsset = (overrides: Partial<AssetOutput> = {}): AssetOutput => (
 
 describe('Asset Utils - getAssetTypeColor', () => {
   it('should return predefined color for known asset types', () => {
-    expect(getAssetTypeColor('stock')).toBe('#16a34a'); // forest-600 (accent)
+    expect(getAssetTypeColor('stock')).toBe('#15803d'); // forest-600 (accent)
     expect(getAssetTypeColor('bank_account')).toBe('#0ea5e9'); // sky-500 (info)
     expect(getAssetTypeColor('mutual_fund')).toBe('#f59e0b');
     expect(getAssetTypeColor('bond')).toBe('#3b82f6');
@@ -162,7 +162,7 @@ describe('Asset Utils - calculateAssetAllocation', () => {
 
     const allocation = calculateAssetAllocation(assets);
 
-    expect(allocation[0].color).toBe('#16a34a'); // Stock color (forest-600 accent)
+    expect(allocation[0].color).toBe('#15803d'); // Stock color (forest-600 accent)
   });
 });
 

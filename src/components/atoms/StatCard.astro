@@ -83,7 +83,7 @@ const iconClass = iconVariant ? iconVariantClasses[iconVariant] : 'text-base-con
     )
   }
   <!-- Title -->
-  <p class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest">
+  <p class="text-xs font-bold text-base-content/40 uppercase tracking-widest">
     {title}
   </p>
 
@@ -95,7 +95,7 @@ const iconClass = iconVariant ? iconVariantClasses[iconVariant] : 'text-base-con
   <!-- Subtitle with optional icon -->
   {
     subtitle && (
-      <div class={`flex items-center gap-1 mt-2 ${subtitleColor} text-[10px] font-bold uppercase`}>
+      <div class={`flex items-center gap-1 mt-2 ${subtitleColor} text-xs font-bold uppercase`}>
         {IconComponent && <IconComponent size={14} class="stroke-current" aria-hidden="true" />}
         <span>{subtitle}</span>
       </div>

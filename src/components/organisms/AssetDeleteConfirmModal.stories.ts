@@ -112,7 +112,7 @@ const createAssetDeleteModal = (args: AssetDeleteModalArgs): HTMLElement => {
             </div>
             <div class="text-right">
               <p class="font-bold ${balanceClasses}">${formatCurrency(balance, currency)}</p>
-              <span class="inline-block px-2 py-0.5 rounded-md text-[10px] font-bold tracking-wider uppercase ${currencyBadgeClasses}">
+              <span class="inline-block px-2 py-0.5 rounded-md text-xs font-bold tracking-wider uppercase ${currencyBadgeClasses}">
                 ${currency}
               </span>
             </div>

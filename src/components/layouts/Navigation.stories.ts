@@ -22,7 +22,7 @@ const meta: Meta = {
 | Property | Value | Applied Via |
 |----------|-------|-------------|
 | Gradient | \`linear-gradient(90deg, rgba(22,163,74,0.1) 0%, rgba(22,163,74,0) 100%)\` | \`.nav-active\` |
-| Left Border | 2px solid #16a34a | \`.nav-active\` |
+| Left Border | 2px solid #15803d | \`.nav-active\` |
 | ARIA | Current page indicator | \`aria-current="page"\` |
 
 ### Navigation Items (8 total)
