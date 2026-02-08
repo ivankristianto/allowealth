@@ -685,28 +685,7 @@ export class DashboardService {
   async getRecentTransactions(
     workspaceId: string,
     limit: number = 5
-  ): Promise<
-    Array<{
-      id: string;
-      type: 'expense' | 'income' | 'transfer';
-      amount: string;
-      currency: 'IDR' | 'USD';
-      description: string | null;
-      transactionDate: Date;
-      category: {
-        id: string;
-        name: string;
-        type: 'expense' | 'income';
-        icon: string;
-        color: string;
-      };
-      asset: {
-        id: string;
-        name: string;
-        type: string;
-      };
-    }>
-  > {
+  ): Promise<DashboardData['recentTransactions']> {
     try {
       // Validate limit
       if (limit < 1 || limit > 100) {
@@ -1201,28 +1180,7 @@ export class DashboardService {
     workspaceId: string,
     limit: number,
     perf?: PerfCollector
-  ): Promise<
-    Array<{
-      id: string;
-      type: 'expense' | 'income' | 'transfer';
-      amount: string;
-      currency: 'IDR' | 'USD';
-      description: string | null;
-      transactionDate: Date;
-      category: {
-        id: string;
-        name: string;
-        type: 'expense' | 'income';
-        icon: string;
-        color: string;
-      };
-      asset: {
-        id: string;
-        name: string;
-        type: string;
-      };
-    }>
-  > {
+  ): Promise<DashboardData['recentTransactions']> {
     try {
       // Validate limit
       if (limit < 1 || limit > 100) {
