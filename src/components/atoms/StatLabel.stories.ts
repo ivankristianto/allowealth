@@ -35,7 +35,7 @@ const createStatLabel = (args: { size?: string; color?: string; text?: string })
 
   // Size classes
   const sizeClasses: Record<string, string> = {
-    sm: 'text-[10px]',
+    sm: 'text-xs',
     md: 'text-xs',
     lg: 'text-sm',
   };

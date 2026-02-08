@@ -30,6 +30,7 @@ import {
   sessions,
   passwordResetTokens,
   budgets,
+  auditLogs,
 } from './schema';
 import { DEFAULT_ASSET_CATEGORIES } from '@/lib/constants';
 import { USER_META_KEYS } from '@/lib/constants/user-meta-keys';
@@ -670,7 +671,9 @@ async function seedWorkspace(): Promise<string> {
 /**
  * Seed users and user settings
  */
-async function seedUsers(workspaceId: string): Promise<string> {
+async function seedUsers(
+  workspaceId: string
+): Promise<{ adminUserId: string; memberUserId: string }> {
   console.log('👤 Seeding users...');
 
   const now = new Date();
@@ -749,7 +752,7 @@ async function seedUsers(workspaceId: string): Promise<string> {
 
   console.log(`✓ Created admin user: ${DEMO_ADMIN.email}`);
   console.log(`✓ Created member user: ${DEMO_MEMBER.email}`);
-  return adminUserId; // Return admin user ID for seeding data
+  return { adminUserId, memberUserId };
 }
 
 /**
@@ -960,8 +963,9 @@ async function seedIncomeTransactions(
       // Skip if date would be in the future
       if (!transactionDate) continue;
 
-      // Add some random time variation
-      transactionDate.setHours(SEED_TIME_HOUR + Math.floor(Math.random() * 8), 0, 0, 0);
+      // created_at gets time variation for within-day ordering
+      const createdAt = new Date(transactionDate);
+      createdAt.setHours(SEED_TIME_HOUR + Math.floor(Math.random() * 8), 0, 0, 0);
 
       await db.insert(transactions).values({
         id: nanoid(),
@@ -974,8 +978,8 @@ async function seedIncomeTransactions(
         currency: 'IDR',
         description: income.description,
         transaction_date: transactionDate,
-        created_at: transactionDate,
-        updated_at: transactionDate,
+        created_at: createdAt,
+        updated_at: createdAt,
       });
       count++;
     }
@@ -1029,8 +1033,9 @@ async function seedExpenseTransactions(
       // Skip if date would be in the future
       if (!transactionDate) continue;
 
-      // Add some random time variation
-      transactionDate.setHours(SEED_TIME_HOUR + Math.floor(Math.random() * 10), 0, 0, 0);
+      // created_at gets time variation for within-day ordering
+      const createdAt = new Date(transactionDate);
+      createdAt.setHours(SEED_TIME_HOUR + Math.floor(Math.random() * 10), 0, 0, 0);
 
       // Select asset (prefer bank transfer/credit card for larger amounts)
       let assetName = paymentAssetNames[Math.floor(Math.random() * paymentAssetNames.length)];
@@ -1052,8 +1057,8 @@ async function seedExpenseTransactions(
         currency: 'IDR',
         description: expense.description,
         transaction_date: transactionDate,
-        created_at: transactionDate,
-        updated_at: transactionDate,
+        created_at: createdAt,
+        updated_at: createdAt,
       });
       count++;
     }
@@ -1076,7 +1081,9 @@ async function seedExpenseTransactions(
         // Skip if date would be in the future
         if (!transactionDate) continue;
 
-        transactionDate.setHours(SEED_TIME_HOUR + Math.floor(Math.random() * 12), 0, 0, 0);
+        // created_at gets time variation for within-day ordering
+        const createdAt = new Date(transactionDate);
+        createdAt.setHours(SEED_TIME_HOUR + Math.floor(Math.random() * 12), 0, 0, 0);
 
         const assetName = paymentAssetNames[Math.floor(Math.random() * paymentAssetNames.length)];
         const assetId = assetMap.get(assetName || 'Cash');
@@ -1093,8 +1100,8 @@ async function seedExpenseTransactions(
           currency: 'IDR',
           description: `Daily expense - ${randomCategory.name}`,
           transaction_date: transactionDate,
-          created_at: transactionDate,
-          updated_at: transactionDate,
+          created_at: createdAt,
+          updated_at: createdAt,
         });
         count++;
       }
@@ -1163,6 +1170,30 @@ async function seedAssets(
     });
     assetMap.set(asset.name, id);
   }
+
+  // Add a closed test account for testing the closed accounts page
+  const closedId = nanoid();
+  const closedCategoryId = assetCategoryMap.get('bank_account') || null;
+  const closedAt = daysAgo(30);
+  await db.insert(assets).values({
+    id: closedId,
+    workspace_id: workspaceId,
+    created_by_user_id: userId,
+    name: 'Old Savings (Closed)',
+    type: 'bank_account',
+    category_id: closedCategoryId,
+    balance: '0',
+    initial_balance: '0',
+    currency: 'IDR',
+    is_cash_account: false,
+    status: 'closed',
+    closed_at: closedAt,
+    closed_by_user_id: userId,
+    last_updated: closedAt,
+    created_at: daysAgo(180),
+    updated_at: closedAt,
+  });
+  assetMap.set('Old Savings (Closed)', closedId);
 
   console.log(`✓ Created ${assetMap.size} assets`);
   return assetMap;
@@ -1422,6 +1453,167 @@ async function backfillInitialBalance(): Promise<void> {
   console.log(`✓ Backfilled initial_balance for ${updated} assets`);
 }
 
+/**
+ * Seed transaction audit logs for demo history feature
+ * Picks some recent transactions and creates realistic audit trail entries:
+ * - Create events for selected transactions
+ * - Update events (simulating edits by another user)
+ * - Delete events for a few transactions
+ */
+async function seedTransactionAuditLogs(
+  workspaceId: string,
+  adminUserId: string,
+  memberUserId: string
+): Promise<void> {
+  console.log('📝 Seeding transaction audit logs...');
+
+  // Get recent transactions to add audit history to
+  const recentTransactions = await db.query.transactions.findMany({
+    where: eq(transactions.workspace_id, workspaceId),
+    orderBy: [sql`${transactions.created_at} DESC`],
+    limit: 20,
+    with: {
+      category: { columns: { id: true, name: true } },
+      asset: { columns: { id: true, name: true } },
+    },
+  });
+
+  if (recentTransactions.length === 0) return;
+
+  let createCount = 0;
+  let updateCount = 0;
+  let deleteCount = 0;
+
+  // Create "create" audit entries for all selected transactions
+  for (const t of recentTransactions) {
+    await db.insert(auditLogs).values({
+      id: nanoid(),
+      workspace_id: workspaceId,
+      user_id: adminUserId,
+      action: 'create',
+      entity_type: 'transaction',
+      entity_id: t.id,
+      old_value: null,
+      new_value: JSON.stringify({
+        amount: t.amount,
+        currency: t.currency,
+        type: t.type,
+        category_id: t.category_id,
+        asset_id: t.asset_id,
+        description: t.description,
+        transaction_date:
+          t.transaction_date instanceof Date
+            ? t.transaction_date.toISOString()
+            : t.transaction_date,
+      }),
+      created_at: t.created_at,
+    });
+    createCount++;
+  }
+
+  // Add "update" events for ~10 transactions (simulating edits by member user)
+  const editCandidates = recentTransactions.slice(0, 10);
+  for (const t of editCandidates) {
+    const oldAmount = t.amount;
+    const newAmount = String(Math.round(Number(oldAmount) * (0.8 + Math.random() * 0.4)));
+
+    const editDate = new Date(
+      t.created_at instanceof Date ? t.created_at.getTime() : Number(t.created_at)
+    );
+    editDate.setDate(editDate.getDate() + 1 + Math.floor(Math.random() * 3));
+
+    await db.insert(auditLogs).values({
+      id: nanoid(),
+      workspace_id: workspaceId,
+      user_id: memberUserId,
+      action: 'update',
+      entity_type: 'transaction',
+      entity_id: t.id,
+      old_value: JSON.stringify({ amount: oldAmount }),
+      new_value: JSON.stringify({ amount: newAmount }),
+      created_at: editDate,
+    });
+
+    // Persist the amount change to the transaction row
+    await db
+      .update(transactions)
+      .set({ amount: newAmount, updated_at: editDate, updated_by_user_id: memberUserId })
+      .where(eq(transactions.id, t.id));
+
+    updateCount++;
+
+    // Add a second edit for some transactions
+    if (Math.random() > 0.5) {
+      const secondEditDate = new Date(editDate);
+      secondEditDate.setHours(secondEditDate.getHours() + 2);
+      const newDesc = `${t.description || 'Transaction'} (updated)`;
+
+      await db.insert(auditLogs).values({
+        id: nanoid(),
+        workspace_id: workspaceId,
+        user_id: adminUserId,
+        action: 'update',
+        entity_type: 'transaction',
+        entity_id: t.id,
+        old_value: JSON.stringify({ description: t.description }),
+        new_value: JSON.stringify({ description: newDesc }),
+        created_at: secondEditDate,
+      });
+
+      // Persist the description change to the transaction row
+      await db
+        .update(transactions)
+        .set({ description: newDesc, updated_at: secondEditDate, updated_by_user_id: adminUserId })
+        .where(eq(transactions.id, t.id));
+
+      updateCount++;
+    }
+  }
+
+  // Add "delete" events for 2 transactions and soft-delete them
+  const deleteCandidates = recentTransactions.slice(10, 12);
+  for (const t of deleteCandidates) {
+    const deleteDate = new Date(
+      t.created_at instanceof Date ? t.created_at.getTime() : Number(t.created_at)
+    );
+    deleteDate.setDate(deleteDate.getDate() + 5);
+
+    await db.insert(auditLogs).values({
+      id: nanoid(),
+      workspace_id: workspaceId,
+      user_id: memberUserId,
+      action: 'delete',
+      entity_type: 'transaction',
+      entity_id: t.id,
+      old_value: JSON.stringify({
+        amount: t.amount,
+        currency: t.currency,
+        type: t.type,
+        category_id: t.category_id,
+        asset_id: t.asset_id,
+        description: t.description,
+      }),
+      new_value: null,
+      created_at: deleteDate,
+    });
+
+    // Soft-delete the transaction
+    await db
+      .update(transactions)
+      .set({
+        deleted_at: deleteDate,
+        deleted_by_user_id: memberUserId,
+      })
+      .where(eq(transactions.id, t.id));
+
+    deleteCount++;
+  }
+
+  console.log(
+    `✓ Created ${createCount} create + ${updateCount} update + ${deleteCount} delete audit entries`
+  );
+}
+
 // ============================================================================
 // MAIN SEED FUNCTION
 // ============================================================================
@@ -1440,7 +1632,7 @@ async function seed() {
 
     // Seed in dependency order
     const workspaceId = await seedWorkspace();
-    const userId = await seedUsers(workspaceId);
+    const { adminUserId: userId, memberUserId } = await seedUsers(workspaceId);
     const categoryMap = await seedCategories(workspaceId, userId);
     const assetCategoryMap = await seedAssetCategories(workspaceId, userId);
 
@@ -1453,6 +1645,9 @@ async function seed() {
     // Seed transactions for the 3 months
     await seedIncomeTransactions(workspaceId, userId, categoryMap, assetMap);
     await seedExpenseTransactions(workspaceId, userId, categoryMap, assetMap);
+
+    // Seed audit trail for some transactions
+    await seedTransactionAuditLogs(workspaceId, userId, memberUserId);
 
     // Seed asset-related data
     await seedAssetHistory(assetMap);

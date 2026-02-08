@@ -98,22 +98,20 @@ const accentGhostBtn =
     if ((container as HTMLElement).dataset.initialized === 'true') return;
     (container as HTMLElement).dataset.initialized = 'true';
 
-    // Add Expense button
+    // Add Expense button — open drawer with expense tab
     const addExpenseBtn = container.querySelector('[data-add-expense-button]');
     addExpenseBtn?.addEventListener('click', () => {
-      const modal = document.getElementById('expense-modal') as HTMLDialogElement | null;
-      if (modal) {
-        modal.showModal();
-      }
+      document.dispatchEvent(
+        new CustomEvent('open-transaction-drawer', { detail: { type: 'expense' } })
+      );
     });
 
-    // Add Income button
+    // Add Income button — open drawer with income tab
     const addIncomeBtn = container.querySelector('[data-add-income-button]');
     addIncomeBtn?.addEventListener('click', () => {
-      const modal = document.getElementById('income-modal') as HTMLDialogElement | null;
-      if (modal) {
-        modal.showModal();
-      }
+      document.dispatchEvent(
+        new CustomEvent('open-transaction-drawer', { detail: { type: 'income' } })
+      );
     });
 
     // Scan Receipt button

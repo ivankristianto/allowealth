@@ -21,8 +21,8 @@ colors.primary; // #0f172a (slate-900)
 colors.primaryLight; // #f1f5f9 (slate-100)
 
 // Accent color (forest green) - CTAs, interactive elements, active states
-colors.accent; // #16a34a (forest-600)
-colors.accentHover; // #15803d (forest-700)
+colors.accent; // #15803d (forest-700 - WCAG AA)
+colors.accentHover; // #166534 (forest-800)
 
 colors.warning; // #f59e0b (amber-500)
 colors.error; // #f43f5e (rose-500)
@@ -36,7 +36,7 @@ colors.info; // #0ea5e9 (sky-500)
 
 | Usage         | Color   | Hex     | Semantic                   |
 | ------------- | ------- | ------- | -------------------------- |
-| Primary CTAs  | accent  | #16a34a | forest - CTAs, interactive |
+| Primary CTAs  | accent  | #15803d | forest-700 - CTAs, WCAG AA |
 | Headings/text | primary | #0f172a | slate - headings, text     |
 | Success       | success | #10b981 | emerald - positive status  |
 | Warning       | warning | #f59e0b | amber - caution states     |
@@ -125,20 +125,20 @@ fonts.mono; // 'SF Mono', Monaco, monospace (for currency)
 
 **Note:** Inter font is loaded via Google Fonts CDN in `src/layouts/BaseLayout.astro` with `display=swap` for FOUT handling.
 
-### Sizes (Accessibility-Adjusted Scale)
+### Sizes (Readability-Adjusted Scale)
 
 ```typescript
-fontSizes.xs; // 0.75rem  (12px) - minimum accessible size
-fontSizes.sm; // 0.8125rem (13px) - body (small)
-fontSizes.base; // 0.875rem (14px) - accessible body text
-fontSizes.md; // 0.9375rem (15px) - emphasized
-fontSizes.lg; // 1rem (16px) - emphasized
-fontSizes.xl; // 1.25rem  (20px) - section headings
-fontSizes['2xl']; // 1.5rem   (24px) - page headings
-fontSizes['3xl']; // 1.875rem (30px) - hero
-fontSizes['4xl']; // 2.25rem (36px) - display
-fontSizes['5xl']; // 3rem (48px) - display
-fontSizes['6xl']; // 3.75rem (60px) - display
+fontSizes.xs; // 0.8125rem (13px) - minimum accessible size
+fontSizes.sm; // 0.875rem  (14px) - body (small)
+fontSizes.base; // 0.9375rem (15px) - accessible body text
+fontSizes.md; // 1rem      (16px) - emphasized
+fontSizes.lg; // 1.0625rem (17px) - emphasized
+fontSizes.xl; // 1.25rem   (20px) - section headings
+fontSizes['2xl']; // 1.5rem    (24px) - page headings
+fontSizes['3xl']; // 1.875rem  (30px) - hero
+fontSizes['4xl']; // 2.25rem   (36px) - display
+fontSizes['5xl']; // 3rem      (48px) - display
+fontSizes['6xl']; // 3.75rem   (60px) - display
 ```
 
 ### Weights

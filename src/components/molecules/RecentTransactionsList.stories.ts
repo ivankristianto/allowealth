@@ -292,10 +292,10 @@ const createRecentTransactionsList = (args: {
 
       const metaRow = document.createElement('div');
       metaRow.className =
-        'mt-2 flex flex-wrap items-center gap-3 text-[11px] font-semibold text-base-content/60 tracking-wide leading-none';
+        'mt-2 flex flex-wrap items-center gap-3 text-xs font-semibold text-base-content/60 tracking-wide leading-none';
       const categoryBadge = document.createElement('span');
       categoryBadge.className =
-        'text-[10px] font-bold tracking-widest uppercase text-base-content/60 bg-base-200 px-2 py-0.5 rounded';
+        'text-xs font-bold tracking-widest uppercase text-base-content/60 bg-base-200 px-2 py-0.5 rounded';
       categoryBadge.textContent = transaction.category.name;
       metaRow.appendChild(categoryBadge);
       const timeEl = document.createElement('time');
@@ -313,7 +313,7 @@ const createRecentTransactionsList = (args: {
       rightBlock.appendChild(amountSpan);
       const paymentRow = document.createElement('div');
       paymentRow.className =
-        'flex items-center gap-1.5 text-[10px] uppercase tracking-widest text-base-content/60';
+        'flex items-center gap-1.5 text-xs uppercase tracking-widest text-base-content/60';
       paymentRow.appendChild(
         CreditCard.render({ size: 12, class: 'stroke-current' }, { 'aria-hidden': 'true' })
       );

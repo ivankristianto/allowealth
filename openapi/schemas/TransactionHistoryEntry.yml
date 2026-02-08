@@ -1,0 +1,27 @@
+# Transaction History Entry Schema
+TransactionHistoryEntry:
+  type: object
+  required: [id, action, userName, userId, createdAt, oldValue, newValue]
+  properties:
+    id:
+      type: string
+    action:
+      type: string
+      enum: [create, update, delete]
+    userName:
+      type: string
+    userId:
+      type: string
+    createdAt:
+      type: string
+      format: date-time
+    oldValue:
+      oneOf:
+        - type: object
+          additionalProperties: true
+        - type: 'null'
+    newValue:
+      oneOf:
+        - type: object
+          additionalProperties: true
+        - type: 'null'

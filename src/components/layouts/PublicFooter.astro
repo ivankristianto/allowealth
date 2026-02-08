@@ -86,7 +86,7 @@ const iconMap: Record<string, { path: string; title: string }> = {
       {
         footerLinks.map((section) => (
           <nav aria-label={`${section.title} links`}>
-            <h5 class="text-[10px] font-bold uppercase tracking-widest text-neutral mb-6">
+            <h5 class="text-xs font-bold uppercase tracking-widest text-neutral mb-6">
               {section.title}
             </h5>
             <ul class="space-y-4 text-sm font-bold text-base-content/70">
@@ -111,9 +111,7 @@ const iconMap: Record<string, { path: string; title: string }> = {
   <div class="max-w-7xl mx-auto mt-16 md:mt-32 pt-8 md:pt-12 border-t border-base-300/30">
     <div class="flex flex-col md:flex-row justify-between items-center gap-8">
       <!-- Copyright -->
-      <p
-        class="text-[10px] font-bold text-neutral uppercase tracking-widest text-center md:text-left"
-      >
+      <p class="text-xs font-bold text-neutral uppercase tracking-widest text-center md:text-left">
         {brandContent.copyright}
       </p>
 
@@ -125,7 +123,7 @@ const iconMap: Record<string, { path: string; title: string }> = {
               <li>
                 <a
                   href={link.href}
-                  class="text-[10px] font-bold text-neutral uppercase tracking-widest hover:text-primary transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 rounded"
+                  class="text-xs font-bold text-neutral uppercase tracking-widest hover:text-primary transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 rounded"
                 >
                   {link.label}
                 </a>

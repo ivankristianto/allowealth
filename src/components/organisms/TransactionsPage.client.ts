@@ -34,7 +34,6 @@ import {
   renderPaginationHtml,
   showLoadingState,
   hideLoadingState,
-  animateRowRemoval,
 } from './TransactionsRenderer.client';
 import type { TransactionFormData } from '@/lib/types/transaction';
 
@@ -439,52 +438,10 @@ async function handleDelete(transactionId: string, transactionDetails: string): 
 }
 
 /**
- * Open edit transaction modal and hydrate form values.
+ * Open edit transaction via the drawer.
  */
-function openEditModal(data: TransactionFormData): void {
-  const modal = document.getElementById('edit-transaction-modal') as HTMLDialogElement | null;
-  if (!modal) return;
-
-  const form = modal.querySelector('[data-transaction-form]') as HTMLFormElement | null;
-  if (!form) return;
-
-  form.dataset.type = data.type;
-  form.dataset.transactionId = data.id;
-  form.dataset.mode = 'edit';
-
-  const typeInput = form.querySelector('input[name="type"]') as HTMLInputElement | null;
-  if (typeInput) typeInput.value = data.type;
-
-  const titleInput = form.querySelector('input[name="title"]') as HTMLInputElement | null;
-  if (titleInput) titleInput.value = data.title || '';
-
-  const amountInput = form.querySelector('input[name="amount"]') as HTMLInputElement | null;
-  if (amountInput) amountInput.value = data.amount || '';
-
-  const currencySelect = form.querySelector('select[name="currency"]') as HTMLSelectElement | null;
-  if (currencySelect) currencySelect.value = data.currency || 'IDR';
-
-  const dateInput = form.querySelector('input[name="transaction_date"]') as HTMLInputElement | null;
-  if (dateInput) dateInput.value = data.transaction_date || '';
-
-  const categorySelect = form.querySelector(
-    'select[name="category_id"]'
-  ) as HTMLSelectElement | null;
-  if (categorySelect) categorySelect.value = data.category_id || '';
-
-  const assetSelect = form.querySelector('select[name="asset_id"]') as HTMLSelectElement | null;
-  if (assetSelect) assetSelect.value = data.asset_id || '';
-
-  const modalTitle = modal.querySelector('[data-modal-title]');
-  const modalSubtitle = modal.querySelector('[data-modal-subtitle]');
-  if (modalTitle) {
-    modalTitle.textContent = data.type === 'expense' ? 'Edit Expense' : 'Edit Income';
-  }
-  if (modalSubtitle) {
-    modalSubtitle.textContent = 'Update the transaction details.';
-  }
-
-  modal.showModal();
+function openEditDrawer(data: TransactionFormData): void {
+  document.dispatchEvent(new CustomEvent('edit-transaction-drawer', { detail: data }));
 }
 
 /**
@@ -506,12 +463,6 @@ async function executeDelete(confirmBtn: HTMLButtonElement): Promise<void> {
     // Invalidate cache since data changed
     invalidateAllCache();
 
-    // Optimistic UI update - animate row removal
-    const row = document.querySelector(`[data-transaction-id="${transactionId}"]`);
-    if (row) {
-      await animateRowRemoval(row as HTMLElement);
-    }
-
     // Update store
     removeTransaction(transactionId);
 
@@ -521,8 +472,7 @@ async function executeDelete(confirmBtn: HTMLButtonElement): Promise<void> {
     // Show success toast
     addToast('Transaction deleted successfully', 'success');
 
-    // Re-fetch and render using server HTML to update summary and pagination
-    // This ensures consistency without duplicating rendering logic
+    // Re-fetch and render using server HTML to update list with deleted state (strikethrough)
     await fetchAndRender();
   } catch (error) {
     showConfirmError(
@@ -677,7 +627,7 @@ function setupEventListeners(): void {
           addToast('Failed to load transaction details', 'error');
           return;
         }
-        openEditModal(parsed);
+        openEditDrawer(parsed);
       } catch (error) {
         console.error('Failed to parse transaction data:', error);
         addToast('Failed to load transaction details', 'error');
@@ -693,7 +643,10 @@ function setupEventListeners(): void {
       if (transactionId) {
         handleDelete(transactionId, transactionDetails);
       }
+      return;
     }
+
+    // History toggle handled by TransactionHistory.client.ts (shared, global)
   });
 
   // Confirm delete button in dialog

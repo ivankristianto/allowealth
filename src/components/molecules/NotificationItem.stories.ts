@@ -81,7 +81,7 @@ const createNotificationItem = (args: {
   headerDiv.appendChild(titleEl);
 
   const timeEl = document.createElement('span');
-  timeEl.className = 'text-[10px] font-bold text-neutral uppercase tracking-widest';
+  timeEl.className = 'text-xs font-bold text-neutral uppercase tracking-widest';
   timeEl.textContent = time;
   headerDiv.appendChild(timeEl);
 

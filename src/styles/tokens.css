@@ -6,7 +6,7 @@
  *
  * Color Semantics (Oasis Finance v1.1.0 - Forest Green):
  * - primary: slate-900 (#0f172a) - headings, primary text, secondary buttons
- * - accent: forest-600 (#16a34a) - CTAs, interactive elements, active states
+ * - accent: forest-700 (#15803d) - CTAs, interactive elements, WCAG AA compliant
  * - success: emerald-500 (#10b981) - positive status, confirmations
  * - warning: amber-500 (#f59e0b) - budget alerts, caution states
  * - error: rose-500 (#f43f5e) - over budget, destructive actions
@@ -24,9 +24,9 @@
   --color-primary-hover: #0f172a;
   --color-primary-light: #f1f5f9; /* slate-100 */
 
-  /* Accent: CTAs, active states (forest green - v1.1.0) */
-  --color-accent: #16a34a; /* forest-600 */
-  --color-accent-hover: #15803d; /* forest-700 */
+  /* Accent: CTAs, active states (forest green - v1.2.0 contrast-improved) */
+  --color-accent: #15803d; /* forest-700 - WCAG AA on all backgrounds */
+  --color-accent-hover: #166534; /* forest-800 */
   --color-accent-content: #ffffff;
 
   /* Warning: Budget alerts (yellow/orange) */
@@ -84,15 +84,15 @@
   --color-rose-500: #f43f5e;
   --color-rose-600: #e11d48;
 
-  /* Neutral: Data display (legacy gray scale - mapped to slate) */
+  /* Neutral: Data display (slate scale - contrast-improved) */
   --color-neutral-50: #f8fafb;
   --color-neutral-100: #f3f4f6;
   --color-neutral-200: #e5e7eb;
   --color-neutral-300: #d1d5db;
   --color-neutral-400: #9ca3af;
-  --color-neutral-500: #6b7280;
-  --color-neutral-600: #4b5563;
-  --color-neutral-700: #374151;
+  --color-neutral-500: #475569; /* slate-600 - WCAG AA on base-300 */
+  --color-neutral-600: #334155;
+  --color-neutral-700: #1e293b;
   --color-neutral-800: #1f2937;
   --color-neutral-900: #111827;
 
@@ -113,12 +113,12 @@
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-mono: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, monospace;
 
-  /* Font sizes (accessibility-adjusted scale - min 12px for WCAG compliance) */
-  --text-xs: 0.75rem; /* 12px - minimum accessible size */
-  --text-sm: 0.8125rem; /* 13px */
-  --text-base: 0.875rem; /* 14px - accessible body text */
-  --text-md: 0.9375rem; /* 15px */
-  --text-lg: 1rem; /* 16px */
+  /* Font sizes (accessibility-adjusted scale - min 13px for readability) */
+  --text-xs: 0.8125rem; /* 13px - minimum accessible size */
+  --text-sm: 0.875rem; /* 14px */
+  --text-base: 0.9375rem; /* 15px - accessible body text */
+  --text-md: 1rem; /* 16px */
+  --text-lg: 1.0625rem; /* 17px */
   --text-xl: 1.25rem; /* 20px */
   --text-2xl: 1.5rem; /* 24px */
   --text-3xl: 1.875rem; /* 30px */
@@ -263,16 +263,16 @@
   /* Button tokens */
   --button-sm-padding: 0.375rem 0.75rem;
   --button-sm-height: 2rem;
-  --button-sm-font-size: 0.75rem;
+  --button-sm-font-size: 0.8125rem;
   --button-md-padding: 0.625rem 1.25rem;
   --button-md-height: 2.5rem;
-  --button-md-font-size: 0.875rem;
+  --button-md-font-size: 0.9375rem;
   --button-lg-padding: 0.75rem 1.5rem;
   --button-lg-height: 3rem;
-  --button-lg-font-size: 0.875rem;
-  --button-primary-bg: #16a34a;
+  --button-lg-font-size: 0.9375rem;
+  --button-primary-bg: #15803d;
   --button-primary-color: #ffffff;
-  --button-primary-shadow: 0 10px 15px -3px rgb(22 163 74 / 0.25);
+  --button-primary-shadow: 0 10px 15px -3px rgb(21 128 61 / 0.25);
   --button-secondary-bg: #0f172a;
   --button-secondary-color: #ffffff;
   --button-ghost-border: 1px solid #e2e8f0;
@@ -289,14 +289,14 @@
   /* Input tokens */
   --input-height: 2.5rem;
   --input-padding: 0.5rem 2.5rem 0.5rem 0.75rem;
-  --input-font-size: 0.75rem;
+  --input-font-size: 0.8125rem;
   --input-bg-light: #f1f5f9;
   --input-bg-dark: #1e293b;
-  --input-focus-ring: 2px solid rgb(22 163 74 / 0.25);
+  --input-focus-ring: 2px solid rgb(21 128 61 / 0.25);
 
   /* Badge tokens */
   --badge-padding: 0.25rem 0.625rem;
-  --badge-font-size: 0.75rem;
+  --badge-font-size: 0.8125rem;
   --badge-font-weight: 700;
 
   /* Sidebar tokens */
@@ -310,10 +310,10 @@
   --sidebar-icon-size: 22px;
   --sidebar-active-gradient: linear-gradient(
     90deg,
-    rgb(22 163 74 / 0.1) 0%,
-    rgb(22 163 74 / 0) 100%
+    rgb(21 128 61 / 0.1) 0%,
+    rgb(21 128 61 / 0) 100%
   );
-  --sidebar-active-border: 2px solid #16a34a;
+  --sidebar-active-border: 2px solid #15803d;
 
   /* Table tokens */
   --table-header-bg-light: rgb(248 250 252 / 0.5);
@@ -340,12 +340,12 @@
   --glass-bg-dark: rgb(15 23 42 / 0.8);
 
   /* Gradients */
-  --gradient-accent-glow: radial-gradient(circle, rgb(22 163 74 / 0.1) 0%, transparent 70%);
+  --gradient-accent-glow: radial-gradient(circle, rgb(21 128 61 / 0.1) 0%, transparent 70%);
 
   /* Premium shadows */
   --shadow-premium: 0 1px 3px 0 rgb(0 0 0 / 0.05), 0 1px 2px 0 rgb(0 0 0 / 0.03);
-  --shadow-accent-glow: 0 10px 15px -3px rgb(22 163 74 / 0.25);
-  --shadow-accent-glow-lg: 0 25px 50px -12px rgb(22 163 74 / 0.3);
+  --shadow-accent-glow: 0 10px 15px -3px rgb(21 128 61 / 0.25);
+  --shadow-accent-glow-lg: 0 25px 50px -12px rgb(21 128 61 / 0.3);
 
   /* ========================================
    * ANIMATION TOKENS (from styles.json)
@@ -395,9 +395,9 @@
   --color-accent: #4ade80; /* forest-400 - vibrant for dark mode */
   --color-accent-hover: #22c55e; /* forest-500 */
 
-  /* Error, success, warning remain similar */
-  --color-error: #f43f5e; /* rose-500 */
-  --color-error-hover: #e11d48; /* rose-600 */
+  /* Error: improved contrast on dark backgrounds */
+  --color-error: #fb7185; /* rose-400 - WCAG AA on base-300 */
+  --color-error-hover: #f43f5e; /* rose-500 */
   --color-success: #34d399; /* emerald-400 */
   --color-success-hover: #10b981; /* emerald-500 */
   --color-warning: #fbbf24; /* amber-400 */

@@ -1,8 +1,8 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "f7cfaf06-a97a-4c66-8fe4-8a9662aaaa2b",
-  "prevId": "9af2d6e6-7d19-45cb-b503-3226824421f6",
+  "id": "73e8240c-bea7-48ec-ba55-7571d6ef0b7c",
+  "prevId": "ab9f650d-271d-475c-be85-598e57d48fb7",
   "tables": {
     "api_keys": {
       "name": "api_keys",
@@ -610,6 +610,28 @@
           "autoincrement": false,
           "default": false
         },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'active'"
+        },
+        "closed_at": {
+          "name": "closed_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "closed_by_user_id": {
+          "name": "closed_by_user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
         "last_updated": {
           "name": "last_updated",
           "type": "integer",
@@ -667,6 +689,15 @@
           "tableFrom": "assets",
           "tableTo": "asset_categories",
           "columnsFrom": ["category_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "assets_closed_by_user_id_users_id_fk": {
+          "name": "assets_closed_by_user_id_users_id_fk",
+          "tableFrom": "assets",
+          "tableTo": "users",
+          "columnsFrom": ["closed_by_user_id"],
           "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
@@ -863,7 +894,7 @@
       "indexes": {
         "budgets_unique": {
           "name": "budgets_unique",
-          "columns": ["workspace_id", "category_id", "month", "year"],
+          "columns": ["workspace_id", "category_id", "month", "year", "currency"],
           "isUnique": true
         }
       },
@@ -1011,83 +1042,6 @@
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
-    "email_verification_tokens": {
-      "name": "email_verification_tokens",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "token": {
-          "name": "token",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "user_id": {
-          "name": "user_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "expires_at": {
-          "name": "expires_at",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "(cast((julianday('now') - 2440587.5)*86400000 as integer))"
-        }
-      },
-      "indexes": {
-        "email_verification_tokens_token_unique": {
-          "name": "email_verification_tokens_token_unique",
-          "columns": ["token"],
-          "isUnique": true
-        },
-        "email_verification_tokens_token_idx": {
-          "name": "email_verification_tokens_token_idx",
-          "columns": ["token"],
-          "isUnique": false
-        },
-        "email_verification_tokens_user_id_idx": {
-          "name": "email_verification_tokens_user_id_idx",
-          "columns": ["user_id"],
-          "isUnique": false
-        },
-        "email_verification_tokens_expires_at_idx": {
-          "name": "email_verification_tokens_expires_at_idx",
-          "columns": ["expires_at"],
-          "isUnique": false
-        }
-      },
-      "foreignKeys": {
-        "email_verification_tokens_user_id_users_id_fk": {
-          "name": "email_verification_tokens_user_id_users_id_fk",
-          "tableFrom": "email_verification_tokens",
-          "tableTo": "users",
-          "columnsFrom": ["user_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {}
-    },
     "exchange_rates": {
       "name": "exchange_rates",
       "columns": {
@@ -1157,14 +1111,6 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
-        },
-        "status": {
-          "name": "status",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'active'"
         },
         "created_at": {
           "name": "created_at",
@@ -1392,13 +1338,6 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false
-        },
-        "email_verified_at": {
-          "name": "email_verified_at",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
           "autoincrement": false
         },
         "deleted_at": {
@@ -1726,6 +1665,20 @@
           "notNull": true,
           "autoincrement": false
         },
+        "updated_by_user_id": {
+          "name": "updated_by_user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "deleted_by_user_id": {
+          "name": "deleted_by_user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
         "deleted_at": {
           "name": "deleted_at",
           "type": "integer",
@@ -1793,6 +1746,24 @@
           "tableFrom": "transactions",
           "tableTo": "assets",
           "columnsFrom": ["to_asset_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "transactions_updated_by_user_id_users_id_fk": {
+          "name": "transactions_updated_by_user_id_users_id_fk",
+          "tableFrom": "transactions",
+          "tableTo": "users",
+          "columnsFrom": ["updated_by_user_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "transactions_deleted_by_user_id_users_id_fk": {
+          "name": "transactions_deleted_by_user_id_users_id_fk",
+          "tableFrom": "transactions",
+          "tableTo": "users",
+          "columnsFrom": ["deleted_by_user_id"],
           "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"

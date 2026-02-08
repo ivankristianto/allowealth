@@ -119,7 +119,7 @@ const createAssetFormModal = (args: AssetFormModalArgs): HTMLElement => {
         <form class="space-y-6">
           <!-- Asset Name -->
           <div class="space-y-2">
-            <label class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest ml-1">
+            <label class="text-xs font-bold text-base-content/40 uppercase tracking-widest ml-1">
               Asset Name
             </label>
             <input
@@ -133,7 +133,7 @@ const createAssetFormModal = (args: AssetFormModalArgs): HTMLElement => {
           <!-- Asset Category -->
           <div class="space-y-2">
             <div class="flex justify-between items-center">
-              <label class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest ml-1">
+              <label class="text-xs font-bold text-base-content/40 uppercase tracking-widest ml-1">
                 Asset Category
               </label>
             </div>
@@ -151,7 +151,7 @@ const createAssetFormModal = (args: AssetFormModalArgs): HTMLElement => {
           <div class="grid grid-cols-2 gap-4">
             <!-- Currency -->
             <div class="space-y-2">
-              <label class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest ml-1">
+              <label class="text-xs font-bold text-base-content/40 uppercase tracking-widest ml-1">
                 Currency
               </label>
               <select class="select select-lg w-full bg-base-200 border border-base-300 rounded-2xl font-bold text-base-content focus:ring-2 focus:ring-accent focus:outline-none focus:border-accent">
@@ -162,7 +162,7 @@ const createAssetFormModal = (args: AssetFormModalArgs): HTMLElement => {
 
             <!-- Balance -->
             <div class="space-y-2">
-              <label class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest ml-1">
+              <label class="text-xs font-bold text-base-content/40 uppercase tracking-widest ml-1">
                 ${isEditMode ? 'Current Balance' : 'Initial Balance'}
               </label>
               <input

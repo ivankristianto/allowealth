@@ -78,7 +78,7 @@ const categoryOptions = categories.length
         <div class="space-y-2">
           <label
             for={`${id}-name`}
-            class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest ml-1"
+            class="text-xs font-bold text-base-content/40 uppercase tracking-widest ml-1"
           >
             Asset Name
           </label>
@@ -98,14 +98,14 @@ const categoryOptions = categories.length
           <div class="flex justify-between items-center">
             <label
               for={`${id}-categoryId`}
-              class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest ml-1"
+              class="text-xs font-bold text-base-content/40 uppercase tracking-widest ml-1"
             >
               Asset Category
             </label>
             {/* P3: TODO - Implement custom category creation feature */}
             <button
               type="button"
-              class="text-[10px] font-bold text-accent uppercase tracking-widest hover:underline"
+              class="text-xs font-bold text-accent uppercase tracking-widest hover:underline"
               data-toggle-custom-type
             >
               Create New Category
@@ -145,7 +145,7 @@ const categoryOptions = categories.length
           <div class="space-y-2">
             <label
               for={`${id}-currency`}
-              class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest ml-1"
+              class="text-xs font-bold text-base-content/40 uppercase tracking-widest ml-1"
             >
               Currency
             </label>
@@ -165,7 +165,7 @@ const categoryOptions = categories.length
           <div class="space-y-2">
             <label
               for={`${id}-balance`}
-              class="text-[10px] font-bold text-base-content/40 uppercase tracking-widest ml-1"
+              class="text-xs font-bold text-base-content/40 uppercase tracking-widest ml-1"
             >
               {isEditMode ? 'Current Balance' : 'Initial Balance'}
             </label>

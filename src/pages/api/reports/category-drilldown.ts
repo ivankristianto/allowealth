@@ -126,7 +126,11 @@ export const GET: APIRoute = async (context) => {
       },
       created_at: txn.transactionDate,
       updated_at: txn.transactionDate,
+      updated_by_user_id: null,
+      deleted_by_user_id: null,
       deleted_at: null,
+      has_history: Boolean(txn.hasHistory),
+      created_by_user_name: txn.createdByName ?? null,
     }));
 
     // 5. Check if HTML rendering is requested

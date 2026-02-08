@@ -100,6 +100,8 @@ paths:
     $ref: './openapi/paths/transactions.yml#/paths/~1api~1transactions'
   /api/transactions/{id}:
     $ref: './openapi/paths/transactions.yml#/paths/~1api~1transactions~1{id}'
+  /api/transactions/{id}/history:
+    $ref: './openapi/paths/transactions.yml#/paths/~1api~1transactions~1{id}~1history'
   /api/transactions/export:
     $ref: './openapi/paths/transactions.yml#/paths/~1api~1transactions~1export'
   /api/transactions/import:
@@ -123,6 +125,12 @@ paths:
     $ref: './openapi/paths/assets.yml#/paths/~1api~1assets~1{id}~1balance'
   /api/assets/{id}/history:
     $ref: './openapi/paths/assets.yml#/paths/~1api~1assets~1{id}~1history'
+  /api/assets/closed:
+    $ref: './openapi/paths/assets.yml#/paths/~1api~1assets~1closed'
+  /api/assets/{id}/close:
+    $ref: './openapi/paths/assets.yml#/paths/~1api~1assets~1{id}~1close'
+  /api/assets/{id}/reopen:
+    $ref: './openapi/paths/assets.yml#/paths/~1api~1assets~1{id}~1reopen'
   /api/assets/transfer:
     $ref: './openapi/paths/assets.yml#/paths/~1api~1assets~1transfer'
   /api/assets/summary:
@@ -135,6 +143,8 @@ paths:
     $ref: './openapi/paths/budgets.yml#/paths/~1api~1budgets~1{id}'
   /api/budgets/copy:
     $ref: './openapi/paths/budgets.yml#/paths/~1api~1budgets~1copy'
+  /api/budgets/initialize:
+    $ref: './openapi/paths/budgets.yml#/paths/~1api~1budgets~1initialize'
 
   # Budget overview endpoints
   /api/budget/overview:
@@ -259,6 +269,10 @@ components:
       $ref: './openapi/schemas/TransactionResponse.yml#/TransactionResponse'
     TransactionsListResponse:
       $ref: './openapi/schemas/TransactionsListResponse.yml#/TransactionsListResponse'
+    TransactionHistoryEntry:
+      $ref: './openapi/schemas/TransactionHistoryEntry.yml#/TransactionHistoryEntry'
+    TransactionHistoryResponse:
+      $ref: './openapi/schemas/TransactionHistoryResponse.yml#/TransactionHistoryResponse'
     TransactionImportResult:
       $ref: './openapi/schemas/TransactionImportResult.yml#/TransactionImportResult'
 
@@ -317,6 +331,10 @@ components:
       $ref: './openapi/schemas/CopyBudgetsRequest.yml#/CopyBudgetsRequest'
     CopyBudgetsResponse:
       $ref: './openapi/schemas/CopyBudgetsResponse.yml#/CopyBudgetsResponse'
+    InitializeBudgetsRequest:
+      $ref: './openapi/schemas/InitializeBudgetsRequest.yml#/InitializeBudgetsRequest'
+    InitializeBudgetsResponse:
+      $ref: './openapi/schemas/InitializeBudgetsResponse.yml#/InitializeBudgetsResponse'
     BudgetResponse:
       $ref: './openapi/schemas/BudgetResponse.yml#/BudgetResponse'
     BudgetsListResponse:

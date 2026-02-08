@@ -114,7 +114,7 @@ const createPortfolioSummary = (args: PortfolioSummaryArgs): HTMLElement => {
           <!-- Total Value (IDR) -->
           <div class="flex items-center justify-between">
             <div>
-              <span class="label-premium uppercase tracking-widest font-semibold text-[10px] text-base-content/60">Total Value (IDR)</span>
+              <span class="label-premium uppercase tracking-widest font-semibold text-xs text-base-content/60">Total Value (IDR)</span>
               <p class="text-2xl lg:text-3xl font-bold mt-2 lg:mt-3 text-success tracking-tight leading-none">
                 ${formatCurrency(totalIdr, 'IDR')}
               </p>
@@ -130,7 +130,7 @@ const createPortfolioSummary = (args: PortfolioSummaryArgs): HTMLElement => {
           <!-- Total Value (USD) -->
           <div class="flex items-center justify-between">
             <div>
-              <span class="label-premium uppercase tracking-widest font-semibold text-[10px] text-base-content/60">Total Value (USD)</span>
+              <span class="label-premium uppercase tracking-widest font-semibold text-xs text-base-content/60">Total Value (USD)</span>
               <p class="text-2xl lg:text-3xl font-bold mt-2 lg:mt-3 text-info tracking-tight leading-none">
                 ${formatCurrency(totalUsd, 'USD')}
               </p>
@@ -158,7 +158,7 @@ const createPortfolioSummary = (args: PortfolioSummaryArgs): HTMLElement => {
                     (item) => `
                   <div class="flex items-center gap-1.5 shrink-0">
                     <div class="w-2 h-2 rounded-full" style="background-color: ${item.color};" aria-hidden="true"></div>
-                    <span class="text-[10px] font-bold text-base-content/60 uppercase tracking-widest whitespace-nowrap">${item.type} (${item.percentage}%)</span>
+                    <span class="text-xs font-bold text-base-content/60 uppercase tracking-widest whitespace-nowrap">${item.type} (${item.percentage}%)</span>
                   </div>
                 `
                   )
@@ -205,7 +205,7 @@ const createPortfolioSummary = (args: PortfolioSummaryArgs): HTMLElement => {
 
 // Default distribution based on screenshot
 const defaultDistribution: AllocationItem[] = [
-  { type: 'Stock', percentage: 78, color: '#16a34a' },
+  { type: 'Stock', percentage: 78, color: '#15803d' },
   { type: 'Bank Account', percentage: 19, color: '#10b981' },
   { type: 'Mutual Fund', percentage: 2, color: '#f59e0b' },
 ];
@@ -236,7 +236,7 @@ export const FewAssetTypes: StoryObj = {
     totalUsd: 33333.33,
     distribution: [
       { type: 'Bank Account', percentage: 60, color: '#10b981' },
-      { type: 'Stock', percentage: 40, color: '#16a34a' },
+      { type: 'Stock', percentage: 40, color: '#15803d' },
     ],
     loading: false,
   },
@@ -248,7 +248,7 @@ export const ManyAssetTypes: StoryObj = {
     totalIdr: 2000000000,
     totalUsd: 133333.33,
     distribution: [
-      { type: 'Stock', percentage: 40, color: '#16a34a' },
+      { type: 'Stock', percentage: 40, color: '#15803d' },
       { type: 'Bank Account', percentage: 25, color: '#10b981' },
       { type: 'Mutual Fund', percentage: 15, color: '#f59e0b' },
       { type: 'Bond', percentage: 10, color: '#3b82f6' },

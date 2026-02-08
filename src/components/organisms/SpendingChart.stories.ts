@@ -121,7 +121,7 @@ const createSpendingChart = (args: {
             <h4 class="font-bold text-xl text-base-content leading-none tracking-tight">
               Spending analysis
             </h4>
-            <p class="text-[10px] font-bold uppercase tracking-widest text-base-content/60 mt-2">
+            <p class="text-xs font-bold uppercase tracking-widest text-base-content/60 mt-2">
               BY MAJOR CATEGORIES
             </p>
           </div>
@@ -143,7 +143,7 @@ const createSpendingChart = (args: {
             <h4 class="font-bold text-xl text-base-content leading-none tracking-tight">
               Spending analysis
             </h4>
-            <p class="text-[10px] font-bold uppercase tracking-widest text-base-content/60 mt-2">
+            <p class="text-xs font-bold uppercase tracking-widest text-base-content/60 mt-2">
               BY MAJOR CATEGORIES
             </p>
           </div>
@@ -184,7 +184,7 @@ const createSpendingChart = (args: {
           <h4 class="font-bold text-xl text-base-content leading-none tracking-tight">
             Spending analysis
           </h4>
-          <p class="text-[10px] font-bold uppercase tracking-widest text-base-content/60 mt-2">
+          <p class="text-xs font-bold uppercase tracking-widest text-base-content/60 mt-2">
             BY MAJOR CATEGORIES
           </p>
         </div>
@@ -207,7 +207,7 @@ const createSpendingChart = (args: {
                   <span class="text-2xl font-bold text-base-content tracking-tighter block">
                     ${overallPercentage}%
                   </span>
-                  <span class="text-[10px] font-bold text-base-content/50 tracking-wide uppercase block mt-1">
+                  <span class="text-xs font-bold text-base-content/50 tracking-wide uppercase block mt-1">
                     Spent
                   </span>
                 </div>

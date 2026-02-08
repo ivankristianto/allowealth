@@ -132,7 +132,7 @@ const createTransactionSummaryCards = (args: TransactionSummaryCardsArgs): HTMLE
           <h3 class="text-3xl font-bold text-success mt-4 leading-none tracking-tight">
             ${formatCurrency(monthlyIncome, currency)}
           </h3>
-          ${periodLabel ? `<p class="text-[10px] font-bold text-success/60 mt-3 uppercase tracking-wider">${escapeHtml(periodLabel)}</p>` : ''}
+          ${periodLabel ? `<p class="text-xs font-bold text-success/60 mt-3 uppercase tracking-wider">${escapeHtml(periodLabel)}</p>` : ''}
         </div>
       </div>
 
@@ -146,7 +146,7 @@ const createTransactionSummaryCards = (args: TransactionSummaryCardsArgs): HTMLE
           <h3 class="text-3xl font-bold text-error mt-4 leading-none tracking-tight">
             ${formatCurrency(monthlyExpenses, currency)}
           </h3>
-          <p class="text-[10px] font-bold text-error/60 mt-3 uppercase tracking-wider">${transactionCount} items</p>
+          <p class="text-xs font-bold text-error/60 mt-3 uppercase tracking-wider">${transactionCount} items</p>
         </div>
       </div>
 
@@ -160,7 +160,7 @@ const createTransactionSummaryCards = (args: TransactionSummaryCardsArgs): HTMLE
           <h3 class="text-3xl font-bold mt-4 leading-none tracking-tight ${netSavingsClass}">
             ${formatCurrency(netSavings, currency)}
           </h3>
-          ${periodLabel ? `<p class="text-[10px] font-bold text-base-content/40 mt-3 uppercase tracking-wider">${escapeHtml(periodLabel)}</p>` : ''}
+          ${periodLabel ? `<p class="text-xs font-bold text-base-content/40 mt-3 uppercase tracking-wider">${escapeHtml(periodLabel)}</p>` : ''}
         </div>
       </div>
     </div>

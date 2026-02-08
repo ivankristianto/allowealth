@@ -309,6 +309,8 @@ describe('TransactionService', () => {
     });
 
     it('should validate category on update', async () => {
+      // Mock findById returning existing transaction
+      (mockDb.query.transactions.findFirst as any).mockResolvedValueOnce(mockTransaction);
       // Mock category as not found
       (mockDb.query.categories.findFirst as any).mockResolvedValue(undefined);
 
@@ -320,6 +322,8 @@ describe('TransactionService', () => {
     });
 
     it('should validate asset on update', async () => {
+      // Mock findById returning existing transaction
+      (mockDb.query.transactions.findFirst as any).mockResolvedValueOnce(mockTransaction);
       // Mock category as found but asset as not found
       (mockDb.query.categories.findFirst as any).mockResolvedValue(mockCategory);
       (mockDb.query.assets.findFirst as any).mockResolvedValue(undefined);
@@ -334,6 +338,8 @@ describe('TransactionService', () => {
     it('should validate inactive category on update', async () => {
       const inactiveCategory = createMockCategory({ is_active: false });
 
+      // Mock findById returning existing transaction
+      (mockDb.query.transactions.findFirst as any).mockResolvedValueOnce(mockTransaction);
       // Mock inactive category
       (mockDb.query.categories.findFirst as any).mockResolvedValue(inactiveCategory);
 
@@ -482,6 +488,47 @@ describe('TransactionService', () => {
       });
 
       expect(result).toBe(15);
+    });
+  });
+
+  describe('getHistory', () => {
+    it('should resolve category and asset IDs to readable names in diffs', async () => {
+      const logs = [
+        {
+          id: 'log-update-1',
+          action: 'update',
+          user_id: 'user-1',
+          old_value: JSON.stringify({
+            category_id: 'cat-1',
+            asset_id: 'asset-1',
+          }),
+          new_value: JSON.stringify({
+            category_id: 'cat-2',
+            asset_id: 'asset-2',
+          }),
+          created_at: new Date('2026-01-10T10:00:00Z'),
+          user: { id: 'user-1', name: 'Ivan' },
+        },
+      ];
+
+      (mockDb.query as any).auditLogs.findMany.mockResolvedValueOnce(logs);
+      (mockDb.query.categories.findMany as any).mockResolvedValueOnce([
+        { id: 'cat-1', name: 'Food' },
+        { id: 'cat-2', name: 'Transport' },
+      ]);
+      (mockDb.query.assets.findMany as any).mockResolvedValueOnce([
+        { id: 'asset-1', name: 'Cash' },
+        { id: 'asset-2', name: 'BCA Savings' },
+      ]);
+
+      const result = await transactionService.getHistory('txn-1', 'workspace-1');
+      const updateEntry = result.history.find((entry) => entry.action === 'update');
+
+      expect(updateEntry).toBeDefined();
+      expect(updateEntry?.oldValue?.category_id).toBe('Food');
+      expect(updateEntry?.newValue?.category_id).toBe('Transport');
+      expect(updateEntry?.oldValue?.asset_id).toBe('Cash');
+      expect(updateEntry?.newValue?.asset_id).toBe('BCA Savings');
     });
   });
 });

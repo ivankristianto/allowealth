@@ -1,0 +1,138 @@
+---
+/**
+ * Transaction History Timeline Partial
+ *
+ * Server-rendered timeline showing audit trail for a transaction.
+ * Fetched as HTML fragment via ?_render=html from the history API.
+ */
+
+import type { TransactionHistoryEntry } from '@/lib/types/transaction';
+
+export interface Props {
+  history: TransactionHistoryEntry[];
+  totalEdits: number;
+  showingEdits: number;
+  transactionId: string;
+}
+
+const { history, totalEdits, showingEdits, transactionId } = Astro.props;
+
+const formatTimestamp = (date: string | Date): string => {
+  const d = new Date(date);
+  return d.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+};
+
+const FIELD_LABELS: Record<string, string> = {
+  amount: 'Amount',
+  currency: 'Currency',
+  type: 'Type',
+  category_id: 'Category',
+  asset_id: 'Asset',
+  to_asset_id: 'To Asset',
+  description: 'Description',
+  transaction_date: 'Date',
+};
+
+const formatFieldValue = (field: string, value: unknown): string => {
+  if (value === null || value === undefined) return '(none)';
+  if (field === 'transaction_date' && typeof value === 'string') {
+    const d = new Date(value);
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+  return String(value);
+};
+---
+
+<div class="py-3 px-4 sm:px-6 border-t border-base-200">
+  {
+    history.length === 0 ? (
+      <p class="text-sm text-base-content/50">No history available.</p>
+    ) : (
+      <div class="relative pl-5">
+        {/* Vertical timeline line */}
+        <div class="absolute left-[7px] top-2 bottom-2 w-0.5 bg-base-300" aria-hidden="true" />
+
+        <div class="space-y-4">
+          {history.map((entry) => (
+            <div class="relative">
+              {/* Timeline dot */}
+              <div
+                class:list={[
+                  'absolute -left-5 top-1 w-3.5 h-3.5 rounded-full border-2 border-base-100',
+                  entry.action === 'create' && 'bg-success',
+                  entry.action === 'update' && 'bg-info',
+                  entry.action === 'delete' && 'bg-error',
+                ]}
+                aria-hidden="true"
+              />
+
+              <div class="text-sm">
+                {/* Header: action + user + time */}
+                <div class="flex flex-wrap items-baseline gap-x-2">
+                  <span class="font-medium">
+                    {entry.action === 'create' && 'Created by'}
+                    {entry.action === 'update' && 'Edited by'}
+                    {entry.action === 'delete' && 'Deleted by'}
+                  </span>
+                  <span class="font-bold">{entry.userName}</span>
+                  <span class="text-base-content/50 text-xs">
+                    {formatTimestamp(entry.createdAt)}
+                  </span>
+                </div>
+
+                {/* Content: snapshot for create, diff for update */}
+                {entry.action === 'create' && entry.newValue && (
+                  <div class="mt-1 text-xs text-base-content/60">
+                    {[
+                      entry.newValue.type,
+                      entry.newValue.amount && entry.newValue.currency
+                        ? `${entry.newValue.currency} ${entry.newValue.amount}`
+                        : null,
+                      entry.newValue.description,
+                    ]
+                      .filter(Boolean)
+                      .join(' \u00B7 ')}
+                  </div>
+                )}
+
+                {entry.action === 'update' && entry.oldValue && entry.newValue && (
+                  <div class="mt-1 space-y-0.5">
+                    {Object.keys(entry.newValue).map((field) => (
+                      <div class="text-xs text-base-content/70">
+                        <span class="font-medium">{FIELD_LABELS[field] || field}:</span>{' '}
+                        <span class="line-through text-base-content/40">
+                          {formatFieldValue(field, entry.oldValue?.[field])}
+                        </span>{' '}
+                        <span aria-label="changed to">&rarr;</span>{' '}
+                        <span>{formatFieldValue(field, entry.newValue[field])}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Show all link */}
+        {totalEdits > showingEdits && (
+          <div class="mt-3 pl-0">
+            <button
+              type="button"
+              class="text-xs text-accent hover:underline min-h-[44px] min-w-[44px] px-2"
+              data-show-all-history={transactionId}
+            >
+              Show all {totalEdits} changes
+            </button>
+          </div>
+        )}
+      </div>
+    )
+  }
+</div>
