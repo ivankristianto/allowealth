@@ -181,6 +181,19 @@ function handleBudgetsCopied(
 }
 
 /**
+ * Re-initialize budget allocations `<details>` elements after DOM replacement.
+ * On desktop (lg breakpoint), the allocations section should auto-open.
+ * The inline script in BudgetSummary.astro only runs on initial page load,
+ * so after innerHTML replacement we must re-apply the open state.
+ */
+function initBudgetAllocations(): void {
+  document.querySelectorAll<HTMLDetailsElement>('[data-budget-allocations]').forEach((details) => {
+    const mq = window.matchMedia('(min-width: 1024px)');
+    if (mq.matches) details.open = true;
+  });
+}
+
+/**
  * Handle content-updated event
  *
  * Re-initializes edit button handlers and filter after new content is injected.
@@ -192,6 +205,11 @@ function handleContentUpdated(): void {
   setupInlineEditHandlers();
   setupFilterHandler();
   setupSortHandler();
+
+  // Re-initialize budget allocations details element (auto-open on desktop).
+  // The inline script in BudgetSummary.astro only runs on initial page load,
+  // so after innerHTML replacement we must re-apply the open state.
+  initBudgetAllocations();
 
   // Re-apply filter if there's a query in the input
   const filterInput = document.getElementById('budget-filter-input') as HTMLInputElement | null;

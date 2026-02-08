@@ -13,7 +13,7 @@
  */
 
 import type { BudgetData } from './BudgetCardGrid.astro';
-import { Wallet, Eye } from '@lucide/astro';
+import { Wallet, Eye, Pencil } from '@lucide/astro';
 import { formatCurrency } from '@/lib/formatting';
 
 export interface Props {
@@ -109,16 +109,24 @@ const sortedBudgets = [...budgets].sort((a, b) => {
                       </span>
                     </td>
                     <td class="px-6 md:px-8 py-5 md:py-6 text-right">
-                      <button
-                        type="button"
-                        class="text-sm font-bold text-base-content cursor-pointer hover:text-accent hover:underline hover:decoration-dotted transition-colors min-h-[44px] min-w-[44px] inline-flex items-center justify-end focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
-                        data-budget-editable={budget.category_id}
-                        data-budget-raw={budgetAmt}
-                        data-testid="budget-table-amount"
-                        aria-label={`Edit ${budget.category_name} budget: ${formatCurrency(budgetAmt, currency)}. Click to edit.`}
-                      >
-                        {formatCurrency(budgetAmt, currency)}
-                      </button>
+                      <div class="inline-flex items-center gap-1.5">
+                        <span
+                          class="text-sm font-bold text-base-content"
+                          data-testid="budget-table-amount"
+                        >
+                          {formatCurrency(budgetAmt, currency)}
+                        </span>
+                        <button
+                          type="button"
+                          class="inline-flex items-center justify-center min-h-[44px] min-w-[44px] rounded-md text-base-content/40 hover:text-accent hover:bg-accent/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+                          data-budget-editable={budget.category_id}
+                          data-budget-raw={budgetAmt}
+                          data-testid="budget-table-edit-btn"
+                          aria-label={`Edit ${budget.category_name} budget: ${formatCurrency(budgetAmt, currency)}`}
+                        >
+                          <Pencil size={14} class="stroke-current" aria-hidden="true" />
+                        </button>
+                      </div>
                     </td>
                     <td class="px-6 md:px-8 py-5 md:py-6 text-right">
                       <span class="text-sm font-bold text-base-content">

@@ -2,7 +2,7 @@
  * Budget Inline Edit Client Module
  *
  * Handles inline editing of budget amounts in both card and table views.
- * Uses hybrid approach: client-side input for speed, server-rendered refresh for consistency.
+ * Uses a popover anchored to the edit icon for a clean editing experience.
  *
  * Part of the Interactive Page Architecture pattern.
  * See: docs/architecture/002-interactive-pages.md
@@ -18,11 +18,11 @@ import { addToast } from '@/lib/stores/toastStore';
 /** Currently active edit (only one at a time) */
 let activeEditCategoryId: string | null = null;
 
-/** Original element content for restoring on cancel */
-let originalElementHtml: string | null = null;
+/** Reference to the active popover element */
+let activePopover: HTMLElement | null = null;
 
-/** Reference to the element currently being edited */
-let activeEditElement: HTMLElement | null = null;
+/** Reference to the trigger button for focus restoration */
+let activeTrigger: HTMLElement | null = null;
 
 // =============================================================================
 // VALIDATION
@@ -81,23 +81,66 @@ function getBudgetIdForCategory(categoryId: string): string | null {
 }
 
 // =============================================================================
-// INLINE EDIT UI
+// POSITIONING
 // =============================================================================
 
 /**
- * Enter edit mode on a budget amount element.
- *
- * Replaces the formatted amount text with an input field + Save/Cancel buttons.
- * Only one budget can be edited at a time.
+ * Position the popover below the trigger element using getBoundingClientRect().
+ * Falls back to above the trigger if there's not enough space below.
+ * Works across all browsers regardless of CSS Anchor Positioning support.
  */
-function enterEditMode(element: HTMLElement, categoryId: string): void {
+function positionPopover(popover: HTMLElement, trigger: HTMLElement): void {
+  const rect = trigger.getBoundingClientRect();
+  const popoverWidth = 224; // w-56 = 14rem = 224px
+  const popoverHeight = popover.offsetHeight || 120;
+  const gap = 4;
+
+  // Position below trigger, centered horizontally
+  let left = rect.left + rect.width / 2 - popoverWidth / 2;
+  let top = rect.bottom + gap;
+
+  // Clamp horizontally within viewport
+  const viewportWidth = window.innerWidth;
+  if (left < 8) left = 8;
+  if (left + popoverWidth > viewportWidth - 8) left = viewportWidth - popoverWidth - 8;
+
+  // If popover overflows below viewport, position above the trigger instead
+  const viewportHeight = window.innerHeight;
+  if (top + popoverHeight > viewportHeight - 8) {
+    top = rect.top - popoverHeight - gap;
+  }
+
+  // Final clamp: don't go above viewport
+  if (top < 8) top = 8;
+
+  popover.style.position = 'fixed';
+  popover.style.inset = 'unset';
+  popover.style.margin = '0';
+  popover.style.top = `${top}px`;
+  popover.style.left = `${left}px`;
+}
+
+// =============================================================================
+// POPOVER EDIT UI
+// =============================================================================
+
+/** Counter for unique popover IDs */
+let popoverCounter = 0;
+
+/**
+ * Open a popover for editing a budget amount.
+ *
+ * Creates a popover element positioned below the edit icon button with an input
+ * field and Save/Cancel buttons. Only one popover can be open at a time.
+ */
+function openEditPopover(trigger: HTMLElement, categoryId: string): void {
   // Prevent concurrent edits
   if (activeEditCategoryId !== null) {
     addToast('Please save or cancel the current edit first.', 'info');
     return;
   }
 
-  const rawAmount = element.dataset.budgetRaw || '0';
+  const rawAmount = trigger.dataset.budgetRaw || '0';
   const budgetId = getBudgetIdForCategory(categoryId);
 
   if (!budgetId) {
@@ -105,50 +148,75 @@ function enterEditMode(element: HTMLElement, categoryId: string): void {
     return;
   }
 
-  // Store state for cancel/restore
+  // Store state
   activeEditCategoryId = categoryId;
-  originalElementHtml = element.innerHTML;
-  activeEditElement = element;
+  activeTrigger = trigger;
 
-  // Determine if this is inside a card or table for styling
-  const isTable = element.closest('[data-budget-table]') !== null;
+  // Create unique IDs
+  const popoverId = `budget-edit-popover-${++popoverCounter}`;
+  const inputId = `budget-edit-input-${popoverCounter}`;
 
-  // Build inline edit UI
-  const wrapper = document.createElement('div');
-  wrapper.className = isTable ? 'inline-flex items-center gap-2' : 'flex items-center gap-2';
-  wrapper.dataset.inlineEdit = 'true';
+  // Build the popover element
+  const popover = document.createElement('div');
+  popover.id = popoverId;
+  popover.setAttribute('popover', 'auto');
+  popover.setAttribute('role', 'dialog');
+  popover.setAttribute('aria-label', 'Edit budget amount');
+  popover.className = 'bg-base-100 border border-base-300 rounded-xl shadow-xl p-3 m-0 w-56';
+  popover.dataset.budgetPopover = 'true';
+
+  // Popover content
+  const label = document.createElement('label');
+  label.className = 'text-xs font-bold text-base-content/40 uppercase tracking-widest mb-1.5 block';
+  label.textContent = 'Budget Amount';
+  label.htmlFor = inputId;
 
   const input = document.createElement('input');
   input.type = 'number';
+  input.id = inputId;
   input.value = rawAmount;
   input.min = '0';
   input.step = '0.01';
-  input.className = isTable
-    ? 'input input-sm input-bordered w-28 text-right font-bold rounded-lg'
-    : 'input input-sm input-bordered w-full text-right font-bold rounded-lg';
+  input.className = 'input input-sm input-bordered w-full text-right font-bold rounded-lg';
   input.dataset.inlineEditInput = 'true';
   input.setAttribute('aria-label', 'Budget amount');
 
+  const btnRow = document.createElement('div');
+  btnRow.className = 'flex items-center gap-2 mt-2';
+
   const saveBtn = document.createElement('button');
   saveBtn.type = 'button';
-  saveBtn.className = 'btn btn-xs btn-accent rounded-lg font-bold';
+  saveBtn.className = 'btn btn-xs btn-accent rounded-lg font-bold flex-1';
   saveBtn.textContent = 'Save';
   saveBtn.dataset.inlineEditSave = 'true';
 
   const cancelBtn = document.createElement('button');
   cancelBtn.type = 'button';
-  cancelBtn.className = 'btn btn-xs btn-ghost rounded-lg font-bold';
+  cancelBtn.className = 'btn btn-xs btn-ghost rounded-lg font-bold flex-1';
   cancelBtn.textContent = 'Cancel';
   cancelBtn.dataset.inlineEditCancel = 'true';
 
-  wrapper.appendChild(input);
-  wrapper.appendChild(saveBtn);
-  wrapper.appendChild(cancelBtn);
+  btnRow.appendChild(saveBtn);
+  btnRow.appendChild(cancelBtn);
 
-  // Replace element content
-  element.innerHTML = '';
-  element.appendChild(wrapper);
-  element.classList.remove('cursor-pointer');
+  popover.appendChild(label);
+  popover.appendChild(input);
+  popover.appendChild(btnRow);
+
+  // Append to body and show
+  document.body.appendChild(popover);
+  activePopover = popover;
+
+  // Feature-detect Popover API; fall back to manual visibility if unsupported
+  if (typeof popover.showPopover === 'function') {
+    popover.showPopover();
+  } else {
+    popover.removeAttribute('popover');
+    popover.style.display = 'block';
+  }
+
+  // Position using getBoundingClientRect (cross-browser)
+  positionPopover(popover, trigger);
 
   // Focus the input and select all text
   input.focus();
@@ -156,7 +224,7 @@ function enterEditMode(element: HTMLElement, categoryId: string): void {
 
   // Event handlers
   saveBtn.addEventListener('click', () => {
-    handleSave(element, budgetId, input.value, categoryId);
+    handleSave(budgetId, input.value, categoryId);
   });
 
   cancelBtn.addEventListener('click', () => {
@@ -166,45 +234,60 @@ function enterEditMode(element: HTMLElement, categoryId: string): void {
   input.addEventListener('keydown', (e: KeyboardEvent) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      handleSave(element, budgetId, input.value, categoryId);
+      handleSave(budgetId, input.value, categoryId);
     } else if (e.key === 'Escape') {
       e.preventDefault();
       cancelEditMode();
     }
   });
+
+  // Handle popover auto-dismiss (click outside)
+  popover.addEventListener('toggle', ((e: ToggleEvent) => {
+    if (e.newState === 'closed' && activePopover === popover) {
+      // Use cancelEditMode to properly clean up all state including activeTrigger
+      cancelEditMode();
+    }
+  }) as EventListener);
 }
 
 /**
- * Cancel edit mode and restore the original content.
+ * Remove the active popover from the DOM and reset state.
+ */
+function cleanupPopover(): void {
+  // Null reference first to prevent re-entrant calls from toggle event
+  const popover = activePopover;
+  activePopover = null;
+  activeEditCategoryId = null;
+  activeTrigger = null;
+
+  if (popover) {
+    try {
+      if (typeof popover.hidePopover === 'function') popover.hidePopover();
+    } catch {
+      // Already hidden or popover API unsupported
+    }
+    popover.remove();
+  }
+}
+
+/**
+ * Cancel edit mode and close the popover.
  *
  * Exported so the page orchestrator can call it when DOM is replaced
  * (e.g., after budget-updated refresh), preventing orphaned edit state.
  */
 export function cancelEditMode(): void {
-  const elementToFocus = activeEditElement;
-
-  if (activeEditElement && originalElementHtml !== null) {
-    activeEditElement.innerHTML = originalElementHtml;
-    activeEditElement.classList.add('cursor-pointer');
-  }
-
-  activeEditCategoryId = null;
-  originalElementHtml = null;
-  activeEditElement = null;
+  const triggerToFocus = activeTrigger;
+  cleanupPopover();
 
   // Return focus to the trigger element so keyboard users don't lose position
-  elementToFocus?.focus();
+  triggerToFocus?.focus();
 }
 
 /**
  * Handle save: validate, call API, refresh page.
  */
-async function handleSave(
-  element: HTMLElement,
-  budgetId: string,
-  value: string,
-  categoryId: string
-): Promise<void> {
+async function handleSave(budgetId: string, value: string, categoryId: string): Promise<void> {
   // Validate
   const validation = validateBudgetAmount(value);
   if (!validation.valid) {
@@ -212,10 +295,12 @@ async function handleSave(
     return;
   }
 
-  // Show loading state on Save button
-  const saveBtn = element.querySelector('[data-inline-edit-save]') as HTMLButtonElement | null;
-  const input = element.querySelector('[data-inline-edit-input]') as HTMLInputElement | null;
-  const cancelBtnEl = element.querySelector(
+  // Show loading state
+  const saveBtn = activePopover?.querySelector(
+    '[data-inline-edit-save]'
+  ) as HTMLButtonElement | null;
+  const input = activePopover?.querySelector('[data-inline-edit-input]') as HTMLInputElement | null;
+  const cancelBtnEl = activePopover?.querySelector(
     '[data-inline-edit-cancel]'
   ) as HTMLButtonElement | null;
 
@@ -240,9 +325,7 @@ async function handleSave(
 
     addToast('Budget updated successfully!', 'success');
 
-    // Restore display mode before refresh — if the refresh fails or is slow,
-    // the user sees the original amount (stale but interactive) instead of
-    // permanently disabled controls. The refresh will overwrite this anyway.
+    // Close the popover before refresh
     cancelEditMode();
 
     // Dispatch event for page orchestrator to refresh all partials
@@ -255,7 +338,7 @@ async function handleSave(
     const message = err instanceof Error ? err.message : 'Failed to update budget';
     addToast(message, 'error');
 
-    // Revert to display mode on error
+    // Close popover on error
     cancelEditMode();
   }
 }
@@ -283,20 +366,17 @@ export function setupInlineEditHandlers(): void {
 }
 
 /**
- * Handle click on an editable budget amount (event delegation).
+ * Handle click on an editable budget edit icon (event delegation).
  */
 function handleEditableClick(e: Event): void {
   const target = (e.target as HTMLElement).closest('[data-budget-editable]') as HTMLElement | null;
   if (!target) return;
 
-  // Don't enter edit mode if we're already inside an inline edit
-  if (target.querySelector('[data-inline-edit]')) return;
-
   const categoryId = target.dataset.budgetEditable;
   if (!categoryId) return;
 
   e.stopPropagation();
-  enterEditMode(target, categoryId);
+  openEditPopover(target, categoryId);
 }
 
 /**
@@ -311,15 +391,12 @@ function handleEditableKeydown(e: Event): void {
   ) as HTMLElement | null;
   if (!target) return;
 
-  // Don't enter edit mode if we're already inside an inline edit
-  if (target.querySelector('[data-inline-edit]')) return;
-
   const categoryId = target.dataset.budgetEditable;
   if (!categoryId) return;
 
   keyEvent.preventDefault();
   keyEvent.stopPropagation();
-  enterEditMode(target, categoryId);
+  openEditPopover(target, categoryId);
 }
 
 /**
