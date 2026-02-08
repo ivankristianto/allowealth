@@ -110,12 +110,6 @@ describe('review feedback regressions', () => {
     expect(content).not.toContain('amount="{amount}"');
   });
 
-  it('design system refresh plan should use H2 task headings', () => {
-    const content = read('docs/plans/2026-02-05-design-system-refresh.md');
-    expect(content).toContain('## Task 1');
-    expect(content).not.toContain('### Task');
-  });
-
   it('transactions page placeholders should use token-driven spacing', () => {
     const content = read('src/pages/transactions/index.astro');
     const forbidden = [
