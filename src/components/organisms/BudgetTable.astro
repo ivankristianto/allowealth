@@ -13,7 +13,7 @@
  */
 
 import type { BudgetData } from './BudgetCardGrid.astro';
-import { Wallet, Pencil, Eye } from '@lucide/astro';
+import { Wallet, Eye } from '@lucide/astro';
 import { formatCurrency } from '@/lib/formatting';
 
 export interface Props {
@@ -109,9 +109,16 @@ const sortedBudgets = [...budgets].sort((a, b) => {
                       </span>
                     </td>
                     <td class="px-6 md:px-8 py-5 md:py-6 text-right">
-                      <span class="text-sm font-bold text-base-content">
+                      <button
+                        type="button"
+                        class="text-sm font-bold text-base-content cursor-pointer hover:text-accent hover:underline hover:decoration-dotted transition-colors min-h-[44px] min-w-[44px] inline-flex items-center justify-end focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+                        data-budget-editable={budget.category_id}
+                        data-budget-raw={budgetAmt}
+                        data-testid="budget-table-amount"
+                        aria-label={`Edit ${budget.category_name} budget: ${formatCurrency(budgetAmt, currency)}. Click to edit.`}
+                      >
                         {formatCurrency(budgetAmt, currency)}
-                      </span>
+                      </button>
                     </td>
                     <td class="px-6 md:px-8 py-5 md:py-6 text-right">
                       <span class="text-sm font-bold text-base-content">
@@ -150,15 +157,6 @@ const sortedBudgets = [...budgets].sort((a, b) => {
                     </td>
                     <td class="px-6 md:px-8 py-5 md:py-6 text-right">
                       <div class="inline-flex items-center gap-2">
-                        <button
-                          type="button"
-                          data-edit-budget={budget.category_id}
-                          class="inline-flex items-center gap-1.5 text-base-content/40 hover:text-base-content hover:bg-base-200/50 px-3 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-                          aria-label={`Edit ${budget.category_name} budget`}
-                        >
-                          <Pencil size={12} class="stroke-current" aria-hidden="true" />
-                          <span>Edit</span>
-                        </button>
                         <a
                           href={detailsUrl}
                           class="inline-flex items-center gap-1.5 text-base-content/40 hover:text-base-content hover:bg-base-200/50 px-3 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"

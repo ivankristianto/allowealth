@@ -228,15 +228,17 @@ const budgetsForModal = existingBudgets.map((b) => ({
   budget_amount: b.budget_amount,
 }));
 
-// Create a map of budget amounts by category_id for easy lookup
+// Create maps for budget data by category_id
 const budgetAmountsByCategory = new Map(
   existingBudgets.map((b) => [b.category_id, b.budget_amount])
 );
+const budgetIdsByCategory = new Map(existingBudgets.map((b) => [b.category_id, b.id]));
 
-// Merge budget amounts into expense categories for the edit handler
+// Merge budget amounts and IDs into expense categories for inline editing
 const expenseCategoriesWithBudgets = expenseCategories.map((cat) => ({
   ...cat,
   budget_amount: budgetAmountsByCategory.get(cat.id) || '0',
+  budget_id: budgetIdsByCategory.get(cat.id) || '',
 }));
 
 // Count budgets with actual limits set

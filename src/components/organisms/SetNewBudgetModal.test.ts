@@ -204,28 +204,6 @@ describe('SetNewBudgetModal - API Integration', () => {
     });
   });
 
-  describe('Request Format - Update Budget', () => {
-    it('should format PUT request body correctly for existing budget', () => {
-      const requestBody = JSON.stringify({
-        budget_amount: '6000000',
-      });
-
-      const parsed = JSON.parse(requestBody);
-      expect(parsed.budget_amount).toBe('6000000');
-    });
-
-    it('should use PUT /api/budgets/:id endpoint for existing budget', () => {
-      const budgetId = 'budget-456';
-      const endpoint = `/api/budgets/${budgetId}`;
-      expect(endpoint).toBe('/api/budgets/budget-456');
-    });
-
-    it('should use PUT method for updating budget', () => {
-      const method = 'PUT';
-      expect(method).toBe('PUT');
-    });
-  });
-
   describe('Response Handling', () => {
     it('should handle successful response', () => {
       const response = { ok: true, status: 200 };
@@ -292,8 +270,8 @@ describe('SetNewBudgetModal - Accessibility', () => {
     });
 
     it('should have submit button', () => {
-      const buttonText = 'Set Budget';
-      expect(buttonText).toBe('Set Budget');
+      const buttonText = 'Create Budget';
+      expect(buttonText).toBe('Create Budget');
     });
 
     it('should disable submit when no expense categories exist', () => {

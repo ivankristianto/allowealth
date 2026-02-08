@@ -5,19 +5,12 @@ import { BasePage } from './BasePage';
  * Page Object Model for the Budget page (/budget).
  * Handles budget management including setting budgets and viewing spending.
  *
- * The budget page uses a modal-based UI for editing budgets:
+ * The budget page uses inline editing for existing budgets:
  * - Budget cards display current budget and spent amounts
- * - Clicking the edit button on a card opens the SetNewBudgetModal
- * - The modal allows selecting a category and setting the budget amount
+ * - Clicking the budget amount opens an inline input with Save/Cancel
+ * - New budgets are created via the SetNewBudgetModal
  */
 export class BudgetPage extends BasePage {
-  // Modal selectors
-  private readonly modalSelector = '#set-new-budget-modal';
-  private readonly modalCategorySelect = '#set-new-budget-modal-category';
-  private readonly modalAmountInput = '#set-new-budget-modal-amount';
-  private readonly modalSubmitBtn = '#set-new-budget-modal-form button[type="submit"]';
-  private readonly modalCancelBtn = '[data-cancel-budget]';
-
   /**
    * Navigate to the budget page.
    */
@@ -32,15 +25,6 @@ export class BudgetPage extends BasePage {
    */
   private getBudgetCard(categoryId: string): Locator {
     return this.page.locator(`[data-testid="budget-card"][data-category-id="${categoryId}"]`);
-  }
-
-  /**
-   * Get the edit button locator for a specific budget card.
-   * @param categoryId - The category ID to locate
-   * @returns Locator for the edit button element
-   */
-  private getEditButton(categoryId: string): Locator {
-    return this.page.locator(`[data-edit-budget="${categoryId}"]`);
   }
 
   /**
@@ -71,58 +55,30 @@ export class BudgetPage extends BasePage {
   }
 
   /**
-   * Get the SetNewBudgetModal locator.
-   */
-  private getModal(): Locator {
-    return this.page.locator(this.modalSelector);
-  }
-
-  /**
-   * Open the SetNewBudgetModal by clicking the edit button on a budget card.
-   * @param categoryId - The category ID to edit
-   */
-  async openEditModal(categoryId: string): Promise<void> {
-    const editButton: Locator = this.getEditButton(categoryId)
-      .and(this.page.locator(':visible'))
-      .first();
-    await editButton.click();
-    await expect(this.getModal()).toBeVisible();
-  }
-
-  /**
-   * Set a budget amount for a specific category using the modal.
+   * Set a budget amount for a specific category using inline editing.
    * @param categoryId - The category ID to set budget for
    * @param amount - The budget amount to set
    */
   async setBudget(categoryId: string, amount: number): Promise<void> {
-    // Open the modal by clicking the edit button (which pre-selects the category)
-    await this.openEditModal(categoryId);
+    // Click the budget amount to enter edit mode
+    const budgetAmount = this.page.locator(`[data-budget-editable="${categoryId}"]`).first();
+    await budgetAmount.click();
 
-    // Verify the category is pre-selected (edit button handler sets this)
-    const categorySelect: Locator = this.page.locator(this.modalCategorySelect);
-    await expect(categorySelect).toHaveValue(categoryId);
+    // Wait for input to appear
+    const input = this.page.locator('[data-inline-edit-input]');
+    await expect(input).toBeVisible();
 
-    // Fill in the budget amount
-    const amountInput = this.page.locator(this.modalAmountInput);
-    await amountInput.clear();
-    await amountInput.fill(amount.toString());
+    // Clear and fill the amount
+    await input.clear();
+    await input.fill(amount.toString());
 
-    // Submit the form
-    const submitBtn = this.page.locator(this.modalSubmitBtn);
-    await submitBtn.click();
+    // Click Save
+    const saveBtn = this.page.locator('[data-inline-edit-save]');
+    await saveBtn.click();
 
-    // Wait for modal to close and page to update
-    await expect(this.getModal()).toBeHidden({ timeout: 10000 });
+    // Wait for the page to refresh (inline edit disappears)
+    await expect(input).toBeHidden({ timeout: 10000 });
     await this.waitForPageLoad();
-  }
-
-  /**
-   * Close the modal without saving.
-   */
-  async cancelModal(): Promise<void> {
-    const cancelBtn = this.page.locator(this.modalCancelBtn);
-    await cancelBtn.click();
-    await expect(this.getModal()).toBeHidden();
   }
 
   /**
