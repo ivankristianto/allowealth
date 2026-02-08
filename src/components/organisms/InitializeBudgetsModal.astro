@@ -15,6 +15,7 @@
 
 import Modal from '../molecules/Modal.astro';
 import { Zap } from '@lucide/astro';
+import { getMonthName } from '@/lib/utils/date';
 
 export interface Props {
   id: string;
@@ -27,6 +28,7 @@ export interface Props {
 const { id, categories, month, year, currency } = Astro.props;
 
 const categoryCount = categories.length;
+const monthName = getMonthName(month);
 
 // Validate hex color to prevent XSS attacks via style injection
 const isValidHexColor = (color: string): boolean => {
@@ -61,7 +63,8 @@ const categoriesWithColors = categories.map((cat) => ({
             Initialize Budgets?
           </h2>
           <p class="text-base-content/60 text-sm mt-2 font-medium">
-            Create budget entries for uninitialized categories.
+            Create budget entries for {monthName}
+            {year}.
           </p>
         </div>
       </div>
@@ -213,7 +216,7 @@ const categoriesWithColors = categories.map((cat) => ({
 
           if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.message || 'Failed to initialize budgets');
+            throw new Error(errorData.error?.message || 'Failed to initialize budgets');
           }
 
           const data = await response.json();
