@@ -111,7 +111,7 @@ const sortedBudgets = [...budgets].sort((a, b) => {
                     <td class="px-6 md:px-8 py-5 md:py-6 text-right">
                       <button
                         type="button"
-                        class="text-sm font-bold text-base-content cursor-pointer hover:text-accent hover:underline hover:decoration-dotted transition-colors min-h-[44px] min-w-[44px] inline-flex items-center justify-end"
+                        class="text-sm font-bold text-base-content cursor-pointer hover:text-accent hover:underline hover:decoration-dotted transition-colors min-h-[44px] min-w-[44px] inline-flex items-center justify-end focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
                         data-budget-editable={budget.category_id}
                         data-budget-raw={budgetAmt}
                         data-testid="budget-table-amount"
