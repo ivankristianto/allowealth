@@ -20,6 +20,7 @@ import {
   reinitializeEventHandlers,
 } from './BudgetRenderer.client';
 import { addToast } from '@/lib/stores/toastStore';
+import { setupInlineEditHandlers, cleanupInlineEdit } from './BudgetInlineEdit.client';
 
 // =============================================================================
 // STATE MANAGEMENT
@@ -182,6 +183,7 @@ function handleBudgetsCopied(
  */
 function handleContentUpdated(): void {
   setupEditBudgetHandlers();
+  setupInlineEditHandlers();
   setupFilterHandler();
   setupSortHandler();
 
@@ -471,6 +473,9 @@ export function initBudgetPage(): void {
   // Set up edit budget button handlers
   setupEditBudgetHandlers();
 
+  // Set up inline edit handlers (replaces modal-based editing for existing budgets)
+  setupInlineEditHandlers();
+
   // Set up filter input handler
   setupFilterHandler();
 
@@ -494,6 +499,7 @@ export function initBudgetPage(): void {
  */
 export function cleanup(): void {
   isCleanedUp = true;
+  cleanupInlineEdit();
   cancelPendingRequest();
 
   // Clear debounce timer to prevent stale DOM operations after navigation
