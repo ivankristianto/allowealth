@@ -84,7 +84,9 @@ describe('AssetService.update() - currency lock', () => {
 
     const updatedAsset = { ...asset, name: 'New Name' };
 
-    (mockDb.query.assets.findFirst as any).mockResolvedValueOnce(updatedAsset);
+    (mockDb.query.assets.findFirst as any)
+      .mockResolvedValueOnce(asset)
+      .mockResolvedValueOnce(updatedAsset);
 
     (mockDb.update as any).mockReturnValue({
       set: mock(() => ({

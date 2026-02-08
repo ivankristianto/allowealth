@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, mock } from 'bun:test';
+import { describe, it, expect, beforeEach } from 'bun:test';
 import { AssetService } from '../asset.service';
 import { createMockDatabase, createMockAsset, resetMockDatabase } from '../test-helpers/mocks';
 import { resetCacheManager } from '@/lib/cache';

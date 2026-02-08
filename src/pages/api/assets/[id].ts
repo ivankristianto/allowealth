@@ -11,6 +11,7 @@ import {
 import { logError } from '@/lib/utils';
 import { DEFAULT_ASSET_CATEGORIES } from '@/lib/constants';
 import { getCacheManager, CacheTags } from '@/lib/cache';
+import { AssetServiceError } from '@/services/service-errors';
 
 // Validation schemas
 const LEGACY_TYPE_BY_NAME = new Map(
@@ -142,6 +143,9 @@ export const PUT: APIRoute = async (context) => {
     if (error instanceof Error && error.message === 'Unauthorized') {
       return errorResponse('Unauthorized', 401);
     }
+    if (error instanceof AssetServiceError) {
+      return errorResponse(error.message, error.statusCode, error.code);
+    }
     logError('Error updating asset', error);
     return errorResponse('Failed to update asset', 500);
   }
@@ -149,7 +153,7 @@ export const PUT: APIRoute = async (context) => {
 
 /**
  * DELETE /api/assets/:id
- * Soft delete an asset
+ * Close an asset account (DELETE alias for backwards compatibility)
  */
 export const DELETE: APIRoute = async (context) => {
   try {
@@ -160,7 +164,7 @@ export const DELETE: APIRoute = async (context) => {
       return errorResponse('Asset ID is required', 400);
     }
 
-    await assetService.delete(id, auth.workspaceId);
+    await assetService.delete(id, auth.workspaceId, auth.userId);
 
     // Invalidate layout cache since assets changed (best-effort)
     try {
@@ -177,10 +181,13 @@ export const DELETE: APIRoute = async (context) => {
       );
     }
 
-    return successResponse({ message: 'Asset deleted successfully' });
+    return successResponse({ message: 'Asset closed successfully' });
   } catch (error) {
     if (error instanceof Error && error.message === 'Unauthorized') {
       return errorResponse('Unauthorized', 401);
+    }
+    if (error instanceof AssetServiceError) {
+      return errorResponse(error.message, error.statusCode, error.code);
     }
     logError('Error deleting asset', error);
     return errorResponse('Failed to delete asset', 500);

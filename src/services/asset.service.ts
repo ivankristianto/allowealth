@@ -98,14 +98,15 @@ export class AssetService {
   }
 
   /**
-   * Find asset by ID
+   * Find active asset by ID
    */
   async findById(id: string, workspaceId: string) {
     const result = await this.db.query.assets.findFirst({
       where: and(
         eq(this.schema.assets.id, id),
         eq(this.schema.assets.workspace_id, workspaceId),
-        sql`${this.schema.assets.deleted_at} IS NULL`
+        sql`${this.schema.assets.deleted_at} IS NULL`,
+        eq(this.schema.assets.status, 'active')
       ),
     });
 
@@ -121,6 +122,7 @@ export class AssetService {
       type?: AssetType;
       category_id?: string;
       currency?: Currency;
+      includeInactive?: boolean;
     },
     perf?: PerfCollector
   ) {
@@ -128,6 +130,11 @@ export class AssetService {
       eq(this.schema.assets.workspace_id, workspaceId),
       sql`${this.schema.assets.deleted_at} IS NULL`,
     ];
+
+    // Default behavior: active assets only.
+    if (!filters?.includeInactive) {
+      conditions.push(eq(this.schema.assets.status, 'active'));
+    }
 
     if (filters?.type) {
       conditions.push(eq(this.schema.assets.type, filters.type));
@@ -155,22 +162,31 @@ export class AssetService {
    * Update asset details
    */
   async update(id: string, workspaceId: string, input: UpdateAssetInput) {
-    // Currency lock: prevent changing currency if history exists
-    if (input.currency !== undefined) {
-      const currentAsset = await this.findById(id, workspaceId);
-      if (currentAsset && input.currency !== currentAsset.currency) {
-        const historyCount = await (this.db as any)
-          .select({ count: sql<number>`count(*)` })
-          .from(this.schema.assetHistory)
-          .where(eq(this.schema.assetHistory.asset_id, id));
+    const currentAsset = await this.findByIdIncludingClosed(id, workspaceId);
+    if (!currentAsset) {
+      throw new AssetServiceError(ServiceErrorCode.ASSET_NOT_FOUND, 'Asset not found', 404);
+    }
+    if (currentAsset.status === 'closed') {
+      throw new AssetServiceError(
+        ServiceErrorCode.ACCOUNT_CLOSED,
+        'Cannot update asset — account is closed',
+        400
+      );
+    }
 
-        if (historyCount[0]?.count > 0) {
-          throw new AssetServiceError(
-            ServiceErrorCode.CURRENCY_LOCKED,
-            'Cannot change currency — account has transaction history',
-            400
-          );
-        }
+    // Currency lock: prevent changing currency if history exists
+    if (input.currency !== undefined && input.currency !== currentAsset.currency) {
+      const historyCount = await (this.db as any)
+        .select({ count: sql<number>`count(*)` })
+        .from(this.schema.assetHistory)
+        .where(eq(this.schema.assetHistory.asset_id, id));
+
+      if (historyCount[0]?.count > 0) {
+        throw new AssetServiceError(
+          ServiceErrorCode.CURRENCY_LOCKED,
+          'Cannot change currency — account has transaction history',
+          400
+        );
       }
     }
 
@@ -194,7 +210,7 @@ export class AssetService {
       .set(updateData)
       .where(and(eq(this.schema.assets.id, id), eq(this.schema.assets.workspace_id, workspaceId)));
 
-    return this.findById(id, workspaceId);
+    return this.findByIdIncludingClosed(id, workspaceId);
   }
 
   /**
@@ -208,7 +224,7 @@ export class AssetService {
     const now = new Date();
 
     // Get current balance for potential rollback
-    const currentAsset = await this.findById(id, workspaceId);
+    const currentAsset = await this.findByIdIncludingClosed(id, workspaceId);
     if (!currentAsset) {
       throw new AssetServiceError(ServiceErrorCode.ASSET_NOT_FOUND, 'Asset not found', 404);
     }
@@ -283,11 +299,11 @@ export class AssetService {
       );
     }
 
-    const fromAsset = await this.findById(fromId, workspaceId);
-    const toAsset = await this.findById(toId, workspaceId);
+    const fromAsset = await this.findByIdIncludingClosed(fromId, workspaceId);
+    const toAsset = await this.findByIdIncludingClosed(toId, workspaceId);
 
     if (!fromAsset || !toAsset) {
-      throw new Error('Asset not found');
+      throw new AssetServiceError(ServiceErrorCode.ASSET_NOT_FOUND, 'Asset not found', 404);
     }
 
     if (fromAsset.status === 'closed' || toAsset.status === 'closed') {
@@ -360,8 +376,8 @@ export class AssetService {
   /**
    * Close an asset account (requires zero balance)
    */
-  async close(id: string, workspaceId: string, closedByUserId: string) {
-    const asset = await this.findById(id, workspaceId);
+  async close(id: string, workspaceId: string, closedByUserId: string | null) {
+    const asset = await this.findByIdIncludingClosed(id, workspaceId);
 
     if (!asset) {
       throw new AssetServiceError(ServiceErrorCode.ASSET_NOT_FOUND, 'Asset not found', 404);
@@ -390,7 +406,7 @@ export class AssetService {
       })
       .where(and(eq(this.schema.assets.id, id), eq(this.schema.assets.workspace_id, workspaceId)));
 
-    return this.findById(id, workspaceId);
+    return this.findByIdIncludingClosed(id, workspaceId);
   }
 
   /**
@@ -427,7 +443,7 @@ export class AssetService {
   /**
    * Find asset by ID including closed assets (but not hard-deleted)
    */
-  private async findByIdIncludingClosed(id: string, workspaceId: string) {
+  async findByIdIncludingClosed(id: string, workspaceId: string) {
     return this.db.query.assets.findFirst({
       where: and(
         eq(this.schema.assets.id, id),
@@ -438,23 +454,10 @@ export class AssetService {
   }
 
   /**
-   * Delete asset (soft delete)
+   * Delete asset (backward-compatible alias for close)
    */
-  async delete(id: string, workspaceId: string) {
-    // Check if asset exists
-    const asset = await this.findById(id, workspaceId);
-    if (!asset) {
-      throw new AssetServiceError(ServiceErrorCode.ASSET_NOT_FOUND, 'Asset not found', 404);
-    }
-
-    await this.db
-      .update(this.schema.assets)
-      .set({
-        deleted_at: new Date(),
-        updated_at: new Date(),
-      })
-      .where(and(eq(this.schema.assets.id, id), eq(this.schema.assets.workspace_id, workspaceId)));
-
+  async delete(id: string, workspaceId: string, closedByUserId?: string) {
+    await this.close(id, workspaceId, closedByUserId ?? null);
     return { success: true };
   }
 
@@ -463,7 +466,7 @@ export class AssetService {
    */
   async getHistory(asset_id: string, workspaceId: string, perf?: PerfCollector, limit?: number) {
     // Verify asset belongs to workspace
-    const asset = await this.findById(asset_id, workspaceId);
+    const asset = await this.findByIdIncludingClosed(asset_id, workspaceId);
     if (!asset) {
       throw new Error('Asset not found');
     }
@@ -498,7 +501,7 @@ export class AssetService {
     const endOfMonth = new Date(year, month, 0, 23, 59, 59, 999);
 
     return trackQuery('AssetService.getSnapshotForMonth', perf, async () => {
-      const allAssets = await this.findAll(workspaceId, filters);
+      const allAssets = await this.findAll(workspaceId, { ...filters, includeInactive: true });
 
       // Filter out assets created after the snapshot month
       const assetsExistingAtTime = allAssets.filter(
@@ -543,7 +546,8 @@ export class AssetService {
         .where(
           and(
             eq(this.schema.assets.workspace_id, workspaceId),
-            sql`${this.schema.assets.deleted_at} IS NULL`
+            sql`${this.schema.assets.deleted_at} IS NULL`,
+            eq(this.schema.assets.status, 'active')
           )
         )
         .groupBy(this.schema.assets.currency);
@@ -568,7 +572,8 @@ export class AssetService {
         .where(
           and(
             eq(this.schema.assets.workspace_id, workspaceId),
-            sql`${this.schema.assets.deleted_at} IS NULL`
+            sql`${this.schema.assets.deleted_at} IS NULL`,
+            eq(this.schema.assets.status, 'active')
           )
         )
         .groupBy(this.schema.assets.type, this.schema.assets.currency);
@@ -617,6 +622,7 @@ export class AssetService {
         and(
           eq(this.schema.assets.workspace_id, workspaceId),
           sql`${this.schema.assets.deleted_at} IS NULL`,
+          eq(this.schema.assets.status, 'active'),
           sql`${this.schema.assets.category_id} IS NOT NULL`
         )
       )
