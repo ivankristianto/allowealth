@@ -486,65 +486,6 @@ async function executeDelete(confirmBtn: HTMLButtonElement): Promise<void> {
 }
 
 /**
- * Toggle transaction history timeline
- * Fetches history HTML on first expand, shows/hides on subsequent toggles
- */
-async function toggleHistory(transactionId: string, showAll = false): Promise<void> {
-  const container = document.querySelector(
-    `[data-history-container="${transactionId}"]`
-  ) as HTMLElement | null;
-  if (!container) return;
-
-  const isVisible = !container.classList.contains('hidden');
-  const hasLoaded = container.dataset.historyLoaded === 'true';
-  const hasLoadedAll = container.dataset.historyAllLoaded === 'true';
-
-  // If already visible and not requesting "show all", just hide
-  if (isVisible && !showAll) {
-    container.classList.add('hidden');
-    return;
-  }
-
-  // Reuse cached HTML when possible
-  if (!showAll && hasLoaded) {
-    container.classList.remove('hidden');
-    return;
-  }
-
-  if (showAll && hasLoadedAll) {
-    container.classList.remove('hidden');
-    return;
-  }
-
-  // Fetch history HTML
-  try {
-    const allParam = showAll ? '&all=true' : '';
-    const response = await fetch(
-      `/api/transactions/${transactionId}/history?_render=html${allParam}`,
-      {
-        method: 'GET',
-        headers: { Accept: 'text/html' },
-      }
-    );
-
-    if (!response.ok) {
-      addToast('Failed to load transaction history', 'error');
-      return;
-    }
-
-    const html = await response.text();
-    container.innerHTML = html;
-    container.classList.remove('hidden');
-    container.dataset.historyLoaded = 'true';
-    if (showAll) {
-      container.dataset.historyAllLoaded = 'true';
-    }
-  } catch {
-    addToast('Failed to load transaction history', 'error');
-  }
-}
-
-/**
  * Update URL with current filter state
  */
 function updateUrl(): void {
@@ -705,25 +646,7 @@ function setupEventListeners(): void {
       return;
     }
 
-    const historyBtn = target.closest('[data-toggle-history]');
-    if (historyBtn) {
-      e.preventDefault();
-      const transactionId = historyBtn.getAttribute('data-toggle-history');
-      if (transactionId) {
-        toggleHistory(transactionId);
-      }
-      return;
-    }
-
-    const showAllBtn = target.closest('[data-show-all-history]');
-    if (showAllBtn) {
-      e.preventDefault();
-      const transactionId = showAllBtn.getAttribute('data-show-all-history');
-      if (transactionId) {
-        toggleHistory(transactionId, true);
-      }
-      return;
-    }
+    // History toggle handled by TransactionHistory.client.ts (shared, global)
   });
 
   // Confirm delete button in dialog

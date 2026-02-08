@@ -138,6 +138,7 @@ export interface DashboardData {
       type: string;
     };
     createdByName?: string;
+    hasHistory?: boolean;
   }>;
 }
 
@@ -616,6 +617,17 @@ export class DashboardService {
               asset: true,
               createdBy: { columns: { id: true, name: true } },
             },
+            // NOTE: Raw SQL names required — Drizzle schema refs resolve incorrectly in relational query extras
+            extras: {
+              has_history: sql<number>`EXISTS (
+                SELECT 1 FROM audit_logs
+                WHERE audit_logs.entity_type = 'transaction'
+                AND audit_logs.entity_id = transactions.id
+                AND audit_logs.workspace_id = transactions.workspace_id
+                AND audit_logs.action IN ('update', 'delete')
+                LIMIT 1
+              )`.as('has_history'),
+            },
             orderBy: [
               desc(this.schema.transactions.transaction_date),
               desc(this.schema.transactions.created_at),
@@ -645,6 +657,7 @@ export class DashboardService {
           type: tx.asset.type,
         },
         createdByName: tx.createdBy?.name,
+        hasHistory: !!(tx as any).has_history,
       }));
     } catch (error) {
       log.error('error getting recent transactions:', error);

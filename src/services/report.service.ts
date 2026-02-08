@@ -93,6 +93,7 @@ export interface CategoryTransaction {
   transactionDate: Date;
   assetName: string;
   createdByName?: string;
+  hasHistory?: boolean;
 }
 
 /**
@@ -345,6 +346,17 @@ export class ReportService {
           asset: true,
           createdBy: { columns: { id: true, name: true } },
         },
+        // NOTE: Raw SQL names required — Drizzle schema refs resolve incorrectly in relational query extras
+        extras: {
+          has_history: sql<number>`EXISTS (
+            SELECT 1 FROM audit_logs
+            WHERE audit_logs.entity_type = 'transaction'
+            AND audit_logs.entity_id = transactions.id
+            AND audit_logs.workspace_id = transactions.workspace_id
+            AND audit_logs.action IN ('update', 'delete')
+            LIMIT 1
+          )`.as('has_history'),
+        },
         orderBy: [sql`${this.schema.transactions.transaction_date} DESC`],
       });
 
@@ -353,7 +365,7 @@ export class ReportService {
       const total = decimalSum(amounts);
 
       // Map to response format
-      const transactionsData: CategoryTransaction[] = categoryTransactions.map((tx) => ({
+      const transactionsData: CategoryTransaction[] = categoryTransactions.map((tx: any) => ({
         id: tx.id,
         amount: tx.amount,
         currency: tx.currency,
@@ -361,6 +373,7 @@ export class ReportService {
         transactionDate: tx.transaction_date,
         assetName: tx.asset?.name || 'Unknown',
         createdByName: tx.createdBy?.name,
+        hasHistory: !!tx.has_history,
       }));
 
       return {

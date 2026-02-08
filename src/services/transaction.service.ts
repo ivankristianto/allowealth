@@ -48,6 +48,7 @@ export interface TransactionFilters {
   end_date?: Date;
   search?: string;
   include_deleted?: boolean;
+  include_history_flag?: boolean;
   limit?: number;
   offset?: number;
 }
@@ -293,7 +294,8 @@ export class TransactionService {
       conditions.push(searchCondition);
     }
 
-    const result = await (this as any).db.query.transactions.findMany({
+    // Drizzle relational query `extras` not typeable with dynamic composition
+    const queryOptions: Record<string, any> = {
       where: and(...conditions),
       with: {
         category: true,
@@ -312,7 +314,23 @@ export class TransactionService {
       ],
       limit: filters.limit || 50,
       offset: filters.offset || 0,
-    });
+    };
+
+    if (filters.include_history_flag) {
+      // NOTE: Raw SQL names required — Drizzle schema refs resolve incorrectly in relational query extras
+      queryOptions.extras = {
+        has_history: sql<number>`EXISTS (
+          SELECT 1 FROM audit_logs
+          WHERE audit_logs.entity_type = 'transaction'
+          AND audit_logs.entity_id = transactions.id
+          AND audit_logs.workspace_id = transactions.workspace_id
+          AND audit_logs.action IN ('update', 'delete')
+          LIMIT 1
+        )`.as('has_history'),
+      };
+    }
+
+    const result = await (this as any).db.query.transactions.findMany(queryOptions);
 
     return result;
   }
@@ -393,12 +411,15 @@ export class TransactionService {
     const oldValues: Record<string, unknown> = {};
     const newValues: Record<string, unknown> = {};
 
+    // Cast to indexable record for bracket-access on known diff fields
+    const existingRecord = existing as unknown as Record<string, unknown>;
+
     for (const field of diffFields) {
       if (validated[field] !== undefined) {
         const existingVal =
           field === 'transaction_date'
-            ? this.toIsoString((existing as any)[field])
-            : (existing as any)[field];
+            ? this.toIsoString(existingRecord[field] as Date | number | string | null)
+            : existingRecord[field];
         const newVal =
           field === 'transaction_date'
             ? this.toIsoString(validated[field] as Date | string | number)
@@ -411,7 +432,7 @@ export class TransactionService {
       }
     }
 
-    const updateData: Record<string, any> = {
+    const updateData: Record<string, unknown> = {
       updated_at: new Date(),
     };
 
@@ -478,7 +499,7 @@ export class TransactionService {
       );
     }
 
-    const deleteData: Record<string, any> = {
+    const deleteData: Record<string, unknown> = {
       deleted_at: new Date(),
       updated_at: new Date(),
     };
@@ -499,6 +520,7 @@ export class TransactionService {
 
     // Log audit event for deletion with full snapshot (fire-and-forget)
     if (userId) {
+      const txRecord = transaction as unknown as Record<string, unknown>;
       void logAuditEvent({
         workspaceId,
         userId,
@@ -506,14 +528,16 @@ export class TransactionService {
         entityType: 'transaction',
         entityId: id,
         oldValue: {
-          type: (transaction as any).type,
-          amount: (transaction as any).amount,
-          currency: (transaction as any).currency,
-          category_id: (transaction as any).category_id,
-          asset_id: (transaction as any).asset_id,
-          to_asset_id: (transaction as any).to_asset_id,
-          description: (transaction as any).description,
-          transaction_date: this.toIsoString((transaction as any).transaction_date),
+          type: txRecord.type,
+          amount: txRecord.amount,
+          currency: txRecord.currency,
+          category_id: txRecord.category_id,
+          asset_id: txRecord.asset_id,
+          to_asset_id: txRecord.to_asset_id,
+          description: txRecord.description,
+          transaction_date: this.toIsoString(
+            txRecord.transaction_date as Date | number | string | null
+          ),
         },
       });
     }
@@ -855,10 +879,20 @@ export class TransactionService {
       assets.map((asset: { id: string; name: string }) => [asset.id, asset.name])
     );
 
+    interface AuditLogRow {
+      id: string;
+      action: string;
+      user_id: string;
+      old_value: string | null;
+      new_value: string | null;
+      created_at: Date | number | string;
+      user?: { id: string; name: string } | null;
+    }
+
     // Separate into create, updates, and delete
-    const createEvent = results.find((r: any) => r.action === 'create');
-    const deleteEvent = results.find((r: any) => r.action === 'delete');
-    const updateEvents = results.filter((r: any) => r.action === 'update');
+    const createEvent = (results as AuditLogRow[]).find((r) => r.action === 'create');
+    const deleteEvent = (results as AuditLogRow[]).find((r) => r.action === 'delete');
+    const updateEvents = (results as AuditLogRow[]).filter((r) => r.action === 'update');
 
     const totalEdits = updateEvents.length;
 
@@ -870,12 +904,12 @@ export class TransactionService {
       ...(createEvent ? [createEvent] : []),
       ...displayedEdits,
       ...(deleteEvent ? [deleteEvent] : []),
-    ].map((entry: any) => ({
+    ].map((entry: AuditLogRow) => ({
       id: entry.id,
       action: entry.action as 'create' | 'update' | 'delete',
       userName: entry.user?.name || 'Unknown',
       userId: entry.user_id,
-      createdAt: entry.created_at,
+      createdAt: this.toIsoString(entry.created_at) || '',
       oldValue: this.resolveAuditReferences(
         this.parseAuditValue(entry.old_value),
         categoryNames,

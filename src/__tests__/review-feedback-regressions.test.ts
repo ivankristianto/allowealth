@@ -237,7 +237,7 @@ describe('review feedback regressions', () => {
   });
 
   it('transaction history toggle should cache first HTML fetch and reuse it', () => {
-    const content = read('src/components/organisms/TransactionsPage.client.ts');
+    const content = read('src/components/molecules/TransactionHistory.client.ts');
 
     expect(content).toContain('dataset.historyLoaded');
   });
@@ -277,10 +277,11 @@ describe('review feedback regressions', () => {
     expect(content).not.toContain('await logAuditEvent(');
   });
 
-  it('transaction history API variables should have explicit types', () => {
+  it('transaction history flag should be computed via service query, not separate API call', () => {
     const content = read('src/pages/api/transactions/index.ts');
-    expect(content).toContain('const transactionIds: string[]');
-    expect(content).toContain('const idsWithHistory: Set<string>');
+    // has_history is now computed in-query via EXISTS subquery, not a separate getTransactionIdsWithHistory call
+    expect(content).toContain('include_history_flag = true');
+    expect(content).not.toContain('getTransactionIdsWithHistory');
   });
 
   it('TransactionHistoryEntry createdAt should be string for JSON serialization', () => {

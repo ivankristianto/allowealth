@@ -90,21 +90,12 @@ export const GET: APIRoute = async (context) => {
 
     // Include soft-deleted transactions in the list for audit trail visibility
     filters.include_deleted = true;
+    filters.include_history_flag = true;
     const rawTransactions = await transactionService.findAll(filters, perf);
     const total = await transactionService.count(filters, perf);
 
     // Transform to TransactionOutput format
     const transactions = rawTransactions.map(transformTransaction);
-
-    // Enrich with has_history flag for conditional history icon
-    const transactionIds: string[] = transactions.map((t) => t.id);
-    const idsWithHistory: Set<string> = await transactionService.getTransactionIdsWithHistory(
-      auth.workspaceId,
-      transactionIds
-    );
-    for (const t of transactions) {
-      t.has_history = idsWithHistory.has(t.id);
-    }
 
     // Calculate month-based summary (only uses date range, not other filters)
     // This summary stays constant regardless of type/category/search filters

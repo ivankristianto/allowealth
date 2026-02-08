@@ -71,6 +71,8 @@ const filters = {
   start_date: monthDateRange?.start,
   end_date: monthDateRange?.end,
   search: searchValue || undefined,
+  include_deleted: true,
+  include_history_flag: true,
   limit: pageSize,
   offset,
 };
@@ -80,16 +82,6 @@ const rawTransactions = await transactionService.findAll(filters, perf);
 
 // Transform Drizzle result to TransactionOutput format (shared with API endpoint)
 const transactions: TransactionOutput[] = rawTransactions.map(transformTransaction);
-
-// Enrich with has_history flag for conditional history icon
-const transactionIds = transactions.map((t) => t.id);
-const idsWithHistory = await transactionService.getTransactionIdsWithHistory(
-  user.workspaceId,
-  transactionIds
-);
-for (const t of transactions) {
-  t.has_history = idsWithHistory.has(t.id);
-}
 
 // Get total count for pagination (without limit/offset)
 const { limit, offset: _, ...countFilters } = filters;

@@ -301,7 +301,7 @@ const cardClasses = [
               <button
                 type="button"
                 class:list={[
-                  'btn btn-ghost btn-sm btn-square',
+                  'btn btn-ghost btn-sm gap-1',
                   !hasHistory && 'btn-disabled opacity-30',
                 ]}
                 aria-label={
@@ -311,6 +311,7 @@ const cardClasses = [
                 {...(hasHistory ? { 'data-toggle-history': transaction.id } : {})}
               >
                 <History size={16} class="stroke-current" aria-hidden="true" />
+                <span class="text-xs">History</span>
               </button>
             </div>
           )}
@@ -356,6 +357,10 @@ const cardClasses = [
 }
 
 <script>
+  // Initialize shared history toggle (document-level delegation, runs once)
+  import { initTransactionHistory } from './TransactionHistory.client';
+  initTransactionHistory();
+
   // Keyboard navigation for dropdown menus (mobile)
   document.querySelectorAll('[data-transaction-card] .dropdown').forEach((dropdown) => {
     const menu = dropdown.querySelector('[role="menu"]');

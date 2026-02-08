@@ -44,6 +44,9 @@ Transaction:
     created_at:
       type: string
       format: date-time
+    has_history:
+      type: boolean
+      description: Whether this transaction has audit history beyond creation (edits or deletions)
     updated_at:
       type: string
       format: date-time

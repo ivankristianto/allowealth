@@ -43,6 +43,7 @@ export interface DrizzleTransactionResult {
     id: string;
     name: string;
   } | null;
+  has_history?: number | boolean;
 }
 
 /**
@@ -85,6 +86,7 @@ export function transformTransaction(t: DrizzleTransactionResult): TransactionOu
           type: t.toAsset.type,
         }
       : null,
+    has_history: !!t.has_history,
     created_by_user_name: t.createdBy?.name,
   };
 }

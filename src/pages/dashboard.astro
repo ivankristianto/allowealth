@@ -96,6 +96,7 @@ const recentTransactions: TransactionOutput[] =
       name: tx.asset.name,
       type: tx.asset.type,
     },
+    has_history: tx.hasHistory,
     created_by_user_name: tx.createdByName,
   })) || [];
 
