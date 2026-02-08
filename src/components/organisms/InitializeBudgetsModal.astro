@@ -142,6 +142,8 @@ const categoriesWithColors = categories.map((cat) => ({
   import { addToast } from '@lib/stores/toastStore';
   import { getCsrfHeaders } from '@/lib/csrf-client';
 
+  const PENDING_BUDGET_INIT_TOAST_KEY = 'budget-initialize-pending-toast';
+
   // Track initialized modals to avoid duplicate handlers
   const initializedModals = new WeakSet<Element>();
 
@@ -235,7 +237,20 @@ const categoriesWithColors = categories.map((cat) => ({
           if (statusDiv) {
             statusDiv.textContent = successMessage;
           }
-          addToast(successMessage, 'success');
+
+          // Persist success toast across hard reload.
+          if (initializedCount > 0) {
+            try {
+              sessionStorage.setItem(
+                PENDING_BUDGET_INIT_TOAST_KEY,
+                JSON.stringify({ message: successMessage, type: 'success' })
+              );
+            } catch {
+              // Ignore storage errors and continue with reload flow.
+            }
+          } else {
+            addToast(successMessage, 'success');
+          }
           modal.close();
 
           // Dispatch custom event so page can update

@@ -27,6 +27,12 @@ export const budgets = sqliteTable(
     updated_at: integer('updated_at', { mode: 'timestamp' }).default(sqliteTimestampNow).notNull(),
   },
   (table) => [
-    unique('budgets_unique').on(table.workspace_id, table.category_id, table.month, table.year),
+    unique('budgets_unique').on(
+      table.workspace_id,
+      table.category_id,
+      table.month,
+      table.year,
+      table.currency
+    ),
   ]
 );

@@ -449,8 +449,31 @@ const budgetCount =
 
   // Track if page-load listener is registered to prevent accumulation
   const PAGE_LOAD_KEY = '__budgetPageLoadListenerRegistered';
+  const PENDING_BUDGET_INIT_TOAST_KEY = 'budget-initialize-pending-toast';
+
+  function showPendingInitializeToast() {
+    let raw: string | null = null;
+    try {
+      raw = sessionStorage.getItem(PENDING_BUDGET_INIT_TOAST_KEY);
+      if (!raw) return;
+      sessionStorage.removeItem(PENDING_BUDGET_INIT_TOAST_KEY);
+    } catch {
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(raw) as { message?: string; type?: 'success' | 'error' };
+      if (typeof parsed.message === 'string' && parsed.message.length > 0) {
+        addToast(parsed.message, parsed.type === 'error' ? 'error' : 'success');
+      }
+    } catch {
+      // Ignore malformed storage payload.
+    }
+  }
 
   function initBudgetExtras() {
+    showPendingInitializeToast();
+
     // Export button
     const exportBtn = document.querySelector('[data-budget-export-btn]');
     if (exportBtn && !(exportBtn as HTMLElement).dataset.initialized) {
