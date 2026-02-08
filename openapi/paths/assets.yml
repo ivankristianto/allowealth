@@ -119,15 +119,18 @@ paths:
           $ref: '../responses/common.yml#/InternalServerError'
     delete:
       tags: [Assets]
-      summary: Delete an asset
-      description: Soft delete an asset
+      summary: Close an asset (deprecated, use /close)
+      description: |
+        Closes an asset account (backwards-compatible alias for POST /api/assets/{id}/close).
+        Requires zero balance. Prefer using the dedicated close endpoint.
+      deprecated: true
       security:
         - sessionAuth: []
       parameters:
         - $ref: '../parameters/common.yml#/IdParameter'
       responses:
         '200':
-          description: Asset deleted successfully
+          description: Asset closed successfully
           content:
             application/json:
               schema:
@@ -140,7 +143,7 @@ paths:
                     properties:
                       message:
                         type: string
-                        example: Asset deleted successfully
+                        example: Asset closed successfully
         '400':
           $ref: '../responses/common.yml#/BadRequest'
         '401':
@@ -268,6 +271,129 @@ paths:
             application/json:
               schema:
                 $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'
+
+  /api/assets/closed:
+    get:
+      tags: [Assets]
+      summary: List closed assets
+      description: Retrieve all closed asset accounts for the authenticated workspace
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: type
+          in: query
+          description: Filter by asset type
+          schema:
+            type: string
+            enum: [cash, bank_account, e_wallet, mutual_fund, bond, crypto, stock, other, credit_card, loan]
+        - name: currency
+          in: query
+          description: Filter by currency
+          schema:
+            type: string
+            enum: [IDR, USD]
+      responses:
+        '200':
+          description: List of closed assets
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/AssetsListResponse.yml#/AssetsListResponse'
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'
+
+  /api/assets/{id}/close:
+    post:
+      tags: [Assets]
+      summary: Close an asset account
+      description: |
+        Closes an asset account. Requires zero balance.
+        Once closed, the account is hidden from active views but transaction history is preserved.
+        Can be reopened later by an admin.
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: '../parameters/common.yml#/IdParameter'
+      responses:
+        '200':
+          description: Account closed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      asset:
+                        $ref: '../schemas/Asset.yml#/Asset'
+                      message:
+                        type: string
+                        example: Account closed successfully
+        '400':
+          description: Balance not zero or account already closed
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '404':
+          $ref: '../responses/common.yml#/NotFound'
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'
+
+  /api/assets/{id}/reopen:
+    post:
+      tags: [Assets]
+      summary: Reopen a closed asset account
+      description: |
+        Reopens a previously closed account. Admin only.
+        The account will be restored to the active accounts list.
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: '../parameters/common.yml#/IdParameter'
+      responses:
+        '200':
+          description: Account reopened successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      asset:
+                        $ref: '../schemas/Asset.yml#/Asset'
+                      message:
+                        type: string
+                        example: Account reopened successfully
+        '400':
+          description: Account is not closed
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '403':
+          description: Insufficient permissions (admin only)
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+        '404':
+          $ref: '../responses/common.yml#/NotFound'
         '500':
           $ref: '../responses/common.yml#/InternalServerError'
 

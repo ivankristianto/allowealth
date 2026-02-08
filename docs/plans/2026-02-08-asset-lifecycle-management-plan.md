@@ -217,14 +217,12 @@ describe('AssetService.close()', () => {
     });
 
     // findById lookup
-    (mockDb.query.assets.findFirst as any)
-      .mockResolvedValueOnce(asset)
-      .mockResolvedValueOnce({
-        ...asset,
-        status: 'closed',
-        closed_at: new Date(),
-        closed_by_user_id: 'user-1',
-      });
+    (mockDb.query.assets.findFirst as any).mockResolvedValueOnce(asset).mockResolvedValueOnce({
+      ...asset,
+      status: 'closed',
+      closed_at: new Date(),
+      closed_by_user_id: 'user-1',
+    });
 
     // update mock
     (mockDb.update as any).mockReturnValue({
