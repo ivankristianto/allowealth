@@ -15,6 +15,7 @@
  * @param {boolean} isNextDisabled - Disable next month button (future months)
  * @param {boolean} showAiRebalancer - Show AI Rebalancer button
  * @param {boolean} showCopyButton - Show Copy to Next Month button
+ * @param {number} uninitializedCount - Number of categories without budgets
  * @param {string} className - Additional CSS classes
  */
 
@@ -32,6 +33,7 @@ export interface Props {
   isNextDisabled?: boolean;
   showAiRebalancer?: boolean;
   showCopyButton?: boolean;
+  uninitializedCount?: number;
   currentMonthResetUrl?: string;
   className?: string;
 }
@@ -46,6 +48,7 @@ const {
   isNextDisabled = false,
   showAiRebalancer = true,
   showCopyButton = false,
+  uninitializedCount = 0,
   currentMonthResetUrl,
   className = '',
 } = Astro.props;
@@ -162,7 +165,7 @@ const headerClasses = ['flex flex-col gap-4', className].filter(Boolean).join(' 
   </div>
 
   {/* Second row: Action buttons */}
-  <BudgetActions showAiRebalancer={showAiRebalancer} />
+  <BudgetActions showAiRebalancer={showAiRebalancer} uninitializedCount={uninitializedCount} />
 </header>
 
 <script>

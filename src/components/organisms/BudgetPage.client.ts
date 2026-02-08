@@ -181,6 +181,27 @@ function handleBudgetsCopied(
 }
 
 /**
+ * Handle budgets-initialized event
+ *
+ * Fired when all uninitialized budgets are created with amount=0.
+ * Reloads the page to refresh button state, modal, and data attributes.
+ */
+function handleBudgetsInitialized(
+  event: CustomEvent<{
+    month: number;
+    year: number;
+    currency: string;
+    initializedCount: number;
+  }>
+): void {
+  const { initializedCount } = event.detail;
+
+  if (initializedCount > 0) {
+    window.location.reload();
+  }
+}
+
+/**
  * Re-initialize budget allocations `<details>` elements after DOM replacement.
  * On desktop (lg breakpoint), the allocations section should auto-open.
  * The inline script in BudgetSummary.astro only runs on initial page load,
@@ -452,6 +473,8 @@ export function initBudgetPage(): void {
   // Listen for budgets copied
   document.addEventListener('budgets-copied', handleBudgetsCopied as EventListener);
 
+  // Listen for budgets initialized
+  document.addEventListener('budgets-initialized', handleBudgetsInitialized as EventListener);
   // Listen for content updates (for re-initializing handlers)
   document.addEventListener('budget-content-updated', handleContentUpdated);
 }
@@ -475,6 +498,7 @@ export function cleanup(): void {
   document.removeEventListener('budget-updated', handleBudgetUpdated as EventListener);
   document.removeEventListener('budgets-copied', handleBudgetsCopied as EventListener);
   document.removeEventListener('budget-content-updated', handleContentUpdated);
+  document.removeEventListener('budgets-initialized', handleBudgetsInitialized as EventListener);
   state = null;
 }
 
