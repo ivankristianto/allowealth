@@ -124,7 +124,7 @@ export class AssetsPage extends BasePage {
       loan: 'Loan',
     };
     const typeLabel = typeToLabel[data.type] || data.type;
-    const typeSelect = modal
+    const typeSelect: Locator = modal
       .locator('[data-testid="asset-category-select"]')
       .or(modal.locator('select[name="type"]'));
 
@@ -235,7 +235,7 @@ export class AssetsPage extends BasePage {
         loan: 'Loan',
       };
       const typeLabel = typeToLabel[updates.type] || updates.type;
-      const typeSelect = modal
+      const typeSelect: Locator = modal
         .locator('[data-testid="asset-category-select"]')
         .or(modal.locator('select[name="type"]'));
       await typeSelect.selectOption({ label: typeLabel });

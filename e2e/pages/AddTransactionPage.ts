@@ -116,7 +116,7 @@ export class AddTransactionPage extends BasePage {
     await expect
       .poll(
         async () => {
-          const options = await this.categorySelect.locator('option').allTextContents();
+          const options: string[] = await this.categorySelect.locator('option').allTextContents();
           return options.some((opt) => opt.includes(data.categoryName));
         },
         { timeout: 10000, message: `Category "${data.categoryName}" not found in select options` }
@@ -127,7 +127,7 @@ export class AddTransactionPage extends BasePage {
     await expect
       .poll(
         async () => {
-          const options = await this.assetSelect.locator('option').allTextContents();
+          const options: string[] = await this.assetSelect.locator('option').allTextContents();
           return options.some((opt) => opt.includes(data.assetName));
         },
         { timeout: 10000, message: `Asset "${data.assetName}" not found in select options` }
@@ -186,7 +186,7 @@ export class AddTransactionPage extends BasePage {
     await this.page.goto(`/transactions?type=${type}`);
 
     // Verify we're on the transactions page by checking for the type filter buttons
-    const typeFilter =
+    const typeFilter: Locator =
       type === 'expense'
         ? this.page.locator(
             'button:has-text("Expenses")[aria-pressed="true"], [data-testid="type-filter-expense"][pressed]'
@@ -205,13 +205,15 @@ export class AddTransactionPage extends BasePage {
    */
   async expectValidationError(field: string, message: string): Promise<void> {
     // Find the field input element
-    const fieldInput = this.page.locator(`[name="${field}"]`);
+    const fieldInput: Locator = this.page.locator(`[name="${field}"]`);
 
     // Find the form-control container (parent of the field)
-    const formControl = fieldInput.locator('xpath=ancestor::div[contains(@class, "form-control")]');
+    const formControl: Locator = fieldInput.locator(
+      'xpath=ancestor::div[contains(@class, "form-control")]'
+    );
 
     // Find error within that specific field's container
-    const errorLocator = formControl.locator('.field-error');
+    const errorLocator: Locator = formControl.locator('.field-error');
 
     await expect(errorLocator).toBeVisible();
     await expect(errorLocator).toHaveText(message);
