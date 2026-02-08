@@ -41,6 +41,10 @@ export function createMockDatabase(): IDatabase {
         findFirst: mock(() => Promise.resolve(undefined)),
         findMany: mock(() => Promise.resolve([])),
       },
+      auditLogs: {
+        findFirst: mock(() => Promise.resolve(undefined)),
+        findMany: mock(() => Promise.resolve([])),
+      },
       categories: {
         findFirst: mock(() => Promise.resolve(undefined)),
         findMany: mock(() => Promise.resolve([])),
@@ -201,6 +205,8 @@ export function createMockTransaction(overrides: Partial<Transaction> = {}): Tra
     currency: 'IDR',
     description: 'Lunch',
     transaction_date: new Date('2026-01-05'),
+    updated_by_user_id: null,
+    deleted_by_user_id: null,
     deleted_at: null,
     created_at: new Date('2026-01-05'),
     updated_at: new Date('2026-01-05'),
@@ -235,6 +241,8 @@ export function resetMockDatabase(mockDb: IDatabase): void {
   (mockDb.insert as any).mockClear();
   (mockDb.query.transactions.findFirst as any).mockClear();
   (mockDb.query.transactions.findMany as any).mockClear();
+  (mockDb.query.auditLogs.findFirst as any).mockClear();
+  (mockDb.query.auditLogs.findMany as any).mockClear();
   (mockDb.query.categories.findFirst as any).mockClear();
   (mockDb.query.categories.findMany as any).mockClear();
   (mockDb.query.budgets.findFirst as any).mockClear();

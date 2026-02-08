@@ -25,6 +25,8 @@ export const transactions = pgTable(
     currency: text('currency', { enum: ['IDR', 'USD'] }).notNull(),
     description: text('description'),
     transaction_date: timestamp('transaction_date').notNull(),
+    updated_by_user_id: text('updated_by_user_id').references(() => users.id),
+    deleted_by_user_id: text('deleted_by_user_id').references(() => users.id),
     deleted_at: timestamp('deleted_at'),
     created_at: timestamp('created_at').defaultNow().notNull(),
     updated_at: timestamp('updated_at').defaultNow().notNull(),

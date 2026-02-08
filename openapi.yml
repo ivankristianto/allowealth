@@ -91,6 +91,8 @@ paths:
     $ref: './openapi/paths/transactions.yml#/paths/~1api~1transactions'
   /api/transactions/{id}:
     $ref: './openapi/paths/transactions.yml#/paths/~1api~1transactions~1{id}'
+  /api/transactions/{id}/history:
+    $ref: './openapi/paths/transactions.yml#/paths/~1api~1transactions~1{id}~1history'
   /api/transactions/export:
     $ref: './openapi/paths/transactions.yml#/paths/~1api~1transactions~1export'
   /api/transactions/import:
@@ -250,6 +252,10 @@ components:
       $ref: './openapi/schemas/TransactionResponse.yml#/TransactionResponse'
     TransactionsListResponse:
       $ref: './openapi/schemas/TransactionsListResponse.yml#/TransactionsListResponse'
+    TransactionHistoryEntry:
+      $ref: './openapi/schemas/TransactionHistoryEntry.yml#/TransactionHistoryEntry'
+    TransactionHistoryResponse:
+      $ref: './openapi/schemas/TransactionHistoryResponse.yml#/TransactionHistoryResponse'
     TransactionImportResult:
       $ref: './openapi/schemas/TransactionImportResult.yml#/TransactionImportResult'
 
