@@ -301,7 +301,7 @@ const cardClasses = [
               <button
                 type="button"
                 class:list={[
-                  'btn btn-ghost btn-sm gap-1',
+                  'btn btn-ghost btn-sm btn-square',
                   !hasHistory && 'btn-disabled opacity-30',
                 ]}
                 aria-label={
@@ -311,7 +311,6 @@ const cardClasses = [
                 {...(hasHistory ? { 'data-toggle-history': transaction.id } : {})}
               >
                 <History size={16} class="stroke-current" aria-hidden="true" />
-                <span class="text-xs">History</span>
               </button>
             </div>
           )}

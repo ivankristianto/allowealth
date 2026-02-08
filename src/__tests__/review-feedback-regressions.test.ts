@@ -296,9 +296,10 @@ describe('review feedback regressions', () => {
     expect(content).toContain('data-show-all-history');
   });
 
-  it('desktop history button should have visible text label', () => {
+  it('desktop history button should be icon-only (btn-square)', () => {
     const content = read('src/components/molecules/TransactionCard.astro');
-    // Desktop history button should have visible "History" text
-    expect(content).toContain('>History</span>');
+    // Desktop history button uses btn-square (icon-only, no text label)
+    expect(content).toContain('btn btn-ghost btn-sm btn-square');
+    expect(content).toContain('data-toggle-history');
   });
 });
