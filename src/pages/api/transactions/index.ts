@@ -97,8 +97,8 @@ export const GET: APIRoute = async (context) => {
     const transactions = rawTransactions.map(transformTransaction);
 
     // Enrich with has_history flag for conditional history icon
-    const transactionIds = transactions.map((t) => t.id);
-    const idsWithHistory = await transactionService.getTransactionIdsWithHistory(
+    const transactionIds: string[] = transactions.map((t) => t.id);
+    const idsWithHistory: Set<string> = await transactionService.getTransactionIdsWithHistory(
       auth.workspaceId,
       transactionIds
     );

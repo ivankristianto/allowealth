@@ -16,6 +16,7 @@ import { TransactionServiceError, ServiceErrorCode } from './service-errors';
 import { getCacheManager, CacheKeys, CacheTags, hashFilters } from '@/lib/cache';
 import { type PerfCollector, trackQuery } from '@/lib/perf';
 import { logAuditEvent } from '@/lib/audit-log';
+import type { TransactionHistoryResponse } from '@/lib/types/transaction';
 
 export { type CreateTransactionInput, type UpdateTransactionInput };
 
@@ -138,8 +139,8 @@ export class TransactionService {
       })
       .returning();
 
-    // Log audit event for transaction creation
-    await logAuditEvent({
+    // Log audit event for transaction creation (fire-and-forget)
+    void logAuditEvent({
       workspaceId: validated.workspace_id,
       userId: validated.created_by_user_id,
       action: 'create',
@@ -421,9 +422,9 @@ export class TransactionService {
         )
       );
 
-    // Log audit event only if something actually changed
+    // Log audit event only if something actually changed (fire-and-forget)
     if (userId && Object.keys(oldValues).length > 0) {
-      await logAuditEvent({
+      void logAuditEvent({
         workspaceId,
         userId,
         action: 'update',
@@ -449,7 +450,7 @@ export class TransactionService {
   /**
    * Soft delete transaction
    */
-  async delete(id: string, workspaceId: string, userId?: string) {
+  async delete(id: string, workspaceId: string, userId?: string): Promise<{ success: true }> {
     // Check if transaction exists
     const transaction = await this.findById(id, workspaceId);
     if (!transaction) {
@@ -479,9 +480,9 @@ export class TransactionService {
         )
       );
 
-    // Log audit event for deletion with full snapshot
+    // Log audit event for deletion with full snapshot (fire-and-forget)
     if (userId) {
-      await logAuditEvent({
+      void logAuditEvent({
         workspaceId,
         userId,
         action: 'delete',
@@ -792,7 +793,11 @@ export class TransactionService {
    * Get audit history for a transaction
    * Returns create + last N edits + delete event (if exists)
    */
-  async getHistory(transactionId: string, workspaceId: string, showAll = false) {
+  async getHistory(
+    transactionId: string,
+    workspaceId: string,
+    showAll = false
+  ): Promise<TransactionHistoryResponse> {
     const [results, categories, assets] = await Promise.all([
       (this as any).db.query.auditLogs.findMany({
         where: and(

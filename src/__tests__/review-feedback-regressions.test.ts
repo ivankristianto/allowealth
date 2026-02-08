@@ -254,4 +254,50 @@ describe('review feedback regressions', () => {
     const content = read('src/pages/api/transactions/index.ts');
     expect(content).toContain('include_deleted: false');
   });
+
+  it('drawer edit handler should use nullish coalescing, not logical OR', () => {
+    const content = read('src/components/organisms/TransactionDrawer.client.ts');
+    // setInput calls must use ?? to preserve zero values (amount: 0)
+    expect(content).toContain("detail.amount ?? ''");
+    expect(content).toContain("detail.currency ?? 'IDR'");
+    expect(content).not.toContain("data.amount || ''");
+  });
+
+  it('drawer event listeners should use typed CustomEvent payloads', () => {
+    const content = read('src/components/organisms/TransactionDrawer.client.ts');
+    expect(content).toContain('interface OpenDrawerDetail');
+    expect(content).toContain('interface EditDrawerDetail');
+    expect(content).toContain('CustomEvent<OpenDrawerDetail>');
+    expect(content).toContain('CustomEvent<EditDrawerDetail>');
+  });
+
+  it('audit logging should be fire-and-forget (void, not await)', () => {
+    const content = read('src/services/transaction.service.ts');
+    expect(content).toContain('void logAuditEvent(');
+    expect(content).not.toContain('await logAuditEvent(');
+  });
+
+  it('transaction history API variables should have explicit types', () => {
+    const content = read('src/pages/api/transactions/index.ts');
+    expect(content).toContain('const transactionIds: string[]');
+    expect(content).toContain('const idsWithHistory: Set<string>');
+  });
+
+  it('TransactionHistoryEntry createdAt should be string for JSON serialization', () => {
+    const content = read('src/lib/types/transaction.ts');
+    expect(content).toContain('createdAt: string;');
+    expect(content).not.toContain('createdAt: Date;');
+  });
+
+  it('show all history button should meet 44px touch target', () => {
+    const content = read('src/components/partials/TransactionHistoryPartial.astro');
+    expect(content).toContain('min-h-[44px]');
+    expect(content).toContain('data-show-all-history');
+  });
+
+  it('desktop history button should have visible text label', () => {
+    const content = read('src/components/molecules/TransactionCard.astro');
+    // Desktop history button should have visible "History" text
+    expect(content).toContain('>History</span>');
+  });
 });

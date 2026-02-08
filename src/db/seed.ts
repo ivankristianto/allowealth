@@ -1506,6 +1506,13 @@ async function seedTransactionAuditLogs(
       new_value: JSON.stringify({ amount: newAmount }),
       created_at: editDate,
     });
+
+    // Persist the amount change to the transaction row
+    await db
+      .update(transactions)
+      .set({ amount: newAmount, updated_at: editDate, updated_by_user_id: memberUserId })
+      .where(eq(transactions.id, t.id));
+
     updateCount++;
 
     // Add a second edit for some transactions
@@ -1525,6 +1532,13 @@ async function seedTransactionAuditLogs(
         new_value: JSON.stringify({ description: newDesc }),
         created_at: secondEditDate,
       });
+
+      // Persist the description change to the transaction row
+      await db
+        .update(transactions)
+        .set({ description: newDesc, updated_at: secondEditDate, updated_by_user_id: adminUserId })
+        .where(eq(transactions.id, t.id));
+
       updateCount++;
     }
   }

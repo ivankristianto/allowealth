@@ -149,11 +149,12 @@ const cardClasses = [
               {hasHistory && (
                 <button
                   type="button"
-                  class="btn btn-ghost btn-sm btn-square min-h-[44px] min-w-[44px]"
+                  class="btn btn-ghost btn-sm min-h-[44px] min-w-[44px] gap-1"
                   aria-label={`View history for: ${primaryText}`}
                   data-toggle-history={transaction.id}
                 >
                   <History size={16} class="stroke-current" aria-hidden="true" />
+                  <span class="sr-only">History</span>
                 </button>
               )}
               {showActions && !isDeleted && (
@@ -295,11 +296,12 @@ const cardClasses = [
             {hasHistory && (
               <button
                 type="button"
-                class="btn btn-ghost btn-sm"
+                class="btn btn-ghost btn-sm gap-1"
                 aria-label={`View history for: ${primaryText}`}
                 data-toggle-history={transaction.id}
               >
                 <History size={16} class="stroke-current" aria-hidden="true" />
+                <span class="text-xs">History</span>
               </button>
             )}
             {showActions && !isDeleted && (

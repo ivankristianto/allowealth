@@ -13,6 +13,22 @@ interface SubmittedTransaction {
   currency?: string;
 }
 
+interface OpenDrawerDetail {
+  type?: TransactionType;
+}
+
+interface EditDrawerDetail {
+  id: string;
+  type: TransactionType;
+  title?: string;
+  description?: string;
+  amount?: string | number;
+  currency?: string;
+  category_id?: string;
+  asset_id?: string;
+  transaction_date?: string;
+}
+
 const ACTIVE_TAB_CLASSES = ['bg-white', 'shadow-sm', 'text-primary'] as const;
 const INACTIVE_TAB_CLASSES = ['bg-transparent', 'text-neutral'] as const;
 
@@ -155,10 +171,10 @@ function initTransactionDrawer(): void {
   });
 
   // Open drawer in create mode
-  document.addEventListener('open-transaction-drawer', ((event: CustomEvent) => {
+  document.addEventListener('open-transaction-drawer', ((event: CustomEvent<OpenDrawerDetail>) => {
     resetEditMode();
     // If a specific tab is requested, switch to it
-    const requestedType = event.detail?.type;
+    const requestedType: TransactionType | undefined = event.detail?.type;
     if (requestedType === 'expense' || requestedType === 'income') {
       setActiveTab(requestedType);
     }
@@ -166,18 +182,18 @@ function initTransactionDrawer(): void {
   }) as EventListener);
 
   // Open drawer in edit mode with transaction data
-  document.addEventListener('edit-transaction-drawer', ((event: CustomEvent) => {
-    const data = event.detail;
-    if (!data?.id) return;
+  document.addEventListener('edit-transaction-drawer', ((event: CustomEvent<EditDrawerDetail>) => {
+    const detail: EditDrawerDetail = event.detail;
+    if (!detail?.id) return;
 
-    const type: TransactionType = data.type === 'income' ? 'income' : 'expense';
+    const type: TransactionType = detail.type === 'income' ? 'income' : 'expense';
     setActiveTab(type);
 
     // Hide tabs and recent items for edit mode
-    const tabContainer = drawer.querySelector('[role="tablist"]');
-    const recentSection = drawer.querySelector('.mt-8.pt-6');
-    if (tabContainer) (tabContainer as HTMLElement).classList.add('hidden');
-    if (recentSection) (recentSection as HTMLElement).classList.add('hidden');
+    const tabContainer: HTMLElement | null = drawer.querySelector('[role="tablist"]');
+    const recentSection: HTMLElement | null = drawer.querySelector('.mt-8.pt-6');
+    if (tabContainer) tabContainer.classList.add('hidden');
+    if (recentSection) recentSection.classList.add('hidden');
 
     // Get the active form
     const formContainer = type === 'expense' ? expenseForm : incomeForm;
@@ -188,26 +204,26 @@ function initTransactionDrawer(): void {
 
     // Set edit mode on form
     form.dataset.mode = 'edit';
-    form.dataset.transactionId = data.id;
+    form.dataset.transactionId = detail.id;
 
     // Populate form fields
-    const setInput = (name: string, value: string) => {
+    const setInput = (name: string, value: string | number | null | undefined): void => {
       const input = form.querySelector(`[name="${name}"]`) as
         | HTMLInputElement
         | HTMLSelectElement
         | null;
       if (input) {
-        input.value = value;
+        input.value = value == null ? '' : String(value);
         input.dispatchEvent(new Event('change', { bubbles: true }));
       }
     };
 
-    setInput('title', data.title || data.description || '');
-    setInput('amount', data.amount || '');
-    setInput('currency', data.currency || 'IDR');
-    setInput('category_id', data.category_id || '');
-    setInput('asset_id', data.asset_id || '');
-    setInput('transaction_date', data.transaction_date || '');
+    setInput('title', detail.title ?? detail.description ?? '');
+    setInput('amount', detail.amount ?? '');
+    setInput('currency', detail.currency ?? 'IDR');
+    setInput('category_id', detail.category_id ?? '');
+    setInput('asset_id', detail.asset_id ?? '');
+    setInput('transaction_date', detail.transaction_date ?? '');
 
     // Update submit button text
     const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement | null;

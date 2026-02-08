@@ -80,7 +80,7 @@ export interface TransactionHistoryEntry {
   action: 'create' | 'update' | 'delete';
   userName: string;
   userId: string;
-  createdAt: Date;
+  createdAt: string;
   oldValue: Record<string, unknown> | null;
   newValue: Record<string, unknown> | null;
 }
