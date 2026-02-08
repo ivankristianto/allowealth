@@ -583,6 +583,38 @@ export class AssetService {
   }
 
   /**
+   * Find all closed assets for a workspace
+   */
+  async findAllClosed(
+    workspaceId: string,
+    filters?: {
+      type?: AssetType;
+      currency?: Currency;
+    },
+    perf?: PerfCollector
+  ) {
+    const conditions = [
+      eq(this.schema.assets.workspace_id, workspaceId),
+      eq(this.schema.assets.status, 'closed'),
+      sql`${this.schema.assets.deleted_at} IS NULL`,
+    ];
+
+    if (filters?.type) {
+      conditions.push(eq(this.schema.assets.type, filters.type));
+    }
+    if (filters?.currency) {
+      conditions.push(eq(this.schema.assets.currency, filters.currency));
+    }
+
+    return trackQuery('AssetService.findAllClosed', perf, async () => {
+      return this.db.query.assets.findMany({
+        where: and(...conditions),
+        orderBy: (_assets: any, { desc }: any) => [desc(this.schema.assets.closed_at)],
+      });
+    });
+  }
+
+  /**
    * Get all assets with their history for forecast calculations
    */
   async findAllWithHistory(workspaceId: string) {
