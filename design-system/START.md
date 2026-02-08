@@ -106,7 +106,7 @@ colors.status.danger; // #f43f5e (≥100%)
 
 ```typescript
 'text-primary'; // Primary brand color (slate-900 light / slate-50 dark)
-'text-accent'; // Accent color (forest-600) - CTAs, interactive elements
+'text-accent'; // Accent color (forest-700) - CTAs, interactive elements
 'text-success'; // Success states (emerald-500) - confirmations, IDR
 'text-warning'; // Warning states (amber-500) - budget alerts
 'text-error'; // Error states (rose-500) - over budget, danger

@@ -21,7 +21,7 @@ const meta: Meta = {
 
 | Property | Value | Applied Via |
 |----------|-------|-------------|
-| Gradient | \`linear-gradient(90deg, rgba(22,163,74,0.1) 0%, rgba(22,163,74,0) 100%)\` | \`.nav-active\` |
+| Gradient | \`linear-gradient(90deg, rgba(21,128,61,0.1) 0%, rgba(21,128,61,0) 100%)\` | \`.nav-active\` |
 | Left Border | 2px solid #15803d | \`.nav-active\` |
 | ARIA | Current page indicator | \`aria-current="page"\` |
 

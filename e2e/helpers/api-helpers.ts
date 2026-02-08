@@ -146,7 +146,7 @@ export async function createCategoryViaAPI(
       name: data.name,
       type: data.type,
       icon: data.icon || 'circle',
-      color: data.color || '#16a34a',
+      color: data.color || '#15803d',
     },
   });
 
