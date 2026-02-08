@@ -21,12 +21,12 @@
  * invalid input parameters without throwing exceptions.
  *
  * P2: TODO - Improve date precision (add milliseconds to end date: 23:59:59.999)
- * P2: TODO - Extract MONTH_NAMES array to class constant (used in 2 places)
  */
 
 import { type IDatabase, getActiveSchema } from '@/db';
 import { eq, and, gte, lte, sql } from 'drizzle-orm';
 import { createLogger } from '@/lib/logger';
+import { MONTH_NAMES_SHORT } from '@/lib/utils/date';
 
 const log = createLogger('report');
 import {
@@ -748,21 +748,6 @@ export class ReportService {
     currency: 'IDR' | 'USD',
     trailingMonths: number
   ): Promise<TrendDataPoint[]> {
-    const monthNames = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-
     const trendData: TrendDataPoint[] = [];
 
     // Get data for each trailing month
@@ -780,7 +765,7 @@ export class ReportService {
       ]);
 
       trendData.push({
-        name: monthNames[trendMonth - 1],
+        name: MONTH_NAMES_SHORT[trendMonth - 1],
         income,
         expenses,
       });
@@ -798,21 +783,6 @@ export class ReportService {
     year: number,
     currency: 'IDR' | 'USD'
   ): Promise<TrendDataPoint[]> {
-    const monthNames = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-
     const trendData: TrendDataPoint[] = [];
 
     // Get data for each month of the year
@@ -826,7 +796,7 @@ export class ReportService {
       ]);
 
       trendData.push({
-        name: monthNames[month - 1],
+        name: MONTH_NAMES_SHORT[month - 1],
         income,
         expenses,
       });

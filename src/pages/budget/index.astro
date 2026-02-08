@@ -27,6 +27,7 @@ import {
 } from '@/services';
 import { formatCurrency } from '@/lib/formatting';
 import { calculateAllocationDistribution } from '@/lib/utils/budget';
+import { getMonthName } from '@/lib/utils/date';
 import { CircleX, Search, LayoutGrid, Table as TableIcon } from '@lucide/astro';
 
 const user = Astro.locals.user;
@@ -44,11 +45,38 @@ const yearParam = url.searchParams.get('year');
 const monthParam = url.searchParams.get('month');
 const currencyParam = url.searchParams.get('currency') as 'IDR' | 'USD' | null;
 
-// Default to current month if not specified
+// Parse and validate year/month parameters with strict numeric validation
 const now = new Date();
-const selectedYear = yearParam ? parseInt(yearParam, 10) : now.getFullYear();
-const selectedMonth = monthParam ? parseInt(monthParam, 10) : now.getMonth() + 1;
+const currentYear = now.getFullYear();
+const currentMonth = now.getMonth() + 1;
+
+// Use Number() for strict validation (rejects "1abc", "1.9", etc.)
+const parsedYear = yearParam ? Number(yearParam) : null;
+const parsedMonth = monthParam ? Number(monthParam) : null;
+
+// Validate year: must be integer in reasonable range (1900-2100)
+const isValidYear =
+  parsedYear !== null && Number.isInteger(parsedYear) && parsedYear >= 1900 && parsedYear <= 2100;
+const selectedYear = isValidYear ? parsedYear : currentYear;
+
+// Validate month: must be integer 1-12
+const isValidMonth =
+  parsedMonth !== null && Number.isInteger(parsedMonth) && parsedMonth >= 1 && parsedMonth <= 12;
+const selectedMonth = isValidMonth ? parsedMonth : currentMonth;
+
 const selectedCurrency = currencyParam || 'IDR';
+
+// Canonicalize URL if invalid params were provided
+const hasInvalidParams =
+  (yearParam !== null && !isValidYear) || (monthParam !== null && !isValidMonth);
+
+if (hasInvalidParams) {
+  const canonicalUrl = new URL(Astro.request.url);
+  canonicalUrl.searchParams.set('year', selectedYear.toString());
+  canonicalUrl.searchParams.set('month', selectedMonth.toString());
+  canonicalUrl.searchParams.set('currency', selectedCurrency);
+  return Astro.redirect(canonicalUrl.pathname + '?' + canonicalUrl.searchParams.toString());
+}
 
 // Get budget data from service
 let budgetData: BudgetSummaryType | null = null;
@@ -79,23 +107,7 @@ const allocationDistribution = budgetData
     )
   : [];
 
-// Month names for display
-const monthNames = [
-  'January',
-  'February',
-  'March',
-  'April',
-  'May',
-  'June',
-  'July',
-  'August',
-  'September',
-  'October',
-  'November',
-  'December',
-];
-
-const currentMonthName = monthNames[selectedMonth - 1];
+const currentMonthName = getMonthName(selectedMonth);
 const currentMonthDisplay = `${currentMonthName} ${selectedYear}`;
 
 // Build URLs for month navigation
@@ -117,9 +129,6 @@ const nextMonthYear = nextMonthDate.getFullYear();
 const nextMonth = nextMonthDate.getMonth() + 1;
 
 // Check if we're viewing the current month (for showing "Current Month" button)
-const nowDate = new Date();
-const currentYear = nowDate.getFullYear();
-const currentMonth = nowDate.getMonth() + 1;
 const isViewingCurrentMonth = selectedYear === currentYear && selectedMonth === currentMonth;
 
 // Check if next month is in the future
@@ -219,15 +228,17 @@ const budgetsForModal = existingBudgets.map((b) => ({
   budget_amount: b.budget_amount,
 }));
 
-// Create a map of budget amounts by category_id for easy lookup
+// Create maps for budget data by category_id
 const budgetAmountsByCategory = new Map(
   existingBudgets.map((b) => [b.category_id, b.budget_amount])
 );
+const budgetIdsByCategory = new Map(existingBudgets.map((b) => [b.category_id, b.id]));
 
-// Merge budget amounts into expense categories for the edit handler
+// Merge budget amounts and IDs into expense categories for inline editing
 const expenseCategoriesWithBudgets = expenseCategories.map((cat) => ({
   ...cat,
   budget_amount: budgetAmountsByCategory.get(cat.id) || '0',
+  budget_id: budgetIdsByCategory.get(cat.id) || '',
 }));
 
 // Count budgets with actual limits set

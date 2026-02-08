@@ -1,0 +1,59 @@
+name: Feature Request
+description: Propose a new feature or enhancement
+labels: ['enhancement']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Describe the feature you'd like to see added.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Feature Description
+      description: What should this feature do?
+      placeholder: 'Add ability to export transactions as CSV for tax reporting'
+    validations:
+      required: true
+
+  - type: textarea
+    id: rationale
+    attributes:
+      label: Why is this needed?
+      description: What problem does this solve? What's the use case?
+      placeholder: 'I need to provide transaction history to my accountant at tax time'
+    validations:
+      required: true
+
+  - type: textarea
+    id: user_stories
+    attributes:
+      label: User Stories
+      description: Describe the feature from the user's perspective
+      placeholder: |
+        As a user, I want to export my transactions to CSV
+        So that I can import them into my accounting software
+
+        Acceptance Criteria:
+        - Export includes all transaction fields (date, amount, category, etc.)
+        - Can filter by date range before exporting
+        - Downloaded file has proper CSV formatting
+      value: |
+        As a [user type], I want to [action]
+        So that [benefit/outcome]
+
+        Acceptance Criteria:
+        -
+        -
+        -
+    validations:
+      required: true
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Additional Notes
+      description: Any implementation ideas, related features, or concerns?
+      placeholder: 'Should support filtering by date range and category'
+    validations:
+      required: false

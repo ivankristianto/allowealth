@@ -1,0 +1,50 @@
+name: Design System Violation
+description: Report UI inconsistency, accessibility issue, or token misuse
+labels: ['design-system', 'ui']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Report violations of the design system documented in `design-system/START.md`
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Violation Type
+      description: What kind of design system issue is this?
+      options:
+        - Hardcoded values (not using tokens)
+        - Wrong component usage (not using DaisyUI)
+        - Accessibility issue
+        - Mobile responsiveness
+        - Inconsistent styling
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: location
+    attributes:
+      label: Where is the issue?
+      description: File path, page URL, or component name
+      placeholder: 'src/pages/budget/index.astro - hardcoded `text-[14px]` instead of `text-sm`'
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What should be used instead?
+      description: Reference to design system guideline or correct implementation
+      placeholder: 'Should use `text-sm` token or import from `@/lib/tokens`'
+    validations:
+      required: true
+
+  - type: textarea
+    id: impact
+    attributes:
+      label: Impact
+      description: How does this affect users or maintainability?
+      placeholder: 'Breaks visual consistency across pages'
+    validations:
+      required: false

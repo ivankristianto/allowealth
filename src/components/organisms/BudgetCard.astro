@@ -19,8 +19,8 @@
 
 // External packages
 import {
-  Pencil,
   Eye,
+  Pencil,
   House,
   ShoppingCart,
   Utensils,
@@ -273,15 +273,6 @@ const cardClasses = [
             <Eye size={16} class="stroke-current" aria-hidden="true" />
             <span class="hidden md:inline">View</span>
           </a>
-          <button
-            type="button"
-            class="inline-flex items-center gap-1 text-base-content/30 hover:text-base-content/60 transition-colors min-h-[44px] min-w-[44px] justify-center rounded-lg hover:bg-base-200 text-xs font-medium"
-            aria-label={`Edit ${categoryName} budget`}
-            data-edit-budget={categoryId}
-          >
-            <Pencil size={16} class="stroke-current" aria-hidden="true" />
-            <span class="hidden md:inline">Edit</span>
-          </button>
         </div>
       </div>
 
@@ -303,13 +294,26 @@ const cardClasses = [
             <StatLabel size="sm" className="text-[10px] md:text-xs">
               Budget
             </StatLabel>
-            <p
-              class="text-xs md:text-sm font-bold mt-0.5 md:mt-1 text-base-content/60 leading-none"
-              data-budget-amount
-              data-testid="budget-amount"
-            >
-              {formatCurrency(budget, currency)}
-            </p>
+            <div class="flex items-center justify-end gap-1 mt-0.5 md:mt-1">
+              <span
+                class="text-xs md:text-sm font-bold text-base-content/60 leading-none"
+                data-budget-amount
+                data-testid="budget-amount"
+              >
+                {formatCurrency(budget, currency)}
+              </span>
+              <button
+                type="button"
+                class="inline-flex items-center justify-center min-h-[44px] min-w-[44px] rounded-md text-base-content/40 hover:text-accent hover:bg-accent/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+                data-budget-editable={categoryId}
+                data-budget-raw={budget}
+                data-testid="budget-edit-btn"
+                aria-label={`Edit ${categoryName} budget: ${formatCurrency(budget, currency)}`}
+              >
+                <Pencil size={12} class="stroke-current md:hidden" aria-hidden="true" />
+                <Pencil size={14} class="stroke-current hidden md:block" aria-hidden="true" />
+              </button>
+            </div>
           </div>
         </div>
 

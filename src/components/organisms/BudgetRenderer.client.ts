@@ -206,6 +206,53 @@ export function renderFromHtmlResponse(response: FetchBudgetOverviewHtmlResponse
   if (partials.advice !== undefined) {
     renderAdviceHtml(partials.advice);
   }
+
+  if (partials.meta) {
+    updateCategoryBudgetMeta(partials.meta);
+  }
+}
+
+/**
+ * Update the data-expense-categories attribute on the budget container.
+ *
+ * After HTML refresh, the container's category-budget mapping is stale.
+ * The API includes a meta partial with fresh category/budget ID data
+ * so inline editing can look up budget IDs for newly created budgets.
+ */
+function updateCategoryBudgetMeta(metaJson: string): void {
+  const container = document.querySelector('[data-budget-container]');
+  if (!container) return;
+
+  try {
+    // Validate JSON is parseable before setting attribute
+    const meta = JSON.parse(metaJson) as Array<{ id: string; budget_id: string }>;
+    if (!Array.isArray(meta)) return;
+
+    // Merge with existing categories to preserve fields not in meta (e.g., name, type)
+    const existingJson = container.getAttribute('data-expense-categories');
+    if (existingJson) {
+      const existing = JSON.parse(existingJson) as Array<Record<string, unknown>>;
+      const metaMap = new Map(meta.map((m) => [m.id, m]));
+
+      const merged = existing.map((cat) => {
+        const fresh = metaMap.get(cat.id as string);
+        return fresh ? { ...cat, budget_id: fresh.budget_id } : cat;
+      });
+
+      // Add any categories from meta that weren't in existing (new budgets)
+      for (const m of meta) {
+        if (!existing.some((cat) => cat.id === m.id)) {
+          merged.push(m);
+        }
+      }
+
+      container.setAttribute('data-expense-categories', JSON.stringify(merged));
+    } else {
+      container.setAttribute('data-expense-categories', metaJson);
+    }
+  } catch {
+    // Silently ignore parse errors — inline edit will show "refresh page" message
+  }
 }
 
 /**

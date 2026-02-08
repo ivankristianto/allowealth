@@ -37,6 +37,7 @@ docs/prompt.md
 .vscode/
 .codex/
 .cursor/
+.gemini/
 .idea/
 *.swp
 *.swo
@@ -65,7 +66,7 @@ storybook-static/
 specs/familyfinance
 
 # E2E Testing
-e2e/.auth/
+**/.auth/
 playwright-report/
 test-results/
 .env.e2e
@@ -77,3 +78,6 @@ test-results/
 .vercel/
 .netlify/
 .astro/
+
+# Git worktrees
+expenses.worktrees/

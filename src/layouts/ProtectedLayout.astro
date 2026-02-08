@@ -19,8 +19,7 @@
  * - Middleware redirects unauthenticated users before page execution
  * - Passes authenticated user and title/subtitle to MainLayout and Header
  * - Provides consistent layout for protected pages
- * - Includes global TransactionModal (expense-modal, income-modal, edit-transaction-modal)
- *   accessible from the "New Entry" button in the header
+ * - Includes global TransactionDrawer accessible from the "New Transaction" header button
  * - Makes userSettings available via Astro.locals.userSettings (frozen to prevent mutation)
  *
  * Note: This layout should only be used for pages under protected route prefixes:
@@ -32,7 +31,7 @@
  */
 
 import MainLayout from './MainLayout.astro';
-import TransactionModal from '@/components/organisms/TransactionModal.astro';
+import TransactionDrawer from '@/components/organisms/TransactionDrawer.astro';
 import { categoryService, assetService, userMetaService } from '@/services';
 import { DEFAULT_USER_SETTINGS, type UserSettings } from '@/lib/constants/user-meta-keys';
 import { getCacheManager, CacheKeys, CacheTags } from '@/lib/cache';
@@ -54,7 +53,7 @@ const { title = 'Finance Manager', currentPath = '/', subtitle } = Astro.props;
 // User is authenticated (enforced by middleware)
 const user = Astro.locals.user!;
 
-// Fetch categories, assets, and user settings for global transaction modal
+// Fetch categories, assets, and user settings for global transaction drawer
 // Use cache to reduce database round-trips (saves ~400ms per page load)
 let categories: Array<{ id: string; name: string; type: string; currency?: string }> = [];
 let assets: Array<{ id: string; name: string; type: string }> = [];
@@ -109,8 +108,8 @@ if (cached) {
       // Non-critical: DB-fetched data is still returned
     }
   } catch (err) {
-    console.error('Error loading transaction form data:', err);
-    // Non-critical: modal won't have options but pages still work
+    console.error('Error loading transaction drawer data:', err);
+    // Non-critical: drawer won't have options but pages still work
   }
 }
 
@@ -122,180 +121,5 @@ Astro.locals.userSettings = Object.freeze({ ...userSettings });
   <slot />
 </MainLayout>
 
-<!-- Global Transaction Modals (accessible from header "New Entry" button) -->
-<TransactionModal
-  id="expense-modal"
-  type="expense"
-  mode="create"
-  open={false}
-  action="/api/transactions"
-  categories={categories}
-  assets={assets}
-/>
-<TransactionModal
-  id="income-modal"
-  type="income"
-  mode="create"
-  open={false}
-  action="/api/transactions"
-  categories={categories}
-  assets={assets}
-/>
-
-<!-- Edit Modal (dynamically populated) -->
-<TransactionModal
-  id="edit-transaction-modal"
-  type="expense"
-  mode="edit"
-  open={false}
-  action="/api/transactions"
-  categories={categories}
-  assets={assets}
-/>
-
-<!-- Client-side script for edit modal handling -->
-<script>
-  import type { TransactionFormData } from '@/lib/types/transaction';
-
-  // AbortController for proper event listener lifecycle management
-  let abortController: AbortController | null = null;
-
-  /**
-   * Handle click events for edit transaction buttons.
-   * Uses event delegation to catch clicks on [data-edit-transaction] elements.
-   */
-  function handleEditClick(e: Event) {
-    const target = e.target as HTMLElement;
-    const editBtn = target.closest('[data-edit-transaction]') as HTMLElement | null;
-    if (!editBtn) return;
-
-    e.preventDefault();
-    const transactionData = editBtn.dataset.transactionData;
-    if (!transactionData) return;
-
-    try {
-      const data = JSON.parse(transactionData) as TransactionFormData;
-      openEditModal(data);
-    } catch (err) {
-      console.error('Failed to parse transaction data:', err);
-    }
-  }
-
-  /**
-   * Initialize edit transaction click handlers with proper cleanup.
-   * Uses scoped event delegation on <main> element for better performance.
-   * Uses AbortController to prevent event listener accumulation across
-   * Astro View Transitions page navigations.
-   */
-  function initEditTransactionHandlers() {
-    const main = document.querySelector('main');
-    if (!main) return;
-
-    // Cleanup previous listener before adding new one
-    abortController?.abort();
-    abortController = new AbortController();
-
-    main.addEventListener('click', handleEditClick, {
-      signal: abortController.signal,
-    });
-  }
-
-  /**
-   * Opens the edit transaction modal and populates it with existing data.
-   */
-  function openEditModal(data: TransactionFormData) {
-    const modal = document.getElementById('edit-transaction-modal') as HTMLDialogElement | null;
-    if (!modal) return;
-
-    const form = modal.querySelector('[data-transaction-form]') as HTMLFormElement | null;
-    if (!form) return;
-
-    // Update form data attributes for the correct type and transaction ID
-    form.dataset.type = data.type;
-    form.dataset.transactionId = data.id;
-    form.dataset.mode = 'edit';
-
-    // Update hidden type field
-    const typeInput = form.querySelector('input[name="type"]') as HTMLInputElement | null;
-    if (typeInput) typeInput.value = data.type;
-
-    // Populate form fields
-    const titleInput = form.querySelector('input[name="title"]') as HTMLInputElement | null;
-    if (titleInput) titleInput.value = data.title || '';
-
-    const amountInput = form.querySelector('input[name="amount"]') as HTMLInputElement | null;
-    if (amountInput) amountInput.value = data.amount || '';
-
-    const currencySelect = form.querySelector(
-      'select[name="currency"]'
-    ) as HTMLSelectElement | null;
-    if (currencySelect) currencySelect.value = data.currency || 'IDR';
-
-    const dateInput = form.querySelector(
-      'input[name="transaction_date"]'
-    ) as HTMLInputElement | null;
-    if (dateInput) dateInput.value = data.transaction_date || '';
-
-    const categorySelect = form.querySelector(
-      'select[name="category_id"]'
-    ) as HTMLSelectElement | null;
-    if (categorySelect) categorySelect.value = data.category_id || '';
-
-    const assetSelect = form.querySelector('select[name="asset_id"]') as HTMLSelectElement | null;
-    if (assetSelect) assetSelect.value = data.asset_id || '';
-
-    // Update modal header based on type
-    const modalTitle = modal.querySelector('[data-modal-title]');
-    const modalSubtitle = modal.querySelector('[data-modal-subtitle]');
-    if (modalTitle)
-      modalTitle.textContent = data.type === 'expense' ? 'Edit Expense' : 'Edit Income';
-    if (modalSubtitle) modalSubtitle.textContent = 'Update the transaction details.';
-
-    modal.showModal();
-  }
-
-  // Window flag to prevent astro:page-load listener accumulation
-  const LISTENER_KEY = '__protectedLayoutEditHandlerRegistered';
-  const win = window as unknown as Record<string, boolean>;
-
-  /**
-   * Register cleanup handler for Astro page swap.
-   * Uses { once: true } since cleanup only needs to fire once per page lifecycle.
-   * Resets window flag to allow re-registration on next protected page visit.
-   */
-  function registerCleanupHandler() {
-    document.addEventListener(
-      'astro:before-swap',
-      () => {
-        abortController?.abort();
-        abortController = null;
-        // Reset flag so listener can be re-registered on next page load
-        win[LISTENER_KEY] = false;
-      },
-      { once: true }
-    );
-  }
-
-  // Initialize on DOM ready (use once: true since DOMContentLoaded fires once per document)
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initEditTransactionHandlers, { once: true });
-  } else {
-    initEditTransactionHandlers();
-  }
-
-  // Register initial cleanup handler
-  registerCleanupHandler();
-
-  // Re-initialize on Astro page transitions - only register listener once per session
-  if (!win[LISTENER_KEY]) {
-    win[LISTENER_KEY] = true;
-    document.addEventListener('astro:page-load', () => {
-      // Only initialize on protected pages (check for modal existence)
-      if (!document.getElementById('edit-transaction-modal')) return;
-
-      initEditTransactionHandlers();
-      // Re-register the one-time cleanup handler for this new page
-      registerCleanupHandler();
-    });
-  }
-</script>
+<!-- Bulk Transaction Drawer -->
+<TransactionDrawer categories={categories} assets={assets} />

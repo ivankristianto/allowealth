@@ -132,6 +132,17 @@ export const GET: APIRoute = async (context) => {
         htmlParts.push(`<!-- PARTIAL:advice -->\n${adviceHtml}`);
       }
 
+      // Include category-budget ID mapping so client can update
+      // data-expense-categories after DOM injection (needed for inline editing)
+      if (partial === 'all' || partial === 'cards') {
+        const categoryBudgetMeta = budgetData.categories.map((cat) => ({
+          id: cat.category_id,
+          budget_id: cat.budget_id,
+          budget_amount: cat.budget_amount,
+        }));
+        htmlParts.push(`<!-- PARTIAL:meta -->\n${JSON.stringify(categoryBudgetMeta)}`);
+      }
+
       return render.html(htmlParts.join('\n\n'));
     }
 

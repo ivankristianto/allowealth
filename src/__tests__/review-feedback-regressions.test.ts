@@ -194,4 +194,38 @@ describe('review feedback regressions', () => {
     expect(mainSearchSegment).not.toContain('sm:pl-11');
     expect(mainSearchSegment).not.toContain('sm:pr-4');
   });
+
+  it('header should delegate drawer trigger in Header.client.ts and keep astro markup SSR-only', () => {
+    const headerAstro = read('src/components/layouts/Header.astro');
+    const headerClient = read('src/components/layouts/Header.client.ts');
+
+    expect(headerAstro).toContain('data-open-transaction-drawer');
+    expect(headerAstro).toContain("import './Header.client';");
+    expect(headerAstro).not.toContain("getElementById('bulk-entry-button')");
+    expect(headerClient).toContain("closest('[data-open-transaction-drawer]')");
+    expect(headerClient).toContain("new CustomEvent('open-transaction-drawer')");
+  });
+
+  it('drawer should conditionally hide and always expose an accessible name', () => {
+    const drawerAstro = read('src/components/molecules/Drawer.astro');
+
+    expect(drawerAstro).toContain("!open && 'hidden'");
+    expect(drawerAstro).toContain('aria-label=');
+    expect(drawerAstro).toContain('aria-labelledby=');
+  });
+
+  it('drawer client should preserve and restore previous body overflow value', () => {
+    const drawerClient = read('src/components/molecules/Drawer.client.ts');
+
+    expect(drawerClient).toContain('previousBodyOverflow');
+    expect(drawerClient).toContain("document.body.style.overflow = previousBodyOverflow ?? ''");
+  });
+
+  it('transactions page should validate parsed edit payload before opening modal', () => {
+    const content = read('src/components/organisms/TransactionsPage.client.ts');
+
+    expect(content).toContain('function isTransactionFormData');
+    expect(content).toContain('if (!isTransactionFormData(parsed))');
+    expect(content).toContain('Failed to load transaction details');
+  });
 });

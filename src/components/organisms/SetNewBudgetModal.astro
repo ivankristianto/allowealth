@@ -2,21 +2,23 @@
 /**
  * SetNewBudgetModal Component
  *
- * Modal for setting a new budget allocation for a category.
+ * Modal for creating a new budget allocation for a category.
  * Allows selecting an expense category and setting a monthly spending limit.
- * Uses the Budget API (POST /api/budgets for create, PUT /api/budgets/:id for update).
+ * Uses POST /api/budgets for creation only. Editing existing budgets is handled
+ * by inline editing (BudgetInlineEdit.client.ts).
  *
  * @param {string} id - Modal ID
  * @param {Array} categories - Available expense categories
  * @param {string} currency - Currency for budget (IDR or USD)
  * @param {number} month - Budget month (1-12)
  * @param {number} year - Budget year
- * @param {Array} budgets - Existing budgets for the month (to determine create vs update)
+ * @param {Array} budgets - Existing budgets for the month (to disable already-set categories)
  */
 
 import Modal from '../molecules/Modal.astro';
 import FormField from '../molecules/FormField.astro';
 import { ChartNoAxesCombined } from '@lucide/astro';
+import { getMonthName } from '@/lib/utils/date';
 
 interface BudgetRecord {
   id: string;
@@ -41,23 +43,7 @@ const expenseCategories = categories.filter((c) => c.type === 'expense');
 // Create a map of category_id -> budget for quick lookup
 const budgetMap = new Map(budgets.map((b) => [b.category_id, b]));
 
-// P3: TODO - Extract monthNames to shared utility (src/lib/utils/date.ts)
-// This array is duplicated in SetNewBudgetModal, CopyBudgetModal, and budget/index.astro
-const monthNames = [
-  'January',
-  'February',
-  'March',
-  'April',
-  'May',
-  'June',
-  'July',
-  'August',
-  'September',
-  'October',
-  'November',
-  'December',
-];
-const monthName = monthNames[month - 1] || `Month ${month}`;
+const monthName = getMonthName(month);
 ---
 
 <div data-set-budget-modal-container data-id={id} data-testid="set-new-budget-modal">
@@ -72,7 +58,7 @@ const monthName = monthNames[month - 1] || `Month ${month}`;
         </div>
         <div>
           <h2 class="text-xl font-bold tracking-tight text-base-content leading-none">
-            Set New Budget
+            Create New Budget
           </h2>
           <p class="text-base-content/60 text-sm mt-2 font-medium">
             Configure spending limits for {monthName}
@@ -99,8 +85,6 @@ const monthName = monthNames[month - 1] || `Month ${month}`;
                     value={category.id}
                     selected={!existingBudget && index === 0}
                     disabled={!!existingBudget}
-                    data-budget-id={existingBudget?.id || ''}
-                    data-budget-amount={existingBudget?.budget_amount || '0'}
                   >
                     {category.name}
                     {existingBudget ? ' (already set)' : ''}
@@ -109,15 +93,6 @@ const monthName = monthNames[month - 1] || `Month ${month}`;
               })
             }
           </select>
-          {/* Warning when category already has budget */}
-          <div
-            id={`${id}-budget-exists-warning`}
-            class="hidden text-sm text-info flex items-center gap-2 mt-2"
-          >
-            <span
-              >This category already has a budget set. Saving will update the existing budget.</span
-            >
-          </div>
         </FormField>
 
         {/* Budget Amount */}
@@ -160,7 +135,7 @@ const monthName = monthNames[month - 1] || `Month ${month}`;
             class="flex-[2] btn btn-accent py-4 rounded-2xl font-bold text-base shadow-lg shadow-accent/20 hover:shadow-xl transition-all"
             disabled={expenseCategories.length === 0}
           >
-            Set Budget
+            Create Budget
           </button>
         </div>
       </form>
@@ -170,7 +145,6 @@ const monthName = monthNames[month - 1] || `Month ${month}`;
 
 <script>
   import { addToast } from '@lib/stores/toastStore';
-  // P2: TODO - Consider using csrfFetch wrapper for cleaner code
   import { getCsrfHeaders } from '@/lib/csrf-client';
 
   // Track initialized modals to avoid duplicate handlers
@@ -191,35 +165,14 @@ const monthName = monthNames[month - 1] || `Month ${month}`;
       const errorDiv = document.getElementById(`${id}-error`);
       const statusDiv = document.getElementById(`${id}-status`);
       const categorySelect = document.getElementById(`${id}-category`) as HTMLSelectElement | null;
-      const warningDiv = document.getElementById(`${id}-budget-exists-warning`);
 
       if (!modal || !form || !categorySelect) return;
-
-      // Function to check and show warning for existing budget
-      const checkExistingBudget = () => {
-        const selectedOption = categorySelect.options[categorySelect.selectedIndex];
-        const budgetAmount = parseFloat(selectedOption?.dataset.budgetAmount || '0');
-
-        if (warningDiv) {
-          if (budgetAmount > 0) {
-            warningDiv.classList.remove('hidden');
-          } else {
-            warningDiv.classList.add('hidden');
-          }
-        }
-      };
-
-      // Check on category change
-      categorySelect.addEventListener('change', checkExistingBudget);
 
       // Auto-select first available (non-disabled) option
       const firstAvailable = categorySelect.querySelector(
         'option:not([disabled])'
       ) as HTMLOptionElement;
       if (firstAvailable) firstAvailable.selected = true;
-
-      // Check initial state
-      checkExistingBudget();
 
       // Handle cancel button - reset form and close
       cancelBtn?.addEventListener('click', () => {
@@ -228,18 +181,15 @@ const monthName = monthNames[month - 1] || `Month ${month}`;
           errorDiv.textContent = '';
           errorDiv.classList.add('hidden');
         }
-        if (warningDiv) {
-          warningDiv.classList.add('hidden');
-        }
         modal.close();
       });
 
-      // Handle form submission with loading state
+      // Handle form submission (creation only)
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
 
         const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
-        const originalText = submitBtn?.textContent || 'Set Budget';
+        const originalText = submitBtn?.textContent || 'Create Budget';
 
         const formData = new FormData(form);
         const categoryId = formData.get('category_id') as string;
@@ -248,8 +198,8 @@ const monthName = monthNames[month - 1] || `Month ${month}`;
         const month = parseInt(formData.get('month') as string, 10);
         const year = parseInt(formData.get('year') as string, 10);
 
-        // Client-side validation (P0: prevents confusing server errors)
-        const parsedAmount = parseFloat(budgetAmount);
+        // Client-side validation
+        const parsedAmount = Number(budgetAmount);
         if (isNaN(parsedAmount) || parsedAmount <= 0) {
           if (errorDiv) {
             errorDiv.textContent = 'Budget amount must be a positive number';
@@ -258,84 +208,54 @@ const monthName = monthNames[month - 1] || `Month ${month}`;
           return;
         }
 
-        // Check if budget already exists for this category
-        const selectedOption = categorySelect.options[categorySelect.selectedIndex];
-        const existingBudgetId = selectedOption?.dataset.budgetId;
-
         // Clear previous errors
         if (errorDiv) {
           errorDiv.textContent = '';
           errorDiv.classList.add('hidden');
         }
 
-        // Show loading state and announce to screen readers (P1 accessibility)
+        // Show loading state and announce to screen readers
         if (submitBtn) {
           submitBtn.disabled = true;
-          submitBtn.textContent = 'Saving...';
+          submitBtn.textContent = 'Creating...';
         }
         if (statusDiv) {
-          statusDiv.textContent = 'Saving budget...';
+          statusDiv.textContent = 'Creating budget...';
         }
 
         try {
-          let response: Response;
-
-          if (existingBudgetId) {
-            // Update existing budget via PUT /api/budgets/:id
-            response = await fetch(`/api/budgets/${existingBudgetId}`, {
-              method: 'PUT',
-              headers: getCsrfHeaders({
-                'Content-Type': 'application/json',
-              }),
-              body: JSON.stringify({
-                budget_amount: budgetAmount,
-              }),
-            });
-          } else {
-            // Create new budget via POST /api/budgets
-            response = await fetch('/api/budgets', {
-              method: 'POST',
-              headers: getCsrfHeaders({
-                'Content-Type': 'application/json',
-              }),
-              body: JSON.stringify({
-                category_id: categoryId,
-                month,
-                year,
-                budget_amount: budgetAmount,
-                currency,
-              }),
-            });
-          }
+          const response = await fetch('/api/budgets', {
+            method: 'POST',
+            headers: getCsrfHeaders({
+              'Content-Type': 'application/json',
+            }),
+            body: JSON.stringify({
+              category_id: categoryId,
+              month,
+              year,
+              budget_amount: budgetAmount,
+              currency,
+            }),
+          });
 
           if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.message || 'Failed to set budget');
+            throw new Error(errorData.message || 'Failed to create budget');
           }
-
-          const responseData = await response.json();
-          const newBudgetId = responseData.data?.id || existingBudgetId;
 
           // Success - announce to screen readers, close modal and show toast
           if (statusDiv) {
-            statusDiv.textContent = 'Budget saved successfully';
+            statusDiv.textContent = 'Budget created successfully';
           }
-          addToast('Budget saved successfully!', 'success');
+          addToast('Budget created successfully!', 'success');
           form.reset();
           modal.close();
 
-          // Update the data attributes with new budget info
-          if (selectedOption) {
-            selectedOption.dataset.budgetAmount = budgetAmount;
-            selectedOption.dataset.budgetId = newBudgetId;
-          }
-
-          // Dispatch custom event so page can update if needed
+          // Dispatch custom event so page can update
           document.dispatchEvent(
             new CustomEvent('budget-updated', {
               detail: {
                 categoryId,
-                budgetId: newBudgetId,
                 budgetAmount,
                 currency,
                 month,
@@ -344,7 +264,7 @@ const monthName = monthNames[month - 1] || `Month ${month}`;
             })
           );
         } catch (err) {
-          const message = err instanceof Error ? err.message : 'Failed to set budget';
+          const message = err instanceof Error ? err.message : 'Failed to create budget';
           if (errorDiv) {
             errorDiv.textContent = message;
             errorDiv.classList.remove('hidden');

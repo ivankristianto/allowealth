@@ -1,0 +1,110 @@
+---
+/**
+ * Drawer Component
+ *
+ * Slide-over drawer for secondary actions or details.
+ * Positioned on the right side of the screen.
+ *
+ * Uses Motion library for smooth enter/exit animations per styles.json specification.
+ * Respects prefers-reduced-motion for accessibility.
+ *
+ * @param {string} id - Unique ID for the drawer
+ * @param {string} title - Drawer title
+ * @param {boolean} open - Whether the drawer is open
+ * @param {boolean} backdropClose - Close when clicking backdrop
+ * @param {string} className - Additional CSS classes
+ */
+
+import { X } from '@lucide/astro';
+
+interface Props {
+  id: string;
+  title?: string;
+  ariaLabel?: string;
+  open?: boolean;
+  backdropClose?: boolean;
+  className?: string;
+  width?: string;
+}
+
+const {
+  id,
+  title = '',
+  ariaLabel = '',
+  open = false,
+  backdropClose = true,
+  className = '',
+  width = 'max-w-md',
+} = Astro.props;
+
+// Generate unique ID for title element to link with aria-labelledby
+const titleId = title ? `${id}-title` : undefined;
+const resolvedAriaLabel = title ? undefined : ariaLabel || 'Drawer';
+---
+
+<!-- Drawer Container -->
+<div
+  id={id}
+  class:list={[
+    'fixed inset-0 z-50 overflow-hidden',
+    !open && 'hidden',
+    open && 'drawer-open',
+    className,
+  ]}
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby={title ? titleId : undefined}
+  aria-label={resolvedAriaLabel}
+  tabindex="-1"
+  data-drawer
+  data-backdrop-close={backdropClose ? 'true' : 'false'}
+>
+  <!-- Backdrop with blur effect -->
+  <div
+    class="absolute inset-0 bg-base-content/20 backdrop-blur-sm transition-opacity"
+    data-drawer-backdrop
+    aria-hidden="true"
+  >
+  </div>
+
+  <!-- Drawer content -->
+  <div
+    class:list={['absolute inset-y-0 right-0 max-w-full flex w-full pointer-events-none', width]}
+  >
+    <div
+      class="pointer-events-auto w-full h-full bg-base-100 shadow-xl flex flex-col transform transition-transform"
+      data-drawer-content
+    >
+      <!-- Header -->
+      <div class="px-6 py-4 flex items-center justify-between border-b border-base-200">
+        {
+          title && (
+            <h2 id={titleId} class="text-lg font-bold text-primary">
+              {title}
+            </h2>
+          )
+        }
+        <button
+          type="button"
+          class="btn btn-sm btn-circle btn-ghost hover:bg-accent/10 hover:text-accent"
+          aria-label="Close drawer"
+          data-close-drawer
+        >
+          <X size={20} class="stroke-current" aria-hidden="true" />
+        </button>
+      </div>
+
+      <!-- Content -->
+      <div class="flex-1 overflow-y-auto p-6">
+        <slot />
+      </div>
+
+      <!-- Footer (if provided) -->
+      <slot name="footer" />
+    </div>
+  </div>
+</div>
+
+<script>
+  import './Drawer.client';
+</script>
