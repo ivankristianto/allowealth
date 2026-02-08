@@ -69,7 +69,9 @@ export interface MonthlyBudgetHistory {
 }
 
 export class BudgetService {
-  private schema = getActiveSchema();
+  private get schema() {
+    return getActiveSchema();
+  }
 
   /**
    * Create a new BudgetService with database injection

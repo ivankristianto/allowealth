@@ -52,7 +52,9 @@ export type WorkspaceMember = Omit<typeof users.$inferSelect, 'password_hash'>;
  * Workspace Service
  */
 export class WorkspaceService {
-  private schema = getActiveSchema();
+  private get schema() {
+    return getActiveSchema();
+  }
 
   /**
    * Create a new WorkspaceService with database injection

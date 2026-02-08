@@ -132,7 +132,9 @@ function validateMetaValue(key: WorkspaceMetaKey, value: string): void {
  * Workspace Meta Service
  */
 export class WorkspaceMetaService {
-  private schema = getActiveSchema();
+  private get schema() {
+    return getActiveSchema();
+  }
 
   /**
    * Create a new WorkspaceMetaService with database injection

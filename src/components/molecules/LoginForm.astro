@@ -15,7 +15,7 @@ import Checkbox from '../atoms/Checkbox.astro';
 import Button from '../atoms/Button.astro';
 import ErrorMessage from '../atoms/ErrorMessage.astro';
 import FormField from '../molecules/FormField.astro';
-import { CircleX, CheckCircle, Info } from '@lucide/astro';
+import { CircleX, CircleCheck, Info } from '@lucide/astro';
 
 export interface Props {
   errorMessage?: string;
@@ -49,7 +49,7 @@ const cspNonce = Astro.locals.cspNonce || '';
           role="alert"
           class={`alert mb-4 ${bannerType === 'success' ? 'alert-success' : bannerType === 'error' ? 'alert-error' : 'alert-info'}`}
         >
-          {bannerType === 'success' && <CheckCircle size={20} class="stroke-current shrink-0" />}
+          {bannerType === 'success' && <CircleCheck size={20} class="stroke-current shrink-0" />}
           {bannerType === 'info' && <Info size={20} class="stroke-current shrink-0" />}
           {bannerType === 'error' && <CircleX size={20} class="stroke-current shrink-0" />}
           <span>{bannerMessage}</span>

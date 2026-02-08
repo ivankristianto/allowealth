@@ -40,7 +40,9 @@ import { getCacheManager, CacheKeys, CacheTags } from '@/lib/cache';
  * User Meta Service
  */
 export class UserMetaService {
-  private schema = getActiveSchema();
+  private get schema() {
+    return getActiveSchema();
+  }
 
   /**
    * Create a new UserMetaService with database injection

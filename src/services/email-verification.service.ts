@@ -22,7 +22,9 @@ export type VerifyEmailResult =
   | { success: false; error: string; email?: string };
 
 export class EmailVerificationService {
-  private schema = getActiveSchema();
+  private get schema() {
+    return getActiveSchema();
+  }
 
   constructor(
     private db: IDatabase,
@@ -43,12 +45,14 @@ export class EmailVerificationService {
     const token = nanoid(64);
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
-    await this.db.insert(this.schema.emailVerificationTokens).values({
-      id: nanoid(),
-      user_id: userId,
-      token,
-      expires_at: expiresAt,
-    });
+    await Promise.resolve(
+      this.db.insert(this.schema.emailVerificationTokens).values({
+        id: nanoid(),
+        user_id: userId,
+        token,
+        expires_at: expiresAt,
+      })
+    );
 
     log.info('Created verification token for user', { userId });
     return token;

@@ -109,7 +109,9 @@ export interface CategoryTransactionsData {
  * Report data aggregation service
  */
 export class ReportService {
-  private schema = getActiveSchema();
+  private get schema() {
+    return getActiveSchema();
+  }
 
   /**
    * Create a new ReportService with database injection

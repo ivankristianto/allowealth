@@ -38,7 +38,9 @@ export interface UpdateAssetBalanceInput {
 }
 
 export class AssetService {
-  private schema = getActiveSchema();
+  private get schema() {
+    return getActiveSchema();
+  }
 
   /**
    * Create a new AssetService with database injection

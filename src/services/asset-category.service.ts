@@ -15,7 +15,9 @@ export { type CreateAssetCategoryInput, type UpdateAssetCategoryInput };
 const MAX_CUSTOM_CATEGORIES = 50;
 
 export class AssetCategoryService {
-  private schema = getActiveSchema();
+  private get schema() {
+    return getActiveSchema();
+  }
 
   constructor(private db: IDatabase) {}
 
@@ -284,18 +286,20 @@ export class AssetCategoryService {
 
     for (const category of DEFAULT_ASSET_CATEGORIES) {
       const id = nanoid();
-      await this.db.insert(this.schema.assetCategories).values({
-        id,
-        workspace_id: workspaceId,
-        created_by_user_id: userId,
-        name: category.name,
-        description: category.description,
-        is_liability: category.isLiability,
-        is_system: true,
-        sort_order: category.sortOrder,
-        created_at: now,
-        updated_at: now,
-      });
+      await Promise.resolve(
+        this.db.insert(this.schema.assetCategories).values({
+          id,
+          workspace_id: workspaceId,
+          created_by_user_id: userId,
+          name: category.name,
+          description: category.description,
+          is_liability: category.isLiability,
+          is_system: true,
+          sort_order: category.sortOrder,
+          created_at: now,
+          updated_at: now,
+        })
+      );
     }
   }
 }

@@ -183,7 +183,7 @@ export async function register(email: string, password: string, name: string): P
       role: 'admin' as const,
     };
 
-    let newUser;
+    let newUser: typeof schema.users.$inferSelect;
     const { dialect } = getDatabaseConfig();
 
     if (dialect === 'postgresql') {

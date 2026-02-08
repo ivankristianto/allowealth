@@ -124,7 +124,9 @@ function generateRandomKey(): string {
 }
 
 export class ApiKeyService {
-  private schema = getActiveSchema();
+  private get schema() {
+    return getActiveSchema();
+  }
 
   constructor(private db: IDatabase) {}
 

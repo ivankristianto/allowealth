@@ -146,7 +146,9 @@ export interface DashboardData {
  * Dashboard data aggregation service
  */
 export class DashboardService {
-  private schema = getActiveSchema();
+  private get schema() {
+    return getActiveSchema();
+  }
 
   /**
    * Create a new DashboardService with database injection
