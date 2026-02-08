@@ -499,7 +499,7 @@ export class TransactionService {
       );
     }
 
-    const deleteData: Record<string, unknown> = {
+    const deleteData: { deleted_at: Date; updated_at: Date; deleted_by_user_id?: string } = {
       deleted_at: new Date(),
       updated_at: new Date(),
     };
