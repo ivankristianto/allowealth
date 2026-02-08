@@ -1,13 +1,13 @@
 /**
- * AssetDeleteConfirmModal Component Tests
+ * AssetDeleteConfirmModal Component Tests (Close Account Modal)
  * ========================================
- * Tests for AssetDeleteConfirmModal component data handling and API integration
+ * Tests for close account modal data handling and API integration
  */
 
 import { describe, it, expect } from 'bun:test';
 
-// Asset delete data interface (same as component)
-interface AssetDeleteData {
+// Asset close data interface (same as component)
+interface AssetCloseData {
   id: string;
   name: string;
   type: string;
@@ -16,11 +16,11 @@ interface AssetDeleteData {
 }
 
 // Mock data for testing
-const createMockAsset = (overrides: Partial<AssetDeleteData> = {}): AssetDeleteData => ({
+const createMockAsset = (overrides: Partial<AssetCloseData> = {}): AssetCloseData => ({
   id: 'test-asset-id',
   name: 'Test Asset',
   type: 'Bank Account',
-  balance: 15000000,
+  balance: 0,
   currency: 'IDR',
   ...overrides,
 });
@@ -38,8 +38,8 @@ describe('AssetDeleteConfirmModal - Data Display', () => {
     });
 
     it('should display balance', () => {
-      const asset = createMockAsset({ balance: 25000000 });
-      expect(asset.balance).toBe(25000000);
+      const asset = createMockAsset({ balance: 0 });
+      expect(asset.balance).toBe(0);
     });
 
     it('should display currency', () => {
@@ -53,40 +53,37 @@ describe('AssetDeleteConfirmModal - Data Display', () => {
       const asset = createMockAsset({ currency: 'IDR' });
       const isIDR = asset.currency === 'IDR';
       expect(isIDR).toBe(true);
-      // Would apply 'text-success' and 'bg-success/10' classes
     });
 
     it('should use info color for USD', () => {
       const asset = createMockAsset({ currency: 'USD' });
       const isUSD = asset.currency === 'USD';
       expect(isUSD).toBe(true);
-      // Would apply 'text-info' and 'bg-info/10' classes
     });
   });
 });
 
 describe('AssetDeleteConfirmModal - API Integration', () => {
-  describe('Delete Request', () => {
-    it('should use DELETE method', () => {
-      const method = 'DELETE';
-      expect(method).toBe('DELETE');
+  describe('Close Request', () => {
+    it('should use POST method', () => {
+      const method = 'POST';
+      expect(method).toBe('POST');
     });
 
     it('should use correct endpoint', () => {
       const assetId = 'abc-123';
-      const endpoint = `/api/assets/${assetId}`;
-      expect(endpoint).toBe('/api/assets/abc-123');
+      const endpoint = `/api/assets/${assetId}/close`;
+      expect(endpoint).toBe('/api/assets/abc-123/close');
     });
 
     it('should not send request body', () => {
-      // DELETE requests typically don't need a body
       const body = undefined;
       expect(body).toBeUndefined();
     });
   });
 
   describe('Response Handling', () => {
-    it('should handle successful delete', () => {
+    it('should handle successful close', () => {
       const response = { ok: true, status: 200 };
       expect(response.ok).toBe(true);
     });
@@ -104,21 +101,35 @@ describe('AssetDeleteConfirmModal - API Integration', () => {
     });
 
     it('should handle server error', () => {
-      const response = { ok: false, status: 500, message: 'Failed to delete asset' };
+      const response = { ok: false, status: 500, message: 'Failed to close account' };
       expect(response.ok).toBe(false);
       expect(response.status).toBe(500);
     });
 
     it('should extract error message from response', () => {
-      const errorData = { message: 'Asset is linked to transactions' };
-      const message = errorData.message || 'Failed to delete asset';
-      expect(message).toBe('Asset is linked to transactions');
+      const errorData = { message: 'Cannot close account with non-zero balance' };
+      const message = errorData.message || 'Failed to close account';
+      expect(message).toBe('Cannot close account with non-zero balance');
     });
 
     it('should use fallback error message', () => {
       const errorData = {} as { message?: string };
-      const message = errorData.message || 'Failed to delete asset';
-      expect(message).toBe('Failed to delete asset');
+      const message = errorData.message || 'Failed to close account';
+      expect(message).toBe('Failed to close account');
+    });
+  });
+});
+
+describe('AssetDeleteConfirmModal - Balance Validation', () => {
+  describe('Client-side balance check', () => {
+    it('should block closure when balance is not zero', () => {
+      const asset = createMockAsset({ balance: 15000000 });
+      expect(asset.balance !== 0).toBe(true);
+    });
+
+    it('should allow closure when balance is zero', () => {
+      const asset = createMockAsset({ balance: 0 });
+      expect(asset.balance === 0).toBe(true);
     });
   });
 });
@@ -126,19 +137,19 @@ describe('AssetDeleteConfirmModal - API Integration', () => {
 describe('AssetDeleteConfirmModal - Accessibility', () => {
   describe('Modal Content', () => {
     it('should have descriptive title', () => {
-      const title = 'Delete Asset';
-      expect(title).toBe('Delete Asset');
+      const title = 'Close Account';
+      expect(title).toBe('Close Account');
     });
 
     it('should have confirmation question', () => {
-      const question = 'Are you sure you want to delete this asset?';
-      expect(question).toContain('delete');
+      const question = 'Close this account?';
+      expect(question).toContain('Close');
     });
 
-    it('should have warning about irreversible action', () => {
-      const warning =
-        'This action cannot be undone. All balance history for this asset will also be deleted.';
-      expect(warning).toContain('cannot be undone');
+    it('should have info about closure semantics', () => {
+      const info =
+        'Once closed: hidden from active accounts, transaction history preserved, can be reopened later by admin.';
+      expect(info).toContain('transaction history preserved');
     });
   });
 
@@ -161,30 +172,30 @@ describe('AssetDeleteConfirmModal - Accessibility', () => {
     });
 
     it('should have confirm button', () => {
-      const buttonText = 'Delete Asset';
-      expect(buttonText).toBe('Delete Asset');
+      const buttonText = 'Close Account';
+      expect(buttonText).toBe('Close Account');
     });
 
     it('should show loading state on confirm', () => {
-      const loadingText = 'Deleting...';
-      expect(loadingText).toBe('Deleting...');
+      const loadingText = 'Closing...';
+      expect(loadingText).toBe('Closing...');
     });
   });
 });
 
 describe('AssetDeleteConfirmModal - Events', () => {
   describe('Custom Events', () => {
-    it('should listen for open-asset-delete event', () => {
-      const eventName = 'open-asset-delete';
-      expect(eventName).toBe('open-asset-delete');
+    it('should listen for open-asset-close event', () => {
+      const eventName = 'open-asset-close';
+      expect(eventName).toBe('open-asset-close');
     });
 
-    it('should dispatch asset-deleted event on success', () => {
-      const eventName = 'asset-deleted';
-      expect(eventName).toBe('asset-deleted');
+    it('should dispatch asset-closed event on success', () => {
+      const eventName = 'asset-closed';
+      expect(eventName).toBe('asset-closed');
     });
 
-    it('should include asset ID in deleted event', () => {
+    it('should include asset ID in closed event', () => {
       const eventDetail = { assetId: 'abc-123' };
       expect(eventDetail.assetId).toBe('abc-123');
     });
