@@ -19,7 +19,6 @@
 
 // External packages
 import {
-  Pencil,
   Eye,
   House,
   ShoppingCart,
@@ -273,15 +272,6 @@ const cardClasses = [
             <Eye size={16} class="stroke-current" aria-hidden="true" />
             <span class="hidden md:inline">View</span>
           </a>
-          <button
-            type="button"
-            class="inline-flex items-center gap-1 text-base-content/30 hover:text-base-content/60 transition-colors min-h-[44px] min-w-[44px] justify-center rounded-lg hover:bg-base-200 text-xs font-medium"
-            aria-label={`Edit ${categoryName} budget`}
-            data-edit-budget={categoryId}
-          >
-            <Pencil size={16} class="stroke-current" aria-hidden="true" />
-            <span class="hidden md:inline">Edit</span>
-          </button>
         </div>
       </div>
 

@@ -13,7 +13,7 @@
  */
 
 import type { BudgetData } from './BudgetCardGrid.astro';
-import { Wallet, Pencil, Eye } from '@lucide/astro';
+import { Wallet, Eye } from '@lucide/astro';
 import { formatCurrency } from '@/lib/formatting';
 
 export interface Props {
@@ -158,15 +158,6 @@ const sortedBudgets = [...budgets].sort((a, b) => {
                     </td>
                     <td class="px-6 md:px-8 py-5 md:py-6 text-right">
                       <div class="inline-flex items-center gap-2">
-                        <button
-                          type="button"
-                          data-edit-budget={budget.category_id}
-                          class="inline-flex items-center gap-1.5 text-base-content/40 hover:text-base-content hover:bg-base-200/50 px-3 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-                          aria-label={`Edit ${budget.category_name} budget`}
-                        >
-                          <Pencil size={12} class="stroke-current" aria-hidden="true" />
-                          <span>Edit</span>
-                        </button>
                         <a
                           href={detailsUrl}
                           class="inline-flex items-center gap-1.5 text-base-content/40 hover:text-base-content hover:bg-base-200/50 px-3 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"

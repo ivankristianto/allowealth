@@ -182,7 +182,6 @@ function handleBudgetsCopied(
  * Re-initializes edit button handlers and filter after new content is injected.
  */
 function handleContentUpdated(): void {
-  setupEditBudgetHandlers();
   setupInlineEditHandlers();
   setupFilterHandler();
   setupSortHandler();
@@ -395,63 +394,6 @@ function setupSortHandler(): void {
 }
 
 // =============================================================================
-// EDIT BUDGET HANDLERS
-// =============================================================================
-
-/**
- * Set up edit budget button handlers
- *
- * Handles click events on budget card edit buttons to open the modal.
- */
-function setupEditBudgetHandlers(): void {
-  document.querySelectorAll('[data-edit-budget]').forEach((btn) => {
-    // Remove existing listener to prevent duplicates
-    const newBtn = btn.cloneNode(true) as HTMLElement;
-    btn.parentNode?.replaceChild(newBtn, btn);
-
-    newBtn.addEventListener('click', (e: Event) => {
-      e.stopPropagation();
-
-      const categoryId = newBtn.getAttribute('data-edit-budget');
-      if (!categoryId) return;
-
-      const container = document.querySelector('[data-budget-container]');
-      const categoriesJson = container?.getAttribute('data-expense-categories');
-      if (!categoriesJson) return;
-
-      try {
-        const categories = JSON.parse(categoriesJson);
-        const category = categories.find(
-          (c: { id: string; name: string; budget_amount: string }) => c.id === categoryId
-        );
-
-        if (!category) return;
-
-        // Use the SetNewBudgetModal
-        const modal = document.getElementById('set-new-budget-modal') as HTMLDialogElement;
-        const categorySelect = document.getElementById(
-          'set-new-budget-modal-category'
-        ) as HTMLSelectElement;
-        const amountInput = document.getElementById(
-          'set-new-budget-modal-amount'
-        ) as HTMLInputElement;
-
-        if (!modal || !categorySelect || !amountInput) return;
-
-        // Pre-select the category and set amount
-        categorySelect.value = categoryId;
-        amountInput.value = category.budget_amount || '';
-
-        modal.showModal();
-      } catch (err) {
-        console.error('[BudgetPage] Error opening edit modal:', err);
-        addToast('Failed to open edit modal. Please refresh the page.', 'error');
-      }
-    });
-  });
-}
-
-// =============================================================================
 // INITIALIZATION
 // =============================================================================
 
@@ -470,10 +412,7 @@ export function initBudgetPage(): void {
     return;
   }
 
-  // Set up edit budget button handlers
-  setupEditBudgetHandlers();
-
-  // Set up inline edit handlers (replaces modal-based editing for existing budgets)
+  // Set up inline edit handlers for editing existing budgets
   setupInlineEditHandlers();
 
   // Set up filter input handler
