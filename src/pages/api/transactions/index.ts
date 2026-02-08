@@ -88,6 +88,8 @@ export const GET: APIRoute = async (context) => {
       filters.search = search;
     }
 
+    // Include soft-deleted transactions in the list for audit trail visibility
+    filters.include_deleted = true;
     const rawTransactions = await transactionService.findAll(filters, perf);
     const total = await transactionService.count(filters, perf);
 

@@ -6,18 +6,10 @@
  * Fetched as HTML fragment via ?_render=html from the history API.
  */
 
-export interface HistoryEntry {
-  id: string;
-  action: 'create' | 'update' | 'delete';
-  userName: string;
-  userId: string;
-  createdAt: Date;
-  oldValue: Record<string, unknown> | null;
-  newValue: Record<string, unknown> | null;
-}
+import type { TransactionHistoryEntry } from '@/lib/types/transaction';
 
 export interface Props {
-  history: HistoryEntry[];
+  history: TransactionHistoryEntry[];
   totalEdits: number;
   showingEdits: number;
   transactionId: string;

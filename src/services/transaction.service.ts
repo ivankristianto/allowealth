@@ -235,11 +235,11 @@ export class TransactionService {
 
   /**
    * Fetch transactions from database (no caching)
-   * Includes soft-deleted transactions for audit trail visibility
+   * Excludes soft-deleted transactions by default; pass include_deleted: true to include them
    */
   private async fetchTransactionsFromDb(filters: TransactionFilters) {
     const conditions = [eq(this.schema.transactions.workspace_id, filters.workspace_id)];
-    const includeDeleted = filters.include_deleted ?? true;
+    const includeDeleted = filters.include_deleted ?? false;
 
     if (!includeDeleted) {
       conditions.push(sql`${this.schema.transactions.deleted_at} IS NULL`);
@@ -511,7 +511,7 @@ export class TransactionService {
    */
   async count(filters: Omit<TransactionFilters, 'limit' | 'offset'>, perf?: PerfCollector) {
     const conditions = [eq(this.schema.transactions.workspace_id, filters.workspace_id)];
-    const includeDeleted = filters.include_deleted ?? true;
+    const includeDeleted = filters.include_deleted ?? false;
 
     if (!includeDeleted) {
       conditions.push(sql`${this.schema.transactions.deleted_at} IS NULL`);

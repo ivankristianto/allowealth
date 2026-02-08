@@ -238,7 +238,7 @@ describe('review feedback regressions', () => {
     expect(countEnd).toBeGreaterThan(countStart);
 
     const countMethod = content.slice(countStart, countEnd);
-    expect(countMethod).toContain('filters.include_deleted ?? true');
+    expect(countMethod).toContain('filters.include_deleted ?? false');
     expect(countMethod).toContain('if (!includeDeleted)');
   });
 
