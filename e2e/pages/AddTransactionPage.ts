@@ -1,4 +1,4 @@
-import { expect, type Locator } from '@playwright/test';
+import { expect, type Locator, type Response } from '@playwright/test';
 import { BasePage } from './BasePage';
 
 /**
@@ -15,92 +15,83 @@ export interface TransactionFormData {
 
 /**
  * Page Object Model for the Add Transaction functionality.
- * Uses TransactionModal instead of dedicated pages.
- * Modals are globally available in ProtectedLayout (expense-modal, income-modal).
- *
- * @TODO P2: Extract modal IDs to shared constants to prevent typos (e2e/constants/modals.ts)
+ * Uses the TransactionDrawer (side drawer) opened via the header "New Transaction" button.
+ * The drawer contains tabs for expense/income with separate forms in each tab panel.
+ * Forms are instances of TransactionEntryForm with formId="drawer-form-expense" or "drawer-form-income".
  */
 export class AddTransactionPage extends BasePage {
-  // Modal locators
-  // @TODO P2: Consider extracting 'expense-modal' and 'income-modal' to constants
-  private getModal(type: 'expense' | 'income'): Locator {
-    const modalId = type === 'expense' ? 'expense-modal' : 'income-modal';
-    return this.page.locator(`dialog#${modalId}`);
+  // Store the current transaction type for scoping form locators
+  private currentType: 'expense' | 'income' = 'expense';
+
+  /**
+   * Get the active form panel locator based on the current transaction type.
+   */
+  private getFormPanel(): Locator {
+    const panelId = this.currentType === 'expense' ? 'drawer-expense-form' : 'drawer-income-form';
+    return this.page.locator(`#${panelId}`);
   }
 
-  // Store the current modal type for scoping form locators
-  private currentModalType: 'expense' | 'income' = 'income';
-
-  // Form locators (scoped to active modal to avoid strict mode violations)
+  // Form locators (scoped to active tab panel to avoid strict mode violations)
   private get transactionForm(): Locator {
-    const modal = this.getModal(this.currentModalType);
-    return modal.locator('[data-testid="transaction-form"]');
+    return this.getFormPanel().locator('[data-testid="transaction-form"]');
   }
 
   private get descriptionInput(): Locator {
-    const modal = this.getModal(this.currentModalType);
-    return modal.locator('[data-testid="transaction-description-input"]');
+    return this.getFormPanel().locator('[data-testid="transaction-description-input"]');
   }
 
   private get amountInput(): Locator {
-    const modal = this.getModal(this.currentModalType);
-    return modal.locator('[data-testid="transaction-amount-input"]');
+    return this.getFormPanel().locator('[data-testid="transaction-amount-input"]');
   }
 
   private get categorySelect(): Locator {
-    const modal = this.getModal(this.currentModalType);
-    return modal.locator('[data-testid="transaction-category-select"]');
+    return this.getFormPanel().locator('[data-testid="transaction-category-select"]');
   }
 
   private get assetSelect(): Locator {
-    const modal = this.getModal(this.currentModalType);
-    return modal.locator('[data-testid="transaction-asset-select"]');
+    return this.getFormPanel().locator('[data-testid="transaction-asset-select"]');
   }
 
   private get dateInput(): Locator {
-    const modal = this.getModal(this.currentModalType);
-    return modal.locator('[data-testid="transaction-date-input"]');
+    return this.getFormPanel().locator('[data-testid="transaction-date-input"]');
   }
 
   private get submitBtn(): Locator {
-    const modal = this.getModal(this.currentModalType);
-    return modal.locator('[data-testid="transaction-submit-btn"]');
+    return this.getFormPanel().locator('[data-testid="transaction-submit-btn"]');
   }
 
   /**
-   * Navigate to the dashboard page and open the transaction modal.
-   * Quick action buttons are available on the dashboard page.
+   * Navigate to the dashboard page and open the transaction drawer.
+   * The "New Transaction" header button opens a side drawer with expense/income tabs.
    *
-   * @param type - Transaction type to open ('expense' or 'income')
+   * @param type - Transaction type to select tab for ('expense' or 'income')
    */
   async gotoAddTransaction(type?: 'expense' | 'income'): Promise<void> {
-    const transactionType = type || 'expense';
+    const transactionType: 'expense' | 'income' = type ?? 'expense';
+    this.currentType = transactionType;
 
-    // Store the modal type for form locator scoping
-    this.currentModalType = transactionType;
-
-    // Navigate to dashboard page where quick actions are available
+    // Navigate to dashboard page where the header "New Transaction" button is available
     await this.page.goto('/dashboard');
 
-    // Open the appropriate modal via quick action button
-    const quickActionButton =
-      transactionType === 'expense'
-        ? this.page.locator('[data-testid="quick-action-expense"]')
-        : this.page.locator('[data-testid="quick-action-income"]');
+    // Click the "New Transaction" button in the header to open the drawer
+    const newTransactionBtn: Locator = this.page.locator('[data-open-transaction-drawer]');
+    await expect(newTransactionBtn).toBeVisible();
+    await expect(newTransactionBtn).toBeEnabled();
+    await newTransactionBtn.click();
 
-    // Wait for the quick action button to be visible and enabled
-    await expect(quickActionButton).toBeVisible();
-    await expect(quickActionButton).toBeEnabled();
+    // Wait for the drawer to be visible
+    const drawer: Locator = this.page.locator('#transaction-drawer');
+    await expect(drawer).toBeVisible({ timeout: 5000 });
 
-    // Click the quick action button to open modal
-    await quickActionButton.click();
+    // Click the appropriate tab within the drawer
+    const tabBtn: Locator = drawer.locator(`[data-tab="${transactionType}"]`);
+    await tabBtn.click();
 
-    // Wait for modal and form to be visible
-    const modal = this.getModal(transactionType);
-    await expect(modal).toBeVisible({ timeout: 5000 });
+    // Wait for the form panel to be visible (not hidden)
+    await expect(this.getFormPanel()).toBeVisible();
     await expect(this.transactionForm).toBeVisible();
 
-    // Wait for form fields to be ready (amount input is a good indicator)
+    // Wait for form fields to be ready
     await expect(this.amountInput).toBeVisible();
     await expect(this.amountInput).toBeEnabled();
   }
@@ -125,7 +116,7 @@ export class AddTransactionPage extends BasePage {
     await expect
       .poll(
         async () => {
-          const options = await this.categorySelect.locator('option').allTextContents();
+          const options: string[] = await this.categorySelect.locator('option').allTextContents();
           return options.some((opt) => opt.includes(data.categoryName));
         },
         { timeout: 10000, message: `Category "${data.categoryName}" not found in select options` }
@@ -136,7 +127,7 @@ export class AddTransactionPage extends BasePage {
     await expect
       .poll(
         async () => {
-          const options = await this.assetSelect.locator('option').allTextContents();
+          const options: string[] = await this.assetSelect.locator('option').allTextContents();
           return options.some((opt) => opt.includes(data.assetName));
         },
         { timeout: 10000, message: `Asset "${data.assetName}" not found in select options` }
@@ -157,10 +148,11 @@ export class AddTransactionPage extends BasePage {
 
   /**
    * Submit the transaction form and wait for network response.
+   * The drawer form submits via AJAX and stays open (bulk entry mode).
    */
   async submit(): Promise<void> {
     // Wait for both the click and the subsequent network activity
-    await Promise.all([
+    const [response]: [Response, void] = await Promise.all([
       this.page.waitForResponse(
         (resp) =>
           resp.url().includes('/api/transactions') &&
@@ -169,6 +161,7 @@ export class AddTransactionPage extends BasePage {
       ),
       this.submitBtn.click(),
     ]);
+    expect(response.ok()).toBe(true);
   }
 
   /**
@@ -182,37 +175,18 @@ export class AddTransactionPage extends BasePage {
   }
 
   /**
-   * Verify that modal closes after submission.
-   *
-   * @param type - Transaction type ('expense' or 'income')
-   */
-  async expectModalClosed(type: 'expense' | 'income'): Promise<void> {
-    const modal = this.getModal(type);
-
-    // Wait for modal to be hidden/closed
-    await expect(modal).not.toBeVisible({ timeout: 5000 });
-
-    // Verify modal is actually closed (not just hidden with CSS)
-    await expect(modal).not.toHaveAttribute('open');
-  }
-
-  /**
    * Verify successful submission and navigate to transactions page.
-   * Note: After modal submission, the page reloads (stays on dashboard).
-   * We navigate to transactions page to verify the transaction was created.
+   * The drawer form stays open after submission (bulk entry mode).
+   * We navigate to the transactions page to verify the transaction was created.
    *
-   * @param type - Transaction type for modal close verification and filter (default: 'income')
+   * @param type - Transaction type for filter (default: 'income')
    */
   async expectRedirectToTransactions(type: 'expense' | 'income' = 'income'): Promise<void> {
-    // First verify modal closes after submission
-    await this.expectModalClosed(type);
-
     // Navigate to transactions page with appropriate type filter
-    // Transactions page defaults to 'expense', so we need to specify type=income for income transactions
     await this.page.goto(`/transactions?type=${type}`);
 
     // Verify we're on the transactions page by checking for the type filter buttons
-    const typeFilter =
+    const typeFilter: Locator =
       type === 'expense'
         ? this.page.locator(
             'button:has-text("Expenses")[aria-pressed="true"], [data-testid="type-filter-expense"][pressed]'
@@ -231,13 +205,15 @@ export class AddTransactionPage extends BasePage {
    */
   async expectValidationError(field: string, message: string): Promise<void> {
     // Find the field input element
-    const fieldInput = this.page.locator(`[name="${field}"]`);
+    const fieldInput: Locator = this.page.locator(`[name="${field}"]`);
 
     // Find the form-control container (parent of the field)
-    const formControl = fieldInput.locator('xpath=ancestor::div[contains(@class, "form-control")]');
+    const formControl: Locator = fieldInput.locator(
+      'xpath=ancestor::div[contains(@class, "form-control")]'
+    );
 
     // Find error within that specific field's container
-    const errorLocator = formControl.locator('.field-error');
+    const errorLocator: Locator = formControl.locator('.field-error');
 
     await expect(errorLocator).toBeVisible();
     await expect(errorLocator).toHaveText(message);
