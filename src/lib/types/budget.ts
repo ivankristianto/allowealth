@@ -76,3 +76,9 @@ export interface CopyBudgetsResult {
   target_month: number;
   target_year: number;
 }
+
+// Result of initialize all budgets operation
+export interface InitializeBudgetsResult {
+  initialized_count: number;
+  categories: Array<{ id: string; name: string }>;
+}
