@@ -1168,6 +1168,30 @@ async function seedAssets(
     assetMap.set(asset.name, id);
   }
 
+  // Add a closed test account for testing the closed accounts page
+  const closedId = nanoid();
+  const closedCategoryId = assetCategoryMap.get('bank_account') || null;
+  const closedAt = daysAgo(30);
+  await db.insert(assets).values({
+    id: closedId,
+    workspace_id: workspaceId,
+    created_by_user_id: userId,
+    name: 'Old Savings (Closed)',
+    type: 'bank_account',
+    category_id: closedCategoryId,
+    balance: '0',
+    initial_balance: '0',
+    currency: 'IDR',
+    is_cash_account: false,
+    status: 'closed',
+    closed_at: closedAt,
+    closed_by_user_id: userId,
+    last_updated: closedAt,
+    created_at: daysAgo(180),
+    updated_at: closedAt,
+  });
+  assetMap.set('Old Savings (Closed)', closedId);
+
   console.log(`✓ Created ${assetMap.size} assets`);
   return assetMap;
 }

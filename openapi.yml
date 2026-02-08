@@ -116,6 +116,12 @@ paths:
     $ref: './openapi/paths/assets.yml#/paths/~1api~1assets~1{id}~1balance'
   /api/assets/{id}/history:
     $ref: './openapi/paths/assets.yml#/paths/~1api~1assets~1{id}~1history'
+  /api/assets/closed:
+    $ref: './openapi/paths/assets.yml#/paths/~1api~1assets~1closed'
+  /api/assets/{id}/close:
+    $ref: './openapi/paths/assets.yml#/paths/~1api~1assets~1{id}~1close'
+  /api/assets/{id}/reopen:
+    $ref: './openapi/paths/assets.yml#/paths/~1api~1assets~1{id}~1reopen'
   /api/assets/transfer:
     $ref: './openapi/paths/assets.yml#/paths/~1api~1assets~1transfer'
   /api/assets/summary:

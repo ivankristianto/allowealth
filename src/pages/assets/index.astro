@@ -103,6 +103,9 @@ const currentMonthDisplay = new Date(selectedYear, selectedMonth - 1).toLocaleDa
   year: 'numeric',
 });
 
+// Get closed account count for navigation link
+const closedCount = await assetService.countClosed(user.workspaceId);
+
 // Fetch assets and categories from database
 const categories = await assetCategoryService.findAll(user.workspaceId);
 const categoriesById = new Map(categories.map((category) => [category.id, category]));
@@ -136,6 +139,9 @@ if (!isViewingCurrentMonth) {
       balance: snapshot.snapshot_balance,
       initial_balance: snapshot.initial_balance || null,
       currency: snapshot.currency,
+      status: snapshot.status ?? 'active',
+      closed_at: snapshot.closed_at ?? null,
+      closed_by_user_id: snapshot.closed_by_user_id ?? null,
       last_updated: snapshot.snapshot_date || snapshot.last_updated,
       created_at: snapshot.created_at,
       updated_at: snapshot.updated_at,
@@ -158,6 +164,9 @@ if (!isViewingCurrentMonth) {
       balance: asset.balance,
       initial_balance: asset.initial_balance || null,
       currency: asset.currency,
+      status: asset.status ?? 'active',
+      closed_at: asset.closed_at ?? null,
+      closed_by_user_id: asset.closed_by_user_id ?? null,
       last_updated: asset.last_updated,
       created_at: asset.created_at,
       updated_at: asset.updated_at,
@@ -202,6 +211,7 @@ const sortedGroups = Object.entries(assetsByType)
     {/* Page Header */}
     <AssetPageHeader
       defaultCategoryId={defaultCategoryId}
+      closedCount={closedCount}
       currentMonth={currentMonthDisplay}
       prevMonthUrl={buildMonthUrl(prevMonthDate.getFullYear(), prevMonthDate.getMonth() + 1)}
       nextMonthUrl={!isNextMonthFuture
