@@ -1,4 +1,4 @@
-import { expect } from '@playwright/test';
+import { expect, type Locator } from '@playwright/test';
 import { BasePage } from './BasePage';
 
 /**
@@ -85,11 +85,11 @@ export class AssetsPage extends BasePage {
     await expect(modal).toBeVisible({ timeout: 5000 });
 
     // Wait for modal content animation to complete (opacity transitions from 0 to 1)
-    const modalContent = modal.locator('[data-modal-content]');
+    const modalContent: Locator = modal.locator('[data-modal-content]');
     await expect(modalContent).toBeVisible({ timeout: 5000 });
 
     // Wait for form to be ready inside the modal
-    const nameInput = modal
+    const nameInput: Locator = modal
       .locator('[data-testid="asset-name-input"]')
       .or(modal.locator('[name="name"]').first());
     await expect(nameInput).toBeVisible({ timeout: 5000 });

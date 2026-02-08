@@ -1,4 +1,4 @@
-import { expect } from '@playwright/test';
+import { expect, type Locator } from '@playwright/test';
 import { BasePage } from './BasePage';
 
 /**
@@ -50,13 +50,14 @@ export class TransactionsPage extends BasePage {
     const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
     // Open month dropdown via PeriodNavigator trigger
-    const monthTrigger = this.page
+    const monthTrigger: Locator = this.page
       .locator(this.monthSelector)
-      .or(this.page.locator('[data-period-trigger]'));
+      .or(this.page.locator('[data-period-trigger]'))
+      .first();
     await monthTrigger.click();
 
     // Select the current month option
-    const monthOption = this.page.locator(`[data-period-option="${monthKey}"]`);
+    const monthOption: Locator = this.page.locator(`[data-period-option="${monthKey}"]`);
     if (await monthOption.isVisible()) {
       await monthOption.click();
     } else {

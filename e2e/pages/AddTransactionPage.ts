@@ -1,4 +1,4 @@
-import { expect, type Locator } from '@playwright/test';
+import { expect, type Locator, type Response } from '@playwright/test';
 import { BasePage } from './BasePage';
 
 /**
@@ -67,24 +67,24 @@ export class AddTransactionPage extends BasePage {
    * @param type - Transaction type to select tab for ('expense' or 'income')
    */
   async gotoAddTransaction(type?: 'expense' | 'income'): Promise<void> {
-    const transactionType = type || 'expense';
+    const transactionType: 'expense' | 'income' = type ?? 'expense';
     this.currentType = transactionType;
 
     // Navigate to dashboard page where the header "New Transaction" button is available
     await this.page.goto('/dashboard');
 
     // Click the "New Transaction" button in the header to open the drawer
-    const newTransactionBtn = this.page.locator('[data-open-transaction-drawer]');
+    const newTransactionBtn: Locator = this.page.locator('[data-open-transaction-drawer]');
     await expect(newTransactionBtn).toBeVisible();
     await expect(newTransactionBtn).toBeEnabled();
     await newTransactionBtn.click();
 
     // Wait for the drawer to be visible
-    const drawer = this.page.locator('#transaction-drawer');
+    const drawer: Locator = this.page.locator('#transaction-drawer');
     await expect(drawer).toBeVisible({ timeout: 5000 });
 
     // Click the appropriate tab within the drawer
-    const tabBtn = drawer.locator(`[data-tab="${transactionType}"]`);
+    const tabBtn: Locator = drawer.locator(`[data-tab="${transactionType}"]`);
     await tabBtn.click();
 
     // Wait for the form panel to be visible (not hidden)
@@ -152,7 +152,7 @@ export class AddTransactionPage extends BasePage {
    */
   async submit(): Promise<void> {
     // Wait for both the click and the subsequent network activity
-    const [response] = await Promise.all([
+    const [response]: [Response, void] = await Promise.all([
       this.page.waitForResponse(
         (resp) =>
           resp.url().includes('/api/transactions') &&
