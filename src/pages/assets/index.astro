@@ -104,8 +104,7 @@ const currentMonthDisplay = new Date(selectedYear, selectedMonth - 1).toLocaleDa
 });
 
 // Get closed account count for navigation link
-const closedAssets = await assetService.findAllClosed(user.workspaceId);
-const closedCount = closedAssets.length;
+const closedCount = await assetService.countClosed(user.workspaceId);
 
 // Fetch assets and categories from database
 const categories = await assetCategoryService.findAll(user.workspaceId);

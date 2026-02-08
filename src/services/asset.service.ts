@@ -643,6 +643,23 @@ export class AssetService {
   /**
    * Get asset counts grouped by category ID
    */
+  async countClosed(workspaceId: string): Promise<number> {
+    const result = await (this.db as any)
+      .select({
+        count: sql<number>`count(*)`,
+      })
+      .from(this.schema.assets)
+      .where(
+        and(
+          eq(this.schema.assets.workspace_id, workspaceId),
+          eq(this.schema.assets.status, 'closed'),
+          sql`${this.schema.assets.deleted_at} IS NULL`
+        )
+      );
+
+    return result[0]?.count ?? 0;
+  }
+
   async countByCategory(workspaceId: string) {
     const result = await (this.db as any)
       .select({
