@@ -14,11 +14,18 @@ import {
   createBudgetSchema,
   updateBudgetSchema,
   copyBudgetsSchema,
+  initializeBudgetsSchema,
   type CreateBudgetInput,
   type UpdateBudgetInput,
   type CopyBudgetsInput,
+  type InitializeBudgetsInput,
 } from '@/lib/validation/budgets';
-import type { Budget, BudgetWithCategory, CopyBudgetsResult } from '@/lib/types/budget';
+import type {
+  Budget,
+  BudgetWithCategory,
+  CopyBudgetsResult,
+  InitializeBudgetsResult,
+} from '@/lib/types/budget';
 import { BudgetServiceError, ServiceErrorCode } from './service-errors';
 import { toHexColor } from '@/lib/utils/colorUtils';
 import { getCacheManager, CacheKeys, CacheTags } from '@/lib/cache';
@@ -842,6 +849,82 @@ export class BudgetService {
     });
 
     return result !== undefined;
+  }
+
+  /**
+   * Initialize budgets for all uninitialized expense categories
+   * Creates budget entries with amount='0' for categories without budgets in the target month
+   */
+  async initializeAllBudgets(input: InitializeBudgetsInput): Promise<InitializeBudgetsResult> {
+    const validated = initializeBudgetsSchema.parse(input);
+
+    // Get all active expense categories for the workspace
+    const allCategoriesRaw = await this.db.query.categories.findMany({
+      where: and(
+        eq(this.schema.categories.workspace_id, validated.workspace_id),
+        eq(this.schema.categories.is_active, true),
+        eq(this.schema.categories.type, 'expense')
+      ),
+    });
+
+    // Defensive filter: ensure only active expense categories (query may not filter in all contexts)
+    const allCategories = allCategoriesRaw.filter(
+      (cat: { type: string; is_active: boolean }) =>
+        cat.type === 'expense' && cat.is_active === true
+    );
+
+    if (allCategories.length === 0) {
+      return { initialized_count: 0, categories: [] };
+    }
+
+    // Get existing budgets for this month/year/currency
+    const existingBudgets = await this.db.query.budgets.findMany({
+      where: and(
+        eq(this.schema.budgets.workspace_id, validated.workspace_id),
+        eq(this.schema.budgets.month, validated.month),
+        eq(this.schema.budgets.year, validated.year),
+        eq(this.schema.budgets.currency, validated.currency)
+      ),
+    });
+
+    // Filter to categories without budgets (Set for O(1) lookup)
+    const existingCategoryIds = new Set(
+      existingBudgets.map((b: { category_id: string }) => b.category_id)
+    );
+    const uninitializedCategories = allCategories.filter(
+      (cat: { id: string }) => !existingCategoryIds.has(cat.id)
+    );
+
+    if (uninitializedCategories.length === 0) {
+      return { initialized_count: 0, categories: [] };
+    }
+
+    // Bulk insert budget records with amount='0'
+    const newBudgets = uninitializedCategories.map((cat: { id: string }) => ({
+      id: nanoid(),
+      workspace_id: validated.workspace_id,
+      created_by_user_id: validated.created_by_user_id,
+      category_id: cat.id,
+      month: validated.month,
+      year: validated.year,
+      budget_amount: '0',
+      currency: validated.currency,
+      is_closed: false,
+    }));
+
+    await Promise.resolve(this.db.insert(this.schema.budgets).values(newBudgets));
+
+    // Invalidate budget cache
+    const cache = getCacheManager();
+    await cache.invalidateByTags([CacheTags.workspace(validated.workspace_id), CacheTags.BUDGET]);
+
+    return {
+      initialized_count: uninitializedCategories.length,
+      categories: uninitializedCategories.map((cat: { id: string; name: string }) => ({
+        id: cat.id,
+        name: cat.name,
+      })),
+    };
   }
 
   /**
