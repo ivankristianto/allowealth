@@ -155,6 +155,25 @@ export class AssetService {
    * Update asset details
    */
   async update(id: string, workspaceId: string, input: UpdateAssetInput) {
+    // Currency lock: prevent changing currency if history exists
+    if (input.currency !== undefined) {
+      const currentAsset = await this.findById(id, workspaceId);
+      if (currentAsset && input.currency !== currentAsset.currency) {
+        const historyCount = await (this.db as any)
+          .select({ count: sql<number>`count(*)` })
+          .from(this.schema.assetHistory)
+          .where(eq(this.schema.assetHistory.asset_id, id));
+
+        if (historyCount[0]?.count > 0) {
+          throw new AssetServiceError(
+            ServiceErrorCode.CURRENCY_LOCKED,
+            'Cannot change currency — account has transaction history',
+            400
+          );
+        }
+      }
+    }
+
     const updateData: Record<string, any> = {
       updated_at: new Date(),
     };
@@ -193,6 +212,15 @@ export class AssetService {
     if (!currentAsset) {
       throw new AssetServiceError(ServiceErrorCode.ASSET_NOT_FOUND, 'Asset not found', 404);
     }
+
+    if (currentAsset.status === 'closed') {
+      throw new AssetServiceError(
+        ServiceErrorCode.ACCOUNT_CLOSED,
+        'Cannot update balance — account is closed',
+        400
+      );
+    }
+
     const previousBalance = currentAsset.balance;
     const previousLastUpdated = currentAsset.last_updated;
     const previousUpdatedAt = currentAsset.updated_at;
@@ -262,6 +290,14 @@ export class AssetService {
       throw new Error('Asset not found');
     }
 
+    if (fromAsset.status === 'closed' || toAsset.status === 'closed') {
+      throw new AssetServiceError(
+        ServiceErrorCode.ACCOUNT_CLOSED,
+        'Cannot transfer — one or both accounts are closed',
+        400
+      );
+    }
+
     if (fromAsset.currency !== toAsset.currency) {
       throw new Error('Cannot transfer between different currencies');
     }
@@ -319,6 +355,86 @@ export class AssetService {
     const updatedTo = await this.findById(toId, workspaceId);
 
     return { fromAsset: updatedFrom, toAsset: updatedTo };
+  }
+
+  /**
+   * Close an asset account (requires zero balance)
+   */
+  async close(id: string, workspaceId: string, closedByUserId: string) {
+    const asset = await this.findById(id, workspaceId);
+
+    if (!asset) {
+      throw new AssetServiceError(ServiceErrorCode.ASSET_NOT_FOUND, 'Asset not found', 404);
+    }
+
+    if (asset.status === 'closed') {
+      throw new AssetServiceError(ServiceErrorCode.ALREADY_CLOSED, 'Account already closed', 400);
+    }
+
+    if (decimalCompare(asset.balance, '0') !== 0) {
+      throw new AssetServiceError(
+        ServiceErrorCode.BALANCE_NOT_ZERO,
+        `Cannot close account with balance ${asset.balance} ${asset.currency}. Transfer funds out first.`,
+        400
+      );
+    }
+
+    const now = new Date();
+    await this.db
+      .update(this.schema.assets)
+      .set({
+        status: 'closed',
+        closed_at: now,
+        closed_by_user_id: closedByUserId,
+        updated_at: now,
+      })
+      .where(and(eq(this.schema.assets.id, id), eq(this.schema.assets.workspace_id, workspaceId)));
+
+    return this.findById(id, workspaceId);
+  }
+
+  /**
+   * Reopen a closed asset account
+   *
+   * Note: Permission check (admin-only) is handled at the API route level
+   * using getAuthenticatedUser().role, not in the service layer.
+   */
+  async reopen(id: string, workspaceId: string) {
+    const asset = await this.findByIdIncludingClosed(id, workspaceId);
+
+    if (!asset) {
+      throw new AssetServiceError(ServiceErrorCode.ASSET_NOT_FOUND, 'Asset not found', 404);
+    }
+
+    if (asset.status !== 'closed') {
+      throw new AssetServiceError(ServiceErrorCode.NOT_CLOSED, 'Account is not closed', 400);
+    }
+
+    const now = new Date();
+    await this.db
+      .update(this.schema.assets)
+      .set({
+        status: 'active',
+        closed_at: null,
+        closed_by_user_id: null,
+        updated_at: now,
+      })
+      .where(and(eq(this.schema.assets.id, id), eq(this.schema.assets.workspace_id, workspaceId)));
+
+    return this.findById(id, workspaceId);
+  }
+
+  /**
+   * Find asset by ID including closed assets (but not hard-deleted)
+   */
+  private async findByIdIncludingClosed(id: string, workspaceId: string) {
+    return this.db.query.assets.findFirst({
+      where: and(
+        eq(this.schema.assets.id, id),
+        eq(this.schema.assets.workspace_id, workspaceId),
+        sql`${this.schema.assets.deleted_at} IS NULL`
+      ),
+    });
   }
 
   /**
