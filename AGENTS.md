@@ -261,6 +261,26 @@ This is a **TypeScript-primary codebase**. Always prefer TypeScript idioms, use 
 - ❌ Never generate migrations for only one dialect and forget the other
 - ❌ Never manually edit migration SQL files
 
+### Feature Completeness & Verification
+
+- ✅ **Trace ALL consumers of a shared component before declaring done** - When modifying TransactionCard, check every render path (SSR, API, Dashboard, CategoryDrilldown, Reports)
+- ✅ **Fix tests before committing, never push with known failures** - Even "pre-existing" failures must be fixed or explicitly flagged to the user before push
+- ✅ **Verify ORM-generated SQL with diagnostic queries** - Drizzle `extras` with schema references can silently produce wrong SQL; test actual output before declaring done
+- ✅ **Verify return types don't silently strip new fields** - Explicit inline return types in TypeScript will discard unlisted properties; use interface references
+- ✅ **Use systematic debugging from the start** - Don't guess at fixes; diagnose root cause with evidence before changing code
+- ✅ **Confirm user intent before implementing UI changes** - Ask clarifying questions ("dropdown or inline?") before rewriting component layout
+- ✅ **Think through mobile vs desktop UX separately** - Mobile uses dropdown menus, desktop uses inline icons; apply changes to each context appropriately
+- ✅ **Add tooltips/labels to icon-only buttons proactively** - Design system says "Use Lucide icons with text labels"; don't wait to be asked
+- ✅ **Update tests to match user intent, not broken implementation** - If tests expect rich behavior, fix the implementation, not the test expectations
+- ❌ **Don't add extra DB queries as the lazy first solution** - Use subqueries or JOINs in the existing query
+- ❌ **Don't claim "done, test it" without verifying all render paths** - Check SSR, API, Dashboard, and dynamic injection paths before declaring success
+- ❌ **Don't guess at fixes** - Speculative fixes waste sessions; use systematic debugging immediately
+- ❌ **Don't thrash method signatures** - If you edit a signature 3x and end at the original, you didn't think before coding
+- ❌ **Don't forget cross-session context** - If the user asked to remove something in a prior session, don't leave it in
+- ❌ **Don't delete tests without replacing coverage** - Removing tests for dead methods requires verifying the remaining tests cover the same cases
+- ❌ **Don't include `create` action in history/audit queries** - Initial create is not meaningful "history"; only `update`/`delete` count
+- ❌ **Don't use `(obj as any).field` when proper typing is available** - Use interface references or Drizzle extras types
+
 ### Pre-Commit Checklist
 
 **Before every commit:**
