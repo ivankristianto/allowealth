@@ -58,24 +58,26 @@ export function validateBudgetAmount(value: string): { valid: boolean; error?: s
 /**
  * Look up the budget ID for a category from the page's data attributes.
  *
- * The budget page stores existing budgets in `data-expense-categories` JSON on the
- * `[data-budget-container]` element. We also need the budget IDs which are stored
- * separately. The budget IDs can be found from the budgets data.
+ * The budget page stores category data (including budget IDs) in
+ * `data-expense-categories` JSON on the `[data-budget-container]` element.
  */
 function getBudgetIdForCategory(categoryId: string): string | null {
   const container = document.querySelector('[data-budget-container]');
   if (!container) return null;
 
-  // Budget IDs are stored in the modal's option elements
-  const modalCategory = document.querySelector(
-    `#set-new-budget-modal-category option[value="${categoryId}"]`
-  ) as HTMLOptionElement | null;
+  const categoriesJson = container.getAttribute('data-expense-categories');
+  if (!categoriesJson) return null;
 
-  if (modalCategory?.dataset.budgetId) {
-    return modalCategory.dataset.budgetId;
+  try {
+    const categories = JSON.parse(categoriesJson) as Array<{
+      id: string;
+      budget_id?: string;
+    }>;
+    const match = categories.find((c) => c.id === categoryId);
+    return match?.budget_id || null;
+  } catch {
+    return null;
   }
-
-  return null;
 }
 
 // =============================================================================
