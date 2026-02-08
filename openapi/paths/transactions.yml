@@ -195,6 +195,42 @@ paths:
         '500':
           $ref: '../responses/common.yml#/InternalServerError'
 
+  /api/transactions/{id}/history:
+    get:
+      tags: [Transactions]
+      summary: Get transaction audit history
+      description: Retrieve create, update, and delete audit events for a transaction
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: '../parameters/common.yml#/IdParameter'
+        - name: all
+          in: query
+          description: Return all update events (default returns the latest 5 updates)
+          schema:
+            type: boolean
+        - name: _render
+          in: query
+          description: Response format (json or server-rendered html fragment)
+          schema:
+            type: string
+            enum: [json, html]
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/TransactionHistoryResponse.yml#/TransactionHistoryResponse'
+        '400':
+          $ref: '../responses/common.yml#/BadRequest'
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '404':
+          $ref: '../responses/common.yml#/NotFound'
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'
+
   /api/transactions/export:
     get:
       tags: [Transactions]

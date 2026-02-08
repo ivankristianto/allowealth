@@ -4,12 +4,9 @@
  * Unit tests for dashboard service
  *
  * Tests cover:
- * - getTotalAssets() - Sum by currency, conversion calculations
- * - getMonthlySpent() - Date filtering, aggregation, percentage calc
- * - getBudgetHealth() - Alert calculation, status determination
- * - getAssetUpdateReminders() - Priority calculation, sorting
- * - getRecentTransactions() - Limit validation, ordering
- * - getDashboardData() - Parallel execution, data aggregation
+ * - getDashboardData() - Parallel execution, data aggregation, error handling
+ * - Error-path defaults for each dashboard section
+ * - processTopCategories() - Category grouping, percentage calc, "Other" bucket
  */
 
 import { describe, it, expect, beforeEach } from 'bun:test';
@@ -20,476 +17,6 @@ describe('DashboardService', () => {
 
   beforeEach(() => {
     dashboardService = new DashboardService({} as any);
-  });
-
-  describe('getTotalAssets', () => {
-    it('should return total assets with string amounts', async () => {
-      const result = await dashboardService.getTotalAssets('user-123', 'IDR');
-
-      expect(result).toHaveProperty('idr');
-      expect(result).toHaveProperty('usd');
-      expect(result).toHaveProperty('converted');
-      expect(result).toHaveProperty('convertedCurrency');
-
-      // Amounts are stored as strings for decimal precision
-      expect(typeof result.idr).toBe('string');
-      expect(typeof result.usd).toBe('string');
-      expect(typeof result.converted).toBe('string');
-      expect(['IDR', 'USD']).toContain(result.convertedCurrency);
-    });
-
-    it('should handle primary currency parameter for IDR', async () => {
-      const result = await dashboardService.getTotalAssets('user-123', 'IDR');
-      expect(result.convertedCurrency).toBe('IDR');
-    });
-
-    it('should handle primary currency parameter for USD', async () => {
-      const result = await dashboardService.getTotalAssets('user-123', 'USD');
-      expect(result.convertedCurrency).toBe('USD');
-    });
-
-    it('should return zeroed string values for user with no assets', async () => {
-      const result = await dashboardService.getTotalAssets('non-existent-user', 'IDR');
-
-      expect(result.idr).toBe('0');
-      expect(result.usd).toBe('0');
-      expect(result.converted).toBe('0');
-    });
-
-    it('should handle database errors gracefully', async () => {
-      // Service catches errors and returns safe defaults
-      const result = await dashboardService.getTotalAssets('error-user', 'IDR');
-      expect(result.idr).toBe('0');
-      expect(result.usd).toBe('0');
-      expect(result.converted).toBe('0');
-    });
-  });
-
-  describe('getMonthlySpent', () => {
-    it('should return monthly spending summary with string amounts', async () => {
-      const result = await dashboardService.getMonthlySpent('user-123', 1, 2025);
-
-      expect(result).toHaveProperty('total');
-      expect(result).toHaveProperty('budget');
-      expect(result).toHaveProperty('percentage');
-      expect(result).toHaveProperty('remaining');
-
-      // Amounts are strings, percentage is number
-      expect(typeof result.total).toBe('string');
-      expect(typeof result.budget).toBe('string');
-      expect(typeof result.percentage).toBe('number');
-      expect(typeof result.remaining).toBe('string');
-    });
-
-    it('should handle currency parameter', async () => {
-      const resultIDR = await dashboardService.getMonthlySpent('user-123', 1, 2025, 'IDR');
-      expect(resultIDR).toBeDefined();
-
-      const resultUSD = await dashboardService.getMonthlySpent('user-123', 1, 2025, 'USD');
-      expect(resultUSD).toBeDefined();
-    });
-
-    it('should return safe defaults for invalid month (caught by service)', async () => {
-      // Service catches validation errors and returns zeroed values
-      const result = await dashboardService.getMonthlySpent('user-123', 0, 2025);
-      expect(result.total).toBe('0');
-      expect(result.budget).toBe('0');
-      expect(result.percentage).toBe(0);
-      expect(result.remaining).toBe('0');
-    });
-
-    it('should return safe defaults for invalid month 13', async () => {
-      const result = await dashboardService.getMonthlySpent('user-123', 13, 2025);
-      expect(result.total).toBe('0');
-      expect(result.budget).toBe('0');
-      expect(result.percentage).toBe(0);
-    });
-
-    it('should return safe defaults for invalid year', async () => {
-      const result = await dashboardService.getMonthlySpent('user-123', 1, 1999);
-      expect(result.total).toBe('0');
-      expect(result.budget).toBe('0');
-      expect(result.percentage).toBe(0);
-    });
-
-    it('should return zeroed string values for month with no transactions', async () => {
-      const result = await dashboardService.getMonthlySpent('user-123', 1, 2020);
-
-      expect(result.total).toBe('0');
-      expect(result.percentage).toBe(0);
-    });
-
-    it('should calculate remaining amount correctly', async () => {
-      const result = await dashboardService.getMonthlySpent('user-123', 1, 2025);
-      // remaining = budget - spent
-      const remaining = parseFloat(result.remaining);
-      const budget = parseFloat(result.budget);
-      const total = parseFloat(result.total);
-      expect(remaining).toBeCloseTo(budget - total, 2);
-    });
-
-    it('should calculate percentage correctly when budget > 0', async () => {
-      const result = await dashboardService.getMonthlySpent('user-123', 1, 2025);
-      if (parseFloat(result.budget) > 0) {
-        const expectedPercentage = (parseFloat(result.total) / parseFloat(result.budget)) * 100;
-        expect(result.percentage).toBeCloseTo(expectedPercentage, 1);
-      } else {
-        expect(result.percentage).toBe(0);
-      }
-    });
-  });
-
-  describe('getBudgetHealth', () => {
-    it('should return budget health with alerts', async () => {
-      const result = await dashboardService.getBudgetHealth('user-123', 1, 2025);
-
-      expect(result).toHaveProperty('alertCount');
-      expect(result).toHaveProperty('status');
-      expect(result).toHaveProperty('alerts');
-
-      expect(typeof result.alertCount).toBe('number');
-      expect(['healthy', 'warning', 'exceeded']).toContain(result.status);
-      expect(Array.isArray(result.alerts)).toBe(true);
-    });
-
-    it('should handle currency parameter', async () => {
-      const resultIDR = await dashboardService.getBudgetHealth('user-123', 1, 2025, 'IDR');
-      expect(resultIDR).toBeDefined();
-
-      const resultUSD = await dashboardService.getBudgetHealth('user-123', 1, 2025, 'USD');
-      expect(resultUSD).toBeDefined();
-    });
-
-    it('should return safe defaults for invalid month', async () => {
-      const result = await dashboardService.getBudgetHealth('user-123', 0, 2025);
-      expect(result.alertCount).toBe(0);
-      expect(result.status).toBe('healthy');
-      expect(result.alerts).toHaveLength(0);
-    });
-
-    it('should return safe defaults for invalid year', async () => {
-      const result = await dashboardService.getBudgetHealth('user-123', 1, 1999);
-      expect(result.alertCount).toBe(0);
-      expect(result.status).toBe('healthy');
-      expect(result.alerts).toHaveLength(0);
-    });
-
-    it('should return healthy status when no alerts', async () => {
-      const result = await dashboardService.getBudgetHealth('user-123', 1, 2020);
-
-      expect(['healthy', 'warning', 'exceeded']).toContain(result.status);
-      expect(result.alertCount).toBeGreaterThanOrEqual(0);
-      expect(result.alerts.length).toBeGreaterThanOrEqual(0);
-    });
-
-    it('should have alert structure with string amounts', async () => {
-      const result = await dashboardService.getBudgetHealth('user-123', 1, 2025);
-
-      result.alerts.forEach((alert) => {
-        expect(alert).toHaveProperty('category');
-        expect(alert).toHaveProperty('budget');
-        expect(alert).toHaveProperty('spent');
-        expect(alert).toHaveProperty('percentage');
-        expect(alert).toHaveProperty('status');
-        expect(alert).toHaveProperty('remaining');
-        expect(alert).toHaveProperty('overage');
-
-        expect(typeof alert.budget).toBe('string');
-        expect(typeof alert.spent).toBe('string');
-        expect(typeof alert.percentage).toBe('number');
-        expect(typeof alert.remaining).toBe('string');
-        expect(typeof alert.overage).toBe('string');
-        expect(['warning', 'exceeded']).toContain(alert.status);
-      });
-    });
-
-    it('should calculate alert values correctly', async () => {
-      const result = await dashboardService.getBudgetHealth('user-123', 1, 2025);
-
-      result.alerts.forEach((alert) => {
-        const budget = parseFloat(alert.budget);
-        const spent = parseFloat(alert.spent);
-        const expectedPercentage = Math.round((spent / budget) * 100 * 10) / 10;
-        expect(alert.percentage).toBeCloseTo(expectedPercentage, 1);
-
-        const expectedRemaining = (budget - spent).toFixed(0);
-        const expectedOverage = spent > budget ? (spent - budget).toFixed(0) : '0';
-        expect(alert.remaining).toBe(expectedRemaining);
-        expect(alert.overage).toBe(expectedOverage);
-      });
-    });
-
-    it('should determine status based on worst alert', async () => {
-      const result = await dashboardService.getBudgetHealth('user-123', 1, 2025);
-
-      // If any exceeded alerts exist, status should be exceeded
-      if (result.alerts.some((a) => a.status === 'exceeded')) {
-        expect(result.status).toBe('exceeded');
-      }
-      // If any warning alerts exist (and no exceeded), status should be warning
-      else if (result.alerts.some((a) => a.status === 'warning')) {
-        expect(result.status).toBe('warning');
-      }
-      // Otherwise healthy
-      else {
-        expect(result.status).toBe('healthy');
-      }
-    });
-
-    it('should handle database errors gracefully', async () => {
-      const result = await dashboardService.getBudgetHealth('error-user', 1, 2025);
-      expect(result.alertCount).toBe(0);
-      expect(result.status).toBe('healthy');
-      expect(result.alerts).toHaveLength(0);
-    });
-  });
-
-  describe('getAssetUpdateReminders', () => {
-    it('should return assets needing update', async () => {
-      const result = await dashboardService.getAssetUpdateReminders('user-123');
-
-      expect(Array.isArray(result)).toBe(true);
-
-      // Check structure of each reminder
-      result.forEach((reminder) => {
-        expect(reminder).toHaveProperty('assetId');
-        expect(reminder).toHaveProperty('assetName');
-        expect(reminder).toHaveProperty('assetType');
-        expect(reminder).toHaveProperty('lastUpdated');
-        expect(reminder).toHaveProperty('daysSinceUpdate');
-        expect(reminder).toHaveProperty('priority');
-        expect(reminder).toHaveProperty('currentBalance');
-        expect(reminder).toHaveProperty('currency');
-
-        expect(['high', 'medium', 'low']).toContain(reminder.priority);
-        expect(reminder.daysSinceUpdate).toBeGreaterThan(7);
-        expect(typeof reminder.currentBalance).toBe('string');
-      });
-    });
-
-    it('should sort reminders by priority (high to low)', async () => {
-      const result = await dashboardService.getAssetUpdateReminders('user-123');
-
-      // Check that reminders are sorted by priority
-      const priorityValue: Record<string, number> = { high: 3, medium: 2, low: 1 };
-      for (let i = 1; i < result.length; i++) {
-        const prev = result[i - 1];
-        const curr = result[i];
-        if (prev && curr) {
-          const prevPriority = priorityValue[prev.priority] ?? 0;
-          const currPriority = priorityValue[curr.priority] ?? 0;
-          expect(prevPriority).toBeGreaterThanOrEqual(currPriority);
-        }
-      }
-    });
-
-    it('should return empty array for user with no assets', async () => {
-      const result = await dashboardService.getAssetUpdateReminders('non-existent-user');
-      expect(result).toHaveLength(0);
-    });
-
-    it('should not include recently updated assets', async () => {
-      const result = await dashboardService.getAssetUpdateReminders('user-123');
-
-      // All returned assets should have daysSinceUpdate > 7
-      result.forEach((reminder) => {
-        expect(reminder.daysSinceUpdate).toBeGreaterThan(7);
-      });
-    });
-
-    it('should sort by days since update within same priority', async () => {
-      const result = await dashboardService.getAssetUpdateReminders('user-123');
-
-      // Find consecutive items with same priority
-      for (let i = 1; i < result.length; i++) {
-        const prev = result[i - 1];
-        const curr = result[i];
-        if (prev && curr && prev.priority === curr.priority) {
-          // Same priority should be sorted by days (descending)
-          expect(prev.daysSinceUpdate).toBeGreaterThanOrEqual(curr.daysSinceUpdate);
-        }
-      }
-    });
-
-    it('should handle database errors gracefully', async () => {
-      const result = await dashboardService.getAssetUpdateReminders('error-user');
-      expect(Array.isArray(result)).toBe(true);
-    });
-  });
-
-  describe('getRecentTransactions', () => {
-    it('should return recent transactions with string amounts', async () => {
-      const result = await dashboardService.getRecentTransactions('user-123', 5);
-
-      expect(Array.isArray(result)).toBe(true);
-      expect(result.length).toBeLessThanOrEqual(5);
-
-      // Check structure of each transaction
-      result.forEach((tx) => {
-        expect(tx).toHaveProperty('id');
-        expect(tx).toHaveProperty('type');
-        expect(tx).toHaveProperty('amount');
-        expect(tx).toHaveProperty('currency');
-        expect(tx).toHaveProperty('transactionDate');
-        expect(tx).toHaveProperty('category');
-        expect(tx).toHaveProperty('asset');
-
-        expect(typeof tx.amount).toBe('string');
-        expect(['expense', 'income']).toContain(tx.type);
-        expect(['IDR', 'USD']).toContain(tx.currency);
-      });
-    });
-
-    it('should respect limit parameter', async () => {
-      const result3 = await dashboardService.getRecentTransactions('user-123', 3);
-      expect(result3.length).toBeLessThanOrEqual(3);
-
-      const result10 = await dashboardService.getRecentTransactions('user-123', 10);
-      expect(result10.length).toBeLessThanOrEqual(10);
-    });
-
-    it('should use default limit of 5', async () => {
-      const result = await dashboardService.getRecentTransactions('user-123');
-      expect(result.length).toBeLessThanOrEqual(5);
-    });
-
-    it('should return safe defaults for invalid limit', async () => {
-      const result = await dashboardService.getRecentTransactions('user-123', 0);
-      expect(Array.isArray(result)).toBe(true);
-    });
-
-    it('should return safe defaults for limit > 100', async () => {
-      const result = await dashboardService.getRecentTransactions('user-123', 101);
-      expect(Array.isArray(result)).toBe(true);
-    });
-
-    it('should return empty array for user with no transactions', async () => {
-      const result = await dashboardService.getRecentTransactions('non-existent-user');
-      expect(result).toHaveLength(0);
-    });
-
-    it('should have transaction relation structure', async () => {
-      const result = await dashboardService.getRecentTransactions('user-123', 5);
-
-      result.forEach((tx) => {
-        expect(tx.category).toHaveProperty('id');
-        expect(tx.category).toHaveProperty('name');
-        expect(tx.category).toHaveProperty('type');
-
-        expect(tx.asset).toHaveProperty('id');
-        expect(tx.asset).toHaveProperty('name');
-      });
-    });
-
-    it('should handle database errors gracefully', async () => {
-      const result = await dashboardService.getRecentTransactions('error-user');
-      expect(Array.isArray(result)).toBe(true);
-    });
-  });
-
-  describe('getTopCategoryExpenses', () => {
-    it('should return top category expenses with percentages', async () => {
-      const result = await dashboardService.getTopCategoryExpenses('user-123', 1, 2025);
-
-      expect(Array.isArray(result)).toBe(true);
-      expect(result.length).toBeLessThanOrEqual(5); // Top 4 + Other
-
-      result.forEach((item) => {
-        expect(item).toHaveProperty('category');
-        expect(item).toHaveProperty('percentage');
-        expect(item).toHaveProperty('color');
-        expect(item).toHaveProperty('amount');
-        expect(typeof item.category).toBe('string');
-        expect(typeof item.percentage).toBe('number');
-        expect(typeof item.amount).toBe('string');
-      });
-    });
-
-    it('should handle currency parameter', async () => {
-      const resultIDR = await dashboardService.getTopCategoryExpenses('user-123', 1, 2025, 'IDR');
-      expect(resultIDR).toBeDefined();
-
-      const resultUSD = await dashboardService.getTopCategoryExpenses('user-123', 1, 2025, 'USD');
-      expect(resultUSD).toBeDefined();
-    });
-
-    it('should return safe defaults for invalid month', async () => {
-      const result = await dashboardService.getTopCategoryExpenses('user-123', 0, 2025);
-      expect(Array.isArray(result)).toBe(true);
-    });
-
-    it('should return empty array for month with no expenses', async () => {
-      const result = await dashboardService.getTopCategoryExpenses('user-123', 1, 2020);
-      expect(Array.isArray(result)).toBe(true);
-    });
-
-    it('should group remaining categories into "Other" when more than 4 categories', async () => {
-      const result = await dashboardService.getTopCategoryExpenses('user-123', 1, 2025);
-
-      // If there are 5 items, the last one should be "Other"
-      if (result.length === 5) {
-        expect(result[4].category).toBe('Other');
-      }
-    });
-
-    it('should sort categories by amount descending', async () => {
-      const result = await dashboardService.getTopCategoryExpenses('user-123', 1, 2025);
-
-      // Check descending order (excluding "Other" which is always last)
-      const nonOther = result.filter((r) => r.category !== 'Other');
-      for (let i = 1; i < nonOther.length; i++) {
-        expect(parseFloat(nonOther[i - 1].amount)).toBeGreaterThanOrEqual(
-          parseFloat(nonOther[i].amount)
-        );
-      }
-    });
-
-    it('should handle database errors gracefully', async () => {
-      const result = await dashboardService.getTopCategoryExpenses('error-user', 1, 2025);
-      expect(Array.isArray(result)).toBe(true);
-    });
-  });
-
-  describe('getMonthlyIncome', () => {
-    it('should return monthly income summary with string amount', async () => {
-      const result = await dashboardService.getMonthlyIncome('user-123', 1, 2025);
-
-      expect(result).toHaveProperty('total');
-      expect(typeof result.total).toBe('string');
-    });
-
-    it('should handle currency parameter', async () => {
-      const resultIDR = await dashboardService.getMonthlyIncome('user-123', 1, 2025, 'IDR');
-      expect(resultIDR).toBeDefined();
-
-      const resultUSD = await dashboardService.getMonthlyIncome('user-123', 1, 2025, 'USD');
-      expect(resultUSD).toBeDefined();
-    });
-
-    it('should return safe defaults for invalid month (caught by service)', async () => {
-      const result = await dashboardService.getMonthlyIncome('user-123', 0, 2025);
-      expect(result.total).toBe('0');
-    });
-
-    it('should return safe defaults for invalid month 13', async () => {
-      const result = await dashboardService.getMonthlyIncome('user-123', 13, 2025);
-      expect(result.total).toBe('0');
-    });
-
-    it('should return safe defaults for invalid year', async () => {
-      const result = await dashboardService.getMonthlyIncome('user-123', 1, 1999);
-      expect(result.total).toBe('0');
-    });
-
-    it('should return zeroed string value for month with no income', async () => {
-      const result = await dashboardService.getMonthlyIncome('user-123', 1, 2020);
-      expect(result.total).toBe('0');
-    });
-
-    it('should handle database errors gracefully', async () => {
-      const result = await dashboardService.getMonthlyIncome('error-user', 1, 2025);
-      expect(result.total).toBe('0');
-    });
   });
 
   describe('getDashboardData', () => {
@@ -583,30 +110,145 @@ describe('DashboardService', () => {
     });
   });
 
-  describe('Error handling', () => {
-    it('should handle all errors gracefully across all methods', async () => {
-      // All methods should return default values on error
-      const totalAssets = await dashboardService.getTotalAssets('db-error-user');
-      expect(totalAssets.idr).toBe('0');
-      expect(totalAssets.usd).toBe('0');
-      expect(totalAssets.converted).toBe('0');
+  describe('error-path defaults', () => {
+    it('should return zeroed totalAssets when db is unavailable', async () => {
+      const result = await dashboardService.getDashboardData('error-user');
 
-      const monthlySpent = await dashboardService.getMonthlySpent('db-error-user', 1, 2025);
-      expect(monthlySpent.total).toBe('0');
-      expect(monthlySpent.budget).toBe('0');
-      expect(monthlySpent.percentage).toBe(0);
-      expect(monthlySpent.remaining).toBe('0');
+      expect(result.totalAssets.idr).toBe('0');
+      expect(result.totalAssets.usd).toBe('0');
+      expect(result.totalAssets.converted).toBe('0');
+    });
 
-      const budgetHealth = await dashboardService.getBudgetHealth('db-error-user', 1, 2025);
-      expect(budgetHealth.alertCount).toBe(0);
-      expect(budgetHealth.status).toBe('healthy');
-      expect(budgetHealth.alerts).toHaveLength(0);
+    it('should return zeroed monthlySpent when db is unavailable', async () => {
+      const result = await dashboardService.getDashboardData('error-user', 1, 2025);
 
-      const reminders = await dashboardService.getAssetUpdateReminders('db-error-user');
-      expect(Array.isArray(reminders)).toBe(true);
+      expect(result.monthlySpent.total).toBe('0');
+      expect(result.monthlySpent.budget).toBe('0');
+      expect(result.monthlySpent.percentage).toBe(0);
+      expect(result.monthlySpent.remaining).toBe('0');
+    });
 
-      const transactions = await dashboardService.getRecentTransactions('db-error-user');
-      expect(Array.isArray(transactions)).toBe(true);
+    it('should return zeroed monthlyIncome when db is unavailable', async () => {
+      const result = await dashboardService.getDashboardData('error-user', 1, 2025);
+
+      expect(result.monthlyIncome.total).toBe('0');
+    });
+
+    it('should return empty topCategoryExpenses when db is unavailable', async () => {
+      const result = await dashboardService.getDashboardData('error-user', 1, 2025);
+
+      expect(result.topCategoryExpenses).toEqual([]);
+    });
+
+    it('should return healthy budgetHealth with no alerts when db is unavailable', async () => {
+      const result = await dashboardService.getDashboardData('error-user', 1, 2025);
+
+      expect(result.budgetHealth.alertCount).toBe(0);
+      expect(result.budgetHealth.status).toBe('healthy');
+      expect(result.budgetHealth.alerts).toHaveLength(0);
+    });
+
+    it('should return empty assetReminders when db is unavailable', async () => {
+      const result = await dashboardService.getDashboardData('error-user');
+
+      expect(result.assetReminders).toEqual([]);
+    });
+
+    it('should return empty recentTransactions when db is unavailable', async () => {
+      const result = await dashboardService.getDashboardData('error-user');
+
+      expect(result.recentTransactions).toEqual([]);
+    });
+
+    it('should preserve currency in totalAssets even on error', async () => {
+      const resultIDR = await dashboardService.getDashboardData(
+        'error-user',
+        undefined,
+        undefined,
+        'IDR'
+      );
+      expect(resultIDR.totalAssets.convertedCurrency).toBe('IDR');
+
+      const resultUSD = await dashboardService.getDashboardData(
+        'error-user',
+        undefined,
+        undefined,
+        'USD'
+      );
+      expect(resultUSD.totalAssets.convertedCurrency).toBe('USD');
+    });
+  });
+
+  describe('processTopCategories', () => {
+    // Access private method for unit testing pure logic
+    const callProcessTopCategories = (service: DashboardService, data: any[]) =>
+      (service as any).processTopCategories(data);
+
+    it('should return empty array for no categories', () => {
+      const result = callProcessTopCategories(dashboardService, []);
+      expect(result).toEqual([]);
+    });
+
+    it('should return empty array when total is zero', () => {
+      const result = callProcessTopCategories(dashboardService, [
+        { category_name: 'Food', category_color: '#ef4444', total: '0' },
+      ]);
+      expect(result).toEqual([]);
+    });
+
+    it('should calculate percentages for single category', () => {
+      const result = callProcessTopCategories(dashboardService, [
+        { category_name: 'Food', category_color: '#ef4444', total: '100' },
+      ]);
+      expect(result).toHaveLength(1);
+      expect(result[0].category).toBe('Food');
+      expect(result[0].percentage).toBe(100);
+      expect(result[0].amount).toBe('100');
+    });
+
+    it('should return top 4 categories without Other when <= 4', () => {
+      const result = callProcessTopCategories(dashboardService, [
+        { category_name: 'Food', category_color: '#ef4444', total: '400' },
+        { category_name: 'Transport', category_color: '#3b82f6', total: '300' },
+        { category_name: 'Shopping', category_color: '#f59e0b', total: '200' },
+        { category_name: 'Entertainment', category_color: '#8b5cf6', total: '100' },
+      ]);
+      expect(result).toHaveLength(4);
+      expect(result.find((r: any) => r.category === 'Other')).toBeUndefined();
+    });
+
+    it('should group 5+ categories into top 4 + Other', () => {
+      const result = callProcessTopCategories(dashboardService, [
+        { category_name: 'Food', category_color: '#ef4444', total: '400' },
+        { category_name: 'Transport', category_color: '#3b82f6', total: '300' },
+        { category_name: 'Shopping', category_color: '#f59e0b', total: '200' },
+        { category_name: 'Entertainment', category_color: '#8b5cf6', total: '100' },
+        { category_name: 'Healthcare', category_color: '#10b981', total: '50' },
+        { category_name: 'Education', category_color: '#6b7280', total: '50' },
+      ]);
+      expect(result).toHaveLength(5);
+      expect(result[4].category).toBe('Other');
+      // Other = 50 + 50 = 100 out of 1100 total ≈ 9%
+      expect(result[4].percentage).toBe(9);
+      expect(result[4].color).toBe('#6b7280');
+    });
+
+    it('should sum percentages close to 100', () => {
+      const result = callProcessTopCategories(dashboardService, [
+        { category_name: 'Food', category_color: '#ef4444', total: '500' },
+        { category_name: 'Transport', category_color: '#3b82f6', total: '300' },
+        { category_name: 'Shopping', category_color: '#f59e0b', total: '200' },
+      ]);
+      const totalPercentage = result.reduce((sum: number, r: any) => sum + r.percentage, 0);
+      expect(totalPercentage).toBe(100);
+    });
+
+    it('should use fallback colors when category_color is invalid', () => {
+      const result = callProcessTopCategories(dashboardService, [
+        { category_name: 'Food', category_color: 'bg-neutral', total: '100' },
+      ]);
+      expect(result[0].color).toBeDefined();
+      expect(typeof result[0].color).toBe('string');
     });
   });
 });

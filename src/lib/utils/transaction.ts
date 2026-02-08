@@ -17,6 +17,8 @@ export interface DrizzleTransactionResult {
   currency: 'IDR' | 'USD';
   description: string | null;
   transaction_date: Date;
+  updated_by_user_id?: string | null;
+  deleted_by_user_id?: string | null;
   deleted_at: Date | null;
   created_at: Date;
   updated_at: Date;
@@ -37,6 +39,11 @@ export interface DrizzleTransactionResult {
     name: string;
     type: string;
   } | null;
+  createdBy?: {
+    id: string;
+    name: string;
+  } | null;
+  has_history?: number | boolean;
 }
 
 /**
@@ -53,6 +60,8 @@ export function transformTransaction(t: DrizzleTransactionResult): TransactionOu
     currency: t.currency,
     description: t.description,
     transaction_date: t.transaction_date,
+    updated_by_user_id: t.updated_by_user_id ?? null,
+    deleted_by_user_id: t.deleted_by_user_id ?? null,
     deleted_at: t.deleted_at,
     created_at: t.created_at,
     updated_at: t.updated_at,
@@ -77,6 +86,8 @@ export function transformTransaction(t: DrizzleTransactionResult): TransactionOu
           type: t.toAsset.type,
         }
       : null,
+    has_history: !!t.has_history,
+    created_by_user_name: t.createdBy?.name,
   };
 }
 

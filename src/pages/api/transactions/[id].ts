@@ -99,7 +99,8 @@ export const PUT: APIRoute = async (context) => {
     const rawTransaction = await transactionService.update(
       idValidation.data,
       auth.workspaceId,
-      updateData
+      updateData,
+      auth.userId
     );
 
     if (!rawTransaction) {
@@ -134,7 +135,7 @@ export const DELETE: APIRoute = async (context) => {
       return errorResponse('Invalid transaction ID format', 400);
     }
 
-    await transactionService.delete(idValidation.data, auth.workspaceId);
+    await transactionService.delete(idValidation.data, auth.workspaceId, auth.userId);
 
     return successResponse({ message: 'Transaction deleted successfully' });
   } catch (error) {

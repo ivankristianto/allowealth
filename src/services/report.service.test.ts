@@ -661,6 +661,23 @@ describe('ReportService', () => {
       // Total should be a decimal string
       expect(typeof result.total).toBe('string');
     });
+
+    test('should include createdByName in transaction data', async () => {
+      const userId = 'test-user-123';
+      const categoryId = 'cat-utilities';
+      const period = '2024-02';
+      const range = 'monthly';
+
+      const result = await service.getCategoryTransactions(userId, categoryId, period, range);
+
+      // Each transaction should have createdByName as string or undefined
+      result.transactions.forEach((tx) => {
+        expect('createdByName' in tx).toBe(true);
+        if (tx.createdByName !== undefined) {
+          expect(typeof tx.createdByName).toBe('string');
+        }
+      });
+    });
   });
 
   describe('Error Handling', () => {

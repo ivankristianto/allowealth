@@ -1,0 +1,19 @@
+# Transaction History Response Schema
+TransactionHistoryResponse:
+  allOf:
+    - $ref: './ApiErrorResponse.yml#/ApiResponse'
+    - type: object
+      required: [success, data]
+      properties:
+        data:
+          type: object
+          required: [history, totalEdits, showingEdits]
+          properties:
+            history:
+              type: array
+              items:
+                $ref: './TransactionHistoryEntry.yml#/TransactionHistoryEntry'
+            totalEdits:
+              type: integer
+            showingEdits:
+              type: integer

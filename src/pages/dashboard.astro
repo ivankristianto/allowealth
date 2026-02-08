@@ -79,6 +79,8 @@ const recentTransactions: TransactionOutput[] =
     currency: tx.currency,
     description: tx.description,
     transaction_date: tx.transactionDate,
+    updated_by_user_id: null,
+    deleted_by_user_id: null,
     deleted_at: null,
     created_at: new Date(),
     updated_at: new Date(),
@@ -94,6 +96,8 @@ const recentTransactions: TransactionOutput[] =
       name: tx.asset.name,
       type: tx.asset.type,
     },
+    has_history: tx.hasHistory,
+    created_by_user_name: tx.createdByName,
   })) || [];
 
 const formatCashFlowDate = (date: Date | string): string => {

@@ -1,22 +1,18 @@
 /**
  * Dashboard Service
  * =================
- * Provides aggregated data for the dashboard including:
- * - Total assets by currency
- * - Monthly spending summary
- * - Budget health alerts
- * - Asset update reminders
- * - Recent transactions
+ * Provides aggregated dashboard data via getDashboardData(), which fetches
+ * all metrics in parallel using optimized private methods:
+ * - Total assets by currency (getAssetsOptimized)
+ * - Monthly spending/income/top categories (getTransactionAggregatesOptimized)
+ * - Budget health alerts (getBudgetHealthOptimized)
+ * - Asset update reminders (getAssetsOptimized)
+ * - Recent transactions (getRecentTransactionsOptimized)
  *
  * Error Handling:
  * Methods catch errors and return safe default values (empty arrays, zeroed values).
  * This ensures the service gracefully handles missing database connections or
  * invalid input parameters without throwing exceptions.
- *
- * Unit Tests:
- * Unit tests pass an empty object {} as the db mock to verify error handling.
- * The null checks below detect this scenario and trigger the error handling
- * path, which logs to console and returns safe defaults.
  */
 
 import { type IDatabase, getActiveSchema } from '@/db';
@@ -141,6 +137,8 @@ export interface DashboardData {
       name: string;
       type: string;
     };
+    createdByName?: string;
+    hasHistory?: boolean;
   }>;
 }
 
@@ -155,612 +153,6 @@ export class DashboardService {
    * @param db - Database instance (injected for testability)
    */
   constructor(private db: IDatabase) {}
-
-  /**
-   * Get total assets summed by currency
-   *
-   * @param workspaceId - Workspace ID
-   * @param primaryCurrency - Primary currency for converted total (default: IDR)
-   * @returns Total assets by currency
-   */
-  async getTotalAssets(
-    workspaceId: string,
-    primaryCurrency: 'IDR' | 'USD' = 'IDR'
-  ): Promise<TotalAssets> {
-    try {
-      // Check if db.query exists (for unit tests with mock db)
-      if (!this.db?.query?.assets) {
-        throw new Error('Database query not available');
-      }
-
-      // Get all non-deleted assets for workspace
-      const workspaceAssets = await this.db.query.assets.findMany({
-        where: and(
-          eq(this.schema.assets.workspace_id, workspaceId),
-          sql`${this.schema.assets.deleted_at} IS NULL`
-        ),
-      });
-
-      // Sum by currency using decimal arithmetic
-      const idrBalances = workspaceAssets.filter((a) => a.currency === 'IDR').map((a) => a.balance);
-      const usdBalances = workspaceAssets.filter((a) => a.currency === 'USD').map((a) => a.balance);
-
-      const idrTotal = decimalSum(idrBalances);
-      const usdTotal = decimalSum(usdBalances);
-
-      // Get exchange rate for conversion
-      const rate = await getLatestExchangeRate();
-      const rateString = rate.toString();
-
-      // Convert to primary currency
-      let convertedTotal: string;
-      if (primaryCurrency === 'IDR') {
-        // Convert USD to IDR and add to IDR total
-        const usdConverted = decimalMultiply(usdTotal, rateString);
-        convertedTotal = decimalAdd(idrTotal, usdConverted);
-      } else {
-        // Convert IDR to USD and add to USD total
-        const idrConverted = decimalDivide(idrTotal, rateString);
-        convertedTotal = decimalAdd(usdTotal, idrConverted);
-      }
-
-      return {
-        idr: idrTotal,
-        usd: usdTotal,
-        converted: convertedTotal,
-        convertedCurrency: primaryCurrency,
-      };
-    } catch (error) {
-      log.error('error getting total assets:', error);
-      // Return zeroed values on error
-      return {
-        idr: '0',
-        usd: '0',
-        converted: '0',
-        convertedCurrency: primaryCurrency,
-      };
-    }
-  }
-
-  /**
-   * Get total spending for a specific month
-   *
-   * @param workspaceId - Workspace ID
-   * @param month - Month (1-12)
-   * @param year - Year
-   * @param currency - Currency to aggregate (default: IDR)
-   * @returns Monthly spending summary
-   */
-  async getMonthlySpent(
-    workspaceId: string,
-    month: number,
-    year: number,
-    currency: 'IDR' | 'USD' = 'IDR'
-  ): Promise<MonthlySpent> {
-    try {
-      // Validate inputs
-      if (month < 1 || month > 12) {
-        throw new Error(`Invalid month: ${month}. Must be between 1 and 12.`);
-      }
-      if (year < 2000 || year > 2100) {
-        throw new Error(`Invalid year: ${year}. Must be between 2000 and 2100.`);
-      }
-
-      // Check if db methods exist (for unit tests with mock db)
-      if (typeof (this.db as any).select !== 'function') {
-        throw new Error('Database select not available');
-      }
-
-      // Calculate date range for the month
-      const startDate = new Date(year, month - 1, 1);
-      const endDate = new Date(year, month, 0, 23, 59, 59);
-
-      // Get total budget for the month from budgets table
-      const [budgetResult] = await (this.db as any)
-        .select({
-          total: sql<string>`COALESCE(SUM(CAST(${this.schema.budgets.budget_amount} AS REAL)), 0)`,
-        })
-        .from(this.schema.budgets)
-        .innerJoin(
-          this.schema.categories,
-          eq(this.schema.budgets.category_id, this.schema.categories.id)
-        )
-        .where(
-          and(
-            eq(this.schema.budgets.workspace_id, workspaceId),
-            eq(this.schema.budgets.month, month),
-            eq(this.schema.budgets.year, year),
-            eq(this.schema.budgets.currency, currency),
-            eq(this.schema.categories.type, 'expense'),
-            eq(this.schema.categories.is_active, true)
-          )
-        );
-
-      const totalBudget = budgetResult?.total || '0';
-
-      // Get total spent for the month
-      const [spentResult] = await (this.db as any)
-        .select({
-          total: sql<string>`COALESCE(SUM(CAST(${this.schema.transactions.amount} AS REAL)), 0)`,
-        })
-        .from(this.schema.transactions)
-        .where(
-          and(
-            eq(this.schema.transactions.workspace_id, workspaceId),
-            eq(this.schema.transactions.type, 'expense'),
-            eq(this.schema.transactions.currency, currency),
-            gte(this.schema.transactions.transaction_date, startDate),
-            lte(this.schema.transactions.transaction_date, endDate),
-            sql`${this.schema.transactions.deleted_at} IS NULL`
-          )
-        );
-
-      const totalSpent = spentResult?.total || '0';
-
-      // Calculate percentage and remaining using decimal arithmetic
-      const percentage = !decimalIsZero(totalBudget)
-        ? parseFloat(decimalDivide(decimalMultiply(totalSpent, 100), totalBudget))
-        : 0;
-      const remaining = decimalSubtract(totalBudget, totalSpent);
-
-      return {
-        total: totalSpent,
-        budget: totalBudget,
-        percentage: Math.round(percentage * 10) / 10, // Round to 1 decimal
-        remaining,
-      };
-    } catch (error) {
-      log.error('error getting monthly spent:', error);
-      // Return zeroed values on error
-      return {
-        total: '0',
-        budget: '0',
-        percentage: 0,
-        remaining: '0',
-      };
-    }
-  }
-
-  /**
-   * Get total income for a specific month
-   *
-   * @param workspaceId - Workspace ID
-   * @param month - Month (1-12)
-   * @param year - Year
-   * @param currency - Currency to aggregate (default: IDR)
-   * @returns Monthly income summary
-   */
-  async getMonthlyIncome(
-    workspaceId: string,
-    month: number,
-    year: number,
-    currency: 'IDR' | 'USD' = 'IDR'
-  ): Promise<MonthlyIncome> {
-    try {
-      // Validate inputs
-      if (month < 1 || month > 12) {
-        throw new Error(`Invalid month: ${month}. Must be between 1 and 12.`);
-      }
-      if (year < 2000 || year > 2100) {
-        throw new Error(`Invalid year: ${year}. Must be between 2000 and 2100.`);
-      }
-
-      // Check if db methods exist (for unit tests with mock db)
-      if (typeof (this.db as any).select !== 'function') {
-        throw new Error('Database select not available');
-      }
-
-      // Calculate date range for the month
-      const startDate = new Date(year, month - 1, 1);
-      const endDate = new Date(year, month, 0, 23, 59, 59);
-
-      // Get total income for the month
-      const [incomeResult] = await (this.db as any)
-        .select({
-          total: sql<string>`COALESCE(SUM(CAST(${this.schema.transactions.amount} AS REAL)), 0)`,
-        })
-        .from(this.schema.transactions)
-        .where(
-          and(
-            eq(this.schema.transactions.workspace_id, workspaceId),
-            eq(this.schema.transactions.type, 'income'),
-            eq(this.schema.transactions.currency, currency),
-            gte(this.schema.transactions.transaction_date, startDate),
-            lte(this.schema.transactions.transaction_date, endDate),
-            sql`${this.schema.transactions.deleted_at} IS NULL`
-          )
-        );
-
-      const totalIncome = incomeResult?.total || '0';
-
-      return {
-        total: totalIncome,
-      };
-    } catch (error) {
-      log.error('error getting monthly income:', error);
-      // Return zeroed values on error
-      return {
-        total: '0',
-      };
-    }
-  }
-
-  /**
-   * Get top category expenses for spending chart
-   *
-   * Returns top 4 categories by spending amount, with remaining categories
-   * grouped into "Other". Includes category colors for chart display.
-   *
-   * @param workspaceId - Workspace ID
-   * @param month - Month (1-12)
-   * @param year - Year
-   * @param currency - Currency to aggregate (default: IDR)
-   * @returns Array of top category expenses (max 5: top 4 + Other)
-   */
-  async getTopCategoryExpenses(
-    workspaceId: string,
-    month: number,
-    year: number,
-    currency: 'IDR' | 'USD' = 'IDR'
-  ): Promise<TopCategoryExpense[]> {
-    try {
-      // Validate inputs
-      if (month < 1 || month > 12) {
-        throw new Error(`Invalid month: ${month}. Must be between 1 and 12.`);
-      }
-      if (year < 2000 || year > 2100) {
-        throw new Error(`Invalid year: ${year}. Must be between 2000 and 2100.`);
-      }
-
-      // Check if db methods exist (for unit tests with mock db)
-      if (typeof (this.db as any).select !== 'function') {
-        throw new Error('Database select not available');
-      }
-
-      // Calculate date range for the month
-      const startDate = new Date(year, month - 1, 1);
-      const endDate = new Date(year, month, 0, 23, 59, 59);
-
-      // Get expenses grouped by category
-      const categoryExpenses = await (this.db as any)
-        .select({
-          category_id: this.schema.transactions.category_id,
-          category_name: this.schema.categories.name,
-          category_color: this.schema.categories.color,
-          total: sql<string>`COALESCE(SUM(CAST(${this.schema.transactions.amount} AS REAL)), 0)`,
-        })
-        .from(this.schema.transactions)
-        .innerJoin(
-          this.schema.categories,
-          eq(this.schema.transactions.category_id, this.schema.categories.id)
-        )
-        .where(
-          and(
-            eq(this.schema.transactions.workspace_id, workspaceId),
-            eq(this.schema.transactions.type, 'expense'),
-            eq(this.schema.transactions.currency, currency),
-            gte(this.schema.transactions.transaction_date, startDate),
-            lte(this.schema.transactions.transaction_date, endDate),
-            sql`${this.schema.transactions.deleted_at} IS NULL`
-          )
-        )
-        .groupBy(
-          this.schema.transactions.category_id,
-          this.schema.categories.name,
-          this.schema.categories.color
-        )
-        .orderBy(sql`SUM(CAST(${this.schema.transactions.amount} AS REAL)) DESC`);
-
-      if (categoryExpenses.length === 0) {
-        return [];
-      }
-
-      // Calculate total spent for percentage calculation
-      const totalSpent = categoryExpenses.reduce(
-        (sum: number, cat: any) => sum + parseFloat(cat.total || '0'),
-        0
-      );
-
-      if (totalSpent === 0) {
-        return [];
-      }
-
-      // Default colors for fallback (used when category has no color or invalid color)
-      const defaultColors = ['#ef4444', '#3b82f6', '#f59e0b', '#8b5cf6', '#10b981'];
-
-      // Take top 4 categories
-      const top4 = categoryExpenses.slice(0, 4);
-      const result: TopCategoryExpense[] = top4.map((cat: any, index: number) => ({
-        category: cat.category_name,
-        percentage: Math.round((parseFloat(cat.total) / totalSpent) * 100),
-        // Convert DaisyUI class names (e.g., 'bg-neutral') to hex colors
-        color: toHexColor(cat.category_color, defaultColors[index % defaultColors.length]),
-        amount: cat.total,
-      }));
-
-      // If there are more than 4 categories, group the rest as "Other"
-      if (categoryExpenses.length > 4) {
-        const otherCategories = categoryExpenses.slice(4);
-        const otherTotal = otherCategories.reduce(
-          (sum: number, cat: any) => sum + parseFloat(cat.total || '0'),
-          0
-        );
-        const otherPercentage = Math.round((otherTotal / totalSpent) * 100);
-
-        result.push({
-          category: 'Other',
-          percentage: otherPercentage,
-          color: '#6b7280', // gray for Other
-          amount: otherTotal.toString(),
-        });
-      }
-
-      return result;
-    } catch (error) {
-      log.error('error getting top category expenses:', error);
-      return [];
-    }
-  }
-
-  /**
-   * Get budget health with alerts for a specific month
-   *
-   * @param workspaceId - Workspace ID
-   * @param month - Month (1-12)
-   * @param year - Year
-   * @param currency - Currency to check (default: IDR)
-   * @returns Budget health with alerts
-   */
-  async getBudgetHealth(
-    workspaceId: string,
-    month: number,
-    year: number,
-    currency: 'IDR' | 'USD' = 'IDR'
-  ): Promise<BudgetHealth> {
-    try {
-      // Validate inputs
-      if (month < 1 || month > 12) {
-        throw new Error(`Invalid month: ${month}. Must be between 1 and 12.`);
-      }
-      if (year < 2000 || year > 2100) {
-        throw new Error(`Invalid year: ${year}. Must be between 2000 and 2100.`);
-      }
-
-      // Check if db methods exist (for unit tests with mock db)
-      if (!this.db?.query?.budgets || typeof (this.db as any).select !== 'function') {
-        throw new Error('Database query not available');
-      }
-
-      // Calculate date range for the month
-      const startDate = new Date(year, month - 1, 1);
-      const endDate = new Date(year, month, 0, 23, 59, 59);
-
-      // Get all budgets for the month with their category info
-      const monthBudgets = await this.db.query.budgets.findMany({
-        where: and(
-          eq(this.schema.budgets.workspace_id, workspaceId),
-          eq(this.schema.budgets.month, month),
-          eq(this.schema.budgets.year, year),
-          eq(this.schema.budgets.currency, currency)
-        ),
-        with: {
-          category: true,
-        },
-      });
-
-      // Filter to only active expense categories
-      const expenseBudgets = monthBudgets.filter(
-        (b: any) => b.category?.type === 'expense' && b.category?.is_active === true
-      );
-
-      // Get total spent per category for the month
-      const categorySpending = await (this.db as any)
-        .select({
-          category_id: this.schema.transactions.category_id,
-          total: sql<string>`COALESCE(SUM(CAST(${this.schema.transactions.amount} AS REAL)), 0)`,
-        })
-        .from(this.schema.transactions)
-        .where(
-          and(
-            eq(this.schema.transactions.workspace_id, workspaceId),
-            eq(this.schema.transactions.type, 'expense'),
-            eq(this.schema.transactions.currency, currency),
-            gte(this.schema.transactions.transaction_date, startDate),
-            lte(this.schema.transactions.transaction_date, endDate),
-            sql`${this.schema.transactions.deleted_at} IS NULL`
-          )
-        )
-        .groupBy(this.schema.transactions.category_id);
-
-      // Create map of spending by category
-      const spendingByCategory = new Map<string, string>();
-      for (const spending of categorySpending) {
-        spendingByCategory.set(spending.category_id, spending.total);
-      }
-
-      // Calculate alerts for each budget
-      const alerts: BudgetAlert[] = [];
-
-      for (const budget of expenseBudgets) {
-        const budgetAmount = budget.budget_amount;
-        const spent = spendingByCategory.get(budget.category_id) || '0';
-        const categoryName = budget.category?.name || 'Unknown';
-
-        const alert = calculateBudgetAlert(categoryName, budgetAmount, spent);
-        if (alert) {
-          alerts.push(alert);
-        }
-      }
-
-      // Determine overall status
-      let status: 'healthy' | 'warning' | 'exceeded' = 'healthy';
-      if (alerts.some((a) => a.status === 'exceeded')) {
-        status = 'exceeded';
-      } else if (alerts.some((a) => a.status === 'warning')) {
-        status = 'warning';
-      }
-
-      return {
-        alertCount: alerts.length,
-        status,
-        alerts,
-      };
-    } catch (error) {
-      log.error('error getting budget health:', error);
-      // Return empty result on error
-      return {
-        alertCount: 0,
-        status: 'healthy',
-        alerts: [],
-      };
-    }
-  }
-
-  /**
-   * Get assets that need updating (older than 7 days)
-   *
-   * @param workspaceId - Workspace ID
-   * @returns Array of asset reminders
-   */
-  async getAssetUpdateReminders(workspaceId: string): Promise<AssetReminder[]> {
-    try {
-      // Check if db.query exists (for unit tests with mock db)
-      if (!this.db?.query?.assets) {
-        throw new Error('Database query not available');
-      }
-
-      // Get all non-deleted assets
-      const workspaceAssets = await this.db.query.assets.findMany({
-        where: and(
-          eq(this.schema.assets.workspace_id, workspaceId),
-          sql`${this.schema.assets.deleted_at} IS NULL`
-        ),
-      });
-
-      // Calculate priority for each asset
-      const reminders: AssetReminder[] = [];
-
-      for (const asset of workspaceAssets) {
-        const priorityResult = calculateAssetPriority(asset.last_updated);
-
-        // Only include assets that need update (>7 days)
-        if (priorityResult.needsUpdate) {
-          reminders.push({
-            assetId: asset.id,
-            assetName: asset.name,
-            assetType: asset.type,
-            lastUpdated: asset.last_updated,
-            daysSinceUpdate: priorityResult.daysSinceUpdate,
-            priority: priorityResult.priority as 'high' | 'medium' | 'low',
-            currentBalance: asset.balance,
-            currency: asset.currency,
-          });
-        }
-      }
-
-      // Sort by priority (high to low) then by days since update (descending)
-      const priorityValue = { high: 3, medium: 2, low: 1 };
-      reminders.sort((a, b) => {
-        const priorityDiff = priorityValue[b.priority] - priorityValue[a.priority];
-        if (priorityDiff !== 0) return priorityDiff;
-        return b.daysSinceUpdate - a.daysSinceUpdate;
-      });
-
-      return reminders;
-    } catch (error) {
-      log.error('error getting asset update reminders:', error);
-      // Return empty array on error
-      return [];
-    }
-  }
-
-  /**
-   * Get recent transactions for the workspace
-   *
-   * @param workspaceId - Workspace ID
-   * @param limit - Maximum number of transactions to return (default: 5)
-   * @returns Array of recent transactions
-   */
-  async getRecentTransactions(
-    workspaceId: string,
-    limit: number = 5
-  ): Promise<
-    Array<{
-      id: string;
-      type: 'expense' | 'income' | 'transfer';
-      amount: string;
-      currency: 'IDR' | 'USD';
-      description: string | null;
-      transactionDate: Date;
-      category: {
-        id: string;
-        name: string;
-        type: 'expense' | 'income';
-        icon: string;
-        color: string;
-      };
-      asset: {
-        id: string;
-        name: string;
-        type: string;
-      };
-    }>
-  > {
-    try {
-      // Validate limit
-      if (limit < 1 || limit > 100) {
-        throw new Error(`Invalid limit: ${limit}. Must be between 1 and 100.`);
-      }
-
-      // Check if db.query exists (for unit tests with mock db)
-      if (!this.db?.query?.transactions) {
-        throw new Error('Database query not available');
-      }
-
-      // Get recent transactions
-      const recentTransactions = await this.db.query.transactions.findMany({
-        where: and(
-          eq(this.schema.transactions.workspace_id, workspaceId),
-          sql`${this.schema.transactions.deleted_at} IS NULL`
-        ),
-        with: {
-          category: true,
-          asset: true,
-        },
-        orderBy: [
-          desc(this.schema.transactions.transaction_date),
-          desc(this.schema.transactions.created_at),
-        ],
-        limit,
-      });
-
-      // Map transaction_date to transactionDate for the return type
-      return recentTransactions.map((tx) => ({
-        id: tx.id,
-        type: tx.type,
-        amount: tx.amount,
-        currency: tx.currency,
-        description: tx.description,
-        transactionDate: tx.transaction_date,
-        category: {
-          id: tx.category.id,
-          name: tx.category.name,
-          type: tx.category.type,
-          icon: tx.category.icon,
-          color: tx.category.color,
-        },
-        asset: {
-          id: tx.asset.id,
-          name: tx.asset.name,
-          type: tx.asset.type,
-        },
-      }));
-    } catch (error) {
-      log.error('error getting recent transactions:', error);
-      // Return empty array on error
-      return [];
-    }
-  }
 
   /**
    * Get complete dashboard data for a workspace (optimized version)
@@ -1198,28 +590,7 @@ export class DashboardService {
     workspaceId: string,
     limit: number,
     perf?: PerfCollector
-  ): Promise<
-    Array<{
-      id: string;
-      type: 'expense' | 'income' | 'transfer';
-      amount: string;
-      currency: 'IDR' | 'USD';
-      description: string | null;
-      transactionDate: Date;
-      category: {
-        id: string;
-        name: string;
-        type: 'expense' | 'income';
-        icon: string;
-        color: string;
-      };
-      asset: {
-        id: string;
-        name: string;
-        type: string;
-      };
-    }>
-  > {
+  ): Promise<DashboardData['recentTransactions']> {
     try {
       // Validate limit
       if (limit < 1 || limit > 100) {
@@ -1244,6 +615,18 @@ export class DashboardService {
             with: {
               category: true,
               asset: true,
+              createdBy: { columns: { id: true, name: true } },
+            },
+            // NOTE: Raw SQL names required — Drizzle schema refs resolve incorrectly in relational query extras
+            extras: {
+              has_history: sql<number>`EXISTS (
+                SELECT 1 FROM audit_logs
+                WHERE audit_logs.entity_type = 'transaction'
+                AND audit_logs.entity_id = transactions.id
+                AND audit_logs.workspace_id = transactions.workspace_id
+                AND audit_logs.action IN ('update', 'delete')
+                LIMIT 1
+              )`.as('has_history'),
             },
             orderBy: [
               desc(this.schema.transactions.transaction_date),
@@ -1273,6 +656,8 @@ export class DashboardService {
           name: tx.asset.name,
           type: tx.asset.type,
         },
+        createdByName: tx.createdBy?.name,
+        hasHistory: !!(tx as any).has_history,
       }));
     } catch (error) {
       log.error('error getting recent transactions:', error);

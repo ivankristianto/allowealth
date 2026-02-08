@@ -2,7 +2,7 @@ import { type IDatabase, getActiveSchema } from '@/db';
 import { createLogger } from '@/lib/logger';
 
 const log = createLogger('transaction');
-import { eq, and, gte, lte, desc, sql, like, inArray } from 'drizzle-orm';
+import { eq, and, gte, lte, desc, asc, sql, like, inArray } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { CategoryService } from './category.service';
 import { AssetService } from './asset.service';
@@ -15,6 +15,8 @@ import {
 import { TransactionServiceError, ServiceErrorCode } from './service-errors';
 import { getCacheManager, CacheKeys, CacheTags, hashFilters } from '@/lib/cache';
 import { type PerfCollector, trackQuery } from '@/lib/perf';
+import { logAuditEvent } from '@/lib/audit-log';
+import type { TransactionHistoryResponse } from '@/lib/types/transaction';
 
 export { type CreateTransactionInput, type UpdateTransactionInput };
 
@@ -45,6 +47,8 @@ export interface TransactionFilters {
   start_date?: Date;
   end_date?: Date;
   search?: string;
+  include_deleted?: boolean;
+  include_history_flag?: boolean;
   limit?: number;
   offset?: number;
 }
@@ -53,6 +57,18 @@ export class TransactionService {
   private schema = getActiveSchema();
   private categoryService: CategoryService;
   private assetService: AssetService;
+
+  /**
+   * Safely convert Date/number/string to ISO string.
+   * SQLite may return integers instead of Date objects depending on driver config.
+   */
+  private toIsoString(value: Date | number | string | null | undefined): string | null {
+    if (value == null) return null;
+    if (value instanceof Date) return value.toISOString();
+    if (typeof value === 'number') return new Date(value).toISOString();
+    const asDate = new Date(value);
+    return Number.isNaN(asDate.getTime()) ? null : asDate.toISOString();
+  }
 
   /**
    * Create a new TransactionService with database injection
@@ -136,6 +152,25 @@ export class TransactionService {
       })
       .returning();
 
+    // Log audit event for transaction creation (fire-and-forget)
+    void logAuditEvent({
+      workspaceId: validated.workspace_id,
+      userId: validated.created_by_user_id,
+      action: 'create',
+      entityType: 'transaction',
+      entityId: id,
+      newValue: {
+        type: validated.type,
+        amount: validated.amount,
+        currency: validated.currency,
+        category_id: validated.category_id || null,
+        asset_id: validated.asset_id,
+        to_asset_id: validated.to_asset_id || null,
+        description: validated.description || null,
+        transaction_date: validated.transaction_date.toISOString(),
+      },
+    });
+
     // Invalidate caches affected by transaction changes
     const cache = getCacheManager();
     await cache.invalidateByTags([
@@ -214,12 +249,15 @@ export class TransactionService {
 
   /**
    * Fetch transactions from database (no caching)
+   * Excludes soft-deleted transactions by default; pass include_deleted: true to include them
    */
   private async fetchTransactionsFromDb(filters: TransactionFilters) {
-    const conditions = [
-      eq(this.schema.transactions.workspace_id, filters.workspace_id),
-      sql`${this.schema.transactions.deleted_at} IS NULL`,
-    ];
+    const conditions = [eq(this.schema.transactions.workspace_id, filters.workspace_id)];
+    const includeDeleted = filters.include_deleted ?? false;
+
+    if (!includeDeleted) {
+      conditions.push(sql`${this.schema.transactions.deleted_at} IS NULL`);
+    }
 
     if (filters.type) {
       conditions.push(eq(this.schema.transactions.type, filters.type));
@@ -256,12 +294,19 @@ export class TransactionService {
       conditions.push(searchCondition);
     }
 
-    const result = await (this as any).db.query.transactions.findMany({
+    // Drizzle relational query `extras` not typeable with dynamic composition
+    const queryOptions: Record<string, any> = {
       where: and(...conditions),
       with: {
         category: true,
         asset: true,
         toAsset: true,
+        createdBy: {
+          columns: {
+            id: true,
+            name: true,
+          },
+        },
       },
       orderBy: [
         desc(this.schema.transactions.transaction_date),
@@ -269,7 +314,23 @@ export class TransactionService {
       ],
       limit: filters.limit || 50,
       offset: filters.offset || 0,
-    });
+    };
+
+    if (filters.include_history_flag) {
+      // NOTE: Raw SQL names required — Drizzle schema refs resolve incorrectly in relational query extras
+      queryOptions.extras = {
+        has_history: sql<number>`EXISTS (
+          SELECT 1 FROM audit_logs
+          WHERE audit_logs.entity_type = 'transaction'
+          AND audit_logs.entity_id = transactions.id
+          AND audit_logs.workspace_id = transactions.workspace_id
+          AND audit_logs.action IN ('update', 'delete')
+          LIMIT 1
+        )`.as('has_history'),
+      };
+    }
+
+    const result = await (this as any).db.query.transactions.findMany(queryOptions);
 
     return result;
   }
@@ -277,9 +338,24 @@ export class TransactionService {
   /**
    * Update transaction
    */
-  async update(id: string, workspaceId: string, input: UpdateTransactionInput) {
+  async update(
+    id: string,
+    workspaceId: string,
+    input: UpdateTransactionInput,
+    userId?: string
+  ): ReturnType<typeof this.findById> {
     // Validate input using Zod schema
     const validated = updateTransactionSchema.parse(input);
+
+    // Fetch current transaction for diff computation
+    const existing = await this.findById(id, workspaceId);
+    if (!existing) {
+      throw new TransactionServiceError(
+        ServiceErrorCode.TRANSACTION_NOT_FOUND,
+        'Transaction not found',
+        404
+      );
+    }
 
     // Verify category if being updated
     if (validated.category_id !== undefined) {
@@ -320,9 +396,49 @@ export class TransactionService {
       }
     }
 
-    const updateData: Record<string, any> = {
+    // Compute field-level diff
+    const diffFields = [
+      'type',
+      'amount',
+      'currency',
+      'category_id',
+      'asset_id',
+      'to_asset_id',
+      'description',
+      'transaction_date',
+    ] as const;
+
+    const oldValues: Record<string, unknown> = {};
+    const newValues: Record<string, unknown> = {};
+
+    // Cast to indexable record for bracket-access on known diff fields
+    const existingRecord = existing as unknown as Record<string, unknown>;
+
+    for (const field of diffFields) {
+      if (validated[field] !== undefined) {
+        const existingVal =
+          field === 'transaction_date'
+            ? this.toIsoString(existingRecord[field] as Date | number | string | null)
+            : existingRecord[field];
+        const newVal =
+          field === 'transaction_date'
+            ? this.toIsoString(validated[field] as Date | string | number)
+            : validated[field];
+
+        if (String(existingVal ?? '') !== String(newVal ?? '')) {
+          oldValues[field] = existingVal ?? null;
+          newValues[field] = newVal ?? null;
+        }
+      }
+    }
+
+    const updateData: Record<string, unknown> = {
       updated_at: new Date(),
     };
+
+    if (userId) {
+      updateData.updated_by_user_id = userId;
+    }
 
     if (validated.type !== undefined) updateData.type = validated.type;
     if (validated.amount !== undefined) updateData.amount = validated.amount;
@@ -344,6 +460,19 @@ export class TransactionService {
         )
       );
 
+    // Log audit event only if something actually changed (fire-and-forget)
+    if (userId && Object.keys(oldValues).length > 0) {
+      void logAuditEvent({
+        workspaceId,
+        userId,
+        action: 'update',
+        entityType: 'transaction',
+        entityId: id,
+        oldValue: oldValues,
+        newValue: newValues,
+      });
+    }
+
     // Invalidate caches affected by transaction changes
     const cache = getCacheManager();
     await cache.invalidateByTags([
@@ -359,7 +488,7 @@ export class TransactionService {
   /**
    * Soft delete transaction
    */
-  async delete(id: string, workspaceId: string) {
+  async delete(id: string, workspaceId: string, userId?: string): Promise<{ success: true }> {
     // Check if transaction exists
     const transaction = await this.findById(id, workspaceId);
     if (!transaction) {
@@ -370,18 +499,48 @@ export class TransactionService {
       );
     }
 
+    const deleteData: { deleted_at: Date; updated_at: Date; deleted_by_user_id?: string } = {
+      deleted_at: new Date(),
+      updated_at: new Date(),
+    };
+
+    if (userId) {
+      deleteData.deleted_by_user_id = userId;
+    }
+
     await (this as any).db
       .update(this.schema.transactions)
-      .set({
-        deleted_at: new Date(),
-        updated_at: new Date(),
-      })
+      .set(deleteData)
       .where(
         and(
           eq(this.schema.transactions.id, id),
           eq(this.schema.transactions.workspace_id, workspaceId)
         )
       );
+
+    // Log audit event for deletion with full snapshot (fire-and-forget)
+    if (userId) {
+      const txRecord = transaction as unknown as Record<string, unknown>;
+      void logAuditEvent({
+        workspaceId,
+        userId,
+        action: 'delete',
+        entityType: 'transaction',
+        entityId: id,
+        oldValue: {
+          type: txRecord.type,
+          amount: txRecord.amount,
+          currency: txRecord.currency,
+          category_id: txRecord.category_id,
+          asset_id: txRecord.asset_id,
+          to_asset_id: txRecord.to_asset_id,
+          description: txRecord.description,
+          transaction_date: this.toIsoString(
+            txRecord.transaction_date as Date | number | string | null
+          ),
+        },
+      });
+    }
 
     // Invalidate caches affected by transaction changes
     const cache = getCacheManager();
@@ -399,10 +558,12 @@ export class TransactionService {
    * Get transaction count
    */
   async count(filters: Omit<TransactionFilters, 'limit' | 'offset'>, perf?: PerfCollector) {
-    const conditions = [
-      eq(this.schema.transactions.workspace_id, filters.workspace_id),
-      sql`${this.schema.transactions.deleted_at} IS NULL`,
-    ];
+    const conditions = [eq(this.schema.transactions.workspace_id, filters.workspace_id)];
+    const includeDeleted = filters.include_deleted ?? false;
+
+    if (!includeDeleted) {
+      conditions.push(sql`${this.schema.transactions.deleted_at} IS NULL`);
+    }
 
     if (filters.type) {
       conditions.push(eq(this.schema.transactions.type, filters.type));
@@ -447,6 +608,48 @@ export class TransactionService {
 
       return result[0]?.count || 0;
     });
+  }
+
+  private parseAuditValue(value: string | null): Record<string, unknown> | null {
+    if (!value) return null;
+
+    try {
+      const parsed = JSON.parse(value);
+      return parsed && typeof parsed === 'object' ? (parsed as Record<string, unknown>) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  private resolveAuditReferences(
+    payload: Record<string, unknown> | null,
+    categoryNames: Map<string, string>,
+    assetNames: Map<string, string>
+  ): Record<string, unknown> | null {
+    if (!payload) return null;
+
+    const resolved: Record<string, unknown> = {};
+
+    for (const [key, value] of Object.entries(payload)) {
+      if (typeof value !== 'string') {
+        resolved[key] = value;
+        continue;
+      }
+
+      if (key === 'category_id') {
+        resolved[key] = categoryNames.get(value) ?? value;
+        continue;
+      }
+
+      if (key === 'asset_id' || key === 'to_asset_id') {
+        resolved[key] = assetNames.get(value) ?? value;
+        continue;
+      }
+
+      resolved[key] = value;
+    }
+
+    return resolved;
   }
 
   /**
@@ -625,5 +828,130 @@ export class TransactionService {
           .join(',')
       )
       .join('\n');
+  }
+
+  /**
+   * Get audit history for a transaction
+   * Returns create + last N edits + delete event (if exists)
+   */
+  async getHistory(
+    transactionId: string,
+    workspaceId: string,
+    showAll = false
+  ): Promise<TransactionHistoryResponse> {
+    const [results, categories, assets] = await Promise.all([
+      (this as any).db.query.auditLogs.findMany({
+        where: and(
+          eq(this.schema.auditLogs.entity_type, 'transaction'),
+          eq(this.schema.auditLogs.entity_id, transactionId),
+          eq(this.schema.auditLogs.workspace_id, workspaceId)
+        ),
+        with: {
+          user: {
+            columns: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+        orderBy: [asc(this.schema.auditLogs.created_at)],
+      }),
+      (this as any).db.query.categories.findMany({
+        where: eq(this.schema.categories.workspace_id, workspaceId),
+        columns: {
+          id: true,
+          name: true,
+        },
+      }),
+      (this as any).db.query.assets.findMany({
+        where: eq(this.schema.assets.workspace_id, workspaceId),
+        columns: {
+          id: true,
+          name: true,
+        },
+      }),
+    ]);
+
+    const categoryNames = new Map<string, string>(
+      categories.map((category: { id: string; name: string }) => [category.id, category.name])
+    );
+    const assetNames = new Map<string, string>(
+      assets.map((asset: { id: string; name: string }) => [asset.id, asset.name])
+    );
+
+    interface AuditLogRow {
+      id: string;
+      action: string;
+      user_id: string;
+      old_value: string | null;
+      new_value: string | null;
+      created_at: Date | number | string;
+      user?: { id: string; name: string } | null;
+    }
+
+    // Separate into create, updates, and delete
+    const createEvent = (results as AuditLogRow[]).find((r) => r.action === 'create');
+    const deleteEvent = (results as AuditLogRow[]).find((r) => r.action === 'delete');
+    const updateEvents = (results as AuditLogRow[]).filter((r) => r.action === 'update');
+
+    const totalEdits = updateEvents.length;
+
+    // Cap edits to last 5 unless showAll
+    const displayedEdits = showAll ? updateEvents : updateEvents.slice(-5);
+
+    // Combine in chronological order
+    const history = [
+      ...(createEvent ? [createEvent] : []),
+      ...displayedEdits,
+      ...(deleteEvent ? [deleteEvent] : []),
+    ].map((entry: AuditLogRow) => ({
+      id: entry.id,
+      action: entry.action as 'create' | 'update' | 'delete',
+      userName: entry.user?.name || 'Unknown',
+      userId: entry.user_id,
+      createdAt: this.toIsoString(entry.created_at) || '',
+      oldValue: this.resolveAuditReferences(
+        this.parseAuditValue(entry.old_value),
+        categoryNames,
+        assetNames
+      ),
+      newValue: this.resolveAuditReferences(
+        this.parseAuditValue(entry.new_value),
+        categoryNames,
+        assetNames
+      ),
+    }));
+
+    return {
+      history,
+      totalEdits,
+      showingEdits: displayedEdits.length,
+    };
+  }
+
+  /**
+   * Get set of transaction IDs that have audit log entries beyond initial creation.
+   * Only matches 'update' and 'delete' actions — the initial 'create' entry
+   * is not meaningful history worth surfacing to the user.
+   */
+  async getTransactionIdsWithHistory(
+    workspaceId: string,
+    transactionIds: string[]
+  ): Promise<Set<string>> {
+    if (transactionIds.length === 0) return new Set();
+
+    const results = await (this as any).db
+      .selectDistinct({ entity_id: this.schema.auditLogs.entity_id })
+      .from(this.schema.auditLogs)
+      .where(
+        and(
+          eq(this.schema.auditLogs.entity_type, 'transaction'),
+          eq(this.schema.auditLogs.workspace_id, workspaceId),
+          inArray(this.schema.auditLogs.entity_id, transactionIds),
+          inArray(this.schema.auditLogs.action, ['update', 'delete'])
+        )
+      );
+
+    return new Set(results.map((r: { entity_id: string }) => r.entity_id));
   }
 }

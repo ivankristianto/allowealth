@@ -28,9 +28,25 @@ Transaction:
       oneOf:
         - type: string
         - type: 'null'
+    updated_by_user_id:
+      oneOf:
+        - type: string
+        - type: 'null'
+    deleted_by_user_id:
+      oneOf:
+        - type: string
+        - type: 'null'
+    deleted_at:
+      oneOf:
+        - type: string
+          format: date-time
+        - type: 'null'
     created_at:
       type: string
       format: date-time
+    has_history:
+      type: boolean
+      description: Whether this transaction has audit history beyond creation (edits or deletions)
     updated_at:
       type: string
       format: date-time
