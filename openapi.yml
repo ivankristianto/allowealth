@@ -128,6 +128,8 @@ paths:
     $ref: './openapi/paths/budgets.yml#/paths/~1api~1budgets~1{id}'
   /api/budgets/copy:
     $ref: './openapi/paths/budgets.yml#/paths/~1api~1budgets~1copy'
+  /api/budgets/initialize:
+    $ref: './openapi/paths/budgets.yml#/paths/~1api~1budgets~1initialize'
 
   # Budget overview endpoints
   /api/budget/overview:
@@ -312,6 +314,10 @@ components:
       $ref: './openapi/schemas/CopyBudgetsRequest.yml#/CopyBudgetsRequest'
     CopyBudgetsResponse:
       $ref: './openapi/schemas/CopyBudgetsResponse.yml#/CopyBudgetsResponse'
+    InitializeBudgetsRequest:
+      $ref: './openapi/schemas/InitializeBudgetsRequest.yml#/InitializeBudgetsRequest'
+    InitializeBudgetsResponse:
+      $ref: './openapi/schemas/InitializeBudgetsResponse.yml#/InitializeBudgetsResponse'
     BudgetResponse:
       $ref: './openapi/schemas/BudgetResponse.yml#/BudgetResponse'
     BudgetsListResponse:

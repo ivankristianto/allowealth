@@ -232,3 +232,33 @@ paths:
                 $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
         '500':
           $ref: '../responses/common.yml#/InternalServerError'
+
+  /api/budgets/initialize:
+    post:
+      tags: [Budget]
+      summary: Initialize all budgets
+      description: |
+        Create budget entries with amount=0 for all active expense categories
+        that don't have budgets in the specified month.
+        Categories that already have a budget for the target month are skipped.
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/InitializeBudgetsRequest.yml#/InitializeBudgetsRequest'
+      responses:
+        '200':
+          description: Budgets initialized successfully
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/InitializeBudgetsResponse.yml#/InitializeBudgetsResponse'
+        '400':
+          $ref: '../responses/common.yml#/BadRequest'
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'

@@ -14,6 +14,7 @@ import BudgetPageHeader from '@components/organisms/BudgetPageHeader.astro';
 import SetNewBudgetModal from '@components/organisms/SetNewBudgetModal.astro';
 import CopyBudgetModal from '@components/organisms/CopyBudgetModal.astro';
 import BudgetImportModal from '@components/organisms/BudgetImportModal.astro';
+import InitializeBudgetsModal from '@components/organisms/InitializeBudgetsModal.astro';
 import BudgetTable from '@components/organisms/BudgetTable.astro';
 
 // Partials for Interactive Page Architecture
@@ -228,7 +229,6 @@ const budgetsForModal = existingBudgets.map((b) => ({
   budget_amount: b.budget_amount,
 }));
 
-// Create maps for budget data by category_id
 const budgetAmountsByCategory = new Map(
   existingBudgets.map((b) => [b.category_id, b.budget_amount])
 );
@@ -240,6 +240,9 @@ const expenseCategoriesWithBudgets = expenseCategories.map((cat) => ({
   budget_amount: budgetAmountsByCategory.get(cat.id) || '0',
   budget_id: budgetIdsByCategory.get(cat.id) || '',
 }));
+
+// Calculate uninitialized categories (expense categories without budgets for this month)
+const uninitializedCategories = expenseCategories.filter((cat) => !budgetIdsByCategory.has(cat.id));
 
 // Count budgets with actual limits set
 const budgetCount =
@@ -271,6 +274,7 @@ const budgetCount =
       isNextDisabled={!allowNextMonthNavigation}
       showAiRebalancer={budgetCount > 0}
       showCopyButton={budgetCount > 0}
+      uninitializedCount={uninitializedCategories.length}
       currentMonthResetUrl={!isViewingCurrentMonth
         ? buildMonthUrl(currentYear, currentMonth)
         : undefined}
@@ -408,6 +412,24 @@ const budgetCount =
     year={selectedYear}
     currency={selectedCurrency}
   />
+
+  {/* Initialize Budgets Modal */}
+  {
+    uninitializedCategories.length > 0 && (
+      <InitializeBudgetsModal
+        id="initialize-budgets-modal"
+        categories={uninitializedCategories.map((cat) => ({
+          id: cat.id,
+          name: cat.name,
+          icon: cat.icon,
+          color: cat.color,
+        }))}
+        month={selectedMonth}
+        year={selectedYear}
+        currency={selectedCurrency}
+      />
+    )
+  }
 </ProtectedLayout>
 
 <script>
@@ -427,8 +449,31 @@ const budgetCount =
 
   // Track if page-load listener is registered to prevent accumulation
   const PAGE_LOAD_KEY = '__budgetPageLoadListenerRegistered';
+  const PENDING_BUDGET_INIT_TOAST_KEY = 'budget-initialize-pending-toast';
+
+  function showPendingInitializeToast() {
+    let raw: string | null = null;
+    try {
+      raw = sessionStorage.getItem(PENDING_BUDGET_INIT_TOAST_KEY);
+      if (!raw) return;
+      sessionStorage.removeItem(PENDING_BUDGET_INIT_TOAST_KEY);
+    } catch {
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(raw) as { message?: string; type?: 'success' | 'error' };
+      if (typeof parsed.message === 'string' && parsed.message.length > 0) {
+        addToast(parsed.message, parsed.type === 'error' ? 'error' : 'success');
+      }
+    } catch {
+      // Ignore malformed storage payload.
+    }
+  }
 
   function initBudgetExtras() {
+    showPendingInitializeToast();
+
     // Export button
     const exportBtn = document.querySelector('[data-budget-export-btn]');
     if (exportBtn && !(exportBtn as HTMLElement).dataset.initialized) {

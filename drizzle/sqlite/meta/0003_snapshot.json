@@ -863,7 +863,7 @@
       "indexes": {
         "budgets_unique": {
           "name": "budgets_unique",
-          "columns": ["workspace_id", "category_id", "month", "year"],
+          "columns": ["workspace_id", "category_id", "month", "year", "currency"],
           "isUnique": true
         }
       },

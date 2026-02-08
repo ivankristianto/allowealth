@@ -680,4 +680,244 @@ describe('BudgetService', () => {
       );
     });
   });
+
+  describe('initializeAllBudgets', () => {
+    const workspaceId = 'workspace-1';
+    const userId = 'user-1';
+    const month = 2;
+    const year = 2026;
+    const currency = 'IDR' as const;
+
+    const mockConflictSafeInsert = () => {
+      const onConflictDoNothing = mock(() => Promise.resolve());
+      (mockDb.insert as any).mockReturnValue({
+        values: mock(() => ({
+          onConflictDoNothing,
+        })),
+      });
+      return onConflictDoNothing;
+    };
+
+    it('creates budgets for categories without existing budgets', async () => {
+      const allCategories = [
+        createMockCategory({ id: 'cat-1', name: 'Food', type: 'expense', is_active: true }),
+        createMockCategory({ id: 'cat-2', name: 'Transport', type: 'expense', is_active: true }),
+        createMockCategory({
+          id: 'cat-3',
+          name: 'Entertainment',
+          type: 'expense',
+          is_active: true,
+        }),
+      ];
+
+      const existingBudgets = [
+        createMockBudget({ id: 'budget-1', category_id: 'cat-1', month, year, currency }),
+      ];
+
+      (mockDb.query.categories.findMany as any).mockResolvedValue(allCategories);
+      (mockDb.query.budgets.findMany as any)
+        .mockResolvedValueOnce(existingBudgets)
+        .mockResolvedValueOnce([
+          ...existingBudgets,
+          createMockBudget({ id: 'budget-2', category_id: 'cat-2', month, year, currency }),
+          createMockBudget({ id: 'budget-3', category_id: 'cat-3', month, year, currency }),
+        ]);
+
+      const insertValues: any[] = [];
+      const onConflictDoNothing = mock(() => Promise.resolve());
+      (mockDb.insert as any).mockReturnValue({
+        values: mock((vals: any) => {
+          insertValues.push(...(Array.isArray(vals) ? vals : [vals]));
+          return { onConflictDoNothing };
+        }),
+      });
+
+      const result = await budgetService.initializeAllBudgets({
+        workspace_id: workspaceId,
+        created_by_user_id: userId,
+        month,
+        year,
+        currency,
+      });
+
+      expect(result.initialized_count).toBe(2);
+      expect(result.categories).toHaveLength(2);
+      expect(result.categories.map((c) => c.name)).toContain('Transport');
+      expect(result.categories.map((c) => c.name)).toContain('Entertainment');
+      expect(onConflictDoNothing).toHaveBeenCalledTimes(1);
+
+      expect(insertValues).toHaveLength(2);
+      for (const val of insertValues) {
+        expect(val.budget_amount).toBe('0');
+        expect(val.workspace_id).toBe(workspaceId);
+        expect(val.created_by_user_id).toBe(userId);
+        expect(val.month).toBe(month);
+        expect(val.year).toBe(year);
+        expect(val.currency).toBe(currency);
+        expect(val.is_closed).toBe(false);
+      }
+    });
+
+    it('skips categories that already have budgets', async () => {
+      const allCategories = [
+        createMockCategory({ id: 'cat-1', name: 'Food', type: 'expense', is_active: true }),
+      ];
+      const existingBudgets = [
+        createMockBudget({ id: 'budget-1', category_id: 'cat-1', month, year, currency }),
+      ];
+
+      (mockDb.query.categories.findMany as any).mockResolvedValue(allCategories);
+      (mockDb.query.budgets.findMany as any).mockResolvedValue(existingBudgets);
+
+      const result = await budgetService.initializeAllBudgets({
+        workspace_id: workspaceId,
+        created_by_user_id: userId,
+        month,
+        year,
+        currency,
+      });
+
+      expect(result.initialized_count).toBe(0);
+      expect(result.categories).toHaveLength(0);
+      expect(mockDb.insert).not.toHaveBeenCalled();
+    });
+
+    it('handles empty category list gracefully', async () => {
+      (mockDb.query.categories.findMany as any).mockResolvedValue([]);
+      (mockDb.query.budgets.findMany as any).mockResolvedValue([]);
+
+      const result = await budgetService.initializeAllBudgets({
+        workspace_id: workspaceId,
+        created_by_user_id: userId,
+        month,
+        year,
+        currency,
+      });
+
+      expect(result.initialized_count).toBe(0);
+      expect(result.categories).toHaveLength(0);
+      expect(mockDb.insert).not.toHaveBeenCalled();
+    });
+
+    it('filters out income categories and inactive categories', async () => {
+      const allCategories = [
+        createMockCategory({ id: 'cat-1', name: 'Food', type: 'expense', is_active: true }),
+        createMockCategory({ id: 'cat-2', name: 'Salary', type: 'income', is_active: true }),
+        createMockCategory({ id: 'cat-3', name: 'Old Expense', type: 'expense', is_active: false }),
+      ];
+
+      (mockDb.query.categories.findMany as any).mockResolvedValue(allCategories);
+      (mockDb.query.budgets.findMany as any)
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([
+          createMockBudget({ id: 'budget-1', category_id: 'cat-1', month, year, currency }),
+        ]);
+
+      const insertValues: any[] = [];
+      const onConflictDoNothing = mock(() => Promise.resolve());
+      (mockDb.insert as any).mockReturnValue({
+        values: mock((vals: any) => {
+          insertValues.push(...(Array.isArray(vals) ? vals : [vals]));
+          return { onConflictDoNothing };
+        }),
+      });
+
+      const result = await budgetService.initializeAllBudgets({
+        workspace_id: workspaceId,
+        created_by_user_id: userId,
+        month,
+        year,
+        currency,
+      });
+
+      expect(result.initialized_count).toBe(1);
+      expect(result.categories[0].name).toBe('Food');
+      expect(insertValues).toHaveLength(1);
+      expect(onConflictDoNothing).toHaveBeenCalledTimes(1);
+    });
+
+    it('returns actual initialized count after conflict-safe insert', async () => {
+      const allCategories = [
+        createMockCategory({ id: 'cat-1', name: 'Food', type: 'expense', is_active: true }),
+        createMockCategory({ id: 'cat-2', name: 'Transport', type: 'expense', is_active: true }),
+      ];
+
+      (mockDb.query.categories.findMany as any).mockResolvedValue(allCategories);
+      (mockDb.query.budgets.findMany as any)
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([
+          createMockBudget({ id: 'budget-1', category_id: 'cat-1', month, year, currency }),
+        ]);
+
+      const onConflictDoNothing = mockConflictSafeInsert();
+
+      const result = await budgetService.initializeAllBudgets({
+        workspace_id: workspaceId,
+        created_by_user_id: userId,
+        month,
+        year,
+        currency,
+      });
+
+      expect(onConflictDoNothing).toHaveBeenCalledTimes(1);
+      expect(mockDb.query.budgets.findMany as any).toHaveBeenCalledTimes(2);
+      expect(result.initialized_count).toBe(1);
+      expect(result.categories).toHaveLength(1);
+      expect(result.categories[0]).toEqual({ id: 'cat-1', name: 'Food' });
+    });
+
+    it('initializes category for target currency when no target-currency budget exists', async () => {
+      const allCategories = [
+        createMockCategory({ id: 'cat-1', name: 'Food', type: 'expense', is_active: true }),
+      ];
+
+      (mockDb.query.categories.findMany as any).mockResolvedValue(allCategories);
+      (mockDb.query.budgets.findMany as any).mockResolvedValueOnce([]).mockResolvedValueOnce([
+        createMockBudget({
+          id: 'budget-idr-1',
+          category_id: 'cat-1',
+          month,
+          year,
+          currency: 'IDR',
+        }),
+      ]);
+
+      mockConflictSafeInsert();
+
+      const result = await budgetService.initializeAllBudgets({
+        workspace_id: workspaceId,
+        created_by_user_id: userId,
+        month,
+        year,
+        currency: 'IDR',
+      });
+
+      expect(result.initialized_count).toBe(1);
+      expect(result.categories).toEqual([{ id: 'cat-1', name: 'Food' }]);
+    });
+
+    it('validates month parameter', async () => {
+      await expect(
+        budgetService.initializeAllBudgets({
+          workspace_id: workspaceId,
+          created_by_user_id: userId,
+          month: 13,
+          year,
+          currency,
+        })
+      ).rejects.toThrow();
+    });
+
+    it('validates year parameter', async () => {
+      await expect(
+        budgetService.initializeAllBudgets({
+          workspace_id: workspaceId,
+          created_by_user_id: userId,
+          month,
+          year: 1999,
+          currency,
+        })
+      ).rejects.toThrow();
+    });
+  });
 });

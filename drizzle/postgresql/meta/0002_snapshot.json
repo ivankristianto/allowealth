@@ -972,7 +972,7 @@
         "budgets_unique": {
           "name": "budgets_unique",
           "nullsNotDistinct": false,
-          "columns": ["workspace_id", "category_id", "month", "year"]
+          "columns": ["workspace_id", "category_id", "month", "year", "currency"]
         }
       },
       "policies": {},
