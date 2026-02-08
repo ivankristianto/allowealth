@@ -74,7 +74,7 @@ export class EmailTemplateService {
           <!-- Footer -->
           <tr>
             <td style="padding: 16px 32px 24px 32px; border-top: 1px solid #e4e4e7;">
-              <p style="margin: 0; font-size: 12px; color: #71717a; text-align: center;">
+              <p style="margin: 0; font-size: 13px; color: #71717a; text-align: center;">
                 This email was sent from ${this.appName}<br>
                 &copy; ${year}
               </p>

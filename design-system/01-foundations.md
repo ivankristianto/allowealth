@@ -22,7 +22,7 @@ colors.primaryLight; // #f1f5f9 (slate-100)
 
 // Accent color (forest green) - CTAs, interactive elements, active states
 colors.accent; // #15803d (forest-700 - WCAG AA)
-colors.accentHover; // #15803d (forest-700)
+colors.accentHover; // #166534 (forest-800)
 
 colors.warning; // #f59e0b (amber-500)
 colors.error; // #f43f5e (rose-500)

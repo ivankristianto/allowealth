@@ -3,34 +3,12 @@
 
 echo "Running pre-commit quality gates..."
 
-# Run format:fix first
-echo "▸ Running prettier..."
-bun run format:fix
+# Run lint-staged on staged files only
+echo "▸ Running lint-staged (format, lint, stylelint on staged files)..."
+bunx lint-staged
 
-# Stage any formatting changes
-git add -A
-
-# Then run lint
-echo "▸ Running eslint..."
-bun run lint:fix
-
-# Stage any linting changes
-git add -A
-
-# Run stylelint
-echo "▸ Running stylelint..."
-bun run stylelint:fix
-
-# Stage any stylelint changes
-git add -A
-
-# Run typecheck
+# Run typecheck on entire codebase (fast, doesn't modify files)
 echo "▸ Running astro check..."
 bun run typecheck
 
-# Check if there are any uncommitted changes after formatting/linting
-if ! git diff --cached --exit-code --quiet; then
-  echo "✅ Files were formatted/linted and staged. Proceeding with commit..."
-else
-  echo "✅ Pre-commit checks passed (no formatting needed)"
-fi
+echo "✅ Pre-commit checks passed"
