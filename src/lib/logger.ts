@@ -54,12 +54,25 @@ export function resolveLogLevel(): number {
  * JSON reporter for production — outputs structured JSON that
  * Cloudflare Workers Logs auto-indexes for querying.
  */
+/** Stringify a log argument — objects get JSON-serialized, everything else String() */
+function stringifyArg(arg: unknown): string {
+  if (arg === null || arg === undefined) return String(arg);
+  if (typeof arg === 'object') {
+    try {
+      return JSON.stringify(arg);
+    } catch {
+      return String(arg);
+    }
+  }
+  return String(arg);
+}
+
 const jsonReporter = {
   log(logObj: LogObject) {
     const entry: Record<string, unknown> = {
       level: logObj.type,
       tag: logObj.tag || undefined,
-      message: logObj.args.map(String).join(' '),
+      message: logObj.args.map(stringifyArg).join(' '),
       timestamp: new Date().toISOString(),
     };
 
@@ -92,7 +105,7 @@ const jsonReporter = {
 const prettyReporter = {
   log(logObj: LogObject) {
     const prefix = logObj.tag ? `[${logObj.tag}]` : '';
-    const message = logObj.args.map(String).join(' ');
+    const message = logObj.args.map(stringifyArg).join(' ');
     const output = prefix ? `${prefix} ${message}` : message;
 
     switch (logObj.type) {
