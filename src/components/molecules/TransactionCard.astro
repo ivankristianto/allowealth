@@ -363,88 +363,17 @@ const cardClasses = [
 }
 
 <script>
-  // Initialize shared history toggle (document-level delegation, runs once)
   import { initTransactionHistory } from './TransactionHistory.client';
+  import {
+    initExpandableText,
+    markTruncated,
+    observeExpandableContainers,
+  } from './ExpandableText.client';
+
   initTransactionHistory();
-
-  // Click-to-expand truncated descriptions (idempotent, document-level delegation)
-  const EXPAND_INIT_KEY = '__expandableTextInit';
-  const docAny = document as unknown as Record<string, unknown>;
-  if (!docAny[EXPAND_INIT_KEY]) {
-    docAny[EXPAND_INIT_KEY] = true;
-
-    // Toggle expand/collapse on a target element
-    const toggleExpand = (target: HTMLElement, e: Event) => {
-      const isTruncated = target.scrollWidth > target.clientWidth;
-      const isExpanded = target.dataset.expanded === 'true';
-
-      if (!isTruncated && !isExpanded) return;
-
-      e.stopPropagation();
-      e.preventDefault();
-
-      if (isExpanded) {
-        target.classList.add('truncate');
-        target.classList.remove('break-words');
-        target.dataset.expanded = 'false';
-        target.setAttribute('aria-expanded', 'false');
-      } else {
-        target.classList.remove('truncate');
-        target.classList.add('break-words');
-        target.dataset.expanded = 'true';
-        target.setAttribute('aria-expanded', 'true');
-      }
-    };
-
-    document.addEventListener('click', (e: Event) => {
-      const target = (e.target as HTMLElement).closest(
-        '[data-expandable-text]'
-      ) as HTMLElement | null;
-      if (target) toggleExpand(target, e);
-    });
-
-    document.addEventListener('keydown', (e: Event) => {
-      const event = e as KeyboardEvent;
-      if (event.key !== 'Enter' && event.key !== ' ') return;
-
-      const target = (event.target as HTMLElement).closest(
-        '[data-expandable-text]'
-      ) as HTMLElement | null;
-      if (target) toggleExpand(target, event);
-    });
-  }
-
-  // Mark truncated elements as interactive (role, tabindex, cursor class)
-  const markTruncated = () => {
-    document.querySelectorAll<HTMLElement>('[data-expandable-text]').forEach((el) => {
-      const isTruncated = el.scrollWidth > el.clientWidth;
-      const isExpanded = el.dataset.expanded === 'true';
-
-      if (isTruncated || isExpanded) {
-        el.setAttribute('role', 'button');
-        el.setAttribute('tabindex', '0');
-        el.classList.add('cursor-pointer');
-        if (!el.hasAttribute('aria-expanded')) {
-          el.setAttribute('aria-expanded', 'false');
-        }
-      } else {
-        el.removeAttribute('role');
-        el.removeAttribute('tabindex');
-        el.removeAttribute('aria-expanded');
-        el.classList.remove('cursor-pointer');
-      }
-    });
-  };
+  initExpandableText();
   markTruncated();
-
-  // Re-scan when new cards are injected dynamically
-  const listContainer = document.getElementById('transaction-list');
-  if (listContainer) {
-    new MutationObserver(markTruncated).observe(listContainer, {
-      childList: true,
-      subtree: true,
-    });
-  }
+  observeExpandableContainers();
 
   // Keyboard navigation for dropdown menus (mobile)
   document.querySelectorAll('[data-transaction-card] .dropdown').forEach((dropdown) => {
