@@ -32,7 +32,10 @@ const { methods } = Astro.props;
         <ShieldCheck size={20} class="stroke-current" aria-hidden="true" />
       </IconBadge>
       <div>
-        <h3 class="text-lg font-bold">Multi-Factor Authentication</h3>
+        <div class="flex items-center gap-2">
+          <h3 class="text-lg font-bold">Multi-Factor Authentication</h3>
+          <span class="badge badge-outline badge-sm text-base-content/50">Under Development</span>
+        </div>
         <p class="text-xs uppercase tracking-widest text-base-content/50">2FA Protection</p>
       </div>
     </div>
@@ -55,6 +58,7 @@ const { methods } = Astro.props;
               type="checkbox"
               class="toggle toggle-accent"
               checked={method.enabled}
+              disabled
               aria-label={`Toggle ${method.label}`}
             />
           </div>

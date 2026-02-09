@@ -32,13 +32,16 @@ const { passkeys } = Astro.props;
           <Key size={20} class="stroke-current" aria-hidden="true" />
         </IconBadge>
         <div>
-          <h3 class="text-lg font-bold">Passkeys</h3>
+          <div class="flex items-center gap-2">
+            <h3 class="text-lg font-bold">Passkeys</h3>
+            <span class="badge badge-outline badge-sm text-base-content/50">Under Development</span>
+          </div>
           <p class="text-xs uppercase tracking-widest text-base-content/50">
             Biometric &amp; Hardware Keys
           </p>
         </div>
       </div>
-      <Button type="button" variant="primary" size="sm">
+      <Button type="button" variant="primary" size="sm" disabled>
         <Plus size={16} class="stroke-current" aria-hidden="true" />
         Add Passkey
       </Button>
@@ -67,6 +70,7 @@ const { passkeys } = Astro.props;
               type="button"
               class="btn btn-ghost btn-sm text-error"
               aria-label="Remove passkey"
+              disabled
             >
               <Trash2 size={16} class="stroke-current" aria-hidden="true" />
             </button>
