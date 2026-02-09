@@ -11,7 +11,13 @@ import {
   isValidationError,
 } from '@/lib/api-utils';
 import { createTransactionAPISchema } from '@/lib/validation';
-import { logError, transformTransaction, safeParseAmount, formatMonthKey } from '@/lib/utils';
+import {
+  logError,
+  transformTransaction,
+  safeParseAmount,
+  formatMonthKey,
+  getCurrentMonthKey,
+} from '@/lib/utils';
 import { PAGINATION } from '@/lib/constants/pagination';
 import { createRenderHelper } from '@/lib/api/renderResponse';
 
@@ -175,6 +181,7 @@ export const GET: APIRoute = async (context) => {
           props: {
             transactions,
             showActions: true,
+            currentMonth: getCurrentMonthKey(),
           },
         });
         htmlParts.push(`<!-- PARTIAL:list -->\n${listHtml}`);

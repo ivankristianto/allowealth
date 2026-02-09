@@ -90,6 +90,7 @@ function initTransactionDrawer(): void {
   const incomeIconTemplate = document.getElementById('icon-income');
 
   let sessionCount = 0;
+  let hasSubmittedInSession = false;
 
   const formatMoney = (amount: number | string, currency = 'IDR'): string => {
     return formatCurrency(Number(amount), currency);
@@ -142,14 +143,27 @@ function initTransactionDrawer(): void {
       const metaDiv = document.createElement('div');
       metaDiv.className = 'text-xs text-neutral font-medium';
 
-      const categorySelect = form.querySelector(
-        'select[name="category_id"]'
-      ) as HTMLSelectElement | null;
-      const categoryOption = categorySelect?.querySelector(
-        `option[value="${data.category_id}"]`
-      ) as HTMLOptionElement | null;
-      const categoryLabel = categoryOption?.textContent || data.category_id;
-      metaDiv.textContent = `${data.transaction_date} • ${categoryLabel}`;
+      // API returns nested category object; fall back to form select for category name
+      const apiCategory = (data as unknown as Record<string, unknown>).category as
+        | { id: string; name: string }
+        | null
+        | undefined;
+      let categoryLabel = apiCategory?.name;
+      if (!categoryLabel) {
+        const categorySelect = form.querySelector(
+          'select[name="category_id"]'
+        ) as HTMLSelectElement | null;
+        const catId = data.category_id || (apiCategory?.id ?? '');
+        const categoryOption = categorySelect?.querySelector(
+          `option[value="${catId}"]`
+        ) as HTMLOptionElement | null;
+        categoryLabel = categoryOption?.textContent || catId || '';
+      }
+
+      // Format the date (API returns ISO string)
+      const dateStr = data.transaction_date;
+      const formattedDate = dateStr ? new Date(dateStr).toLocaleDateString() : '';
+      metaDiv.textContent = `${formattedDate} • ${categoryLabel}`;
 
       detailsDiv.append(titleDiv, metaDiv);
       contentDiv.appendChild(detailsDiv);
@@ -164,6 +178,7 @@ function initTransactionDrawer(): void {
       animate(li, { opacity: [0, 1], x: [20, 0], height: [0, 'auto'] }, { duration: 0.4 });
 
       sessionCount += 1;
+      hasSubmittedInSession = true;
       countBadge.innerText = String(sessionCount);
     };
 
@@ -274,8 +289,15 @@ function initTransactionDrawer(): void {
 
   // Reset when drawer closes
   drawer.addEventListener('drawer-closed', () => {
+    const hadSubmissions = hasSubmittedInSession;
     resetEditMode();
     resetSessionState();
+    hasSubmittedInSession = false;
+
+    // Notify the page to refresh if transactions were added/edited
+    if (hadSubmissions) {
+      document.dispatchEvent(new CustomEvent('transactions-changed'));
+    }
   });
 }
 
