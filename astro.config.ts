@@ -65,6 +65,10 @@ export default defineConfig({
   },
   output: 'server',
   adapter,
+  prefetch: {
+    prefetchAll: false,
+    defaultStrategy: 'hover',
+  },
   build: {
     server: './server/',
     client: './client/',

@@ -29,6 +29,13 @@
       "when": 1770575497800,
       "tag": "0003_overrated_venus",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1770800000000,
+      "tag": "0004_backfill_email_verified",
+      "breakpoints": true
     }
   ]
 }

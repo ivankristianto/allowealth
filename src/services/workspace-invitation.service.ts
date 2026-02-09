@@ -20,6 +20,7 @@ import { type IDatabase, getActiveSchema } from '@/db';
 import { workspaceInvitations as workspaceInvitationsSchema } from '@/db/schema/sqlite';
 import { eq, and, isNull, gt, desc } from 'drizzle-orm';
 import { createLogger } from '@/lib/logger';
+import { getEnv } from '@/lib/env';
 
 const log = createLogger('workspace-invitation');
 import { nanoid } from 'nanoid';
@@ -39,16 +40,9 @@ const TOKEN_LENGTH = 64;
 
 /**
  * Get base URL from environment or use default
- *
- * Note: Uses import.meta.env because Astro/Vite only populates
- * import.meta.env from .env files, not process.env.
  */
 function getBaseUrl(): string {
-  return (
-    import.meta.env.PUBLIC_BASE_URL ||
-    import.meta.env.PUBLIC_API_URL?.replace('/api', '') ||
-    'http://localhost:4321'
-  );
+  return getEnv('PUBLIC_URL') || 'http://localhost:4321';
 }
 
 /**

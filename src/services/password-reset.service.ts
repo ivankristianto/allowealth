@@ -16,6 +16,7 @@ import { nanoid } from 'nanoid';
 import { db, getActiveSchema } from '@/db/index';
 import { eq, and, gt } from 'drizzle-orm';
 import { createLogger } from '@/lib/logger';
+import { getEnv } from '@/lib/env';
 
 const log = createLogger('password-reset');
 
@@ -91,11 +92,7 @@ const TOKEN_EXPIRATION_MS = 60 * 60 * 1000;
  * import.meta.env from .env files, not process.env.
  */
 function getBaseUrl(): string {
-  return (
-    import.meta.env.PUBLIC_BASE_URL ||
-    import.meta.env.PUBLIC_API_URL?.replace('/api', '') ||
-    'http://localhost:4321'
-  );
+  return getEnv('PUBLIC_URL') || 'http://localhost:4321';
 }
 
 /**

@@ -36,7 +36,7 @@ describe('EmailTemplateService', () => {
   describe('workspaceInvitation', () => {
     it('should generate invitation email with correct subject', () => {
       const result = templateService.workspaceInvitation({
-        inviteUrl: 'https://example.com/register?token=xyz',
+        inviteUrl: 'https://example.com/signup?token=xyz',
         inviterName: 'John Doe',
         workspaceName: 'Family Budget',
         expiresIn: '7 days',
@@ -47,7 +47,7 @@ describe('EmailTemplateService', () => {
 
     it('should include inviter name', () => {
       const result = templateService.workspaceInvitation({
-        inviteUrl: 'https://example.com/register?token=xyz',
+        inviteUrl: 'https://example.com/signup?token=xyz',
         inviterName: 'John Doe',
         workspaceName: 'Family Budget',
         expiresIn: '7 days',
@@ -58,7 +58,7 @@ describe('EmailTemplateService', () => {
 
     it('should include workspace name', () => {
       const result = templateService.workspaceInvitation({
-        inviteUrl: 'https://example.com/register?token=xyz',
+        inviteUrl: 'https://example.com/signup?token=xyz',
         inviterName: 'John Doe',
         workspaceName: 'Family Budget',
         expiresIn: '7 days',

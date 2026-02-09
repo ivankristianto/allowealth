@@ -13,8 +13,7 @@ import SecurityApiKeysCard from '@/components/molecules/SecurityApiKeysCard.astr
 import GenerateApiKeyModal from '@/components/organisms/GenerateApiKeyModal.astro';
 import MCPSetupInstructionsModal from '@/components/organisms/MCPSetupInstructionsModal.astro';
 import { History } from '@lucide/astro';
-import { db } from '@/db';
-import { ApiKeyService } from '@/services/api-key.service';
+import { apiKeyService } from '@/services';
 
 const currentPath = '/security';
 
@@ -29,7 +28,6 @@ let apiKeys: Array<{
   expires_at: Date | null;
 }> = [];
 if (user?.id && user?.workspaceId) {
-  const apiKeyService = new ApiKeyService(db);
   apiKeys = await apiKeyService.list(user.workspaceId, user.id);
 }
 
