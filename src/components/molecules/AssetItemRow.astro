@@ -19,7 +19,7 @@
  * @param {string} className - Additional CSS classes
  */
 
-import { TrendingUp, Pencil, CircleX, Clock, RefreshCw, History } from '@lucide/astro';
+import { TrendingUp, Pencil, CircleX, Clock, RefreshCw, History, Ellipsis } from '@lucide/astro';
 import { formatCurrency } from '@/lib/formatting';
 import { ASSET_TYPE_LABELS, type AssetType } from '@/lib/types/asset';
 
@@ -84,11 +84,7 @@ const currencyBadgeClasses =
 
 const currencyValueClasses = currency === 'IDR' ? 'text-success' : 'text-info';
 
-const rowClasses = [
-  'p-4 lg:px-8 lg:py-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4',
-  'hover:bg-base-100/50 transition-all group',
-  className,
-]
+const rowClasses = ['p-4 lg:px-8 lg:py-5', 'hover:bg-base-100/50 transition-all group', className]
   .filter(Boolean)
   .join(' ');
 ---
@@ -100,148 +96,309 @@ const rowClasses = [
   data-asset-id={id}
   data-asset-name={name}
 >
-  {/* Asset Info */}
-  <div class="flex-1 min-w-0">
-    <h4
-      class="text-base lg:text-lg font-bold text-base-content leading-none tracking-tight truncate"
-      data-testid="asset-name"
-    >
-      {name}
-    </h4>
-    <div class="flex items-center gap-3 mt-2 lg:mt-3">
-      <span
-        class:list={[
-          'px-2 py-0.5 rounded-md text-xs font-bold tracking-wider uppercase',
-          currencyBadgeClasses,
-        ]}
+  {/* Mobile Layout - shown below sm breakpoint */}
+  <div class="sm:hidden">
+    {/* Row 1: Name + Balance + Menu */}
+    <div class="flex items-center gap-2">
+      <h4
+        class="flex-1 min-w-0 text-base font-bold text-base-content leading-none tracking-tight truncate"
+        data-testid="asset-name"
       >
-        {currency}
-      </span>
-      <span
-        class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-bold tracking-wider uppercase bg-base-200 text-base-content/50"
-        title={`Last balance input: ${formattedDate}`}
-      >
-        <Clock size={10} class="stroke-current" aria-hidden="true" />
-        {relativeTime}
-      </span>
-    </div>
-  </div>
+        {name}
+      </h4>
 
-  {/* Balance and Actions */}
-  <div class="flex items-center gap-6 lg:gap-10">
-    {/* Balance */}
-    <div class="text-right sm:min-w-[140px]">
       <p
         class:list={[
-          'text-lg lg:text-xl font-bold tracking-tight leading-none',
+          'text-base font-bold tracking-tight leading-none shrink-0',
           currencyValueClasses,
         ]}
         data-testid="asset-balance"
       >
         {formatCurrency(balance, currency)}
       </p>
+
+      {/* Mobile dropdown menu */}
       {
-        initialBalance !== undefined && initialBalance !== balance && (
-          <p
-            class="text-xs font-medium text-base-content/40 mt-1"
-            data-testid="asset-initial-balance"
-          >
-            Initial: {formatCurrency(initialBalance, currency)}
-          </p>
+        !isHistoricalView && (
+          <div class="dropdown dropdown-end shrink-0 -mr-1.5">
+            <button
+              type="button"
+              tabindex={0}
+              class="btn btn-ghost btn-xs btn-square min-h-[44px] min-w-[44px]"
+              aria-label={`Actions for ${name}`}
+              aria-haspopup="menu"
+            >
+              <Ellipsis size={16} class="stroke-current opacity-40" aria-hidden="true" />
+            </button>
+            <ul
+              tabindex={0}
+              class="dropdown-content z-50 menu p-2 shadow-lg bg-base-100 rounded-xl w-44 border border-base-300"
+              role="menu"
+            >
+              <li role="none">
+                <button
+                  type="button"
+                  role="menuitem"
+                  class="flex items-center gap-2"
+                  aria-label={`Toggle ${name} inline history`}
+                  data-toggle-history
+                  data-asset-id={id}
+                  data-testid="asset-inline-history-btn"
+                >
+                  <History size={16} class="stroke-current" aria-hidden="true" />
+                  Quick History
+                </button>
+              </li>
+              <li role="none">
+                <button
+                  type="button"
+                  role="menuitem"
+                  class="flex items-center gap-2"
+                  aria-label={`View ${name} history`}
+                  data-history-asset={id}
+                  data-asset-name={name}
+                  data-asset-type={categoryLabel}
+                  data-asset-currency={currency}
+                  data-asset-balance={balance}
+                  data-testid="asset-history-btn"
+                >
+                  <TrendingUp size={16} class="stroke-current" aria-hidden="true" />
+                  Timeline
+                </button>
+              </li>
+              <li role="none">
+                <button
+                  type="button"
+                  role="menuitem"
+                  class="flex items-center gap-2"
+                  aria-label={`Update ${name} value`}
+                  data-update-value-asset={id}
+                  data-asset-name={name}
+                  data-asset-currency={currency}
+                  data-asset-balance={balance}
+                  data-testid="asset-update-value-btn"
+                >
+                  <RefreshCw size={16} class="stroke-current" aria-hidden="true" />
+                  Update Value
+                </button>
+              </li>
+              <li role="none">
+                <button
+                  type="button"
+                  role="menuitem"
+                  class="flex items-center gap-2"
+                  aria-label={`Edit ${name}`}
+                  data-edit-asset={id}
+                  data-asset-name={name}
+                  data-asset-type={type}
+                  data-asset-category-id={categoryId || ''}
+                  data-asset-category-name={categoryLabel}
+                  data-asset-currency={currency}
+                  data-asset-balance={balance}
+                  data-testid="asset-edit-btn"
+                >
+                  <Pencil size={16} class="stroke-current" aria-hidden="true" />
+                  Edit Asset
+                </button>
+              </li>
+              <li role="none">
+                <button
+                  type="button"
+                  role="menuitem"
+                  class="flex items-center gap-2 text-error"
+                  aria-label={`Close ${name}`}
+                  data-close-asset={id}
+                  data-asset-name={name}
+                  data-asset-type={categoryLabel}
+                  data-asset-currency={currency}
+                  data-asset-balance={balance}
+                  data-testid="asset-close-btn"
+                >
+                  <CircleX size={16} class="stroke-current" aria-hidden="true" />
+                  Close Account
+                </button>
+              </li>
+            </ul>
+          </div>
         )
       }
     </div>
 
-    {/* Action Buttons - hidden for historical views */}
-    {
-      !isHistoricalView && (
-        <div class="flex items-center gap-1 opacity-40 group-hover:opacity-100 transition-opacity">
-          {/* Inline History Toggle */}
-          <div class="tooltip tooltip-bottom" data-tip="Quick history">
-            <button
-              type="button"
-              class="p-2 min-h-11 min-w-11 flex items-center justify-center text-base-content/50 hover:text-info transition-all rounded-xl hover:bg-info/10"
-              aria-label={`Toggle ${name} inline history`}
-              data-toggle-history
-              data-asset-id={id}
-              data-testid="asset-inline-history-btn"
-            >
-              <History size={18} class="stroke-current" aria-hidden="true" />
-              <span class="sr-only">Toggle history</span>
-            </button>
-          </div>
+    {/* Row 2: Currency badge + relative time + initial balance */}
+    <div class="mt-2 flex items-center gap-2">
+      <span
+        class:list={[
+          'px-2 py-0.5 rounded-md text-[11px] font-bold tracking-wider uppercase',
+          currencyBadgeClasses,
+        ]}
+      >
+        {currency}
+      </span>
+      <span
+        class="inline-flex items-center gap-1 text-[11px] font-medium tracking-wide uppercase text-base-content/40"
+        title={`Last balance input: ${formattedDate}`}
+      >
+        <Clock size={10} class="stroke-current" aria-hidden="true" />
+        {relativeTime}
+      </span>
+      {
+        initialBalance !== undefined && initialBalance !== balance && (
+          <span
+            class="text-[11px] font-medium text-base-content/40 ml-auto"
+            data-testid="asset-initial-balance"
+          >
+            Initial: {formatCurrency(initialBalance, currency)}
+          </span>
+        )
+      }
+    </div>
+  </div>
 
-          {/* View History / Timeline */}
-          <div class="tooltip tooltip-bottom" data-tip="View timeline">
-            <button
-              type="button"
-              class="p-2 min-h-11 min-w-11 flex items-center justify-center text-base-content/50 hover:text-accent transition-all rounded-xl hover:bg-accent/10"
-              aria-label={`View ${name} history`}
-              data-history-asset={id}
-              data-asset-name={name}
-              data-asset-type={categoryLabel}
-              data-asset-currency={currency}
-              data-asset-balance={balance}
-              data-testid="asset-history-btn"
-            >
-              <TrendingUp size={18} class="stroke-current" aria-hidden="true" />
-            </button>
-          </div>
+  {/* Desktop Layout - shown at sm and above */}
+  <div class="hidden sm:flex sm:items-center sm:justify-between sm:gap-4">
+    {/* Asset Info */}
+    <div class="flex-1 min-w-0">
+      <h4
+        class="text-base lg:text-lg font-bold text-base-content leading-none tracking-tight truncate"
+        data-testid="asset-name"
+      >
+        {name}
+      </h4>
+      <div class="flex items-center gap-3 mt-2 lg:mt-3">
+        <span
+          class:list={[
+            'px-2 py-0.5 rounded-md text-xs font-bold tracking-wider uppercase',
+            currencyBadgeClasses,
+          ]}
+        >
+          {currency}
+        </span>
+        <span
+          class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-bold tracking-wider uppercase bg-base-200 text-base-content/50"
+          title={`Last balance input: ${formattedDate}`}
+        >
+          <Clock size={10} class="stroke-current" aria-hidden="true" />
+          {relativeTime}
+        </span>
+      </div>
+    </div>
 
-          {/* Update Value */}
-          <div class="tooltip tooltip-bottom" data-tip="Update value">
-            <button
-              type="button"
-              class="p-2 min-h-11 min-w-11 flex items-center justify-center text-base-content/50 hover:text-warning transition-all rounded-xl hover:bg-warning/10"
-              aria-label={`Update ${name} value`}
-              data-update-value-asset={id}
-              data-asset-name={name}
-              data-asset-currency={currency}
-              data-asset-balance={balance}
-              data-testid="asset-update-value-btn"
+    {/* Balance and Actions */}
+    <div class="flex items-center gap-6 lg:gap-10">
+      {/* Balance */}
+      <div class="text-right sm:min-w-[140px]">
+        <p
+          class:list={[
+            'text-lg lg:text-xl font-bold tracking-tight leading-none',
+            currencyValueClasses,
+          ]}
+          data-testid="asset-balance"
+        >
+          {formatCurrency(balance, currency)}
+        </p>
+        {
+          initialBalance !== undefined && initialBalance !== balance && (
+            <p
+              class="text-xs font-medium text-base-content/40 mt-1"
+              data-testid="asset-initial-balance"
             >
-              <RefreshCw size={18} class="stroke-current" aria-hidden="true" />
-            </button>
-          </div>
+              Initial: {formatCurrency(initialBalance, currency)}
+            </p>
+          )
+        }
+      </div>
 
-          {/* Edit Asset */}
-          <div class="tooltip tooltip-bottom" data-tip="Edit asset">
-            <button
-              type="button"
-              class="p-2 min-h-11 min-w-11 flex items-center justify-center text-base-content/50 hover:text-success transition-all rounded-xl hover:bg-success/10"
-              aria-label={`Edit ${name}`}
-              data-edit-asset={id}
-              data-asset-name={name}
-              data-asset-type={type}
-              data-asset-category-id={categoryId || ''}
-              data-asset-category-name={categoryLabel}
-              data-asset-currency={currency}
-              data-asset-balance={balance}
-              data-testid="asset-edit-btn"
-            >
-              <Pencil size={18} class="stroke-current" aria-hidden="true" />
-            </button>
-          </div>
+      {/* Action Buttons - hidden for historical views */}
+      {
+        !isHistoricalView && (
+          <div class="flex items-center gap-1 opacity-40 group-hover:opacity-100 transition-opacity">
+            {/* Inline History Toggle */}
+            <div class="tooltip tooltip-bottom" data-tip="Quick history">
+              <button
+                type="button"
+                class="p-2 min-h-11 min-w-11 flex items-center justify-center text-base-content/50 hover:text-info transition-all rounded-xl hover:bg-info/10"
+                aria-label={`Toggle ${name} inline history`}
+                data-toggle-history
+                data-asset-id={id}
+                data-testid="asset-inline-history-btn"
+              >
+                <History size={18} class="stroke-current" aria-hidden="true" />
+                <span class="sr-only">Toggle history</span>
+              </button>
+            </div>
 
-          {/* Close Account */}
-          <div class="tooltip tooltip-bottom" data-tip="Close account">
-            <button
-              type="button"
-              class="p-2 min-h-11 min-w-11 flex items-center justify-center text-base-content/50 hover:text-error transition-all rounded-xl hover:bg-error/10"
-              aria-label={`Close ${name}`}
-              data-close-asset={id}
-              data-asset-name={name}
-              data-asset-type={categoryLabel}
-              data-asset-currency={currency}
-              data-asset-balance={balance}
-              data-testid="asset-close-btn"
-            >
-              <CircleX size={18} class="stroke-current" aria-hidden="true" />
-            </button>
+            {/* View History / Timeline */}
+            <div class="tooltip tooltip-bottom" data-tip="View timeline">
+              <button
+                type="button"
+                class="p-2 min-h-11 min-w-11 flex items-center justify-center text-base-content/50 hover:text-accent transition-all rounded-xl hover:bg-accent/10"
+                aria-label={`View ${name} history`}
+                data-history-asset={id}
+                data-asset-name={name}
+                data-asset-type={categoryLabel}
+                data-asset-currency={currency}
+                data-asset-balance={balance}
+                data-testid="asset-history-btn"
+              >
+                <TrendingUp size={18} class="stroke-current" aria-hidden="true" />
+              </button>
+            </div>
+
+            {/* Update Value */}
+            <div class="tooltip tooltip-bottom" data-tip="Update value">
+              <button
+                type="button"
+                class="p-2 min-h-11 min-w-11 flex items-center justify-center text-base-content/50 hover:text-warning transition-all rounded-xl hover:bg-warning/10"
+                aria-label={`Update ${name} value`}
+                data-update-value-asset={id}
+                data-asset-name={name}
+                data-asset-currency={currency}
+                data-asset-balance={balance}
+                data-testid="asset-update-value-btn"
+              >
+                <RefreshCw size={18} class="stroke-current" aria-hidden="true" />
+              </button>
+            </div>
+
+            {/* Edit Asset */}
+            <div class="tooltip tooltip-bottom" data-tip="Edit asset">
+              <button
+                type="button"
+                class="p-2 min-h-11 min-w-11 flex items-center justify-center text-base-content/50 hover:text-success transition-all rounded-xl hover:bg-success/10"
+                aria-label={`Edit ${name}`}
+                data-edit-asset={id}
+                data-asset-name={name}
+                data-asset-type={type}
+                data-asset-category-id={categoryId || ''}
+                data-asset-category-name={categoryLabel}
+                data-asset-currency={currency}
+                data-asset-balance={balance}
+                data-testid="asset-edit-btn"
+              >
+                <Pencil size={18} class="stroke-current" aria-hidden="true" />
+              </button>
+            </div>
+
+            {/* Close Account */}
+            <div class="tooltip tooltip-bottom" data-tip="Close account">
+              <button
+                type="button"
+                class="p-2 min-h-11 min-w-11 flex items-center justify-center text-base-content/50 hover:text-error transition-all rounded-xl hover:bg-error/10"
+                aria-label={`Close ${name}`}
+                data-close-asset={id}
+                data-asset-name={name}
+                data-asset-type={categoryLabel}
+                data-asset-currency={currency}
+                data-asset-balance={balance}
+                data-testid="asset-close-btn"
+              >
+                <CircleX size={18} class="stroke-current" aria-hidden="true" />
+              </button>
+            </div>
           </div>
-        </div>
-      )
-    }
+        )
+      }
+    </div>
   </div>
 </div>
 
