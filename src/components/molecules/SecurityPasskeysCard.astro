@@ -32,9 +32,11 @@ const { passkeys } = Astro.props;
           <Key size={20} class="stroke-current" aria-hidden="true" />
         </IconBadge>
         <div>
-          <div class="flex items-center gap-2">
+          <div class="flex flex-wrap items-center gap-2">
             <h3 class="text-lg font-bold">Passkeys</h3>
-            <span class="badge badge-outline badge-sm text-base-content/50">Under Development</span>
+            <span class="badge badge-outline badge-sm text-base-content/50 whitespace-nowrap"
+              >Under Development</span
+            >
           </div>
           <p class="text-xs uppercase tracking-widest text-base-content/50">
             Biometric &amp; Hardware Keys
