@@ -15,6 +15,8 @@ import { parseMonthKeyToISO } from '@/lib/utils/date';
 import { PAGINATION } from '@/lib/constants/pagination';
 import { getCsrfHeaders } from '@/lib/csrf-client';
 
+const DEFAULT_PAGE_SIZE = PAGINATION.DEFAULT_PAGE_SIZE;
+
 export interface FetchTransactionsResponse {
   transactions: TransactionOutput[];
   pagination: {
@@ -166,7 +168,7 @@ function parseHtmlPartials(html: string): FetchTransactionsHtmlResponse['partial
  */
 export async function fetchTransactions(
   filters: Partial<TransactionFilters>,
-  pageSize = 50
+  pageSize = DEFAULT_PAGE_SIZE
 ): Promise<FetchTransactionsResponse> {
   // Cancel any pending request
   cancelPendingRequest();
@@ -231,7 +233,7 @@ export async function fetchTransactions(
 export async function fetchTransactionsHtml(
   filters: Partial<TransactionFilters>,
   options: Omit<FetchOptions, 'render'> = {},
-  pageSize = 50
+  pageSize = DEFAULT_PAGE_SIZE
 ): Promise<FetchTransactionsHtmlResponse> {
   // Cancel any pending request
   cancelPendingRequest();

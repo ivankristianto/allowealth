@@ -429,12 +429,19 @@ const formId = propFormId || `transaction-entry-form-${type}`;
       }
     }
 
-    // Close modal helper
+    // Close modal or drawer helper
     function closeModal() {
-      if (!modalId) return;
-      const modal = document.getElementById(modalId) as HTMLDialogElement | null;
-      if (modal) {
-        modal.close();
+      if (modalId) {
+        const modal = document.getElementById(modalId) as HTMLDialogElement | null;
+        if (modal) {
+          modal.close();
+          return;
+        }
+      }
+      // Fall back to closing the parent drawer if no modal ID
+      const parentDrawer = form.closest('[data-drawer]') as HTMLElement | null;
+      if (parentDrawer) {
+        parentDrawer.dispatchEvent(new CustomEvent('drawer:close'));
       }
     }
 
@@ -572,10 +579,8 @@ const formId = propFormId || `transaction-entry-form-${type}`;
           } else {
             closeModal();
 
-            // Refresh page to show new transaction
-            setTimeout(() => {
-              window.location.reload();
-            }, 300);
+            // Notify the page to refresh the transaction list
+            document.dispatchEvent(new CustomEvent('transactions-changed'));
           }
         }
       } catch (err) {
