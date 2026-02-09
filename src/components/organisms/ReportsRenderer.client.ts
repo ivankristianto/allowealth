@@ -7,7 +7,7 @@
  * Following the pattern from docs/architecture/002-interactive-pages.md
  */
 
-import { animate } from 'motion';
+import { animate } from 'motion/mini';
 import { initPeriodNavigator } from '@/components/molecules/PeriodNavigator.client';
 
 /**

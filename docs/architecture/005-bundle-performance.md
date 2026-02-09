@@ -6,12 +6,12 @@
 
 ## Bundle Budget
 
-| Category        | Limit  | Current | Notes                          |
-| --------------- | ------ | ------- | ------------------------------ |
-| Total Client JS | 250 kB | 340 kB  | Target for future optimization |
-| Chart.js        | 180 kB | 175 kB  | Tree-shaken (3 chart types)    |
-| Motion          | 60 kB  | 59 kB   | Animation library              |
-| Decimal.js      | 0 kB   | 0 kB    | Server-only (MUST NOT bundle)  |
+| Category        | Limit  | Current | Notes                                       |
+| --------------- | ------ | ------- | ------------------------------------------- |
+| Total Client JS | 250 kB | 195 kB  | Under budget after motion/mini migration    |
+| Chart.js        | 180 kB | 175 kB  | Tree-shaken (3 chart types)                 |
+| Motion          | 60 kB  | 8 kB    | Uses motion/mini (WAAPI-based, ~8x smaller) |
+| Decimal.js      | 0 kB   | 0 kB    | Server-only (MUST NOT bundle)               |
 
 ## Rules
 

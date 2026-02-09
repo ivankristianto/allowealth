@@ -1,4 +1,4 @@
-import { animate } from 'motion';
+import { animate } from 'motion/mini';
 import { DRAWER_ANIMATION_CONFIG, DRAWER_CONTENT_INITIAL_STYLES } from '@/lib/animations';
 
 const initializedDrawers = new WeakSet<HTMLElement>();

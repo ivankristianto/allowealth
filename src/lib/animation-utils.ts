@@ -375,7 +375,7 @@ export function animateList(
 ): void {
   elements.forEach((element: Element, index: number) => {
     // Dynamic import to avoid SSR issues
-    import('motion').then(({ animate }) => {
+    import('motion/mini').then(({ animate }) => {
       // Convert AnimationKeyframes to Motion's expected format
       const keyframes = preset.animate as Record<string, number | number[]>;
       animate(element, keyframes, {

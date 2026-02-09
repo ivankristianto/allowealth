@@ -140,9 +140,10 @@ export default defineConfig({
     build: {
       rollupOptions: {
         output: {
-          manualChunks: {
-            chartjs: ['chart.js'],
-            motion: ['motion'],
+          manualChunks(id) {
+            if (id.includes('node_modules/chart.js')) return 'chartjs';
+            if (id.includes('node_modules/motion') || id.includes('node_modules/framer-motion'))
+              return 'motion';
           },
         },
       },

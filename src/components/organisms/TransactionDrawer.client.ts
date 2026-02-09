@@ -1,4 +1,4 @@
-import { animate } from 'motion';
+import { animate } from 'motion/mini';
 import { formatCurrency } from '@/lib/formatting/currency-client';
 
 type TransactionType = 'expense' | 'income';

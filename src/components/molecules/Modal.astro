@@ -111,7 +111,7 @@ const titleId = title ? `${id}-title` : undefined;
 </dialog>
 
 <script>
-  import { animate } from 'motion';
+  import { animate } from 'motion/mini';
   import {
     MODAL_ANIMATION_CONFIG,
     MODAL_INITIAL_SCALE,
@@ -166,11 +166,11 @@ const titleId = title ? `${id}-title` : undefined;
         content.style.opacity = '1';
         content.style.transform = '';
       } else {
-        // Cast keyframes to satisfy motion library types
-        const keyframes = MODAL_ANIMATION_CONFIG.content.enter.keyframes as Parameters<
-          typeof animate
-        >[1];
-        await animate(content, keyframes, MODAL_ANIMATION_CONFIG.content.enter.options);
+        await animate(
+          content,
+          MODAL_ANIMATION_CONFIG.content.enter.keyframes,
+          MODAL_ANIMATION_CONFIG.content.enter.options
+        );
       }
     };
 
@@ -183,11 +183,11 @@ const titleId = title ? `${id}-title` : undefined;
         content.style.opacity = '0';
         content.style.transform = `scale(${MODAL_INITIAL_SCALE}) translateY(${MODAL_INITIAL_Y_OFFSET}px)`;
       } else {
-        // Cast keyframes to satisfy motion library types
-        const keyframes = MODAL_ANIMATION_CONFIG.content.exit.keyframes as Parameters<
-          typeof animate
-        >[1];
-        await animate(content, keyframes, MODAL_ANIMATION_CONFIG.content.exit.options);
+        await animate(
+          content,
+          MODAL_ANIMATION_CONFIG.content.exit.keyframes,
+          MODAL_ANIMATION_CONFIG.content.exit.options
+        );
       }
     };
 

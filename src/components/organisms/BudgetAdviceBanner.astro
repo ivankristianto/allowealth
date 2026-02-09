@@ -132,14 +132,14 @@ const bannerClasses = [
 </aside>
 
 <script>
-  import { animate } from 'motion';
+  import { animate } from 'motion/mini';
 
   // Animation keyframes for banner dismiss (matches modal exit pattern)
   const BANNER_DISMISS_KEYFRAMES = {
     opacity: [1, 0],
     y: [0, -10],
     scale: [1, 0.98],
-  } as const;
+  };
 
   const BANNER_DISMISS_OPTIONS = {
     duration: 0.2,
@@ -161,9 +161,7 @@ const bannerClasses = [
           bannerEl.style.display = 'none';
         } else {
           // Animated dismiss using Motion library
-          // Cast keyframes to satisfy motion library types
-          const keyframes = BANNER_DISMISS_KEYFRAMES as Parameters<typeof animate>[1];
-          await animate(bannerEl, keyframes, BANNER_DISMISS_OPTIONS).finished;
+          await animate(bannerEl, BANNER_DISMISS_KEYFRAMES, BANNER_DISMISS_OPTIONS).finished;
           bannerEl.style.display = 'none';
         }
       });
