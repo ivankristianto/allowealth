@@ -182,7 +182,7 @@ export const DELETE: APIRoute = async (context) => {
       );
     }
 
-    return successResponse({ message: 'Asset closed successfully' });
+    return successResponse({ message: 'Asset deactivated successfully' });
   } catch (error) {
     if (error instanceof Error && error.message === 'Unauthorized') {
       return errorResponse('Unauthorized', 401);

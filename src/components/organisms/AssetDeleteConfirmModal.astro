@@ -2,7 +2,7 @@
 /**
  * AssetDeleteConfirmModal Component
  *
- * Modal for confirming asset account closure.
+ * Modal for confirming asset account deactivation.
  * Based on the ConfirmationModal pattern.
  *
  * @param {string} id - Modal ID
@@ -20,12 +20,12 @@ const { id } = Astro.props;
 <div data-asset-delete-modal-container data-id={id} data-testid="asset-delete-modal">
   <ConfirmationModal
     id={id}
-    title="Close Account"
-    description="Close this account?"
-    confirmLabel="Close Account"
-    confirmVariant="error"
-    confirmLoadingLabel="Closing..."
-    iconVariant="error"
+    title="Deactivate Account"
+    description="Deactivate this account?"
+    confirmLabel="Deactivate"
+    confirmVariant="warning"
+    confirmLoadingLabel="Deactivating..."
+    iconVariant="warning"
     confirmTestId="confirm-delete-btn"
   >
     <div slot="details" class="bg-base-200 rounded-2xl p-4" data-asset-details>
@@ -47,8 +47,8 @@ const { id } = Astro.props;
     </div>
 
     <div slot="details" class="text-sm text-base-content/60 bg-base-200 p-3 rounded-xl">
-      Once closed: hidden from active accounts, transaction history preserved, can be reopened later
-      by admin.
+      Once deactivated: hidden from active accounts, transaction history preserved, can be
+      reactivated later by admin.
     </div>
   </ConfirmationModal>
 </div>
@@ -176,7 +176,7 @@ const { id } = Astro.props;
         if (currentAssetBalance !== 0) {
           showConfirmError(
             errorElement,
-            `Cannot close account with balance of ${formatCurrency(currentAssetBalance, currentAssetCurrency)}. Transfer funds out first.`
+            `Cannot deactivate account with balance of ${formatCurrency(currentAssetBalance, currentAssetCurrency)}. Transfer funds out first.`
           );
           return;
         }
@@ -195,11 +195,11 @@ const { id } = Astro.props;
 
           if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.message || 'Failed to close account');
+            throw new Error(errorData.message || 'Failed to deactivate account');
           }
 
           // Success
-          addToast('Account closed successfully', 'success');
+          addToast('Account deactivated successfully', 'success');
           closeConfirmationModal(modal);
 
           // Dispatch event for page update
@@ -212,7 +212,7 @@ const { id } = Astro.props;
           // Reload page to show updated data
           setTimeout(() => window.location.reload(), 500);
         } catch (err) {
-          const message = err instanceof Error ? err.message : 'Failed to close account';
+          const message = err instanceof Error ? err.message : 'Failed to deactivate account';
           showConfirmError(errorElement, message);
           addToast(message, 'error');
         } finally {

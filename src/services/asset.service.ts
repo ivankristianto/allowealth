@@ -171,7 +171,7 @@ export class AssetService {
     if (currentAsset.status === 'closed') {
       throw new AssetServiceError(
         ServiceErrorCode.ACCOUNT_CLOSED,
-        'Cannot update asset — account is closed',
+        'Cannot update asset — account is deactivated',
         400
       );
     }
@@ -235,7 +235,7 @@ export class AssetService {
     if (currentAsset.status === 'closed') {
       throw new AssetServiceError(
         ServiceErrorCode.ACCOUNT_CLOSED,
-        'Cannot update balance — account is closed',
+        'Cannot update balance — account is deactivated',
         400
       );
     }
@@ -312,7 +312,7 @@ export class AssetService {
     if (fromAsset.status === 'closed' || toAsset.status === 'closed') {
       throw new AssetServiceError(
         ServiceErrorCode.ACCOUNT_CLOSED,
-        'Cannot transfer — one or both accounts are closed',
+        'Cannot transfer — one or both accounts are deactivated',
         400
       );
     }
@@ -408,13 +408,17 @@ export class AssetService {
     }
 
     if (asset.status === 'closed') {
-      throw new AssetServiceError(ServiceErrorCode.ALREADY_CLOSED, 'Account already closed', 400);
+      throw new AssetServiceError(
+        ServiceErrorCode.ALREADY_CLOSED,
+        'Account already deactivated',
+        400
+      );
     }
 
     if (decimalCompare(asset.balance, '0') !== 0) {
       throw new AssetServiceError(
         ServiceErrorCode.BALANCE_NOT_ZERO,
-        `Cannot close account with balance ${asset.balance} ${asset.currency}. Transfer funds out first.`,
+        `Cannot deactivate account with balance ${asset.balance} ${asset.currency}. Transfer funds out first.`,
         400
       );
     }
@@ -447,7 +451,7 @@ export class AssetService {
     }
 
     if (asset.status !== 'closed') {
-      throw new AssetServiceError(ServiceErrorCode.NOT_CLOSED, 'Account is not closed', 400);
+      throw new AssetServiceError(ServiceErrorCode.NOT_CLOSED, 'Account is not deactivated', 400);
     }
 
     const now = new Date();

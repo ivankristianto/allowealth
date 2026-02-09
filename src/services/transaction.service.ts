@@ -123,7 +123,7 @@ export class TransactionService {
     if (asset.status === 'closed') {
       throw new TransactionServiceError(
         ServiceErrorCode.ACCOUNT_CLOSED,
-        'Cannot create transaction — source account is closed',
+        'Cannot create transaction — source account is deactivated',
         400
       );
     }
@@ -144,7 +144,7 @@ export class TransactionService {
       if (toAsset.status === 'closed') {
         throw new TransactionServiceError(
           ServiceErrorCode.ACCOUNT_CLOSED,
-          'Cannot create transfer — destination account is closed',
+          'Cannot create transfer — destination account is deactivated',
           400
         );
       }
@@ -407,7 +407,7 @@ export class TransactionService {
       if (asset.status === 'closed') {
         throw new TransactionServiceError(
           ServiceErrorCode.ACCOUNT_CLOSED,
-          'Cannot update transaction — source account is closed',
+          'Cannot update transaction — source account is deactivated',
           400
         );
       }
@@ -429,7 +429,7 @@ export class TransactionService {
       if (toAsset.status === 'closed') {
         throw new TransactionServiceError(
           ServiceErrorCode.ACCOUNT_CLOSED,
-          'Cannot update transfer — destination account is closed',
+          'Cannot update transfer — destination account is deactivated',
           400
         );
       }
