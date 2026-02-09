@@ -19,7 +19,7 @@
  * @param {string} className - Additional CSS classes
  */
 
-import { TrendingUp, Pencil, Trash2, Clock, RefreshCw, History } from '@lucide/astro';
+import { TrendingUp, Pencil, CircleX, Clock, RefreshCw, History } from '@lucide/astro';
 import { formatCurrency } from '@/lib/formatting';
 import { ASSET_TYPE_LABELS, type AssetType } from '@/lib/types/asset';
 
@@ -223,20 +223,20 @@ const rowClasses = [
             </button>
           </div>
 
-          {/* Delete Asset */}
-          <div class="tooltip tooltip-bottom" data-tip="Delete asset">
+          {/* Close Account */}
+          <div class="tooltip tooltip-bottom" data-tip="Close account">
             <button
               type="button"
               class="p-2 min-h-11 min-w-11 flex items-center justify-center text-base-content/50 hover:text-error transition-all rounded-xl hover:bg-error/10"
-              aria-label={`Delete ${name}`}
-              data-delete-asset={id}
+              aria-label={`Close ${name}`}
+              data-close-asset={id}
               data-asset-name={name}
               data-asset-type={categoryLabel}
               data-asset-currency={currency}
               data-asset-balance={balance}
-              data-testid="asset-delete-btn"
+              data-testid="asset-close-btn"
             >
-              <Trash2 size={18} class="stroke-current" aria-hidden="true" />
+              <CircleX size={18} class="stroke-current" aria-hidden="true" />
             </button>
           </div>
         </div>
@@ -264,7 +264,7 @@ const rowClasses = [
   const initializedHistoryButtons = new WeakSet<Element>();
   const initializedUpdateValueButtons = new WeakSet<Element>();
   const initializedEditButtons = new WeakSet<Element>();
-  const initializedDeleteButtons = new WeakSet<Element>();
+  const initializedCloseButtons = new WeakSet<Element>();
 
   function initAssetRowButtons() {
     // Initialize History buttons
@@ -367,17 +367,17 @@ const rowClasses = [
       });
     });
 
-    // Initialize Delete buttons
-    document.querySelectorAll('[data-delete-asset]').forEach((button) => {
-      if (initializedDeleteButtons.has(button)) return;
-      initializedDeleteButtons.add(button);
+    // Initialize Close Account buttons
+    document.querySelectorAll('[data-close-asset]').forEach((button) => {
+      if (initializedCloseButtons.has(button)) return;
+      initializedCloseButtons.add(button);
 
       button.addEventListener('click', (e: MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
 
         const btn = button as HTMLElement;
-        const assetId = btn.getAttribute('data-delete-asset');
+        const assetId = btn.getAttribute('data-close-asset');
         const assetName = btn.getAttribute('data-asset-name') || 'this asset';
         const assetType = btn.getAttribute('data-asset-type') || 'Asset';
         const assetCurrency = (btn.getAttribute('data-asset-currency') || 'IDR') as 'IDR' | 'USD';
@@ -385,9 +385,9 @@ const rowClasses = [
 
         if (!assetId) return;
 
-        // Dispatch event to open delete confirmation modal
+        // Dispatch event to open close account confirmation modal
         document.dispatchEvent(
-          new CustomEvent('open-asset-delete', {
+          new CustomEvent('open-asset-close', {
             detail: {
               id: assetId,
               name: assetName,

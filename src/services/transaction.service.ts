@@ -54,7 +54,9 @@ export interface TransactionFilters {
 }
 
 export class TransactionService {
-  private schema = getActiveSchema();
+  private get schema() {
+    return getActiveSchema();
+  }
   private categoryService: CategoryService;
   private assetService: AssetService;
 
@@ -110,15 +112,25 @@ export class TransactionService {
       }
     }
 
-    // Verify source asset exists and belongs to workspace
-    const asset = await this.assetService.findById(validated.asset_id, validated.workspace_id);
+    // Verify source asset exists, belongs to workspace, and is active
+    const asset = await this.assetService.findByIdIncludingClosed(
+      validated.asset_id,
+      validated.workspace_id
+    );
     if (!asset) {
       throw new TransactionServiceError(ServiceErrorCode.ASSET_NOT_FOUND, 'Asset not found', 404);
     }
+    if (asset.status === 'closed') {
+      throw new TransactionServiceError(
+        ServiceErrorCode.ACCOUNT_CLOSED,
+        'Cannot create transaction — source account is closed',
+        400
+      );
+    }
 
-    // For transfers, verify destination asset exists
+    // For transfers, verify destination asset exists and is active
     if (validated.type === 'transfer' && validated.to_asset_id) {
-      const toAsset = await this.assetService.findById(
+      const toAsset = await this.assetService.findByIdIncludingClosed(
         validated.to_asset_id,
         validated.workspace_id
       );
@@ -127,6 +139,13 @@ export class TransactionService {
           ServiceErrorCode.ASSET_NOT_FOUND,
           'Destination asset not found',
           404
+        );
+      }
+      if (toAsset.status === 'closed') {
+        throw new TransactionServiceError(
+          ServiceErrorCode.ACCOUNT_CLOSED,
+          'Cannot create transfer — destination account is closed',
+          400
         );
       }
     }
@@ -378,20 +397,40 @@ export class TransactionService {
 
     // Verify asset if being updated
     if (validated.asset_id !== undefined) {
-      const asset = await this.assetService.findById(validated.asset_id, workspaceId);
+      const asset = await this.assetService.findByIdIncludingClosed(
+        validated.asset_id,
+        workspaceId
+      );
       if (!asset) {
         throw new TransactionServiceError(ServiceErrorCode.ASSET_NOT_FOUND, 'Asset not found', 404);
+      }
+      if (asset.status === 'closed') {
+        throw new TransactionServiceError(
+          ServiceErrorCode.ACCOUNT_CLOSED,
+          'Cannot update transaction — source account is closed',
+          400
+        );
       }
     }
 
     // Verify destination asset if being updated
     if (validated.to_asset_id !== undefined && validated.to_asset_id !== null) {
-      const toAsset = await this.assetService.findById(validated.to_asset_id, workspaceId);
+      const toAsset = await this.assetService.findByIdIncludingClosed(
+        validated.to_asset_id,
+        workspaceId
+      );
       if (!toAsset) {
         throw new TransactionServiceError(
           ServiceErrorCode.ASSET_NOT_FOUND,
           'Destination asset not found',
           404
+        );
+      }
+      if (toAsset.status === 'closed') {
+        throw new TransactionServiceError(
+          ServiceErrorCode.ACCOUNT_CLOSED,
+          'Cannot update transfer — destination account is closed',
+          400
         );
       }
     }

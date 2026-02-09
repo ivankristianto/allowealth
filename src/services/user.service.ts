@@ -61,7 +61,9 @@ function constantTimeDelay(ms: number): Promise<void> {
  * User Service
  */
 export class UserService {
-  private schema = getActiveSchema();
+  private get schema() {
+    return getActiveSchema();
+  }
 
   /**
    * Create a new UserService with database injection

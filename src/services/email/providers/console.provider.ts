@@ -21,13 +21,14 @@ export class ConsoleEmailProvider implements EmailProvider {
     console.warn(`Subject: ${subject}`);
     console.warn('-'.repeat(60));
     console.warn('Body (HTML):');
-    // Strip HTML tags for console readability
+    // Convert HTML to readable text, preserving link URLs
     const textContent = html
       .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+      .replace(/<a\s[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi, '$2 [ $1 ]')
       .replace(/<[^>]+>/g, ' ')
       .replace(/\s+/g, ' ')
       .trim();
-    console.warn(textContent.substring(0, 500) + (textContent.length > 500 ? '...' : ''));
+    console.warn(textContent.substring(0, 1000) + (textContent.length > 1000 ? '...' : ''));
     console.warn('='.repeat(60) + '\n');
 
     return {

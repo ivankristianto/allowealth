@@ -15,20 +15,49 @@ import Checkbox from '../atoms/Checkbox.astro';
 import Button from '../atoms/Button.astro';
 import ErrorMessage from '../atoms/ErrorMessage.astro';
 import FormField from '../molecules/FormField.astro';
-import { CircleX } from '@lucide/astro';
+import { CircleX, CircleCheck, Info } from '@lucide/astro';
 
 export interface Props {
   errorMessage?: string;
   email?: string;
   redirectTo?: string;
+  bannerMessage?: string;
+  bannerType?: 'info' | 'success' | 'error';
+  resendEmail?: string;
 }
 
-const { errorMessage = '', email = '', redirectTo = '' } = Astro.props;
+const {
+  errorMessage = '',
+  email = '',
+  redirectTo = '',
+  bannerMessage = '',
+  bannerType = 'info',
+  resendEmail = '',
+} = Astro.props;
 ---
 
 <div class="card bg-base-100 shadow-2xl border border-base-300">
   <div class="card-body p-8">
     <h2 class="text-2xl font-bold mb-6 text-center">Welcome Back</h2>
+
+    {
+      bannerMessage && (
+        <div
+          role="alert"
+          class={`alert mb-4 ${bannerType === 'success' ? 'alert-success' : bannerType === 'error' ? 'alert-error' : 'alert-info'}`}
+        >
+          {bannerType === 'success' && <CircleCheck size={20} class="stroke-current shrink-0" />}
+          {bannerType === 'info' && <Info size={20} class="stroke-current shrink-0" />}
+          {bannerType === 'error' && <CircleX size={20} class="stroke-current shrink-0" />}
+          <span>{bannerMessage}</span>
+          {resendEmail && (
+            <button type="button" class="btn btn-ghost" data-resend-email={resendEmail}>
+              Resend
+            </button>
+          )}
+        </div>
+      )
+    }
 
     <div id="login-messages" data-testid="login-error" aria-live="polite" aria-atomic="true">
       {errorMessage && <ErrorMessage message={errorMessage} />}
@@ -37,8 +66,9 @@ const { errorMessage = '', email = '', redirectTo = '' } = Astro.props;
     <form
       id="login-form"
       data-testid="login-form"
-      data-redirect-to={redirectTo}
-      data-api-login-url="/api/auth/login"
+      data-redirect={redirectTo}
+      data-api-login="/api/auth/login"
+      data-resend-api="/api/auth/resend-verification"
       class="space-y-5"
       novalidate
     >
@@ -115,6 +145,12 @@ const { errorMessage = '', email = '', redirectTo = '' } = Astro.props;
 </div>
 
 <script>
+  // Read server values from data attributes
+  const loginForm = document.getElementById('login-form');
+  const redirectTo = loginForm?.dataset.redirect || '';
+  const apiLoginUrl = loginForm?.dataset.apiLogin || '/api/auth/login';
+  const resendApiUrl = loginForm?.dataset.resendApi || '/api/auth/resend-verification';
+
   // Helper function to clone icon from template
   const getErrorIcon = () => {
     const template = document.getElementById('icon-error-template');
@@ -150,17 +186,71 @@ const { errorMessage = '', email = '', redirectTo = '' } = Astro.props;
     messagesContainer.appendChild(alertDiv);
   };
 
-  const form = document.getElementById('login-form') as HTMLFormElement | null;
+  // Show verification error with resend button
+  const showVerificationError = (emailAddr: string) => {
+    if (!messagesContainer) return;
+    messagesContainer.innerHTML = '';
+
+    const alertDiv = document.createElement('div');
+    alertDiv.setAttribute('role', 'alert');
+    alertDiv.className = 'alert alert-error';
+
+    const icon = getErrorIcon();
+    if (icon) alertDiv.appendChild(icon);
+
+    const textSpan = document.createElement('span');
+    textSpan.textContent = 'Please verify your email before signing in. ';
+    alertDiv.appendChild(textSpan);
+
+    const resendBtn = document.createElement('button');
+    resendBtn.type = 'button';
+    resendBtn.className = 'btn btn-ghost';
+    resendBtn.textContent = 'Resend verification email';
+    resendBtn.dataset.resendEmail = emailAddr;
+    alertDiv.appendChild(resendBtn);
+
+    messagesContainer.appendChild(alertDiv);
+  };
+
+  // Handle resend verification email clicks (event delegation)
+  document.addEventListener('click', async (e) => {
+    const target = e.target as HTMLButtonElement | null;
+    if (!target?.dataset?.resendEmail) return;
+
+    const resendEmail = target.dataset.resendEmail;
+    if (!resendEmail) return;
+
+    target.disabled = true;
+    target.textContent = 'Sending...';
+
+    try {
+      const res = await fetch(resendApiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: resendEmail }),
+      });
+
+      if (res.ok) {
+        target.textContent = 'Sent! Check your inbox';
+        target.className = 'btn btn-ghost btn-disabled';
+      } else {
+        const data = await res.json();
+        target.textContent = data.error?.message || 'Failed to send';
+        target.disabled = false;
+      }
+    } catch {
+      target.textContent = 'Failed to send. Try again.';
+      target.disabled = false;
+    }
+  });
+
+  const form = loginForm as HTMLFormElement | null;
   const messagesContainer = document.getElementById('login-messages');
   const emailInput = document.getElementById('email') as HTMLInputElement | null;
   const passwordInput = document.getElementById('password') as HTMLInputElement | null;
   const submitButton = document.getElementById('login-submit-button') as HTMLButtonElement | null;
   const buttonText = submitButton?.querySelector('[data-button-text]');
   const loadingSpinner = submitButton?.querySelector('[data-loading-spinner]');
-
-  // Read server values from data attributes
-  const redirectTo = form?.dataset.redirectTo || '';
-  const apiLoginUrl = form?.dataset.apiLoginUrl || '/api/auth/login';
 
   if (!form || !emailInput || !passwordInput || !submitButton) {
     console.error('Login form elements not found');
@@ -244,9 +334,14 @@ const { errorMessage = '', email = '', redirectTo = '' } = Astro.props;
           // Login successful - redirect to dashboard or return URL
           const returnUrl = redirectTo || '/dashboard';
           window.location.href = returnUrl;
+        } else if (result.code === 'EMAIL_NOT_VERIFIED') {
+          // Show verification error with resend option
+          showVerificationError(result.email || emailInput.value);
         } else {
           // Login failed - show error message
-          showErrorAlert(result.error?.message || 'Login failed. Please try again.');
+          showErrorAlert(
+            result.error?.message || result.error || 'Login failed. Please try again.'
+          );
         }
       } catch (error) {
         console.error('Login error:', error);

@@ -100,24 +100,24 @@ const errorMessage = error ? errorMessages[error] || 'An error occurred. Please 
         const result = await response.json();
 
         if (response.ok && result.success) {
-          // Registration successful
+          // Registration successful - tell user to verify email
           messagesContainer.innerHTML = `
             <div role="alert" class="alert alert-success">
               <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
                 <circle cx="12" cy="12" r="10"></circle>
                 <path d="m9 12 2 2 4-4"></path>
               </svg>
-              <span>Account created successfully! Redirecting to login...</span>
+              <span>Account created! Check your email to verify your account.</span>
             </div>
           `;
 
           // Reset form
           form.reset();
 
-          // Redirect to login after delay
+          // Redirect to login with registered flag
           setTimeout(() => {
-            window.location.href = '/login';
-          }, 2000);
+            window.location.href = '/login?registered=true';
+          }, 3000);
         } else {
           // Registration failed
           messagesContainer.innerHTML = `

@@ -44,7 +44,8 @@ jobs:
           if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
             VERSION="${{ github.ref_name }}"
           else
-            VERSION="commit-${{ github.sha:0:7 }}"
+            SHA="${{ github.sha }}"
+            VERSION="commit-${SHA:0:7}"
           fi
 
           # Get commit message (first line)
@@ -62,7 +63,7 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: deploy --message "${{ steps.metadata.outputs.message }}"
+          command: deploy
 
       - name: Deployment Summary
         run: |

@@ -13,7 +13,7 @@
 
 import { auth, type User, type Session } from '@/lib/auth/lucia';
 import { hashPassword, verifyPassword } from '@/lib/auth/password';
-import { db, type IDatabase, getActiveSchema } from '@/db';
+import { db, getActiveSchema, runTransaction } from '@/db';
 import { createLogger } from '@/lib/logger';
 
 const log = createLogger('auth');
@@ -22,8 +22,6 @@ import { eq } from 'drizzle-orm';
 // Get the correct schema for the current database dialect
 const schema = getActiveSchema();
 import { nanoid } from 'nanoid';
-import { DEFAULT_ASSET_CATEGORIES } from '@/lib/constants';
-import { AssetCategoryService } from './asset-category.service';
 
 /**
  * Error codes for authentication operations
@@ -35,12 +33,16 @@ export const AUTH_ERRORS = {
   DATABASE_ERROR: 'DATABASE_ERROR',
   NOT_AUTHENTICATED: 'NOT_AUTHENTICATED',
   SESSION_NOT_FOUND: 'SESSION_NOT_FOUND',
+  EMAIL_NOT_VERIFIED: 'EMAIL_NOT_VERIFIED',
+  WORKSPACE_INACTIVE: 'WORKSPACE_INACTIVE',
 } as const;
 
 /**
  * Auth error class
  */
 export class AuthError extends Error {
+  public email?: string;
+
   constructor(
     public code: string,
     message: string
@@ -164,54 +166,42 @@ export async function register(email: string, password: string, name: string): P
     const workspaceId = nanoid();
     const userId = nanoid();
 
-    const newUser = await db.transaction(async (tx: IDatabase) => {
-      // Create workspace for the new user - use returning() to ensure execution
-      await tx
-        .insert(schema.workspaces)
-        .values({
-          id: workspaceId,
-          name: `${name.trim()}'s Workspace`,
-          created_at: new Date(),
-          updated_at: new Date(),
-        })
-        .returning();
+    const workspaceValues = {
+      id: workspaceId,
+      name: `${name.trim()}'s Workspace`,
+      status: 'inactive' as const,
+      created_at: new Date(),
+      updated_at: new Date(),
+    };
 
-      const [createdUser] = await tx
-        .insert(schema.users)
-        .values({
-          id: userId,
-          workspace_id: workspaceId,
-          email: email.toLowerCase(),
-          password_hash: passwordHash,
-          name: name.trim(),
-          role: 'admin',
-        })
-        .returning();
+    const userValues = {
+      id: userId,
+      workspace_id: workspaceId,
+      email: email.toLowerCase(),
+      password_hash: passwordHash,
+      name: name.trim(),
+      role: 'admin' as const,
+    };
 
-      if (!createdUser) {
-        throw new AuthError(AUTH_ERRORS.DATABASE_ERROR, 'Failed to create user');
-      }
-
-      const assetCategoryService = new AssetCategoryService(tx);
-
-      for (const category of DEFAULT_ASSET_CATEGORIES) {
-        await assetCategoryService.create({
-          workspace_id: workspaceId,
-          created_by_user_id: createdUser.id,
-          name: category.name,
-          description: category.description,
-          is_liability: category.isLiability,
-          is_system: true,
-          sort_order: category.sortOrder,
-        });
-      }
-
-      return createdUser;
+    // Use transaction for atomicity (prevents orphaned workspaces)
+    const newUser: typeof schema.users.$inferSelect = await runTransaction(db, async (tx) => {
+      await Promise.resolve(tx.insert(schema.workspaces).values(workspaceValues));
+      const [user] = await tx.insert(schema.users).values(userValues).returning();
+      return user;
     });
 
     if (!newUser) {
       throw new AuthError(AUTH_ERRORS.DATABASE_ERROR, 'Failed to create user');
     }
+
+    // NOTE: Asset category seeding deferred until email verification
+    // (handled in verify-email endpoint)
+    // NOTE: Verification email is sent by the caller (signup endpoint)
+
+    log.info('User registered (unverified)', {
+      userId: newUser.id,
+      workspaceId,
+    });
 
     // Return user in Lucia format
     return {
@@ -292,6 +282,13 @@ export async function registerWithInvitation(
       throw new AuthError(AUTH_ERRORS.DATABASE_ERROR, 'Failed to create user');
     }
 
+    // NOTE: Verification email is sent by the caller (signup endpoint)
+
+    log.info('User registered via invitation (unverified)', {
+      userId: newUser.id,
+      workspaceId,
+    });
+
     // Return user in Lucia format
     return {
       id: newUser.id,
@@ -339,11 +336,34 @@ export async function login(
       throw new AuthError(AUTH_ERRORS.INVALID_CREDENTIALS, 'Invalid email or password');
     }
 
-    // Verify password
+    // Always verify password first to maintain constant timing
+    // (prevents timing oracle that could distinguish verified vs unverified accounts)
     const isValidPassword = await verifyPassword(password, user.password_hash);
 
+    // Check password validity before revealing email verification status
     if (!isValidPassword) {
       throw new AuthError(AUTH_ERRORS.INVALID_CREDENTIALS, 'Invalid email or password');
+    }
+
+    // Check email verification after password check
+    if (!user.email_verified_at) {
+      log.warn('Login attempt with unverified email', { userId: user.id });
+      const err = new AuthError(AUTH_ERRORS.EMAIL_NOT_VERIFIED, 'Email not verified');
+      err.email = user.email;
+      throw err;
+    }
+
+    // Check if workspace is active
+    const workspace = await db.query.workspaces.findFirst({
+      where: eq(schema.workspaces.id, user.workspace_id),
+    });
+
+    if (!workspace || workspace.status !== 'active') {
+      log.warn('Login attempt with inactive workspace', {
+        userId: user.id,
+        workspaceId: user.workspace_id,
+      });
+      throw new AuthError(AUTH_ERRORS.WORKSPACE_INACTIVE, 'Workspace inactive');
     }
 
     // Check if user has been soft-deleted

@@ -3,10 +3,24 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
-import { register, login, logout, validateSession, getUser } from './auth.service';
+import { register, login, logout, validateSession, getUser, AUTH_ERRORS } from './auth.service';
 import { db } from '@/db/index';
 import { users, workspaces } from '@/db/schema';
 import { eq } from 'drizzle-orm';
+
+/**
+ * Helper to verify a user's email and activate their workspace for tests
+ */
+async function verifyUserForTests(email: string) {
+  const user = await db.query.users.findFirst({
+    where: eq(users.email, email.toLowerCase()),
+  });
+  if (!user) throw new Error(`Test helper: user ${email} not found`);
+
+  await db.update(users).set({ email_verified_at: new Date() }).where(eq(users.id, user.id));
+
+  await db.update(workspaces).set({ status: 'active' }).where(eq(workspaces.id, user.workspace_id));
+}
 
 describe('AuthService', () => {
   /**
@@ -114,8 +128,9 @@ describe('AuthService', () => {
 
   describe('login', () => {
     beforeEach(async () => {
-      // Create a test user for login tests
+      // Create a test user for login tests and verify them
       await register('test@example.com', 'SecurePassword123!', 'Test User');
+      await verifyUserForTests('test@example.com');
     });
 
     it('should login with correct credentials', async () => {
@@ -164,8 +179,9 @@ describe('AuthService', () => {
 
   describe('logout', () => {
     it('should invalidate session', async () => {
-      // First login to create session
+      // First register, verify, and login to create session
       await register('test@example.com', 'SecurePassword123!', 'Test User');
+      await verifyUserForTests('test@example.com');
       const { session } = await login('test@example.com', 'SecurePassword123!');
 
       // Logout should not throw
@@ -189,6 +205,7 @@ describe('AuthService', () => {
   describe('validateSession', () => {
     it('should validate valid session', async () => {
       await register('test@example.com', 'SecurePassword123!', 'Test User');
+      await verifyUserForTests('test@example.com');
       const { session } = await login('test@example.com', 'SecurePassword123!');
 
       const validatedSession = await validateSession(session.id);
@@ -213,6 +230,7 @@ describe('AuthService', () => {
   describe('getUser', () => {
     it('should get user from valid session', async () => {
       await register('test@example.com', 'SecurePassword123!', 'Test User');
+      await verifyUserForTests('test@example.com');
       const { session } = await login('test@example.com', 'SecurePassword123!');
 
       const user = await getUser(session.id);
@@ -235,12 +253,55 @@ describe('AuthService', () => {
 
     it('should return null after logout', async () => {
       await register('test@example.com', 'SecurePassword123!', 'Test User');
+      await verifyUserForTests('test@example.com');
       const { session } = await login('test@example.com', 'SecurePassword123!');
 
       await logout(session.id);
 
       const user = await getUser(session.id);
       expect(user).toBeNull();
+    });
+  });
+
+  describe('email verification', () => {
+    it('should block login for unverified users', async () => {
+      await register('test@example.com', 'SecurePassword123!', 'Test User');
+
+      // Login should fail for unverified user
+      try {
+        await login('test@example.com', 'SecurePassword123!');
+        expect(true).toBe(false); // Should not reach here
+      } catch (error: any) {
+        expect(error.code).toBe(AUTH_ERRORS.EMAIL_NOT_VERIFIED);
+        expect(error.email).toBe('test@example.com');
+      }
+    });
+
+    it('should block login for inactive workspaces', async () => {
+      await register('test@example.com', 'SecurePassword123!', 'Test User');
+
+      // Verify email but keep workspace inactive
+      const user = await db.query.users.findFirst({
+        where: eq(users.email, 'test@example.com'),
+      });
+      await db.update(users).set({ email_verified_at: new Date() }).where(eq(users.id, user!.id));
+
+      // Login should fail because workspace is inactive
+      try {
+        await login('test@example.com', 'SecurePassword123!');
+        expect(true).toBe(false); // Should not reach here
+      } catch (error: any) {
+        expect(error.code).toBe(AUTH_ERRORS.WORKSPACE_INACTIVE);
+      }
+    });
+
+    it('should allow login after verification and workspace activation', async () => {
+      await register('test@example.com', 'SecurePassword123!', 'Test User');
+      await verifyUserForTests('test@example.com');
+
+      const result = await login('test@example.com', 'SecurePassword123!');
+      expect(result.user).toBeDefined();
+      expect(result.session).toBeDefined();
     });
   });
 
@@ -253,6 +314,9 @@ describe('AuthService', () => {
       // Register
       const registeredUser = await register(email, password, name);
       expect(registeredUser).toBeDefined();
+
+      // Verify email and activate workspace
+      await verifyUserForTests(email);
 
       // Login
       const { session } = await login(email, password);

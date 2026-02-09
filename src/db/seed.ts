@@ -630,6 +630,7 @@ async function seedWorkspace(): Promise<string> {
   await db.insert(workspaces).values({
     id: workspaceId,
     name: 'Demo Family',
+    status: 'active',
     created_at: now,
     updated_at: now,
   });
@@ -688,6 +689,7 @@ async function seedUsers(
     password_hash: adminPasswordHash,
     name: DEMO_ADMIN.name,
     role: DEMO_ADMIN.role,
+    email_verified_at: now,
     created_at: now,
     updated_at: now,
   });
@@ -723,6 +725,7 @@ async function seedUsers(
     password_hash: memberPasswordHash,
     name: DEMO_MEMBER.name,
     role: DEMO_MEMBER.role,
+    email_verified_at: now,
     created_at: now,
     updated_at: now,
   });
@@ -1167,6 +1170,30 @@ async function seedAssets(
     });
     assetMap.set(asset.name, id);
   }
+
+  // Add a closed test account for testing the closed accounts page
+  const closedId = nanoid();
+  const closedCategoryId = assetCategoryMap.get('bank_account') || null;
+  const closedAt = daysAgo(30);
+  await db.insert(assets).values({
+    id: closedId,
+    workspace_id: workspaceId,
+    created_by_user_id: userId,
+    name: 'Old Savings (Closed)',
+    type: 'bank_account',
+    category_id: closedCategoryId,
+    balance: '0',
+    initial_balance: '0',
+    currency: 'IDR',
+    is_cash_account: false,
+    status: 'closed',
+    closed_at: closedAt,
+    closed_by_user_id: userId,
+    last_updated: closedAt,
+    created_at: daysAgo(180),
+    updated_at: closedAt,
+  });
+  assetMap.set('Old Savings (Closed)', closedId);
 
   console.log(`✓ Created ${assetMap.size} assets`);
   return assetMap;

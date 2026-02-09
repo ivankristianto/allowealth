@@ -1,8 +1,8 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "ab9f650d-271d-475c-be85-598e57d48fb7",
-  "prevId": "9af2d6e6-7d19-45cb-b503-3226824421f6",
+  "id": "73e8240c-bea7-48ec-ba55-7571d6ef0b7c",
+  "prevId": "ab9f650d-271d-475c-be85-598e57d48fb7",
   "tables": {
     "api_keys": {
       "name": "api_keys",
@@ -610,6 +610,28 @@
           "autoincrement": false,
           "default": false
         },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'active'"
+        },
+        "closed_at": {
+          "name": "closed_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "closed_by_user_id": {
+          "name": "closed_by_user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
         "last_updated": {
           "name": "last_updated",
           "type": "integer",
@@ -667,6 +689,15 @@
           "tableFrom": "assets",
           "tableTo": "asset_categories",
           "columnsFrom": ["category_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "assets_closed_by_user_id_users_id_fk": {
+          "name": "assets_closed_by_user_id_users_id_fk",
+          "tableFrom": "assets",
+          "tableTo": "users",
+          "columnsFrom": ["closed_by_user_id"],
           "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"

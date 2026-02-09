@@ -300,24 +300,8 @@ const hasInvitationError = !!invitationError;
     const invitationToken = form.getAttribute('data-invitation-token') || '';
     const apiSignupUrl = form.getAttribute('data-api-signup-url') || '/api/signup';
 
-    // Handle password toggle for confirm password field
-    const toggleButtons = form.querySelectorAll('[data-toggle-password]');
-    toggleButtons.forEach((button) => {
-      button.addEventListener('click', () => {
-        const targetId = button.getAttribute('data-toggle-password');
-        const input = document.getElementById(targetId);
-        const eyeIcon = button.querySelector('[data-eye-icon]');
-        const eyeOffIcon = button.querySelector('[data-eye-off-icon]');
-
-        if (input && eyeIcon && eyeOffIcon) {
-          const isPassword = input.type === 'password';
-          input.type = isPassword ? 'text' : 'password';
-          eyeIcon.classList.toggle('hidden', !isPassword);
-          eyeOffIcon.classList.toggle('hidden', isPassword);
-          button.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
-        }
-      });
-    });
+    // Password toggle for confirm-password is handled by PasswordField's
+    // inline script (binds to all [data-toggle-password] buttons globally)
 
     // Clear messages on input
     const inputs = form.querySelectorAll('input');
