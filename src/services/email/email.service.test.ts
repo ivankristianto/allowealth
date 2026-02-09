@@ -108,7 +108,7 @@ describe('EmailService', () => {
         to: 'newuser@example.com',
         inviterName: 'John',
         workspaceName: 'Test Workspace',
-        inviteUrl: 'https://example.com/register?token=xyz',
+        inviteUrl: 'https://example.com/signup?token=xyz',
         expiresIn: '7 days',
       });
 

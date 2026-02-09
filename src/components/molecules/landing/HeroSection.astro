@@ -18,7 +18,7 @@ interface Props {
 const { user } = Astro.props;
 
 const primaryCtaText = user ? heroContent.ctaLoggedIn : heroContent.ctaGuest;
-const primaryCtaHref = user ? '/dashboard' : '/register';
+const primaryCtaHref = user ? '/dashboard' : '/signup';
 ---
 
 <header class="relative z-10 pt-36 sm:pt-48 pb-16 sm:pb-32 px-6 overflow-hidden">

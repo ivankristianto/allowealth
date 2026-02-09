@@ -206,7 +206,7 @@ function createLoginForm(args: {
   // Sign up link
   const signupLink = document.createElement('p');
   signupLink.className = 'text-sm text-center text-base-content/60';
-  signupLink.innerHTML = `Don't have an account? <a href="/register" class="text-accent hover:underline">Sign up</a>`;
+  signupLink.innerHTML = `Don't have an account? <a href="/signup" class="text-accent hover:underline">Sign up</a>`;
   form.appendChild(signupLink);
 
   wrapper.appendChild(form);
