@@ -63,9 +63,7 @@ export class EmailVerificationService {
    * @param userId - User ID
    */
   async sendVerificationEmail(userId: string): Promise<void> {
-    const token = await this.createVerificationToken(userId);
-
-    // Get user details
+    // Validate user and email service before creating token
     const user = await this.db.query.users.findFirst({
       where: eq(this.schema.users.id, userId),
     });
@@ -79,14 +77,17 @@ export class EmailVerificationService {
       return;
     }
 
-    // Build verification URL
-    const baseUrl = getEnv('PUBLIC_URL') || 'http://localhost:4321';
-    const verificationUrl = `${baseUrl}/api/auth/verify-email?token=${token}`;
-
     if (!this.emailSvc) {
       log.warn('No email service configured, skipping verification email');
       return;
     }
+
+    // Create token only after validating user and email service
+    const token = await this.createVerificationToken(userId);
+
+    // Build verification URL
+    const baseUrl = getEnv('PUBLIC_URL') || 'http://localhost:4321';
+    const verificationUrl = `${baseUrl}/api/auth/verify-email?token=${token}`;
 
     // Send email via workspace email service
     await this.emailSvc.sendEmailVerification(user.workspace_id, {
@@ -95,7 +96,7 @@ export class EmailVerificationService {
       verificationUrl,
     });
 
-    log.info('Verification email sent', { userId, email: user.email });
+    log.info('Verification email sent', { userId });
   }
 
   /**
@@ -119,6 +120,11 @@ export class EmailVerificationService {
     // Check expiration
     if (expiresAt < new Date()) {
       log.warn('Expired verification token attempted', { userId });
+
+      // Clean up expired token
+      await this.db
+        .delete(this.schema.emailVerificationTokens)
+        .where(eq(this.schema.emailVerificationTokens.token, token));
 
       // Get user email for resend functionality
       const userRecord = await this.db.query.users.findFirst({
@@ -148,9 +154,12 @@ export class EmailVerificationService {
       return { success: false, error: 'INVALID_TOKEN' };
     }
 
-    // Check if already verified (idempotent)
+    // Check if already verified (idempotent) — clean up leftover tokens
     if (user.email_verified_at) {
       log.info('User already verified', { userId });
+      await this.db
+        .delete(this.schema.emailVerificationTokens)
+        .where(eq(this.schema.emailVerificationTokens.user_id, userId));
       return { success: true, user };
     }
 

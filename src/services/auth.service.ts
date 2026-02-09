@@ -200,7 +200,6 @@ export async function register(email: string, password: string, name: string): P
 
     log.info('User registered (unverified)', {
       userId: newUser.id,
-      email: newUser.email,
       workspaceId,
     });
 
@@ -287,7 +286,6 @@ export async function registerWithInvitation(
 
     log.info('User registered via invitation (unverified)', {
       userId: newUser.id,
-      email: newUser.email,
       workspaceId,
     });
 
@@ -349,7 +347,7 @@ export async function login(
 
     // Check email verification after password check
     if (!user.email_verified_at) {
-      log.warn('Login attempt with unverified email', { email });
+      log.warn('Login attempt with unverified email', { userId: user.id });
       const err = new AuthError(AUTH_ERRORS.EMAIL_NOT_VERIFIED, 'Email not verified');
       err.email = user.email;
       throw err;
@@ -362,7 +360,7 @@ export async function login(
 
     if (!workspace || workspace.status !== 'active') {
       log.warn('Login attempt with inactive workspace', {
-        email,
+        userId: user.id,
         workspaceId: user.workspace_id,
       });
       throw new AuthError(AUTH_ERRORS.WORKSPACE_INACTIVE, 'Workspace inactive');
