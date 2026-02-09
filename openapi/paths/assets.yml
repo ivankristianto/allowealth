@@ -397,3 +397,21 @@ paths:
         '500':
           $ref: '../responses/common.yml#/InternalServerError'
 
+  /api/assets/summary:
+    get:
+      tags: [Assets]
+      summary: Get asset summary
+      description: Retrieve totals by currency and by type
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/AssetSummaryResponse.yml#/AssetSummaryResponse'
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'

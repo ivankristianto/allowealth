@@ -83,6 +83,35 @@ paths:
         '500':
           $ref: '../responses/common.yml#/InternalServerError'
 
+  /api/budget/alerts:
+    get:
+      tags: [Budget]
+      summary: Get budget alerts
+      description: Retrieve budget alerts for the current month
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: currency
+          in: query
+          description: Currency (defaults to IDR)
+          schema:
+            type: string
+            enum: [IDR, USD]
+            default: IDR
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/BudgetAlertsResponse.yml#/BudgetAlertsResponse'
+        '400':
+          $ref: '../responses/common.yml#/BadRequest'
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'
+
   /api/budget/history:
     get:
       tags: [Budget]

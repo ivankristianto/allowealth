@@ -1,0 +1,147 @@
+# User Meta endpoint paths
+paths:
+  /api/user/meta:
+    get:
+      tags: [User]
+      summary: Get all user meta values
+      description: |
+        Retrieves all meta values for the authenticated user.
+        Returns defaults for any unset meta keys.
+
+        **Available meta keys:**
+        - `currency` - Primary currency (IDR or USD)
+        - `show_converted_totals` - Whether to show converted totals ("true" or "false")
+        - `show_individual_currencies` - Whether to show individual currencies ("true" or "false")
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          description: Meta values retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/UserMetaListResponse.yml#/UserMetaListResponse'
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'
+
+  /api/user/meta/{key}:
+    get:
+      tags: [User]
+      summary: Get a single user meta value
+      description: |
+        Retrieves a single meta value for the authenticated user.
+        Returns the default value if the key is not set.
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: key
+          in: path
+          required: true
+          description: Meta key (must be one of currency, show_converted_totals, show_individual_currencies)
+          schema:
+            type: string
+            enum: [currency, show_converted_totals, show_individual_currencies]
+      responses:
+        '200':
+          description: Meta value retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/UserMetaResponse.yml#/UserMetaResponse'
+        '400':
+          description: Invalid meta key
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'
+
+    put:
+      tags: [User]
+      summary: Create or update a user meta value
+      description: |
+        Creates or updates a meta value for the authenticated user.
+
+        **Validation rules:**
+        - `currency` must be "IDR" or "USD"
+        - `show_converted_totals` must be "true" or "false"
+        - `show_individual_currencies` must be "true" or "false"
+        - Value must not exceed 4KB in size
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: key
+          in: path
+          required: true
+          description: Meta key (must be one of currency, show_converted_totals, show_individual_currencies)
+          schema:
+            type: string
+            enum: [currency, show_converted_totals, show_individual_currencies]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/UpdateUserMetaRequest.yml#/UpdateUserMetaRequest'
+      responses:
+        '200':
+          description: Meta value updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/UserMetaResponse.yml#/UserMetaResponse'
+        '400':
+          description: Invalid meta key or value
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'
+
+    delete:
+      tags: [User]
+      summary: Delete a user meta value
+      description: |
+        Deletes a meta value for the authenticated user.
+        After deletion, the key will return its default value.
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: key
+          in: path
+          required: true
+          description: Meta key (must be one of currency, show_converted_totals, show_individual_currencies)
+          schema:
+            type: string
+            enum: [currency, show_converted_totals, show_individual_currencies]
+      responses:
+        '200':
+          description: Meta value deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/DeleteUserMetaResponse.yml#/DeleteUserMetaResponse'
+        '400':
+          description: Invalid meta key
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '404':
+          description: Meta key not found
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'
