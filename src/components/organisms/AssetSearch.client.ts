@@ -37,7 +37,7 @@ function filterAssets(query: string): void {
   // Toggle "no results" message
   const noResultsEl = document.querySelector<HTMLElement>('[data-asset-search-no-results]');
   if (noResultsEl) {
-    noResultsEl.style.display = visibleCount === 0 && normalizedQuery ? '' : 'none';
+    noResultsEl.classList.toggle('hidden', !(visibleCount === 0 && normalizedQuery));
   }
 }
 

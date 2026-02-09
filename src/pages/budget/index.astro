@@ -11,6 +11,7 @@
 
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import BudgetPageHeader from '@components/organisms/BudgetPageHeader.astro';
+import BudgetActions from '@components/molecules/BudgetActions.astro';
 import SetNewBudgetModal from '@components/organisms/SetNewBudgetModal.astro';
 import CopyBudgetModal from '@components/organisms/CopyBudgetModal.astro';
 import BudgetImportModal from '@components/organisms/BudgetImportModal.astro';
@@ -272,9 +273,7 @@ const budgetCount =
       prevMonthUrl={buildMonthUrl(prevMonthYear, prevMonth)}
       nextMonthUrl={allowNextMonthNavigation ? buildMonthUrl(nextMonthYear, nextMonth) : undefined}
       isNextDisabled={!allowNextMonthNavigation}
-      showAiRebalancer={budgetCount > 0}
       showCopyButton={budgetCount > 0}
-      uninitializedCount={uninitializedCategories.length}
       currentMonthResetUrl={!isViewingCurrentMonth
         ? buildMonthUrl(currentYear, currentMonth)
         : undefined}
@@ -300,6 +299,12 @@ const budgetCount =
               />
             )}
           </div>
+
+          {/* Budget Actions Bar */}
+          <BudgetActions
+            showAiRebalancer={budgetCount > 0}
+            uninitializedCount={uninitializedCategories.length}
+          />
 
           {/* Budget Filter and View Toggle */}
           {budgetData && budgetData.categories.length > 0 && (

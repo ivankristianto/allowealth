@@ -224,14 +224,14 @@ const rowClasses = ['p-4 lg:px-8 lg:py-5', 'hover:bg-base-100/50 transition-all 
     <div class="mt-2 flex items-center gap-2">
       <span
         class:list={[
-          'px-2 py-0.5 rounded-md text-[11px] font-bold tracking-wider uppercase',
+          'px-2 py-0.5 rounded-md text-xs font-bold tracking-wider uppercase',
           currencyBadgeClasses,
         ]}
       >
         {currency}
       </span>
       <span
-        class="inline-flex items-center gap-1 text-[11px] font-medium tracking-wide uppercase text-base-content/40"
+        class="inline-flex items-center gap-1 text-xs font-medium tracking-wide uppercase text-base-content/40"
         title={`Last balance input: ${formattedDate}`}
       >
         <Clock size={10} class="stroke-current" aria-hidden="true" />
@@ -240,7 +240,7 @@ const rowClasses = ['p-4 lg:px-8 lg:py-5', 'hover:bg-base-100/50 transition-all 
       {
         initialBalance !== undefined && initialBalance !== balance && (
           <span
-            class="text-[11px] font-medium text-base-content/40 ml-auto"
+            class="text-xs font-medium text-base-content/40 ml-auto"
             data-testid="asset-initial-balance"
           >
             Initial: {formatCurrency(initialBalance, currency)}
