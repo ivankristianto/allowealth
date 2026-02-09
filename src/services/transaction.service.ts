@@ -54,7 +54,9 @@ export interface TransactionFilters {
 }
 
 export class TransactionService {
-  private schema = getActiveSchema();
+  private get schema() {
+    return getActiveSchema();
+  }
   private categoryService: CategoryService;
   private assetService: AssetService;
 

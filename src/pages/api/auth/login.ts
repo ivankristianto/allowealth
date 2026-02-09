@@ -113,6 +113,31 @@ export const POST: APIRoute = async (context) => {
         case AUTH_ERRORS.INVALID_INPUT:
           return createErrorResponseResponse(AUTH_ERRORS.INVALID_INPUT, authError.message, 400);
 
+        case AUTH_ERRORS.EMAIL_NOT_VERIFIED:
+          return new Response(
+            JSON.stringify({
+              error: 'Email not verified',
+              code: AUTH_ERRORS.EMAIL_NOT_VERIFIED,
+              email: authError.email || email,
+            }),
+            {
+              status: 403,
+              headers: STANDARD_RESPONSE_HEADERS,
+            }
+          );
+
+        case AUTH_ERRORS.WORKSPACE_INACTIVE:
+          return new Response(
+            JSON.stringify({
+              error: 'Workspace inactive',
+              code: AUTH_ERRORS.WORKSPACE_INACTIVE,
+            }),
+            {
+              status: 403,
+              headers: STANDARD_RESPONSE_HEADERS,
+            }
+          );
+
         default:
           break;
       }

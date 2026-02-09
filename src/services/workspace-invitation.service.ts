@@ -75,7 +75,9 @@ export type WorkspaceInvitation = typeof workspaceInvitationsSchema.$inferSelect
  * Workspace Invitation Service
  */
 export class WorkspaceInvitationService {
-  private schema = getActiveSchema();
+  private get schema() {
+    return getActiveSchema();
+  }
 
   /**
    * Create a new WorkspaceInvitationService with database injection

@@ -58,16 +58,20 @@ describe('AssetService.reopen()', () => {
 
     (mockDb.query.assets.findFirst as any).mockResolvedValueOnce(activeAsset);
 
-    await expect(assetService.reopen('asset-1', 'workspace-1')).rejects.toMatchObject({
-      code: ServiceErrorCode.NOT_CLOSED,
-    });
+    await Promise.resolve(
+      expect(assetService.reopen('asset-1', 'workspace-1')).rejects.toMatchObject({
+        code: ServiceErrorCode.NOT_CLOSED,
+      })
+    );
   });
 
   it('should throw ASSET_NOT_FOUND when asset does not exist', async () => {
     (mockDb.query.assets.findFirst as any).mockResolvedValueOnce(undefined);
 
-    await expect(assetService.reopen('nonexistent', 'workspace-1')).rejects.toMatchObject({
-      code: ServiceErrorCode.ASSET_NOT_FOUND,
-    });
+    await Promise.resolve(
+      expect(assetService.reopen('nonexistent', 'workspace-1')).rejects.toMatchObject({
+        code: ServiceErrorCode.ASSET_NOT_FOUND,
+      })
+    );
   });
 });

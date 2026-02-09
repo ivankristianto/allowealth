@@ -12,17 +12,41 @@ import LoginForm from '../components/molecules/LoginForm.astro';
 const url = new URL(Astro.request.url);
 const error = url.searchParams.get('error');
 const redirect = url.searchParams.get('redirect') || '';
+const registered = url.searchParams.get('registered');
+const verified = url.searchParams.get('verified');
+const emailParam = url.searchParams.get('email') || '';
 
 const errorMessages: Record<string, string> = {
   invalid_credentials: 'Invalid email or password. Please try again.',
   session_expired: 'Your session has expired. Please sign in again.',
   unauthorized: 'You must be logged in to access this page.',
+  invalid_token: 'Invalid verification link. Please request a new one.',
+  expired_token: 'Verification link has expired.',
+  verification_failed: 'Email verification failed. Please try again.',
 };
 
 // Only use whitelisted error codes to prevent XSS
 const errorMessage = error && errorMessages[error] ? errorMessages[error] : '';
+
+// Determine banner for verification status
+let bannerMessage = '';
+let bannerType: 'info' | 'success' | 'error' = 'info';
+
+if (registered === 'true') {
+  bannerMessage = 'Check your email to verify your account before logging in.';
+  bannerType = 'info';
+} else if (verified === 'true') {
+  bannerMessage = 'Email verified! You can now sign in.';
+  bannerType = 'success';
+}
 ---
 
 <AuthLayout title="allowealth - Sign In">
-  <LoginForm errorMessage={errorMessage} redirectTo={redirect} />
+  <LoginForm
+    errorMessage={errorMessage}
+    redirectTo={redirect}
+    bannerMessage={bannerMessage}
+    bannerType={bannerType}
+    resendEmail={error === 'expired_token' ? emailParam : ''}
+  />
 </AuthLayout>

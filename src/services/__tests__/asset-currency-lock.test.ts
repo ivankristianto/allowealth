@@ -32,12 +32,14 @@ describe('AssetService.update() - currency lock', () => {
       })),
     });
 
-    await expect(
-      assetService.update('asset-1', 'workspace-1', { currency: 'USD' })
-    ).rejects.toMatchObject({
-      code: ServiceErrorCode.CURRENCY_LOCKED,
-      statusCode: 400,
-    });
+    await Promise.resolve(
+      expect(
+        assetService.update('asset-1', 'workspace-1', { currency: 'USD' })
+      ).rejects.toMatchObject({
+        code: ServiceErrorCode.CURRENCY_LOCKED,
+        statusCode: 400,
+      })
+    );
   });
 
   it('should allow currency change when only initial history entry exists', async () => {

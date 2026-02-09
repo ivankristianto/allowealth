@@ -630,6 +630,7 @@ async function seedWorkspace(): Promise<string> {
   await db.insert(workspaces).values({
     id: workspaceId,
     name: 'Demo Family',
+    status: 'active',
     created_at: now,
     updated_at: now,
   });
@@ -688,6 +689,7 @@ async function seedUsers(
     password_hash: adminPasswordHash,
     name: DEMO_ADMIN.name,
     role: DEMO_ADMIN.role,
+    email_verified_at: now,
     created_at: now,
     updated_at: now,
   });
@@ -723,6 +725,7 @@ async function seedUsers(
     password_hash: memberPasswordHash,
     name: DEMO_MEMBER.name,
     role: DEMO_MEMBER.role,
+    email_verified_at: now,
     created_at: now,
     updated_at: now,
   });

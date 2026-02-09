@@ -41,6 +41,15 @@ export interface SendWorkspaceInvitationOptions {
 }
 
 /**
+ * Email verification options
+ */
+export interface SendEmailVerificationOptions {
+  to: string;
+  userName: string;
+  verificationUrl: string;
+}
+
+/**
  * Test email options
  */
 export interface SendTestOptions {
@@ -95,6 +104,25 @@ export class EmailService {
       inviteUrl,
       expiresIn,
     });
+
+    return this.send(workspaceId, {
+      to,
+      subject: template.subject,
+      html: template.html,
+    });
+  }
+
+  /**
+   * Send an email verification email
+   *
+   * Uses workspace email config if available, falls back to console provider.
+   */
+  async sendEmailVerification(
+    workspaceId: string,
+    options: SendEmailVerificationOptions
+  ): Promise<SendEmailResult> {
+    const { to, userName, verificationUrl } = options;
+    const template = emailTemplateService.emailVerification({ verificationUrl, userName });
 
     return this.send(workspaceId, {
       to,
