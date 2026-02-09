@@ -13,42 +13,43 @@ import { CircleMinus, CirclePlus, Inbox } from '@lucide/astro';
 export interface Props {
   categories: Array<{ id: string; name: string; type: string; currency?: string }>;
   assets: Array<{ id: string; name: string; type: string }>;
+  categoryUsageCounts?: Array<{ category_id: string; count: number }>;
 }
 
-const { categories, assets } = Astro.props;
+const { categories, assets, categoryUsageCounts = [] } = Astro.props;
 ---
 
 <Drawer id="transaction-drawer" title="Add Transaction" width="w-full sm:max-w-md">
   <!-- Tabs -->
   <div
-    class="grid grid-cols-2 gap-2 p-1 bg-base-200 rounded-xl mb-6"
+    class="grid grid-cols-2 gap-1 p-1 bg-base-200 rounded-lg mb-5"
     role="tablist"
     aria-label="Transaction type"
   >
     <button
       id="drawer-tab-expense"
       type="button"
-      class="btn btn-sm h-10 rounded-lg border-none bg-white shadow-sm text-primary font-bold transition-all hover:bg-white flex gap-2"
+      class="btn btn-sm h-9 rounded-md border-none bg-white shadow-sm text-primary font-bold transition-all hover:bg-white flex gap-1.5 text-xs"
       data-tab="expense"
       role="tab"
       aria-selected="true"
       aria-controls="drawer-expense-form"
       tabindex="0"
     >
-      <CircleMinus size={18} class="text-error" />
+      <CircleMinus size={15} class="text-error" />
       <span>Expense</span>
     </button>
     <button
       id="drawer-tab-income"
       type="button"
-      class="btn btn-sm h-10 rounded-lg border-none bg-transparent text-neutral font-medium hover:bg-base-300 transition-all flex gap-2"
+      class="btn btn-sm h-9 rounded-md border-none bg-transparent text-neutral font-medium hover:bg-base-300 transition-all flex gap-1.5 text-xs"
       data-tab="income"
       role="tab"
       aria-selected="false"
       aria-controls="drawer-income-form"
       tabindex="-1"
     >
-      <CirclePlus size={18} class="text-success" />
+      <CirclePlus size={15} class="text-success" />
       <span>Income</span>
     </button>
   </div>
@@ -68,6 +69,7 @@ const { categories, assets } = Astro.props;
       action="/api/transactions"
       categories={categories}
       assets={assets}
+      categoryUsageCounts={categoryUsageCounts}
       bulk={true}
       formId="drawer-form-expense"
     />
@@ -87,29 +89,30 @@ const { categories, assets } = Astro.props;
       action="/api/transactions"
       categories={categories}
       assets={assets}
+      categoryUsageCounts={categoryUsageCounts}
       bulk={true}
       formId="drawer-form-income"
     />
   </div>
 
   <!-- Recently Added Section -->
-  <div class="mt-8 pt-6 border-t border-base-200">
-    <div class="flex items-center justify-between mb-4">
-      <h3 class="font-bold text-xs uppercase tracking-wider text-neutral/70">
-        Just Added in Session
-      </h3>
-      <span class="badge badge-sm badge-ghost font-mono" id="session-count">0</span>
+  <div class="mt-5 pt-4 border-t border-base-200" data-recent-section>
+    <div class="flex items-center justify-between mb-2">
+      <h3 class="font-semibold text-xs uppercase tracking-wider text-neutral/50">Just Added</h3>
+      <span class="text-xs text-neutral/40 font-medium tabular-nums" id="session-summary">
+        <span id="session-count">0</span> items
+      </span>
     </div>
 
     <div
       id="empty-state-message"
-      class="flex flex-col items-center justify-center py-8 text-neutral/40 gap-3 border-2 border-dashed border-base-200 rounded-xl"
+      class="flex flex-col items-center justify-center py-4 text-neutral/30 gap-1.5 border border-dashed border-base-300/60 rounded-lg"
     >
-      <Inbox size={32} class="stroke-current opacity-50" />
-      <span class="text-sm font-medium">No items added yet</span>
+      <Inbox size={22} class="stroke-current" />
+      <span class="text-xs font-medium">No items yet</span>
     </div>
 
-    <ul id="drawer-recent-list" class="space-y-3 hidden">
+    <ul id="drawer-recent-list" class="space-y-1.5 hidden">
       <!-- Items will be injected here -->
     </ul>
   </div>
@@ -117,18 +120,16 @@ const { categories, assets } = Astro.props;
 
 <!-- Templates for dynamic list items -->
 <template id="icon-expense">
-  <div
-    class="w-10 h-10 rounded-xl flex items-center justify-center bg-error/10 text-error shrink-0"
-  >
-    <CircleMinus size={20} class="stroke-current" aria-hidden="true" />
+  <div class="w-8 h-8 rounded-lg flex items-center justify-center bg-error/10 text-error shrink-0">
+    <CircleMinus size={16} class="stroke-current" aria-hidden="true" />
   </div>
 </template>
 
 <template id="icon-income">
   <div
-    class="w-10 h-10 rounded-xl flex items-center justify-center bg-success/10 text-success shrink-0"
+    class="w-8 h-8 rounded-lg flex items-center justify-center bg-success/10 text-success shrink-0"
   >
-    <CirclePlus size={20} class="stroke-current" aria-hidden="true" />
+    <CirclePlus size={16} class="stroke-current" aria-hidden="true" />
   </div>
 </template>
 

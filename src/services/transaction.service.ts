@@ -969,6 +969,44 @@ export class TransactionService {
   }
 
   /**
+   * Get category usage counts for a specific user over a recent time window.
+   * Used to sort category chips by frequency in the quick-capture form.
+   *
+   * @param workspaceId - Workspace to query
+   * @param userId - User whose transactions to count
+   * @param daysBack - Number of days to look back (default 90)
+   * @returns Array of {category_id, count} ordered by count DESC
+   */
+  async getCategoryUsageCounts(
+    workspaceId: string,
+    userId: string,
+    daysBack = 90
+  ): Promise<Array<{ category_id: string; count: number }>> {
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - daysBack);
+
+    const results = await (this as any).db
+      .select({
+        category_id: this.schema.transactions.category_id,
+        count: sql<number>`count(*)`,
+      })
+      .from(this.schema.transactions)
+      .where(
+        and(
+          eq(this.schema.transactions.workspace_id, workspaceId),
+          eq(this.schema.transactions.created_by_user_id, userId),
+          gte(this.schema.transactions.transaction_date, cutoffDate),
+          sql`${this.schema.transactions.deleted_at} IS NULL`,
+          sql`${this.schema.transactions.category_id} IS NOT NULL`
+        )
+      )
+      .groupBy(this.schema.transactions.category_id)
+      .orderBy(sql`count(*) DESC`);
+
+    return results as Array<{ category_id: string; count: number }>;
+  }
+
+  /**
    * Get set of transaction IDs that have audit log entries beyond initial creation.
    * Only matches 'update' and 'delete' actions — the initial 'create' entry
    * is not meaningful history worth surfacing to the user.

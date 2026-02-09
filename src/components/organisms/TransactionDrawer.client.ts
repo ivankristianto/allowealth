@@ -1,5 +1,7 @@
 import { animate } from 'motion/mini';
 import { formatCurrency } from '@/lib/formatting/currency-client';
+import { CURRENCY_META, DEFAULT_CURRENCY } from '@/lib/constants/currency';
+import type { Currency } from '@/lib/constants/currency';
 
 type TransactionType = 'expense' | 'income';
 
@@ -86,20 +88,35 @@ function initTransactionDrawer(): void {
   const list = document.getElementById('drawer-recent-list') as HTMLUListElement | null;
   const emptyState = document.getElementById('empty-state-message');
   const countBadge = document.getElementById('session-count');
+  const sessionSummary = document.getElementById('session-summary');
   const expenseIconTemplate = document.getElementById('icon-expense');
   const incomeIconTemplate = document.getElementById('icon-income');
 
   let sessionCount = 0;
+  let sessionTotal = 0;
+  let sessionCurrency: string = DEFAULT_CURRENCY;
   let hasSubmittedInSession = false;
 
-  const formatMoney = (amount: number | string, currency = 'IDR'): string => {
+  const formatMoney = (amount: number | string, currency: string = DEFAULT_CURRENCY): string => {
     return formatCurrency(Number(amount), currency);
+  };
+
+  const updateSessionSummary = (): void => {
+    if (!sessionSummary || !countBadge) return;
+    countBadge.textContent = String(sessionCount);
+    if (sessionCount > 0) {
+      sessionSummary.textContent = `${sessionCount} item${sessionCount !== 1 ? 's' : ''} · ${formatMoney(sessionTotal, sessionCurrency)}`;
+    } else {
+      countBadge.textContent = '0';
+      sessionSummary.textContent = '0 items';
+    }
   };
 
   const resetSessionState = (): void => {
     if (!list || !emptyState || !countBadge) return;
     sessionCount = 0;
-    countBadge.innerText = '0';
+    sessionTotal = 0;
+    updateSessionSummary();
     list.innerHTML = '';
     list.classList.add('hidden');
     emptyState.classList.remove('hidden');
@@ -124,10 +141,10 @@ function initTransactionDrawer(): void {
 
       const li = document.createElement('li');
       li.className =
-        'bg-base-100 rounded-2xl shadow-sm border border-base-200 p-3 flex items-center justify-between gap-3 overflow-hidden relative';
+        'bg-base-100 rounded-lg border border-base-200 p-2 flex items-center justify-between gap-2 overflow-hidden';
 
       const contentDiv = document.createElement('div');
-      contentDiv.className = 'flex items-center gap-3 min-w-0 flex-1';
+      contentDiv.className = 'flex items-center gap-2 min-w-0 flex-1';
 
       const iconContainer = document.createElement('div');
       iconContainer.appendChild(iconClone);
@@ -137,13 +154,12 @@ function initTransactionDrawer(): void {
       detailsDiv.className = 'min-w-0 flex-1';
 
       const titleDiv = document.createElement('div');
-      titleDiv.className = 'font-bold text-sm text-primary truncate';
+      titleDiv.className = 'font-semibold text-xs text-primary truncate';
       titleDiv.textContent = data.description || data.title || '';
 
       const metaDiv = document.createElement('div');
-      metaDiv.className = 'text-xs text-neutral font-medium';
+      metaDiv.className = 'text-xs text-neutral/60 font-medium';
 
-      // API returns nested category object; fall back to form select for category name
       const apiCategory = (data as unknown as Record<string, unknown>).category as
         | { id: string; name: string }
         | null
@@ -160,17 +176,16 @@ function initTransactionDrawer(): void {
         categoryLabel = categoryOption?.textContent || catId || '';
       }
 
-      // Format the date (API returns ISO string)
       const dateStr = data.transaction_date;
       const formattedDate = dateStr ? new Date(dateStr).toLocaleDateString() : '';
-      metaDiv.textContent = `${formattedDate} • ${categoryLabel}`;
+      metaDiv.textContent = `${formattedDate} · ${categoryLabel}`;
 
       detailsDiv.append(titleDiv, metaDiv);
       contentDiv.appendChild(detailsDiv);
       li.appendChild(contentDiv);
 
       const amountDiv = document.createElement('div');
-      amountDiv.className = `font-bold text-sm whitespace-nowrap ${data.type === 'expense' ? 'text-error' : 'text-success'}`;
+      amountDiv.className = `font-bold text-xs whitespace-nowrap tabular-nums ${data.type === 'expense' ? 'text-error' : 'text-success'}`;
       amountDiv.innerText = `${data.type === 'expense' ? '-' : '+'} ${formatMoney(data.amount, data.currency)}`;
       li.appendChild(amountDiv);
 
@@ -178,8 +193,10 @@ function initTransactionDrawer(): void {
       animate(li, { opacity: [0, 1], x: [20, 0], height: [0, 'auto'] }, { duration: 0.4 });
 
       sessionCount += 1;
+      sessionTotal += Number(data.amount) || 0;
+      sessionCurrency = data.currency || DEFAULT_CURRENCY;
       hasSubmittedInSession = true;
-      countBadge.innerText = String(sessionCount);
+      updateSessionSummary();
     };
 
     form.addEventListener('transaction-submitted', handleTransactionSubmitted);
@@ -188,7 +205,6 @@ function initTransactionDrawer(): void {
   // Open drawer in create mode
   document.addEventListener('open-transaction-drawer', ((event: CustomEvent<OpenDrawerDetail>) => {
     resetEditMode();
-    // If a specific tab is requested, switch to it
     const requestedType: TransactionType | undefined = event.detail?.type;
     if (requestedType === 'expense' || requestedType === 'income') {
       setActiveTab(requestedType);
@@ -206,7 +222,7 @@ function initTransactionDrawer(): void {
 
     // Hide tabs and recent items for edit mode
     const tabContainer: HTMLElement | null = drawer.querySelector('[role="tablist"]');
-    const recentSection: HTMLElement | null = drawer.querySelector('.mt-8.pt-6');
+    const recentSection: HTMLElement | null = drawer.querySelector('[data-recent-section]');
     if (tabContainer) tabContainer.classList.add('hidden');
     if (recentSection) recentSection.classList.add('hidden');
 
@@ -235,24 +251,87 @@ function initTransactionDrawer(): void {
 
     setInput('title', detail.title ?? detail.description ?? '');
     setInput('amount', detail.amount ?? '');
-    setInput('currency', detail.currency ?? 'IDR');
+    setInput('currency', detail.currency ?? DEFAULT_CURRENCY);
     setInput('category_id', detail.category_id ?? '');
     setInput('asset_id', detail.asset_id ?? '');
     setInput('transaction_date', detail.transaction_date ?? '');
 
+    // Update category chip active state
+    if (detail.category_id) {
+      const chips = form.querySelectorAll<HTMLButtonElement>('[data-category-chip]');
+      // Auto-expand overflow if selected category is hidden
+      const overflowChips = form.querySelectorAll<HTMLButtonElement>('[data-category-overflow]');
+      const isOverflow = Array.from(overflowChips).some(
+        (c) => c.dataset.categoryChip === detail.category_id
+      );
+      if (isOverflow) {
+        overflowChips.forEach((chip) => chip.classList.remove('hidden'));
+        const catToggle = form.querySelector('[data-category-toggle]') as HTMLButtonElement | null;
+        if (catToggle) {
+          catToggle.setAttribute('aria-expanded', 'true');
+          catToggle.textContent = 'Less';
+        }
+      }
+      chips.forEach((chip) => {
+        const isActive = chip.dataset.categoryChip === detail.category_id;
+        chip.classList.toggle('bg-accent', isActive);
+        chip.classList.toggle('text-white', isActive);
+        chip.classList.toggle('bg-base-200', !isActive);
+        chip.classList.toggle('text-base-content/70', !isActive);
+        chip.classList.toggle('hover:bg-accent/10', !isActive);
+        chip.classList.toggle('hover:text-accent', !isActive);
+        chip.setAttribute('aria-checked', isActive ? 'true' : 'false');
+      });
+    }
+
+    // Update date quick-pick active state
+    if (detail.transaction_date) {
+      const todayStr = form.dataset.today || '';
+      const yesterdayStr = form.dataset.yesterday || '';
+      const datePickBtns = form.querySelectorAll<HTMLElement>('[data-date-pick]');
+      const dateCustomInput = form.querySelector('[data-date-custom]') as HTMLInputElement | null;
+      const dateLabel = form.querySelector('[data-date-label]') as HTMLElement | null;
+
+      let activePick = 'custom';
+      if (detail.transaction_date === todayStr) activePick = 'today';
+      else if (detail.transaction_date === yesterdayStr) activePick = 'yesterday';
+
+      datePickBtns.forEach((btn) => {
+        const pick = btn.dataset.datePick || '';
+        const isActive = pick === activePick;
+        btn.classList.toggle('btn-accent', isActive);
+        btn.classList.toggle('text-accent-content', isActive);
+        btn.classList.toggle('btn-ghost', !isActive);
+        btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+      });
+
+      if (dateCustomInput) {
+        dateCustomInput.value = detail.transaction_date;
+      }
+      if (dateLabel) {
+        if (activePick === 'custom') {
+          const d = new Date(detail.transaction_date + 'T00:00:00');
+          dateLabel.textContent = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+        } else {
+          dateLabel.textContent = 'Other';
+        }
+      }
+    }
+
+    // Update currency badge
+    if (detail.currency) {
+      const currencyBadge = form.querySelector('[data-currency-badge]') as HTMLElement | null;
+      if (currencyBadge) {
+        const meta = CURRENCY_META[detail.currency as Currency];
+        if (meta) {
+          currencyBadge.textContent = `${meta.symbol} ${detail.currency}`;
+        }
+      }
+    }
+
     // Update submit button text
     const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement | null;
     if (submitBtn) submitBtn.textContent = 'Save Changes';
-
-    // Update cancel button to close drawer
-    const cancelBtn = form.querySelector('[data-close-modal]') as HTMLButtonElement | null;
-    if (cancelBtn) {
-      cancelBtn.onclick = (e) => {
-        e.preventDefault();
-        resetEditMode();
-        drawer.dispatchEvent(new CustomEvent('drawer:close'));
-      };
-    }
 
     // Update drawer title
     const titleEl = drawer.querySelector('[id$="-title"]');
@@ -264,7 +343,7 @@ function initTransactionDrawer(): void {
   function resetEditMode(): void {
     // Restore tabs and recent section
     const tabContainer = drawer.querySelector('[role="tablist"]');
-    const recentSection = drawer.querySelector('.mt-8.pt-6');
+    const recentSection = drawer.querySelector('[data-recent-section]');
     if (tabContainer) (tabContainer as HTMLElement).classList.remove('hidden');
     if (recentSection) (recentSection as HTMLElement).classList.remove('hidden');
 
@@ -273,13 +352,70 @@ function initTransactionDrawer(): void {
       const f = form as HTMLFormElement;
       f.dataset.mode = 'create';
       f.dataset.transactionId = '';
-      f.reset();
+
+      // Reset fields manually (preserve structure)
+      const titleInput = f.querySelector('input[name="title"]') as HTMLInputElement | null;
+      const amountInput = f.querySelector('input[name="amount"]') as HTMLInputElement | null;
+      if (titleInput) titleInput.value = '';
+      if (amountInput) amountInput.value = '';
+
+      // Reset category chips
+      const chips = f.querySelectorAll<HTMLButtonElement>('[data-category-chip]');
+      chips.forEach((chip) => {
+        chip.classList.remove('bg-accent', 'text-white');
+        chip.classList.add(
+          'bg-base-200',
+          'text-base-content/70',
+          'hover:bg-accent/10',
+          'hover:text-accent'
+        );
+        chip.setAttribute('aria-checked', 'false');
+      });
+      // Collapse overflow chips
+      const overflowChips = f.querySelectorAll<HTMLButtonElement>('[data-category-overflow]');
+      overflowChips.forEach((chip) => chip.classList.add('hidden'));
+      const catToggle = f.querySelector('[data-category-toggle]') as HTMLButtonElement | null;
+      if (catToggle) {
+        catToggle.setAttribute('aria-expanded', 'false');
+        catToggle.textContent = `+${overflowChips.length} more`;
+      }
+      const categorySelect = f.querySelector(
+        'select[name="category_id"]'
+      ) as HTMLSelectElement | null;
+      if (categorySelect) categorySelect.value = '';
+
+      // Reset date to today
+      const todayStr = f.dataset.today || '';
+      const hiddenDate = f.querySelector(
+        'input[name="transaction_date"]'
+      ) as HTMLInputElement | null;
+      const dateCustom = f.querySelector('[data-date-custom]') as HTMLInputElement | null;
+      const dateLabelEl = f.querySelector('[data-date-label]') as HTMLElement | null;
+      if (hiddenDate) hiddenDate.value = todayStr;
+      if (dateCustom) dateCustom.value = todayStr;
+      if (dateLabelEl) dateLabelEl.textContent = 'Other';
+
+      const datePickBtns = f.querySelectorAll<HTMLElement>('[data-date-pick]');
+      datePickBtns.forEach((btn) => {
+        const pick = btn.dataset.datePick || '';
+        const isToday = pick === 'today';
+        btn.classList.toggle('btn-accent', isToday);
+        btn.classList.toggle('text-accent-content', isToday);
+        btn.classList.toggle('btn-ghost', !isToday);
+        btn.setAttribute('aria-pressed', isToday ? 'true' : 'false');
+      });
+
+      // Reset currency badge
+      const currencyInput = f.querySelector('input[name="currency"]') as HTMLInputElement | null;
+      const currencyBadge = f.querySelector('[data-currency-badge]') as HTMLElement | null;
+      if (currencyInput) currencyInput.value = DEFAULT_CURRENCY;
+      if (currencyBadge) {
+        const meta = CURRENCY_META[DEFAULT_CURRENCY];
+        currencyBadge.textContent = `${meta.symbol} ${DEFAULT_CURRENCY}`;
+      }
 
       const submitBtn = f.querySelector('button[type="submit"]') as HTMLButtonElement | null;
       if (submitBtn) submitBtn.textContent = 'Save Entry';
-
-      const cancelBtn = f.querySelector('[data-close-modal]') as HTMLButtonElement | null;
-      if (cancelBtn) cancelBtn.onclick = null;
     });
 
     // Restore drawer title
@@ -294,7 +430,6 @@ function initTransactionDrawer(): void {
     resetSessionState();
     hasSubmittedInSession = false;
 
-    // Notify the page to refresh if transactions were added/edited
     if (hadSubmissions) {
       document.dispatchEvent(new CustomEvent('transactions-changed'));
     }
