@@ -70,6 +70,20 @@ export class UserService {
   constructor(private db: IDatabase) {}
 
   /**
+   * Get user by ID
+   *
+   * @param userId - User ID to look up
+   * @returns Promise resolving to user or null if not found
+   */
+  async getById(userId: string) {
+    const user = await this.db.query.users.findFirst({
+      where: eq(this.schema.users.id, userId),
+    });
+
+    return user ?? null;
+  }
+
+  /**
    * Update user profile (name and email)
    *
    * @param userId - User ID to update

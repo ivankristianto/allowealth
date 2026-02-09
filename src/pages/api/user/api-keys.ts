@@ -1,8 +1,7 @@
 import type { APIRoute } from 'astro';
 import { experimental_AstroContainer as AstroContainer } from 'astro/container';
 import { z } from 'zod';
-import { db } from '@/db';
-import { ApiKeyService } from '@/services/api-key.service';
+import { apiKeyService } from '@/services';
 import {
   successResponse,
   errorResponse,
@@ -43,8 +42,7 @@ export const GET: APIRoute = async (context) => {
 
   try {
     const auth = getAuthenticatedUser(context);
-    const service = new ApiKeyService(db);
-    const keys = await service.list(auth.workspaceId, auth.userId);
+    const keys = await apiKeyService.list(auth.workspaceId, auth.userId);
 
     if (render.wantsHtml()) {
       const container = await AstroContainer.create();
@@ -95,10 +93,8 @@ export const POST: APIRoute = async (context) => {
       return errorResponse('Validation failed', 400, 'VALIDATION_ERROR', validation.error.issues);
     }
 
-    const service = new ApiKeyService(db);
-
     // Enforce max active keys per user
-    const existingKeys = await service.list(auth.workspaceId, auth.userId);
+    const existingKeys = await apiKeyService.list(auth.workspaceId, auth.userId);
     if (existingKeys.length >= MAX_KEYS_PER_USER) {
       return errorResponse(
         `Maximum of ${MAX_KEYS_PER_USER} active API keys reached. Revoke unused keys first.`,
@@ -106,7 +102,7 @@ export const POST: APIRoute = async (context) => {
       );
     }
 
-    const result = await service.generate({
+    const result = await apiKeyService.generate({
       workspace_id: auth.workspaceId,
       user_id: auth.userId,
       name: validation.data.name,
@@ -140,8 +136,7 @@ export const DELETE: APIRoute = async (context) => {
     }
 
     // Verify the key belongs to this user by checking list filtered by userId
-    const service = new ApiKeyService(db);
-    const userKeys = await service.list(auth.workspaceId, auth.userId);
+    const userKeys = await apiKeyService.list(auth.workspaceId, auth.userId);
     const ownsKey = userKeys.some((k) => k.id === validation.data.id);
 
     if (!ownsKey) {
@@ -151,7 +146,7 @@ export const DELETE: APIRoute = async (context) => {
     // Find the key prefix before revoking (needed for cache invalidation)
     const keyToRevoke = userKeys.find((k) => k.id === validation.data.id);
 
-    const revoked = await service.revoke(validation.data.id, auth.workspaceId);
+    const revoked = await apiKeyService.revoke(validation.data.id, auth.workspaceId);
     if (!revoked) {
       return errorResponse('API key not found', 404);
     }

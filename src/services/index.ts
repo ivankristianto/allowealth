@@ -27,6 +27,7 @@ import { ReportService } from './report.service';
 import { WorkspaceService } from './workspace.service';
 import { WorkspaceMetaService } from './workspace-meta.service';
 import { WorkspaceInvitationService } from './workspace-invitation.service';
+import { ApiKeyService } from './api-key.service';
 import { EmailService } from './email';
 
 // Re-export types and utilities
@@ -44,6 +45,7 @@ export * from './workspace.service';
 export * from './workspace-meta.service';
 export * from './workspace-invitation.service';
 export * from './service-errors';
+export * from './api-key.service';
 export * from './email';
 
 // Export singleton instances with real database
@@ -59,4 +61,5 @@ export const reportService = new ReportService(db);
 export const workspaceService = new WorkspaceService(db);
 export const workspaceMetaService = new WorkspaceMetaService(db);
 export const workspaceInvitationService = new WorkspaceInvitationService(db);
+export const apiKeyService = new ApiKeyService(db);
 export const emailService = new EmailService(workspaceMetaService);
