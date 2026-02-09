@@ -185,7 +185,7 @@ describe('BudgetCard - getIconForCategory', () => {
 
 describe('BudgetCard - status determination based on percentage', () => {
   const getStatusFromPercentage = (percentage: number): 'ok' | 'warning' | 'exceeded' => {
-    if (percentage >= 100) return 'exceeded';
+    if (percentage > 100) return 'exceeded';
     if (percentage >= 80) return 'warning';
     return 'ok';
   };
@@ -197,6 +197,10 @@ describe('BudgetCard - status determination based on percentage', () => {
     expect(getStatusFromPercentage(79.9)).toBe('ok');
   });
 
+  it('should return warning for exactly 100% (on budget, orange)', () => {
+    expect(getStatusFromPercentage(100)).toBe('warning');
+  });
+
   it('should return warning for percentage 80-99%', () => {
     expect(getStatusFromPercentage(80)).toBe('warning');
     expect(getStatusFromPercentage(85)).toBe('warning');
@@ -205,8 +209,8 @@ describe('BudgetCard - status determination based on percentage', () => {
     expect(getStatusFromPercentage(99.9)).toBe('warning');
   });
 
-  it('should return exceeded for percentage >= 100%', () => {
-    expect(getStatusFromPercentage(100)).toBe('exceeded');
+  it('should return exceeded for percentage > 100%', () => {
+    expect(getStatusFromPercentage(100.1)).toBe('exceeded');
     expect(getStatusFromPercentage(117)).toBe('exceeded');
     expect(getStatusFromPercentage(150)).toBe('exceeded');
   });

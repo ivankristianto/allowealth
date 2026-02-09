@@ -82,7 +82,7 @@ const sortedBudgets = [...budgets].sort((a, b) => {
                   typeof budget.spent_amount === 'string'
                     ? parseFloat(budget.spent_amount)
                     : budget.spent_amount;
-                const remaining = budgetAmt - spentAmt;
+                const remaining = Math.round((budgetAmt - spentAmt) * 100) / 100 || 0;
                 const percentage = budget.percentage_used;
                 // Build "See Details" URL
                 const detailsParams = new URLSearchParams({

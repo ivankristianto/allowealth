@@ -106,7 +106,7 @@ if (year) transactionParams.set('year', String(year));
 const transactionUrl = `/transactions?${transactionParams.toString()}`;
 
 // Calculate remaining amount
-const remaining = budget - spent;
+const remaining = Math.round((budget - spent) * 100) / 100 || 0;
 
 const budgetStatus = getBudgetStatus(percentageUsed);
 const progressStatus = budgetStatus.status;
@@ -339,7 +339,11 @@ const cardClasses = [
           >
             <div class="flex justify-between items-center text-xs md:text-xs font-bold leading-none">
               <span class="uppercase tracking-widest" data-footer-label>
-                {budgetStatus.status === 'danger' ? 'Over budget' : 'Almost exceeded'}
+                {budgetStatus.status === 'danger'
+                  ? 'Over budget'
+                  : percentageUsed === 100
+                    ? 'On budget'
+                    : 'Almost exceeded'}
               </span>
               <span
                 class={budgetStatus.status === 'danger' ? 'text-error' : 'text-warning'}
@@ -347,7 +351,9 @@ const cardClasses = [
               >
                 {budgetStatus.status === 'danger'
                   ? formatCurrency(Math.abs(remaining), currency)
-                  : `${Math.round(percentageUsed)}%`}
+                  : percentageUsed === 100
+                    ? formatCurrency(0, currency)
+                    : `${Math.round(percentageUsed)}%`}
               </span>
             </div>
           </div>

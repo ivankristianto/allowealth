@@ -210,7 +210,7 @@ export class BudgetService {
         totalBudgetAmount > 0 ? (budgetAmountNum / totalBudgetAmount) * 100 : 0;
 
       let status: 'ok' | 'warning' | 'exceeded' = 'ok';
-      if (percentageUsed >= 100) {
+      if (percentageUsed > 100) {
         status = 'exceeded';
       } else if (percentageUsed >= 80) {
         status = 'warning';

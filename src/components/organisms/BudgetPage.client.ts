@@ -40,6 +40,10 @@ interface PageState {
 let state: PageState | null = null;
 let isCleanedUp = false;
 
+// Preserved filter/sort state across DOM replacements
+let savedFilterQuery = '';
+let savedSortKey = '';
+
 /**
  * Validate and parse currency value (P1: runtime validation)
  */
@@ -95,6 +99,12 @@ export async function refreshBudgetData(options: BudgetFetchOptions = {}): Promi
     console.error('[BudgetPage] Cannot refresh - state not initialized');
     return;
   }
+
+  // Capture filter/sort state before DOM replacement
+  const filterInput = document.getElementById('budget-filter-input') as HTMLInputElement | null;
+  const sortSelect = document.getElementById('budget-sort-select') as HTMLSelectElement | null;
+  savedFilterQuery = filterInput?.value || '';
+  savedSortKey = sortSelect?.value || '';
 
   showLoadingState();
 
@@ -231,16 +241,22 @@ function handleContentUpdated(): void {
   // so after innerHTML replacement we must re-apply the open state.
   initBudgetAllocations();
 
-  // Re-apply filter if there's a query in the input
-  const filterInput = document.getElementById('budget-filter-input') as HTMLInputElement | null;
-  if (filterInput?.value) {
-    filterBudgetCards(filterInput.value);
+  // Restore filter state from before DOM replacement
+  if (savedFilterQuery) {
+    const filterInput = document.getElementById('budget-filter-input') as HTMLInputElement | null;
+    if (filterInput) {
+      filterInput.value = savedFilterQuery;
+    }
+    filterBudgetCards(savedFilterQuery);
   }
 
-  // Re-apply sort if a sort option is selected
-  const sortSelect = document.getElementById('budget-sort-select') as HTMLSelectElement | null;
-  if (sortSelect?.value) {
-    sortBudgets(sortSelect.value);
+  // Restore sort state from before DOM replacement
+  if (savedSortKey) {
+    const sortSelect = document.getElementById('budget-sort-select') as HTMLSelectElement | null;
+    if (sortSelect) {
+      sortSelect.value = savedSortKey;
+    }
+    sortBudgets(savedSortKey);
   }
 }
 
@@ -493,6 +509,10 @@ export function cleanup(): void {
     clearTimeout(filterDebounceTimer);
     filterDebounceTimer = null;
   }
+
+  // Clear saved filter/sort state to prevent stale values on re-init
+  savedFilterQuery = '';
+  savedSortKey = '';
 
   document.removeEventListener('budget-updated', handleBudgetUpdated as EventListener);
   document.removeEventListener('budgets-copied', handleBudgetsCopied as EventListener);

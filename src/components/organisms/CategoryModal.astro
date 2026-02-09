@@ -413,6 +413,11 @@ const iconColorClass = 'text-accent';
       }
 
       typeSelect?.addEventListener('change', filterIconsByType);
+      // Sync type select with URL parameter so icon filtering matches active tab
+      const urlTypeParam = new URL(window.location.href).searchParams.get('type');
+      if (urlTypeParam && typeSelect && (urlTypeParam === 'expense' || urlTypeParam === 'income')) {
+        typeSelect.value = urlTypeParam;
+      }
       // Apply initial filtering
       filterIconsByType();
 
