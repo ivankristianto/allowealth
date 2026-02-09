@@ -4,7 +4,7 @@ import { nanoid } from 'nanoid';
 import { AssetServiceError, ServiceErrorCode } from './service-errors';
 import type { AssetType, Currency } from '@/lib/types/asset';
 import { type PerfCollector, trackQuery } from '@/lib/perf';
-import { decimalCompare, decimalSubtract, decimalAdd } from '@/lib/utils/decimal';
+import { decimalCompare } from '@/lib/utils/decimal';
 
 /** Inferred row type for an asset record */
 export type AssetRow = typeof assetsTable.$inferSelect;
@@ -329,41 +329,62 @@ export class AssetService {
       throw new Error('Insufficient balance');
     }
 
-    const newFromBalance = decimalSubtract(fromAsset.balance, amount);
-    const newToBalance = decimalAdd(toAsset.balance, amount);
     const now = new Date();
     const fromNote = notes ? `Transfer out: ${notes}` : `Transfer to ${toAsset.name}`;
     const toNote = notes ? `Transfer in: ${notes}` : `Transfer from ${fromAsset.name}`;
 
     await runTransaction(this.db, async (tx) => {
-      // Deduct from source
-      await tx
+      // Deduct from source using relative update to prevent lost-update race condition.
+      // The WHERE guard ensures balance cannot go negative even under concurrent access.
+      const deductResult: { balance: string }[] = await (tx as any)
         .update(this.schema.assets)
-        .set({ balance: newFromBalance, last_updated: now, updated_at: now })
+        .set({
+          balance: sql`CAST(CAST(${this.schema.assets.balance} AS REAL) - CAST(${amount} AS REAL) AS TEXT)`,
+          last_updated: now,
+          updated_at: now,
+        })
         .where(
-          and(eq(this.schema.assets.id, fromId), eq(this.schema.assets.workspace_id, workspaceId))
-        );
+          and(
+            eq(this.schema.assets.id, fromId),
+            eq(this.schema.assets.workspace_id, workspaceId),
+            sql`CAST(${this.schema.assets.balance} AS REAL) >= CAST(${amount} AS REAL)`
+          )
+        )
+        .returning({ balance: this.schema.assets.balance });
+
+      if (!deductResult.length) {
+        throw new Error('Insufficient balance');
+      }
 
       await (tx as any).insert(this.schema.assetHistory).values({
         id: nanoid(),
         asset_id: fromId,
-        balance: newFromBalance,
+        balance: deductResult[0].balance,
         notes: fromNote,
         recorded_at: now,
       });
 
-      // Add to target
-      await tx
+      // Add to target using relative update
+      const addResult: { balance: string }[] = await (tx as any)
         .update(this.schema.assets)
-        .set({ balance: newToBalance, last_updated: now, updated_at: now })
+        .set({
+          balance: sql`CAST(CAST(${this.schema.assets.balance} AS REAL) + CAST(${amount} AS REAL) AS TEXT)`,
+          last_updated: now,
+          updated_at: now,
+        })
         .where(
           and(eq(this.schema.assets.id, toId), eq(this.schema.assets.workspace_id, workspaceId))
-        );
+        )
+        .returning({ balance: this.schema.assets.balance });
+
+      if (!addResult.length) {
+        throw new AssetServiceError(ServiceErrorCode.ASSET_NOT_FOUND, 'Asset not found', 404);
+      }
 
       await (tx as any).insert(this.schema.assetHistory).values({
         id: nanoid(),
         asset_id: toId,
-        balance: newToBalance,
+        balance: addResult[0].balance,
         notes: toNote,
         recorded_at: now,
       });
