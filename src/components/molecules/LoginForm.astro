@@ -24,9 +24,6 @@ export interface Props {
 }
 
 const { errorMessage = '', email = '', redirectTo = '' } = Astro.props;
-
-// Get CSP nonce from middleware
-const cspNonce = Astro.locals.cspNonce || '';
 ---
 
 <div class="card bg-base-100 shadow-2xl border border-base-300">
@@ -37,7 +34,14 @@ const cspNonce = Astro.locals.cspNonce || '';
       {errorMessage && <ErrorMessage message={errorMessage} />}
     </div>
 
-    <form id="login-form" data-testid="login-form" class="space-y-5" novalidate>
+    <form
+      id="login-form"
+      data-testid="login-form"
+      data-redirect-to={redirectTo}
+      data-api-login-url="/api/auth/login"
+      class="space-y-5"
+      novalidate
+    >
       <!-- Email Field -->
       <FormField label="Email" htmlFor="email" required>
         <Input
@@ -110,7 +114,7 @@ const cspNonce = Astro.locals.cspNonce || '';
   </div>
 </div>
 
-<script define:vars={{ redirectTo, apiLoginUrl: '/api/auth/login' }} nonce={cspNonce} is:inline>
+<script>
   // Helper function to clone icon from template
   const getErrorIcon = () => {
     const template = document.getElementById('icon-error-template');
@@ -118,13 +122,13 @@ const cspNonce = Astro.locals.cspNonce || '';
       console.warn('Error icon template not found or empty');
       return null;
     }
-    const clone = template.firstElementChild.cloneNode(true);
+    const clone = template.firstElementChild.cloneNode(true) as Element;
     clone.removeAttribute('id'); // Remove ID to avoid duplicates
     return clone;
   };
 
   // Helper function to show alert messages
-  const showErrorAlert = (message) => {
+  const showErrorAlert = (message: string) => {
     if (!messagesContainer) return;
 
     messagesContainer.innerHTML = '';
@@ -146,13 +150,17 @@ const cspNonce = Astro.locals.cspNonce || '';
     messagesContainer.appendChild(alertDiv);
   };
 
-  const form = document.getElementById('login-form');
+  const form = document.getElementById('login-form') as HTMLFormElement | null;
   const messagesContainer = document.getElementById('login-messages');
-  const emailInput = document.getElementById('email');
-  const passwordInput = document.getElementById('password');
-  const submitButton = document.getElementById('login-submit-button');
+  const emailInput = document.getElementById('email') as HTMLInputElement | null;
+  const passwordInput = document.getElementById('password') as HTMLInputElement | null;
+  const submitButton = document.getElementById('login-submit-button') as HTMLButtonElement | null;
   const buttonText = submitButton?.querySelector('[data-button-text]');
   const loadingSpinner = submitButton?.querySelector('[data-loading-spinner]');
+
+  // Read server values from data attributes
+  const redirectTo = form?.dataset.redirectTo || '';
+  const apiLoginUrl = form?.dataset.apiLoginUrl || '/api/auth/login';
 
   if (!form || !emailInput || !passwordInput || !submitButton) {
     console.error('Login form elements not found');

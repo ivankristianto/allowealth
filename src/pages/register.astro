@@ -8,7 +8,6 @@
 
 import AuthLayout from '../layouts/AuthLayout.astro';
 import RegistrationForm from '../components/molecules/RegistrationForm.astro';
-import { getSignupUrl } from '@/lib/config';
 
 // Get error message from query params (if any)
 const url = new URL(Astro.request.url);
@@ -25,29 +24,23 @@ const errorMessages: Record<string, string> = {
 
 // Only use whitelisted error codes to prevent XSS, with fallback for unknown errors
 const errorMessage = error ? errorMessages[error] || 'An error occurred. Please try again.' : '';
-
-// Get CSP nonce from middleware
-const cspNonce = Astro.locals.cspNonce || '';
 ---
 
 <AuthLayout title="allowealth - Sign Up">
   <RegistrationForm initialServerError={errorMessage} />
 </AuthLayout>
 
-<script src="/scripts/registration-validation.js" nonce={cspNonce} is:inline></script>
+<script src="/scripts/registration-validation.js" is:inline></script>
 
-<script
-  define:vars={{
-    apiSignupUrl: getSignupUrl(),
-  }}
-  nonce={cspNonce}
-  is:inline
->
+<script>
+  import { getSignupUrl } from '@/lib/config';
+
   // This script enhances the RegistrationForm with actual API calls
   document.addEventListener('DOMContentLoaded', () => {
-    const form = document.querySelector('[data-registration-form]');
+    const form = document.querySelector('[data-registration-form]') as HTMLFormElement | null;
     const messagesContainer = document.getElementById('form-messages');
-    const submitButton = form?.querySelector('[data-submit-button]');
+    const apiSignupUrl = getSignupUrl();
+    const submitButton = form?.querySelector('[data-submit-button]') as HTMLButtonElement | null;
     const buttonText = submitButton?.querySelector('[data-button-text]');
     const loadingSpinner = submitButton?.querySelector('[data-loading-spinner]');
 
@@ -63,14 +56,14 @@ const cspNonce = Astro.locals.cspNonce || '';
 
       const formData = new FormData(form);
       const data = {
-        name: formData.get('name'),
-        email: formData.get('email'),
-        password: formData.get('password'),
-        'confirm-password': formData.get('confirm-password'),
+        name: String(formData.get('name') || ''),
+        email: String(formData.get('email') || ''),
+        password: String(formData.get('password') || ''),
+        'confirm-password': String(formData.get('confirm-password') || ''),
       };
 
       // Use shared validation from RegistrationValidation module
-      const emailInput = document.getElementById('email');
+      const emailInput = document.getElementById('email') as HTMLInputElement | null;
       const validationResult = window.RegistrationValidation.validateRegistrationForm(
         data,
         emailInput

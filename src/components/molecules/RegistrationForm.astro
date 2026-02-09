@@ -58,9 +58,6 @@ const {
   loginLink = '/login',
   initialServerError = '',
 } = Astro.props;
-
-// Get CSP nonce from middleware
-const cspNonce = Astro.locals.cspNonce || '';
 ---
 
 <div class="card bg-base-100 shadow-2xl border border-base-300">
@@ -73,6 +70,8 @@ const cspNonce = Astro.locals.cspNonce || '';
       action={action}
       method={method}
       data-registration-form
+      data-login-link={loginLink}
+      data-initial-server-error={initialServerError || ''}
       novalidate
     >
       <div id="form-messages" class="space-y-2" aria-live="polite" tabindex="-1"></div>
@@ -172,19 +171,16 @@ const cspNonce = Astro.locals.cspNonce || '';
   }
 </style>
 
-<script src="/scripts/registration-validation.js" nonce={cspNonce} is:inline></script>
+<script src="/scripts/registration-validation.js" is:inline></script>
 
-<script
-  define:vars={{
-    loginLink,
-    initialServerError,
-  }}
-  nonce={cspNonce}
-  is:inline
->
-  const form = document.querySelector('[data-registration-form]');
+<script>
+  const form = document.querySelector('[data-registration-form]') as HTMLFormElement | null;
   const messagesContainer = document.getElementById('form-messages');
-  const submitButton = form?.querySelector('[data-submit-button]');
+
+  // Read server values from data attributes
+  const loginLink = form?.dataset.loginLink || '/login';
+  const initialServerError = form?.dataset.initialServerError || '';
+  const submitButton = form?.querySelector('[data-submit-button]') as HTMLButtonElement | null;
   const buttonText = submitButton?.querySelector('[data-button-text]');
   const loadingSpinner = submitButton?.querySelector('[data-loading-spinner]');
 
@@ -250,7 +246,9 @@ const cspNonce = Astro.locals.cspNonce || '';
     toggleButtons.forEach((button) => {
       button.addEventListener('click', () => {
         const targetId = button.getAttribute('data-toggle-password');
-        const input = document.getElementById(targetId);
+        const input = targetId
+          ? (document.getElementById(targetId) as HTMLInputElement | null)
+          : null;
         const eyeIcon = button.querySelector('[data-eye-icon]');
         const eyeOffIcon = button.querySelector('[data-eye-off-icon]');
 
@@ -284,10 +282,16 @@ const cspNonce = Astro.locals.cspNonce || '';
       }
 
       const formData = new FormData(form);
-      const data = Object.fromEntries(formData.entries());
+      const entries = Object.fromEntries(formData.entries());
+      const data = {
+        name: String(entries.name || ''),
+        email: String(entries.email || ''),
+        password: String(entries.password || ''),
+        'confirm-password': String(entries['confirm-password'] || ''),
+      };
 
       // Use shared validation from RegistrationValidation module
-      const emailInput = document.getElementById('email');
+      const emailInput = document.getElementById('email') as HTMLInputElement | null;
       const validationResult = window.RegistrationValidation.validateRegistrationForm(
         data,
         emailInput
@@ -302,7 +306,9 @@ const cspNonce = Astro.locals.cspNonce || '';
           // Associate inputs with error messages for screen readers
           addFormMessagesAssociation();
           // Move focus to first invalid input or message container for accessibility
-          const firstInvalidInput = form.querySelector('input[aria-invalid="true"]');
+          const firstInvalidInput = form.querySelector(
+            'input[aria-invalid="true"]'
+          ) as HTMLElement | null;
           if (firstInvalidInput) {
             firstInvalidInput.focus();
           } else {
