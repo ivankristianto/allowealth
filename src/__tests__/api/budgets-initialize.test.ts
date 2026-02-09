@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, mock } from 'bun:test';
-import { POST } from './initialize';
+import { POST } from '@/pages/api/budgets/initialize';
 import { budgetService, BudgetServiceError, ServiceErrorCode } from '@/services';
 
 interface TestLocalsUser {
