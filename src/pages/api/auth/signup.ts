@@ -34,6 +34,7 @@ import {
   type ApiSuccessResponse,
 } from '@/types/api';
 import { logError } from '@/lib/utils';
+import { verifyTurnstileToken } from '@/lib/turnstile';
 import {
   checkRateLimit,
   createRateLimitResponse,
@@ -56,7 +57,17 @@ export const POST: APIRoute = async (context) => {
     // Parse request body first (before consuming rate limit)
     const body = await request.json();
     email = body.email;
-    const { password, name } = body;
+    const { password, name, turnstileToken } = body;
+
+    // Verify Turnstile token BEFORE rate limiting
+    const turnstileResult = await verifyTurnstileToken(turnstileToken || '', clientAddress);
+    if (!turnstileResult.success) {
+      return createErrorResponseResponse(
+        'TURNSTILE_FAILED',
+        turnstileResult.error || 'Bot protection verification failed.',
+        400
+      );
+    }
 
     // Check rate limit (5 attempts per hour per IP)
     // Pass clientAddress from Astro context for trusted IP (prevents spoofing)
