@@ -105,16 +105,30 @@ export abstract class BasePage {
 
   /**
    * Parse a currency string back to a number.
-   * Removes all non-digit characters before parsing.
+   * Handles both IDR format (dot=thousands, comma=decimal: "Rp480.000,00")
+   * and USD format (comma=thousands, dot=decimal: "$2,500.00").
    * @param text - Currency string to parse
-   * @returns Parsed number (0 if parsing fails)
+   * @returns Parsed number rounded to nearest integer (0 if parsing fails)
    */
   protected parseCurrency(text: string): number {
-    const digits = text.replace(/[^\d]/g, '');
-    if (!digits) {
-      return 0;
+    // Strip currency symbols and whitespace, keep digits, dots, commas, minus
+    let cleaned = text.replace(/[^0-9.,\-]/g, '');
+    if (!cleaned) return 0;
+
+    const lastDot = cleaned.lastIndexOf('.');
+    const lastComma = cleaned.lastIndexOf(',');
+
+    if (lastComma > lastDot) {
+      // IDR format: dot = thousands separator, comma = decimal
+      // "480.000,00" → "480000.00"
+      cleaned = cleaned.replace(/\./g, '').replace(',', '.');
+    } else if (lastDot > lastComma) {
+      // USD format: comma = thousands separator, dot = decimal
+      // "2,500.00" → "2500.00"
+      cleaned = cleaned.replace(/,/g, '');
     }
-    const parsed = parseInt(digits, 10);
-    return isNaN(parsed) ? 0 : parsed;
+
+    const parsed = Number(cleaned);
+    return isNaN(parsed) ? 0 : Math.round(parsed);
   }
 }

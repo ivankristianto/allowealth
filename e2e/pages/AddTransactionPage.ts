@@ -99,6 +99,10 @@ export class AddTransactionPage extends BasePage {
   /**
    * Fill the transaction form with the provided data.
    *
+   * Categories use radio button chips (not a visible select dropdown).
+   * The hidden select is for form submission only; clicking chips triggers
+   * client-side validation that enables the submit button.
+   *
    * @param data - The transaction form data
    */
   async fillForm(data: TransactionFormData): Promise<void> {
@@ -112,16 +116,33 @@ export class AddTransactionPage extends BasePage {
     await this.amountInput.clear();
     await this.amountInput.fill(String(data.amount));
 
-    // Wait for category select to have options (poll for option with our category name)
+    // Wait for category chips to load with the target category
+    const formPanel: Locator = this.getFormPanel();
     await expect
       .poll(
         async () => {
-          const options: string[] = await this.categorySelect.locator('option').allTextContents();
-          return options.some((opt) => opt.includes(data.categoryName));
+          const chips: string[] = await formPanel.locator('[data-category-chip]').allTextContents();
+          return chips.some((text) => text.trim() === data.categoryName);
         },
-        { timeout: 10000, message: `Category "${data.categoryName}" not found in select options` }
+        { timeout: 10000, message: `Category "${data.categoryName}" not found in category chips` }
       )
       .toBe(true);
+
+    // Find the category chip by aria-label (matches category name)
+    const categoryChip: Locator = formPanel.locator(
+      `button[data-category-chip][aria-label="${data.categoryName}"]`
+    );
+
+    // If chip is in the overflow section and hidden, expand first
+    if (!(await categoryChip.isVisible())) {
+      const expandToggle: Locator = formPanel.locator('[data-category-toggle]');
+      if (await expandToggle.isVisible()) {
+        await expandToggle.click();
+      }
+    }
+
+    // Click the category chip to trigger validation and enable submit button
+    await categoryChip.click();
 
     // Wait for asset select to have options (poll for option with our asset name)
     await expect
@@ -134,9 +155,6 @@ export class AddTransactionPage extends BasePage {
       )
       .toBe(true);
 
-    // Select category by visible text
-    await this.categorySelect.selectOption({ label: data.categoryName });
-
     // Select asset by visible text
     await this.assetSelect.selectOption({ label: data.assetName });
 
@@ -144,6 +162,9 @@ export class AddTransactionPage extends BasePage {
     if (data.date) {
       await this.dateInput.fill(data.date);
     }
+
+    // Wait for submit button to be enabled after all fields are filled
+    await expect(this.submitBtn).toBeEnabled({ timeout: 5000 });
   }
 
   /**

@@ -94,6 +94,12 @@ test.describe('Email Verification', () => {
   });
 
   test.describe('Full Verification Flow', () => {
+    // Reset rate limits before this describe block to prevent 429 errors
+    // when running across multiple Playwright projects (chromium + mobile-chrome)
+    test.beforeAll(async ({ request }) => {
+      await request.post(`${E2E_BASE_URL}/api/auth/__reset-rate-limits`);
+    });
+
     test('register, verify via token, then login successfully', async ({ page, request }) => {
       // Step 1: Register a new user via API
       const { email, password } = await registerUser(request);
