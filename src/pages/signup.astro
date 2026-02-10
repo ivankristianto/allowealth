@@ -15,6 +15,7 @@ import Label from '../components/atoms/Label.astro';
 import { Building2, Eye, EyeOff, TriangleAlert, CircleCheck } from '@lucide/astro';
 import { getSignupUrl } from '@/lib/config';
 import { workspaceInvitationService, workspaceService } from '@/services';
+import Turnstile from '../components/atoms/Turnstile.astro';
 
 // Get query params
 const url = new URL(Astro.request.url);
@@ -240,6 +241,9 @@ const hasInvitationError = !!invitationError;
               </div>
             )}
 
+            {/* Bot Protection */}
+            <Turnstile />
+
             <div class="pt-2">
               <Button
                 type="submit"
@@ -365,6 +369,7 @@ const hasInvitationError = !!invitationError;
             name: data.name,
             email: data.email,
             password: data.password,
+            turnstileToken: new FormData(form).get('cf-turnstile-response') || '',
           }),
         });
 
@@ -401,6 +406,10 @@ const hasInvitationError = !!invitationError;
               <span>${window.RegistrationValidation.escapeHtml(result.error?.message || 'Registration failed. Please try again.')}</span>
             </div>
           `;
+          // Reset Turnstile widget on error
+          if (typeof turnstile !== 'undefined') {
+            turnstile.reset();
+          }
         }
       } catch (error) {
         console.error('Registration error:', error);
@@ -420,6 +429,10 @@ const hasInvitationError = !!invitationError;
         if (buttonText) buttonText.classList.remove('hidden');
         if (loadingSpinner) loadingSpinner.classList.add('hidden');
         if (submitButton) submitButton.disabled = false;
+        // Reset Turnstile widget for retry
+        if (typeof turnstile !== 'undefined') {
+          turnstile.reset();
+        }
       }
     });
   });
