@@ -90,7 +90,7 @@ const transactionDataJson = transaction
       currency: transaction.currency,
       category_id: transaction.category?.id,
       asset_id: transaction.asset.id,
-      transaction_date: transaction.transaction_date.toString().split('T')[0],
+      transaction_date: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`,
     })
   : '';
 

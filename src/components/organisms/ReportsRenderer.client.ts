@@ -42,6 +42,15 @@ export function parseHtmlPartials(html: string): {
 }
 
 /**
+ * Clear loading state inline styles after animation completes
+ */
+function clearLoadingStyles(container: HTMLElement): void {
+  container.style.opacity = '';
+  container.style.pointerEvents = '';
+  container.removeAttribute('aria-busy');
+}
+
+/**
  * Render summary cards with fade-in animation
  */
 export function renderSummaryHtml(html: string): void {
@@ -49,28 +58,31 @@ export function renderSummaryHtml(html: string): void {
   if (!container) return;
 
   // Fade out existing content
-  // @ts-expect-error - Motion library type definition issue
-  animate(container, { opacity: [1, 0] }, { duration: 0.2, easing: 'ease-out' }).finished.then(
-    () => {
-      // Inject new HTML
-      container.innerHTML = html;
+  animate(container, { opacity: [1, 0] }, {
+    duration: 0.2,
+    easing: 'ease-out',
+  } as any).finished.then(() => {
+    // Inject new HTML
+    container.innerHTML = html;
 
-      // Fade in new content
-      // @ts-expect-error - Motion library type definition issue
-      animate(container, { opacity: [0, 1] }, { duration: 0.3, easing: 'ease-in' });
+    // Fade in new content and clear loading state after animation
+    const fadeIn = animate(container, { opacity: [0, 1] }, {
+      duration: 0.3,
+      easing: 'ease-in',
+    } as any);
+    fadeIn.finished.then(() => clearLoadingStyles(container));
 
-      // Animate individual cards with stagger
-      const cards = container.querySelectorAll('[data-stat-card]');
-      cards.forEach((card, i) => {
-        // Motion library animation with keyframes
-        animate(
-          card,
-          { opacity: [0, 1], y: [20, 0] } as any,
-          { delay: i * 0.1, duration: 0.4, easing: [0.22, 1, 0.36, 1] } as any
-        );
-      });
-    }
-  );
+    // Animate individual cards with stagger
+    const cards = container.querySelectorAll('[data-stat-card]');
+    cards.forEach((card, i) => {
+      // Motion library animation with keyframes
+      animate(
+        card,
+        { opacity: [0, 1], y: [20, 0] } as any,
+        { delay: i * 0.1, duration: 0.4, easing: [0.22, 1, 0.36, 1] } as any
+      );
+    });
+  });
 }
 
 /**
@@ -81,23 +93,26 @@ export function renderChartsHtml(html: string): void {
   if (!container) return;
 
   // Fade out existing content
-  // @ts-expect-error - Motion library type definition issue
-  animate(container, { opacity: [1, 0] }, { duration: 0.2, easing: 'ease-out' }).finished.then(
-    () => {
-      // Inject new HTML
-      container.innerHTML = html;
+  animate(container, { opacity: [1, 0] }, {
+    duration: 0.2,
+    easing: 'ease-out',
+  } as any).finished.then(() => {
+    // Inject new HTML
+    container.innerHTML = html;
 
-      // Fade in new content
-      // @ts-expect-error - Motion library type definition issue
-      animate(container, { opacity: [0, 1] }, { duration: 0.3, easing: 'ease-in' });
+    // Fade in new content and clear loading state after animation
+    const fadeIn = animate(container, { opacity: [0, 1] }, {
+      duration: 0.3,
+      easing: 'ease-in',
+    } as any);
+    fadeIn.finished.then(() => clearLoadingStyles(container));
 
-      // Re-initialize charts after HTML injection
-      // Small delay to ensure DOM is fully updated
-      requestAnimationFrame(() => {
-        document.dispatchEvent(new CustomEvent('charts:reinit'));
-      });
-    }
-  );
+    // Re-initialize charts after HTML injection
+    // Small delay to ensure DOM is fully updated
+    requestAnimationFrame(() => {
+      document.dispatchEvent(new CustomEvent('charts:reinit'));
+    });
+  });
 }
 
 /**
@@ -108,17 +123,20 @@ export function renderTableHtml(html: string): void {
   if (!container) return;
 
   // Fade out existing content
-  // @ts-expect-error - Motion library type definition issue
-  animate(container, { opacity: [1, 0] }, { duration: 0.2, easing: 'ease-out' }).finished.then(
-    () => {
-      // Inject new HTML
-      container.innerHTML = html;
+  animate(container, { opacity: [1, 0] }, {
+    duration: 0.2,
+    easing: 'ease-out',
+  } as any).finished.then(() => {
+    // Inject new HTML
+    container.innerHTML = html;
 
-      // Fade in new content
-      // @ts-expect-error - Motion library type definition issue
-      animate(container, { opacity: [0, 1] }, { duration: 0.3, easing: 'ease-in' });
-    }
-  );
+    // Fade in new content and clear loading state after animation
+    const fadeIn = animate(container, { opacity: [0, 1] }, {
+      duration: 0.3,
+      easing: 'ease-in',
+    } as any);
+    fadeIn.finished.then(() => clearLoadingStyles(container));
+  });
 }
 
 /**
@@ -129,29 +147,32 @@ export function renderSelectorHtml(html: string): void {
   if (!container) return;
 
   // Fade out existing content
-  // @ts-expect-error - Motion library type definition issue
-  animate(container, { opacity: [1, 0] }, { duration: 0.2, easing: 'ease-out' }).finished.then(
-    () => {
-      // Inject new HTML
-      container.innerHTML = html;
+  animate(container, { opacity: [1, 0] }, {
+    duration: 0.2,
+    easing: 'ease-out',
+  } as any).finished.then(() => {
+    // Inject new HTML
+    container.innerHTML = html;
 
-      // Fade in new content
-      // @ts-expect-error - Motion library type definition issue
-      animate(container, { opacity: [0, 1] }, { duration: 0.3, easing: 'ease-in' });
+    // Fade in new content and clear loading state after animation
+    const fadeIn = animate(container, { opacity: [0, 1] }, {
+      duration: 0.3,
+      easing: 'ease-in',
+    } as any);
+    fadeIn.finished.then(() => clearLoadingStyles(container));
 
-      // Re-initialize navigator after HTML injection
-      requestAnimationFrame(() => {
-        const hasPeriodNavigator = container.querySelector('[data-period-navigator]');
+    // Re-initialize navigator after HTML injection
+    requestAnimationFrame(() => {
+      const hasPeriodNavigator = container.querySelector('[data-period-navigator]');
 
-        if (hasPeriodNavigator) {
-          initPeriodNavigator();
-        }
+      if (hasPeriodNavigator) {
+        initPeriodNavigator();
+      }
 
-        // Re-initialize ReportSelector script
-        document.dispatchEvent(new CustomEvent('astro:page-load'));
-      });
-    }
-  );
+      // Re-initialize ReportSelector script
+      document.dispatchEvent(new CustomEvent('astro:page-load'));
+    });
+  });
 }
 
 /**

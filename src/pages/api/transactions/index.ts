@@ -94,8 +94,8 @@ export const GET: APIRoute = async (context) => {
       filters.search = search;
     }
 
-    // Include soft-deleted transactions in the list for audit trail visibility
-    filters.include_deleted = true;
+    // Exclude soft-deleted transactions from main list to avoid inflating count
+    filters.include_deleted = false;
     filters.include_history_flag = true;
     const rawTransactions = await transactionService.findAll(filters, perf);
     const total = await transactionService.count(filters, perf);

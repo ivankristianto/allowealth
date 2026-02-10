@@ -161,6 +161,7 @@ const serializedInput = JSON.stringify(input);
         <>
           {/* Chart Container */}
           <div
+            id={`${chartId}-container`}
             class="h-[300px] md:h-[400px] w-full bg-base-200/20 rounded-card p-4 md:p-8 border border-base-300/50"
             data-chart-data={serializedData}
             data-chart-input={serializedInput}

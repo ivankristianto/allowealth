@@ -33,34 +33,34 @@ Three AI agents simulated family members using the expenses app on both desktop 
 
 ### Critical
 
-| #   | Bug                                                                                                                                            | Found By           | Pages                   |
-| --- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ | ----------------------- |
-| B1  | **Forecast chart renders blank** — Wealth Trajectory chart area is empty while summary cards below show data                                   | David, Sarah, Alex | `/forecast`             |
-| B2  | **Transaction amounts lose decimals** — Entering `156.32` saves as `Rp156`; entering `9.99` saves as `Rp10`. Decimals silently dropped/rounded | Sarah, Alex        | Transaction drawer      |
-| B3  | **Yearly reports render faded/washed out** — All content (text, charts, numbers) has very low opacity, looks like a stuck loading state        | David              | `/reports?range=yearly` |
+| #   | Bug                                                                                                                                            | Found By           | Pages                   | Status                                                                         |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ | ----------------------- | ------------------------------------------------------------------------------ |
+| B1  | **Forecast chart renders blank** — Wealth Trajectory chart area is empty while summary cards below show data                                   | David, Sarah, Alex | `/forecast`             | **FIXED** — Container div missing `id`; selector mismatch prevented chart init |
+| B2  | **Transaction amounts lose decimals** — Entering `156.32` saves as `Rp156`; entering `9.99` saves as `Rp10`. Decimals silently dropped/rounded | Sarah, Alex        | Transaction drawer      | **FIXED** — IDR currency configured with 0 decimals; changed to 2              |
+| B3  | **Yearly reports render faded/washed out** — All content (text, charts, numbers) has very low opacity, looks like a stuck loading state        | David              | `/reports?range=yearly` | **FIXED** — Race condition between loading state and animation opacity         |
 
 ### Major
 
-| #   | Bug                                                                                                                                                             | Found By     | Pages                       |
-| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ | --------------------------- |
-| B4  | **`/reports/yearly` returns 404** — Route listed in project structure doesn't exist (actual path is query param `?range=yearly`)                                | Sarah        | `/reports/yearly`           |
-| B5  | **`/settings/payment-methods` returns 404** — Documented route doesn't exist                                                                                    | Sarah, David | `/settings/payment-methods` |
-| B6  | **Validation errors flash after successful transaction save** — Form resets then immediately shows "Amount is required" / "Title is required" on the empty form | Sarah        | Transaction drawer          |
-| B7  | **Budget History shows "No data" for current month** — February 2026 shows empty despite active budget data existing                                            | Sarah        | `/budget/history`           |
-| B8  | **Budget reallocation advice ignores worst overspends** — Mentions Housekeeper Salary (101%) but ignores House Expenses (209%) and Holiday (130%)               | David        | `/budget`                   |
-| B9  | **Mobile add-transaction button uses filter/sort icon** — The green button that opens transaction drawer looks like a filter icon, not "+" add                  | Alex         | Mobile header               |
-| B10 | **Calculators page missing from mobile sidebar navigation** — Not discoverable through hamburger menu                                                           | Alex         | Mobile nav                  |
+| #   | Bug                                                                                                                                                             | Found By     | Pages                       | Status                                                                                                           |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ | --------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| B4  | **`/reports/yearly` returns 404** — Route listed in project structure doesn't exist (actual path is query param `?range=yearly`)                                | Sarah        | `/reports/yearly`           | **NOT VALID** — Reports uses query params (`/reports?range=yearly`); agents navigated to wrong URL               |
+| B5  | **`/settings/payment-methods` returns 404** — Documented route doesn't exist                                                                                    | Sarah, David | `/settings/payment-methods` | **NOT VALID** — Route was never implemented or documented; orphaned component, not a regression bug              |
+| B6  | **Validation errors flash after successful transaction save** — Form resets then immediately shows "Amount is required" / "Title is required" on the empty form | Sarah        | Transaction drawer          | **FIXED** — Programmatic field reset triggered input validation; added `isResetting` guard                       |
+| B7  | **Budget History shows "No data" for current month** — February 2026 shows empty despite active budget data existing                                            | Sarah        | `/budget/history`           | **FIXED** — `hasData` only checked budgetAmount > 0; now also checks spentAmount > 0                             |
+| B8  | **Budget reallocation advice ignores worst overspends** — Mentions Housekeeper Salary (101%) but ignores House Expenses (209%) and Holiday (130%)               | David        | `/budget`                   | **FIXED** — Exceeded categories not sorted by severity; added sort by spent/budget ratio descending              |
+| B9  | **Mobile add-transaction button uses filter/sort icon** — The green button that opens transaction drawer looks like a filter icon, not "+" add                  | Alex         | Mobile header               | **FIXED** — Changed `ListPlus` icon to `Plus` for universal add affordance                                       |
+| B10 | **Calculators page missing from mobile sidebar navigation** — Not discoverable through hamburger menu                                                           | Alex         | Mobile nav                  | **NOT VALID** — Calculators already present in Navigation.astro sidebar (line 51), accessible via hamburger menu |
 
 ### Minor
 
-| #   | Bug                                                                                                           | Found By           | Pages           |
-| --- | ------------------------------------------------------------------------------------------------------------- | ------------------ | --------------- |
-| B11 | **Cash flow cards — text/date overlap** — Date and amount collide on dashboard cards                          | Alex               | `/dashboard`    |
-| B12 | **Dashboard category names truncated** — "Housekeeper S...", "House Expen..." in pie chart legend             | Sarah, Alex, David | `/dashboard`    |
-| B13 | **Calculator tab labels are icon-only on mobile** — No text, user can't tell what each tab does               | Alex               | `/calculators`  |
-| B14 | **Transaction date timezone bug** — "Today" entry shows as "Yesterday" in list                                | David              | `/transactions` |
-| B15 | **Resource Allocation pie chart initially renders too small** — Thin arc until page scroll triggers re-render | David              | `/reports`      |
-| B16 | **Deleted transactions still visible in main list** — Strikethrough items inflate "55 transactions" count     | David              | `/transactions` |
+| #   | Bug                                                                                                           | Found By           | Pages           | Status                                                                                                           |
+| --- | ------------------------------------------------------------------------------------------------------------- | ------------------ | --------------- | ---------------------------------------------------------------------------------------------------------------- |
+| B11 | **Cash flow cards — text/date overlap** — Date and amount collide on dashboard cards                          | Alex               | `/dashboard`    | **FIXED** — Added `truncate` to date time/span elements in CashFlowItem                                          |
+| B12 | **Dashboard category names truncated** — "Housekeeper S...", "House Expen..." in pie chart legend             | Sarah, Alex, David | `/dashboard`    | **FIXED** — Widened legend name max-width from 100px/120px to 140px/200px in SpendingChart                       |
+| B13 | **Calculator tab labels are icon-only on mobile** — No text, user can't tell what each tab does               | Alex               | `/calculators`  | **FIXED** — Removed `hidden sm:inline` and duplicate CSS; labels now always visible with smaller text on mobile  |
+| B14 | **Transaction date timezone bug** — "Today" entry shows as "Yesterday" in list                                | David              | `/transactions` | **FIXED** — Parse date as local date (year/month/day) instead of UTC `new Date()` to prevent timezone shift      |
+| B15 | **Resource Allocation pie chart initially renders too small** — Thin arc until page scroll triggers re-render | David              | `/reports`      | **FIXED** — Changed container from `w-full` to fixed `w-[250px]` on mobile so chart has known dimensions at init |
+| B16 | **Deleted transactions still visible in main list** — Strikethrough items inflate "55 transactions" count     | David              | `/transactions` | **FIXED** — Changed `include_deleted` from `true` to `false` in transaction list API                             |
 
 ---
 

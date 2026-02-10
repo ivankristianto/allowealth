@@ -125,7 +125,10 @@ const chartId = `resource-allocation-chart-${Math.random().toString(36).slice(2,
           data-chart-colors={serializedColors}
         >
           {/* Chart Container */}
-          <div class="h-[250px] w-full sm:w-[250px] shrink-0 relative" id={`${chartId}-container`}>
+          <div
+            class="h-[250px] w-full max-w-[250px] mx-auto sm:mx-0 shrink-0 relative"
+            id={`${chartId}-container`}
+          >
             <canvas
               id={chartId}
               aria-label={`Resource allocation chart showing ${data.length} expense categories`}

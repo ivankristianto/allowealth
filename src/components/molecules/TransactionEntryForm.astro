@@ -661,6 +661,7 @@ const defaultDatePick =
     };
 
     const fieldErrors: Record<string, string | null> = {};
+    let isResetting = false;
 
     function updateFieldErrorUI(fieldName: string, errorMessage: string | null) {
       // For chip-based fields, look for the form-control container differently
@@ -707,6 +708,7 @@ const defaultDatePick =
     }
 
     function validateField(fieldName: string, value: string): string | null {
+      if (isResetting) return null;
       const validator = validators[fieldName];
       if (!validator) return null;
 
@@ -939,6 +941,10 @@ const defaultDatePick =
               }
             });
 
+            // Suppress validation during programmatic reset to prevent
+            // input event listeners from showing errors on empty fields
+            isResetting = true;
+
             // Reset title and amount only
             const titleInput = form.querySelector('input[name="title"]') as HTMLInputElement;
             const amountInput = form.querySelector('input[name="amount"]') as HTMLInputElement;
@@ -965,10 +971,13 @@ const defaultDatePick =
               }
             }
 
-            // Clear field error state
+            isResetting = false;
+
+            // Clear field error state and UI after reset
             Object.keys(fieldErrors).forEach((k) => {
               fieldErrors[k] = null;
             });
+            clearFieldErrors();
 
             updateSubmitButton();
             // Auto-focus amount for rapid entry

@@ -110,7 +110,7 @@ export const CURRENCY_META = {
     symbol: 'Rp',
     locale: 'id-ID',
     name: 'Indonesian Rupiah',
-    decimals: 0,
+    decimals: 2,
     symbolPosition: 'before' as const,
     thousandsSeparator: '.',
     decimalSeparator: ',',

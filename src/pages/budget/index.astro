@@ -182,6 +182,18 @@ const generateAdviceData = (): AdviceData | null => {
   const warningCategories = alerts.filter((a) => a.status === 'warning');
 
   if (exceededCategories.length > 0) {
+    // Sort by worst overspend first (highest spent/budget ratio)
+    exceededCategories.sort((a, b) => {
+      const ratioA =
+        parseFloat(a.budget_amount) > 0
+          ? parseFloat(a.spent_amount) / parseFloat(a.budget_amount)
+          : 0;
+      const ratioB =
+        parseFloat(b.budget_amount) > 0
+          ? parseFloat(b.spent_amount) / parseFloat(b.budget_amount)
+          : 0;
+      return ratioB - ratioA;
+    });
     const category = exceededCategories[0];
     const overage = formatCurrency(category.overage, selectedCurrency);
     return {
@@ -192,6 +204,18 @@ const generateAdviceData = (): AdviceData | null => {
   }
 
   if (warningCategories.length > 0) {
+    // Sort by closest to exceeding first (highest percentage used)
+    warningCategories.sort((a, b) => {
+      const ratioA =
+        parseFloat(a.budget_amount) > 0
+          ? parseFloat(a.spent_amount) / parseFloat(a.budget_amount)
+          : 0;
+      const ratioB =
+        parseFloat(b.budget_amount) > 0
+          ? parseFloat(b.spent_amount) / parseFloat(b.budget_amount)
+          : 0;
+      return ratioB - ratioA;
+    });
     const category = warningCategories[0];
     const budgetAmount = parseFloat(category.budget_amount);
     const spentAmount = parseFloat(category.spent_amount);
