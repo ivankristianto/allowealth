@@ -64,5 +64,5 @@ export const workspaceService = new WorkspaceService(db);
 export const workspaceMetaService = new WorkspaceMetaService(db);
 export const workspaceInvitationService = new WorkspaceInvitationService(db);
 export const apiKeyService = new ApiKeyService(db);
-export const emailService = new EmailService(workspaceMetaService);
+export const emailService = new EmailService();
 export const emailVerificationService = new EmailVerificationService(db, emailService);

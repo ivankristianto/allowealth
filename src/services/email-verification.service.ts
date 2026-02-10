@@ -90,7 +90,7 @@ export class EmailVerificationService {
     const verificationUrl = `${baseUrl}/api/auth/verify-email?token=${token}`;
 
     // Send email via workspace email service
-    await this.emailSvc.sendEmailVerification(user.workspace_id, {
+    await this.emailSvc.sendEmailVerification({
       to: user.email,
       userName: user.name,
       verificationUrl,

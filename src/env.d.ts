@@ -40,10 +40,16 @@ declare global {
     readonly LOG_LEVEL?: string;
 
     // Email configuration
-    /** Email mode: 'console' for development logging, undefined for real sending */
-    readonly EMAIL_MODE?: 'console';
-    /** Base64-encoded 32-byte encryption key for email credentials */
-    readonly EMAIL_ENCRYPTION_KEY?: string;
+    /** Email mode: 'console' for development logging, 'real' for provider sending */
+    readonly EMAIL_MODE?: 'console' | 'real';
+    /** Email provider: 'resend' or 'sendgrid' */
+    readonly EMAIL_PROVIDER?: 'resend' | 'sendgrid';
+    /** API key from your email provider dashboard */
+    readonly EMAIL_API_KEY?: string;
+    /** Sender display name */
+    readonly EMAIL_SENDER_NAME?: string;
+    /** Verified sender email address */
+    readonly EMAIL_SENDER_ADDRESS?: string;
   }
 
   interface ImportMeta {
