@@ -204,18 +204,15 @@ export class AddTransactionPage extends BasePage {
    */
   async expectRedirectToTransactions(type: 'expense' | 'income' = 'income'): Promise<void> {
     // Navigate to transactions page with appropriate type filter
-    await this.page.goto(`/transactions?type=${type}`);
+    // Use waitUntil: 'domcontentloaded' to avoid waiting for slow network resources on mobile
+    await this.page.goto(`/transactions?type=${type}`, { waitUntil: 'domcontentloaded' });
 
-    // Verify we're on the transactions page by checking for the type filter buttons
-    const typeFilter: Locator =
-      type === 'expense'
-        ? this.page.locator(
-            'button:has-text("Expenses")[aria-pressed="true"], [data-testid="type-filter-expense"][pressed]'
-          )
-        : this.page.locator(
-            'button:has-text("Income")[aria-pressed="true"], [data-testid="type-filter-income"][pressed]'
-          );
-    await expect(typeFilter.first()).toBeVisible();
+    // Verify we're on the transactions page by checking for the active type filter button
+    // aria-pressed is set server-side so it's available once the HTML is parsed
+    const typeFilter: Locator = this.page.locator(
+      `[data-filter-type="${type}"][aria-pressed="true"]`
+    );
+    await expect(typeFilter).toBeVisible({ timeout: 10000 });
   }
 
   /**
