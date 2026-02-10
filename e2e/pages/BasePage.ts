@@ -108,7 +108,7 @@ export abstract class BasePage {
    * Handles both IDR format (dot=thousands, comma=decimal: "Rp480.000,00")
    * and USD format (comma=thousands, dot=decimal: "$2,500.00").
    * @param text - Currency string to parse
-   * @returns Parsed number rounded to nearest integer (0 if parsing fails)
+   * @returns Parsed number (0 if parsing fails)
    */
   protected parseCurrency(text: string): number {
     // Strip currency symbols and whitespace, keep digits, dots, commas, minus
@@ -129,6 +129,6 @@ export abstract class BasePage {
     }
 
     const parsed = Number(cleaned);
-    return isNaN(parsed) ? 0 : Math.round(parsed);
+    return isNaN(parsed) ? 0 : parsed;
   }
 }

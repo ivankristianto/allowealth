@@ -97,7 +97,7 @@ test.describe('Email Verification', () => {
     // Reset rate limits before this describe block to prevent 429 errors
     // when running across multiple Playwright projects (chromium + mobile-chrome)
     test.beforeAll(async ({ request }) => {
-      await request.post(`${E2E_BASE_URL}/api/auth/__reset-rate-limits`);
+      await request.post(`${E2E_BASE_URL}/api/auth/e2e-reset-rate-limits`);
     });
 
     test('register, verify via token, then login successfully', async ({ page, request }) => {
