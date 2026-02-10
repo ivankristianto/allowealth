@@ -138,12 +138,10 @@ const defaultDatePick =
   <div class="form-control">
     <div class="relative">
       <input
-        type="number"
+        type="text"
         id={`${formId}-amount`}
         name="amount"
         value={values.amount || ''}
-        step="0.01"
-        min="0.01"
         required
         placeholder="0"
         class:list={[
@@ -441,6 +439,8 @@ const defaultDatePick =
   import { getCsrfHeaders } from '@/lib/csrf-client';
   import { CURRENCY_META, AVAILABLE_CURRENCIES, DEFAULT_CURRENCY } from '@/lib/constants/currency';
   import type { Currency } from '@/lib/constants/currency';
+  import { attachAmountFormatter, stripAmountFormatting } from '@/lib/formatting/amount-input';
+  import type { AmountFormatterHandle } from '@/lib/formatting/amount-input';
 
   function initTransactionEntryForms() {
     document.querySelectorAll<HTMLFormElement>('[data-transaction-form]').forEach(initForm);
@@ -626,9 +626,10 @@ const defaultDatePick =
       },
       amount: {
         validate: (value) => {
-          const cleanValue = value.replace(/[^\d.-]/g, '');
-          const num = Number(cleanValue);
           if (!value || value.trim() === '') return 'Amount is required';
+          const currentCurrency = (currencyInput?.value || DEFAULT_CURRENCY) as Currency;
+          const cleanValue = stripAmountFormatting(value, currentCurrency);
+          const num = Number(cleanValue);
           if (isNaN(num)) return 'Amount must be a valid number';
           if (num <= 0) return 'Amount must be greater than 0';
           return null;
@@ -870,7 +871,10 @@ const defaultDatePick =
         const data = {
           type: transactionType,
           description: String(formData.get('title') || ''),
-          amount: String(formData.get('amount') || '0').replace(/[^\d.-]/g, ''),
+          amount: stripAmountFormatting(
+            String(formData.get('amount') || '0'),
+            (formData.get('currency') || DEFAULT_CURRENCY) as Currency
+          ),
           currency: String(formData.get('currency') || DEFAULT_CURRENCY),
           category_id: String(formData.get('category_id') || ''),
           asset_id: String(formData.get('asset_id') || ''),
@@ -1005,6 +1009,24 @@ const defaultDatePick =
     // Initialize
     attachValidationListeners();
     updateSubmitButton();
+
+    // Attach amount formatter for thousand separators
+    const amountInputEl = form.querySelector('input[name="amount"]') as HTMLInputElement;
+    let amountFormatter: AmountFormatterHandle | null = null;
+    if (amountInputEl) {
+      const initialCurrency = (currencyInput?.value || DEFAULT_CURRENCY) as Currency;
+      amountFormatter = attachAmountFormatter(amountInputEl, initialCurrency);
+    }
+
+    // Update formatter currency when currency badge is clicked.
+    // This listener runs AFTER the badge click handler (in initCurrencyToggle)
+    // which updates currencyInput.value, so we read the new value here.
+    if (currencyBadge && amountFormatter) {
+      currencyBadge.addEventListener('click', () => {
+        const newCurrency = (currencyInput?.value || DEFAULT_CURRENCY) as Currency;
+        amountFormatter!.updateCurrency(newCurrency);
+      });
+    }
 
     // Auto-focus amount field on initial load (only for create mode)
     if (form.dataset.mode === 'create') {

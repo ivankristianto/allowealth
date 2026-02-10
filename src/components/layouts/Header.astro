@@ -88,7 +88,8 @@ const { title, subtitle, showMenuToggle = true, user } = Astro.props;
           aria-label="New Transaction"
         >
           <Plus size={20} class="stroke-current" aria-hidden="true" />
-          <span class="hidden sm:inline">New Transaction</span>
+          <span class="text-xs sm:text-sm sm:hidden">New</span>
+          <span class="text-sm hidden sm:inline">New Transaction</span>
         </Button>
       )
     }

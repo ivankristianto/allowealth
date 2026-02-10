@@ -174,14 +174,12 @@ const currencyOptions: Array<{ value: Currency; label: string }> = [
       <Input
         id="balance"
         name="balance"
-        type="number"
+        type="text"
         value={values.balance || ''}
         placeholder="Enter current balance"
         required={true}
         error={!!errors.balance}
         errorMessage={errors.balance}
-        step="0.01"
-        min="0"
         className="join-item flex-1"
       />
     </div>
@@ -199,6 +197,9 @@ const currencyOptions: Array<{ value: Currency; label: string }> = [
 
 <script>
   import { getCsrfHeaders } from '@/lib/csrf-client';
+  import { attachAmountFormatter, stripAmountFormatting } from '@/lib/formatting/amount-input';
+  import type { AmountFormatterHandle } from '@/lib/formatting/amount-input';
+  import type { Currency } from '@/lib/constants/currency';
 
   // Asset Form Client-side script
   // Handles form validation and submission
@@ -235,14 +236,25 @@ const currencyOptions: Array<{ value: Currency; label: string }> = [
     const currencySelect = document.getElementById('currency') as HTMLSelectElement;
     const balanceCurrencySelect = document.getElementById('currency-select') as HTMLSelectElement;
 
+    // Attach amount formatter for thousand separators on balance input
+    const balanceInput = document.getElementById('balance') as HTMLInputElement;
+    let balanceFormatter: AmountFormatterHandle | null = null;
+    if (balanceInput) {
+      balanceInput.inputMode = 'decimal';
+      const initialCurrency = (currencySelect?.value || 'IDR') as Currency;
+      balanceFormatter = attachAmountFormatter(balanceInput, initialCurrency);
+    }
+
     // Sync currency selects
     if (currencySelect && balanceCurrencySelect) {
       currencySelect.addEventListener('change', () => {
         balanceCurrencySelect.value = currencySelect.value;
+        balanceFormatter?.updateCurrency(currencySelect.value as Currency);
       });
 
       balanceCurrencySelect.addEventListener('change', () => {
         currencySelect.value = balanceCurrencySelect.value;
+        balanceFormatter?.updateCurrency(balanceCurrencySelect.value as Currency);
       });
     }
 
@@ -328,7 +340,11 @@ const currencyOptions: Array<{ value: Currency; label: string }> = [
       if (!values.balance) {
         errors.push('Balance is required');
       } else {
-        const balance = parseFloat(values.balance);
+        const stripped = stripAmountFormatting(
+          values.balance,
+          (values.currency || 'IDR') as Currency
+        );
+        const balance = Number(stripped);
         if (isNaN(balance) || balance < 0) {
           errors.push('Balance must be a valid positive number');
         }
@@ -382,7 +398,7 @@ const currencyOptions: Array<{ value: Currency; label: string }> = [
       try {
         const payload: Record<string, string> = {
           name: values.name,
-          balance: values.balance,
+          balance: stripAmountFormatting(values.balance, (values.currency || 'IDR') as Currency),
           currency: values.currency,
         };
 

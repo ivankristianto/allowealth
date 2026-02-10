@@ -31,7 +31,7 @@ export default meta;
 const icons = {
   receipt: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 17.5v-11"/></svg>`,
   wallet: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></svg>`,
-  layoutGrid: `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>`,
+  plus: `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>`,
   donut: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.2 11A8.5 8.5 0 0 0 13 4.2V2a1 1 0 0 0-2 0v2.2a8.5 8.5 0 0 0-7.2 6.8H2a1 1 0 0 0 0 2h1.8a8.5 8.5 0 0 0 7.2 6.8V22a1 1 0 0 0 2 0v-2.2a8.5 8.5 0 0 0 7.2-6.8H22a1 1 0 0 0 0-2Zm-4.7 0h-4A1.5 1.5 0 0 1 10 9.5v-3a6.5 6.5 0 0 1 5.5 4.5Z"/></svg>`,
   chartBar: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" x2="12" y1="20" y2="10"/><line x1="18" x2="18" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="16"/></svg>`,
 };
@@ -57,7 +57,6 @@ const isActive = (href: string, currentPath: string) => {
 
 const createMobileNavigation = (args: { currentPath?: string }): HTMLElement => {
   const { currentPath = '/dashboard' } = args;
-  const isDashboardActive = currentPath === '/' || currentPath === '/dashboard';
 
   const nav = document.createElement('nav');
   nav.className =
@@ -75,22 +74,17 @@ const createMobileNavigation = (args: { currentPath?: string }): HTMLElement => 
     container.appendChild(link);
   });
 
-  // Center FAB
+  // Center FAB (New Transaction)
   const fabContainer = document.createElement('div');
   fabContainer.className = 'flex-1 flex justify-center -mt-10 pointer-events-none';
 
-  const fab = document.createElement('a');
-  fab.href = '/dashboard';
-  fab.className = `w-16 h-16 rounded-2xl flex items-center justify-center transition-all active:scale-90 pointer-events-auto ring-8 ring-base-100 shadow-2xl min-w-[64px] min-h-[64px] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-accent focus-visible:ring-offset-4 ${
-    isDashboardActive
-      ? 'bg-accent text-accent-content shadow-accent/30'
-      : 'bg-primary text-primary-content'
-  }`;
-  fab.setAttribute('aria-label', 'Dashboard');
-  if (isDashboardActive) {
-    fab.setAttribute('aria-current', 'page');
-  }
-  fab.innerHTML = icons.layoutGrid;
+  const fab = document.createElement('button');
+  fab.type = 'button';
+  fab.setAttribute('data-open-transaction-drawer', '');
+  fab.className =
+    'w-16 h-16 rounded-2xl flex items-center justify-center transition-all active:scale-90 pointer-events-auto ring-8 ring-base-100 shadow-2xl min-w-[64px] min-h-[64px] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-accent focus-visible:ring-offset-4 bg-accent text-accent-content shadow-accent/30';
+  fab.setAttribute('aria-label', 'New Transaction');
+  fab.innerHTML = icons.plus;
 
   fabContainer.appendChild(fab);
   container.appendChild(fabContainer);

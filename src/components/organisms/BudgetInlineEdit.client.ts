@@ -10,6 +10,8 @@
 
 import { csrfFetch } from '@/lib/csrf-client';
 import { addToast } from '@/lib/stores/toastStore';
+import { attachAmountFormatter, stripAmountFormatting } from '@/lib/formatting/amount-input';
+import type { Currency } from '@/lib/constants/currency';
 
 // =============================================================================
 // STATE
@@ -49,6 +51,19 @@ export function validateBudgetAmount(value: string): { valid: boolean; error?: s
   }
 
   return { valid: true };
+}
+
+// =============================================================================
+// CURRENCY LOOKUP
+// =============================================================================
+
+/**
+ * Read the budget page's active currency from `data-currency` on the container.
+ * Falls back to 'IDR' if not set.
+ */
+function getBudgetCurrency(): Currency {
+  const container = document.querySelector('[data-budget-container]');
+  return (container?.getAttribute('data-currency') as Currency) || 'IDR';
 }
 
 // =============================================================================
@@ -172,14 +187,16 @@ function openEditPopover(trigger: HTMLElement, categoryId: string): void {
   label.htmlFor = inputId;
 
   const input = document.createElement('input');
-  input.type = 'number';
+  input.type = 'text';
+  input.inputMode = 'decimal';
   input.id = inputId;
   input.value = rawAmount;
-  input.min = '0';
-  input.step = '0.01';
   input.className = 'input input-sm input-bordered w-full text-right font-bold rounded-lg';
   input.dataset.inlineEditInput = 'true';
   input.setAttribute('aria-label', 'Budget amount');
+
+  // Attach amount formatter for thousand separators
+  attachAmountFormatter(input, getBudgetCurrency());
 
   const btnRow = document.createElement('div');
   btnRow.className = 'flex items-center gap-2 mt-2';
@@ -288,8 +305,9 @@ export function cancelEditMode(): void {
  * Handle save: validate, call API, refresh page.
  */
 async function handleSave(budgetId: string, value: string, categoryId: string): Promise<void> {
-  // Validate
-  const validation = validateBudgetAmount(value);
+  // Strip formatting before validation
+  const strippedValue = stripAmountFormatting(value, getBudgetCurrency());
+  const validation = validateBudgetAmount(strippedValue);
   if (!validation.valid) {
     addToast(validation.error || 'Invalid budget amount', 'error');
     return;
@@ -315,7 +333,7 @@ async function handleSave(budgetId: string, value: string, categoryId: string): 
     const response = await csrfFetch(`/api/budgets/${budgetId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ budget_amount: value }),
+      body: JSON.stringify({ budget_amount: strippedValue }),
     });
 
     if (!response.ok) {
@@ -331,7 +349,7 @@ async function handleSave(budgetId: string, value: string, categoryId: string): 
     // Dispatch event for page orchestrator to refresh all partials
     document.dispatchEvent(
       new CustomEvent('budget-updated', {
-        detail: { categoryId, budgetId, budgetAmount: value },
+        detail: { categoryId, budgetId, budgetAmount: strippedValue },
       })
     );
   } catch (err) {
