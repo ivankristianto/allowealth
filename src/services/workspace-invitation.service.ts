@@ -387,7 +387,7 @@ export class WorkspaceInvitationService {
       // Calculate expiration time
       const expiresIn = '7 days';
 
-      await emailService.sendWorkspaceInvitation(invitation.workspace_id, {
+      await emailService.sendWorkspaceInvitation({
         to: invitation.email,
         inviterName,
         workspaceName,

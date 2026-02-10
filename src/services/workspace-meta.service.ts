@@ -29,9 +29,6 @@ import {
   WEEK_START_VALUES,
   DEFAULT_WORKSPACE_SETTINGS,
   isValidWorkspaceMetaKey,
-  EMAIL_PROVIDERS,
-  isValidEmailProvider,
-  type EmailSettings,
 } from '@/lib/constants/workspace-meta-keys';
 import { WorkspaceMetaServiceError, ServiceErrorCode } from './service-errors';
 
@@ -88,37 +85,6 @@ function validateMetaValue(key: WorkspaceMetaKey, value: string): void {
     case WORKSPACE_META_KEYS.COMPACT_NUMBERS:
       if (value !== 'true' && value !== 'false') {
         throw new Error('Compact numbers must be "true" or "false"');
-      }
-      break;
-
-    case WORKSPACE_META_KEYS.EMAIL_PROVIDER:
-      // Empty string is allowed (unconfigured)
-      if (value && !isValidEmailProvider(value)) {
-        throw new Error(`Invalid email provider. Must be one of: ${EMAIL_PROVIDERS.join(', ')}`);
-      }
-      break;
-
-    case WORKSPACE_META_KEYS.EMAIL_API_KEY:
-      // Empty string or encrypted format
-      if (value && !value.startsWith('aes256gcm:')) {
-        throw new Error('API key must be encrypted');
-      }
-      break;
-
-    case WORKSPACE_META_KEYS.EMAIL_SENDER_NAME:
-      // Allow empty or any non-empty string up to 100 chars
-      if (value && value.length > 100) {
-        throw new Error('Sender name too long (max 100 characters)');
-      }
-      break;
-
-    case WORKSPACE_META_KEYS.EMAIL_SENDER_ADDRESS:
-      // Empty string is allowed, but if provided must be valid email
-      if (value) {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(value)) {
-          throw new Error('Invalid sender email address');
-        }
       }
       break;
 
@@ -432,101 +398,6 @@ export class WorkspaceMetaService {
         DEFAULT_WORKSPACE_SETTINGS.compactNumbers
       ),
     };
-  }
-
-  // ============================================================================
-  // Email settings methods
-  // ============================================================================
-
-  /**
-   * Get email configuration for workspace
-   *
-   * @param workspaceId - Workspace ID
-   * @returns EmailSettings object (null values indicate unconfigured)
-   */
-  async getEmailSettings(workspaceId: string): Promise<EmailSettings> {
-    const metaAll = await this.getAll(workspaceId);
-
-    const provider = metaAll[WORKSPACE_META_KEYS.EMAIL_PROVIDER];
-    const apiKey = metaAll[WORKSPACE_META_KEYS.EMAIL_API_KEY];
-    const senderName = metaAll[WORKSPACE_META_KEYS.EMAIL_SENDER_NAME];
-    const senderAddress = metaAll[WORKSPACE_META_KEYS.EMAIL_SENDER_ADDRESS];
-
-    return {
-      provider: provider && isValidEmailProvider(provider) ? provider : null,
-      apiKey: apiKey || null,
-      senderName: senderName || null,
-      senderAddress: senderAddress || null,
-    };
-  }
-
-  /**
-   * Check if email is fully configured
-   *
-   * @param workspaceId - Workspace ID
-   * @returns true if all email settings are present
-   */
-  async isEmailConfigured(workspaceId: string): Promise<boolean> {
-    const settings = await this.getEmailSettings(workspaceId);
-    return !!(
-      settings.provider &&
-      settings.apiKey &&
-      settings.senderName &&
-      settings.senderAddress
-    );
-  }
-
-  /**
-   * Set email provider
-   *
-   * @param workspaceId - Workspace ID
-   * @param provider - Email provider ('sendgrid' or 'resend')
-   */
-  async setEmailProvider(workspaceId: string, provider: string): Promise<void> {
-    await this.set(workspaceId, WORKSPACE_META_KEYS.EMAIL_PROVIDER, provider);
-  }
-
-  /**
-   * Set encrypted email API key
-   *
-   * @param workspaceId - Workspace ID
-   * @param encryptedApiKey - Already encrypted API key (aes256gcm:...)
-   */
-  async setEmailApiKey(workspaceId: string, encryptedApiKey: string): Promise<void> {
-    await this.set(workspaceId, WORKSPACE_META_KEYS.EMAIL_API_KEY, encryptedApiKey);
-  }
-
-  /**
-   * Set email sender name
-   *
-   * @param workspaceId - Workspace ID
-   * @param name - Display name for sender
-   */
-  async setEmailSenderName(workspaceId: string, name: string): Promise<void> {
-    await this.set(workspaceId, WORKSPACE_META_KEYS.EMAIL_SENDER_NAME, name);
-  }
-
-  /**
-   * Set email sender address
-   *
-   * @param workspaceId - Workspace ID
-   * @param address - Email address for sender
-   */
-  async setEmailSenderAddress(workspaceId: string, address: string): Promise<void> {
-    await this.set(workspaceId, WORKSPACE_META_KEYS.EMAIL_SENDER_ADDRESS, address);
-  }
-
-  /**
-   * Clear all email settings (reset to unconfigured)
-   *
-   * @param workspaceId - Workspace ID
-   */
-  async clearEmailSettings(workspaceId: string): Promise<void> {
-    // Set empty strings (not delete, to ensure consistent state)
-    await this.set(workspaceId, WORKSPACE_META_KEYS.EMAIL_PROVIDER, '');
-    await this.set(workspaceId, WORKSPACE_META_KEYS.EMAIL_API_KEY, '');
-    await this.set(workspaceId, WORKSPACE_META_KEYS.EMAIL_SENDER_NAME, '');
-    await this.set(workspaceId, WORKSPACE_META_KEYS.EMAIL_SENDER_ADDRESS, '');
   }
 
   // ============================================================================

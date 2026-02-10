@@ -151,7 +151,7 @@ export async function requestPasswordReset(email: string): Promise<void> {
     const resetUrl = `${baseUrl}/reset-password?token=${token}`;
 
     try {
-      await emailService.sendPasswordReset(user.workspace_id, {
+      await emailService.sendPasswordReset({
         to: email,
         resetUrl,
         expiresIn: '1 hour',

@@ -7,7 +7,6 @@ export type {
   SendPasswordResetOptions,
   SendWorkspaceInvitationOptions,
   SendEmailVerificationOptions,
-  SendTestOptions,
 } from './email.service';
 
 export { EmailTemplateService, emailTemplateService } from './email-template.service';
