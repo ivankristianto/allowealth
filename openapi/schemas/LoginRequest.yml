@@ -16,3 +16,8 @@ LoginRequest:
         User password. Password format validation is enforced during signup
         and password changes, not during login.
       example: mypassword123
+    turnstileToken:
+      type: string
+      description: >
+        Cloudflare Turnstile verification token (from cf-turnstile-response widget).
+        Optional when Turnstile is not configured.
