@@ -404,6 +404,6 @@ export const RATE_LIMIT_PRESETS = {
 } as const;
 
 // Start cleanup on module load (for long-running servers)
-if (typeof globalThis !== 'undefined' && !import.meta.env?.TEST) {
+if (typeof globalThis !== 'undefined' && import.meta.env?.MODE !== 'test') {
   startCleanup();
 }

@@ -17,6 +17,7 @@
 
 /* eslint-disable no-console -- Logger is the console wrapper; direct console calls are intentional */
 import { createConsola, type LogObject } from 'consola/core';
+import { getEnv } from '@/lib/env';
 
 const isDev = typeof import.meta !== 'undefined' && import.meta.env?.MODE === 'development';
 // Bun test does not set import.meta.env.MODE; it sets process.env.NODE_ENV instead.
@@ -41,7 +42,7 @@ const LOG_LEVEL_MAP: Record<string, number> = {
 };
 
 export function resolveLogLevel(): number {
-  const envLevel = typeof import.meta !== 'undefined' ? import.meta.env?.LOG_LEVEL : undefined;
+  const envLevel = getEnv('LOG_LEVEL');
   if (envLevel && envLevel.toLowerCase() in LOG_LEVEL_MAP) {
     return LOG_LEVEL_MAP[envLevel.toLowerCase()];
   }
