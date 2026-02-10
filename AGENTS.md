@@ -596,13 +596,13 @@ npx @redocly/cli preview-docs openapi.yml
 - **DO NOT access `user.attributes.property`** - The User type has properties directly on the object (`user.name`, `user.email`), not nested in `attributes`.
 - **DO NOT declare `Astro.locals` types in multiple files** - Centralize in `src/env.d.ts` only.
 - **DO NOT use `vitest` to write test, use `bun:test` instead.**
-- **DO NOT mix `define:vars`, `is:inline`, or `type="module"` with npm imports in `<script>` tags** - These attributes make Astro treat scripts as inline, which cannot resolve npm package imports (e.g., `import { animate } from 'motion'`). Instead, pass server values via `data-*` attributes on HTML elements and read them in a regular `<script>` tag:
+- **DO NOT mix `define:vars`, `is:inline`, or `type="module"` with npm imports in `<script>` tags** - These attributes make Astro treat scripts as inline, which cannot resolve npm package imports (e.g., `import { animate } from 'motion/mini'`). Instead, pass server values via `data-*` attributes on HTML elements and read them in a regular `<script>` tag:
 
   ```astro
   <!-- ✅ Correct: Use data attributes -->
   <dialog data-modal data-backdrop-close={backdropClose ? 'true' : 'false'}>
     <script>
-      import { animate } from 'motion'; // Works!
+      import { animate } from 'motion/mini'; // Works!
       document.querySelectorAll('dialog[data-modal]').forEach((modal) => {
         const backdropClose = modal.dataset.backdropClose === 'true';
       });
@@ -610,7 +610,7 @@ npx @redocly/cli preview-docs openapi.yml
 
     <!-- ❌ Wrong: define:vars breaks npm imports -->
     <script define:vars={{ backdropClose }}>
-      import { animate } from 'motion'; // Error: Cannot resolve module
+      import { animate } from 'motion/mini'; // Error: Cannot resolve module
     </script>
   </dialog>
   ```

@@ -14,14 +14,14 @@ bun add motion
 
 ```astro
 ---
-import { animate } from 'motion';
+import { animate } from 'motion/mini';
 ---
 ```
 
 Use design tokens for standard durations:
 
 ```typescript
-import { animate } from 'motion';
+import { animate } from 'motion/mini';
 import { animationDuration } from '@/lib/tokens';
 
 animate(element, { opacity: [0, 1] }, { duration: animationDuration.normal, easing: 'easeOut' });
@@ -50,7 +50,7 @@ Prefer `animationDuration.fast | normal | slow` from `@/lib/tokens`.
 ### Fade + Slide (Toast Pattern)
 
 ```typescript
-import { animate } from 'motion';
+import { animate } from 'motion/mini';
 
 // Enter animation (fade in + slide from right)
 animate(element, { opacity: [0, 1], x: [50, 0] }, { duration: 0.3, easing: 'easeOut' });
@@ -64,7 +64,7 @@ animate(element, { opacity: [1, 0], x: [0, 50] }, { duration: 0.2, easing: 'ease
 ### Fade + Slide Up (Modal Pattern)
 
 ```typescript
-import { animate } from 'motion';
+import { animate } from 'motion/mini';
 
 // Modal enter
 animate(modalElement, { opacity: [0, 1], y: [20, 0] }, { duration: 0.3, easing: 'easeOut' });
@@ -92,7 +92,7 @@ animate(element, { opacity: [1, 0] }, { duration: 0.2 });
 ### Stagger Children
 
 ```typescript
-import { animate } from 'motion';
+import { animate } from 'motion/mini';
 
 // Animate list items one by one
 const items = document.querySelectorAll('.list-item');
@@ -198,7 +198,7 @@ The `.theme-transition` utility class provides smooth color transitions when the
 - Dynamic values (e.g., calculated positions)
 
 ```typescript
-import { animate } from 'motion';
+import { animate } from 'motion/mini';
 
 animate(
   element,
@@ -296,7 +296,7 @@ The project migrated from `framer-motion` to `motion` for better Astro compatibi
 **Motion (current):**
 
 ```typescript
-import { animate } from 'motion';
+import { animate } from 'motion/mini';
 
 animate(element, { opacity: [0, 1] }, { duration: 0.3 });
 ```

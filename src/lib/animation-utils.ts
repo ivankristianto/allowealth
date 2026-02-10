@@ -5,7 +5,7 @@
  * Uses Motion library for performant, declarative animations.
  *
  * @example
- * import { animate } from 'motion';
+ * import { animate } from 'motion/mini';
  * import { presets, durations } from '@/lib/animation-utils';
  *
  * animate(element, presets.fadeIn.animate, { duration: durations.fast });
