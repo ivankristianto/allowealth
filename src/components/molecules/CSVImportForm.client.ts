@@ -558,7 +558,10 @@ import { getCsrfToken } from '@/lib/csrf-client';
           throw new Error('File is empty');
         }
 
-        const lines = parseCSV(text);
+        // Strip BOM from Excel UTF-8 exports
+        const cleanText = text.replace(/^\uFEFF/, '');
+
+        const lines = parseCSV(cleanText);
 
         if (lines.length < 2) {
           throw new Error('CSV file must contain at least a header row and one data row');

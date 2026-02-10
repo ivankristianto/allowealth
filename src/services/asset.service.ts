@@ -339,7 +339,7 @@ export class AssetService {
       const deductResult: { balance: string }[] = await (tx as any)
         .update(this.schema.assets)
         .set({
-          balance: sql`CAST(CAST(${this.schema.assets.balance} AS REAL) - CAST(${amount} AS REAL) AS TEXT)`,
+          balance: sql`CAST(CAST(${this.schema.assets.balance} AS NUMERIC) - CAST(${amount} AS NUMERIC) AS TEXT)`,
           last_updated: now,
           updated_at: now,
         })
@@ -347,7 +347,7 @@ export class AssetService {
           and(
             eq(this.schema.assets.id, fromId),
             eq(this.schema.assets.workspace_id, workspaceId),
-            sql`CAST(${this.schema.assets.balance} AS REAL) >= CAST(${amount} AS REAL)`
+            sql`CAST(${this.schema.assets.balance} AS NUMERIC) >= CAST(${amount} AS NUMERIC)`
           )
         )
         .returning({ balance: this.schema.assets.balance });
@@ -368,7 +368,7 @@ export class AssetService {
       const addResult: { balance: string }[] = await (tx as any)
         .update(this.schema.assets)
         .set({
-          balance: sql`CAST(CAST(${this.schema.assets.balance} AS REAL) + CAST(${amount} AS REAL) AS TEXT)`,
+          balance: sql`CAST(CAST(${this.schema.assets.balance} AS NUMERIC) + CAST(${amount} AS NUMERIC) AS TEXT)`,
           last_updated: now,
           updated_at: now,
         })
@@ -560,7 +560,7 @@ export class AssetService {
       const result = await (this.db as any)
         .select({
           currency: this.schema.assets.currency,
-          total: sql<string>`sum(CAST(${this.schema.assets.balance} AS REAL))`,
+          total: sql<string>`sum(CAST(${this.schema.assets.balance} AS NUMERIC))`,
         })
         .from(this.schema.assets)
         .where(
@@ -585,7 +585,7 @@ export class AssetService {
         .select({
           type: this.schema.assets.type,
           currency: this.schema.assets.currency,
-          total: sql<string>`sum(CAST(${this.schema.assets.balance} AS REAL))`,
+          total: sql<string>`sum(CAST(${this.schema.assets.balance} AS NUMERIC))`,
           count: sql<number>`count(*)`,
         })
         .from(this.schema.assets)

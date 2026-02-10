@@ -410,7 +410,7 @@ export class ReportService {
   ): Promise<string> {
     const [result] = await (this.db as any)
       .select({
-        total: sql<string>`COALESCE(SUM(CAST(${this.schema.transactions.amount} AS REAL)), 0)`,
+        total: sql<string>`COALESCE(SUM(CAST(${this.schema.transactions.amount} AS NUMERIC)), 0)`,
       })
       .from(this.schema.transactions)
       .where(
@@ -440,7 +440,7 @@ export class ReportService {
   ): Promise<string> {
     const [result] = await (this.db as any)
       .select({
-        total: sql<string>`COALESCE(SUM(CAST(${this.schema.transactions.amount} AS REAL)), 0)`,
+        total: sql<string>`COALESCE(SUM(CAST(${this.schema.transactions.amount} AS NUMERIC)), 0)`,
       })
       .from(this.schema.transactions)
       .where(
@@ -471,7 +471,7 @@ export class ReportService {
     // Get total budget for the month
     const [budgetResult] = await (this.db as any)
       .select({
-        total: sql<string>`COALESCE(SUM(CAST(${this.schema.budgets.budget_amount} AS REAL)), 0)`,
+        total: sql<string>`COALESCE(SUM(CAST(${this.schema.budgets.budget_amount} AS NUMERIC)), 0)`,
       })
       .from(this.schema.budgets)
       .innerJoin(
@@ -519,7 +519,7 @@ export class ReportService {
     // Get total budget for all months in the year
     const [budgetResult] = await (this.db as any)
       .select({
-        total: sql<string>`COALESCE(SUM(CAST(${this.schema.budgets.budget_amount} AS REAL)), 0)`,
+        total: sql<string>`COALESCE(SUM(CAST(${this.schema.budgets.budget_amount} AS NUMERIC)), 0)`,
       })
       .from(this.schema.budgets)
       .innerJoin(
@@ -567,7 +567,7 @@ export class ReportService {
     const categoryExpenses = await (this.db as any)
       .select({
         category_name: this.schema.categories.name,
-        total: sql<string>`COALESCE(SUM(CAST(${this.schema.transactions.amount} AS REAL)), 0)`,
+        total: sql<string>`COALESCE(SUM(CAST(${this.schema.transactions.amount} AS NUMERIC)), 0)`,
       })
       .from(this.schema.transactions)
       .innerJoin(
@@ -585,7 +585,7 @@ export class ReportService {
         )
       )
       .groupBy(this.schema.categories.name)
-      .orderBy(sql`SUM(CAST(${this.schema.transactions.amount} AS REAL)) DESC`);
+      .orderBy(sql`SUM(CAST(${this.schema.transactions.amount} AS NUMERIC)) DESC`);
 
     if (categoryExpenses.length === 0) {
       return [];
@@ -632,7 +632,7 @@ export class ReportService {
     const categorySpending = await (this.db as any)
       .select({
         category_id: this.schema.transactions.category_id,
-        total: sql<string>`COALESCE(SUM(CAST(${this.schema.transactions.amount} AS REAL)), 0)`,
+        total: sql<string>`COALESCE(SUM(CAST(${this.schema.transactions.amount} AS NUMERIC)), 0)`,
       })
       .from(this.schema.transactions)
       .where(
@@ -682,7 +682,7 @@ export class ReportService {
     const yearlyBudgets = await (this.db as any)
       .select({
         category_id: this.schema.budgets.category_id,
-        total_budget: sql<string>`COALESCE(SUM(CAST(${this.schema.budgets.budget_amount} AS REAL)), 0)`,
+        total_budget: sql<string>`COALESCE(SUM(CAST(${this.schema.budgets.budget_amount} AS NUMERIC)), 0)`,
       })
       .from(this.schema.budgets)
       .where(
@@ -721,7 +721,7 @@ export class ReportService {
     const categorySpending = await (this.db as any)
       .select({
         category_id: this.schema.transactions.category_id,
-        total: sql<string>`COALESCE(SUM(CAST(${this.schema.transactions.amount} AS REAL)), 0)`,
+        total: sql<string>`COALESCE(SUM(CAST(${this.schema.transactions.amount} AS NUMERIC)), 0)`,
       })
       .from(this.schema.transactions)
       .where(

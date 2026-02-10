@@ -167,7 +167,7 @@ export class BudgetService {
     const monthTransactions = await (this.db as any)
       .select({
         category_id: this.schema.transactions.category_id,
-        total: sql<string>`sum(CAST(${this.schema.transactions.amount} AS REAL))`,
+        total: sql<string>`sum(CAST(${this.schema.transactions.amount} AS NUMERIC))`,
       })
       .from(this.schema.transactions)
       .where(
@@ -375,7 +375,7 @@ export class BudgetService {
 
     const [result] = await (this.db as any)
       .select({
-        total: sql<string>`COALESCE(sum(CAST(${this.schema.transactions.amount} AS REAL)), 0)`,
+        total: sql<string>`COALESCE(sum(CAST(${this.schema.transactions.amount} AS NUMERIC)), 0)`,
       })
       .from(this.schema.transactions)
       .where(
