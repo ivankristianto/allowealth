@@ -50,6 +50,12 @@ declare global {
     readonly EMAIL_SENDER_NAME?: string;
     /** Verified sender email address */
     readonly EMAIL_SENDER_ADDRESS?: string;
+
+    // Cloudflare Turnstile (Bot Protection)
+    /** Public site key for Turnstile widget (client-side) */
+    readonly PUBLIC_TURNSTILE_SITE_KEY: string;
+    /** Secret key for server-side Turnstile token verification */
+    readonly TURNSTILE_SECRET_KEY: string;
   }
 
   interface ImportMeta {
