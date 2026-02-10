@@ -57,10 +57,11 @@ export const POST: APIRoute = async (context) => {
     // Parse request body first (before consuming rate limit)
     const body = await request.json();
     email = body.email;
-    const { password, name, turnstileToken } = body;
+    const { password, name } = body;
+    const turnstileToken = typeof body.turnstileToken === 'string' ? body.turnstileToken : '';
 
     // Verify Turnstile token BEFORE rate limiting
-    const turnstileResult = await verifyTurnstileToken(turnstileToken || '', clientAddress);
+    const turnstileResult = await verifyTurnstileToken(turnstileToken, clientAddress);
     if (!turnstileResult.success) {
       return createErrorResponseResponse(
         'TURNSTILE_FAILED',

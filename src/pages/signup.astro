@@ -330,6 +330,7 @@ const hasInvitationError = !!invitationError;
         email: formData.get('email'),
         password: formData.get('password'),
         'confirm-password': formData.get('confirm-password'),
+        turnstileToken: formData.get('cf-turnstile-response') || '',
       };
 
       // Use shared validation from RegistrationValidation module
@@ -369,7 +370,7 @@ const hasInvitationError = !!invitationError;
             name: data.name,
             email: data.email,
             password: data.password,
-            turnstileToken: new FormData(form).get('cf-turnstile-response') || '',
+            turnstileToken: data.turnstileToken,
           }),
         });
 

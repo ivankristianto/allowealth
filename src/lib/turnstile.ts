@@ -6,7 +6,7 @@
  * Fail-closed: if configured but siteverify is unreachable, requests are rejected.
  */
 
-import { logError } from '@/lib/utils';
+import { logError } from '@/lib/logger';
 
 const SITEVERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
 const VERIFY_TIMEOUT_MS = 5000;

@@ -52,11 +52,14 @@ describe('verifyTurnstileToken', () => {
 
   test('returns error when token is empty and secret key is configured', async () => {
     setEnv('TURNSTILE_SECRET_KEY', 'test-secret-key');
+    const fetchMock = mock(() => Promise.resolve(new Response())) as unknown as typeof fetch;
+    globalThis.fetch = fetchMock;
 
     const result = await verifyTurnstileToken('', '127.0.0.1');
 
     expect(result.success).toBe(false);
     expect(result.error).toContain('missing');
+    expect(fetchMock).toHaveBeenCalledTimes(0);
   });
 
   test('skips verification when secret key is not configured', async () => {
@@ -105,12 +108,15 @@ describe('verifyTurnstileToken', () => {
     await verifyTurnstileToken('my-token', '192.168.1.1');
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    const [url, options] = (fetchMock as any).mock.calls[0];
+    const [url, options] = (fetchMock as unknown as { mock: { calls: [Parameters<typeof fetch>] } })
+      .mock.calls[0];
     expect(url).toBe('https://challenges.cloudflare.com/turnstile/v0/siteverify');
-    expect(options.method).toBe('POST');
-    expect(options.headers['Content-Type']).toBe('application/x-www-form-urlencoded');
+    expect(options).toBeDefined();
+    expect(options!.method).toBe('POST');
+    const headers = options!.headers as Record<string, string>;
+    expect(headers['Content-Type']).toBe('application/x-www-form-urlencoded');
 
-    const body = options.body as URLSearchParams;
+    const body = options!.body as URLSearchParams;
     expect(body.get('secret')).toBe('my-secret');
     expect(body.get('response')).toBe('my-token');
     expect(body.get('remoteip')).toBe('192.168.1.1');
