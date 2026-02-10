@@ -6,6 +6,7 @@
  * Request body:
  * - email: string (valid email format)
  * - password: string
+ * - turnstileToken: string (Cloudflare Turnstile response token)
  *
  * Response:
  * - 200: Login successful, sets session cookie
@@ -26,6 +27,7 @@ import {
   type ApiSuccessResponse,
 } from '@/types/api';
 import { logError } from '@/lib/utils';
+import { verifyTurnstileToken } from '@/lib/turnstile';
 import {
   checkRateLimit,
   createRateLimitResponse,
@@ -44,6 +46,17 @@ export const POST: APIRoute = async (context) => {
     const body = await request.json();
     email = body.email;
     const { password } = body;
+    const turnstileToken = typeof body.turnstileToken === 'string' ? body.turnstileToken : '';
+
+    // Verify Turnstile token BEFORE rate limiting (prevent burning rate limit without challenge)
+    const turnstileResult = await verifyTurnstileToken(turnstileToken, clientAddress);
+    if (!turnstileResult.success) {
+      return createErrorResponseResponse(
+        'TURNSTILE_FAILED',
+        turnstileResult.error || 'Bot protection verification failed.',
+        400
+      );
+    }
 
     // Check rate limit (10 attempts per 15 minutes per IP)
     // Pass clientAddress from Astro context for trusted IP (prevents spoofing)

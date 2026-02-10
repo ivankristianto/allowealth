@@ -23,7 +23,7 @@ paths:
               schema:
                 $ref: '../schemas/AuthSuccessResponse.yml#/AuthSuccessResponse'
         '400':
-          description: Invalid input
+          description: Bad request - invalid input or Turnstile verification failed
           content:
             application/json:
               schema:
@@ -62,7 +62,7 @@ paths:
               schema:
                 $ref: '../schemas/AuthSuccessResponse.yml#/AuthSuccessResponse'
         '400':
-          description: Invalid input
+          description: Bad request - invalid input or Turnstile verification failed
           content:
             application/json:
               schema:

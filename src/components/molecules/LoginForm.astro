@@ -16,6 +16,7 @@ import Button from '../atoms/Button.astro';
 import ErrorMessage from '../atoms/ErrorMessage.astro';
 import FormField from '../molecules/FormField.astro';
 import { CircleX, CircleCheck, Info } from '@lucide/astro';
+import Turnstile from '../atoms/Turnstile.astro';
 
 export interface Props {
   errorMessage?: string;
@@ -108,6 +109,9 @@ const {
           Forgot password?
         </a>
       </div>
+
+      <!-- Bot Protection -->
+      <Turnstile />
 
       <!-- Submit Button -->
       <div class="pt-2">
@@ -317,6 +321,7 @@ const {
           email: formData.get('email'),
           password: formData.get('password'),
           remember: formData.get('remember') === 'true',
+          turnstileToken: formData.get('cf-turnstile-response') || '',
         };
 
         const response = await fetch(apiLoginUrl, {
@@ -352,6 +357,10 @@ const {
         if (buttonText) buttonText.classList.remove('hidden');
         if (loadingSpinner) loadingSpinner.classList.add('hidden');
         if (submitButton) submitButton.disabled = false;
+        // Reset Turnstile widget for retry
+        if (typeof turnstile !== 'undefined') {
+          turnstile.reset();
+        }
       }
     });
   }
