@@ -343,8 +343,6 @@ bun run typecheck         # TypeScript (blocking)
 
 /assets                    # Active asset list
 /assets/closed             # Closed/inactive assets
-/assets/add                # Add new asset
-/assets/edit/[id]          # Edit existing asset
 /assets/history            # Asset history overview
 /assets/history/[id]       # Individual asset history
 /assets/categories         # Asset category management

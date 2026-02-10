@@ -100,11 +100,10 @@ const monthName = getMonthName(month);
           <input
             id={`${id}-amount`}
             name="budget_amount"
-            type="number"
+            type="text"
+            inputmode="decimal"
             required
-            min="0"
-            step="0.01"
-            placeholder={currency === 'IDR' ? 'e.g. 5,000,000' : 'e.g. 500'}
+            placeholder={currency === 'IDR' ? 'e.g. 5.000.000' : 'e.g. 500'}
             class="input input-lg w-full bg-base-200 border border-base-300 rounded-2xl font-bold text-base-content focus:ring-2 focus:ring-accent focus:outline-none focus:border-accent placeholder:text-base-content/30 placeholder:font-normal"
           />
         </FormField>
@@ -146,6 +145,8 @@ const monthName = getMonthName(month);
 <script>
   import { addToast } from '@lib/stores/toastStore';
   import { getCsrfHeaders } from '@/lib/csrf-client';
+  import { attachAmountFormatter, stripAmountFormatting } from '@/lib/formatting/amount-input';
+  import type { Currency } from '@/lib/constants/currency';
 
   // Track initialized modals to avoid duplicate handlers
   const initializedModals = new WeakSet<Element>();
@@ -167,6 +168,15 @@ const monthName = getMonthName(month);
       const categorySelect = document.getElementById(`${id}-category`) as HTMLSelectElement | null;
 
       if (!modal || !form || !categorySelect) return;
+
+      // Attach amount formatter for thousand separators on amount input
+      const amountInput = document.getElementById(`${id}-amount`) as HTMLInputElement | null;
+      const currencyValue =
+        ((container.querySelector('input[name="currency"]') as HTMLInputElement)
+          ?.value as Currency) || 'IDR';
+      if (amountInput) {
+        attachAmountFormatter(amountInput, currencyValue);
+      }
 
       // Auto-select first available (non-disabled) option
       const firstAvailable = categorySelect.querySelector(
@@ -198,8 +208,9 @@ const monthName = getMonthName(month);
         const month = parseInt(formData.get('month') as string, 10);
         const year = parseInt(formData.get('year') as string, 10);
 
-        // Client-side validation
-        const parsedAmount = Number(budgetAmount);
+        // Strip formatting before validation
+        const strippedAmount = stripAmountFormatting(budgetAmount, currencyValue);
+        const parsedAmount = Number(strippedAmount);
         if (isNaN(parsedAmount) || parsedAmount <= 0) {
           if (errorDiv) {
             errorDiv.textContent = 'Budget amount must be a positive number';
@@ -233,7 +244,7 @@ const monthName = getMonthName(month);
               category_id: categoryId,
               month,
               year,
-              budget_amount: budgetAmount,
+              budget_amount: strippedAmount,
               currency,
             }),
           });

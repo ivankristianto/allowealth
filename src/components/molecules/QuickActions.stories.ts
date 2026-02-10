@@ -202,7 +202,7 @@ export const CustomActions: StoryObj = {
     actions: [
       {
         label: 'Add Asset',
-        url: '/assets/add',
+        url: '/assets',
         icon: 'plus',
         variant: 'income',
         ariaLabel: 'Add new asset',
@@ -257,7 +257,7 @@ export const AllVariants: StoryObj = {
         actions: [
           {
             label: 'Add Asset',
-            url: '/assets/add',
+            url: '/assets',
             icon: 'plus',
             variant: 'income',
             ariaLabel: 'Add new asset',

@@ -807,6 +807,8 @@ const defaultDatePick =
             currencyBadge.textContent = `${meta.symbol} ${selectedCategory.currency}`;
           }
         }
+        // Sync amount formatter locale with new currency
+        amountFormatter?.updateCurrency(selectedCategory.currency as Currency);
       }
     }
 
@@ -974,6 +976,8 @@ const defaultDatePick =
                 currencyBadge.textContent = `${meta.symbol} ${prevCurrency}`;
               }
             }
+            // Sync amount formatter locale with restored currency
+            amountFormatter?.updateCurrency(prevCurrency as Currency);
 
             isResetting = false;
 

@@ -34,6 +34,24 @@ describe('stripAmountFormatting', () => {
     test('strips currency symbols', () => {
       expect(stripAmountFormatting('Rp2.400.000', 'IDR')).toBe('2400000');
     });
+
+    test('treats comma with 3+ digits as thousands (USD-style paste)', () => {
+      expect(stripAmountFormatting('12,000', 'IDR')).toBe('12000');
+    });
+
+    test('treats multiple commas as thousands separators', () => {
+      expect(stripAmountFormatting('1,000,000', 'IDR')).toBe('1000000');
+    });
+
+    test('treats comma with 1-2 digits as decimal', () => {
+      expect(stripAmountFormatting('12,50', 'IDR')).toBe('12.50');
+      expect(stripAmountFormatting('12,5', 'IDR')).toBe('12.5');
+    });
+
+    test('prefers IDR format when dots and comma both present', () => {
+      // Dots = thousands, comma = decimal (standard IDR format)
+      expect(stripAmountFormatting('2.400,50', 'IDR')).toBe('2400.50');
+    });
   });
 
   describe('USD (thousands=",", decimal=".")', () => {

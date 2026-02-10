@@ -172,10 +172,9 @@ const categoryOptions = categories.length
             <input
               id={`${id}-balance`}
               name="balance"
-              type="number"
+              type="text"
+              inputmode="decimal"
               required
-              min="0"
-              step="0.01"
               placeholder="0"
               class="input input-lg w-full bg-base-200 border border-base-300 rounded-2xl font-bold text-base-content focus:ring-2 focus:ring-accent focus:outline-none focus:border-accent placeholder:text-base-content/30 placeholder:font-normal"
             />
@@ -217,6 +216,8 @@ const categoryOptions = categories.length
 <script>
   import { addToast } from '@lib/stores/toastStore';
   import { csrfFetch } from '@/lib/csrf-client';
+  import { attachAmountFormatter, stripAmountFormatting } from '@/lib/formatting/amount-input';
+  import type { Currency } from '@/lib/constants/currency';
 
   // Track initialized modals to avoid duplicate handlers
   const initializedModals = new WeakSet<Element>();
@@ -260,6 +261,18 @@ const categoryOptions = categories.length
       const subtitleEl = container.querySelector('[data-modal-subtitle]');
 
       if (!modal || !form) return;
+
+      // Attach amount formatter for thousand separators on balance input
+      let balanceFormatterHandle: ReturnType<typeof attachAmountFormatter> | null = null;
+      if (balanceInput) {
+        const initialCurrency = (currencySelect?.value || 'IDR') as Currency;
+        balanceFormatterHandle = attachAmountFormatter(balanceInput, initialCurrency);
+      }
+
+      // Update formatter currency when currency select changes
+      currencySelect?.addEventListener('change', () => {
+        balanceFormatterHandle?.updateCurrency(currencySelect.value as Currency);
+      });
 
       createCategoryBtn?.addEventListener('click', () => {
         if (typeof (window as any).openAssetCategoryModal === 'function') {
@@ -387,15 +400,12 @@ const categoryOptions = categories.length
           return;
         }
 
-        // Balance validation - reject commas and invalid numbers (only when balance is provided)
+        // Balance validation - strip formatting then validate (only when balance is provided)
+        const selectedCurrency = (currencySelect?.value || 'IDR') as Currency;
+        const strippedBalance = balance ? stripAmountFormatting(balance, selectedCurrency) : '';
         if (balance) {
-          const balanceNum = parseFloat(balance);
-          if (
-            isNaN(balanceNum) ||
-            balanceNum < 0 ||
-            !isFinite(balanceNum) ||
-            balance.includes(',')
-          ) {
+          const balanceNum = Number(strippedBalance);
+          if (isNaN(balanceNum) || balanceNum < 0 || !isFinite(balanceNum)) {
             if (errorDiv) {
               errorDiv.textContent = 'Please enter a valid positive number for balance.';
               errorDiv.classList.remove('hidden');
@@ -439,9 +449,9 @@ const categoryOptions = categories.length
             payload.type = categoryId;
           }
 
-          // For create, include balance; for update, use balance endpoint
+          // For create, include balance (stripped of formatting); for update, use balance endpoint
           if (!isEdit) {
-            payload.balance = balance;
+            payload.balance = strippedBalance;
           }
 
           const response = await csrfFetch(url, {

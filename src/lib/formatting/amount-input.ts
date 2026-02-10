@@ -37,10 +37,21 @@ export function stripAmountFormatting(value: string, currency: Currency = 'IDR')
     // Find last comma — if it exists and has digits after it, treat as decimal
     const lastComma = cleaned.lastIndexOf(',');
     if (lastComma !== -1) {
-      // Remove all dots (thousands), replace last comma with dot (decimal)
-      const beforeDecimal = cleaned.substring(0, lastComma).replace(/\./g, '');
-      const afterDecimal = cleaned.substring(lastComma + 1);
-      cleaned = `${beforeDecimal}.${afterDecimal}`;
+      const afterLastComma = cleaned.substring(lastComma + 1);
+      const commaCount = (cleaned.match(/,/g) || []).length;
+      const hasDots = cleaned.includes('.');
+
+      // When no dots are present, commas could be USD-style thousands separators.
+      // Heuristic: multiple commas, or single comma with 3+ digits after (and no dots),
+      // means commas are thousands separators (e.g., '12,000' or '1,000,000').
+      // IDR has max 2 decimal places, so 3+ digits after comma is never a valid decimal.
+      if (!hasDots && (commaCount > 1 || afterLastComma.length >= 3)) {
+        cleaned = cleaned.replace(/,/g, '');
+      } else {
+        // Comma is decimal separator: remove dots (thousands), replace comma with dot
+        const beforeDecimal = cleaned.substring(0, lastComma).replace(/\./g, '');
+        cleaned = `${beforeDecimal}.${afterLastComma}`;
+      }
     } else {
       // No comma present — dots could be thousands separators OR a decimal point.
       // Heuristic: a single dot with 1-2 digits after it is a decimal point

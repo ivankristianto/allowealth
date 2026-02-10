@@ -26,10 +26,8 @@ export interface Props {
 const { budgets = [], currency = 'IDR', month, year } = Astro.props;
 
 const sortedBudgets = [...budgets].sort((a, b) => {
-  const amountA =
-    typeof a.budget_amount === 'string' ? parseFloat(a.budget_amount) : a.budget_amount;
-  const amountB =
-    typeof b.budget_amount === 'string' ? parseFloat(b.budget_amount) : b.budget_amount;
+  const amountA = typeof a.budget_amount === 'string' ? Number(a.budget_amount) : a.budget_amount;
+  const amountB = typeof b.budget_amount === 'string' ? Number(b.budget_amount) : b.budget_amount;
   return amountB - amountA;
 });
 ---
@@ -77,11 +75,11 @@ const sortedBudgets = [...budgets].sort((a, b) => {
                 {sortedBudgets.map((budget) => {
                   const budgetAmt =
                     typeof budget.budget_amount === 'string'
-                      ? parseFloat(budget.budget_amount)
+                      ? Number(budget.budget_amount)
                       : budget.budget_amount;
                   const spentAmt =
                     typeof budget.spent_amount === 'string'
-                      ? parseFloat(budget.spent_amount)
+                      ? Number(budget.spent_amount)
                       : budget.spent_amount;
                   const remaining = Math.round((budgetAmt - spentAmt) * 100) / 100 || 0;
                   const percentage = budget.percentage_used;

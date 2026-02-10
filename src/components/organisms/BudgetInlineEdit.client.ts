@@ -11,6 +11,7 @@
 import { csrfFetch } from '@/lib/csrf-client';
 import { addToast } from '@/lib/stores/toastStore';
 import { attachAmountFormatter, stripAmountFormatting } from '@/lib/formatting/amount-input';
+import type { AmountFormatterHandle } from '@/lib/formatting/amount-input';
 import type { Currency } from '@/lib/constants/currency';
 
 // =============================================================================
@@ -25,6 +26,9 @@ let activePopover: HTMLElement | null = null;
 
 /** Reference to the trigger button for focus restoration */
 let activeTrigger: HTMLElement | null = null;
+
+/** Handle for the active amount formatter (for cleanup) */
+let activeFormatter: AmountFormatterHandle | null = null;
 
 // =============================================================================
 // VALIDATION
@@ -196,7 +200,7 @@ function openEditPopover(trigger: HTMLElement, categoryId: string): void {
   input.setAttribute('aria-label', 'Budget amount');
 
   // Attach amount formatter for thousand separators
-  attachAmountFormatter(input, getBudgetCurrency());
+  activeFormatter = attachAmountFormatter(input, getBudgetCurrency());
 
   const btnRow = document.createElement('div');
   btnRow.className = 'flex items-center gap-2 mt-2';
@@ -276,6 +280,11 @@ function cleanupPopover(): void {
   activePopover = null;
   activeEditCategoryId = null;
   activeTrigger = null;
+
+  if (activeFormatter) {
+    activeFormatter.cleanup();
+    activeFormatter = null;
+  }
 
   if (popover) {
     try {
