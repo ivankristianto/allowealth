@@ -58,10 +58,10 @@ if (!show) return null;
 const bannerClasses = [
   // Base styling with indigo tint
   'bg-info/5 border border-info/10 rounded-card',
-  // Padding
-  'p-6 lg:p-8',
-  // Layout
-  'flex flex-col lg:flex-row lg:items-center gap-4 lg:gap-6',
+  // Padding — compact on mobile
+  'p-4 sm:p-6 lg:p-8',
+  // Layout — horizontal from sm breakpoint
+  'flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6',
   // Position relative for dismiss button
   'relative',
   // Additional classes
@@ -73,7 +73,7 @@ const bannerClasses = [
 
 <aside class={bannerClasses} role="complementary" aria-label="Budget advice" data-advice-banner>
   {/* Icon Badge */}
-  <IconBadge variant="info" size="md" className="shrink-0">
+  <IconBadge variant="info" size="md" className="shrink-0 w-fit">
     <Sparkles size={24} class="stroke-current" aria-hidden="true" />
   </IconBadge>
 
@@ -102,13 +102,16 @@ const bannerClasses = [
   {/* CTA Button */}
   {
     ctaUrl ? (
-      <a href={ctaUrl} class="btn btn-accent gap-2 rounded-2xl whitespace-nowrap shrink-0">
+      <a
+        href={ctaUrl}
+        class="btn btn-accent gap-2 rounded-2xl whitespace-nowrap w-full sm:w-auto shrink-0"
+      >
         {ctaText}
       </a>
     ) : (
       <button
         type="button"
-        class="btn btn-accent gap-2 rounded-2xl whitespace-nowrap shrink-0"
+        class="btn btn-accent gap-2 rounded-2xl whitespace-nowrap w-full sm:w-auto shrink-0"
         data-execute-reallocation
       >
         {ctaText}

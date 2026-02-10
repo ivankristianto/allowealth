@@ -79,18 +79,19 @@ const { title, subtitle, showMenuToggle = true, user } = Astro.props;
 
     {
       user && (
-        <Button
-          id="bulk-entry-button"
-          data-open-transaction-drawer
-          variant="accent"
-          size="md"
-          className="px-4 sm:px-6 active:scale-95"
-          aria-label="New Transaction"
-        >
-          <Plus size={20} class="stroke-current" aria-hidden="true" />
-          <span class="text-xs sm:text-sm sm:hidden">New</span>
-          <span class="text-sm hidden sm:inline">New Transaction</span>
-        </Button>
+        <div class="hidden lg:block">
+          <Button
+            id="bulk-entry-button"
+            data-open-transaction-drawer
+            variant="accent"
+            size="md"
+            className="px-6 active:scale-95"
+            aria-label="New Transaction"
+          >
+            <Plus size={20} class="stroke-current" aria-hidden="true" />
+            <span class="text-sm">New Transaction</span>
+          </Button>
+        </div>
       )
     }
   </div>

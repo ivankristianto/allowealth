@@ -27,8 +27,8 @@ const containerClasses = [
   'bg-base-100 rounded-card border border-base-300 shadow-sm',
   // Responsive padding — compact on mobile
   'p-2 md:p-4 lg:p-6',
-  // Layout — nowrap on mobile for single row, wrap on larger screens
-  'flex items-center gap-1 md:gap-3 md:flex-wrap',
+  // Layout — wrap on all screen sizes for action overflow
+  'flex items-center gap-2 md:gap-3 flex-wrap',
   className,
 ]
   .filter(Boolean)
@@ -37,7 +37,7 @@ const containerClasses = [
 
 <div class={containerClasses} role="toolbar" aria-label={ariaLabel}>
   {/* Secondary Actions — Ghost style, icon-only on mobile */}
-  <div class="flex items-center gap-1 md:gap-2">
+  <div class="flex items-center gap-1 md:gap-2 flex-wrap">
     <slot />
   </div>
 
