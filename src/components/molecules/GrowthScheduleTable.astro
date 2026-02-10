@@ -40,66 +40,70 @@ const { data, currency = 'IDR', className = '', id = '' } = Astro.props;
     </p>
   </div>
 
-  <div class="overflow-x-auto">
-    <table class="table table-zebra w-full text-left">
-      <thead>
-        <tr class="bg-base-200">
-          <th class="px-6 py-4 text-xs font-bold uppercase tracking-widest text-base-content/50">
-            Year
-          </th>
-          <th
-            class="px-6 py-4 text-xs font-bold uppercase tracking-widest text-base-content/50 text-right"
-          >
-            Opening Balance
-          </th>
-          <th class="px-6 py-4 text-xs font-bold uppercase tracking-widest text-success text-right">
-            Interest Earned
-          </th>
-          <th
-            class="px-6 py-4 text-xs font-bold uppercase tracking-widest text-base-content text-right"
-          >
-            Closing Balance
-          </th>
-        </tr>
-      </thead>
-      <tbody class="divide-y divide-base-300">
-        {
-          data.map((row) => (
-            <tr class="hover:bg-base-200/50 transition-colors">
-              <td class="px-6 py-4">
-                <span class="text-sm font-bold text-base-content">Year {row.year}</span>
-              </td>
-              <td class="px-6 py-4 text-right">
-                <span class="text-sm font-medium text-base-content/60">
-                  <Currency
-                    amount={row.openingBalance}
-                    currency={currency}
-                    size="sm"
-                    variant="neutral"
-                  />
-                </span>
-              </td>
-              <td class="px-6 py-4 text-right">
-                <span class="text-sm font-bold text-success">+</span>
-                <span class="text-sm font-bold text-success ml-1">
-                  <Currency
-                    amount={row.interest}
-                    currency={currency}
-                    size="sm"
-                    variant="positive"
-                    showSign={false}
-                  />
-                </span>
-              </td>
-              <td class="px-6 py-4 text-right">
-                <span class="text-sm font-bold text-base-content">
-                  <Currency amount={row.closingBalance} currency={currency} size="sm" />
-                </span>
-              </td>
-            </tr>
-          ))
-        }
-      </tbody>
-    </table>
+  <div class="table-scroll-hint">
+    <div class="overflow-x-auto">
+      <table class="table table-zebra w-full text-left">
+        <thead>
+          <tr class="bg-base-200">
+            <th class="px-6 py-4 text-xs font-bold uppercase tracking-widest text-base-content/50">
+              Year
+            </th>
+            <th
+              class="px-6 py-4 text-xs font-bold uppercase tracking-widest text-base-content/50 text-right"
+            >
+              Opening Balance
+            </th>
+            <th
+              class="px-6 py-4 text-xs font-bold uppercase tracking-widest text-success text-right"
+            >
+              Interest Earned
+            </th>
+            <th
+              class="px-6 py-4 text-xs font-bold uppercase tracking-widest text-base-content text-right"
+            >
+              Closing Balance
+            </th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-base-300">
+          {
+            data.map((row) => (
+              <tr class="hover:bg-base-200/50 transition-colors">
+                <td class="px-6 py-4">
+                  <span class="text-sm font-bold text-base-content">Year {row.year}</span>
+                </td>
+                <td class="px-6 py-4 text-right">
+                  <span class="text-sm font-medium text-base-content/60">
+                    <Currency
+                      amount={row.openingBalance}
+                      currency={currency}
+                      size="sm"
+                      variant="neutral"
+                    />
+                  </span>
+                </td>
+                <td class="px-6 py-4 text-right">
+                  <span class="text-sm font-bold text-success">+</span>
+                  <span class="text-sm font-bold text-success ml-1">
+                    <Currency
+                      amount={row.interest}
+                      currency={currency}
+                      size="sm"
+                      variant="positive"
+                      showSign={false}
+                    />
+                  </span>
+                </td>
+                <td class="px-6 py-4 text-right">
+                  <span class="text-sm font-bold text-base-content">
+                    <Currency amount={row.closingBalance} currency={currency} size="sm" />
+                  </span>
+                </td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
   </div>
 </div>
