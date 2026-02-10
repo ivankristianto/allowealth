@@ -9,6 +9,7 @@
 import { logError } from '@/lib/utils';
 
 const SITEVERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
+const VERIFY_TIMEOUT_MS = 5000;
 
 export interface TurnstileVerificationResult {
   success: boolean;
@@ -49,6 +50,9 @@ export async function verifyTurnstileToken(
   }
 
   try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), VERIFY_TIMEOUT_MS);
+
     const response = await fetch(SITEVERIFY_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -57,7 +61,10 @@ export async function verifyTurnstileToken(
         response: token,
         remoteip: clientIP,
       }),
+      signal: controller.signal,
     });
+
+    clearTimeout(timeout);
 
     if (!response.ok) {
       logError('Turnstile siteverify returned non-OK status', {
