@@ -57,6 +57,7 @@ export class TransactionService {
   private get schema() {
     return getActiveSchema();
   }
+  private db: IDatabase;
   private categoryService: CategoryService;
   private assetService: AssetService;
 
@@ -77,10 +78,9 @@ export class TransactionService {
    * @param db - Database instance (injected for testability)
    */
   constructor(db: IDatabase) {
+    this.db = db;
     this.categoryService = new CategoryService(db);
     this.assetService = new AssetService(db);
-    // Store db for direct use in this service
-    (this as any).db = db;
   }
 
   /**
@@ -152,7 +152,7 @@ export class TransactionService {
 
     const id = nanoid();
 
-    await (this as any).db
+    await this.db
       .insert(this.schema.transactions)
       .values({
         id,
@@ -208,7 +208,7 @@ export class TransactionService {
    */
   async findById(id: string, workspaceId: string, perf?: PerfCollector) {
     return trackQuery('TransactionService.findById', perf, async () => {
-      const result = await (this as any).db.query.transactions.findFirst({
+      const result = await this.db.query.transactions.findFirst({
         where: and(
           eq(this.schema.transactions.id, id),
           eq(this.schema.transactions.workspace_id, workspaceId),
@@ -349,7 +349,7 @@ export class TransactionService {
       };
     }
 
-    const result = await (this as any).db.query.transactions.findMany(queryOptions);
+    const result = await this.db.query.transactions.findMany(queryOptions);
 
     return result;
   }
@@ -489,7 +489,7 @@ export class TransactionService {
       updateData.transaction_date = validated.transaction_date;
     if (validated.description !== undefined) updateData.description = validated.description;
 
-    await (this as any).db
+    await this.db
       .update(this.schema.transactions)
       .set(updateData)
       .where(
@@ -547,7 +547,7 @@ export class TransactionService {
       deleteData.deleted_by_user_id = userId;
     }
 
-    await (this as any).db
+    await this.db
       .update(this.schema.transactions)
       .set(deleteData)
       .where(
@@ -640,7 +640,7 @@ export class TransactionService {
     }
 
     return trackQuery('TransactionService.count', perf, async () => {
-      const result = await ((this as any).db as any)
+      const result = await (this.db as any)
         .select({ count: sql<number>`count(*)` })
         .from(this.schema.transactions)
         .where(and(...conditions));
@@ -762,7 +762,7 @@ export class TransactionService {
           continue;
         }
 
-        const amount = parseFloat(amountStr ?? '0');
+        const amount = Number(amountStr ?? '0');
         if (isNaN(amount) || amount <= 0) {
           result.errors.push({ row: i + 1, message: 'Invalid amount (must be > 0)' });
           continue;
@@ -879,7 +879,7 @@ export class TransactionService {
     showAll = false
   ): Promise<TransactionHistoryResponse> {
     const [results, categories, assets] = await Promise.all([
-      (this as any).db.query.auditLogs.findMany({
+      this.db.query.auditLogs.findMany({
         where: and(
           eq(this.schema.auditLogs.entity_type, 'transaction'),
           eq(this.schema.auditLogs.entity_id, transactionId),
@@ -895,14 +895,14 @@ export class TransactionService {
         },
         orderBy: [asc(this.schema.auditLogs.created_at)],
       }),
-      (this as any).db.query.categories.findMany({
+      this.db.query.categories.findMany({
         where: eq(this.schema.categories.workspace_id, workspaceId),
         columns: {
           id: true,
           name: true,
         },
       }),
-      (this as any).db.query.assets.findMany({
+      this.db.query.assets.findMany({
         where: eq(this.schema.assets.workspace_id, workspaceId),
         columns: {
           id: true,
@@ -985,7 +985,9 @@ export class TransactionService {
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - daysBack);
 
-    const results = await (this as any).db
+    // IDatabase interface doesn't cover full Drizzle select().from().where().groupBy().orderBy() chain
+    const db = this.db as any;
+    const results = await db
       .select({
         category_id: this.schema.transactions.category_id,
         count: sql<number>`count(*)`,
@@ -1017,7 +1019,8 @@ export class TransactionService {
   ): Promise<Set<string>> {
     if (transactionIds.length === 0) return new Set();
 
-    const results = await (this as any).db
+    // IDatabase interface doesn't cover selectDistinct
+    const results = await (this.db as any)
       .selectDistinct({ entity_id: this.schema.auditLogs.entity_id })
       .from(this.schema.auditLogs)
       .where(

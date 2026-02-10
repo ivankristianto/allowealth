@@ -93,8 +93,7 @@ function initTransactionDrawer(): void {
   const incomeIconTemplate = document.getElementById('icon-income');
 
   let sessionCount = 0;
-  let sessionTotal = 0;
-  let sessionCurrency: string = DEFAULT_CURRENCY;
+  const sessionTotals: Record<string, number> = {};
   let hasSubmittedInSession = false;
 
   const formatMoney = (amount: number | string, currency: string = DEFAULT_CURRENCY): string => {
@@ -105,7 +104,9 @@ function initTransactionDrawer(): void {
     if (!sessionSummary || !countBadge) return;
     countBadge.textContent = String(sessionCount);
     if (sessionCount > 0) {
-      sessionSummary.textContent = `${sessionCount} item${sessionCount !== 1 ? 's' : ''} · ${formatMoney(sessionTotal, sessionCurrency)}`;
+      const currencies = Object.keys(sessionTotals);
+      const totalStr = currencies.map((cur) => formatMoney(sessionTotals[cur], cur)).join(' + ');
+      sessionSummary.textContent = `${sessionCount} item${sessionCount !== 1 ? 's' : ''} · ${totalStr}`;
     } else {
       countBadge.textContent = '0';
       sessionSummary.textContent = '0 items';
@@ -115,7 +116,7 @@ function initTransactionDrawer(): void {
   const resetSessionState = (): void => {
     if (!list || !emptyState || !countBadge) return;
     sessionCount = 0;
-    sessionTotal = 0;
+    for (const key of Object.keys(sessionTotals)) delete sessionTotals[key];
     updateSessionSummary();
     list.innerHTML = '';
     list.classList.add('hidden');
@@ -177,7 +178,13 @@ function initTransactionDrawer(): void {
       }
 
       const dateStr = data.transaction_date;
-      const formattedDate = dateStr ? new Date(dateStr).toLocaleDateString() : '';
+      // Parse as local date to avoid timezone shift (UTC midnight → previous day in UTC- zones)
+      let formattedDate = '';
+      if (dateStr) {
+        const str = String(dateStr).split('T')[0];
+        const [y, m, d] = str.split('-').map(Number);
+        formattedDate = new Date(y, m - 1, d).toLocaleDateString();
+      }
       metaDiv.textContent = `${formattedDate} · ${categoryLabel}`;
 
       detailsDiv.append(titleDiv, metaDiv);
@@ -193,8 +200,8 @@ function initTransactionDrawer(): void {
       animate(li, { opacity: [0, 1], x: [20, 0], height: [0, 'auto'] }, { duration: 0.4 });
 
       sessionCount += 1;
-      sessionTotal += Number(data.amount) || 0;
-      sessionCurrency = data.currency || DEFAULT_CURRENCY;
+      const cur = data.currency || DEFAULT_CURRENCY;
+      sessionTotals[cur] = (sessionTotals[cur] || 0) + (Number(data.amount) || 0);
       hasSubmittedInSession = true;
       updateSessionSummary();
     };
