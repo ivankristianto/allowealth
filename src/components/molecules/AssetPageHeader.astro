@@ -2,53 +2,41 @@
 /**
  * AssetPageHeader Component
  *
- * Header section for the Assets page with title, subtitle, month navigation,
- * and action buttons row. Follows the same two-row layout as BudgetPageHeader.
- *
- * Row 1: Title/subtitle (left) + Month navigation (right)
- * Row 2: AssetActions bar (Categories + Add Asset)
+ * Header section for the Assets page with title, subtitle, and month navigation.
+ * Title/subtitle on the left, month navigation on the right.
  *
  * @param {string} title - Main heading (default: "Global Portfolio")
  * @param {string} subtitle - Description text
  * @param {string} className - Additional CSS classes
- * @param {string} defaultCategoryId - Default category ID for new assets
  * @param {string} currentMonth - Formatted month/year display string
  * @param {string} prevMonthUrl - URL for previous month navigation
  * @param {string} nextMonthUrl - URL for next month navigation
  * @param {boolean} isNextDisabled - Whether next month button is disabled
  * @param {string} currentMonthResetUrl - URL to reset to current month
- * @param {boolean} isHistoricalView - Whether viewing a historical month
  */
 
 import { ChevronLeft, ChevronRight, CalendarDays } from '@lucide/astro';
-import AssetActions from '@components/organisms/AssetActions.astro';
 
 export interface Props {
   title?: string;
   subtitle?: string;
   className?: string;
-  defaultCategoryId?: string;
-  closedCount?: number;
   currentMonth?: string;
   prevMonthUrl?: string;
   nextMonthUrl?: string;
   isNextDisabled?: boolean;
   currentMonthResetUrl?: string;
-  isHistoricalView?: boolean;
 }
 
 const {
   title = 'Global Portfolio',
   subtitle = 'Manage and track your distributed household wealth.',
   className = '',
-  defaultCategoryId = '',
-  closedCount = 0,
   currentMonth,
   prevMonthUrl,
   nextMonthUrl,
   isNextDisabled = false,
   currentMonthResetUrl,
-  isHistoricalView = false,
 } = Astro.props;
 
 const headerClasses = ['flex flex-col gap-4', className].filter(Boolean).join(' ');
@@ -127,11 +115,4 @@ const headerClasses = ['flex flex-col gap-4', className].filter(Boolean).join(' 
       )
     }
   </div>
-
-  {/* Second row: Action buttons */}
-  <AssetActions
-    isHistoricalView={isHistoricalView}
-    defaultCategoryId={defaultCategoryId}
-    closedCount={closedCount}
-  />
 </header>

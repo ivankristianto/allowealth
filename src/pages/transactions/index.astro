@@ -71,7 +71,7 @@ const filters = {
   start_date: monthDateRange?.start,
   end_date: monthDateRange?.end,
   search: searchValue || undefined,
-  include_deleted: true,
+  include_deleted: false,
   include_history_flag: true,
   limit: pageSize,
   offset,
@@ -284,7 +284,12 @@ const ssrData = {
                 <p class="text-base-content/60 font-medium max-w-xs mx-auto mb-6">
                   Try adjusting your filters or search terms to find what you're looking for.
                 </p>
-                <a href="/transactions" class="btn btn-outline btn-sm gap-2" data-reset-filters>
+                <a
+                  href="/transactions"
+                  class="btn btn-outline btn-sm gap-2"
+                  data-reset-filters
+                  data-current-month={currentMonthKey}
+                >
                   <RotateCcw size={16} class="stroke-current" aria-hidden="true" />
                   Reset filters
                 </a>

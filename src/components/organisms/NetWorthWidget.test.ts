@@ -9,22 +9,22 @@ import { formatCurrency } from '@/lib/formatting';
 
 describe('NetWorthWidget - formatIDR', () => {
   it('should format positive IDR amounts correctly', () => {
-    expect(formatCurrency(1956063000, 'IDR')).toBe('Rp1.956.063.000');
-    expect(formatCurrency(1000000, 'IDR')).toBe('Rp1.000.000');
-    expect(formatCurrency(50000, 'IDR')).toBe('Rp50.000');
+    expect(formatCurrency(1956063000, 'IDR')).toBe('Rp1.956.063.000,00');
+    expect(formatCurrency(1000000, 'IDR')).toBe('Rp1.000.000,00');
+    expect(formatCurrency(50000, 'IDR')).toBe('Rp50.000,00');
   });
 
   it('should format zero correctly', () => {
-    expect(formatCurrency(0, 'IDR')).toBe('Rp0');
+    expect(formatCurrency(0, 'IDR')).toBe('Rp0,00');
   });
 
   it('should handle large numbers', () => {
-    expect(formatCurrency(5000000000, 'IDR')).toBe('Rp5.000.000.000');
-    expect(formatCurrency(999999999999)).toBe('Rp999.999.999.999');
+    expect(formatCurrency(5000000000, 'IDR')).toBe('Rp5.000.000.000,00');
+    expect(formatCurrency(999999999999)).toBe('Rp999.999.999.999,00');
   });
 
-  it('should not show decimal places', () => {
-    expect(formatCurrency(1234.56, 'IDR')).toBe('Rp1.235'); // rounded, not truncated
+  it('should show 2 decimal places', () => {
+    expect(formatCurrency(1234.56, 'IDR')).toBe('Rp1.234,56');
   });
 });
 

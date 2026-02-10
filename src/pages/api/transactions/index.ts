@@ -11,7 +11,13 @@ import {
   isValidationError,
 } from '@/lib/api-utils';
 import { createTransactionAPISchema } from '@/lib/validation';
-import { logError, transformTransaction, safeParseAmount, formatMonthKey } from '@/lib/utils';
+import {
+  logError,
+  transformTransaction,
+  safeParseAmount,
+  formatMonthKey,
+  getCurrentMonthKey,
+} from '@/lib/utils';
 import { PAGINATION } from '@/lib/constants/pagination';
 import { createRenderHelper } from '@/lib/api/renderResponse';
 
@@ -88,8 +94,8 @@ export const GET: APIRoute = async (context) => {
       filters.search = search;
     }
 
-    // Include soft-deleted transactions in the list for audit trail visibility
-    filters.include_deleted = true;
+    // Exclude soft-deleted transactions from main list to avoid inflating count
+    filters.include_deleted = false;
     filters.include_history_flag = true;
     const rawTransactions = await transactionService.findAll(filters, perf);
     const total = await transactionService.count(filters, perf);
@@ -175,6 +181,7 @@ export const GET: APIRoute = async (context) => {
           props: {
             transactions,
             showActions: true,
+            currentMonth: getCurrentMonthKey(),
           },
         });
         htmlParts.push(`<!-- PARTIAL:list -->\n${listHtml}`);

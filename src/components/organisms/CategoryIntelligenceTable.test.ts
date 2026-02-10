@@ -135,18 +135,18 @@ describe('CategoryIntelligenceTable', () => {
 
   describe('Currency Formatting', () => {
     it('should format spent amount correctly', () => {
-      expect(formatCurrency(1850000, 'IDR')).toBe('Rp1.850.000');
-      expect(formatCurrency(905000, 'IDR')).toBe('Rp905.000');
-      expect(formatCurrency(750000, 'IDR')).toBe('Rp750.000');
+      expect(formatCurrency(1850000, 'IDR')).toBe('Rp1.850.000,00');
+      expect(formatCurrency(905000, 'IDR')).toBe('Rp905.000,00');
+      expect(formatCurrency(750000, 'IDR')).toBe('Rp750.000,00');
     });
 
     it('should format budget limit correctly', () => {
-      expect(formatCurrency(4000000, 'IDR')).toBe('Rp4.000.000');
-      expect(formatCurrency(40000000, 'IDR')).toBe('Rp40.000.000');
+      expect(formatCurrency(4000000, 'IDR')).toBe('Rp4.000.000,00');
+      expect(formatCurrency(40000000, 'IDR')).toBe('Rp40.000.000,00');
     });
 
     it('should handle zero values', () => {
-      expect(formatCurrency(0, 'IDR')).toBe('Rp0');
+      expect(formatCurrency(0, 'IDR')).toBe('Rp0,00');
     });
   });
 

@@ -1,8 +1,8 @@
 ---
 /**
- * Transaction Entry Form Component
+ * Transaction Entry Form Component — Quick Capture Layout
  *
- * Form for adding or editing transactions with type-specific styling.
+ * Optimized for speed: amount hero input, category chips, date quick-picks.
  * Used within TransactionDrawer for expense and income entries.
  *
  * @param {string} type - Transaction type: 'expense' | 'income'
@@ -12,17 +12,14 @@
  * @param {Object} values - Default form values
  * @param {Array} categories - Available categories
  * @param {Array} assets - Available assets (bank accounts, wallets)
+ * @param {Array} categoryUsageCounts - Category usage frequency for chip sorting
  * @param {Object} errors - Form errors {field: message}
  * @param {string} modalId - Parent modal ID for closing on success
  */
 
-import Input from '../atoms/Input.astro';
-import CurrencyInput from '../atoms/CurrencyInput.astro';
-import CategorySelect from '../atoms/CategorySelect.astro';
-import AssetSelect from '../atoms/AssetSelect.astro';
-import DatePicker from '../atoms/DatePicker.astro';
 import Button from '../atoms/Button.astro';
-import FormField from '../molecules/FormField.astro';
+import { CalendarDays } from '@lucide/astro';
+import { CURRENCY_META, DEFAULT_CURRENCY } from '@/lib/constants/currency';
 
 export interface Props {
   type: 'expense' | 'income';
@@ -39,6 +36,7 @@ export interface Props {
   };
   categories: Array<{ id: string; name: string; type: string; currency?: string }>;
   assets: Array<{ id: string; name: string; type: string }>;
+  categoryUsageCounts?: Array<{ category_id: string; count: number }>;
   errors?: Record<string, string>;
   modalId?: string;
   bulk?: boolean;
@@ -53,6 +51,7 @@ const {
   values = {},
   categories = [],
   assets = [],
+  categoryUsageCounts = [],
   errors = {},
   modalId = '',
   bulk = false,
@@ -62,9 +61,30 @@ const {
 const isEditMode = mode === 'edit';
 
 const today = new Date().toISOString().split('T')[0];
+const yesterdayDate = new Date();
+yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+const yesterday = yesterdayDate.toISOString().split('T')[0];
 
 // Filter categories by type
 const typeCategories = categories.filter((c) => c.type === type);
+
+// Sort categories by usage frequency, then alphabetically
+const usageMap = new Map(categoryUsageCounts.map((u) => [u.category_id, u.count]));
+const sortedCategories = [...typeCategories].sort((a, b) => {
+  const countA = usageMap.get(a.id) || 0;
+  const countB = usageMap.get(b.id) || 0;
+  if (countB !== countA) return countB - countA;
+  return a.name.localeCompare(b.name);
+});
+
+// Split categories: show top N initially, rest behind expand toggle
+const INITIAL_CHIP_COUNT = 8;
+const visibleCategories = sortedCategories.slice(0, INITIAL_CHIP_COUNT);
+const hiddenCategories = sortedCategories.slice(INITIAL_CHIP_COUNT);
+const hasHiddenCategories = hiddenCategories.length > 0;
+// If the selected category is in the hidden set, start expanded
+const selectedInHidden =
+  hasHiddenCategories && hiddenCategories.some((c) => c.id === values.category_id);
 
 // Serialize data for client-side JavaScript
 const categoriesJson = JSON.stringify(
@@ -72,13 +92,22 @@ const categoriesJson = JSON.stringify(
     id: c.id,
     name: c.name,
     type: c.type,
-    currency: c.currency || 'IDR',
+    currency: c.currency || DEFAULT_CURRENCY,
   }))
 );
 const assetsJson = JSON.stringify(assets.map((a) => ({ id: a.id, name: a.name, type: a.type })));
 
+// Default currency
+const defaultCurrency = values.currency || DEFAULT_CURRENCY;
+const currencyMeta = CURRENCY_META[defaultCurrency];
+
 // Generate unique form ID
 const formId = propFormId || `transaction-entry-form-${type}`;
+
+// Determine default date state
+const defaultDate = values.transaction_date || today;
+const defaultDatePick =
+  defaultDate === today ? 'today' : defaultDate === yesterday ? 'yesterday' : 'custom';
 ---
 
 <form
@@ -93,118 +122,331 @@ const formId = propFormId || `transaction-entry-form-${type}`;
   data-categories-json={categoriesJson}
   data-assets-json={assetsJson}
   data-bulk={bulk ? 'true' : 'false'}
-  class="flex flex-col gap-5"
+  data-today={today}
+  data-yesterday={yesterday}
+  class="flex flex-col gap-3"
   novalidate
 >
-  <!-- @TODO P2: Consider stripping data-testid attributes in production builds for smaller bundle size -->
-  <!-- Hidden type field -->
+  <!-- Hidden fields -->
   <input type="hidden" name="type" value={type} />
+  <input type="hidden" name="currency" value={defaultCurrency} />
 
   <!-- Global error message container -->
   <div id={`${formId}-error`} class="hidden alert alert-error text-sm" role="alert"></div>
 
-  <!-- Title (required) -->
-  <FormField label="Title" htmlFor={`${formId}-title`} required>
-    <Input
-      id={`${formId}-title`}
-      name="title"
-      type="text"
-      placeholder="e.g. Weekly Groceries"
-      value={values.title || ''}
-      required={true}
-      error={!!errors.title}
-      errorMessage={errors.title}
-      className="rounded-lg py-4 px-6 h-14 text-base font-bold border border-base-300"
-      data-testid="transaction-description-input"
-    />
-  </FormField>
-
-  <!-- Amount and Date row -->
-  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-    <FormField label="Amount" htmlFor={`${formId}-amount`} required>
-      <CurrencyInput
+  <!-- Amount Input (hero) -->
+  <div class="form-control">
+    <div class="relative">
+      <input
+        type="number"
         id={`${formId}-amount`}
         name="amount"
         value={values.amount || ''}
-        currency={values.currency || 'IDR'}
-        required={true}
-        error={!!errors.amount}
-        errorMessage={errors.amount}
+        step="0.01"
+        min="0.01"
+        required
+        placeholder="0"
+        class:list={[
+          'input input-bordered w-full',
+          'h-16 rounded-lg border border-base-300 bg-base-100',
+          'text-3xl font-bold text-center tracking-tight',
+          'placeholder:text-base-content/20',
+          'focus:outline-none focus:border-accent focus-visible:ring-2 focus-visible:ring-accent/30',
+          errors.amount && 'input-error',
+        ]}
+        inputmode="decimal"
+        aria-label="Amount"
+        aria-invalid={!!errors.amount}
+        aria-required="true"
         data-testid="transaction-amount-input"
       />
-    </FormField>
-
-    <FormField label="Date" htmlFor={`${formId}-date`} required>
-      <DatePicker
-        id={`${formId}-date`}
-        name="transaction_date"
-        value={values.transaction_date || today}
-        max={today}
-        required={true}
-        error={!!errors.transaction_date}
-        errorMessage={errors.transaction_date}
-        data-testid="transaction-date-input"
-      />
-    </FormField>
+      <!-- Currency badge -->
+      <button
+        type="button"
+        class="absolute top-1/2 -translate-y-1/2 right-3 text-xs font-bold text-neutral/50 cursor-pointer hover:text-neutral transition-colors"
+        data-currency-badge
+        aria-label={`Currency: ${defaultCurrency}. Tap to change`}
+      >
+        {currencyMeta.symbol}
+        {defaultCurrency}
+      </button>
+    </div>
+    {
+      errors.amount && (
+        <span class="text-error text-sm mt-1" role="alert">
+          {errors.amount}
+        </span>
+      )
+    }
   </div>
 
-  <!-- Category and Account row -->
-  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-    <CategorySelect
+  <!-- Title Input -->
+  <div class="form-control">
+    <input
+      type="text"
+      id={`${formId}-title`}
+      name="title"
+      value={values.title || ''}
+      required
+      placeholder="What was this for?"
+      class:list={[
+        'input input-bordered w-full',
+        'h-11 rounded-lg border border-base-300 bg-base-100',
+        'text-sm font-medium px-3',
+        'placeholder:text-base-content/30',
+        'focus:outline-none focus:border-accent focus-visible:ring-2 focus-visible:ring-accent/30',
+        errors.title && 'input-error',
+      ]}
+      aria-label="Title"
+      aria-invalid={!!errors.title}
+      aria-required="true"
+      data-testid="transaction-description-input"
+    />
+    {
+      errors.title && (
+        <span class="text-error text-sm mt-1" role="alert">
+          {errors.title}
+        </span>
+      )
+    }
+  </div>
+
+  <!-- Category Chips -->
+  <div class="form-control">
+    <span class="text-xs font-semibold text-neutral/50 uppercase tracking-wider mb-1.5"
+      >Category</span
+    >
+    <div
+      class="flex flex-wrap gap-1.5"
+      role="radiogroup"
+      aria-label="Category selection"
+      data-category-chips
+    >
+      {
+        visibleCategories.map((cat) => (
+          <button
+            type="button"
+            class:list={[
+              'px-3 py-1.5 rounded-full cursor-pointer transition-all',
+              'text-xs font-semibold',
+              'focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1',
+              values.category_id === cat.id
+                ? 'bg-accent text-white'
+                : 'bg-base-200 text-base-content/70 hover:bg-accent/10 hover:text-accent',
+            ]}
+            data-category-chip={cat.id}
+            role="radio"
+            aria-checked={values.category_id === cat.id ? 'true' : 'false'}
+            aria-label={cat.name}
+          >
+            {cat.name}
+          </button>
+        ))
+      }
+      {
+        hasHiddenCategories && (
+          <>
+            {hiddenCategories.map((cat) => (
+              <button
+                type="button"
+                class:list={[
+                  'px-3 py-1.5 rounded-full cursor-pointer transition-all',
+                  'text-xs font-semibold',
+                  'focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1',
+                  values.category_id === cat.id
+                    ? 'bg-accent text-white'
+                    : 'bg-base-200 text-base-content/70 hover:bg-accent/10 hover:text-accent',
+                  selectedInHidden ? '' : 'hidden',
+                ]}
+                data-category-chip={cat.id}
+                data-category-overflow
+                role="radio"
+                aria-checked={values.category_id === cat.id ? 'true' : 'false'}
+                aria-label={cat.name}
+              >
+                {cat.name}
+              </button>
+            ))}
+            <button
+              type="button"
+              class:list={[
+                'px-3 py-1.5 rounded-full cursor-pointer transition-all',
+                'text-xs font-semibold',
+                'bg-base-300/60 text-base-content/50 hover:bg-base-300 hover:text-base-content/70',
+                'focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1',
+              ]}
+              data-category-toggle
+              aria-expanded={selectedInHidden ? 'true' : 'false'}
+              aria-label={
+                selectedInHidden
+                  ? `Show less categories`
+                  : `Show ${hiddenCategories.length} more categories`
+              }
+            >
+              {selectedInHidden ? 'Less' : `+${hiddenCategories.length} more`}
+            </button>
+          </>
+        )
+      }
+    </div>
+    <!-- Hidden select for form submission -->
+    <select
+      name="category_id"
       id={`${formId}-category`}
-      categories={typeCategories}
-      value={values.category_id || ''}
-      type={type}
-      required={true}
-      error={!!errors.category_id}
-      errorMessage={errors.category_id}
-      label="Category"
+      class="hidden"
+      aria-hidden="true"
+      required
       data-testid="transaction-category-select"
-    />
-
-    <AssetSelect
-      id={`${formId}-asset`}
-      assets={assets}
-      value={values.asset_id || ''}
-      required={true}
-      error={!!errors.asset_id}
-      errorMessage={errors.asset_id}
-      label="Account"
-      data-testid="transaction-asset-select"
-    />
+    >
+      <option value="">Select category...</option>
+      {
+        sortedCategories.map((cat) => (
+          <option value={cat.id} selected={cat.id === (values.category_id || '')}>
+            {cat.name}
+          </option>
+        ))
+      }
+    </select>
+    {
+      errors.category_id && (
+        <span class="text-error text-sm mt-1" role="alert">
+          {errors.category_id}
+        </span>
+      )
+    }
   </div>
 
-  <!-- Actions -->
-  <div class="flex gap-4 pt-6">
-    <button
-      type="button"
-      class="btn btn-ghost flex-1 h-14 rounded-2xl font-bold text-base-content hover:bg-base-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent"
-      data-close-modal={modalId}
-    >
-      Cancel
-    </button>
-    <Button
-      type="submit"
-      variant="accent"
-      className="flex-[2] h-14 rounded-2xl font-bold"
-      data-testid="transaction-submit-btn"
-    >
-      {isEditMode ? 'Save Changes' : 'Save Entry'}
-    </Button>
+  <!-- Date Quick-Picks -->
+  <div class="form-control">
+    <span class="text-xs font-semibold text-neutral/50 uppercase tracking-wider mb-1.5">Date</span>
+    <div class="grid grid-cols-3 gap-1" data-date-picks>
+      <button
+        type="button"
+        class:list={[
+          'btn btn-sm rounded-lg text-xs font-semibold',
+          defaultDatePick === 'today' ? 'btn-accent text-accent-content' : 'btn-ghost',
+        ]}
+        data-date-pick="today"
+        aria-pressed={defaultDatePick === 'today' ? 'true' : 'false'}
+      >
+        Today
+      </button>
+      <button
+        type="button"
+        class:list={[
+          'btn btn-sm rounded-lg text-xs font-semibold',
+          defaultDatePick === 'yesterday' ? 'btn-accent text-accent-content' : 'btn-ghost',
+        ]}
+        data-date-pick="yesterday"
+        aria-pressed={defaultDatePick === 'yesterday' ? 'true' : 'false'}
+      >
+        Yesterday
+      </button>
+      <label
+        class:list={[
+          'btn btn-sm rounded-lg relative overflow-hidden text-xs font-semibold gap-1',
+          defaultDatePick === 'custom' ? 'btn-accent text-accent-content' : 'btn-ghost',
+        ]}
+        data-date-pick="custom"
+        aria-pressed={defaultDatePick === 'custom' ? 'true' : 'false'}
+      >
+        <CalendarDays size={14} class="pointer-events-none stroke-current" aria-hidden="true" />
+        <span class="pointer-events-none" data-date-label>
+          {
+            defaultDatePick === 'custom'
+              ? new Date(defaultDate + 'T00:00:00').toLocaleDateString('en-GB', {
+                  day: '2-digit',
+                  month: 'short',
+                })
+              : 'Other'
+          }
+        </span>
+        <input
+          type="date"
+          id={`${formId}-date`}
+          class="absolute inset-0 opacity-0 cursor-pointer"
+          value={defaultDate}
+          max={today}
+          data-date-custom
+          aria-label="Pick a date"
+          data-testid="transaction-date-input"
+        />
+      </label>
+    </div>
+    <!-- Hidden date input for form submission -->
+    <input type="hidden" name="transaction_date" value={defaultDate} />
+    {
+      errors.transaction_date && (
+        <span class="text-error text-sm mt-1" role="alert">
+          {errors.transaction_date}
+        </span>
+      )
+    }
   </div>
+
+  <!-- Account Select -->
+  {
+    assets.length > 1 ? (
+      <div class="form-control">
+        <span class="text-xs font-semibold text-neutral/50 uppercase tracking-wider mb-1.5">
+          Account
+        </span>
+        <select
+          id={`${formId}-asset`}
+          name="asset_id"
+          required
+          class:list={[
+            'select select-bordered w-full',
+            'h-10 rounded-lg border border-base-300 bg-base-100',
+            'text-sm font-medium',
+            'focus:outline-none focus:border-accent focus-visible:ring-2 focus-visible:ring-accent/30',
+            errors.asset_id && 'select-error border-error',
+          ]}
+          aria-label="Account"
+          aria-invalid={!!errors.asset_id}
+          aria-required="true"
+          data-testid="transaction-asset-select"
+        >
+          <option value="">Select account...</option>
+          {assets.map((asset) => (
+            <option value={asset.id} selected={asset.id === (values.asset_id || '')}>
+              {asset.name}
+            </option>
+          ))}
+        </select>
+        {errors.asset_id && (
+          <span class="text-error text-sm mt-1" role="alert">
+            {errors.asset_id}
+          </span>
+        )}
+      </div>
+    ) : (
+      <input type="hidden" name="asset_id" value={assets[0]?.id || ''} />
+    )
+  }
+
+  <!-- Save Button -->
+  <Button
+    type="submit"
+    variant="accent"
+    className="w-full h-12 rounded-2xl font-bold text-sm mt-1"
+    data-testid="transaction-submit-btn"
+  >
+    {isEditMode ? 'Save Changes' : 'Save Entry'}
+  </Button>
 </form>
 
 <script>
   import { addToast } from '@/lib/stores/toastStore';
   import { getCsrfHeaders } from '@/lib/csrf-client';
+  import { CURRENCY_META, AVAILABLE_CURRENCIES, DEFAULT_CURRENCY } from '@/lib/constants/currency';
+  import type { Currency } from '@/lib/constants/currency';
 
-  // Initialize all transaction entry forms on the page
   function initTransactionEntryForms() {
     document.querySelectorAll<HTMLFormElement>('[data-transaction-form]').forEach(initForm);
   }
 
   function initForm(form: HTMLFormElement) {
-    // Prevent duplicate initialization
     if (form.dataset.initialized === 'true') return;
     form.dataset.initialized = 'true';
 
@@ -213,13 +455,167 @@ const formId = propFormId || `transaction-entry-form-${type}`;
     const submitButton = form.querySelector('button[type="submit"]') as HTMLButtonElement | null;
     const action = form.dataset.action || '/api/transactions';
     const modalId = form.dataset.modalId || '';
-    // Note: type, mode, and transactionId are read dynamically at submit time
-    // because they can be updated by the edit modal handler
+    const todayStr = form.dataset.today || new Date().toISOString().split('T')[0];
+    const yesterdayStr = form.dataset.yesterday || '';
 
-    // Parse categories from data attribute
     const categories = JSON.parse(form.dataset.categoriesJson || '[]');
 
-    // Validation rules
+    // === Category chip handlers ===
+    const categoryChips = form.querySelectorAll<HTMLButtonElement>('[data-category-chip]');
+    const categorySelect = form.querySelector(
+      'select[name="category_id"]'
+    ) as HTMLSelectElement | null;
+    function setActiveChip(categoryId: string) {
+      categoryChips.forEach((chip) => {
+        const isActive = chip.dataset.categoryChip === categoryId;
+        chip.classList.toggle('bg-accent', isActive);
+        chip.classList.toggle('text-white', isActive);
+        chip.classList.toggle('bg-base-200', !isActive);
+        chip.classList.toggle('text-base-content/70', !isActive);
+        chip.classList.toggle('hover:bg-accent/10', !isActive);
+        chip.classList.toggle('hover:text-accent', !isActive);
+        chip.setAttribute('aria-checked', isActive ? 'true' : 'false');
+      });
+      if (categorySelect) {
+        categorySelect.value = categoryId;
+        categorySelect.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+      validateField('category_id', categoryId);
+      updateCurrencyForCategory();
+      ensureCategoryVisible(categoryId);
+    }
+
+    categoryChips.forEach((chip) => {
+      chip.addEventListener('click', () => {
+        const catId = chip.dataset.categoryChip || '';
+        setActiveChip(catId);
+      });
+    });
+
+    // === Category expand/collapse toggle ===
+    const overflowChips = form.querySelectorAll<HTMLButtonElement>('[data-category-overflow]');
+    const toggleBtn = form.querySelector('[data-category-toggle]') as HTMLButtonElement | null;
+
+    if (toggleBtn && overflowChips.length > 0) {
+      toggleBtn.addEventListener('click', () => {
+        const isExpanded = toggleBtn.getAttribute('aria-expanded') === 'true';
+        if (isExpanded) {
+          // Collapsing: hide overflow chips except the active one
+          overflowChips.forEach((chip) => {
+            const isActive = chip.getAttribute('aria-checked') === 'true';
+            chip.classList.toggle('hidden', !isActive);
+          });
+        } else {
+          // Expanding: show all overflow chips
+          overflowChips.forEach((chip) => chip.classList.remove('hidden'));
+        }
+        toggleBtn.setAttribute('aria-expanded', isExpanded ? 'false' : 'true');
+        const label = isExpanded ? `+${overflowChips.length} more` : 'Less';
+        toggleBtn.textContent = label;
+        toggleBtn.setAttribute(
+          'aria-label',
+          isExpanded ? `Show ${overflowChips.length} more categories` : 'Show less categories'
+        );
+      });
+    }
+
+    // Auto-expand if selecting a hidden category (e.g., in edit mode)
+    function ensureCategoryVisible(categoryId: string) {
+      if (!toggleBtn || overflowChips.length === 0) return;
+      const isOverflow = Array.from(overflowChips).some(
+        (c) => c.dataset.categoryChip === categoryId
+      );
+      if (isOverflow && toggleBtn.getAttribute('aria-expanded') !== 'true') {
+        overflowChips.forEach((chip) => chip.classList.remove('hidden'));
+        toggleBtn.setAttribute('aria-expanded', 'true');
+        toggleBtn.textContent = 'Less';
+        toggleBtn.setAttribute('aria-label', 'Show less categories');
+      }
+    }
+
+    // === Date quick-pick handlers ===
+    const datePickBtns = form.querySelectorAll<HTMLElement>('[data-date-pick]');
+    const dateCustomInput = form.querySelector('[data-date-custom]') as HTMLInputElement | null;
+    const dateLabel = form.querySelector('[data-date-label]') as HTMLElement | null;
+    const hiddenDateInput = form.querySelector(
+      'input[name="transaction_date"]'
+    ) as HTMLInputElement | null;
+
+    function formatDateLabel(dateStr: string): string {
+      const d = new Date(dateStr + 'T00:00:00');
+      return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+    }
+
+    function setDateValue(dateStr: string, activePick: string) {
+      if (hiddenDateInput) hiddenDateInput.value = dateStr;
+      if (dateCustomInput) dateCustomInput.value = dateStr;
+
+      // Update the label to show the selected custom date
+      if (dateLabel) {
+        dateLabel.textContent = activePick === 'custom' ? formatDateLabel(dateStr) : 'Other';
+      }
+
+      datePickBtns.forEach((btn) => {
+        const pick = btn.dataset.datePick || '';
+        const isActive = pick === activePick;
+        btn.classList.toggle('btn-accent', isActive);
+        btn.classList.toggle('text-accent-content', isActive);
+        btn.classList.toggle('btn-ghost', !isActive);
+        btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+      });
+
+      validateField('transaction_date', dateStr);
+    }
+
+    datePickBtns.forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        const pick = btn.dataset.datePick || '';
+        if (pick === 'today') {
+          e.preventDefault();
+          setDateValue(todayStr, 'today');
+        } else if (pick === 'yesterday') {
+          e.preventDefault();
+          setDateValue(yesterdayStr, 'yesterday');
+        } else if (pick === 'custom' && dateCustomInput) {
+          e.preventDefault();
+          try {
+            dateCustomInput.showPicker();
+          } catch {
+            dateCustomInput.focus();
+            dateCustomInput.click();
+          }
+        }
+      });
+    });
+
+    if (dateCustomInput) {
+      dateCustomInput.addEventListener('change', () => {
+        const val = dateCustomInput.value;
+        if (val) {
+          const activePick =
+            val === todayStr ? 'today' : val === yesterdayStr ? 'yesterday' : 'custom';
+          setDateValue(val, activePick);
+        }
+      });
+    }
+
+    // === Currency badge toggle ===
+    const currencyBadge = form.querySelector('[data-currency-badge]') as HTMLButtonElement | null;
+    const currencyInput = form.querySelector('input[name="currency"]') as HTMLInputElement | null;
+
+    if (currencyBadge && currencyInput) {
+      currencyBadge.addEventListener('click', () => {
+        const currentIdx = AVAILABLE_CURRENCIES.indexOf(currencyInput.value as Currency);
+        const nextIdx = (currentIdx + 1) % AVAILABLE_CURRENCIES.length;
+        const nextCurrency = AVAILABLE_CURRENCIES[nextIdx] as Currency;
+        currencyInput.value = nextCurrency;
+        const meta = CURRENCY_META[nextCurrency];
+        currencyBadge.textContent = `${meta.symbol} ${nextCurrency}`;
+        currencyBadge.setAttribute('aria-label', `Currency: ${nextCurrency}. Tap to change`);
+      });
+    }
+
+    // === Validation ===
     const validators: Record<string, { validate: (value: string) => string | null }> = {
       title: {
         validate: (value) => {
@@ -231,7 +627,7 @@ const formId = propFormId || `transaction-entry-form-${type}`;
       amount: {
         validate: (value) => {
           const cleanValue = value.replace(/[^\d.-]/g, '');
-          const num = parseFloat(cleanValue);
+          const num = Number(cleanValue);
           if (!value || value.trim() === '') return 'Amount is required';
           if (isNaN(num)) return 'Amount must be a valid number';
           if (num <= 0) return 'Amount must be greater than 0';
@@ -264,28 +660,36 @@ const formId = propFormId || `transaction-entry-form-${type}`;
       },
     };
 
-    // Field error state
     const fieldErrors: Record<string, string | null> = {};
+    let isResetting = false;
 
-    // Update field error UI
     function updateFieldErrorUI(fieldName: string, errorMessage: string | null) {
-      const field = form.querySelector(`[name="${fieldName}"]`) as HTMLElement | null;
-      if (!field) return;
+      // For chip-based fields, look for the form-control container differently
+      let fieldContainer: Element | null = null;
 
-      const fieldContainer = field.closest('.form-control');
+      if (fieldName === 'category_id') {
+        fieldContainer =
+          form.querySelector('[data-category-chips]')?.closest('.form-control') || null;
+      } else {
+        const field = form.querySelector(`[name="${fieldName}"]`) as HTMLElement | null;
+        if (!field) return;
+        fieldContainer = field.closest('.form-control');
+      }
+
       if (!fieldContainer) return;
 
-      // Remove existing error
       const existingError = fieldContainer.querySelector('.field-error');
       if (existingError) existingError.remove();
 
-      // @TODO P2: Extract error ID construction to prevent collisions if form IDs aren't unique
       const errorDivId = `${formId}-${fieldName}-error`;
 
       if (errorMessage) {
-        field.classList.add('input-error', 'border-error');
-        field.setAttribute('aria-invalid', 'true');
-        field.setAttribute('aria-describedby', errorDivId);
+        const field = form.querySelector(`[name="${fieldName}"]`) as HTMLElement | null;
+        if (field) {
+          field.classList.add('input-error', 'border-error');
+          field.setAttribute('aria-invalid', 'true');
+          field.setAttribute('aria-describedby', errorDivId);
+        }
 
         const errorDiv = document.createElement('div');
         errorDiv.className = 'field-error text-error text-sm mt-1';
@@ -294,14 +698,17 @@ const formId = propFormId || `transaction-entry-form-${type}`;
         errorDiv.setAttribute('role', 'alert');
         fieldContainer.appendChild(errorDiv);
       } else {
-        field.classList.remove('input-error', 'border-error');
-        field.setAttribute('aria-invalid', 'false');
-        field.removeAttribute('aria-describedby');
+        const field = form.querySelector(`[name="${fieldName}"]`) as HTMLElement | null;
+        if (field) {
+          field.classList.remove('input-error', 'border-error');
+          field.setAttribute('aria-invalid', 'false');
+          field.removeAttribute('aria-describedby');
+        }
       }
     }
 
-    // Validate single field
     function validateField(fieldName: string, value: string): string | null {
+      if (isResetting) return null;
       const validator = validators[fieldName];
       if (!validator) return null;
 
@@ -312,7 +719,6 @@ const formId = propFormId || `transaction-entry-form-${type}`;
       return error;
     }
 
-    // Validate all fields
     function validateForm(): boolean {
       const formData = new FormData(form);
       let isValid = true;
@@ -326,7 +732,6 @@ const formId = propFormId || `transaction-entry-form-${type}`;
       return isValid;
     }
 
-    // Update submit button state
     function updateSubmitButton() {
       if (!submitButton) return;
 
@@ -336,9 +741,6 @@ const formId = propFormId || `transaction-entry-form-${type}`;
       for (const fieldName of requiredFields) {
         const field = form.querySelector(`[name="${fieldName}"]`) as HTMLInputElement | null;
         const value = field?.value || '';
-
-        // Only consider it invalid if there's an explicit error
-        // Missing from fieldErrors means it hasn't been validated yet
         const hasError = fieldErrors[fieldName] !== null && fieldErrors[fieldName] !== undefined;
 
         if (hasError || !value || value.trim() === '') {
@@ -350,7 +752,6 @@ const formId = propFormId || `transaction-entry-form-${type}`;
       submitButton.disabled = !allValid;
     }
 
-    // Clear all errors
     function clearFieldErrors() {
       form.querySelectorAll('.field-error').forEach((el) => el.remove());
       form.querySelectorAll('.input-error, .border-error').forEach((el) => {
@@ -362,9 +763,15 @@ const formId = propFormId || `transaction-entry-form-${type}`;
       }
     }
 
-    // Set field error from server response
     function setFieldError(fieldName: string, message: string) {
-      const fieldContainer = form.querySelector(`[name="${fieldName}"]`)?.closest('.form-control');
+      let fieldContainer: Element | null = null;
+      if (fieldName === 'category_id') {
+        fieldContainer =
+          form.querySelector('[data-category-chips]')?.closest('.form-control') || null;
+      } else {
+        fieldContainer =
+          form.querySelector(`[name="${fieldName}"]`)?.closest('.form-control') || null;
+      }
       if (!fieldContainer) return;
 
       const existingError = fieldContainer.querySelector('.field-error');
@@ -381,6 +788,27 @@ const formId = propFormId || `transaction-entry-form-${type}`;
       fieldContainer.appendChild(errorDiv);
     }
 
+    // Update currency based on category selection
+    function updateCurrencyForCategory() {
+      if (!categorySelect || !currencyInput) return;
+
+      const selectedCategoryId = categorySelect.value;
+      const selectedCategory = categories.find(
+        (c: { id: string; currency?: string }) => c.id === selectedCategoryId
+      );
+
+      if (selectedCategory && selectedCategory.currency) {
+        currencyInput.value = selectedCategory.currency;
+        // Update badge text
+        if (currencyBadge) {
+          const meta = CURRENCY_META[selectedCategory.currency as Currency];
+          if (meta) {
+            currencyBadge.textContent = `${meta.symbol} ${selectedCategory.currency}`;
+          }
+        }
+      }
+    }
+
     // Attach validation listeners
     function attachValidationListeners() {
       const titleInput = form.querySelector('input[name="title"]');
@@ -393,69 +821,36 @@ const formId = propFormId || `transaction-entry-form-${type}`;
         validateField('amount', (e.target as HTMLInputElement).value);
       });
 
-      const dateInput = form.querySelector('input[name="transaction_date"]');
-      dateInput?.addEventListener('change', (e: Event) => {
-        validateField('transaction_date', (e.target as HTMLInputElement).value);
-      });
-
-      const categorySelect = form.querySelector('select[name="category_id"]');
-      categorySelect?.addEventListener('change', (e: Event) => {
-        validateField('category_id', (e.target as HTMLSelectElement).value);
-        updateCurrencyForCategory();
-      });
-
       const assetSelect = form.querySelector('select[name="asset_id"]');
       assetSelect?.addEventListener('change', (e: Event) => {
         validateField('asset_id', (e.target as HTMLSelectElement).value);
       });
     }
 
-    // Update currency based on category
-    function updateCurrencyForCategory() {
-      const categorySelect = form.querySelector(
-        'select[name="category_id"]'
-      ) as HTMLSelectElement | null;
-      const currencyInput = form.querySelector('input[name="currency"]') as HTMLInputElement | null;
-      if (!categorySelect || !currencyInput) return;
-
-      const selectedCategoryId = categorySelect.value;
-      const selectedCategory = categories.find(
-        (c: { id: string; currency?: string }) => c.id === selectedCategoryId
-      );
-
-      if (selectedCategory && selectedCategory.currency) {
-        currencyInput.value = selectedCategory.currency;
-        currencyInput.dispatchEvent(new Event('change'));
-      }
-    }
-
-    // Close modal helper
+    // Close modal or drawer helper
     function closeModal() {
-      if (!modalId) return;
-      const modal = document.getElementById(modalId) as HTMLDialogElement | null;
-      if (modal) {
-        modal.close();
+      if (modalId) {
+        const modal = document.getElementById(modalId) as HTMLDialogElement | null;
+        if (modal) {
+          modal.close();
+          return;
+        }
+      }
+      const parentDrawer = form.closest('[data-drawer]') as HTMLElement | null;
+      if (parentDrawer) {
+        parentDrawer.dispatchEvent(new CustomEvent('drawer:close'));
       }
     }
-
-    // Handle cancel button
-    const cancelButton = form.querySelector('[data-close-modal]');
-    cancelButton?.addEventListener('click', (e: Event) => {
-      e.preventDefault();
-      closeModal();
-    });
 
     // Handle form submission
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
 
-      // Read mode-related values at submit time (they can be updated by edit modal)
       const transactionType = form.dataset.type || 'expense';
       const formMode = form.dataset.mode || 'create';
       const transactionId = form.dataset.transactionId || '';
       const isEditMode = formMode === 'edit';
 
-      // Validate
       const isFormValid = validateForm();
       if (!isFormValid) {
         const firstErrorField = form.querySelector('[aria-invalid="true"]') as HTMLElement | null;
@@ -472,13 +867,11 @@ const formId = propFormId || `transaction-entry-form-${type}`;
 
       try {
         const formData = new FormData(form);
-        // Map 'title' field to 'description' for API compatibility
-        // UI shows "Title" but API schema uses "description"
         const data = {
           type: transactionType,
           description: String(formData.get('title') || ''),
           amount: String(formData.get('amount') || '0').replace(/[^\d.-]/g, ''),
-          currency: String(formData.get('currency') || 'IDR'),
+          currency: String(formData.get('currency') || DEFAULT_CURRENCY),
           category_id: String(formData.get('category_id') || ''),
           asset_id: String(formData.get('asset_id') || ''),
           transaction_date: String(
@@ -486,7 +879,6 @@ const formId = propFormId || `transaction-entry-form-${type}`;
           ),
         };
 
-        // Use PUT for edit mode, POST for create mode
         const apiUrl = isEditMode ? `${action}/${transactionId}` : action;
         const method = isEditMode ? 'PUT' : 'POST';
 
@@ -499,7 +891,6 @@ const formId = propFormId || `transaction-entry-form-${type}`;
         const result = await response.json();
 
         if (!response.ok || !result.success) {
-          // Handle validation errors
           if (result.error?.details) {
             result.error.details.forEach(
               (issue: { path: (string | number)[]; message: string }) => {
@@ -507,7 +898,6 @@ const formId = propFormId || `transaction-entry-form-${type}`;
                 setFieldError(fieldName, issue.message);
               }
             );
-            // Focus the first field with an error for accessibility
             const firstInvalidField = form.querySelector(
               '.input-error, .select-error, .border-error'
             ) as HTMLElement | null;
@@ -520,7 +910,6 @@ const formId = propFormId || `transaction-entry-form-${type}`;
           }
           addToast(result.error?.message || 'Failed to save transaction', 'error');
         } else {
-          // Success
           const actionWord = isEditMode ? 'updated' : 'saved';
           addToast(
             `${transactionType === 'expense' ? 'Expense' : 'Income'} ${actionWord} successfully!`,
@@ -530,7 +919,6 @@ const formId = propFormId || `transaction-entry-form-${type}`;
           const isBulk = form.dataset.bulk === 'true';
 
           if (isBulk) {
-            // Dispatch event for bulk handling
             form.dispatchEvent(
               new CustomEvent('transaction-submitted', {
                 detail: result.data,
@@ -538,44 +926,65 @@ const formId = propFormId || `transaction-entry-form-${type}`;
               })
             );
 
-            // Reset form but keep date and account for convenience
-            const dateInput = form.querySelector(
-              'input[name="transaction_date"]'
-            ) as HTMLInputElement;
-            const assetSelect = form.querySelector('select[name="asset_id"]') as HTMLSelectElement;
-            const categorySelect = form.querySelector(
-              'select[name="category_id"]'
-            ) as HTMLSelectElement;
+            // Preserve date, account, and category on reset
+            const prevDate = hiddenDateInput?.value || todayStr;
+            const prevAsset = (form.querySelector('select[name="asset_id"]') as HTMLSelectElement)
+              ?.value;
+            const prevCategory = categorySelect?.value || '';
+            const prevCurrency = currencyInput?.value || DEFAULT_CURRENCY;
 
-            const prevDate = dateInput?.value;
-            const prevAsset = assetSelect?.value;
-            // Also keep category if user is entering multiple items for same category?
-            // The prompt says "fill in expense... bulk one by one". Keeping category is often helpful.
-            const prevCategory = categorySelect?.value;
+            // Determine which date pick was active
+            let prevDatePick = 'today';
+            datePickBtns.forEach((btn) => {
+              if (btn.getAttribute('aria-pressed') === 'true') {
+                prevDatePick = btn.dataset.datePick || 'today';
+              }
+            });
 
-            form.reset();
+            // Suppress validation during programmatic reset to prevent
+            // input event listeners from showing errors on empty fields
+            isResetting = true;
 
-            // Restore values
-            if (dateInput && prevDate) dateInput.value = prevDate;
-            if (assetSelect && prevAsset) assetSelect.value = prevAsset;
-            if (categorySelect && prevCategory) {
-              categorySelect.value = prevCategory;
-              // Trigger change to update currency if needed
-              categorySelect.dispatchEvent(new Event('change'));
+            // Reset title and amount only
+            const titleInput = form.querySelector('input[name="title"]') as HTMLInputElement;
+            const amountInput = form.querySelector('input[name="amount"]') as HTMLInputElement;
+            if (titleInput) titleInput.value = '';
+            if (amountInput) amountInput.value = '';
+
+            // Restore preserved values
+            if (hiddenDateInput) hiddenDateInput.value = prevDate;
+            if (dateCustomInput) dateCustomInput.value = prevDate;
+            setDateValue(prevDate, prevDatePick);
+
+            const assetSel = form.querySelector('select[name="asset_id"]') as HTMLSelectElement;
+            if (assetSel && prevAsset) assetSel.value = prevAsset;
+
+            if (prevCategory) {
+              setActiveChip(prevCategory);
             }
 
-            // Update UI state
+            if (currencyInput) currencyInput.value = prevCurrency;
+            if (currencyBadge) {
+              const meta = CURRENCY_META[prevCurrency as Currency];
+              if (meta) {
+                currencyBadge.textContent = `${meta.symbol} ${prevCurrency}`;
+              }
+            }
+
+            isResetting = false;
+
+            // Clear field error state and UI after reset
+            Object.keys(fieldErrors).forEach((k) => {
+              fieldErrors[k] = null;
+            });
+            clearFieldErrors();
+
             updateSubmitButton();
-            // Re-focus title for rapid entry
-            const titleInput = form.querySelector('input[name="title"]') as HTMLInputElement;
-            titleInput?.focus();
+            // Auto-focus amount for rapid entry
+            amountInput?.focus();
           } else {
             closeModal();
-
-            // Refresh page to show new transaction
-            setTimeout(() => {
-              window.location.reload();
-            }, 300);
+            document.dispatchEvent(new CustomEvent('transactions-changed'));
           }
         }
       } catch (err) {
@@ -587,7 +996,6 @@ const formId = propFormId || `transaction-entry-form-${type}`;
       } finally {
         if (submitButton) {
           submitButton.disabled = false;
-          // Re-read mode in case it changed
           const currentMode = form.dataset.mode || 'create';
           submitButton.textContent = currentMode === 'edit' ? 'Save Changes' : 'Save Entry';
         }
@@ -597,15 +1005,20 @@ const formId = propFormId || `transaction-entry-form-${type}`;
     // Initialize
     attachValidationListeners();
     updateSubmitButton();
+
+    // Auto-focus amount field on initial load (only for create mode)
+    if (form.dataset.mode === 'create') {
+      const amountInput = form.querySelector('input[name="amount"]') as HTMLInputElement;
+      // Delay focus to avoid conflicts with drawer animation
+      setTimeout(() => amountInput?.focus(), 100);
+    }
   }
 
-  // Initialize on DOM ready
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initTransactionEntryForms);
   } else {
     initTransactionEntryForms();
   }
 
-  // Re-initialize on Astro page transitions
   document.addEventListener('astro:page-load', initTransactionEntryForms);
 </script>

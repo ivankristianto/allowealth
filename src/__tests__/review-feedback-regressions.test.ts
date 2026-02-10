@@ -259,7 +259,7 @@ describe('review feedback regressions', () => {
     const content = read('src/components/organisms/TransactionDrawer.client.ts');
     // setInput calls must use ?? to preserve zero values (amount: 0)
     expect(content).toContain("detail.amount ?? ''");
-    expect(content).toContain("detail.currency ?? 'IDR'");
+    expect(content).toContain('detail.currency ?? DEFAULT_CURRENCY');
     expect(content).not.toContain("data.amount || ''");
   });
 

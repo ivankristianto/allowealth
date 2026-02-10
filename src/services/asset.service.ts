@@ -171,7 +171,7 @@ export class AssetService {
     if (currentAsset.status === 'closed') {
       throw new AssetServiceError(
         ServiceErrorCode.ACCOUNT_CLOSED,
-        'Cannot update asset — account is closed',
+        'Cannot update asset — account is deactivated',
         400
       );
     }
@@ -235,7 +235,7 @@ export class AssetService {
     if (currentAsset.status === 'closed') {
       throw new AssetServiceError(
         ServiceErrorCode.ACCOUNT_CLOSED,
-        'Cannot update balance — account is closed',
+        'Cannot update balance — account is deactivated',
         400
       );
     }
@@ -312,7 +312,7 @@ export class AssetService {
     if (fromAsset.status === 'closed' || toAsset.status === 'closed') {
       throw new AssetServiceError(
         ServiceErrorCode.ACCOUNT_CLOSED,
-        'Cannot transfer — one or both accounts are closed',
+        'Cannot transfer — one or both accounts are deactivated',
         400
       );
     }
@@ -339,7 +339,7 @@ export class AssetService {
       const deductResult: { balance: string }[] = await (tx as any)
         .update(this.schema.assets)
         .set({
-          balance: sql`CAST(CAST(${this.schema.assets.balance} AS REAL) - CAST(${amount} AS REAL) AS TEXT)`,
+          balance: sql`CAST(CAST(${this.schema.assets.balance} AS NUMERIC) - CAST(${amount} AS NUMERIC) AS TEXT)`,
           last_updated: now,
           updated_at: now,
         })
@@ -347,7 +347,7 @@ export class AssetService {
           and(
             eq(this.schema.assets.id, fromId),
             eq(this.schema.assets.workspace_id, workspaceId),
-            sql`CAST(${this.schema.assets.balance} AS REAL) >= CAST(${amount} AS REAL)`
+            sql`CAST(${this.schema.assets.balance} AS NUMERIC) >= CAST(${amount} AS NUMERIC)`
           )
         )
         .returning({ balance: this.schema.assets.balance });
@@ -368,7 +368,7 @@ export class AssetService {
       const addResult: { balance: string }[] = await (tx as any)
         .update(this.schema.assets)
         .set({
-          balance: sql`CAST(CAST(${this.schema.assets.balance} AS REAL) + CAST(${amount} AS REAL) AS TEXT)`,
+          balance: sql`CAST(CAST(${this.schema.assets.balance} AS NUMERIC) + CAST(${amount} AS NUMERIC) AS TEXT)`,
           last_updated: now,
           updated_at: now,
         })
@@ -408,13 +408,17 @@ export class AssetService {
     }
 
     if (asset.status === 'closed') {
-      throw new AssetServiceError(ServiceErrorCode.ALREADY_CLOSED, 'Account already closed', 400);
+      throw new AssetServiceError(
+        ServiceErrorCode.ALREADY_CLOSED,
+        'Account already deactivated',
+        400
+      );
     }
 
     if (decimalCompare(asset.balance, '0') !== 0) {
       throw new AssetServiceError(
         ServiceErrorCode.BALANCE_NOT_ZERO,
-        `Cannot close account with balance ${asset.balance} ${asset.currency}. Transfer funds out first.`,
+        `Cannot deactivate account with balance ${asset.balance} ${asset.currency}. Transfer funds out first.`,
         400
       );
     }
@@ -447,7 +451,7 @@ export class AssetService {
     }
 
     if (asset.status !== 'closed') {
-      throw new AssetServiceError(ServiceErrorCode.NOT_CLOSED, 'Account is not closed', 400);
+      throw new AssetServiceError(ServiceErrorCode.NOT_CLOSED, 'Account is not deactivated', 400);
     }
 
     const now = new Date();
@@ -556,7 +560,7 @@ export class AssetService {
       const result = await (this.db as any)
         .select({
           currency: this.schema.assets.currency,
-          total: sql<string>`sum(CAST(${this.schema.assets.balance} AS REAL))`,
+          total: sql<string>`sum(CAST(${this.schema.assets.balance} AS NUMERIC))`,
         })
         .from(this.schema.assets)
         .where(
@@ -581,7 +585,7 @@ export class AssetService {
         .select({
           type: this.schema.assets.type,
           currency: this.schema.assets.currency,
-          total: sql<string>`sum(CAST(${this.schema.assets.balance} AS REAL))`,
+          total: sql<string>`sum(CAST(${this.schema.assets.balance} AS NUMERIC))`,
           count: sql<number>`count(*)`,
         })
         .from(this.schema.assets)

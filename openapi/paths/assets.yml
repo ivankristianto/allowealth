@@ -119,9 +119,9 @@ paths:
           $ref: '../responses/common.yml#/InternalServerError'
     delete:
       tags: [Assets]
-      summary: Close an asset (deprecated, use /close)
+      summary: Deactivate an asset (deprecated, use /close)
       description: |
-        Closes an asset account (backwards-compatible alias for POST /api/assets/{id}/close).
+        Deactivates an asset account (backwards-compatible alias for POST /api/assets/{id}/close).
         Requires zero balance. Prefer using the dedicated close endpoint.
       deprecated: true
       security:
@@ -130,7 +130,7 @@ paths:
         - $ref: '../parameters/common.yml#/IdParameter'
       responses:
         '200':
-          description: Asset closed successfully
+          description: Asset deactivated successfully
           content:
             application/json:
               schema:
@@ -143,7 +143,7 @@ paths:
                     properties:
                       message:
                         type: string
-                        example: Asset closed successfully
+                        example: Asset deactivated successfully
         '400':
           $ref: '../responses/common.yml#/BadRequest'
         '401':
@@ -309,10 +309,10 @@ paths:
   /api/assets/{id}/close:
     post:
       tags: [Assets]
-      summary: Close an asset account
+      summary: Deactivate an asset account
       description: |
-        Closes an asset account. Requires zero balance.
-        Once closed, the account is hidden from active views but transaction history is preserved.
+        Deactivates an asset account. Requires zero balance.
+        Once deactivated, the account is hidden from active views but transaction history is preserved.
         Can be reopened later by an admin.
       security:
         - sessionAuth: []
@@ -320,7 +320,7 @@ paths:
         - $ref: '../parameters/common.yml#/IdParameter'
       responses:
         '200':
-          description: Account closed successfully
+          description: Account deactivated successfully
           content:
             application/json:
               schema:
@@ -335,9 +335,9 @@ paths:
                         $ref: '../schemas/Asset.yml#/Asset'
                       message:
                         type: string
-                        example: Account closed successfully
+                        example: Account deactivated successfully
         '400':
-          description: Balance not zero or account already closed
+          description: Balance not zero or account already deactivated
           content:
             application/json:
               schema:

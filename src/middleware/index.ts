@@ -4,7 +4,7 @@
  * Chains middleware handlers in sequence. Each handler has a single responsibility.
  * Order matters: earlier middleware wraps later ones (onion model).
  *
- * @see https://docs.astro.build/en/reference/middleware-reference/
+ * @see https://docs.astro.build/en/guides/middleware/#chaining-middleware
  */
 
 import { sequence } from 'astro:middleware';

@@ -1,5 +1,5 @@
 /**
- * AssetDeleteConfirmModal Storybook Stories (Close Account Modal)
+ * AssetDeleteConfirmModal Storybook Stories (Deactivate Account Modal)
  *
  * P1: NOTE - This file duplicates the AssetDeleteConfirmModal.astro HTML structure because
  * Storybook's HTML framework cannot directly render Astro components.
@@ -16,7 +16,7 @@ const meta: Meta = {
   argTypes: {
     assetName: {
       control: 'text',
-      description: 'Name of the asset to close',
+      description: 'Name of the asset to deactivate',
     },
     assetType: {
       control: 'text',
@@ -48,7 +48,7 @@ const meta: Meta = {
 
 export default meta;
 
-interface AssetCloseModalArgs {
+interface AssetDeactivateModalArgs {
   assetName?: string;
   assetType?: string;
   balance?: number;
@@ -58,7 +58,7 @@ interface AssetCloseModalArgs {
   errorMessage?: string;
 }
 
-const createAssetCloseModal = (args: AssetCloseModalArgs): HTMLElement => {
+const createAssetDeactivateModal = (args: AssetDeactivateModalArgs): HTMLElement => {
   const {
     assetName = 'BCA Checking',
     assetType = 'Bank Account',
@@ -66,7 +66,7 @@ const createAssetCloseModal = (args: AssetCloseModalArgs): HTMLElement => {
     currency = 'IDR',
     isLoading = false,
     hasError = false,
-    errorMessage = 'Failed to close account. Please try again.',
+    errorMessage = 'Failed to deactivate account. Please try again.',
   } = args;
 
   const container = document.createElement('div');
@@ -82,21 +82,20 @@ const createAssetCloseModal = (args: AssetCloseModalArgs): HTMLElement => {
         <!-- Header section -->
         <div class="flex items-center gap-4">
           <!-- Icon -->
-          <div class="w-12 h-12 rounded-2xl flex items-center justify-center bg-error/10">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-error">
-              <circle cx="12" cy="12" r="10"/>
-              <path d="m15 9-6 6"/>
-              <path d="m9 9 6 6"/>
+          <div class="w-12 h-12 rounded-2xl flex items-center justify-center bg-warning/10">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-warning">
+              <path d="M18.36 6.64a9 9 0 1 1-12.73 0"/>
+              <line x1="12" y1="2" x2="12" y2="12"/>
             </svg>
           </div>
 
           <!-- Title and description -->
           <div class="flex-1">
             <h2 class="text-2xl font-bold tracking-tight text-primary leading-none">
-              Close Account
+              Deactivate Account
             </h2>
             <p class="text-neutral text-sm mt-2 font-medium">
-              Close this account?
+              Deactivate this account?
             </p>
           </div>
         </div>
@@ -119,7 +118,7 @@ const createAssetCloseModal = (args: AssetCloseModalArgs): HTMLElement => {
 
         <!-- Info message -->
         <div class="text-sm text-base-content/60 bg-base-200 p-3 rounded-xl">
-          Once closed: hidden from active accounts, transaction history preserved, can be reopened later by admin.
+          Once deactivated: hidden from active accounts, transaction history preserved, can be reactivated later by admin.
         </div>
 
         <!-- Error message -->
@@ -143,10 +142,10 @@ const createAssetCloseModal = (args: AssetCloseModalArgs): HTMLElement => {
           </button>
           <button
             type="button"
-            class="btn btn-error flex-1 h-14 rounded-full font-bold"
+            class="btn btn-warning flex-1 h-14 rounded-full font-bold"
             ${isLoading ? 'disabled' : ''}
           >
-            ${isLoading ? 'Closing...' : 'Close Account'}
+            ${isLoading ? 'Deactivating...' : 'Deactivate'}
           </button>
         </div>
       </div>
@@ -165,7 +164,7 @@ export const Default: StoryObj = {
     isLoading: false,
     hasError: false,
   },
-  render: (args) => createAssetCloseModal(args),
+  render: (args) => createAssetDeactivateModal(args),
 };
 
 export const USDAsset: StoryObj = {
@@ -177,7 +176,7 @@ export const USDAsset: StoryObj = {
     isLoading: false,
     hasError: false,
   },
-  render: (args) => createAssetCloseModal(args),
+  render: (args) => createAssetDeactivateModal(args),
 };
 
 export const Loading: StoryObj = {
@@ -189,7 +188,7 @@ export const Loading: StoryObj = {
     isLoading: true,
     hasError: false,
   },
-  render: (args) => createAssetCloseModal(args),
+  render: (args) => createAssetDeactivateModal(args),
 };
 
 export const WithError: StoryObj = {
@@ -200,9 +199,9 @@ export const WithError: StoryObj = {
     currency: 'IDR',
     isLoading: false,
     hasError: true,
-    errorMessage: 'Cannot close account with non-zero balance. Transfer funds out first.',
+    errorMessage: 'Cannot deactivate account with non-zero balance. Transfer funds out first.',
   },
-  render: (args) => createAssetCloseModal(args),
+  render: (args) => createAssetDeactivateModal(args),
 };
 
 export const NonZeroBalance: StoryObj = {
@@ -214,9 +213,9 @@ export const NonZeroBalance: StoryObj = {
     isLoading: false,
     hasError: true,
     errorMessage:
-      'Cannot close account with balance of Rp 1,500,000,000. Transfer funds out first.',
+      'Cannot deactivate account with balance of Rp 1,500,000,000. Transfer funds out first.',
   },
-  render: (args) => createAssetCloseModal(args),
+  render: (args) => createAssetDeactivateModal(args),
 };
 
 export const SmallBalance: StoryObj = {
@@ -228,5 +227,5 @@ export const SmallBalance: StoryObj = {
     isLoading: false,
     hasError: false,
   },
-  render: (args) => createAssetCloseModal(args),
+  render: (args) => createAssetDeactivateModal(args),
 };

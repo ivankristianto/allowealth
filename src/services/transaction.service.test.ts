@@ -491,6 +491,68 @@ describe('TransactionService', () => {
     });
   });
 
+  describe('getCategoryUsageCounts', () => {
+    it('should return category usage counts ordered by frequency', async () => {
+      (mockDb.select as any).mockReturnValueOnce({
+        from: mock(() => ({
+          where: mock(() => ({
+            groupBy: mock(() => ({
+              orderBy: mock(() =>
+                Promise.resolve([
+                  { category_id: 'cat-food', count: 15 },
+                  { category_id: 'cat-transport', count: 8 },
+                  { category_id: 'cat-entertainment', count: 3 },
+                ])
+              ),
+            })),
+          })),
+        })),
+      });
+
+      const result = await transactionService.getCategoryUsageCounts('workspace-1', 'user-1');
+
+      expect(result).toHaveLength(3);
+      expect(result[0].category_id).toBe('cat-food');
+      expect(result[0].count).toBe(15);
+      expect(result[1].category_id).toBe('cat-transport');
+      expect(result[2].count).toBe(3);
+      expect(mockDb.select).toHaveBeenCalled();
+    });
+
+    it('should return empty array when no transactions exist', async () => {
+      (mockDb.select as any).mockReturnValueOnce({
+        from: mock(() => ({
+          where: mock(() => ({
+            groupBy: mock(() => ({
+              orderBy: mock(() => Promise.resolve([])),
+            })),
+          })),
+        })),
+      });
+
+      const result = await transactionService.getCategoryUsageCounts('workspace-1', 'user-1');
+
+      expect(result).toHaveLength(0);
+    });
+
+    it('should accept custom daysBack parameter', async () => {
+      (mockDb.select as any).mockReturnValueOnce({
+        from: mock(() => ({
+          where: mock(() => ({
+            groupBy: mock(() => ({
+              orderBy: mock(() => Promise.resolve([{ category_id: 'cat-1', count: 5 }])),
+            })),
+          })),
+        })),
+      });
+
+      const result = await transactionService.getCategoryUsageCounts('workspace-1', 'user-1', 30);
+
+      expect(result).toHaveLength(1);
+      expect(mockDb.select).toHaveBeenCalled();
+    });
+  });
+
   describe('getHistory', () => {
     it('should resolve category and asset IDs to readable names in diffs', async () => {
       const logs = [

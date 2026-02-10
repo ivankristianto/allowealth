@@ -27,8 +27,9 @@ export interface Props {
 
 const { history, currency, currentMonth, currentYear } = Astro.props;
 
-// Check if month has data (budget > 0)
-const hasData = (budgetAmount: number): boolean => budgetAmount > 0;
+// Check if month has data (budget > 0 or spending > 0)
+const hasData = (budgetAmount: number, spentAmount: number): boolean =>
+  budgetAmount > 0 || spentAmount > 0;
 
 const getChangeIndicator = (
   current: number,
@@ -77,7 +78,7 @@ const sortedHistory = [...history].sort((a, b) => {
         const balance = parseFloat(monthData.total_balance);
         const percentageUsed = monthData.percentage_used;
         const budgetStatus = getBudgetStatus(percentageUsed);
-        const monthHasData = hasData(budgetAmount);
+        const monthHasData = hasData(budgetAmount, spentAmount);
 
         // Get previous month for comparison
         const previousMonth = sortedHistory[index + 1];

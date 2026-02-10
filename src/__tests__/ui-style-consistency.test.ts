@@ -64,7 +64,14 @@ describe('UI style consistency', () => {
         throw new Error(`[${filePath}] expected at least one actionable button segment`);
       }
 
-      const hasRoundedFullButton = buttonSegments.some((segment) =>
+      // Chip/pill buttons (role="radio", data-category-chip, data-category-toggle) legitimately use rounded-full
+      const actionButtons = buttonSegments.filter(
+        (seg) =>
+          !seg.includes('role="radio"') &&
+          !seg.includes('data-category-chip') &&
+          !seg.includes('data-category-toggle')
+      );
+      const hasRoundedFullButton = actionButtons.some((segment) =>
         segment.includes('rounded-full')
       );
       if (hasRoundedFullButton) {

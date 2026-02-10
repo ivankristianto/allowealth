@@ -74,11 +74,6 @@ const serializedInput = JSON.stringify(input);
         <p class="text-sm text-base-content/60 mt-2 font-medium">
           Predicting global asset growth over the next decade.
         </p>
-        <div class="mt-3 px-3 py-2 bg-warning/10 border border-warning/20 rounded-lg">
-          <p class="text-xs text-warning font-medium">
-            ⓘ USD conversions use a fixed exchange rate (1 USD = 15,000 IDR)
-          </p>
-        </div>
       </div>
 
       {/* Input Controls */}
@@ -161,6 +156,7 @@ const serializedInput = JSON.stringify(input);
         <>
           {/* Chart Container */}
           <div
+            id={`${chartId}-container`}
             class="h-[300px] md:h-[400px] w-full bg-base-200/20 rounded-card p-4 md:p-8 border border-base-300/50"
             data-chart-data={serializedData}
             data-chart-input={serializedInput}
@@ -415,11 +411,11 @@ const serializedInput = JSON.stringify(input);
     if (!Array.isArray(raw)) return null;
     const validData = raw.filter(
       (item) =>
-        typeof item?.netWorth === 'number' &&
-        isFinite(item.netWorth) &&
-        typeof item?.date === 'string' &&
-        item.date.length > 0 &&
-        item.date.length <= 50
+        typeof item?.forecastBalance === 'number' &&
+        isFinite(item.forecastBalance) &&
+        typeof item?.dateLabel === 'string' &&
+        item.dateLabel.length > 0 &&
+        item.dateLabel.length <= 50
     ) as ForecastDataPoint[];
     return validData.length > 0 ? validData : null;
   }

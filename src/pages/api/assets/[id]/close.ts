@@ -35,7 +35,7 @@ export const POST: APIRoute = async (context) => {
       );
     }
 
-    return successResponse({ asset, message: 'Account closed successfully' });
+    return successResponse({ asset, message: 'Account deactivated successfully' });
   } catch (error) {
     if (error instanceof Error && error.message === 'Unauthorized') {
       return errorResponse('Unauthorized', 401);
@@ -44,6 +44,6 @@ export const POST: APIRoute = async (context) => {
       return errorResponse(error.message, error.statusCode, error.code);
     }
     logError('Error closing asset', error);
-    return errorResponse('Failed to close asset', 500);
+    return errorResponse('Failed to deactivate asset', 500);
   }
 };
