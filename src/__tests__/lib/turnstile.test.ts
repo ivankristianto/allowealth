@@ -1,27 +1,21 @@
 import { describe, test, expect, mock, beforeEach, afterEach } from 'bun:test';
 import { verifyTurnstileToken } from '@/lib/turnstile';
-
-/** Helper to mutate readonly import.meta.env in tests (Bun allows runtime mutation) */
-function setEnv(key: string, value: string) {
-  (import.meta.env as Record<string, string>)[key] = value;
-}
+import { setTestEnv } from '@/lib/env';
 
 describe('verifyTurnstileToken', () => {
   let originalFetch: typeof globalThis.fetch;
-  let originalSecretKey: string | undefined;
 
   beforeEach(() => {
     originalFetch = globalThis.fetch;
-    originalSecretKey = import.meta.env.TURNSTILE_SECRET_KEY;
   });
 
   afterEach(() => {
     globalThis.fetch = originalFetch;
-    setEnv('TURNSTILE_SECRET_KEY', originalSecretKey ?? '');
+    setTestEnv(null);
   });
 
   test('returns success when siteverify responds with success: true', async () => {
-    setEnv('TURNSTILE_SECRET_KEY', 'test-secret-key');
+    setTestEnv({ TURNSTILE_SECRET_KEY: 'test-secret-key' });
     globalThis.fetch = mock(() =>
       Promise.resolve(new Response(JSON.stringify({ success: true }), { status: 200 }))
     ) as unknown as typeof fetch;
@@ -34,7 +28,7 @@ describe('verifyTurnstileToken', () => {
   });
 
   test('returns error when siteverify responds with success: false', async () => {
-    setEnv('TURNSTILE_SECRET_KEY', 'test-secret-key');
+    setTestEnv({ TURNSTILE_SECRET_KEY: 'test-secret-key' });
     globalThis.fetch = mock(() =>
       Promise.resolve(
         new Response(
@@ -51,7 +45,7 @@ describe('verifyTurnstileToken', () => {
   });
 
   test('returns error when token is empty and secret key is configured', async () => {
-    setEnv('TURNSTILE_SECRET_KEY', 'test-secret-key');
+    setTestEnv({ TURNSTILE_SECRET_KEY: 'test-secret-key' });
     const fetchMock = mock(() => Promise.resolve(new Response())) as unknown as typeof fetch;
     globalThis.fetch = fetchMock;
 
@@ -63,7 +57,7 @@ describe('verifyTurnstileToken', () => {
   });
 
   test('skips verification when secret key is not configured', async () => {
-    setEnv('TURNSTILE_SECRET_KEY', '');
+    setTestEnv({ TURNSTILE_SECRET_KEY: undefined });
     const fetchMock = mock(() => Promise.resolve(new Response())) as unknown as typeof fetch;
     globalThis.fetch = fetchMock;
 
@@ -75,7 +69,7 @@ describe('verifyTurnstileToken', () => {
   });
 
   test('returns error when fetch to siteverify fails (fail-closed)', async () => {
-    setEnv('TURNSTILE_SECRET_KEY', 'test-secret-key');
+    setTestEnv({ TURNSTILE_SECRET_KEY: 'test-secret-key' });
     globalThis.fetch = mock(() =>
       Promise.reject(new Error('Network error'))
     ) as unknown as typeof fetch;
@@ -87,7 +81,7 @@ describe('verifyTurnstileToken', () => {
   });
 
   test('returns error when siteverify returns non-OK status', async () => {
-    setEnv('TURNSTILE_SECRET_KEY', 'test-secret-key');
+    setTestEnv({ TURNSTILE_SECRET_KEY: 'test-secret-key' });
     globalThis.fetch = mock(() =>
       Promise.resolve(new Response('Server Error', { status: 500 }))
     ) as unknown as typeof fetch;
@@ -99,7 +93,7 @@ describe('verifyTurnstileToken', () => {
   });
 
   test('sends correct payload to siteverify endpoint', async () => {
-    setEnv('TURNSTILE_SECRET_KEY', 'my-secret');
+    setTestEnv({ TURNSTILE_SECRET_KEY: 'my-secret' });
     const fetchMock = mock(() =>
       Promise.resolve(new Response(JSON.stringify({ success: true }), { status: 200 }))
     ) as unknown as typeof fetch;

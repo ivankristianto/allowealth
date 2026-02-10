@@ -22,8 +22,10 @@ export interface Props {
   className?: string;
 }
 
+import { getEnv } from '@/lib/env';
+
 const { theme = 'auto', className = '' } = Astro.props;
-const siteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
+const siteKey = getEnv('PUBLIC_TURNSTILE_SITE_KEY');
 ---
 
 {

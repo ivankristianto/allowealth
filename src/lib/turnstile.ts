@@ -6,6 +6,7 @@
  * Fail-closed: if configured but siteverify is unreachable, requests are rejected.
  */
 
+import { getEnv } from '@/lib/env';
 import { logError } from '@/lib/logger';
 
 const SITEVERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
@@ -34,7 +35,7 @@ export async function verifyTurnstileToken(
   token: string,
   clientIP: string
 ): Promise<TurnstileVerificationResult> {
-  const secretKey = import.meta.env.TURNSTILE_SECRET_KEY;
+  const secretKey = getEnv('TURNSTILE_SECRET_KEY');
 
   // Graceful degradation: skip verification if not configured
   if (!secretKey) {
