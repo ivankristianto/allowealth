@@ -31,7 +31,16 @@ const amount = transaction ? parseFloat(transaction.amount) || 0 : 0;
 const isExpense = transaction?.type === 'expense';
 const isDeleted = !!transaction?.deleted_at;
 const hasHistory = !!transaction?.has_history;
-const date = transaction ? new Date(transaction.transaction_date) : new Date();
+// Parse date as local date to avoid timezone shift (UTC midnight → previous day in UTC- zones)
+const parseLocalDate = (dateStr: string | Date): Date => {
+  if (dateStr instanceof Date) {
+    return new Date(dateStr.getFullYear(), dateStr.getMonth(), dateStr.getDate());
+  }
+  const str = dateStr.split('T')[0];
+  const [y, m, d] = str.split('-').map(Number);
+  return new Date(y, m - 1, d);
+};
+const date = transaction ? parseLocalDate(transaction.transaction_date) : new Date();
 
 // Format date with relative context
 const formatDate = (d: Date): string => {
@@ -66,6 +75,11 @@ const createdByName = transaction?.created_by_user_name;
 const categoryIcon = transaction?.category?.icon || 'credit-card';
 const categoryColor = transaction?.category?.color || 'bg-base-300';
 
+// Extract color name for WCAG-compliant tinted pill background on mobile
+// Uses color-mix() to create a light tint with dark text (always passes contrast)
+const categoryColorName = categoryColor.replace('bg-', '');
+const categoryPillStyle = `background-color: color-mix(in srgb, var(--color-${categoryColorName}) 18%, transparent)`;
+
 // Prepare transaction data for edit action (reused in both layouts)
 const transactionDataJson = transaction
   ? JSON.stringify({
@@ -76,7 +90,7 @@ const transactionDataJson = transaction
       currency: transaction.currency,
       category_id: transaction.category?.id,
       asset_id: transaction.asset.id,
-      transaction_date: date.toISOString().split('T')[0],
+      transaction_date: transaction.transaction_date.toString().split('T')[0],
     })
   : '';
 
@@ -104,17 +118,14 @@ const cardClasses = [
       data-transaction-card-skeleton
     >
       <div class="flex items-center gap-2.5">
-        <div class="w-8 h-8 rounded-xl bg-base-200 shrink-0" aria-hidden="true" />
         <div class="flex-1 min-w-0">
           <div class="h-4 bg-base-200 rounded w-2/3" aria-hidden="true" />
         </div>
         <div class="h-4 bg-base-200 rounded w-20 shrink-0" aria-hidden="true" />
       </div>
-      <div class="mt-1.5 pl-[42px]">
-        <div class="h-3 bg-base-200 rounded w-24" aria-hidden="true" />
-      </div>
-      <div class="mt-1 pl-[42px]">
-        <div class="h-3 bg-base-200 rounded w-40" aria-hidden="true" />
+      <div class="mt-1 flex items-center gap-1.5">
+        <div class="h-3.5 bg-base-200 rounded w-20" aria-hidden="true" />
+        <div class="h-3 bg-base-200 rounded w-32" aria-hidden="true" />
       </div>
     </div>
   ) : (
@@ -124,12 +135,10 @@ const cardClasses = [
       data-transaction-id={transaction?.id}
       aria-label={`${transaction?.type === 'income' ? 'Income' : 'Expense'}: ${primaryText}, ${amount} ${transaction?.currency}`}
     >
-      {/* Mobile Layout (3-row compact) - shown below sm breakpoint */}
+      {/* Mobile Layout (2-row compact) - shown below sm breakpoint */}
       <div class="sm:hidden">
-        {/* Row 1: Icon + Description + Amount (+ menu when actions) */}
+        {/* Row 1: Description + Amount (+ menu when actions) */}
         <div class="flex items-center gap-2.5">
-          <CategoryIcon icon={categoryIcon} color={categoryColor} size="sm" className="shrink-0" />
-
           <div class="flex-1 min-w-0">
             <div
               class:list={[
@@ -218,27 +227,31 @@ const cardClasses = [
           )}
         </div>
 
-        {/* Row 2: Category badge */}
-        <div class="mt-1.5 pl-[42px] flex items-center gap-2">
-          <span class="text-[11px] font-semibold tracking-widest uppercase text-base-content/50 bg-base-200/80 px-1.5 py-0.5 rounded">
-            {transaction?.category?.name}
-          </span>
-          {isDeleted && <span class="badge badge-ghost badge-sm text-xs">Deleted</span>}
-        </div>
-
-        {/* Row 3: Date · Asset · User */}
-        <div class="mt-1 pl-[42px] flex items-center gap-1.5 text-[11px] text-base-content/40 tracking-wide">
-          <time datetime={date.toISOString()} class="font-medium uppercase">
+        {/* Row 2: Date · Category · Asset · User */}
+        <div class="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-base-content/40">
+          <time
+            datetime={date.toISOString()}
+            class="whitespace-nowrap font-medium text-base-content/60"
+          >
             {formattedDate}
           </time>
           <span aria-hidden="true">&middot;</span>
-          <CreditCard size={10} class="stroke-current shrink-0" aria-hidden="true" />
-          <span class="truncate">{transaction?.asset?.name}</span>
+          <span
+            class="font-semibold text-base-content/80 px-1.5 py-0.5 rounded text-xs"
+            style={categoryPillStyle}
+          >
+            {transaction?.category?.name}
+          </span>
+          {isDeleted && <span class="badge badge-ghost badge-sm text-xs">Deleted</span>}
+          <span class="inline-flex items-center gap-1 min-w-0">
+            <CreditCard size={10} class="stroke-current shrink-0" aria-hidden="true" />
+            <span class="truncate">{transaction?.asset?.name}</span>
+          </span>
           {createdByName && (
-            <>
+            <span class="inline-flex items-center gap-1 whitespace-nowrap min-w-0">
               <span aria-hidden="true">&middot;</span>
               <span class="truncate">{createdByName}</span>
-            </>
+            </span>
           )}
         </div>
       </div>
@@ -273,7 +286,10 @@ const cardClasses = [
               {primaryText}
             </div>
             <div class="mt-1.5 flex flex-wrap items-center gap-1.5 leading-none">
-              <span class="text-[11px] font-semibold tracking-widest uppercase text-base-content/50 bg-base-200/80 px-1.5 py-0.5 rounded">
+              <span
+                class="text-xs font-semibold text-base-content/80 px-1.5 py-0.5 rounded"
+                style={categoryPillStyle}
+              >
                 {transaction?.category?.name}
               </span>
               {isDeleted && <span class="badge badge-ghost badge-sm text-xs">Deleted</span>}
