@@ -15,7 +15,6 @@ export type {
   EmailVerificationOptions,
   PasswordResetOptions,
   WorkspaceInvitationOptions,
-  TestEmailOptions,
 } from './email-template.service';
 
 export { EmailServiceError, EmailErrorCode } from './email-errors';

@@ -68,20 +68,6 @@ describe('EmailTemplateService', () => {
     });
   });
 
-  describe('test', () => {
-    it('should generate test email', () => {
-      const result = templateService.test({
-        workspaceName: 'My Workspace',
-        provider: 'sendgrid',
-        senderEmail: 'noreply@example.com',
-      });
-
-      expect(result.subject).toBe('Test email from My Workspace');
-      expect(result.html).toContain('working correctly');
-      expect(result.html).toContain('sendgrid');
-    });
-  });
-
   describe('footer', () => {
     it('should include current year in footer', () => {
       const result = templateService.passwordReset({

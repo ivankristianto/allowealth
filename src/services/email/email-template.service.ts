@@ -39,15 +39,6 @@ export interface EmailVerificationOptions {
 }
 
 /**
- * Test email template options
- */
-export interface TestEmailOptions {
-  workspaceName: string;
-  provider: string;
-  senderEmail: string;
-}
-
-/**
  * Email Template Service
  */
 /** Escape HTML special characters to prevent injection */
@@ -206,42 +197,6 @@ ${this.button('Accept Invitation', inviteUrl)}
 
     return {
       subject: `You've been invited to join ${sanitizeSubject(workspaceName)}`,
-      html: this.wrap(content),
-    };
-  }
-
-  /**
-   * Generate test email template
-   */
-  test(options: TestEmailOptions): EmailTemplate {
-    const { workspaceName, provider, senderEmail } = options;
-
-    const content = `
-<h1 style="margin: 0 0 16px 0; font-size: 24px; font-weight: 600; color: #18181b;">
-  Email Configuration Test
-</h1>
-<p style="margin: 0 0 16px 0; font-size: 14px; line-height: 1.6; color: #3f3f46;">
-  Your email configuration is working correctly.
-</p>
-<table role="presentation" cellpadding="0" cellspacing="0" style="margin: 16px 0; background-color: #f4f4f5; border-radius: 8px; padding: 16px; width: 100%;">
-  <tr>
-    <td style="padding: 8px 16px;">
-      <p style="margin: 0 0 8px 0; font-size: 13px; color: #71717a;">
-        <strong style="color: #3f3f46;">Provider:</strong> ${escapeHtml(provider)}
-      </p>
-      <p style="margin: 0; font-size: 13px; color: #71717a;">
-        <strong style="color: #3f3f46;">Sender:</strong> ${escapeHtml(senderEmail)}
-      </p>
-    </td>
-  </tr>
-</table>
-<p style="margin: 0; font-size: 13px; color: #71717a;">
-  Emails from ${escapeHtml(workspaceName)} will be sent using this configuration.
-</p>
-`.trim();
-
-    return {
-      subject: `Test email from ${sanitizeSubject(workspaceName)}`,
       html: this.wrap(content),
     };
   }

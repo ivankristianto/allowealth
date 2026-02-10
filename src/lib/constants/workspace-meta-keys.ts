@@ -21,7 +21,6 @@ export type WorkspaceMetaKey = (typeof WORKSPACE_META_KEYS)[keyof typeof WORKSPA
 
 /**
  * Default values for each workspace meta key (stored as strings in database)
- * Note: Email keys have no defaults (unconfigured state)
  */
 export const WORKSPACE_META_DEFAULTS: Record<WorkspaceMetaKey, string> = {
   [WORKSPACE_META_KEYS.CURRENCY]: 'IDR',
