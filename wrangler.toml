@@ -21,7 +21,7 @@ PERF_DEBUG = "true"
 LOG_LEVEL = "warn"
 EMAIL_MODE = "real"
 EMAIL_PROVIDER = "resend"
-EMAIL_SENDER_NAME = "Expenses App"
+EMAIL_SENDER_NAME = "Allowealth"
 EMAIL_SENDER_ADDRESS = "noreply@allowealth.io"
 
 # Note: The _worker.js bundling is handled by @astrojs/cloudflare adapter
