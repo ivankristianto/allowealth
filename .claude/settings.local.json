@@ -11,5 +11,8 @@
       "Skill(k2-dev:*)",
       "Bash(bd comments:*)"
     ]
+  },
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
   }
 }
