@@ -21,6 +21,18 @@ declare global {
     showToast?: (message: string, type?: string, duration?: number) => HTMLDivElement | undefined;
   }
 
+  /** Cloudflare Turnstile client-side API (injected by turnstile/v0/api.js) */
+
+  var turnstile:
+    | {
+        render: (container: string | HTMLElement, params?: Record<string, unknown>) => string;
+        reset: (widgetId?: string) => void;
+        getResponse: (widgetId?: string) => string | undefined;
+        remove: (widgetId?: string) => void;
+        isExpired: (widgetId?: string) => boolean;
+      }
+    | undefined;
+
   /// <reference types="vite/client" />
   interface ImportMetaEnv {
     /** Base URL for API endpoints (default: /api) */
