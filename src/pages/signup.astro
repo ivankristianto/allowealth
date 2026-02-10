@@ -406,10 +406,6 @@ const hasInvitationError = !!invitationError;
               <span>${window.RegistrationValidation.escapeHtml(result.error?.message || 'Registration failed. Please try again.')}</span>
             </div>
           `;
-          // Reset Turnstile widget on error
-          if (typeof turnstile !== 'undefined') {
-            turnstile.reset();
-          }
         }
       } catch (error) {
         console.error('Registration error:', error);
