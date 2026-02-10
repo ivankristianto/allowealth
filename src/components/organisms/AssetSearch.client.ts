@@ -18,7 +18,7 @@ function filterAssets(query: string): void {
     const name = (row.getAttribute('data-asset-name') || '').toLowerCase();
     const matches = !normalizedQuery || name.includes(normalizedQuery);
 
-    row.style.display = matches ? '' : 'none';
+    row.classList.toggle('hidden', !matches);
 
     // Also hide/show the inline history container that follows the row
     const assetId = row.getAttribute('data-asset-row');
@@ -27,7 +27,7 @@ function filterAssets(query: string): void {
         `[data-history-container][data-asset-id="${CSS.escape(assetId)}"]`
       );
       if (historyContainer) {
-        historyContainer.style.display = matches ? '' : 'none';
+        historyContainer.classList.toggle('hidden', !matches);
       }
     }
 
