@@ -19,12 +19,17 @@ PUBLIC_URL = "https://allowealth.io"
 CACHE_DRIVER = "upstash"
 PERF_DEBUG = "true"
 LOG_LEVEL = "warn"
+EMAIL_MODE = "real"
+EMAIL_PROVIDER = "resend"
+EMAIL_SENDER_NAME = "Expenses App"
+EMAIL_SENDER_ADDRESS = "noreply@allowealth.io"
 
 # Note: The _worker.js bundling is handled by @astrojs/cloudflare adapter
 # Workers only support PostgreSQL - SQLite (bun:sqlite) is for local development only
 
 # Secrets (set via CLI, not committed):
 # wrangler secret put DATABASE_URL
+# wrangler secret put EMAIL_API_KEY
 #
 # To deploy:
 # 1. bun add -d @astrojs/cloudflare wrangler
