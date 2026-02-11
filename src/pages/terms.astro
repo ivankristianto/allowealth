@@ -8,15 +8,10 @@
 import PublicLayout from '@/layouts/PublicLayout.astro';
 import { brandContent } from '@/lib/landing-content';
 
-const user = Astro.locals.user;
 const lastUpdated = 'January 30, 2025';
 ---
 
-<PublicLayout
-  title={`Terms & Conditions - ${brandContent.name}`}
-  user={user}
-  showBackground={false}
->
+<PublicLayout title={`Terms & Conditions - ${brandContent.name}`} showBackground={false}>
   <article class="pt-32 pb-16 px-6">
     <div class="max-w-3xl mx-auto">
       <!-- Header -->

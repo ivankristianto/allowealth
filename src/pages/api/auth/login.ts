@@ -97,11 +97,13 @@ export const POST: APIRoute = async (context) => {
 
     const response = new Response(JSON.stringify(responseData), {
       status: 200,
-      headers: {
-        ...STANDARD_RESPONSE_HEADERS,
-        'Set-Cookie': sessionCookie.serialize(),
-      },
+      headers: STANDARD_RESPONSE_HEADERS,
     });
+    response.headers.append('Set-Cookie', sessionCookie.serialize());
+    response.headers.append(
+      'Set-Cookie',
+      `auth_hint=1; Path=/; Max-Age=${30 * 24 * 60 * 60}; SameSite=Lax${import.meta.env.PROD ? '; Secure' : ''}`
+    );
 
     // Add rate limit headers to successful response
     return applyRateLimitHeaders(response, rateLimitResult);

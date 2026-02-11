@@ -70,12 +70,17 @@ function setSecurityHeaders(headers: Headers, nonce: string): void {
   headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
 }
 
-/** Clone response headers into a new mutable Headers object */
+/** Clone response headers into a new mutable Headers object, preserving multiple Set-Cookie values */
 function cloneHeaders(response: Response): Headers {
   const headers = new Headers();
   response.headers.forEach((value, key) => {
+    if (key.toLowerCase() === 'set-cookie') return; // handled below
     headers.set(key, value);
   });
+  // Set-Cookie must use append to preserve multiple values
+  for (const cookie of response.headers.getSetCookie()) {
+    headers.append('Set-Cookie', cookie);
+  }
   return headers;
 }
 

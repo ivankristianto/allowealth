@@ -165,7 +165,7 @@ const spendingCategories =
   subtitle={`Welcome back! ${currentMonthName} ${currentYear}`}
 >
   <div
-    class="max-w-7xl mx-auto sm:px-2 lg:px-6 space-y-6 sm:space-y-8"
+    class="@container max-w-7xl mx-auto @sm:px-2 @3xl:px-6 space-y-6 @sm:space-y-8"
     data-testid="dashboard-page"
   >
     <!-- Error State -->
@@ -186,7 +186,7 @@ const spendingCategories =
       !error && primaryCurrency && (
         <>
           {/* Spending Summary Card & Spending Analysis Chart (side by side) */}
-          <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 sm:gap-8">
+          <div class="grid grid-cols-1 @3xl:grid-cols-2 gap-6 @sm:gap-8">
             <SpendingCard
               spent={safeParseFloat(dashboardData?.monthlySpent.total)}
               budget={safeParseFloat(dashboardData?.monthlySpent.budget)}
@@ -210,8 +210,8 @@ const spendingCategories =
           </div>
 
           {/* Recent Transactions & Net Worth Widget (side by side) */}
-          <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 sm:gap-8">
-            <div class="xl:col-span-2">
+          <div class="grid grid-cols-1 @3xl:grid-cols-3 gap-6 @sm:gap-8">
+            <div class="@3xl:col-span-2">
               <RecentTransactionsList
                 transactions={recentTransactions}
                 loading={!dashboardData}
@@ -219,7 +219,7 @@ const spendingCategories =
               />
             </div>
 
-            <div class="space-y-6 sm:space-y-8">
+            <div class="space-y-6 @sm:space-y-8">
               <NetWorthWidget
                 totalIDR={safeParseFloat(dashboardData?.totalAssets.idr)}
                 totalUSD={safeParseFloat(dashboardData?.totalAssets.usd)}

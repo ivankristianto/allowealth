@@ -1,4 +1,4 @@
-import { type IDatabase, getActiveSchema } from '@/db';
+import { type IDatabase, getActiveSchema, runTransaction } from '@/db';
 import { createLogger } from '@/lib/logger';
 
 const log = createLogger('transaction');
@@ -35,6 +35,22 @@ export interface CSVRow {
   asset: string;
   description: string;
   [key: string]: string; // Allow dynamic column access
+}
+
+interface TransactionInsertRow {
+  id: string;
+  workspace_id: string;
+  created_by_user_id: string;
+  type: 'expense' | 'income' | 'transfer';
+  amount: string;
+  currency: 'IDR' | 'USD';
+  category_id: string | null;
+  asset_id: string;
+  to_asset_id: string | null;
+  transaction_date: Date;
+  description: string;
+  created_at: Date;
+  updated_at: Date;
 }
 
 export interface TransactionFilters {
@@ -691,8 +707,41 @@ export class TransactionService {
     return resolved;
   }
 
+  /** Max rows per INSERT statement to stay within bind-variable limits (50 × 14 cols = 700 params) */
+  private static readonly BULK_INSERT_CHUNK_SIZE = 50;
+
   /**
-   * Import transactions from CSV data
+   * Bulk insert pre-validated transaction rows in chunked INSERT statements
+   * wrapped in a single transaction for atomicity.
+   * No validation, audit logging, or cache invalidation — caller handles those.
+   */
+  private async bulkInsert(
+    validRows: TransactionInsertRow[]
+  ): Promise<{ inserted: number } | { error: string }> {
+    if (validRows.length === 0) return { inserted: 0 };
+
+    try {
+      await runTransaction(this.db, async (tx) => {
+        for (
+          let offset = 0;
+          offset < validRows.length;
+          offset += TransactionService.BULK_INSERT_CHUNK_SIZE
+        ) {
+          const chunk = validRows.slice(offset, offset + TransactionService.BULK_INSERT_CHUNK_SIZE);
+          await tx.insert(this.schema.transactions).values(chunk);
+        }
+      });
+      return { inserted: validRows.length };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Bulk insert failed';
+      log.error('bulkInsert failed:', error);
+      return { error: message };
+    }
+  }
+
+  /**
+   * Import transactions from CSV data.
+   * Two-phase approach: validate all rows first, then bulk insert in chunked statements.
    */
   async importFromCSV(
     workspaceId: string,
@@ -706,21 +755,73 @@ export class TransactionService {
       errors: [],
     };
 
-    // Get workspace's categories and assets for lookup
-    const workspaceCategories = await this.categoryService.findAll(workspaceId);
-    const workspaceAssets = await this.assetService.findAll(workspaceId);
+    // --- Pre-load workspace data (2 queries) ---
+    const [workspaceCategories, workspaceAssets] = await Promise.all([
+      this.categoryService.findAll(workspaceId),
+      this.assetService.findAll(workspaceId, { includeInactive: true }),
+    ]);
 
-    const categoryMap = new Map(workspaceCategories.map((c) => [c.name.toLowerCase(), c.id]));
-    const assetMap = new Map(workspaceAssets.map((a) => [a.name.toLowerCase(), a.id]));
-
-    // Get existing transactions for duplicate detection
-    const existingTransactions = await this.findAll({ workspace_id: workspaceId, limit: 10000 });
-    const existingKeys = new Set(
-      existingTransactions.map(
-        (t: any) =>
-          `${t.transaction_date.toISOString().split('T')[0]}-${t.type}-${t.amount}-${t.category_id}-${t.asset_id}`
-      )
+    const categoryMap = new Map<string, { id: string; is_active: boolean }>(
+      workspaceCategories.map((c) => [c.name.toLowerCase(), { id: c.id, is_active: c.is_active }])
     );
+    // Store full asset object for status checks
+    const assetMap = new Map(workspaceAssets.map((a) => [a.name.toLowerCase(), a]));
+
+    // --- Date-scoped duplicate detection (1 lightweight query) ---
+    const csvDates = new Set<string>();
+    for (const row of rows) {
+      const mappedDate = columnMapping.date;
+      const dateStr = mappedDate ? row[mappedDate] : row.date;
+      if (dateStr) csvDates.add(dateStr);
+    }
+
+    const existingKeys = new Set<string>();
+    if (csvDates.size > 0) {
+      const parsedDates = [...csvDates].map((d) => new Date(d)).filter((d) => !isNaN(d.getTime()));
+
+      if (parsedDates.length > 0) {
+        const minDate = new Date(Math.min(...parsedDates.map((d) => d.getTime())));
+        const maxDate = new Date(Math.max(...parsedDates.map((d) => d.getTime())));
+        // Extend maxDate to end of day (UTC to avoid timezone boundary issues)
+        maxDate.setUTCHours(23, 59, 59, 999);
+
+        // Select only the fields needed for duplicate keys (no relations, no limit)
+        const txTable = this.schema.transactions;
+        const existing = await (this.db as any)
+          .select({
+            transaction_date: txTable.transaction_date,
+            type: txTable.type,
+            amount: txTable.amount,
+            category_id: txTable.category_id,
+            asset_id: txTable.asset_id,
+          })
+          .from(txTable)
+          .where(
+            and(
+              eq(txTable.workspace_id, workspaceId),
+              gte(txTable.transaction_date, minDate),
+              lte(txTable.transaction_date, maxDate),
+              sql`${txTable.deleted_at} IS NULL`
+            )
+          );
+
+        for (const t of existing as Array<{
+          transaction_date: Date | number | string;
+          type: string;
+          amount: string;
+          category_id: string | null;
+          asset_id: string;
+        }>) {
+          const txDate = this.toIsoString(t.transaction_date);
+          const dateKey = txDate ? txDate.split('T')[0] : '';
+          existingKeys.add(`${dateKey}-${t.type}-${t.amount}-${t.category_id ?? ''}-${t.asset_id}`);
+        }
+      }
+    }
+
+    // --- Phase 1: Validate all rows (no DB writes) ---
+    const now = new Date();
+    const validRows: TransactionInsertRow[] = [];
 
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
@@ -729,96 +830,183 @@ export class TransactionService {
         continue;
       }
 
-      try {
-        // Map columns based on user's mapping
-        const mappedDate = columnMapping.date;
-        const mappedType = columnMapping.type;
-        const mappedAmount = columnMapping.amount;
-        const mappedCurrency = columnMapping.currency;
-        const mappedCategory = columnMapping.category;
-        const mappedAsset = columnMapping.asset;
-        const mappedDescription = columnMapping.description;
+      // Map columns based on user's mapping
+      const dateStr = columnMapping.date ? row[columnMapping.date] : row.date;
+      const typeStr = columnMapping.type ? row[columnMapping.type] : row.type;
+      const amountStr = columnMapping.amount ? row[columnMapping.amount] : row.amount;
+      const currencyStr = columnMapping.currency ? row[columnMapping.currency] : row.currency;
+      const categoryStr = columnMapping.category ? row[columnMapping.category] : row.category;
+      const assetStr = columnMapping.asset ? row[columnMapping.asset] : row.asset;
+      const descriptionStr = columnMapping.description
+        ? row[columnMapping.description]
+        : row.description;
+      const toAssetStr = columnMapping.to_asset ? row[columnMapping.to_asset] : undefined;
 
-        const dateStr = mappedDate ? row[mappedDate] : row.date;
-        const typeStr = mappedType ? row[mappedType] : row.type;
-        const amountStr = mappedAmount ? row[mappedAmount] : row.amount;
-        const currencyStr = mappedCurrency ? row[mappedCurrency] : row.currency;
-        const categoryStr = mappedCategory ? row[mappedCategory] : row.category;
-        const assetStr = mappedAsset ? row[mappedAsset] : row.asset;
-        const descriptionStr = mappedDescription ? row[mappedDescription] : row.description;
-
-        // Validate and parse data
-        const transactionDate = new Date(dateStr ?? '');
-        if (isNaN(transactionDate.getTime())) {
-          result.errors.push({ row: i + 1, message: 'Invalid date format' });
-          continue;
-        }
-
-        if (typeStr !== 'expense' && typeStr !== 'income' && typeStr !== 'transfer') {
-          result.errors.push({
-            row: i + 1,
-            message: 'Invalid type (must be expense, income, or transfer)',
-          });
-          continue;
-        }
-
-        const amount = Number(amountStr ?? '0');
-        if (isNaN(amount) || amount <= 0) {
-          result.errors.push({ row: i + 1, message: 'Invalid amount (must be > 0)' });
-          continue;
-        }
-
-        if (currencyStr !== 'IDR' && currencyStr !== 'USD') {
-          result.errors.push({ row: i + 1, message: 'Invalid currency (must be IDR or USD)' });
-          continue;
-        }
-
-        // Look up category (optional for transfers)
-        let categoryId: string | undefined;
-        if (typeStr !== 'transfer') {
-          categoryId = categoryMap.get((categoryStr ?? '').toLowerCase().trim());
-          if (!categoryId) {
-            result.errors.push({ row: i + 1, message: `Category not found: ${categoryStr}` });
-            continue;
-          }
-        }
-
-        // Look up asset
-        const assetId = assetMap.get((assetStr ?? '').toLowerCase().trim());
-        if (!assetId) {
-          result.errors.push({
-            row: i + 1,
-            message: `Asset not found: ${assetStr}`,
-          });
-          continue;
-        }
-
-        // Check for duplicates
-        const duplicateKey = `${dateStr ?? ''}-${typeStr}-${amountStr ?? ''}-${categoryId ?? ''}-${assetId}`;
-        if (existingKeys.has(duplicateKey)) {
-          result.skipped++;
-          continue;
-        }
-
-        // Create transaction
-        await this.create({
-          workspace_id: workspaceId,
-          created_by_user_id: createdByUserId,
-          type: typeStr as 'expense' | 'income' | 'transfer',
-          amount: amountStr ?? '0',
-          currency: currencyStr as 'IDR' | 'USD',
-          category_id: categoryId,
-          asset_id: assetId,
-          transaction_date: transactionDate,
-          description: descriptionStr ?? '',
-        });
-
-        result.imported++;
-        existingKeys.add(duplicateKey); // Add to set to avoid duplicates within same import
-      } catch (error) {
-        const message = error instanceof Error ? error.message : 'Unknown error';
-        result.errors.push({ row: i + 1, message });
+      // Validate date
+      const transactionDate = new Date(dateStr ?? '');
+      if (isNaN(transactionDate.getTime())) {
+        result.errors.push({ row: i + 1, message: 'Invalid date format' });
+        continue;
       }
+      if (transactionDate > now) {
+        result.errors.push({
+          row: i + 1,
+          message: 'Transaction date cannot be in the future',
+        });
+        continue;
+      }
+
+      // Validate type
+      if (typeStr !== 'expense' && typeStr !== 'income' && typeStr !== 'transfer') {
+        result.errors.push({
+          row: i + 1,
+          message: 'Invalid type (must be expense, income, or transfer)',
+        });
+        continue;
+      }
+
+      // Validate amount
+      const amount = Number(amountStr ?? '0');
+      if (isNaN(amount) || amount <= 0) {
+        result.errors.push({ row: i + 1, message: 'Invalid amount (must be > 0)' });
+        continue;
+      }
+
+      // Validate currency
+      if (currencyStr !== 'IDR' && currencyStr !== 'USD') {
+        result.errors.push({ row: i + 1, message: 'Invalid currency (must be IDR or USD)' });
+        continue;
+      }
+
+      // Validate description length
+      const description = descriptionStr ?? '';
+      if (description.length > 500) {
+        result.errors.push({
+          row: i + 1,
+          message: 'Description must not exceed 500 characters',
+        });
+        continue;
+      }
+
+      // Look up category (required for non-transfer)
+      let categoryId: string | null = null;
+      if (typeStr !== 'transfer') {
+        const category = categoryMap.get((categoryStr ?? '').toLowerCase().trim());
+        if (!category) {
+          result.errors.push({ row: i + 1, message: `Category not found: ${categoryStr}` });
+          continue;
+        }
+        if (!category.is_active) {
+          result.errors.push({ row: i + 1, message: `Category is inactive: ${categoryStr}` });
+          continue;
+        }
+        categoryId = category.id;
+      }
+
+      // Look up source asset
+      const asset = assetMap.get((assetStr ?? '').toLowerCase().trim());
+      if (!asset) {
+        result.errors.push({ row: i + 1, message: `Asset not found: ${assetStr}` });
+        continue;
+      }
+      if (asset.status === 'closed') {
+        result.errors.push({
+          row: i + 1,
+          message: `Account is deactivated: ${assetStr}`,
+        });
+        continue;
+      }
+
+      // Validate destination asset for transfers
+      let toAssetId: string | null = null;
+      if (typeStr === 'transfer') {
+        if (!toAssetStr) {
+          result.errors.push({
+            row: i + 1,
+            message: 'Destination asset is required for transfers',
+          });
+          continue;
+        }
+        const toAsset = assetMap.get(toAssetStr.toLowerCase().trim());
+        if (!toAsset) {
+          result.errors.push({
+            row: i + 1,
+            message: `Destination asset not found: ${toAssetStr}`,
+          });
+          continue;
+        }
+        if (toAsset.status === 'closed') {
+          result.errors.push({
+            row: i + 1,
+            message: `Destination account is deactivated: ${toAssetStr}`,
+          });
+          continue;
+        }
+        toAssetId = toAsset.id;
+      }
+
+      // Check for duplicates
+      const normalizedAmount = amount.toString();
+      const duplicateKey = `${transactionDate.toISOString().split('T')[0]}-${typeStr}-${normalizedAmount}-${categoryId ?? ''}-${asset.id}`;
+      if (existingKeys.has(duplicateKey)) {
+        result.skipped++;
+        continue;
+      }
+      // Prevent intra-file duplicates
+      existingKeys.add(duplicateKey);
+
+      validRows.push({
+        id: nanoid(),
+        workspace_id: workspaceId,
+        created_by_user_id: createdByUserId,
+        type: typeStr,
+        amount: normalizedAmount,
+        currency: currencyStr,
+        category_id: categoryId,
+        asset_id: asset.id,
+        to_asset_id: toAssetId,
+        transaction_date: transactionDate,
+        description,
+        created_at: now,
+        updated_at: now,
+      });
+    }
+
+    // --- Phase 2: Bulk insert valid rows in chunked statements ---
+    if (validRows.length > 0) {
+      const insertResult = await this.bulkInsert(validRows);
+
+      if ('error' in insertResult) {
+        result.errors.push({ row: 0, message: `Bulk insert failed: ${insertResult.error}` });
+        return result;
+      }
+
+      result.imported = insertResult.inserted;
+    }
+
+    // --- Post-insert: Single audit log + single cache invalidation ---
+    if (result.imported > 0) {
+      void logAuditEvent({
+        workspaceId,
+        userId: createdByUserId,
+        action: 'create',
+        entityType: 'transaction',
+        newValue: {
+          action: 'csv_import',
+          imported: result.imported,
+          skipped: result.skipped,
+          errors: result.errors.length,
+          total: rows.length,
+        },
+      });
+
+      const cache = getCacheManager();
+      await cache.invalidateByTags([
+        CacheTags.workspace(workspaceId),
+        CacheTags.TRANSACTIONS,
+        CacheTags.DASHBOARD,
+        CacheTags.BUDGET,
+      ]);
     }
 
     return result;
