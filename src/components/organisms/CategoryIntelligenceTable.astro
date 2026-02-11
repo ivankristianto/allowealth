@@ -47,6 +47,7 @@ export interface Props {
   error?: string;
   className?: string;
   range?: 'monthly' | 'yearly';
+  currency?: 'IDR' | 'USD';
 }
 
 const {
@@ -56,6 +57,7 @@ const {
   error,
   className = '',
   range = 'monthly',
+  currency = 'IDR',
 } = Astro.props;
 
 // Calculate percentage for each category
@@ -157,7 +159,7 @@ const categoriesWithPercentage = categories.map((cat) => {
                     {/* Total Spent */}
                     <td class="px-6 md:px-8 py-5 md:py-6 text-right">
                       <span class="text-sm font-bold text-base-content">
-                        {formatCurrency(cat.spent, 'IDR')}
+                        {formatCurrency(cat.spent, currency)}
                       </span>
                     </td>
 
@@ -165,7 +167,7 @@ const categoriesWithPercentage = categories.map((cat) => {
                     <td class="px-6 md:px-8 py-5 md:py-6 text-right">
                       <span class="text-sm font-medium text-base-content/60">
                         {cat.budgetLimit && cat.budgetLimit > 0
-                          ? formatCurrency(cat.budgetLimit, 'IDR')
+                          ? formatCurrency(cat.budgetLimit, currency)
                           : 'Not Set'}
                       </span>
                     </td>
@@ -211,7 +213,7 @@ const categoriesWithPercentage = categories.map((cat) => {
                           data-category-color={cat.color}
                           data-spent={cat.spent}
                           data-budget-limit={cat.budgetLimit}
-                          class="category-drill-down-btn inline-flex items-center gap-2 text-accent hover:bg-accent/5 px-3 md:px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest border border-accent/10 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+                          class="category-drill-down-btn inline-flex items-center gap-2 text-accent hover:bg-accent/5 px-3 md:px-4 py-3 md:py-2 rounded-xl text-xs font-bold uppercase tracking-widest border border-accent/10 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
                           aria-label={`View detailed breakdown for ${cat.name}`}
                         >
                           <span>See Details</span>

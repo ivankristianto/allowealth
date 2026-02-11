@@ -18,10 +18,11 @@ const activeObservers: ResizeObserver[] = [];
 function initScrollHints() {
   document.querySelectorAll<HTMLElement>('.table-scroll-hint').forEach((hint) => {
     if (hint.hasAttribute(INIT_ATTR)) return;
-    hint.setAttribute(INIT_ATTR, '');
 
     const scroller = hint.querySelector<HTMLElement>('.overflow-x-auto');
     if (!scroller) return;
+
+    hint.setAttribute(INIT_ATTR, '');
 
     // Create overlay elements
     const left = document.createElement('div');

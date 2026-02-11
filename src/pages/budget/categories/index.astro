@@ -184,7 +184,9 @@ if (searchQuery) {
                       <td class="px-8 py-5 text-right">
                         <div class="flex items-center justify-end gap-2">
                           <button
-                            class="p-2 text-base-content/30 hover:text-primary hover:bg-primary/10 rounded-xl transition-all"
+                            type="button"
+                            title="Edit category"
+                            class="min-h-[44px] min-w-[44px] p-2 text-base-content/30 hover:text-primary hover:bg-primary/10 rounded-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                             data-action="edit"
                             data-category-id={category.id}
                             aria-label={`Edit ${category.name} category`}
@@ -193,7 +195,9 @@ if (searchQuery) {
                             <Pencil size={18} class="stroke-current" aria-hidden="true" />
                           </button>
                           <button
-                            class="p-2 text-base-content/30 hover:text-error hover:bg-error/10 rounded-xl transition-all"
+                            type="button"
+                            title="Delete category"
+                            class="min-h-[44px] min-w-[44px] p-2 text-base-content/30 hover:text-error hover:bg-error/10 rounded-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-error focus-visible:ring-offset-2"
                             data-action="delete"
                             data-category-id={category.id}
                             data-category-name={category.name}

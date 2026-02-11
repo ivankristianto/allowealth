@@ -304,6 +304,7 @@ const categoryOptions = categories.length
         }
         if (currencySelect) currencySelect.value = data.currency || 'IDR';
         if (balanceInput) balanceInput.value = data.balance || '';
+        balanceFormatterHandle?.updateCurrency((currencySelect?.value || 'IDR') as Currency);
 
         // Update title/subtitle for edit mode
         if (data.id && titleEl && subtitleEl) {
@@ -328,6 +329,7 @@ const categoryOptions = categories.length
           errorDiv.textContent = '';
           errorDiv.classList.add('hidden');
         }
+        balanceFormatterHandle?.updateCurrency((currencySelect?.value || 'IDR') as Currency);
 
         // Reset title/subtitle for add mode
         if (titleEl && subtitleEl) {
