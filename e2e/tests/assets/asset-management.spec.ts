@@ -1,5 +1,12 @@
 import { test, expect } from '../test.fixture';
 import { generateTestId, generateAssetData, formatIDR } from '../../helpers';
+import { getVerificationToken } from '../../helpers/email-verification';
+
+let freshWorkspaceEmailCounter = 0;
+
+function uniqueFreshWorkspaceEmail(): string {
+  return `e2e-assets-fresh-${Date.now()}-${freshWorkspaceEmailCounter++}@test.com`;
+}
 
 /**
  * E2E Tests for Asset Management.
@@ -367,5 +374,43 @@ test.describe('Asset Management', () => {
     expect(assetId).not.toBeNull();
     expect(typeof assetId).toBe('string');
     expect(assetId).toBeTruthy();
+  });
+});
+
+test.describe('Asset Management - Fresh Workspace', () => {
+  test.use({ storageState: { cookies: [], origins: [] } });
+
+  test('empty state add button opens asset modal for new workspace users', async ({
+    page,
+    request,
+  }) => {
+    const email = uniqueFreshWorkspaceEmail();
+    const password = 'TestPassword123!';
+
+    const signupResponse = await request.post('/api/auth/signup', {
+      data: { email, password, name: 'E2E Fresh Workspace' },
+    });
+    expect(signupResponse.status()).toBe(201);
+
+    const verificationToken = getVerificationToken(email);
+    expect(verificationToken).toBeTruthy();
+
+    await page.goto(`/api/auth/verify-email?token=${verificationToken}`);
+    await page.waitForURL('**/login**');
+
+    await page.goto('/login');
+    await page.fill('[data-testid="email-input"]', email);
+    await page.fill('[data-testid="password-input"]', password);
+    await page.click('[data-testid="login-btn"]');
+    await page.waitForURL('**/dashboard');
+
+    await page.goto('/assets');
+
+    const addFirstAssetButton = page.locator('button[data-add-asset-btn]');
+    await expect(addFirstAssetButton).toBeVisible();
+
+    await addFirstAssetButton.click();
+
+    await expect(page.locator('dialog#asset-form-modal[open]')).toBeVisible();
   });
 });

@@ -42,9 +42,13 @@ const currentYear = now.getFullYear();
 
 // Check onboarding status and get currency
 let onboardingStatus: OnboardingStatus | null = null;
+let isOnboardingComplete = false;
 let primaryCurrency: 'IDR' | 'USD' | null = null;
 let dashboardData: DashboardData | null = null;
 let error: Error | null = null;
+
+const isSupportedCurrency = (value: string | null): value is 'IDR' | 'USD' =>
+  value === 'IDR' || value === 'USD';
 
 try {
   if (!user) {
@@ -53,11 +57,17 @@ try {
 
   // Get onboarding status (parallel queries)
   onboardingStatus = await workspaceService.getOnboardingStatus(user.workspaceId);
+  isOnboardingComplete =
+    onboardingStatus.currency &&
+    onboardingStatus.categories &&
+    onboardingStatus.budgets &&
+    onboardingStatus.assets &&
+    onboardingStatus.transactions;
 
   // Get currency from workspace meta (null if not set)
   if (onboardingStatus.currency) {
     const currencyValue = await workspaceMetaService.get(user.workspaceId, 'currency');
-    primaryCurrency = currencyValue as 'IDR' | 'USD' | null;
+    primaryCurrency = isSupportedCurrency(currencyValue) ? currencyValue : null;
   }
 
   // Only fetch dashboard data if currency is set
@@ -169,23 +179,14 @@ const spendingCategories =
     }
 
     <!-- Onboarding Checklist (shown when setup is incomplete) -->
-    {
-      onboardingStatus &&
-        !(
-          onboardingStatus.currency &&
-          onboardingStatus.categories &&
-          onboardingStatus.budgets &&
-          onboardingStatus.assets &&
-          onboardingStatus.transactions
-        ) && <OnboardingChecklist status={onboardingStatus} />
-    }
+    {onboardingStatus && !isOnboardingComplete && <OnboardingChecklist status={onboardingStatus} />}
 
     <!-- Dashboard Content (only shown when currency is set) -->
     {
       !error && primaryCurrency && (
         <>
           {/* Spending Summary Card & Spending Analysis Chart (side by side) */}
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
+          <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 sm:gap-8">
             <SpendingCard
               spent={safeParseFloat(dashboardData?.monthlySpent.total)}
               budget={safeParseFloat(dashboardData?.monthlySpent.budget)}
@@ -209,8 +210,8 @@ const spendingCategories =
           </div>
 
           {/* Recent Transactions & Net Worth Widget (side by side) */}
-          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
-            <div class="lg:col-span-2">
+          <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 sm:gap-8">
+            <div class="xl:col-span-2">
               <RecentTransactionsList
                 transactions={recentTransactions}
                 loading={!dashboardData}

@@ -318,7 +318,13 @@ const sortedGroups = Object.entries(assetsByType)
               message="Add your first asset to start tracking your net worth across different types and currencies."
             />
             <div class="flex justify-center mt-4">
-              <button type="button" class="btn btn-accent gap-2 rounded-2xl" data-add-asset-btn>
+              <button
+                type="button"
+                class="btn btn-accent gap-2 rounded-2xl"
+                data-add-asset-btn
+                data-add-first-asset-btn
+                data-default-category-id={defaultCategoryId}
+              >
                 Add Your First Asset
               </button>
             </div>
@@ -349,9 +355,69 @@ const sortedGroups = Object.entries(assetsByType)
   import { initInlineHistory } from '@/components/molecules/AssetInlineHistory.client';
   import { initAssetSearch } from '@/components/organisms/AssetSearch.client';
 
+  const firstAssetButtonHandlers = new WeakMap<HTMLElement, (event: Event) => void>();
+
+  function openAssetForm(defaultCategoryId = '') {
+    document.dispatchEvent(
+      new CustomEvent('open-asset-form', {
+        detail: {
+          name: '',
+          categoryId: defaultCategoryId,
+          currency: 'IDR',
+          balance: '',
+        },
+      })
+    );
+  }
+
+  function initFirstAssetButton() {
+    document.querySelectorAll<HTMLElement>('[data-add-first-asset-btn]').forEach((button) => {
+      if (firstAssetButtonHandlers.has(button)) return;
+
+      const handler = () => {
+        const defaultCategoryId = button.getAttribute('data-default-category-id') || '';
+        openAssetForm(defaultCategoryId);
+      };
+
+      firstAssetButtonHandlers.set(button, handler);
+      button.addEventListener('click', handler);
+    });
+  }
+
+  function openOnboardingAssetModal() {
+    const url = new URL(window.location.href);
+    if (url.searchParams.get('onboarding') !== 'add-asset') return;
+
+    const modal = document.getElementById('asset-form-modal') as HTMLDialogElement | null;
+    if (modal?.open) return;
+
+    const defaultCategoryId =
+      document
+        .querySelector<HTMLElement>('[data-add-first-asset-btn],[data-add-asset-btn]')
+        ?.getAttribute('data-default-category-id') || '';
+
+    // Delay to ensure modal listeners are attached before dispatching.
+    requestAnimationFrame(() => openAssetForm(defaultCategoryId));
+
+    url.searchParams.delete('onboarding');
+    const query = url.searchParams.toString();
+    window.history.replaceState({}, '', `${url.pathname}${query ? `?${query}` : ''}`);
+  }
+
+  function cleanupFirstAssetButton() {
+    document.querySelectorAll<HTMLElement>('[data-add-first-asset-btn]').forEach((button) => {
+      const handler = firstAssetButtonHandlers.get(button);
+      if (!handler) return;
+      button.removeEventListener('click', handler);
+      firstAssetButtonHandlers.delete(button);
+    });
+  }
+
   function init() {
     initInlineHistory();
     initAssetSearch();
+    initFirstAssetButton();
+    openOnboardingAssetModal();
   }
 
   if (document.readyState === 'loading') {
@@ -361,4 +427,5 @@ const sortedGroups = Object.entries(assetsByType)
   }
 
   document.addEventListener('astro:page-load', init);
+  document.addEventListener('astro:before-swap', cleanupFirstAssetButton, { once: true });
 </script>
