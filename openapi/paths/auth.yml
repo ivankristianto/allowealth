@@ -271,3 +271,102 @@ paths:
                         example: RATE_LIMIT_EXCEEDED
         '500':
           $ref: '../responses/common.yml#/InternalServerError'
+
+  /api/auth/google:
+    get:
+      tags: [Authentication]
+      summary: Initiate Google OAuth flow
+      description: |
+        Redirects to Google's authorization page for OAuth sign-in/sign-up.
+        Generates PKCE code verifier and state parameter stored in HTTP-only cookies.
+      security: []
+      responses:
+        '302':
+          description: Redirect to Google authorization URL
+          headers:
+            Location:
+              description: Google OAuth authorization URL
+              schema:
+                type: string
+            Set-Cookie:
+              description: OAuth state and code verifier cookies (HTTP-only, 10-minute expiry)
+              schema:
+                type: string
+
+  /api/auth/google/callback:
+    get:
+      tags: [Authentication]
+      summary: Google OAuth callback
+      description: |
+        Handles the OAuth callback from Google. Validates state parameter,
+        exchanges authorization code for tokens, and creates or links user account.
+      security: []
+      parameters:
+        - name: code
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: state
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '302':
+          description: |
+            Redirects based on result:
+            - /dashboard: Login/signup successful
+            - /auth/link-account: Existing email found, needs linking consent
+            - /login?error=oauth_error: Authentication failed
+
+  /api/auth/google/link:
+    post:
+      tags: [Authentication]
+      summary: Confirm OAuth account linking
+      description: |
+        Confirms linking a Google account to an existing user after explicit consent.
+        Reads pending link data from HTTP-only cookie set during callback.
+      security: []
+      responses:
+        '302':
+          description: |
+            Redirects based on result:
+            - /dashboard: Linking successful
+            - /login?error=link_expired: Pending link expired
+            - /login?error=link_failed: Linking failed
+
+  /api/auth/google/unlink:
+    post:
+      tags: [Authentication]
+      summary: Unlink Google account
+      description: |
+        Removes the Google OAuth link from the authenticated user's account.
+        Fails if the user has no password set (would leave them with no auth method).
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          description: Google account unlinked successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        example: Google account unlinked
+        '400':
+          description: Cannot unlink (no password set)
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
