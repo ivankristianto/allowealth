@@ -19,7 +19,7 @@ CSV import executes 3-4 database queries per row via `create()`, producing ~3,00
 
 ## Architecture
 
-```
+```text
 importFromCSV(rows, columnMapping, workspaceId)
   │
   ├─ Phase 1: Validate all rows (pure, no DB writes)

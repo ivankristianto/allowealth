@@ -1,4 +1,4 @@
-import { type IDatabase, getActiveSchema } from '@/db';
+import { type IDatabase, getActiveSchema, runTransaction } from '@/db';
 import { createLogger } from '@/lib/logger';
 
 const log = createLogger('transaction');
@@ -711,8 +711,8 @@ export class TransactionService {
   private static readonly BULK_INSERT_CHUNK_SIZE = 50;
 
   /**
-   * Bulk insert pre-validated transaction rows in chunked INSERT statements.
-   * Each chunk is a single multi-row INSERT, atomic in both SQLite and PostgreSQL.
+   * Bulk insert pre-validated transaction rows in chunked INSERT statements
+   * wrapped in a single transaction for atomicity.
    * No validation, audit logging, or cache invalidation — caller handles those.
    */
   private async bulkInsert(
@@ -721,14 +721,16 @@ export class TransactionService {
     if (validRows.length === 0) return { inserted: 0 };
 
     try {
-      for (
-        let offset = 0;
-        offset < validRows.length;
-        offset += TransactionService.BULK_INSERT_CHUNK_SIZE
-      ) {
-        const chunk = validRows.slice(offset, offset + TransactionService.BULK_INSERT_CHUNK_SIZE);
-        await this.db.insert(this.schema.transactions).values(chunk);
-      }
+      await runTransaction(this.db, async (tx) => {
+        for (
+          let offset = 0;
+          offset < validRows.length;
+          offset += TransactionService.BULK_INSERT_CHUNK_SIZE
+        ) {
+          const chunk = validRows.slice(offset, offset + TransactionService.BULK_INSERT_CHUNK_SIZE);
+          await tx.insert(this.schema.transactions).values(chunk);
+        }
+      });
       return { inserted: validRows.length };
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Bulk insert failed';
@@ -760,10 +762,7 @@ export class TransactionService {
     ]);
 
     const categoryMap = new Map<string, { id: string; is_active: boolean }>(
-      workspaceCategories.map((c) => [
-        c.name.toLowerCase(),
-        { id: c.id, is_active: (c as Record<string, unknown>).is_active as boolean },
-      ])
+      workspaceCategories.map((c) => [c.name.toLowerCase(), { id: c.id, is_active: c.is_active }])
     );
     // Store full asset object for status checks
     const assetMap = new Map(workspaceAssets.map((a) => [a.name.toLowerCase(), a]));
