@@ -8,6 +8,7 @@
 import type { APIRoute } from 'astro';
 import { auth } from '@/lib/auth/lucia';
 import { confirmAccountLink } from '@/services/auth.service';
+import { verifyCookieSignature } from '@/lib/crypto/cookie-signature';
 import { createLogger } from '@/lib/logger';
 
 const log = createLogger('oauth:google:link');
@@ -21,7 +22,15 @@ export const POST: APIRoute = async ({ cookies, redirect }) => {
       return redirect('/login?error=link_expired', 302);
     }
 
-    const pendingLink = JSON.parse(pendingLinkCookie) as {
+    // Verify HMAC signature to prevent cookie tampering
+    const verifiedJson = await verifyCookieSignature(pendingLinkCookie);
+    if (!verifiedJson) {
+      log.warn('OAuth link cookie signature verification failed');
+      cookies.delete('pending_oauth_link', { path: '/' });
+      return redirect('/login?error=link_expired', 302);
+    }
+
+    const pendingLink = JSON.parse(verifiedJson) as {
       userId: string;
       provider: string;
       providerAccountId: string;

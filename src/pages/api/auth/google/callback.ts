@@ -9,6 +9,7 @@ import type { APIRoute } from 'astro';
 import { createGoogleOAuthClient } from '@/lib/auth/oauth';
 import { auth } from '@/lib/auth/lucia';
 import { loginOrRegisterWithOAuth } from '@/services/auth.service';
+import { signCookieValue, constantTimeEqual } from '@/lib/crypto/cookie-signature';
 import { createLogger } from '@/lib/logger';
 import { getEnv } from '@/lib/env';
 import { checkRateLimit, RATE_LIMIT_PRESETS } from '@/lib/rate-limit';
@@ -33,8 +34,15 @@ export const GET: APIRoute = async ({ url, cookies, redirect, clientAddress, req
     cookies.delete('google_oauth_state', { path: '/' });
     cookies.delete('google_oauth_code_verifier', { path: '/' });
 
-    if (!code || !state || !storedState || !storedCodeVerifier || state !== storedState) {
-      log.warn('OAuth state validation failed');
+    if (!code || !state || !storedState || !storedCodeVerifier) {
+      log.warn('OAuth state validation failed: missing parameters');
+      return redirect('/login?error=oauth_error', 302);
+    }
+
+    // Constant-time comparison prevents timing attacks on state parameter
+    const stateValid = await constantTimeEqual(state, storedState);
+    if (!stateValid) {
+      log.warn('OAuth state validation failed: state mismatch');
       return redirect('/login?error=oauth_error', 302);
     }
 
@@ -64,6 +72,11 @@ export const GET: APIRoute = async ({ url, cookies, redirect, clientAddress, req
       return redirect('/login?error=oauth_error', 302);
     }
 
+    if (!googleUser.email_verified) {
+      log.warn('Google account email not verified', { email: googleUser.email });
+      return redirect('/login?error=oauth_error', 302);
+    }
+
     const result = await loginOrRegisterWithOAuth({
       provider: 'google',
       providerAccountId: googleUser.sub,
@@ -86,7 +99,7 @@ export const GET: APIRoute = async ({ url, cookies, redirect, clientAddress, req
     }
 
     const isProduction = getEnv('NODE_ENV') === 'production';
-    const pendingLink = JSON.stringify({
+    const pendingLinkJson = JSON.stringify({
       userId: result.pendingUserId,
       provider: 'google',
       providerAccountId: googleUser.sub,
@@ -96,7 +109,10 @@ export const GET: APIRoute = async ({ url, cookies, redirect, clientAddress, req
       expiresAt: Date.now() + 10 * 60 * 1000,
     });
 
-    cookies.set('pending_oauth_link', pendingLink, {
+    // Sign cookie value with HMAC-SHA256 to prevent tampering
+    const signedValue = await signCookieValue(pendingLinkJson);
+
+    cookies.set('pending_oauth_link', signedValue, {
       path: '/',
       httpOnly: true,
       secure: isProduction,

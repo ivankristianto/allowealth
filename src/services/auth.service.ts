@@ -14,6 +14,7 @@
 import { auth, type User, type Session } from '@/lib/auth/lucia';
 import { hashPassword, verifyPassword } from '@/lib/auth/password';
 import { db, getActiveSchema, runTransaction } from '@/db';
+import { AssetCategoryService } from '@/services/asset-category.service';
 import { createLogger } from '@/lib/logger';
 
 const log = createLogger('auth');
@@ -618,6 +619,19 @@ export async function loginOrRegisterWithOAuth(profile: OAuthProfile): Promise<O
 
     if (!newUser) {
       throw new AuthError(AUTH_ERRORS.DATABASE_ERROR, 'Failed to create user');
+    }
+
+    // Seed default asset categories — OAuth users are immediately active
+    try {
+      const assetCategoryService = new AssetCategoryService(db);
+      await assetCategoryService.seedDefaultCategories(workspaceId, userId);
+    } catch (seedError) {
+      // Non-fatal: user can still use the app, categories can be seeded later
+      log.error('Failed to seed default categories for OAuth user', {
+        userId,
+        workspaceId,
+        error: seedError,
+      });
     }
 
     const session = await auth.createSession(newUser.id, {});
