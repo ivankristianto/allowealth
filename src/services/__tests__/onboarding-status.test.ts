@@ -52,7 +52,7 @@ describe('WorkspaceService.getOnboardingStatus()', () => {
     expect(status.categories).toBe(true);
   });
 
-  it('should detect budgets as set when current month has a non-zero budget', async () => {
+  it('should detect budgets as set when a non-zero budget exists', async () => {
     // Currency not set
     (mockDb.query.workspaceMeta.findFirst as any).mockResolvedValueOnce(undefined);
     // No categories

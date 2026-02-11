@@ -270,19 +270,14 @@ export class WorkspaceService {
         columns: { id: true },
       }),
 
-      // 3. Budgets: current month has at least 1 budget with non-zero amount
-      (() => {
-        const now = new Date();
-        return this.db.query.budgets.findFirst({
-          where: and(
-            eq(this.schema.budgets.workspace_id, workspaceId),
-            eq(this.schema.budgets.month, now.getMonth() + 1),
-            eq(this.schema.budgets.year, now.getFullYear()),
-            sql`CAST(${this.schema.budgets.budget_amount} AS NUMERIC) > 0`
-          ),
-          columns: { id: true },
-        });
-      })(),
+      // 3. Budgets: at least 1 budget with non-zero amount (any month)
+      this.db.query.budgets.findFirst({
+        where: and(
+          eq(this.schema.budgets.workspace_id, workspaceId),
+          sql`CAST(${this.schema.budgets.budget_amount} AS NUMERIC) > 0`
+        ),
+        columns: { id: true },
+      }),
 
       // 4. Assets: at least 1 non-deleted asset
       this.db.query.assets.findFirst({
