@@ -327,7 +327,12 @@ paths:
             Redirects based on result:
             - /dashboard: Login/signup successful
             - /auth/link-account: Existing email found, needs linking consent
-            - /login?error=oauth_error: Authentication failed
+            - /login?oauth_error=...: Authentication failed
+          headers:
+            Location:
+              description: Redirect target based on authentication result
+              schema:
+                type: string
 
   /api/auth/google/link:
     post:
@@ -342,8 +347,13 @@ paths:
           description: |
             Redirects based on result:
             - /dashboard: Linking successful
-            - /login?error=link_expired: Pending link expired
-            - /login?error=link_failed: Linking failed
+            - /login?oauth_error=link_expired: Pending link expired
+            - /login?oauth_error=link_failed: Linking failed
+          headers:
+            Location:
+              description: Redirect target based on linking result
+              schema:
+                type: string
 
   /api/auth/google/unlink:
     post:

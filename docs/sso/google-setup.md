@@ -35,16 +35,16 @@ Add to your `.env` (development) or `.env.production` (production):
 ```bash
 GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=GOCSPX-your-client-secret
-PUBLIC_APP_URL=http://localhost:4321
+PUBLIC_URL=http://localhost:4321
 ```
 
-For production, set `PUBLIC_APP_URL` to your deployed URL (no trailing slash):
+For production, set `PUBLIC_URL` to your deployed URL (no trailing slash):
 
 ```bash
-PUBLIC_APP_URL=https://yourdomain.com
+PUBLIC_URL=https://yourdomain.com
 ```
 
-These variables are referenced in `src/lib/auth/oauth.ts` to configure the Arctic Google client.
+`PUBLIC_URL` is the shared canonical app origin used for OAuth redirect URIs, email links, and invitation URLs. It's referenced in `src/lib/auth/oauth.ts` to build the Google callback URI.
 
 ## Step 4: Verify Setup
 
@@ -98,7 +98,7 @@ The linking cookie expires after 10 minutes. Restart the OAuth flow by clicking 
 1. **Publish the consent screen**: In Google Cloud Console, go to the OAuth consent screen and click **Publish App**. This removes the test-user restriction.
 2. **Update redirect URIs**: Add your production URL (`https://yourdomain.com/api/auth/google/callback`) to the OAuth client's authorized redirect URIs.
 3. **Verify domain ownership**: Google may require domain verification for published apps. Follow the instructions in the console.
-4. **Set production env vars**: Ensure `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, and `PUBLIC_APP_URL` are set in your production environment.
+4. **Set production env vars**: Ensure `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, and `PUBLIC_URL` are set in your production environment.
 5. **Run migrations**: The `oauth_accounts` table must exist in production. Run `bun run db:migrate:prod` if not already applied.
 
 ## Architecture Reference
