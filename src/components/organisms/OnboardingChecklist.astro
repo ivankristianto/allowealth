@@ -1,0 +1,174 @@
+---
+/**
+ * OnboardingChecklist Component
+ *
+ * Sequential setup checklist for new workspaces.
+ * Renders at the top of the dashboard to guide users through initial setup.
+ * Auto-disappears when all steps are complete (caller should not render it).
+ *
+ * Steps unlock sequentially: each step requires the previous to be complete.
+ * Step 5 opens the TransactionDrawer instead of navigating to a page.
+ */
+
+import { Check, Lock, ArrowRight } from '@lucide/astro';
+import Card from '@/components/atoms/Card.astro';
+import type { OnboardingStatus } from '@/services/workspace.service';
+
+export interface Props {
+  status: OnboardingStatus;
+}
+
+const { status } = Astro.props;
+
+interface Step {
+  id: number;
+  title: string;
+  description: string;
+  href: string;
+  complete: boolean;
+  unlocked: boolean;
+}
+
+const steps: Step[] = [
+  {
+    id: 1,
+    title: 'Set your currency',
+    description: 'Choose your default currency',
+    href: '/settings',
+    complete: status.currency,
+    unlocked: true,
+  },
+  {
+    id: 2,
+    title: 'Create categories',
+    description: 'Add expense and income categories',
+    href: '/budget/categories',
+    complete: status.categories,
+    unlocked: status.currency,
+  },
+  {
+    id: 3,
+    title: 'Set up budgets',
+    description: 'Initialize and set monthly budget amounts',
+    href: '/budget',
+    complete: status.budgets,
+    unlocked: status.categories,
+  },
+  {
+    id: 4,
+    title: 'Add your accounts',
+    description: 'Track bank accounts, wallets, or cash',
+    href: '/assets',
+    complete: status.assets,
+    unlocked: status.budgets,
+  },
+  {
+    id: 5,
+    title: 'Record a transaction',
+    description: 'Log your first expense or income',
+    href: '#',
+    complete: status.transactions,
+    unlocked: status.assets,
+  },
+];
+
+const completedCount = steps.filter((s) => s.complete).length;
+const progressPercent = (completedCount / steps.length) * 100;
+---
+
+<Card data-testid="onboarding-checklist" aria-label="Workspace setup checklist">
+  <div class="space-y-5">
+    {/* Header */}
+    <div>
+      <h2 class="text-lg font-semibold text-base-content">Set up your workspace</h2>
+      <p class="text-sm text-base-content/60 mt-1">
+        Complete these steps to start tracking your finances
+      </p>
+    </div>
+
+    {/* Progress bar */}
+    <div>
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-sm font-medium text-base-content/70">
+          {completedCount} of {steps.length} complete
+        </span>
+      </div>
+      <div class="w-full bg-base-200 rounded-full h-2">
+        <div
+          class="bg-success rounded-full h-2 transition-all duration-300"
+          style={`width: ${progressPercent}%`}
+        >
+        </div>
+      </div>
+    </div>
+
+    {/* Steps */}
+    <ul class="space-y-1" role="list">
+      {
+        steps.map((step) => {
+          const isCurrent = step.unlocked && !step.complete;
+
+          return (
+            <li
+              class:list={[
+                'flex items-center gap-3 rounded-lg px-3 py-3 transition-colors',
+                step.complete && 'opacity-60',
+                isCurrent && 'bg-primary/5',
+                !step.unlocked && !step.complete && 'opacity-40',
+              ]}
+              data-testid={`onboarding-step-${step.id}`}
+            >
+              {/* Status icon */}
+              <div
+                class:list={[
+                  'flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center',
+                  step.complete && 'bg-success/20 text-success',
+                  isCurrent && 'bg-primary/20 text-primary',
+                  !step.unlocked && !step.complete && 'bg-base-200 text-base-content/30',
+                ]}
+              >
+                {step.complete ? (
+                  <Check size={16} />
+                ) : isCurrent ? (
+                  <ArrowRight size={16} />
+                ) : (
+                  <Lock size={14} />
+                )}
+              </div>
+
+              {/* Content */}
+              <div class="flex-1 min-w-0">
+                <div class="text-sm font-medium text-base-content">{step.title}</div>
+                <div class="text-xs text-base-content/50">{step.description}</div>
+              </div>
+
+              {/* Action */}
+              {isCurrent && step.id !== 5 && (
+                <a href={step.href} class="btn btn-primary btn-sm btn-outline">
+                  Start
+                </a>
+              )}
+              {isCurrent && step.id === 5 && (
+                <button
+                  type="button"
+                  class="btn btn-primary btn-sm btn-outline"
+                  data-onboarding-open-drawer
+                >
+                  Start
+                </button>
+              )}
+            </li>
+          );
+        })
+      }
+    </ul>
+  </div>
+</Card>
+
+<script>
+  document.querySelectorAll('[data-onboarding-open-drawer]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      document.dispatchEvent(new CustomEvent('open-transaction-drawer'));
+    });
+  });
+</script>
