@@ -167,9 +167,13 @@ This is a **TypeScript-primary codebase**. Always prefer TypeScript idioms, use 
 - ✅ **Use sync callbacks with better-sqlite3 transactions** - `db.transaction((tx) => { /* sync code */ })`
 - ✅ **Wrap multi-step DB operations in transactions** - Ensures atomicity (delete + insert must both succeed)
 - ✅ **Query budgets directly instead of cached overview** - Guarantees schema fields like `id` are present
+- ✅ **Verify ORM-generated SQL with diagnostic queries** - Drizzle `extras` with schema references can silently produce wrong SQL; test actual output before declaring done
 - ❌ **Don't use `async/await` in better-sqlite3 transactions** - Driver is synchronous, throws "Transaction function cannot return a promise"
 - ❌ **Don't use `db.transaction(async (tx) => { await ... })` with better-sqlite3** - Works on PostgreSQL, crashes on SQLite
 - ❌ **Don't rely on cached data when schema fields are critical** - Cache may be stale or incomplete
+- ❌ **Don't add extra DB queries as the lazy first solution** - Use subqueries or JOINs in the existing query
+- ❌ **Don't use `(obj as any).field` when proper typing is available** - Use interface references or Drizzle extras types
+- ❌ **Don't include `create` action in history/audit queries** - Initial create is not meaningful "history"; only `update`/`delete` count
 
 ### CSS & Styling Patterns
 
@@ -265,21 +269,17 @@ This is a **TypeScript-primary codebase**. Always prefer TypeScript idioms, use 
 
 - ✅ **Trace ALL consumers of a shared component before declaring done** - When modifying TransactionCard, check every render path (SSR, API, Dashboard, CategoryDrilldown, Reports)
 - ✅ **Fix tests before committing, never push with known failures** - Even "pre-existing" failures must be fixed or explicitly flagged to the user before push
-- ✅ **Verify ORM-generated SQL with diagnostic queries** - Drizzle `extras` with schema references can silently produce wrong SQL; test actual output before declaring done
 - ✅ **Verify return types don't silently strip new fields** - Explicit inline return types in TypeScript will discard unlisted properties; use interface references
 - ✅ **Use systematic debugging from the start** - Don't guess at fixes; diagnose root cause with evidence before changing code
 - ✅ **Confirm user intent before implementing UI changes** - Ask clarifying questions ("dropdown or inline?") before rewriting component layout
 - ✅ **Think through mobile vs desktop UX separately** - Mobile uses dropdown menus, desktop uses inline icons; apply changes to each context appropriately
 - ✅ **Add tooltips/labels to icon-only buttons proactively** - Design system says "Use Lucide icons with text labels"; don't wait to be asked
 - ✅ **Update tests to match user intent, not broken implementation** - If tests expect rich behavior, fix the implementation, not the test expectations
-- ❌ **Don't add extra DB queries as the lazy first solution** - Use subqueries or JOINs in the existing query
 - ❌ **Don't claim "done, test it" without verifying all render paths** - Check SSR, API, Dashboard, and dynamic injection paths before declaring success
 - ❌ **Don't guess at fixes** - Speculative fixes waste sessions; use systematic debugging immediately
 - ❌ **Don't thrash method signatures** - If you edit a signature 3x and end at the original, you didn't think before coding
 - ❌ **Don't forget cross-session context** - If the user asked to remove something in a prior session, don't leave it in
 - ❌ **Don't delete tests without replacing coverage** - Removing tests for dead methods requires verifying the remaining tests cover the same cases
-- ❌ **Don't include `create` action in history/audit queries** - Initial create is not meaningful "history"; only `update`/`delete` count
-- ❌ **Don't use `(obj as any).field` when proper typing is available** - Use interface references or Drizzle extras types
 
 ### Pre-Commit Checklist
 
@@ -312,24 +312,46 @@ bun run typecheck         # TypeScript (blocking)
 
 ## Routes
 
+### Public Routes
+
 ```
-/                          # Homepage
-/dashboard                 # Dashboard
-/transactions              # Transaction list (add/edit via TransactionDrawer)
+/                          # Homepage (landing page)
+/login                     # User login
+/signup                    # User registration
+/register                  # User registration (alternate route)
+/forgot-password           # Password reset request
+/contact                   # Contact page
+/privacy                   # Privacy policy
+/terms                     # Terms of service
+```
+
+### Protected Routes
+
+```
+/dashboard                 # Main dashboard
+/profile                   # User profile
+/security                  # Security settings (2FA, passkeys, etc.)
+/settings                  # Application settings
+
+/transactions              # Transaction list
+/transactions/import       # Import transactions from CSV
+/transactions/export       # Export transactions to CSV
+
 /budget                    # Budget overview
 /budget/history            # Budget history
 /budget/categories         # Category management
-/assets                    # Asset list
-/assets/add                # Add asset
-/assets/history            # Asset history
-/reports                   # Monthly reports
-/reports/yearly            # Yearly reports
-/reports/custom            # Custom date range
+
+/assets                    # Active asset list
+/assets/closed             # Closed/inactive assets
+/assets/history            # Asset history overview
+/assets/history/[id]       # Individual asset history
+/assets/categories         # Asset category management
+
+/reports                   # Financial reports
+
 /forecast                  # Forecast calculator
-/forecast/comparison       # Scenario comparison
+
 /calculators               # Compound interest calculator
-/settings                  # Profile settings
-/settings/payment-methods  # Payment methods
 ```
 
 **Note:** Transaction creation and editing is handled via TransactionDrawer available globally in ProtectedLayout, not via dedicated pages.
@@ -338,30 +360,128 @@ bun run typecheck         # TypeScript (blocking)
 
 ```
 src/
+├── __tests__/            # Integration and cross-cutting tests
+├── cli/                  # CLI commands
+│   ├── create-api-key.ts
+│   ├── create-workspace.ts
+│   ├── delete-workspace.ts
+│   ├── list-workspaces.ts
+│   └── rotate-db-password.ts
 ├── components/
-│   ├── atoms/           # Atomic UI elements (Button, Input, etc.)
-│   ├── molecules/        # Compound components (Modal, Toast)
-│   ├── layouts/          # Layout components (Header, Footer, Nav)
-│   └── organisms/        # Complex compositions
-├── layouts/
-│   ├── BaseLayout.astro  # HTML shell
-│   └── MainLayout.astro  # App layout with sidebar
-├── pages/                # File-based routing
-│   ├── index.astro       # Dashboard (/)
-│   ├── transactions/
-│   ├── budget/
-│   ├── assets/
-│   ├── reports/
-│   ├── forecast/
-│   ├── calculators/
-│   └── settings/
-├── lib/
+│   ├── atoms/            # Atomic UI elements (Button, Input, Badge, etc.)
+│   ├── molecules/        # Compound components (Modal, Toast, Forms)
+│   ├── organisms/        # Complex compositions (AssetFormModal, TransactionDrawer)
+│   ├── partials/         # Server-rendered fragments (no layout)
+│   └── layouts/          # Reusable layout components (Header, Footer, Nav)
+├── db/
+│   ├── schema/           # Database schema definitions
+│   │   ├── sqlite/       # SQLite-specific schema
+│   │   └── postgresql/   # PostgreSQL-specific schema
+│   ├── drivers/          # Database driver implementations
+│   ├── config.ts         # Database configuration
+│   ├── driver.ts         # Driver factory
+│   ├── index.ts          # Database client exports
+│   ├── empty.ts          # Empty/null database implementation
+│   └── seed.ts           # Database seeding
+├── layouts/              # Page layouts
+│   ├── AuthLayout.astro      # Authentication pages layout
+│   ├── BaseLayout.astro      # HTML shell with <head> setup
+│   ├── MainLayout.astro      # Public pages layout
+│   ├── ProtectedLayout.astro # Protected pages with sidebar & TransactionDrawer
+│   └── PublicLayout.astro    # Public marketing pages layout
+├── lib/                  # Shared utilities and helpers
+│   ├── animations/       # Animation utilities
+│   ├── api/              # API client utilities
+│   ├── assets/           # Asset management utilities
+│   ├── auth/             # Authentication utilities (Lucia setup)
+│   ├── budget/           # Budget calculation utilities
+│   ├── cache/            # Cache abstraction layer
+│   │   └── drivers/      # Cache driver implementations (Memory, Noop, Upstash)
+│   ├── constants/        # Application constants
+│   ├── crypto/           # Cryptography utilities (password hashing)
+│   ├── currency/         # Currency formatting utilities
+│   ├── forecast/         # Forecast calculation utilities
+│   ├── formatting/       # Number and date formatting utilities
+│   ├── perf/             # Performance monitoring utilities
 │   ├── stores/           # Nano Stores for client-side state
 │   │   └── toastStore.ts # Toast notification state
+│   ├── types/            # Shared TypeScript types
+│   ├── utils/            # General utility functions
+│   ├── validation/       # Input validation utilities
 │   └── tokens.ts         # Design tokens & helpers
-└── styles/
-    ├── globals.css       # Global styles
-    └── tokens.css        # CSS custom properties
+├── middleware/           # Astro middleware
+│   ├── auth.ts           # Authentication middleware
+│   ├── csrf.ts           # CSRF protection
+│   ├── database.ts       # Database connection per request
+│   ├── index.ts          # Middleware sequence definition
+│   ├── perf-debug.ts     # Performance debugging
+│   ├── route-guard.ts    # Route protection
+│   ├── runtime-env.ts    # Runtime environment setup
+│   └── security-headers.ts # Security headers (CSP, etc.)
+├── pages/                # File-based routing
+│   ├── index.astro       # Homepage (/)
+│   ├── dashboard.astro   # Dashboard
+│   ├── api/              # API endpoints
+│   │   ├── auth/         # Authentication endpoints
+│   │   ├── transactions/ # Transaction management
+│   │   ├── budget/       # Budget management
+│   │   ├── assets/       # Asset management
+│   │   ├── categories/   # Category management
+│   │   └── user/         # User profile endpoints
+│   ├── transactions/
+│   │   ├── index.astro   # Transaction list
+│   │   ├── import.astro  # Import from CSV
+│   │   └── export.astro  # Export to CSV
+│   ├── budget/
+│   │   ├── index.astro   # Budget overview
+│   │   ├── history.astro # Budget history
+│   │   └── categories/   # Category management
+│   ├── assets/
+│   │   ├── index.astro       # Active assets
+│   │   ├── closed.astro      # Closed assets
+│   │   ├── add.astro         # Add asset
+│   │   ├── edit/[id].astro   # Edit asset
+│   │   ├── history.astro     # Asset history overview
+│   │   ├── history/[id].astro # Individual asset history
+│   │   └── categories/       # Asset category management
+│   ├── reports/
+│   │   └── index.astro   # Financial reports
+│   ├── forecast/
+│   │   └── index.astro   # Forecast calculator
+│   ├── calculators/
+│   │   └── index.astro   # Compound interest calculator
+│   ├── settings/
+│   │   └── index.astro   # Application settings
+│   ├── login.astro       # Login page
+│   ├── signup.astro      # Signup page
+│   ├── register.astro    # Registration page
+│   ├── forgot-password.astro # Password reset
+│   ├── profile.astro     # User profile
+│   ├── security.astro    # Security settings
+│   ├── contact.astro     # Contact page
+│   ├── privacy.astro     # Privacy policy
+│   └── terms.astro       # Terms of service
+├── services/             # Business logic layer
+│   ├── api-key.service.ts        # API key management
+│   ├── asset-category.service.ts # Asset category management
+│   ├── asset.service.ts          # Asset management
+│   ├── auth.service.ts           # Authentication logic
+│   ├── budget.service.ts         # Budget calculations
+│   ├── category.service.ts       # Category management
+│   ├── dashboard.service.ts      # Dashboard data aggregation
+│   ├── email-verification.service.ts # Email verification
+│   ├── password-reset.service.ts # Password reset logic
+│   ├── report.service.ts         # Report generation
+│   ├── transaction.service.ts    # Transaction management
+│   ├── user-meta.service.ts      # User metadata
+│   ├── service-errors.ts         # Service error definitions
+│   └── email/                    # Email templates and utilities
+├── stories/              # Storybook stories
+├── styles/               # Global styles
+│   ├── globals.css       # Global styles and resets
+│   ├── tokens.css        # CSS custom properties (design tokens)
+│   └── animations.css    # Animation definitions
+└── types/                # TypeScript type definitions
 ```
 
 ## Interactive Pages Architecture
@@ -474,13 +594,13 @@ npx @redocly/cli preview-docs openapi.yml
 - **DO NOT access `user.attributes.property`** - The User type has properties directly on the object (`user.name`, `user.email`), not nested in `attributes`.
 - **DO NOT declare `Astro.locals` types in multiple files** - Centralize in `src/env.d.ts` only.
 - **DO NOT use `vitest` to write test, use `bun:test` instead.**
-- **DO NOT mix `define:vars`, `is:inline`, or `type="module"` with npm imports in `<script>` tags** - These attributes make Astro treat scripts as inline, which cannot resolve npm package imports (e.g., `import { animate } from 'motion'`). Instead, pass server values via `data-*` attributes on HTML elements and read them in a regular `<script>` tag:
+- **DO NOT mix `define:vars`, `is:inline`, or `type="module"` with npm imports in `<script>` tags** - These attributes make Astro treat scripts as inline, which cannot resolve npm package imports (e.g., `import { animate } from 'motion/mini'`). Instead, pass server values via `data-*` attributes on HTML elements and read them in a regular `<script>` tag:
 
   ```astro
   <!-- ✅ Correct: Use data attributes -->
   <dialog data-modal data-backdrop-close={backdropClose ? 'true' : 'false'}>
     <script>
-      import { animate } from 'motion'; // Works!
+      import { animate } from 'motion/mini'; // Works!
       document.querySelectorAll('dialog[data-modal]').forEach((modal) => {
         const backdropClose = modal.dataset.backdropClose === 'true';
       });
@@ -488,7 +608,7 @@ npx @redocly/cli preview-docs openapi.yml
 
     <!-- ❌ Wrong: define:vars breaks npm imports -->
     <script define:vars={{ backdropClose }}>
-      import { animate } from 'motion'; // Error: Cannot resolve module
+      import { animate } from 'motion/mini'; // Error: Cannot resolve module
     </script>
   </dialog>
   ```

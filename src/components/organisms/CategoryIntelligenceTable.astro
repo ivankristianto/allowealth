@@ -1,13 +1,13 @@
 ---
 /**
- * CategoryIntelligenceTable Component
+ * CategorySpendingTable Component
  *
  * Table displaying spending per category data with budget, status, and drill-down actions.
  * Follows Oasis Finance v1.0.0 design system specifications.
  *
  * @param {CategoryIntelligence[]} categories - Array of category data
  * @param {Function} onDrillDown - Callback for drill-down button clicks (category name)
- * @param {string} subtitle - Subtitle text (e.g., "SORTED BY FUNCTIONAL VOLUME")
+ * @param {string} subtitle - Subtitle text (e.g., "SORTED BY AMOUNT SPENT")
  * @param {boolean} loading - Show loading skeleton state
  * @param {string} error - Error message to display
  * @param {string} className - Additional CSS classes
@@ -47,15 +47,17 @@ export interface Props {
   error?: string;
   className?: string;
   range?: 'monthly' | 'yearly';
+  currency?: 'IDR' | 'USD';
 }
 
 const {
   categories = [],
-  subtitle = 'SORTED BY FUNCTIONAL VOLUME',
+  subtitle = 'SORTED BY AMOUNT SPENT',
   loading = false,
   error,
   className = '',
   range = 'monthly',
+  currency = 'IDR',
 } = Astro.props;
 
 // Calculate percentage for each category
@@ -119,109 +121,111 @@ const categoriesWithPercentage = categories.map((cat) => {
         </div>
       ) : (
         /* Table */
-        <div class="overflow-x-auto">
-          <table class="w-full text-left border-collapse">
-            <thead>
-              <tr class="bg-base-200/50 border-b border-base-300">
-                <th class="px-6 md:px-8 py-4 md:py-5 text-xs font-bold text-base-content/40 uppercase tracking-widest">
-                  Category
-                </th>
-                <th class="px-6 md:px-8 py-4 md:py-5 text-xs font-bold text-base-content/40 uppercase tracking-widest text-right">
-                  Total Spent
-                </th>
-                <th class="px-6 md:px-8 py-4 md:py-5 text-xs font-bold text-base-content/40 uppercase tracking-widest text-right">
-                  Allocated Budget
-                </th>
-                <th class="px-6 md:px-8 py-4 md:py-5 text-xs font-bold text-base-content/40 uppercase tracking-widest text-center">
-                  Status
-                </th>
-                {range === 'monthly' && (
-                  <th class="px-6 md:px-8 py-4 md:py-5 text-xs font-bold text-base-content/40 uppercase tracking-widest text-right">
-                    Action
+        <div class="table-scroll-hint">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="bg-base-200/50 border-b border-base-300">
+                  <th class="px-6 md:px-8 py-4 md:py-5 text-xs font-bold text-base-content/40 uppercase tracking-widest">
+                    Category
                   </th>
-                )}
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-base-300">
-              {categoriesWithPercentage.map((cat) => (
-                <tr class="group hover:bg-base-200/30 transition-colors">
-                  {/* Category with Icon */}
-                  <td class="px-6 md:px-8 py-5 md:py-6">
-                    <div class="flex items-center gap-3 md:gap-4">
-                      <CategoryIcon icon={cat.iconName} color={cat.color} size="md" />
-                      <span class="text-sm font-bold text-base-content">{cat.name}</span>
-                    </div>
-                  </td>
-
-                  {/* Total Spent */}
-                  <td class="px-6 md:px-8 py-5 md:py-6 text-right">
-                    <span class="text-sm font-bold text-base-content">
-                      {formatCurrency(cat.spent, 'IDR')}
-                    </span>
-                  </td>
-
-                  {/* Budget Quota */}
-                  <td class="px-6 md:px-8 py-5 md:py-6 text-right">
-                    <span class="text-sm font-medium text-base-content/60">
-                      {cat.budgetLimit && cat.budgetLimit > 0
-                        ? formatCurrency(cat.budgetLimit, 'IDR')
-                        : 'Not Set'}
-                    </span>
-                  </td>
-
-                  {/* Status */}
-                  <td class="px-6 md:px-8 py-5 md:py-6 text-center">
-                    <div class="inline-flex items-center gap-2">
-                      {cat.percentage !== null ? (
-                        <>
-                          <div class="w-16 h-1.5 bg-base-200 rounded-full overflow-hidden">
-                            <div
-                              class={`h-full ${cat.percentage > 100 ? 'bg-error' : 'bg-accent'} transition-all duration-300`}
-                              style={`width: ${Math.min(cat.percentage, 100)}%`}
-                              role="progressbar"
-                              aria-valuenow={Math.round(cat.percentage)}
-                              aria-valuemin={0}
-                              aria-valuemax={100}
-                              aria-label={`${Math.round(cat.percentage)}% of budget used`}
-                            />
-                          </div>
-                          <span
-                            class={`text-xs font-bold ${cat.percentage > 100 ? 'text-error' : 'text-base-content/60'}`}
-                          >
-                            {Math.round(cat.percentage)}%
-                          </span>
-                        </>
-                      ) : (
-                        <span class="text-xs font-bold text-base-content/30 uppercase">
-                          Untracked
-                        </span>
-                      )}
-                    </div>
-                  </td>
-
-                  {/* Action */}
+                  <th class="px-6 md:px-8 py-4 md:py-5 text-xs font-bold text-base-content/40 uppercase tracking-widest text-right">
+                    Total Spent
+                  </th>
+                  <th class="px-6 md:px-8 py-4 md:py-5 text-xs font-bold text-base-content/40 uppercase tracking-widest text-right">
+                    Allocated Budget
+                  </th>
+                  <th class="px-6 md:px-8 py-4 md:py-5 text-xs font-bold text-base-content/40 uppercase tracking-widest text-center">
+                    Status
+                  </th>
                   {range === 'monthly' && (
-                    <td class="px-6 md:px-8 py-5 md:py-6 text-right">
-                      <button
-                        type="button"
-                        data-category-id={cat.id}
-                        data-category-name={cat.name}
-                        data-category-icon={cat.iconName}
-                        data-category-color={cat.color}
-                        data-spent={cat.spent}
-                        data-budget-limit={cat.budgetLimit}
-                        class="category-drill-down-btn inline-flex items-center gap-2 text-accent hover:bg-accent/5 px-3 md:px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest border border-accent/10 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
-                        aria-label={`View detailed breakdown for ${cat.name}`}
-                      >
-                        <span>See Details</span>
-                        <ChevronRight size={14} class="stroke-current" aria-hidden="true" />
-                      </button>
-                    </td>
+                    <th class="px-6 md:px-8 py-4 md:py-5 text-xs font-bold text-base-content/40 uppercase tracking-widest text-right">
+                      Action
+                    </th>
                   )}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody class="divide-y divide-base-300">
+                {categoriesWithPercentage.map((cat) => (
+                  <tr class="group hover:bg-base-200/30 transition-colors">
+                    {/* Category with Icon */}
+                    <td class="px-6 md:px-8 py-5 md:py-6">
+                      <div class="flex items-center gap-3 md:gap-4">
+                        <CategoryIcon icon={cat.iconName} color={cat.color} size="md" />
+                        <span class="text-sm font-bold text-base-content">{cat.name}</span>
+                      </div>
+                    </td>
+
+                    {/* Total Spent */}
+                    <td class="px-6 md:px-8 py-5 md:py-6 text-right">
+                      <span class="text-sm font-bold text-base-content">
+                        {formatCurrency(cat.spent, currency)}
+                      </span>
+                    </td>
+
+                    {/* Budget Quota */}
+                    <td class="px-6 md:px-8 py-5 md:py-6 text-right">
+                      <span class="text-sm font-medium text-base-content/60">
+                        {cat.budgetLimit && cat.budgetLimit > 0
+                          ? formatCurrency(cat.budgetLimit, currency)
+                          : 'Not Set'}
+                      </span>
+                    </td>
+
+                    {/* Status */}
+                    <td class="px-6 md:px-8 py-5 md:py-6 text-center">
+                      <div class="inline-flex items-center gap-2">
+                        {cat.percentage !== null ? (
+                          <>
+                            <div class="w-16 h-1.5 bg-base-200 rounded-full overflow-hidden">
+                              <div
+                                class={`h-full ${cat.percentage > 100 ? 'bg-error' : 'bg-accent'} transition-all duration-300`}
+                                style={`width: ${Math.min(cat.percentage, 100)}%`}
+                                role="progressbar"
+                                aria-valuenow={Math.round(cat.percentage)}
+                                aria-valuemin={0}
+                                aria-valuemax={100}
+                                aria-label={`${Math.round(cat.percentage)}% of budget used`}
+                              />
+                            </div>
+                            <span
+                              class={`text-xs font-bold ${cat.percentage > 100 ? 'text-error' : 'text-base-content/60'}`}
+                            >
+                              {Math.round(cat.percentage)}%
+                            </span>
+                          </>
+                        ) : (
+                          <span class="text-xs font-bold text-base-content/30 uppercase">
+                            Untracked
+                          </span>
+                        )}
+                      </div>
+                    </td>
+
+                    {/* Action */}
+                    {range === 'monthly' && (
+                      <td class="px-6 md:px-8 py-5 md:py-6 text-right">
+                        <button
+                          type="button"
+                          data-category-id={cat.id}
+                          data-category-name={cat.name}
+                          data-category-icon={cat.iconName}
+                          data-category-color={cat.color}
+                          data-spent={cat.spent}
+                          data-budget-limit={cat.budgetLimit}
+                          class="category-drill-down-btn inline-flex items-center gap-2 text-accent hover:bg-accent/5 px-3 md:px-4 py-3 md:py-2 rounded-xl text-xs font-bold uppercase tracking-widest border border-accent/10 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+                          aria-label={`View detailed breakdown for ${cat.name}`}
+                        >
+                          <span>See Details</span>
+                          <ChevronRight size={14} class="stroke-current" aria-hidden="true" />
+                        </button>
+                      </td>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )
     }

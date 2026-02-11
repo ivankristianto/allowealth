@@ -31,17 +31,31 @@ export interface WorkspaceInvitationOptions {
 }
 
 /**
- * Test email template options
+ * Email verification template options
  */
-export interface TestEmailOptions {
-  workspaceName: string;
-  provider: string;
-  senderEmail: string;
+export interface EmailVerificationOptions {
+  verificationUrl: string;
+  userName: string;
 }
 
 /**
  * Email Template Service
  */
+/** Escape HTML special characters to prevent injection */
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/** Sanitize email subject — strip CR/LF to prevent header injection */
+function sanitizeSubject(str: string): string {
+  return str.replace(/[\r\n]+/g, ' ').trim();
+}
+
 export class EmailTemplateService {
   private readonly primaryColor = '#2563eb';
   private readonly appName = 'Expenses App';
@@ -107,6 +121,34 @@ export class EmailTemplateService {
   }
 
   /**
+   * Generate email verification template
+   */
+  emailVerification(options: EmailVerificationOptions): EmailTemplate {
+    const { verificationUrl, userName } = options;
+
+    const content = `
+<h1 style="margin: 0 0 16px 0; font-size: 24px; font-weight: 600; color: #18181b;">
+  Verify your email
+</h1>
+<p style="margin: 0 0 16px 0; font-size: 14px; line-height: 1.6; color: #3f3f46;">
+  Hi ${escapeHtml(userName)}, thanks for signing up! Please verify your email address to activate your account.
+</p>
+${this.button('Verify Email', verificationUrl)}
+<p style="margin: 0 0 8px 0; font-size: 13px; color: #71717a;">
+  This link expires in 24 hours.
+</p>
+<p style="margin: 0; font-size: 13px; color: #71717a;">
+  If you didn't create an account, you can safely ignore this email.
+</p>
+`.trim();
+
+    return {
+      subject: 'Verify your email',
+      html: this.wrap(content),
+    };
+  }
+
+  /**
    * Generate password reset email template
    */
   passwordReset(options: PasswordResetOptions): EmailTemplate {
@@ -145,7 +187,7 @@ ${this.button('Reset Password', resetUrl)}
   You're invited!
 </h1>
 <p style="margin: 0 0 16px 0; font-size: 14px; line-height: 1.6; color: #3f3f46;">
-  <strong>${inviterName}</strong> has invited you to join <strong>${workspaceName}</strong> on ${this.appName}.
+  <strong>${escapeHtml(inviterName)}</strong> has invited you to join <strong>${escapeHtml(workspaceName)}</strong> on ${this.appName}.
 </p>
 ${this.button('Accept Invitation', inviteUrl)}
 <p style="margin: 0; font-size: 13px; color: #71717a;">
@@ -154,43 +196,7 @@ ${this.button('Accept Invitation', inviteUrl)}
 `.trim();
 
     return {
-      subject: `You've been invited to join ${workspaceName}`,
-      html: this.wrap(content),
-    };
-  }
-
-  /**
-   * Generate test email template
-   */
-  test(options: TestEmailOptions): EmailTemplate {
-    const { workspaceName, provider, senderEmail } = options;
-
-    const content = `
-<h1 style="margin: 0 0 16px 0; font-size: 24px; font-weight: 600; color: #18181b;">
-  Email Configuration Test
-</h1>
-<p style="margin: 0 0 16px 0; font-size: 14px; line-height: 1.6; color: #3f3f46;">
-  Your email configuration is working correctly.
-</p>
-<table role="presentation" cellpadding="0" cellspacing="0" style="margin: 16px 0; background-color: #f4f4f5; border-radius: 8px; padding: 16px; width: 100%;">
-  <tr>
-    <td style="padding: 8px 16px;">
-      <p style="margin: 0 0 8px 0; font-size: 13px; color: #71717a;">
-        <strong style="color: #3f3f46;">Provider:</strong> ${provider}
-      </p>
-      <p style="margin: 0; font-size: 13px; color: #71717a;">
-        <strong style="color: #3f3f46;">Sender:</strong> ${senderEmail}
-      </p>
-    </td>
-  </tr>
-</table>
-<p style="margin: 0; font-size: 13px; color: #71717a;">
-  Emails from ${workspaceName} will be sent using this configuration.
-</p>
-`.trim();
-
-    return {
-      subject: `Test email from ${workspaceName}`,
+      subject: `You've been invited to join ${sanitizeSubject(workspaceName)}`,
       html: this.wrap(content),
     };
   }

@@ -8,8 +8,15 @@ import { describe, it, expect } from 'bun:test';
 import { getBudgetStatus } from './budget';
 
 describe('getBudgetStatus', () => {
-  it('should return danger/exceeded for >= 100%', () => {
+  it('should return warning/review "On Budget" for exactly 100%', () => {
     const result = getBudgetStatus(100);
+    expect(result.status).toBe('warning');
+    expect(result.badgeVariant).toBe('review');
+    expect(result.label).toBe('On Budget');
+  });
+
+  it('should return danger/exceeded for > 100%', () => {
+    const result = getBudgetStatus(100.1);
     expect(result.status).toBe('danger');
     expect(result.badgeVariant).toBe('exceeded');
     expect(result.label).toBe('Over Budget');

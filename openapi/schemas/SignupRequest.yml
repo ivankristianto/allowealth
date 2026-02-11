@@ -19,3 +19,8 @@ SignupRequest:
       maxLength: 255
       description: User display name
       example: John Doe
+    turnstileToken:
+      type: string
+      description: >
+        Cloudflare Turnstile verification token (from cf-turnstile-response widget).
+        Optional when Turnstile is not configured.

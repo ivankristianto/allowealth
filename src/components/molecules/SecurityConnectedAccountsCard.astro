@@ -32,7 +32,12 @@ const { accounts } = Astro.props;
         <Key size={20} class="stroke-current" aria-hidden="true" />
       </IconBadge>
       <div>
-        <h3 class="text-lg font-bold">Connected Accounts</h3>
+        <div class="flex flex-wrap items-center gap-2">
+          <h3 class="text-lg font-bold">Connected Accounts</h3>
+          <span class="badge badge-outline badge-sm text-base-content/50 whitespace-nowrap"
+            >Under Development</span
+          >
+        </div>
         <p class="text-xs uppercase tracking-widest text-base-content/50">Single Sign-On (SSO)</p>
       </div>
     </div>
@@ -55,7 +60,12 @@ const { accounts } = Astro.props;
               </div>
             </div>
 
-            <Button type="button" variant={account.connected ? 'outline' : 'accent'} size="sm">
+            <Button
+              type="button"
+              variant={account.connected ? 'outline' : 'accent'}
+              size="sm"
+              disabled
+            >
               {account.connected ? 'Disconnect' : 'Connect Account'}
             </Button>
           </div>

@@ -40,8 +40,11 @@ export const POST: APIRoute = async (context) => {
     // Read file content
     const text = await file.text();
 
-    // Parse CSV (normalize line endings for cross-platform support)
-    const normalizedText = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    // Parse CSV — strip BOM, normalize line endings for cross-platform support
+    const normalizedText = text
+      .replace(/^\uFEFF/, '')
+      .replace(/\r\n/g, '\n')
+      .replace(/\r/g, '\n');
     const lines = normalizedText.trim().split('\n');
     if (lines.length < 2) {
       return errorResponse('CSV file must contain at least a header row and one data row', 400);

@@ -63,7 +63,7 @@ function getIcon(iconName: keyof typeof iconMap) {
           data-tab-id={tab.id}
         >
           <IconComponent size={18} class="stroke-current shrink-0" aria-hidden="true" />
-          <span class="hidden sm:inline">{tab.label}</span>
+          <span class="text-sm sm:text-xs">{tab.label}</span>
         </button>
       );
     })
@@ -108,12 +108,5 @@ function getIcon(iconName: keyof typeof iconMap) {
   /* Active tab indicator styles */
   .tab-active {
     font-weight: 700;
-  }
-
-  /* Mobile responsive: show only icons on small screens */
-  @media (max-width: 640px) {
-    [data-tabs] .tab span:not(:first-child) {
-      display: none;
-    }
   }
 </style>

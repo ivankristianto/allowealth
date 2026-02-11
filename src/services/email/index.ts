@@ -6,15 +6,15 @@ export { EmailService } from './email.service';
 export type {
   SendPasswordResetOptions,
   SendWorkspaceInvitationOptions,
-  SendTestOptions,
+  SendEmailVerificationOptions,
 } from './email.service';
 
 export { EmailTemplateService, emailTemplateService } from './email-template.service';
 export type {
   EmailTemplate,
+  EmailVerificationOptions,
   PasswordResetOptions,
   WorkspaceInvitationOptions,
-  TestEmailOptions,
 } from './email-template.service';
 
 export { EmailServiceError, EmailErrorCode } from './email-errors';

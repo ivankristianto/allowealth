@@ -8,7 +8,7 @@
  * Uses Motion for animations and respects prefers-reduced-motion.
  */
 
-import { animate } from 'motion';
+import { animate } from 'motion/mini';
 import { animationDuration } from '@/lib/tokens';
 import type { FetchTransactionsHtmlResponse } from '@/lib/api/transactionsApiClient';
 

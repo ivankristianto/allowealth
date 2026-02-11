@@ -1,0 +1,58 @@
+---
+/**
+ * Turnstile Widget Component
+ *
+ * Renders a Cloudflare Turnstile widget for bot protection.
+ * When PUBLIC_TURNSTILE_SITE_KEY is not set, renders nothing (graceful degradation).
+ *
+ * Uses implicit rendering mode: the Turnstile script auto-renders the widget
+ * and injects a hidden input named "cf-turnstile-response" into the nearest form.
+ *
+ * @example
+ * <form>
+ *   <Turnstile />
+ *   <button type="submit">Submit</button>
+ * </form>
+ */
+
+export interface Props {
+  /** Override the theme (default: auto-detects from page) */
+  theme?: 'light' | 'dark' | 'auto';
+  /** Additional CSS classes for the container */
+  className?: string;
+}
+
+import { getEnv } from '@/lib/env';
+
+const { theme = 'auto', className = '' } = Astro.props;
+const siteKey = getEnv('PUBLIC_TURNSTILE_SITE_KEY');
+---
+
+{
+  siteKey && (
+    <div class={`turnstile-container ${className}`.trim()}>
+      <div
+        class="cf-turnstile"
+        data-sitekey={siteKey}
+        data-theme={theme}
+        data-language="auto"
+        data-retry="auto"
+        data-retry-interval="2000"
+        data-response-field-name="cf-turnstile-response"
+      />
+    </div>
+  )
+}
+
+{
+  siteKey && (
+    <script is:inline src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer />
+  )
+}
+
+<style>
+  .turnstile-container {
+    display: flex;
+    justify-content: center;
+  }
+</style>

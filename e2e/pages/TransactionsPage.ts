@@ -90,12 +90,14 @@ export class TransactionsPage extends BasePage {
   /**
    * Filter transactions by type (expense, income, or all).
    *
+   * Clicking the filter button triggers a client-side AJAX fetch (fetchAndRender).
+   * We must wait for the API response before asserting list contents.
+   *
    * @param type - The transaction type to filter by
    */
   async filterByType(type: 'expense' | 'income' | 'all'): Promise<void> {
     // Note: Current implementation doesn't have 'all' option
     if (type === 'all') {
-      // Reset to default or expense type
       type = 'expense';
     }
 
@@ -104,8 +106,14 @@ export class TransactionsPage extends BasePage {
       .or(this.page.locator('[data-filter-type-group]'))
       .locator(`[data-filter-type="${type}"]`);
 
-    await typeBtn.click();
-    await this.waitForPageLoad();
+    // Wait for both the click and the subsequent AJAX fetch triggered by handleTypeFilterChange
+    await Promise.all([
+      this.page.waitForResponse(
+        (resp) => resp.url().includes('/api/transactions') && resp.request().method() === 'GET',
+        { timeout: 10000 }
+      ),
+      typeBtn.click(),
+    ]);
   }
 
   /**

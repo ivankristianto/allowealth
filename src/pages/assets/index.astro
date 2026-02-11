@@ -10,6 +10,7 @@
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import AssetPageHeader from '@components/molecules/AssetPageHeader.astro';
 import AssetPortfolioSummary from '@components/organisms/AssetPortfolioSummary.astro';
+import AssetActions from '@components/organisms/AssetActions.astro';
 import AssetGroupCard from '@components/organisms/AssetGroupCard.astro';
 import AssetItemRow from '@components/molecules/AssetItemRow.astro';
 import AssetFormModal from '@components/organisms/AssetFormModal.astro';
@@ -19,7 +20,7 @@ import AssetHistoryModal from '@components/organisms/AssetHistoryModal.astro';
 import AssetUpdateValueModal from '@components/organisms/AssetUpdateValueModal.astro';
 import AssetCategoryModal from '@components/organisms/AssetCategoryModal.astro';
 import EmptyState from '@components/atoms/EmptyState.astro';
-import { CalendarDays } from '@lucide/astro';
+import { CalendarDays, Search } from '@lucide/astro';
 import { assetService, assetCategoryService } from '@/services';
 import type { AssetOutput, AssetType } from '@/lib/types/asset';
 import { formatAssetType } from '@/lib/types/asset';
@@ -103,6 +104,9 @@ const currentMonthDisplay = new Date(selectedYear, selectedMonth - 1).toLocaleDa
   year: 'numeric',
 });
 
+// Get closed account count for navigation link
+const closedCount = await assetService.countClosed(user.workspaceId);
+
 // Fetch assets and categories from database
 const categories = await assetCategoryService.findAll(user.workspaceId);
 const categoriesById = new Map(categories.map((category) => [category.id, category]));
@@ -136,6 +140,9 @@ if (!isViewingCurrentMonth) {
       balance: snapshot.snapshot_balance,
       initial_balance: snapshot.initial_balance || null,
       currency: snapshot.currency,
+      status: snapshot.status ?? 'active',
+      closed_at: snapshot.closed_at ?? null,
+      closed_by_user_id: snapshot.closed_by_user_id ?? null,
       last_updated: snapshot.snapshot_date || snapshot.last_updated,
       created_at: snapshot.created_at,
       updated_at: snapshot.updated_at,
@@ -158,6 +165,9 @@ if (!isViewingCurrentMonth) {
       balance: asset.balance,
       initial_balance: asset.initial_balance || null,
       currency: asset.currency,
+      status: asset.status ?? 'active',
+      closed_at: asset.closed_at ?? null,
+      closed_by_user_id: asset.closed_by_user_id ?? null,
       last_updated: asset.last_updated,
       created_at: asset.created_at,
       updated_at: asset.updated_at,
@@ -201,7 +211,6 @@ const sortedGroups = Object.entries(assetsByType)
   <div class="max-w-7xl mx-auto sm:px-2 lg:px-6 space-y-6 sm:space-y-8" data-testid="assets-page">
     {/* Page Header */}
     <AssetPageHeader
-      defaultCategoryId={defaultCategoryId}
       currentMonth={currentMonthDisplay}
       prevMonthUrl={buildMonthUrl(prevMonthDate.getFullYear(), prevMonthDate.getMonth() + 1)}
       nextMonthUrl={!isNextMonthFuture
@@ -209,7 +218,6 @@ const sortedGroups = Object.entries(assetsByType)
         : undefined}
       isNextDisabled={isNextMonthFuture}
       currentMonthResetUrl={!isViewingCurrentMonth ? '/assets' : undefined}
-      isHistoricalView={!isViewingCurrentMonth}
     />
 
     {/* Historical view indicator */}
@@ -235,6 +243,29 @@ const sortedGroups = Object.entries(assetsByType)
             latestUpdate={latestUpdate}
             isHistoricalView={!isViewingCurrentMonth}
           />
+
+          {/* Action Buttons */}
+          <AssetActions
+            isHistoricalView={!isViewingCurrentMonth}
+            defaultCategoryId={defaultCategoryId}
+            closedCount={closedCount}
+          />
+
+          {/* Search Filter */}
+          <div class="relative">
+            <Search
+              size={18}
+              class="absolute left-3 top-1/2 -translate-y-1/2 stroke-current text-base-content/40 pointer-events-none"
+              aria-hidden="true"
+            />
+            <input
+              type="search"
+              data-asset-search
+              placeholder="Search assets by name…"
+              class="input input-bordered w-full pl-10 rounded-xl bg-base-100 text-sm"
+              aria-label="Search assets by name"
+            />
+          </div>
 
           {/* Asset Groups */}
           <div class="space-y-6">
@@ -269,6 +300,14 @@ const sortedGroups = Object.entries(assetsByType)
                 </AssetGroupCard>
               );
             })}
+          </div>
+
+          {/* No results message (hidden by default, shown by client script) */}
+          <div
+            data-asset-search-no-results
+            class="text-center py-8 text-base-content/50 text-sm font-medium hidden"
+          >
+            No assets match your search.
           </div>
         </>
       ) : (
@@ -308,9 +347,11 @@ const sortedGroups = Object.entries(assetsByType)
 
 <script>
   import { initInlineHistory } from '@/components/molecules/AssetInlineHistory.client';
+  import { initAssetSearch } from '@/components/organisms/AssetSearch.client';
 
   function init() {
     initInlineHistory();
+    initAssetSearch();
   }
 
   if (document.readyState === 'loading') {

@@ -17,9 +17,10 @@ import type { TransactionOutput } from '@/lib/types/transaction';
 export interface Props {
   transactions: TransactionOutput[];
   showActions?: boolean;
+  currentMonth?: string;
 }
 
-const { transactions, showActions = true } = Astro.props;
+const { transactions, showActions = true, currentMonth = '' } = Astro.props;
 ---
 
 {
@@ -36,7 +37,12 @@ const { transactions, showActions = true } = Astro.props;
         variant="centered"
         className="py-0"
       />
-      <a href="/transactions" class="btn btn-outline btn-sm gap-2 mt-6" data-reset-filters>
+      <a
+        href="/transactions"
+        class="btn btn-outline btn-sm gap-2 mt-6"
+        data-reset-filters
+        data-current-month={currentMonth}
+      >
         <RotateCcw size={16} class="stroke-current" aria-hidden="true" />
         Reset filters
       </a>

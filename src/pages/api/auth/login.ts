@@ -6,6 +6,7 @@
  * Request body:
  * - email: string (valid email format)
  * - password: string
+ * - turnstileToken: string (Cloudflare Turnstile response token)
  *
  * Response:
  * - 200: Login successful, sets session cookie
@@ -26,6 +27,7 @@ import {
   type ApiSuccessResponse,
 } from '@/types/api';
 import { logError } from '@/lib/utils';
+import { verifyTurnstileToken } from '@/lib/turnstile';
 import {
   checkRateLimit,
   createRateLimitResponse,
@@ -44,6 +46,17 @@ export const POST: APIRoute = async (context) => {
     const body = await request.json();
     email = body.email;
     const { password } = body;
+    const turnstileToken = typeof body.turnstileToken === 'string' ? body.turnstileToken : '';
+
+    // Verify Turnstile token BEFORE rate limiting (prevent burning rate limit without challenge)
+    const turnstileResult = await verifyTurnstileToken(turnstileToken, clientAddress);
+    if (!turnstileResult.success) {
+      return createErrorResponseResponse(
+        'TURNSTILE_FAILED',
+        turnstileResult.error || 'Bot protection verification failed.',
+        400
+      );
+    }
 
     // Check rate limit (10 attempts per 15 minutes per IP)
     // Pass clientAddress from Astro context for trusted IP (prevents spoofing)
@@ -112,6 +125,31 @@ export const POST: APIRoute = async (context) => {
 
         case AUTH_ERRORS.INVALID_INPUT:
           return createErrorResponseResponse(AUTH_ERRORS.INVALID_INPUT, authError.message, 400);
+
+        case AUTH_ERRORS.EMAIL_NOT_VERIFIED:
+          return new Response(
+            JSON.stringify({
+              error: 'Email not verified',
+              code: AUTH_ERRORS.EMAIL_NOT_VERIFIED,
+              email: authError.email || email,
+            }),
+            {
+              status: 403,
+              headers: STANDARD_RESPONSE_HEADERS,
+            }
+          );
+
+        case AUTH_ERRORS.WORKSPACE_INACTIVE:
+          return new Response(
+            JSON.stringify({
+              error: 'Workspace inactive',
+              code: AUTH_ERRORS.WORKSPACE_INACTIVE,
+            }),
+            {
+              status: 403,
+              headers: STANDARD_RESPONSE_HEADERS,
+            }
+          );
 
         default:
           break;

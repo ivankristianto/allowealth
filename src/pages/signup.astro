@@ -15,6 +15,7 @@ import Label from '../components/atoms/Label.astro';
 import { Building2, Eye, EyeOff, TriangleAlert, CircleCheck } from '@lucide/astro';
 import { getSignupUrl } from '@/lib/config';
 import { workspaceInvitationService, workspaceService } from '@/services';
+import Turnstile from '../components/atoms/Turnstile.astro';
 
 // Get query params
 const url = new URL(Astro.request.url);
@@ -98,7 +99,7 @@ const hasInvitationError = !!invitationError;
               <a href="/login" class="btn btn-ghost rounded-2xl">
                 Sign In
               </a>
-              <a href="/register" class="btn btn-accent rounded-2xl">
+              <a href="/signup" class="btn btn-accent rounded-2xl">
                 Create Account
               </a>
             </div>
@@ -240,6 +241,9 @@ const hasInvitationError = !!invitationError;
               </div>
             )}
 
+            {/* Bot Protection */}
+            <Turnstile />
+
             <div class="pt-2">
               <Button
                 type="submit"
@@ -300,24 +304,8 @@ const hasInvitationError = !!invitationError;
     const invitationToken = form.getAttribute('data-invitation-token') || '';
     const apiSignupUrl = form.getAttribute('data-api-signup-url') || '/api/signup';
 
-    // Handle password toggle for confirm password field
-    const toggleButtons = form.querySelectorAll('[data-toggle-password]');
-    toggleButtons.forEach((button) => {
-      button.addEventListener('click', () => {
-        const targetId = button.getAttribute('data-toggle-password');
-        const input = document.getElementById(targetId);
-        const eyeIcon = button.querySelector('[data-eye-icon]');
-        const eyeOffIcon = button.querySelector('[data-eye-off-icon]');
-
-        if (input && eyeIcon && eyeOffIcon) {
-          const isPassword = input.type === 'password';
-          input.type = isPassword ? 'text' : 'password';
-          eyeIcon.classList.toggle('hidden', !isPassword);
-          eyeOffIcon.classList.toggle('hidden', isPassword);
-          button.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
-        }
-      });
-    });
+    // Password toggle for confirm-password is handled by PasswordField's
+    // inline script (binds to all [data-toggle-password] buttons globally)
 
     // Clear messages on input
     const inputs = form.querySelectorAll('input');
@@ -342,6 +330,7 @@ const hasInvitationError = !!invitationError;
         email: formData.get('email'),
         password: formData.get('password'),
         'confirm-password': formData.get('confirm-password'),
+        turnstileToken: formData.get('cf-turnstile-response') || '',
       };
 
       // Use shared validation from RegistrationValidation module
@@ -381,6 +370,7 @@ const hasInvitationError = !!invitationError;
             name: data.name,
             email: data.email,
             password: data.password,
+            turnstileToken: data.turnstileToken,
           }),
         });
 
@@ -436,6 +426,10 @@ const hasInvitationError = !!invitationError;
         if (buttonText) buttonText.classList.remove('hidden');
         if (loadingSpinner) loadingSpinner.classList.add('hidden');
         if (submitButton) submitButton.disabled = false;
+        // Reset Turnstile widget for retry
+        if (typeof turnstile !== 'undefined') {
+          turnstile.reset();
+        }
       }
     });
   });

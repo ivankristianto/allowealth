@@ -31,7 +31,16 @@ const amount = transaction ? parseFloat(transaction.amount) || 0 : 0;
 const isExpense = transaction?.type === 'expense';
 const isDeleted = !!transaction?.deleted_at;
 const hasHistory = !!transaction?.has_history;
-const date = transaction ? new Date(transaction.transaction_date) : new Date();
+// Parse date as local date to avoid timezone shift (UTC midnight → previous day in UTC- zones)
+const parseLocalDate = (dateStr: string | Date): Date => {
+  if (dateStr instanceof Date) {
+    return new Date(dateStr.getFullYear(), dateStr.getMonth(), dateStr.getDate());
+  }
+  const str = dateStr.split('T')[0];
+  const [y, m, d] = str.split('-').map(Number);
+  return new Date(y, m - 1, d);
+};
+const date = transaction ? parseLocalDate(transaction.transaction_date) : new Date();
 
 // Format date with relative context
 const formatDate = (d: Date): string => {
@@ -66,6 +75,11 @@ const createdByName = transaction?.created_by_user_name;
 const categoryIcon = transaction?.category?.icon || 'credit-card';
 const categoryColor = transaction?.category?.color || 'bg-base-300';
 
+// Extract color name for WCAG-compliant tinted pill background on mobile
+// Uses color-mix() to create a light tint with dark text (always passes contrast)
+const categoryColorName = categoryColor.replace('bg-', '');
+const categoryPillStyle = `background-color: color-mix(in srgb, var(--color-${categoryColorName}) 18%, transparent)`;
+
 // Prepare transaction data for edit action (reused in both layouts)
 const transactionDataJson = transaction
   ? JSON.stringify({
@@ -76,7 +90,7 @@ const transactionDataJson = transaction
       currency: transaction.currency,
       category_id: transaction.category?.id,
       asset_id: transaction.asset.id,
-      transaction_date: date.toISOString().split('T')[0],
+      transaction_date: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`,
     })
   : '';
 
@@ -98,21 +112,20 @@ const cardClasses = [
 {
   loading ? (
     <div
-      class={`p-4 ${className}`}
+      class={`p-3 sm:p-4 ${className}`}
       role="status"
       aria-label="Loading transaction"
       data-transaction-card-skeleton
     >
-      <div class="flex items-start gap-3">
-        <div class="w-10 h-10 rounded-xl bg-base-200 shrink-0" aria-hidden="true" />
-        <div class="flex-1 min-w-0 space-y-2">
-          <div class="h-4 bg-base-200 rounded w-3/4" aria-hidden="true" />
-          <div class="h-3 bg-base-200 rounded w-1/2" aria-hidden="true" />
+      <div class="flex items-center gap-2.5">
+        <div class="flex-1 min-w-0">
+          <div class="h-4 bg-base-200 rounded w-2/3" aria-hidden="true" />
         </div>
+        <div class="h-4 bg-base-200 rounded w-20 shrink-0" aria-hidden="true" />
       </div>
-      <div class="mt-3 flex items-center justify-between">
-        <div class="h-3 bg-base-200 rounded w-20" aria-hidden="true" />
-        <div class="h-4 bg-base-200 rounded w-24" aria-hidden="true" />
+      <div class="mt-1 flex items-center gap-1.5">
+        <div class="h-3.5 bg-base-200 rounded w-20" aria-hidden="true" />
+        <div class="h-3 bg-base-200 rounded w-32" aria-hidden="true" />
       </div>
     </div>
   ) : (
@@ -122,38 +135,42 @@ const cardClasses = [
       data-transaction-id={transaction?.id}
       aria-label={`${transaction?.type === 'income' ? 'Income' : 'Expense'}: ${primaryText}, ${amount} ${transaction?.currency}`}
     >
-      {/* Mobile Layout (stacked with dropdown) - shown below sm breakpoint */}
+      {/* Mobile Layout (2-row compact) - shown below sm breakpoint */}
       <div class="sm:hidden">
-        <div class="flex items-start gap-3">
-          <CategoryIcon icon={categoryIcon} color={categoryColor} size="sm" className="shrink-0" />
-
+        {/* Row 1: Description + Amount (+ menu when actions) */}
+        <div class="flex items-center gap-2.5">
           <div class="flex-1 min-w-0">
             <div
               class:list={[
-                'font-bold text-base tracking-tight leading-tight break-words',
+                'font-bold text-sm tracking-tight leading-tight truncate',
                 isDeleted && 'line-through',
               ]}
+              data-expandable-text
+              title={primaryText}
             >
               {primaryText}
             </div>
-            <div class="mt-1 flex items-center gap-2">
-              <span class="font-bold tracking-widest uppercase text-xs bg-base-200 px-1.5 py-0.5 rounded text-base-content/60">
-                {transaction?.category?.name}
-              </span>
-              {isDeleted && <span class="badge badge-ghost badge-sm text-xs">Deleted</span>}
-            </div>
           </div>
 
+          <Currency
+            amount={amount}
+            currency={transaction?.currency || 'IDR'}
+            showSign={false}
+            variant={isExpense ? 'negative' : 'positive'}
+            size="sm"
+            className={`font-bold tracking-tight shrink-0${isDeleted ? ' line-through' : ''}`}
+          />
+
           {transaction && (
-            <div class="dropdown dropdown-end">
+            <div class="dropdown dropdown-end shrink-0 -mr-1.5">
               <button
                 type="button"
                 tabindex={0}
-                class="btn btn-ghost btn-sm btn-square min-h-[44px] min-w-[44px]"
+                class="btn btn-ghost btn-xs btn-square min-h-[44px] min-w-[44px]"
                 aria-label="Transaction actions"
                 aria-haspopup="menu"
               >
-                <Ellipsis size={18} class="stroke-current" aria-hidden="true" />
+                <Ellipsis size={16} class="stroke-current opacity-40" aria-hidden="true" />
               </button>
               <ul
                 tabindex={0}
@@ -210,46 +227,47 @@ const cardClasses = [
           )}
         </div>
 
-        <div class="mt-2.5 flex items-end justify-between pl-[52px]">
-          <div class="text-xs text-base-content/50 space-y-1">
-            <time datetime={date.toISOString()} class="block font-medium uppercase tracking-widest">
-              {formattedDate}
-            </time>
-            <div class="flex items-center gap-1.5 uppercase tracking-widest">
-              <CreditCard size={12} class="stroke-current" aria-hidden="true" />
-              <span>{transaction?.asset?.name}</span>
-              {createdByName && (
-                <>
-                  <span aria-hidden="true">&middot;</span>
-                  <span>{createdByName}</span>
-                </>
-              )}
-            </div>
-          </div>
-
-          <Currency
-            amount={amount}
-            currency={transaction?.currency || 'IDR'}
-            showSign={false}
-            variant={isExpense ? 'negative' : 'positive'}
-            size="md"
-            className={`font-bold tracking-tight${isDeleted ? ' line-through' : ''}`}
-          />
+        {/* Row 2: Date · Category · Asset · User */}
+        <div class="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-base-content/40">
+          <time
+            datetime={date.toISOString()}
+            class="whitespace-nowrap font-medium text-base-content/60"
+          >
+            {formattedDate}
+          </time>
+          <span aria-hidden="true">&middot;</span>
+          <span
+            class="font-semibold text-base-content/80 px-1.5 py-0.5 rounded text-xs"
+            style={categoryPillStyle}
+          >
+            {transaction?.category?.name}
+          </span>
+          {isDeleted && <span class="badge badge-ghost badge-sm text-xs">Deleted</span>}
+          <span class="inline-flex items-center gap-1 min-w-0">
+            <CreditCard size={10} class="stroke-current shrink-0" aria-hidden="true" />
+            <span class="truncate">{transaction?.asset?.name}</span>
+          </span>
+          {createdByName && (
+            <span class="inline-flex items-center gap-1 whitespace-nowrap min-w-0">
+              <span aria-hidden="true">&middot;</span>
+              <span class="truncate">{createdByName}</span>
+            </span>
+          )}
         </div>
       </div>
 
       {/* Desktop Layout (horizontal with inline buttons) - shown at sm and above */}
-      <div class="hidden sm:flex items-center gap-4 lg:gap-5">
+      <div class="hidden sm:flex items-center gap-3 lg:gap-4">
         {/* Date & User */}
         <div class="flex-shrink-0 w-20 lg:w-24 text-sm">
           <div class="font-medium">{formattedDate}</div>
           {createdByName && (
-            <div class="text-xs text-base-content/50 truncate mt-0.5">{createdByName}</div>
+            <div class="text-xs text-base-content/40 truncate mt-0.5">{createdByName}</div>
           )}
         </div>
 
         {/* Category & Description */}
-        <div class="flex-1 min-w-0 flex items-center gap-4">
+        <div class="flex-1 min-w-0 flex items-center gap-3">
           <CategoryIcon
             icon={categoryIcon}
             color={categoryColor}
@@ -259,14 +277,19 @@ const cardClasses = [
           <div class="min-w-0">
             <div
               class:list={[
-                'font-bold tracking-tight truncate text-base leading-none',
+                'font-bold tracking-tight truncate text-sm leading-none',
                 isDeleted && 'line-through',
               ]}
+              data-expandable-text
+              title={primaryText}
             >
               {primaryText}
             </div>
-            <div class="mt-2 flex flex-wrap items-center gap-2 leading-none">
-              <span class="text-xs font-bold tracking-widest uppercase text-base-content/60 bg-base-200 px-2 py-0.5 rounded">
+            <div class="mt-1.5 flex flex-wrap items-center gap-1.5 leading-none">
+              <span
+                class="text-xs font-semibold text-base-content/80 px-1.5 py-0.5 rounded"
+                style={categoryPillStyle}
+              >
                 {transaction?.category?.name}
               </span>
               {isDeleted && <span class="badge badge-ghost badge-sm text-xs">Deleted</span>}
@@ -276,14 +299,14 @@ const cardClasses = [
 
         {/* Asset */}
         <div class="flex-shrink-0">
-          <div class="flex items-center gap-1.5 text-xs uppercase tracking-widest text-base-content/60">
-            <CreditCard size={12} class="stroke-current" aria-hidden="true" />
+          <div class="flex items-center gap-1.5 text-[11px] uppercase tracking-widest text-base-content/40">
+            <CreditCard size={11} class="stroke-current" aria-hidden="true" />
             <span>{transaction?.asset?.name}</span>
           </div>
         </div>
 
         {/* Amount */}
-        <div class="flex-shrink-0 text-right">
+        <div class="flex-shrink-0 text-right min-w-[100px]">
           <Currency
             amount={amount}
             currency={transaction?.currency || 'IDR'}
@@ -356,9 +379,17 @@ const cardClasses = [
 }
 
 <script>
-  // Initialize shared history toggle (document-level delegation, runs once)
   import { initTransactionHistory } from './TransactionHistory.client';
+  import {
+    initExpandableText,
+    markTruncated,
+    observeExpandableContainers,
+  } from './ExpandableText.client';
+
   initTransactionHistory();
+  initExpandableText();
+  markTruncated();
+  observeExpandableContainers();
 
   // Keyboard navigation for dropdown menus (mobile)
   document.querySelectorAll('[data-transaction-card] .dropdown').forEach((dropdown) => {

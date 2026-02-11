@@ -10,6 +10,7 @@ export const users = pgTable('users', {
   password_hash: text('password_hash').notNull(),
   name: text('name').notNull(),
   role: text('role', { enum: ['admin', 'member'] }).notNull(),
+  email_verified_at: timestamp('email_verified_at'),
   deleted_at: timestamp('deleted_at'),
   created_at: timestamp('created_at').defaultNow().notNull(),
   updated_at: timestamp('updated_at').defaultNow().notNull(),

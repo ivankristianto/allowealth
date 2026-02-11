@@ -146,7 +146,9 @@ export interface DashboardData {
  * Dashboard data aggregation service
  */
 export class DashboardService {
-  private schema = getActiveSchema();
+  private get schema() {
+    return getActiveSchema();
+  }
 
   /**
    * Create a new DashboardService with database injection
@@ -361,7 +363,7 @@ export class DashboardService {
         trackQuery('DashboardService.getBudgetTotal', perf, async () =>
           (this.db as any)
             .select({
-              total: sql<string>`COALESCE(SUM(CAST(${this.schema.budgets.budget_amount} AS REAL)), 0)`,
+              total: sql<string>`COALESCE(SUM(CAST(${this.schema.budgets.budget_amount} AS NUMERIC)), 0)`,
             })
             .from(this.schema.budgets)
             .innerJoin(
@@ -384,8 +386,8 @@ export class DashboardService {
         trackQuery('DashboardService.getSpentIncome', perf, async () =>
           (this.db as any)
             .select({
-              spent: sql<string>`COALESCE(SUM(CASE WHEN ${this.schema.transactions.type} = 'expense' THEN CAST(${this.schema.transactions.amount} AS REAL) ELSE 0 END), 0)`,
-              income: sql<string>`COALESCE(SUM(CASE WHEN ${this.schema.transactions.type} = 'income' THEN CAST(${this.schema.transactions.amount} AS REAL) ELSE 0 END), 0)`,
+              spent: sql<string>`COALESCE(SUM(CASE WHEN ${this.schema.transactions.type} = 'expense' THEN CAST(${this.schema.transactions.amount} AS NUMERIC) ELSE 0 END), 0)`,
+              income: sql<string>`COALESCE(SUM(CASE WHEN ${this.schema.transactions.type} = 'income' THEN CAST(${this.schema.transactions.amount} AS NUMERIC) ELSE 0 END), 0)`,
             })
             .from(this.schema.transactions)
             .where(
@@ -406,7 +408,7 @@ export class DashboardService {
               category_id: this.schema.transactions.category_id,
               category_name: this.schema.categories.name,
               category_color: this.schema.categories.color,
-              total: sql<string>`COALESCE(SUM(CAST(${this.schema.transactions.amount} AS REAL)), 0)`,
+              total: sql<string>`COALESCE(SUM(CAST(${this.schema.transactions.amount} AS NUMERIC)), 0)`,
             })
             .from(this.schema.transactions)
             .innerJoin(
@@ -428,7 +430,7 @@ export class DashboardService {
               this.schema.categories.name,
               this.schema.categories.color
             )
-            .orderBy(sql`SUM(CAST(${this.schema.transactions.amount} AS REAL)) DESC`)
+            .orderBy(sql`SUM(CAST(${this.schema.transactions.amount} AS NUMERIC)) DESC`)
         ),
       ]);
 
@@ -523,7 +525,7 @@ export class DashboardService {
           (this.db as any)
             .select({
               category_id: this.schema.transactions.category_id,
-              total: sql<string>`COALESCE(SUM(CAST(${this.schema.transactions.amount} AS REAL)), 0)`,
+              total: sql<string>`COALESCE(SUM(CAST(${this.schema.transactions.amount} AS NUMERIC)), 0)`,
             })
             .from(this.schema.transactions)
             .where(

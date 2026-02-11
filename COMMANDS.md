@@ -157,6 +157,17 @@ bun run cli:rotate-db-password -- --ask
 bun run cli:rotate-db-password -- --ask --hyperdrive
 ```
 
+### Email Verification
+
+```bash
+# Backfill existing users as verified (run once after deployment)
+bun run backfill:email-verification           # Local/dev
+bun run backfill:email-verification:prod      # Production
+```
+
+Marks all existing users' emails as verified and activates all workspaces.
+Run this once after deploying the email verification feature.
+
 ## MCP Server
 
 | Command                  | Description                                   |

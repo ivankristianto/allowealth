@@ -1,6 +1,7 @@
 import type { APIContext } from 'astro';
 import { z } from 'zod';
 import { auth } from '@/lib/auth/lucia';
+import { PAGINATION } from '@/lib/constants/pagination';
 
 /**
  * Standard API response format
@@ -287,7 +288,7 @@ export function getQueryParams(url: URL): Record<string, string> {
  * Internal requests (with _internal=true) are capped at 10000 for caching purposes.
  */
 export function getPaginationParams(url: URL): { limit: number; offset: number } {
-  const limit = parseInt(url.searchParams.get('limit') || '50', 10);
+  const limit = parseInt(url.searchParams.get('limit') || String(PAGINATION.DEFAULT_PAGE_SIZE), 10);
   const offset = parseInt(url.searchParams.get('offset') || '0', 10);
   const isInternal = url.searchParams.get('_internal') === 'true';
 

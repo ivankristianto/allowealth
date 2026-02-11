@@ -7,9 +7,9 @@ import {
 } from '@/lib/formatting';
 
 describe('currency formatting', () => {
-  it('formats IDR with dot thousands and no decimals', () => {
-    expect(formatCurrency(150000, 'IDR')).toBe('Rp150.000');
-    expect(formatCurrency('150000', 'IDR')).toBe('Rp150.000');
+  it('formats IDR with dot thousands and 2 decimals', () => {
+    expect(formatCurrency(150000, 'IDR')).toBe('Rp150.000,00');
+    expect(formatCurrency('150000', 'IDR')).toBe('Rp150.000,00');
   });
 
   it('formats USD with comma thousands and 2 decimals', () => {
@@ -18,7 +18,7 @@ describe('currency formatting', () => {
   });
 
   it('places negative sign before symbol', () => {
-    expect(formatCurrency(-150000, 'IDR')).toBe('-Rp150.000');
+    expect(formatCurrency(-150000, 'IDR')).toBe('-Rp150.000,00');
     expect(formatCurrency(-2500, 'USD')).toBe('-$2,500.00');
   });
 
@@ -35,12 +35,12 @@ describe('currency formatting', () => {
   });
 
   it('handles invalid numeric inputs as zero', () => {
-    expect(formatCurrency(Number.NaN, 'IDR')).toBe('Rp0');
+    expect(formatCurrency(Number.NaN, 'IDR')).toBe('Rp0,00');
     expect(formatCurrency(Number.POSITIVE_INFINITY, 'USD')).toBe('$0.00');
   });
 
   it('falls back to default currency on invalid codes', () => {
-    expect(formatCurrency(1000, 'EUR' as unknown as 'IDR')).toBe('Rp1.000');
+    expect(formatCurrency(1000, 'EUR' as unknown as 'IDR')).toBe('Rp1.000,00');
   });
 });
 

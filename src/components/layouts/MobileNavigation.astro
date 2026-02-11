@@ -5,14 +5,14 @@
  * Fixed bottom navigation bar for mobile viewports with:
  * - 5-slot layout: Activity, Assets, FAB center, Budgets, Reports
  * - Glass effect background with backdrop blur
- * - Elevated center FAB button for Dashboard
+ * - Elevated center FAB button for Quick-Add Transaction
  * - Active state styling with accent color
  *
  * @design-system Oasis Finance v1.0.0
  * @see specs/ui-redesign_implementation_plan.md Task 5
  */
 
-import { Receipt, Wallet, LayoutGrid, Donut, ChartBar } from '@lucide/astro';
+import { Receipt, Wallet, Plus, Donut, ChartBar } from '@lucide/astro';
 
 interface Props {
   currentPath?: string;
@@ -39,8 +39,6 @@ const isActive = (href: string) => {
   if (href === '/dashboard' && (currentPath === '/' || currentPath === '/dashboard')) return true;
   return currentPath.startsWith(href + '/');
 };
-
-const isDashboardActive = currentPath === '/' || currentPath === '/dashboard';
 ---
 
 <nav
@@ -91,24 +89,20 @@ const isDashboardActive = currentPath === '/' || currentPath === '/dashboard';
       })
     }
 
-    <!-- Center FAB (Dashboard) -->
+    <!-- Center FAB (New Transaction) -->
     <div class="flex-1 flex justify-center -mt-10 pointer-events-none">
-      <a
-        href="/dashboard"
-        class={`group mobile-fab w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-200 pointer-events-auto ring-8 ring-base-100 shadow-2xl min-w-[64px] min-h-[64px] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-accent focus-visible:ring-offset-4 hover:scale-110 hover:-translate-y-1 active:scale-95 ${
-          isDashboardActive
-            ? 'bg-accent text-accent-content shadow-accent/40 hover:shadow-accent/60'
-            : 'bg-primary text-primary-content hover:shadow-primary/40'
-        }`}
-        aria-label="Dashboard"
-        aria-current={isDashboardActive ? 'page' : undefined}
+      <button
+        type="button"
+        data-open-transaction-drawer
+        class="group mobile-fab w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-200 pointer-events-auto ring-8 ring-base-100 shadow-2xl min-w-[64px] min-h-[64px] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-accent focus-visible:ring-offset-4 hover:scale-110 hover:-translate-y-1 active:scale-95 bg-accent text-accent-content shadow-accent/40 hover:shadow-accent/60"
+        aria-label="New Transaction"
       >
-        <LayoutGrid
+        <Plus
           size={28}
           class="stroke-current transition-transform duration-200 group-hover:rotate-12"
           aria-hidden="true"
         />
-      </a>
+      </button>
     </div>
 
     <!-- Right nav items (Budgets, Reports) -->

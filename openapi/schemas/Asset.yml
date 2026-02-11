@@ -4,7 +4,6 @@ Asset:
   properties:
     id:
       type: string
-      format: uuid
     name:
       type: string
     type:
@@ -19,6 +18,19 @@ Asset:
     currency:
       type: string
       enum: [IDR, USD]
+    status:
+      type: string
+      enum: [active, closed]
+      description: Asset lifecycle status
+    closed_at:
+      type: string
+      format: date-time
+      nullable: true
+      description: Timestamp when the account was closed
+    closed_by_user_id:
+      type: string
+      nullable: true
+      description: ID of the user who closed the account
     last_updated:
       type: string
       format: date-time

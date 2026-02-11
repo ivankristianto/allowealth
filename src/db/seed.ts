@@ -165,7 +165,11 @@ const CATEGORY_STYLES: Record<string, { icon: string; color: string; description
     description: 'Restaurant meals and takeout orders',
   },
   'Work Support': { icon: 'briefcase', color: 'bg-neutral', description: 'Work-related expenses' },
-  'Pocket Money': { icon: 'wallet', color: 'bg-secondary' }, // No description for variety
+  'Pocket Money': {
+    icon: 'wallet',
+    color: 'bg-secondary',
+    description: 'Personal spending money and small allowances',
+  },
   'Kids Expenses': {
     icon: 'user',
     color: 'bg-secondary',
@@ -176,7 +180,11 @@ const CATEGORY_STYLES: Record<string, { icon: string; color: string; description
     color: 'bg-info',
     description: 'Electricity, water, internet, and phone bills',
   },
-  'Misc. Cost': { icon: 'package', color: 'bg-neutral' }, // No description
+  'Misc. Cost': {
+    icon: 'package',
+    color: 'bg-neutral',
+    description: 'Miscellaneous and uncategorized expenses',
+  },
   Entertainment: {
     icon: 'smile',
     color: 'bg-secondary',
@@ -197,7 +205,11 @@ const CATEGORY_STYLES: Record<string, { icon: string; color: string; description
     color: 'bg-error',
     description: 'Monthly mortgage or loan payments',
   },
-  'House Expenses': { icon: 'shopping-cart', color: 'bg-success' }, // No description
+  'House Expenses': {
+    icon: 'shopping-cart',
+    color: 'bg-success',
+    description: 'General household supplies and maintenance costs',
+  },
   'House Renovation': {
     icon: 'hammer',
     color: 'bg-warning',
@@ -217,7 +229,11 @@ const CATEGORY_STYLES: Record<string, { icon: string; color: string; description
     description: 'Income from freelance or side projects',
   },
   Dividend: { icon: 'banknote', color: 'bg-success', description: 'Investment dividend payments' },
-  'Other Income': { icon: 'circle-dot', color: 'bg-primary' }, // No description
+  'Other Income': {
+    icon: 'circle-dot',
+    color: 'bg-primary',
+    description: 'Miscellaneous income from various sources',
+  },
 };
 
 // Expense categories with their budgets
@@ -630,6 +646,7 @@ async function seedWorkspace(): Promise<string> {
   await db.insert(workspaces).values({
     id: workspaceId,
     name: 'Demo Family',
+    status: 'active',
     created_at: now,
     updated_at: now,
   });
@@ -688,6 +705,7 @@ async function seedUsers(
     password_hash: adminPasswordHash,
     name: DEMO_ADMIN.name,
     role: DEMO_ADMIN.role,
+    email_verified_at: now,
     created_at: now,
     updated_at: now,
   });
@@ -723,6 +741,7 @@ async function seedUsers(
     password_hash: memberPasswordHash,
     name: DEMO_MEMBER.name,
     role: DEMO_MEMBER.role,
+    email_verified_at: now,
     created_at: now,
     updated_at: now,
   });
@@ -1167,6 +1186,30 @@ async function seedAssets(
     });
     assetMap.set(asset.name, id);
   }
+
+  // Add a closed test account for testing the closed accounts page
+  const closedId = nanoid();
+  const closedCategoryId = assetCategoryMap.get('bank_account') || null;
+  const closedAt = daysAgo(30);
+  await db.insert(assets).values({
+    id: closedId,
+    workspace_id: workspaceId,
+    created_by_user_id: userId,
+    name: 'Old Savings (Closed)',
+    type: 'bank_account',
+    category_id: closedCategoryId,
+    balance: '0',
+    initial_balance: '0',
+    currency: 'IDR',
+    is_cash_account: false,
+    status: 'closed',
+    closed_at: closedAt,
+    closed_by_user_id: userId,
+    last_updated: closedAt,
+    created_at: daysAgo(180),
+    updated_at: closedAt,
+  });
+  assetMap.set('Old Savings (Closed)', closedId);
 
   console.log(`✓ Created ${assetMap.size} assets`);
   return assetMap;

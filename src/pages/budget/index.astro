@@ -11,6 +11,7 @@
 
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import BudgetPageHeader from '@components/organisms/BudgetPageHeader.astro';
+import BudgetActions from '@components/molecules/BudgetActions.astro';
 import SetNewBudgetModal from '@components/organisms/SetNewBudgetModal.astro';
 import CopyBudgetModal from '@components/organisms/CopyBudgetModal.astro';
 import BudgetImportModal from '@components/organisms/BudgetImportModal.astro';
@@ -181,6 +182,14 @@ const generateAdviceData = (): AdviceData | null => {
   const warningCategories = alerts.filter((a) => a.status === 'warning');
 
   if (exceededCategories.length > 0) {
+    // Sort by worst overspend first (highest spent/budget ratio)
+    exceededCategories.sort((a, b) => {
+      const ratioA =
+        Number(a.budget_amount) > 0 ? Number(a.spent_amount) / Number(a.budget_amount) : 0;
+      const ratioB =
+        Number(b.budget_amount) > 0 ? Number(b.spent_amount) / Number(b.budget_amount) : 0;
+      return ratioB - ratioA;
+    });
     const category = exceededCategories[0];
     const overage = formatCurrency(category.overage, selectedCurrency);
     return {
@@ -191,9 +200,17 @@ const generateAdviceData = (): AdviceData | null => {
   }
 
   if (warningCategories.length > 0) {
+    // Sort by closest to exceeding first (highest percentage used)
+    warningCategories.sort((a, b) => {
+      const ratioA =
+        Number(a.budget_amount) > 0 ? Number(a.spent_amount) / Number(a.budget_amount) : 0;
+      const ratioB =
+        Number(b.budget_amount) > 0 ? Number(b.spent_amount) / Number(b.budget_amount) : 0;
+      return ratioB - ratioA;
+    });
     const category = warningCategories[0];
-    const budgetAmount = parseFloat(category.budget_amount);
-    const spentAmount = parseFloat(category.spent_amount);
+    const budgetAmount = Number(category.budget_amount);
+    const spentAmount = Number(category.spent_amount);
     const percentageUsed = budgetAmount > 0 ? Math.round((spentAmount / budgetAmount) * 100) : 0;
     const remaining = budgetAmount - spentAmount;
     const remainingFormatted = formatCurrency(Math.max(0, remaining), selectedCurrency);
@@ -245,8 +262,7 @@ const expenseCategoriesWithBudgets = expenseCategories.map((cat) => ({
 const uninitializedCategories = expenseCategories.filter((cat) => !budgetIdsByCategory.has(cat.id));
 
 // Count budgets with actual limits set
-const budgetCount =
-  budgetData?.categories.filter((c) => parseFloat(c.budget_amount) > 0).length || 0;
+const budgetCount = budgetData?.categories.filter((c) => Number(c.budget_amount) > 0).length || 0;
 ---
 
 <ProtectedLayout
@@ -272,9 +288,7 @@ const budgetCount =
       prevMonthUrl={buildMonthUrl(prevMonthYear, prevMonth)}
       nextMonthUrl={allowNextMonthNavigation ? buildMonthUrl(nextMonthYear, nextMonth) : undefined}
       isNextDisabled={!allowNextMonthNavigation}
-      showAiRebalancer={budgetCount > 0}
       showCopyButton={budgetCount > 0}
-      uninitializedCount={uninitializedCategories.length}
       currentMonthResetUrl={!isViewingCurrentMonth
         ? buildMonthUrl(currentYear, currentMonth)
         : undefined}
@@ -293,13 +307,19 @@ const budgetCount =
           <div id="budget-summary-container" data-testid="budget-summary-container">
             {budgetData && (
               <BudgetSummaryPartial
-                totalAllocated={parseFloat(budgetData.total_budget || '0')}
-                totalSpent={parseFloat(budgetData.total_spent || '0')}
+                totalAllocated={Number(budgetData.total_budget || '0')}
+                totalSpent={Number(budgetData.total_spent || '0')}
                 distribution={allocationDistribution}
                 currency={selectedCurrency}
               />
             )}
           </div>
+
+          {/* Budget Actions Bar */}
+          <BudgetActions
+            showAiRebalancer={budgetCount > 0}
+            uninitializedCount={uninitializedCategories.length}
+          />
 
           {/* Budget Filter and View Toggle */}
           {budgetData && budgetData.categories.length > 0 && (

@@ -18,11 +18,19 @@ export interface BudgetStatusSummary {
 }
 
 export function getBudgetStatus(percentage: number): BudgetStatusSummary {
-  if (percentage >= 100) {
+  if (percentage > 100) {
     return {
       status: 'danger',
       badgeVariant: 'exceeded',
       label: 'Over Budget',
+    };
+  }
+
+  if (percentage === 100) {
+    return {
+      status: 'warning',
+      badgeVariant: 'review',
+      label: 'On Budget',
     };
   }
 

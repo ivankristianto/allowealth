@@ -3,8 +3,7 @@
  * BudgetPageHeader Component
  *
  * Header section for the Budget page with title, month navigation,
- * and action buttons row.
- * Part of the premium Budget page redesign (Task 16).
+ * and History/Copy action buttons.
  *
  * @param {string} title - Main heading (default: "Family Spending Targets")
  * @param {string} subtitle - Description text
@@ -13,15 +12,11 @@
  * @param {string} prevMonthUrl - URL for previous month navigation
  * @param {string} nextMonthUrl - URL for next month navigation
  * @param {boolean} isNextDisabled - Disable next month button (future months)
- * @param {boolean} showAiRebalancer - Show AI Rebalancer button
  * @param {boolean} showCopyButton - Show Copy to Next Month button
- * @param {number} uninitializedCount - Number of categories without budgets
  * @param {string} className - Additional CSS classes
  */
 
 import { ChevronLeft, ChevronRight, CalendarDays, History, Copy } from '@lucide/astro';
-
-import BudgetActions from '@components/molecules/BudgetActions.astro';
 
 export interface Props {
   title?: string;
@@ -31,9 +26,7 @@ export interface Props {
   prevMonthUrl: string;
   nextMonthUrl?: string;
   isNextDisabled?: boolean;
-  showAiRebalancer?: boolean;
   showCopyButton?: boolean;
-  uninitializedCount?: number;
   currentMonthResetUrl?: string;
   className?: string;
 }
@@ -46,9 +39,7 @@ const {
   prevMonthUrl,
   nextMonthUrl,
   isNextDisabled = false,
-  showAiRebalancer = true,
   showCopyButton = false,
-  uninitializedCount = 0,
   currentMonthResetUrl,
   className = '',
 } = Astro.props;
@@ -83,7 +74,7 @@ const headerClasses = ['flex flex-col gap-4', className].filter(Boolean).join(' 
           data-testid="budget-history-btn"
         >
           <History size={16} class="stroke-current" aria-hidden="true" />
-          <span class="hidden md:inline text-xs">History</span>
+          <span class="text-xs">History</span>
         </a>
       </div>
 
@@ -100,7 +91,7 @@ const headerClasses = ['flex flex-col gap-4', className].filter(Boolean).join(' 
               data-testid="budget-copy-btn"
             >
               <Copy size={16} class="stroke-current" aria-hidden="true" />
-              <span class="hidden md:inline text-xs">Copy</span>
+              <span class="text-xs">Copy</span>
             </button>
           </div>
         )
@@ -163,9 +154,6 @@ const headerClasses = ['flex flex-col gap-4', className].filter(Boolean).join(' 
       }
     </div>
   </div>
-
-  {/* Second row: Action buttons */}
-  <BudgetActions showAiRebalancer={showAiRebalancer} uninitializedCount={uninitializedCount} />
 </header>
 
 <script>

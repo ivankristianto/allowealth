@@ -10,16 +10,22 @@
  * @param {string} className - Additional CSS classes
  */
 
-import { Plus, Settings, ArrowRightLeft } from '@lucide/astro';
+import { Plus, Settings, ArrowRightLeft, Archive } from '@lucide/astro';
 import ActionBar from '@components/molecules/ActionBar.astro';
 
 export interface Props {
   isHistoricalView?: boolean;
   defaultCategoryId?: string;
+  closedCount?: number;
   className?: string;
 }
 
-const { isHistoricalView = false, defaultCategoryId = '', className = '' } = Astro.props;
+const {
+  isHistoricalView = false,
+  defaultCategoryId = '',
+  closedCount = 0,
+  className = '',
+} = Astro.props;
 
 const ghostBtn =
   'btn btn-ghost btn-sm md:btn-md min-h-[44px] min-w-[44px] gap-1 md:gap-2 rounded-lg md:rounded-xl text-base-content/70 hover:text-base-content hover:bg-base-200 px-2 md:px-4';
@@ -39,7 +45,7 @@ const accentGhostBtn =
     >
       <Settings size={16} class="stroke-current md:hidden" aria-hidden="true" />
       <Settings size={18} class="stroke-current hidden md:block" aria-hidden="true" />
-      <span class="hidden md:inline">Categories</span>
+      <span class="text-xs md:text-sm">Categories</span>
     </a>
   </div>
 
@@ -56,8 +62,30 @@ const accentGhostBtn =
         >
           <ArrowRightLeft size={16} class="stroke-current md:hidden" aria-hidden="true" />
           <ArrowRightLeft size={18} class="stroke-current hidden md:block" aria-hidden="true" />
-          <span class="hidden md:inline">Transfer</span>
+          <span class="text-xs md:text-sm">Transfer</span>
         </button>
+      </div>
+    )
+  }
+
+  {/* View Closed Accounts */}
+  {
+    closedCount > 0 && (
+      <div
+        class="tooltip tooltip-bottom"
+        data-tip={`View ${closedCount} closed account${closedCount !== 1 ? 's' : ''}`}
+      >
+        <a
+          href="/assets/closed"
+          class={ghostBtn}
+          aria-label={`View ${closedCount} closed account${closedCount !== 1 ? 's' : ''}`}
+          data-testid="view-closed-accounts-btn"
+        >
+          <Archive size={16} class="stroke-current md:hidden" aria-hidden="true" />
+          <Archive size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+          <span class="text-xs md:text-sm">Closed</span>
+          <span class="badge badge-xs badge-ghost">{closedCount}</span>
+        </a>
       </div>
     )
   }

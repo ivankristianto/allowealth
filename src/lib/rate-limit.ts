@@ -225,6 +225,54 @@ export function checkRateLimit(
 }
 
 /**
+ * Check rate limit using a custom key (e.g., email address)
+ *
+ * @param key - Custom rate limit key (e.g., "resend:user@example.com")
+ * @param config - Rate limit configuration
+ * @returns Rate limit result
+ */
+export function checkRateLimitByKey(key: string, config: RateLimitConfig): RateLimitResult {
+  const { maxRequests, windowMs } = config;
+  const now = Date.now();
+
+  if (rateLimitStore.size >= MAX_STORE_ENTRIES && !rateLimitStore.has(key)) {
+    const oldestKey = rateLimitStore.keys().next().value;
+    if (oldestKey) {
+      rateLimitStore.delete(oldestKey);
+    }
+  }
+
+  const timestamps = rateLimitStore.get(key) || [];
+  const windowStart = now - windowMs;
+  const validTimestamps = timestamps.filter((ts) => ts > windowStart);
+
+  const oldestTimestamp = validTimestamps[0] || now;
+  const resetTime = Math.floor((oldestTimestamp + windowMs) / 1000);
+  const retryAfter = Math.max(0, Math.ceil((oldestTimestamp + windowMs - now) / 1000));
+
+  if (validTimestamps.length < maxRequests) {
+    validTimestamps.push(now);
+    rateLimitStore.set(key, validTimestamps);
+
+    return {
+      allowed: true,
+      remaining: maxRequests - validTimestamps.length,
+      limit: maxRequests,
+      resetTime,
+      retryAfter: 0,
+    };
+  }
+
+  return {
+    allowed: false,
+    remaining: 0,
+    limit: maxRequests,
+    resetTime,
+    retryAfter,
+  };
+}
+
+/**
  * Apply rate limit headers to a response
  *
  * @param response - The response to add headers to
@@ -325,6 +373,26 @@ export const RATE_LIMIT_PRESETS = {
   } satisfies RateLimitConfig,
 
   /**
+   * Rate limit for resend verification email
+   * 3 requests per hour per IP
+   */
+  resendVerification: {
+    maxRequests: 3,
+    windowMs: 60 * 60 * 1000, // 1 hour
+    message: 'Too many verification email requests. Please try again later.',
+  } satisfies RateLimitConfig,
+
+  /**
+   * Per-email rate limit for resend verification
+   * 3 requests per hour per email address
+   */
+  resendVerificationPerEmail: {
+    maxRequests: 3,
+    windowMs: 60 * 60 * 1000, // 1 hour
+    message: 'Too many verification email requests for this address. Please try again later.',
+  } satisfies RateLimitConfig,
+
+  /**
    * Standard API rate limit
    * 100 requests per minute per IP
    */
@@ -336,6 +404,6 @@ export const RATE_LIMIT_PRESETS = {
 } as const;
 
 // Start cleanup on module load (for long-running servers)
-if (typeof globalThis !== 'undefined' && !import.meta.env?.TEST) {
+if (typeof globalThis !== 'undefined' && import.meta.env?.MODE !== 'test') {
   startCleanup();
 }

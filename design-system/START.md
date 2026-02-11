@@ -64,7 +64,7 @@ import { X, Plus, Edit, Trash2 } from '@lucide/astro';
 ### Import Animations
 
 ```typescript
-import { animate } from 'motion';
+import { animate } from 'motion/mini';
 ```
 
 ### Chart Setup
@@ -282,7 +282,7 @@ import { X, Plus, Edit, Trash2, Check, TriangleAlert } from '@lucide/astro';
 ```astro
 ---
 // In client-side script
-import { animate } from 'motion';
+import { animate } from 'motion/mini';
 ---
 
 <script>

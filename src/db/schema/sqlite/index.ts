@@ -6,6 +6,7 @@ export * from './users';
 export * from './user-meta';
 export * from './sessions';
 export * from './password-reset-tokens';
+export * from './email-verification-tokens';
 export * from './categories';
 export * from './asset-categories';
 export * from './transactions';

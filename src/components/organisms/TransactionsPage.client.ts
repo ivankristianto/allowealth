@@ -218,26 +218,47 @@ async function fetchAndRender(): Promise<void> {
 }
 
 /**
+ * Sync pagination state from the DOM data attributes after HTML replacement.
+ * The PaginationPartial renders data-total, data-page-size, and data-current-page
+ * on the container element which we use to keep the store in sync.
+ */
+function syncPaginationStateFromDOM(): void {
+  const container = document.getElementById('pagination-container');
+  if (!container) return;
+
+  const total = parseInt(container.dataset.total || '0', 10);
+  const pageSize = parseInt(container.dataset.pageSize || '50', 10);
+  const currentPage = parseInt(container.dataset.currentPage || '1', 10);
+  const totalPages = pageSize > 0 ? Math.ceil(total / pageSize) : 0;
+
+  transactionsDataStore.setKey('pagination', {
+    total,
+    limit: pageSize,
+    offset: (currentPage - 1) * pageSize,
+    page: currentPage,
+    totalPages,
+  });
+}
+
+/**
  * Re-attach pagination event listeners after HTML replacement
  */
 function reattachPaginationListeners(): void {
+  // Sync store pagination state from the freshly rendered DOM
+  syncPaginationStateFromDOM();
+
   const prevBtn = document.querySelector('[data-pagination-prev]');
   const nextBtn = document.querySelector('[data-pagination-next]');
 
   if (prevBtn) {
-    // Remove old listener by cloning
-    const newPrevBtn = prevBtn.cloneNode(true);
-    prevBtn.parentNode?.replaceChild(newPrevBtn, prevBtn);
-    newPrevBtn.addEventListener('click', () => {
+    prevBtn.addEventListener('click', () => {
       const page = transactionFiltersStore.get().page;
       handlePageChange(page - 1);
     });
   }
 
   if (nextBtn) {
-    const newNextBtn = nextBtn.cloneNode(true);
-    nextBtn.parentNode?.replaceChild(newNextBtn, nextBtn);
-    newNextBtn.addEventListener('click', () => {
+    nextBtn.addEventListener('click', () => {
       const page = transactionFiltersStore.get().page;
       handlePageChange(page + 1);
     });
@@ -675,8 +696,18 @@ function setupEventListeners(): void {
     if (resetBtn) {
       e.preventDefault();
 
-      // Get current month from the button's data attribute
-      const currentMonth = resetBtn.dataset.currentMonth || '';
+      // Get current month from the button's data attribute, with fallback to SSR data
+      const ssrContainer = document.getElementById('transactions-page');
+      const ssrDataAttr = ssrContainer?.dataset.ssrData;
+      let fallbackMonth = '';
+      if (ssrDataAttr) {
+        try {
+          fallbackMonth = JSON.parse(ssrDataAttr).currentMonth || '';
+        } catch {
+          // ignore parse errors
+        }
+      }
+      const currentMonth = resetBtn.dataset.currentMonth || fallbackMonth;
 
       transactionFiltersStore.set({
         type: 'expense',
@@ -714,6 +745,14 @@ function setupEventListeners(): void {
       updateUrl();
       fetchAndRender();
     }
+  });
+
+  // Refresh list when transactions are added/edited in the drawer
+  document.addEventListener('transactions-changed', () => {
+    invalidateAllCache();
+    transactionFiltersStore.setKey('page', 1);
+    updateUrl();
+    fetchAndRender();
   });
 
   // Browser back/forward

@@ -159,7 +159,7 @@ Simple functions that inject HTML and handle animations.
 **Example: `src/components/organisms/MyRenderer.client.ts`**
 
 ```typescript
-import { animate } from 'motion';
+import { animate } from 'motion/mini';
 
 export function renderListHtml(html: string): void {
   const container = document.getElementById('list-container');

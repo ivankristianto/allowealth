@@ -64,7 +64,12 @@ export function getEnv(key: string): string | undefined {
   }
 
   // Fall back to import.meta.env (build-time vars from Vite)
-  return (import.meta.env as Record<string, string | undefined>)[key];
+  // Guard: import.meta.env is undefined in CJS contexts (e.g., drizzle-kit)
+  if (typeof import.meta !== 'undefined' && import.meta.env) {
+    return (import.meta.env as Record<string, string | undefined>)[key];
+  }
+
+  return undefined;
 }
 
 /**

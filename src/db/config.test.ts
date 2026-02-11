@@ -95,12 +95,19 @@ describe('getDatabaseConfig', () => {
 });
 
 describe('Hyperdrive detection', () => {
+  const originalEnv = process.env.DATABASE_URL;
+
   beforeEach(() => {
     delete process.env.DATABASE_URL;
   });
 
   afterEach(() => {
     setTestEnv(null);
+    if (originalEnv !== undefined) {
+      process.env.DATABASE_URL = originalEnv;
+    } else {
+      delete process.env.DATABASE_URL;
+    }
   });
 
   test('detects Hyperdrive when HYPERDRIVE_ENABLED is set', () => {

@@ -27,8 +27,9 @@ export interface Props {
 
 const { history, currency, currentMonth, currentYear } = Astro.props;
 
-// Check if month has data (budget > 0)
-const hasData = (budgetAmount: number): boolean => budgetAmount > 0;
+// Check if month has data (budget > 0 or spending > 0)
+const hasData = (budgetAmount: number, spentAmount: number): boolean =>
+  budgetAmount > 0 || spentAmount > 0;
 
 const getChangeIndicator = (
   current: number,
@@ -77,7 +78,7 @@ const sortedHistory = [...history].sort((a, b) => {
         const balance = parseFloat(monthData.total_balance);
         const percentageUsed = monthData.percentage_used;
         const budgetStatus = getBudgetStatus(percentageUsed);
-        const monthHasData = hasData(budgetAmount);
+        const monthHasData = hasData(budgetAmount, spentAmount);
 
         // Get previous month for comparison
         const previousMonth = sortedHistory[index + 1];
@@ -93,7 +94,7 @@ const sortedHistory = [...history].sort((a, b) => {
         return (
           <div class="group hover:bg-base-200/30 transition-colors" data-history-row>
             {/* Mobile View - Card Layout */}
-            <div class="md:hidden p-6 space-y-4">
+            <div class="lg:hidden p-6 space-y-4">
               <div class="flex items-center justify-between">
                 <div class="flex items-center gap-3">
                   <span class="text-base font-bold">{monthData.month_name}</span>
@@ -192,20 +193,20 @@ const sortedHistory = [...history].sort((a, b) => {
             </div>
 
             {/* Desktop View - Table Row */}
-            <div class="hidden md:grid grid-cols-7 items-center">
-              <div class="px-8 py-8">
-                <div class="flex items-center gap-3">
-                  <span class="text-base font-bold">{monthData.month_name}</span>
+            <div class="hidden lg:grid grid-cols-7 items-center">
+              <div class="px-4 xl:px-8 py-5 xl:py-6">
+                <div class="flex items-center gap-2 xl:gap-3">
+                  <span class="text-sm xl:text-base font-bold">{monthData.month_name}</span>
                   <span class="text-xs font-medium text-base-content/40">{monthData.year}</span>
                   {isCurrentMonth && (
-                    <span class="bg-primary text-primary-content text-xs px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
+                    <span class="bg-primary text-primary-content text-xs px-1.5 xl:px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
                       Current
                     </span>
                   )}
                 </div>
               </div>
 
-              <div class="px-8 py-8 text-right">
+              <div class="px-4 xl:px-8 py-5 xl:py-6 text-right">
                 {monthHasData ? (
                   <span class="text-sm font-bold">{formatCurrency(budgetAmount, currency)}</span>
                 ) : (
@@ -213,7 +214,7 @@ const sortedHistory = [...history].sort((a, b) => {
                 )}
               </div>
 
-              <div class="px-8 py-8 text-right">
+              <div class="px-4 xl:px-8 py-5 xl:py-6 text-right">
                 {monthHasData ? (
                   <span class="text-sm font-bold">{formatCurrency(spentAmount, currency)}</span>
                 ) : (
@@ -221,7 +222,7 @@ const sortedHistory = [...history].sort((a, b) => {
                 )}
               </div>
 
-              <div class="px-8 py-8 text-right">
+              <div class="px-4 xl:px-8 py-5 xl:py-6 text-right">
                 {monthHasData ? (
                   <span class={`text-sm font-bold ${balance >= 0 ? 'text-success' : 'text-error'}`}>
                     {formatCurrencyCompact(balance, currency)}
@@ -231,7 +232,7 @@ const sortedHistory = [...history].sort((a, b) => {
                 )}
               </div>
 
-              <div class="px-8 py-8 text-center">
+              <div class="px-4 xl:px-8 py-5 xl:py-6 text-center">
                 {monthHasData ? (
                   <div class="inline-flex flex-col items-center">
                     <Badge
@@ -261,7 +262,7 @@ const sortedHistory = [...history].sort((a, b) => {
                 )}
               </div>
 
-              <div class="px-8 py-8 text-right">
+              <div class="px-4 xl:px-8 py-5 xl:py-6 text-right">
                 {monthHasData ? (
                   <span class={`text-sm ${changeIndicator.class}`}>{changeIndicator.value}</span>
                 ) : (
@@ -269,7 +270,7 @@ const sortedHistory = [...history].sort((a, b) => {
                 )}
               </div>
 
-              <div class="px-8 py-8 text-center">
+              <div class="px-4 xl:px-8 py-5 xl:py-6 text-center">
                 <a
                   href={budgetUrl}
                   class="btn btn-ghost btn-sm btn-square hover:bg-base-200"

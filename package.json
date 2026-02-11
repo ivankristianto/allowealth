@@ -1,6 +1,6 @@
 {
   "name": "allowealth",
-  "version": "0.6.0",
+  "version": "0.9.1",
   "type": "module",
   "private": true,
   "scripts": {
@@ -48,6 +48,8 @@
     "cli:create-api-key:prod": "bun --env-file=.env.production run src/cli/create-api-key.ts",
     "cli:rotate-db-password": "bun --env-file=.env.production run src/cli/rotate-db-password.ts",
     "cli:generate-email-key": "bun run scripts/generate-email-key.ts",
+    "backfill:email-verification": "bun run scripts/backfill-email-verification.ts",
+    "backfill:email-verification:prod": "bun --env-file=.env.production run scripts/backfill-email-verification.ts",
     "mcp:start": "bun run mcp-server/src/index.ts",
     "mcp:start:prod": "bun --env-file=.env.production run mcp-server/src/index.ts",
     "test": "bun test",

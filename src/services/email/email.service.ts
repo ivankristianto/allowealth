@@ -5,8 +5,6 @@
  * provider selection, and graceful degradation.
  */
 
-import type { WorkspaceMetaService } from '@/services/workspace-meta.service';
-import { decrypt } from '@/lib/crypto/encryption';
 import { getEnv } from '@/lib/env';
 import { createLogger } from '@/lib/logger';
 
@@ -41,11 +39,22 @@ export interface SendWorkspaceInvitationOptions {
 }
 
 /**
- * Test email options
+ * Email verification options
  */
-export interface SendTestOptions {
+export interface SendEmailVerificationOptions {
   to: string;
-  workspaceName: string;
+  userName: string;
+  verificationUrl: string;
+}
+
+/**
+ * Email configuration from environment variables
+ */
+interface EmailConfig {
+  provider: string;
+  apiKey: string;
+  senderName: string;
+  senderAddress: string;
 }
 
 /**
@@ -53,28 +62,38 @@ export interface SendTestOptions {
  *
  * Provides methods for sending transactional emails with automatic
  * provider selection and graceful fallback to console logging.
+ *
+ * Configuration is read from environment variables (global, not per-workspace).
  */
 export class EmailService {
-  constructor(private workspaceMetaService: WorkspaceMetaService) {}
+  /**
+   * Get email configuration from environment variables
+   */
+  private getEmailConfig(): EmailConfig {
+    return {
+      provider: getEnv('EMAIL_PROVIDER') || 'resend',
+      apiKey: getEnv('EMAIL_API_KEY') || '',
+      senderName: getEnv('EMAIL_SENDER_NAME') || 'Expenses App',
+      senderAddress: getEnv('EMAIL_SENDER_ADDRESS') || '',
+    };
+  }
 
   /**
-   * Check if email is configured for a workspace
+   * Check if email is configured globally
    */
-  async isConfigured(workspaceId: string): Promise<boolean> {
-    return this.workspaceMetaService.isEmailConfigured(workspaceId);
+  isConfigured(): boolean {
+    const config = this.getEmailConfig();
+    return !!(config.provider && config.apiKey && config.senderAddress);
   }
 
   /**
    * Send a password reset email
    */
-  async sendPasswordReset(
-    workspaceId: string,
-    options: SendPasswordResetOptions
-  ): Promise<SendEmailResult> {
+  async sendPasswordReset(options: SendPasswordResetOptions): Promise<SendEmailResult> {
     const { to, resetUrl, expiresIn } = options;
     const template = emailTemplateService.passwordReset({ resetUrl, expiresIn });
 
-    return this.send(workspaceId, {
+    return this.send({
       to,
       subject: template.subject,
       html: template.html,
@@ -84,10 +103,7 @@ export class EmailService {
   /**
    * Send a workspace invitation email
    */
-  async sendWorkspaceInvitation(
-    workspaceId: string,
-    options: SendWorkspaceInvitationOptions
-  ): Promise<SendEmailResult> {
+  async sendWorkspaceInvitation(options: SendWorkspaceInvitationOptions): Promise<SendEmailResult> {
     const { to, inviterName, workspaceName, inviteUrl, expiresIn } = options;
     const template = emailTemplateService.workspaceInvitation({
       inviterName,
@@ -96,7 +112,7 @@ export class EmailService {
       expiresIn,
     });
 
-    return this.send(workspaceId, {
+    return this.send({
       to,
       subject: template.subject,
       html: template.html,
@@ -104,21 +120,13 @@ export class EmailService {
   }
 
   /**
-   * Send a test email
+   * Send an email verification email
    */
-  async sendTest(workspaceId: string, options: SendTestOptions): Promise<SendEmailResult> {
-    const { to, workspaceName } = options;
+  async sendEmailVerification(options: SendEmailVerificationOptions): Promise<SendEmailResult> {
+    const { to, userName, verificationUrl } = options;
+    const template = emailTemplateService.emailVerification({ verificationUrl, userName });
 
-    // Get email settings for test email content
-    const settings = await this.workspaceMetaService.getEmailSettings(workspaceId);
-
-    const template = emailTemplateService.test({
-      workspaceName,
-      provider: settings.provider || 'console',
-      senderEmail: settings.senderAddress || 'not configured',
-    });
-
-    return this.send(workspaceId, {
+    return this.send({
       to,
       subject: template.subject,
       html: template.html,
@@ -128,10 +136,11 @@ export class EmailService {
   /**
    * Internal send method with provider selection and fallback
    */
-  private async send(
-    workspaceId: string,
-    options: { to: string; subject: string; html: string }
-  ): Promise<SendEmailResult> {
+  private async send(options: {
+    to: string;
+    subject: string;
+    html: string;
+  }): Promise<SendEmailResult> {
     const { to, subject, html } = options;
 
     // Check if we're in console mode (development)
@@ -145,11 +154,11 @@ export class EmailService {
       });
     }
 
-    // Get email configuration
-    const settings = await this.workspaceMetaService.getEmailSettings(workspaceId);
+    // Get email configuration from env vars
+    const config = this.getEmailConfig();
 
     // If not configured, fall back to console
-    if (!settings.provider || !settings.apiKey || !settings.senderAddress) {
+    if (!config.provider || !config.apiKey || !config.senderAddress) {
       log.warn('not configured, falling back to console provider');
       return consoleProvider.send({
         apiKey: '',
@@ -160,38 +169,25 @@ export class EmailService {
       });
     }
 
-    // Decrypt API key
-    let apiKey: string;
-    try {
-      apiKey = decrypt(settings.apiKey);
-    } catch (error) {
-      log.error('failed to decrypt API key:', error);
-      throw new EmailServiceError(
-        EmailErrorCode.ENCRYPTION_ERROR,
-        'Failed to decrypt email API key',
-        500
-      );
-    }
-
     // Get provider
     let provider: EmailProvider;
     try {
-      provider = getEmailProvider(settings.provider);
+      provider = getEmailProvider(config.provider);
     } catch (error) {
-      log.error('invalid provider:', settings.provider);
+      log.error('invalid provider:', config.provider);
       throw new EmailServiceError(
         EmailErrorCode.INVALID_PROVIDER,
-        `Invalid email provider: ${settings.provider}`,
+        `Invalid email provider: ${config.provider}`,
         400
       );
     }
 
     // Send email
     const result = await provider.send({
-      apiKey,
+      apiKey: config.apiKey,
       from: {
-        name: settings.senderName || 'Expenses App',
-        email: settings.senderAddress,
+        name: config.senderName,
+        email: config.senderAddress,
       },
       to,
       subject,

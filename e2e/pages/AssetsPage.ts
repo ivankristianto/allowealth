@@ -53,10 +53,11 @@ export class AssetsPage extends BasePage {
 
   /**
    * Get the asset balance element within an asset item.
+   * Uses .first() because AssetItemRow has dual mobile/desktop layouts.
    * @param assetId - The asset ID
    */
   private getAssetBalance(assetId: string) {
-    return this.getAssetItem(assetId).locator('[data-testid="asset-balance"]');
+    return this.getAssetItem(assetId).locator('[data-testid="asset-balance"]').first();
   }
 
   /**
@@ -294,6 +295,8 @@ export class AssetsPage extends BasePage {
 
   /**
    * Verify that an asset has the expected balance.
+   * Uses .first() because AssetItemRow has dual mobile/desktop layouts
+   * with separate balance elements sharing the same data-testid.
    *
    * @param name - The asset name
    * @param expectedBalance - The expected balance string (formatted)
@@ -302,8 +305,8 @@ export class AssetsPage extends BasePage {
     const assetItem = this.getAssetItemByName(name);
     await expect(assetItem).toBeVisible();
 
-    // Look for balance within the asset item using the data-testid
-    const balanceElement = assetItem.locator('[data-testid="asset-balance"]');
+    // Use .first() to avoid strict mode violation from dual mobile/desktop layouts
+    const balanceElement = assetItem.locator('[data-testid="asset-balance"]').first();
     await expect(balanceElement).toContainText(expectedBalance);
   }
 

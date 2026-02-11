@@ -167,13 +167,13 @@ describe('FinancialVelocityChart', () => {
 
   describe('Currency Formatting', () => {
     it('should format large numbers with proper locale', () => {
-      expect(formatCurrency(25245000, 'IDR')).toBe('Rp25.245.000');
-      expect(formatCurrency(60525000, 'IDR')).toBe('Rp60.525.000');
-      expect(formatCurrency(9750000, 'IDR')).toBe('Rp9.750.000');
+      expect(formatCurrency(25245000, 'IDR')).toBe('Rp25.245.000,00');
+      expect(formatCurrency(60525000, 'IDR')).toBe('Rp60.525.000,00');
+      expect(formatCurrency(9750000, 'IDR')).toBe('Rp9.750.000,00');
     });
 
     it('should handle zero values', () => {
-      expect(formatCurrency(0, 'IDR')).toBe('Rp0');
+      expect(formatCurrency(0, 'IDR')).toBe('Rp0,00');
     });
   });
 });

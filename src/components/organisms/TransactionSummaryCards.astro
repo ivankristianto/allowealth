@@ -15,7 +15,7 @@
  */
 
 // External packages
-import { TrendingUp, TrendingDown, Wallet } from '@lucide/astro';
+import { TrendingUp, TrendingDown, Wallet, Info } from '@lucide/astro';
 
 // Internal aliases - lib
 import { formatCurrency } from '@/lib/formatting';
@@ -126,6 +126,17 @@ const cardClasses = [
         data-summary-card="savings"
       >
         <Wallet slot="icon" size={48} class="stroke-current text-primary" aria-hidden="true" />
+        <div slot="details" class="flex items-center gap-1.5 text-xs text-base-content/40">
+          <div
+            class="tooltip tooltip-bottom"
+            data-tip="Income minus expenses. Negative means you spent more than you earned this period."
+          >
+            <Info size={14} class="stroke-current cursor-help" aria-label="What is Net Savings?" />
+          </div>
+          {netSavings < 0 && (
+            <span class="text-error/60 font-medium">Spending exceeded income</span>
+          )}
+        </div>
       </StatCard>
     </div>
   )

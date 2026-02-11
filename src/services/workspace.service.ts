@@ -52,7 +52,9 @@ export type WorkspaceMember = Omit<typeof users.$inferSelect, 'password_hash'>;
  * Workspace Service
  */
 export class WorkspaceService {
-  private schema = getActiveSchema();
+  private get schema() {
+    return getActiveSchema();
+  }
 
   /**
    * Create a new WorkspaceService with database injection
@@ -85,6 +87,38 @@ export class WorkspaceService {
       .returning();
 
     return workspace;
+  }
+
+  /**
+   * Activate workspace after owner email verification
+   * @param workspaceId - Workspace ID to activate
+   */
+  async activateWorkspace(workspaceId: string): Promise<void> {
+    const workspace = await this.findById(workspaceId);
+    if (!workspace) {
+      throw new WorkspaceServiceError(
+        ServiceErrorCode.WORKSPACE_NOT_FOUND,
+        'Workspace not found',
+        404
+      );
+    }
+
+    await this.db
+      .update(this.schema.workspaces)
+      .set({ status: 'active', updated_at: new Date() })
+      .where(eq(this.schema.workspaces.id, workspaceId));
+  }
+
+  /**
+   * Check if workspace is active
+   * @param workspaceId - Workspace ID to check
+   */
+  async isWorkspaceActive(workspaceId: string): Promise<boolean> {
+    const workspace = await this.db.query.workspaces.findFirst({
+      where: eq(this.schema.workspaces.id, workspaceId),
+    });
+
+    return workspace != null && workspace.status === 'active';
   }
 
   /**

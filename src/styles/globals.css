@@ -253,3 +253,113 @@ body {
    Tailwind v4 + DaisyUI v5 @apply expands these styles at a late CSS position,
    causing cascade ordering issues (e.g. --btn-fg override breaks btn-accent text color).
    Always use DaisyUI classes directly as utility classes on elements. */
+
+/* ========================================
+   TABLE SCROLL HINTS
+   Shadow + chevron overlays on horizontally
+   scrollable tables to signal more content
+   off-screen. Overlay divs are created by
+   ScrollHint.client.ts at runtime.
+   ======================================== */
+
+.table-scroll-hint {
+  position: relative;
+  isolation: isolate;
+}
+
+/* --- Base overlay -------------------------------------------------- */
+.table-scroll-hint > .scroll-hint-fade {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 28px;
+  pointer-events: none;
+  z-index: 10;
+  opacity: 0;
+  transition: opacity var(--duration-normal, 0.3s) var(--ease-default, ease);
+  display: flex;
+  align-items: center;
+}
+
+/* --- Animated chevron via ::after ---------------------------------- */
+.table-scroll-hint > .scroll-hint-fade::after {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-style: solid;
+  border-color: var(--color-base-content);
+  flex-shrink: 0;
+}
+
+/* --- Left fade ----------------------------------------------------- */
+.table-scroll-hint > .scroll-hint-fade-left {
+  left: 0;
+  background: linear-gradient(to right, var(--color-base-100), transparent);
+  box-shadow: 2px 0 8px -2px rgb(0 0 0 / 0.1);
+}
+
+.table-scroll-hint > .scroll-hint-fade-left::after {
+  border-width: 0 0 2px 2px;
+  transform: rotate(45deg);
+  margin-left: 8px;
+  animation: sh-nudge-l 2s var(--ease-in-out, ease-in-out) infinite;
+}
+
+/* --- Right fade ---------------------------------------------------- */
+.table-scroll-hint > .scroll-hint-fade-right {
+  right: 0;
+  background: linear-gradient(to left, var(--color-base-100), transparent);
+  box-shadow: -2px 0 8px -2px rgb(0 0 0 / 0.1);
+}
+
+.table-scroll-hint > .scroll-hint-fade-right::after {
+  border-width: 2px 2px 0 0;
+  transform: rotate(45deg);
+  margin-left: auto;
+  margin-right: 8px;
+  animation: sh-nudge-r 2s var(--ease-in-out, ease-in-out) infinite;
+}
+
+/* --- Chevron keyframes --------------------------------------------- */
+@keyframes sh-nudge-l {
+  0%,
+  100% {
+    transform: rotate(45deg) translate(0, 0);
+    opacity: 0.2;
+  }
+
+  50% {
+    transform: rotate(45deg) translate(-3px, 3px);
+    opacity: 0.5;
+  }
+}
+
+@keyframes sh-nudge-r {
+  0%,
+  100% {
+    transform: rotate(45deg) translate(0, 0);
+    opacity: 0.2;
+  }
+
+  50% {
+    transform: rotate(45deg) translate(3px, -3px);
+    opacity: 0.5;
+  }
+}
+
+/* --- Dark mode: stronger shadows ----------------------------------- */
+[data-theme='dark'] .table-scroll-hint > .scroll-hint-fade-left {
+  box-shadow: 2px 0 12px -2px rgb(0 0 0 / 0.3);
+}
+
+[data-theme='dark'] .table-scroll-hint > .scroll-hint-fade-right {
+  box-shadow: -2px 0 12px -2px rgb(0 0 0 / 0.3);
+}
+
+/* --- Respect reduced motion ---------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .table-scroll-hint > .scroll-hint-fade::after {
+    animation: none;
+    opacity: 0.3;
+  }
+}

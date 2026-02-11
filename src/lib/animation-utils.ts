@@ -5,7 +5,7 @@
  * Uses Motion library for performant, declarative animations.
  *
  * @example
- * import { animate } from 'motion';
+ * import { animate } from 'motion/mini';
  * import { presets, durations } from '@/lib/animation-utils';
  *
  * animate(element, presets.fadeIn.animate, { duration: durations.fast });
@@ -375,7 +375,7 @@ export function animateList(
 ): void {
   elements.forEach((element: Element, index: number) => {
     // Dynamic import to avoid SSR issues
-    import('motion').then(({ animate }) => {
+    import('motion/mini').then(({ animate }) => {
       // Convert AnimationKeyframes to Motion's expected format
       const keyframes = preset.animate as Record<string, number | number[]>;
       animate(element, keyframes, {

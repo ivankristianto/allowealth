@@ -1,5 +1,5 @@
 /**
- * AssetDeleteConfirmModal Storybook Stories
+ * AssetDeleteConfirmModal Storybook Stories (Deactivate Account Modal)
  *
  * P1: NOTE - This file duplicates the AssetDeleteConfirmModal.astro HTML structure because
  * Storybook's HTML framework cannot directly render Astro components.
@@ -16,7 +16,7 @@ const meta: Meta = {
   argTypes: {
     assetName: {
       control: 'text',
-      description: 'Name of the asset to delete',
+      description: 'Name of the asset to deactivate',
     },
     assetType: {
       control: 'text',
@@ -48,7 +48,7 @@ const meta: Meta = {
 
 export default meta;
 
-interface AssetDeleteModalArgs {
+interface AssetDeactivateModalArgs {
   assetName?: string;
   assetType?: string;
   balance?: number;
@@ -58,15 +58,15 @@ interface AssetDeleteModalArgs {
   errorMessage?: string;
 }
 
-const createAssetDeleteModal = (args: AssetDeleteModalArgs): HTMLElement => {
+const createAssetDeactivateModal = (args: AssetDeactivateModalArgs): HTMLElement => {
   const {
     assetName = 'BCA Checking',
     assetType = 'Bank Account',
-    balance = 15250000,
+    balance = 0,
     currency = 'IDR',
     isLoading = false,
     hasError = false,
-    errorMessage = 'Failed to delete asset. Please try again.',
+    errorMessage = 'Failed to deactivate account. Please try again.',
   } = args;
 
   const container = document.createElement('div');
@@ -82,23 +82,20 @@ const createAssetDeleteModal = (args: AssetDeleteModalArgs): HTMLElement => {
         <!-- Header section -->
         <div class="flex items-center gap-4">
           <!-- Icon -->
-          <div class="w-12 h-12 rounded-2xl flex items-center justify-center bg-error/10">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-error">
-              <path d="M3 6h18"/>
-              <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
-              <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
-              <line x1="10" x2="10" y1="11" y2="17"/>
-              <line x1="14" x2="14" y1="11" y2="17"/>
+          <div class="w-12 h-12 rounded-2xl flex items-center justify-center bg-warning/10">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-warning">
+              <path d="M18.36 6.64a9 9 0 1 1-12.73 0"/>
+              <line x1="12" y1="2" x2="12" y2="12"/>
             </svg>
           </div>
 
           <!-- Title and description -->
           <div class="flex-1">
             <h2 class="text-2xl font-bold tracking-tight text-primary leading-none">
-              Delete Asset
+              Deactivate Account
             </h2>
             <p class="text-neutral text-sm mt-2 font-medium">
-              Are you sure you want to delete this asset?
+              Deactivate this account?
             </p>
           </div>
         </div>
@@ -119,9 +116,9 @@ const createAssetDeleteModal = (args: AssetDeleteModalArgs): HTMLElement => {
           </div>
         </div>
 
-        <!-- Warning message -->
-        <div class="text-sm text-error/80 bg-error/5 p-3 rounded-xl">
-          This action cannot be undone. All balance history for this asset will also be deleted.
+        <!-- Info message -->
+        <div class="text-sm text-base-content/60 bg-base-200 p-3 rounded-xl">
+          Once deactivated: hidden from active accounts, transaction history preserved, can be reactivated later by admin.
         </div>
 
         <!-- Error message -->
@@ -145,10 +142,10 @@ const createAssetDeleteModal = (args: AssetDeleteModalArgs): HTMLElement => {
           </button>
           <button
             type="button"
-            class="btn btn-error flex-1 h-14 rounded-full font-bold"
+            class="btn btn-warning flex-1 h-14 rounded-full font-bold"
             ${isLoading ? 'disabled' : ''}
           >
-            ${isLoading ? 'Deleting...' : 'Delete Asset'}
+            ${isLoading ? 'Deactivating...' : 'Deactivate'}
           </button>
         </div>
       </div>
@@ -162,71 +159,73 @@ export const Default: StoryObj = {
   args: {
     assetName: 'BCA Checking',
     assetType: 'Bank Account',
-    balance: 15250000,
+    balance: 0,
     currency: 'IDR',
     isLoading: false,
     hasError: false,
   },
-  render: (args) => createAssetDeleteModal(args),
+  render: (args) => createAssetDeactivateModal(args),
 };
 
 export const USDAsset: StoryObj = {
   args: {
     assetName: 'Fidelity 401(k)',
     assetType: 'Stock',
-    balance: 125000.5,
+    balance: 0,
     currency: 'USD',
     isLoading: false,
     hasError: false,
   },
-  render: (args) => createAssetDeleteModal(args),
+  render: (args) => createAssetDeactivateModal(args),
 };
 
 export const Loading: StoryObj = {
   args: {
     assetName: 'BCA Savings',
     assetType: 'Bank Account',
-    balance: 50000000,
+    balance: 0,
     currency: 'IDR',
     isLoading: true,
     hasError: false,
   },
-  render: (args) => createAssetDeleteModal(args),
+  render: (args) => createAssetDeactivateModal(args),
 };
 
 export const WithError: StoryObj = {
   args: {
     assetName: 'Investment Portfolio',
     assetType: 'Mutual Fund',
-    balance: 100000000,
+    balance: 0,
     currency: 'IDR',
     isLoading: false,
     hasError: true,
-    errorMessage: 'This asset cannot be deleted because it has linked transactions.',
+    errorMessage: 'Cannot deactivate account with non-zero balance. Transfer funds out first.',
   },
-  render: (args) => createAssetDeleteModal(args),
+  render: (args) => createAssetDeactivateModal(args),
 };
 
-export const LargeBalance: StoryObj = {
+export const NonZeroBalance: StoryObj = {
   args: {
     assetName: 'Main Investment',
     assetType: 'Stock',
     balance: 1500000000,
     currency: 'IDR',
     isLoading: false,
-    hasError: false,
+    hasError: true,
+    errorMessage:
+      'Cannot deactivate account with balance of Rp 1,500,000,000. Transfer funds out first.',
   },
-  render: (args) => createAssetDeleteModal(args),
+  render: (args) => createAssetDeactivateModal(args),
 };
 
 export const SmallBalance: StoryObj = {
   args: {
     assetName: 'Petty Cash',
     assetType: 'Other',
-    balance: 500000,
+    balance: 0,
     currency: 'IDR',
     isLoading: false,
     hasError: false,
   },
-  render: (args) => createAssetDeleteModal(args),
+  render: (args) => createAssetDeactivateModal(args),
 };

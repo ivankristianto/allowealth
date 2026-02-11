@@ -110,8 +110,9 @@ function extractChunks(
 }
 
 /**
- * Find all nodes matching a pattern at any depth and sum their sizes
- * This handles deeply nested library modules that aren't top-level chunks
+ * Find library sizes inside node_modules directories matching a pattern.
+ * Only matches package directories that are direct children of node_modules,
+ * then sums ALL descendants of matching packages.
  */
 function findLibrarySize(
   node: TreeNode,
@@ -120,13 +121,15 @@ function findLibrarySize(
 ): number {
   let totalGzip = 0;
 
-  // If this node matches and has a size, add it
-  if (node.name && pattern.test(node.name) && node.uid && nodeParts[node.uid]) {
-    totalGzip += nodeParts[node.uid].gzipLength || 0;
-  }
-
-  // Recurse into all children at any depth
-  if (node.children) {
+  if (node.name === 'node_modules' && node.children) {
+    // Inside node_modules — check direct children (package names) against pattern
+    for (const pkg of node.children) {
+      if (pkg.name && pattern.test(pkg.name)) {
+        totalGzip += sumTreeSizes(pkg, nodeParts).gzip;
+      }
+    }
+  } else if (node.children) {
+    // Keep searching for node_modules directories deeper in the tree
     for (const child of node.children) {
       totalGzip += findLibrarySize(child, nodeParts, pattern);
     }

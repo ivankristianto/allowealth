@@ -9,7 +9,6 @@ import {
 } from '@/lib/api-utils';
 import { logError } from '@/lib/utils';
 import { UserServiceError, UserMetaServiceError } from '@/services/service-errors';
-import { db } from '@/db';
 import { z } from 'zod';
 
 /**
@@ -30,9 +29,7 @@ const updateFullProfileSchema = z.object({
 export const GET: APIRoute = async (context) => {
   try {
     const auth = getAuthenticatedUser(context);
-    const user = await db.query.users.findFirst({
-      where: (users, { eq }) => eq(users.id, auth.userId),
-    });
+    const user = await userService.getById(auth.userId);
 
     if (!user) {
       return errorResponse('User not found', 404, 'USER_NOT_FOUND');

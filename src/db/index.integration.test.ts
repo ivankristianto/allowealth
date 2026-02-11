@@ -239,7 +239,7 @@ describe('Database Runtime-Agnostic Integration Tests', () => {
 
     // Set up test database schema
     setupTestDatabase();
-  });
+  }, 30_000); // drizzle-kit push can be slow on first run or schema changes
 
   beforeEach(() => {
     // Set test database path for isolation (use relative path for consistency)

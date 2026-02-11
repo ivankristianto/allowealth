@@ -32,7 +32,7 @@
 
 import MainLayout from './MainLayout.astro';
 import TransactionDrawer from '@/components/organisms/TransactionDrawer.astro';
-import { categoryService, assetService, userMetaService } from '@/services';
+import { categoryService, assetService, userMetaService, transactionService } from '@/services';
 import { DEFAULT_USER_SETTINGS, type UserSettings } from '@/lib/constants/user-meta-keys';
 import { getCacheManager, CacheKeys, CacheTags } from '@/lib/cache';
 
@@ -40,6 +40,7 @@ interface LayoutData {
   categories: Array<{ id: string; name: string; type: string; currency?: string }>;
   assets: Array<{ id: string; name: string; type: string }>;
   userSettings: UserSettings;
+  categoryUsageCounts: Array<{ category_id: string; count: number }>;
 }
 
 interface Props {
@@ -58,6 +59,7 @@ const user = Astro.locals.user!;
 let categories: Array<{ id: string; name: string; type: string; currency?: string }> = [];
 let assets: Array<{ id: string; name: string; type: string }> = [];
 let userSettings: UserSettings = { ...DEFAULT_USER_SETTINGS };
+let categoryUsageCounts: Array<{ category_id: string; count: number }> = [];
 
 // Try to get from cache first (fail-silent: cache errors should never break the page)
 let cached: LayoutData | null = null;
@@ -77,19 +79,21 @@ if (cached) {
   categories = cached.categories;
   assets = cached.assets;
   userSettings = cached.userSettings;
+  categoryUsageCounts = cached.categoryUsageCounts;
 } else {
   try {
-    [categories, assets, userSettings] = await Promise.all([
+    [categories, assets, userSettings, categoryUsageCounts] = await Promise.all([
       categoryService.findAll(user.workspaceId, { is_active: true }),
       assetService.findAll(user.workspaceId),
       userMetaService.getUserSettings(user.id),
+      transactionService.getCategoryUsageCounts(user.workspaceId, user.id),
     ]);
     // Cache the results (60 seconds TTL) - fail-silent
     try {
       if (cache && cacheKey) {
         await cache.set<LayoutData>(
           cacheKey,
-          { categories, assets, userSettings },
+          { categories, assets, userSettings, categoryUsageCounts },
           {
             ttl: 60,
             tags: [
@@ -121,5 +125,14 @@ Astro.locals.userSettings = Object.freeze({ ...userSettings });
   <slot />
 </MainLayout>
 
+<!-- Horizontal scroll hints for tables -->
+<script>
+  import '@/components/atoms/ScrollHint.client';
+</script>
+
 <!-- Bulk Transaction Drawer -->
-<TransactionDrawer categories={categories} assets={assets} />
+<TransactionDrawer
+  categories={categories}
+  assets={assets}
+  categoryUsageCounts={categoryUsageCounts}
+/>

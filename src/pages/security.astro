@@ -13,8 +13,7 @@ import SecurityApiKeysCard from '@/components/molecules/SecurityApiKeysCard.astr
 import GenerateApiKeyModal from '@/components/organisms/GenerateApiKeyModal.astro';
 import MCPSetupInstructionsModal from '@/components/organisms/MCPSetupInstructionsModal.astro';
 import { History } from '@lucide/astro';
-import { db } from '@/db';
-import { ApiKeyService } from '@/services/api-key.service';
+import { apiKeyService } from '@/services';
 
 const currentPath = '/security';
 
@@ -29,7 +28,6 @@ let apiKeys: Array<{
   expires_at: Date | null;
 }> = [];
 if (user?.id && user?.workspaceId) {
-  const apiKeyService = new ApiKeyService(db);
   apiKeys = await apiKeyService.list(user.workspaceId, user.id);
 }
 
@@ -115,6 +113,9 @@ const toneDotClasses: Record<string, string> = {
           <div class="flex items-center gap-2 text-base-content/70">
             <History size={18} class="stroke-current" aria-hidden="true" />
             <h3 class="text-sm font-semibold">Recent Security Events</h3>
+            <span class="badge badge-outline badge-sm text-base-content/50 whitespace-nowrap"
+              >Under Development</span
+            >
           </div>
 
           <div class="space-y-4">
@@ -136,6 +137,7 @@ const toneDotClasses: Record<string, string> = {
           <button
             type="button"
             class="btn btn-outline btn-sm w-full text-xs uppercase tracking-widest"
+            disabled
           >
             Download Security Audit
           </button>

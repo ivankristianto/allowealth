@@ -58,7 +58,7 @@ const meta: Meta = {
 - Error: red alert with error list
 
 ### Props
-- **action**: Form submission URL (default: /api/auth/register)
+- **action**: Form submission URL (default: /api/auth/signup)
 - **method**: HTTP method (default: POST)
 - **submitText**: Button text (default: Create Account)
 - **loginLink**: Existing account link (default: /login)
@@ -79,7 +79,7 @@ const createRegistrationForm = (args: {
   loginLink?: string;
 }): HTMLElement => {
   const {
-    action = '/api/auth/register',
+    action = '/api/auth/signup',
     method = 'POST',
     submitText = 'Create Account',
     loginLink = '/login',

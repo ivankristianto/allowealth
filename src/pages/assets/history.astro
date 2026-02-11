@@ -23,6 +23,9 @@ const assets: AssetOutput[] = rawAssets.map((asset) => ({
   type: asset.type,
   balance: asset.balance,
   currency: asset.currency,
+  status: asset.status ?? 'active',
+  closed_at: asset.closed_at ?? null,
+  closed_by_user_id: asset.closed_by_user_id ?? null,
   last_updated: asset.last_updated,
   created_at: asset.created_at,
   updated_at: asset.updated_at,
@@ -37,7 +40,7 @@ const assets: AssetOutput[] = rawAssets.map((asset) => ({
 
     <div class="tabs">
       <a class="tab" href="/assets">List</a>
-      <a class="tab" href="/assets/add">Add New</a>
+      <a class="tab" href="/assets">Add New</a>
       <a class="tab tab-active" href="/assets/history">History</a>
     </div>
 
@@ -69,7 +72,7 @@ const assets: AssetOutput[] = rawAssets.map((asset) => ({
             <p class="text-base-content/60">
               No assets available. Add an asset first to view its history.
             </p>
-            <a href="/assets/add" class="btn btn-accent mt-4">
+            <a href="/assets" class="btn btn-accent mt-4">
               Add Your First Asset
             </a>
           </div>

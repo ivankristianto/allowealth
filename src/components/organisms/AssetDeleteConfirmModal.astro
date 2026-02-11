@@ -2,7 +2,7 @@
 /**
  * AssetDeleteConfirmModal Component
  *
- * Modal for confirming asset deletion.
+ * Modal for confirming asset account deactivation.
  * Based on the ConfirmationModal pattern.
  *
  * @param {string} id - Modal ID
@@ -20,12 +20,12 @@ const { id } = Astro.props;
 <div data-asset-delete-modal-container data-id={id} data-testid="asset-delete-modal">
   <ConfirmationModal
     id={id}
-    title="Delete Asset"
-    description="Are you sure you want to delete this asset?"
-    confirmLabel="Delete Asset"
-    confirmVariant="error"
-    confirmLoadingLabel="Deleting..."
-    iconVariant="error"
+    title="Deactivate Account"
+    description="Deactivate this account?"
+    confirmLabel="Deactivate"
+    confirmVariant="warning"
+    confirmLoadingLabel="Deactivating..."
+    iconVariant="warning"
     confirmTestId="confirm-delete-btn"
   >
     <div slot="details" class="bg-base-200 rounded-2xl p-4" data-asset-details>
@@ -46,8 +46,9 @@ const { id } = Astro.props;
       </div>
     </div>
 
-    <div slot="details" class="text-sm text-error/80 bg-error/5 p-3 rounded-xl">
-      This action cannot be undone. All balance history for this asset will also be deleted.
+    <div slot="details" class="text-sm text-base-content/60 bg-base-200 p-3 rounded-xl">
+      Once deactivated: hidden from active accounts, transaction history preserved, can be
+      reactivated later by admin.
     </div>
   </ConfirmationModal>
 </div>
@@ -68,7 +69,7 @@ const { id } = Astro.props;
   // Track initialized modals to avoid duplicate handlers
   const initializedModals = new WeakSet<Element>();
 
-  interface AssetDeleteData {
+  interface AssetCloseData {
     id: string;
     name: string;
     type: string;
@@ -98,13 +99,17 @@ const { id } = Astro.props;
 
       if (!modal || !confirmButton) return;
 
-      // Store current asset ID for deletion
+      // Store current asset data for closure
       let currentAssetId: string | null = null;
+      let currentAssetBalance = 0;
+      let currentAssetCurrency: 'IDR' | 'USD' = 'IDR';
 
       // Function to populate modal with asset data
       // SECURITY: Use textContent (not innerHTML) to prevent XSS from user data
-      const populateModal = (data: AssetDeleteData) => {
+      const populateModal = (data: AssetCloseData) => {
         currentAssetId = data.id;
+        currentAssetBalance = data.balance;
+        currentAssetCurrency = data.currency;
         if (nameEl) nameEl.textContent = data.name;
         if (typeEl) typeEl.textContent = data.type;
         if (balanceEl) {
@@ -126,22 +131,24 @@ const { id } = Astro.props;
       // Function to reset modal
       const resetModal = () => {
         currentAssetId = null;
+        currentAssetBalance = 0;
+        currentAssetCurrency = 'IDR';
         resetConfirmationModal(confirmButton, errorElement);
       };
 
-      // Listen for open-asset-delete event
-      const handleOpenDelete = ((e: CustomEvent<AssetDeleteData>) => {
+      // Listen for open-asset-close event
+      const handleOpenClose = ((e: CustomEvent<AssetCloseData>) => {
         populateModal(e.detail);
         modal.showModal();
       }) as EventListener;
 
-      document.addEventListener('open-asset-delete', handleOpenDelete);
+      document.addEventListener('open-asset-close', handleOpenClose);
 
       // Clean up event listener on Astro page transitions to prevent memory leaks
       document.addEventListener(
         'astro:before-swap',
         () => {
-          document.removeEventListener('open-asset-delete', handleOpenDelete);
+          document.removeEventListener('open-asset-close', handleOpenClose);
         },
         { once: true }
       );
@@ -154,7 +161,7 @@ const { id } = Astro.props;
         closeConfirmationModal(modal);
       });
 
-      // Handle confirm delete
+      // Handle confirm close
       confirmButton.addEventListener('click', async () => {
         if (!currentAssetId) return;
 
@@ -165,6 +172,15 @@ const { id } = Astro.props;
           return;
         }
 
+        // Client-side balance check
+        if (currentAssetBalance !== 0) {
+          showConfirmError(
+            errorElement,
+            `Cannot deactivate account with balance of ${formatCurrency(currentAssetBalance, currentAssetCurrency)}. Transfer funds out first.`
+          );
+          return;
+        }
+
         // Clear previous errors
         clearConfirmError(errorElement);
 
@@ -172,23 +188,23 @@ const { id } = Astro.props;
         setConfirmLoading(confirmButton, true);
 
         try {
-          const response = await fetch(`/api/assets/${currentAssetId}`, {
-            method: 'DELETE',
+          const response = await fetch(`/api/assets/${currentAssetId}/close`, {
+            method: 'POST',
             headers: getCsrfHeaders(),
           });
 
           if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.message || 'Failed to delete asset');
+            throw new Error(errorData.message || 'Failed to deactivate account');
           }
 
           // Success
-          addToast('Asset deleted successfully', 'success');
+          addToast('Account deactivated successfully', 'success');
           closeConfirmationModal(modal);
 
           // Dispatch event for page update
           document.dispatchEvent(
-            new CustomEvent('asset-deleted', {
+            new CustomEvent('asset-closed', {
               detail: { assetId: currentAssetId },
             })
           );
@@ -196,7 +212,7 @@ const { id } = Astro.props;
           // Reload page to show updated data
           setTimeout(() => window.location.reload(), 500);
         } catch (err) {
-          const message = err instanceof Error ? err.message : 'Failed to delete asset';
+          const message = err instanceof Error ? err.message : 'Failed to deactivate account';
           showConfirmError(errorElement, message);
           addToast(message, 'error');
         } finally {

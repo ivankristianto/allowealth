@@ -11,7 +11,7 @@
  * @param user - Authenticated user object
  */
 
-import { Menu, ListPlus } from '@lucide/astro';
+import { Menu, Plus } from '@lucide/astro';
 import CurrencySelector from '../molecules/CurrencySelector.astro';
 import NotificationDropdown from '../molecules/NotificationDropdown.astro';
 import ThemeToggle from '../atoms/ThemeToggle.astro';
@@ -79,17 +79,19 @@ const { title, subtitle, showMenuToggle = true, user } = Astro.props;
 
     {
       user && (
-        <Button
-          id="bulk-entry-button"
-          data-open-transaction-drawer
-          variant="accent"
-          size="md"
-          className="px-4 sm:px-6 active:scale-95"
-          aria-label="New Transaction"
-        >
-          <ListPlus size={20} class="stroke-current" aria-hidden="true" />
-          <span class="hidden sm:inline">New Transaction</span>
-        </Button>
+        <div class="hidden lg:block">
+          <Button
+            id="bulk-entry-button"
+            data-open-transaction-drawer
+            variant="accent"
+            size="md"
+            className="px-6 active:scale-95"
+            aria-label="New Transaction"
+          >
+            <Plus size={20} class="stroke-current" aria-hidden="true" />
+            <span class="text-sm">New Transaction</span>
+          </Button>
+        </div>
       )
     }
   </div>

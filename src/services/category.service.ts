@@ -13,7 +13,9 @@ import { type PerfCollector, trackQuery } from '@/lib/perf';
 export { type CreateCategoryInput, type UpdateCategoryInput };
 
 export class CategoryService {
-  private schema = getActiveSchema();
+  private get schema() {
+    return getActiveSchema();
+  }
 
   /**
    * Create a new CategoryService with database injection

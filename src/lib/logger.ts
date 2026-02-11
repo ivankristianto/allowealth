@@ -17,6 +17,7 @@
 
 /* eslint-disable no-console -- Logger is the console wrapper; direct console calls are intentional */
 import { createConsola, type LogObject } from 'consola/core';
+import { getEnv } from '@/lib/env';
 
 const isDev = typeof import.meta !== 'undefined' && import.meta.env?.MODE === 'development';
 // Bun test does not set import.meta.env.MODE; it sets process.env.NODE_ENV instead.
@@ -41,7 +42,7 @@ const LOG_LEVEL_MAP: Record<string, number> = {
 };
 
 export function resolveLogLevel(): number {
-  const envLevel = typeof import.meta !== 'undefined' ? import.meta.env?.LOG_LEVEL : undefined;
+  const envLevel = getEnv('LOG_LEVEL');
   if (envLevel && envLevel.toLowerCase() in LOG_LEVEL_MAP) {
     return LOG_LEVEL_MAP[envLevel.toLowerCase()];
   }
@@ -54,12 +55,25 @@ export function resolveLogLevel(): number {
  * JSON reporter for production — outputs structured JSON that
  * Cloudflare Workers Logs auto-indexes for querying.
  */
+/** Stringify a log argument — objects get JSON-serialized, everything else String() */
+function stringifyArg(arg: unknown): string {
+  if (arg === null || arg === undefined) return String(arg);
+  if (typeof arg === 'object') {
+    try {
+      return JSON.stringify(arg);
+    } catch {
+      return String(arg);
+    }
+  }
+  return String(arg);
+}
+
 const jsonReporter = {
   log(logObj: LogObject) {
     const entry: Record<string, unknown> = {
       level: logObj.type,
       tag: logObj.tag || undefined,
-      message: logObj.args.map(String).join(' '),
+      message: logObj.args.map(stringifyArg).join(' '),
       timestamp: new Date().toISOString(),
     };
 
@@ -92,7 +106,7 @@ const jsonReporter = {
 const prettyReporter = {
   log(logObj: LogObject) {
     const prefix = logObj.tag ? `[${logObj.tag}]` : '';
-    const message = logObj.args.map(String).join(' ');
+    const message = logObj.args.map(stringifyArg).join(' ');
     const output = prefix ? `${prefix} ${message}` : message;
 
     switch (logObj.type) {

@@ -20,6 +20,7 @@ import { type IDatabase, getActiveSchema } from '@/db';
 import { workspaceInvitations as workspaceInvitationsSchema } from '@/db/schema/sqlite';
 import { eq, and, isNull, gt, desc } from 'drizzle-orm';
 import { createLogger } from '@/lib/logger';
+import { getEnv } from '@/lib/env';
 
 const log = createLogger('workspace-invitation');
 import { nanoid } from 'nanoid';
@@ -39,16 +40,9 @@ const TOKEN_LENGTH = 64;
 
 /**
  * Get base URL from environment or use default
- *
- * Note: Uses import.meta.env because Astro/Vite only populates
- * import.meta.env from .env files, not process.env.
  */
 function getBaseUrl(): string {
-  return (
-    import.meta.env.PUBLIC_BASE_URL ||
-    import.meta.env.PUBLIC_API_URL?.replace('/api', '') ||
-    'http://localhost:4321'
-  );
+  return getEnv('PUBLIC_URL') || 'http://localhost:4321';
 }
 
 /**
@@ -75,7 +69,9 @@ export type WorkspaceInvitation = typeof workspaceInvitationsSchema.$inferSelect
  * Workspace Invitation Service
  */
 export class WorkspaceInvitationService {
-  private schema = getActiveSchema();
+  private get schema() {
+    return getActiveSchema();
+  }
 
   /**
    * Create a new WorkspaceInvitationService with database injection
@@ -391,7 +387,7 @@ export class WorkspaceInvitationService {
       // Calculate expiration time
       const expiresIn = '7 days';
 
-      await emailService.sendWorkspaceInvitation(invitation.workspace_id, {
+      await emailService.sendWorkspaceInvitation({
         to: invitation.email,
         inviterName,
         workspaceName,

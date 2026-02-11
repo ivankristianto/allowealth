@@ -6,8 +6,13 @@ info:
     asset management, and financial forecasting.
 
     **Authentication:**
-    All endpoints require session-based authentication. The session token should be
-    included in HTTP-only cookies.
+    Most endpoints require session-based authentication via HTTP-only session cookies.
+    The following endpoints are public (no authentication required):
+    - `POST /api/auth/signup`
+    - `POST /api/auth/login`
+    - `POST /api/auth/forgot-password`
+    - `GET /api/auth/verify-email`
+    - `POST /api/auth/resend-verification`
 
     **Response Format:**
     All responses follow a standard format:
@@ -65,16 +70,15 @@ paths:
     $ref: './openapi/paths/auth.yml#/paths/~1api~1auth~1logout'
   /api/auth/forgot-password:
     $ref: './openapi/paths/auth.yml#/paths/~1api~1auth~1forgot-password'
+  /api/auth/verify-email:
+    $ref: './openapi/paths/auth.yml#/paths/~1api~1auth~1verify-email'
+  /api/auth/resend-verification:
+    $ref: './openapi/paths/auth.yml#/paths/~1api~1auth~1resend-verification'
 
   /api/user/profile:
     $ref: './openapi/paths/user.yml#/paths/~1api~1user~1profile'
   /api/user/password:
     $ref: './openapi/paths/user.yml#/paths/~1api~1user~1password'
-  /api/user/meta:
-    $ref: './openapi/paths/user-meta.yml#/paths/~1api~1user~1meta'
-  /api/user/meta/{key}:
-    $ref: './openapi/paths/user-meta.yml#/paths/~1api~1user~1meta~1{key}'
-
   # Workspace endpoints
   /api/workspace/settings:
     $ref: './openapi/paths/workspace.yml#/paths/~1api~1workspace~1settings'
@@ -116,11 +120,14 @@ paths:
     $ref: './openapi/paths/assets.yml#/paths/~1api~1assets~1{id}~1balance'
   /api/assets/{id}/history:
     $ref: './openapi/paths/assets.yml#/paths/~1api~1assets~1{id}~1history'
+  /api/assets/closed:
+    $ref: './openapi/paths/assets.yml#/paths/~1api~1assets~1closed'
+  /api/assets/{id}/close:
+    $ref: './openapi/paths/assets.yml#/paths/~1api~1assets~1{id}~1close'
+  /api/assets/{id}/reopen:
+    $ref: './openapi/paths/assets.yml#/paths/~1api~1assets~1{id}~1reopen'
   /api/assets/transfer:
     $ref: './openapi/paths/assets.yml#/paths/~1api~1assets~1transfer'
-  /api/assets/summary:
-    $ref: './openapi/paths/assets.yml#/paths/~1api~1assets~1summary'
-
   # Budget CRUD endpoints (new)
   /api/budgets:
     $ref: './openapi/paths/budgets.yml#/paths/~1api~1budgets'
@@ -134,8 +141,6 @@ paths:
   # Budget overview endpoints
   /api/budget/overview:
     $ref: './openapi/paths/budget.yml#/paths/~1api~1budget~1overview'
-  /api/budget/alerts:
-    $ref: './openapi/paths/budget.yml#/paths/~1api~1budget~1alerts'
   /api/budget/history:
     $ref: './openapi/paths/budget.yml#/paths/~1api~1budget~1history'
   /api/budget/category/{id}/remaining:
@@ -150,9 +155,6 @@ paths:
 
   /api/reports:
     $ref: './openapi/paths/reports.yml#/paths/~1api~1reports'
-  /api/reports/category-transactions:
-    $ref: './openapi/paths/reports.yml#/paths/~1api~1reports~1category-transactions'
-
 components:
   securitySchemes:
     sessionAuth:
@@ -194,6 +196,8 @@ components:
       $ref: './openapi/schemas/ForgotPasswordResponse.yml#/ForgotPasswordResponse'
     AuthSuccessResponse:
       $ref: './openapi/schemas/AuthSuccessResponse.yml#/AuthSuccessResponse'
+    ResendVerificationRequest:
+      $ref: './openapi/schemas/ResendVerificationRequest.yml#/ResendVerificationRequest'
 
     # User Schemas
     UpdateUserProfileRequest:
@@ -204,16 +208,6 @@ components:
       $ref: './openapi/schemas/UpdatePasswordRequest.yml#/UpdatePasswordRequest'
     PasswordUpdateResponse:
       $ref: './openapi/schemas/PasswordUpdateResponse.yml#/PasswordUpdateResponse'
-
-    # User Meta Schemas
-    UserMetaListResponse:
-      $ref: './openapi/schemas/UserMetaListResponse.yml#/UserMetaListResponse'
-    UserMetaResponse:
-      $ref: './openapi/schemas/UserMetaResponse.yml#/UserMetaResponse'
-    UpdateUserMetaRequest:
-      $ref: './openapi/schemas/UpdateUserMetaRequest.yml#/UpdateUserMetaRequest'
-    DeleteUserMetaResponse:
-      $ref: './openapi/schemas/DeleteUserMetaResponse.yml#/DeleteUserMetaResponse'
 
     # Workspace Schemas
     Workspace:
@@ -300,9 +294,6 @@ components:
       $ref: './openapi/schemas/AssetHistoryItem.yml#/AssetHistoryItem'
     AssetHistoryListResponse:
       $ref: './openapi/schemas/AssetHistoryListResponse.yml#/AssetHistoryListResponse'
-    AssetSummaryResponse:
-      $ref: './openapi/schemas/AssetSummaryResponse.yml#/AssetSummaryResponse'
-
     # Budget Schemas
     Budget:
       $ref: './openapi/schemas/Budget.yml#/Budget'
@@ -324,8 +315,6 @@ components:
       $ref: './openapi/schemas/BudgetsListResponse.yml#/BudgetsListResponse'
     BudgetOverviewResponse:
       $ref: './openapi/schemas/BudgetOverviewResponse.yml#/BudgetOverviewResponse'
-    BudgetAlertsResponse:
-      $ref: './openapi/schemas/BudgetAlertsResponse.yml#/BudgetAlertsResponse'
     CategoryRemainingResponse:
       $ref: './openapi/schemas/CategoryRemainingResponse.yml#/CategoryRemainingResponse'
     BudgetHistoryResponse:
@@ -346,9 +335,3 @@ components:
       $ref: './openapi/schemas/TrendDataPoint.yml#/TrendDataPoint'
     CategoryIntelligence:
       $ref: './openapi/schemas/CategoryIntelligence.yml#/CategoryIntelligence'
-    CategoryTransaction:
-      $ref: './openapi/schemas/CategoryTransaction.yml#/CategoryTransaction'
-    CategoryTransactionsData:
-      $ref: './openapi/schemas/CategoryTransactionsData.yml#/CategoryTransactionsData'
-    CategoryTransactionsResponse:
-      $ref: './openapi/schemas/CategoryTransactionsResponse.yml#/CategoryTransactionsResponse'

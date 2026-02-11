@@ -21,6 +21,18 @@ declare global {
     showToast?: (message: string, type?: string, duration?: number) => HTMLDivElement | undefined;
   }
 
+  /** Cloudflare Turnstile client-side API (injected by turnstile/v0/api.js) */
+
+  var turnstile:
+    | {
+        render: (container: string | HTMLElement, params?: Record<string, unknown>) => string;
+        reset: (widgetId?: string) => void;
+        getResponse: (widgetId?: string) => string | undefined;
+        remove: (widgetId?: string) => void;
+        isExpired: (widgetId?: string) => boolean;
+      }
+    | undefined;
+
   /// <reference types="vite/client" />
   interface ImportMetaEnv {
     /** Base URL for API endpoints (default: /api) */
@@ -40,10 +52,22 @@ declare global {
     readonly LOG_LEVEL?: string;
 
     // Email configuration
-    /** Email mode: 'console' for development logging, undefined for real sending */
-    readonly EMAIL_MODE?: 'console';
-    /** Base64-encoded 32-byte encryption key for email credentials */
-    readonly EMAIL_ENCRYPTION_KEY?: string;
+    /** Email mode: 'console' for development logging, 'real' for provider sending */
+    readonly EMAIL_MODE?: 'console' | 'real';
+    /** Email provider: 'resend' or 'sendgrid' */
+    readonly EMAIL_PROVIDER?: 'resend' | 'sendgrid';
+    /** API key from your email provider dashboard */
+    readonly EMAIL_API_KEY?: string;
+    /** Sender display name */
+    readonly EMAIL_SENDER_NAME?: string;
+    /** Verified sender email address */
+    readonly EMAIL_SENDER_ADDRESS?: string;
+
+    // Cloudflare Turnstile (Bot Protection)
+    /** Public site key for Turnstile widget (client-side) */
+    readonly PUBLIC_TURNSTILE_SITE_KEY?: string;
+    /** Secret key for server-side Turnstile token verification */
+    readonly TURNSTILE_SECRET_KEY?: string;
   }
 
   interface ImportMeta {

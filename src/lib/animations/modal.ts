@@ -24,7 +24,7 @@ export const MODAL_CONTENT_ENTER_KEYFRAMES = {
   opacity: [0, 1],
   scale: [0.95, 1],
   y: [20, 0],
-} as const;
+};
 
 /**
  * Modal content exit animation keyframes
@@ -34,7 +34,7 @@ export const MODAL_CONTENT_EXIT_KEYFRAMES = {
   opacity: [1, 0],
   scale: [1, 0.95],
   y: [0, 20],
-} as const;
+};
 
 /**
  * Modal content enter animation options (duration and easing)

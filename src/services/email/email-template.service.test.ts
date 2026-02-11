@@ -36,7 +36,7 @@ describe('EmailTemplateService', () => {
   describe('workspaceInvitation', () => {
     it('should generate invitation email with correct subject', () => {
       const result = templateService.workspaceInvitation({
-        inviteUrl: 'https://example.com/register?token=xyz',
+        inviteUrl: 'https://example.com/signup?token=xyz',
         inviterName: 'John Doe',
         workspaceName: 'Family Budget',
         expiresIn: '7 days',
@@ -47,7 +47,7 @@ describe('EmailTemplateService', () => {
 
     it('should include inviter name', () => {
       const result = templateService.workspaceInvitation({
-        inviteUrl: 'https://example.com/register?token=xyz',
+        inviteUrl: 'https://example.com/signup?token=xyz',
         inviterName: 'John Doe',
         workspaceName: 'Family Budget',
         expiresIn: '7 days',
@@ -58,27 +58,13 @@ describe('EmailTemplateService', () => {
 
     it('should include workspace name', () => {
       const result = templateService.workspaceInvitation({
-        inviteUrl: 'https://example.com/register?token=xyz',
+        inviteUrl: 'https://example.com/signup?token=xyz',
         inviterName: 'John Doe',
         workspaceName: 'Family Budget',
         expiresIn: '7 days',
       });
 
       expect(result.html).toContain('Family Budget');
-    });
-  });
-
-  describe('test', () => {
-    it('should generate test email', () => {
-      const result = templateService.test({
-        workspaceName: 'My Workspace',
-        provider: 'sendgrid',
-        senderEmail: 'noreply@example.com',
-      });
-
-      expect(result.subject).toBe('Test email from My Workspace');
-      expect(result.html).toContain('working correctly');
-      expect(result.html).toContain('sendgrid');
     });
   });
 

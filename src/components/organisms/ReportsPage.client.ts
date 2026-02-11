@@ -117,21 +117,24 @@ async function fetchAndRenderReports(): Promise<void> {
     // Fetch HTML fragments
     const partials = await fetchReportHtml(currentState.range, currentState.period);
 
-    // Render partials
+    // Render partials — each render function clears its own loading state
+    // after animation completes. Only call hideLoadingState as fallback
+    // when no render function runs for that container.
     if (partials.summary) {
       renderSummaryHtml(partials.summary);
+    } else {
+      hideLoadingState('[data-summary-container]');
     }
     if (partials.charts) {
       renderChartsHtml(partials.charts);
+    } else {
+      hideLoadingState('[data-charts-container]');
     }
     if (partials.table) {
       renderTableHtml(partials.table);
+    } else {
+      hideLoadingState('[data-table-container]');
     }
-
-    // Hide loading states
-    hideLoadingState('[data-summary-container]');
-    hideLoadingState('[data-charts-container]');
-    hideLoadingState('[data-table-container]');
 
     // Accessibility announcement
     const rangeLabel = currentState.range === 'monthly' ? 'Monthly' : 'Yearly';
@@ -139,7 +142,7 @@ async function fetchAndRenderReports(): Promise<void> {
   } catch (error) {
     console.error('Error fetching report data:', error);
 
-    // Hide loading states
+    // Hide loading states on error
     hideLoadingState('[data-summary-container]');
     hideLoadingState('[data-charts-container]');
     hideLoadingState('[data-table-container]');
