@@ -2,9 +2,10 @@
 /**
  * Signup Page
  *
- * User registration page with support for invitation-based signups.
+ * User registration page with signup-mode policy.
  * - If `?token` is present: validates invitation and pre-fills email
- * - If no token: shows regular signup form (creates new workspace)
+ * - If no token and SIGNUP_MODE=public: shows public registration form
+ * - If no token and SIGNUP_MODE=invite_only: shows invitation-required state
  */
 
 import AuthLayout from '../layouts/AuthLayout.astro';
@@ -16,11 +17,14 @@ import { Building2, Eye, EyeOff, TriangleAlert, CircleCheck } from '@lucide/astr
 import { getSignupUrl } from '@/lib/config';
 import { workspaceInvitationService, workspaceService } from '@/services';
 import Turnstile from '../components/atoms/Turnstile.astro';
+import { getSignupMode } from '@/lib/auth/signup-mode';
 
 // Get query params
 const url = new URL(Astro.request.url);
 const token = url.searchParams.get('token');
 const error = url.searchParams.get('error');
+const signupMode = getSignupMode();
+const isPublicSignupEnabled = signupMode === 'public';
 
 // Error messages mapping
 const errorMessages: Record<string, string> = {
@@ -47,6 +51,32 @@ let invitation: {
 
 let invitationError = '';
 
+type InvitationErrorCode =
+  | 'INVITATION_NOT_FOUND'
+  | 'INVITATION_EXPIRED'
+  | 'INVITATION_ALREADY_ACCEPTED';
+
+function getInvitationErrorCode(error: unknown): InvitationErrorCode | undefined {
+  if (!error || typeof error !== 'object') {
+    return undefined;
+  }
+
+  const candidate = (error as { code?: unknown }).code;
+  if (typeof candidate !== 'string') {
+    return undefined;
+  }
+
+  if (
+    candidate === 'INVITATION_NOT_FOUND' ||
+    candidate === 'INVITATION_EXPIRED' ||
+    candidate === 'INVITATION_ALREADY_ACCEPTED'
+  ) {
+    return candidate;
+  }
+
+  return undefined;
+}
+
 // Validate invitation token if present
 if (token) {
   try {
@@ -62,13 +92,15 @@ if (token) {
     } else {
       invitationError = 'Workspace not found';
     }
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const errorCode = getInvitationErrorCode(err);
+
     // Handle specific error codes
-    if (err.code === 'INVITATION_NOT_FOUND') {
+    if (errorCode === 'INVITATION_NOT_FOUND') {
       invitationError = 'This invitation link is invalid or has been revoked.';
-    } else if (err.code === 'INVITATION_EXPIRED') {
+    } else if (errorCode === 'INVITATION_EXPIRED') {
       invitationError = 'This invitation has expired. Please request a new invitation.';
-    } else if (err.code === 'INVITATION_ALREADY_ACCEPTED') {
+    } else if (errorCode === 'INVITATION_ALREADY_ACCEPTED') {
       invitationError = 'This invitation has already been used.';
     } else {
       invitationError = 'Unable to validate invitation. Please try again.';
@@ -79,13 +111,36 @@ if (token) {
 // Get CSP nonce from middleware
 const cspNonce = Astro.locals.cspNonce || '';
 
-const isInvitation = !!invitation;
-const hasInvitationError = !!invitationError;
+const isMissingInvitationToken = !token;
+const showInvitationRequired = isMissingInvitationToken && !isPublicSignupEnabled;
+const isInvitationSignup = !!token && !!invitation;
+const hasInvitationError = !!token && (!invitation || !!invitationError);
+const invitationErrorMessage =
+  invitationError || 'Unable to validate invitation. Please try again.';
 ---
 
-<AuthLayout title={isInvitation ? 'allowealth - Join Workspace' : 'allowealth - Sign Up'}>
+<AuthLayout title={isInvitationSignup ? 'allowealth - Join Workspace' : 'allowealth - Sign Up'}>
   {
-    hasInvitationError ? (
+    showInvitationRequired ? (
+      <div class="card bg-base-100 shadow-2xl border border-base-300">
+        <div class="card-body p-8">
+          <div class="flex flex-col items-center gap-4 text-center">
+            <div class="w-16 h-16 rounded-full bg-warning/10 flex items-center justify-center">
+              <TriangleAlert size={32} class="text-warning stroke-current" aria-hidden="true" />
+            </div>
+            <h2 class="text-2xl font-bold">Invitation Required</h2>
+            <p class="text-base-content/70">
+              Signup is currently invite-only. Ask your workspace admin for an invitation link.
+            </p>
+            <div class="flex gap-4 mt-4">
+              <a href="/login" class="btn btn-accent rounded-2xl">
+                Sign In
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    ) : hasInvitationError ? (
       // Show error state for invalid/expired invitation
       <div class="card bg-base-100 shadow-2xl border border-base-300">
         <div class="card-body p-8">
@@ -94,13 +149,10 @@ const hasInvitationError = !!invitationError;
               <TriangleAlert size={32} class="text-error stroke-current" aria-hidden="true" />
             </div>
             <h2 class="text-2xl font-bold text-error">Invalid Invitation</h2>
-            <p class="text-base-content/70">{invitationError}</p>
+            <p class="text-base-content/70">{invitationErrorMessage}</p>
             <div class="flex gap-4 mt-4">
               <a href="/login" class="btn btn-ghost rounded-2xl">
                 Sign In
-              </a>
-              <a href="/signup" class="btn btn-accent rounded-2xl">
-                Create Account
               </a>
             </div>
           </div>
@@ -110,7 +162,7 @@ const hasInvitationError = !!invitationError;
       <div class="card bg-base-100 shadow-2xl border border-base-300">
         <div class="card-body p-8">
           {/* Invitation banner */}
-          {isInvitation && invitation && (
+          {isInvitationSignup && invitation && (
             <div class="bg-accent/10 border border-accent/20 rounded-2xl p-4 mb-6">
               <div class="flex items-center gap-3">
                 <div class="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center">
@@ -126,7 +178,7 @@ const hasInvitationError = !!invitationError;
           )}
 
           <h2 class="text-2xl font-bold mb-6 text-center">
-            {isInvitation ? 'Complete Your Account' : 'Create Account'}
+            {isInvitationSignup ? 'Complete Your Account' : 'Create Account'}
           </h2>
 
           <form
@@ -164,8 +216,7 @@ const hasInvitationError = !!invitationError;
               <Label htmlFor="email" required>
                 Email Address
               </Label>
-              {isInvitation && invitation ? (
-                // Pre-filled and readonly for invitation signup
+              {isInvitationSignup && invitation ? (
                 <div class="flex items-center gap-3 h-14 py-4 px-6 bg-base-200 rounded-full border border-base-300">
                   <CircleCheck
                     size={20}
@@ -224,8 +275,7 @@ const hasInvitationError = !!invitationError;
               </div>
             </div>
 
-            {/* Workspace name for new signups */}
-            {!isInvitation && (
+            {!isInvitationSignup && (
               <div class="form-control">
                 <Label htmlFor="workspace-name">Workspace Name (Optional)</Label>
                 <Input
@@ -251,7 +301,9 @@ const hasInvitationError = !!invitationError;
                 className="w-full h-14 rounded-full"
                 data-submit-button
               >
-                <span data-button-text>{isInvitation ? 'Join Workspace' : 'Create Account'}</span>
+                <span data-button-text>
+                  {isInvitationSignup ? 'Join Workspace' : 'Create Account'}
+                </span>
                 <span data-loading-spinner class="hidden">
                   <span class="loading loading-spinner" />
                   Creating account...

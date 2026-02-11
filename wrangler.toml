@@ -16,6 +16,7 @@ binding = "ASSETS"
 [vars]
 NODE_ENV = "production"
 PUBLIC_URL = "https://allowealth.io"
+SIGNUP_MODE = "invite_only"
 CACHE_DRIVER = "upstash"
 PERF_DEBUG = "true"
 LOG_LEVEL = "warn"
@@ -57,5 +58,5 @@ head_sampling_rate = 1
 # https://developers.cloudflare.com/workers/configuration/routing/routes/
 routes = [
   { pattern = "allowealth.io/*", custom_domain = true },
-  { pattern = "www.allowealth.io/*", custom_domain = true }
+  { pattern = "www.allowealth.io/*", custom_domain = true },
 ]

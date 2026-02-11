@@ -21,17 +21,24 @@ import { workspaceInvitations as workspaceInvitationsSchema } from '@/db/schema/
 import { eq, and, isNull, gt, desc } from 'drizzle-orm';
 import { createLogger } from '@/lib/logger';
 import { getEnv } from '@/lib/env';
+import { EmailService } from '@/services/email';
 
 const log = createLogger('workspace-invitation');
 import { nanoid } from 'nanoid';
 import { z } from 'zod';
 import { WorkspaceInvitationServiceError, ServiceErrorCode } from './service-errors';
-import { emailService } from '@/services';
+
+const workspaceInvitationEmailService = new EmailService();
 
 /**
- * Invitation expiration time in milliseconds (7 days)
+ * Invitation expiration time in days
  */
-const INVITATION_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000;
+const INVITATION_EXPIRY_DAYS = 7;
+
+/**
+ * Invitation expiration time in milliseconds
+ */
+const INVITATION_EXPIRY_MS = INVITATION_EXPIRY_DAYS * 24 * 60 * 60 * 1000;
 
 /**
  * Secure token length for invitations
@@ -51,7 +58,7 @@ function getBaseUrl(): string {
 export const createInvitationSchema = z.object({
   workspaceId: z.string().min(1, 'Workspace ID is required'),
   email: z.string().regex(/^[^\s@]+@[^\s@]+\.[^\s@]+$/, 'Invalid email format'),
-  invitedByUserId: z.string().min(1, 'Invited by user ID is required'),
+  invitedByUserId: z.string().min(1, 'Invited by user ID is required').optional(),
   role: z.enum(['admin', 'member']),
 });
 
@@ -107,7 +114,7 @@ export class WorkspaceInvitationService {
         workspace_id: validated.workspaceId,
         email: validated.email.toLowerCase(),
         token,
-        invited_by_user_id: validated.invitedByUserId,
+        invited_by_user_id: validated.invitedByUserId ?? null,
         role: validated.role,
         expires_at: expiresAt,
         accepted_at: null,
@@ -375,19 +382,21 @@ export class WorkspaceInvitationService {
       const workspaceName = workspace?.name || 'Unknown Workspace';
 
       // Get inviter name
-      const inviter = await this.db.query.users.findFirst({
-        where: eq(this.schema.users.id, invitation.invited_by_user_id),
-      });
-      const inviterName = inviter?.name || 'A team member';
+      const inviter = invitation.invited_by_user_id
+        ? await this.db.query.users.findFirst({
+            where: eq(this.schema.users.id, invitation.invited_by_user_id),
+          })
+        : null;
+      const inviterName = inviter?.name || 'Workspace administrator';
 
       // Build invite URL
       const baseUrl = getBaseUrl();
-      const inviteUrl = `${baseUrl}/invite?token=${invitation.token}`;
+      const inviteUrl = `${baseUrl}/signup?token=${invitation.token}`;
 
       // Calculate expiration time
-      const expiresIn = '7 days';
+      const expiresIn = `${INVITATION_EXPIRY_DAYS} days`;
 
-      await emailService.sendWorkspaceInvitation({
+      await workspaceInvitationEmailService.sendWorkspaceInvitation({
         to: invitation.email,
         inviterName,
         workspaceName,

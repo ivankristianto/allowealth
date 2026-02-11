@@ -2,8 +2,8 @@
 /**
  * Register Page - Redirect
  *
- * Redirects to /signup which handles both standard registration
- * and invitation-based signups. Preserves query parameters.
+ * Redirects to /signup for registration flow.
+ * Preserves query parameters.
  */
 
 return Astro.redirect(`/signup${new URL(Astro.request.url).search}`, 301);
