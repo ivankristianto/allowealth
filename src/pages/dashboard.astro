@@ -57,18 +57,20 @@ try {
 
   // Get onboarding status (parallel queries)
   onboardingStatus = await workspaceService.getOnboardingStatus(user.workspaceId);
-  isOnboardingComplete =
-    onboardingStatus.currency &&
-    onboardingStatus.categories &&
-    onboardingStatus.budgets &&
-    onboardingStatus.assets &&
-    onboardingStatus.transactions;
 
-  // Get currency from workspace meta (null if not set)
+  // Validate currency from workspace meta before computing completion
   if (onboardingStatus.currency) {
     const currencyValue = await workspaceMetaService.get(user.workspaceId, 'currency');
     primaryCurrency = isSupportedCurrency(currencyValue) ? currencyValue : null;
   }
+
+  // Tie completion to validated currency so checklist stays visible if currency is unsupported
+  isOnboardingComplete =
+    Boolean(primaryCurrency) &&
+    onboardingStatus.categories &&
+    onboardingStatus.budgets &&
+    onboardingStatus.assets &&
+    onboardingStatus.transactions;
 
   // Only fetch dashboard data if currency is set
   if (primaryCurrency) {
