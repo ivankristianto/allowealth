@@ -278,7 +278,7 @@ export class WorkspaceService {
             eq(this.schema.budgets.workspace_id, workspaceId),
             eq(this.schema.budgets.month, now.getMonth() + 1),
             eq(this.schema.budgets.year, now.getFullYear()),
-            sql`CAST(${this.schema.budgets.budget_amount} AS REAL) > 0`
+            sql`CAST(${this.schema.budgets.budget_amount} AS NUMERIC) > 0`
           ),
           columns: { id: true },
         });
