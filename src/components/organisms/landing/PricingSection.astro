@@ -3,21 +3,12 @@
  * PricingSection Component
  *
  * Pricing table with 3 tiers: Starter, Pro (featured), Expert.
- * CTA buttons change based on authentication state.
+ * Auth state is detected client-side via auth_hint cookie (see PublicAuthCta.client.ts).
  */
 
 import { Check } from '@lucide/astro';
 import { pricingTiers } from '@/lib/landing-content';
-import type { User } from '@/lib/auth/lucia';
 import Button from '@/components/atoms/Button.astro';
-
-interface Props {
-  user?: User | null;
-}
-
-const { user } = Astro.props;
-
-const ctaHref = user ? '/transactions' : '/signup';
 ---
 
 <section id="pricing" class="relative z-10 px-6 py-24 sm:py-40" aria-labelledby="pricing-title">
@@ -112,9 +103,11 @@ const ctaHref = user ? '/transactions' : '/signup';
               {/* CTA Button */}
               <Button
                 variant={isFeatured ? 'accent' : 'secondary'}
-                href={ctaHref}
+                href="/signup"
                 size="lg"
                 className="w-full"
+                data-auth-cta
+                data-auth-href="/transactions"
               >
                 Select Plan
               </Button>

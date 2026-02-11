@@ -129,36 +129,37 @@ Workspaces provide a shared financial context for families, teams, or groups. Ea
 
 #### Create Workspace
 
-Create a new workspace with custom settings:
+Create a new workspace with custom settings and admin invitation:
 
 ```bash
 # Basic workspace creation
-bun run cli:create-workspace -- --name "My Family"
+bun run cli:create-workspace -- --name "My Family" --email admin@example.com
 
 # Create with custom settings
-bun run cli:create-workspace -- --name "Business" --currency USD --week-start sunday --compact-numbers true
+bun run cli:create-workspace -- --name "Business" --email owner@business.com --currency USD --week-start sunday --compact-numbers true
 ```
 
 **Example Output:**
 
-```
+```text
 Creating workspace...
 
-Created workspace:
-  ID:   abc123def456
-  Name: My Family
+✓ Created workspace: My Family (abc123def456)
+✓ Set workspace settings (currency: IDR, weekStart: monday)
+✓ Created admin invitation for: admin@example.com
 
-Workspace settings:
-  Currency:        IDR
-  Week Start:      monday
-  Compact Numbers: true
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ Workspace created successfully!
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Workspace created successfully!
+Invitation link:
+  http://localhost:4321/signup?token=...
 ```
 
 **Available Options:**
 
 - `--name, -n` - Workspace name (required)
+- `--email, -e` - Admin email address (required, prompts if missing)
 - `--currency, -c` - Default currency code (default: IDR)
 - `--week-start, -w` - Week start day: `monday` or `sunday` (default: monday)
 - `--compact-numbers` - Use compact formatting: `true` or `false` (default: true)
@@ -424,9 +425,12 @@ All platforms require these environment variables:
 ```bash
 DATABASE_URL=postgresql://postgres.xxx:password@aws-0-region.pooler.supabase.com:6543/postgres
 NODE_ENV=production
+PUBLIC_URL=https://your-app.example.com
+SIGNUP_MODE=invite_only
 ```
 
 **Important:** For serverless platforms (Cloudflare, Vercel, Netlify), always use the Supabase **pooler URL** (port 6543), not the direct connection.
+`SIGNUP_MODE=invite_only` enforces invitation-only registration. Set `SIGNUP_MODE=public` when you're ready to open public signup.
 
 ### Supabase PostgreSQL Setup
 

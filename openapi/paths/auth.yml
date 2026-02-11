@@ -8,7 +8,16 @@ paths:
         Create a new user account with email, password, and name.
         A verification email is sent to the provided email address.
         The user must verify their email before they can log in.
+        When `SIGNUP_MODE=invite_only`, signup requires an invitation token.
+        When `SIGNUP_MODE=public`, signup without a token is allowed.
       security: []
+      parameters:
+        - name: token
+          in: query
+          required: false
+          description: Invitation token from workspace admin
+          schema:
+            type: string
       requestBody:
         required: true
         content:
@@ -23,7 +32,7 @@ paths:
               schema:
                 $ref: '../schemas/AuthSuccessResponse.yml#/AuthSuccessResponse'
         '400':
-          description: Bad request - invalid input or Turnstile verification failed
+          description: Bad request - invalid input, invalid invitation token, or Turnstile verification failed
           content:
             application/json:
               schema:

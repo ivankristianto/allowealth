@@ -31,37 +31,39 @@ const { totalIncome, totalExpenses, netSavings, budgetHealth, expenseCategories,
 ---
 
 <!-- Summary Metric Cards -->
-<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 md:gap-6" data-summary-cards>
-  <StatCard
-    title="TOTAL INCOME"
-    value={formatCurrency(totalIncome, currency)}
-    subtitle="PERIOD TOTAL"
-    subtitleIcon="trending-up"
-    valueColor="text-success"
-    subtitleColor="text-success/60"
-  />
+<div class="@container" data-summary-cards>
+  <div class="grid grid-cols-1 @2xl:grid-cols-2 @5xl:grid-cols-4 gap-4 @2xl:gap-6">
+    <StatCard
+      title="TOTAL INCOME"
+      value={formatCurrency(totalIncome, currency)}
+      subtitle="PERIOD TOTAL"
+      subtitleIcon="trending-up"
+      valueColor="text-success"
+      subtitleColor="text-success/60"
+    />
 
-  <StatCard
-    title="TOTAL EXPENSES"
-    value={formatCurrency(totalExpenses, currency)}
-    subtitle={`${expenseCategories} CATEGORIES`}
-    valueColor="text-error"
-    subtitleColor="text-error/60"
-  />
+    <StatCard
+      title="TOTAL EXPENSES"
+      value={formatCurrency(totalExpenses, currency)}
+      subtitle={`${expenseCategories} CATEGORIES`}
+      valueColor="text-error"
+      subtitleColor="text-error/60"
+    />
 
-  <StatCard
-    title="NET SAVINGS"
-    value={formatCurrency(netSavings, currency)}
-    subtitle="RETAINED CAPITAL"
-    valueColor="text-accent"
-    subtitleColor="text-base-content/60"
-  />
+    <StatCard
+      title="NET SAVINGS"
+      value={formatCurrency(netSavings, currency)}
+      subtitle="RETAINED CAPITAL"
+      valueColor="text-accent"
+      subtitleColor="text-base-content/60"
+    />
 
-  <StatCard
-    title="BUDGET HEALTH"
-    value={`${budgetHealth}%`}
-    valueColor={budgetHealth > 100 ? 'text-error' : 'text-success'}
-    progress={budgetHealth}
-    progressColor={budgetHealth > 100 ? 'bg-error' : 'bg-success'}
-  />
+    <StatCard
+      title="BUDGET HEALTH"
+      value={`${budgetHealth}%`}
+      valueColor={budgetHealth > 100 ? 'text-error' : 'text-success'}
+      progress={budgetHealth}
+      progressColor={budgetHealth > 100 ? 'bg-error' : 'bg-success'}
+    />
+  </div>
 </div>

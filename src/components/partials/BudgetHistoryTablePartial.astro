@@ -69,172 +69,44 @@ const sortedHistory = [...history].sort((a, b) => {
 });
 ---
 
-{
-  sortedHistory.length > 0 ? (
-    <div class="divide-y divide-base-100">
-      {sortedHistory.map((monthData, index) => {
-        const budgetAmount = parseFloat(monthData.total_budget);
-        const spentAmount = parseFloat(monthData.total_spent);
-        const balance = parseFloat(monthData.total_balance);
-        const percentageUsed = monthData.percentage_used;
-        const budgetStatus = getBudgetStatus(percentageUsed);
-        const monthHasData = hasData(budgetAmount, spentAmount);
+<div class="@container">
+  {
+    sortedHistory.length > 0 ? (
+      <div class="divide-y divide-base-100">
+        {sortedHistory.map((monthData, index) => {
+          const budgetAmount = parseFloat(monthData.total_budget);
+          const spentAmount = parseFloat(monthData.total_spent);
+          const balance = parseFloat(monthData.total_balance);
+          const percentageUsed = monthData.percentage_used;
+          const budgetStatus = getBudgetStatus(percentageUsed);
+          const monthHasData = hasData(budgetAmount, spentAmount);
 
-        // Get previous month for comparison
-        const previousMonth = sortedHistory[index + 1];
-        const previousSpent = previousMonth ? parseFloat(previousMonth.total_spent) : null;
-        const changeIndicator = getChangeIndicator(spentAmount, previousSpent);
+          // Get previous month for comparison
+          const previousMonth = sortedHistory[index + 1];
+          const previousSpent = previousMonth ? parseFloat(previousMonth.total_spent) : null;
+          const changeIndicator = getChangeIndicator(spentAmount, previousSpent);
 
-        // Check if this is current month
-        const isCurrentMonth = monthData.month === currentMonth && monthData.year === currentYear;
+          // Check if this is current month
+          const isCurrentMonth = monthData.month === currentMonth && monthData.year === currentYear;
 
-        // Budget details URL
-        const budgetUrl = buildBudgetUrl(monthData.year, monthData.month);
+          // Budget details URL
+          const budgetUrl = buildBudgetUrl(monthData.year, monthData.month);
 
-        return (
-          <div class="group hover:bg-base-200/30 transition-colors" data-history-row>
-            {/* Mobile View - Card Layout */}
-            <div class="lg:hidden p-6 space-y-4">
-              <div class="flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                  <span class="text-base font-bold">{monthData.month_name}</span>
-                  <span class="text-xs font-medium text-base-content/40">{monthData.year}</span>
-                  {isCurrentMonth && (
-                    <span class="bg-primary text-primary-content text-xs px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
-                      Current
-                    </span>
-                  )}
-                </div>
-                {monthHasData ? (
-                  <Badge
-                    variant={budgetStatus.badgeVariant}
-                    size="sm"
-                    className={`${tokenClasses.badgePadding} ${tokenClasses.textXs}`}
-                  >
-                    {percentageUsed.toFixed(2)}%
-                  </Badge>
-                ) : (
-                  <span class="text-xs font-bold text-base-content/30">No data</span>
-                )}
-              </div>
-
-              {monthHasData ? (
-                <>
-                  <div class="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <div class="text-xs font-bold text-base-content/40 uppercase tracking-widest mb-1">
-                        Budget
-                      </div>
-                      <div class="font-bold">{formatCurrency(budgetAmount, currency)}</div>
-                    </div>
-                    <div>
-                      <div class="text-xs font-bold text-base-content/40 uppercase tracking-widest mb-1">
-                        Spent
-                      </div>
-                      <div class="font-bold">{formatCurrency(spentAmount, currency)}</div>
-                    </div>
-                    <div>
-                      <div class="text-xs font-bold text-base-content/40 uppercase tracking-widest mb-1">
-                        Balance
-                      </div>
-                      <div class={`font-bold ${balance >= 0 ? 'text-success' : 'text-error'}`}>
-                        {formatCurrencyCompact(balance, currency)}
-                      </div>
-                    </div>
-                    <div>
-                      <div class="text-xs font-bold text-base-content/40 uppercase tracking-widest mb-1">
-                        Change
-                      </div>
-                      <div class={changeIndicator.class}>{changeIndicator.value}</div>
-                    </div>
+          return (
+            <div class="group hover:bg-base-200/30 transition-colors" data-history-row>
+              {/* Mobile View - Card Layout */}
+              <div class="@3xl:hidden p-6 space-y-4">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-3">
+                    <span class="text-base font-bold">{monthData.month_name}</span>
+                    <span class="text-xs font-medium text-base-content/40">{monthData.year}</span>
+                    {isCurrentMonth && (
+                      <span class="bg-primary text-primary-content text-xs px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
+                        Current
+                      </span>
+                    )}
                   </div>
-
-                  {/* Progress bar */}
-                  <div class="pt-2">
-                    <ProgressBar
-                      value={percentageUsed}
-                      status={budgetStatus.status}
-                      size="sm"
-                      ariaLabel={`${monthData.month_name}: ${formatPercentage(percentageUsed)} of budget used`}
-                    />
-                  </div>
-
-                  {/* Alerts summary */}
-                  {(monthData.categories_exceeded > 0 || monthData.categories_warning > 0) && (
-                    <div class="flex items-center gap-3">
-                      {monthData.categories_exceeded > 0 && (
-                        <span class="text-xs font-bold text-error uppercase tracking-wide">
-                          {monthData.categories_exceeded} exceeded
-                        </span>
-                      )}
-                      {monthData.categories_warning > 0 && (
-                        <span class="text-xs font-bold text-warning uppercase tracking-wide">
-                          {monthData.categories_warning} warning
-                        </span>
-                      )}
-                    </div>
-                  )}
-                </>
-              ) : (
-                <div class="text-center py-4 text-base-content/40 text-sm">
-                  No budget data for this month
-                </div>
-              )}
-
-              {/* View button for mobile */}
-              <a
-                href={budgetUrl}
-                class="btn btn-outline btn-accent btn-sm w-full gap-2 rounded-lg"
-                aria-label={`View budget details for ${monthData.month_name} ${monthData.year}`}
-              >
-                <Eye size={16} class="stroke-current" aria-hidden="true" />
-                View Details
-              </a>
-            </div>
-
-            {/* Desktop View - Table Row */}
-            <div class="hidden lg:grid grid-cols-7 items-center">
-              <div class="px-4 xl:px-8 py-5 xl:py-6">
-                <div class="flex items-center gap-2 xl:gap-3">
-                  <span class="text-sm xl:text-base font-bold">{monthData.month_name}</span>
-                  <span class="text-xs font-medium text-base-content/40">{monthData.year}</span>
-                  {isCurrentMonth && (
-                    <span class="bg-primary text-primary-content text-xs px-1.5 xl:px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
-                      Current
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              <div class="px-4 xl:px-8 py-5 xl:py-6 text-right">
-                {monthHasData ? (
-                  <span class="text-sm font-bold">{formatCurrency(budgetAmount, currency)}</span>
-                ) : (
-                  <span class="text-sm font-bold text-base-content/30">No data</span>
-                )}
-              </div>
-
-              <div class="px-4 xl:px-8 py-5 xl:py-6 text-right">
-                {monthHasData ? (
-                  <span class="text-sm font-bold">{formatCurrency(spentAmount, currency)}</span>
-                ) : (
-                  <span class="text-sm font-bold text-base-content/30">No data</span>
-                )}
-              </div>
-
-              <div class="px-4 xl:px-8 py-5 xl:py-6 text-right">
-                {monthHasData ? (
-                  <span class={`text-sm font-bold ${balance >= 0 ? 'text-success' : 'text-error'}`}>
-                    {formatCurrencyCompact(balance, currency)}
-                  </span>
-                ) : (
-                  <span class="text-sm font-bold text-base-content/30">No data</span>
-                )}
-              </div>
-
-              <div class="px-4 xl:px-8 py-5 xl:py-6 text-center">
-                {monthHasData ? (
-                  <div class="inline-flex flex-col items-center">
+                  {monthHasData ? (
                     <Badge
                       variant={budgetStatus.badgeVariant}
                       size="sm"
@@ -242,65 +114,197 @@ const sortedHistory = [...history].sort((a, b) => {
                     >
                       {percentageUsed.toFixed(2)}%
                     </Badge>
+                  ) : (
+                    <span class="text-xs font-bold text-base-content/30">No data</span>
+                  )}
+                </div>
+
+                {monthHasData ? (
+                  <>
+                    <div class="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <div class="text-xs font-bold text-base-content/40 uppercase tracking-widest mb-1">
+                          Budget
+                        </div>
+                        <div class="font-bold">{formatCurrency(budgetAmount, currency)}</div>
+                      </div>
+                      <div>
+                        <div class="text-xs font-bold text-base-content/40 uppercase tracking-widest mb-1">
+                          Spent
+                        </div>
+                        <div class="font-bold">{formatCurrency(spentAmount, currency)}</div>
+                      </div>
+                      <div>
+                        <div class="text-xs font-bold text-base-content/40 uppercase tracking-widest mb-1">
+                          Balance
+                        </div>
+                        <div class={`font-bold ${balance >= 0 ? 'text-success' : 'text-error'}`}>
+                          {formatCurrencyCompact(balance, currency)}
+                        </div>
+                      </div>
+                      <div>
+                        <div class="text-xs font-bold text-base-content/40 uppercase tracking-widest mb-1">
+                          Change
+                        </div>
+                        <div class={changeIndicator.class}>{changeIndicator.value}</div>
+                      </div>
+                    </div>
+
+                    {/* Progress bar */}
+                    <div class="pt-2">
+                      <ProgressBar
+                        value={percentageUsed}
+                        status={budgetStatus.status}
+                        size="sm"
+                        ariaLabel={`${monthData.month_name}: ${formatPercentage(percentageUsed)} of budget used`}
+                      />
+                    </div>
+
+                    {/* Alerts summary */}
                     {(monthData.categories_exceeded > 0 || monthData.categories_warning > 0) && (
-                      <div class="mt-2 flex gap-2 justify-center">
+                      <div class="flex items-center gap-3">
                         {monthData.categories_exceeded > 0 && (
-                          <span class="text-xs font-bold text-error uppercase leading-none whitespace-nowrap">
+                          <span class="text-xs font-bold text-error uppercase tracking-wide">
                             {monthData.categories_exceeded} exceeded
                           </span>
                         )}
                         {monthData.categories_warning > 0 && (
-                          <span class="text-xs font-bold text-warning uppercase leading-none whitespace-nowrap">
+                          <span class="text-xs font-bold text-warning uppercase tracking-wide">
                             {monthData.categories_warning} warning
                           </span>
                         )}
                       </div>
                     )}
+                  </>
+                ) : (
+                  <div class="text-center py-4 text-base-content/40 text-sm">
+                    No budget data for this month
                   </div>
-                ) : (
-                  <span class="text-sm font-bold text-base-content/30">—</span>
                 )}
-              </div>
 
-              <div class="px-4 xl:px-8 py-5 xl:py-6 text-right">
-                {monthHasData ? (
-                  <span class={`text-sm ${changeIndicator.class}`}>{changeIndicator.value}</span>
-                ) : (
-                  <span class="text-sm font-bold text-base-content/30">—</span>
-                )}
-              </div>
-
-              <div class="px-4 xl:px-8 py-5 xl:py-6 text-center">
+                {/* View button for mobile */}
                 <a
                   href={budgetUrl}
-                  class="btn btn-ghost btn-sm btn-square hover:bg-base-200"
+                  class="btn btn-outline btn-accent btn-sm w-full gap-2 rounded-lg"
                   aria-label={`View budget details for ${monthData.month_name} ${monthData.year}`}
-                  title="View budget details"
                 >
-                  <Eye size={18} class="stroke-current" aria-hidden="true" />
+                  <Eye size={16} class="stroke-current" aria-hidden="true" />
+                  View Details
                 </a>
               </div>
+
+              {/* Desktop View - Table Row */}
+              <div class="hidden @3xl:grid grid-cols-7 items-center">
+                <div class="px-4 @4xl:px-8 py-5 @4xl:py-6">
+                  <div class="flex items-center gap-2 @4xl:gap-3">
+                    <span class="text-sm @4xl:text-base font-bold">{monthData.month_name}</span>
+                    <span class="text-xs font-medium text-base-content/40">{monthData.year}</span>
+                    {isCurrentMonth && (
+                      <span class="bg-primary text-primary-content text-xs px-1.5 @4xl:px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
+                        Current
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div class="px-4 @4xl:px-8 py-5 @4xl:py-6 text-right">
+                  {monthHasData ? (
+                    <span class="text-sm font-bold">{formatCurrency(budgetAmount, currency)}</span>
+                  ) : (
+                    <span class="text-sm font-bold text-base-content/30">No data</span>
+                  )}
+                </div>
+
+                <div class="px-4 @4xl:px-8 py-5 @4xl:py-6 text-right">
+                  {monthHasData ? (
+                    <span class="text-sm font-bold">{formatCurrency(spentAmount, currency)}</span>
+                  ) : (
+                    <span class="text-sm font-bold text-base-content/30">No data</span>
+                  )}
+                </div>
+
+                <div class="px-4 @4xl:px-8 py-5 @4xl:py-6 text-right">
+                  {monthHasData ? (
+                    <span
+                      class={`text-sm font-bold ${balance >= 0 ? 'text-success' : 'text-error'}`}
+                    >
+                      {formatCurrencyCompact(balance, currency)}
+                    </span>
+                  ) : (
+                    <span class="text-sm font-bold text-base-content/30">No data</span>
+                  )}
+                </div>
+
+                <div class="px-4 @4xl:px-8 py-5 @4xl:py-6 text-center">
+                  {monthHasData ? (
+                    <div class="inline-flex flex-col items-center">
+                      <Badge
+                        variant={budgetStatus.badgeVariant}
+                        size="sm"
+                        className={`${tokenClasses.badgePadding} ${tokenClasses.textXs}`}
+                      >
+                        {percentageUsed.toFixed(2)}%
+                      </Badge>
+                      {(monthData.categories_exceeded > 0 || monthData.categories_warning > 0) && (
+                        <div class="mt-2 flex gap-2 justify-center">
+                          {monthData.categories_exceeded > 0 && (
+                            <span class="text-xs font-bold text-error uppercase leading-none whitespace-nowrap">
+                              {monthData.categories_exceeded} exceeded
+                            </span>
+                          )}
+                          {monthData.categories_warning > 0 && (
+                            <span class="text-xs font-bold text-warning uppercase leading-none whitespace-nowrap">
+                              {monthData.categories_warning} warning
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <span class="text-sm font-bold text-base-content/30">—</span>
+                  )}
+                </div>
+
+                <div class="px-4 @4xl:px-8 py-5 @4xl:py-6 text-right">
+                  {monthHasData ? (
+                    <span class={`text-sm ${changeIndicator.class}`}>{changeIndicator.value}</span>
+                  ) : (
+                    <span class="text-sm font-bold text-base-content/30">—</span>
+                  )}
+                </div>
+
+                <div class="px-4 @4xl:px-8 py-5 @4xl:py-6 text-center">
+                  <a
+                    href={budgetUrl}
+                    class="btn btn-ghost btn-sm btn-square hover:bg-base-200"
+                    aria-label={`View budget details for ${monthData.month_name} ${monthData.year}`}
+                    title="View budget details"
+                  >
+                    <Eye size={18} class="stroke-current" aria-hidden="true" />
+                  </a>
+                </div>
+              </div>
             </div>
-          </div>
-        );
-      })}
-    </div>
-  ) : (
-    <div id="empty-state" class="py-24 text-center">
-      <EmptyState
-        title="No budget history available"
-        message="Budget history will appear here as you track your spending over time."
-        iconName="receipt"
-        variant="centered"
-        className="py-0"
-      />
-      <a
-        href="/transactions/add"
-        class={`btn btn-outline btn-sm gap-2 ${tokenClasses.marginTopLg}`}
-      >
-        <RotateCcw size={16} class="stroke-current" aria-hidden="true" />
-        Start Tracking
-      </a>
-    </div>
-  )
-}
+          );
+        })}
+      </div>
+    ) : (
+      <div id="empty-state" class="py-24 text-center">
+        <EmptyState
+          title="No budget history available"
+          message="Budget history will appear here as you track your spending over time."
+          iconName="receipt"
+          variant="centered"
+          className="py-0"
+        />
+        <a
+          href="/transactions/add"
+          class={`btn btn-outline btn-sm gap-2 ${tokenClasses.marginTopLg}`}
+        >
+          <RotateCcw size={16} class="stroke-current" aria-hidden="true" />
+          Start Tracking
+        </a>
+      </div>
+    )
+  }
+</div>

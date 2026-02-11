@@ -47,13 +47,16 @@ export const POST: APIRoute = async (context) => {
       message: 'Logged out successfully',
     });
 
-    return new Response(JSON.stringify(responseData), {
+    const response = new Response(JSON.stringify(responseData), {
       status: 200,
-      headers: {
-        ...STANDARD_RESPONSE_HEADERS,
-        'Set-Cookie': blankSessionCookie.serialize(),
-      },
+      headers: STANDARD_RESPONSE_HEADERS,
     });
+    response.headers.append('Set-Cookie', blankSessionCookie.serialize());
+    response.headers.append(
+      'Set-Cookie',
+      `auth_hint=; Path=/; Max-Age=0; SameSite=Lax${import.meta.env.PROD ? '; Secure' : ''}`
+    );
+    return response;
   } catch (error) {
     // Handle auth errors
     if (error instanceof Error && 'code' in error) {

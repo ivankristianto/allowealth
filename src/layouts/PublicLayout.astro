@@ -10,15 +10,13 @@ import BaseLayout from './BaseLayout.astro';
 import PublicNavbar from '@/components/layouts/PublicNavbar.astro';
 import PublicFooter from '@/components/layouts/PublicFooter.astro';
 import ThemeToggle from '@/components/atoms/ThemeToggle.astro';
-import type { User } from '@/lib/auth/lucia';
 
 interface Props {
   title?: string;
-  user?: User | null;
   showBackground?: boolean;
 }
 
-const { title = 'allowealth', user, showBackground = true } = Astro.props;
+const { title = 'allowealth', showBackground = true } = Astro.props;
 ---
 
 <BaseLayout title={title}>
@@ -41,7 +39,7 @@ const { title = 'allowealth', user, showBackground = true } = Astro.props;
   }
 
   <!-- Navigation -->
-  <PublicNavbar user={user} />
+  <PublicNavbar />
 
   <!-- Main Content -->
   <main id="main-content" class="relative z-10 min-h-screen">
@@ -53,6 +51,11 @@ const { title = 'allowealth', user, showBackground = true } = Astro.props;
 
   <!-- Floating Theme Toggle -->
   <ThemeToggle className="fixed bottom-6 right-6 z-50" />
+
+  <!-- Client-side auth detection for CTA swapping -->
+  <script>
+    import '@/components/layouts/PublicAuthCta.client.ts';
+  </script>
 </BaseLayout>
 
 <style is:global>
