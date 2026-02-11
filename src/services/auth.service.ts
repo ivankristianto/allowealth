@@ -771,16 +771,18 @@ export async function unlinkOAuthProvider(userId: string, provider: string): Pro
       );
     }
 
-    await db
-      .delete(schema.oauthAccounts)
-      .where(
-        and(eq(schema.oauthAccounts.user_id, userId), eq(schema.oauthAccounts.provider, provider))
-      );
+    await runTransaction(db, async (tx) => {
+      await tx
+        .delete(schema.oauthAccounts)
+        .where(
+          and(eq(schema.oauthAccounts.user_id, userId), eq(schema.oauthAccounts.provider, provider))
+        );
 
-    // Clear avatar_url since it likely came from the OAuth provider
-    if (user.avatar_url) {
-      await db.update(schema.users).set({ avatar_url: null }).where(eq(schema.users.id, userId));
-    }
+      // Clear avatar_url since it likely came from the OAuth provider
+      if (user.avatar_url) {
+        await tx.update(schema.users).set({ avatar_url: null }).where(eq(schema.users.id, userId));
+      }
+    });
 
     log.info('OAuth provider unlinked', { userId, provider });
   } catch (error) {

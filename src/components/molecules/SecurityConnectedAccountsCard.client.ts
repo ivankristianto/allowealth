@@ -11,6 +11,9 @@ import { addToast } from '@/lib/stores/toastStore';
 
 function initConnectedAccounts() {
   document.querySelectorAll<HTMLFormElement>('[data-unlink-form]').forEach((form) => {
+    if (form.dataset.initialized) return;
+    form.dataset.initialized = 'true';
+
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const provider = form.dataset.provider;
