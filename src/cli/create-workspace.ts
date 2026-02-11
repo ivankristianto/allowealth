@@ -120,15 +120,16 @@ async function main(): Promise<void> {
   console.log('==================');
   console.log('');
 
-  let email = options.email;
+  let email = options.email?.trim();
   if (!email) {
-    email = await prompt('Admin email: ');
+    email = (await prompt('Admin email: ')).trim();
   }
 
   if (!validateEmail(email)) {
     console.error('Error: Invalid email format');
     process.exit(1);
   }
+  const normalizedEmail = email.toLowerCase();
 
   console.log('');
   console.log('Creating workspace...');
@@ -157,13 +158,13 @@ async function main(): Promise<void> {
     const invitationService = new WorkspaceInvitationService(db);
     const invitation = await invitationService.create({
       workspaceId: workspace.id,
-      email: email.toLowerCase(),
+      email: normalizedEmail,
       role: 'admin',
     });
 
     const signupLink = `${getBaseUrl()}/signup?token=${invitation.token}`;
 
-    console.log(`✓ Created admin invitation for: ${email}`);
+    console.log(`✓ Created admin invitation for: ${normalizedEmail}`);
     console.log('');
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     console.log('✅ Workspace created successfully!');

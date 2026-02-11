@@ -31,9 +31,14 @@ import { WorkspaceInvitationServiceError, ServiceErrorCode } from './service-err
 const workspaceInvitationEmailService = new EmailService();
 
 /**
- * Invitation expiration time in milliseconds (7 days)
+ * Invitation expiration time in days
  */
-const INVITATION_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000;
+const INVITATION_EXPIRY_DAYS = 7;
+
+/**
+ * Invitation expiration time in milliseconds
+ */
+const INVITATION_EXPIRY_MS = INVITATION_EXPIRY_DAYS * 24 * 60 * 60 * 1000;
 
 /**
  * Secure token length for invitations
@@ -389,7 +394,7 @@ export class WorkspaceInvitationService {
       const inviteUrl = `${baseUrl}/signup?token=${invitation.token}`;
 
       // Calculate expiration time
-      const expiresIn = '7 days';
+      const expiresIn = `${INVITATION_EXPIRY_DAYS} days`;
 
       await workspaceInvitationEmailService.sendWorkspaceInvitation({
         to: invitation.email,

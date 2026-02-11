@@ -51,6 +51,32 @@ let invitation: {
 
 let invitationError = '';
 
+type InvitationErrorCode =
+  | 'INVITATION_NOT_FOUND'
+  | 'INVITATION_EXPIRED'
+  | 'INVITATION_ALREADY_ACCEPTED';
+
+function getInvitationErrorCode(error: unknown): InvitationErrorCode | undefined {
+  if (!error || typeof error !== 'object') {
+    return undefined;
+  }
+
+  const candidate = (error as { code?: unknown }).code;
+  if (typeof candidate !== 'string') {
+    return undefined;
+  }
+
+  if (
+    candidate === 'INVITATION_NOT_FOUND' ||
+    candidate === 'INVITATION_EXPIRED' ||
+    candidate === 'INVITATION_ALREADY_ACCEPTED'
+  ) {
+    return candidate;
+  }
+
+  return undefined;
+}
+
 // Validate invitation token if present
 if (token) {
   try {
@@ -66,13 +92,15 @@ if (token) {
     } else {
       invitationError = 'Workspace not found';
     }
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const errorCode = getInvitationErrorCode(err);
+
     // Handle specific error codes
-    if (err.code === 'INVITATION_NOT_FOUND') {
+    if (errorCode === 'INVITATION_NOT_FOUND') {
       invitationError = 'This invitation link is invalid or has been revoked.';
-    } else if (err.code === 'INVITATION_EXPIRED') {
+    } else if (errorCode === 'INVITATION_EXPIRED') {
       invitationError = 'This invitation has expired. Please request a new invitation.';
-    } else if (err.code === 'INVITATION_ALREADY_ACCEPTED') {
+    } else if (errorCode === 'INVITATION_ALREADY_ACCEPTED') {
       invitationError = 'This invitation has already been used.';
     } else {
       invitationError = 'Unable to validate invitation. Please try again.';

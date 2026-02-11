@@ -8,7 +8,7 @@
 
 **Tech Stack:** TypeScript, Astro 5 API/routes, Bun test runner (`bun:test`), Drizzle ORM, OpenAPI 3.1.
 
-### Task 1: Add failing tests for invitation-only enforcement
+## Task 1: Add failing tests for invitation-only enforcement
 
 **Files:**
 
@@ -26,7 +26,7 @@
 - Run: `bun test src/services/workspace-invitation.service.test.ts`
 - Expected: fail on new assertions.
 
-### Task 2: Enforce invitation-only signup in API and page
+## Task 2: Enforce invitation-only signup in API and page
 
 **Files:**
 
@@ -45,7 +45,7 @@
 - Run: `bun test src/__tests__/api/auth/signup-turnstile.test.ts`
 - Expected: pass.
 
-### Task 3: Convert workspace bootstrap CLI to invitation flow
+## Task 3: Convert workspace bootstrap CLI to invitation flow
 
 **Files:**
 
@@ -73,7 +73,7 @@
 - Run: `bun test src/services/workspace-invitation.service.test.ts`
 - Expected: pass.
 
-### Task 4: Update contract docs
+## Task 4: Update contract docs
 
 **Files:**
 
@@ -88,7 +88,7 @@
 
 - Update `cli:create-workspace` behavior and examples to invitation bootstrap.
 
-### Task 5: Verify end-to-end quality gates
+## Task 5: Verify end-to-end quality gates
 
 **Files:**
 

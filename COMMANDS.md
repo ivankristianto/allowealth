@@ -126,6 +126,14 @@ bun run cli:create-workspace:prod -- --name "My Family" --email admin@example.co
 bun run cli:list-workspaces:prod
 ```
 
+`cli:create-workspace` options:
+
+- `--name, -n <name>` workspace name (required)
+- `--email, -e <email>` admin invitation email (prompts if omitted)
+- `--currency, -c <currency>` workspace default currency (default: `IDR`)
+- `--week-start, -w <day>` workspace week start day (`monday` or `sunday`, default: `monday`)
+- `--compact-numbers <true|false>` compact number formatting (default: `true`)
+
 ### API Keys
 
 | Command                           | Description                      |

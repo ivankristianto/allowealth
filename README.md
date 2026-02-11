@@ -141,7 +141,7 @@ bun run cli:create-workspace -- --name "Business" --email owner@business.com --c
 
 **Example Output:**
 
-```
+```text
 Creating workspace...
 
 ✓ Created workspace: My Family (abc123def456)

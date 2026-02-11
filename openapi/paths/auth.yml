@@ -3,7 +3,7 @@ paths:
   /api/auth/signup:
     post:
       tags: [Authentication]
-      summary: Register a new user via invitation
+      summary: Register a new user
       description: |
         Create a new user account with email, password, and name.
         A verification email is sent to the provided email address.
