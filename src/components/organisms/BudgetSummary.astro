@@ -86,12 +86,14 @@ const allocationDescription = sortedDistribution
   .join(', ');
 
 const cardClasses = [
+  // Container query context
+  '@container',
   // Base card styling
   'bg-base-100 rounded-card border border-base-300',
   // Premium shadow
   'shadow-sm',
   // Padding - responsive
-  'p-6 lg:p-10',
+  'p-6 @3xl:p-10',
   // Relative for overflow
   'relative overflow-hidden',
   // Additional classes
@@ -104,9 +106,9 @@ const cardClasses = [
 {
   loading ? (
     <section class={cardClasses} aria-busy="true" aria-label="Loading budget summary">
-      <div class="grid grid-cols-1 xl:grid-cols-12 gap-8 xl:gap-10">
+      <div class="grid grid-cols-1 @5xl:grid-cols-12 gap-8 @5xl:gap-10">
         {/* Left: Key Metrics Skeleton */}
-        <div class="xl:col-span-4 flex flex-col justify-center gap-6 xl:gap-8">
+        <div class="@5xl:col-span-4 flex flex-col justify-center gap-6 @5xl:gap-8">
           <div class="flex flex-col gap-6">
             <div>
               <Skeleton variant="text" width="120px" height="12px" />
@@ -124,14 +126,14 @@ const cardClasses = [
         </div>
 
         {/* Right: Allocation Bar Skeleton */}
-        <div class="xl:col-span-8 flex flex-col justify-center gap-6 xl:gap-8">
+        <div class="@5xl:col-span-8 flex flex-col justify-center gap-6 @5xl:gap-8">
           <div class="flex justify-between items-end mb-2">
             <Skeleton variant="text" width="120px" height="20px" />
             <Skeleton variant="text" width="160px" height="12px" />
           </div>
           <Skeleton variant="rectangular" width="100%" height="24px" className="rounded-full" />
           {/* Legend skeleton - up to 8 items (7 categories + Others) */}
-          <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 xl:gap-4">
+          <div class="grid grid-cols-2 @sm:grid-cols-3 @5xl:grid-cols-4 gap-3 @5xl:gap-4">
             {Array(8)
               .fill(0)
               .map(() => (
@@ -149,16 +151,16 @@ const cardClasses = [
     </section>
   ) : (
     <section class={cardClasses} aria-label="Budget overview summary">
-      <div class="grid grid-cols-1 xl:grid-cols-12 gap-8 xl:gap-10 relative z-10">
+      <div class="grid grid-cols-1 @5xl:grid-cols-12 gap-8 @5xl:gap-10 relative z-10">
         {/* Left: Key Metrics */}
-        <div class="xl:col-span-4 flex flex-col justify-center gap-6 xl:gap-8">
+        <div class="@5xl:col-span-4 flex flex-col justify-center gap-6 @5xl:gap-8">
           <div class="flex flex-col gap-6">
             {/* Total Monthly Pot */}
             <div>
               <StatLabel size="sm" className="uppercase tracking-widest">
                 Allocated Budget
               </StatLabel>
-              <p class="text-2xl lg:text-3xl font-bold mt-2 lg:mt-3 text-base-content tracking-tight leading-none">
+              <p class="text-2xl @3xl:text-3xl font-bold mt-2 @3xl:mt-3 text-base-content tracking-tight leading-none">
                 {formatCurrency(totalAllocated, currency)}
               </p>
             </div>
@@ -168,10 +170,10 @@ const cardClasses = [
               <StatLabel size="sm" color="warning" className="uppercase tracking-widest">
                 Total Budget Spent
               </StatLabel>
-              <div class="flex items-baseline gap-2 mt-2 lg:mt-3">
+              <div class="flex items-baseline gap-2 mt-2 @3xl:mt-3">
                 <p
                   class:list={[
-                    'text-2xl lg:text-3xl font-bold tracking-tight leading-none',
+                    'text-2xl @3xl:text-3xl font-bold tracking-tight leading-none',
                     statusForDisplay === 'danger'
                       ? 'text-error'
                       : statusForDisplay === 'warning'
@@ -209,20 +211,20 @@ const cardClasses = [
         </div>
 
         {/* Right: Budget Allocations — collapsed on mobile/tablet, open on wide desktop */}
-        <details class="xl:col-span-8" data-budget-allocations>
-          <summary class="flex justify-between items-center cursor-pointer list-none xl:pointer-events-none select-none mb-6 xl:mb-8 [&::-webkit-details-marker]:hidden">
-            <h3 class="font-bold text-base-content tracking-tight text-base xl:text-lg leading-none">
+        <details class="@5xl:col-span-8" data-budget-allocations>
+          <summary class="flex justify-between items-center cursor-pointer list-none @5xl:pointer-events-none select-none mb-6 @5xl:mb-8 [&::-webkit-details-marker]:hidden">
+            <h3 class="font-bold text-base-content tracking-tight text-base @5xl:text-lg leading-none">
               Budget Allocations
             </h3>
-            <span class="text-base-content/40 text-xs font-bold uppercase tracking-widest xl:hidden">
+            <span class="text-base-content/40 text-xs font-bold uppercase tracking-widest @5xl:hidden">
               Tap to expand
             </span>
-            <StatLabel size="sm" className="uppercase tracking-widest hidden xl:block">
+            <StatLabel size="sm" className="uppercase tracking-widest hidden @5xl:block">
               Total Share Distribution
             </StatLabel>
           </summary>
 
-          <div class="flex flex-col gap-6 xl:gap-8">
+          <div class="flex flex-col gap-6 @5xl:gap-8">
             {/* Stacked Bar - P0: Colors sanitized, P1: Accessible description */}
             {/* Uses displayDistribution to match legend (top 7 + Others) */}
             <AllocationBar
@@ -236,7 +238,7 @@ const cardClasses = [
             />
 
             {/* Legend - P0: Colors sanitized, shows top 7 + Others */}
-            <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 xl:gap-4">
+            <div class="grid grid-cols-2 @sm:grid-cols-3 @5xl:grid-cols-4 gap-3 @5xl:gap-4">
               {displayDistribution.map((item) => {
                 return (
                   <div class="flex flex-col gap-1">
@@ -266,6 +268,7 @@ const cardClasses = [
 
 <script>
   const initializedDetails = new WeakSet<Element>();
+  const detailsObservers = new Map<Element, ResizeObserver>();
 
   function initBudgetAllocations() {
     document
@@ -274,14 +277,27 @@ const cardClasses = [
         if (initializedDetails.has(details)) return;
         initializedDetails.add(details);
 
-        // Open by default on wide desktop (xl breakpoint = 1280px)
-        const mq = window.matchMedia('(min-width: 1280px)');
-        if (mq.matches) details.open = true;
+        // Observe the section (@container) to check its width
+        const container = details.closest('section');
+        if (!container) return;
 
-        mq.addEventListener('change', (e) => {
-          details.open = e.matches;
+        // Open by default when container is wide enough (@5xl = 1024px)
+        const WIDE_THRESHOLD = 1024;
+
+        const observer = new ResizeObserver((entries) => {
+          for (const entry of entries) {
+            details.open = entry.contentRect.width >= WIDE_THRESHOLD;
+          }
         });
+
+        observer.observe(container);
+        detailsObservers.set(details, observer);
       });
+  }
+
+  function cleanupBudgetAllocations() {
+    detailsObservers.forEach((observer) => observer.disconnect());
+    detailsObservers.clear();
   }
 
   if (document.readyState === 'loading') {
@@ -290,5 +306,6 @@ const cardClasses = [
     initBudgetAllocations();
   }
 
+  document.addEventListener('astro:before-swap', cleanupBudgetAllocations);
   document.addEventListener('astro:page-load', initBudgetAllocations);
 </script>
