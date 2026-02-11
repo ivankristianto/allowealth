@@ -26,7 +26,7 @@ CREATE TABLE `__new_users` (
 	FOREIGN KEY (`workspace_id`) REFERENCES `workspaces`(`id`) ON UPDATE no action ON DELETE cascade
 );
 --> statement-breakpoint
-INSERT INTO `__new_users`("id", "workspace_id", "email", "password_hash", "avatar_url", "name", "role", "email_verified_at", "deleted_at", "created_at", "updated_at") SELECT "id", "workspace_id", "email", "password_hash", "avatar_url", "name", "role", "email_verified_at", "deleted_at", "created_at", "updated_at" FROM `users`;--> statement-breakpoint
+INSERT INTO `__new_users`("id", "workspace_id", "email", "password_hash", "avatar_url", "name", "role", "email_verified_at", "deleted_at", "created_at", "updated_at") SELECT "id", "workspace_id", "email", "password_hash", NULL, "name", "role", "email_verified_at", "deleted_at", "created_at", "updated_at" FROM `users`;--> statement-breakpoint
 DROP TABLE `users`;--> statement-breakpoint
 ALTER TABLE `__new_users` RENAME TO `users`;--> statement-breakpoint
 PRAGMA foreign_keys=ON;--> statement-breakpoint

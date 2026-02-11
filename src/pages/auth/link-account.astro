@@ -9,6 +9,7 @@
 import AuthLayout from '../../layouts/AuthLayout.astro';
 import Button from '../../components/atoms/Button.astro';
 import { Link2, ShieldCheck, ArrowLeft } from '@lucide/astro';
+import { verifyCookieSignature } from '@/lib/crypto/cookie-signature';
 
 const pendingLinkCookie = Astro.cookies.get('pending_oauth_link')?.value;
 
@@ -20,12 +21,15 @@ let pendingLink: {
 
 if (pendingLinkCookie) {
   try {
-    const parsed = JSON.parse(pendingLinkCookie);
-    if (Date.now() < parsed.expiresAt) {
-      pendingLink = parsed;
+    const verifiedJson = await verifyCookieSignature(pendingLinkCookie);
+    if (verifiedJson) {
+      const parsed = JSON.parse(verifiedJson);
+      if (Date.now() < parsed.expiresAt) {
+        pendingLink = parsed;
+      }
     }
   } catch {
-    // Invalid cookie
+    // Invalid or tampered cookie
   }
 }
 

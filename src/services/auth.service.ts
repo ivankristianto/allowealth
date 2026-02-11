@@ -674,6 +674,18 @@ export async function confirmAccountLink(
       throw new AuthError(AUTH_ERRORS.INVALID_CREDENTIALS, 'Account not found or deleted');
     }
 
+    // Check workspace is active before creating session
+    const workspace = await db.query.workspaces.findFirst({
+      where: eq(schema.workspaces.id, existingUser.workspace_id),
+    });
+    if (!workspace || workspace.status !== 'active') {
+      log.warn('Account link attempt with inactive workspace', {
+        userId,
+        workspaceId: existingUser.workspace_id,
+      });
+      throw new AuthError(AUTH_ERRORS.WORKSPACE_INACTIVE, 'Workspace inactive');
+    }
+
     const oauthAccountId = nanoid();
 
     await runTransaction(db, async (tx) => {
@@ -751,6 +763,11 @@ export async function unlinkOAuthProvider(userId: string, provider: string): Pro
       .where(
         and(eq(schema.oauthAccounts.user_id, userId), eq(schema.oauthAccounts.provider, provider))
       );
+
+    // Clear avatar_url since it likely came from the OAuth provider
+    if (user.avatar_url) {
+      await db.update(schema.users).set({ avatar_url: null }).where(eq(schema.users.id, userId));
+    }
 
     log.info('OAuth provider unlinked', { userId, provider });
   } catch (error) {

@@ -10,6 +10,32 @@
 import { getEnv } from '@/lib/env';
 
 /**
+ * Encode a string to base64, handling Unicode characters safely.
+ * btoa() only handles Latin-1; this converts UTF-8 bytes first.
+ */
+function toBase64(str: string): string {
+  const bytes = new TextEncoder().encode(str);
+  let binary = '';
+  for (let i = 0; i < bytes.length; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+}
+
+/**
+ * Decode a base64 string back to a UTF-8 string.
+ * Reverses toBase64() by decoding the bytes as UTF-8.
+ */
+function fromBase64(b64: string): string {
+  const binary = atob(b64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return new TextDecoder().decode(bytes);
+}
+
+/**
  * Convert ArrayBuffer to hex string
  */
 function bufferToHex(buffer: ArrayBuffer): string {
@@ -68,7 +94,7 @@ async function computeHmac(data: string): Promise<string> {
  * @returns Signed cookie string in format base64.hmac_hex
  */
 export async function signCookieValue(value: string): Promise<string> {
-  const payload = btoa(value);
+  const payload = toBase64(value);
   const hmac = await computeHmac(payload);
   return `${payload}.${hmac}`;
 }
@@ -110,7 +136,7 @@ export async function verifyCookieSignature(signedValue: string): Promise<string
   }
 
   try {
-    return atob(payload);
+    return fromBase64(payload);
   } catch {
     return null;
   }
