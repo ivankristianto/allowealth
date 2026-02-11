@@ -946,7 +946,8 @@ export class TransactionService {
       }
 
       // Check for duplicates
-      const duplicateKey = `${transactionDate.toISOString().split('T')[0]}-${typeStr}-${amountStr ?? ''}-${categoryId ?? ''}-${asset.id}`;
+      const normalizedAmount = amount.toString();
+      const duplicateKey = `${transactionDate.toISOString().split('T')[0]}-${typeStr}-${normalizedAmount}-${categoryId ?? ''}-${asset.id}`;
       if (existingKeys.has(duplicateKey)) {
         result.skipped++;
         continue;
@@ -959,7 +960,7 @@ export class TransactionService {
         workspace_id: workspaceId,
         created_by_user_id: createdByUserId,
         type: typeStr,
-        amount: amountStr ?? '0',
+        amount: normalizedAmount,
         currency: currencyStr,
         category_id: categoryId,
         asset_id: asset.id,
