@@ -747,12 +747,12 @@ the component's actual available width, not the viewport.
 - `BudgetCard.astro` — card internals with container queries
 - `SpendingChart.astro` — flex direction change with container queries
 
-````
-
+````markdown
 **Step 2: Run format**
 
 ```bash
 bun run format:fix
+```
 ````
 
 **Step 3: Commit**
