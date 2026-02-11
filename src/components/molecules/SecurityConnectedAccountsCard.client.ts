@@ -32,8 +32,8 @@ function initConnectedAccounts() {
         if (res.ok) {
           window.location.reload();
         } else {
-          const data = await res.json();
-          addToast(data.error?.message || 'Failed to disconnect', 'error');
+          const errorPayload = await res.json();
+          addToast(errorPayload.error?.message || 'Failed to disconnect', 'error');
           if (btn) btn.disabled = false;
         }
       } catch {

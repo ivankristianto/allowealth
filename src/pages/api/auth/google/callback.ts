@@ -22,7 +22,7 @@ export const GET: APIRoute = async ({ url, cookies, redirect, clientAddress, req
   try {
     const rateLimitResult = checkRateLimit(request, RATE_LIMIT_PRESETS.login, clientAddress);
     if (!rateLimitResult.allowed) {
-      return redirect('/login?error=rate_limited', 302);
+      return redirect('/login?oauth_error=rate_limited', 302);
     }
 
     const code = url.searchParams.get('code');
@@ -36,14 +36,14 @@ export const GET: APIRoute = async ({ url, cookies, redirect, clientAddress, req
 
     if (!code || !state || !storedState || !storedCodeVerifier) {
       log.warn('OAuth state validation failed: missing parameters');
-      return redirect('/login?error=oauth_error', 302);
+      return redirect('/login?oauth_error=oauth_error', 302);
     }
 
     // Constant-time comparison prevents timing attacks on state parameter
     const stateValid = await constantTimeEqual(state, storedState);
     if (!stateValid) {
       log.warn('OAuth state validation failed: state mismatch');
-      return redirect('/login?error=oauth_error', 302);
+      return redirect('/login?oauth_error=oauth_error', 302);
     }
 
     const google = createGoogleOAuthClient();
@@ -56,7 +56,7 @@ export const GET: APIRoute = async ({ url, cookies, redirect, clientAddress, req
 
     if (!profileResponse.ok) {
       log.error('Failed to fetch Google profile', { status: profileResponse.status });
-      return redirect('/login?error=oauth_error', 302);
+      return redirect('/login?oauth_error=oauth_error', 302);
     }
 
     const googleUser = (await profileResponse.json()) as {
@@ -69,12 +69,12 @@ export const GET: APIRoute = async ({ url, cookies, redirect, clientAddress, req
 
     if (!googleUser.email) {
       log.error('Google profile missing email');
-      return redirect('/login?error=oauth_error', 302);
+      return redirect('/login?oauth_error=oauth_error', 302);
     }
 
     if (!googleUser.email_verified) {
       log.warn('Google account email not verified', { email: googleUser.email });
-      return redirect('/login?error=oauth_error', 302);
+      return redirect('/login?oauth_error=oauth_error', 302);
     }
 
     const result = await loginOrRegisterWithOAuth({
@@ -123,6 +123,6 @@ export const GET: APIRoute = async ({ url, cookies, redirect, clientAddress, req
     return redirect('/auth/link-account', 302);
   } catch (error) {
     log.error('OAuth callback error', error);
-    return redirect('/login?error=oauth_error', 302);
+    return redirect('/login?oauth_error=oauth_error', 302);
   }
 };

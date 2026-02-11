@@ -40,6 +40,6 @@ export const GET: APIRoute = async ({ cookies, redirect }) => {
 
     return redirect(url.toString(), 302);
   } catch {
-    return redirect('/login?error=oauth_error', 302);
+    return redirect('/login?oauth_error=oauth_error', 302);
   }
 };

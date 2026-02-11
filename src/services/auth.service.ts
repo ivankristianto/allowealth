@@ -170,15 +170,13 @@ async function initializeWorkspace(
   userName: string,
   options: { status: 'active' | 'inactive' }
 ): Promise<void> {
-  await Promise.resolve(
-    tx.insert(schema.workspaces).values({
-      id: workspaceId,
-      name: `${userName.trim()}'s Workspace`,
-      status: options.status,
-      created_at: new Date(),
-      updated_at: new Date(),
-    })
-  );
+  await tx.insert(schema.workspaces).values({
+    id: workspaceId,
+    name: `${userName.trim()}'s Workspace`,
+    status: options.status,
+    created_at: new Date(),
+    updated_at: new Date(),
+  });
 }
 
 /**
@@ -795,7 +793,9 @@ export async function unlinkOAuthProvider(userId: string, provider: string): Pro
 /**
  * Get all linked OAuth accounts for a user
  */
-export async function getLinkedOAuthAccounts(userId: string) {
+export async function getLinkedOAuthAccounts(
+  userId: string
+): Promise<Array<typeof schema.oauthAccounts.$inferSelect>> {
   return db.query.oauthAccounts.findMany({
     where: eq(schema.oauthAccounts.user_id, userId),
   });

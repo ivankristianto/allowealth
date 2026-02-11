@@ -19,7 +19,7 @@ import { getEnv } from '@/lib/env';
 export function createGoogleOAuthClient(): Google {
   const clientId = getEnv('GOOGLE_CLIENT_ID');
   const clientSecret = getEnv('GOOGLE_CLIENT_SECRET');
-  const appUrl = getEnv('PUBLIC_APP_URL') || 'http://localhost:4321';
+  const appUrl = (getEnv('PUBLIC_APP_URL') || 'http://localhost:4321').replace(/\/$/, '');
 
   if (!clientId || !clientSecret) {
     throw new Error('GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET must be configured');

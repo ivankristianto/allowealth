@@ -337,7 +337,7 @@ export function createGoogleOAuthClient(): Google {
 
 Add after the Turnstile section:
 
-```
+```env
 # Google OAuth (SSO)
 # Get credentials from: https://console.cloud.google.com/apis/credentials
 # Redirect URI: http://localhost:4321/api/auth/google/callback (dev)

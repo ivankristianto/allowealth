@@ -34,7 +34,7 @@ if (pendingLinkCookie) {
 }
 
 if (!pendingLink) {
-  return Astro.redirect('/login?error=link_expired');
+  return Astro.redirect('/login?oauth_error=link_expired');
 }
 
 const providerName = pendingLink.provider.charAt(0).toUpperCase() + pendingLink.provider.slice(1);

@@ -19,7 +19,7 @@ export const POST: APIRoute = async ({ cookies, redirect }) => {
   try {
     const pendingLinkCookie = cookies.get('pending_oauth_link')?.value;
     if (!pendingLinkCookie) {
-      return redirect('/login?error=link_expired', 302);
+      return redirect('/login?oauth_error=link_expired', 302);
     }
 
     // Verify HMAC signature to prevent cookie tampering
@@ -27,10 +27,10 @@ export const POST: APIRoute = async ({ cookies, redirect }) => {
     if (!verifiedJson) {
       log.warn('OAuth link cookie signature verification failed');
       cookies.delete('pending_oauth_link', { path: '/' });
-      return redirect('/login?error=link_expired', 302);
+      return redirect('/login?oauth_error=link_expired', 302);
     }
 
-    const pendingLink = JSON.parse(verifiedJson) as {
+    let pendingLink: {
       userId: string;
       provider: string;
       providerAccountId: string;
@@ -38,12 +38,30 @@ export const POST: APIRoute = async ({ cookies, redirect }) => {
       name: string;
       avatarUrl: string | null;
       expiresAt: number;
-    };
+    } | null = null;
+
+    try {
+      pendingLink = JSON.parse(verifiedJson);
+    } catch {
+      cookies.delete('pending_oauth_link', { path: '/' });
+      return redirect('/login?oauth_error=link_expired', 302);
+    }
+
+    if (
+      !pendingLink?.userId ||
+      !pendingLink.provider ||
+      !pendingLink.providerAccountId ||
+      !pendingLink.email ||
+      !pendingLink.expiresAt
+    ) {
+      cookies.delete('pending_oauth_link', { path: '/' });
+      return redirect('/login?oauth_error=link_expired', 302);
+    }
 
     cookies.delete('pending_oauth_link', { path: '/' });
 
     if (Date.now() > pendingLink.expiresAt) {
-      return redirect('/login?error=link_expired', 302);
+      return redirect('/login?oauth_error=link_expired', 302);
     }
 
     const { session } = await confirmAccountLink(pendingLink.userId, {
@@ -67,6 +85,6 @@ export const POST: APIRoute = async ({ cookies, redirect }) => {
   } catch (error) {
     log.error('Account linking error', error);
     cookies.delete('pending_oauth_link', { path: '/' });
-    return redirect('/login?error=link_failed', 302);
+    return redirect('/login?oauth_error=link_failed', 302);
   }
 };

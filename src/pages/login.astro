@@ -16,7 +16,7 @@ const registered = url.searchParams.get('registered');
 const verified = url.searchParams.get('verified');
 const emailParam = url.searchParams.get('email') || '';
 
-const oauthError = Astro.url.searchParams.get('error') || '';
+const oauthError = Astro.url.searchParams.get('oauth_error') || '';
 
 const errorMessages: Record<string, string> = {
   invalid_credentials: 'Invalid email or password. Please try again.',

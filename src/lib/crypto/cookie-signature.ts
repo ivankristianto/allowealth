@@ -61,20 +61,27 @@ function hexToBuffer(hex: string): Uint8Array {
 /**
  * Get the HMAC signing key from GOOGLE_CLIENT_SECRET
  */
+let signingKeyPromise: Promise<CryptoKey> | null = null;
+
 async function getSigningKey(): Promise<CryptoKey> {
+  if (signingKeyPromise) {
+    return signingKeyPromise;
+  }
+
   const secret = getEnv('GOOGLE_CLIENT_SECRET');
   if (!secret) {
     throw new Error('GOOGLE_CLIENT_SECRET not available for cookie signing');
   }
 
   const encoder = new TextEncoder();
-  return crypto.subtle.importKey(
+  signingKeyPromise = crypto.subtle.importKey(
     'raw',
     encoder.encode(secret),
     { name: 'HMAC', hash: 'SHA-256' },
     false,
     ['sign', 'verify']
   );
+  return signingKeyPromise;
 }
 
 /**
