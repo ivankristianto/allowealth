@@ -17,12 +17,12 @@ Components respond to their **container width**, not the viewport. This handles 
 
 The sidebar is 256px wide (visible at `lg:` 1024px). Use this mapping when converting viewport breakpoints:
 
-| Viewport       | Container        | Rationale                             |
-| -------------- | ---------------- | ------------------------------------- |
-| `sm:` (640px)  | `@sm:` (384px)   | 640 - 256 = 384                       |
-| `md:` (768px)  | `@2xl:` (672px)  | 768 - 256 = 512, round up for padding |
-| `lg:` (1024px) | `@3xl:` (768px)  | 1024 - 256 = 768                      |
-| `xl:` (1280px) | `@5xl:` (1024px) | 1280 - 256 = 1024                     |
+| Viewport       | Container        | Rationale                                |
+| -------------- | ---------------- | ---------------------------------------- |
+| `sm:` (640px)  | `@sm:` (384px)   | 640 - 256 = 384                          |
+| `md:` (768px)  | `@2xl:` (672px)  | Closest breakpoint above 512 (768 - 256) |
+| `lg:` (1024px) | `@3xl:` (768px)  | 1024 - 256 = 768                         |
+| `xl:` (1280px) | `@5xl:` (1024px) | 1280 - 256 = 1024                        |
 
 ### Pattern
 
@@ -128,6 +128,11 @@ MainLayout provides base padding and vertical offsets: `px-4 lg:px-6 pt-24 sm:pt
 </div>
 ```
 
+> **Note:** This is an intentional exception to the "no padding on `@container`" rule.
+> The padding here is minimal (8-24px) and only activates at/above its own breakpoint,
+> so it does not meaningfully shift downstream thresholds. For components with larger
+> padding (e.g. `p-6`/`p-10`), always use a separate wrapper div.
+
 - **Mobile**: No extra padding (uses MainLayout's `p-4` = 16px)
 - **@sm** (384px): `px-2` adds 8px extra (24px total)
 - **@3xl** (768px): `px-6` adds 24px extra (48px total)
@@ -220,9 +225,7 @@ No extra padding needed - container is already narrow.
 Minimum **44x44px** on mobile.
 
 ```html
-<button class="btn min-h-[44px]">
-  <button class="btn-square w-11 h-11"></button>
-</button>
+<button class="btn min-h-[44px]">Tap me</button> <button class="btn-square w-11 h-11">X</button>
 ```
 
 ## Testing Checklist
