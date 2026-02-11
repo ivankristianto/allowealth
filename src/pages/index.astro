@@ -2,23 +2,22 @@
 /**
  * Landing Page
  *
- * Public homepage for all users (guest and authenticated).
- * Showcases features, pricing, and CTAs for the allowealth platform.
+ * Static prerendered homepage for all users.
+ * Auth state is detected client-side via auth_hint cookie to swap CTAs.
  */
+
+export const prerender = true;
 
 import PublicLayout from '@/layouts/PublicLayout.astro';
 import HeroSection from '@/components/molecules/landing/HeroSection.astro';
 import ShowcaseSection from '@/components/organisms/landing/ShowcaseSection.astro';
 import FeaturesGrid from '@/components/molecules/landing/FeaturesGrid.astro';
 import PricingSection from '@/components/organisms/landing/PricingSection.astro';
-
-// Get user from Astro.locals (set by auth middleware)
-const user = Astro.locals.user;
 ---
 
-<PublicLayout title="allowealth - Master the Family Ledger" user={user}>
-  <HeroSection user={user} />
+<PublicLayout title="allowealth - Master the Family Ledger">
+  <HeroSection />
   <ShowcaseSection />
   <FeaturesGrid />
-  <PricingSection user={user} />
+  <PricingSection />
 </PublicLayout>
