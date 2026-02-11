@@ -106,20 +106,20 @@ All CLI tools have `:prod` variants that use `.env.production` for the database 
 
 ### Workspace Management
 
-| Command                             | Description                                             |
-| ----------------------------------- | ------------------------------------------------------- |
-| `bun run cli:create-workspace`      | Create workspace with admin user and default categories |
-| `bun run cli:create-workspace:prod` | Same, against production DB                             |
-| `bun run cli:list-workspaces`       | List all workspaces with user counts                    |
-| `bun run cli:list-workspaces:prod`  | Same, against production DB                             |
-| `bun run cli:delete-workspace`      | Delete a workspace and all its data                     |
-| `bun run cli:delete-workspace:prod` | Same, against production DB                             |
+| Command                             | Description                                      |
+| ----------------------------------- | ------------------------------------------------ |
+| `bun run cli:create-workspace`      | Create workspace and send admin invitation email |
+| `bun run cli:create-workspace:prod` | Same, against production DB                      |
+| `bun run cli:list-workspaces`       | List all workspaces with user counts             |
+| `bun run cli:list-workspaces:prod`  | Same, against production DB                      |
+| `bun run cli:delete-workspace`      | Delete a workspace and all its data              |
+| `bun run cli:delete-workspace:prod` | Same, against production DB                      |
 
 ```bash
-# Create a new workspace interactively
+# Create a new workspace interactively (prompts for admin email)
 bun run cli:create-workspace:prod
 
-# With arguments
+# With arguments (recommended for automation)
 bun run cli:create-workspace:prod -- --name "My Family" --email admin@example.com
 
 # List workspaces

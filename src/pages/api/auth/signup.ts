@@ -9,11 +9,12 @@
  * - name: string (non-empty)
  *
  * Query parameters:
- * - token: string (optional invitation token)
+ * - token: string (optional invitation token, required when SIGNUP_MODE=invite_only)
  *
  * Behavior:
  * - If token is provided: validates invitation, creates user in the invited workspace with the invited role
- * - If no token: creates a new workspace and makes user the admin
+ * - If token is missing and SIGNUP_MODE=public: creates a new workspace and makes user admin
+ * - If token is missing and SIGNUP_MODE=invite_only: rejects signup
  *
  * Response:
  * - 201: User created successfully
@@ -43,12 +44,14 @@ import {
 } from '@/lib/rate-limit';
 import { workspaceInvitationService, emailVerificationService } from '@/services';
 import { WorkspaceInvitationServiceError, ServiceErrorCode } from '@/services/service-errors';
+import { getSignupMode } from '@/lib/auth/signup-mode';
 
 export const prerender = false;
 
 export const POST: APIRoute = async (context) => {
   const { request, clientAddress, url } = context;
   let email: string | undefined;
+  const signupMode = getSignupMode();
 
   // Get invitation token from query parameter if present
   const invitationToken = url.searchParams.get('token');
@@ -70,6 +73,14 @@ export const POST: APIRoute = async (context) => {
       );
     }
 
+    if (signupMode === 'invite_only' && !invitationToken) {
+      return createErrorResponseResponse(
+        'INVALID_INPUT',
+        'Invitation token is required for signup',
+        400
+      );
+    }
+
     // Check rate limit (5 attempts per hour per IP)
     // Pass clientAddress from Astro context for trusted IP (prevents spoofing)
     const rateLimitResult = checkRateLimit(request, RATE_LIMIT_PRESETS.signup, clientAddress);
@@ -80,7 +91,6 @@ export const POST: APIRoute = async (context) => {
     let user: User;
 
     if (invitationToken) {
-      // Handle invitation-based signup
       // Validate and get invitation details
       const invitation = await workspaceInvitationService.validateAndGet(invitationToken);
 
@@ -101,7 +111,6 @@ export const POST: APIRoute = async (context) => {
       // Mark invitation as accepted
       await workspaceInvitationService.accept(invitationToken);
     } else {
-      // Standard signup - creates new workspace with user as admin
       user = await register(email, password, name);
     }
 
