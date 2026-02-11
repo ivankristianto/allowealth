@@ -123,52 +123,54 @@ if (searchQuery) {
 
     <!-- Categories Table -->
     <div class="bg-base-100 rounded-card border border-base-300 shadow-sm overflow-hidden">
-      <div class="overflow-x-auto">
-        <table
-          class="w-full text-left border-collapse"
-          role="table"
-          data-testid="asset-categories-table"
-        >
-          <caption class="sr-only">
-            Asset categories list with {filteredCategories.length} entries
-          </caption>
-          <thead>
-            <tr class="border-b border-base-200 bg-base-200/50">
-              <th
-                scope="col"
-                class="px-8 py-5 text-xs font-bold text-base-content/40 uppercase tracking-widest"
-              >
-                Category Name
-              </th>
-              <th
-                scope="col"
-                class="px-8 py-5 text-xs font-bold text-base-content/40 uppercase tracking-widest hidden md:table-cell"
-              >
-                Description
-              </th>
-              <th
-                scope="col"
-                class="px-8 py-5 text-xs font-bold text-base-content/40 uppercase tracking-widest"
-              >
-                Type
-              </th>
-              <th
-                scope="col"
-                class="px-8 py-5 text-xs font-bold text-base-content/40 uppercase tracking-widest"
-              >
-                Assets
-              </th>
-              <th
-                scope="col"
-                class="px-8 py-5 text-xs font-bold text-base-content/40 uppercase tracking-widest text-right"
-              >
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <!-- Server-rendered table body partial - used for both SSR and dynamic HTML injection -->
-          <AssetCategoryTablePartial categories={allCategories} typeFilter={typeFilter} />
-        </table>
+      <div class="table-scroll-hint">
+        <div class="overflow-x-auto">
+          <table
+            class="w-full text-left border-collapse"
+            role="table"
+            data-testid="asset-categories-table"
+          >
+            <caption class="sr-only">
+              Asset categories list with {filteredCategories.length} entries
+            </caption>
+            <thead>
+              <tr class="border-b border-base-200 bg-base-200/50">
+                <th
+                  scope="col"
+                  class="px-8 py-5 text-xs font-bold text-base-content/40 uppercase tracking-widest"
+                >
+                  Category Name
+                </th>
+                <th
+                  scope="col"
+                  class="px-8 py-5 text-xs font-bold text-base-content/40 uppercase tracking-widest hidden md:table-cell"
+                >
+                  Description
+                </th>
+                <th
+                  scope="col"
+                  class="px-8 py-5 text-xs font-bold text-base-content/40 uppercase tracking-widest"
+                >
+                  Type
+                </th>
+                <th
+                  scope="col"
+                  class="px-8 py-5 text-xs font-bold text-base-content/40 uppercase tracking-widest"
+                >
+                  Assets
+                </th>
+                <th
+                  scope="col"
+                  class="px-8 py-5 text-xs font-bold text-base-content/40 uppercase tracking-widest text-right"
+                >
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <!-- Server-rendered table body partial - used for both SSR and dynamic HTML injection -->
+            <AssetCategoryTablePartial categories={allCategories} typeFilter={typeFilter} />
+          </table>
+        </div>
       </div>
     </div>
   </div>

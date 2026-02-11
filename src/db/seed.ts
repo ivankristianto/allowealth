@@ -165,7 +165,11 @@ const CATEGORY_STYLES: Record<string, { icon: string; color: string; description
     description: 'Restaurant meals and takeout orders',
   },
   'Work Support': { icon: 'briefcase', color: 'bg-neutral', description: 'Work-related expenses' },
-  'Pocket Money': { icon: 'wallet', color: 'bg-secondary' }, // No description for variety
+  'Pocket Money': {
+    icon: 'wallet',
+    color: 'bg-secondary',
+    description: 'Personal spending money and small allowances',
+  },
   'Kids Expenses': {
     icon: 'user',
     color: 'bg-secondary',
@@ -176,7 +180,11 @@ const CATEGORY_STYLES: Record<string, { icon: string; color: string; description
     color: 'bg-info',
     description: 'Electricity, water, internet, and phone bills',
   },
-  'Misc. Cost': { icon: 'package', color: 'bg-neutral' }, // No description
+  'Misc. Cost': {
+    icon: 'package',
+    color: 'bg-neutral',
+    description: 'Miscellaneous and uncategorized expenses',
+  },
   Entertainment: {
     icon: 'smile',
     color: 'bg-secondary',
@@ -197,7 +205,11 @@ const CATEGORY_STYLES: Record<string, { icon: string; color: string; description
     color: 'bg-error',
     description: 'Monthly mortgage or loan payments',
   },
-  'House Expenses': { icon: 'shopping-cart', color: 'bg-success' }, // No description
+  'House Expenses': {
+    icon: 'shopping-cart',
+    color: 'bg-success',
+    description: 'General household supplies and maintenance costs',
+  },
   'House Renovation': {
     icon: 'hammer',
     color: 'bg-warning',
@@ -217,7 +229,11 @@ const CATEGORY_STYLES: Record<string, { icon: string; color: string; description
     description: 'Income from freelance or side projects',
   },
   Dividend: { icon: 'banknote', color: 'bg-success', description: 'Investment dividend payments' },
-  'Other Income': { icon: 'circle-dot', color: 'bg-primary' }, // No description
+  'Other Income': {
+    icon: 'circle-dot',
+    color: 'bg-primary',
+    description: 'Miscellaneous income from various sources',
+  },
 };
 
 // Expense categories with their budgets

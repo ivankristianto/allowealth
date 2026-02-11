@@ -167,7 +167,7 @@ const createNavigation = (args: { currentPath?: string }): HTMLElement => {
     }
     // Exact match for index routes
     if (currentPath === href) return true;
-    // For nested routes (e.g., /assets/add), parent is active if path starts with href + '/'
+    // For nested routes (e.g., /assets/history), parent is active if path starts with href + '/'
     return currentPath.startsWith(href + '/');
   };
 

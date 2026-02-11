@@ -125,6 +125,11 @@ Astro.locals.userSettings = Object.freeze({ ...userSettings });
   <slot />
 </MainLayout>
 
+<!-- Horizontal scroll hints for tables -->
+<script>
+  import '@/components/atoms/ScrollHint.client';
+</script>
+
 <!-- Bulk Transaction Drawer -->
 <TransactionDrawer
   categories={categories}

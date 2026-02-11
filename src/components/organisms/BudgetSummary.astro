@@ -104,9 +104,9 @@ const cardClasses = [
 {
   loading ? (
     <section class={cardClasses} aria-busy="true" aria-label="Loading budget summary">
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10">
+      <div class="grid grid-cols-1 xl:grid-cols-12 gap-8 xl:gap-10">
         {/* Left: Key Metrics Skeleton */}
-        <div class="lg:col-span-4 flex flex-col justify-center gap-6 lg:gap-8">
+        <div class="xl:col-span-4 flex flex-col justify-center gap-6 xl:gap-8">
           <div class="flex flex-col gap-6">
             <div>
               <Skeleton variant="text" width="120px" height="12px" />
@@ -124,14 +124,14 @@ const cardClasses = [
         </div>
 
         {/* Right: Allocation Bar Skeleton */}
-        <div class="lg:col-span-8 flex flex-col justify-center gap-6 lg:gap-8">
+        <div class="xl:col-span-8 flex flex-col justify-center gap-6 xl:gap-8">
           <div class="flex justify-between items-end mb-2">
             <Skeleton variant="text" width="120px" height="20px" />
             <Skeleton variant="text" width="160px" height="12px" />
           </div>
           <Skeleton variant="rectangular" width="100%" height="24px" className="rounded-full" />
           {/* Legend skeleton - up to 8 items (7 categories + Others) */}
-          <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 lg:gap-4">
+          <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 xl:gap-4">
             {Array(8)
               .fill(0)
               .map(() => (
@@ -149,9 +149,9 @@ const cardClasses = [
     </section>
   ) : (
     <section class={cardClasses} aria-label="Budget overview summary">
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 relative z-10">
+      <div class="grid grid-cols-1 xl:grid-cols-12 gap-8 xl:gap-10 relative z-10">
         {/* Left: Key Metrics */}
-        <div class="lg:col-span-4 flex flex-col justify-center gap-6 lg:gap-8">
+        <div class="xl:col-span-4 flex flex-col justify-center gap-6 xl:gap-8">
           <div class="flex flex-col gap-6">
             {/* Total Monthly Pot */}
             <div>
@@ -208,21 +208,21 @@ const cardClasses = [
           </div>
         </div>
 
-        {/* Right: Budget Allocations — collapsed on mobile, open on desktop */}
-        <details class="lg:col-span-8" data-budget-allocations>
-          <summary class="flex justify-between items-center cursor-pointer list-none lg:pointer-events-none select-none mb-6 lg:mb-8 [&::-webkit-details-marker]:hidden">
-            <h3 class="font-bold text-base-content tracking-tight text-base lg:text-lg leading-none">
+        {/* Right: Budget Allocations — collapsed on mobile/tablet, open on wide desktop */}
+        <details class="xl:col-span-8" data-budget-allocations>
+          <summary class="flex justify-between items-center cursor-pointer list-none xl:pointer-events-none select-none mb-6 xl:mb-8 [&::-webkit-details-marker]:hidden">
+            <h3 class="font-bold text-base-content tracking-tight text-base xl:text-lg leading-none">
               Budget Allocations
             </h3>
-            <span class="text-base-content/40 text-xs font-bold uppercase tracking-widest lg:hidden">
+            <span class="text-base-content/40 text-xs font-bold uppercase tracking-widest xl:hidden">
               Tap to expand
             </span>
-            <StatLabel size="sm" className="uppercase tracking-widest hidden lg:block">
+            <StatLabel size="sm" className="uppercase tracking-widest hidden xl:block">
               Total Share Distribution
             </StatLabel>
           </summary>
 
-          <div class="flex flex-col gap-6 lg:gap-8">
+          <div class="flex flex-col gap-6 xl:gap-8">
             {/* Stacked Bar - P0: Colors sanitized, P1: Accessible description */}
             {/* Uses displayDistribution to match legend (top 7 + Others) */}
             <AllocationBar
@@ -236,7 +236,7 @@ const cardClasses = [
             />
 
             {/* Legend - P0: Colors sanitized, shows top 7 + Others */}
-            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 lg:gap-4">
+            <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 xl:gap-4">
               {displayDistribution.map((item) => {
                 return (
                   <div class="flex flex-col gap-1">
@@ -274,8 +274,8 @@ const cardClasses = [
         if (initializedDetails.has(details)) return;
         initializedDetails.add(details);
 
-        // Open by default on desktop (lg breakpoint = 1024px)
-        const mq = window.matchMedia('(min-width: 1024px)');
+        // Open by default on wide desktop (xl breakpoint = 1280px)
+        const mq = window.matchMedia('(min-width: 1280px)');
         if (mq.matches) details.open = true;
 
         mq.addEventListener('change', (e) => {

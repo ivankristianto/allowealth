@@ -58,18 +58,16 @@ const {
 
 // Sort budgets by budget_amount in descending order (highest first)
 const sortedBudgets = [...budgets].sort((a, b) => {
-  const amountA =
-    typeof a.budget_amount === 'string' ? parseFloat(a.budget_amount) : a.budget_amount;
-  const amountB =
-    typeof b.budget_amount === 'string' ? parseFloat(b.budget_amount) : b.budget_amount;
+  const amountA = typeof a.budget_amount === 'string' ? Number(a.budget_amount) : a.budget_amount;
+  const amountB = typeof b.budget_amount === 'string' ? Number(b.budget_amount) : b.budget_amount;
   return amountB - amountA;
 });
 
 const gridClasses = [
-  // Responsive grid: 1 col on mobile, 2 on tablet, 3 on desktop
-  'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3',
-  // Responsive gap - tighter on mobile, spacious on desktop
-  'gap-3 md:gap-6 lg:gap-8',
+  // Container-query grid: 1 col → 2 cols at 672px → 3 cols at 1024px container width
+  'grid grid-cols-1 @2xl:grid-cols-2 @5xl:grid-cols-3',
+  // Container-query gap - tighter on small containers, spacious on wide
+  'gap-3 @2xl:gap-6 @5xl:gap-8',
   // Additional classes
   className,
 ]
@@ -77,101 +75,105 @@ const gridClasses = [
   .join(' ');
 ---
 
-{/* Error state */}
-{
-  error && (
-    <div class="alert alert-error" role="alert">
-      <CircleX size={24} class="stroke-current shrink-0" aria-hidden="true" />
-      <span>{error}</span>
-    </div>
-  )
-}
-
-{/* Loading state */}
-{
-  !error && loading && (
-    <div class={gridClasses} aria-busy="true" aria-label="Loading budgets">
-      {Array.from({ length: skeletonCount }).map(() => (
-        <BudgetCard categoryName="" spent={0} budget={0} percentageUsed={0} loading={true} />
-      ))}
-    </div>
-  )
-}
-
-{/* Empty state */}
-{
-  !error && !loading && budgets.length === 0 && (
-    <div class="flex flex-col items-center justify-center py-16 text-center">
-      <div class="w-16 h-16 rounded-2xl bg-base-200 flex items-center justify-center mb-4">
-        <Wallet size={32} class="stroke-base-content/40" aria-hidden="true" />
+<div class="@container">
+  {/* Error state */}
+  {
+    error && (
+      <div class="alert alert-error" role="alert">
+        <CircleX size={24} class="stroke-current shrink-0" aria-hidden="true" />
+        <span>{error}</span>
       </div>
-      <h3 class="text-lg font-bold text-base-content mb-2">No budgets set</h3>
-      <p class="text-sm text-base-content/60 max-w-sm">
-        Set up spending limits for your expense categories to start tracking your budget progress.
-      </p>
-    </div>
-  )
-}
+    )
+  }
 
-{/* Budget grid - sorted by highest budget amount first */}
-{
-  !error && !loading && sortedBudgets.length > 0 && (
-    <div
-      class={gridClasses}
-      role="list"
-      aria-label="Budget categories"
-      aria-rowcount={sortedBudgets.length}
-    >
-      {sortedBudgets.map((budget) => {
-        const budgetAmt =
-          typeof budget.budget_amount === 'string'
-            ? parseFloat(budget.budget_amount)
-            : budget.budget_amount;
-        const spentAmt =
-          typeof budget.spent_amount === 'string'
-            ? parseFloat(budget.spent_amount)
-            : budget.spent_amount;
-        return (
-          <div
-            role="listitem"
-            class="h-full"
-            data-sort-title={budget.category_name}
-            data-sort-budget={budgetAmt}
-            data-sort-spent={spentAmt}
-          >
-            <BudgetCard
-              categoryId={budget.category_id}
-              categoryName={budget.category_name}
-              icon={budget.category_icon || getIconForCategory(budget.category_name, budget.icon)}
-              color={budget.category_color}
-              spent={
-                typeof budget.spent_amount === 'string'
-                  ? parseFloat(budget.spent_amount)
-                  : budget.spent_amount
-              }
-              budget={
-                typeof budget.budget_amount === 'string'
-                  ? parseFloat(budget.budget_amount)
-                  : budget.budget_amount
-              }
-              percentageUsed={budget.percentage_used}
-              status={budget.status}
-              currency={currency}
-              month={month}
-              year={year}
-            />
+  {/* Loading state */}
+  {
+    !error && loading && (
+      <div class={gridClasses} aria-busy="true" aria-label="Loading budgets">
+        {Array.from({ length: skeletonCount }).map(() => (
+          <div class="@container">
+            <BudgetCard categoryName="" spent={0} budget={0} percentageUsed={0} loading={true} />
           </div>
-        );
-      })}
-      {/* Hidden "no results" element for client-side filter - shown via JS when no cards match */}
-      <div
-        data-filter-no-results
-        class="hidden col-span-full text-center py-12 text-base-content/60"
-        aria-live="polite"
-      >
-        <p class="text-lg font-medium">No budgets match your filter</p>
-        <p class="text-sm mt-1">Try a different search term</p>
+        ))}
       </div>
-    </div>
-  )
-}
+    )
+  }
+
+  {/* Empty state */}
+  {
+    !error && !loading && budgets.length === 0 && (
+      <div class="flex flex-col items-center justify-center py-16 text-center">
+        <div class="w-16 h-16 rounded-2xl bg-base-200 flex items-center justify-center mb-4">
+          <Wallet size={32} class="stroke-base-content/40" aria-hidden="true" />
+        </div>
+        <h3 class="text-lg font-bold text-base-content mb-2">No budgets set</h3>
+        <p class="text-sm text-base-content/60 max-w-sm">
+          Set up spending limits for your expense categories to start tracking your budget progress.
+        </p>
+      </div>
+    )
+  }
+
+  {/* Budget grid - sorted by highest budget amount first */}
+  {
+    !error && !loading && sortedBudgets.length > 0 && (
+      <div
+        class={gridClasses}
+        role="list"
+        aria-label="Budget categories"
+        aria-rowcount={sortedBudgets.length}
+      >
+        {sortedBudgets.map((budget) => {
+          const budgetAmt =
+            typeof budget.budget_amount === 'string'
+              ? Number(budget.budget_amount)
+              : budget.budget_amount;
+          const spentAmt =
+            typeof budget.spent_amount === 'string'
+              ? Number(budget.spent_amount)
+              : budget.spent_amount;
+          return (
+            <div
+              role="listitem"
+              class="h-full @container"
+              data-sort-title={budget.category_name}
+              data-sort-budget={budgetAmt}
+              data-sort-spent={spentAmt}
+            >
+              <BudgetCard
+                categoryId={budget.category_id}
+                categoryName={budget.category_name}
+                icon={budget.category_icon || getIconForCategory(budget.category_name, budget.icon)}
+                color={budget.category_color}
+                spent={
+                  typeof budget.spent_amount === 'string'
+                    ? Number(budget.spent_amount)
+                    : budget.spent_amount
+                }
+                budget={
+                  typeof budget.budget_amount === 'string'
+                    ? Number(budget.budget_amount)
+                    : budget.budget_amount
+                }
+                percentageUsed={budget.percentage_used}
+                status={budget.status}
+                currency={currency}
+                month={month}
+                year={year}
+              />
+            </div>
+          );
+        })}
+        {/* Hidden "no results" element for client-side filter - shown via JS when no cards match */}
+        <div
+          data-filter-no-results
+          class="hidden col-span-full text-center py-12 text-base-content/60"
+          aria-live="polite"
+        >
+          <p class="text-lg font-medium">No budgets match your filter</p>
+          <p class="text-sm mt-1">Try a different search term</p>
+        </div>
+      </div>
+    )
+  }
+</div>

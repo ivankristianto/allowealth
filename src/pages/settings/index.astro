@@ -594,6 +594,18 @@ const dataActions = [
               </div>
             </section>
           </div>
+
+          {/* Bottom Save Button (visible after scrolling through form) */}
+          <div class="border-t border-base-300 pt-6 mt-2">
+            <button
+              type="button"
+              class="btn btn-accent w-full h-14 rounded-2xl gap-2 font-bold shadow-sm"
+              id="save-settings-btn-bottom"
+            >
+              <Save size={18} class="stroke-current" aria-hidden="true" />
+              Save Changes
+            </button>
+          </div>
         </Card>
       </article>
     </section>
@@ -646,54 +658,62 @@ const dataActions = [
 
   // ==================== WORKSPACE SETTINGS FORM ====================
   const saveBtn = document.getElementById('save-settings-btn') as HTMLButtonElement | null;
+  const saveBtnBottom = document.getElementById(
+    'save-settings-btn-bottom'
+  ) as HTMLButtonElement | null;
   const settingsForm = document.getElementById('workspace-settings-form') as HTMLFormElement | null;
 
-  if (saveBtn && settingsForm) {
-    saveBtn.addEventListener('click', async () => {
-      setButtonLoading(saveBtn, true);
+  async function handleSave() {
+    const allSaveBtns = [saveBtn, saveBtnBottom].filter(Boolean) as HTMLButtonElement[];
+    allSaveBtns.forEach((btn) => setButtonLoading(btn, true));
 
-      try {
-        const formData = new FormData(settingsForm);
+    try {
+      const formData = new FormData(settingsForm!);
 
-        const payload: Record<string, unknown> = {
-          currency: formData.get('currency'),
-          weekStart: formData.get('weekStart'),
-          compactNumbers: formData.get('compactNumbers') === 'on',
-        };
+      const payload: Record<string, unknown> = {
+        currency: formData.get('currency'),
+        weekStart: formData.get('weekStart'),
+        compactNumbers: formData.get('compactNumbers') === 'on',
+      };
 
-        // Include workspace name only if admin
-        if (isAdmin) {
-          const workspaceName = formData.get('workspaceName');
-          if (workspaceName) {
-            payload.name = workspaceName;
-          }
+      // Include workspace name only if admin
+      if (isAdmin) {
+        const workspaceName = formData.get('workspaceName');
+        if (workspaceName) {
+          payload.name = workspaceName;
         }
-
-        const response = await fetch('/api/workspace/settings', {
-          method: 'PUT',
-          headers: getCsrfHeaders({
-            'Content-Type': 'application/json',
-          }),
-          credentials: 'include',
-          body: JSON.stringify(payload),
-        });
-
-        const result = await response.json();
-
-        if (response.ok && result.success) {
-          addToast('Settings saved successfully!', 'success');
-        } else {
-          const errorMessage =
-            result.error?.message || 'Failed to save settings. Please try again.';
-          addToast(errorMessage, 'error');
-        }
-      } catch (error) {
-        console.error('Settings update error:', error);
-        addToast('An error occurred. Please check your connection and try again.', 'error');
-      } finally {
-        setButtonLoading(saveBtn, false);
       }
-    });
+
+      const response = await fetch('/api/workspace/settings', {
+        method: 'PUT',
+        headers: getCsrfHeaders({
+          'Content-Type': 'application/json',
+        }),
+        credentials: 'include',
+        body: JSON.stringify(payload),
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        addToast('Settings saved successfully!', 'success');
+      } else {
+        const errorMessage = result.error?.message || 'Failed to save settings. Please try again.';
+        addToast(errorMessage, 'error');
+      }
+    } catch (error) {
+      console.error('Settings update error:', error);
+      addToast('An error occurred. Please check your connection and try again.', 'error');
+    } finally {
+      allSaveBtns.forEach((btn) => setButtonLoading(btn, false));
+    }
+  }
+
+  if (saveBtn && settingsForm) {
+    saveBtn.addEventListener('click', handleSave);
+  }
+  if (saveBtnBottom && settingsForm) {
+    saveBtnBottom.addEventListener('click', handleSave);
   }
 
   // ==================== CANCEL INVITATION ====================

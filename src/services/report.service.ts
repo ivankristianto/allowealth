@@ -1,12 +1,12 @@
 /**
  * Report Service
  * ==============
- * Provides aggregated financial intelligence data for reports including:
+ * Provides aggregated financial data for reports including:
  * - Monthly and yearly income/expense summaries
  * - Budget health metrics
  * - Category spending analysis with donut chart data
- * - Financial velocity trends (trailing periods)
- * - Category intelligence table with budget limits
+ * - Income vs. expense trends (trailing periods)
+ * - Category spending table with budget limits
  * - Category transaction drill-down
  *
  * Security:

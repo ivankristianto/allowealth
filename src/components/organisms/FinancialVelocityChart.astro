@@ -1,8 +1,8 @@
 ---
 /**
- * FinancialVelocityChart Component
+ * IncomeVsExpensesChart Component
  *
- * Interactive bar chart showing financial velocity (income vs expenses) over time.
+ * Interactive bar chart showing income vs expenses over time.
  * Uses Chart.js for rendering with grouped bars.
  * Follows Oasis Finance v1.0.0 design system specifications.
  *
@@ -54,13 +54,13 @@ const chartId = `financial-velocity-chart-${Math.random().toString(36).slice(2, 
   rounded="card-lg"
   className={className}
   role="region"
-  aria-label="Financial velocity over time"
+  aria-label="Income vs. expenses over time"
 >
   <div class="flex flex-col gap-6 md:gap-8">
     {/* Header */}
     <div class="flex justify-between items-center">
       <h4 class="font-bold text-base md:text-lg text-base-content tracking-tight">
-        Financial Velocity
+        Income vs. Expenses
       </h4>
       <StatLabel size="sm" color="neutral">{subtitle}</StatLabel>
     </div>
@@ -92,7 +92,7 @@ const chartId = `financial-velocity-chart-${Math.random().toString(36).slice(2, 
         >
           <canvas
             id={chartId}
-            aria-label={`Financial velocity bar chart showing income and expenses for ${data.length} periods`}
+            aria-label={`Income vs. expenses bar chart for ${data.length} periods`}
             role="img"
           />
         </div>
@@ -102,7 +102,7 @@ const chartId = `financial-velocity-chart-${Math.random().toString(36).slice(2, 
     {/* Screen Reader Data Table */}
     {
       !loading && !error && data.length > 0 && (
-        <table class="sr-only" aria-label="Financial velocity data table">
+        <table class="sr-only" aria-label="Income vs. expenses data table">
           <thead>
             <tr>
               <th>Period</th>

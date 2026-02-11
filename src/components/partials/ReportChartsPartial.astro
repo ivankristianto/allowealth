@@ -2,7 +2,7 @@
 /**
  * Report Charts Partial
  *
- * Server-rendered partial for report charts (Resource Allocation + Financial Velocity).
+ * Server-rendered partial for report charts (Expense Breakdown + Income vs. Expenses).
  * Used for both SSR and HTML fragment responses (?_render=html).
  *
  * @param {Array} expenseByCategory - Expense breakdown by category
@@ -41,9 +41,9 @@ const {
 
 <!-- Charts Grid -->
 <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 md:gap-8" data-report-charts>
-  <!-- Resource Allocation Chart -->
+  <!-- Expense Breakdown Chart -->
   <ResourceAllocationChart data={expenseByCategory} subtitle={resourceAllocationSubtitle} />
 
-  <!-- Financial Velocity Chart -->
+  <!-- Income vs. Expenses Chart -->
   <FinancialVelocityChart data={trendData} subtitle={financialVelocitySubtitle} />
 </div>
