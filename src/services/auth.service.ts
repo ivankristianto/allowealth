@@ -17,7 +17,7 @@ import { db, getActiveSchema, runTransaction } from '@/db';
 import { createLogger } from '@/lib/logger';
 
 const log = createLogger('auth');
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 
 // Get the correct schema for the current database dialect
 const schema = getActiveSchema();
@@ -35,7 +35,28 @@ export const AUTH_ERRORS = {
   SESSION_NOT_FOUND: 'SESSION_NOT_FOUND',
   EMAIL_NOT_VERIFIED: 'EMAIL_NOT_VERIFIED',
   WORKSPACE_INACTIVE: 'WORKSPACE_INACTIVE',
+  OAUTH_PROVIDER_ERROR: 'OAUTH_PROVIDER_ERROR',
+  OAUTH_LINK_REQUIRED: 'OAUTH_LINK_REQUIRED',
+  OAUTH_UNLINK_DENIED: 'OAUTH_UNLINK_DENIED',
 } as const;
+
+/**
+ * OAuth provider profile data
+ */
+export interface OAuthProfile {
+  provider: string;
+  providerAccountId: string;
+  email: string;
+  name: string;
+  avatarUrl?: string;
+}
+
+/**
+ * Result types for OAuth login/register
+ */
+export type OAuthResult =
+  | { needsLinking: false; user: User; session: Session; isNewUser: boolean }
+  | { needsLinking: true; pendingUserId: string; email: string; provider: string };
 
 /**
  * Auth error class
@@ -336,6 +357,14 @@ export async function login(
       throw new AuthError(AUTH_ERRORS.INVALID_CREDENTIALS, 'Invalid email or password');
     }
 
+    // OAuth-only users don't have passwords
+    if (!user.password_hash) {
+      throw new AuthError(
+        AUTH_ERRORS.INVALID_CREDENTIALS,
+        'This account uses social login. Please sign in with your linked provider.'
+      );
+    }
+
     // Always verify password first to maintain constant timing
     // (prevents timing oracle that could distinguish verified vs unverified accounts)
     const isValidPassword = await verifyPassword(password, user.password_hash);
@@ -472,4 +501,256 @@ export async function getUser(sessionId: string): Promise<User | null> {
   } catch (error) {
     return null;
   }
+}
+
+/**
+ * Login or register a user via OAuth provider
+ *
+ * Flow:
+ * 1. Check if oauth_account exists for this provider+id → return existing user
+ * 2. Check if a user exists with matching email → request account linking
+ * 3. No match → create new user + workspace + oauth_account
+ */
+export async function loginOrRegisterWithOAuth(profile: OAuthProfile): Promise<OAuthResult> {
+  try {
+    // 1. Check if oauth_account already linked
+    const existingOAuth = await db.query.oauthAccounts.findFirst({
+      where: and(
+        eq(schema.oauthAccounts.provider, profile.provider),
+        eq(schema.oauthAccounts.provider_account_id, profile.providerAccountId)
+      ),
+    });
+
+    if (existingOAuth) {
+      const user = await db.query.users.findFirst({
+        where: eq(schema.users.id, existingOAuth.user_id),
+      });
+
+      if (!user || user.deleted_at) {
+        throw new AuthError(AUTH_ERRORS.INVALID_CREDENTIALS, 'Account not found or deleted');
+      }
+
+      // Check workspace is active
+      const workspace = await db.query.workspaces.findFirst({
+        where: eq(schema.workspaces.id, user.workspace_id),
+      });
+      if (!workspace || workspace.status !== 'active') {
+        throw new AuthError(AUTH_ERRORS.WORKSPACE_INACTIVE, 'Workspace inactive');
+      }
+
+      const session = await auth.createSession(user.id, {});
+      const luciaUser: User = {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        workspaceId: user.workspace_id,
+        role: user.role as 'admin' | 'member',
+        avatarUrl: user.avatar_url ?? null,
+        deletedAt: user.deleted_at,
+      };
+
+      log.info('OAuth login (existing link)', { userId: user.id, provider: profile.provider });
+      return { needsLinking: false, user: luciaUser, session, isNewUser: false };
+    }
+
+    // 2. Check if user exists with matching email
+    const existingUser = await db.query.users.findFirst({
+      where: eq(schema.users.email, profile.email.toLowerCase()),
+    });
+
+    if (existingUser) {
+      if (existingUser.deleted_at) {
+        throw new AuthError(AUTH_ERRORS.INVALID_CREDENTIALS, 'Account not found or deleted');
+      }
+
+      log.info('OAuth login requires linking', {
+        userId: existingUser.id,
+        provider: profile.provider,
+      });
+      return {
+        needsLinking: true,
+        pendingUserId: existingUser.id,
+        email: existingUser.email,
+        provider: profile.provider,
+      };
+    }
+
+    // 3. New user — create user + workspace + oauth_account
+    const workspaceId = nanoid();
+    const userId = nanoid();
+    const oauthAccountId = nanoid();
+
+    const newUser = await runTransaction(db, async (tx) => {
+      await Promise.resolve(
+        tx.insert(schema.workspaces).values({
+          id: workspaceId,
+          name: `${profile.name.trim()}'s Workspace`,
+          status: 'active' as const,
+          created_at: new Date(),
+          updated_at: new Date(),
+        })
+      );
+
+      const [user] = await tx
+        .insert(schema.users)
+        .values({
+          id: userId,
+          workspace_id: workspaceId,
+          email: profile.email.toLowerCase(),
+          password_hash: null,
+          name: profile.name.trim(),
+          role: 'admin' as const,
+          avatar_url: profile.avatarUrl || null,
+          email_verified_at: new Date(),
+        })
+        .returning();
+
+      await tx.insert(schema.oauthAccounts).values({
+        id: oauthAccountId,
+        user_id: userId,
+        provider: profile.provider,
+        provider_account_id: profile.providerAccountId,
+        email: profile.email.toLowerCase(),
+      });
+
+      return user;
+    });
+
+    if (!newUser) {
+      throw new AuthError(AUTH_ERRORS.DATABASE_ERROR, 'Failed to create user');
+    }
+
+    const session = await auth.createSession(newUser.id, {});
+    const luciaUser: User = {
+      id: newUser.id,
+      email: newUser.email,
+      name: newUser.name,
+      workspaceId: newUser.workspace_id,
+      role: newUser.role as 'admin' | 'member',
+      avatarUrl: newUser.avatar_url ?? null,
+      deletedAt: newUser.deleted_at,
+    };
+
+    log.info('OAuth registration (new user)', {
+      userId: newUser.id,
+      provider: profile.provider,
+      workspaceId,
+    });
+    return { needsLinking: false, user: luciaUser, session, isNewUser: true };
+  } catch (error) {
+    if (error instanceof AuthError) throw error;
+    log.error('OAuth login/register error', error);
+    throw new AuthError(AUTH_ERRORS.DATABASE_ERROR, 'OAuth authentication failed');
+  }
+}
+
+/**
+ * Confirm account linking after user consent
+ */
+export async function confirmAccountLink(
+  userId: string,
+  profile: OAuthProfile
+): Promise<{ user: User; session: Session }> {
+  try {
+    const existingUser = await db.query.users.findFirst({
+      where: eq(schema.users.id, userId),
+    });
+
+    if (!existingUser || existingUser.deleted_at) {
+      throw new AuthError(AUTH_ERRORS.INVALID_CREDENTIALS, 'Account not found or deleted');
+    }
+
+    const oauthAccountId = nanoid();
+
+    await runTransaction(db, async (tx) => {
+      await tx.insert(schema.oauthAccounts).values({
+        id: oauthAccountId,
+        user_id: userId,
+        provider: profile.provider,
+        provider_account_id: profile.providerAccountId,
+        email: profile.email.toLowerCase(),
+      });
+
+      const updates: Record<string, unknown> = {};
+      if (!existingUser.avatar_url && profile.avatarUrl) {
+        updates.avatar_url = profile.avatarUrl;
+      }
+      if (!existingUser.email_verified_at) {
+        updates.email_verified_at = new Date();
+      }
+
+      if (Object.keys(updates).length > 0) {
+        await tx.update(schema.users).set(updates).where(eq(schema.users.id, userId));
+      }
+    });
+
+    const updatedUser = await db.query.users.findFirst({
+      where: eq(schema.users.id, userId),
+    });
+
+    if (!updatedUser) {
+      throw new AuthError(AUTH_ERRORS.DATABASE_ERROR, 'Failed to fetch updated user');
+    }
+
+    const session = await auth.createSession(userId, {});
+    const luciaUser: User = {
+      id: updatedUser.id,
+      email: updatedUser.email,
+      name: updatedUser.name,
+      workspaceId: updatedUser.workspace_id,
+      role: updatedUser.role as 'admin' | 'member',
+      avatarUrl: updatedUser.avatar_url ?? null,
+      deletedAt: updatedUser.deleted_at,
+    };
+
+    log.info('OAuth account linked', { userId, provider: profile.provider });
+    return { user: luciaUser, session };
+  } catch (error) {
+    if (error instanceof AuthError) throw error;
+    log.error('Account linking error', error);
+    throw new AuthError(AUTH_ERRORS.DATABASE_ERROR, 'Account linking failed');
+  }
+}
+
+/**
+ * Unlink an OAuth provider from a user account
+ */
+export async function unlinkOAuthProvider(userId: string, provider: string): Promise<void> {
+  try {
+    const user = await db.query.users.findFirst({
+      where: eq(schema.users.id, userId),
+    });
+
+    if (!user) {
+      throw new AuthError(AUTH_ERRORS.INVALID_CREDENTIALS, 'User not found');
+    }
+
+    if (!user.password_hash) {
+      throw new AuthError(
+        AUTH_ERRORS.OAUTH_UNLINK_DENIED,
+        'Cannot unlink: no password set. Add a password first.'
+      );
+    }
+
+    await db
+      .delete(schema.oauthAccounts)
+      .where(
+        and(eq(schema.oauthAccounts.user_id, userId), eq(schema.oauthAccounts.provider, provider))
+      );
+
+    log.info('OAuth provider unlinked', { userId, provider });
+  } catch (error) {
+    if (error instanceof AuthError) throw error;
+    log.error('OAuth unlink error', error);
+    throw new AuthError(AUTH_ERRORS.DATABASE_ERROR, 'Failed to unlink provider');
+  }
+}
+
+/**
+ * Get all linked OAuth accounts for a user
+ */
+export async function getLinkedOAuthAccounts(userId: string) {
+  return db.query.oauthAccounts.findMany({
+    where: eq(schema.oauthAccounts.user_id, userId),
+  });
 }
