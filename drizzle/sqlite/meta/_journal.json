@@ -57,6 +57,13 @@
       "when": 1770800000000,
       "tag": "0007_backfill_email_verified",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1770809671491,
+      "tag": "0008_jazzy_earthquake",
+      "breakpoints": true
     }
   ]
 }

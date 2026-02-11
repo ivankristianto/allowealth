@@ -192,6 +192,7 @@ export const auth = new Lucia(adapter, {
       name: databaseUser.name,
       workspaceId: databaseUser.workspace_id,
       role: databaseUser.role as 'admin' | 'member',
+      avatarUrl: databaseUser.avatar_url,
       deletedAt: databaseUser.deleted_at,
     };
   },
@@ -226,5 +227,6 @@ export type User = {
   name: string;
   workspaceId: string;
   role: UserRole;
+  avatarUrl: string | null;
   deletedAt: Date | null;
 };

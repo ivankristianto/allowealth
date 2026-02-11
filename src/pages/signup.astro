@@ -13,6 +13,7 @@ import Input from '../components/atoms/Input.astro';
 import PasswordField from '../components/atoms/PasswordField.astro';
 import Button from '../components/atoms/Button.astro';
 import Label from '../components/atoms/Label.astro';
+import GoogleButton from '../components/atoms/GoogleButton.astro';
 import { Building2, Eye, EyeOff, TriangleAlert, CircleCheck } from '@lucide/astro';
 import { getSignupUrl } from '@/lib/config';
 import { workspaceInvitationService, workspaceService } from '@/services';
@@ -180,6 +181,15 @@ const invitationErrorMessage =
           <h2 class="text-2xl font-bold mb-6 text-center">
             {isInvitationSignup ? 'Complete Your Account' : 'Create Account'}
           </h2>
+
+          {!isInvitationSignup && (
+            <>
+              <GoogleButton action="Sign up" />
+              <div class="divider text-base-content/40 text-xs uppercase tracking-widest my-2">
+                or
+              </div>
+            </>
+          )}
 
           <form
             id="signup-form"

@@ -21,8 +21,6 @@ export interface Props {
 }
 
 const { accounts } = Astro.props;
-
-// @TODO: Implement SSO connect/disconnect logic.
 ---
 
 <section class="card bg-base-100 shadow border border-base-300">
@@ -34,9 +32,6 @@ const { accounts } = Astro.props;
       <div>
         <div class="flex flex-wrap items-center gap-2">
           <h3 class="text-lg font-bold">Connected Accounts</h3>
-          <span class="badge badge-outline badge-sm text-base-content/50 whitespace-nowrap"
-            >Under Development</span
-          >
         </div>
         <p class="text-xs uppercase tracking-widest text-base-content/50">Single Sign-On (SSO)</p>
       </div>
@@ -60,17 +55,24 @@ const { accounts } = Astro.props;
               </div>
             </div>
 
-            <Button
-              type="button"
-              variant={account.connected ? 'outline' : 'accent'}
-              size="sm"
-              disabled
-            >
-              {account.connected ? 'Disconnect' : 'Connect Account'}
-            </Button>
+            {account.connected ? (
+              <form method="POST" data-unlink-form data-provider={account.id}>
+                <Button type="submit" variant="outline" size="sm" data-unlink-btn>
+                  Disconnect
+                </Button>
+              </form>
+            ) : (
+              <a href="/api/auth/google" class="btn btn-accent btn-sm">
+                Connect Account
+              </a>
+            )}
           </div>
         ))
       }
     </div>
   </div>
 </section>
+
+<script>
+  import '@/components/molecules/SecurityConnectedAccountsCard.client';
+</script>

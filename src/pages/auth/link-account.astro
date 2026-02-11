@@ -1,0 +1,88 @@
+---
+/**
+ * Account Linking Page
+ *
+ * Shown when an existing email/password user signs in with Google.
+ * Asks for explicit consent before linking the Google account.
+ */
+
+import AuthLayout from '../../layouts/AuthLayout.astro';
+import Button from '../../components/atoms/Button.astro';
+import { Link2, ShieldCheck, ArrowLeft } from '@lucide/astro';
+import { verifyCookieSignature } from '@/lib/crypto/cookie-signature';
+
+const pendingLinkCookie = Astro.cookies.get('pending_oauth_link')?.value;
+
+let pendingLink: {
+  email: string;
+  provider: string;
+  expiresAt: number;
+} | null = null;
+
+if (pendingLinkCookie) {
+  try {
+    const verifiedJson = await verifyCookieSignature(pendingLinkCookie);
+    if (verifiedJson) {
+      const parsed = JSON.parse(verifiedJson);
+      if (Date.now() < parsed.expiresAt) {
+        pendingLink = parsed;
+      }
+    }
+  } catch {
+    // Invalid or tampered cookie
+  }
+}
+
+if (!pendingLink) {
+  return Astro.redirect('/login?oauth_error=link_expired');
+}
+
+const providerName = pendingLink.provider.charAt(0).toUpperCase() + pendingLink.provider.slice(1);
+---
+
+<AuthLayout title="allowealth - Link Account">
+  <div class="card bg-base-100 shadow-2xl border border-base-300">
+    <div class="card-body p-8">
+      <div class="flex flex-col items-center gap-4 text-center">
+        <div class="w-16 h-16 rounded-full bg-accent/10 flex items-center justify-center">
+          <Link2 size={32} class="text-accent stroke-current" aria-hidden="true" />
+        </div>
+
+        <h2 class="text-2xl font-bold">Link Your Account</h2>
+
+        <p class="text-base-content/70">
+          An account with <strong class="text-base-content">{pendingLink.email}</strong> already exists.
+        </p>
+
+        <div class="bg-base-200/60 border border-base-300 rounded-2xl p-4 w-full text-left">
+          <div class="flex items-start gap-3">
+            <ShieldCheck
+              size={20}
+              class="text-accent stroke-current shrink-0 mt-0.5"
+              aria-hidden="true"
+            />
+            <div class="text-sm text-base-content/70">
+              <p class="font-semibold text-base-content mb-1">What linking does:</p>
+              <ul class="list-disc list-inside space-y-1">
+                <li>Connects your {providerName} account for quick sign-in</li>
+                <li>You can still use your email and password</li>
+                <li>You can unlink anytime from Security settings</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <form method="POST" action="/api/auth/google/link" class="w-full">
+          <Button type="submit" variant="accent" className="w-full h-14 rounded-2xl">
+            Link my {providerName} account
+          </Button>
+        </form>
+
+        <a href="/login" class="btn btn-ghost gap-2 text-sm">
+          <ArrowLeft size={16} class="stroke-current" aria-hidden="true" />
+          Cancel and return to login
+        </a>
+      </div>
+    </div>
+  </div>
+</AuthLayout>

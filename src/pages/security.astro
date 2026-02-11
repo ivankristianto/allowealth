@@ -14,6 +14,7 @@ import GenerateApiKeyModal from '@/components/organisms/GenerateApiKeyModal.astr
 import MCPSetupInstructionsModal from '@/components/organisms/MCPSetupInstructionsModal.astro';
 import { History } from '@lucide/astro';
 import { apiKeyService } from '@/services';
+import { getLinkedOAuthAccounts } from '@/services/auth.service';
 
 const currentPath = '/security';
 
@@ -31,15 +32,25 @@ if (user?.id && user?.workspaceId) {
   apiKeys = await apiKeyService.list(user.workspaceId, user.id);
 }
 
-// @TODO: Wire with backend for security data.
-const connectedAccounts = [
-  {
-    id: 'google',
-    provider: 'Google',
-    email: 'sarah.j@familyfinance.com',
-    connected: false,
-  },
-];
+let connectedAccounts: Array<{
+  id: string;
+  provider: string;
+  email?: string;
+  connected: boolean;
+}> = [];
+
+if (user?.id) {
+  const linkedAccounts = await getLinkedOAuthAccounts(user.id);
+  const googleAccount = linkedAccounts.find((a) => a.provider === 'google');
+  connectedAccounts = [
+    {
+      id: 'google',
+      provider: 'Google',
+      email: googleAccount?.email,
+      connected: !!googleAccount,
+    },
+  ];
+}
 
 // @TODO: Wire with backend for MFA preferences.
 const mfaMethods = [
