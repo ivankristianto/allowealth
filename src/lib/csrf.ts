@@ -137,6 +137,7 @@ export const CSRF_EXEMPT_ENDPOINTS = [
   '/api/auth/signup',
   '/api/auth/forgot-password',
   '/api/auth/logout',
+  '/api/auth/google/link',
 ] as const;
 
 /**

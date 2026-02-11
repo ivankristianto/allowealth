@@ -21,8 +21,6 @@ export interface Props {
 }
 
 const { accounts } = Astro.props;
-
-// @TODO: Implement SSO connect/disconnect logic.
 ---
 
 <section class="card bg-base-100 shadow border border-base-300">
@@ -34,9 +32,6 @@ const { accounts } = Astro.props;
       <div>
         <div class="flex flex-wrap items-center gap-2">
           <h3 class="text-lg font-bold">Connected Accounts</h3>
-          <span class="badge badge-outline badge-sm text-base-content/50 whitespace-nowrap"
-            >Under Development</span
-          >
         </div>
         <p class="text-xs uppercase tracking-widest text-base-content/50">Single Sign-On (SSO)</p>
       </div>
@@ -60,17 +55,62 @@ const { accounts } = Astro.props;
               </div>
             </div>
 
-            <Button
-              type="button"
-              variant={account.connected ? 'outline' : 'accent'}
-              size="sm"
-              disabled
-            >
-              {account.connected ? 'Disconnect' : 'Connect Account'}
-            </Button>
+            {account.connected ? (
+              <form method="POST" data-unlink-form data-provider={account.id}>
+                <Button type="submit" variant="outline" size="sm" data-unlink-btn>
+                  Disconnect
+                </Button>
+              </form>
+            ) : (
+              <a href="/api/auth/google" class="btn btn-accent btn-sm">
+                Connect Account
+              </a>
+            )}
           </div>
         ))
       }
     </div>
   </div>
 </section>
+
+<script>
+  document.querySelectorAll('[data-unlink-form]').forEach((form) => {
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const provider = (form as HTMLFormElement).dataset.provider;
+      const btn = form.querySelector('[data-unlink-btn]') as HTMLButtonElement;
+      if (btn) btn.disabled = true;
+
+      try {
+        const csrfToken = document.cookie
+          .split('; ')
+          .find((c) => c.startsWith('csrf_token='))
+          ?.split('=')
+          .slice(1)
+          .join('=');
+
+        const res = await fetch(`/api/auth/${provider}/unlink`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': csrfToken || '',
+          },
+          credentials: 'include',
+        });
+
+        if (res.ok) {
+          window.location.reload();
+        } else {
+          const data = await res.json();
+          const { addToast } = await import('@/lib/stores/toastStore');
+          addToast(data.error?.message || 'Failed to disconnect', 'error');
+          if (btn) btn.disabled = false;
+        }
+      } catch {
+        const { addToast } = await import('@/lib/stores/toastStore');
+        addToast('Failed to disconnect. Please try again.', 'error');
+        if (btn) btn.disabled = false;
+      }
+    });
+  });
+</script>
