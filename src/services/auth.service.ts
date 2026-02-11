@@ -381,6 +381,7 @@ export async function login(
       name: user.name,
       workspaceId: user.workspace_id,
       role: user.role as 'admin' | 'member',
+      avatarUrl: user.avatar_url ?? null,
       deletedAt: user.deleted_at,
     };
 

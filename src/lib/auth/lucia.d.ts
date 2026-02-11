@@ -13,6 +13,7 @@ declare module 'lucia' {
       name: string;
       workspace_id: string;
       role: 'admin' | 'member';
+      avatar_url: string | null;
       deleted_at: Date | null;
     };
   }
