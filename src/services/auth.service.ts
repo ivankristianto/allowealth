@@ -13,7 +13,7 @@
 
 import { auth, type User, type Session } from '@/lib/auth/lucia';
 import { hashPassword, verifyPassword } from '@/lib/auth/password';
-import { db, getActiveSchema, runTransaction } from '@/db';
+import { db, getActiveSchema, runTransaction, type IDatabase } from '@/db';
 import { AssetCategoryService } from '@/services/asset-category.service';
 import { createLogger } from '@/lib/logger';
 
@@ -154,6 +154,34 @@ function validateLoginInput(email: string, password: string): ValidationResult {
 }
 
 /**
+ * Initialize a new workspace for a user
+ *
+ * Creates the workspace record within the provided transaction.
+ * Both password registration and OAuth registration share this logic.
+ *
+ * @param tx - Database transaction handle
+ * @param workspaceId - Pre-generated workspace ID
+ * @param userName - User display name (used for workspace name)
+ * @param options - Workspace options (status: 'active' for OAuth, 'inactive' for email signup)
+ */
+async function initializeWorkspace(
+  tx: IDatabase,
+  workspaceId: string,
+  userName: string,
+  options: { status: 'active' | 'inactive' }
+): Promise<void> {
+  await Promise.resolve(
+    tx.insert(schema.workspaces).values({
+      id: workspaceId,
+      name: `${userName.trim()}'s Workspace`,
+      status: options.status,
+      created_at: new Date(),
+      updated_at: new Date(),
+    })
+  );
+}
+
+/**
  * Register a new user
  *
  * Creates a new workspace and makes the user an admin of that workspace.
@@ -188,27 +216,20 @@ export async function register(email: string, password: string, name: string): P
     const workspaceId = nanoid();
     const userId = nanoid();
 
-    const workspaceValues = {
-      id: workspaceId,
-      name: `${name.trim()}'s Workspace`,
-      status: 'inactive' as const,
-      created_at: new Date(),
-      updated_at: new Date(),
-    };
-
-    const userValues = {
-      id: userId,
-      workspace_id: workspaceId,
-      email: email.toLowerCase(),
-      password_hash: passwordHash,
-      name: name.trim(),
-      role: 'admin' as const,
-    };
-
     // Use transaction for atomicity (prevents orphaned workspaces)
     const newUser: typeof schema.users.$inferSelect = await runTransaction(db, async (tx) => {
-      await Promise.resolve(tx.insert(schema.workspaces).values(workspaceValues));
-      const [user] = await tx.insert(schema.users).values(userValues).returning();
+      await initializeWorkspace(tx, workspaceId, name, { status: 'inactive' });
+      const [user] = await tx
+        .insert(schema.users)
+        .values({
+          id: userId,
+          workspace_id: workspaceId,
+          email: email.toLowerCase(),
+          password_hash: passwordHash,
+          name: name.trim(),
+          role: 'admin' as const,
+        })
+        .returning();
       return user;
     });
 
@@ -582,15 +603,7 @@ export async function loginOrRegisterWithOAuth(profile: OAuthProfile): Promise<O
     const oauthAccountId = nanoid();
 
     const newUser = await runTransaction(db, async (tx) => {
-      await Promise.resolve(
-        tx.insert(schema.workspaces).values({
-          id: workspaceId,
-          name: `${profile.name.trim()}'s Workspace`,
-          status: 'active' as const,
-          created_at: new Date(),
-          updated_at: new Date(),
-        })
-      );
+      await initializeWorkspace(tx, workspaceId, profile.name, { status: 'active' });
 
       const [user] = await tx
         .insert(schema.users)

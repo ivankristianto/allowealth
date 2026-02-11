@@ -74,43 +74,5 @@ const { accounts } = Astro.props;
 </section>
 
 <script>
-  document.querySelectorAll('[data-unlink-form]').forEach((form) => {
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const provider = (form as HTMLFormElement).dataset.provider;
-      const btn = form.querySelector('[data-unlink-btn]') as HTMLButtonElement;
-      if (btn) btn.disabled = true;
-
-      try {
-        const csrfToken = document.cookie
-          .split('; ')
-          .find((c) => c.startsWith('csrf_token='))
-          ?.split('=')
-          .slice(1)
-          .join('=');
-
-        const res = await fetch(`/api/auth/${provider}/unlink`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-Token': csrfToken || '',
-          },
-          credentials: 'include',
-        });
-
-        if (res.ok) {
-          window.location.reload();
-        } else {
-          const data = await res.json();
-          const { addToast } = await import('@/lib/stores/toastStore');
-          addToast(data.error?.message || 'Failed to disconnect', 'error');
-          if (btn) btn.disabled = false;
-        }
-      } catch {
-        const { addToast } = await import('@/lib/stores/toastStore');
-        addToast('Failed to disconnect. Please try again.', 'error');
-        if (btn) btn.disabled = false;
-      }
-    });
-  });
+  import '@/components/molecules/SecurityConnectedAccountsCard.client';
 </script>
