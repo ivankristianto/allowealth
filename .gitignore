@@ -85,3 +85,6 @@ expenses.worktrees/
 # Claude Code personal files
 CLAUDE.local.md
 .claude/memory/
+
+# Local audit artifacts
+.audit/
