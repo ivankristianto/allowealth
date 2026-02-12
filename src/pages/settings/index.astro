@@ -186,19 +186,11 @@ const dataActions = [
     data-is-admin={isAdmin ? 'true' : 'false'}
     data-user-id={user.id}
   >
-    <header class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <header>
       <div class="space-y-1">
         <h1 class="text-2xl font-semibold text-base-content">System Settings</h1>
         <p class="text-sm text-base-content/60">Configure workspace settings and manage access.</p>
       </div>
-      <button
-        type="button"
-        class="btn btn-accent h-14 rounded-2xl gap-2 font-bold shadow-sm"
-        id="save-settings-btn"
-      >
-        <Save size={18} class="stroke-current" aria-hidden="true" />
-        Save Changes
-      </button>
     </header>
 
     <section class="flex flex-col gap-6 lg:flex-row">
@@ -657,14 +649,13 @@ const dataActions = [
   const isAdmin = container.dataset.isAdmin === 'true';
 
   // ==================== WORKSPACE SETTINGS FORM ====================
-  const saveBtn = document.getElementById('save-settings-btn') as HTMLButtonElement | null;
   const saveBtnBottom = document.getElementById(
     'save-settings-btn-bottom'
   ) as HTMLButtonElement | null;
   const settingsForm = document.getElementById('workspace-settings-form') as HTMLFormElement | null;
 
   async function handleSave() {
-    const allSaveBtns = [saveBtn, saveBtnBottom].filter(Boolean) as HTMLButtonElement[];
+    const allSaveBtns = [saveBtnBottom].filter(Boolean) as HTMLButtonElement[];
     allSaveBtns.forEach((btn) => setButtonLoading(btn, true));
 
     try {
@@ -709,9 +700,6 @@ const dataActions = [
     }
   }
 
-  if (saveBtn && settingsForm) {
-    saveBtn.addEventListener('click', handleSave);
-  }
   if (saveBtnBottom && settingsForm) {
     saveBtnBottom.addEventListener('click', handleSave);
   }

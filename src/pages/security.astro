@@ -12,6 +12,7 @@ import SecurityPasskeysCard from '@/components/molecules/SecurityPasskeysCard.as
 import SecurityApiKeysCard from '@/components/molecules/SecurityApiKeysCard.astro';
 import GenerateApiKeyModal from '@/components/organisms/GenerateApiKeyModal.astro';
 import MCPSetupInstructionsModal from '@/components/organisms/MCPSetupInstructionsModal.astro';
+import Button from '@/components/atoms/Button.astro';
 import { History } from '@lucide/astro';
 import { apiKeyService } from '@/services';
 import { getLinkedOAuthAccounts } from '@/services/auth.service';
@@ -145,13 +146,15 @@ const toneDotClasses: Record<string, string> = {
             }
           </div>
 
-          <button
+          <Button
             type="button"
-            class="btn btn-outline btn-sm w-full text-xs uppercase tracking-widest"
+            variant="outline"
+            size="sm"
+            className="w-full text-xs uppercase tracking-widest"
             disabled
           >
             Download Security Audit
-          </button>
+          </Button>
         </div>
       </section>
     </div>

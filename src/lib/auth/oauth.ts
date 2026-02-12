@@ -17,8 +17,8 @@ import { getEnv } from '@/lib/env';
  * Uses getEnv() for cross-runtime compatibility (Workers, Bun, Node).
  */
 export function createGoogleOAuthClient(): Google {
-  const clientId = getEnv('GOOGLE_CLIENT_ID');
-  const clientSecret = getEnv('GOOGLE_CLIENT_SECRET');
+  const clientId = getEnv('GOOGLE_CLIENT_ID')?.trim();
+  const clientSecret = getEnv('GOOGLE_CLIENT_SECRET')?.trim();
   const appUrl = (getEnv('PUBLIC_URL') || 'http://localhost:4321').replace(/\/$/, '');
 
   if (!clientId || !clientSecret) {
