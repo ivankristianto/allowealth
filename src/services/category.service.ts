@@ -9,6 +9,7 @@ import {
 } from '@/lib/validation/categories';
 import { CategoryServiceError, ServiceErrorCode } from './service-errors';
 import { type PerfCollector, trackQuery } from '@/lib/perf';
+import { getCacheManager, CacheKeys, CacheTags, hashFilters } from '@/lib/cache';
 
 export { type CreateCategoryInput, type UpdateCategoryInput };
 
@@ -90,6 +91,21 @@ export class CategoryService {
     filters?: { type?: 'expense' | 'income'; is_active?: boolean },
     perf?: PerfCollector
   ) {
+    const filtersHashValue = hashFilters(filters || {});
+    const cache = getCacheManager();
+    const cacheKey = CacheKeys.categories(workspaceId, filtersHashValue);
+
+    // Cache read - fail-silent
+    let cached = null;
+    try {
+      cached = await cache.get(cacheKey, perf);
+    } catch {
+      // Cache read failed, continue to DB fetch
+    }
+    if (cached) {
+      return cached;
+    }
+
     const conditions = [eq(this.schema.categories.workspace_id, workspaceId)];
 
     if (filters?.type) {
@@ -106,6 +122,16 @@ export class CategoryService {
         orderBy: (categories: any, { asc }: any) => [asc(categories.name)],
       });
     });
+
+    // Cache write - fail-silent
+    try {
+      await cache.set(cacheKey, result, {
+        ttl: 3600,
+        tags: [CacheTags.workspace(workspaceId), CacheTags.CATEGORIES],
+      });
+    } catch {
+      // Cache write failed, continue without caching
+    }
 
     return result;
   }
@@ -146,6 +172,10 @@ export class CategoryService {
         );
     });
 
+    // Invalidate category cache
+    const cache = getCacheManager();
+    await cache.invalidateByTags([CacheTags.workspace(workspaceId), CacheTags.CATEGORIES]);
+
     return this.findById(id, workspaceId, perf);
   }
 
@@ -181,6 +211,10 @@ export class CategoryService {
           )
         );
     });
+
+    // Invalidate category cache
+    const cache = getCacheManager();
+    await cache.invalidateByTags([CacheTags.workspace(workspaceId), CacheTags.CATEGORIES]);
 
     return { success: true };
   }
