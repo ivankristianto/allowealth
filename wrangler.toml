@@ -31,6 +31,8 @@ EMAIL_SENDER_ADDRESS = "noreply@allowealth.io"
 # Secrets (set via CLI, not committed):
 # wrangler secret put DATABASE_URL
 # wrangler secret put EMAIL_API_KEY
+# wrangler secret put GOOGLE_CLIENT_ID
+# wrangler secret put GOOGLE_CLIENT_SECRET
 #
 # To deploy:
 # 1. bun add -d @astrojs/cloudflare wrangler
