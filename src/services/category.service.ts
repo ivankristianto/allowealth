@@ -56,6 +56,13 @@ export class CategoryService {
         .returning();
     });
 
+    // Invalidate category cache
+    const cache = getCacheManager();
+    await cache.invalidateByTags([
+      CacheTags.workspace(validated.workspace_id),
+      CacheTags.CATEGORIES,
+    ]);
+
     return category;
   }
 

@@ -67,6 +67,13 @@ export class AssetCategoryService {
         })
         .returning();
 
+      // Invalidate asset category cache
+      const cache = getCacheManager();
+      await cache.invalidateByTags([
+        CacheTags.workspace(validated.workspace_id),
+        CacheTags.ASSET_CATEGORIES,
+      ]);
+
       return category;
     } catch (error: any) {
       // Handle race condition: another request created the same name concurrently
