@@ -705,22 +705,35 @@ export class AssetService {
   async findAllWithHistory(workspaceId: string) {
     const allAssets = await this.findAll(workspaceId);
 
-    const assetsWithHistory = await Promise.all(
-      allAssets.map(async (asset) => {
-        const history = await this.db.query.assetHistory.findMany({
-          where: eq(this.schema.assetHistory.asset_id, asset.id),
-          orderBy: (assetHistory: any, { asc }: any) => [asc(assetHistory.recorded_at)],
-        });
+    if (allAssets.length === 0) {
+      return [];
+    }
 
-        return {
-          ...asset,
-          history: history.map((h) => ({
-            date: h.recorded_at,
-            amount: parseFloat(h.balance),
-          })),
-        };
-      })
-    );
+    // Bulk query: fetch all history for all assets in one query
+    const assetIds = allAssets.map((a) => a.id);
+
+    const allHistory = await this.db.query.assetHistory.findMany({
+      where: inArray(this.schema.assetHistory.asset_id, assetIds),
+      orderBy: (assetHistory: any, { asc }: any) => [asc(assetHistory.recorded_at)],
+    });
+
+    // Group history by asset_id
+    const historyMap = new Map<string, Array<{ date: Date; amount: number }>>();
+    for (const h of allHistory) {
+      if (!historyMap.has(h.asset_id)) {
+        historyMap.set(h.asset_id, []);
+      }
+      historyMap.get(h.asset_id)!.push({
+        date: h.recorded_at,
+        amount: parseFloat(h.balance),
+      });
+    }
+
+    // Map assets to their history arrays
+    const assetsWithHistory = allAssets.map((asset) => ({
+      ...asset,
+      history: historyMap.get(asset.id) || [],
+    }));
 
     return assetsWithHistory;
   }
