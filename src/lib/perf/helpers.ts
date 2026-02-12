@@ -117,6 +117,76 @@ export function trackQuerySync<T>(
 }
 
 /**
+ * Wrap an async page-level processing phase and record its timing.
+ * Use for non-DB, non-service CPU work like data transforms,
+ * serialization, or complex computations.
+ *
+ * @param name - Phase identifier (e.g., 'extractAvailableMonths', 'buildSsrData')
+ * @param perf - PerfCollector instance (nullable)
+ * @param fn - Async function to execute and time
+ * @returns The result of the async function
+ *
+ * @example
+ * ```typescript
+ * const months = await trackPhase('extractAvailableMonths', perf, async () => {
+ *   return extractAvailableMonths(allTransactions);
+ * });
+ * ```
+ */
+export async function trackPhase<T>(
+  name: string,
+  perf: PerfCollector | null | undefined,
+  fn: () => Promise<T>
+): Promise<T> {
+  if (!perf) {
+    return fn();
+  }
+
+  const start = performance.now();
+  try {
+    return await fn();
+  } finally {
+    const duration = performance.now() - start;
+    perf.recordPhase(name, duration);
+  }
+}
+
+/**
+ * Wrap a synchronous page-level processing phase and record its timing.
+ * Use for non-DB, non-service CPU work like data transforms,
+ * serialization, or complex computations.
+ *
+ * @param name - Phase identifier (e.g., 'transformTransactions', 'JSON.stringify')
+ * @param perf - PerfCollector instance (nullable)
+ * @param fn - Synchronous function to execute and time
+ * @returns The result of the function
+ *
+ * @example
+ * ```typescript
+ * const transformed = trackPhaseSync('transformTransactions', perf, () => {
+ *   return rawTransactions.map(transformTransaction);
+ * });
+ * ```
+ */
+export function trackPhaseSync<T>(
+  name: string,
+  perf: PerfCollector | null | undefined,
+  fn: () => T
+): T {
+  if (!perf) {
+    return fn();
+  }
+
+  const start = performance.now();
+  try {
+    return fn();
+  } finally {
+    const duration = performance.now() - start;
+    perf.recordPhase(name, duration);
+  }
+}
+
+/**
  * Wrap a synchronous service operation and record its timing
  *
  * Useful for synchronous service operations.

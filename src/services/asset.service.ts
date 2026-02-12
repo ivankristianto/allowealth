@@ -1,10 +1,11 @@
 import { type IDatabase, getActiveSchema, runTransaction, assets as assetsTable } from '@/db';
-import { eq, and, lte, sql } from 'drizzle-orm';
+import { eq, and, lte, sql, inArray } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { AssetServiceError, ServiceErrorCode } from './service-errors';
 import type { AssetType, Currency } from '@/lib/types/asset';
 import { type PerfCollector, trackQuery } from '@/lib/perf';
 import { decimalCompare } from '@/lib/utils/decimal';
+import { getCacheManager, CacheKeys, CacheTags, hashFilters } from '@/lib/cache';
 
 /** Inferred row type for an asset record */
 export type AssetRow = typeof assetsTable.$inferSelect;
@@ -96,6 +97,14 @@ export class AssetService {
       );
     }
 
+    // Invalidate asset cache - best-effort
+    try {
+      const cache = getCacheManager();
+      await cache.invalidateByTags([CacheTags.workspace(input.workspace_id), CacheTags.ASSETS]);
+    } catch {
+      // Cache invalidation failed, stale cache is acceptable
+    }
+
     return asset;
   }
 
@@ -128,6 +137,21 @@ export class AssetService {
     },
     perf?: PerfCollector
   ) {
+    const filtersHashValue = hashFilters(filters || {});
+    const cache = getCacheManager();
+    const cacheKey = CacheKeys.assets(workspaceId, filtersHashValue);
+
+    // Cache read - fail-silent
+    let cached: AssetRow[] | null = null;
+    try {
+      cached = await cache.get<AssetRow[]>(cacheKey, perf);
+    } catch {
+      // Cache read failed, continue to DB fetch
+    }
+    if (cached) {
+      return cached;
+    }
+
     const conditions = [
       eq(this.schema.assets.workspace_id, workspaceId),
       sql`${this.schema.assets.deleted_at} IS NULL`,
@@ -150,14 +174,24 @@ export class AssetService {
       conditions.push(eq(this.schema.assets.currency, filters.currency));
     }
 
-    return trackQuery('AssetService.findAll', perf, async () => {
-      const result = await this.db.query.assets.findMany({
+    const result = await trackQuery('AssetService.findAll', perf, async () => {
+      return this.db.query.assets.findMany({
         where: and(...conditions),
         orderBy: (_assets: any, { asc }: any) => [asc(this.schema.assets.name)],
       });
-
-      return result;
     });
+
+    // Cache write - fail-silent
+    try {
+      await cache.set(cacheKey, result, {
+        ttl: 3600,
+        tags: [CacheTags.workspace(workspaceId), CacheTags.ASSETS],
+      });
+    } catch {
+      // Cache write failed, continue without caching
+    }
+
+    return result;
   }
 
   /**
@@ -212,6 +246,14 @@ export class AssetService {
       .update(this.schema.assets)
       .set(updateData)
       .where(and(eq(this.schema.assets.id, id), eq(this.schema.assets.workspace_id, workspaceId)));
+
+    // Invalidate asset cache - best-effort
+    try {
+      const cache = getCacheManager();
+      await cache.invalidateByTags([CacheTags.workspace(workspaceId), CacheTags.ASSETS]);
+    } catch {
+      // Cache invalidation failed, stale cache is acceptable
+    }
 
     return this.findByIdIncludingClosed(id, workspaceId);
   }
@@ -280,6 +322,14 @@ export class AssetService {
         'Failed to update balance: could not create history entry',
         500
       );
+    }
+
+    // Invalidate asset cache - best-effort
+    try {
+      const cache = getCacheManager();
+      await cache.invalidateByTags([CacheTags.workspace(workspaceId), CacheTags.ASSETS]);
+    } catch {
+      // Cache invalidation failed, stale cache is acceptable
     }
 
     return this.findById(id, workspaceId);
@@ -390,6 +440,14 @@ export class AssetService {
       });
     });
 
+    // Invalidate asset cache - best-effort
+    try {
+      const cache = getCacheManager();
+      await cache.invalidateByTags([CacheTags.workspace(workspaceId), CacheTags.ASSETS]);
+    } catch {
+      // Cache invalidation failed, stale cache is acceptable
+    }
+
     // Return updated assets after the transaction
     const updatedFrom = await this.findById(fromId, workspaceId);
     const updatedTo = await this.findById(toId, workspaceId);
@@ -434,6 +492,14 @@ export class AssetService {
       })
       .where(and(eq(this.schema.assets.id, id), eq(this.schema.assets.workspace_id, workspaceId)));
 
+    // Invalidate asset cache - best-effort
+    try {
+      const cache = getCacheManager();
+      await cache.invalidateByTags([CacheTags.workspace(workspaceId), CacheTags.ASSETS]);
+    } catch {
+      // Cache invalidation failed, stale cache is acceptable
+    }
+
     return this.findByIdIncludingClosed(id, workspaceId);
   }
 
@@ -464,6 +530,14 @@ export class AssetService {
         updated_at: now,
       })
       .where(and(eq(this.schema.assets.id, id), eq(this.schema.assets.workspace_id, workspaceId)));
+
+    // Invalidate asset cache - best-effort
+    try {
+      const cache = getCacheManager();
+      await cache.invalidateByTags([CacheTags.workspace(workspaceId), CacheTags.ASSETS]);
+    } catch {
+      // Cache invalidation failed, stale cache is acceptable
+    }
 
     return this.findById(id, workspaceId);
   }
@@ -528,25 +602,40 @@ export class AssetService {
         (asset) => new Date(asset.created_at) <= endOfMonth
       );
 
-      const snapshots = await Promise.all(
-        assetsExistingAtTime.map(async (asset) => {
-          const history = await this.db.query.assetHistory.findFirst({
-            where: and(
-              eq(this.schema.assetHistory.asset_id, asset.id),
-              // Use Drizzle's lte() for cross-database compatibility
-              // (SQLite stores as integer epoch, PostgreSQL as native timestamp)
-              lte(this.schema.assetHistory.recorded_at, endOfMonth)
-            ),
-            orderBy: (assetHistory: any, { desc }: any) => [desc(assetHistory.recorded_at)],
-          });
+      if (assetsExistingAtTime.length === 0) {
+        return [];
+      }
 
-          return {
-            ...asset,
-            snapshot_balance: history?.balance ?? asset.initial_balance ?? asset.balance,
-            snapshot_date: history?.recorded_at || asset.created_at,
-          };
-        })
-      );
+      // Bulk query: fetch all history entries for all assets in one query
+      const assetIds = assetsExistingAtTime.map((a) => a.id);
+
+      const allHistory = await this.db.query.assetHistory.findMany({
+        where: and(
+          inArray(this.schema.assetHistory.asset_id, assetIds),
+          lte(this.schema.assetHistory.recorded_at, endOfMonth)
+        ),
+        orderBy: (assetHistory: any, { desc }: any) => [desc(assetHistory.recorded_at)],
+      });
+
+      // Build lookup map: keep only the most recent entry per asset
+      const historyMap = new Map<string, (typeof allHistory)[0]>();
+      for (const history of allHistory) {
+        if (!historyMap.has(history.asset_id)) {
+          // First entry per asset is the most recent (ordered desc)
+          historyMap.set(history.asset_id, history);
+        }
+      }
+
+      // Map assets to snapshots with O(1) lookups
+      const snapshots = assetsExistingAtTime.map((asset) => {
+        const history = historyMap.get(asset.id);
+
+        return {
+          ...asset,
+          snapshot_balance: history?.balance ?? asset.initial_balance ?? asset.balance,
+          snapshot_date: history?.recorded_at || asset.created_at,
+        };
+      });
 
       return snapshots;
     });
@@ -640,22 +729,35 @@ export class AssetService {
   async findAllWithHistory(workspaceId: string) {
     const allAssets = await this.findAll(workspaceId);
 
-    const assetsWithHistory = await Promise.all(
-      allAssets.map(async (asset) => {
-        const history = await this.db.query.assetHistory.findMany({
-          where: eq(this.schema.assetHistory.asset_id, asset.id),
-          orderBy: (assetHistory: any, { asc }: any) => [asc(assetHistory.recorded_at)],
-        });
+    if (allAssets.length === 0) {
+      return [];
+    }
 
-        return {
-          ...asset,
-          history: history.map((h) => ({
-            date: h.recorded_at,
-            amount: parseFloat(h.balance),
-          })),
-        };
-      })
-    );
+    // Bulk query: fetch all history for all assets in one query
+    const assetIds = allAssets.map((a) => a.id);
+
+    const allHistory = await this.db.query.assetHistory.findMany({
+      where: inArray(this.schema.assetHistory.asset_id, assetIds),
+      orderBy: (assetHistory: any, { asc }: any) => [asc(assetHistory.recorded_at)],
+    });
+
+    // Group history by asset_id
+    const historyMap = new Map<string, Array<{ date: Date; amount: number }>>();
+    for (const h of allHistory) {
+      if (!historyMap.has(h.asset_id)) {
+        historyMap.set(h.asset_id, []);
+      }
+      historyMap.get(h.asset_id)!.push({
+        date: h.recorded_at,
+        amount: parseFloat(h.balance),
+      });
+    }
+
+    // Map assets to their history arrays
+    const assetsWithHistory = allAssets.map((asset) => ({
+      ...asset,
+      history: historyMap.get(asset.id) || [],
+    }));
 
     return assetsWithHistory;
   }

@@ -49,6 +49,18 @@ export const CacheKeys = {
 
   /** API key auth context: cache:apikey:{keyHash} */
   apiKey: (keyHash: string): string => `${PREFIX}:apikey:${keyHash}`,
+
+  /** All assets: cache:assets:{workspaceId}:{filtersHash} */
+  assets: (workspaceId: string, filtersHash: string): string =>
+    `${PREFIX}:assets:${workspaceId}:${filtersHash}`,
+
+  /** All categories: cache:categories:{workspaceId}:{filtersHash} */
+  categories: (workspaceId: string, filtersHash: string): string =>
+    `${PREFIX}:categories:${workspaceId}:${filtersHash}`,
+
+  /** All asset categories: cache:asset-categories:{workspaceId}:{filtersHash} */
+  assetCategories: (workspaceId: string, filtersHash: string): string =>
+    `${PREFIX}:asset-categories:${workspaceId}:${filtersHash}`,
 } as const;
 
 /**

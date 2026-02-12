@@ -94,6 +94,20 @@ export default defineConfig({
     ],
     server: {
       allowedHosts: ['.local'],
+      warmup: {
+        // Pre-transform heavy pages to reduce first-request dev-mode latency.
+        // These pages have deep import trees (services, components, icons)
+        // that cause ~1-2s Vite module resolution on cold access.
+        ssrFiles: [
+          './src/pages/dashboard.astro',
+          './src/pages/transactions/index.astro',
+          './src/pages/budget/index.astro',
+          './src/pages/assets/index.astro',
+          './src/pages/reports/index.astro',
+          './src/layouts/ProtectedLayout.astro',
+          './src/services/index.ts',
+        ],
+      },
     },
     // Externalize Node.js built-in modules to suppress Vite warnings
     // These are auto-externalized but Vite emits warnings suggesting explicit config

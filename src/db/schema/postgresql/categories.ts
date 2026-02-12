@@ -24,6 +24,7 @@ export const categories = pgTable(
   },
   (table) => [
     index('budget_categories_workspace_id_idx').on(table.workspace_id),
+    index('budget_categories_created_by_user_id_idx').on(table.created_by_user_id),
     pgPolicy('budget_categories_allow_all', {
       as: 'permissive',
       for: 'all',

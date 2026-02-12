@@ -36,4 +36,11 @@
 
 export { PerfCollector } from './collector';
 export type { TimedOperation } from './collector';
-export { trackQuery, trackService, trackQuerySync, trackServiceSync } from './helpers';
+export {
+  trackQuery,
+  trackService,
+  trackQuerySync,
+  trackServiceSync,
+  trackPhase,
+  trackPhaseSync,
+} from './helpers';

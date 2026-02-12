@@ -42,9 +42,10 @@ export const perfDebug: MiddlewareHandler = async (context, next) => {
   perf.setRoute(context.url.pathname);
   perf.setDialect(getDatabaseConfig().dialect);
   // Detect runtime environment
-  const hasProcessMemory =
-    typeof process !== 'undefined' && typeof process.memoryUsage === 'function';
-  const isWorkers = typeof globalThis.caches !== 'undefined' && !hasProcessMemory;
+  // Note: nodejs_compat polyfills process.memoryUsage in Workers, so we
+  // check navigator.userAgent which Workers sets to "Cloudflare-Workers".
+  const isWorkers =
+    typeof navigator !== 'undefined' && navigator.userAgent === 'Cloudflare-Workers';
   const isBun = typeof globalThis.Bun !== 'undefined';
   perf.setRuntime(isWorkers ? 'workers' : isBun ? 'bun' : 'node');
   context.locals.perf = perf;

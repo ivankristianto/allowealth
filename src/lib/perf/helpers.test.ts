@@ -10,7 +10,14 @@
 
 import { describe, test, expect, beforeEach } from 'bun:test';
 import { PerfCollector } from './collector';
-import { trackQuery, trackService, trackQuerySync, trackServiceSync } from './helpers';
+import {
+  trackQuery,
+  trackService,
+  trackQuerySync,
+  trackServiceSync,
+  trackPhase,
+  trackPhaseSync,
+} from './helpers';
 
 describe('helpers', () => {
   let perf: PerfCollector;
@@ -265,6 +272,117 @@ describe('helpers', () => {
       const services = perf.getServices();
       expect(services).toHaveLength(1);
       expect(services[0].name).toBe('FailingService');
+    });
+  });
+
+  describe('trackPhase', () => {
+    test('executes async function and returns result', async () => {
+      const result = await trackPhase('testPhase', perf, async () => {
+        return [1, 2, 3];
+      });
+
+      expect(result).toEqual([1, 2, 3]);
+    });
+
+    test('records phase timing', async () => {
+      await trackPhase('slowPhase', perf, async () => {
+        await new Promise((resolve) => setTimeout(resolve, 10));
+        return 'done';
+      });
+
+      const phases = perf.getPhases();
+      expect(phases).toHaveLength(1);
+      expect(phases[0].name).toBe('slowPhase');
+      expect(phases[0].durationMs).toBeGreaterThan(0);
+    });
+
+    test('handles null perf gracefully', async () => {
+      const result = await trackPhase('testPhase', null, async () => 'result');
+      expect(result).toBe('result');
+    });
+
+    test('handles undefined perf gracefully', async () => {
+      const result = await trackPhase('testPhase', undefined, async () => 'result');
+      expect(result).toBe('result');
+    });
+
+    test('propagates errors', async () => {
+      await expect(
+        trackPhase('failingPhase', perf, async () => {
+          throw new Error('Phase failed');
+        })
+      ).rejects.toThrow('Phase failed');
+    });
+
+    test('records timing even when error thrown', async () => {
+      try {
+        await trackPhase('failingPhase', perf, async () => {
+          throw new Error('Phase failed');
+        });
+      } catch {
+        // Expected error
+      }
+
+      const phases = perf.getPhases();
+      expect(phases).toHaveLength(1);
+      expect(phases[0].name).toBe('failingPhase');
+    });
+  });
+
+  describe('trackPhaseSync', () => {
+    test('executes sync function and returns result', () => {
+      const result = trackPhaseSync('syncPhase', perf, () => {
+        return { transformed: true };
+      });
+
+      expect(result).toEqual({ transformed: true });
+    });
+
+    test('records phase timing', () => {
+      trackPhaseSync('computePhase', perf, () => {
+        let sum = 0;
+        for (let i = 0; i < 10000; i++) {
+          sum += i;
+        }
+        return sum;
+      });
+
+      const phases = perf.getPhases();
+      expect(phases).toHaveLength(1);
+      expect(phases[0].name).toBe('computePhase');
+      expect(phases[0].durationMs).toBeGreaterThanOrEqual(0);
+    });
+
+    test('handles null perf gracefully', () => {
+      const result = trackPhaseSync('testPhase', null, () => 'result');
+      expect(result).toBe('result');
+    });
+
+    test('handles undefined perf gracefully', () => {
+      const result = trackPhaseSync('testPhase', undefined, () => 'result');
+      expect(result).toBe('result');
+    });
+
+    test('propagates errors', () => {
+      expect(() =>
+        trackPhaseSync('failingPhase', perf, () => {
+          throw new Error('Sync phase failed');
+        })
+      ).toThrow('Sync phase failed');
+    });
+
+    test('records timing even when error thrown', () => {
+      try {
+        trackPhaseSync('failingPhase', perf, () => {
+          throw new Error('Sync phase failed');
+        });
+      } catch {
+        // Expected error
+      }
+
+      const phases = perf.getPhases();
+      expect(phases).toHaveLength(1);
+      expect(phases[0].name).toBe('failingPhase');
     });
   });
 

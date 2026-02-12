@@ -1,4 +1,4 @@
-import { pgTable, text, boolean, timestamp, pgPolicy } from 'drizzle-orm/pg-core';
+import { pgTable, text, boolean, timestamp, index, pgPolicy } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { workspaces } from './workspaces';
 import { users } from './users';
@@ -25,7 +25,10 @@ export const assetUpdateReminders = pgTable(
     is_dismissed: boolean('is_dismissed').default(false).notNull(),
     created_at: timestamp('created_at').defaultNow().notNull(),
   },
-  () => [
+  (table) => [
+    index('asset_update_reminders_workspace_id_idx').on(table.workspace_id),
+    index('asset_update_reminders_created_by_user_id_idx').on(table.created_by_user_id),
+    index('asset_update_reminders_asset_id_idx').on(table.asset_id),
     pgPolicy('asset_update_reminders_allow_all', {
       as: 'permissive',
       for: 'all',

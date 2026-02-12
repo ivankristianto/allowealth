@@ -50,6 +50,13 @@
       "when": 1770889856464,
       "tag": "0006_woozy_rattler",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1770899090446,
+      "tag": "0007_nappy_prodigy",
+      "breakpoints": true
     }
   ]
 }
