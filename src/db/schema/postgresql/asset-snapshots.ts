@@ -1,4 +1,4 @@
-import { pgTable, text, integer, timestamp, pgPolicy } from 'drizzle-orm/pg-core';
+import { pgTable, text, integer, timestamp, index, pgPolicy } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { workspaces } from './workspaces';
 import { users } from './users';
@@ -19,7 +19,9 @@ export const assetSnapshots = pgTable(
     notes: text('notes'),
     created_at: timestamp('created_at').defaultNow().notNull(),
   },
-  () => [
+  (table) => [
+    index('asset_snapshots_workspace_id_idx').on(table.workspace_id),
+    index('asset_snapshots_created_by_user_id_idx').on(table.created_by_user_id),
     pgPolicy('asset_snapshots_allow_all', {
       as: 'permissive',
       for: 'all',

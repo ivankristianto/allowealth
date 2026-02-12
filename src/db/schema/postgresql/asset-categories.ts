@@ -32,6 +32,7 @@ export const assetCategories = pgTable(
   },
   (table) => [
     index('asset_categories_workspace_id_idx').on(table.workspace_id),
+    index('asset_categories_created_by_user_id_idx').on(table.created_by_user_id),
     uniqueIndex('asset_categories_workspace_name_unique').on(table.workspace_id, table.name),
     pgPolicy('asset_categories_allow_all', {
       as: 'permissive',

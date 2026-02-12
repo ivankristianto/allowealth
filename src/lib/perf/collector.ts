@@ -261,12 +261,16 @@ export class PerfCollector {
 
   /**
    * Get memory usage in megabytes
-   * Returns null if memory info is not available (e.g., in browser)
+   * Returns null if memory info is not available (e.g., Workers polyfills
+   * process.memoryUsage but returns zeros)
    */
   private getMemoryUsage(): number | null {
-    // Node.js / Bun environment
+    if (this.runtime === 'workers') {
+      return null;
+    }
     if (typeof process !== 'undefined' && process.memoryUsage) {
       const usage = process.memoryUsage();
+      if (usage.heapUsed === 0) return null;
       return Math.round((usage.heapUsed / 1024 / 1024) * 10) / 10;
     }
     return null;
