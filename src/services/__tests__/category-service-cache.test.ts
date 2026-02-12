@@ -44,6 +44,29 @@ describe('CategoryService.findAll caching', () => {
     expect(options.tags).toContain(CacheTags.CATEGORIES);
   });
 
+  it('should invalidate cache on create', async () => {
+    const workspaceId = 'workspace-1';
+
+    // Mock insert chain
+    const returningMock = mock(() =>
+      Promise.resolve([createMockCategory({ id: 'new-1', workspace_id: workspaceId })])
+    );
+    const valuesMock = mock(() => ({ returning: returningMock }));
+    (mockDb as any).insert = mock(() => ({ values: valuesMock }));
+
+    await categoryService.create({
+      workspace_id: workspaceId,
+      created_by_user_id: 'user-1',
+      name: 'New Category',
+      type: 'expense',
+    });
+
+    expect(cache.invalidateByTags).toHaveBeenCalledTimes(1);
+    const tags = (cache.invalidateByTags as any).mock.calls[0][0];
+    expect(tags).toContain(CacheTags.workspace(workspaceId));
+    expect(tags).toContain(CacheTags.CATEGORIES);
+  });
+
   it('should return cached results on cache hit', async () => {
     const workspaceId = 'workspace-1';
     const mockCategories = [createMockCategory({ id: 'cat-1', workspace_id: workspaceId })];

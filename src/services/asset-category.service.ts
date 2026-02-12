@@ -344,5 +344,9 @@ export class AssetCategoryService {
         })
       );
     }
+
+    // Invalidate asset category cache after seeding
+    const cache = getCacheManager();
+    await cache.invalidateByTags([CacheTags.workspace(workspaceId), CacheTags.ASSET_CATEGORIES]);
   }
 }
