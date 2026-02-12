@@ -67,12 +67,16 @@ export class AssetCategoryService {
         })
         .returning();
 
-      // Invalidate asset category cache
-      const cache = getCacheManager();
-      await cache.invalidateByTags([
-        CacheTags.workspace(validated.workspace_id),
-        CacheTags.ASSET_CATEGORIES,
-      ]);
+      // Invalidate asset category cache - best-effort
+      try {
+        const cache = getCacheManager();
+        await cache.invalidateByTags([
+          CacheTags.workspace(validated.workspace_id),
+          CacheTags.ASSET_CATEGORIES,
+        ]);
+      } catch {
+        // Cache invalidation failed, stale cache is acceptable
+      }
 
       return category;
     } catch (error: any) {
@@ -216,9 +220,13 @@ export class AssetCategoryService {
         )
       );
 
-    // Invalidate asset category cache
-    const cache = getCacheManager();
-    await cache.invalidateByTags([CacheTags.workspace(workspaceId), CacheTags.ASSET_CATEGORIES]);
+    // Invalidate asset category cache - best-effort
+    try {
+      const cache = getCacheManager();
+      await cache.invalidateByTags([CacheTags.workspace(workspaceId), CacheTags.ASSET_CATEGORIES]);
+    } catch {
+      // Cache invalidation failed, stale cache is acceptable
+    }
 
     return this.findById(id, workspaceId);
   }
@@ -271,9 +279,13 @@ export class AssetCategoryService {
         )
       );
 
-    // Invalidate asset category cache
-    const cache = getCacheManager();
-    await cache.invalidateByTags([CacheTags.workspace(workspaceId), CacheTags.ASSET_CATEGORIES]);
+    // Invalidate asset category cache - best-effort
+    try {
+      const cache = getCacheManager();
+      await cache.invalidateByTags([CacheTags.workspace(workspaceId), CacheTags.ASSET_CATEGORIES]);
+    } catch {
+      // Cache invalidation failed, stale cache is acceptable
+    }
 
     return { success: true };
   }
@@ -345,8 +357,12 @@ export class AssetCategoryService {
       );
     }
 
-    // Invalidate asset category cache after seeding
-    const cache = getCacheManager();
-    await cache.invalidateByTags([CacheTags.workspace(workspaceId), CacheTags.ASSET_CATEGORIES]);
+    // Invalidate asset category cache after seeding - best-effort
+    try {
+      const cache = getCacheManager();
+      await cache.invalidateByTags([CacheTags.workspace(workspaceId), CacheTags.ASSET_CATEGORIES]);
+    } catch {
+      // Cache invalidation failed, stale cache is acceptable
+    }
   }
 }

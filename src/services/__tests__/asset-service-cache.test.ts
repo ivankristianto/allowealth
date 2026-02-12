@@ -71,4 +71,17 @@ describe('AssetService.findAll caching', () => {
     const cacheSetCall = (cache.set as any).mock.calls[0];
     expect(cacheSetCall[0]).toContain(workspaceId);
   });
+
+  it('should fall back to DB when cache read throws', async () => {
+    const workspaceId = 'workspace-1';
+    const mockAssets = [createMockAsset({ id: 'asset-1', workspace_id: workspaceId })];
+
+    (cache.get as any).mockRejectedValueOnce(new Error('cache down'));
+    (mockDb.query.assets.findMany as any).mockResolvedValue(mockAssets);
+
+    const result = await assetService.findAll(workspaceId);
+
+    expect(result).toEqual(mockAssets);
+    expect(mockDb.query.assets.findMany).toHaveBeenCalledTimes(1);
+  });
 });

@@ -56,12 +56,16 @@ export class CategoryService {
         .returning();
     });
 
-    // Invalidate category cache
-    const cache = getCacheManager();
-    await cache.invalidateByTags([
-      CacheTags.workspace(validated.workspace_id),
-      CacheTags.CATEGORIES,
-    ]);
+    // Invalidate category cache - best-effort
+    try {
+      const cache = getCacheManager();
+      await cache.invalidateByTags([
+        CacheTags.workspace(validated.workspace_id),
+        CacheTags.CATEGORIES,
+      ]);
+    } catch {
+      // Cache invalidation failed, stale cache is acceptable
+    }
 
     return category;
   }
@@ -181,9 +185,13 @@ export class CategoryService {
         );
     });
 
-    // Invalidate category cache
-    const cache = getCacheManager();
-    await cache.invalidateByTags([CacheTags.workspace(workspaceId), CacheTags.CATEGORIES]);
+    // Invalidate category cache - best-effort
+    try {
+      const cache = getCacheManager();
+      await cache.invalidateByTags([CacheTags.workspace(workspaceId), CacheTags.CATEGORIES]);
+    } catch {
+      // Cache invalidation failed, stale cache is acceptable
+    }
 
     return this.findById(id, workspaceId, perf);
   }
@@ -221,9 +229,13 @@ export class CategoryService {
         );
     });
 
-    // Invalidate category cache
-    const cache = getCacheManager();
-    await cache.invalidateByTags([CacheTags.workspace(workspaceId), CacheTags.CATEGORIES]);
+    // Invalidate category cache - best-effort
+    try {
+      const cache = getCacheManager();
+      await cache.invalidateByTags([CacheTags.workspace(workspaceId), CacheTags.CATEGORIES]);
+    } catch {
+      // Cache invalidation failed, stale cache is acceptable
+    }
 
     return { success: true };
   }

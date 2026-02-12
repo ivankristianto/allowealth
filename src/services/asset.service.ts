@@ -97,9 +97,13 @@ export class AssetService {
       );
     }
 
-    // Invalidate asset cache
-    const cache = getCacheManager();
-    await cache.invalidateByTags([CacheTags.workspace(input.workspace_id), CacheTags.ASSETS]);
+    // Invalidate asset cache - best-effort
+    try {
+      const cache = getCacheManager();
+      await cache.invalidateByTags([CacheTags.workspace(input.workspace_id), CacheTags.ASSETS]);
+    } catch {
+      // Cache invalidation failed, stale cache is acceptable
+    }
 
     return asset;
   }
@@ -243,9 +247,13 @@ export class AssetService {
       .set(updateData)
       .where(and(eq(this.schema.assets.id, id), eq(this.schema.assets.workspace_id, workspaceId)));
 
-    // Invalidate asset cache
-    const cache = getCacheManager();
-    await cache.invalidateByTags([CacheTags.workspace(workspaceId), CacheTags.ASSETS]);
+    // Invalidate asset cache - best-effort
+    try {
+      const cache = getCacheManager();
+      await cache.invalidateByTags([CacheTags.workspace(workspaceId), CacheTags.ASSETS]);
+    } catch {
+      // Cache invalidation failed, stale cache is acceptable
+    }
 
     return this.findByIdIncludingClosed(id, workspaceId);
   }
@@ -316,9 +324,13 @@ export class AssetService {
       );
     }
 
-    // Invalidate asset cache
-    const cache = getCacheManager();
-    await cache.invalidateByTags([CacheTags.workspace(workspaceId), CacheTags.ASSETS]);
+    // Invalidate asset cache - best-effort
+    try {
+      const cache = getCacheManager();
+      await cache.invalidateByTags([CacheTags.workspace(workspaceId), CacheTags.ASSETS]);
+    } catch {
+      // Cache invalidation failed, stale cache is acceptable
+    }
 
     return this.findById(id, workspaceId);
   }
@@ -428,9 +440,13 @@ export class AssetService {
       });
     });
 
-    // Invalidate asset cache
-    const cache = getCacheManager();
-    await cache.invalidateByTags([CacheTags.workspace(workspaceId), CacheTags.ASSETS]);
+    // Invalidate asset cache - best-effort
+    try {
+      const cache = getCacheManager();
+      await cache.invalidateByTags([CacheTags.workspace(workspaceId), CacheTags.ASSETS]);
+    } catch {
+      // Cache invalidation failed, stale cache is acceptable
+    }
 
     // Return updated assets after the transaction
     const updatedFrom = await this.findById(fromId, workspaceId);
@@ -476,9 +492,13 @@ export class AssetService {
       })
       .where(and(eq(this.schema.assets.id, id), eq(this.schema.assets.workspace_id, workspaceId)));
 
-    // Invalidate asset cache
-    const cache = getCacheManager();
-    await cache.invalidateByTags([CacheTags.workspace(workspaceId), CacheTags.ASSETS]);
+    // Invalidate asset cache - best-effort
+    try {
+      const cache = getCacheManager();
+      await cache.invalidateByTags([CacheTags.workspace(workspaceId), CacheTags.ASSETS]);
+    } catch {
+      // Cache invalidation failed, stale cache is acceptable
+    }
 
     return this.findByIdIncludingClosed(id, workspaceId);
   }
@@ -511,9 +531,13 @@ export class AssetService {
       })
       .where(and(eq(this.schema.assets.id, id), eq(this.schema.assets.workspace_id, workspaceId)));
 
-    // Invalidate asset cache
-    const cache = getCacheManager();
-    await cache.invalidateByTags([CacheTags.workspace(workspaceId), CacheTags.ASSETS]);
+    // Invalidate asset cache - best-effort
+    try {
+      const cache = getCacheManager();
+      await cache.invalidateByTags([CacheTags.workspace(workspaceId), CacheTags.ASSETS]);
+    } catch {
+      // Cache invalidation failed, stale cache is acceptable
+    }
 
     return this.findById(id, workspaceId);
   }

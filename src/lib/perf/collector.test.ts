@@ -417,6 +417,13 @@ describe('PerfCollector', () => {
       expect(output).toContain('@ middleware.elapsed:');
     });
 
+    test('sanitizes milestone names in HTML comment', () => {
+      perf.recordMilestone('milestone-->injection');
+      const output = perf.toHtmlComment();
+      expect(output).not.toContain('-->injection');
+      expect(output).toContain('milestone==&gt;injection');
+    });
+
     test('excludes milestones section when none tracked', () => {
       const output = perf.toHtmlComment();
       expect(output).not.toContain('Milestones:');
