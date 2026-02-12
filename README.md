@@ -28,12 +28,20 @@ For branch-based local development (useful when working on multiple branches sim
 2. **Configure host and port:**
    Edit `.env` and set:
    - `DEV_HOST` to `{branch}.expenses.local` (e.g., `feature-auth.expenses.local`)
-   - `PORT` to an unused port between `4322-4330` (default is `4321`)
+   - `PORT` to an unused port between `4322-4310` (default is `4321`)
 
 3. **Run setup script:**
    ```bash
    ./scripts/setup.sh
    ```
+
+**Or use the automated worktree setup:**
+
+```bash
+./scripts/setup.sh --worktree
+```
+
+This automatically configures `.env` with the branch name (e.g., `feature-auth.expenses.local`) and finds an available port between 4322-4310.
 
 This script will:
 
