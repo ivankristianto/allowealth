@@ -101,7 +101,7 @@ const uniqueId = `spending-card-${Math.random().toString(36).slice(2, 11)}`;
 <Card
   padding="lg"
   rounded="card-lg"
-  className={className}
+  className={`h-full ${className}`}
   role="status"
   aria-live="polite"
   aria-busy={loading}
@@ -109,7 +109,7 @@ const uniqueId = `spending-card-${Math.random().toString(36).slice(2, 11)}`;
   aria-labelledby={!loading && !error ? uniqueId : undefined}
   data-testid="dashboard-spending-card"
 >
-  <div class="flex flex-col gap-6">
+  <div class="@container flex flex-col h-full">
     {/* Loading State */}
     {
       loading ? (
@@ -158,57 +158,61 @@ const uniqueId = `spending-card-${Math.random().toString(36).slice(2, 11)}`;
       ) : (
         /* Normal State */
         <>
-          {/* Header: Responsive layout - stacks on mobile */}
-          <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 sm:gap-4">
-            <div class="flex items-center gap-3 sm:gap-4">
-              <IconBadge variant={iconBadgeVariant} size="md">
-                <Scale size={24} class="stroke-current" aria-hidden="true" />
-              </IconBadge>
-              <div class="min-w-0">
-                <StatLabel size="md" color="neutral">
-                  MONTHLY EXPENSES
-                </StatLabel>
-                <h3
-                  id={uniqueId}
-                  class="text-2xl sm:text-3xl font-bold mt-1.5 tracking-tight leading-none"
-                  data-testid="dashboard-total-expenses"
-                >
-                  {spentFormatted}
-                  <span class="text-sm sm:text-base text-base-content/60 font-medium tracking-normal">
-                    / {budgetFormatted}
-                  </span>
-                </h3>
+          {/* Main content group */}
+          <div class="flex flex-col gap-6">
+            {/* Header: Responsive layout using container queries */}
+            <div class="flex flex-col @xs:flex-row @xs:justify-between @xs:items-start gap-3 @xs:gap-4">
+              <div class="flex items-center gap-3 @xs:gap-4">
+                <IconBadge variant={iconBadgeVariant} size="md">
+                  <Scale size={24} class="stroke-current" aria-hidden="true" />
+                </IconBadge>
+                <div class="min-w-0">
+                  <StatLabel size="md" color="neutral">
+                    MONTHLY EXPENSES
+                  </StatLabel>
+                  <h3
+                    id={uniqueId}
+                    class="text-2xl @sm:text-3xl font-bold mt-1.5 tracking-tight leading-none"
+                    data-testid="dashboard-total-expenses"
+                  >
+                    {spentFormatted}
+                    <span class="text-sm @sm:text-base text-base-content/60 font-medium tracking-normal">
+                      / {budgetFormatted}
+                    </span>
+                  </h3>
+                </div>
+              </div>
+
+              <span class={`shrink-0 ${getStatusBadgeClasses(status)}`}>
+                {percentageRounded}% used
+              </span>
+            </div>
+
+            {/* Progress Bar with Monthly Allocation label */}
+            <div class="space-y-2">
+              <ProgressBar value={percentage} status={progressBarStatus} size="md" />
+              <div class="flex justify-between items-center text-sm">
+                <span class="text-base-content/60">Monthly Allocation</span>
+                <span class="font-semibold text-base-content">{percentageRounded}%</span>
               </div>
             </div>
 
-            <span class={`shrink-0 ${getStatusBadgeClasses(status)}`}>
-              {percentageRounded}% used
-            </span>
+            <p class="text-base font-medium text-base-content/60">
+              {remainingLabel}:{' '}
+              <span class="font-bold text-base-content">{remainingFormatted}</span>
+            </p>
+
+            {alertMessage && (
+              <BudgetAlertBanner
+                title="Budget alert"
+                message={alertMessage}
+                variant={status === 'status-danger' ? 'error' : 'warning'}
+              />
+            )}
           </div>
 
-          {/* Progress Bar with Monthly Allocation label */}
-          <div class="space-y-2">
-            <ProgressBar value={percentage} status={progressBarStatus} size="md" />
-            <div class="flex justify-between items-center text-sm">
-              <span class="text-base-content/60">Monthly Allocation</span>
-              <span class="font-semibold text-base-content">{percentageRounded}%</span>
-            </div>
-          </div>
-
-          <p class="text-base font-medium text-base-content/60">
-            {remainingLabel}: <span class="font-bold text-base-content">{remainingFormatted}</span>
-          </p>
-
-          {alertMessage && (
-            <BudgetAlertBanner
-              title="Budget alert"
-              message={alertMessage}
-              variant={status === 'status-danger' ? 'error' : 'warning'}
-            />
-          )}
-
-          {/* Income and Net Savings Section - Always at bottom */}
-          <div class="border-t border-base-300 pt-4 mt-2">
+          {/* Income and Net Savings Section - Pushed to bottom */}
+          <div class="border-t border-base-300 pt-4 mt-auto">
             <div class="grid grid-cols-2 gap-4">
               <div>
                 <StatLabel size="sm" color="neutral">
@@ -218,22 +222,23 @@ const uniqueId = `spending-card-${Math.random().toString(36).slice(2, 11)}`;
                   {incomeFormatted}
                 </p>
               </div>
-              <div>
+              <div class="min-w-0">
                 <StatLabel size="sm" color="neutral">
                   NET SAVINGS
                 </StatLabel>
                 <p
                   class:list={[
-                    'text-lg font-bold mt-1',
+                    'text-lg font-bold mt-1 truncate',
                     netSavings >= 0 ? 'text-success' : 'text-error',
                   ]}
+                  title={`${netSavings < 0 ? '-' : ''}${netSavingsFormatted} (${netSavings >= 0 ? '+' : ''}${Math.round(savingsPercentage)}%)`}
                 >
                   {netSavings < 0 ? '-' : ''}
                   {netSavingsFormatted}
-                  <span class="text-xs font-medium text-base-content/60 ml-1">
-                    ({netSavings >= 0 ? '+' : ''}
-                    {Math.round(savingsPercentage)}%)
-                  </span>
+                </p>
+                <p class="text-xs font-medium text-base-content/60 mt-0.5">
+                  {netSavings >= 0 ? '+' : ''}
+                  {Math.round(savingsPercentage)}% of income
                 </p>
               </div>
             </div>
