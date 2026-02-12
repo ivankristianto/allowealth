@@ -1,5 +1,5 @@
-import { pgTable, text, timestamp, index } from 'drizzle-orm/pg-core';
-import { relations } from 'drizzle-orm';
+import { pgTable, text, timestamp, index, pgPolicy } from 'drizzle-orm/pg-core';
+import { relations, sql } from 'drizzle-orm';
 import { users } from './users';
 
 /**
@@ -22,6 +22,12 @@ export const emailVerificationTokens = pgTable(
   (table) => [
     index('email_verification_tokens_user_id_idx').on(table.user_id),
     index('email_verification_tokens_expires_at_idx').on(table.expires_at),
+    pgPolicy('email_verification_tokens_allow_all', {
+      as: 'permissive',
+      for: 'all',
+      using: sql`true`,
+      withCheck: sql`true`,
+    }),
   ]
 ).enableRLS();
 

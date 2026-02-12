@@ -212,8 +212,8 @@ const spendingCategories =
           </div>
 
           {/* Recent Transactions & Net Worth Widget (side by side) */}
-          <div class="grid grid-cols-1 @3xl:grid-cols-3 gap-6 @sm:gap-8">
-            <div class="@3xl:col-span-2">
+          <div class="grid grid-cols-1 @min-[52rem]:grid-cols-3 gap-6 @sm:gap-8">
+            <div class="@min-[52rem]:col-span-2">
               <RecentTransactionsList
                 transactions={recentTransactions}
                 loading={!dashboardData}

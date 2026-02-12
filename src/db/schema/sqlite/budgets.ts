@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, unique } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, unique, index } from 'drizzle-orm/sqlite-core';
 import { sqliteTimestampNow } from './base';
 import { workspaces } from './workspaces';
 import { users } from './users';
@@ -30,6 +30,12 @@ export const budgets = sqliteTable(
     unique('budgets_unique').on(
       table.workspace_id,
       table.category_id,
+      table.month,
+      table.year,
+      table.currency
+    ),
+    index('budgets_ws_month_year_currency_idx').on(
+      table.workspace_id,
       table.month,
       table.year,
       table.currency

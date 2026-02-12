@@ -97,7 +97,7 @@ const transactionDataJson = transaction
 const transactionDetailsJson = transaction ? JSON.stringify(transaction) : '';
 
 const cardClasses = [
-  'group p-3 sm:p-4 transition-all',
+  '@container group p-3 @xs:p-4 transition-all',
   'border-l-4 border-transparent',
   !loading && !isDeleted && isExpense && 'hover:border-error/30 active:border-error/30',
   !loading && !isDeleted && !isExpense && 'hover:border-success/30 active:border-success/30',
@@ -112,7 +112,7 @@ const cardClasses = [
 {
   loading ? (
     <div
-      class={`p-3 sm:p-4 ${className}`}
+      class={`@container p-3 @xs:p-4 ${className}`}
       role="status"
       aria-label="Loading transaction"
       data-transaction-card-skeleton
@@ -135,8 +135,8 @@ const cardClasses = [
       data-transaction-id={transaction?.id}
       aria-label={`${transaction?.type === 'income' ? 'Income' : 'Expense'}: ${primaryText}, ${amount} ${transaction?.currency}`}
     >
-      {/* Mobile Layout (2-row compact) - shown below sm breakpoint */}
-      <div class="sm:hidden">
+      {/* Mobile Layout (2-row compact) - shown below @lg container width */}
+      <div class="@lg:hidden">
         {/* Row 1: Description + Amount (+ menu when actions) */}
         <div class="flex items-center gap-2.5">
           <div class="flex-1 min-w-0">
@@ -256,10 +256,10 @@ const cardClasses = [
         </div>
       </div>
 
-      {/* Desktop Layout (horizontal with inline buttons) - shown at sm and above */}
-      <div class="hidden sm:flex items-center gap-3 lg:gap-4">
+      {/* Desktop Layout (horizontal with inline buttons) - shown at @lg container width */}
+      <div class="hidden @lg:flex items-center gap-3 @2xl:gap-4">
         {/* Date & User */}
-        <div class="flex-shrink-0 w-20 lg:w-24 text-sm">
+        <div class="flex-shrink-0 w-20 @2xl:w-24 text-sm">
           <div class="font-medium">{formattedDate}</div>
           {createdByName && (
             <div class="text-xs text-base-content/40 truncate mt-0.5">{createdByName}</div>

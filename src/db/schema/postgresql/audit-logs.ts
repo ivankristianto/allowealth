@@ -1,4 +1,5 @@
-import { pgTable, text, timestamp, index } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, index, pgPolicy } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 import { workspaces } from './workspaces';
 import { users } from './users';
 
@@ -23,5 +24,17 @@ export const auditLogs = pgTable(
     index('audit_logs_workspace_id_idx').on(table.workspace_id),
     index('audit_logs_user_id_idx').on(table.user_id),
     index('audit_logs_created_at_idx').on(table.created_at),
+    index('audit_logs_ws_entity_action_idx').on(
+      table.workspace_id,
+      table.entity_type,
+      table.entity_id,
+      table.action
+    ),
+    pgPolicy('audit_logs_allow_all', {
+      as: 'permissive',
+      for: 'all',
+      using: sql`true`,
+      withCheck: sql`true`,
+    }),
   ]
 ).enableRLS();

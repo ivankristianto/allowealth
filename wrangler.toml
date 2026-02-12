@@ -6,6 +6,13 @@ main = "dist/_worker.js/index.js"
 compatibility_date = "2026-02-01"
 compatibility_flags = ["nodejs_compat", "disable_nodejs_process_v2"]
 
+# Custom domain routes (must be top-level, before any [section] headers)
+# https://developers.cloudflare.com/workers/configuration/routing/routes/
+routes = [
+  { pattern = "allowealth.io", custom_domain = true },
+  { pattern = "www.allowealth.io", custom_domain = true },
+]
+
 # Static assets configuration
 # https://developers.cloudflare.com/workers/static-assets/
 [assets]
@@ -31,6 +38,8 @@ EMAIL_SENDER_ADDRESS = "noreply@allowealth.io"
 # Secrets (set via CLI, not committed):
 # wrangler secret put DATABASE_URL
 # wrangler secret put EMAIL_API_KEY
+# wrangler secret put GOOGLE_CLIENT_ID
+# wrangler secret put GOOGLE_CLIENT_SECRET
 #
 # To deploy:
 # 1. bun add -d @astrojs/cloudflare wrangler
@@ -47,16 +56,12 @@ EMAIL_SENDER_ADDRESS = "noreply@allowealth.io"
 [[hyperdrive]]
 binding = "HYPERDRIVE"
 id = "119e775bed8d476cb4d24c42278131e2"
+# For local dev: point to a local PostgreSQL instance
+# Or set env var CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE
+# localConnectionString = "postgresql://user:pass@localhost:5432/expenses"
 
 # Workers Logs — captures all console.* output, auto-indexes JSON fields
 # https://developers.cloudflare.com/workers/observability/logs/workers-logs/
 [observability]
 enabled = true
 head_sampling_rate = 1
-
-# Custom domain routes
-# https://developers.cloudflare.com/workers/configuration/routing/routes/
-routes = [
-  { pattern = "allowealth.io/*", custom_domain = true },
-  { pattern = "www.allowealth.io/*", custom_domain = true },
-]

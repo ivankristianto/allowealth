@@ -2,6 +2,7 @@ import type { APIContext } from 'astro';
 import { z } from 'zod';
 import { auth } from '@/lib/auth/lucia';
 import { PAGINATION } from '@/lib/constants/pagination';
+import { requireTenantContext } from '@/lib/tenant/context';
 
 /**
  * Standard API response format
@@ -203,11 +204,11 @@ export function getAuthenticatedUser(context: APIContext): AuthenticatedUser {
     throw new Error('Unauthorized');
   }
 
-  return {
+  return requireTenantContext({
     userId: user.id,
     workspaceId: user.workspaceId,
     role: user.role,
-  };
+  });
 }
 
 /**

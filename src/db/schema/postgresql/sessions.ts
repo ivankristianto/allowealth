@@ -1,4 +1,5 @@
-import { pgTable, text, timestamp, index } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, index, pgPolicy } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 import { users } from './users';
 
 /**
@@ -26,5 +27,14 @@ export const sessions = pgTable(
     // Our custom Lucia adapter handles Date <-> string conversion
     expiresAt: timestamp('expires_at', { withTimezone: true, mode: 'string' }).notNull(),
   },
-  (table) => [index('sessions_expires_at_idx').on(table.expiresAt)]
+  (table) => [
+    index('sessions_expires_at_idx').on(table.expiresAt),
+    index('sessions_user_id_idx').on(table.userId),
+    pgPolicy('sessions_allow_all', {
+      as: 'permissive',
+      for: 'all',
+      using: sql`true`,
+      withCheck: sql`true`,
+    }),
+  ]
 ).enableRLS();
