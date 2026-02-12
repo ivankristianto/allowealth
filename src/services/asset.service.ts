@@ -1,5 +1,5 @@
 import { type IDatabase, getActiveSchema, runTransaction, assets as assetsTable } from '@/db';
-import { eq, and, lte, sql } from 'drizzle-orm';
+import { eq, and, lte, sql, inArray } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { AssetServiceError, ServiceErrorCode } from './service-errors';
 import type { AssetType, Currency } from '@/lib/types/asset';
@@ -578,25 +578,40 @@ export class AssetService {
         (asset) => new Date(asset.created_at) <= endOfMonth
       );
 
-      const snapshots = await Promise.all(
-        assetsExistingAtTime.map(async (asset) => {
-          const history = await this.db.query.assetHistory.findFirst({
-            where: and(
-              eq(this.schema.assetHistory.asset_id, asset.id),
-              // Use Drizzle's lte() for cross-database compatibility
-              // (SQLite stores as integer epoch, PostgreSQL as native timestamp)
-              lte(this.schema.assetHistory.recorded_at, endOfMonth)
-            ),
-            orderBy: (assetHistory: any, { desc }: any) => [desc(assetHistory.recorded_at)],
-          });
+      if (assetsExistingAtTime.length === 0) {
+        return [];
+      }
 
-          return {
-            ...asset,
-            snapshot_balance: history?.balance ?? asset.initial_balance ?? asset.balance,
-            snapshot_date: history?.recorded_at || asset.created_at,
-          };
-        })
-      );
+      // Bulk query: fetch all history entries for all assets in one query
+      const assetIds = assetsExistingAtTime.map((a) => a.id);
+
+      const allHistory = await this.db.query.assetHistory.findMany({
+        where: and(
+          inArray(this.schema.assetHistory.asset_id, assetIds),
+          lte(this.schema.assetHistory.recorded_at, endOfMonth)
+        ),
+        orderBy: (assetHistory: any, { desc }: any) => [desc(assetHistory.recorded_at)],
+      });
+
+      // Build lookup map: keep only the most recent entry per asset
+      const historyMap = new Map<string, (typeof allHistory)[0]>();
+      for (const history of allHistory) {
+        if (!historyMap.has(history.asset_id)) {
+          // First entry per asset is the most recent (ordered desc)
+          historyMap.set(history.asset_id, history);
+        }
+      }
+
+      // Map assets to snapshots with O(1) lookups
+      const snapshots = assetsExistingAtTime.map((asset) => {
+        const history = historyMap.get(asset.id);
+
+        return {
+          ...asset,
+          snapshot_balance: history?.balance ?? asset.initial_balance ?? asset.balance,
+          snapshot_date: history?.recorded_at || asset.created_at,
+        };
+      });
 
       return snapshots;
     });
