@@ -107,7 +107,7 @@ export interface IDatabase {
    * Insert records into a table
    */
   insert: (table: any) => {
-    values: (values: any) => {
+    values: (values: any) => Promise<any> & {
       returning: (columns?: any) => Promise<any[]>;
       onConflictDoNothing: () => Promise<any>;
       onConflictDoUpdate: (config: any) => Promise<any>;

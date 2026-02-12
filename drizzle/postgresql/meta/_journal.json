@@ -36,6 +36,13 @@
       "when": 1770800000000,
       "tag": "0004_backfill_email_verified",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1770809703806,
+      "tag": "0005_furry_crusher_hogan",
+      "breakpoints": true
     }
   ]
 }

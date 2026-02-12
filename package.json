@@ -65,12 +65,13 @@
     "release": "bun run scripts/release.ts"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.12.1",
     "@astrojs/node": "9.5.2",
     "@lucia-auth/adapter-drizzle": "^1.1.0",
     "@lucide/astro": "^0.562.0",
+    "@modelcontextprotocol/sdk": "^1.12.1",
     "@tailwindcss/vite": "^4.1.18",
     "@upstash/redis": "^1.36.2",
+    "arctic": "^3.7.0",
     "astro": "5.16.15",
     "chart.js": "^4.5.1",
     "consola": "^3.4.2",

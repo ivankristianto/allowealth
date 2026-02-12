@@ -19,6 +19,7 @@ export * from './exchange-rates';
 export * from './audit-logs';
 export * from './budgets';
 export * from './api-keys';
+export * from './oauth-accounts';
 
 // Export all relations (centralized to avoid circular imports)
 export * from './relations';

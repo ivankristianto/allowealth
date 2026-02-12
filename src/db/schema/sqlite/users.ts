@@ -8,7 +8,8 @@ export const users = sqliteTable('users', {
     .notNull()
     .references(() => workspaces.id, { onDelete: 'cascade' }),
   email: text('email').notNull().unique(),
-  password_hash: text('password_hash').notNull(),
+  password_hash: text('password_hash'),
+  avatar_url: text('avatar_url'),
   name: text('name').notNull(),
   role: text('role', { enum: ['admin', 'member'] }).notNull(),
   email_verified_at: integer('email_verified_at', { mode: 'timestamp' }),

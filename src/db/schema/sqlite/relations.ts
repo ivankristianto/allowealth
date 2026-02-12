@@ -24,6 +24,7 @@ import { assetSnapshotItems } from './asset-snapshot-items';
 import { budgets } from './budgets';
 import { auditLogs } from './audit-logs';
 import { apiKeys } from './api-keys';
+import { oauthAccounts } from './oauth-accounts';
 
 // Workspace relations
 export const workspacesRelations = relations(workspaces, ({ many }) => ({
@@ -77,6 +78,7 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   createdAssetUpdateReminders: many(assetUpdateReminders),
   createdBudgets: many(budgets),
   apiKeys: many(apiKeys),
+  oauthAccounts: many(oauthAccounts),
 }));
 
 // User meta relations
@@ -254,6 +256,14 @@ export const apiKeysRelations = relations(apiKeys, ({ one }) => ({
   }),
   user: one(users, {
     fields: [apiKeys.user_id],
+    references: [users.id],
+  }),
+}));
+
+// OAuth accounts relations
+export const oauthAccountsRelations = relations(oauthAccounts, ({ one }) => ({
+  user: one(users, {
+    fields: [oauthAccounts.user_id],
     references: [users.id],
   }),
 }));

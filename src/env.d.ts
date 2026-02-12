@@ -37,6 +37,8 @@ declare global {
   interface ImportMetaEnv {
     /** Base URL for API endpoints (default: /api) */
     readonly PUBLIC_API_URL?: string;
+    /** Signup mode: invite_only (default) or public */
+    readonly SIGNUP_MODE?: 'invite_only' | 'public';
 
     // Cache configuration
     readonly CACHE_DRIVER?: 'upstash' | 'memory' | 'none';

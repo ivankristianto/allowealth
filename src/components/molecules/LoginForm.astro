@@ -15,6 +15,7 @@ import Checkbox from '../atoms/Checkbox.astro';
 import Button from '../atoms/Button.astro';
 import ErrorMessage from '../atoms/ErrorMessage.astro';
 import FormField from '../molecules/FormField.astro';
+import GoogleButton from '../atoms/GoogleButton.astro';
 import { CircleX, CircleCheck, Info } from '@lucide/astro';
 import Turnstile from '../atoms/Turnstile.astro';
 
@@ -25,6 +26,7 @@ export interface Props {
   bannerMessage?: string;
   bannerType?: 'info' | 'success' | 'error';
   resendEmail?: string;
+  oauthError?: string;
 }
 
 const {
@@ -34,7 +36,16 @@ const {
   bannerMessage = '',
   bannerType = 'info',
   resendEmail = '',
+  oauthError = '',
 } = Astro.props;
+
+const oauthErrorMessages: Record<string, string> = {
+  oauth_error: 'Google sign-in failed. Please try again.',
+  link_expired: 'Account linking session expired. Please try again.',
+  link_failed: 'Failed to link account. Please try again.',
+  rate_limited: 'Too many attempts. Please try again later.',
+};
+const oauthMessage = oauthError ? oauthErrorMessages[oauthError] || 'An error occurred.' : '';
 ---
 
 <div class="card bg-base-100 shadow-2xl border border-base-300">
@@ -56,6 +67,15 @@ const {
               Resend
             </button>
           )}
+        </div>
+      )
+    }
+
+    {
+      oauthMessage && (
+        <div role="alert" class="alert alert-error mb-4">
+          <CircleX size={20} class="stroke-current shrink-0" />
+          <span>{oauthMessage}</span>
         </div>
       )
     }
@@ -138,6 +158,9 @@ const {
         >
       </div>
     </form>
+
+    <div class="divider text-base-content/40 text-xs uppercase tracking-widest my-6">or</div>
+    <GoogleButton action="Sign in" />
   </div>
 </div>
 
