@@ -1,4 +1,5 @@
-import { pgTable, text, timestamp, unique } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, unique, pgPolicy } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 import { workspaces } from './workspaces';
 
 export const workspaceMeta = pgTable(
@@ -13,5 +14,13 @@ export const workspaceMeta = pgTable(
     created_at: timestamp('created_at').defaultNow().notNull(),
     updated_at: timestamp('updated_at').defaultNow().notNull(),
   },
-  (table) => [unique('workspace_meta_unique').on(table.workspace_id, table.meta_key)]
+  (table) => [
+    unique('workspace_meta_unique').on(table.workspace_id, table.meta_key),
+    pgPolicy('workspace_meta_allow_all', {
+      as: 'permissive',
+      for: 'all',
+      using: sql`true`,
+      withCheck: sql`true`,
+    }),
+  ]
 ).enableRLS();

@@ -1,4 +1,5 @@
-import { pgTable, text, boolean, timestamp, index } from 'drizzle-orm/pg-core';
+import { pgTable, text, boolean, timestamp, index, pgPolicy } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 import { workspaces } from './workspaces';
 import { users } from './users';
 
@@ -21,5 +22,13 @@ export const categories = pgTable(
     created_at: timestamp('created_at').defaultNow().notNull(),
     updated_at: timestamp('updated_at').defaultNow().notNull(),
   },
-  (table) => [index('budget_categories_workspace_id_idx').on(table.workspace_id)]
+  (table) => [
+    index('budget_categories_workspace_id_idx').on(table.workspace_id),
+    pgPolicy('budget_categories_allow_all', {
+      as: 'permissive',
+      for: 'all',
+      using: sql`true`,
+      withCheck: sql`true`,
+    }),
+  ]
 ).enableRLS();

@@ -6,7 +6,9 @@ import {
   timestamp,
   index,
   uniqueIndex,
+  pgPolicy,
 } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 import { workspaces } from './workspaces';
 import { users } from './users';
 
@@ -31,5 +33,11 @@ export const assetCategories = pgTable(
   (table) => [
     index('asset_categories_workspace_id_idx').on(table.workspace_id),
     uniqueIndex('asset_categories_workspace_name_unique').on(table.workspace_id, table.name),
+    pgPolicy('asset_categories_allow_all', {
+      as: 'permissive',
+      for: 'all',
+      using: sql`true`,
+      withCheck: sql`true`,
+    }),
   ]
 ).enableRLS();

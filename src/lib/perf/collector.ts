@@ -54,6 +54,7 @@ export class PerfCollector {
   private services: TimedOperation[] = [];
   private renderStartTime: number | null = null;
   private renderEndTime: number | null = null;
+  private runtime: 'workers' | 'bun' | 'node' | '' = '';
 
   constructor() {
     this.startTime = performance.now();
@@ -179,6 +180,45 @@ export class PerfCollector {
    */
   getCacheDriver(): string {
     return this.cacheDriver;
+  }
+
+  /**
+   * Set the runtime environment
+   */
+  setRuntime(runtime: 'workers' | 'bun' | 'node' | ''): void {
+    this.runtime = runtime;
+  }
+
+  /**
+   * Get the runtime environment
+   */
+  getRuntime(): string {
+    return this.runtime;
+  }
+
+  /**
+   * Get estimated CPU time in milliseconds.
+   * For bun/node: wall-clock time minus DB I/O wait time.
+   * For workers: total time (performance.now() already measures CPU time).
+   */
+  getEstimatedCpuTime(): number {
+    const total = this.getTotalTime();
+    if (this.runtime === 'workers') {
+      return total;
+    }
+    return Math.max(0, total - this.getTotalDbTime());
+  }
+
+  /**
+   * Get estimated I/O wait time in milliseconds.
+   * For bun/node: total DB query time.
+   * For workers: 0 (CPU-time clock doesn't include I/O wait).
+   */
+  getIoWaitTime(): number {
+    if (this.runtime === 'workers') {
+      return 0;
+    }
+    return this.getTotalDbTime();
   }
 
   /**
@@ -343,9 +383,22 @@ export class PerfCollector {
       lines.push(`Memory: ${memoryMb} MB`);
     }
 
-    // Total time
+    // Total time + CPU breakdown
     const totalTime = this.getTotalTime();
-    lines.push(`Total: ${this.formatDuration(totalTime)}`);
+    if (this.runtime === 'workers') {
+      lines.push(`Total: ${this.formatDuration(totalTime)} (CPU time)`);
+      lines.push(`Runtime: workers (CPU-time clock)`);
+    } else if (this.runtime) {
+      const cpuTime = this.getEstimatedCpuTime();
+      const ioTime = this.getIoWaitTime();
+      lines.push(`Total: ${this.formatDuration(totalTime)} (wall-clock)`);
+      lines.push(
+        `CPU: ~${this.formatDuration(cpuTime)} | I/O Wait: ~${this.formatDuration(ioTime)} (DB queries)`
+      );
+      lines.push(`Runtime: ${this.runtime}`);
+    } else {
+      lines.push(`Total: ${this.formatDuration(totalTime)}`);
+    }
 
     lines.push('');
 

@@ -1,4 +1,5 @@
-import { pgTable, text, timestamp, index } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, index, pgPolicy } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 import { workspaces } from './workspaces';
 import { users } from './users';
 
@@ -23,5 +24,11 @@ export const apiKeys = pgTable(
   (table) => [
     index('api_keys_workspace_id_idx').on(table.workspace_id),
     index('api_keys_key_prefix_idx').on(table.key_prefix),
+    pgPolicy('api_keys_allow_all', {
+      as: 'permissive',
+      for: 'all',
+      using: sql`true`,
+      withCheck: sql`true`,
+    }),
   ]
 ).enableRLS();

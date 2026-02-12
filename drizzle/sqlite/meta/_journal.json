@@ -64,6 +64,13 @@
       "when": 1770809671491,
       "tag": "0008_jazzy_earthquake",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1770889855699,
+      "tag": "0009_natural_mattie_franklin",
+      "breakpoints": true
     }
   ]
 }

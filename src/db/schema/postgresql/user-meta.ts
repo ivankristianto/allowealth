@@ -1,4 +1,5 @@
-import { pgTable, text, timestamp, index, unique } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, index, unique, pgPolicy } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 import { users } from './users';
 
 /**
@@ -27,5 +28,11 @@ export const userMeta = pgTable(
   (table) => [
     unique('user_meta_user_key_unique').on(table.user_id, table.meta_key),
     index('idx_user_meta_user_id').on(table.user_id),
+    pgPolicy('user_meta_allow_all', {
+      as: 'permissive',
+      for: 'all',
+      using: sql`true`,
+      withCheck: sql`true`,
+    }),
   ]
 ).enableRLS();
