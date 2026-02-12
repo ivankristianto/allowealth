@@ -91,14 +91,16 @@ export class CategoryService {
     filters?: { type?: 'expense' | 'income'; is_active?: boolean },
     perf?: PerfCollector
   ) {
+    type CategoryRow = Awaited<ReturnType<typeof this.db.query.categories.findMany>>;
+
     const filtersHashValue = hashFilters(filters || {});
     const cache = getCacheManager();
     const cacheKey = CacheKeys.categories(workspaceId, filtersHashValue);
 
     // Cache read - fail-silent
-    let cached = null;
+    let cached: CategoryRow | null = null;
     try {
-      cached = await cache.get(cacheKey, perf);
+      cached = await cache.get<CategoryRow>(cacheKey, perf);
     } catch {
       // Cache read failed, continue to DB fetch
     }
