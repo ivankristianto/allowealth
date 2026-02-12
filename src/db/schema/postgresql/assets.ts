@@ -1,4 +1,5 @@
-import { pgTable, text, boolean, timestamp, index } from 'drizzle-orm/pg-core';
+import { pgTable, text, boolean, timestamp, index, pgPolicy } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 import { workspaces } from './workspaces';
 import { users } from './users';
 import { assetCategories } from './asset-categories';
@@ -49,5 +50,14 @@ export const assets = pgTable(
     created_at: timestamp('created_at').defaultNow().notNull(),
     updated_at: timestamp('updated_at').defaultNow().notNull(),
   },
-  (table) => [index('assets_workspace_id_idx').on(table.workspace_id)]
+  (table) => [
+    index('assets_workspace_id_idx').on(table.workspace_id),
+    index('assets_ws_status_deleted_idx').on(table.workspace_id, table.status, table.deleted_at),
+    pgPolicy('assets_allow_all', {
+      as: 'permissive',
+      for: 'all',
+      using: sql`true`,
+      withCheck: sql`true`,
+    }),
+  ]
 ).enableRLS();

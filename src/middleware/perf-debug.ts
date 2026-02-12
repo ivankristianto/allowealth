@@ -41,6 +41,12 @@ export const perfDebug: MiddlewareHandler = async (context, next) => {
   const perf = new PerfCollector();
   perf.setRoute(context.url.pathname);
   perf.setDialect(getDatabaseConfig().dialect);
+  // Detect runtime environment
+  const hasProcessMemory =
+    typeof process !== 'undefined' && typeof process.memoryUsage === 'function';
+  const isWorkers = typeof globalThis.caches !== 'undefined' && !hasProcessMemory;
+  const isBun = typeof globalThis.Bun !== 'undefined';
+  perf.setRuntime(isWorkers ? 'workers' : isBun ? 'bun' : 'node');
   context.locals.perf = perf;
   context.locals.serverTimings = {};
 
@@ -48,6 +54,8 @@ export const perfDebug: MiddlewareHandler = async (context, next) => {
 
   const timings = context.locals.serverTimings!;
   timings['total'] = performance.now() - requestStart;
+  timings['cpu'] = perf.getEstimatedCpuTime();
+  timings['io-wait'] = perf.getIoWaitTime();
 
   if (Object.keys(timings).length > 0) {
     response.headers.set('Server-Timing', buildServerTimingHeader(timings));

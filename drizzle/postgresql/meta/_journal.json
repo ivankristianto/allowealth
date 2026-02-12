@@ -43,6 +43,13 @@
       "when": 1770809703806,
       "tag": "0005_furry_crusher_hogan",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1770889856464,
+      "tag": "0006_woozy_rattler",
+      "breakpoints": true
     }
   ]
 }

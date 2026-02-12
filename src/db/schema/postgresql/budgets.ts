@@ -1,4 +1,14 @@
-import { pgTable, text, integer, boolean, timestamp, unique } from 'drizzle-orm/pg-core';
+import {
+  pgTable,
+  text,
+  integer,
+  boolean,
+  timestamp,
+  unique,
+  index,
+  pgPolicy,
+} from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 import { workspaces } from './workspaces';
 import { users } from './users';
 import { categories } from './categories';
@@ -33,5 +43,17 @@ export const budgets = pgTable(
       table.year,
       table.currency
     ),
+    index('budgets_ws_month_year_currency_idx').on(
+      table.workspace_id,
+      table.month,
+      table.year,
+      table.currency
+    ),
+    pgPolicy('budgets_allow_all', {
+      as: 'permissive',
+      for: 'all',
+      using: sql`true`,
+      withCheck: sql`true`,
+    }),
   ]
 ).enableRLS();

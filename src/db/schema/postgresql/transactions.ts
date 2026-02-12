@@ -1,4 +1,5 @@
-import { pgTable, text, timestamp, index } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, index, pgPolicy } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 import { workspaces } from './workspaces';
 import { users } from './users';
 import { categories } from './categories';
@@ -36,5 +37,30 @@ export const transactions = pgTable(
     index('transactions_asset_id_idx').on(table.asset_id),
     index('transactions_transaction_date_idx').on(table.transaction_date),
     index('transactions_category_id_idx').on(table.category_id),
+    index('transactions_ws_type_currency_date_idx').on(
+      table.workspace_id,
+      table.type,
+      table.currency,
+      table.transaction_date
+    ),
+    index('transactions_ws_cat_type_currency_date_idx').on(
+      table.workspace_id,
+      table.category_id,
+      table.type,
+      table.currency,
+      table.transaction_date
+    ),
+    index('transactions_ws_user_date_idx').on(
+      table.workspace_id,
+      table.created_by_user_id,
+      table.transaction_date
+    ),
+    index('transactions_to_asset_id_idx').on(table.to_asset_id),
+    pgPolicy('transactions_allow_all', {
+      as: 'permissive',
+      for: 'all',
+      using: sql`true`,
+      withCheck: sql`true`,
+    }),
   ]
 ).enableRLS();

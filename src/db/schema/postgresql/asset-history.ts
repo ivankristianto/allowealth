@@ -1,4 +1,5 @@
-import { pgTable, text, timestamp, index } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, index, pgPolicy } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 import { assets } from './assets';
 
 export const assetHistory = pgTable(
@@ -13,5 +14,14 @@ export const assetHistory = pgTable(
     notes: text('notes'),
     recorded_at: timestamp('recorded_at').defaultNow().notNull(),
   },
-  (table) => [index('asset_history_recorded_at_idx').on(table.recorded_at)]
+  (table) => [
+    index('asset_history_recorded_at_idx').on(table.recorded_at),
+    index('asset_history_asset_id_idx').on(table.asset_id),
+    pgPolicy('asset_history_allow_all', {
+      as: 'permissive',
+      for: 'all',
+      using: sql`true`,
+      withCheck: sql`true`,
+    }),
+  ]
 ).enableRLS();

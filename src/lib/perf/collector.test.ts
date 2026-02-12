@@ -321,4 +321,107 @@ describe('PerfCollector', () => {
       expect(output).toMatch(/\n-->$/);
     });
   });
+
+  describe('runtime tracking', () => {
+    test('starts with empty runtime', () => {
+      expect(perf.getRuntime()).toBe('');
+    });
+
+    test('sets runtime', () => {
+      perf.setRuntime('bun');
+      expect(perf.getRuntime()).toBe('bun');
+    });
+
+    test('allows runtime updates', () => {
+      perf.setRuntime('bun');
+      perf.setRuntime('workers');
+      expect(perf.getRuntime()).toBe('workers');
+    });
+  });
+
+  describe('CPU time estimation', () => {
+    test('bun runtime: CPU = max(0, total - DB time)', () => {
+      perf.setRuntime('bun');
+      perf.recordDbQuery('query1', 10);
+      perf.recordDbQuery('query2', 15);
+
+      const cpuTime = perf.getEstimatedCpuTime();
+      const totalTime = perf.getTotalTime();
+      const dbTime = perf.getTotalDbTime();
+
+      expect(cpuTime).toBeCloseTo(Math.max(0, totalTime - dbTime), 0);
+    });
+
+    test('workers runtime: CPU = total (CPU-time clock)', () => {
+      perf.setRuntime('workers');
+      perf.recordDbQuery('query1', 10);
+
+      const cpuTime = perf.getEstimatedCpuTime();
+      const totalTime = perf.getTotalTime();
+
+      expect(cpuTime).toBeCloseTo(totalTime, 0);
+    });
+
+    test('bun runtime: I/O wait = DB time', () => {
+      perf.setRuntime('bun');
+      perf.recordDbQuery('query1', 10);
+      perf.recordDbQuery('query2', 15);
+
+      expect(perf.getIoWaitTime()).toBe(25);
+    });
+
+    test('workers runtime: I/O wait = 0', () => {
+      perf.setRuntime('workers');
+      perf.recordDbQuery('query1', 10);
+
+      expect(perf.getIoWaitTime()).toBe(0);
+    });
+
+    test('unset runtime: CPU = max(0, total - DB time)', () => {
+      perf.recordDbQuery('query1', 10);
+
+      const cpuTime = perf.getEstimatedCpuTime();
+      const totalTime = perf.getTotalTime();
+
+      expect(cpuTime).toBeCloseTo(Math.max(0, totalTime - 10), 0);
+    });
+
+    test('CPU time floors at 0 when parallel DB queries exceed wall-clock', () => {
+      perf.setRuntime('bun');
+      // Simulate concurrent queries whose summed duration exceeds wall-clock
+      perf.recordDbQuery('parallel1', 50000);
+      perf.recordDbQuery('parallel2', 50000);
+
+      const cpuTime = perf.getEstimatedCpuTime();
+      expect(cpuTime).toBe(0);
+    });
+  });
+
+  describe('toHtmlComment with runtime', () => {
+    test('bun runtime shows wall-clock and CPU breakdown', () => {
+      perf.setRuntime('bun');
+      perf.recordDbQuery('query1', 10);
+      const output = perf.toHtmlComment();
+
+      expect(output).toContain('(wall-clock)');
+      expect(output).toContain('CPU: ~');
+      expect(output).toContain('I/O Wait: ~');
+      expect(output).toContain('Runtime: bun');
+    });
+
+    test('workers runtime shows CPU time', () => {
+      perf.setRuntime('workers');
+      const output = perf.toHtmlComment();
+
+      expect(output).toContain('(CPU time)');
+      expect(output).toContain('Runtime: workers (CPU-time clock)');
+    });
+
+    test('unset runtime shows simple total', () => {
+      const output = perf.toHtmlComment();
+
+      expect(output).toMatch(/Total: (<1ms|\d+ms)$/m);
+      expect(output).not.toContain('Runtime:');
+    });
+  });
 });
