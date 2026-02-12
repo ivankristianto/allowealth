@@ -2,7 +2,7 @@
 
 Personal and family financial application for expense tracking, budgeting, asset management, and financial forecasting.
 
-# Agent Instructions
+# Critical Rules
 
 ## Agent Initialization
 
@@ -24,264 +24,27 @@ Agents must internalize:
 
 **If constitution conflicts with task instructions, constitution wins.**
 
-## Fix Quality
-
-When fixing bugs, always verify the fix doesn't break existing functionality by running the build and any related tests before presenting the solution. If a fix introduces new errors, diagnose those before suggesting the fix.
-
-- ✅ Run `bun run build` after bug fixes to verify no new errors
-- ✅ Run relevant tests (`bun test`, e2e tests, or integration tests) related to the fix
-- ✅ Test the fix in the browser/application to confirm it works as expected
-- ✅ Check all usages of changed code to ensure no downstream breakage
-- ✅ Run quality gates before committing (lint, typecheck, format)
-- ❌ Suggest fixes without verification
-- ❌ Claim bugs are fixed without running tests
-- ❌ Ignore new errors introduced by fixes
-- ❌ Skip quality gates to move faster
-
-## Planning & Research
-
-When asked to plan or brainstorm (e.g., version upgrades, migration strategies), produce a concrete written plan with actionable steps within the first response. Do not spend the entire session only reading files — summarize findings and deliver the plan incrementally.
-
-- ✅ Deliver a written plan in the first response (not after extensive exploration)
-- ✅ Include actionable steps, timelines, and dependencies
-- ✅ Summarize findings incrementally as you research
-- ✅ Provide context and rationale for recommendations
-- ✅ Update the plan as new information emerges
-- ❌ Spend entire session reading without producing a plan
-- ❌ Delay planning until all possible research is complete
-- ❌ Create vague plans without concrete next steps
-
-## Language & Stack
-
-This is a **TypeScript-primary codebase**. Always prefer TypeScript idioms, use strict types, and ensure any code changes pass `tsc --noEmit` before considering a task complete.
-
-- ✅ Write code in TypeScript with strict type checking
-- ✅ Use `tsc --noEmit` to verify type correctness
-- ✅ Prefer TypeScript over plain JavaScript
-- ✅ Use strict mode and enable `strict: true` in tsconfig
-- ✅ Define explicit types instead of using `any`
-- ✅ Use type inference where appropriate (avoid redundant type annotations)
-- ✅ Import and use project types (`@/lib/auth/lucia`, etc.)
-- ❌ Use `any` type without justification
-- ❌ Skip typecheck in pre-commit
-- ❌ Leave `tsc --noEmit` errors unfixed
-
-## Do & Don't
-
-### Session Rules (Every Agent Session)
+## Session Behavior
 
 - ✅ Follow implementation order: UI → Service → API → CLI → Seeder
 - ✅ Run quality gates before committing (lint, stylelint, format, typecheck)
 - ✅ Update OpenAPI docs when modifying API endpoints
 - ✅ Update `COMMANDS.md` when adding or modifying `package.json` scripts or CLI tools
-- ✅ Apply refactor checklist each loop, not at the end
 - ✅ Create a plan before coding
-- ❌ Hardcode colors, spacing, or font sizes (use design tokens)
-- ❌ Build desktop-first layouts (use mobile-first)
-- ❌ Remove focus outlines without replacement
-- ❌ Use placeholder text as labels
-- ❌ Rely on color alone to convey information
+- ✅ Deliver a written plan in the first response (not after extensive exploration)
+- ✅ Run `bun run build` after bug fixes to verify no new errors
+- ✅ Run relevant tests related to the fix, check all usages of changed code
+- ✅ Understand all requirements before implementing — clarify unclear items upfront
+- ✅ Push back with technical reasoning if reviewer is wrong — technical correctness > comfort
+- ✅ Admit when you're wrong quickly — state the correction and reason, move on
+- ❌ Suggest fixes without verification or claim bugs are fixed without running tests
+- ❌ Spend entire session reading without producing a plan
+- ❌ Implement partial lists — complete all items or clarify first
+- ❌ Use gratitude expressions — no "Thanks!", "Great point!", "You're absolutely right!"
+- ❌ Apologize excessively — just fix and move on
+- ❌ Defend why you pushed back — state technical facts only
 
-### Architectural Decisions (ADR Quick Reference)
-
-| Category                | Use This ✅                              | Not This ❌                      | Reference                         |
-| ----------------------- | ---------------------------------------- | -------------------------------- | --------------------------------- |
-| **HTML Rendering**      | Server-rendered Astro components         | Client-side DOM construction     | `002-interactive-pages.md`        |
-| **Interactive Updates** | Fetch `?_render=html` from API           | Build HTML strings in JS         | `002-interactive-pages.md`        |
-| **Client Scripts**      | `.client.ts` files + `data-*` attributes | `define:vars` with npm imports   | `002-interactive-pages.md`        |
-| **Styling**             | DaisyUI classes (`bg-base-200`)          | Tailwind colors (`bg-slate-100`) | `design-system/START.md`          |
-| **Design Tokens**       | Import from `@/lib/tokens`               | Hardcoded values (`#10b981`)     | `design-system/01-foundations.md` |
-| **Icons**               | `@lucide/astro`                          | Custom SVG or emojis             | `design-system/START.md`          |
-| **Animations**          | Motion library                           | CSS transitions only             | `design-system/08-animations.md`  |
-| **State**               | Nano Stores                              | Local state scattered            | N/A                               |
-| **Feedback**            | Toast notifications                      | `alert()`, `confirm()`           | N/A                               |
-| **TypeScript**          | Separate `.ts` files                     | Types in `<script>` tags         | `AGENTS.md`                       |
-| **Database**            | `better-sqlite3` (shared code)           | `bun:sqlite` (middleware)        | `docs/constitution.md`            |
-| **Schema Selection**    | `getActiveSchema()` in services          | Direct table imports             | Dual SQLite/PostgreSQL support    |
-| **Environment Vars**    | `import.meta.env`                        | `process.env`                    | Bun compatibility                 |
-| **Testing**             | `bun:test`                               | `vitest`                         | `docs/constitution.md`            |
-| **API Docs**            | Update OpenAPI files                     | Comments only                    | `openapi/README.md`               |
-| **Bundle Size**         | Specific imports (`@/lib/utils/client`)  | Barrel exports (`@/lib/utils`)   | `005-bundle-performance.md`       |
-| **Chart.js**            | `@/lib/chart-setup` (tree-shaken)        | `chart.js/auto`                  | `005-bundle-performance.md`       |
-| **Server Libraries**    | Type-only imports (`import type`)        | Runtime imports in client        | `005-bundle-performance.md`       |
-| **Password Hashing**    | PBKDF2-SHA256 (Web Crypto API)           | oslo/argon2 (native addon)       | Cross-runtime compatibility       |
-| **Caching**             | CacheManager + Tag-based drivers         | Direct Redis or local-only cache | `008-cache-abstraction.md`        |
-| **Logging**             | Structured consola loggers               | `console.log`                    | `009-logger-abstraction.md`       |
-| **MCP Server**          | Hybrid (stdio + HTTP) with shared tools  | Logic scattered in routes        | `010-mcp-server-architecture.md`  |
-
-### Design System Compliance
-
-- ✅ Import design tokens from `@/lib/tokens` for colors, spacing, typography
-- ✅ Use DaisyUI classes first, then Tailwind utilities
-- ✅ Use semantic HTML elements (`<button>`, `<nav>`, `<main>`, `<section>`)
-- ✅ Follow mobile-first responsive design (base styles for mobile, `md:` for desktop)
-- ✅ Ensure keyboard navigation (Tab, Enter, Space, Esc)
-- ✅ Add ARIA labels and roles for accessibility
-- ✅ Maintain color contrast ratios (text ≥4.5:1, UI ≥3:1)
-- ✅ Use minimum touch targets of 44x44px for mobile
-- ✅ Include visible labels for all form inputs
-- ✅ Use Lucide icons with text labels
-
-### Code Quality (Constitution)
-
-- ✅ Write clear, explicit code (clarity over cleverness)
-- ✅ Follow Single Responsibility Principle (one function = one responsibility)
-- ✅ Use descriptive variable names that explain purpose (not `data`, `temp`, `x`)
-- ✅ Document _what_ and _why_ in commit messages
-- ✅ Write unit tests first (fail first, then implement)
-- ✅ Validate inputs at system boundaries (user input, external APIs)
-- ✅ Define performance targets upfront (e.g., <200ms p95)
-- ✅ Follow refactor checklist: Maintainability → Security → Performance → Consistency → Abstraction
-- ❌ Add unnecessary error handling for impossible scenarios
-- ❌ Use backwards-compatibility hacks (delete unused code completely)
-
-### Debugging & Problem Solving
-
-- ✅ Fix root cause of typecheck errors (update API usage, fix imports)
-- ✅ Trace bugs through full flow: DB → Service → API → Session → UI
-- ✅ Test after every code change
-- ✅ Check all usages after changing types or imports (`grep` the codebase)
-- ✅ Verify root cause is fixed, not just symptoms
-- ✅ Stop and ask when blocked or unclear - Don't guess, don't force through
-- ✅ Report actual state, not agent claims - Check VCS diff to verify changes
-- ❌ Suppress warnings with `@ts-expect-error` or `eslint-disable`
-- ❌ Remove `await` just because TypeScript says "no effect" (runtime differs)
-- ❌ Don't attempt fix #4 without questioning architecture - 3+ failures = wrong approach
-- ❌ Don't fix multiple things at once - Changes must be isolated
-
-### Input Validation & Data Handling
-
-- ✅ **Use `Number()` instead of `parseFloat()` for validation** - `parseFloat("1,000")` returns `1`, `parseFloat("100abc")` returns `100` (silently corrupts data)
-- ✅ **Parse CSV with proper parser, not `split(',')`** - Handles quoted fields containing commas
-- ✅ **Strip BOM from CSV files before parsing** - Excel UTF-8 exports include BOM (`\uFEFF`)
-- ✅ **Read CSRF token with proper decoding loop** - Don't use single-line `split('=')[1]` (breaks on base64)
-- ✅ **Surface actual error messages in API responses** - Include details for debugging, not generic "Failed to X"
-- ✅ **Extract `data-action` from DOM, don't use `define:vars`** - NPM imports break with `define:vars/is:inline`
-- ❌ **Don't use `parseFloat()` for currency validation** - Accepts malformed input like `"1,000"` or `"100abc"`
-- ❌ **Don't use `split(',')` for CSV parsing** - Breaks on quoted fields like `"Company, Inc."`
-- ❌ **Don't use `split('=')[1]` for CSRF token** - Base64 tokens contain `=` characters
-- ❌ **Don't default empty amounts to `'0'`** - Silently zeros out budgets, corrupts user data
-
-### Database Transactions & Queries
-
-- ✅ **Use sync callbacks with better-sqlite3 transactions** - `db.transaction((tx) => { /* sync code */ })`
-- ✅ **Wrap multi-step DB operations in transactions** - Ensures atomicity (delete + insert must both succeed)
-- ✅ **Query budgets directly instead of cached overview** - Guarantees schema fields like `id` are present
-- ✅ **Verify ORM-generated SQL with diagnostic queries** - Drizzle `extras` with schema references can silently produce wrong SQL; test actual output before declaring done
-- ❌ **Don't use `async/await` in better-sqlite3 transactions** - Driver is synchronous, throws "Transaction function cannot return a promise"
-- ❌ **Don't use `db.transaction(async (tx) => { await ... })` with better-sqlite3** - Works on PostgreSQL, crashes on SQLite
-- ❌ **Don't rely on cached data when schema fields are critical** - Cache may be stale or incomplete
-- ❌ **Don't add extra DB queries as the lazy first solution** - Use subqueries or JOINs in the existing query
-- ❌ **Don't use `(obj as any).field` when proper typing is available** - Use interface references or Drizzle extras types
-- ❌ **Don't include `create` action in history/audit queries** - Initial create is not meaningful "history"; only `update`/`delete` count
-
-### CSS & Styling Patterns
-
-- ✅ **Use DaisyUI classes directly on elements** - `<button class="btn btn-accent">` works correctly
-- ✅ **Use design token constants from `@/lib/tokens`** - Not inline Tailwind utilities like `px-2 md:px-4`
-- ✅ **Use semantic size classes** - `text-sm`, `text-base`, not `text-[10px]`
-- ❌ **Don't use `@apply btn` in custom classes** - Creates CSS cascade issues (source order determines precedence)
-- ❌ **Don't create `.btn-contract-base` with `@apply btn`** - Base class appears later in CSS, overrides modifiers like `.btn-accent`
-- ❌ **Don't hardcode sizes like `text-[10px]`** - Breaks design system consistency
-- ❌ **Don't use inline styles for interactive states** - Use CSS classes instead of `element.style.cursor = 'pointer'`
-
-### Communication & Workflow
-
-- ✅ **Understand all requirements before implementing** - Clarify unclear items upfront
-- ✅ **Push back with technical reasoning if reviewer is wrong** - Technical correctness > comfort
-- ✅ **Admit when you're wrong quickly** - State the correction and reason, move on
-- ❌ **Don't implement partial lists** - Complete all items or clarify first, not "do 1,2,3,6, ask about 4,5 later"
-- ❌ **Don't use gratitude expressions** - No "Thanks!", "Great point!", "You're absolutely right!"
-- ❌ **Don't apologize excessively** - Just fix and move on
-- ❌ **Don't defend why you pushed back** - State technical facts only
-
-### TypeScript Best Practices
-
-- ✅ Use `declare global { namespace App { ... } }` when `env.d.ts` has imports
-- ✅ Import custom types from project files (`@/lib/auth/lucia`), not library packages
-- ✅ Add `export {}` at the end of module-scoped type files
-- ✅ Use TypeScript in separate `.ts` files for client-side code (not inline `<script>`)
-- ✅ Define component props with interfaces
-
-### E2E Testing & Playwright
-
-- ✅ Use expect.poll() for condition-based waiting (not manual loops or waitForTimeout)
-- ✅ Set Playwright workers=1 for shared database tests (prevents race conditions)
-- ✅ Use domcontentloaded instead of networkidle (faster, still reliable)
-- ✅ Follow systematic-debugging skill for test failures (find root cause)
-- ✅ Remove precomputed hashes when changing algorithms (prevents seed mismatches)
-- ✅ Use dynamic dates for current month in seed data (not hardcoded)
-
-### Cross-Runtime & Edge Compatibility
-
-- ✅ Use Web Crypto API (PBKDF2-SHA256) for password hashing - works in all runtimes including Workers
-- ✅ Replace native Node modules with platform-agnostic alternatives (no native addons)
-- ✅ Serialize Date objects explicitly when returning from services - PostgreSQL Date objects can't JSON-serialize in Workers
-- ✅ Set `runtimeEnv` from middleware on first request - Workers secrets aren't available at module load
-- ✅ Create fresh DB connections per request in Workers (no singletons in edge runtime)
-- ✅ Use tag-based cache invalidation (`user:123`, `budget:123`) with configurable TTLs
-- ✅ Create abstraction layers for vendor-agnostic features (cache drivers: Memory, Noop, Upstash)
-- ✅ Handle cache errors gracefully - fall back to database queries
-- ✅ Add diagnostic logging when debugging production issues
-- ✅ Use Hyperdrive for Workers database connections - postgres.js TCP/TLS operations count as subrequests; Hyperdrive provides local proxy with 0 overhead
-- ✅ Trace dependency chains when builds fail - e.g., oslo → @node-rs/argon2 → native addon reveals the incompatible layer
-- ❌ Use `script-src 'unsafe-inline'` for CSP - inject nonces into Astro-generated scripts instead
-- ❌ Change DATABASE_URL to sqlite fallback in prod config (causes "table not found" errors)
-- ❌ Assume fetch counter captures all subrequests - TCP sockets via nodejs_compat are subrequests that bypass fetch wrappers
-- ❌ Use Supabase transaction pooler with Hyperdrive - Hyperdrive handles pooling; use direct connection (port 5432, not 6543)
-
-### PostgreSQL/Supabase Compatibility
-
-- ✅ Use `getActiveSchema()` and `this.schema.tableName` pattern in services (not direct table imports)
-- ✅ Use `import.meta.env` instead of `process.env` - Bun doesn't populate process.env from .env files
-- ✅ Add `:prod` script variants with `--env-file=.env.production` for explicit env loading
-- ✅ Import SQLite schema for type inference only - both schemas have same structure
-- ✅ Handle timestamps correctly: SQLite uses integers, PostgreSQL uses native timestamps
-- ❌ Check for double-prefix bugs during mass replace (`this.schema.this.schema` patterns)
-
-### Database Migrations (Dual Dialect)
-
-**CRITICAL:** All schema changes MUST generate migrations for **both** SQLite and PostgreSQL. See `docs/architecture/007-database-migrations.md` for full documentation.
-
-**When modifying any schema file:**
-
-1. Edit both `src/db/schema/sqlite/<table>.ts` and `src/db/schema/postgresql/<table>.ts`
-2. Generate migrations for both dialects:
-   ```bash
-   bun run db:generate          # SQLite
-   bun run db:generate:prod     # PostgreSQL
-   ```
-3. Apply locally: `bun run db:migrate`
-4. Commit both `drizzle/sqlite/` and `drizzle/postgresql/` directories
-5. Deploy: `bun run db:migrate:prod`
-
-**Rules:**
-
-- ✅ Always generate migrations for both SQLite and PostgreSQL when changing schema
-- ✅ Use `db:generate` + `db:migrate` for tracked, incremental changes
-- ✅ Commit migration files (`drizzle/sqlite/` and `drizzle/postgresql/`) to git
-- ✅ Use `db:push` only for local SQLite rapid iteration (never for production)
-- ❌ Never use `db:push` for PostgreSQL/Supabase (known drizzle-kit bug crashes it)
-- ❌ Never generate migrations for only one dialect and forget the other
-- ❌ Never manually edit migration SQL files
-
-### Feature Completeness & Verification
-
-- ✅ **Trace ALL consumers of a shared component before declaring done** - When modifying TransactionCard, check every render path (SSR, API, Dashboard, CategoryDrilldown, Reports)
-- ✅ **Fix tests before committing, never push with known failures** - Even "pre-existing" failures must be fixed or explicitly flagged to the user before push
-- ✅ **Verify return types don't silently strip new fields** - Explicit inline return types in TypeScript will discard unlisted properties; use interface references
-- ✅ **Use systematic debugging from the start** - Don't guess at fixes; diagnose root cause with evidence before changing code
-- ✅ **Confirm user intent before implementing UI changes** - Ask clarifying questions ("dropdown or inline?") before rewriting component layout
-- ✅ **Think through mobile vs desktop UX separately** - Mobile uses dropdown menus, desktop uses inline icons; apply changes to each context appropriately
-- ✅ **Add tooltips/labels to icon-only buttons proactively** - Design system says "Use Lucide icons with text labels"; don't wait to be asked
-- ✅ **Update tests to match user intent, not broken implementation** - If tests expect rich behavior, fix the implementation, not the test expectations
-- ❌ **Don't claim "done, test it" without verifying all render paths** - Check SSR, API, Dashboard, and dynamic injection paths before declaring success
-- ❌ **Don't guess at fixes** - Speculative fixes waste sessions; use systematic debugging immediately
-- ❌ **Don't thrash method signatures** - If you edit a signature 3x and end at the original, you didn't think before coding
-- ❌ **Don't forget cross-session context** - If the user asked to remove something in a prior session, don't leave it in
-- ❌ **Don't delete tests without replacing coverage** - Removing tests for dead methods requires verifying the remaining tests cover the same cases
-
-### Pre-Commit Checklist
+## Quality Gates
 
 **Before every commit:**
 
@@ -298,6 +61,15 @@ bun run typecheck         # TypeScript (blocking)
 
 **CRITICAL:** If `bun:` imports are found in middleware-imported files, REFACTOR before committing.
 
+This is a **TypeScript-primary codebase**:
+
+- ✅ Write TypeScript with strict type checking, use `tsc --noEmit` to verify
+- ✅ Define explicit types instead of using `any`, use type inference where appropriate
+- ✅ Import project types from `@/lib/auth/lucia` etc., not library packages directly
+- ❌ Use `any` type without justification or skip typecheck
+
+# Architecture
+
 ## Tech Stack
 
 - **Runtime:** Bun 1.x
@@ -305,374 +77,238 @@ bun run typecheck         # TypeScript (blocking)
 - **Styling:** Tailwind CSS v4 + DaisyUI v5
 - **Components:** Astro components (server-side)
 - **State Management:** Nano Stores (client-side reactive state)
-- **Animations:** Motion (client-side animations)
+- **Animations:** Motion/mini (client-side animations)
 - **Storybook:** 8.x with HTML framework
 - **Database:** Drizzle ORM + SQLite (dev) / PostgreSQL/Supabase (prod)
 - **Auth:** Lucia Auth
 
-## Routes
+## ADR Quick Reference
 
-### Public Routes
+| Category                | Use This ✅                              | Not This ❌                                    | Reference                         |
+| ----------------------- | ---------------------------------------- | ---------------------------------------------- | --------------------------------- |
+| **HTML Rendering**      | Server-rendered Astro components         | Client-side DOM construction                   | `002-interactive-pages.md`        |
+| **Interactive Updates** | Fetch `?_render=html` from API           | Build HTML strings in JS                       | `002-interactive-pages.md`        |
+| **Client Scripts**      | `.client.ts` files + `data-*` attributes | `define:vars` with npm imports                 | `002-interactive-pages.md`        |
+| **Styling**             | DaisyUI classes (`bg-base-200`)          | Tailwind colors (`bg-slate-100`)               | `design-system/START.md`          |
+| **Design Tokens**       | Import from `@/lib/tokens`               | Hardcoded values (`#10b981`)                   | `design-system/01-foundations.md` |
+| **Icons**               | `@lucide/astro`                          | Custom SVG or emojis                           | `design-system/START.md`          |
+| **Animations**          | `motion/mini`                            | `motion` (full) or CSS-only                    | `design-system/08-animations.md`  |
+| **State**               | Nano Stores                              | Local state scattered                          | N/A                               |
+| **Feedback**            | Toast notifications                      | `alert()`, `confirm()`                         | N/A                               |
+| **TypeScript**          | Separate `.ts` files                     | Types in `<script>` tags                       | N/A                               |
+| **Database**            | `better-sqlite3` (shared code)           | `bun:sqlite` (middleware)                      | `docs/constitution.md`            |
+| **Schema Selection**    | `getActiveSchema()` in services          | Direct table imports                           | Dual SQLite/PostgreSQL support    |
+| **Environment Vars**    | `getEnv()` for runtime secrets           | `import.meta.env` (build-time only on Workers) | Cross-runtime compat              |
+| **Testing**             | `bun:test`                               | `vitest`                                       | `docs/constitution.md`            |
+| **API Docs**            | Update OpenAPI files                     | Comments only                                  | `openapi/README.md`               |
+| **Bundle Size**         | Specific imports (`@/lib/utils/client`)  | Barrel exports (`@/lib/utils`)                 | `005-bundle-performance.md`       |
+| **Chart.js**            | `@/lib/chart-setup` (tree-shaken)        | `chart.js/auto`                                | `005-bundle-performance.md`       |
+| **Server Libraries**    | Type-only imports (`import type`)        | Runtime imports in client                      | `005-bundle-performance.md`       |
+| **Password Hashing**    | PBKDF2-SHA256 (Web Crypto API)           | oslo/argon2 (native addon)                     | Cross-runtime compatibility       |
+| **Caching**             | CacheManager + Tag-based drivers         | Direct Redis or local-only cache               | `008-cache-abstraction.md`        |
+| **Logging**             | Structured consola loggers               | `console.log`                                  | `009-logger-abstraction.md`       |
+| **MCP Server**          | Hybrid (stdio + HTTP) with shared tools  | Logic scattered in routes                      | `010-mcp-server-architecture.md`  |
 
-```
-/                          # Homepage (landing page)
-/login                     # User login
-/signup                    # User registration
-/register                  # User registration (alternate route)
-/forgot-password           # Password reset request
-/contact                   # Contact page
-/privacy                   # Privacy policy
-/terms                     # Terms of service
-```
+# Learned Patterns
 
-### Protected Routes
+## Frontend
 
-```
-/dashboard                 # Main dashboard
-/profile                   # User profile
-/security                  # Security settings (2FA, passkeys, etc.)
-/settings                  # Application settings
+### Design System & Styling
 
-/transactions              # Transaction list
-/transactions/import       # Import transactions from CSV
-/transactions/export       # Export transactions to CSV
+- ✅ Import design tokens from `@/lib/tokens` for colors, spacing, typography
+- ✅ Use DaisyUI classes first, then Tailwind utilities
+- ✅ Use semantic HTML elements (`<button>`, `<nav>`, `<main>`, `<section>`)
+- ✅ Follow mobile-first responsive design (base styles for mobile, `md:` for desktop)
+- ✅ Ensure keyboard navigation (Tab, Enter, Space, Esc)
+- ✅ Add ARIA labels and roles for accessibility
+- ✅ Maintain color contrast ratios (text ≥4.5:1, UI ≥3:1)
+- ✅ Use minimum touch targets of 44x44px for mobile
+- ✅ Include visible labels for all form inputs
+- ✅ Use Lucide icons with text labels
+- ✅ **Use DaisyUI classes directly on elements** - `<button class="btn btn-accent">`
+- ✅ **Use semantic size classes** - `text-sm`, `text-base`, not `text-[10px]`
+- ❌ Hardcode colors, spacing, or font sizes (use design tokens)
+- ❌ Build desktop-first layouts (use mobile-first)
+- ❌ Remove focus outlines without replacement
+- ❌ Use placeholder text as labels
+- ❌ Rely on color alone to convey information
+- ❌ **Use `@apply btn` in custom classes** - creates CSS cascade issues
+- ❌ **Hardcode sizes like `text-[10px]`** - breaks design system consistency
+- ❌ **Use inline styles for interactive states** - use CSS classes instead
 
-/budget                    # Budget overview
-/budget/history            # Budget history
-/budget/categories         # Category management
+### Astro Components
 
-/assets                    # Active asset list
-/assets/closed             # Closed/inactive assets
-/assets/history            # Asset history overview
-/assets/history/[id]       # Individual asset history
-/assets/categories         # Asset category management
+- ✅ Use toast system (`addToast`) for user feedback instead of inline alerts
+- ✅ All atomic components must have Storybook stories (`.stories.ts`)
+- ❌ **Use TypeScript types in client-side `<script>` tags** - Astro's inline scripts don't support TS annotations
+- ❌ **Access `user.attributes.property`** - User type has properties directly (`user.name`, `user.email`)
+- ❌ **Declare `Astro.locals` types in multiple files** - centralize in `src/env.d.ts` only
+- ❌ **Mix `define:vars`, `is:inline`, or `type="module"` with npm imports** - pass server values via `data-*` attributes instead:
 
-/reports                   # Financial reports
+```astro
+<!-- ✅ Correct: Use data attributes -->
+<dialog data-modal data-backdrop-close={backdropClose ? 'true' : 'false'}>
+  <script>
+    import { animate } from 'motion/mini'; // Works!
+    const modal = document.querySelector('dialog[data-modal]');
+    const backdropClose = modal?.dataset.backdropClose === 'true';
+  </script>
 
-/forecast                  # Forecast calculator
-
-/calculators               # Compound interest calculator
-```
-
-**Note:** Transaction creation and editing is handled via TransactionDrawer available globally in ProtectedLayout, not via dedicated pages.
-
-## Project Structure
-
-```
-src/
-├── __tests__/            # Integration and cross-cutting tests
-├── cli/                  # CLI commands
-│   ├── create-api-key.ts
-│   ├── create-workspace.ts
-│   ├── delete-workspace.ts
-│   ├── list-workspaces.ts
-│   └── rotate-db-password.ts
-├── components/
-│   ├── atoms/            # Atomic UI elements (Button, Input, Badge, etc.)
-│   ├── molecules/        # Compound components (Modal, Toast, Forms)
-│   ├── organisms/        # Complex compositions (AssetFormModal, TransactionDrawer)
-│   ├── partials/         # Server-rendered fragments (no layout)
-│   └── layouts/          # Reusable layout components (Header, Footer, Nav)
-├── db/
-│   ├── schema/           # Database schema definitions
-│   │   ├── sqlite/       # SQLite-specific schema
-│   │   └── postgresql/   # PostgreSQL-specific schema
-│   ├── drivers/          # Database driver implementations
-│   ├── config.ts         # Database configuration
-│   ├── driver.ts         # Driver factory
-│   ├── index.ts          # Database client exports
-│   ├── empty.ts          # Empty/null database implementation
-│   └── seed.ts           # Database seeding
-├── layouts/              # Page layouts
-│   ├── AuthLayout.astro      # Authentication pages layout
-│   ├── BaseLayout.astro      # HTML shell with <head> setup
-│   ├── MainLayout.astro      # Public pages layout
-│   ├── ProtectedLayout.astro # Protected pages with sidebar & TransactionDrawer
-│   └── PublicLayout.astro    # Public marketing pages layout
-├── lib/                  # Shared utilities and helpers
-│   ├── animations/       # Animation utilities
-│   ├── api/              # API client utilities
-│   ├── assets/           # Asset management utilities
-│   ├── auth/             # Authentication utilities (Lucia setup)
-│   ├── budget/           # Budget calculation utilities
-│   ├── cache/            # Cache abstraction layer
-│   │   └── drivers/      # Cache driver implementations (Memory, Noop, Upstash)
-│   ├── constants/        # Application constants
-│   ├── crypto/           # Cryptography utilities (password hashing)
-│   ├── currency/         # Currency formatting utilities
-│   ├── forecast/         # Forecast calculation utilities
-│   ├── formatting/       # Number and date formatting utilities
-│   ├── perf/             # Performance monitoring utilities
-│   ├── stores/           # Nano Stores for client-side state
-│   │   └── toastStore.ts # Toast notification state
-│   ├── types/            # Shared TypeScript types
-│   ├── utils/            # General utility functions
-│   ├── validation/       # Input validation utilities
-│   └── tokens.ts         # Design tokens & helpers
-├── middleware/           # Astro middleware
-│   ├── auth.ts           # Authentication middleware
-│   ├── csrf.ts           # CSRF protection
-│   ├── database.ts       # Database connection per request
-│   ├── index.ts          # Middleware sequence definition
-│   ├── perf-debug.ts     # Performance debugging
-│   ├── route-guard.ts    # Route protection
-│   ├── runtime-env.ts    # Runtime environment setup
-│   └── security-headers.ts # Security headers (CSP, etc.)
-├── pages/                # File-based routing
-│   ├── index.astro       # Homepage (/)
-│   ├── dashboard.astro   # Dashboard
-│   ├── api/              # API endpoints
-│   │   ├── auth/         # Authentication endpoints
-│   │   ├── transactions/ # Transaction management
-│   │   ├── budget/       # Budget management
-│   │   ├── assets/       # Asset management
-│   │   ├── categories/   # Category management
-│   │   └── user/         # User profile endpoints
-│   ├── transactions/
-│   │   ├── index.astro   # Transaction list
-│   │   ├── import.astro  # Import from CSV
-│   │   └── export.astro  # Export to CSV
-│   ├── budget/
-│   │   ├── index.astro   # Budget overview
-│   │   ├── history.astro # Budget history
-│   │   └── categories/   # Category management
-│   ├── assets/
-│   │   ├── index.astro       # Active assets
-│   │   ├── closed.astro      # Closed assets
-│   │   ├── add.astro         # Add asset
-│   │   ├── edit/[id].astro   # Edit asset
-│   │   ├── history.astro     # Asset history overview
-│   │   ├── history/[id].astro # Individual asset history
-│   │   └── categories/       # Asset category management
-│   ├── reports/
-│   │   └── index.astro   # Financial reports
-│   ├── forecast/
-│   │   └── index.astro   # Forecast calculator
-│   ├── calculators/
-│   │   └── index.astro   # Compound interest calculator
-│   ├── settings/
-│   │   └── index.astro   # Application settings
-│   ├── login.astro       # Login page
-│   ├── signup.astro      # Signup page
-│   ├── register.astro    # Registration page
-│   ├── forgot-password.astro # Password reset
-│   ├── profile.astro     # User profile
-│   ├── security.astro    # Security settings
-│   ├── contact.astro     # Contact page
-│   ├── privacy.astro     # Privacy policy
-│   └── terms.astro       # Terms of service
-├── services/             # Business logic layer
-│   ├── api-key.service.ts        # API key management
-│   ├── asset-category.service.ts # Asset category management
-│   ├── asset.service.ts          # Asset management
-│   ├── auth.service.ts           # Authentication logic
-│   ├── budget.service.ts         # Budget calculations
-│   ├── category.service.ts       # Category management
-│   ├── dashboard.service.ts      # Dashboard data aggregation
-│   ├── email-verification.service.ts # Email verification
-│   ├── password-reset.service.ts # Password reset logic
-│   ├── report.service.ts         # Report generation
-│   ├── transaction.service.ts    # Transaction management
-│   ├── user-meta.service.ts      # User metadata
-│   ├── service-errors.ts         # Service error definitions
-│   └── email/                    # Email templates and utilities
-├── stories/              # Storybook stories
-├── styles/               # Global styles
-│   ├── globals.css       # Global styles and resets
-│   ├── tokens.css        # CSS custom properties (design tokens)
-│   └── animations.css    # Animation definitions
-└── types/                # TypeScript type definitions
+  <!-- ❌ Wrong: define:vars breaks npm imports -->
+  <script define:vars={{ backdropClose }}>
+    import { animate } from 'motion/mini'; // Error!
+  </script>
+</dialog>
 ```
 
-## Interactive Pages Architecture
+### Bundle Size
 
-For pages that need client-side interactivity (filtering, pagination, dynamic updates), we use **server-rendered HTML fragments** instead of client-side DOM construction.
+- ✅ **Check bundle budget after every dependency change** - 250 kB gzipped budget
+- ❌ **Assume `manualChunks` captures transitive dependencies** - `motion: ['motion']` only captures the wrapper, not `motion-dom`/`framer-motion`
 
-**Read the full documentation:** `docs/architecture/002-interactive-pages.md`
+## Data Layer
 
-### Key Principles
+### Input Validation
 
-1. **Single Source of Truth**: All HTML rendering happens in Astro components
-2. **No DOM Construction**: Client-side code only injects pre-rendered HTML
-3. **API Dual Response**: Endpoints support both `?_render=json` and `?_render=html`
+- ✅ **Use `Number()` instead of `parseFloat()` for validation** - `parseFloat("1,000")` returns `1`, silently corrupts data
+- ✅ **Parse CSV with proper parser, not `split(',')`** - handles quoted fields containing commas
+- ✅ **Strip BOM from CSV files before parsing** - Excel UTF-8 exports include BOM (`\uFEFF`)
+- ✅ **Read CSRF token with proper decoding loop** - don't use `split('=')[1]` (breaks on base64)
+- ✅ **Surface actual error messages in API responses** - not generic "Failed to X"
+- ✅ **Extract `data-action` from DOM, don't use `define:vars`** - NPM imports break with `define:vars/is:inline`
+- ❌ **Use `parseFloat()` for currency validation** - accepts malformed input like `"100abc"`
+- ❌ **Default empty amounts to `'0'`** - silently zeros out budgets, corrupts user data
+- ❌ **Use `parseCurrency` without locale-aware decimal detection** - IDR format `Rp480.000,00` parsed as 48M instead of 480K
 
-### File Structure
+### Database
 
-```
-src/components/
-├── partials/                    # Server-rendered fragments (no layout)
-│   ├── TransactionListPartial.astro
-│   └── PaginationPartial.astro
-└── organisms/
-    ├── MyRenderer.client.ts     # HTML injection + animations
-    └── MyPage.client.ts         # Event handling + orchestration
-```
+- ✅ **Use sync callbacks with better-sqlite3 transactions** - `db.transaction((tx) => { /* sync code */ })`
+- ✅ **Wrap multi-step DB operations in transactions** - ensures atomicity
+- ✅ **Query budgets directly instead of cached overview** - guarantees schema fields like `id` are present
+- ✅ **Verify ORM-generated SQL with diagnostic queries** - Drizzle `extras` can silently produce wrong SQL
+- ❌ **Use `async/await` in better-sqlite3 transactions** - driver is synchronous, throws "cannot return a promise"
+- ❌ **Rely on cached data when schema fields are critical** - cache may be stale
+- ❌ **Add extra DB queries as the lazy first solution** - use subqueries or JOINs
+- ❌ **Use `(obj as any).field` when proper typing is available** - use interface references
+- ❌ **Include `create` action in history/audit queries** - only `update`/`delete` count
 
-### Quick Example
+### PostgreSQL & Dual-Dialect Migrations
 
-```typescript
-// ❌ DON'T: Construct DOM on the client
-function createRow(data) {
-  const div = document.createElement('div');
-  div.innerHTML = `<span>${data.name}</span>`; // Duplicates server logic
-  return div;
-}
+- ✅ Use `getActiveSchema()` and `this.schema.tableName` pattern in services
+- ✅ Handle timestamps correctly: SQLite uses integers, PostgreSQL uses native timestamps
+- ❌ Check for double-prefix bugs during mass replace (`this.schema.this.schema`)
 
-// ✅ DO: Inject server-rendered HTML
-async function fetchAndRender() {
-  const { html } = await fetch('/api/items?_render=html');
-  document.getElementById('list').innerHTML = html;
-}
-```
+**CRITICAL:** All schema changes MUST generate migrations for **both** SQLite and PostgreSQL.
 
-## API Documentation
+1. Edit both `src/db/schema/sqlite/<table>.ts` and `src/db/schema/postgresql/<table>.ts`
+2. Generate: `bun run db:generate` (SQLite) + `bun run db:generate:prod` (PostgreSQL)
+3. Apply locally: `bun run db:migrate`
+4. Commit both `drizzle/sqlite/` and `drizzle/postgresql/` directories
+5. Deploy: `bun run db:migrate:prod`
 
-The project uses **OpenAPI 3.1.0** for API documentation with a modular file structure.
+- ✅ Use `db:generate` + `db:migrate` for tracked, incremental changes
+- ✅ Use `db:push` only for local SQLite rapid iteration (never for production)
+- ❌ Use `db:push` for PostgreSQL/Supabase (known drizzle-kit bug crashes it)
+- ❌ Generate migrations for only one dialect and forget the other
+- ❌ Manually edit migration SQL files
 
-### File Structure
+## Deployment (Cloudflare Workers)
 
-```
-openapi.yml                    # Main entry point with $ref references
-openapi/
-├── README.md                  # Documentation for OpenAPI structure
-├── paths/                     # API endpoint definitions organized by feature
-│   ├── auth.yml               # Authentication endpoints
-│   ├── user.yml               # User profile and settings
-│   ├── transactions.yml       # Transaction management
-│   ├── categories.yml         # Category management
-│   ├── payment-methods.yml    # Payment method management
-│   ├── assets.yml             # Asset tracking
-│   └── budget.yml             # Budget overview and alerts
-├── schemas/                   # Reusable data model definitions
-│   ├── ApiErrorResponse.yml   # Base API response schema
-│   ├── ErrorResponse.yml      # Error response schema
-│   ├── SignupRequest.yml      # Registration request schema
-│   ├── LoginRequest.yml       # Login request schema
-│   └── ... (40+ schema files)
-├── responses/                 # Reusable response definitions
-│   └── common.yml             # Common HTTP responses (400, 401, 404, 500)
-└── parameters/                # Reusable parameter definitions
-    └── common.yml             # Common parameters (id)
-```
+- ✅ Use Web Crypto API (PBKDF2-SHA256) for password hashing - works in all runtimes
+- ✅ Replace native Node modules with platform-agnostic alternatives (no native addons)
+- ✅ Serialize Date objects explicitly when returning from services - PostgreSQL Date objects can't JSON-serialize in Workers
+- ✅ Set `runtimeEnv` from middleware on first request - Workers secrets aren't available at module load
+- ✅ Create fresh DB connections per request in Workers (no singletons in edge runtime)
+- ✅ Use tag-based cache invalidation (`user:123`, `budget:123`) with configurable TTLs
+- ✅ Handle cache errors gracefully - fall back to database queries
+- ✅ Use Hyperdrive for Workers database connections - provides local proxy with 0 overhead
+- ✅ Trace dependency chains when builds fail - e.g., oslo → @node-rs/argon2 → native addon
+- ✅ **Use `getEnv()` for ALL runtime env vars on Workers** - `import.meta.env` only has build-time inlined values
+- ✅ **Audit ALL `import.meta.env` usages when deploying to Workers** - categorize as: Vite built-in (safe), CLI-only (safe), runtime secret (needs `getEnv()`)
+- ❌ Use `script-src 'unsafe-inline'` for CSP - inject nonces into Astro-generated scripts
+- ❌ Change DATABASE_URL to sqlite fallback in prod config
+- ❌ Assume fetch counter captures all subrequests - TCP sockets via nodejs_compat bypass fetch wrappers
+- ❌ Use Supabase transaction pooler with Hyperdrive - use direct connection (port 5432)
+- ❌ **Name Astro API endpoints with `_` prefix** - Astro treats `_`-prefixed files as private, silently 404s
+- ❌ **Mutate `import.meta.env` directly in tests** - use `setTestEnv()` to match the production code path
 
-### Updating API Documentation
+## Testing
 
-**IMPORTANT:** Whenever you modify or add API endpoints, you MUST update the appropriate OpenAPI files:
+### E2E & Playwright
 
-1. **For new endpoints:** Add to the appropriate `openapi/paths/*.yml` file
-2. **For new schemas:** Add to `openapi/schemas/*.yml`
-3. **For references:** Update main `openapi.yml` with new `$ref` entries
+- ✅ Use expect.poll() for condition-based waiting (not manual loops or waitForTimeout)
+- ✅ Set Playwright workers=1 for shared database tests (prevents race conditions)
+- ✅ Use domcontentloaded instead of networkidle (faster, still reliable)
+- ✅ Follow systematic-debugging skill for test failures (find root cause)
+- ✅ Remove precomputed hashes when changing algorithms (prevents seed mismatches)
+- ✅ Use dynamic dates for current month in seed data (not hardcoded)
+- ✅ **Use `waitForResponse()` for AJAX-driven updates** - `waitForPageLoad(domcontentloaded)` fires before client-side fetch/re-render completes
+- ✅ **Increase `beforeAll` hook timeouts for `drizzle-kit push`** - schema push can exceed default 5000ms; use 30000ms
+- ✅ **Update page objects when UI components change** - select-to-chips, dual-layout, new selectors break existing locators
+- ❌ Don't rely on Playwright's `webServer.env` when `reuseExistingServer: true` - env block is not applied to already-running server
 
-See `openapi/README.md` for detailed documentation on the structure and conventions.
+### TypeScript
 
-### Validation Commands
+- ✅ Use `declare global { namespace App { ... } }` when `env.d.ts` has imports
+- ✅ Add `export {}` at the end of module-scoped type files
+- ✅ Use TypeScript in separate `.ts` files for client-side code (not inline `<script>`)
+- ✅ Define component props with interfaces
 
-```bash
-# Install OpenAPI validation tool
-npm install -g @redocly/cli
+## Workflow
 
-# Validate the OpenAPI specification
-npx @redocly/cli lint openapi.yml
+### Code Quality
 
-# Preview documentation locally
-npx @redocly/cli preview-docs openapi.yml
-```
+- ✅ Write clear, explicit code (clarity over cleverness)
+- ✅ Follow Single Responsibility Principle (one function = one responsibility)
+- ✅ Use descriptive variable names that explain purpose (not `data`, `temp`, `x`)
+- ✅ Document _what_ and _why_ in commit messages
+- ✅ Write unit tests first (fail first, then implement)
+- ✅ Validate inputs at system boundaries (user input, external APIs)
+- ✅ Define performance targets upfront (e.g., <200ms p95)
+- ✅ Follow refactor checklist: Maintainability → Security → Performance → Consistency → Abstraction
+- ❌ Add unnecessary error handling for impossible scenarios
+- ❌ Use backwards-compatibility hacks (delete unused code completely)
 
-## Component Guidelines
+### Debugging
 
-**IMPORTANT:** Follow the design system guidelines in `design-system/START.md` for all UI implementation. This includes using design tokens, DaisyUI classes, accessibility requirements, and responsive patterns.
+- ✅ Fix root cause of typecheck errors (update API usage, fix imports)
+- ✅ Trace bugs through full flow: DB → Service → API → Session → UI
+- ✅ Test after every code change
+- ✅ Check all usages after changing types or imports (`grep` the codebase)
+- ✅ Verify root cause is fixed, not just symptoms
+- ✅ Stop and ask when blocked or unclear - don't guess, don't force through
+- ✅ Report actual state, not agent claims - check VCS diff to verify changes
+- ❌ Suppress warnings with `@ts-expect-error` or `eslint-disable`
+- ❌ Remove `await` just because TypeScript says "no effect" (runtime differs)
+- ❌ Attempt fix #4 without questioning architecture - 3+ failures = wrong approach
+- ❌ Fix multiple things at once - changes must be isolated
 
-### Use Astro Components For:
+### Feature Completeness
 
-- All UI components (atoms, molecules, organisms)
-- Pages and layouts
-- Server-rendered content
+- ✅ **Trace ALL consumers of a shared component before declaring done** - check every render path (SSR, API, Dashboard, etc.)
+- ✅ **Fix tests before committing, never push with known failures**
+- ✅ **Verify return types don't silently strip new fields** - explicit inline return types discard unlisted properties
+- ✅ **Use systematic debugging from the start** - diagnose root cause with evidence before changing code
+- ✅ **Confirm user intent before implementing UI changes** - ask clarifying questions first
+- ✅ **Think through mobile vs desktop UX separately** - mobile uses dropdowns, desktop uses inline icons
+- ✅ **Add tooltips/labels to icon-only buttons proactively**
+- ✅ **Update tests to match user intent, not broken implementation**
+- ✅ **Verify feature requests against existing codebase before creating issues**
+- ✅ **Confirm with user before deleting "dead" code** - endpoints may be used externally
+- ✅ **Check bundle budget after every dependency change**
+- ❌ **Claim "done" without verifying all render paths**
+- ❌ **Guess at fixes** - use systematic debugging immediately
+- ❌ **Thrash method signatures** - if you edit 3x and end at the original, you didn't think first
+- ❌ **Forget cross-session context** - if user asked to remove something prior, don't leave it
+- ❌ **Delete tests without replacing coverage**
+- ❌ **Assume endpoints are "dead" because grep finds no client references**
 
-### Astro Files - DO NOT:
+# Reference
 
-- **DO NOT use TypeScript types in client-side `<script>` tags** - Astro's inline scripts run in the browser and don't support TypeScript type annotations. Use plain JavaScript or move typed code to separate `.ts` files.
-- **DO NOT access `user.attributes.property`** - The User type has properties directly on the object (`user.name`, `user.email`), not nested in `attributes`.
-- **DO NOT declare `Astro.locals` types in multiple files** - Centralize in `src/env.d.ts` only.
-- **DO NOT use `vitest` to write test, use `bun:test` instead.**
-- **DO NOT mix `define:vars`, `is:inline`, or `type="module"` with npm imports in `<script>` tags** - These attributes make Astro treat scripts as inline, which cannot resolve npm package imports (e.g., `import { animate } from 'motion/mini'`). Instead, pass server values via `data-*` attributes on HTML elements and read them in a regular `<script>` tag:
-
-  ```astro
-  <!-- ✅ Correct: Use data attributes -->
-  <dialog data-modal data-backdrop-close={backdropClose ? 'true' : 'false'}>
-    <script>
-      import { animate } from 'motion/mini'; // Works!
-      document.querySelectorAll('dialog[data-modal]').forEach((modal) => {
-        const backdropClose = modal.dataset.backdropClose === 'true';
-      });
-    </script>
-
-    <!-- ❌ Wrong: define:vars breaks npm imports -->
-    <script define:vars={{ backdropClose }}>
-      import { animate } from 'motion/mini'; // Error: Cannot resolve module
-    </script>
-  </dialog>
-  ```
-
-### Storybook Stories:
-
-- All atomic components must have stories
-- Use `.stories.ts` files (TypeScript)
-- Render functions create DOM elements directly
-- Test all variants and states
-
-### Toast Notifications
-
-Use the toast system for user feedback instead of inline alerts:
-
-```typescript
-// In client-side <script> tags
-import { addToast } from '@lib/stores/toastStore';
-
-// After successful action
-addToast('Changes saved!', 'success');
-
-// After error
-addToast('Failed to save. Please try again.', 'error');
-```
-
-**When to use:**
-
-- Form submission feedback
-- API response notifications
-- Background task completion
-- Error messages that don't block UI
-
-**When NOT to use:**
-
-- Form validation errors (use inline errors)
-- Critical blocking errors (use error page/modal)
-- Confirmation dialogs (use Modal)
-
-## TypeScript Guidelines
-
-### Extending Astro.locals
-
-When extending `Astro.locals`, use this pattern in `src/env.d.ts`:
-
-```typescript
-/// <reference types="astro/client" />
-
-import type { User, Session } from '@/lib/auth/lucia';
-
-declare global {
-  namespace App {
-    interface Locals {
-      user?: User | null;
-      session?: Session | null;
-    }
-  }
-}
-
-export {};
-```
-
-**Key points:**
-
-- Use `declare global { namespace App { ... } }` when the file has imports
-- Import custom types from project files (`@/lib/auth/lucia`), not from library packages directly
-- The `export {}` at the end ensures the file is treated as a module
+- **Routes**: `src/pages/` (file-based routing). Transaction creation/editing uses TransactionDrawer in ProtectedLayout, not dedicated pages.
+- **Project Structure**: `src/` directory — components (atoms/molecules/organisms/partials), services, db, lib, middleware, pages
+- **Interactive Pages**: `docs/architecture/002-interactive-pages.md` — server-rendered HTML fragments, no client-side DOM construction
+- **API Documentation**: `openapi/README.md` — OpenAPI 3.1.0 modular structure
+- **Design System**: `design-system/START.md` — tokens, DaisyUI, accessibility
+- **Constitution**: `docs/constitution.md` — principles and fences
+- **Commands**: `COMMANDS.md` — all available scripts and CLI tools
