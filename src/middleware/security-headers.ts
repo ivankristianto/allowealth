@@ -8,6 +8,7 @@
  */
 
 import type { MiddlewareHandler } from 'astro';
+import type { PerfCollector } from '@/lib/perf';
 
 const isDev = import.meta.env.DEV;
 
@@ -91,22 +92,52 @@ export const securityHeaders: MiddlewareHandler = async (context, next) => {
   context.locals.cspNonce = nonce;
 
   const response = await next();
-  return applySecurityHeaders(response, nonce);
+  const perf = context.locals.perf as PerfCollector | undefined;
+  return applySecurityHeaders(response, nonce, perf);
 };
+
+/** Check if body starts with an HTML doctype or html tag (case-insensitive, ignoring leading whitespace) */
+function looksLikeHtml(body: string): boolean {
+  // Find first non-whitespace character index
+  let i = 0;
+  while (
+    i < body.length &&
+    (body[i] === ' ' || body[i] === '\n' || body[i] === '\r' || body[i] === '\t')
+  ) {
+    i++;
+  }
+  // Check first ~20 chars case-insensitively instead of lowercasing the entire body
+  const prefix = body.slice(i, i + 20).toLowerCase();
+  return prefix.startsWith('<!doctype') || prefix.startsWith('<html');
+}
 
 /**
  * Apply security headers and optionally inject nonces into HTML responses.
  * Reads the body only when Content-Type suggests HTML.
  */
-async function applySecurityHeaders(response: Response, nonce: string): Promise<Response> {
+async function applySecurityHeaders(
+  response: Response,
+  nonce: string,
+  perf?: PerfCollector
+): Promise<Response> {
   const contentType = response.headers.get('Content-Type') || '';
   const mightBeHtml = contentType === '' || contentType.includes('text/html');
 
   if (mightBeHtml) {
+    const readStart = performance.now();
     const body = await response.text();
-    const trimmed = body.trimStart().toLowerCase();
-    const isHtml = trimmed.startsWith('<!doctype') || trimmed.startsWith('<html');
-    const finalBody = isHtml ? injectScriptNonces(body, nonce) : body;
+    const readDuration = performance.now() - readStart;
+    perf?.recordPhase('csp.readBody', readDuration);
+
+    const isHtml = looksLikeHtml(body);
+
+    let finalBody = body;
+    if (isHtml) {
+      const nonceStart = performance.now();
+      finalBody = injectScriptNonces(body, nonce);
+      const nonceDuration = performance.now() - nonceStart;
+      perf?.recordPhase('csp.injectNonces', nonceDuration);
+    }
 
     const headers = cloneHeaders(response);
     setSecurityHeaders(headers, nonce);

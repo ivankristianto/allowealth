@@ -26,10 +26,13 @@ import {
   extractAvailableMonths,
   transformTransaction,
 } from '@/lib/utils';
+import { trackPhase, trackPhaseSync } from '@/lib/perf';
 import { PAGINATION } from '@/lib/constants/pagination';
 
 const user = Astro.locals.user!;
 const perf = Astro.locals.perf;
+// Milestone: elapsed time from PerfCollector creation to page entry = middleware overhead
+perf?.recordMilestone('middleware.elapsed');
 const currentPath = '/transactions';
 
 // TODO: Get workspace currency from workspace settings
@@ -81,14 +84,18 @@ const filters = {
 const rawTransactions = await transactionService.findAll(filters, perf);
 
 // Transform Drizzle result to TransactionOutput format (shared with API endpoint)
-const transactions: TransactionOutput[] = rawTransactions.map(transformTransaction);
+const transactions: TransactionOutput[] = trackPhaseSync('transform', perf, () =>
+  rawTransactions.map(transformTransaction)
+);
 
 // Get total count for pagination (without limit/offset)
 const { limit, offset: _, ...countFilters } = filters;
 const total = await transactionService.count(countFilters, perf);
 
 // Fetch categories for filter dropdowns
-const categories = await categoryService.findAll(user.workspaceId, { is_active: true });
+const categories = await trackPhase('categoryService.findAll', perf, () =>
+  categoryService.findAll(user.workspaceId, { is_active: true }, perf)
+);
 
 // For month selector, fetch all months available (optimized query)
 const allUserTransactions = await transactionService.findAll(
@@ -100,7 +107,9 @@ const allUserTransactions = await transactionService.findAll(
 );
 
 // Extract available months using utility function
-const availableMonthsWithLabels = extractAvailableMonths(allUserTransactions);
+const availableMonthsWithLabels = trackPhaseSync('extractAvailableMonths', perf, () =>
+  extractAvailableMonths(allUserTransactions)
+);
 const availableMonths = availableMonthsWithLabels.map((m) => m.key);
 
 // Current month key - always use today's month as the default
@@ -120,19 +129,21 @@ let monthlyExpenses = 0;
 let expenseCount = 0;
 
 // Calculate from all user transactions for the selected month
-allUserTransactions.forEach((t: any) => {
-  const txDate = new Date(t.transaction_date);
-  const txMonthKey = createMonthKey(txDate);
+trackPhaseSync('monthlySummary', perf, () => {
+  allUserTransactions.forEach((t: any) => {
+    const txDate = new Date(t.transaction_date);
+    const txMonthKey = createMonthKey(txDate);
 
-  if (txMonthKey === effectiveMonth) {
-    const amount = safeParseAmount(t.amount);
-    if (t.type === 'income') {
-      monthlyIncome += amount;
-    } else {
-      monthlyExpenses += Math.abs(amount);
-      expenseCount++;
+    if (txMonthKey === effectiveMonth) {
+      const amount = safeParseAmount(t.amount);
+      if (t.type === 'income') {
+        monthlyIncome += amount;
+      } else {
+        monthlyExpenses += Math.abs(amount);
+        expenseCount++;
+      }
     }
-  }
+  });
 });
 
 // Build base URL for navigation
@@ -150,7 +161,7 @@ const paginationCurrentClass =
   'inline-flex items-center justify-center min-h-[44px] rounded-2xl border border-base-300 bg-base-200 px-3 font-medium text-base-content';
 
 // Serialize SSR data for client-side hydration
-const ssrData = {
+const ssrData = trackPhaseSync('buildSsrData', perf, () => ({
   transactions,
   pagination: {
     total,
@@ -177,7 +188,11 @@ const ssrData = {
   categories: categories.map((c) => ({ id: c.id, name: c.name, type: c.type })),
   availableMonths: availableMonthsWithLabels,
   currency: userCurrency,
-};
+}));
+
+// Milestone: end of frontmatter = middleware + data work done
+// Remainder (total - this) = SSR template rendering + layout frontmatter + CSP post-processing
+perf?.recordMilestone('preRender.elapsed');
 ---
 
 <ProtectedLayout

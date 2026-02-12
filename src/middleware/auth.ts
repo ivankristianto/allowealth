@@ -23,6 +23,9 @@ const AUTH_HINT_COOKIE = 'auth_hint';
 const AUTH_HINT_MAX_AGE = 30 * 24 * 60 * 60; // 30 days in seconds
 
 export const authentication: MiddlewareHandler = async (context, next) => {
+  const perf = context.locals.perf;
+  const authStart = performance.now();
+
   const sessionId = context.cookies.get(SESSION_COOKIE_NAME)?.value;
 
   // Auth API endpoints manage auth_hint themselves via raw Set-Cookie headers.
@@ -37,6 +40,7 @@ export const authentication: MiddlewareHandler = async (context, next) => {
     if (!isAuthApi && context.cookies.get(AUTH_HINT_COOKIE)?.value) {
       context.cookies.delete(AUTH_HINT_COOKIE, { path: '/' });
     }
+    perf?.recordPhase('mw.auth', performance.now() - authStart);
     return next();
   }
 
@@ -50,21 +54,20 @@ export const authentication: MiddlewareHandler = async (context, next) => {
       if (!isAuthApi) {
         context.cookies.delete(AUTH_HINT_COOKIE, { path: '/' });
       }
-      return next();
-    }
+    } else {
+      context.locals.session = result.session;
+      context.locals.user = result.user;
 
-    context.locals.session = result.session;
-    context.locals.user = result.user;
-
-    // Set auth_hint for client-side detection on static pages
-    if (!isAuthApi) {
-      context.cookies.set(AUTH_HINT_COOKIE, '1', {
-        path: '/',
-        httpOnly: false,
-        secure: import.meta.env.PROD,
-        sameSite: 'lax',
-        maxAge: AUTH_HINT_MAX_AGE,
-      });
+      // Set auth_hint for client-side detection on static pages
+      if (!isAuthApi) {
+        context.cookies.set(AUTH_HINT_COOKIE, '1', {
+          path: '/',
+          httpOnly: false,
+          secure: import.meta.env.PROD,
+          sameSite: 'lax',
+          maxAge: AUTH_HINT_MAX_AGE,
+        });
+      }
     }
   } catch (error) {
     logError('Session validation error', error);
@@ -76,6 +79,7 @@ export const authentication: MiddlewareHandler = async (context, next) => {
     }
   }
 
+  perf?.recordPhase('mw.auth', performance.now() - authStart);
   return next();
 };
 
