@@ -49,6 +49,10 @@ export const CacheKeys = {
 
   /** API key auth context: cache:apikey:{keyHash} */
   apiKey: (keyHash: string): string => `${PREFIX}:apikey:${keyHash}`,
+
+  /** All assets: cache:assets:{workspaceId}:{filtersHash} */
+  assets: (workspaceId: string, filtersHash: string): string =>
+    `${PREFIX}:assets:${workspaceId}:${filtersHash}`,
 } as const;
 
 /**

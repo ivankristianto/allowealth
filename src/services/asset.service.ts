@@ -5,6 +5,7 @@ import { AssetServiceError, ServiceErrorCode } from './service-errors';
 import type { AssetType, Currency } from '@/lib/types/asset';
 import { type PerfCollector, trackQuery } from '@/lib/perf';
 import { decimalCompare } from '@/lib/utils/decimal';
+import { getCacheManager, CacheKeys, CacheTags, hashFilters } from '@/lib/cache';
 
 /** Inferred row type for an asset record */
 export type AssetRow = typeof assetsTable.$inferSelect;
@@ -96,6 +97,10 @@ export class AssetService {
       );
     }
 
+    // Invalidate asset cache
+    const cache = getCacheManager();
+    await cache.invalidateByTags([CacheTags.workspace(input.workspace_id), CacheTags.ASSETS]);
+
     return asset;
   }
 
@@ -128,6 +133,21 @@ export class AssetService {
     },
     perf?: PerfCollector
   ) {
+    const filtersHashValue = hashFilters(filters || {});
+    const cache = getCacheManager();
+    const cacheKey = CacheKeys.assets(workspaceId, filtersHashValue);
+
+    // Cache read - fail-silent
+    let cached: AssetRow[] | null = null;
+    try {
+      cached = await cache.get<AssetRow[]>(cacheKey, perf);
+    } catch {
+      // Cache read failed, continue to DB fetch
+    }
+    if (cached) {
+      return cached;
+    }
+
     const conditions = [
       eq(this.schema.assets.workspace_id, workspaceId),
       sql`${this.schema.assets.deleted_at} IS NULL`,
@@ -150,14 +170,24 @@ export class AssetService {
       conditions.push(eq(this.schema.assets.currency, filters.currency));
     }
 
-    return trackQuery('AssetService.findAll', perf, async () => {
-      const result = await this.db.query.assets.findMany({
+    const result = await trackQuery('AssetService.findAll', perf, async () => {
+      return this.db.query.assets.findMany({
         where: and(...conditions),
         orderBy: (_assets: any, { asc }: any) => [asc(this.schema.assets.name)],
       });
-
-      return result;
     });
+
+    // Cache write - fail-silent
+    try {
+      await cache.set(cacheKey, result, {
+        ttl: 3600,
+        tags: [CacheTags.workspace(workspaceId), CacheTags.ASSETS],
+      });
+    } catch {
+      // Cache write failed, continue without caching
+    }
+
+    return result;
   }
 
   /**
@@ -212,6 +242,10 @@ export class AssetService {
       .update(this.schema.assets)
       .set(updateData)
       .where(and(eq(this.schema.assets.id, id), eq(this.schema.assets.workspace_id, workspaceId)));
+
+    // Invalidate asset cache
+    const cache = getCacheManager();
+    await cache.invalidateByTags([CacheTags.workspace(workspaceId), CacheTags.ASSETS]);
 
     return this.findByIdIncludingClosed(id, workspaceId);
   }
@@ -281,6 +315,10 @@ export class AssetService {
         500
       );
     }
+
+    // Invalidate asset cache
+    const cache = getCacheManager();
+    await cache.invalidateByTags([CacheTags.workspace(workspaceId), CacheTags.ASSETS]);
 
     return this.findById(id, workspaceId);
   }
@@ -390,6 +428,10 @@ export class AssetService {
       });
     });
 
+    // Invalidate asset cache
+    const cache = getCacheManager();
+    await cache.invalidateByTags([CacheTags.workspace(workspaceId), CacheTags.ASSETS]);
+
     // Return updated assets after the transaction
     const updatedFrom = await this.findById(fromId, workspaceId);
     const updatedTo = await this.findById(toId, workspaceId);
@@ -434,6 +476,10 @@ export class AssetService {
       })
       .where(and(eq(this.schema.assets.id, id), eq(this.schema.assets.workspace_id, workspaceId)));
 
+    // Invalidate asset cache
+    const cache = getCacheManager();
+    await cache.invalidateByTags([CacheTags.workspace(workspaceId), CacheTags.ASSETS]);
+
     return this.findByIdIncludingClosed(id, workspaceId);
   }
 
@@ -464,6 +510,10 @@ export class AssetService {
         updated_at: now,
       })
       .where(and(eq(this.schema.assets.id, id), eq(this.schema.assets.workspace_id, workspaceId)));
+
+    // Invalidate asset cache
+    const cache = getCacheManager();
+    await cache.invalidateByTags([CacheTags.workspace(workspaceId), CacheTags.ASSETS]);
 
     return this.findById(id, workspaceId);
   }
