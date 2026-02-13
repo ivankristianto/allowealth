@@ -13,7 +13,6 @@
  */
 
 import { Search, ChevronDown, Tag, Check, RotateCcw } from '@lucide/astro';
-import PeriodNavigator from '@/components/molecules/PeriodNavigator.astro';
 import { tokenClasses } from '@/lib/tokens';
 
 export interface Props {
@@ -22,11 +21,9 @@ export interface Props {
   categoryIds?: string[];
   categories?: Array<{ id: string; name: string; type: string }>;
   showCategoryFilter?: boolean;
-  monthSelector?: boolean;
-  availableMonths?: Array<{ key: string; label: string }>;
-  selectedMonth?: string;
-  currentMonth?: string;
   baseUrl?: string;
+  currentMonth?: string;
+  selectedMonth?: string;
 }
 
 const {
@@ -35,11 +32,9 @@ const {
   categoryIds = [],
   categories = [],
   showCategoryFilter = true,
-  monthSelector = true,
-  availableMonths = [],
-  selectedMonth = '',
-  currentMonth = '',
   baseUrl = '/transactions',
+  currentMonth = '',
+  selectedMonth = '',
 } = Astro.props;
 
 // Check if any filters are active (to show reset button)
@@ -83,11 +78,6 @@ const buildFilterUrl = (updates: Record<string, string>) => {
   return queryString ? `${basePath}?${queryString}` : basePath;
 };
 
-const periodOptions = availableMonths.map((month) => ({
-  value: month.key,
-  label: month.label,
-}));
-
 const categorySearchLabelClass = ['mb-1 block text-base-content/70', tokenClasses.textXs].join(' ');
 const categorySearchInputClass = [
   'input w-full rounded-lg',
@@ -105,8 +95,6 @@ const mainSearchInputClass = [
   tokenClasses.textSm,
   tokenClasses.placeholderMuted,
 ].join(' ');
-
-// Period navigator logic moved to PeriodNavigator component
 ---
 
 <!-- Filter Bar Container -->
@@ -119,9 +107,40 @@ const mainSearchInputClass = [
   id="transaction-filters-form"
   data-filter-form
 >
-  {/* Row 1: Type filter + Category + Month (wraps on mobile) */}
+  {/* Row 1: Search + Reset */}
+  <div class="flex items-center gap-2 sm:gap-3 w-full">
+    <div class="relative flex-1">
+      <Search
+        size={18}
+        class="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-base-content/40 stroke-current pointer-events-none z-10"
+        aria-hidden="true"
+      />
+      <label for="search-input" class="sr-only">Search activity</label>
+      <input
+        id="search-input"
+        type="search"
+        name="search"
+        value={searchValue}
+        placeholder="Search..."
+        class={mainSearchInputClass}
+        data-filter-search
+      />
+    </div>
+
+    <button
+      type="button"
+      class={`btn btn-ghost btn-sm gap-1 sm:gap-2 text-base-content/60 hover:text-primary hover:bg-primary/10 rounded-lg sm:rounded-xl transition-colors shrink-0 min-h-[44px] ${hasActiveFilters ? '' : 'hidden'}`}
+      aria-label="Reset filters"
+      data-reset-filters
+      data-current-month={currentMonth}
+    >
+      <RotateCcw size={16} class="stroke-current" aria-hidden="true" />
+      <span class="text-xs sm:text-sm">Reset</span>
+    </button>
+  </div>
+
+  {/* Row 2: Type filter + Category */}
   <div class="flex flex-wrap items-center gap-2 sm:gap-4 w-full">
-    <!-- Type Filter (Tab-style) -->
     <input type="hidden" name="type" value={typeFilter} id="type-filter-hidden" />
     <div
       class="flex bg-base-200 p-1 rounded-xl sm:rounded-2xl shrink-0"
@@ -158,7 +177,7 @@ const mainSearchInputClass = [
       </button>
     </div>
 
-    <!-- Category Filter (Multi-select with search) -->
+    {/* Category dropdown */}
     {
       showCategoryFilter && categories.length > 0 && (
         <div class="dropdown" id="category-dropdown">
@@ -256,52 +275,6 @@ const mainSearchInputClass = [
         </div>
       )
     }
-
-    <!-- Month Filter with Navigation -->
-    {
-      monthSelector && (
-        <PeriodNavigator
-          options={periodOptions}
-          selected={selectedMonth}
-          ariaLabel="Select month"
-          inputName="month"
-        />
-      )
-    }
-  </div>
-
-  {/* Row 2: Search + Reset */}
-  <div class="flex items-center gap-2 sm:gap-3 w-full">
-    <!-- Search Input -->
-    <div class="relative flex-1">
-      <Search
-        size={18}
-        class="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-base-content/40 stroke-current pointer-events-none z-10"
-        aria-hidden="true"
-      />
-      <label for="search-input" class="sr-only">Search activity</label>
-      <input
-        id="search-input"
-        type="search"
-        name="search"
-        value={searchValue}
-        placeholder="Search..."
-        class={mainSearchInputClass}
-        data-filter-search
-      />
-    </div>
-
-    <!-- Reset Filters Button (visibility controlled by JS) -->
-    <button
-      type="button"
-      class={`btn btn-ghost btn-sm gap-1 sm:gap-2 text-base-content/60 hover:text-primary hover:bg-primary/10 rounded-lg sm:rounded-xl transition-colors shrink-0 min-h-[44px] ${hasActiveFilters ? '' : 'hidden'}`}
-      aria-label="Reset filters"
-      data-reset-filters
-      data-current-month={currentMonth}
-    >
-      <RotateCcw size={16} class="stroke-current" aria-hidden="true" />
-      <span class="text-xs sm:text-sm">Reset</span>
-    </button>
   </div>
 </form>
 

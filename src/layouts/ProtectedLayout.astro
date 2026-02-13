@@ -119,9 +119,20 @@ if (cached) {
 
 // Make userSettings available to child pages via Astro.locals (frozen to prevent mutation)
 Astro.locals.userSettings = Object.freeze({ ...userSettings });
+
+// Render header-extras slot to HTML string for prop-based passing through layout chain
+const headerExtrasHtml = Astro.slots.has('header-extras')
+  ? await Astro.slots.render('header-extras')
+  : '';
 ---
 
-<MainLayout title={title} currentPath={currentPath} user={user} subtitle={subtitle}>
+<MainLayout
+  title={title}
+  currentPath={currentPath}
+  user={user}
+  subtitle={subtitle}
+  headerExtrasHtml={headerExtrasHtml}
+>
   <slot />
 </MainLayout>
 

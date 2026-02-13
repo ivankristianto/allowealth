@@ -25,9 +25,17 @@ interface Props {
   currentPath?: string;
   user?: User | null;
   subtitle?: string;
+  headerExtrasHtml?: string;
 }
 
-const { title = 'allowealth', currentPath = '/', user, subtitle } = Astro.props;
+const {
+  title = 'allowealth',
+  currentPath = '/',
+  user,
+  subtitle,
+  headerExtrasHtml = '',
+} = Astro.props;
+const hasHeaderExtras = headerExtrasHtml.length > 0;
 ---
 
 <BaseLayout title={title}>
@@ -41,12 +49,12 @@ const { title = 'allowealth', currentPath = '/', user, subtitle } = Astro.props;
     <!-- Page content -->
     <div class="drawer-content flex flex-col lg:h-screen lg:overflow-y-auto">
       <!-- Header -->
-      <Header title={title} user={user} subtitle={subtitle} />
+      <Header title={title} user={user} subtitle={subtitle} headerExtrasHtml={headerExtrasHtml} />
 
       <!-- Main content -->
       <main
         id="main-content"
-        class="flex-1 px-4 lg:px-6 pt-24 sm:pt-28 pb-24 lg:pb-6 bg-base-200 theme-transition"
+        class={`flex-1 px-4 lg:px-6 ${hasHeaderExtras ? 'pt-36 sm:pt-40' : 'pt-24 sm:pt-28'} pb-24 lg:pb-6 bg-base-200 theme-transition`}
       >
         <slot />
       </main>
