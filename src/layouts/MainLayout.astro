@@ -49,7 +49,7 @@ const hasHeaderSlot = Astro.slots.has('header');
       <!-- Main content -->
       <main
         id="main-content"
-        class={`flex-1 px-4 lg:px-6 ${hasHeaderSlot ? 'pt-40 md:pt-28' : 'pt-28'} pb-24 lg:pb-6 bg-base-200 theme-transition`}
+        class={`flex-1 px-4 lg:px-6 ${hasHeaderSlot ? 'has-header-slot pt-40 md:pt-28' : 'pt-28'} pb-24 lg:pb-6 bg-base-200 theme-transition`}
       >
         <slot />
       </main>
@@ -70,4 +70,8 @@ const hasHeaderSlot = Astro.slots.has('header');
 
   <!-- Floating Theme Toggle - bottom right corner, desktop only (mobile toggle in header) -->
   <ThemeToggle className="hidden lg:block fixed bottom-6 right-6 z-50" />
+
+  <script>
+    import '../components/layouts/MobileDrawer.client';
+  </script>
 </BaseLayout>

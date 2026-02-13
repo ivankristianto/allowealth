@@ -377,3 +377,23 @@ body {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* ========================================
+   MOBILE DRAWER PERFORMANCE OVERRIDE
+   Replaces DaisyUI's :root:has(.drawer-toggle:checked) with a
+   JS-controlled data attribute to avoid full-document style recalc.
+   See: MobileDrawer.client.ts
+   ======================================== */
+
+@media (width < 1024px) {
+  .drawer-side[data-mobile-open='true'] {
+    pointer-events: auto;
+    visibility: visible;
+    opacity: 1;
+    overflow-y: auto;
+  }
+
+  .drawer-side[data-mobile-open='true'] > :not(.drawer-overlay) {
+    translate: 0%;
+  }
+}
