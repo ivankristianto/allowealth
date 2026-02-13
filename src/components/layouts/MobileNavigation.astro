@@ -3,7 +3,7 @@
  * Mobile Bottom Navigation Component
  *
  * Fixed bottom navigation bar for mobile viewports with:
- * - 5-slot layout: Activity, Assets, FAB center, Budgets, Reports
+ * - 5-slot layout: Transactions, Assets, FAB center, Budgets, Reports
  * - Glass effect background with backdrop blur
  * - Elevated center FAB button for Quick-Add Transaction
  * - Active state styling with accent color
@@ -12,7 +12,7 @@
  * @see specs/ui-redesign_implementation_plan.md Task 5
  */
 
-import { Receipt, Wallet, Plus, Donut, ChartBar } from '@lucide/astro';
+import { ArrowLeftRight, Wallet, Plus, Donut, ChartBar } from '@lucide/astro';
 
 interface Props {
   currentPath?: string;
@@ -23,11 +23,11 @@ const { currentPath = '/' } = Astro.props;
 interface NavItem {
   href: string;
   label: string;
-  icon: typeof Receipt;
+  icon: typeof ArrowLeftRight;
 }
 
 const navItems: NavItem[] = [
-  { href: '/transactions', label: 'Activity', icon: Receipt },
+  { href: '/transactions', label: 'Transactions', icon: ArrowLeftRight },
   { href: '/assets', label: 'Assets', icon: Wallet },
   // Center FAB is handled separately
   { href: '/budget', label: 'Budgets', icon: Donut },
@@ -42,11 +42,11 @@ const isActive = (href: string) => {
 ---
 
 <nav
-  class="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-base-100/80 backdrop-blur-xl border-t border-base-300/50 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 shadow-[0_-10px_40px_rgba(0,0,0,0.05)]"
+  class="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-base-100/80 backdrop-blur-xl border-t border-base-300 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-2 shadow-[0_-8px_30px_rgba(0,0,0,0.12)]"
   role="navigation"
   aria-label="Mobile navigation"
 >
-  <div class="flex justify-between items-center max-w-md mx-auto relative h-14">
+  <div class="flex justify-between items-center max-w-md mx-auto relative h-12">
     <!-- Left nav items (Activity, Assets) -->
     {
       navItems.slice(0, 2).map((item) => {
@@ -78,7 +78,7 @@ const isActive = (href: string) => {
               )}
             </div>
             <span
-              class={`text-xs font-bold tracking-tight uppercase leading-none mt-1 ${
+              class={`text-xs font-bold tracking-tight leading-none mt-1 ${
                 active ? 'opacity-100' : 'opacity-60'
               }`}
             >
@@ -94,7 +94,7 @@ const isActive = (href: string) => {
       <button
         type="button"
         data-open-transaction-drawer
-        class="group mobile-fab w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-200 pointer-events-auto ring-8 ring-base-100 shadow-2xl min-w-[64px] min-h-[64px] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-accent focus-visible:ring-offset-4 hover:scale-110 hover:-translate-y-1 active:scale-95 bg-accent text-accent-content shadow-accent/40 hover:shadow-accent/60"
+        class="group mobile-fab w-16 h-16 rounded-full flex items-center justify-center transition-all duration-200 pointer-events-auto ring-8 ring-base-100 shadow-2xl min-w-[64px] min-h-[64px] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-accent focus-visible:ring-offset-4 hover:scale-110 hover:-translate-y-1 active:scale-95 bg-accent text-accent-content shadow-accent/40 hover:shadow-accent/60"
         aria-label="New Transaction"
       >
         <Plus
@@ -136,7 +136,7 @@ const isActive = (href: string) => {
               )}
             </div>
             <span
-              class={`text-xs font-bold tracking-tight uppercase leading-none mt-1 ${
+              class={`text-xs font-bold tracking-tight leading-none mt-1 ${
                 active ? 'opacity-100' : 'opacity-60'
               }`}
             >
