@@ -1,5 +1,14 @@
 # Container Query Migration Checklist
 
+## Acceptance Criteria Mapping
+
+- Criterion: component-by-component migration checklist exists.
+  Coverage: phases below list concrete files/components in migration order (Phase 1 -> Phase 2 -> Phase 3).
+- Criterion: migration vs keep paths are explicit.
+  Coverage: `Explicit Keep List (Viewport Chrome)` isolates app-shell viewport behavior from container migration scope.
+- Criterion: mobile UX readiness is preserved during rollout.
+  Coverage: `Verification Gate For Each Migrated File` enforces touch target and responsive validation at key breakpoints.
+
 ## Phase 1: High-Impact Pages and Shared Components
 
 - [ ] `src/pages/transactions/index.astro` and `src/components/organisms/TransactionList.astro`

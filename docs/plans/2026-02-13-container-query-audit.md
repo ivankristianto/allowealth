@@ -48,6 +48,15 @@
 - Behavioral/UI refactors unrelated to responsive breakpoint semantics
 - Any code changes to production components (audit-only deliverable)
 
+## Acceptance Criteria Coverage
+
+- Criterion: all viewport breakpoint usage inventoried.
+  Evidence: inventory scan produced **515** hits and the table below contains **515** numbered rows.
+- Criterion: migration vs keep categories complete.
+  Evidence: each table row includes one of `MIGRATE_TO_CONTAINER`, `KEEP_VIEWPORT_CHROME`, or `NEEDS_DECISION`, with explicit rationale.
+- Criterion: mobile UX issues included.
+  Evidence: `Mobile UX Findings` includes touch targets, navigation/chrome behavior, and form usability findings.
+
 ## Full Inventory
 
 |   # | File                                                            | Usage                                                                                                                                                                                                                                                                                                                          | Category             | Rationale                                                                                                                               |
