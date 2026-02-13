@@ -7,7 +7,7 @@
  */
 
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
-import TransactionCard from '@/components/molecules/TransactionCard.astro';
+import TransactionDateGroups from '@/components/molecules/TransactionDateGroups.astro';
 import TransactionSummaryCards from '@/components/organisms/TransactionSummaryCards.astro';
 import TransactionActionsBar from '@/components/molecules/TransactionActionsBar.astro';
 import TransactionFiltersBar from '@/components/organisms/TransactionFiltersBar.astro';
@@ -289,18 +289,7 @@ perf?.recordMilestone('preRender.elapsed');
         <div id="transaction-list">
           {
             transactions.length > 0 ? (
-              dateGroups.map((group) => (
-                <div role="group" aria-label={`Transactions from ${group.label}`}>
-                  <div class="text-xs font-semibold text-base-content/50 uppercase tracking-wide py-2 px-4 bg-base-200/30 border-b border-base-200">
-                    {group.label}
-                  </div>
-                  <div class="divide-y divide-base-200">
-                    {group.transactions.map((transaction) => (
-                      <TransactionCard transaction={transaction} showActions={true} />
-                    ))}
-                  </div>
-                </div>
-              ))
+              <TransactionDateGroups groups={dateGroups} showActions={true} />
             ) : (
               <div id="empty-state" class="py-24 text-center">
                 <div class="w-20 h-20 bg-base-200 mx-auto rounded-3xl flex items-center justify-center text-base-content/30 mb-6 shadow-inner">

@@ -14,7 +14,7 @@
 import Card from '../atoms/Card.astro';
 import EmptyState from '../atoms/EmptyState.astro';
 import Skeleton from '../atoms/Skeleton.astro';
-import TransactionCard from '../molecules/TransactionCard.astro';
+import TransactionDateGroups from '../molecules/TransactionDateGroups.astro';
 import type { TransactionOutput } from '@/lib/types/transaction';
 import { groupTransactionsByDate } from '@/lib/utils/transaction-grouping';
 
@@ -91,20 +91,7 @@ const dateGroups = groupTransactionsByDate(displayTransactions);
       ) : (
         // Transactions list grouped by date
         <div role="list" aria-label="Recent transactions">
-          {dateGroups.map((group) => (
-            <div role="group" aria-label={`Transactions from ${group.label}`}>
-              <div class="text-xs font-semibold text-base-content/50 uppercase tracking-wide py-2 px-4 bg-base-200/30">
-                {group.label}
-              </div>
-              <ul class="divide-y divide-base-200" role="list">
-                {group.transactions.map((transaction) => (
-                  <li>
-                    <TransactionCard transaction={transaction} showActions={false} />
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+          <TransactionDateGroups groups={dateGroups} showActions={false} />
         </div>
       )
     }

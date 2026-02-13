@@ -12,10 +12,11 @@ import CategoryIcon from '../atoms/CategoryIcon.astro';
 import Badge from '../atoms/Badge.astro';
 import EmptyState from '../atoms/EmptyState.astro';
 import ProgressBar from '../atoms/ProgressBar.astro';
-import TransactionCard from '../molecules/TransactionCard.astro';
+import TransactionDateGroups from '../molecules/TransactionDateGroups.astro';
 import { TrendingUp, TrendingDown, TriangleAlert } from '@lucide/astro';
 import { formatCurrency } from '@/lib/formatting';
 import { getBudgetStatus } from '@/lib/utils/budget';
+import { groupTransactionsByDate } from '@/lib/utils/transaction-grouping';
 
 import type { TransactionOutput } from '@/lib/types/transaction';
 
@@ -32,6 +33,8 @@ export interface Props {
 
 const { categoryName, categoryIcon, categoryColor, spent, budgetLimit, period, transactions } =
   Astro.props;
+
+const dateGroups = groupTransactionsByDate(transactions);
 
 // Budget calculations
 const hasBudget = typeof budgetLimit === 'number' && budgetLimit > 0;
@@ -160,13 +163,7 @@ const progressStatus: 'ok' | 'warning' | 'danger' = budgetStatus?.status ?? 'ok'
           />
         </div>
       ) : (
-        <div class="space-y-3">
-          {transactions.map((transaction) => (
-            <div data-transaction-card>
-              <TransactionCard transaction={transaction} showActions={false} />
-            </div>
-          ))}
-        </div>
+        <TransactionDateGroups groups={dateGroups} showActions={false} variant="compact" />
       )
     }
   </div>

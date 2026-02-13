@@ -9,7 +9,7 @@
  */
 
 import EmptyState from '@/components/atoms/EmptyState.astro';
-import TransactionCard from '@/components/molecules/TransactionCard.astro';
+import TransactionDateGroups from '../molecules/TransactionDateGroups.astro';
 import { groupTransactionsByDate } from '@/lib/utils/transaction-grouping';
 import type { TransactionOutput } from '@/lib/types/transaction';
 
@@ -23,20 +23,7 @@ const dateGroups = groupTransactionsByDate(transactions);
 
 {
   transactions.length > 0 ? (
-    <div class="space-y-1">
-      {dateGroups.map((group) => (
-        <div role="group" aria-label={`Transactions from ${group.label}`}>
-          <div class="text-xs font-semibold text-base-content/50 uppercase tracking-wide py-2 px-4 bg-base-200/30 rounded-lg">
-            {group.label}
-          </div>
-          <div class="space-y-1">
-            {group.transactions.map((transaction) => (
-              <TransactionCard transaction={transaction} showActions={false} />
-            ))}
-          </div>
-        </div>
-      ))}
-    </div>
+    <TransactionDateGroups groups={dateGroups} showActions={false} variant="compact" />
   ) : (
     <div role="status" aria-live="polite">
       <EmptyState
