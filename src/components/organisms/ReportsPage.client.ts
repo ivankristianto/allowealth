@@ -50,6 +50,24 @@ let currentState: ReportState = {
   period: getDefaultPeriod('monthly'),
 };
 
+function resolvePeriodLabel(range: 'monthly' | 'yearly', period: string): string {
+  if (range === 'yearly') return period;
+
+  const [year, month] = period.split('-').map(Number);
+  if (!year || !month || month < 1 || month > 12) return period;
+
+  return new Date(year, month - 1, 1).toLocaleDateString('en-US', {
+    month: 'long',
+    year: 'numeric',
+  });
+}
+
+function syncHeaderSubtitle(): void {
+  const subtitle = document.querySelector('[data-header-subtitle]');
+  if (!subtitle) return;
+  subtitle.textContent = resolvePeriodLabel(currentState.range, currentState.period);
+}
+
 /**
  * Update URL query params without page reload
  */
@@ -199,6 +217,7 @@ function handleRangeChange(event: CustomEvent<{ range: 'monthly' | 'yearly' }>):
 
   // Update URL with new state
   updateUrl(currentState.range, currentState.period);
+  syncHeaderSubtitle();
 
   // Fetch and render selector first, then data
   fetchAndRenderSelector().then(() => {
@@ -283,6 +302,8 @@ export function initReportsPage(): void {
       currentState.period = periodInput.value;
     }
   }
+
+  syncHeaderSubtitle();
 
   // Only attach event listeners once to prevent duplicates
   if (!listenersAttached) {

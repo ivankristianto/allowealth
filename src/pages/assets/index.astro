@@ -8,7 +8,6 @@
  */
 
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
-import AssetPageHeader from '@components/molecules/AssetPageHeader.astro';
 import AssetPortfolioSummary from '@components/organisms/AssetPortfolioSummary.astro';
 import AssetActions from '@components/organisms/AssetActions.astro';
 import AssetGroupCard from '@components/organisms/AssetGroupCard.astro';
@@ -20,7 +19,7 @@ import AssetHistoryModal from '@components/organisms/AssetHistoryModal.astro';
 import AssetUpdateValueModal from '@components/organisms/AssetUpdateValueModal.astro';
 import AssetCategoryModal from '@components/organisms/AssetCategoryModal.astro';
 import EmptyState from '@components/atoms/EmptyState.astro';
-import { CalendarDays, Search } from '@lucide/astro';
+import { CalendarDays, Search, ChevronLeft, ChevronRight } from '@lucide/astro';
 import { assetService, assetCategoryService } from '@/services';
 import type { AssetOutput, AssetType } from '@/lib/types/asset';
 import { formatAssetType } from '@/lib/types/asset';
@@ -97,6 +96,10 @@ const buildMonthUrl = (year: number, month: number) => {
 const prevMonthDate = new Date(selectedYear, selectedMonth - 2, 1);
 const nextMonthDate = new Date(selectedYear, selectedMonth, 1);
 const isNextMonthFuture = nextMonthDate > now;
+const prevMonthUrl = buildMonthUrl(prevMonthDate.getFullYear(), prevMonthDate.getMonth() + 1);
+const nextMonthUrl = isNextMonthFuture
+  ? undefined
+  : buildMonthUrl(nextMonthDate.getFullYear(), nextMonthDate.getMonth() + 1);
 
 // Format current month for display
 const currentMonthDisplay = new Date(selectedYear, selectedMonth - 1).toLocaleDateString('en-US', {
@@ -207,19 +210,66 @@ const sortedGroups = Object.entries(assetsByType)
   });
 ---
 
-<ProtectedLayout title="Assets" currentPath={currentPath} subtitle="Your financial portfolio">
-  <div class="max-w-7xl mx-auto sm:px-2 lg:px-6 space-y-6 sm:space-y-8" data-testid="assets-page">
-    {/* Page Header */}
-    <AssetPageHeader
-      currentMonth={currentMonthDisplay}
-      prevMonthUrl={buildMonthUrl(prevMonthDate.getFullYear(), prevMonthDate.getMonth() + 1)}
-      nextMonthUrl={!isNextMonthFuture
-        ? buildMonthUrl(nextMonthDate.getFullYear(), nextMonthDate.getMonth() + 1)
-        : undefined}
-      isNextDisabled={isNextMonthFuture}
-      currentMonthResetUrl={!isViewingCurrentMonth ? '/assets' : undefined}
-    />
+<ProtectedLayout title="Assets" currentPath={currentPath} subtitle={currentMonthDisplay}>
+  <div
+    slot="header"
+    class="flex w-full items-center gap-1 overflow-x-auto overflow-y-hidden py-1 scrollbar-hide sm:gap-2 lg:w-auto"
+    data-asset-header-controls
+  >
+    <a
+      href={prevMonthUrl}
+      class="btn btn-sm btn-square bg-base-100 border border-base-300 hover:border-accent/30 hover:text-accent rounded-xl transition-all"
+      aria-label="Previous month"
+      data-testid="asset-prev-month-btn"
+    >
+      <ChevronLeft size={18} class="stroke-current" aria-hidden="true" />
+    </a>
 
+    <div
+      class="px-4 py-2 bg-base-100 border border-base-300 rounded-xl text-sm font-bold text-base-content min-w-[130px] text-center"
+    >
+      {currentMonthDisplay}
+    </div>
+
+    {
+      nextMonthUrl ? (
+        <a
+          href={nextMonthUrl}
+          class="btn btn-sm btn-square bg-base-100 border border-base-300 hover:border-accent/30 hover:text-accent rounded-xl transition-all"
+          aria-label="Next month"
+          data-testid="asset-next-month-btn"
+        >
+          <ChevronRight size={18} class="stroke-current" aria-hidden="true" />
+        </a>
+      ) : (
+        <button
+          type="button"
+          class="btn btn-sm btn-square bg-base-100 border border-base-300 rounded-xl opacity-30 cursor-not-allowed"
+          disabled
+          aria-label="Next month (disabled)"
+          data-testid="asset-next-month-btn"
+        >
+          <ChevronRight size={18} class="stroke-current" aria-hidden="true" />
+        </button>
+      )
+    }
+
+    {
+      !isViewingCurrentMonth && (
+        <a
+          href="/assets"
+          class="btn btn-sm bg-base-100 border border-base-300 hover:border-accent/30 hover:text-accent rounded-xl transition-all gap-1 ml-1"
+          aria-label="Go to current month"
+          data-testid="asset-current-month-btn"
+        >
+          <CalendarDays size={16} class="stroke-current" aria-hidden="true" />
+          <span class="text-xs">Today</span>
+        </a>
+      )
+    }
+  </div>
+
+  <div class="max-w-7xl mx-auto sm:px-2 lg:px-6 space-y-6 sm:space-y-8" data-testid="assets-page">
     {/* Historical view indicator */}
     {
       !isViewingCurrentMonth && (
