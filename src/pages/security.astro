@@ -107,13 +107,6 @@ const toneDotClasses: Record<string, string> = {
   subtitle="Protect your account and devices"
 >
   <div class="max-w-4xl mx-auto sm:px-2 lg:px-6 space-y-6 sm:space-y-8">
-    <div>
-      <h2 class="text-2xl font-bold">Security Settings</h2>
-      <p class="text-base-content/60">
-        Keep your family's financial data safe with advanced protection.
-      </p>
-    </div>
-
     <div class="space-y-6">
       <SecurityConnectedAccountsCard accounts={connectedAccounts} />
       <SecurityMfaCard methods={mfaMethods} />
