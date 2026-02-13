@@ -11,6 +11,7 @@
 
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import BudgetActions from '@components/molecules/BudgetActions.astro';
+import BudgetFilterControls from '@components/molecules/BudgetFilterControls.astro';
 import BudgetHeaderControls from '@components/molecules/BudgetHeaderControls.astro';
 import SetNewBudgetModal from '@components/organisms/SetNewBudgetModal.astro';
 import CopyBudgetModal from '@components/organisms/CopyBudgetModal.astro';
@@ -31,7 +32,7 @@ import { formatCurrency } from '@/lib/formatting';
 import { calculateAllocationDistribution } from '@/lib/utils/budget';
 import { getMonthName } from '@/lib/utils/date';
 import { buildBudgetPeriodOptions } from '@/lib/utils/budget-period';
-import { CircleX, Search, LayoutGrid, Table as TableIcon } from '@lucide/astro';
+import { CircleX } from '@lucide/astro';
 
 const user = Astro.locals.user;
 const currentPath = '/budget';
@@ -302,59 +303,7 @@ const budgetCount = budgetData?.categories.filter((c) => Number(c.budget_amount)
           <BudgetActions uninitializedCount={uninitializedCategories.length} />
 
           {/* Budget Filter and View Toggle */}
-          {budgetData && budgetData.categories.length > 0 && (
-            <div class="flex items-center gap-3">
-              <div class="relative flex-1">
-                <span
-                  class="absolute left-4 top-1/2 -translate-y-1/2 text-base-content/40 pointer-events-none"
-                  aria-hidden="true"
-                >
-                  <Search size={20} />
-                </span>
-                <input
-                  type="search"
-                  id="budget-filter-input"
-                  data-testid="budget-filter-input"
-                  placeholder="Filter budgets..."
-                  class="w-full pl-12 pr-4 py-3 bg-base-100 border border-base-300 focus:border-primary focus:ring-0 rounded-2xl text-base font-medium text-base-content shadow-sm"
-                  aria-label="Filter budgets by category name"
-                />
-              </div>
-              <select
-                id="budget-sort-select"
-                class="select select-bordered select-sm rounded-xl bg-base-100 text-xs font-bold uppercase tracking-wider min-w-[140px]"
-                aria-label="Sort budgets"
-              >
-                <option value="budget-desc">Budget ↓</option>
-                <option value="spent-desc">Spent ↓</option>
-                <option value="title-asc">Title A-Z</option>
-                <option value="title-desc">Title Z-A</option>
-              </select>
-              <div
-                class="flex items-center gap-1 bg-base-100 border border-base-300 rounded-xl p-1"
-                data-view-toggle
-              >
-                <button
-                  type="button"
-                  class="btn btn-sm btn-ghost rounded-lg btn-active"
-                  data-view-mode="card"
-                  aria-label="Card view"
-                  aria-pressed="true"
-                >
-                  <LayoutGrid size={16} class="stroke-current" aria-hidden="true" />
-                </button>
-                <button
-                  type="button"
-                  class="btn btn-sm btn-ghost rounded-lg"
-                  data-view-mode="table"
-                  aria-label="Table view"
-                  aria-pressed="false"
-                >
-                  <TableIcon size={16} class="stroke-current" aria-hidden="true" />
-                </button>
-              </div>
-            </div>
-          )}
+          {budgetData && budgetData.categories.length > 0 && <BudgetFilterControls />}
 
           {/* Budget Card Grid - Container for HTML injection */}
           <div id="budget-cards-container">
