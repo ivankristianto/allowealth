@@ -114,4 +114,11 @@ describe('mobile view improvements', () => {
     expect(budgetHeaderControls).not.toContain('overflow-y-hidden');
     expect(budgetHeaderControls).not.toContain('overflow-x-auto');
   });
+
+  it('keeps reports selector controls in a single row on mobile', () => {
+    const reportSelector = read('src/components/molecules/ReportSelector.astro');
+
+    expect(reportSelector).toContain('flex-nowrap');
+    expect(reportSelector).not.toContain('flex-wrap');
+  });
 });
