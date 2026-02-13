@@ -144,8 +144,8 @@ const progressStatus: 'ok' | 'warning' | 'danger' = budgetStatus?.status ?? 'ok'
   </div>
 
   {/* Transactions Section */}
-  <div class="bg-base-200/50 rounded-card p-6 border border-base-300/50">
-    <div class="flex justify-between items-center mb-6">
+  <div class="bg-base-200/50 rounded-card border border-base-300/50 overflow-hidden">
+    <div class="flex justify-between items-center px-6 pt-6 pb-4">
       <h3 class="text-sm font-bold text-base-content/60 uppercase tracking-widest">
         Transactions (<span>{transactions.length}</span>)
       </h3>
@@ -153,7 +153,7 @@ const progressStatus: 'ok' | 'warning' | 'danger' = budgetStatus?.status ?? 'ok'
 
     {
       transactions.length === 0 ? (
-        <div role="status" aria-live="polite">
+        <div role="status" aria-live="polite" class="px-6 pb-6">
           <EmptyState
             title="No transactions"
             message="No transactions in this period."
