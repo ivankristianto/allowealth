@@ -386,14 +386,43 @@ body {
    ======================================== */
 
 @media (width < 1024px) {
-  .drawer-side[data-mobile-open='true'] {
-    pointer-events: auto;
-    visibility: visible;
+  .drawer-side[data-mobile-drawer-js='true'] {
+    /* Avoid delayed parent fade that can desync panel shell vs. inner content paint. */
     opacity: 1;
-    overflow-y: auto;
+    transition: visibility 0s linear 0.3s;
   }
 
-  .drawer-side[data-mobile-open='true'] > :not(.drawer-overlay) {
+  .drawer-side[data-mobile-drawer-js='true']:not([data-mobile-open='true']) {
+    pointer-events: none;
+    visibility: hidden;
+  }
+
+  .drawer-side[data-mobile-drawer-js='true'][data-mobile-open='true'] {
+    pointer-events: auto;
+    visibility: visible;
+    overflow-y: auto;
+    transition-delay: 0s;
+  }
+
+  .drawer-side[data-mobile-drawer-js='true'] > .drawer-overlay {
+    opacity: 0;
+    transition: opacity 0.2s ease-out;
+  }
+
+  .drawer-side[data-mobile-drawer-js='true'][data-mobile-open='true'] > .drawer-overlay {
+    opacity: 1;
+  }
+
+  .drawer-side[data-mobile-drawer-js='true']:not([data-mobile-open='true'])
+    > :not(.drawer-overlay) {
+    translate: -100%;
+  }
+
+  .drawer-side[data-mobile-drawer-js='true'] > :not(.drawer-overlay) {
+    transition: translate 0.3s ease-out;
+  }
+
+  .drawer-side[data-mobile-drawer-js='true'][data-mobile-open='true'] > :not(.drawer-overlay) {
     translate: 0%;
   }
 }
