@@ -35,27 +35,24 @@ const maxTransactions = 10;
 const displayTransactions = transactions.slice(0, maxTransactions);
 ---
 
-<div
-  class={`space-y-5 ${className}`}
-  data-recent-transactions-list
-  data-testid="recent-transactions"
->
-  <div class="flex items-center justify-between px-2">
-    <h2 class="text-lg font-bold tracking-tight leading-none">Recent activity</h2>
-    {
-      !loading && transactions.length > 0 && (
-        <a
-          href={viewAllUrl}
-          class="btn btn-outline btn-sm text-accent border-accent/20 hover:bg-accent/5 rounded-xl tracking-wide"
-          aria-label="View all transactions"
-        >
-          View all
-        </a>
-      )
-    }
-  </div>
-
+<div class={className} data-recent-transactions-list data-testid="recent-transactions">
   <Card rounded="card-lg" padding="sm" className="p-0 overflow-hidden shadow-sm">
+    {/* Header inside card */}
+    <div class="flex items-center justify-between p-5 pb-0">
+      <h2 class="text-lg font-bold tracking-tight leading-none">Recent transactions</h2>
+      {
+        !loading && transactions.length > 0 && (
+          <a
+            href={viewAllUrl}
+            class="btn btn-outline btn-sm text-accent border-accent/20 hover:bg-accent/5 rounded-xl tracking-wide"
+            aria-label="View all transactions"
+          >
+            View all
+          </a>
+        )
+      }
+    </div>
+
     {
       loading ? (
         // Loading skeleton

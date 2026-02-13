@@ -15,13 +15,14 @@
  */
 
 import Card from '@/components/atoms/Card.astro';
-import StatLabel from '@/components/atoms/StatLabel.astro';
 import Skeleton from '@/components/atoms/Skeleton.astro';
+import { Info } from '@lucide/astro';
 
 export interface SpendingCategory {
   category: string;
   percentage: number;
   color?: string; // Optional override color
+  otherCategoryNames?: string[];
 }
 
 export interface Props {
@@ -68,16 +69,15 @@ const chartId = `spending-chart-${Math.random().toString(36).slice(2, 11)}`;
   rounded="card-lg"
   className={`h-full ${className}`}
   role="region"
-  aria-label="Spending analysis by major categories"
+  aria-label="Most spending categories"
   data-testid="spending-chart"
 >
   <div class="@container flex flex-col gap-6">
     {/* Header */}
     <div>
       <h4 class="font-bold text-xl text-base-content leading-none tracking-tight">
-        Spending analysis
+        Most spending categories
       </h4>
-      <StatLabel size="sm" color="neutral" className="mt-2"> BY MAJOR CATEGORIES </StatLabel>
     </div>
 
     {/* Loading State */}
@@ -171,6 +171,20 @@ const chartId = `spending-chart-${Math.random().toString(36).slice(2, 11)}`;
                   >
                     {item.category}
                   </span>
+                  {item.category === 'Other' &&
+                    item.otherCategoryNames &&
+                    item.otherCategoryNames.length > 0 && (
+                      <div
+                        class="tooltip tooltip-top"
+                        data-tip={`Includes: ${item.otherCategoryNames.join(', ')}`}
+                      >
+                        <Info
+                          size={14}
+                          class="stroke-current text-base-content/40 shrink-0"
+                          aria-hidden="true"
+                        />
+                      </div>
+                    )}
                 </div>
                 <span class="text-sm @xs:text-base font-bold text-base-content">
                   {item.percentage}%
