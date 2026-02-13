@@ -193,7 +193,7 @@ export const GET: APIRoute = async (context) => {
 
         // Generate monthly periods (last 12 months)
         const monthlyPeriods = Array.from({ length: 12 }, (_, i) => {
-          const monthsBack = 11 - i;
+          const monthsBack = i;
           const date = new Date(currentYear, currentMonth - 1 - monthsBack, 1);
           const year = date.getFullYear();
           const month = date.getMonth() + 1;

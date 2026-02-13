@@ -22,6 +22,18 @@ describe('mobile view improvements', () => {
     expect(content).not.toContain('Spending Insights');
   });
 
+  it('uses latest-first monthly periods (max 12) for reports selectors', () => {
+    const reportsPage = read('src/pages/reports/index.astro');
+    const reportsApi = read('src/pages/api/reports/index.ts');
+
+    expect(reportsPage).toContain('Array.from({ length: 12 }');
+    expect(reportsPage).toContain('const monthsBack = i;');
+    expect(reportsPage).toContain('? monthlyPeriods[0].key');
+
+    expect(reportsApi).toContain('Array.from({ length: 12 }');
+    expect(reportsApi).toContain('const monthsBack = i;');
+  });
+
   it('deprecates AssetPageHeader component file', () => {
     const componentPath = join(projectRoot, 'src/components/molecules/AssetPageHeader.astro');
     expect(existsSync(componentPath)).toBe(false);
