@@ -299,10 +299,7 @@ const budgetCount = budgetData?.categories.filter((c) => Number(c.budget_amount)
           </div>
 
           {/* Budget Actions Bar */}
-          <BudgetActions
-            showAiRebalancer={budgetCount > 0}
-            uninitializedCount={uninitializedCategories.length}
-          />
+          <BudgetActions uninitializedCount={uninitializedCategories.length} />
 
           {/* Budget Filter and View Toggle */}
           {budgetData && budgetData.categories.length > 0 && (

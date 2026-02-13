@@ -3,20 +3,20 @@
  * BudgetActions Component
  *
  * Action buttons row for the Budget page.
- * Left: Categories, Import, Export, Initialize All, AI Rebalancer
- * Right: New Budget (accent ghost)
+ * Mobile order: New Budget, Categories, Import, Export, Initialize All, AI Rebalancer.
+ * (AI Rebalancer is intentionally disabled for now.)
  * Uses ActionBar for consistent layout.
  *
- * Note: History and Copy buttons are in BudgetPageHeader (left of month picker).
+ * Note: History and Copy controls are in BudgetHeaderControls (header slot).
  *
- * @param {boolean} showAiRebalancer - Show AI Rebalancer button
+ * @param {boolean} showAiRebalancer - Feature flag input (currently ignored; AI is disabled)
  * @param {number} uninitializedCount - Number of categories without budgets
  * @param {string} className - Additional CSS classes
  */
 
-import { Sparkles, Plus, Tags, Download, Upload, Zap } from '@lucide/astro';
-import Modal from '@components/molecules/Modal.astro';
+import { Plus, Tags, Download, Upload, Zap } from '@lucide/astro';
 import ActionBar from './ActionBar.astro';
+import { BUDGET_ACTIONS_MOBILE_SCROLL_CLASS } from './budget-actions.config';
 
 export interface Props {
   showAiRebalancer?: boolean;
@@ -24,7 +24,11 @@ export interface Props {
   className?: string;
 }
 
-const { showAiRebalancer = true, uninitializedCount = 0, className = '' } = Astro.props;
+const {
+  showAiRebalancer: _showAiRebalancer = true,
+  uninitializedCount = 0,
+  className = '',
+} = Astro.props;
 
 const ghostBtn =
   'btn btn-ghost btn-sm md:btn-md min-h-[44px] min-w-[44px] gap-1 md:gap-2 rounded-lg md:rounded-xl text-base-content/70 hover:text-base-content hover:bg-base-200 px-2 md:px-4';
@@ -33,7 +37,11 @@ const accentGhostBtn =
   'btn btn-ghost btn-sm md:btn-md min-h-[44px] min-w-[44px] gap-1 md:gap-2 rounded-lg md:rounded-xl text-accent hover:text-accent hover:bg-accent/10 px-2 md:px-4 font-semibold';
 ---
 
-<ActionBar className={className} ariaLabel="Budget actions">
+<ActionBar
+  className={[BUDGET_ACTIONS_MOBILE_SCROLL_CLASS, className].filter(Boolean).join(' ')}
+  ariaLabel="Budget actions"
+  edgeBleed
+>
   {/* Categories */}
   <div class="tooltip tooltip-bottom" data-tip="Manage categories">
     <a href="/budget/categories" class={ghostBtn} aria-label="Manage categories">
@@ -108,26 +116,6 @@ const accentGhostBtn =
     )
   }
 
-  {/* AI Rebalancer */}
-  {
-    showAiRebalancer && (
-      <div class="tooltip tooltip-bottom" data-tip="AI budget rebalancer">
-        <button
-          type="button"
-          class="btn btn-ghost btn-sm md:btn-md min-h-[44px] min-w-[44px] gap-1 md:gap-2 rounded-lg md:rounded-xl text-accent hover:text-accent hover:bg-accent/10 px-2 md:px-4"
-          id="ai-rebalancer-btn"
-          data-target-modal="ai-rebalancer-modal"
-          aria-label="AI budget rebalancer"
-        >
-          <Sparkles size={16} class="stroke-current md:hidden" aria-hidden="true" />
-          <Sparkles size={18} class="stroke-current hidden md:block" aria-hidden="true" />
-          <span class="text-xs md:text-sm md:hidden">AI</span>
-          <span class="text-sm hidden md:inline">AI Rebalancer</span>
-        </button>
-      </div>
-    )
-  }
-
   {/* Primary Action - New Budget */}
   <div slot="primary" class="tooltip tooltip-bottom" data-tip="Set new budget">
     <button
@@ -145,37 +133,6 @@ const accentGhostBtn =
     </button>
   </div>
 </ActionBar>
-
-{/* AI Rebalancer Coming Soon Modal */}
-{
-  showAiRebalancer && (
-    <Modal
-      id="ai-rebalancer-modal"
-      title="AI Rebalancer"
-      size="sm"
-      closable={true}
-      backdropClose={true}
-    >
-      <div class="text-center">
-        <div class="flex justify-center mb-4">
-          <div class="w-16 h-16 rounded-full bg-accent/10 flex items-center justify-center">
-            <Sparkles size={32} class="text-accent" aria-hidden="true" />
-          </div>
-        </div>
-        <p class="text-base-content/70 mb-4">
-          Smart budget optimization powered by AI is coming soon. This feature will analyze your
-          spending patterns and suggest optimal budget allocations.
-        </p>
-        <div class="badge badge-accent badge-outline">Coming Soon</div>
-      </div>
-      <div slot="actions" class="modal-action justify-center">
-        <form method="dialog">
-          <button class="btn btn-ghost rounded-xl">Close</button>
-        </form>
-      </div>
-    </Modal>
-  )
-}
 
 <script>
   const handlerMap = new WeakMap<HTMLElement, (e: Event) => void>();
@@ -202,7 +159,7 @@ const accentGhostBtn =
   }
 
   function cleanupBudgetActionButtons() {
-    ['set-new-budget-btn', 'ai-rebalancer-btn', 'initialize-budgets-btn'].forEach((buttonId) => {
+    ['set-new-budget-btn', 'initialize-budgets-btn'].forEach((buttonId) => {
       const btn = document.getElementById(buttonId);
       if (btn) {
         const handler = handlerMap.get(btn);
@@ -216,7 +173,6 @@ const accentGhostBtn =
 
   function initBudgetActionButtons() {
     initModalTriggerButton('set-new-budget-btn');
-    initModalTriggerButton('ai-rebalancer-btn');
     initModalTriggerButton('initialize-budgets-btn');
   }
 
