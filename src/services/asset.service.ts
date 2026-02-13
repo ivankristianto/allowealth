@@ -43,6 +43,17 @@ export class AssetService {
     return getActiveSchema();
   }
 
+  private chunkIds(ids: string[], size = 500): string[][] {
+    if (ids.length === 0) return [];
+
+    const chunks: string[][] = [];
+    for (let i = 0; i < ids.length; i += size) {
+      chunks.push(ids.slice(i, i + size));
+    }
+
+    return chunks;
+  }
+
   /**
    * Create a new AssetService with database injection
    * @param db - Database instance (injected for testability)
@@ -735,11 +746,17 @@ export class AssetService {
 
     // Bulk query: fetch all history for all assets in one query
     const assetIds = allAssets.map((a) => a.id);
-
-    const allHistory = await this.db.query.assetHistory.findMany({
-      where: inArray(this.schema.assetHistory.asset_id, assetIds),
-      orderBy: (assetHistory: any, { asc }: any) => [asc(assetHistory.recorded_at)],
-    });
+    const idChunks = this.chunkIds(assetIds, 500);
+    const historyResults = await Promise.all(
+      idChunks.map((chunk) =>
+        this.db.query.assetHistory.findMany({
+          where: inArray(this.schema.assetHistory.asset_id, chunk),
+          orderBy: (assetHistory: any, { asc }: any) => [asc(assetHistory.recorded_at)],
+        })
+      )
+    );
+    const allHistory = historyResults.flat();
+    allHistory.sort((a, b) => a.recorded_at.getTime() - b.recorded_at.getTime());
 
     // Group history by asset_id
     const historyMap = new Map<string, Array<{ date: Date; amount: number }>>();
