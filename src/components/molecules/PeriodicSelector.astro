@@ -1,0 +1,47 @@
+---
+import PeriodNavigator, { type PeriodOption } from '@/components/molecules/PeriodNavigator.astro';
+
+export type { PeriodOption };
+
+export interface Props {
+  options?: PeriodOption[];
+  selected?: string;
+  prevHref?: string;
+  nextHref?: string;
+  prevDisabled?: boolean;
+  nextDisabled?: boolean;
+  ariaLabel?: string;
+  inputName?: string;
+  className?: string;
+  compactMobile?: boolean;
+  newestFirst?: boolean;
+}
+
+const {
+  options = [],
+  selected = '',
+  prevHref,
+  nextHref,
+  prevDisabled,
+  nextDisabled,
+  ariaLabel = 'Select period',
+  inputName = 'period',
+  className = '',
+  compactMobile = false,
+  newestFirst = false,
+} = Astro.props;
+---
+
+<PeriodNavigator
+  options={options}
+  selected={selected}
+  prevHref={prevHref}
+  nextHref={nextHref}
+  prevDisabled={prevDisabled}
+  nextDisabled={nextDisabled}
+  ariaLabel={ariaLabel}
+  inputName={inputName}
+  className={className}
+  compactMobile={compactMobile}
+  newestFirst={newestFirst}
+/>

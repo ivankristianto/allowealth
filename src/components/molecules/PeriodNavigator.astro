@@ -29,6 +29,8 @@ export interface Props {
   ariaLabel?: string;
   inputName?: string;
   className?: string;
+  compactMobile?: boolean;
+  newestFirst?: boolean;
 }
 
 const {
@@ -41,14 +43,18 @@ const {
   ariaLabel = 'Select period',
   inputName = 'period',
   className = '',
+  compactMobile = false,
+  newestFirst = false,
 } = Astro.props;
 
-const selectedOption = options.find((option) => option.value === selected) || options.at(-1);
+const selectedOption =
+  options.find((option) => option.value === selected) ||
+  (newestFirst ? options.at(0) : options.at(-1));
 const currentIndex = selectedOption
   ? options.findIndex((option) => option.value === selectedOption.value)
   : -1;
-const hasPrevOption = currentIndex > 0;
-const hasNextOption = currentIndex >= 0 && currentIndex < options.length - 1;
+const hasPrevOption = newestFirst ? currentIndex < options.length - 1 : currentIndex > 0;
+const hasNextOption = newestFirst ? currentIndex > 0 : currentIndex < options.length - 1;
 
 const isPrevDisabled = prevDisabled ?? !hasPrevOption;
 const isNextDisabled = nextDisabled ?? !hasNextOption;
@@ -56,20 +62,33 @@ const isNextDisabled = nextDisabled ?? !hasNextOption;
 const currentLabel =
   selectedOption?.label ||
   new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+const rootGapClass = compactMobile ? 'gap-0.5 sm:gap-1' : 'gap-1';
+const navButtonSizeClass = compactMobile
+  ? 'btn-sm min-h-9 min-w-9 rounded-xl sm:min-h-[44px] sm:min-w-[44px] sm:rounded-2xl'
+  : 'rounded-2xl';
+const triggerClass = compactMobile
+  ? 'flex items-center gap-1.5 px-2.5 py-2 text-[11px] font-bold border border-base-300 bg-base-100 text-base-content rounded-xl shadow-sm hover:border-base-content/30 transition-colors min-w-[96px] sm:gap-2 sm:px-4 sm:py-3 sm:text-xs sm:min-w-[120px] sm:rounded-2xl'
+  : 'flex items-center gap-2 px-4 py-3 text-xs font-bold border border-base-300 bg-base-100 text-base-content rounded-2xl shadow-sm hover:border-base-content/30 transition-colors min-w-[120px]';
+const navIconSize = compactMobile ? 16 : 18;
+const calendarIconSize = compactMobile ? 14 : 16;
+const chevronDownSize = compactMobile ? 12 : 14;
+const dropdownWidthClass = compactMobile ? 'w-48 sm:w-52' : 'w-52';
 ---
 
 {
   options.length > 0 && (
     <div
-      class={`flex items-center gap-1 ${className}`}
+      class={`flex items-center ${rootGapClass} ${className}`}
       data-period-navigator
       data-period-options={JSON.stringify(options)}
       data-prev-href={prevHref}
       data-next-href={nextHref}
+      data-newest-first={newestFirst ? 'true' : 'false'}
     >
       <button
         type="button"
-        class={`btn btn-ghost btn-square border border-base-300 bg-base-100 rounded-2xl transition-all active:scale-95 shadow-sm ${
+        class={`btn btn-ghost btn-square border border-base-300 bg-base-100 transition-all active:scale-95 shadow-sm ${navButtonSizeClass} ${
           isPrevDisabled
             ? 'opacity-30 cursor-not-allowed pointer-events-none'
             : 'text-base-content/40 hover:text-primary hover:border-accent/30'
@@ -80,7 +99,7 @@ const currentLabel =
         data-period-nav="prev"
         data-has-prev={isPrevDisabled ? 'false' : 'true'}
       >
-        <ChevronLeft size={18} class="stroke-current" aria-hidden="true" />
+        <ChevronLeft size={navIconSize} class="stroke-current" aria-hidden="true" />
       </button>
 
       <div class="dropdown" data-period-dropdown>
@@ -88,19 +107,27 @@ const currentLabel =
         <button
           type="button"
           tabindex={0}
-          class="flex items-center gap-2 px-4 py-3 text-xs font-bold border border-base-300 bg-base-100 text-base-content rounded-2xl shadow-sm hover:border-base-content/30 transition-colors min-w-[120px]"
+          class={triggerClass}
           aria-label={ariaLabel}
           data-period-trigger
         >
-          <Calendar size={16} class="stroke-current text-base-content/40" aria-hidden="true" />
+          <Calendar
+            size={calendarIconSize}
+            class="stroke-current text-base-content/40"
+            aria-hidden="true"
+          />
           <span class="flex-1 text-left" data-period-label>
             {currentLabel}
           </span>
-          <ChevronDown size={14} class="stroke-current text-base-content/40" aria-hidden="true" />
+          <ChevronDown
+            size={chevronDownSize}
+            class="stroke-current text-base-content/40"
+            aria-hidden="true"
+          />
         </button>
         <ul
           tabindex={0}
-          class="dropdown-content z-50 menu p-2 shadow-lg bg-base-100 rounded-2xl w-52 border border-base-300 mt-2 max-h-64 overflow-y-auto"
+          class={`dropdown-content z-50 menu p-2 shadow-lg bg-base-100 rounded-2xl border border-base-300 mt-2 max-h-64 overflow-y-auto ${dropdownWidthClass}`}
         >
           {options.map((option) => (
             <li>
@@ -119,7 +146,7 @@ const currentLabel =
 
       <button
         type="button"
-        class={`btn btn-ghost btn-square border border-base-300 bg-base-100 rounded-2xl transition-all active:scale-95 shadow-sm ${
+        class={`btn btn-ghost btn-square border border-base-300 bg-base-100 transition-all active:scale-95 shadow-sm ${navButtonSizeClass} ${
           isNextDisabled
             ? 'opacity-30 cursor-not-allowed pointer-events-none'
             : 'text-base-content/40 hover:text-primary hover:border-accent/30'
@@ -130,7 +157,7 @@ const currentLabel =
         data-period-nav="next"
         data-has-next={isNextDisabled ? 'false' : 'true'}
       >
-        <ChevronRight size={18} class="stroke-current" aria-hidden="true" />
+        <ChevronRight size={navIconSize} class="stroke-current" aria-hidden="true" />
       </button>
     </div>
   )

@@ -14,6 +14,16 @@ describe('mobile view improvements', () => {
     expect(content).not.toContain('AssetPageHeader');
   });
 
+  it('uses PeriodicSelector for asset header month controls', () => {
+    const assetsPage = read('src/pages/assets/index.astro');
+
+    expect(assetsPage).toContain(
+      "import PeriodicSelector, { type PeriodOption } from '@/components/molecules/PeriodicSelector.astro'"
+    );
+    expect(assetsPage).toContain('<PeriodicSelector');
+    expect(assetsPage).toContain('data-asset-header-controls');
+  });
+
   it('moves report selector to header slot and uses selected period as subtitle', () => {
     const content = read('src/pages/reports/index.astro');
 
@@ -120,5 +130,34 @@ describe('mobile view improvements', () => {
 
     expect(reportSelector).toContain('flex-nowrap');
     expect(reportSelector).not.toContain('flex-wrap');
+  });
+
+  it('uses compact mobile PeriodicSelector controls for reports period navigation', () => {
+    const reportSelector = read('src/components/molecules/ReportSelector.astro');
+    const periodNavigator = read('src/components/molecules/PeriodNavigator.astro');
+
+    expect(reportSelector).toContain('compactMobile');
+    expect(periodNavigator).toContain('compactMobile');
+    expect(periodNavigator).toContain('btn-sm');
+    expect(periodNavigator).toContain('min-w-[96px]');
+  });
+
+  it('uses descending month navigation for reports and full month-year labels', () => {
+    const reportSelector = read('src/components/molecules/ReportSelector.astro');
+    const periodNavigator = read('src/components/molecules/PeriodNavigator.astro');
+    const periodNavigatorClient = read('src/components/molecules/PeriodNavigator.client.ts');
+    const reportsPage = read('src/pages/reports/index.astro');
+    const reportsApi = read('src/pages/api/reports/index.ts');
+
+    expect(reportSelector).toContain('newestFirst');
+    expect(periodNavigator).toContain('newestFirst');
+    expect(periodNavigatorClient).toContain('data-newest-first');
+    expect(periodNavigatorClient).toContain('prevIndexAt');
+    expect(periodNavigatorClient).toContain('newestFirst ? index + 1 : index - 1');
+
+    expect(reportsPage).toContain('formatMonthYear');
+    expect(reportsApi).toContain('formatMonthYear');
+    expect(reportsPage).not.toContain('MONTH_NAMES_SHORT');
+    expect(reportsApi).not.toContain('MONTH_NAMES_SHORT');
   });
 });

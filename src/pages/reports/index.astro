@@ -32,7 +32,7 @@ import CategoryTablePartial from '@/components/partials/CategoryTablePartial.ast
 import { reportService } from '@/services';
 import type { ReportData } from '@/services/report.service';
 import { safeParseDecimal } from '@/lib/utils/decimal';
-import { MONTH_NAMES_SHORT } from '@/lib/utils/date';
+import { formatMonthYear } from '@/lib/utils/date';
 
 const currentPath = '/reports';
 
@@ -65,7 +65,7 @@ const monthlyPeriods = Array.from({ length: 12 }, (_, i) => {
   const month = date.getMonth() + 1;
   const monthStr = month.toString().padStart(2, '0');
 
-  const label = `${MONTH_NAMES_SHORT[month - 1]} ${year}`;
+  const label = formatMonthYear(date);
 
   return {
     key: `${year}-${monthStr}`,
