@@ -1,4 +1,5 @@
 import { getMonthName } from '@/lib/utils/date';
+import { PERIOD_SELECTOR_MONTH_LIMIT } from '@/lib/constants/period';
 
 export interface BudgetPeriodOption {
   value: string;
@@ -67,7 +68,7 @@ export function buildBudgetPeriodOptions({
   currentYear,
   currentMonth,
   allowNextMonthNavigation,
-  lookbackMonths = 24,
+  lookbackMonths = PERIOD_SELECTOR_MONTH_LIMIT,
 }: BuildBudgetPeriodOptionsParams): BudgetPeriodOption[] {
   const selectedDate = toDate(selectedYear, selectedMonth);
   const currentDate = toDate(currentYear, currentMonth);

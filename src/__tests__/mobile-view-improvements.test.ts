@@ -24,6 +24,18 @@ describe('mobile view improvements', () => {
     expect(assetsPage).toContain('data-asset-header-controls');
   });
 
+  it('uses configurable month window and full month-year labels for assets periods', () => {
+    const assetsPage = read('src/pages/assets/index.astro');
+
+    expect(assetsPage).toContain(
+      "import { PERIOD_SELECTOR_MONTH_LIMIT } from '@/lib/constants/period'"
+    );
+    expect(assetsPage).toContain("import { formatMonthYear } from '@/lib/utils/date'");
+    expect(assetsPage).toContain('length: PERIOD_SELECTOR_MONTH_LIMIT');
+    expect(assetsPage).toContain('label: formatMonthYear(date)');
+    expect(assetsPage).not.toContain("month: 'short'");
+  });
+
   it('moves report selector to header slot and uses selected period as subtitle', () => {
     const content = read('src/pages/reports/index.astro');
 
@@ -159,5 +171,21 @@ describe('mobile view improvements', () => {
     expect(reportsApi).toContain('formatMonthYear');
     expect(reportsPage).not.toContain('MONTH_NAMES_SHORT');
     expect(reportsApi).not.toContain('MONTH_NAMES_SHORT');
+  });
+
+  it('uses configurable month window for budget period options', () => {
+    const budgetPeriodUtil = read('src/lib/utils/budget-period.ts');
+
+    expect(budgetPeriodUtil).toContain(
+      "import { PERIOD_SELECTOR_MONTH_LIMIT } from '@/lib/constants/period'"
+    );
+    expect(budgetPeriodUtil).toContain('lookbackMonths = PERIOD_SELECTOR_MONTH_LIMIT');
+  });
+
+  it('keeps period dropdown options in a single column with no wrapped labels', () => {
+    const periodNavigator = read('src/components/molecules/PeriodNavigator.astro');
+
+    expect(periodNavigator).toContain('whitespace-nowrap');
+    expect(periodNavigator).toContain('w-full text-left');
   });
 });

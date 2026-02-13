@@ -116,7 +116,7 @@ const dropdownWidthClass = compactMobile ? 'w-48 sm:w-52' : 'w-52';
             class="stroke-current text-base-content/40"
             aria-hidden="true"
           />
-          <span class="flex-1 text-left" data-period-label>
+          <span class="flex-1 text-left whitespace-nowrap" data-period-label>
             {currentLabel}
           </span>
           <ChevronDown
@@ -133,7 +133,7 @@ const dropdownWidthClass = compactMobile ? 'w-48 sm:w-52' : 'w-52';
             <li>
               <button
                 type="button"
-                class={`text-xs font-medium ${option.value === selected ? 'bg-primary/10 text-primary' : ''}`}
+                class={`w-full text-left whitespace-nowrap text-xs font-medium ${option.value === selected ? 'bg-primary/10 text-primary' : ''}`}
                 data-period-option={option.value}
                 data-period-label={option.label}
               >

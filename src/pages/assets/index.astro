@@ -24,6 +24,8 @@ import { CalendarDays, Search } from '@lucide/astro';
 import { assetService, assetCategoryService } from '@/services';
 import type { AssetOutput, AssetType } from '@/lib/types/asset';
 import { formatAssetType } from '@/lib/types/asset';
+import { formatMonthYear } from '@/lib/utils/date';
+import { PERIOD_SELECTOR_MONTH_LIMIT } from '@/lib/constants/period';
 import {
   calculateAssetAllocation,
   calculatePortfolioTotals,
@@ -88,19 +90,22 @@ const currentMonthDisplay = new Date(selectedYear, selectedMonth - 1).toLocaleDa
 });
 const selectedPeriod = `${selectedYear}-${selectedMonth.toString().padStart(2, '0')}`;
 
-// Generate monthly period options (oldest -> latest, max 10 years)
-const monthlyPeriodOptions: PeriodOption[] = Array.from({ length: 120 }, (_, i) => {
-  const monthsBack = 119 - i;
-  const date = new Date(now.getFullYear(), now.getMonth() - monthsBack, 1);
-  const year = date.getFullYear();
-  const month = date.getMonth() + 1;
-  const monthStr = month.toString().padStart(2, '0');
+// Generate monthly period options (oldest -> latest, capped by shared selector window)
+const monthlyPeriodOptions: PeriodOption[] = Array.from(
+  { length: PERIOD_SELECTOR_MONTH_LIMIT },
+  (_, i) => {
+    const monthsBack = PERIOD_SELECTOR_MONTH_LIMIT - 1 - i;
+    const date = new Date(now.getFullYear(), now.getMonth() - monthsBack, 1);
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1;
+    const monthStr = month.toString().padStart(2, '0');
 
-  return {
-    value: `${year}-${monthStr}`,
-    label: date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
-  };
-});
+    return {
+      value: `${year}-${monthStr}`,
+      label: formatMonthYear(date),
+    };
+  }
+);
 
 if (!monthlyPeriodOptions.some((period) => period.value === selectedPeriod)) {
   monthlyPeriodOptions.push({

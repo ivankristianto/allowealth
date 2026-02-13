@@ -7,6 +7,20 @@ import {
 
 describe('budget-period utils', () => {
   describe('buildBudgetPeriodOptions', () => {
+    it('defaults to a 12-month selector window', () => {
+      const options = buildBudgetPeriodOptions({
+        selectedYear: 2026,
+        selectedMonth: 2,
+        currentYear: 2026,
+        currentMonth: 2,
+        allowNextMonthNavigation: false,
+      });
+
+      expect(options).toHaveLength(12);
+      expect(options.at(0)?.value).toBe('2025-03');
+      expect(options.at(-1)?.value).toBe('2026-02');
+    });
+
     it('keeps current month as latest when selected month is in the past', () => {
       const options = buildBudgetPeriodOptions({
         selectedYear: 2025,
