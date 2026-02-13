@@ -11,6 +11,7 @@ import {
   isValidHexColor,
   sanitizeColor,
 } from '@/lib/utils/budget';
+import { getRemainingBudgetMetric } from '@/lib/utils/budget-summary';
 
 describe('BudgetSummary - getCategoryColor', () => {
   it('should return a valid hex color string', () => {
@@ -350,5 +351,23 @@ describe('BudgetSummary - Edge cases', () => {
     const distribution = calculateAllocationDistribution(categories);
 
     expect(distribution).toHaveLength(1);
+  });
+});
+
+describe('BudgetSummary - Remaining/Overbudget metric', () => {
+  it('returns remaining metric when spending is within budget', () => {
+    expect(getRemainingBudgetMetric(1000, 700)).toEqual({
+      label: 'Remaining',
+      value: 300,
+      tone: 'success',
+    });
+  });
+
+  it('returns overbudget metric when spending exceeds budget', () => {
+    expect(getRemainingBudgetMetric(1000, 1350)).toEqual({
+      label: 'Overbudget',
+      value: 350,
+      tone: 'error',
+    });
   });
 });
