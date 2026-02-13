@@ -1,5 +1,4 @@
 export type BudgetMetricTone = 'success' | 'error';
-export const COPY_BUDGET_TO_NEXT_MONTH_LABEL = 'Copy budget to next month';
 
 export interface RemainingBudgetMetric {
   label: 'Remaining' | 'Overbudget';

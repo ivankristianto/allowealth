@@ -12,10 +12,10 @@ import {
   sanitizeColor,
 } from '@/lib/utils/budget';
 import {
-  COPY_BUDGET_TO_NEXT_MONTH_LABEL,
   getRemainingBudgetMetric,
   resolveBudgetAllocationOpenState,
 } from '@/lib/utils/budget-summary';
+import { COPY_BUDGET_TO_NEXT_MONTH_LABEL } from '@/lib/utils/budget-copy';
 
 describe('BudgetSummary - getCategoryColor', () => {
   it('should return a valid hex color string', () => {

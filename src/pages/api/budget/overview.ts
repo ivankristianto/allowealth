@@ -6,6 +6,8 @@ import { logError } from '@/lib/utils';
 import { createRenderHelper } from '@/lib/api/renderResponse';
 import { formatCurrency } from '@/lib/formatting';
 import { calculateAllocationDistribution } from '@/lib/utils/budget';
+import { getCopyBudgetAvailability } from '@/lib/utils/budget-copy';
+import { getMonthName } from '@/lib/utils/date';
 
 // Import partial components for HTML rendering
 import BudgetSummaryPartial from '@/components/partials/BudgetSummaryPartial.astro';
@@ -87,6 +89,23 @@ export const GET: APIRoute = async (context) => {
         const budgetCount =
           budgetData.categories.filter((category) => Number(category.budget_amount) > 0).length ||
           0;
+        const nextMonthDate = new Date(year, month, 1);
+        const nextMonthYear = nextMonthDate.getFullYear();
+        const nextMonth = nextMonthDate.getMonth() + 1;
+        const hasNextMonthBudgets = await budgetService.hasBudgetsForMonth(
+          auth.workspaceId,
+          nextMonthYear,
+          nextMonth,
+          selectedCurrency
+        );
+        const copyBudgetAvailability = getCopyBudgetAvailability({
+          sourceBudgetCount: budgetCount,
+          hasNextMonthBudgets,
+        });
+        const copyButtonDisabledTooltip =
+          copyBudgetAvailability.disabledReason === 'target-month-has-budgets'
+            ? `Budgets already exist for ${getMonthName(nextMonth)} ${nextMonthYear}`
+            : '';
 
         const summaryHtml = await container.renderToString(BudgetSummaryPartial, {
           props: {
@@ -94,7 +113,9 @@ export const GET: APIRoute = async (context) => {
             totalSpent: parseFloat(budgetData.total_spent || '0'),
             distribution,
             currency: selectedCurrency,
-            showCopyButton: budgetCount > 0,
+            showCopyButton: copyBudgetAvailability.isVisible,
+            disableCopyButton: copyBudgetAvailability.isDisabled,
+            copyButtonDisabledTooltip,
           },
         });
         htmlParts.push(`<!-- PARTIAL:summary -->\n${summaryHtml}`);

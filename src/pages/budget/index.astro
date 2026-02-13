@@ -30,6 +30,7 @@ import {
 } from '@/services';
 import { formatCurrency } from '@/lib/formatting';
 import { calculateAllocationDistribution } from '@/lib/utils/budget';
+import { getCopyBudgetAvailability } from '@/lib/utils/budget-copy';
 import { getMonthName } from '@/lib/utils/date';
 import { buildBudgetPeriodOptions } from '@/lib/utils/budget-period';
 import { CircleX } from '@lucide/astro';
@@ -123,24 +124,22 @@ const nextMonth = nextMonthDate.getMonth() + 1;
 const isNextMonthInFuture =
   nextMonthYear > currentYear || (nextMonthYear === currentYear && nextMonth > currentMonth);
 
-// If next month is in the future, check if it has budget data
-// Allow navigation to future months if they have existing budget data
-let allowNextMonthNavigation = !isNextMonthInFuture;
-if (isNextMonthInFuture) {
-  try {
-    const hasNextMonthBudgets = await budgetService.hasBudgetsForMonth(
-      user.workspaceId,
-      nextMonthYear,
-      nextMonth,
-      selectedCurrency
-    );
-    allowNextMonthNavigation = hasNextMonthBudgets;
-  } catch (err) {
-    console.error('Error checking next month budgets:', err);
-    // Default to not allowing navigation on error
-    allowNextMonthNavigation = false;
-  }
+// Check whether next month already has budgets.
+let hasNextMonthBudgets = false;
+try {
+  hasNextMonthBudgets = await budgetService.hasBudgetsForMonth(
+    user.workspaceId,
+    nextMonthYear,
+    nextMonth,
+    selectedCurrency
+  );
+} catch (err) {
+  console.error('Error checking next month budgets:', err);
+  hasNextMonthBudgets = false;
 }
+
+// If next month is in the future, allow navigation only when it has existing budgets.
+const allowNextMonthNavigation = !isNextMonthInFuture || hasNextMonthBudgets;
 
 const selectedPeriod = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}`;
 const periodOptions = buildBudgetPeriodOptions({
@@ -258,6 +257,15 @@ const uninitializedCategories = expenseCategories.filter((cat) => !budgetIdsByCa
 
 // Count budgets with actual limits set
 const budgetCount = budgetData?.categories.filter((c) => Number(c.budget_amount) > 0).length || 0;
+const copyBudgetAvailability = getCopyBudgetAvailability({
+  sourceBudgetCount: budgetCount,
+  hasNextMonthBudgets,
+});
+const nextMonthDisplay = `${getMonthName(nextMonth)} ${nextMonthYear}`;
+const copyDisabledTooltip =
+  copyBudgetAvailability.disabledReason === 'target-month-has-budgets'
+    ? `Budgets already exist for ${nextMonthDisplay}`
+    : '';
 ---
 
 <ProtectedLayout title="Budget" currentPath={currentPath} subtitle={currentMonthDisplay}>
@@ -294,7 +302,9 @@ const budgetCount = budgetData?.categories.filter((c) => Number(c.budget_amount)
                 totalSpent={Number(budgetData.total_spent || '0')}
                 distribution={allocationDistribution}
                 currency={selectedCurrency}
-                showCopyButton={budgetCount > 0}
+                showCopyButton={copyBudgetAvailability.isVisible}
+                disableCopyButton={copyBudgetAvailability.isDisabled}
+                copyButtonDisabledTooltip={copyDisabledTooltip}
               />
             )}
           </div>
