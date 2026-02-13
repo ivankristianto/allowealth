@@ -5,48 +5,61 @@
  * Reusable action bar providing consistent card layout for page-level actions.
  * Uses BudgetActions pattern: ghost buttons on the left, primary action pushed right.
  *
+ * When `edgeBleed` is true, the bar bleeds to page edges on mobile (no card
+ * border/rounded) and scrolls horizontally when buttons overflow. On md+ it
+ * restores the standard card appearance.
+ *
  * Slots:
  * - default: Secondary action buttons (left-aligned, btn-ghost style)
  * - primary: Primary action button (right-aligned with ml-auto, btn-accent style)
  *
  * @param {string} className - Additional CSS classes
  * @param {string} ariaLabel - Accessible label for the action bar
+ * @param {boolean} edgeBleed - Bleed to page edges on mobile (opt-in)
  */
 
 export interface Props {
   className?: string;
   ariaLabel?: string;
+  edgeBleed?: boolean;
 }
 
-const { className = '', ariaLabel = 'Page actions' } = Astro.props;
+const { className = '', ariaLabel = 'Page actions', edgeBleed = false } = Astro.props;
 
 const hasPrimary = Astro.slots.has('primary');
 
 const containerClasses = [
-  // Card styling
-  'bg-base-100 rounded-card border border-base-300 shadow-sm',
-  // Responsive padding — compact on mobile
-  'p-2 md:p-4 lg:p-6',
-  // Layout — wrap on all screen sizes for action overflow
-  'flex items-center gap-2 md:gap-3 flex-wrap',
+  'bg-base-100',
+  edgeBleed
+    ? '-mx-4 px-4 py-2 border-y border-base-300 md:mx-0 md:rounded-card md:border md:shadow-sm md:p-4 lg:p-6'
+    : 'rounded-card border border-base-300 shadow-sm p-2 md:p-4 lg:p-6',
   className,
 ]
   .filter(Boolean)
   .join(' ');
 ---
 
-<div class={containerClasses} role="toolbar" aria-label={ariaLabel}>
-  {/* Secondary Actions — Ghost style, icon-only on mobile */}
-  <div class="flex items-center gap-1 md:gap-2 flex-wrap">
-    <slot />
-  </div>
-
-  {/* Primary Action — Pushed to right */}
+<div
+  class:list={[
+    containerClasses,
+    'flex items-center gap-1 md:gap-3 flex-nowrap md:flex-wrap overflow-x-auto md:overflow-visible scrollbar-hide',
+  ]}
+  role="toolbar"
+  aria-label={ariaLabel}
+>
+  {
+    /* Primary Actions — first on mobile (order-first), pushed right on desktop (order-last + ml-auto) */
+  }
   {
     hasPrimary && (
-      <div class="ml-auto">
+      <div class="order-first md:order-last md:ml-auto shrink-0">
         <slot name="primary" />
       </div>
     )
   }
+
+  {/* Secondary Actions */}
+  <div class="flex items-center gap-1 md:gap-2 shrink-0">
+    <slot />
+  </div>
 </div>
