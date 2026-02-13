@@ -3,6 +3,7 @@ export const MOBILE_BUDGET_ACTION_ORDER = [
   'categories',
   'import',
   'export',
+  'copy',
   'initialize-all',
   'ai-rebalancer',
 ] as const;

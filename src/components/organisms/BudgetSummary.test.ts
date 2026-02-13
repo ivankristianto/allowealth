@@ -15,7 +15,6 @@ import {
   getRemainingBudgetMetric,
   resolveBudgetAllocationOpenState,
 } from '@/lib/utils/budget-summary';
-import { COPY_BUDGET_TO_NEXT_MONTH_LABEL } from '@/lib/utils/budget-copy';
 
 describe('BudgetSummary - getCategoryColor', () => {
   it('should return a valid hex color string', () => {
@@ -373,10 +372,6 @@ describe('BudgetSummary - Remaining/Overbudget metric', () => {
       value: 350,
       tone: 'error',
     });
-  });
-
-  it('uses the updated copy CTA label', () => {
-    expect(COPY_BUDGET_TO_NEXT_MONTH_LABEL).toBe('Copy budget to next month');
   });
 });
 

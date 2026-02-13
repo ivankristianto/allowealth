@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'bun:test';
-import { getCopyBudgetAvailability } from './budget-copy';
+import { COPY_BUDGET_TO_NEXT_MONTH_LABEL, getCopyBudgetAvailability } from './budget-copy';
 
 describe('getCopyBudgetAvailability', () => {
+  it('uses the expected copy action label', () => {
+    expect(COPY_BUDGET_TO_NEXT_MONTH_LABEL).toBe('Copy budget to next month');
+  });
+
   it('shows enabled action when source month has budgets and next month has none', () => {
     expect(
       getCopyBudgetAvailability({

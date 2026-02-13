@@ -302,15 +302,17 @@ const copyDisabledTooltip =
                 totalSpent={Number(budgetData.total_spent || '0')}
                 distribution={allocationDistribution}
                 currency={selectedCurrency}
-                showCopyButton={copyBudgetAvailability.isVisible}
-                disableCopyButton={copyBudgetAvailability.isDisabled}
-                copyButtonDisabledTooltip={copyDisabledTooltip}
               />
             )}
           </div>
 
           {/* Budget Actions Bar */}
-          <BudgetActions uninitializedCount={uninitializedCategories.length} />
+          <BudgetActions
+            uninitializedCount={uninitializedCategories.length}
+            showCopyAction={copyBudgetAvailability.isVisible}
+            disableCopyAction={copyBudgetAvailability.isDisabled}
+            copyActionTooltip={copyDisabledTooltip}
+          />
 
           {/* Budget Filter and View Toggle */}
           {budgetData && budgetData.categories.length > 0 && <BudgetFilterControls />}

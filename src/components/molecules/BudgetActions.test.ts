@@ -13,6 +13,7 @@ describe('BudgetActions mobile configuration', () => {
       'categories',
       'import',
       'export',
+      'copy',
       'initialize-all',
       'ai-rebalancer',
     ]);
