@@ -10,8 +10,8 @@
  */
 
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
-import BudgetPageHeader from '@components/organisms/BudgetPageHeader.astro';
 import BudgetActions from '@components/molecules/BudgetActions.astro';
+import BudgetHeaderControls from '@components/molecules/BudgetHeaderControls.astro';
 import SetNewBudgetModal from '@components/organisms/SetNewBudgetModal.astro';
 import CopyBudgetModal from '@components/organisms/CopyBudgetModal.astro';
 import BudgetImportModal from '@components/organisms/BudgetImportModal.astro';
@@ -30,6 +30,7 @@ import {
 import { formatCurrency } from '@/lib/formatting';
 import { calculateAllocationDistribution } from '@/lib/utils/budget';
 import { getMonthName } from '@/lib/utils/date';
+import { buildBudgetPeriodOptions } from '@/lib/utils/budget-period';
 import { CircleX, Search, LayoutGrid, Table as TableIcon } from '@lucide/astro';
 
 const user = Astro.locals.user;
@@ -112,26 +113,10 @@ const allocationDistribution = budgetData
 const currentMonthName = getMonthName(selectedMonth);
 const currentMonthDisplay = `${currentMonthName} ${selectedYear}`;
 
-// Build URLs for month navigation
-const buildMonthUrl = (year: number, month: number) => {
-  const params = new URLSearchParams();
-  params.set('year', year.toString());
-  params.set('month', month.toString());
-  params.set('currency', selectedCurrency);
-  return `/budget?${params.toString()}`;
-};
-
-// Previous and next month
-const prevMonthDate = new Date(selectedYear, selectedMonth - 2, 1);
+// Next month metadata (used for copy modal and period option bounds)
 const nextMonthDate = new Date(selectedYear, selectedMonth, 1);
-
-const prevMonthYear = prevMonthDate.getFullYear();
-const prevMonth = prevMonthDate.getMonth() + 1;
 const nextMonthYear = nextMonthDate.getFullYear();
 const nextMonth = nextMonthDate.getMonth() + 1;
-
-// Check if we're viewing the current month (for showing "Current Month" button)
-const isViewingCurrentMonth = selectedYear === currentYear && selectedMonth === currentMonth;
 
 // Check if next month is in the future
 const isNextMonthInFuture =
@@ -155,6 +140,15 @@ if (isNextMonthInFuture) {
     allowNextMonthNavigation = false;
   }
 }
+
+const selectedPeriod = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}`;
+const periodOptions = buildBudgetPeriodOptions({
+  selectedYear,
+  selectedMonth,
+  currentYear,
+  currentMonth,
+  allowNextMonthNavigation,
+});
 
 // Get budget alerts for generating advice
 let alerts: Awaited<ReturnType<typeof budgetService.getAlerts>> = [];
@@ -265,11 +259,14 @@ const uninitializedCategories = expenseCategories.filter((cat) => !budgetIdsByCa
 const budgetCount = budgetData?.categories.filter((c) => Number(c.budget_amount) > 0).length || 0;
 ---
 
-<ProtectedLayout
-  title="Budget"
-  currentPath={currentPath}
-  subtitle={`${currentMonthName} ${selectedYear} overview`}
->
+<ProtectedLayout title="Budget" currentPath={currentPath} subtitle={currentMonthDisplay}>
+  <BudgetHeaderControls
+    slot="header"
+    periodOptions={periodOptions}
+    selectedPeriod={selectedPeriod}
+    showCopyButton={budgetCount > 0}
+  />
+
   <div
     class="max-w-7xl mx-auto sm:px-2 lg:px-6 space-y-6 sm:space-y-8"
     data-budget-page
@@ -280,20 +277,6 @@ const budgetCount = budgetData?.categories.filter((c) => Number(c.budget_amount)
     data-currency={selectedCurrency}
     data-expense-categories={JSON.stringify(expenseCategoriesWithBudgets)}
   >
-    {/* Premium Header with Month Navigation and Actions */}
-    <BudgetPageHeader
-      title="Family Spending Targets"
-      budgetCount={budgetCount}
-      currentMonth={currentMonthDisplay}
-      prevMonthUrl={buildMonthUrl(prevMonthYear, prevMonth)}
-      nextMonthUrl={allowNextMonthNavigation ? buildMonthUrl(nextMonthYear, nextMonth) : undefined}
-      isNextDisabled={!allowNextMonthNavigation}
-      showCopyButton={budgetCount > 0}
-      currentMonthResetUrl={!isViewingCurrentMonth
-        ? buildMonthUrl(currentYear, currentMonth)
-        : undefined}
-    />
-
     {/* Error State */}
     {
       error ? (
@@ -465,11 +448,18 @@ const budgetCount = budgetData?.categories.filter((c) => Number(c.budget_amount)
    * - Edit budget handlers: Opens the modal with pre-filled data
    */
   import { initBudgetPage, cleanup } from '@components/organisms/BudgetPage.client';
+  import { PERIOD_CHANGE_EVENT } from '@/lib/constants/events';
+  import { buildBudgetUrlForPeriod } from '@/lib/utils/budget-period';
   import { addToast } from '@/lib/stores/toastStore';
 
   // Track if page-load listener is registered to prevent accumulation
   const PAGE_LOAD_KEY = '__budgetPageLoadListenerRegistered';
   const PENDING_BUDGET_INIT_TOAST_KEY = 'budget-initialize-pending-toast';
+  const PERIOD_NAV_HANDLER_KEY = '__budgetPeriodNavigationHandler';
+
+  interface BudgetWindow extends Window {
+    [PERIOD_NAV_HANDLER_KEY]?: (event: Event) => void;
+  }
 
   function showPendingInitializeToast() {
     let raw: string | null = null;
@@ -571,13 +561,52 @@ const budgetCount = budgetData?.categories.filter((c) => Number(c.budget_amount)
     }
   }
 
+  function initBudgetPeriodNavigation() {
+    const scopedWindow = window as BudgetWindow;
+    if (scopedWindow[PERIOD_NAV_HANDLER_KEY]) return;
+
+    const handler = (event: Event) => {
+      const { period } = (event as CustomEvent<{ period?: string }>).detail || {};
+      if (!period) return;
+
+      const container = document.querySelector('[data-budget-page]') as HTMLElement | null;
+      const currency = container?.dataset.currency === 'USD' ? 'USD' : 'IDR';
+      const targetUrl = buildBudgetUrlForPeriod(period, currency);
+
+      const currentUrl = `${window.location.pathname}${window.location.search}`;
+      if (targetUrl === currentUrl) return;
+
+      window.location.href = targetUrl;
+    };
+
+    scopedWindow[PERIOD_NAV_HANDLER_KEY] = handler;
+    window.addEventListener(PERIOD_CHANGE_EVENT, handler);
+  }
+
+  function cleanupBudgetPeriodNavigation() {
+    const scopedWindow = window as BudgetWindow;
+    const handler = scopedWindow[PERIOD_NAV_HANDLER_KEY];
+    if (!handler) return;
+
+    window.removeEventListener(PERIOD_CHANGE_EVENT, handler);
+    delete scopedWindow[PERIOD_NAV_HANDLER_KEY];
+  }
+
   // Initialize the budget page orchestrator
   initBudgetPage();
   initBudgetExtras();
+  initBudgetPeriodNavigation();
 
   // Register cleanup handler (must re-register after each page load since it's once)
   function registerCleanup() {
-    document.addEventListener('astro:before-swap', cleanup, { once: true });
+    document.addEventListener(
+      'astro:before-swap',
+      () => {
+        cleanup();
+        cleanupBudgetPeriodNavigation();
+      },
+      { once: true }
+    );
   }
   registerCleanup();
 
@@ -587,6 +616,7 @@ const budgetCount = budgetData?.categories.filter((c) => Number(c.budget_amount)
     document.addEventListener('astro:page-load', () => {
       initBudgetPage();
       initBudgetExtras();
+      initBudgetPeriodNavigation();
       registerCleanup();
     });
   }

@@ -28,12 +28,11 @@ interface Props {
   showMenuToggle?: boolean;
   /** Authenticated user object */
   user?: User | null;
-  /** Pre-rendered HTML for page-specific header extras (e.g., PeriodNavigator) */
-  headerExtrasHtml?: string;
 }
 
-const { title, subtitle, showMenuToggle = true, user, headerExtrasHtml = '' } = Astro.props;
-const hasHeaderExtras = headerExtrasHtml.length > 0;
+const { title, subtitle, showMenuToggle = true, user } = Astro.props;
+const hasHeaderSlot = Astro.slots.has('header');
+const headerSlotHtml = hasHeaderSlot ? await Astro.slots.render('header') : '';
 ---
 
 <header
@@ -73,13 +72,13 @@ const hasHeaderExtras = headerExtrasHtml.length > 0;
       </div>
     </div>
 
-    <!-- Right side: Header extras (desktop) + Currency selector + New Entry button -->
+    <!-- Right side: Header slot content (desktop) + Currency selector + New Entry button -->
     <div class="flex items-center gap-3 sm:gap-5">
-      {/* Header extras inline on desktop (e.g., PeriodNavigator beside CurrencySelector) */}
+      {/* Header slot content inline on desktop (e.g., PeriodNavigator beside CurrencySelector) */}
       {
-        hasHeaderExtras && (
-          <div class="hidden lg:block" data-header-extras-desktop>
-            <Fragment set:html={headerExtrasHtml} />
+        hasHeaderSlot && (
+          <div class="hidden lg:block" data-header-slot-desktop>
+            <Fragment set:html={headerSlotHtml} />
           </div>
         )
       }
@@ -118,14 +117,14 @@ const hasHeaderExtras = headerExtrasHtml.length > 0;
     </div>
   </div>
 
-  {/* Header extras below main bar on mobile/tablet */}
+  {/* Header slot content below main bar on mobile/tablet */}
   {
-    hasHeaderExtras && (
+    hasHeaderSlot && (
       <div
         class="flex items-center justify-center gap-3 px-4 sm:px-6 pb-3 lg:hidden"
-        data-header-extras-mobile
+        data-header-slot-mobile
       >
-        <Fragment set:html={headerExtrasHtml} />
+        <Fragment set:html={headerSlotHtml} />
       </div>
     )
   }
