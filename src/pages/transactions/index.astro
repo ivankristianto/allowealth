@@ -7,6 +7,7 @@
  */
 
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
+import PeriodNavigator from '@/components/molecules/PeriodNavigator.astro';
 import TransactionDateGroups from '@/components/molecules/TransactionDateGroups.astro';
 import TransactionSummaryCards from '@/components/organisms/TransactionSummaryCards.astro';
 import TransactionActionsBar from '@/components/molecules/TransactionActionsBar.astro';
@@ -162,6 +163,11 @@ const dateGroups = groupTransactionsByDate(transactions);
 const paginationCurrentClass =
   'inline-flex items-center justify-center min-h-[44px] rounded-2xl border border-base-300 bg-base-200 px-3 font-medium text-base-content';
 
+const periodOptions = availableMonthsWithLabels.map((month) => ({
+  value: month.key,
+  label: month.label,
+}));
+
 // Serialize SSR data for client-side hydration
 const ssrData = trackPhaseSync('buildSsrData', perf, () => ({
   transactions,
@@ -200,8 +206,15 @@ perf?.recordMilestone('preRender.elapsed');
 <ProtectedLayout
   title="Transactions"
   currentPath={currentPath}
-  subtitle="View and manage your transactions"
+  subtitle={formatMonthKey(effectiveMonth)}
 >
+  <PeriodNavigator
+    slot="header-extras"
+    options={periodOptions}
+    selected={selectedMonth || currentMonthKey}
+    ariaLabel="Select month"
+    inputName="month"
+  />
   <div
     id="transactions-page"
     class="max-w-7xl mx-auto sm:px-2 lg:px-6 space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500"
