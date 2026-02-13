@@ -647,10 +647,14 @@ export class AssetService {
 
       for (const chunk of idChunks) {
         if (dialect === 'postgresql') {
+          const pgArray = sql`ARRAY[${sql.join(
+            chunk.map((id) => sql`${id}`),
+            sql`, `
+          )}]::text[]`;
           const queryResult = await (this.db as any).execute(sql`
             SELECT DISTINCT ON (asset_id) asset_id, balance, recorded_at
             FROM asset_history
-            WHERE asset_id = ANY(${chunk})
+            WHERE asset_id = ANY(${pgArray})
               AND recorded_at <= ${endOfMonth}
             ORDER BY asset_id, recorded_at DESC
           `);

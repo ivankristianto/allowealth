@@ -1,8 +1,10 @@
-import { describe, it, expect, beforeEach, mock } from 'bun:test';
+import { describe, it, expect, beforeEach, afterEach, mock } from 'bun:test';
 import { AssetService } from '../asset.service';
 import { createMockDatabase, createMockAsset, resetMockDatabase } from '../test-helpers/mocks';
 import { resetCacheManager, getCacheManager } from '@/lib/cache';
 import { PerfCollector } from '@/lib/perf';
+import { setTestEnv } from '@/lib/env';
+import { PgDialect } from 'drizzle-orm/pg-core';
 
 describe('AssetService.getSnapshotForMonth N+1 fix', () => {
   let mockDb: ReturnType<typeof createMockDatabase>;
@@ -19,6 +21,10 @@ describe('AssetService.getSnapshotForMonth N+1 fix', () => {
     const cache = getCacheManager();
     cache.get = mock(() => Promise.resolve(null));
     cache.set = mock(() => Promise.resolve());
+  });
+
+  afterEach(() => {
+    setTestEnv(null);
   });
 
   it('should use bulk query instead of per-asset queries', async () => {
@@ -158,6 +164,33 @@ describe('AssetService.getSnapshotForMonth N+1 fix', () => {
     expect(snapshots).toHaveLength(1);
     expect(snapshots[0].snapshot_balance).toBe('3000');
     expect(snapshots[0].snapshot_date).toEqual(new Date('2026-01-31'));
+  });
+
+  it('builds PostgreSQL snapshot SQL with array-based ANY syntax', async () => {
+    const workspaceId = 'workspace-1';
+    const assets = [
+      createMockAsset({
+        id: 'asset-1',
+        workspace_id: workspaceId,
+        created_at: new Date('2026-01-01'),
+      }),
+      createMockAsset({
+        id: 'asset-2',
+        workspace_id: workspaceId,
+        created_at: new Date('2026-01-01'),
+      }),
+    ];
+    setTestEnv({ DATABASE_URL: 'postgresql://localhost:5432/testdb' });
+    (mockDb.query.assets.findMany as any).mockResolvedValue(assets);
+    (mockDb as any).execute.mockResolvedValue([]);
+
+    await assetService.getSnapshotForMonth(workspaceId, 2026, 2);
+
+    const query = (mockDb as any).execute.mock.calls[0][0];
+    const sqlText = new PgDialect().sqlToQuery(query).sql;
+
+    expect(sqlText).toContain('asset_id = ANY(ARRAY[');
+    expect(sqlText).not.toContain('asset_id = ANY((');
   });
 
   it('should fall back to initial_balance when no history exists', async () => {
