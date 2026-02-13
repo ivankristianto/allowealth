@@ -1,5 +1,11 @@
-import { type IDatabase, getActiveSchema, runTransaction, assets as assetsTable } from '@/db';
-import { eq, and, lte, sql, inArray } from 'drizzle-orm';
+import {
+  type IDatabase,
+  getActiveSchema,
+  runTransaction,
+  assets as assetsTable,
+  getDatabaseConfig,
+} from '@/db';
+import { eq, and, sql, inArray } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { AssetServiceError, ServiceErrorCode } from './service-errors';
 import type { AssetType, Currency } from '@/lib/types/asset';
@@ -52,6 +58,20 @@ export class AssetService {
     }
 
     return chunks;
+  }
+
+  private normalizeExecuteRows(result: any): Array<{
+    asset_id: string;
+    balance: string;
+    recorded_at: Date;
+  }> {
+    const rawRows = Array.isArray(result) ? result : (result?.rows ?? []);
+
+    return rawRows.map((row: any) => ({
+      asset_id: row.asset_id,
+      balance: row.balance,
+      recorded_at: row.recorded_at instanceof Date ? row.recorded_at : new Date(row.recorded_at),
+    }));
   }
 
   /**
@@ -619,20 +639,47 @@ export class AssetService {
 
       // Bulk query: fetch all history entries for all assets in one query
       const assetIds = assetsExistingAtTime.map((a) => a.id);
+      const idChunks = this.chunkIds(assetIds, 500);
+      const dialect = getDatabaseConfig().dialect;
+      const allHistory: Array<{ asset_id: string; balance: string; recorded_at: Date }> = [];
 
-      const allHistory = await this.db.query.assetHistory.findMany({
-        where: and(
-          inArray(this.schema.assetHistory.asset_id, assetIds),
-          lte(this.schema.assetHistory.recorded_at, endOfMonth)
-        ),
-        orderBy: (assetHistory: any, { desc }: any) => [desc(assetHistory.recorded_at)],
-      });
+      for (const chunk of idChunks) {
+        if (dialect === 'postgresql') {
+          const queryResult = await (this.db as any).execute(sql`
+            SELECT DISTINCT ON (asset_id) asset_id, balance, recorded_at
+            FROM asset_history
+            WHERE asset_id = ANY(${chunk})
+              AND recorded_at <= ${endOfMonth}
+            ORDER BY asset_id, recorded_at DESC
+          `);
+          allHistory.push(...this.normalizeExecuteRows(queryResult));
+          continue;
+        }
+
+        const queryResult = await (this.db as any).execute(sql`
+          SELECT h.asset_id, h.balance, h.recorded_at
+          FROM asset_history h
+          INNER JOIN (
+            SELECT asset_id, MAX(recorded_at) AS max_recorded_at
+            FROM asset_history
+            WHERE asset_id IN (${sql.join(
+              chunk.map((id) => sql`${id}`),
+              sql`, `
+            )})
+              AND recorded_at <= ${endOfMonth}
+            GROUP BY asset_id
+          ) latest
+            ON latest.asset_id = h.asset_id
+           AND latest.max_recorded_at = h.recorded_at
+        `);
+        allHistory.push(...this.normalizeExecuteRows(queryResult));
+      }
 
       // Build lookup map: keep only the most recent entry per asset
       const historyMap = new Map<string, (typeof allHistory)[0]>();
       for (const history of allHistory) {
-        if (!historyMap.has(history.asset_id)) {
-          // First entry per asset is the most recent (ordered desc)
+        const existing = historyMap.get(history.asset_id);
+        if (!existing || history.recorded_at > existing.recorded_at) {
           historyMap.set(history.asset_id, history);
         }
       }

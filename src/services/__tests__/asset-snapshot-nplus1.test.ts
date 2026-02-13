@@ -12,6 +12,7 @@ describe('AssetService.getSnapshotForMonth N+1 fix', () => {
     mockDb = createMockDatabase();
     resetMockDatabase(mockDb);
     assetService = new AssetService(mockDb);
+    (mockDb as any).execute = mock(() => Promise.resolve([]));
 
     // Mock cache to always miss (we're testing query behavior)
     const cache = getCacheManager();
@@ -35,21 +36,21 @@ describe('AssetService.getSnapshotForMonth N+1 fix', () => {
 
     (mockDb.query.assets.findMany as any).mockResolvedValue(assets);
 
-    // Mock bulk history query
+    // Mock latest-row query result
     const histories = assets.map((asset) => ({
       asset_id: asset.id,
       balance: '1000',
       recorded_at: new Date(year, month - 1, 15),
     }));
-    (mockDb.query.assetHistory as any).findMany.mockResolvedValue(histories);
+    (mockDb as any).execute.mockResolvedValue(histories);
 
     await assetService.getSnapshotForMonth(workspaceId, year, month);
 
-    // Should call assetHistory.findMany exactly once (bulk query)
+    // Should call raw execute exactly once (single chunk)
     // NOT N times (one per asset)
-    expect((mockDb.query.assetHistory as any).findMany).toHaveBeenCalledTimes(1);
+    expect((mockDb as any).execute).toHaveBeenCalledTimes(1);
 
-    // Should NOT use findFirst at all (old N+1 pattern)
+    // Should NOT use per-asset findFirst at all (old N+1 pattern)
     expect((mockDb.query.assetHistory as any).findFirst).not.toHaveBeenCalled();
   });
 
@@ -76,8 +77,8 @@ describe('AssetService.getSnapshotForMonth N+1 fix', () => {
 
     (mockDb.query.assets.findMany as any).mockResolvedValue([asset1, asset2]);
 
-    // Mock histories - ordered desc by recorded_at (most recent first)
-    (mockDb.query.assetHistory as any).findMany.mockResolvedValue([
+    // Mock one latest row per asset
+    (mockDb as any).execute.mockResolvedValue([
       { asset_id: 'asset-1', balance: '4500', recorded_at: new Date(year, month - 1, 15) },
       { asset_id: 'asset-2', balance: '3200', recorded_at: new Date(year, month - 1, 20) },
     ]);
@@ -100,11 +101,11 @@ describe('AssetService.getSnapshotForMonth N+1 fix', () => {
     );
 
     (mockDb.query.assets.findMany as any).mockResolvedValue(assets);
-    (mockDb.query.assetHistory as any).findMany.mockResolvedValue([]);
+    (mockDb as any).execute.mockResolvedValue([]);
 
     await assetService.getSnapshotForMonth(workspaceId, 2026, 2);
 
-    expect((mockDb.query.assetHistory as any).findMany.mock.calls.length).toBeGreaterThan(1);
+    expect((mockDb as any).execute.mock.calls.length).toBeGreaterThan(1);
   });
 
   it('uses latest history at or before month-end per asset', async () => {
@@ -118,7 +119,7 @@ describe('AssetService.getSnapshotForMonth N+1 fix', () => {
     });
 
     (mockDb.query.assets.findMany as any).mockResolvedValue([asset]);
-    (mockDb.query.assetHistory as any).findMany.mockResolvedValue([
+    (mockDb as any).execute.mockResolvedValue([
       { asset_id: 'asset-1', balance: '1500', recorded_at: new Date('2026-01-15') },
       { asset_id: 'asset-1', balance: '3000', recorded_at: new Date('2026-01-31') },
     ]);
@@ -144,7 +145,7 @@ describe('AssetService.getSnapshotForMonth N+1 fix', () => {
     });
 
     (mockDb.query.assets.findMany as any).mockResolvedValue([asset]);
-    (mockDb.query.assetHistory as any).findMany.mockResolvedValue([]);
+    (mockDb as any).execute.mockResolvedValue([]);
 
     const snapshots = await assetService.getSnapshotForMonth(workspaceId, year, month);
 
@@ -161,6 +162,6 @@ describe('AssetService.getSnapshotForMonth N+1 fix', () => {
 
     expect(snapshots).toHaveLength(0);
     // Should not even call history query
-    expect((mockDb.query.assetHistory as any).findMany).not.toHaveBeenCalled();
+    expect((mockDb as any).execute).not.toHaveBeenCalled();
   });
 });
