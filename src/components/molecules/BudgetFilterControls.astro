@@ -2,6 +2,7 @@
 import { LayoutGrid, Search, Table as TableIcon } from '@lucide/astro';
 import {
   BUDGET_FILTER_CONTROL_HEIGHT_CLASS,
+  BUDGET_FILTER_DESKTOP_LAYOUT_CLASS,
   BUDGET_FILTER_MOBILE_SECOND_ROW_CLASS,
 } from './budget-filter-controls.config';
 
@@ -27,8 +28,11 @@ const viewToggleClass = [
 ].join(' ');
 ---
 
-<div class:list={['space-y-2.5', className]} data-budget-filter-controls>
-  <div class="relative">
+<div
+  class:list={['space-y-2.5', BUDGET_FILTER_DESKTOP_LAYOUT_CLASS, className]}
+  data-budget-filter-controls
+>
+  <div class="relative md:flex-1">
     <span
       class="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-base-content/40"
       aria-hidden="true"
@@ -46,7 +50,12 @@ const viewToggleClass = [
     />
   </div>
 
-  <div class:list={[BUDGET_FILTER_MOBILE_SECOND_ROW_CLASS, 'md:grid-cols-[8fr_2fr]']}>
+  <div
+    class:list={[
+      BUDGET_FILTER_MOBILE_SECOND_ROW_CLASS,
+      'md:w-auto md:grid-cols-[minmax(170px,220px)_minmax(120px,140px)]',
+    ]}
+  >
     <select id="budget-sort-select" class={sortSelectClass} aria-label="Sort budgets">
       <option value="budget-desc">Budget ↓</option>
       <option value="spent-desc">Spent ↓</option>
