@@ -632,14 +632,16 @@ export class AssetService {
       const assetsExistingAtTime = allAssets.filter(
         (asset) => new Date(asset.created_at) <= endOfMonth
       );
+      perf?.recordPhase('AssetService.getSnapshotForMonth.assetCount', assetsExistingAtTime.length);
 
       if (assetsExistingAtTime.length === 0) {
         return [];
       }
 
-      // Bulk query: fetch all history entries for all assets in one query
+      // Fetch one latest history row per asset, chunked to avoid parameter limits.
       const assetIds = assetsExistingAtTime.map((a) => a.id);
       const idChunks = this.chunkIds(assetIds, 500);
+      perf?.recordPhase('AssetService.getSnapshotForMonth.chunkCount', idChunks.length);
       const dialect = getDatabaseConfig().dialect;
       const allHistory: Array<{ asset_id: string; balance: string; recorded_at: Date }> = [];
 
@@ -674,6 +676,7 @@ export class AssetService {
         `);
         allHistory.push(...this.normalizeExecuteRows(queryResult));
       }
+      perf?.recordPhase('AssetService.getSnapshotForMonth.historyRowsFetched', allHistory.length);
 
       // Build lookup map: keep only the most recent entry per asset
       const historyMap = new Map<string, (typeof allHistory)[0]>();
@@ -784,8 +787,9 @@ export class AssetService {
   /**
    * Get all assets with their history for forecast calculations
    */
-  async findAllWithHistory(workspaceId: string) {
+  async findAllWithHistory(workspaceId: string, perf?: PerfCollector) {
     const allAssets = await this.findAll(workspaceId);
+    perf?.recordPhase('AssetService.findAllWithHistory.assetCount', allAssets.length);
 
     if (allAssets.length === 0) {
       return [];
@@ -794,6 +798,7 @@ export class AssetService {
     // Bulk query: fetch all history for all assets in one query
     const assetIds = allAssets.map((a) => a.id);
     const idChunks = this.chunkIds(assetIds, 500);
+    perf?.recordPhase('AssetService.findAllWithHistory.chunkCount', idChunks.length);
     const historyResults = await Promise.all(
       idChunks.map((chunk) =>
         this.db.query.assetHistory.findMany({
@@ -804,6 +809,7 @@ export class AssetService {
     );
     const allHistory = historyResults.flat();
     allHistory.sort((a, b) => a.recorded_at.getTime() - b.recorded_at.getTime());
+    perf?.recordPhase('AssetService.findAllWithHistory.historyRowsFetched', allHistory.length);
 
     // Group history by asset_id
     const historyMap = new Map<string, Array<{ date: Date; amount: number }>>();

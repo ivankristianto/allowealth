@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, mock } from 'bun:test';
 import { AssetService } from '../asset.service';
 import { createMockDatabase, createMockAsset, resetMockDatabase } from '../test-helpers/mocks';
 import { resetCacheManager, getCacheManager } from '@/lib/cache';
+import { PerfCollector } from '@/lib/perf';
 
 describe('AssetService.getSnapshotForMonth N+1 fix', () => {
   let mockDb: ReturnType<typeof createMockDatabase>;
@@ -106,6 +107,34 @@ describe('AssetService.getSnapshotForMonth N+1 fix', () => {
     await assetService.getSnapshotForMonth(workspaceId, 2026, 2);
 
     expect((mockDb as any).execute.mock.calls.length).toBeGreaterThan(1);
+  });
+
+  it('records perf metrics during chunked snapshot execution', async () => {
+    const workspaceId = 'workspace-1';
+    const assets = Array.from({ length: 1200 }, (_, i) =>
+      createMockAsset({
+        id: `asset-${i}`,
+        workspace_id: workspaceId,
+        created_at: new Date('2026-01-01'),
+      })
+    );
+    const perf = new PerfCollector();
+
+    (mockDb.query.assets.findMany as any).mockResolvedValue(assets);
+    (mockDb as any).execute.mockResolvedValue([]);
+
+    await assetService.getSnapshotForMonth(workspaceId, 2026, 2, undefined, perf);
+
+    const phases = perf.getPhases();
+    expect(
+      phases.some((phase) => phase.name === 'AssetService.getSnapshotForMonth.assetCount')
+    ).toBe(true);
+    expect(
+      phases.some((phase) => phase.name === 'AssetService.getSnapshotForMonth.chunkCount')
+    ).toBe(true);
+    expect(
+      phases.some((phase) => phase.name === 'AssetService.getSnapshotForMonth.historyRowsFetched')
+    ).toBe(true);
   });
 
   it('uses latest history at or before month-end per asset', async () => {
