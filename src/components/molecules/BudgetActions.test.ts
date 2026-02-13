@@ -3,6 +3,7 @@ import {
   MOBILE_BUDGET_ACTION_ORDER,
   shouldShowAiRebalancer,
   BUDGET_ACTIONS_MOBILE_SCROLL_CLASS,
+  BUDGET_ACTIONS_DESKTOP_CARD_CLASS,
 } from './budget-actions.config';
 
 describe('BudgetActions mobile configuration', () => {
@@ -25,5 +26,9 @@ describe('BudgetActions mobile configuration', () => {
   it('uses horizontal-only scrolling affordances for mobile action row', () => {
     expect(BUDGET_ACTIONS_MOBILE_SCROLL_CLASS).toContain('overflow-x-auto');
     expect(BUDGET_ACTIONS_MOBILE_SCROLL_CLASS).toContain('overflow-y-hidden');
+  });
+
+  it('keeps rounded corners on desktop card layout', () => {
+    expect(BUDGET_ACTIONS_DESKTOP_CARD_CLASS).toContain('md:rounded-2xl');
   });
 });

@@ -7,7 +7,7 @@
  * (AI Rebalancer is intentionally disabled for now.)
  * Uses ActionBar for consistent layout.
  *
- * Note: History and Copy controls are in BudgetHeaderControls (header slot).
+ * Note: History is in BudgetHeaderControls (header slot), and Copy is in BudgetSummary.
  *
  * @param {boolean} showAiRebalancer - Feature flag input (currently ignored; AI is disabled)
  * @param {number} uninitializedCount - Number of categories without budgets
@@ -16,7 +16,10 @@
 
 import { Plus, Tags, Download, Upload, Zap } from '@lucide/astro';
 import ActionBar from './ActionBar.astro';
-import { BUDGET_ACTIONS_MOBILE_SCROLL_CLASS } from './budget-actions.config';
+import {
+  BUDGET_ACTIONS_DESKTOP_CARD_CLASS,
+  BUDGET_ACTIONS_MOBILE_SCROLL_CLASS,
+} from './budget-actions.config';
 
 export interface Props {
   showAiRebalancer?: boolean;
@@ -38,7 +41,9 @@ const accentGhostBtn =
 ---
 
 <ActionBar
-  className={[BUDGET_ACTIONS_MOBILE_SCROLL_CLASS, className].filter(Boolean).join(' ')}
+  className={[BUDGET_ACTIONS_MOBILE_SCROLL_CLASS, BUDGET_ACTIONS_DESKTOP_CARD_CLASS, className]
+    .filter(Boolean)
+    .join(' ')}
   ariaLabel="Budget actions"
   edgeBleed
 >
