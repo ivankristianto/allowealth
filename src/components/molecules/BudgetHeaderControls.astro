@@ -15,10 +15,7 @@ const ghostButtonClass =
 ---
 
 <div
-  class:list={[
-    'flex w-full items-center gap-1 overflow-x-auto overflow-y-hidden py-1 scrollbar-hide sm:gap-2 lg:w-auto',
-    className,
-  ]}
+  class:list={['flex w-full flex-wrap items-center gap-1 py-1 sm:gap-2 lg:w-auto', className]}
   data-budget-header-controls
 >
   <a href="/budget/history" class={ghostButtonClass} aria-label="Budget history">

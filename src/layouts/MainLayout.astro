@@ -28,9 +28,7 @@ interface Props {
 }
 
 const { title = 'allowealth', currentPath = '/', user, subtitle } = Astro.props;
-const headerSlotHtml = Astro.slots.has('header') ? await Astro.slots.render('header') : '';
-const normalizedHeaderSlotHtml = headerSlotHtml.replace(/<!--[\s\S]*?-->/g, '').trim();
-const hasHeaderSlot = normalizedHeaderSlotHtml.length > 0;
+const hasHeaderSlot = Astro.slots.has('header');
 ---
 
 <BaseLayout title={title}>
@@ -45,7 +43,7 @@ const hasHeaderSlot = normalizedHeaderSlotHtml.length > 0;
     <div class="drawer-content flex flex-col lg:h-screen lg:overflow-y-auto">
       <!-- Header -->
       <Header title={title} user={user} subtitle={subtitle}>
-        {hasHeaderSlot && <Fragment slot="header" set:html={headerSlotHtml} />}
+        {hasHeaderSlot && <slot name="header" slot="header" />}
       </Header>
 
       <!-- Main content -->

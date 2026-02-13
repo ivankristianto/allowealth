@@ -66,7 +66,7 @@ describe('mobile view improvements', () => {
     const header = read('src/components/layouts/Header.astro');
     expect(header).toContain('data-header-slot-mobile');
     expect(header).toContain('justify-start');
-    expect(header).toContain('overflow-x-auto');
+    expect(header).toContain('flex-wrap');
   });
 
   it('renders header slot directly instead of injecting HTML strings', () => {
@@ -74,6 +74,14 @@ describe('mobile view improvements', () => {
     expect(header).toContain('<slot name="header" />');
     expect(header).not.toContain('Astro.slots.render(');
     expect(header).not.toContain('set:html={headerSlotHtml}');
+  });
+
+  it('forwards header slot in MainLayout without set:html injection', () => {
+    const mainLayout = read('src/layouts/MainLayout.astro');
+
+    expect(mainLayout).toContain('<slot name="header" slot="header" />');
+    expect(mainLayout).not.toContain("Astro.slots.render('header')");
+    expect(mainLayout).not.toContain('set:html={headerSlotHtml}');
   });
 
   it('keeps reports selector container in header slot for client re-rendering', () => {
@@ -85,8 +93,13 @@ describe('mobile view improvements', () => {
   it('does not clip period dropdown menus with overflow-y-hidden wrappers', () => {
     const header = read('src/components/layouts/Header.astro');
     const reportSelector = read('src/components/molecules/ReportSelector.astro');
+    const budgetHeaderControls = read('src/components/molecules/BudgetHeaderControls.astro');
 
     expect(header).not.toContain('overflow-y-hidden');
+    expect(header).not.toContain('overflow-x-auto');
     expect(reportSelector).not.toContain('overflow-y-hidden');
+    expect(reportSelector).not.toContain('overflow-x-auto');
+    expect(budgetHeaderControls).not.toContain('overflow-y-hidden');
+    expect(budgetHeaderControls).not.toContain('overflow-x-auto');
   });
 });

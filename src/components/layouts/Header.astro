@@ -120,7 +120,7 @@ const hasHeaderSlot = Astro.slots.has('header');
   {
     hasHeaderSlot && (
       <div
-        class="flex items-center justify-start gap-3 px-4 sm:px-6 pb-3 lg:hidden overflow-x-auto"
+        class="flex flex-wrap items-center justify-start gap-3 px-4 sm:px-6 pb-3 lg:hidden"
         data-header-slot-mobile
       >
         <slot name="header" />
