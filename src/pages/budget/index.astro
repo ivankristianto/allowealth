@@ -265,7 +265,6 @@ const budgetCount = budgetData?.categories.filter((c) => Number(c.budget_amount)
     slot="header"
     periodOptions={periodOptions}
     selectedPeriod={selectedPeriod}
-    showCopyButton={budgetCount > 0}
   />
 
   <div
@@ -295,6 +294,7 @@ const budgetCount = budgetData?.categories.filter((c) => Number(c.budget_amount)
                 totalSpent={Number(budgetData.total_spent || '0')}
                 distribution={allocationDistribution}
                 currency={selectedCurrency}
+                showCopyButton={budgetCount > 0}
               />
             )}
           </div>

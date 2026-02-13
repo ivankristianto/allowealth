@@ -29,9 +29,10 @@ export interface Props {
   totalSpent: number;
   distribution: DistributionItem[] | AllocationDistribution[];
   currency: 'IDR' | 'USD';
+  showCopyButton?: boolean;
 }
 
-const { totalAllocated, totalSpent, distribution, currency } = Astro.props;
+const { totalAllocated, totalSpent, distribution, currency, showCopyButton = false } = Astro.props;
 ---
 
 <BudgetSummary
@@ -39,5 +40,6 @@ const { totalAllocated, totalSpent, distribution, currency } = Astro.props;
   totalSpent={totalSpent}
   distribution={distribution}
   currency={currency}
+  showCopyButton={showCopyButton}
   loading={false}
 />

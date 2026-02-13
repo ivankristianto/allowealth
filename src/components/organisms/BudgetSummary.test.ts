@@ -11,7 +11,10 @@ import {
   isValidHexColor,
   sanitizeColor,
 } from '@/lib/utils/budget';
-import { getRemainingBudgetMetric } from '@/lib/utils/budget-summary';
+import {
+  COPY_BUDGET_TO_NEXT_MONTH_LABEL,
+  getRemainingBudgetMetric,
+} from '@/lib/utils/budget-summary';
 
 describe('BudgetSummary - getCategoryColor', () => {
   it('should return a valid hex color string', () => {
@@ -369,5 +372,9 @@ describe('BudgetSummary - Remaining/Overbudget metric', () => {
       value: 350,
       tone: 'error',
     });
+  });
+
+  it('uses the updated copy CTA label', () => {
+    expect(COPY_BUDGET_TO_NEXT_MONTH_LABEL).toBe('Copy budget to next month');
   });
 });

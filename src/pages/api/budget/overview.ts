@@ -84,6 +84,9 @@ export const GET: APIRoute = async (context) => {
             spent_amount: cat.spent_amount,
           }))
         );
+        const budgetCount =
+          budgetData.categories.filter((category) => Number(category.budget_amount) > 0).length ||
+          0;
 
         const summaryHtml = await container.renderToString(BudgetSummaryPartial, {
           props: {
@@ -91,6 +94,7 @@ export const GET: APIRoute = async (context) => {
             totalSpent: parseFloat(budgetData.total_spent || '0'),
             distribution,
             currency: selectedCurrency,
+            showCopyButton: budgetCount > 0,
           },
         });
         htmlParts.push(`<!-- PARTIAL:summary -->\n${summaryHtml}`);

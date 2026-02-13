@@ -1,15 +1,14 @@
 ---
-import { Copy, History } from '@lucide/astro';
+import { History } from '@lucide/astro';
 import PeriodNavigator, { type PeriodOption } from '@/components/molecules/PeriodNavigator.astro';
 
 export interface Props {
   periodOptions: PeriodOption[];
   selectedPeriod: string;
-  showCopyButton?: boolean;
   className?: string;
 }
 
-const { periodOptions, selectedPeriod, showCopyButton = false, className = '' } = Astro.props;
+const { periodOptions, selectedPeriod, className = '' } = Astro.props;
 
 const ghostButtonClass =
   'btn btn-sm min-h-[44px] gap-1 rounded-xl border border-base-300 bg-base-100 px-3 text-base-content/70 hover:border-accent/30 hover:text-accent';
@@ -27,21 +26,6 @@ const ghostButtonClass =
     <span class="text-xs font-semibold">History</span>
   </a>
 
-  {
-    showCopyButton && (
-      <button
-        type="button"
-        class={ghostButtonClass}
-        data-budget-copy-btn
-        data-target-modal="copy-budget-modal"
-        aria-label="Copy budgets to next month"
-      >
-        <Copy size={16} class="stroke-current" aria-hidden="true" />
-        <span class="text-xs font-semibold">Copy</span>
-      </button>
-    )
-  }
-
   <PeriodNavigator
     options={periodOptions}
     selected={selectedPeriod}
@@ -50,48 +34,3 @@ const ghostButtonClass =
     className="shrink-0"
   />
 </div>
-
-<script>
-  const copyButtonHandlers = new WeakMap<HTMLElement, (event: Event) => void>();
-
-  function initBudgetHeaderCopyButtons() {
-    document.querySelectorAll<HTMLElement>('[data-budget-copy-btn]').forEach((button) => {
-      if (copyButtonHandlers.has(button)) return;
-
-      const handler = (event: Event) => {
-        event.preventDefault();
-        event.stopPropagation();
-
-        const targetId = button.getAttribute('data-target-modal');
-        if (!targetId) return;
-
-        const modal = document.getElementById(targetId) as HTMLDialogElement | null;
-        if (modal) modal.showModal();
-      };
-
-      copyButtonHandlers.set(button, handler);
-      button.addEventListener('click', handler);
-    });
-  }
-
-  function cleanupBudgetHeaderCopyButtons() {
-    document.querySelectorAll<HTMLElement>('[data-budget-copy-btn]').forEach((button) => {
-      const handler = copyButtonHandlers.get(button);
-      if (!handler) return;
-      button.removeEventListener('click', handler);
-      copyButtonHandlers.delete(button);
-    });
-  }
-
-  function registerCleanup() {
-    document.addEventListener('astro:before-swap', cleanupBudgetHeaderCopyButtons, { once: true });
-  }
-
-  initBudgetHeaderCopyButtons();
-  registerCleanup();
-
-  document.addEventListener('astro:page-load', () => {
-    initBudgetHeaderCopyButtons();
-    registerCleanup();
-  });
-</script>
