@@ -69,4 +69,17 @@ describe('mobile view improvements', () => {
     expect(header).toContain('overflow-x-auto');
     expect(header).toContain('overflow-y-hidden');
   });
+
+  it('renders header slot directly instead of injecting HTML strings', () => {
+    const header = read('src/components/layouts/Header.astro');
+    expect(header).toContain('<slot name="header" />');
+    expect(header).not.toContain('Astro.slots.render(');
+    expect(header).not.toContain('set:html={headerSlotHtml}');
+  });
+
+  it('keeps reports selector container in header slot for client re-rendering', () => {
+    const reports = read('src/pages/reports/index.astro');
+    expect(reports).toContain('slot="header"');
+    expect(reports).toContain('data-selector-container');
+  });
 });
