@@ -71,6 +71,20 @@ describe('AssetService.findAllWithHistory N+1 fix', () => {
     expect(result[1].history[0].amount).toBe(2000);
   });
 
+  it('chunks asset IDs in findAllWithHistory when workspace has many assets', async () => {
+    const workspaceId = 'workspace-1';
+    const assets = Array.from({ length: 1200 }, (_, i) =>
+      createMockAsset({ id: `asset-${i}`, workspace_id: workspaceId })
+    );
+
+    (mockDb.query.assets.findMany as any).mockResolvedValue(assets);
+    (mockDb.query.assetHistory as any).findMany.mockResolvedValue([]);
+
+    await assetService.findAllWithHistory(workspaceId);
+
+    expect((mockDb.query.assetHistory as any).findMany.mock.calls.length).toBeGreaterThan(1);
+  });
+
   it('should return empty array when no assets exist', async () => {
     (mockDb.query.assets.findMany as any).mockResolvedValue([]);
 

@@ -89,6 +89,47 @@ describe('AssetService.getSnapshotForMonth N+1 fix', () => {
     expect(snapshots[1].snapshot_balance).toBe('3200');
   });
 
+  it('chunks asset IDs when count exceeds SQLite variable limit', async () => {
+    const workspaceId = 'workspace-1';
+    const assets = Array.from({ length: 1200 }, (_, i) =>
+      createMockAsset({
+        id: `asset-${i}`,
+        workspace_id: workspaceId,
+        created_at: new Date('2026-01-01'),
+      })
+    );
+
+    (mockDb.query.assets.findMany as any).mockResolvedValue(assets);
+    (mockDb.query.assetHistory as any).findMany.mockResolvedValue([]);
+
+    await assetService.getSnapshotForMonth(workspaceId, 2026, 2);
+
+    expect((mockDb.query.assetHistory as any).findMany.mock.calls.length).toBeGreaterThan(1);
+  });
+
+  it('uses latest history at or before month-end per asset', async () => {
+    const workspaceId = 'workspace-1';
+    const asset = createMockAsset({
+      id: 'asset-1',
+      workspace_id: workspaceId,
+      balance: '5000',
+      initial_balance: '1000',
+      created_at: new Date('2026-01-01'),
+    });
+
+    (mockDb.query.assets.findMany as any).mockResolvedValue([asset]);
+    (mockDb.query.assetHistory as any).findMany.mockResolvedValue([
+      { asset_id: 'asset-1', balance: '1500', recorded_at: new Date('2026-01-15') },
+      { asset_id: 'asset-1', balance: '3000', recorded_at: new Date('2026-01-31') },
+    ]);
+
+    const snapshots = await assetService.getSnapshotForMonth(workspaceId, 2026, 1);
+
+    expect(snapshots).toHaveLength(1);
+    expect(snapshots[0].snapshot_balance).toBe('3000');
+    expect(snapshots[0].snapshot_date).toEqual(new Date('2026-01-31'));
+  });
+
   it('should fall back to initial_balance when no history exists', async () => {
     const workspaceId = 'workspace-1';
     const year = 2026;
