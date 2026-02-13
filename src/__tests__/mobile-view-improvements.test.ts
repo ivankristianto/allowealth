@@ -26,4 +26,47 @@ describe('mobile view improvements', () => {
     const componentPath = join(projectRoot, 'src/components/molecules/AssetPageHeader.astro');
     expect(existsSync(componentPath)).toBe(false);
   });
+
+  it('enforces edge-bleed mobile action rows for all ActionBar consumers', () => {
+    const actionBar = read('src/components/molecules/ActionBar.astro');
+    expect(actionBar).toContain('overflow-x-auto');
+    expect(actionBar).toContain('overflow-y-hidden');
+    expect(actionBar).toContain('md:overflow-visible');
+    expect(actionBar).toContain('md:mx-0');
+
+    const consumers = [
+      read('src/components/molecules/TransactionActionsBar.astro'),
+      read('src/components/molecules/BudgetActions.astro'),
+      read('src/components/organisms/AssetActions.astro'),
+    ];
+
+    consumers.forEach((content) => {
+      expect(content).toContain('edgeBleed');
+    });
+  });
+
+  it('uses ActionBar edge-bleed action rows in asset and budget category pages', () => {
+    const assetCategoriesPage = read('src/pages/assets/categories/index.astro');
+    const budgetCategoriesPage = read('src/pages/budget/categories/index.astro');
+
+    expect(assetCategoriesPage).toContain(
+      "import ActionBar from '@components/molecules/ActionBar.astro'"
+    );
+    expect(assetCategoriesPage).toContain('ariaLabel="Asset category actions"');
+    expect(assetCategoriesPage).toContain('edgeBleed');
+
+    expect(budgetCategoriesPage).toContain(
+      "import ActionBar from '@components/molecules/ActionBar.astro'"
+    );
+    expect(budgetCategoriesPage).toContain('ariaLabel="Budget category actions"');
+    expect(budgetCategoriesPage).toContain('edgeBleed');
+  });
+
+  it('allows horizontal scrolling for header slot controls on mobile', () => {
+    const header = read('src/components/layouts/Header.astro');
+    expect(header).toContain('data-header-slot-mobile');
+    expect(header).toContain('justify-start');
+    expect(header).toContain('overflow-x-auto');
+    expect(header).toContain('overflow-y-hidden');
+  });
 });

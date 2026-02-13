@@ -121,7 +121,7 @@ const headerSlotHtml = hasHeaderSlot ? await Astro.slots.render('header') : '';
   {
     hasHeaderSlot && (
       <div
-        class="flex items-center justify-center gap-3 px-4 sm:px-6 pb-3 lg:hidden"
+        class="flex items-center justify-start gap-3 px-4 sm:px-6 pb-3 lg:hidden overflow-x-auto overflow-y-hidden"
         data-header-slot-mobile
       >
         <Fragment set:html={headerSlotHtml} />

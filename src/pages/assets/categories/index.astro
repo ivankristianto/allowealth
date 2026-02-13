@@ -8,6 +8,7 @@
 
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import TabToggle from '@/components/atoms/TabToggle.astro';
+import ActionBar from '@components/molecules/ActionBar.astro';
 import AssetCategoryModal from '@/components/organisms/AssetCategoryModal.astro';
 import AssetCategoryDeleteDialog from '@/components/organisms/AssetCategoryDeleteDialog.astro';
 import AssetCategoryTablePartial from '@/components/partials/AssetCategoryTablePartial.astro';
@@ -55,6 +56,12 @@ if (searchQuery) {
       (category.description || '').toLowerCase().includes(query)
   );
 }
+
+const ghostBtn =
+  'btn btn-ghost btn-sm md:btn-md min-h-[44px] min-w-[44px] gap-1 md:gap-2 rounded-lg md:rounded-xl text-base-content/70 hover:text-base-content hover:bg-base-200 px-2 md:px-4';
+
+const accentGhostBtn =
+  'btn btn-ghost btn-sm md:btn-md min-h-[44px] min-w-[44px] gap-1 md:gap-2 rounded-lg md:rounded-xl text-accent hover:text-accent hover:bg-accent/10 px-2 md:px-4 font-semibold';
 ---
 
 <ProtectedLayout
@@ -63,14 +70,8 @@ if (searchQuery) {
   subtitle="Manage your asset and liability categories"
 >
   <div class="max-w-7xl mx-auto sm:px-2 lg:px-6 space-y-6 sm:space-y-8">
-    <!-- Back to Assets -->
-    <a href="/assets" class="btn btn-ghost btn-sm gap-2 rounded-xl w-fit">
-      <ArrowLeft size={16} class="stroke-current" aria-hidden="true" />
-      Back to Assets
-    </a>
-
-    <!-- Header -->
-    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+    <!-- Page Intro -->
+    <div>
       <div>
         <h2 class="text-2xl font-bold text-base-content tracking-tight leading-none">
           Manage Categories
@@ -79,15 +80,27 @@ if (searchQuery) {
           Organizing {allCategories.length} categories across your portfolio
         </p>
       </div>
+    </div>
+
+    <ActionBar ariaLabel="Asset category actions" edgeBleed>
+      <a href="/assets" class={ghostBtn} aria-label="Back to assets">
+        <ArrowLeft size={16} class="stroke-current md:hidden" aria-hidden="true" />
+        <ArrowLeft size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+        <span class="text-xs md:text-sm">Back</span>
+      </a>
+
       <button
-        class="btn btn-accent rounded-2xl font-bold text-sm flex items-center gap-2"
+        slot="primary"
+        class={accentGhostBtn}
         data-action="create-asset-category"
         data-testid="create-asset-category-btn"
+        aria-label="Create asset category"
       >
-        <Plus size={18} class="stroke-current" aria-hidden="true" />
-        Add Category
+        <Plus size={16} class="stroke-current md:hidden" aria-hidden="true" />
+        <Plus size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+        <span class="text-xs md:text-sm">Add Category</span>
       </button>
-    </div>
+    </ActionBar>
 
     <!-- Filters -->
     <div class="flex flex-col md:flex-row justify-between items-center gap-6">
