@@ -1,0 +1,24 @@
+---
+/**
+ * BudgetCopyActionPartial
+ *
+ * Server-rendered partial for budget copy action inside the action bar.
+ * Used by budget overview HTML responses to keep copy action state in sync.
+ */
+
+import BudgetCopyActionButton from '@components/molecules/BudgetCopyActionButton.astro';
+
+export interface Props {
+  showCopyAction?: boolean;
+  disableCopyAction?: boolean;
+  copyActionTooltip?: string;
+}
+
+const { showCopyAction = false, disableCopyAction = false, copyActionTooltip = '' } = Astro.props;
+---
+
+<BudgetCopyActionButton
+  showCopyAction={showCopyAction}
+  disableCopyAction={disableCopyAction}
+  copyActionTooltip={copyActionTooltip}
+/>

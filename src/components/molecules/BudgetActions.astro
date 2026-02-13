@@ -17,13 +17,13 @@
  * @param {string} className - Additional CSS classes
  */
 
-import { Plus, Tags, Download, Upload, Zap, Copy } from '@lucide/astro';
+import { Plus, Tags, Download, Upload, Zap } from '@lucide/astro';
 import ActionBar from './ActionBar.astro';
+import BudgetCopyActionButton from './BudgetCopyActionButton.astro';
 import {
   BUDGET_ACTIONS_DESKTOP_CARD_CLASS,
   BUDGET_ACTIONS_MOBILE_SCROLL_CLASS,
 } from './budget-actions.config';
-import { COPY_BUDGET_TO_NEXT_MONTH_LABEL } from '@/lib/utils/budget-copy';
 
 export interface Props {
   showAiRebalancer?: boolean;
@@ -96,31 +96,13 @@ const accentGhostBtn =
     </button>
   </div>
 
-  {/* Copy Budget to Next Month */}
-  {
-    showCopyAction && (
-      <div
-        class="tooltip tooltip-bottom"
-        data-tip={disableCopyAction ? copyActionTooltip : COPY_BUDGET_TO_NEXT_MONTH_LABEL}
-      >
-        <button
-          type="button"
-          class:list={[ghostBtn, disableCopyAction && 'opacity-30 cursor-not-allowed']}
-          id="copy-budget-btn"
-          data-target-modal="copy-budget-modal"
-          aria-label={COPY_BUDGET_TO_NEXT_MONTH_LABEL}
-          title={disableCopyAction ? copyActionTooltip : undefined}
-          disabled={disableCopyAction}
-          aria-disabled={disableCopyAction ? 'true' : undefined}
-          data-testid="copy-budget-btn"
-        >
-          <Copy size={16} class="stroke-current md:hidden" aria-hidden="true" />
-          <Copy size={18} class="stroke-current hidden md:block" aria-hidden="true" />
-          <span class="text-xs sm:text-sm">Copy</span>
-        </button>
-      </div>
-    )
-  }
+  <div id="budget-copy-action-container">
+    <BudgetCopyActionButton
+      showCopyAction={showCopyAction}
+      disableCopyAction={disableCopyAction}
+      copyActionTooltip={copyActionTooltip}
+    />
+  </div>
 
   {/* Initialize All Budgets */}
   {
@@ -218,12 +200,24 @@ const accentGhostBtn =
     initModalTriggerButton('initialize-budgets-btn');
   }
 
+  function handleBudgetContentUpdated() {
+    initBudgetActionButtons();
+  }
+
   function registerCleanup() {
-    document.addEventListener('astro:before-swap', cleanupBudgetActionButtons, { once: true });
+    document.addEventListener(
+      'astro:before-swap',
+      () => {
+        cleanupBudgetActionButtons();
+        document.removeEventListener('budget-content-updated', handleBudgetContentUpdated);
+      },
+      { once: true }
+    );
   }
 
   initBudgetActionButtons();
   registerCleanup();
+  document.addEventListener('budget-content-updated', handleBudgetContentUpdated);
 
   document.addEventListener('astro:page-load', () => {
     initBudgetActionButtons();
