@@ -73,7 +73,7 @@ const triggerClass = compactMobile
 const navIconSize = compactMobile ? 16 : 18;
 const calendarIconSize = compactMobile ? 14 : 16;
 const chevronDownSize = compactMobile ? 12 : 14;
-const dropdownWidthClass = compactMobile ? 'w-48 sm:w-52' : 'w-52';
+const dropdownWidthClass = compactMobile ? 'w-56 sm:w-60' : 'w-56';
 ---
 
 {
@@ -127,10 +127,10 @@ const dropdownWidthClass = compactMobile ? 'w-48 sm:w-52' : 'w-52';
         </button>
         <ul
           tabindex={0}
-          class={`dropdown-content z-50 menu p-2 shadow-lg bg-base-100 rounded-2xl border border-base-300 mt-2 max-h-64 overflow-y-auto ${dropdownWidthClass}`}
+          class={`dropdown-content z-50 menu flex flex-col flex-nowrap p-2 shadow-lg bg-base-100 rounded-2xl border border-base-300 mt-2 max-h-64 overflow-x-hidden overflow-y-auto ${dropdownWidthClass}`}
         >
           {options.map((option) => (
-            <li>
+            <li class="w-full">
               <button
                 type="button"
                 class={`w-full text-left whitespace-nowrap text-xs font-medium ${option.value === selected ? 'bg-primary/10 text-primary' : ''}`}

@@ -187,5 +187,7 @@ describe('mobile view improvements', () => {
 
     expect(periodNavigator).toContain('whitespace-nowrap');
     expect(periodNavigator).toContain('w-full text-left');
+    expect(periodNavigator).toContain('flex-nowrap');
+    expect(periodNavigator).toContain('overflow-x-hidden');
   });
 });
