@@ -1,7 +1,9 @@
 import type { TransactionOutput } from '@/lib/types/transaction';
 
 export interface DateGroup {
-  label: string;
+  label: string; // Combined: "Today, 13 February 2026" or "13 February 2026"
+  relativeLabel?: string; // "Today" | "Yesterday" | undefined (for older dates)
+  fullDate: string; // Always: "13 February 2026"
   dateKey: string;
   transactions: TransactionOutput[];
 }
@@ -23,12 +25,19 @@ function toDateKey(year: number, month: number, day: number): string {
   return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 }
 
-function formatDateLabel(year: number, month: number, day: number): string {
+function formatDateLabel(
+  year: number,
+  month: number,
+  day: number
+): { relative?: string; full: string } {
+  const date = new Date(year, month, day);
+  const full = date.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+
   const now = new Date();
   const todayKey = toDateKey(now.getFullYear(), now.getMonth(), now.getDate());
   const dateKey = toDateKey(year, month, day);
 
-  if (dateKey === todayKey) return 'Today';
+  if (dateKey === todayKey) return { relative: 'Today', full };
 
   const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
   const yesterdayKey = toDateKey(
@@ -36,10 +45,9 @@ function formatDateLabel(year: number, month: number, day: number): string {
     yesterday.getMonth(),
     yesterday.getDate()
   );
-  if (dateKey === yesterdayKey) return 'Yesterday';
+  if (dateKey === yesterdayKey) return { relative: 'Yesterday', full };
 
-  const date = new Date(year, month, day);
-  return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+  return { full };
 }
 
 /**
@@ -49,7 +57,10 @@ function formatDateLabel(year: number, month: number, day: number): string {
 export function groupTransactionsByDate(transactions: TransactionOutput[]): DateGroup[] {
   if (transactions.length === 0) return [];
 
-  const groupMap = new Map<string, { label: string; transactions: TransactionOutput[] }>();
+  const groupMap = new Map<
+    string,
+    { relativeLabel?: string; fullDate: string; transactions: TransactionOutput[] }
+  >();
   const dateOrder: string[] = [];
 
   for (const tx of transactions) {
@@ -57,7 +68,8 @@ export function groupTransactionsByDate(transactions: TransactionOutput[]): Date
     const key = toDateKey(year, month, day);
 
     if (!groupMap.has(key)) {
-      groupMap.set(key, { label: formatDateLabel(year, month, day), transactions: [] });
+      const { relative, full } = formatDateLabel(year, month, day);
+      groupMap.set(key, { relativeLabel: relative, fullDate: full, transactions: [] });
       dateOrder.push(key);
     }
     groupMap.get(key)!.transactions.push(tx);
@@ -66,9 +78,14 @@ export function groupTransactionsByDate(transactions: TransactionOutput[]): Date
   // Sort date keys descending
   dateOrder.sort((a, b) => b.localeCompare(a));
 
-  return dateOrder.map((key) => ({
-    dateKey: key,
-    label: groupMap.get(key)!.label,
-    transactions: groupMap.get(key)!.transactions,
-  }));
+  return dateOrder.map((key) => {
+    const group = groupMap.get(key)!;
+    return {
+      dateKey: key,
+      label: group.relativeLabel ? `${group.relativeLabel}, ${group.fullDate}` : group.fullDate,
+      relativeLabel: group.relativeLabel,
+      fullDate: group.fullDate,
+      transactions: group.transactions,
+    };
+  });
 }
