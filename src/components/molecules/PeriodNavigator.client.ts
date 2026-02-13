@@ -14,6 +14,12 @@ interface PeriodOption {
 
 // Track initialized navigators to avoid duplicate handlers
 const initializedNavigators = new WeakSet<Element>();
+const resetSyncControllers = new Set<AbortController>();
+
+function cleanupPeriodNavigatorListeners(): void {
+  resetSyncControllers.forEach((controller) => controller.abort());
+  resetSyncControllers.clear();
+}
 
 export function initPeriodNavigator() {
   document.querySelectorAll('[data-period-navigator]').forEach((navigator) => {
@@ -170,10 +176,16 @@ export function initPeriodNavigator() {
     }
 
     // Listen for filters reset to restore current month
-    window.addEventListener(FILTERS_RESET_EVENT, (e: Event) => {
-      const { month } = (e as CustomEvent).detail || {};
-      if (month) setPeriod(month);
-    });
+    const resetSyncController = new AbortController();
+    resetSyncControllers.add(resetSyncController);
+    window.addEventListener(
+      FILTERS_RESET_EVENT,
+      (e: Event) => {
+        const { month } = (e as CustomEvent).detail || {};
+        if (month) setPeriod(month);
+      },
+      { signal: resetSyncController.signal }
+    );
 
     // Initialize button states
     updateNavButtons();
@@ -189,3 +201,4 @@ if (document.readyState === 'loading') {
 
 // Re-initialize on Astro page transitions
 document.addEventListener('astro:page-load', initPeriodNavigator);
+document.addEventListener('astro:before-swap', cleanupPeriodNavigatorListeners);

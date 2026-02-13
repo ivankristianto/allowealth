@@ -1,4 +1,4 @@
-import { PERIOD_CHANGE_EVENT } from '@/lib/constants/events';
+import { FILTERS_RESET_EVENT, PERIOD_CHANGE_EVENT } from '@/lib/constants/events';
 
 const HEADER_LISTENER_KEY = '__headerListenerInitialized';
 
@@ -19,6 +19,17 @@ function handleHeaderClick(event: Event): void {
   dispatchDrawerOpenEvent();
 }
 
+function setHeaderSubtitle(label: string): void {
+  const subtitle = document.querySelector('[data-header-subtitle]');
+  if (subtitle) subtitle.textContent = label;
+}
+
+function resolvePeriodLabel(period: string): string | null {
+  const periodOption = document.querySelector<HTMLElement>(`[data-period-option="${period}"]`);
+  if (!periodOption) return null;
+  return periodOption.dataset.periodLabel || periodOption.textContent?.trim() || null;
+}
+
 function initHeaderListeners(): void {
   const scopedWindow = window as HeaderWindow;
   if (scopedWindow[HEADER_LISTENER_KEY]) return;
@@ -29,8 +40,15 @@ function initHeaderListeners(): void {
   window.addEventListener(PERIOD_CHANGE_EVENT, (e: Event) => {
     const { label } = (e as CustomEvent).detail;
     if (!label) return;
-    const subtitle = document.querySelector('[data-header-subtitle]');
-    if (subtitle) subtitle.textContent = label;
+    setHeaderSubtitle(label);
+  });
+
+  // Reset filters emits month key only; resolve to human-readable label for subtitle.
+  window.addEventListener(FILTERS_RESET_EVENT, (e: Event) => {
+    const { month } = (e as CustomEvent).detail || {};
+    if (!month) return;
+    const label = resolvePeriodLabel(month);
+    if (label) setHeaderSubtitle(label);
   });
 
   scopedWindow[HEADER_LISTENER_KEY] = true;

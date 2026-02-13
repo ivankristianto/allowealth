@@ -106,6 +106,7 @@ const mainSearchInputClass = [
   aria-label="Filter transactions"
   id="transaction-filters-form"
   data-filter-form
+  data-selected-month={selectedMonth}
 >
   {/* Row 1: Search + Reset */}
   <div class="flex items-center gap-2 sm:gap-3 w-full">
@@ -282,11 +283,17 @@ const mainSearchInputClass = [
   import { PERIOD_CHANGE_EVENT, FILTERS_RESET_EVENT } from '@/lib/constants/events';
   // Track selected category IDs
   let selectedCategoryIds: string[] = [];
+  let selectedPeriod = '';
 
   // Get current month from reset button
   function getCurrentMonth(): string {
     const resetBtn = document.querySelector('[data-reset-filters]') as HTMLElement;
     return resetBtn?.dataset.currentMonth || '';
+  }
+
+  function getInitialSelectedMonth(): string {
+    const form = document.getElementById('transaction-filters-form') as HTMLElement | null;
+    return form?.dataset.selectedMonth || '';
   }
 
   // Check if filters are active and update reset button visibility
@@ -295,7 +302,6 @@ const mainSearchInputClass = [
     if (!resetBtn) return;
 
     const searchInput = document.getElementById('search-input') as HTMLInputElement;
-    const periodInput = document.querySelector('[data-period-input]') as HTMLInputElement;
     const typeButtons = document.querySelectorAll('[data-filter-type]');
     const currentMonth = getCurrentMonth();
 
@@ -311,7 +317,7 @@ const mainSearchInputClass = [
       currentType !== 'expense' ||
       (searchInput && searchInput.value.trim() !== '') ||
       selectedCategoryIds.length > 0 ||
-      (periodInput && periodInput.value !== '' && periodInput.value !== currentMonth);
+      (selectedPeriod !== '' && selectedPeriod !== currentMonth);
 
     resetBtn.classList.toggle('hidden', !hasFilters);
   }
@@ -494,6 +500,7 @@ const mainSearchInputClass = [
   window.addEventListener(PERIOD_CHANGE_EVENT, (e: Event) => {
     const customEvent = e as CustomEvent;
     const { period } = customEvent.detail;
+    selectedPeriod = period || '';
 
     // Update reset button visibility
     updateResetButtonVisibility();
@@ -521,8 +528,12 @@ const mainSearchInputClass = [
     const searchEl = document.getElementById('search-input') as HTMLInputElement;
     if (searchEl) searchEl.value = '';
 
+    selectedPeriod = getCurrentMonth();
+
     updateResetButtonVisibility();
   });
+
+  selectedPeriod = getInitialSelectedMonth();
 
   // Initialize on load
   initCategorySelection();
