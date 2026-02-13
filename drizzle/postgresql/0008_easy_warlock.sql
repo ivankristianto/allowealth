@@ -1,0 +1,1 @@
+CREATE INDEX "asset_history_asset_recorded_idx" ON "asset_history" USING btree ("asset_id","recorded_at");
