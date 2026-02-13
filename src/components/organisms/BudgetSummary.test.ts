@@ -14,6 +14,7 @@ import {
 import {
   COPY_BUDGET_TO_NEXT_MONTH_LABEL,
   getRemainingBudgetMetric,
+  resolveBudgetAllocationOpenState,
 } from '@/lib/utils/budget-summary';
 
 describe('BudgetSummary - getCategoryColor', () => {
@@ -376,5 +377,22 @@ describe('BudgetSummary - Remaining/Overbudget metric', () => {
 
   it('uses the updated copy CTA label', () => {
     expect(COPY_BUDGET_TO_NEXT_MONTH_LABEL).toBe('Copy budget to next month');
+  });
+});
+
+describe('BudgetSummary - allocation details open state sync', () => {
+  it('sets initial state based on viewport width', () => {
+    expect(resolveBudgetAllocationOpenState({ isWide: true })).toBe(true);
+    expect(resolveBudgetAllocationOpenState({ isWide: false })).toBe(false);
+  });
+
+  it('does not override user state when width class is unchanged', () => {
+    expect(resolveBudgetAllocationOpenState({ previousIsWide: false, isWide: false })).toBeNull();
+    expect(resolveBudgetAllocationOpenState({ previousIsWide: true, isWide: true })).toBeNull();
+  });
+
+  it('updates state when crossing breakpoint', () => {
+    expect(resolveBudgetAllocationOpenState({ previousIsWide: false, isWide: true })).toBe(true);
+    expect(resolveBudgetAllocationOpenState({ previousIsWide: true, isWide: false })).toBe(false);
   });
 });

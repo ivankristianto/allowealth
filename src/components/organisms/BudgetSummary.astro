@@ -282,8 +282,11 @@ const cardClasses = [
 </div>
 
 <script>
+  import { resolveBudgetAllocationOpenState } from '@/lib/utils/budget-summary';
+
   const initializedDetails = new WeakSet<Element>();
   const detailsObservers = new Map<Element, ResizeObserver>();
+  const detailsViewportStates = new WeakMap<Element, boolean>();
   const copyButtonHandlers = new WeakMap<HTMLElement, (event: Event) => void>();
 
   function initBudgetAllocations() {
@@ -303,7 +306,15 @@ const cardClasses = [
 
         const observer = new ResizeObserver((entries) => {
           for (const entry of entries) {
-            details.open = entry.contentRect.width >= WIDE_THRESHOLD;
+            const isWide = entry.contentRect.width >= WIDE_THRESHOLD;
+            const previousIsWide = detailsViewportStates.get(details);
+            const nextOpenState = resolveBudgetAllocationOpenState({ previousIsWide, isWide });
+
+            if (nextOpenState !== null) {
+              details.open = nextOpenState;
+            }
+
+            detailsViewportStates.set(details, isWide);
           }
         });
 

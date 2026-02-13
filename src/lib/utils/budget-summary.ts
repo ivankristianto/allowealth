@@ -7,6 +7,11 @@ export interface RemainingBudgetMetric {
   tone: BudgetMetricTone;
 }
 
+interface BudgetAllocationOpenStateInput {
+  previousIsWide?: boolean;
+  isWide: boolean;
+}
+
 export function getRemainingBudgetMetric(
   totalAllocated: number,
   totalSpent: number
@@ -26,4 +31,19 @@ export function getRemainingBudgetMetric(
     value: delta,
     tone: 'success',
   };
+}
+
+export function resolveBudgetAllocationOpenState({
+  previousIsWide,
+  isWide,
+}: BudgetAllocationOpenStateInput): boolean | null {
+  if (previousIsWide === undefined) {
+    return isWide;
+  }
+
+  if (previousIsWide === isWide) {
+    return null;
+  }
+
+  return isWide;
 }
