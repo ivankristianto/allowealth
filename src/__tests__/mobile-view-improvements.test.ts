@@ -67,7 +67,6 @@ describe('mobile view improvements', () => {
     expect(header).toContain('data-header-slot-mobile');
     expect(header).toContain('justify-start');
     expect(header).toContain('overflow-x-auto');
-    expect(header).toContain('overflow-y-hidden');
   });
 
   it('renders header slot directly instead of injecting HTML strings', () => {
@@ -81,5 +80,13 @@ describe('mobile view improvements', () => {
     const reports = read('src/pages/reports/index.astro');
     expect(reports).toContain('slot="header"');
     expect(reports).toContain('data-selector-container');
+  });
+
+  it('does not clip period dropdown menus with overflow-y-hidden wrappers', () => {
+    const header = read('src/components/layouts/Header.astro');
+    const reportSelector = read('src/components/molecules/ReportSelector.astro');
+
+    expect(header).not.toContain('overflow-y-hidden');
+    expect(reportSelector).not.toContain('overflow-y-hidden');
   });
 });
