@@ -5,7 +5,7 @@
  * Separated from component for explicit initialization after HTML injection.
  */
 
-import { PERIOD_CHANGE_EVENT } from '@/lib/constants/events';
+import { PERIOD_CHANGE_EVENT, FILTERS_RESET_EVENT } from '@/lib/constants/events';
 
 interface PeriodOption {
   value: string;
@@ -31,6 +31,19 @@ export function initPeriodNavigator() {
     // Get available periods from data attribute
     const optionsData = navigator.getAttribute('data-period-options');
     const availableOptions: PeriodOption[] = optionsData ? JSON.parse(optionsData) : [];
+
+    // Update dropdown active highlight to match current selection
+    function updateDropdownHighlight() {
+      const currentValue = periodInput.value;
+      navigator.querySelectorAll('[data-period-option]').forEach((btn) => {
+        const el = btn as HTMLElement;
+        if (el.dataset.periodOption === currentValue) {
+          el.classList.add('bg-primary/10', 'text-primary');
+        } else {
+          el.classList.remove('bg-primary/10', 'text-primary');
+        }
+      });
+    }
 
     // Update navigation button states
     function updateNavButtons() {
@@ -62,6 +75,17 @@ export function initPeriodNavigator() {
           nextBtn.classList.add('opacity-30', 'cursor-not-allowed', 'pointer-events-none');
         }
       }
+
+      updateDropdownHighlight();
+    }
+
+    // Set period programmatically (used by filtersReset)
+    function setPeriod(value: string) {
+      const option = availableOptions.find((o) => o.value === value);
+      if (!option) return;
+      periodInput.value = option.value;
+      periodLabel.textContent = option.label;
+      updateNavButtons();
     }
 
     // Handle period dropdown selection
@@ -144,6 +168,12 @@ export function initPeriodNavigator() {
         }
       });
     }
+
+    // Listen for filters reset to restore current month
+    window.addEventListener(FILTERS_RESET_EVENT, (e: Event) => {
+      const { month } = (e as CustomEvent).detail || {};
+      if (month) setPeriod(month);
+    });
 
     // Initialize button states
     updateNavButtons();

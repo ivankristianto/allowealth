@@ -62,14 +62,28 @@ const hasHeaderExtras = headerExtrasHtml.length > 0;
         </h1>
         {
           subtitle && (
-            <p class="text-sm font-medium text-neutral mt-0.5 sm:mt-1.5 leading-none">{subtitle}</p>
+            <p
+              class="text-sm font-medium text-neutral mt-0.5 sm:mt-1.5 leading-none"
+              data-header-subtitle
+            >
+              {subtitle}
+            </p>
           )
         }
       </div>
     </div>
 
-    <!-- Right side: Currency selector + New Entry button -->
+    <!-- Right side: Header extras (desktop) + Currency selector + New Entry button -->
     <div class="flex items-center gap-3 sm:gap-5">
+      {/* Header extras inline on desktop (e.g., PeriodNavigator beside CurrencySelector) */}
+      {
+        hasHeaderExtras && (
+          <div class="hidden lg:block" data-header-extras-desktop>
+            <Fragment set:html={headerExtrasHtml} />
+          </div>
+        )
+      }
+
       {
         user && (
           <div class="hidden sm:block">
@@ -104,10 +118,13 @@ const hasHeaderExtras = headerExtrasHtml.length > 0;
     </div>
   </div>
 
-  {/* Page-specific header extras (e.g., PeriodNavigator) */}
+  {/* Header extras below main bar on mobile/tablet */}
   {
     hasHeaderExtras && (
-      <div class="flex items-center justify-center sm:justify-end gap-3 px-4 sm:px-6 lg:px-10 pb-3">
+      <div
+        class="flex items-center justify-center gap-3 px-4 sm:px-6 pb-3 lg:hidden"
+        data-header-extras-mobile
+      >
         <Fragment set:html={headerExtrasHtml} />
       </div>
     )

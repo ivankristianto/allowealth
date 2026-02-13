@@ -1,4 +1,6 @@
-const HEADER_LISTENER_KEY = '__headerDrawerListenerInitialized';
+import { PERIOD_CHANGE_EVENT } from '@/lib/constants/events';
+
+const HEADER_LISTENER_KEY = '__headerListenerInitialized';
 
 interface HeaderWindow extends Window {
   [HEADER_LISTENER_KEY]?: boolean;
@@ -17,12 +19,21 @@ function handleHeaderClick(event: Event): void {
   dispatchDrawerOpenEvent();
 }
 
-function initHeaderDrawerListener(): void {
+function initHeaderListeners(): void {
   const scopedWindow = window as HeaderWindow;
   if (scopedWindow[HEADER_LISTENER_KEY]) return;
 
   document.addEventListener('click', handleHeaderClick);
+
+  // Update subtitle when period changes (e.g., month navigation)
+  window.addEventListener(PERIOD_CHANGE_EVENT, (e: Event) => {
+    const { label } = (e as CustomEvent).detail;
+    if (!label) return;
+    const subtitle = document.querySelector('[data-header-subtitle]');
+    if (subtitle) subtitle.textContent = label;
+  });
+
   scopedWindow[HEADER_LISTENER_KEY] = true;
 }
 
-initHeaderDrawerListener();
+initHeaderListeners();

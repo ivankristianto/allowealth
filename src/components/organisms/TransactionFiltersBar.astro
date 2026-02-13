@@ -180,7 +180,7 @@ const mainSearchInputClass = [
     {/* Category dropdown */}
     {
       showCategoryFilter && categories.length > 0 && (
-        <div class="dropdown" id="category-dropdown">
+        <div class="dropdown dropdown-end" id="category-dropdown">
           <input
             type="hidden"
             name="category_ids"
@@ -279,7 +279,7 @@ const mainSearchInputClass = [
 </form>
 
 <script>
-  import { PERIOD_CHANGE_EVENT } from '@/lib/constants/events';
+  import { PERIOD_CHANGE_EVENT, FILTERS_RESET_EVENT } from '@/lib/constants/events';
   // Track selected category IDs
   let selectedCategoryIds: string[] = [];
 
@@ -511,6 +511,18 @@ const mainSearchInputClass = [
       updateResetButtonVisibility();
     });
   }
+
+  // Listen for filters reset to clear category state and UI
+  window.addEventListener(FILTERS_RESET_EVENT, () => {
+    selectedCategoryIds = [];
+    updateCategoryUI();
+
+    // Clear search input
+    const searchEl = document.getElementById('search-input') as HTMLInputElement;
+    if (searchEl) searchEl.value = '';
+
+    updateResetButtonVisibility();
+  });
 
   // Initialize on load
   initCategorySelection();
