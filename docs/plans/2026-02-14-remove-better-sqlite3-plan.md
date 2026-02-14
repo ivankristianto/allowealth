@@ -296,7 +296,7 @@ Make these specific changes to `src/db/index.ts`:
 
 **a) Update module doc comment (lines 1-22):** Remove the better-sqlite3 reference from the SQLite section. Change:
 
-```
+```text
  * SQLite:
  * - In Bun runtime: Uses bun:sqlite with drizzle-orm/bun-sqlite
  * - In Node.js runtime: Uses better-sqlite3 with drizzle-orm/better-sqlite3
@@ -304,7 +304,7 @@ Make these specific changes to `src/db/index.ts`:
 
 to:
 
-```
+```text
  * SQLite:
  * - Uses bun:sqlite with drizzle-orm/bun-sqlite (local development)
 ```
