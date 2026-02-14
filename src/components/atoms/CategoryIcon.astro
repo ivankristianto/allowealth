@@ -67,14 +67,14 @@ function getForegroundClass(backgroundClass: string): string {
     ?.split('/')[0];
 
   if (!normalizedBgClass) {
-    return 'text-white';
+    return 'text-base-content';
   }
 
   if (normalizedBgClass.startsWith('bg-base-')) {
     return 'text-base-content';
   }
 
-  return semanticContentClassByBackground[normalizedBgClass] || 'text-white';
+  return semanticContentClassByBackground[normalizedBgClass] || 'text-base-content';
 }
 
 const containerClasses = [
