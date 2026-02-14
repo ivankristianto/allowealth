@@ -52,6 +52,8 @@ export class PerfCollector {
   private cacheMisses: number = 0;
   private dbQueries: TimedOperation[] = [];
   private services: TimedOperation[] = [];
+  private phases: TimedOperation[] = [];
+  private milestones: TimedOperation[] = [];
   private renderStartTime: number | null = null;
   private renderEndTime: number | null = null;
   private runtime: 'workers' | 'bun' | 'node' | '' = '';
@@ -92,6 +94,56 @@ export class PerfCollector {
    */
   recordService(name: string, durationMs: number): void {
     this.services.push({ name, durationMs });
+  }
+
+  /**
+   * Record a page-level processing phase with its duration.
+   * Use for non-DB, non-service CPU work like data transforms,
+   * serialization, or template rendering.
+   *
+   * @param name - Phase identifier (e.g., 'extractAvailableMonths', 'JSON.stringify')
+   * @param durationMs - Phase duration in milliseconds
+   */
+  recordPhase(name: string, durationMs: number): void {
+    this.phases.push({ name, durationMs });
+  }
+
+  private isCounterPhase(name: string): boolean {
+    return /(?:assetCount|chunkCount|historyRowsFetched)$/.test(name);
+  }
+
+  /**
+   * Get all recorded processing phases
+   */
+  getPhases(): readonly TimedOperation[] {
+    return this.phases;
+  }
+
+  /**
+   * Get total duration of all recorded phases
+   */
+  getTotalPhaseTime(): number {
+    return this.phases.reduce((sum, phase) => {
+      return this.isCounterPhase(phase.name) ? sum : sum + phase.durationMs;
+    }, 0);
+  }
+
+  /**
+   * Record a milestone — a named elapsed timestamp relative to collector creation.
+   * Unlike phases (which are durations), milestones mark points in time.
+   * They are displayed separately and NOT included in CPU phase totals.
+   *
+   * @param name - Milestone identifier (e.g., 'middleware.elapsed', 'preRender.elapsed')
+   */
+  recordMilestone(name: string): void {
+    this.milestones.push({ name, durationMs: this.getTotalTime() });
+  }
+
+  /**
+   * Get all recorded milestones
+   */
+  getMilestones(): readonly TimedOperation[] {
+    return this.milestones;
   }
 
   /**
@@ -261,12 +313,16 @@ export class PerfCollector {
 
   /**
    * Get memory usage in megabytes
-   * Returns null if memory info is not available (e.g., in browser)
+   * Returns null if memory info is not available (e.g., Workers polyfills
+   * process.memoryUsage but returns zeros)
    */
   private getMemoryUsage(): number | null {
-    // Node.js / Bun environment
+    if (this.runtime === 'workers') {
+      return null;
+    }
     if (typeof process !== 'undefined' && process.memoryUsage) {
       const usage = process.memoryUsage();
+      if (usage.heapUsed === 0) return null;
       return Math.round((usage.heapUsed / 1024 / 1024) * 10) / 10;
     }
     return null;
@@ -371,6 +427,31 @@ export class PerfCollector {
       lines.push(`Services: ${serviceParts.join(', ')}`);
     }
 
+    // Phases (page-level processing)
+    if (this.phases.length > 0) {
+      const totalPhaseTime = this.getTotalPhaseTime();
+      const phaseLabel = this.phases.length === 1 ? 'phase' : 'phases';
+      lines.push(
+        `Phases: ${this.phases.length} ${phaseLabel} in ${this.formatDuration(totalPhaseTime)}`
+      );
+      for (const phase of this.phases) {
+        const formattedValue = this.isCounterPhase(phase.name)
+          ? `${Math.round(phase.durationMs)}`
+          : this.formatDuration(phase.durationMs);
+        lines.push(`  - ${this.sanitizeCommentField(phase.name)}: ${formattedValue}`);
+      }
+    }
+
+    // Milestones (elapsed timestamps, not durations — excluded from CPU totals)
+    if (this.milestones.length > 0) {
+      lines.push(`Milestones:`);
+      for (const ms of this.milestones) {
+        lines.push(
+          `  @ ${this.sanitizeCommentField(ms.name)}: ${this.formatDuration(ms.durationMs)}`
+        );
+      }
+    }
+
     // Render time
     const renderTime = this.getRenderTime();
     if (renderTime !== null) {
@@ -391,10 +472,17 @@ export class PerfCollector {
     } else if (this.runtime) {
       const cpuTime = this.getEstimatedCpuTime();
       const ioTime = this.getIoWaitTime();
+      const trackedCpu = this.getTotalPhaseTime();
+      const untrackedCpu = Math.max(0, cpuTime - trackedCpu);
       lines.push(`Total: ${this.formatDuration(totalTime)} (wall-clock)`);
       lines.push(
         `CPU: ~${this.formatDuration(cpuTime)} | I/O Wait: ~${this.formatDuration(ioTime)} (DB queries)`
       );
+      if (trackedCpu > 0) {
+        lines.push(
+          `CPU breakdown: ${this.formatDuration(trackedCpu)} tracked, ~${this.formatDuration(untrackedCpu)} untracked (SSR, imports, middleware)`
+        );
+      }
       lines.push(`Runtime: ${this.runtime}`);
     } else {
       lines.push(`Total: ${this.formatDuration(totalTime)}`);

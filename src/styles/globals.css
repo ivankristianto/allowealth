@@ -58,29 +58,29 @@
   prefersdark: true;
   color-scheme: dark;
 
-  /* Color tokens - inverted for dark mode */
-  --color-primary: #f8fafc; /* slate-50 - light text in dark mode */
-  --color-primary-content: #0f172a;
-  --color-secondary: #f8fafc; /* slate-50 */
-  --color-secondary-content: #0f172a;
+  /* Color tokens - softened contrast for dark mode comfort */
+  --color-primary: #e8edf5; /* light slate - reduced glare vs pure near-white */
+  --color-primary-content: #0b1426;
+  --color-secondary: #e8edf5;
+  --color-secondary-content: #0b1426;
   --color-accent: #4ade80; /* green-400 - vibrant for dark mode visibility */
   --color-accent-content: #052e16; /* dark green for contrast */
-  --color-neutral: #94a3b8; /* slate-400 */
-  --color-neutral-content: #0f172a;
-  --color-base-100: #020617; /* slate-950 */
-  --color-base-200: #0f172a; /* slate-900 */
-  --color-base-300: #1e293b; /* slate-800 */
-  --color-base-content: #f1f5f9; /* slate-100 */
+  --color-neutral: #9fb0c8; /* muted informational text/icons */
+  --color-neutral-content: #0b1426;
+  --color-base-100: #0b1426; /* deep navy */
+  --color-base-200: #111d31; /* elevated surface */
+  --color-base-300: #131d30; /* hover and border surface */
+  --color-base-content: #e8edf5; /* softer than slate-50 while retaining AA */
 
-  /* Semantic colors in dark mode - all WCAG AA compliant on base-300 */
+  /* Semantic colors in dark mode - content uses dark ink for AA on bright fills */
   --color-info: #38bdf8; /* sky-400 - distinct from accent */
-  --color-info-content: #ffffff;
+  --color-info-content: #0b1426;
   --color-success: #34d399; /* emerald-400 */
-  --color-success-content: #ffffff;
+  --color-success-content: #0b1426;
   --color-warning: #fbbf24; /* amber-400 */
-  --color-warning-content: #ffffff;
+  --color-warning-content: #0b1426;
   --color-error: #fb7185; /* rose-400 - improved contrast on dark backgrounds */
-  --color-error-content: #ffffff;
+  --color-error-content: #0b1426;
 
   /* Design variables */
   --radius-selector: 1rem;
@@ -239,6 +239,33 @@ body {
   background: var(--glass-bg-dark);
 }
 
+/* Mobile bottom navigation utilities */
+.mobile-nav-surface {
+  background: var(--mobile-nav-surface-bg);
+  box-shadow: var(--mobile-nav-surface-shadow);
+}
+
+.mobile-nav-top-accent {
+  background-color: var(--mobile-nav-accent-line);
+}
+
+.mobile-nav-fab-halo {
+  background: var(--mobile-nav-fab-halo);
+}
+
+.mobile-nav-fab-surface {
+  box-shadow: var(--mobile-nav-fab-shadow);
+}
+
+.mobile-nav-fab-offset {
+  position: relative;
+  top: var(--mobile-nav-fab-offset-y);
+}
+
+.pb-safe-bottom-nav {
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}
+
 /* Badge text size - accessibility-adjusted (12px minimum) */
 .text-badge {
   font-size: var(--badge-font-size);
@@ -356,10 +383,87 @@ body {
   box-shadow: -2px 0 12px -2px rgb(0 0 0 / 0.3);
 }
 
+/* Ensure low-emphasis base-content text still meets WCAG AA in dark mode. */
+[data-theme='dark'] :where([class*='text-base-content/30']) {
+  color: color-mix(in srgb, var(--color-base-content) 50%, transparent);
+}
+
+[data-theme='dark'] :where([class*='text-base-content/40']) {
+  color: color-mix(in srgb, var(--color-base-content) 50%, transparent);
+}
+
+[data-theme='dark'] :where([class*='placeholder:text-base-content/30'])::placeholder {
+  color: color-mix(in srgb, var(--color-base-content) 50%, transparent);
+  opacity: 1;
+}
+
 /* --- Respect reduced motion ---------------------------------------- */
 @media (prefers-reduced-motion: reduce) {
   .table-scroll-hint > .scroll-hint-fade::after {
     animation: none;
     opacity: 0.3;
+  }
+}
+
+/* ========================================
+   SCROLLBAR HIDE UTILITY
+   Hide scrollbar but keep scroll functionality
+   ======================================== */
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* ========================================
+   MOBILE DRAWER PERFORMANCE OVERRIDE
+   Replaces DaisyUI's :root:has(.drawer-toggle:checked) with a
+   JS-controlled data attribute to avoid full-document style recalc.
+   See: MobileDrawer.client.ts
+   ======================================== */
+
+@media (width < 1024px) {
+  .drawer-side[data-mobile-drawer-js='true'] {
+    /* Avoid delayed parent fade that can desync panel shell vs. inner content paint. */
+    opacity: 1;
+    transition: visibility 0s linear 0.3s;
+  }
+
+  .drawer-side[data-mobile-drawer-js='true']:not([data-mobile-open='true']) {
+    pointer-events: none;
+    visibility: hidden;
+  }
+
+  .drawer-side[data-mobile-drawer-js='true'][data-mobile-open='true'] {
+    pointer-events: auto;
+    visibility: visible;
+    overflow-y: auto;
+    transition-delay: 0s;
+  }
+
+  .drawer-side[data-mobile-drawer-js='true'] > .drawer-overlay {
+    opacity: 0;
+    transition: opacity 0.2s ease-out;
+  }
+
+  .drawer-side[data-mobile-drawer-js='true'][data-mobile-open='true'] > .drawer-overlay {
+    opacity: 1;
+  }
+
+  .drawer-side[data-mobile-drawer-js='true']:not([data-mobile-open='true'])
+    > :not(.drawer-overlay) {
+    translate: -100%;
+  }
+
+  .drawer-side[data-mobile-drawer-js='true'] > :not(.drawer-overlay) {
+    transition: translate 0.3s ease-out;
+  }
+
+  .drawer-side[data-mobile-drawer-js='true'][data-mobile-open='true'] > :not(.drawer-overlay) {
+    translate: 0%;
   }
 }

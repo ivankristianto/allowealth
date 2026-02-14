@@ -23,5 +23,6 @@ export const CacheTags = {
   CATEGORIES: 'categories' as const,
   ASSETS: 'assets' as const,
   LAYOUT: 'layout' as const,
+  ASSET_CATEGORIES: 'asset-categories' as const,
   API_KEYS: 'api_keys' as const,
 } as const;

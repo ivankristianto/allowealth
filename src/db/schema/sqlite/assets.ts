@@ -54,5 +54,8 @@ export const assets = sqliteTable(
   (table) => [
     index('assets_workspace_id_idx').on(table.workspace_id),
     index('assets_ws_status_deleted_idx').on(table.workspace_id, table.status, table.deleted_at),
+    index('assets_created_by_user_id_idx').on(table.created_by_user_id),
+    index('assets_category_id_idx').on(table.category_id),
+    index('assets_closed_by_user_id_idx').on(table.closed_by_user_id),
   ]
 );

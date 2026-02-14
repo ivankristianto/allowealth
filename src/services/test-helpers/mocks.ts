@@ -65,6 +65,14 @@ export function createMockDatabase(): IDatabase {
         findFirst: mock(() => Promise.resolve(undefined)),
         findMany: mock(() => Promise.resolve([])),
       },
+      assetHistory: {
+        findFirst: mock(() => Promise.resolve(undefined)),
+        findMany: mock(() => Promise.resolve([])),
+      },
+      assetCategories: {
+        findFirst: mock(() => Promise.resolve(undefined)),
+        findMany: mock(() => Promise.resolve([])),
+      },
       apiKeys: {
         findFirst: mock(() => Promise.resolve(undefined)),
         findMany: mock(() => Promise.resolve([])),
@@ -260,6 +268,10 @@ export function resetMockDatabase(mockDb: IDatabase): void {
   (mockDb.query.budgets.findMany as any).mockClear();
   (mockDb.query.assets.findFirst as any).mockClear();
   (mockDb.query.assets.findMany as any).mockClear();
+  (mockDb.query.assetHistory as any).findFirst.mockClear();
+  (mockDb.query.assetHistory as any).findMany.mockClear();
+  (mockDb.query.assetCategories as any).findFirst.mockClear();
+  (mockDb.query.assetCategories as any).findMany.mockClear();
   (mockDb.query.apiKeys.findFirst as any).mockClear();
   (mockDb.query.apiKeys.findMany as any).mockClear();
   (mockDb.query.workspaceMeta.findFirst as any).mockClear();

@@ -322,6 +322,114 @@ describe('PerfCollector', () => {
     });
   });
 
+  describe('phase tracking', () => {
+    test('starts with empty phases', () => {
+      expect(perf.getPhases()).toHaveLength(0);
+      expect(perf.getTotalPhaseTime()).toBe(0);
+    });
+
+    test('records a phase', () => {
+      perf.recordPhase('transform', 25);
+      const phases = perf.getPhases();
+      expect(phases).toHaveLength(1);
+      expect(phases[0].name).toBe('transform');
+      expect(phases[0].durationMs).toBe(25);
+    });
+
+    test('records multiple phases', () => {
+      perf.recordPhase('transform', 10);
+      perf.recordPhase('extractMonths', 50);
+      perf.recordPhase('monthlySummary', 30);
+
+      expect(perf.getPhases()).toHaveLength(3);
+      expect(perf.getTotalPhaseTime()).toBe(90);
+    });
+
+    test('includes phases in HTML comment', () => {
+      perf.recordPhase('transform', 5);
+      perf.recordPhase('extractAvailableMonths', 120);
+      perf.recordPhase('monthlySummary', 80);
+      const output = perf.toHtmlComment();
+
+      expect(output).toContain('Phases: 3 phases in 205ms');
+      expect(output).toContain('  - transform: 5ms');
+      expect(output).toContain('  - extractAvailableMonths: 120ms');
+      expect(output).toContain('  - monthlySummary: 80ms');
+    });
+
+    test('uses singular label for single phase', () => {
+      perf.recordPhase('transform', 5);
+      const output = perf.toHtmlComment();
+
+      expect(output).toContain('Phases: 1 phase in 5ms');
+    });
+
+    test('excludes phases section when none tracked', () => {
+      const output = perf.toHtmlComment();
+      expect(output).not.toContain('Phases:');
+    });
+
+    test('includes CPU breakdown when phases and runtime are set', () => {
+      perf.setRuntime('node');
+      perf.recordPhase('transform', 50);
+      perf.recordPhase('summary', 30);
+      const output = perf.toHtmlComment();
+
+      expect(output).toContain('CPU breakdown: 80ms tracked');
+      expect(output).toContain('untracked (SSR, imports, middleware)');
+    });
+
+    test('sanitizes phase names in HTML comment', () => {
+      perf.recordPhase('phase-->injection', 10);
+      const output = perf.toHtmlComment();
+
+      expect(output).not.toContain('-->injection');
+      expect(output).toContain('phase==&gt;injection');
+    });
+  });
+
+  describe('milestone tracking', () => {
+    test('starts with empty milestones', () => {
+      expect(perf.getMilestones()).toHaveLength(0);
+    });
+
+    test('records a milestone with elapsed time', () => {
+      perf.recordMilestone('middleware.elapsed');
+      const milestones = perf.getMilestones();
+      expect(milestones).toHaveLength(1);
+      expect(milestones[0].name).toBe('middleware.elapsed');
+      expect(milestones[0].durationMs).toBeGreaterThanOrEqual(0);
+    });
+
+    test('milestones are NOT included in getTotalPhaseTime', () => {
+      perf.recordPhase('transform', 10);
+      perf.recordMilestone('middleware.elapsed');
+      expect(perf.getTotalPhaseTime()).toBe(10);
+    });
+
+    test('milestones appear in HTML comment separately from phases', () => {
+      perf.recordPhase('transform', 5);
+      perf.recordMilestone('middleware.elapsed');
+      const output = perf.toHtmlComment();
+
+      expect(output).toContain('Phases: 1 phase in 5ms');
+      expect(output).toContain('Milestones:');
+      expect(output).toContain('@ middleware.elapsed:');
+    });
+
+    test('sanitizes milestone names in HTML comment', () => {
+      perf.recordMilestone('milestone-->injection');
+      const output = perf.toHtmlComment();
+      expect(output).not.toContain('-->injection');
+      expect(output).toContain('milestone==&gt;injection');
+    });
+
+    test('excludes milestones section when none tracked', () => {
+      const output = perf.toHtmlComment();
+      expect(output).not.toContain('Milestones:');
+    });
+  });
+
   describe('runtime tracking', () => {
     test('starts with empty runtime', () => {
       expect(perf.getRuntime()).toBe('');

@@ -347,6 +347,23 @@
   --shadow-accent-glow: 0 10px 15px -3px rgb(21 128 61 / 0.25);
   --shadow-accent-glow-lg: 0 25px 50px -12px rgb(21 128 61 / 0.3);
 
+  /* Mobile bottom navigation */
+  --mobile-nav-surface-bg: linear-gradient(
+    to top,
+    rgb(255 255 255 / 1) 0%,
+    rgb(255 255 255 / 0.95) 56%,
+    rgb(255 255 255 / 0.9) 100%
+  );
+  --mobile-nav-surface-shadow: 0 -14px 36px rgb(2 6 23 / 0.18);
+  --mobile-nav-accent-line: rgb(21 128 61 / 0.25);
+  --mobile-nav-fab-halo: radial-gradient(
+    circle at center,
+    rgb(21 128 61 / 0.2) 0%,
+    transparent 72%
+  );
+  --mobile-nav-fab-shadow: 0 16px 28px rgb(2 6 23 / 0.3);
+  --mobile-nav-fab-offset-y: calc(var(--spacing-5) * -1);
+
   /* ========================================
    * ANIMATION TOKENS (from styles.json)
    * ======================================== */
@@ -387,9 +404,9 @@
 
 [data-theme='dark'] {
   /* Primary: Text/headings in dark mode */
-  --color-primary: #f8fafc; /* slate-50 */
-  --color-primary-hover: #f8fafc;
-  --color-primary-light: #1e293b; /* slate-800 */
+  --color-primary: #e8edf5; /* softened light slate for reduced glare */
+  --color-primary-hover: #e8edf5;
+  --color-primary-light: #111d31;
 
   /* Accent: CTAs in dark mode */
   --color-accent: #4ade80; /* forest-400 - vibrant for dark mode */
@@ -408,16 +425,16 @@
   --color-info-hover: #0ea5e9; /* sky-500 */
 
   /* Dark mode slate scale */
-  --color-slate-50: #f8fafc;
-  --color-slate-100: #f1f5f9;
-  --color-slate-200: #e2e8f0;
-  --color-slate-300: #cbd5e1;
-  --color-slate-400: #94a3b8;
-  --color-slate-500: #64748b;
-  --color-slate-600: #475569;
-  --color-slate-700: #334155;
-  --color-slate-800: #1e293b;
-  --color-slate-900: #0f172a;
+  --color-slate-50: #e8edf5;
+  --color-slate-100: #dbe4ee;
+  --color-slate-200: #c9d6e8;
+  --color-slate-300: #b2c1d7;
+  --color-slate-400: #8da0bb;
+  --color-slate-500: #667b99;
+  --color-slate-600: #4b5f7d;
+  --color-slate-700: #314562;
+  --color-slate-800: #1f2f48;
+  --color-slate-900: #111d31;
 
   /* Dark mode forest scale */
   --color-forest-400: #4ade80;
@@ -427,6 +444,23 @@
   /* Dark mode sky scale */
   --color-sky-400: #38bdf8;
   --color-sky-500: #0ea5e9;
+
+  /* Mobile bottom navigation */
+  --mobile-nav-surface-bg: linear-gradient(
+    to top,
+    rgb(15 23 42 / 0.96) 0%,
+    rgb(15 23 42 / 0.92) 56%,
+    rgb(15 23 42 / 0.86) 100%
+  );
+  --mobile-nav-surface-shadow: 0 -14px 36px rgb(2 6 23 / 0.45);
+  --mobile-nav-accent-line: rgb(74 222 128 / 0.35);
+  --mobile-nav-fab-halo: radial-gradient(
+    circle at center,
+    rgb(74 222 128 / 0.24) 0%,
+    transparent 72%
+  );
+  --mobile-nav-fab-shadow: 0 16px 28px rgb(2 6 23 / 0.55);
+  --mobile-nav-fab-offset-y: calc(var(--spacing-5) * -1);
 
   /* Dark mode rose scale */
   --color-rose-500: #f43f5e;

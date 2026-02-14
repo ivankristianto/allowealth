@@ -9,6 +9,7 @@ import {
 } from '@/lib/validation/categories';
 import { CategoryServiceError, ServiceErrorCode } from './service-errors';
 import { type PerfCollector, trackQuery } from '@/lib/perf';
+import { getCacheManager, CacheKeys, CacheTags, hashFilters } from '@/lib/cache';
 
 export { type CreateCategoryInput, type UpdateCategoryInput };
 
@@ -55,6 +56,17 @@ export class CategoryService {
         .returning();
     });
 
+    // Invalidate category cache - best-effort
+    try {
+      const cache = getCacheManager();
+      await cache.invalidateByTags([
+        CacheTags.workspace(validated.workspace_id),
+        CacheTags.CATEGORIES,
+      ]);
+    } catch {
+      // Cache invalidation failed, stale cache is acceptable
+    }
+
     return category;
   }
 
@@ -90,6 +102,23 @@ export class CategoryService {
     filters?: { type?: 'expense' | 'income'; is_active?: boolean },
     perf?: PerfCollector
   ) {
+    type CategoryRow = Awaited<ReturnType<typeof this.db.query.categories.findMany>>;
+
+    const filtersHashValue = hashFilters(filters || {});
+    const cache = getCacheManager();
+    const cacheKey = CacheKeys.categories(workspaceId, filtersHashValue);
+
+    // Cache read - fail-silent
+    let cached: CategoryRow | null = null;
+    try {
+      cached = await cache.get<CategoryRow>(cacheKey, perf);
+    } catch {
+      // Cache read failed, continue to DB fetch
+    }
+    if (cached) {
+      return cached;
+    }
+
     const conditions = [eq(this.schema.categories.workspace_id, workspaceId)];
 
     if (filters?.type) {
@@ -106,6 +135,16 @@ export class CategoryService {
         orderBy: (categories: any, { asc }: any) => [asc(categories.name)],
       });
     });
+
+    // Cache write - fail-silent
+    try {
+      await cache.set(cacheKey, result, {
+        ttl: 3600,
+        tags: [CacheTags.workspace(workspaceId), CacheTags.CATEGORIES],
+      });
+    } catch {
+      // Cache write failed, continue without caching
+    }
 
     return result;
   }
@@ -146,6 +185,14 @@ export class CategoryService {
         );
     });
 
+    // Invalidate category cache - best-effort
+    try {
+      const cache = getCacheManager();
+      await cache.invalidateByTags([CacheTags.workspace(workspaceId), CacheTags.CATEGORIES]);
+    } catch {
+      // Cache invalidation failed, stale cache is acceptable
+    }
+
     return this.findById(id, workspaceId, perf);
   }
 
@@ -181,6 +228,14 @@ export class CategoryService {
           )
         );
     });
+
+    // Invalidate category cache - best-effort
+    try {
+      const cache = getCacheManager();
+      await cache.invalidateByTags([CacheTags.workspace(workspaceId), CacheTags.CATEGORIES]);
+    } catch {
+      // Cache invalidation failed, stale cache is acceptable
+    }
 
     return { success: true };
   }

@@ -30,11 +30,6 @@ const reclassifiedComponents = [
     newPath: [moleculeRoot, 'TransactionActionsBar.astro'].join('/'),
   },
   {
-    name: 'AssetPageHeader',
-    oldPath: [legacyRoot, 'AssetPageHeader.astro'].join('/'),
-    newPath: [moleculeRoot, 'AssetPageHeader.astro'].join('/'),
-  },
-  {
     name: 'BudgetActions',
     oldPath: [legacyRoot, 'BudgetActions.astro'].join('/'),
     newPath: [moleculeRoot, 'BudgetActions.astro'].join('/'),

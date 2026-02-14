@@ -28,6 +28,7 @@ interface Props {
 }
 
 const { title = 'allowealth', currentPath = '/', user, subtitle } = Astro.props;
+const hasHeaderSlot = Astro.slots.has('header');
 ---
 
 <BaseLayout title={title}>
@@ -41,12 +42,14 @@ const { title = 'allowealth', currentPath = '/', user, subtitle } = Astro.props;
     <!-- Page content -->
     <div class="drawer-content flex flex-col lg:h-screen lg:overflow-y-auto">
       <!-- Header -->
-      <Header title={title} user={user} subtitle={subtitle} />
+      <Header title={title} user={user} subtitle={subtitle}>
+        {hasHeaderSlot && <slot name="header" slot="header" />}
+      </Header>
 
       <!-- Main content -->
       <main
         id="main-content"
-        class="flex-1 px-4 lg:px-6 pt-24 sm:pt-28 pb-24 lg:pb-6 bg-base-200 theme-transition"
+        class={`flex-1 px-4 lg:px-6 ${hasHeaderSlot ? 'has-header-slot pt-40 md:pt-28' : 'pt-28'} pb-24 lg:pb-6 bg-base-200 theme-transition`}
       >
         <slot />
       </main>
@@ -67,4 +70,8 @@ const { title = 'allowealth', currentPath = '/', user, subtitle } = Astro.props;
 
   <!-- Floating Theme Toggle - bottom right corner, desktop only (mobile toggle in header) -->
   <ThemeToggle className="hidden lg:block fixed bottom-6 right-6 z-50" />
+
+  <script>
+    import '../components/layouts/MobileDrawer.client';
+  </script>
 </BaseLayout>

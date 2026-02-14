@@ -60,13 +60,33 @@ export class BudgetPage extends BasePage {
    * @param amount - The budget amount to set
    */
   async setBudget(categoryId: string, amount: number): Promise<void> {
-    // Click the budget amount to enter edit mode
-    const budgetAmount = this.page.locator(`[data-budget-editable="${categoryId}"]`).first();
-    await budgetAmount.click();
+    // Click the edit button inside the visible budget card for this category.
+    // This avoids matching hidden table-view edit buttons that share the same category ID.
+    const budgetEditButton = this.getBudgetCard(categoryId)
+      .locator('[data-testid="budget-edit-btn"]:visible')
+      .first();
+    await expect(budgetEditButton).toBeVisible();
+
+    // Close any open period dropdown on mobile to prevent click interception.
+    await this.page.keyboard.press('Escape');
+    const openPeriodOption = this.page.locator('[data-period-option]:visible').first();
+    if ((await openPeriodOption.count()) > 0) {
+      await this.page.keyboard.press('Escape');
+    }
+
+    await budgetEditButton.evaluate((element) => {
+      element.scrollIntoView({ block: 'center', inline: 'nearest' });
+    });
+
+    // Trigger click on the edit button directly so fixed mobile overlays
+    // (period navigator, bottom nav) cannot steal the pointer target.
+    await budgetEditButton.evaluate((element) => {
+      (element as HTMLButtonElement).click();
+    });
 
     // Wait for input to appear
     const input = this.page.locator('[data-inline-edit-input]');
-    await expect(input).toBeVisible();
+    await expect(input).toBeVisible({ timeout: 10000 });
 
     // Clear and fill the amount
     await input.clear();

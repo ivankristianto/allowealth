@@ -17,11 +17,6 @@ const user = Astro.locals.user! as User;
 
 <ProtectedLayout title="Profile" currentPath={currentPath} subtitle="Manage your account details">
   <div class="max-w-4xl mx-auto sm:px-2 lg:px-6 space-y-6 sm:space-y-8">
-    <div>
-      <h2 class="text-2xl font-bold">Account Settings</h2>
-      <p class="text-base-content/60">Manage your personal information and security preferences.</p>
-    </div>
-
     <ManageAccountForms user={user} />
   </div>
 </ProtectedLayout>

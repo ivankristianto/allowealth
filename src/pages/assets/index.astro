@@ -8,7 +8,6 @@
  */
 
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
-import AssetPageHeader from '@components/molecules/AssetPageHeader.astro';
 import AssetPortfolioSummary from '@components/organisms/AssetPortfolioSummary.astro';
 import AssetActions from '@components/organisms/AssetActions.astro';
 import AssetGroupCard from '@components/organisms/AssetGroupCard.astro';
@@ -19,11 +18,14 @@ import AssetDeleteConfirmModal from '@components/organisms/AssetDeleteConfirmMod
 import AssetHistoryModal from '@components/organisms/AssetHistoryModal.astro';
 import AssetUpdateValueModal from '@components/organisms/AssetUpdateValueModal.astro';
 import AssetCategoryModal from '@components/organisms/AssetCategoryModal.astro';
+import PeriodicSelector, { type PeriodOption } from '@/components/molecules/PeriodicSelector.astro';
 import EmptyState from '@components/atoms/EmptyState.astro';
 import { CalendarDays, Search } from '@lucide/astro';
 import { assetService, assetCategoryService } from '@/services';
 import type { AssetOutput, AssetType } from '@/lib/types/asset';
 import { formatAssetType } from '@/lib/types/asset';
+import { formatMonthYear } from '@/lib/utils/date';
+import { PERIOD_SELECTOR_MONTH_LIMIT } from '@/lib/constants/period';
 import {
   calculateAssetAllocation,
   calculatePortfolioTotals,
@@ -81,28 +83,41 @@ const selectedYear = yearParam ? parseInt(yearParam, 10) : now.getFullYear();
 const selectedMonth = monthParam ? parseInt(monthParam, 10) : now.getMonth() + 1;
 const isViewingCurrentMonth = !yearParam && !monthParam;
 
-// Build month navigation URL helper
-const buildMonthUrl = (year: number, month: number) => {
-  const params = new URLSearchParams();
-  params.set('year', year.toString());
-  params.set('month', month.toString());
-  // Preserve existing filters
-  if (searchParams.type) params.set('type', searchParams.type);
-  if (searchParams.categoryId) params.set('categoryId', searchParams.categoryId);
-  if (searchParams.currency) params.set('currency', searchParams.currency);
-  return `/assets?${params.toString()}`;
-};
-
-// Calculate prev/next month dates
-const prevMonthDate = new Date(selectedYear, selectedMonth - 2, 1);
-const nextMonthDate = new Date(selectedYear, selectedMonth, 1);
-const isNextMonthFuture = nextMonthDate > now;
-
 // Format current month for display
 const currentMonthDisplay = new Date(selectedYear, selectedMonth - 1).toLocaleDateString('en-US', {
   month: 'long',
   year: 'numeric',
 });
+const selectedPeriod = `${selectedYear}-${selectedMonth.toString().padStart(2, '0')}`;
+const currentMonthUrl = new URL(url);
+currentMonthUrl.searchParams.delete('year');
+currentMonthUrl.searchParams.delete('month');
+const currentMonthHref = `${currentMonthUrl.pathname}${currentMonthUrl.search}`;
+
+// Generate monthly period options (oldest -> latest, capped by shared selector window)
+const monthlyPeriodOptions: PeriodOption[] = Array.from(
+  { length: PERIOD_SELECTOR_MONTH_LIMIT },
+  (_, i) => {
+    const monthsBack = PERIOD_SELECTOR_MONTH_LIMIT - 1 - i;
+    const date = new Date(now.getFullYear(), now.getMonth() - monthsBack, 1);
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1;
+    const monthStr = month.toString().padStart(2, '0');
+
+    return {
+      value: `${year}-${monthStr}`,
+      label: formatMonthYear(date),
+    };
+  }
+);
+
+if (!monthlyPeriodOptions.some((period) => period.value === selectedPeriod)) {
+  monthlyPeriodOptions.push({
+    value: selectedPeriod,
+    label: currentMonthDisplay,
+  });
+  monthlyPeriodOptions.sort((a, b) => a.value.localeCompare(b.value));
+}
 
 // Get closed account count for navigation link
 const closedCount = await assetService.countClosed(user.workspaceId);
@@ -207,19 +222,36 @@ const sortedGroups = Object.entries(assetsByType)
   });
 ---
 
-<ProtectedLayout title="Assets" currentPath={currentPath} subtitle="Your financial portfolio">
-  <div class="max-w-7xl mx-auto sm:px-2 lg:px-6 space-y-6 sm:space-y-8" data-testid="assets-page">
-    {/* Page Header */}
-    <AssetPageHeader
-      currentMonth={currentMonthDisplay}
-      prevMonthUrl={buildMonthUrl(prevMonthDate.getFullYear(), prevMonthDate.getMonth() + 1)}
-      nextMonthUrl={!isNextMonthFuture
-        ? buildMonthUrl(nextMonthDate.getFullYear(), nextMonthDate.getMonth() + 1)
-        : undefined}
-      isNextDisabled={isNextMonthFuture}
-      currentMonthResetUrl={!isViewingCurrentMonth ? '/assets' : undefined}
+<ProtectedLayout title="Assets" currentPath={currentPath} subtitle={currentMonthDisplay}>
+  <div
+    slot="header"
+    class="relative flex w-full items-center justify-center py-1 sm:gap-2 lg:w-auto lg:justify-start"
+    data-asset-header-controls
+  >
+    <PeriodicSelector
+      options={monthlyPeriodOptions}
+      selected={selectedPeriod}
+      ariaLabel="Select asset month"
+      inputName="asset-period"
+      className="shrink-0"
     />
 
+    {
+      !isViewingCurrentMonth && (
+        <a
+          href={currentMonthHref}
+          class="btn btn-sm bg-base-100 border border-base-300 hover:border-accent/30 hover:text-accent rounded-xl transition-all gap-1 absolute right-0 lg:static lg:ml-1"
+          aria-label="Go to current month"
+          data-testid="asset-current-month-btn"
+        >
+          <CalendarDays size={16} class="stroke-current" aria-hidden="true" />
+          <span class="text-xs">Today</span>
+        </a>
+      )
+    }
+  </div>
+
+  <div class="max-w-7xl mx-auto sm:px-2 lg:px-6 space-y-6 sm:space-y-8" data-testid="assets-page">
     {/* Historical view indicator */}
     {
       !isViewingCurrentMonth && (
@@ -352,6 +384,7 @@ const sortedGroups = Object.entries(assetsByType)
 </ProtectedLayout>
 
 <script>
+  import { PERIOD_CHANGE_EVENT } from '@/lib/constants/events';
   import { initInlineHistory } from '@/components/molecules/AssetInlineHistory.client';
   import { initAssetSearch } from '@/components/organisms/AssetSearch.client';
 
@@ -412,11 +445,51 @@ const sortedGroups = Object.entries(assetsByType)
     });
   }
 
+  let periodChangeController: AbortController | null = null;
+
+  function initAssetPeriodSelector() {
+    periodChangeController?.abort();
+    periodChangeController = new AbortController();
+
+    const controls = document.querySelector('[data-asset-header-controls]');
+    if (!controls) return;
+
+    window.addEventListener(
+      PERIOD_CHANGE_EVENT,
+      (event: Event) => {
+        const period = (event as CustomEvent<{ period?: string }>).detail?.period;
+        if (!period || !/^\d{4}-\d{2}$/.test(period)) return;
+
+        const [year, month] = period.split('-');
+        const periodYear = parseInt(year, 10);
+        const periodMonth = parseInt(month, 10);
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        const currentMonth = now.getMonth() + 1;
+        const nextUrl = new URL(window.location.href);
+
+        if (periodYear === currentYear && periodMonth === currentMonth) {
+          nextUrl.searchParams.delete('year');
+          nextUrl.searchParams.delete('month');
+        } else {
+          nextUrl.searchParams.set('year', String(periodYear));
+          nextUrl.searchParams.set('month', String(periodMonth));
+        }
+
+        if (nextUrl.toString() !== window.location.href) {
+          window.location.assign(nextUrl.toString());
+        }
+      },
+      { signal: periodChangeController.signal }
+    );
+  }
+
   function init() {
     initInlineHistory();
     initAssetSearch();
     initFirstAssetButton();
     openOnboardingAssetModal();
+    initAssetPeriodSelector();
   }
 
   if (document.readyState === 'loading') {
@@ -426,5 +499,12 @@ const sortedGroups = Object.entries(assetsByType)
   }
 
   document.addEventListener('astro:page-load', init);
-  document.addEventListener('astro:before-swap', cleanupFirstAssetButton, { once: true });
+  document.addEventListener(
+    'astro:before-swap',
+    () => {
+      cleanupFirstAssetButton();
+      periodChangeController?.abort();
+    },
+    { once: true }
+  );
 </script>

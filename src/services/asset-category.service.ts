@@ -9,6 +9,7 @@ import {
 } from '@/lib/validation/asset-categories';
 import { AssetCategoryServiceError, ServiceErrorCode } from './service-errors';
 import { DEFAULT_ASSET_CATEGORIES } from '@/lib/constants';
+import { getCacheManager, CacheKeys, CacheTags, hashFilters } from '@/lib/cache';
 
 export { type CreateAssetCategoryInput, type UpdateAssetCategoryInput };
 
@@ -66,6 +67,17 @@ export class AssetCategoryService {
         })
         .returning();
 
+      // Invalidate asset category cache - best-effort
+      try {
+        const cache = getCacheManager();
+        await cache.invalidateByTags([
+          CacheTags.workspace(validated.workspace_id),
+          CacheTags.ASSET_CATEGORIES,
+        ]);
+      } catch {
+        // Cache invalidation failed, stale cache is acceptable
+      }
+
       return category;
     } catch (error: any) {
       // Handle race condition: another request created the same name concurrently
@@ -98,6 +110,23 @@ export class AssetCategoryService {
       is_system?: boolean;
     }
   ) {
+    type AssetCategoryRow = Awaited<ReturnType<typeof this.db.query.assetCategories.findMany>>;
+
+    const filtersHashValue = hashFilters(filters || {});
+    const cache = getCacheManager();
+    const cacheKey = CacheKeys.assetCategories(workspaceId, filtersHashValue);
+
+    // Cache read - fail-silent
+    let cached: AssetCategoryRow | null = null;
+    try {
+      cached = await cache.get<AssetCategoryRow>(cacheKey);
+    } catch {
+      // Cache read failed, continue to DB fetch
+    }
+    if (cached) {
+      return cached;
+    }
+
     const conditions = [eq(this.schema.assetCategories.workspace_id, workspaceId)];
 
     if (filters?.is_liability !== undefined) {
@@ -116,6 +145,16 @@ export class AssetCategoryService {
         asc(assetCategories.name),
       ],
     });
+
+    // Cache write - fail-silent
+    try {
+      await cache.set(cacheKey, result, {
+        ttl: 3600,
+        tags: [CacheTags.workspace(workspaceId), CacheTags.ASSET_CATEGORIES],
+      });
+    } catch {
+      // Cache write failed, continue without caching
+    }
 
     return result;
   }
@@ -181,6 +220,14 @@ export class AssetCategoryService {
         )
       );
 
+    // Invalidate asset category cache - best-effort
+    try {
+      const cache = getCacheManager();
+      await cache.invalidateByTags([CacheTags.workspace(workspaceId), CacheTags.ASSET_CATEGORIES]);
+    } catch {
+      // Cache invalidation failed, stale cache is acceptable
+    }
+
     return this.findById(id, workspaceId);
   }
 
@@ -231,6 +278,14 @@ export class AssetCategoryService {
           eq(this.schema.assetCategories.workspace_id, workspaceId)
         )
       );
+
+    // Invalidate asset category cache - best-effort
+    try {
+      const cache = getCacheManager();
+      await cache.invalidateByTags([CacheTags.workspace(workspaceId), CacheTags.ASSET_CATEGORIES]);
+    } catch {
+      // Cache invalidation failed, stale cache is acceptable
+    }
 
     return { success: true };
   }
@@ -300,6 +355,14 @@ export class AssetCategoryService {
           updated_at: now,
         })
       );
+    }
+
+    // Invalidate asset category cache after seeding - best-effort
+    try {
+      const cache = getCacheManager();
+      await cache.invalidateByTags([CacheTags.workspace(workspaceId), CacheTags.ASSET_CATEGORIES]);
+    } catch {
+      // Cache invalidation failed, stale cache is acceptable
     }
   }
 }

@@ -11,6 +11,10 @@ import {
   isValidHexColor,
   sanitizeColor,
 } from '@/lib/utils/budget';
+import {
+  getRemainingBudgetMetric,
+  resolveBudgetAllocationOpenState,
+} from '@/lib/utils/budget-summary';
 
 describe('BudgetSummary - getCategoryColor', () => {
   it('should return a valid hex color string', () => {
@@ -350,5 +354,48 @@ describe('BudgetSummary - Edge cases', () => {
     const distribution = calculateAllocationDistribution(categories);
 
     expect(distribution).toHaveLength(1);
+  });
+});
+
+describe('BudgetSummary - Remaining/Overbudget metric', () => {
+  it('returns remaining metric when spending is within budget', () => {
+    expect(getRemainingBudgetMetric(1000, 700)).toEqual({
+      label: 'Remaining',
+      value: 300,
+      tone: 'success',
+    });
+  });
+
+  it('returns remaining metric when spending matches budget', () => {
+    expect(getRemainingBudgetMetric(1000, 1000)).toEqual({
+      label: 'Remaining',
+      value: 0,
+      tone: 'success',
+    });
+  });
+
+  it('returns overbudget metric when spending exceeds budget', () => {
+    expect(getRemainingBudgetMetric(1000, 1350)).toEqual({
+      label: 'Overbudget',
+      value: 350,
+      tone: 'error',
+    });
+  });
+});
+
+describe('BudgetSummary - allocation details open state sync', () => {
+  it('sets initial state based on viewport width', () => {
+    expect(resolveBudgetAllocationOpenState({ isWide: true })).toBe(true);
+    expect(resolveBudgetAllocationOpenState({ isWide: false })).toBe(false);
+  });
+
+  it('does not override user state when width class is unchanged', () => {
+    expect(resolveBudgetAllocationOpenState({ previousIsWide: false, isWide: false })).toBeNull();
+    expect(resolveBudgetAllocationOpenState({ previousIsWide: true, isWide: true })).toBeNull();
+  });
+
+  it('updates state when crossing breakpoint', () => {
+    expect(resolveBudgetAllocationOpenState({ previousIsWide: false, isWide: true })).toBe(true);
+    expect(resolveBudgetAllocationOpenState({ previousIsWide: true, isWide: false })).toBe(false);
   });
 });

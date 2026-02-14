@@ -73,8 +73,11 @@ export class AddTransactionPage extends BasePage {
     // Navigate to dashboard page where the header "New Transaction" button is available
     await this.page.goto('/dashboard');
 
-    // Click the "New Transaction" button in the header to open the drawer
-    const newTransactionBtn: Locator = this.page.locator('[data-open-transaction-drawer]');
+    // Click the currently visible drawer trigger.
+    // Desktop uses the header CTA, while mobile uses the bottom navigation FAB.
+    const newTransactionBtn: Locator = this.page
+      .locator('[data-open-transaction-drawer]:visible')
+      .first();
     await expect(newTransactionBtn).toBeVisible();
     await expect(newTransactionBtn).toBeEnabled();
     await newTransactionBtn.click();

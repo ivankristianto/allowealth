@@ -10,8 +10,9 @@
  */
 
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
-import BudgetPageHeader from '@components/organisms/BudgetPageHeader.astro';
 import BudgetActions from '@components/molecules/BudgetActions.astro';
+import BudgetFilterControls from '@components/molecules/BudgetFilterControls.astro';
+import BudgetHeaderControls from '@components/molecules/BudgetHeaderControls.astro';
 import SetNewBudgetModal from '@components/organisms/SetNewBudgetModal.astro';
 import CopyBudgetModal from '@components/organisms/CopyBudgetModal.astro';
 import BudgetImportModal from '@components/organisms/BudgetImportModal.astro';
@@ -29,8 +30,10 @@ import {
 } from '@/services';
 import { formatCurrency } from '@/lib/formatting';
 import { calculateAllocationDistribution } from '@/lib/utils/budget';
+import { getCopyBudgetAvailability } from '@/lib/utils/budget-copy';
 import { getMonthName } from '@/lib/utils/date';
-import { CircleX, Search, LayoutGrid, Table as TableIcon } from '@lucide/astro';
+import { buildBudgetPeriodOptions } from '@/lib/utils/budget-period';
+import { CircleX } from '@lucide/astro';
 
 const user = Astro.locals.user;
 const currentPath = '/budget';
@@ -112,49 +115,40 @@ const allocationDistribution = budgetData
 const currentMonthName = getMonthName(selectedMonth);
 const currentMonthDisplay = `${currentMonthName} ${selectedYear}`;
 
-// Build URLs for month navigation
-const buildMonthUrl = (year: number, month: number) => {
-  const params = new URLSearchParams();
-  params.set('year', year.toString());
-  params.set('month', month.toString());
-  params.set('currency', selectedCurrency);
-  return `/budget?${params.toString()}`;
-};
-
-// Previous and next month
-const prevMonthDate = new Date(selectedYear, selectedMonth - 2, 1);
+// Next month metadata (used for copy modal and period option bounds)
 const nextMonthDate = new Date(selectedYear, selectedMonth, 1);
-
-const prevMonthYear = prevMonthDate.getFullYear();
-const prevMonth = prevMonthDate.getMonth() + 1;
 const nextMonthYear = nextMonthDate.getFullYear();
 const nextMonth = nextMonthDate.getMonth() + 1;
-
-// Check if we're viewing the current month (for showing "Current Month" button)
-const isViewingCurrentMonth = selectedYear === currentYear && selectedMonth === currentMonth;
 
 // Check if next month is in the future
 const isNextMonthInFuture =
   nextMonthYear > currentYear || (nextMonthYear === currentYear && nextMonth > currentMonth);
 
-// If next month is in the future, check if it has budget data
-// Allow navigation to future months if they have existing budget data
-let allowNextMonthNavigation = !isNextMonthInFuture;
-if (isNextMonthInFuture) {
-  try {
-    const hasNextMonthBudgets = await budgetService.hasBudgetsForMonth(
-      user.workspaceId,
-      nextMonthYear,
-      nextMonth,
-      selectedCurrency
-    );
-    allowNextMonthNavigation = hasNextMonthBudgets;
-  } catch (err) {
-    console.error('Error checking next month budgets:', err);
-    // Default to not allowing navigation on error
-    allowNextMonthNavigation = false;
-  }
+// Check whether next month already has budgets.
+let hasNextMonthBudgets = false;
+try {
+  hasNextMonthBudgets = await budgetService.hasBudgetsForMonth(
+    user.workspaceId,
+    nextMonthYear,
+    nextMonth,
+    selectedCurrency
+  );
+} catch (err) {
+  console.error('Error checking next month budgets:', err);
+  hasNextMonthBudgets = false;
 }
+
+// If next month is in the future, allow navigation only when it has existing budgets.
+const allowNextMonthNavigation = !isNextMonthInFuture || hasNextMonthBudgets;
+
+const selectedPeriod = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}`;
+const periodOptions = buildBudgetPeriodOptions({
+  selectedYear,
+  selectedMonth,
+  currentYear,
+  currentMonth,
+  allowNextMonthNavigation,
+});
 
 // Get budget alerts for generating advice
 let alerts: Awaited<ReturnType<typeof budgetService.getAlerts>> = [];
@@ -266,13 +260,25 @@ const budgetCount = budgetData?.categories.filter((c) => Number(c.budget_amount)
 
 const onboardingStep = url.searchParams.get('onboarding');
 const shouldShowAssetNextStep = onboardingStep === 'budgets';
+
+const copyBudgetAvailability = getCopyBudgetAvailability({
+  sourceBudgetCount: budgetCount,
+  hasNextMonthBudgets,
+});
+const nextMonthDisplay = `${getMonthName(nextMonth)} ${nextMonthYear}`;
+const copyDisabledTooltip =
+  copyBudgetAvailability.disabledReason === 'target-month-has-budgets'
+    ? `Budgets already exist for ${nextMonthDisplay}`
+    : '';
 ---
 
-<ProtectedLayout
-  title="Budget"
-  currentPath={currentPath}
-  subtitle={`${currentMonthName} ${selectedYear} overview`}
->
+<ProtectedLayout title="Budget" currentPath={currentPath} subtitle={currentMonthDisplay}>
+  <BudgetHeaderControls
+    slot="header"
+    periodOptions={periodOptions}
+    selectedPeriod={selectedPeriod}
+  />
+
   <div
     class="max-w-7xl mx-auto sm:px-2 lg:px-6 space-y-6 sm:space-y-8"
     data-budget-page
@@ -283,20 +289,6 @@ const shouldShowAssetNextStep = onboardingStep === 'budgets';
     data-currency={selectedCurrency}
     data-expense-categories={JSON.stringify(expenseCategoriesWithBudgets)}
   >
-    {/* Premium Header with Month Navigation and Actions */}
-    <BudgetPageHeader
-      title="Family Spending Targets"
-      budgetCount={budgetCount}
-      currentMonth={currentMonthDisplay}
-      prevMonthUrl={buildMonthUrl(prevMonthYear, prevMonth)}
-      nextMonthUrl={allowNextMonthNavigation ? buildMonthUrl(nextMonthYear, nextMonth) : undefined}
-      isNextDisabled={!allowNextMonthNavigation}
-      showCopyButton={budgetCount > 0}
-      currentMonthResetUrl={!isViewingCurrentMonth
-        ? buildMonthUrl(currentYear, currentMonth)
-        : undefined}
-    />
-
     {
       shouldShowAssetNextStep && (
         <div class="alert bg-success/10 border border-success/30 rounded-card">
@@ -314,7 +306,6 @@ const shouldShowAssetNextStep = onboardingStep === 'budgets';
         </div>
       )
     }
-
     {/* Error State */}
     {
       error ? (
@@ -338,64 +329,14 @@ const shouldShowAssetNextStep = onboardingStep === 'budgets';
 
           {/* Budget Actions Bar */}
           <BudgetActions
-            showAiRebalancer={budgetCount > 0}
             uninitializedCount={uninitializedCategories.length}
+            showCopyAction={copyBudgetAvailability.isVisible}
+            disableCopyAction={copyBudgetAvailability.isDisabled}
+            copyActionTooltip={copyDisabledTooltip}
           />
 
           {/* Budget Filter and View Toggle */}
-          {budgetData && budgetData.categories.length > 0 && (
-            <div class="flex items-center gap-3">
-              <div class="relative flex-1">
-                <span
-                  class="absolute left-4 top-1/2 -translate-y-1/2 text-base-content/40 pointer-events-none"
-                  aria-hidden="true"
-                >
-                  <Search size={20} />
-                </span>
-                <input
-                  type="search"
-                  id="budget-filter-input"
-                  data-testid="budget-filter-input"
-                  placeholder="Filter budgets..."
-                  class="w-full pl-12 pr-4 py-3 bg-base-100 border border-base-300 focus:border-primary focus:ring-0 rounded-2xl text-base font-medium text-base-content shadow-sm"
-                  aria-label="Filter budgets by category name"
-                />
-              </div>
-              <select
-                id="budget-sort-select"
-                class="select select-bordered select-sm rounded-xl bg-base-100 text-xs font-bold uppercase tracking-wider min-w-[140px]"
-                aria-label="Sort budgets"
-              >
-                <option value="budget-desc">Budget ↓</option>
-                <option value="spent-desc">Spent ↓</option>
-                <option value="title-asc">Title A-Z</option>
-                <option value="title-desc">Title Z-A</option>
-              </select>
-              <div
-                class="flex items-center gap-1 bg-base-100 border border-base-300 rounded-xl p-1"
-                data-view-toggle
-              >
-                <button
-                  type="button"
-                  class="btn btn-sm btn-ghost rounded-lg btn-active"
-                  data-view-mode="card"
-                  aria-label="Card view"
-                  aria-pressed="true"
-                >
-                  <LayoutGrid size={16} class="stroke-current" aria-hidden="true" />
-                </button>
-                <button
-                  type="button"
-                  class="btn btn-sm btn-ghost rounded-lg"
-                  data-view-mode="table"
-                  aria-label="Table view"
-                  aria-pressed="false"
-                >
-                  <TableIcon size={16} class="stroke-current" aria-hidden="true" />
-                </button>
-              </div>
-            </div>
-          )}
+          {budgetData && budgetData.categories.length > 0 && <BudgetFilterControls />}
 
           {/* Budget Card Grid - Container for HTML injection */}
           <div id="budget-cards-container">
@@ -486,11 +427,18 @@ const shouldShowAssetNextStep = onboardingStep === 'budgets';
    * - Edit budget handlers: Opens the modal with pre-filled data
    */
   import { initBudgetPage, cleanup } from '@components/organisms/BudgetPage.client';
+  import { PERIOD_CHANGE_EVENT } from '@/lib/constants/events';
+  import { buildBudgetUrlForPeriod } from '@/lib/utils/budget-period';
   import { addToast } from '@/lib/stores/toastStore';
 
   // Track if page-load listener is registered to prevent accumulation
   const PAGE_LOAD_KEY = '__budgetPageLoadListenerRegistered';
   const PENDING_BUDGET_INIT_TOAST_KEY = 'budget-initialize-pending-toast';
+  const PERIOD_NAV_HANDLER_KEY = '__budgetPeriodNavigationHandler';
+
+  interface BudgetWindow extends Window {
+    [PERIOD_NAV_HANDLER_KEY]?: (event: Event) => void;
+  }
 
   function showPendingInitializeToast() {
     let raw: string | null = null;
@@ -592,13 +540,60 @@ const shouldShowAssetNextStep = onboardingStep === 'budgets';
     }
   }
 
+  function initBudgetPeriodNavigation() {
+    const scopedWindow = window as BudgetWindow;
+    if (scopedWindow[PERIOD_NAV_HANDLER_KEY]) return;
+
+    const handler = (event: Event) => {
+      const { period } = (event as CustomEvent<{ period?: string }>).detail || {};
+      if (!period) return;
+
+      const container = document.querySelector('[data-budget-page]') as HTMLElement | null;
+      const currency = container?.dataset.currency === 'USD' ? 'USD' : 'IDR';
+      const targetUrl = buildBudgetUrlForPeriod(period, currency);
+
+      const current = new URL(window.location.href);
+      const target = new URL(targetUrl, window.location.origin);
+      const keys = new Set([...current.searchParams.keys(), ...target.searchParams.keys()]);
+      const samePath = current.pathname === target.pathname;
+      const sameParams = [...keys].every((key) => {
+        const currentValues = current.searchParams.getAll(key).sort().join(',');
+        const targetValues = target.searchParams.getAll(key).sort().join(',');
+        return currentValues === targetValues;
+      });
+      if (samePath && sameParams) return;
+
+      window.location.href = targetUrl;
+    };
+
+    scopedWindow[PERIOD_NAV_HANDLER_KEY] = handler;
+    window.addEventListener(PERIOD_CHANGE_EVENT, handler);
+  }
+
+  function cleanupBudgetPeriodNavigation() {
+    const scopedWindow = window as BudgetWindow;
+    const handler = scopedWindow[PERIOD_NAV_HANDLER_KEY];
+    if (!handler) return;
+
+    window.removeEventListener(PERIOD_CHANGE_EVENT, handler);
+    delete scopedWindow[PERIOD_NAV_HANDLER_KEY];
+  }
+
   // Initialize the budget page orchestrator
   initBudgetPage();
   initBudgetExtras();
+  initBudgetPeriodNavigation();
 
   // Register cleanup handler (must re-register after each page load since it's once)
   function registerCleanup() {
-    document.addEventListener('astro:before-swap', cleanup, { once: true });
+    document.addEventListener(
+      'astro:before-swap',
+      () => {
+        cleanup();
+        cleanupBudgetPeriodNavigation();
+      },
+      { once: true }
+    );
   }
   registerCleanup();
 
@@ -608,6 +603,7 @@ const shouldShowAssetNextStep = onboardingStep === 'budgets';
     document.addEventListener('astro:page-load', () => {
       initBudgetPage();
       initBudgetExtras();
+      initBudgetPeriodNavigation();
       registerCleanup();
     });
   }

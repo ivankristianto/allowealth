@@ -10,7 +10,6 @@ compatibility_flags = ["nodejs_compat", "disable_nodejs_process_v2"]
 # https://developers.cloudflare.com/workers/configuration/routing/routes/
 routes = [
   { pattern = "allowealth.io", custom_domain = true },
-  { pattern = "www.allowealth.io", custom_domain = true },
 ]
 
 # Static assets configuration

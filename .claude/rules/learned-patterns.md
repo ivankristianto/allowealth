@@ -102,6 +102,11 @@ const token = document.cookie.split('csrf_token=')[1]; // Breaks on base64
 
 ## Deployment Patterns
 
+### Wrangler Configuration
+
+- ❌ **Use wildcards (`/*`) or paths in Custom Domain routes** - Custom Domains only accept bare domain names
+- ✅ **Use bare domain in `custom_domain` routes** - `{ pattern = "example.io", custom_domain = true }`, not `"example.io/*"`
+
 ### Cloudflare Workers
 
 - ✅ **Use Web Crypto API (PBKDF2-SHA256) for password hashing** - works in all runtimes

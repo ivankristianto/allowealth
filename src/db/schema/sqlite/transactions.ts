@@ -55,5 +55,8 @@ export const transactions = sqliteTable(
       table.transaction_date
     ),
     index('transactions_to_asset_id_idx').on(table.to_asset_id),
+    index('transactions_created_by_user_id_idx').on(table.created_by_user_id),
+    index('transactions_updated_by_user_id_idx').on(table.updated_by_user_id),
+    index('transactions_deleted_by_user_id_idx').on(table.deleted_by_user_id),
   ]
 );

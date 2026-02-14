@@ -13,7 +13,6 @@
  */
 
 import { Search, ChevronDown, Tag, Check, RotateCcw } from '@lucide/astro';
-import PeriodNavigator from '@/components/molecules/PeriodNavigator.astro';
 import { tokenClasses } from '@/lib/tokens';
 
 export interface Props {
@@ -22,11 +21,9 @@ export interface Props {
   categoryIds?: string[];
   categories?: Array<{ id: string; name: string; type: string }>;
   showCategoryFilter?: boolean;
-  monthSelector?: boolean;
-  availableMonths?: Array<{ key: string; label: string }>;
-  selectedMonth?: string;
-  currentMonth?: string;
   baseUrl?: string;
+  currentMonth?: string;
+  selectedMonth?: string;
 }
 
 const {
@@ -35,11 +32,9 @@ const {
   categoryIds = [],
   categories = [],
   showCategoryFilter = true,
-  monthSelector = true,
-  availableMonths = [],
-  selectedMonth = '',
-  currentMonth = '',
   baseUrl = '/transactions',
+  currentMonth = '',
+  selectedMonth = '',
 } = Astro.props;
 
 // Check if any filters are active (to show reset button)
@@ -83,11 +78,6 @@ const buildFilterUrl = (updates: Record<string, string>) => {
   return queryString ? `${basePath}?${queryString}` : basePath;
 };
 
-const periodOptions = availableMonths.map((month) => ({
-  value: month.key,
-  label: month.label,
-}));
-
 const categorySearchLabelClass = ['mb-1 block text-base-content/70', tokenClasses.textXs].join(' ');
 const categorySearchInputClass = [
   'input w-full rounded-lg',
@@ -105,8 +95,6 @@ const mainSearchInputClass = [
   tokenClasses.textSm,
   tokenClasses.placeholderMuted,
 ].join(' ');
-
-// Period navigator logic moved to PeriodNavigator component
 ---
 
 <!-- Filter Bar Container -->
@@ -118,10 +106,42 @@ const mainSearchInputClass = [
   aria-label="Filter transactions"
   id="transaction-filters-form"
   data-filter-form
+  data-selected-month={selectedMonth}
 >
-  {/* Row 1: Type filter + Category + Month (wraps on mobile) */}
+  {/* Row 1: Search + Reset */}
+  <div class="flex items-center gap-2 sm:gap-3 w-full">
+    <div class="relative flex-1">
+      <Search
+        size={18}
+        class="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-base-content/40 stroke-current pointer-events-none z-10"
+        aria-hidden="true"
+      />
+      <label for="search-input" class="sr-only">Search activity</label>
+      <input
+        id="search-input"
+        type="search"
+        name="search"
+        value={searchValue}
+        placeholder="Search..."
+        class={mainSearchInputClass}
+        data-filter-search
+      />
+    </div>
+
+    <button
+      type="button"
+      class={`btn btn-ghost btn-sm gap-1 sm:gap-2 text-base-content/60 hover:text-primary hover:bg-primary/10 rounded-lg sm:rounded-xl transition-colors shrink-0 min-h-[44px] ${hasActiveFilters ? '' : 'hidden'}`}
+      aria-label="Reset filters"
+      data-reset-filters
+      data-current-month={currentMonth}
+    >
+      <RotateCcw size={16} class="stroke-current" aria-hidden="true" />
+      <span class="text-xs sm:text-sm">Reset</span>
+    </button>
+  </div>
+
+  {/* Row 2: Type filter + Category */}
   <div class="flex flex-wrap items-center gap-2 sm:gap-4 w-full">
-    <!-- Type Filter (Tab-style) -->
     <input type="hidden" name="type" value={typeFilter} id="type-filter-hidden" />
     <div
       class="flex bg-base-200 p-1 rounded-xl sm:rounded-2xl shrink-0"
@@ -158,10 +178,10 @@ const mainSearchInputClass = [
       </button>
     </div>
 
-    <!-- Category Filter (Multi-select with search) -->
+    {/* Category dropdown */}
     {
       showCategoryFilter && categories.length > 0 && (
-        <div class="dropdown" id="category-dropdown">
+        <div class="dropdown dropdown-end" id="category-dropdown">
           <input
             type="hidden"
             name="category_ids"
@@ -227,93 +247,78 @@ const mainSearchInputClass = [
                 {categoryIds.length} selected
               </span>
             </div>
-            {/* Category Options - filtered by current type */}
+            {/* Category Options - visibility filtered client-side by current type */}
             <div class="space-y-1 max-h-52 overflow-y-auto" data-category-list>
-              {categories
-                .filter((cat) => cat.type === typeFilter)
-                .map((cat) => {
-                  const isSelected = categoryIds.includes(cat.id);
-                  return (
-                    <label
-                      class={`flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-colors hover:bg-base-200 ${isSelected ? 'bg-accent/10' : ''}`}
-                      data-category-option={cat.id}
-                      data-category-name={cat.name.toLowerCase()}
+              {categories.map((cat) => {
+                const isSelected = categoryIds.includes(cat.id);
+                return (
+                  <label
+                    class={`flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-colors hover:bg-base-200 ${isSelected ? 'bg-accent/10' : ''}`}
+                    data-category-option={cat.id}
+                    data-category-type={cat.type}
+                    data-category-name={cat.name.toLowerCase()}
+                  >
+                    <div
+                      class={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-colors ${isSelected ? 'bg-accent border-accent' : 'border-base-300'}`}
+                      data-checkbox-visual={cat.id}
                     >
-                      <div
-                        class={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-colors ${isSelected ? 'bg-accent border-accent' : 'border-base-300'}`}
-                        data-checkbox-visual={cat.id}
-                      >
-                        {isSelected && (
-                          <Check size={12} class="stroke-white stroke-3" aria-hidden="true" />
-                        )}
-                      </div>
-                      <span class="text-sm font-medium text-base-content truncate">{cat.name}</span>
-                    </label>
-                  );
-                })}
+                      {isSelected && (
+                        <Check size={12} class="stroke-white stroke-3" aria-hidden="true" />
+                      )}
+                    </div>
+                    <span class="text-sm font-medium text-base-content truncate">{cat.name}</span>
+                  </label>
+                );
+              })}
             </div>
           </div>
         </div>
       )
     }
-
-    <!-- Month Filter with Navigation -->
-    {
-      monthSelector && (
-        <PeriodNavigator
-          options={periodOptions}
-          selected={selectedMonth}
-          ariaLabel="Select month"
-          inputName="month"
-        />
-      )
-    }
-  </div>
-
-  {/* Row 2: Search + Reset */}
-  <div class="flex items-center gap-2 sm:gap-3 w-full">
-    <!-- Search Input -->
-    <div class="relative flex-1">
-      <Search
-        size={18}
-        class="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-base-content/40 stroke-current pointer-events-none z-10"
-        aria-hidden="true"
-      />
-      <label for="search-input" class="sr-only">Search activity</label>
-      <input
-        id="search-input"
-        type="search"
-        name="search"
-        value={searchValue}
-        placeholder="Search..."
-        class={mainSearchInputClass}
-        data-filter-search
-      />
-    </div>
-
-    <!-- Reset Filters Button (visibility controlled by JS) -->
-    <button
-      type="button"
-      class={`btn btn-ghost btn-sm gap-1 sm:gap-2 text-base-content/60 hover:text-primary hover:bg-primary/10 rounded-lg sm:rounded-xl transition-colors shrink-0 min-h-[44px] ${hasActiveFilters ? '' : 'hidden'}`}
-      aria-label="Reset filters"
-      data-reset-filters
-      data-current-month={currentMonth}
-    >
-      <RotateCcw size={16} class="stroke-current" aria-hidden="true" />
-      <span class="text-xs sm:text-sm">Reset</span>
-    </button>
   </div>
 </form>
 
 <script>
-  import { PERIOD_CHANGE_EVENT } from '@/lib/constants/events';
+  import { PERIOD_CHANGE_EVENT, FILTERS_RESET_EVENT } from '@/lib/constants/events';
   // Track selected category IDs
   let selectedCategoryIds: string[] = [];
+  let selectedPeriod = '';
 
   // Get current month from reset button
   function getCurrentMonth(): string {
     const resetBtn = document.querySelector('[data-reset-filters]') as HTMLElement;
     return resetBtn?.dataset.currentMonth || '';
+  }
+
+  function getInitialSelectedMonth(): string {
+    const form = document.getElementById('transaction-filters-form') as HTMLElement | null;
+    return form?.dataset.selectedMonth || '';
+  }
+
+  function getCurrentTypeFilter(): string {
+    let currentType = 'expense';
+    document.querySelectorAll('[data-filter-type]').forEach((btn) => {
+      if (btn.getAttribute('aria-pressed') === 'true') {
+        currentType = btn.getAttribute('data-filter-type') || 'expense';
+      }
+    });
+    return currentType;
+  }
+
+  function updateCategoryVisibility(filterType: string = getCurrentTypeFilter()) {
+    const categorySearchInput = document.querySelector(
+      '[data-category-search]'
+    ) as HTMLInputElement | null;
+    const query = categorySearchInput?.value.toLowerCase().trim() || '';
+
+    document.querySelectorAll('[data-category-option]').forEach((option) => {
+      const optionEl = option as HTMLElement;
+      const optionType = optionEl.dataset.categoryType || '';
+      const name = optionEl.dataset.categoryName || '';
+      const matchesType = optionType === filterType;
+      const matchesSearch = name.includes(query);
+      optionEl.style.display = matchesType && matchesSearch ? '' : 'none';
+    });
   }
 
   // Check if filters are active and update reset button visibility
@@ -322,23 +327,14 @@ const mainSearchInputClass = [
     if (!resetBtn) return;
 
     const searchInput = document.getElementById('search-input') as HTMLInputElement;
-    const periodInput = document.querySelector('[data-period-input]') as HTMLInputElement;
-    const typeButtons = document.querySelectorAll('[data-filter-type]');
     const currentMonth = getCurrentMonth();
-
-    // Check current type
-    let currentType = 'expense';
-    typeButtons.forEach((btn) => {
-      if (btn.getAttribute('aria-pressed') === 'true') {
-        currentType = btn.getAttribute('data-filter-type') || 'expense';
-      }
-    });
+    const currentType = getCurrentTypeFilter();
 
     const hasFilters =
       currentType !== 'expense' ||
       (searchInput && searchInput.value.trim() !== '') ||
       selectedCategoryIds.length > 0 ||
-      (periodInput && periodInput.value !== '' && periodInput.value !== currentMonth);
+      (selectedPeriod !== '' && selectedPeriod !== currentMonth);
 
     resetBtn.classList.toggle('hidden', !hasFilters);
   }
@@ -349,6 +345,13 @@ const mainSearchInputClass = [
     if (hiddenInput && hiddenInput.value) {
       selectedCategoryIds = hiddenInput.value.split(',').filter(Boolean);
     }
+
+    const currentType = getCurrentTypeFilter();
+    selectedCategoryIds = selectedCategoryIds.filter((id) => {
+      const option = document.querySelector(`[data-category-option="${id}"]`) as HTMLElement | null;
+      return option?.dataset.categoryType === currentType;
+    });
+    updateCategoryVisibility(currentType);
     updateCategoryUI();
     updateResetButtonVisibility();
   }
@@ -420,13 +423,7 @@ const mainSearchInputClass = [
   const categorySearch = document.querySelector('[data-category-search]') as HTMLInputElement;
   if (categorySearch) {
     categorySearch.addEventListener('input', () => {
-      const query = categorySearch.value.toLowerCase().trim();
-      document.querySelectorAll('[data-category-option]').forEach((option) => {
-        const optionEl = option as HTMLElement;
-        const name = optionEl.dataset.categoryName || '';
-        const matches = name.includes(query);
-        optionEl.style.display = matches ? '' : 'none';
-      });
+      updateCategoryVisibility();
     });
 
     // Prevent dropdown from closing when typing
@@ -439,6 +436,7 @@ const mainSearchInputClass = [
   document.querySelectorAll<HTMLButtonElement>('[data-filter-type]').forEach((btn) => {
     btn.addEventListener('click', () => {
       const filterType = btn.dataset.filterType;
+      const previousCategoryIds = [...selectedCategoryIds];
       const hiddenInput = document.getElementById('type-filter-hidden') as HTMLInputElement;
 
       // Update hidden input
@@ -461,14 +459,31 @@ const mainSearchInputClass = [
         b.classList.toggle('text-base-content/50', !isActive);
       });
 
-      // Dispatch custom event for client-side handling
-      // Note: TransactionsPage.client.ts handles client-side filtering
-      // No page reload needed - removed window.location.href navigation
+      if (filterType) {
+        updateCategoryVisibility(filterType);
+        selectedCategoryIds = selectedCategoryIds.filter((id) => {
+          const option = document.querySelector(
+            `[data-category-option="${id}"]`
+          ) as HTMLElement | null;
+          return option?.dataset.categoryType === filterType;
+        });
+        updateCategoryUI();
+      }
+
+      // Dispatch after pruning category IDs so listeners receive consistent state.
       window.dispatchEvent(
         new CustomEvent('filterChange', {
           detail: { type: 'type', value: filterType },
         })
       );
+
+      if (previousCategoryIds.join(',') !== selectedCategoryIds.join(',')) {
+        window.dispatchEvent(
+          new CustomEvent('filterChange', {
+            detail: { type: 'category_ids', value: [...selectedCategoryIds] },
+          })
+        );
+      }
     });
   });
 
@@ -521,6 +536,7 @@ const mainSearchInputClass = [
   window.addEventListener(PERIOD_CHANGE_EVENT, (e: Event) => {
     const customEvent = e as CustomEvent;
     const { period } = customEvent.detail;
+    selectedPeriod = period || '';
 
     // Update reset button visibility
     updateResetButtonVisibility();
@@ -538,6 +554,29 @@ const mainSearchInputClass = [
       updateResetButtonVisibility();
     });
   }
+
+  // Listen for filters reset to clear category state and UI
+  window.addEventListener(FILTERS_RESET_EVENT, () => {
+    selectedCategoryIds = [];
+    updateCategoryUI();
+
+    const categorySearchEl = document.querySelector(
+      '[data-category-search]'
+    ) as HTMLInputElement | null;
+    if (categorySearchEl) categorySearchEl.value = '';
+
+    updateCategoryVisibility();
+
+    // Clear search input
+    const searchEl = document.getElementById('search-input') as HTMLInputElement;
+    if (searchEl) searchEl.value = '';
+
+    selectedPeriod = getCurrentMonth();
+
+    updateResetButtonVisibility();
+  });
+
+  selectedPeriod = getInitialSelectedMonth();
 
   // Initialize on load
   initCategorySelection();

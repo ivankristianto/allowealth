@@ -8,7 +8,8 @@
 
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import { categoryService } from '@/services';
-import { Plus, Search, Pencil, Trash2, ListPlus } from '@lucide/astro';
+import ActionBar from '@components/molecules/ActionBar.astro';
+import { Plus, Search, Pencil, Trash2, ListPlus, ArrowLeft } from '@lucide/astro';
 import CategoryIcon from '@/components/atoms/CategoryIcon.astro';
 import TabToggle from '@/components/atoms/TabToggle.astro';
 import CategoryModal from '@/components/organisms/CategoryModal.astro';
@@ -36,6 +37,12 @@ if (searchQuery) {
 
 const onboardingStep = url.searchParams.get('onboarding');
 const shouldShowBudgetNextStep = onboardingStep === 'categories';
+
+const ghostBtn =
+  'btn btn-ghost btn-sm md:btn-md min-h-[44px] min-w-[44px] gap-1 md:gap-2 rounded-lg md:rounded-xl text-base-content/70 hover:text-base-content hover:bg-base-200 px-2 md:px-4';
+
+const accentGhostBtn =
+  'btn btn-ghost btn-sm md:btn-md min-h-[44px] min-w-[44px] gap-1 md:gap-2 rounded-lg md:rounded-xl text-accent hover:text-accent hover:bg-accent/10 px-2 md:px-4 font-semibold';
 ---
 
 <ProtectedLayout
@@ -47,8 +54,8 @@ const shouldShowBudgetNextStep = onboardingStep === 'categories';
     class="max-w-7xl mx-auto sm:px-2 lg:px-6 space-y-6 sm:space-y-8"
     data-testid="categories-page"
   >
-    <!-- View Header -->
-    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+    <!-- Page Intro -->
+    <div>
       <div>
         <h2 class="text-2xl font-bold text-base-content tracking-tight leading-none">
           Manage Categories
@@ -56,26 +63,6 @@ const shouldShowBudgetNextStep = onboardingStep === 'categories';
         <p class="text-sm text-base-content/60 mt-2 font-medium">
           Organizing {allCategories.length} custom labels for your family ledger
         </p>
-      </div>
-      <div class="flex items-center gap-3">
-        <button
-          class="btn btn-outline btn-accent rounded-2xl font-bold text-sm flex items-center gap-2"
-          data-action="bulk-add-categories"
-          data-type={typeFilter}
-          data-testid="bulk-add-btn"
-        >
-          <ListPlus size={18} class="stroke-current" aria-hidden="true" />
-          Bulk Add
-        </button>
-        <button
-          class="btn btn-accent rounded-2xl font-bold text-sm flex items-center gap-2"
-          data-action="create-category"
-          data-type={typeFilter}
-          data-testid="create-category-btn"
-        >
-          <Plus size={18} class="stroke-current" aria-hidden="true" />
-          Create Category
-        </button>
       </div>
     </div>
 
@@ -96,6 +83,39 @@ const shouldShowBudgetNextStep = onboardingStep === 'categories';
         </div>
       )
     }
+
+    <ActionBar ariaLabel="Budget category actions" edgeBleed>
+      <a href="/budget" class={ghostBtn} aria-label="Back to budget">
+        <ArrowLeft size={16} class="stroke-current md:hidden" aria-hidden="true" />
+        <ArrowLeft size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+        <span class="text-xs md:text-sm">Back</span>
+      </a>
+
+      <button
+        class={ghostBtn}
+        data-action="bulk-add-categories"
+        data-type={typeFilter}
+        data-testid="bulk-add-btn"
+        aria-label="Bulk add categories"
+      >
+        <ListPlus size={16} class="stroke-current md:hidden" aria-hidden="true" />
+        <ListPlus size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+        <span class="text-xs md:text-sm">Bulk Add</span>
+      </button>
+
+      <button
+        slot="primary"
+        class={accentGhostBtn}
+        data-action="create-category"
+        data-type={typeFilter}
+        data-testid="create-category-btn"
+        aria-label="Create category"
+      >
+        <Plus size={16} class="stroke-current md:hidden" aria-hidden="true" />
+        <Plus size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+        <span class="text-xs md:text-sm">Create Category</span>
+      </button>
+    </ActionBar>
 
     <!-- Search and Filters -->
     <div class="flex flex-col md:flex-row justify-between items-center gap-6">

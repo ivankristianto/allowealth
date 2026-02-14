@@ -43,6 +43,7 @@ export const budgets = pgTable(
       table.year,
       table.currency
     ),
+    index('budgets_created_by_user_id_idx').on(table.created_by_user_id),
     index('budgets_ws_month_year_currency_idx').on(
       table.workspace_id,
       table.month,

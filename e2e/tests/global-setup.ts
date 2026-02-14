@@ -68,7 +68,7 @@ setup('authenticate', async ({ page }) => {
   // Wait for login form to be visible and ready
   const emailInput = page.locator('#email');
   const passwordInput = page.locator('#password');
-  const loginButton = page.getByRole('button', { name: /sign in/i });
+  const loginButton = page.getByTestId('login-btn');
 
   await expect(emailInput).toBeVisible();
   await expect(passwordInput).toBeVisible();

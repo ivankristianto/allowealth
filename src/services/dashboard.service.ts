@@ -70,6 +70,7 @@ export interface TopCategoryExpense {
   percentage: number;
   color: string;
   amount: string;
+  otherCategoryNames?: string[];
 }
 
 /**
@@ -708,6 +709,7 @@ export class DashboardService {
         percentage: otherPercentage,
         color: '#6b7280',
         amount: otherTotal.toString(),
+        otherCategoryNames: otherCategories.map((cat: any) => cat.category_name),
       });
     }
 

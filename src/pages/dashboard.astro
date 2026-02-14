@@ -158,6 +158,7 @@ const spendingCategories =
     category: cat.category,
     percentage: cat.percentage,
     color: cat.color,
+    otherCategoryNames: cat.otherCategoryNames,
   })) ?? [];
 ---
 
@@ -195,12 +196,6 @@ const spendingCategories =
               income={safeParseFloat(dashboardData?.monthlyIncome.total)}
               currency={primaryCurrency}
               remainingLabel={`Budget Remaining for ${currentMonthName}`}
-              alertMessage={
-                dashboardData?.monthlySpent.percentage &&
-                dashboardData.monthlySpent.percentage >= 80
-                  ? `You've reached ${Math.round(dashboardData.monthlySpent.percentage)}% of your monthly budget.`
-                  : undefined
-              }
               loading={!dashboardData}
             />
             <SpendingChart
