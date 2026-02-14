@@ -52,6 +52,34 @@ export interface PlatformOverview {
   activeWorkspaces: number;
 }
 
+export interface UserWithWorkspace {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  workspaceId: string | null;
+  workspaceName: string | null;
+  emailVerifiedAt: Date | null;
+  deletedAt: Date | null;
+  createdAt: Date;
+}
+
+export interface UserDetailed extends UserWithWorkspace {
+  avatarUrl: string | null;
+  updatedAt: Date;
+}
+
+export interface ListUsersParams {
+  search?: string;
+  role?: 'admin' | 'member' | 'super_admin';
+  status?: 'active' | 'deactivated';
+  workspaceId?: string;
+  sortBy?: 'name' | 'email' | 'created_at' | 'role';
+  sortOrder?: 'asc' | 'desc';
+  limit?: number;
+  offset?: number;
+}
+
 // === Service ===
 
 export class SuperAdminService {
@@ -406,6 +434,263 @@ export class SuperAdminService {
     }
 
     await this.db.delete(schema.workspaces).where(eq(schema.workspaces.id, workspaceId));
+  }
+
+  // === User Management ===
+
+  /**
+   * List all users across all workspaces with filtering, sorting, and pagination
+   *
+   * @param params - Filter, sort, and pagination parameters
+   * @returns Paginated users with workspace info and total count
+   */
+  async listAllUsers(
+    params: ListUsersParams = {}
+  ): Promise<{ users: UserWithWorkspace[]; total: number }> {
+    const schema = this.schema;
+    const {
+      search,
+      role,
+      status,
+      workspaceId,
+      sortBy = 'created_at',
+      sortOrder = 'desc',
+      limit = 50,
+      offset = 0,
+    } = params;
+
+    const conditions = [];
+    if (search) {
+      conditions.push(
+        sql`(${like(schema.users.name, `%${search}%`)} OR ${like(schema.users.email, `%${search}%`)})`
+      );
+    }
+    if (role) {
+      conditions.push(eq(schema.users.role, role));
+    }
+    if (status === 'active') {
+      conditions.push(isNull(schema.users.deleted_at));
+    } else if (status === 'deactivated') {
+      conditions.push(sql`${schema.users.deleted_at} IS NOT NULL`);
+    }
+    if (workspaceId) {
+      conditions.push(eq(schema.users.workspace_id, workspaceId));
+    }
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+    const countQuery = (this.db as any).select({ count: sql<number>`count(*)` }).from(schema.users);
+    const [countResult] = whereClause ? await countQuery.where(whereClause) : await countQuery;
+    const total = countResult?.count ?? 0;
+
+    if (total === 0) {
+      return { users: [], total: 0 };
+    }
+
+    const sortColumnMap: Record<string, any> = {
+      name: schema.users.name,
+      email: schema.users.email,
+      created_at: schema.users.created_at,
+      role: schema.users.role,
+    };
+    const sortColumn = sortColumnMap[sortBy] ?? schema.users.created_at;
+    const orderFn = sortOrder === 'asc' ? asc : desc;
+
+    let usersQuery = (this.db as any)
+      .select({
+        id: schema.users.id,
+        name: schema.users.name,
+        email: schema.users.email,
+        role: schema.users.role,
+        workspace_id: schema.users.workspace_id,
+        workspace_name: schema.workspaces.name,
+        email_verified_at: schema.users.email_verified_at,
+        deleted_at: schema.users.deleted_at,
+        created_at: schema.users.created_at,
+      })
+      .from(schema.users)
+      .leftJoin(schema.workspaces, eq(schema.users.workspace_id, schema.workspaces.id));
+
+    if (whereClause) {
+      usersQuery = usersQuery.where(whereClause);
+    }
+
+    const userRows = await usersQuery.orderBy(orderFn(sortColumn)).limit(limit).offset(offset);
+
+    const users: UserWithWorkspace[] = userRows.map((u: any) => ({
+      id: u.id,
+      name: u.name,
+      email: u.email,
+      role: u.role,
+      workspaceId: u.workspace_id,
+      workspaceName: u.workspace_name,
+      emailVerifiedAt: u.email_verified_at,
+      deletedAt: u.deleted_at,
+      createdAt: u.created_at,
+    }));
+
+    return { users, total };
+  }
+
+  /**
+   * Get detailed user information including workspace association
+   *
+   * @param userId - User ID to retrieve
+   * @throws {SuperAdminServiceError} If user not found
+   */
+  async getUserDetails(userId: string): Promise<UserDetailed> {
+    const schema = this.schema;
+
+    const rows = await (this.db as any)
+      .select({
+        id: schema.users.id,
+        name: schema.users.name,
+        email: schema.users.email,
+        role: schema.users.role,
+        avatar_url: schema.users.avatar_url,
+        workspace_id: schema.users.workspace_id,
+        workspace_name: schema.workspaces.name,
+        email_verified_at: schema.users.email_verified_at,
+        deleted_at: schema.users.deleted_at,
+        created_at: schema.users.created_at,
+        updated_at: schema.users.updated_at,
+      })
+      .from(schema.users)
+      .leftJoin(schema.workspaces, eq(schema.users.workspace_id, schema.workspaces.id))
+      .where(eq(schema.users.id, userId))
+      .limit(1);
+
+    const user = rows[0];
+    if (!user) {
+      throw new SuperAdminServiceError(ServiceErrorCode.USER_NOT_FOUND, 'User not found', 404);
+    }
+
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      avatarUrl: user.avatar_url,
+      workspaceId: user.workspace_id,
+      workspaceName: user.workspace_name,
+      emailVerifiedAt: user.email_verified_at,
+      deletedAt: user.deleted_at,
+      createdAt: user.created_at,
+      updatedAt: user.updated_at,
+    };
+  }
+
+  /**
+   * Deactivate a user by setting deleted_at timestamp
+   *
+   * Cannot deactivate super_admin users.
+   *
+   * @param userId - User ID to deactivate
+   * @throws {SuperAdminServiceError} If user not found or is super_admin
+   */
+  async deactivateUser(userId: string): Promise<void> {
+    const schema = this.schema;
+
+    const user = await this.db.query.users.findFirst({
+      where: eq(schema.users.id, userId),
+    });
+
+    if (!user) {
+      throw new SuperAdminServiceError(ServiceErrorCode.USER_NOT_FOUND, 'User not found', 404);
+    }
+
+    if (user.role === 'super_admin') {
+      throw new SuperAdminServiceError(
+        ServiceErrorCode.FORBIDDEN,
+        'Cannot deactivate super admin users',
+        403
+      );
+    }
+
+    if (user.deleted_at) {
+      throw new SuperAdminServiceError(
+        ServiceErrorCode.VALIDATION_ERROR,
+        'User is already deactivated',
+        400
+      );
+    }
+
+    await this.db
+      .update(schema.users)
+      .set({ deleted_at: new Date(), updated_at: new Date() })
+      .where(eq(schema.users.id, userId));
+  }
+
+  /**
+   * Reactivate a previously deactivated user by clearing deleted_at
+   *
+   * @param userId - User ID to reactivate
+   * @throws {SuperAdminServiceError} If user not found or not deactivated
+   */
+  async reactivateUser(userId: string): Promise<void> {
+    const schema = this.schema;
+
+    const user = await this.db.query.users.findFirst({
+      where: eq(schema.users.id, userId),
+    });
+
+    if (!user) {
+      throw new SuperAdminServiceError(ServiceErrorCode.USER_NOT_FOUND, 'User not found', 404);
+    }
+
+    if (!user.deleted_at) {
+      throw new SuperAdminServiceError(
+        ServiceErrorCode.VALIDATION_ERROR,
+        'User is not deactivated',
+        400
+      );
+    }
+
+    await this.db
+      .update(schema.users)
+      .set({ deleted_at: null, updated_at: new Date() })
+      .where(eq(schema.users.id, userId));
+  }
+
+  /**
+   * Change a user's role (admin or member only)
+   *
+   * Cannot change the role of super_admin users.
+   *
+   * @param userId - User ID to update
+   * @param newRole - New role ('admin' or 'member')
+   * @throws {SuperAdminServiceError} If user not found, is super_admin, or invalid role
+   */
+  async changeUserRole(userId: string, newRole: 'admin' | 'member'): Promise<void> {
+    const schema = this.schema;
+
+    if (!['admin', 'member'].includes(newRole)) {
+      throw new SuperAdminServiceError(
+        ServiceErrorCode.VALIDATION_ERROR,
+        'Role must be admin or member',
+        400
+      );
+    }
+
+    const user = await this.db.query.users.findFirst({
+      where: eq(schema.users.id, userId),
+    });
+
+    if (!user) {
+      throw new SuperAdminServiceError(ServiceErrorCode.USER_NOT_FOUND, 'User not found', 404);
+    }
+
+    if (user.role === 'super_admin') {
+      throw new SuperAdminServiceError(
+        ServiceErrorCode.FORBIDDEN,
+        'Cannot change super admin role via UI',
+        403
+      );
+    }
+
+    await this.db
+      .update(schema.users)
+      .set({ role: newRole, updated_at: new Date() })
+      .where(eq(schema.users.id, userId));
   }
 }
 
