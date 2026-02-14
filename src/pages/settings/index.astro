@@ -38,6 +38,11 @@ if (!user) {
 const isAdmin = user.role === 'admin';
 const workspaceId = user.workspaceId;
 
+// Settings page requires a workspace context (super_admin has no workspace)
+if (!workspaceId) {
+  return Astro.redirect('/admin');
+}
+
 // Initialize workspace data with defaults
 let workspaceData = {
   id: '',
@@ -54,7 +59,7 @@ let members: Array<{
   id: string;
   name: string;
   email: string;
-  role: 'admin' | 'member';
+  role: 'admin' | 'member' | 'super_admin';
   createdAt: string;
 }> = [];
 

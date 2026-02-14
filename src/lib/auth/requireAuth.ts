@@ -104,6 +104,42 @@ export function getCurrentUser(astro: any): any {
 }
 
 /**
+ * Require super admin role for a route
+ *
+ * Checks if the user is authenticated and has super_admin role.
+ * If not authenticated, redirects to the login page.
+ * If authenticated but not super_admin, returns a 403 Forbidden response.
+ *
+ * @param astro - Astro global object
+ * @returns Response if not authorized, null if authorized
+ *
+ * @example
+ * ```astro
+ * ---
+ * import { requireSuperAdmin } from '@/lib/auth/requireAuth';
+ *
+ * const authResponse = requireSuperAdmin(Astro);
+ * if (authResponse) {
+ *   return authResponse;
+ * }
+ * ---
+ * ```
+ */
+export function requireSuperAdmin(astro: any): AuthCheckResult {
+  const authResult = requireAuth(astro);
+  if (authResult) return authResult;
+
+  if (astro.locals?.user?.role !== 'super_admin') {
+    return new Response(JSON.stringify({ error: 'Super admin access required' }), {
+      status: 403,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
+  return null;
+}
+
+/**
  * Require admin role for a route
  *
  * Checks if the user is authenticated and has admin role.

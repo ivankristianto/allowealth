@@ -54,6 +54,11 @@ const { title = 'Finance Manager', currentPath = '/', subtitle } = Astro.props;
 // User is authenticated (enforced by middleware)
 const user = Astro.locals.user!;
 
+// Super admins don't have a workspace - redirect to admin panel
+if (!user.workspaceId) {
+  return Astro.redirect('/admin');
+}
+
 // Fetch categories, assets, and user settings for global transaction drawer
 // Use cache to reduce database round-trips (saves ~400ms per page load)
 let categories: Array<{ id: string; name: string; type: string; currency?: string }> = [];

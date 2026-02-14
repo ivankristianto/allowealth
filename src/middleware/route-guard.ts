@@ -11,6 +11,7 @@
 import type { MiddlewareHandler } from 'astro';
 
 const PROTECTED_PREFIXES = [
+  '/admin',
   '/dashboard',
   '/transactions',
   '/budget',
@@ -34,6 +35,15 @@ export const routeGuard: MiddlewareHandler = async (context, next) => {
   if (isProtected && !context.locals.user) {
     const returnUrl = pathname + context.url.search;
     return context.redirect(`/login?redirect=${encodeURIComponent(returnUrl)}`, 302);
+  }
+
+  // Require super_admin role for /admin routes
+  const isAdminRoute = pathname.startsWith('/admin');
+  if (isAdminRoute && context.locals.user && context.locals.user.role !== 'super_admin') {
+    return new Response(JSON.stringify({ error: 'Super admin access required' }), {
+      status: 403,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 
   // Redirect authenticated users away from auth pages to dashboard

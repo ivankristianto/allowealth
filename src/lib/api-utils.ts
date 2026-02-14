@@ -166,8 +166,8 @@ export async function validateBody<T>(
  */
 export interface AuthenticatedUser {
   userId: string;
-  workspaceId: string;
-  role: 'admin' | 'member';
+  workspaceId: string | null;
+  role: 'admin' | 'member' | 'super_admin';
 }
 
 /**
@@ -199,10 +199,13 @@ export interface AuthenticatedUser {
  */
 export function getAuthenticatedUser(context: APIContext): AuthenticatedUser {
   const user = context.locals.user;
+  if (!user?.id) throw new Error('Unauthorized');
 
-  if (!user?.id || !user?.workspaceId) {
-    throw new Error('Unauthorized');
+  if (user.role === 'super_admin') {
+    return { userId: user.id, workspaceId: null, role: 'super_admin' };
   }
+
+  if (!user.workspaceId) throw new Error('Unauthorized');
 
   return requireTenantContext({
     userId: user.id,
