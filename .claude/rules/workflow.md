@@ -53,6 +53,7 @@ The project deploys to **Cloudflare Workers** (primary) and **Bun** (local dev).
 - CLI scripts: Can use Bun-specific APIs
 - Database: Use abstraction layer with environment-specific drivers
 - Environment variables: Use `getEnv()` helper, not `import.meta.env` (build-time only on Workers)
+- Dev/preview scripts: Must use `bun --bun` flag to ensure Bun runtime (Astro CLI defaults to Node.js)
 
 ## Code Quality Standards
 

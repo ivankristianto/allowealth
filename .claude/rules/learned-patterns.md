@@ -100,6 +100,15 @@ const token = document.cookie.split('csrf_token=')[1]; // Breaks on base64
 - ✅ **Remove precomputed hashes when changing algorithms** - prevents seed mismatches
 - ✅ **Use dynamic dates for current month in seed data** - not hardcoded
 
+## Runtime Compatibility
+
+### Astro Dev Server Runtime
+
+- ✅ **Use `bun --bun` flag for dev/preview scripts** - Astro CLI has `#!/usr/bin/env node` shebang, runs under Node.js by default
+- ❌ **Assume `bun run dev` runs Astro under Bun** - the shebang overrides, causing Node.js execution
+- ❌ **Assume `createRequire` resolves `.ts` files in Vite SSR** - Node.js `createRequire` only resolves `.js`, `.json`, `.node`
+- ✅ **Verify actual runtime with `ps aux`** before assuming Bun APIs are available in dev server context
+
 ## Deployment Patterns
 
 ### Wrangler Configuration
