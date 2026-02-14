@@ -19,9 +19,9 @@ import {
   Database,
   Server,
   Settings,
-  AlertTriangle,
-  CheckCircle,
-  XCircle,
+  TriangleAlert,
+  CircleCheck,
+  CircleX,
 } from '@lucide/astro';
 
 interface Props {
@@ -75,7 +75,7 @@ function getCacheStatusBadgeClass(status: string): string {
   {
     data.configuration.missingRequired.length > 0 && (
       <div class="alert alert-error" role="alert">
-        <AlertTriangle class="h-5 w-5 shrink-0" />
+        <TriangleAlert class="h-5 w-5 shrink-0" />
         <div>
           <h3 class="font-bold">Missing Required Configuration</h3>
           <div class="text-sm">
@@ -98,7 +98,7 @@ function getCacheStatusBadgeClass(status: string): string {
   {
     data.configuration.warnings.length > 0 && (
       <div class="alert alert-warning" role="alert">
-        <AlertTriangle class="h-5 w-5 shrink-0" />
+        <TriangleAlert class="h-5 w-5 shrink-0" />
         <div>
           <h3 class="font-bold">Configuration Warnings</h3>
           <ul class="list-disc list-inside text-sm mt-1">
@@ -116,7 +116,7 @@ function getCacheStatusBadgeClass(status: string): string {
       data.configuration.missingRequired.length === 0 &&
       data.configuration.warnings.length === 0 && (
         <div class="alert alert-success" role="status">
-          <CheckCircle class="h-5 w-5 shrink-0" />
+          <CircleCheck class="h-5 w-5 shrink-0" />
           <div>
             <h3 class="font-bold">Configuration Valid</h3>
             <p class="text-sm">All required configuration is present and no warnings detected.</p>
@@ -371,7 +371,7 @@ function getCacheStatusBadgeClass(status: string): string {
                 </td>
                 <td>
                   <div class="alert alert-error py-2">
-                    <XCircle class="h-4 w-4 shrink-0" />
+                    <CircleX class="h-4 w-4 shrink-0" />
                     <span class="text-xs">{data.cache.lastError}</span>
                   </div>
                 </td>
