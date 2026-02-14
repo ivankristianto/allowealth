@@ -7,7 +7,6 @@ import { BasePage } from './BasePage';
  */
 export class ReportsPage extends BasePage {
   // Locators for reports page elements
-  private readonly reportsPage = '[data-testid="reports-page"]';
   private readonly rangeMonthly = '[data-testid="report-range-monthly"]';
   private readonly rangeYearly = '[data-testid="report-range-yearly"]';
   private readonly metricIncome = '[data-testid="report-metric-income"]';
@@ -227,9 +226,23 @@ export class ReportsPage extends BasePage {
    * Verify that the reports page is visible.
    */
   async expectReportsPageVisible(): Promise<void> {
-    // Check for report selector - use first() to avoid strict mode issues
-    const reportSelector = this.page.locator('[data-report-selector]').first();
-    await expect(reportSelector).toBeVisible();
+    await expect(this.page).toHaveURL(/\/reports(?:[/?#]|$)/);
+
+    // Reports page does not expose a dedicated root test id in production markup.
+    // Verify at least one core reports content container is visible.
+    const reportsContent = this.page
+      .locator(
+        '[data-summary-container]:visible, [data-charts-container]:visible, [data-table-container]:visible'
+      )
+      .first();
+    await expect(reportsContent).toBeVisible();
+
+    // On mobile, the full selector can be hidden; accept either a visible selector
+    // container or a period trigger button as proof controls are available.
+    const visibleControls = this.page
+      .locator('[data-report-selector]:visible, [data-period-trigger]:visible')
+      .first();
+    await expect(visibleControls).toBeVisible();
   }
 
   /**

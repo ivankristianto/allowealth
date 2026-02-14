@@ -40,6 +40,7 @@ export default defineConfig({
       DATABASE_URL: 'db/.e2e.db',
       PORT: String(E2E_PORT),
       DEV_HOST: 'localhost', // Override to ensure server binds to localhost for E2E
+      SIGNUP_MODE: 'public',
       E2E_USER_EMAIL: 'demo@example.com',
       E2E_USER_PASSWORD: 'demo123456789',
     },
