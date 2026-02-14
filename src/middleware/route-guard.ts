@@ -40,10 +40,14 @@ export const routeGuard: MiddlewareHandler = async (context, next) => {
   // Require super_admin role for /admin routes
   const isAdminRoute = pathname.startsWith('/admin');
   if (isAdminRoute && context.locals.user && context.locals.user.role !== 'super_admin') {
-    return new Response(JSON.stringify({ error: 'Super admin access required' }), {
-      status: 403,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    // API routes get JSON 403, page routes get redirected to dashboard
+    if (pathname.startsWith('/api/')) {
+      return new Response(JSON.stringify({ error: 'Super admin access required' }), {
+        status: 403,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+    return context.redirect('/dashboard', 302);
   }
 
   // Redirect authenticated users away from auth pages to dashboard

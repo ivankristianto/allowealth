@@ -154,3 +154,10 @@ export class WorkspaceInvitationServiceError extends ServiceError {
     this.name = 'WorkspaceInvitationServiceError';
   }
 }
+
+export class SuperAdminServiceError extends ServiceError {
+  constructor(code: ServiceErrorCode, message: string, statusCode: number = 400) {
+    super(code, message, statusCode);
+    this.name = 'SuperAdminServiceError';
+  }
+}
