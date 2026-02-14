@@ -5,7 +5,7 @@
  * Playwright runs in Node.js, so we shell out to Bun for SQLite access.
  */
 
-import { execSync } from 'child_process';
+import { execFileSync } from 'child_process';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -19,7 +19,7 @@ const DB_QUERY_SCRIPT = path.join(__dirname, 'db-query.ts');
  * Run a database query via Bun subprocess
  */
 function runDbQuery(queryType: string, email: string): string {
-  return execSync(`bun run "${DB_QUERY_SCRIPT}" "${E2E_DB_PATH}" ${queryType} "${email}"`, {
+  return execFileSync('bun', ['run', DB_QUERY_SCRIPT, E2E_DB_PATH, queryType, email], {
     encoding: 'utf-8',
     cwd: PROJECT_ROOT,
   }).trim();
