@@ -163,6 +163,19 @@ const token = document.cookie.split('csrf_token=')[1]; // Breaks on base64
 - ❌ **Delete tests without replacing coverage**
 - ❌ **Assume endpoints are "dead" because grep finds no client references**
 
+## Subprocess Patterns
+
+- ✅ **Use `execFileSync` with argv array for subprocess calls** - avoids shell injection and special character issues in parameters
+- ❌ **Use `execSync` with string interpolation** - `execSync(\`bun run \${script} \${param}\`)` breaks on shell metacharacters and is a command injection vector
+- ✅ **Use Bun subprocess for E2E helpers needing bun:sqlite** - Playwright runs in Node.js, shell out to Bun for SQLite access
+- ❌ **Over-engineer E2E test helpers with production-grade error handling** - YAGNI for test code; keep subprocess helpers simple
+
+## Dependency Removal
+
+- ✅ **Grep ALL file types when removing a dependency** - comments, docs, rules, and config files reference dependencies too
+- ✅ **Verify E2E failures are pre-existing before investigating** - `git stash` and test on prior code to isolate regressions
+- ❌ **Trust `reuseExistingServer: true` E2E results as proof of correctness** - a running dev server masks startup failures
+
 ## Error Messages
 
 - ✅ **Surface actual error messages in API responses** - not generic "Failed to X"
