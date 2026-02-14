@@ -1,5 +1,5 @@
 import { describe, test, expect, beforeEach, afterEach } from 'bun:test';
-import { groupTransactionsByDate, type DateGroup } from './transaction-grouping';
+import { groupTransactionsByDate } from './transaction-grouping';
 import type { TransactionOutput } from '@/lib/types/transaction';
 
 // Helper to create a minimal TransactionOutput for testing

@@ -22,7 +22,7 @@ export interface Props {
   currency: 'IDR' | 'USD';
 }
 
-const { monthlyIncome, monthlyExpenses, transactionCount, periodLabel, currency } = Astro.props;
+const { monthlyIncome, monthlyExpenses, transactionCount, currency } = Astro.props;
 
 const netSavings = monthlyIncome - monthlyExpenses;
 const netSavingsClass = netSavings >= 0 ? 'text-success' : 'text-error';
