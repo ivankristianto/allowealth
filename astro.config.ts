@@ -147,8 +147,6 @@ export default defineConfig({
         // These are only used in local SQLite development, not in Workers
         'bun:sqlite',
         'bun:test',
-        // SQLite drivers - not needed in Cloudflare (uses PostgreSQL)
-        'better-sqlite3',
       ],
     },
     build: {
