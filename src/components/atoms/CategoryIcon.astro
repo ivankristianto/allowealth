@@ -49,6 +49,34 @@ const iconSizeMap: Record<string, number> = {
 
 const iconSize = iconSizeMap[size];
 
+const semanticContentClassByBackground: Record<string, string> = {
+  'bg-primary': 'text-primary-content',
+  'bg-secondary': 'text-secondary-content',
+  'bg-accent': 'text-accent-content',
+  'bg-neutral': 'text-neutral-content',
+  'bg-info': 'text-info-content',
+  'bg-success': 'text-success-content',
+  'bg-warning': 'text-warning-content',
+  'bg-error': 'text-error-content',
+};
+
+function getForegroundClass(backgroundClass: string): string {
+  const normalizedBgClass = backgroundClass
+    .split(/\s+/)
+    .find((className) => className.startsWith('bg-'))
+    ?.split('/')[0];
+
+  if (!normalizedBgClass) {
+    return 'text-white';
+  }
+
+  if (normalizedBgClass.startsWith('bg-base-')) {
+    return 'text-base-content';
+  }
+
+  return semanticContentClassByBackground[normalizedBgClass] || 'text-white';
+}
+
 const containerClasses = [
   // Size
   containerSizeClasses[size],
@@ -58,8 +86,8 @@ const containerClasses = [
   color,
   // Layout
   'flex items-center justify-center',
-  // Text color
-  'text-white',
+  // Foreground color from semantic bg token
+  getForegroundClass(color),
   // Shadow for depth
   'shadow-lg',
   // Transition for hover effects
