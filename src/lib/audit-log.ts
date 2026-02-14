@@ -22,7 +22,10 @@ export type AuditAction =
   | 'logout'
   | 'password_change'
   | 'member_invite'
-  | 'member_remove';
+  | 'member_remove'
+  | 'admin_view'
+  | 'admin_archive'
+  | 'admin_delete';
 
 /**
  * Types of entities that can be audited

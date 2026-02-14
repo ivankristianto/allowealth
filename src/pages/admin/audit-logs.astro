@@ -1,0 +1,124 @@
+---
+/**
+ * Admin Audit Logs Page
+ *
+ * Displays paginated audit log entries across all workspaces.
+ * Super admin only.
+ */
+
+import AdminLayout from '@/layouts/AdminLayout.astro';
+import { db, auditLogs, users } from '@/db';
+import { desc, eq, sql } from 'drizzle-orm';
+import { ClipboardList } from '@lucide/astro';
+
+// Parse query params
+const url = Astro.url;
+const page = parseInt(url.searchParams.get('page') || '1', 10);
+const limit = 50;
+const offset = (page - 1) * limit;
+
+// Query audit logs with user info
+const logs = await (db as any)
+  .select({
+    id: auditLogs.id,
+    action: auditLogs.action,
+    entityType: auditLogs.entity_type,
+    entityId: auditLogs.entity_id,
+    workspaceId: auditLogs.workspace_id,
+    createdAt: auditLogs.created_at,
+    userId: auditLogs.user_id,
+    userName: users.name,
+    userEmail: users.email,
+  })
+  .from(auditLogs)
+  .leftJoin(users, eq(auditLogs.user_id, users.id))
+  .orderBy(desc(auditLogs.created_at))
+  .limit(limit)
+  .offset(offset);
+
+// Get total count
+const [countResult] = await (db as any).select({ count: sql<number>`count(*)` }).from(auditLogs);
+const total = countResult?.count ?? 0;
+const totalPages = Math.ceil(total / limit);
+---
+
+<AdminLayout title="Audit Logs" currentPath="/admin/audit-logs" subtitle="System Activity">
+  <div class="max-w-7xl mx-auto space-y-6" data-testid="admin-audit-logs">
+    <p class="text-sm text-base-content/60">{total} log entries</p>
+
+    <div class="overflow-x-auto">
+      <table class="table table-sm">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>User</th>
+            <th>Action</th>
+            <th>Entity</th>
+            <th>Workspace</th>
+          </tr>
+        </thead>
+        <tbody>
+          {
+            logs.length === 0 ? (
+              <tr>
+                <td colspan="5" class="text-center py-8 text-base-content/60">
+                  <ClipboardList size={32} class="stroke-current mx-auto mb-2 opacity-50" />
+                  No audit logs found
+                </td>
+              </tr>
+            ) : (
+              logs.map(
+                (log: {
+                  id: string;
+                  action: string;
+                  entityType: string;
+                  entityId: string | null;
+                  workspaceId: string;
+                  createdAt: Date | number;
+                  userId: string;
+                  userName: string | null;
+                  userEmail: string | null;
+                }) => (
+                  <tr>
+                    <td class="text-sm">{new Date(log.createdAt).toLocaleString()}</td>
+                    <td class="text-sm">{log.userName || log.userId}</td>
+                    <td>
+                      <span class="badge badge-ghost badge-sm">{log.action}</span>
+                    </td>
+                    <td class="text-sm">
+                      {log.entityType}
+                      {log.entityId && (
+                        <span class="text-base-content/50 ml-1">
+                          ({log.entityId.slice(0, 8)}...)
+                        </span>
+                      )}
+                    </td>
+                    <td class="text-sm font-mono text-base-content/50">
+                      {log.workspaceId ? `${log.workspaceId.slice(0, 8)}...` : '-'}
+                    </td>
+                  </tr>
+                )
+              )
+            )
+          }
+        </tbody>
+      </table>
+    </div>
+
+    {/* Pagination */}
+    {
+      totalPages > 1 && (
+        <div class="join flex justify-center">
+          {Array.from({ length: Math.min(totalPages, 10) }, (_, i) => i + 1).map((p) => (
+            <a
+              href={`/admin/audit-logs?page=${p}`}
+              class:list={['join-item btn btn-sm', { 'btn-active': p === page }]}
+            >
+              {p}
+            </a>
+          ))}
+        </div>
+      )
+    }
+  </div>
+</AdminLayout>

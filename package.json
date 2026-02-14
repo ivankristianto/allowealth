@@ -38,6 +38,8 @@
     "db:reset": "mkdir -p db && rm -f db/.dev.db db/.dev.db-wal db/.dev.db-shm && bun run db:push --force && bun run db:seed",
     "db:empty": "bun run src/db/empty.ts",
     "db:empty:prod": "bun --env-file=.env.production run src/db/empty.ts",
+    "cli:create-super-admin": "bun run src/cli/create-super-admin.ts",
+    "cli:create-super-admin:prod": "bun --env-file=.env.production run src/cli/create-super-admin.ts",
     "cli:create-workspace": "bun run src/cli/create-workspace.ts",
     "cli:create-workspace:prod": "bun --env-file=.env.production run src/cli/create-workspace.ts",
     "cli:list-workspaces": "bun run src/cli/list-workspaces.ts",
