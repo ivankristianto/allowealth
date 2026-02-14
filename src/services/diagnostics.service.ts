@@ -256,8 +256,3 @@ export class DiagnosticsService {
     return `${value.substring(0, 4)}...${value.substring(value.length - 4)}`;
   }
 }
-
-// Import database instance for singleton
-import { db } from '@/db';
-
-export const diagnosticsService = new DiagnosticsService(db);
