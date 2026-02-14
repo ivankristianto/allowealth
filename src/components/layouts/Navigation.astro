@@ -20,6 +20,7 @@ import {
   Settings,
   X,
   ChevronLeft,
+  Activity,
 } from '@lucide/astro';
 import type { User } from '@/lib/auth/lucia';
 import UserProfile from './UserProfile.astro';
@@ -31,6 +32,9 @@ interface Props {
 }
 
 const { currentPath = '/', user = null } = Astro.props;
+
+// Check if user has admin role
+const isAdmin = user?.role === 'admin';
 
 interface NavItem {
   href: string;
@@ -51,6 +55,11 @@ const navItems: NavItem[] = [
   { href: '/calculators', label: 'Calculators', icon: Calculator },
   { href: '/settings', label: 'Settings', icon: Settings },
 ];
+
+// Admin-only diagnostics navigation
+const adminNavItems: NavItem[] = isAdmin
+  ? [{ href: '/admin/diagnostics', label: 'Diagnostics', icon: Activity }]
+  : [];
 
 const isActive = (href: string) => {
   // Settings alias: treat /profile and /security as settings area
@@ -154,6 +163,47 @@ const isActive = (href: string) => {
   >
     {
       navItems.map((item) => {
+        const active = isActive(item.href);
+        return (
+          <li class="shrink-0">
+            <a
+              href={item.href}
+              title={item.label}
+              aria-label={item.label}
+              class={`relative flex items-center gap-4 py-4 px-5 text-base rounded-xl transition-all duration-200 group border group-data-[sidebar-collapsed=true]:justify-center group-data-[sidebar-collapsed=true]:px-0 group-data-[sidebar-collapsed=true]:gap-0 ${
+                active
+                  ? 'bg-accent/10 text-accent font-bold border-accent/20'
+                  : 'text-base-content/60 hover:text-base-content font-medium border-transparent'
+              } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2`}
+              aria-current={active ? 'page' : undefined}
+            >
+              <item.icon
+                size={22}
+                class={`shrink-0 transition-transform duration-200 group-hover:scale-110 ${
+                  active ? 'text-accent' : ''
+                }`}
+                aria-hidden="true"
+              />
+              <span class="group-data-[sidebar-collapsed=true]:hidden">{item.label}</span>
+              {active && (
+                <span
+                  class="ml-auto w-2 h-2 bg-accent rounded-full animate-pulse group-data-[sidebar-collapsed=true]:hidden"
+                  aria-hidden="true"
+                />
+              )}
+              {item.badge && (
+                <span class="badge badge-sm badge-accent group-data-[sidebar-collapsed=true]:hidden">
+                  {item.badge}
+                </span>
+              )}
+            </a>
+          </li>
+        );
+      })
+    }
+    <!-- Admin-only navigation -->
+    {
+      adminNavItems.map((item) => {
         const active = isActive(item.href);
         return (
           <li class="shrink-0">
