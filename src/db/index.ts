@@ -1,12 +1,10 @@
 /**
  * Database connection configuration
  *
- * Provides a database abstraction layer that works across different
- * JavaScript runtimes (Bun and Node.js) and database dialects (SQLite, PostgreSQL).
+ * Provides a database abstraction layer supporting SQLite and PostgreSQL dialects.
  *
  * SQLite:
- * - In Bun runtime: Uses bun:sqlite with drizzle-orm/bun-sqlite
- * - In Node.js runtime: Uses better-sqlite3 with drizzle-orm/better-sqlite3
+ * - Uses bun:sqlite with drizzle-orm/bun-sqlite (local development)
  *
  * PostgreSQL:
  * - Uses postgres.js with drizzle-orm/postgres-js
@@ -17,16 +15,13 @@
  * - Otherwise → SQLite
  *
  * @see https://bun.sh/docs/api/sqlite
- * @see https://github.com/WiseLibs/better-sqlite3
  * @see https://github.com/porsager/postgres
  */
 import { createRequire } from 'node:module';
 import { getDatabaseConfig } from './config';
-import { detectRuntime, type DatabaseDriver } from './driver';
+import type { DatabaseDriver } from './driver';
 import { createPostgresDatabase, closePostgres, resetPostgresClient } from './drivers/postgres';
-import { createNodeDriver } from './drivers/node';
 import type { BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
-import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 
 // Import schemas for type inference (SQLite schema is structurally compatible)
@@ -68,9 +63,7 @@ export type { DatabaseConfig, DatabaseDialect } from './config';
  * This approach provides correct IntelliSense and type checking while
  * allowing runtime flexibility between database dialects.
  */
-export type Database =
-  | BunSQLiteDatabase<typeof sqliteSchema>
-  | BetterSQLite3Database<typeof sqliteSchema>;
+export type Database = BunSQLiteDatabase<typeof sqliteSchema>;
 
 /**
  * PostgreSQL database type (for internal use when dialect is known)
@@ -166,11 +159,9 @@ export interface IDatabase {
  * Run an async callback transactionally across dialects.
  *
  * - **PostgreSQL**: Uses a real database transaction (BEGIN/COMMIT/ROLLBACK).
- * - **SQLite (better-sqlite3)**: Runs the callback directly against `db` without
- *   a transaction wrapper because better-sqlite3 is synchronous and rejects async
- *   callbacks with "Transaction function cannot return a promise". SQLite's WAL mode
- *   with single-writer guarantees sequential writes within a single connection are
- *   effectively atomic for server request scope.
+ * - **SQLite**: Runs the callback directly against `db` without a transaction
+ *   wrapper. SQLite's WAL mode with single-writer guarantees sequential writes
+ *   within a single connection are effectively atomic for server request scope.
  *
  * @param db - Database instance
  * @param callback - Async function receiving a transaction-capable db handle
@@ -222,9 +213,9 @@ function getRequire() {
  *
  * Automatically selects the correct driver based on DATABASE_URL:
  * - PostgreSQL URLs → postgres.js driver
- * - SQLite paths → bun:sqlite or better-sqlite3 based on runtime
+ * - SQLite paths → bun:sqlite driver
  *
- * Note: SQLite drivers are loaded via createRequire to work with Vite/Astro bundling.
+ * Note: SQLite driver is loaded via createRequire to work with Vite/Astro bundling.
  * For edge environments (Cloudflare Workers), only PostgreSQL is supported.
  *
  * @throws Error if database connection fails
@@ -238,26 +229,12 @@ function createDatabase(): Database {
       return createPostgresDatabase(config.url, pgSchema) as unknown as Database;
     }
 
-    // SQLite path - requires sync loading which may not work in all environments
-    // This path should only be taken in Bun or Node.js environments
+    // SQLite path - uses bun:sqlite via Bun runtime
     // For edge environments (Cloudflare Workers), configure DATABASE_URL to use PostgreSQL
-    const dynamicRequire = getRequire(); // Only call getRequire for SQLite path
-    const runtime = detectRuntime();
-
-    // Use static imports for local drivers, dynamic require only for npm packages
-    let driver: DatabaseDriver & { _raw: unknown };
-    let drizzle: (db: unknown, config: { schema: typeof sqliteSchema }) => Database;
-
-    if (runtime === 'bun') {
-      // Bun runtime: use bun:sqlite driver
-      const { createBunDriver } = dynamicRequire('./drivers/bun');
-      driver = createBunDriver(config.url);
-      drizzle = dynamicRequire('drizzle-orm/bun-sqlite').drizzle;
-    } else {
-      // Node.js runtime: use better-sqlite3 driver (static import)
-      driver = createNodeDriver(config.url);
-      drizzle = dynamicRequire('drizzle-orm/better-sqlite3').drizzle;
-    }
+    const dynamicRequire = getRequire();
+    const { createBunDriver } = dynamicRequire('./drivers/bun');
+    const driver: DatabaseDriver & { _raw: unknown } = createBunDriver(config.url);
+    const { drizzle } = dynamicRequire('drizzle-orm/bun-sqlite');
 
     applyPragmas(driver);
     return drizzle(driver._raw, { schema: sqliteSchema });
