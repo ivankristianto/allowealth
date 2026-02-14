@@ -15,7 +15,7 @@ Any code imported by middleware MUST be Workers-compatible.
 
 ### Forbidden in Middleware-Imported Code
 
-- ❌ `bun:sqlite` → Use `better-sqlite3` or database abstraction layer
+- ❌ `bun:sqlite` → Only use in API routes, CLI, or non-middleware contexts
 - ❌ `bun:` protocol imports → Only use in API routes, CLI, or non-middleware contexts
 - ❌ Native addons (e.g., `@node-rs/argon2`) → Use Web APIs or Workers-compatible alternatives
 - ❌ Node-specific APIs → Use cross-runtime alternatives
@@ -32,8 +32,8 @@ grep -r "bun:" src/ --exclude-dir=node_modules
 ### Correct Patterns
 
 ```typescript
-// ✅ Middleware: Workers-compatible imports only
-import Database from 'better-sqlite3'; // Works in both runtimes
+// ✅ Middleware: Workers-compatible imports only (no SQLite drivers)
+// Database middleware skips SQLite lifecycle management
 
 // ✅ API routes: Can use Bun-specific APIs (local dev context)
 import { Database } from 'bun:sqlite'; // OK in API routes

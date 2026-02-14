@@ -20,7 +20,7 @@ This file is managed by Claude Code's auto-memory system.
 
 ## Database
 
-- Local: SQLite via `better-sqlite3`
+- Local: SQLite via `bun:sqlite`
 - Production: PostgreSQL via Hyperdrive
 - Migrations: Always generate for **both** dialects (`db:generate` + `db:generate:prod`)
 

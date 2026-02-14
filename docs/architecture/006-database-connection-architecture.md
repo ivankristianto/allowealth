@@ -10,7 +10,7 @@ This document describes how the application connects to databases across differe
 
 The application runs on multiple runtimes with different database requirements:
 
-- **Local development (Bun):** SQLite via `bun:sqlite` or `better-sqlite3`
+- **Local development (Bun):** SQLite via `bun:sqlite`
 - **Production (Cloudflare Workers):** PostgreSQL via `postgres.js` to Supabase
 
 In Cloudflare Workers, connecting to PostgreSQL directly caused **"Too many subrequests"** errors because each TCP socket operation (connect, TLS handshake, protocol messages) counts as a subrequest. A single database query could consume 10-50+ subrequests, exceeding Workers' limit.
@@ -25,7 +25,7 @@ The database dialect is detected from `DATABASE_URL` format:
 
 ```
 postgres:// or postgresql://  →  PostgreSQL (postgres.js + Drizzle)
-anything else (file path)     →  SQLite (bun:sqlite or better-sqlite3 + Drizzle)
+anything else (file path)     →  SQLite (bun:sqlite + Drizzle)
 ```
 
 **Key files:**
@@ -34,7 +34,6 @@ anything else (file path)     →  SQLite (bun:sqlite or better-sqlite3 + Drizzl
 - `src/db/index.ts` — Singleton management, lazy initialization via Proxy
 - `src/db/drivers/postgres.ts` — postgres.js client with SSL/prepare settings
 - `src/db/drivers/bun.ts` — bun:sqlite driver (local dev)
-- `src/db/drivers/node.ts` — better-sqlite3 driver (Node.js fallback)
 
 ### Cloudflare Hyperdrive Integration
 

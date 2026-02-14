@@ -41,8 +41,8 @@ const token = document.cookie.split('csrf_token=')[1]; // Breaks on base64
 
 ### Transactions
 
-- ✅ **Use sync callbacks with better-sqlite3 transactions** - `db.transaction((tx) => { /* sync code */ })`
-- ❌ **Use `async/await` in better-sqlite3 transactions** - driver is synchronous, throws "cannot return a promise"
+- ✅ **Use `runTransaction()` for cross-dialect transactions** - handles SQLite/PostgreSQL differences
+- ❌ **Use raw `db.transaction()` with async callbacks on SQLite** - driver is synchronous, use `runTransaction()` instead
 - ✅ **Wrap multi-step DB operations in transactions** - ensures atomicity
 
 ### Query Optimization
