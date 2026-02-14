@@ -20,6 +20,7 @@
 import { createRequire } from 'node:module';
 import { getDatabaseConfig } from './config';
 import type { DatabaseDriver } from './driver';
+import { createBunDriver } from './drivers/bun';
 import { createPostgresDatabase, closePostgres, resetPostgresClient } from './drivers/postgres';
 import type { BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
@@ -197,12 +198,14 @@ function applyPragmas(driver: DatabaseDriver): void {
 }
 
 /**
- * Get a require function that works in both CommonJS and ESM
+ * Get a require function for loading npm packages at runtime
  *
- * Note: We always use createRequire(import.meta.url) because:
- * 1. When Astro/Vite bundles the code, the global `require` is not available
- *    even in Bun runtime context
- * 2. createRequire works in both Node.js and Bun environments
+ * Used for drizzle-orm dialect packages which must be loaded dynamically
+ * to avoid bundling both SQLite and PostgreSQL drivers together.
+ * npm packages resolve correctly from built output via node_modules/ walking.
+ *
+ * Note: Local driver files (./drivers/bun) use static imports instead,
+ * as createRequire cannot resolve them from Vite's built output directory.
  */
 function getRequire() {
   return createRequire(import.meta.url);
@@ -213,9 +216,8 @@ function getRequire() {
  *
  * Automatically selects the correct driver based on DATABASE_URL:
  * - PostgreSQL URLs → postgres.js driver
- * - SQLite paths → bun:sqlite driver
+ * - SQLite paths → bun:sqlite driver (via static import, bun:sqlite externalized)
  *
- * Note: SQLite driver is loaded via createRequire to work with Vite/Astro bundling.
  * For edge environments (Cloudflare Workers), only PostgreSQL is supported.
  *
  * @throws Error if database connection fails
@@ -230,10 +232,11 @@ function createDatabase(): Database {
     }
 
     // SQLite path - uses bun:sqlite via Bun runtime
+    // createBunDriver is statically imported so Vite bundles it correctly.
+    // bun:sqlite is externalized in astro.config.ts so it remains a runtime require.
     // For edge environments (Cloudflare Workers), configure DATABASE_URL to use PostgreSQL
-    const dynamicRequire = getRequire();
-    const { createBunDriver } = dynamicRequire('./drivers/bun');
     const driver: DatabaseDriver & { _raw: unknown } = createBunDriver(config.url);
+    const dynamicRequire = getRequire();
     const { drizzle } = dynamicRequire('drizzle-orm/bun-sqlite');
 
     applyPragmas(driver);
