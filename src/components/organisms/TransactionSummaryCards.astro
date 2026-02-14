@@ -38,7 +38,7 @@ const {
   monthlyIncome = 0,
   monthlyExpenses = 0,
   transactionCount = 0,
-  periodLabel = '',
+  periodLabel: _periodLabel = '',
   currency = 'IDR',
   loading = false,
   error = '',
@@ -61,89 +61,161 @@ const cardClasses = [
         <p>{error}</p>
       </div>
     ) : loading ? (
-      <div class="grid grid-cols-1 @2xl:grid-cols-3 gap-4 @sm:gap-6">
-        <div class={cardClasses}>
-          <div class="card-body p-4 @sm:p-6 @3xl:p-8">
-            <Skeleton height="0.75rem" width="50%" className="mb-3 @sm:mb-4" />
-            <Skeleton height="1.5rem" width="80%" className="@sm:h-9 mb-2 @sm:mb-3" />
-            <Skeleton height="0.75rem" width="40%" />
-          </div>
-        </div>
-        <div class={cardClasses}>
-          <div class="card-body p-4 @sm:p-6 @3xl:p-8">
-            <Skeleton height="0.75rem" width="50%" className="mb-3 @sm:mb-4" />
-            <Skeleton height="1.5rem" width="80%" className="@sm:h-9 mb-2 @sm:mb-3" />
-            <Skeleton height="0.75rem" width="40%" />
-          </div>
-        </div>
-        <div class={cardClasses}>
-          <div class="card-body p-4 @sm:p-6 @3xl:p-8">
-            <Skeleton height="0.75rem" width="50%" className="mb-3 @sm:mb-4" />
-            <Skeleton height="1.5rem" width="80%" className="@sm:h-9 mb-2 @sm:mb-3" />
-            <Skeleton height="0.75rem" width="40%" />
-          </div>
-        </div>
-      </div>
-    ) : (
-      <div
-        class="grid grid-cols-1 @2xl:grid-cols-3 gap-4 @sm:gap-6"
-        id="summary-cards-container"
-        data-summary-container
-        data-currency={currency}
-      >
-        <StatCard
-          title="Monthly Income"
-          value={formatCurrency(monthlyIncome, currency)}
-          subtitle={periodLabel || undefined}
-          valueColor="text-success"
-          subtitleColor="text-success/60"
-          iconVariant="success"
-          className="transition-all hover:shadow-md"
-          data-summary-card="income"
-        >
-          <TrendingUp slot="icon" size={48} class="stroke-current" aria-hidden="true" />
-        </StatCard>
-
-        <StatCard
-          title="Monthly Expenses"
-          value={formatCurrency(monthlyExpenses, currency)}
-          subtitle={`${transactionCount} items`}
-          valueColor="text-error"
-          subtitleColor="text-error/60"
-          iconVariant="error"
-          className="transition-all hover:shadow-md"
-          data-summary-card="expenses"
-        >
-          <TrendingDown slot="icon" size={48} class="stroke-current" aria-hidden="true" />
-        </StatCard>
-
-        <StatCard
-          title="Net Savings"
-          value={formatCurrency(netSavings, currency)}
-          subtitle={periodLabel || undefined}
-          valueColor={netSavingsClass}
-          subtitleColor="text-base-content/40"
-          className="transition-all hover:shadow-md"
-          data-summary-card="savings"
-        >
-          <Wallet slot="icon" size={48} class="stroke-current text-primary" aria-hidden="true" />
-          <div slot="details" class="flex items-center gap-1.5 text-xs text-base-content/40">
-            <div
-              class="tooltip tooltip-bottom"
-              data-tip="Income minus expenses. Negative means you spent more than you earned this period."
-            >
-              <Info
-                size={14}
-                class="stroke-current cursor-help"
-                aria-label="What is Net Savings?"
-              />
+      <>
+        {/* Mobile skeleton */}
+        <div class="flex flex-col gap-3 md:hidden">
+          {[1, 2, 3].map(() => (
+            <div class="flex items-center gap-3 bg-base-100 border border-base-300 rounded-xl px-4 py-3 shadow-sm">
+              <Skeleton height="1.25rem" width="1.25rem" className="rounded" />
+              <Skeleton height="0.625rem" width="4rem" />
+              <div class="flex-1" />
+              <Skeleton height="0.875rem" width="5rem" />
             </div>
-            {netSavings < 0 && (
-              <span class="text-error/60 font-medium">Spending exceeded income</span>
-            )}
+          ))}
+        </div>
+        {/* Desktop skeleton */}
+        <div class="hidden md:grid grid-cols-1 @2xl:grid-cols-3 gap-4 @sm:gap-6">
+          <div class={cardClasses}>
+            <div class="card-body p-4 @sm:p-6 @3xl:p-8">
+              <Skeleton height="0.75rem" width="50%" className="mb-3 @sm:mb-4" />
+              <Skeleton height="1.5rem" width="80%" className="@sm:h-9 mb-2 @sm:mb-3" />
+              <Skeleton height="0.75rem" width="40%" />
+            </div>
           </div>
-        </StatCard>
-      </div>
+          <div class={cardClasses}>
+            <div class="card-body p-4 @sm:p-6 @3xl:p-8">
+              <Skeleton height="0.75rem" width="50%" className="mb-3 @sm:mb-4" />
+              <Skeleton height="1.5rem" width="80%" className="@sm:h-9 mb-2 @sm:mb-3" />
+              <Skeleton height="0.75rem" width="40%" />
+            </div>
+          </div>
+          <div class={cardClasses}>
+            <div class="card-body p-4 @sm:p-6 @3xl:p-8">
+              <Skeleton height="0.75rem" width="50%" className="mb-3 @sm:mb-4" />
+              <Skeleton height="1.5rem" width="80%" className="@sm:h-9 mb-2 @sm:mb-3" />
+              <Skeleton height="0.75rem" width="40%" />
+            </div>
+          </div>
+        </div>
+      </>
+    ) : (
+      <>
+        {/* Mobile compact cards */}
+        <div
+          class="flex flex-col gap-3 md:hidden"
+          id="summary-cards-container-mobile"
+          data-summary-container
+          data-currency={currency}
+        >
+          <div
+            class="flex items-center gap-3 bg-base-100 border border-base-300 rounded-xl px-4 py-3 shadow-sm"
+            role="region"
+            aria-label="Monthly Income"
+            data-summary-card="income"
+          >
+            <TrendingUp size={20} class="stroke-current text-success shrink-0" aria-hidden="true" />
+            <span class="text-xs font-bold uppercase tracking-wider text-base-content/60 flex-1">
+              Income
+            </span>
+            <span class="text-sm font-bold text-success tabular-nums">
+              {formatCurrency(monthlyIncome, currency)}
+            </span>
+          </div>
+
+          <div
+            class="flex items-center gap-3 bg-base-100 border border-base-300 rounded-xl px-4 py-3 shadow-sm"
+            role="region"
+            aria-label="Monthly Expenses"
+            data-summary-card="expenses"
+          >
+            <TrendingDown size={20} class="stroke-current text-error shrink-0" aria-hidden="true" />
+            <span class="text-xs font-bold uppercase tracking-wider text-base-content/60 flex-1">
+              Expenses
+            </span>
+            <span class="text-sm font-bold text-error tabular-nums">
+              {formatCurrency(monthlyExpenses, currency)}
+            </span>
+          </div>
+
+          <div
+            class="flex items-center gap-3 bg-base-100 border border-base-300 rounded-xl px-4 py-3 shadow-sm"
+            role="region"
+            aria-label="Net Savings"
+            data-summary-card="savings"
+          >
+            <Wallet
+              size={20}
+              class={`stroke-current shrink-0 ${netSavings >= 0 ? 'text-success' : 'text-error'}`}
+              aria-hidden="true"
+            />
+            <span class="text-xs font-bold uppercase tracking-wider text-base-content/60 flex-1">
+              Savings
+            </span>
+            <span class={`text-sm font-bold tabular-nums ${netSavingsClass}`}>
+              {formatCurrency(netSavings, currency)}
+            </span>
+          </div>
+        </div>
+
+        {/* Desktop full cards */}
+        <div
+          class="hidden md:grid grid-cols-1 @2xl:grid-cols-3 gap-4 @sm:gap-6"
+          id="summary-cards-container"
+          data-summary-container
+          data-currency={currency}
+        >
+          <StatCard
+            title="Monthly Income"
+            value={formatCurrency(monthlyIncome, currency)}
+            valueColor="text-success"
+            subtitleColor="text-success/60"
+            iconVariant="success"
+            className="transition-all hover:shadow-md"
+            data-summary-card="income"
+          >
+            <TrendingUp slot="icon" size={48} class="stroke-current" aria-hidden="true" />
+          </StatCard>
+
+          <StatCard
+            title="Monthly Expenses"
+            value={formatCurrency(monthlyExpenses, currency)}
+            subtitle={`${transactionCount} items`}
+            valueColor="text-error"
+            subtitleColor="text-error/60"
+            iconVariant="error"
+            className="transition-all hover:shadow-md"
+            data-summary-card="expenses"
+          >
+            <TrendingDown slot="icon" size={48} class="stroke-current" aria-hidden="true" />
+          </StatCard>
+
+          <StatCard
+            title="Net Savings"
+            value={formatCurrency(netSavings, currency)}
+            valueColor={netSavingsClass}
+            subtitleColor="text-base-content/40"
+            className="transition-all hover:shadow-md"
+            data-summary-card="savings"
+          >
+            <Wallet slot="icon" size={48} class="stroke-current text-primary" aria-hidden="true" />
+            <div slot="details" class="flex items-center gap-1.5 text-xs text-base-content/40">
+              <div
+                class="tooltip tooltip-bottom"
+                data-tip="Income minus expenses. Negative means you spent more than you earned this period."
+              >
+                <Info
+                  size={14}
+                  class="stroke-current cursor-help"
+                  aria-label="What is Net Savings?"
+                />
+              </div>
+              {netSavings < 0 && (
+                <span class="text-error/60 font-medium">Spending exceeded income</span>
+              )}
+            </div>
+          </StatCard>
+        </div>
+      </>
     )
   }
 </div>

@@ -14,8 +14,9 @@
 import Card from '../atoms/Card.astro';
 import EmptyState from '../atoms/EmptyState.astro';
 import Skeleton from '../atoms/Skeleton.astro';
-import TransactionCard from '../molecules/TransactionCard.astro';
+import TransactionDateGroups from '../molecules/TransactionDateGroups.astro';
 import type { TransactionOutput } from '@/lib/types/transaction';
+import { groupTransactionsByDate } from '@/lib/utils/transaction-grouping';
 
 export interface Props {
   transactions?: TransactionOutput[];
@@ -33,29 +34,27 @@ const {
 
 const maxTransactions = 10;
 const displayTransactions = transactions.slice(0, maxTransactions);
+const dateGroups = groupTransactionsByDate(displayTransactions);
 ---
 
-<div
-  class={`space-y-5 ${className}`}
-  data-recent-transactions-list
-  data-testid="recent-transactions"
->
-  <div class="flex items-center justify-between px-2">
-    <h2 class="text-lg font-bold tracking-tight leading-none">Recent activity</h2>
-    {
-      !loading && transactions.length > 0 && (
-        <a
-          href={viewAllUrl}
-          class="btn btn-outline btn-sm text-accent border-accent/20 hover:bg-accent/5 rounded-xl tracking-wide"
-          aria-label="View all transactions"
-        >
-          View all
-        </a>
-      )
-    }
-  </div>
+<div class={className} data-recent-transactions-list data-testid="recent-transactions">
+  <Card rounded="card-lg" padding="sm" className="!p-0 overflow-hidden shadow-sm">
+    {/* Header inside card */}
+    <div class="flex items-center justify-between px-4 pt-5 pb-3">
+      <h2 class="text-lg font-bold tracking-tight leading-none">Recent transactions</h2>
+      {
+        !loading && transactions.length > 0 && (
+          <a
+            href={viewAllUrl}
+            class="btn btn-outline btn-sm text-accent border-accent/20 hover:bg-accent/5 rounded-xl tracking-wide"
+            aria-label="View all transactions"
+          >
+            View all
+          </a>
+        )
+      }
+    </div>
 
-  <Card rounded="card-lg" padding="sm" className="p-0 overflow-hidden shadow-sm">
     {
       loading ? (
         // Loading skeleton
@@ -90,14 +89,10 @@ const displayTransactions = transactions.slice(0, maxTransactions);
           variant="compact"
         />
       ) : (
-        // Transactions list using unified TransactionCard component
-        <ul class="divide-y divide-base-200" role="list" aria-label="Recent transactions">
-          {displayTransactions.map((transaction) => (
-            <li>
-              <TransactionCard transaction={transaction} showActions={false} />
-            </li>
-          ))}
-        </ul>
+        // Transactions list grouped by date
+        <div role="list" aria-label="Recent transactions">
+          <TransactionDateGroups groups={dateGroups} showActions={false} />
+        </div>
       )
     }
   </Card>

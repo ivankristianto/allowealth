@@ -3,7 +3,7 @@
  * Mobile Bottom Navigation Component
  *
  * Fixed bottom navigation bar for mobile viewports with:
- * - 5-slot layout: Activity, Assets, FAB center, Budgets, Reports
+ * - 5-slot layout: Transactions, Assets, FAB center, Budgets, Reports
  * - Glass effect background with backdrop blur
  * - Elevated center FAB button for Quick-Add Transaction
  * - Active state styling with accent color
@@ -12,7 +12,7 @@
  * @see specs/ui-redesign_implementation_plan.md Task 5
  */
 
-import { Receipt, Wallet, Plus, Donut, ChartBar } from '@lucide/astro';
+import { ArrowLeftRight, Wallet, Donut, ChartBar } from '@lucide/astro';
 
 interface Props {
   currentPath?: string;
@@ -23,16 +23,17 @@ const { currentPath = '/' } = Astro.props;
 interface NavItem {
   href: string;
   label: string;
-  icon: typeof Receipt;
+  icon: typeof ArrowLeftRight;
 }
 
 const navItems: NavItem[] = [
-  { href: '/transactions', label: 'Activity', icon: Receipt },
+  { href: '/transactions', label: 'Transactions', icon: ArrowLeftRight },
   { href: '/assets', label: 'Assets', icon: Wallet },
   // Center FAB is handled separately
   { href: '/budget', label: 'Budgets', icon: Donut },
   { href: '/reports', label: 'Reports', icon: ChartBar },
 ];
+const navSlots: Array<NavItem | null> = [...navItems.slice(0, 2), null, ...navItems.slice(2)];
 
 const isActive = (href: string) => {
   if (currentPath === href) return true;
@@ -42,102 +43,67 @@ const isActive = (href: string) => {
 ---
 
 <nav
-  class="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-base-100/80 backdrop-blur-xl border-t border-base-300/50 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 shadow-[0_-10px_40px_rgba(0,0,0,0.05)]"
+  class="mobile-nav-surface fixed inset-x-0 bottom-0 z-50 border-t border-base-300 px-4 pt-2 pb-safe-bottom-nav backdrop-blur-2xl lg:hidden"
   role="navigation"
   aria-label="Mobile navigation"
 >
-  <div class="flex justify-between items-center max-w-md mx-auto relative h-14">
-    <!-- Left nav items (Activity, Assets) -->
-    {
-      navItems.slice(0, 2).map((item) => {
-        const active = isActive(item.href);
-        return (
-          <a
-            href={item.href}
-            class={`flex-1 flex flex-col items-center gap-1 py-1 transition-all active:scale-95 min-w-[44px] min-h-[44px] rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 ${
-              active ? 'text-accent' : 'text-neutral hover:text-base-content'
-            }`}
-            aria-current={active ? 'page' : undefined}
-            aria-label={item.label}
-          >
-            <div
-              class={`relative flex items-center justify-center w-12 h-8 rounded-full transition-colors ${
-                active ? 'bg-accent/10' : ''
-              }`}
-            >
-              <item.icon
-                size={24}
-                class={`stroke-current transition-transform ${active ? 'scale-110' : ''}`}
-                aria-hidden="true"
-              />
-              {active && (
-                <span
-                  class="absolute -bottom-1 w-1 h-1 rounded-full bg-accent"
-                  aria-hidden="true"
-                />
-              )}
-            </div>
-            <span
-              class={`text-xs font-bold tracking-tight uppercase leading-none mt-1 ${
-                active ? 'opacity-100' : 'opacity-60'
-              }`}
-            >
-              {item.label}
-            </span>
-          </a>
-        );
-      })
-    }
-
-    <!-- Center FAB (New Transaction) -->
-    <div class="flex-1 flex justify-center -mt-10 pointer-events-none">
-      <button
-        type="button"
-        data-open-transaction-drawer
-        class="group mobile-fab w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-200 pointer-events-auto ring-8 ring-base-100 shadow-2xl min-w-[64px] min-h-[64px] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-accent focus-visible:ring-offset-4 hover:scale-110 hover:-translate-y-1 active:scale-95 bg-accent text-accent-content shadow-accent/40 hover:shadow-accent/60"
-        aria-label="New Transaction"
-      >
-        <Plus
-          size={28}
-          class="stroke-current transition-transform duration-200 group-hover:rotate-12"
-          aria-hidden="true"
-        />
-      </button>
+  <div
+    aria-hidden="true"
+    class="mobile-nav-top-accent pointer-events-none absolute inset-x-0 top-0 h-px"
+  >
+  </div>
+  <div class="relative mx-auto grid max-w-md grid-cols-5 items-end gap-0.5">
+    <div
+      aria-hidden="true"
+      class="mobile-nav-fab-halo pointer-events-none absolute left-1/2 top-0 h-14 w-32 -translate-x-1/2 -translate-y-5 rounded-full blur-2xl"
+    >
     </div>
-
-    <!-- Right nav items (Budgets, Reports) -->
     {
-      navItems.slice(2).map((item) => {
+      navSlots.map((item) => {
+        if (!item) {
+          return (
+            <div class="mobile-nav-fab-offset flex justify-center pointer-events-none">
+              <button
+                type="button"
+                data-open-transaction-drawer
+                class="mobile-nav-fab-surface btn btn-circle group pointer-events-auto size-16 border-4 border-base-100 bg-base-100 ring-1 ring-accent/30 transition-transform duration-200 hover:-translate-y-0.5 hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-4"
+                aria-label="New Transaction"
+              >
+                <img
+                  src="/favicon.svg"
+                  alt=""
+                  class="size-9 transition-transform duration-200 group-hover:rotate-6 group-hover:scale-105"
+                  aria-hidden="true"
+                />
+              </button>
+            </div>
+          );
+        }
+
         const active = isActive(item.href);
         return (
           <a
             href={item.href}
-            class={`flex-1 flex flex-col items-center gap-1 py-1 transition-all active:scale-95 min-w-[44px] min-h-[44px] rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 ${
-              active ? 'text-accent' : 'text-neutral hover:text-base-content'
+            class={`group flex min-h-11 min-w-11 flex-col items-center justify-end gap-1 rounded-xl px-0.5 pt-1 text-base-content/80 no-underline transition-colors transition-transform duration-200 active:scale-95 hover:text-base-content focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 ${
+              active ? 'text-accent' : ''
             }`}
             aria-current={active ? 'page' : undefined}
             aria-label={item.label}
           >
-            <div
-              class={`relative flex items-center justify-center w-12 h-8 rounded-full transition-colors ${
-                active ? 'bg-accent/10' : ''
+            <span
+              class={`relative flex size-10 items-center justify-center rounded-full transition-colors duration-200 ${
+                active ? 'bg-accent/20' : 'bg-base-200 group-hover:bg-base-300'
               }`}
             >
               <item.icon
-                size={24}
-                class={`stroke-current transition-transform ${active ? 'scale-110' : ''}`}
+                size={22}
+                class={`stroke-current transition-transform duration-200 ${active ? 'scale-110' : ''}`}
                 aria-hidden="true"
               />
-              {active && (
-                <span
-                  class="absolute -bottom-1 w-1 h-1 rounded-full bg-accent"
-                  aria-hidden="true"
-                />
-              )}
-            </div>
+            </span>
             <span
-              class={`text-xs font-bold tracking-tight uppercase leading-none mt-1 ${
-                active ? 'opacity-100' : 'opacity-60'
+              class={`mt-1 text-xs font-bold leading-none tracking-tight transition-colors duration-200 ${
+                active ? 'text-accent' : 'text-base-content/80 group-hover:text-base-content'
               }`}
             >
               {item.label}

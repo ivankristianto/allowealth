@@ -10,8 +10,9 @@
  */
 
 import EmptyState from '../atoms/EmptyState.astro';
-import TransactionCard from '../molecules/TransactionCard.astro';
+import TransactionDateGroups from '../molecules/TransactionDateGroups.astro';
 import { RotateCcw } from '@lucide/astro';
+import { groupTransactionsByDate } from '@/lib/utils/transaction-grouping';
 import type { TransactionOutput } from '@/lib/types/transaction';
 
 export interface Props {
@@ -21,13 +22,12 @@ export interface Props {
 }
 
 const { transactions, showActions = true, currentMonth = '' } = Astro.props;
+const dateGroups = groupTransactionsByDate(transactions);
 ---
 
 {
   transactions.length > 0 ? (
-    transactions.map((transaction) => (
-      <TransactionCard transaction={transaction} showActions={showActions} />
-    ))
+    <TransactionDateGroups groups={dateGroups} showActions={showActions} />
   ) : (
     <div id="empty-state" class="py-24 text-center">
       <EmptyState

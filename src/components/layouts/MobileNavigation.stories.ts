@@ -31,7 +31,7 @@ export default meta;
 const icons = {
   receipt: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 17.5v-11"/></svg>`,
   wallet: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></svg>`,
-  plus: `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>`,
+  logo: `<img src="/favicon.svg" alt="" class="w-9 h-9" aria-hidden="true" />`,
   donut: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.2 11A8.5 8.5 0 0 0 13 4.2V2a1 1 0 0 0-2 0v2.2a8.5 8.5 0 0 0-7.2 6.8H2a1 1 0 0 0 0 2h1.8a8.5 8.5 0 0 0 7.2 6.8V22a1 1 0 0 0 2 0v-2.2a8.5 8.5 0 0 0 7.2-6.8H22a1 1 0 0 0 0-2Zm-4.7 0h-4A1.5 1.5 0 0 1 10 9.5v-3a6.5 6.5 0 0 1 5.5 4.5Z"/></svg>`,
   chartBar: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" x2="12" y1="20" y2="10"/><line x1="18" x2="18" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="16"/></svg>`,
 };
@@ -60,12 +60,24 @@ const createMobileNavigation = (args: { currentPath?: string }): HTMLElement => 
 
   const nav = document.createElement('nav');
   nav.className =
-    'fixed bottom-0 left-0 right-0 z-50 bg-base-100/80 backdrop-blur-xl border-t border-base-300/50 px-4 pb-4 pt-3 shadow-[0_-10px_40px_rgba(0,0,0,0.05)]';
+    'mobile-nav-surface fixed bottom-0 left-0 right-0 z-50 border-t border-base-300 px-4 pb-4 pt-3 backdrop-blur-2xl';
   nav.setAttribute('role', 'navigation');
   nav.setAttribute('aria-label', 'Mobile navigation');
 
+  const topAccentLine = document.createElement('div');
+  topAccentLine.className =
+    'mobile-nav-top-accent pointer-events-none absolute inset-x-0 top-0 h-px';
+  topAccentLine.setAttribute('aria-hidden', 'true');
+  nav.appendChild(topAccentLine);
+
   const container = document.createElement('div');
-  container.className = 'flex justify-between items-center max-w-md mx-auto relative h-14';
+  container.className = 'flex justify-between items-end max-w-md mx-auto relative h-14';
+
+  const accentHalo = document.createElement('div');
+  accentHalo.className =
+    'mobile-nav-fab-halo pointer-events-none absolute left-1/2 top-0 h-14 w-32 -translate-x-1/2 -translate-y-5 rounded-full blur-2xl';
+  accentHalo.setAttribute('aria-hidden', 'true');
+  container.appendChild(accentHalo);
 
   // Left nav items (Activity, Assets)
   navItems.slice(0, 2).forEach((item) => {
@@ -76,15 +88,15 @@ const createMobileNavigation = (args: { currentPath?: string }): HTMLElement => 
 
   // Center FAB (New Transaction)
   const fabContainer = document.createElement('div');
-  fabContainer.className = 'flex-1 flex justify-center -mt-10 pointer-events-none';
+  fabContainer.className = 'mobile-nav-fab-offset flex-1 flex justify-center pointer-events-none';
 
   const fab = document.createElement('button');
   fab.type = 'button';
   fab.setAttribute('data-open-transaction-drawer', '');
   fab.className =
-    'w-16 h-16 rounded-2xl flex items-center justify-center transition-all active:scale-90 pointer-events-auto ring-8 ring-base-100 shadow-2xl min-w-[64px] min-h-[64px] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-accent focus-visible:ring-offset-4 bg-accent text-accent-content shadow-accent/30';
+    'mobile-nav-fab-surface w-16 h-16 rounded-full flex items-center justify-center transition-all active:scale-90 pointer-events-auto border-4 border-base-100 ring-1 ring-accent/30 min-w-16 min-h-16 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-accent focus-visible:ring-offset-4 bg-base-100';
   fab.setAttribute('aria-label', 'New Transaction');
-  fab.innerHTML = icons.plus;
+  fab.innerHTML = icons.logo;
 
   fabContainer.appendChild(fab);
   container.appendChild(fabContainer);
@@ -100,7 +112,7 @@ const createMobileNavigation = (args: { currentPath?: string }): HTMLElement => 
 
   // Wrap in a container that simulates mobile viewport
   const wrapper = document.createElement('div');
-  wrapper.className = 'relative min-h-[200px] bg-base-200';
+  wrapper.className = 'relative min-h-52 bg-base-200';
   wrapper.appendChild(nav);
 
   return wrapper;
@@ -109,8 +121,8 @@ const createMobileNavigation = (args: { currentPath?: string }): HTMLElement => 
 const createNavItem = (item: NavItemConfig, active: boolean): HTMLElement => {
   const link = document.createElement('a');
   link.href = item.href;
-  link.className = `flex-1 flex flex-col items-center gap-1 py-1 transition-all active:scale-95 min-w-[44px] min-h-[44px] rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 ${
-    active ? 'text-accent' : 'text-neutral hover:text-base-content'
+  link.className = `group flex-1 flex flex-col items-center gap-1 py-1 transition-all active:scale-95 min-w-11 min-h-11 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 ${
+    active ? 'text-accent' : 'text-base-content/80 hover:text-base-content'
   }`;
   if (active) {
     link.setAttribute('aria-current', 'page');
@@ -119,7 +131,7 @@ const createNavItem = (item: NavItemConfig, active: boolean): HTMLElement => {
 
   const iconContainer = document.createElement('div');
   iconContainer.className = `relative flex items-center justify-center w-12 h-8 rounded-full transition-colors ${
-    active ? 'bg-accent/10' : ''
+    active ? 'bg-accent/20' : 'bg-base-200 group-hover:bg-base-300'
   }`;
 
   const iconWrapper = document.createElement('span');
@@ -135,8 +147,8 @@ const createNavItem = (item: NavItemConfig, active: boolean): HTMLElement => {
   }
 
   const label = document.createElement('span');
-  label.className = `text-xs font-bold tracking-tight uppercase leading-none mt-1 ${
-    active ? 'opacity-100' : 'opacity-60'
+  label.className = `text-xs font-bold tracking-tight uppercase leading-none mt-1 transition-colors ${
+    active ? 'text-accent' : 'text-base-content/80 group-hover:text-base-content'
   }`;
   label.textContent = item.label;
 

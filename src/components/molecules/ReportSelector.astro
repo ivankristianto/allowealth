@@ -13,7 +13,7 @@
  * @param {string} className - Additional CSS classes
  */
 
-import PeriodNavigator from '@/components/molecules/PeriodNavigator.astro';
+import PeriodicSelector from '@/components/molecules/PeriodicSelector.astro';
 
 export interface PeriodOption {
   key: string;
@@ -48,21 +48,21 @@ const yearlyOptions = yearlyPeriods.map((period) => ({
 ---
 
 <div
-  class={`flex flex-wrap items-center gap-4 ${className}`}
+  class={`flex w-full flex-nowrap items-center gap-1 py-1 sm:gap-2 lg:w-auto ${className}`}
   data-report-selector
   data-monthly-periods={JSON.stringify(monthlyPeriods)}
   data-yearly-periods={JSON.stringify(yearlyPeriods)}
 >
   <!-- Range Toggle (Monthly/Yearly) -->
   <div
-    class="flex bg-base-200 p-1 rounded-xl sm:rounded-2xl shrink-0"
+    class="flex bg-base-200 p-0.5 sm:p-1 rounded-xl sm:rounded-2xl shrink-0"
     role="group"
     aria-label="Select report range"
     data-range-toggle-group
   >
     <button
       type="button"
-      class={`px-4 sm:px-6 py-2 sm:py-2.5 min-h-[44px] min-w-[44px] text-xs font-bold rounded-lg sm:rounded-xl transition-all focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2 ${
+      class={`px-3 sm:px-4 py-2 sm:py-2.5 min-h-[40px] sm:min-h-[44px] text-[11px] sm:text-xs font-bold rounded-lg sm:rounded-xl transition-all focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2 ${
         selectedRange === 'monthly'
           ? 'bg-base-100 shadow text-primary'
           : 'text-base-content/50 hover:text-base-content/70'
@@ -74,7 +74,7 @@ const yearlyOptions = yearlyPeriods.map((period) => ({
     </button>
     <button
       type="button"
-      class={`px-4 sm:px-6 py-2 sm:py-2.5 min-h-[44px] min-w-[44px] text-xs font-bold rounded-lg sm:rounded-xl transition-all focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2 ${
+      class={`px-3 sm:px-4 py-2 sm:py-2.5 min-h-[40px] sm:min-h-[44px] text-[11px] sm:text-xs font-bold rounded-lg sm:rounded-xl transition-all focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2 ${
         selectedRange === 'yearly'
           ? 'bg-base-100 shadow text-primary'
           : 'text-base-content/50 hover:text-base-content/70'
@@ -89,13 +89,22 @@ const yearlyOptions = yearlyPeriods.map((period) => ({
   <!-- Period Selector: PeriodNavigator for monthly/yearly -->
   {
     selectedRange === 'monthly' && monthlyOptions.length > 0 ? (
-      <PeriodNavigator
+      <PeriodicSelector
         options={monthlyOptions}
         selected={selectedPeriod}
         ariaLabel="Select month"
+        className="shrink-0"
+        compactMobile
+        newestFirst
       />
     ) : selectedRange === 'yearly' && yearlyOptions.length > 0 ? (
-      <PeriodNavigator options={yearlyOptions} selected={selectedPeriod} ariaLabel="Select year" />
+      <PeriodicSelector
+        options={yearlyOptions}
+        selected={selectedPeriod}
+        ariaLabel="Select year"
+        className="shrink-0"
+        compactMobile
+      />
     ) : null
   }
 </div>

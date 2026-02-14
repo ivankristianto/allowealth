@@ -6,11 +6,14 @@ import { logError } from '@/lib/utils';
 import { createRenderHelper } from '@/lib/api/renderResponse';
 import { formatCurrency } from '@/lib/formatting';
 import { calculateAllocationDistribution } from '@/lib/utils/budget';
+import { getCopyBudgetAvailability } from '@/lib/utils/budget-copy';
+import { getMonthName } from '@/lib/utils/date';
 
 // Import partial components for HTML rendering
 import BudgetSummaryPartial from '@/components/partials/BudgetSummaryPartial.astro';
 import BudgetCardGridPartial from '@/components/partials/BudgetCardGridPartial.astro';
 import BudgetAdviceBannerPartial from '@/components/partials/BudgetAdviceBannerPartial.astro';
+import BudgetCopyActionPartial from '@/components/partials/BudgetCopyActionPartial.astro';
 import BudgetTable from '@/components/organisms/BudgetTable.astro';
 
 /**
@@ -22,6 +25,7 @@ import BudgetTable from '@/components/organisms/BudgetTable.astro';
  *   - currency: 'IDR' | 'USD' (optional, defaults to 'IDR')
  *   - _render: 'html' | 'json' (optional, defaults to 'json')
  *   - _partial: 'summary' | 'cards' | 'advice' | 'all' (optional, defaults to 'all')
+ * Note: summary responses also include copy-action HTML for action bar sync.
  */
 export const GET: APIRoute = async (context) => {
   const { url } = context;
@@ -84,6 +88,27 @@ export const GET: APIRoute = async (context) => {
             spent_amount: cat.spent_amount,
           }))
         );
+        const budgetCount =
+          budgetData.categories.filter((category) => Number(category.budget_amount) > 0).length ||
+          0;
+        const nextMonthDate = new Date(year, month, 1);
+        const nextMonthYear = nextMonthDate.getFullYear();
+        const nextMonth = nextMonthDate.getMonth() + 1;
+        const hasNextMonthBudgets = await budgetService.hasBudgetsForMonth(
+          auth.workspaceId,
+          nextMonthYear,
+          nextMonth,
+          selectedCurrency
+        );
+        const copyBudgetAvailability = getCopyBudgetAvailability({
+          sourceBudgetCount: budgetCount,
+          hasNextMonthBudgets,
+        });
+        const nextMonthDisplay = `${getMonthName(nextMonth)} ${nextMonthYear}`;
+        const copyActionTooltip =
+          copyBudgetAvailability.disabledReason === 'target-month-has-budgets'
+            ? `Budgets already exist for ${nextMonthDisplay}`
+            : '';
 
         const summaryHtml = await container.renderToString(BudgetSummaryPartial, {
           props: {
@@ -94,6 +119,15 @@ export const GET: APIRoute = async (context) => {
           },
         });
         htmlParts.push(`<!-- PARTIAL:summary -->\n${summaryHtml}`);
+
+        const copyActionHtml = await container.renderToString(BudgetCopyActionPartial, {
+          props: {
+            showCopyAction: copyBudgetAvailability.isVisible,
+            disableCopyAction: copyBudgetAvailability.isDisabled,
+            copyActionTooltip,
+          },
+        });
+        htmlParts.push(`<!-- PARTIAL:copy-action -->\n${copyActionHtml}`);
       }
 
       // Render cards partial

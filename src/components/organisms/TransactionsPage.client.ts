@@ -35,6 +35,7 @@ import {
   showLoadingState,
   hideLoadingState,
 } from './TransactionsRenderer.client';
+import { FILTERS_RESET_EVENT } from '@/lib/constants/events';
 import type { TransactionFormData } from '@/lib/types/transaction';
 
 // Debounce timer for search
@@ -729,21 +730,14 @@ function setupEventListeners(): void {
       const categoryInput = document.getElementById('category-filter') as HTMLInputElement | null;
       if (categoryInput) categoryInput.value = '';
 
-      // Reset category dropdown UI
-      const categoryLabel = document.querySelector('[data-category-label]');
-      if (categoryLabel) categoryLabel.textContent = 'All Categories';
-
-      // Reset month dropdown label
-      const state = transactionsDataStore.get();
-      const monthData = state.availableMonths.find((m) => m.key === currentMonth);
-      if (monthData) {
-        const monthLabel = document.querySelector('[data-period-label]');
-        if (monthLabel) monthLabel.textContent = monthData.label;
-      }
-
       updateTypeFilterUI('expense');
       updateUrl();
       fetchAndRender();
+
+      // Dispatch filtersReset so PeriodNavigator and TransactionFiltersBar can sync their internal state
+      window.dispatchEvent(
+        new CustomEvent(FILTERS_RESET_EVENT, { detail: { month: currentMonth } })
+      );
     }
   });
 

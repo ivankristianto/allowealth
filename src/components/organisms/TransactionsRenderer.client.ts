@@ -26,15 +26,17 @@ const STAGGER_DELAY = prefersReducedMotion ? 0 : 0.05;
 
 /**
  * Show loading state for summary cards
+ *
+ * Hides ALL summary containers (mobile + desktop) and shows skeletons.
  */
 export function showSummaryLoadingState(): void {
-  const summaryContainer = document.getElementById('summary-cards-container');
+  const summaryContainers = document.querySelectorAll<HTMLElement>('[data-summary-container]');
   const summarySkeleton = document.getElementById('summary-cards-skeleton');
 
-  if (summaryContainer) {
-    summaryContainer.classList.add('hidden');
-    summaryContainer.setAttribute('aria-hidden', 'true');
-  }
+  summaryContainers.forEach((container) => {
+    container.classList.add('hidden');
+    container.setAttribute('aria-hidden', 'true');
+  });
   if (summarySkeleton) {
     summarySkeleton.classList.remove('hidden');
     summarySkeleton.setAttribute('aria-busy', 'true');
@@ -44,9 +46,11 @@ export function showSummaryLoadingState(): void {
 
 /**
  * Hide loading state for summary cards
+ *
+ * Shows ALL summary containers (mobile + desktop) and hides skeletons.
  */
 export function hideSummaryLoadingState(): void {
-  const summaryContainer = document.getElementById('summary-cards-container');
+  const summaryContainers = document.querySelectorAll<HTMLElement>('[data-summary-container]');
   const summarySkeleton = document.getElementById('summary-cards-skeleton');
 
   if (summarySkeleton) {
@@ -54,10 +58,10 @@ export function hideSummaryLoadingState(): void {
     summarySkeleton.removeAttribute('aria-busy');
     summarySkeleton.removeAttribute('aria-label');
   }
-  if (summaryContainer) {
-    summaryContainer.classList.remove('hidden');
-    summaryContainer.removeAttribute('aria-hidden');
-  }
+  summaryContainers.forEach((container) => {
+    container.classList.remove('hidden');
+    container.removeAttribute('aria-hidden');
+  });
 }
 
 /**
@@ -165,32 +169,49 @@ export function renderTransactionListHtml(html: string): void {
 
 /**
  * Render summary cards from server-rendered HTML
+ *
+ * The partial renders both mobile and desktop containers. This function
+ * replaces each existing [data-summary-container] with its matching
+ * replacement from the new HTML (matched by ID).
  */
 export function renderSummaryCardsHtml(html: string): void {
-  const summaryContainer = document.getElementById('summary-cards-container');
-  if (!summaryContainer) {
-    // Try to find parent container and replace
-    const skeleton = document.getElementById('summary-cards-skeleton');
-    if (skeleton && skeleton.parentElement) {
-      // Create a temporary container to parse the HTML
-      const temp = document.createElement('div');
-      temp.innerHTML = html;
-      const newSummary = temp.firstElementChild;
-      if (newSummary) {
-        skeleton.parentElement.insertBefore(newSummary, skeleton);
-        skeleton.classList.add('hidden');
+  const existingContainers = document.querySelectorAll<HTMLElement>('[data-summary-container]');
+
+  // Parse the new HTML from the server partial
+  const temp = document.createElement('div');
+  temp.innerHTML = html;
+  const newContainers = temp.querySelectorAll<HTMLElement>('[data-summary-container]');
+
+  if (existingContainers.length > 0 && newContainers.length > 0) {
+    // Replace each existing container with its matching new container by ID
+    existingContainers.forEach((existing) => {
+      const matchId = existing.id;
+      let replacement: HTMLElement | null = null;
+
+      if (matchId) {
+        replacement = temp.querySelector<HTMLElement>(`#${matchId}`);
       }
-    }
+
+      // If no ID match, use order-based fallback (first new replaces first old, etc.)
+      if (!replacement && newContainers.length === 1) {
+        replacement = newContainers[0];
+      }
+
+      if (replacement && existing.parentElement) {
+        existing.parentElement.replaceChild(replacement, existing);
+      }
+    });
     return;
   }
 
-  // Replace the summary container's innerHTML
-  const temp = document.createElement('div');
-  temp.innerHTML = html;
-  const newSummary = temp.firstElementChild;
-
-  if (newSummary && summaryContainer.parentElement) {
-    summaryContainer.parentElement.replaceChild(newSummary, summaryContainer);
+  // Fallback: no existing containers found, insert near skeleton
+  const skeleton = document.getElementById('summary-cards-skeleton');
+  if (skeleton && skeleton.parentElement) {
+    // Insert all new containers before the skeleton
+    newContainers.forEach((newContainer) => {
+      skeleton.parentElement!.insertBefore(newContainer, skeleton);
+    });
+    skeleton.classList.add('hidden');
   }
 }
 

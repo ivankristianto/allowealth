@@ -5,10 +5,12 @@
  * Renders summary cards (Income, Expenses, Net Savings) as an HTML fragment.
  * Used for server-rendered HTML responses (HTMX-style).
  *
- * This partial outputs the complete summary grid with all three cards.
+ * Outputs BOTH mobile compact cards and desktop StatCard grid to match
+ * the dual-layout in TransactionSummaryCards.astro. CSS visibility
+ * (md:hidden / hidden md:grid) controls which layout is shown.
  */
 
-import { TrendingUp, TrendingDown, Wallet } from '@lucide/astro';
+import { TrendingUp, TrendingDown, Wallet, Info } from '@lucide/astro';
 import { formatCurrency } from '@/lib/formatting';
 import StatCard from '../atoms/StatCard.astro';
 
@@ -26,8 +28,66 @@ const netSavings = monthlyIncome - monthlyExpenses;
 const netSavingsClass = netSavings >= 0 ? 'text-success' : 'text-error';
 ---
 
+{/* Mobile compact cards */}
 <div
-  class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6"
+  class="flex flex-col gap-3 md:hidden"
+  id="summary-cards-container-mobile"
+  data-summary-container
+  data-currency={currency}
+>
+  <div
+    class="flex items-center gap-3 bg-base-100 border border-base-300 rounded-xl px-4 py-3 shadow-sm"
+    role="region"
+    aria-label="Monthly Income"
+    data-summary-card="income"
+  >
+    <TrendingUp size={20} class="stroke-current text-success shrink-0" aria-hidden="true" />
+    <span class="text-xs font-bold uppercase tracking-wider text-base-content/60 flex-1">
+      Income
+    </span>
+    <span class="text-sm font-bold text-success tabular-nums">
+      {formatCurrency(monthlyIncome, currency)}
+    </span>
+  </div>
+
+  <div
+    class="flex items-center gap-3 bg-base-100 border border-base-300 rounded-xl px-4 py-3 shadow-sm"
+    role="region"
+    aria-label="Monthly Expenses"
+    data-summary-card="expenses"
+  >
+    <TrendingDown size={20} class="stroke-current text-error shrink-0" aria-hidden="true" />
+    <span class="text-xs font-bold uppercase tracking-wider text-base-content/60 flex-1">
+      Expenses
+    </span>
+    <span class="text-sm font-bold text-error tabular-nums">
+      {formatCurrency(monthlyExpenses, currency)}
+    </span>
+  </div>
+
+  <div
+    class="flex items-center gap-3 bg-base-100 border border-base-300 rounded-xl px-4 py-3 shadow-sm"
+    role="region"
+    aria-label="Net Savings"
+    data-summary-card="savings"
+  >
+    <Wallet
+      size={20}
+      class={`stroke-current shrink-0 ${netSavings >= 0 ? 'text-success' : 'text-error'}`}
+      aria-hidden="true"
+    />
+    <span class="text-xs font-bold uppercase tracking-wider text-base-content/60 flex-1">
+      Savings
+    </span>
+    <span class={`text-sm font-bold tabular-nums ${netSavingsClass}`}>
+      {formatCurrency(netSavings, currency)}
+    </span>
+  </div>
+</div>
+
+{/* Desktop full cards */}
+<div
+  class="hidden md:grid grid-cols-1 @2xl:grid-cols-3 gap-4 @sm:gap-6"
   id="summary-cards-container"
   data-summary-container
   data-currency={currency}
@@ -35,7 +95,6 @@ const netSavingsClass = netSavings >= 0 ? 'text-success' : 'text-error';
   <StatCard
     title="Monthly Income"
     value={formatCurrency(monthlyIncome, currency)}
-    subtitle={periodLabel || undefined}
     valueColor="text-success"
     subtitleColor="text-success/60"
     iconVariant="success"
@@ -61,12 +120,22 @@ const netSavingsClass = netSavings >= 0 ? 'text-success' : 'text-error';
   <StatCard
     title="Net Savings"
     value={formatCurrency(netSavings, currency)}
-    subtitle={periodLabel || undefined}
     valueColor={netSavingsClass}
     subtitleColor="text-base-content/40"
     className="transition-all hover:shadow-md"
     data-summary-card="savings"
   >
     <Wallet slot="icon" size={48} class="stroke-current text-primary" aria-hidden="true" />
+    <div slot="details" class="flex items-center gap-1.5 text-xs text-base-content/40">
+      <button
+        type="button"
+        class="tooltip tooltip-bottom inline-flex items-center bg-transparent border-0 p-0 cursor-help"
+        data-tip="Income minus expenses. Negative means you spent more than you earned this period."
+        aria-label="Income minus expenses. Negative means you spent more than you earned this period."
+      >
+        <Info size={14} class="stroke-current" aria-hidden="true" />
+      </button>
+      {netSavings < 0 && <span class="text-error/60 font-medium">Spending exceeded income</span>}
+    </div>
   </StatCard>
 </div>

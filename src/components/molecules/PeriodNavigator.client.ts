@@ -5,7 +5,7 @@
  * Separated from component for explicit initialization after HTML injection.
  */
 
-import { PERIOD_CHANGE_EVENT } from '@/lib/constants/events';
+import { PERIOD_CHANGE_EVENT, FILTERS_RESET_EVENT } from '@/lib/constants/events';
 
 interface PeriodOption {
   value: string;
@@ -14,6 +14,14 @@ interface PeriodOption {
 
 // Track initialized navigators to avoid duplicate handlers
 const initializedNavigators = new WeakSet<Element>();
+const resetSyncControllers = new Set<AbortController>();
+
+function cleanupPeriodNavigatorListeners(): void {
+  resetSyncControllers.forEach((controller) => {
+    controller.abort();
+  });
+  resetSyncControllers.clear();
+}
 
 export function initPeriodNavigator() {
   document.querySelectorAll('[data-period-navigator]').forEach((navigator) => {
@@ -31,6 +39,27 @@ export function initPeriodNavigator() {
     // Get available periods from data attribute
     const optionsData = navigator.getAttribute('data-period-options');
     const availableOptions: PeriodOption[] = optionsData ? JSON.parse(optionsData) : [];
+    const newestFirst = navigator.getAttribute('data-newest-first') === 'true';
+
+    const hasPrevAt = (index: number): boolean =>
+      newestFirst ? index < availableOptions.length - 1 : index > 0;
+    const hasNextAt = (index: number): boolean =>
+      newestFirst ? index > 0 : index < availableOptions.length - 1;
+    const prevIndexAt = (index: number): number => (newestFirst ? index + 1 : index - 1);
+    const nextIndexAt = (index: number): number => (newestFirst ? index - 1 : index + 1);
+
+    // Update dropdown active highlight to match current selection
+    function updateDropdownHighlight() {
+      const currentValue = periodInput.value;
+      navigator.querySelectorAll('[data-period-option]').forEach((btn) => {
+        const el = btn as HTMLElement;
+        if (el.dataset.periodOption === currentValue) {
+          el.classList.add('bg-primary/10', 'text-primary');
+        } else {
+          el.classList.remove('bg-primary/10', 'text-primary');
+        }
+      });
+    }
 
     // Update navigation button states
     function updateNavButtons() {
@@ -38,7 +67,7 @@ export function initPeriodNavigator() {
       const currentIndex = availableOptions.findIndex((option) => option.value === currentPeriod);
 
       if (prevBtn) {
-        const hasPrev = currentIndex > 0;
+        const hasPrev = hasPrevAt(currentIndex);
         prevBtn.disabled = !hasPrev;
         prevBtn.setAttribute('aria-disabled', hasPrev ? 'false' : 'true');
         prevBtn.setAttribute('data-has-prev', hasPrev ? 'true' : 'false');
@@ -51,7 +80,7 @@ export function initPeriodNavigator() {
       }
 
       if (nextBtn) {
-        const hasNext = currentIndex < availableOptions.length - 1;
+        const hasNext = hasNextAt(currentIndex);
         nextBtn.disabled = !hasNext;
         nextBtn.setAttribute('aria-disabled', hasNext ? 'false' : 'true');
         nextBtn.setAttribute('data-has-next', hasNext ? 'true' : 'false');
@@ -62,6 +91,17 @@ export function initPeriodNavigator() {
           nextBtn.classList.add('opacity-30', 'cursor-not-allowed', 'pointer-events-none');
         }
       }
+
+      updateDropdownHighlight();
+    }
+
+    // Set period programmatically (used by filtersReset)
+    function setPeriod(value: string) {
+      const option = availableOptions.find((o) => o.value === value);
+      if (!option) return;
+      periodInput.value = option.value;
+      periodLabel.textContent = option.label;
+      updateNavButtons();
     }
 
     // Handle period dropdown selection
@@ -100,9 +140,10 @@ export function initPeriodNavigator() {
 
         const currentPeriod = periodInput.value;
         const currentIndex = availableOptions.findIndex((option) => option.value === currentPeriod);
+        const prevIndex = prevIndexAt(currentIndex);
 
-        if (currentIndex > 0) {
-          const prevOption = availableOptions[currentIndex - 1];
+        if (prevIndex >= 0 && prevIndex < availableOptions.length) {
+          const prevOption = availableOptions[prevIndex];
           periodInput.value = prevOption.value;
           periodLabel.textContent = prevOption.label;
 
@@ -126,9 +167,10 @@ export function initPeriodNavigator() {
 
         const currentPeriod = periodInput.value;
         const currentIndex = availableOptions.findIndex((option) => option.value === currentPeriod);
+        const nextIndex = nextIndexAt(currentIndex);
 
-        if (currentIndex < availableOptions.length - 1) {
-          const nextOption = availableOptions[currentIndex + 1];
+        if (nextIndex >= 0 && nextIndex < availableOptions.length) {
+          const nextOption = availableOptions[nextIndex];
           periodInput.value = nextOption.value;
           periodLabel.textContent = nextOption.label;
 
@@ -145,6 +187,18 @@ export function initPeriodNavigator() {
       });
     }
 
+    // Listen for filters reset to restore current month
+    const resetSyncController = new AbortController();
+    resetSyncControllers.add(resetSyncController);
+    window.addEventListener(
+      FILTERS_RESET_EVENT,
+      (e: Event) => {
+        const { month } = (e as CustomEvent).detail || {};
+        if (month) setPeriod(month);
+      },
+      { signal: resetSyncController.signal }
+    );
+
     // Initialize button states
     updateNavButtons();
   });
@@ -159,3 +213,4 @@ if (document.readyState === 'loading') {
 
 // Re-initialize on Astro page transitions
 document.addEventListener('astro:page-load', initPeriodNavigator);
+document.addEventListener('astro:before-swap', cleanupPeriodNavigatorListeners);

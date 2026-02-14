@@ -15,15 +15,12 @@
  * @param {string} className - Additional CSS classes
  */
 
-// External packages
-import { Landmark, TriangleAlert } from '@lucide/astro';
-
 // Internal aliases - lib
 import { formatCurrency } from '@/lib/formatting';
 import { getBudgetStatus, sanitizeColor } from '@/lib/utils/budget';
+import { getRemainingBudgetMetric } from '@/lib/utils/budget-summary';
 
 // Internal aliases - components
-import Badge from '@components/atoms/Badge.astro';
 import StatLabel from '@components/atoms/StatLabel.astro';
 import Skeleton from '@components/atoms/Skeleton.astro';
 import AllocationBar from '@components/molecules/AllocationBar.astro';
@@ -59,12 +56,15 @@ const {
 } = Astro.props;
 
 // Calculate derived values
-const remaining = totalAllocated - totalSpent;
 const overallUsage = totalAllocated > 0 ? (totalSpent / totalAllocated) * 100 : 0;
 const usageStatus = getBudgetStatus(overallUsage);
-const isDeficit = remaining < 0;
-const statusForDisplay = isDeficit ? 'danger' : usageStatus.status;
-const badgeVariant = isDeficit ? 'exceeded' : usageStatus.badgeVariant;
+const remainingMetric = getRemainingBudgetMetric(totalAllocated, totalSpent);
+const spentAmountColorClass =
+  remainingMetric.tone === 'error'
+    ? 'text-error'
+    : usageStatus.status === 'warning'
+      ? 'text-warning'
+      : 'text-base-content';
 
 // Sort distribution by weight (largest first)
 const sortedDistribution = [...distribution].sort((a, b) => b.weight - a.weight);
@@ -173,11 +173,7 @@ const cardClasses = [
                   <p
                     class:list={[
                       'text-2xl @3xl:text-3xl font-bold tracking-tight leading-none',
-                      statusForDisplay === 'danger'
-                        ? 'text-error'
-                        : statusForDisplay === 'warning'
-                          ? 'text-warning'
-                          : 'text-base-content',
+                      spentAmountColorClass,
                     ]}
                   >
                     {formatCurrency(totalSpent, currency)}
@@ -187,25 +183,25 @@ const cardClasses = [
                   </span>
                 </div>
               </div>
-            </div>
 
-            {/* Surplus/Deficit Indicator */}
-            <div
-              class:list={[
-                'p-4 rounded-2xl border flex items-center gap-3 flex-wrap min-w-0',
-                isDeficit ? 'bg-error/5 border-error/20' : 'bg-success/5 border-success/20',
-              ]}
-            >
-              {isDeficit ? (
-                <TriangleAlert size={20} class="text-error shrink-0" aria-hidden="true" />
-              ) : (
-                <Landmark size={20} class="text-success shrink-0" aria-hidden="true" />
-              )}
-              <Badge variant={badgeVariant} size="sm" className="uppercase tracking-wide">
-                {isDeficit
-                  ? `Deficit of ${formatCurrency(Math.abs(remaining), currency)}`
-                  : `Surplus of ${formatCurrency(remaining, currency)}`}
-              </Badge>
+              {/* Remaining / Overbudget */}
+              <div>
+                <StatLabel
+                  size="sm"
+                  color={remainingMetric.tone === 'error' ? 'error' : 'success'}
+                  className="uppercase tracking-widest"
+                >
+                  {remainingMetric.label}
+                </StatLabel>
+                <p
+                  class:list={[
+                    'text-2xl @3xl:text-3xl font-bold mt-2 @3xl:mt-3 tracking-tight leading-none',
+                    remainingMetric.tone === 'error' ? 'text-error' : 'text-success',
+                  ]}
+                >
+                  {formatCurrency(remainingMetric.value, currency)}
+                </p>
+              </div>
             </div>
           </div>
 
@@ -267,8 +263,11 @@ const cardClasses = [
 </div>
 
 <script>
+  import { resolveBudgetAllocationOpenState } from '@/lib/utils/budget-summary';
+
   const initializedDetails = new WeakSet<Element>();
   const detailsObservers = new Map<Element, ResizeObserver>();
+  const detailsViewportStates = new WeakMap<Element, boolean>();
 
   function initBudgetAllocations() {
     document
@@ -287,7 +286,15 @@ const cardClasses = [
 
         const observer = new ResizeObserver((entries) => {
           for (const entry of entries) {
-            details.open = entry.contentRect.width >= WIDE_THRESHOLD;
+            const isWide = entry.contentRect.width >= WIDE_THRESHOLD;
+            const previousIsWide = detailsViewportStates.get(details);
+            const nextOpenState = resolveBudgetAllocationOpenState({ previousIsWide, isWide });
+
+            if (nextOpenState !== null) {
+              details.open = nextOpenState;
+            }
+
+            detailsViewportStates.set(details, isWide);
           }
         });
 
@@ -302,11 +309,17 @@ const cardClasses = [
   }
 
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initBudgetAllocations);
+    document.addEventListener('DOMContentLoaded', () => {
+      initBudgetAllocations();
+    });
   } else {
     initBudgetAllocations();
   }
 
-  document.addEventListener('astro:before-swap', cleanupBudgetAllocations);
-  document.addEventListener('astro:page-load', initBudgetAllocations);
+  document.addEventListener('astro:before-swap', () => {
+    cleanupBudgetAllocations();
+  });
+  document.addEventListener('astro:page-load', () => {
+    initBudgetAllocations();
+  });
 </script>

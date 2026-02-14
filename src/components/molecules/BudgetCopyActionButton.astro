@@ -1,0 +1,57 @@
+---
+/**
+ * BudgetCopyActionButton Component
+ *
+ * Copy-to-next-month action rendered inside the budget action bar.
+ * Supports visible/disabled states and disabled tooltip messaging.
+ *
+ * @param {boolean} showCopyAction - Whether copy action should be rendered
+ * @param {boolean} disableCopyAction - Whether copy action is disabled
+ * @param {string} copyActionTooltip - Disabled state tooltip text
+ */
+
+import { Copy } from '@lucide/astro';
+import { COPY_BUDGET_TO_NEXT_MONTH_LABEL } from '@/lib/utils/budget-copy';
+
+export interface Props {
+  showCopyAction?: boolean;
+  disableCopyAction?: boolean;
+  copyActionTooltip?: string;
+  className?: string;
+}
+
+const {
+  showCopyAction = false,
+  disableCopyAction = false,
+  copyActionTooltip = '',
+  className = '',
+} = Astro.props;
+
+const ghostBtn =
+  'btn btn-ghost btn-sm md:btn-md min-h-[44px] min-w-[44px] gap-1 md:gap-2 rounded-lg md:rounded-xl text-base-content/70 hover:text-base-content hover:bg-base-200 px-2 md:px-4';
+---
+
+{
+  showCopyAction && (
+    <div
+      class:list={['tooltip tooltip-bottom', className].filter(Boolean)}
+      data-tip={disableCopyAction ? copyActionTooltip : COPY_BUDGET_TO_NEXT_MONTH_LABEL}
+    >
+      <button
+        type="button"
+        class:list={[ghostBtn, disableCopyAction && 'opacity-30 cursor-not-allowed']}
+        id="copy-budget-btn"
+        data-target-modal="copy-budget-modal"
+        aria-label={COPY_BUDGET_TO_NEXT_MONTH_LABEL}
+        title={disableCopyAction ? copyActionTooltip : undefined}
+        disabled={disableCopyAction}
+        aria-disabled={disableCopyAction ? 'true' : undefined}
+        data-testid="copy-budget-btn"
+      >
+        <Copy size={16} class="stroke-current md:hidden" aria-hidden="true" />
+        <Copy size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+        <span class="text-xs sm:text-sm">Copy</span>
+      </button>
+    </div>
+  )
+}

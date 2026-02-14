@@ -15,13 +15,14 @@
  * @param {boolean} showFilters - Show filter panel
  */
 
-import TransactionCard from '../molecules/TransactionCard.astro';
+import TransactionDateGroups from '../molecules/TransactionDateGroups.astro';
 import TransactionFilters from '../molecules/TransactionFilters.astro';
 import EmptyState from '../atoms/EmptyState.astro';
 import Badge from '../atoms/Badge.astro';
 import ConfirmationModal from '../molecules/ConfirmationModal.astro';
 import { ArrowLeft, Download, ArrowRight, Plus, ChevronLeft, ChevronRight } from '@lucide/astro';
 import type { TransactionOutput } from '@/lib/types/transaction';
+import { groupTransactionsByDate } from '@/lib/utils/transaction-grouping';
 
 export interface Props {
   transactions: TransactionOutput[];
@@ -80,6 +81,8 @@ const buildDirectExportUrl = () => {
   const queryString = params.toString();
   return queryString ? `/api/transactions/export?${queryString}` : '/api/transactions/export';
 };
+
+const dateGroups = groupTransactionsByDate(transactions);
 ---
 
 <div class="space-y-6">
@@ -165,11 +168,7 @@ const buildDirectExportUrl = () => {
             </div>
 
             {/* Transaction list using unified TransactionCard component */}
-            <div class="divide-y divide-base-200">
-              {transactions.map((transaction) => (
-                <TransactionCard transaction={transaction} showActions={true} />
-              ))}
-            </div>
+            <TransactionDateGroups groups={dateGroups} showActions={true} />
 
             {totalPages > 1 && (
               <div class="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 sm:px-6 py-4 border-t border-base-200">

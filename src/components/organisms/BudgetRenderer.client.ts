@@ -64,10 +64,11 @@ function announceToScreenReader(message: string): void {
  */
 export function showLoadingState(): void {
   const summaryContainer = document.getElementById('budget-summary-container');
+  const copyActionContainer = document.getElementById('budget-copy-action-container');
   const cardsContainer = document.getElementById('budget-cards-container');
   const adviceContainer = document.getElementById('budget-advice-container');
 
-  [summaryContainer, cardsContainer, adviceContainer].forEach((container) => {
+  [summaryContainer, copyActionContainer, cardsContainer, adviceContainer].forEach((container) => {
     if (container) {
       container.classList.add('opacity-50', 'pointer-events-none');
       container.setAttribute('aria-busy', 'true');
@@ -82,10 +83,11 @@ export function showLoadingState(): void {
  */
 export function hideLoadingState(): void {
   const summaryContainer = document.getElementById('budget-summary-container');
+  const copyActionContainer = document.getElementById('budget-copy-action-container');
   const cardsContainer = document.getElementById('budget-cards-container');
   const adviceContainer = document.getElementById('budget-advice-container');
 
-  [summaryContainer, cardsContainer, adviceContainer].forEach((container) => {
+  [summaryContainer, copyActionContainer, cardsContainer, adviceContainer].forEach((container) => {
     if (container) {
       container.classList.remove('opacity-50', 'pointer-events-none');
       container.removeAttribute('aria-busy');
@@ -114,6 +116,19 @@ export function renderSummaryHtml(html: string): void {
   }
 
   announceToScreenReader('Budget summary updated');
+}
+
+/**
+ * Render copy action segment from server-rendered HTML
+ */
+export function renderCopyActionHtml(html: string): void {
+  const container = document.getElementById('budget-copy-action-container');
+  if (!container) {
+    console.error('[BudgetRenderer] #budget-copy-action-container not found!');
+    return;
+  }
+
+  container.innerHTML = html;
 }
 
 /**
@@ -193,6 +208,10 @@ export function renderFromHtmlResponse(response: FetchBudgetOverviewHtmlResponse
 
   if (partials.summary) {
     renderSummaryHtml(partials.summary);
+  }
+
+  if (partials.copyAction !== undefined) {
+    renderCopyActionHtml(partials.copyAction);
   }
 
   if (partials.cards) {

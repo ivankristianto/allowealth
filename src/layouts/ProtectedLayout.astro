@@ -122,6 +122,7 @@ Astro.locals.userSettings = Object.freeze({ ...userSettings });
 ---
 
 <MainLayout title={title} currentPath={currentPath} user={user} subtitle={subtitle}>
+  <slot name="header" slot="header" />
   <slot />
 </MainLayout>
 

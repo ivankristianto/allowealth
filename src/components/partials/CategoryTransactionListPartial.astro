@@ -9,7 +9,8 @@
  */
 
 import EmptyState from '@/components/atoms/EmptyState.astro';
-import TransactionCard from '@/components/molecules/TransactionCard.astro';
+import TransactionDateGroups from '../molecules/TransactionDateGroups.astro';
+import { groupTransactionsByDate } from '@/lib/utils/transaction-grouping';
 import type { TransactionOutput } from '@/lib/types/transaction';
 
 export interface Props {
@@ -17,15 +18,12 @@ export interface Props {
 }
 
 const { transactions = [] } = Astro.props;
+const dateGroups = groupTransactionsByDate(transactions);
 ---
 
 {
   transactions.length > 0 ? (
-    <div class="space-y-3">
-      {transactions.map((transaction) => (
-        <TransactionCard transaction={transaction} showActions={false} />
-      ))}
-    </div>
+    <TransactionDateGroups groups={dateGroups} showActions={false} variant="compact" />
   ) : (
     <div role="status" aria-live="polite">
       <EmptyState

@@ -1,0 +1,87 @@
+---
+import { LayoutGrid, Search, Table as TableIcon } from '@lucide/astro';
+import {
+  BUDGET_FILTER_CONTROL_HEIGHT_CLASS,
+  BUDGET_FILTER_DESKTOP_LAYOUT_CLASS,
+  BUDGET_FILTER_MOBILE_SECOND_ROW_CLASS,
+} from './budget-filter-controls.config';
+
+export interface Props {
+  className?: string;
+}
+
+const { className = '' } = Astro.props;
+
+const searchInputClass = [
+  'w-full rounded-2xl border border-base-300 bg-base-100 pl-11 pr-4 text-sm font-medium text-base-content shadow-sm focus:border-primary focus:ring-0',
+  BUDGET_FILTER_CONTROL_HEIGHT_CLASS,
+].join(' ');
+
+const sortSelectClass = [
+  'select select-bordered w-full rounded-xl bg-base-100 px-3 text-xs font-bold uppercase tracking-wider',
+  BUDGET_FILTER_CONTROL_HEIGHT_CLASS,
+].join(' ');
+
+const viewToggleClass = [
+  'flex items-center gap-1 rounded-xl border border-base-300 bg-base-100 p-1',
+  BUDGET_FILTER_CONTROL_HEIGHT_CLASS,
+].join(' ');
+---
+
+<div
+  class:list={['space-y-2.5', BUDGET_FILTER_DESKTOP_LAYOUT_CLASS, className]}
+  data-budget-filter-controls
+>
+  <div class="relative md:flex-1">
+    <span
+      class="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-base-content/40"
+      aria-hidden="true"
+    >
+      <Search size={18} class="stroke-current" />
+    </span>
+
+    <input
+      type="search"
+      id="budget-filter-input"
+      data-testid="budget-filter-input"
+      placeholder="Filter budgets..."
+      class={searchInputClass}
+      aria-label="Filter budgets by category name"
+    />
+  </div>
+
+  <div
+    class:list={[
+      BUDGET_FILTER_MOBILE_SECOND_ROW_CLASS,
+      'md:w-auto md:grid-cols-[minmax(170px,220px)_minmax(120px,140px)]',
+    ]}
+  >
+    <select id="budget-sort-select" class={sortSelectClass} aria-label="Sort budgets">
+      <option value="budget-desc">Budget ↓</option>
+      <option value="spent-desc">Spent ↓</option>
+      <option value="title-asc">Title A-Z</option>
+      <option value="title-desc">Title Z-A</option>
+    </select>
+
+    <div class={viewToggleClass} data-view-toggle>
+      <button
+        type="button"
+        class="btn btn-sm btn-ghost btn-active h-full min-h-0 flex-1 rounded-lg"
+        data-view-mode="card"
+        aria-label="Card view"
+        aria-pressed="true"
+      >
+        <LayoutGrid size={16} class="stroke-current" aria-hidden="true" />
+      </button>
+      <button
+        type="button"
+        class="btn btn-sm btn-ghost h-full min-h-0 flex-1 rounded-lg"
+        data-view-mode="table"
+        aria-label="Table view"
+        aria-pressed="false"
+      >
+        <TableIcon size={16} class="stroke-current" aria-hidden="true" />
+      </button>
+    </div>
+  </div>
+</div>

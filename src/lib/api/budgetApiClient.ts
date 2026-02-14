@@ -17,6 +17,7 @@ export interface FetchBudgetOverviewHtmlResponse {
   /** Parsed partial sections (keyed by partial name) */
   partials: {
     summary?: string;
+    copyAction?: string;
     cards?: string;
     table?: string;
     advice?: string;
@@ -81,17 +82,21 @@ function buildQueryString(
 /**
  * Parse HTML response into partial sections
  */
-function parseHtmlPartials(html: string): FetchBudgetOverviewHtmlResponse['partials'] {
+export function parseBudgetOverviewHtmlPartials(
+  html: string
+): FetchBudgetOverviewHtmlResponse['partials'] {
   const partials: FetchBudgetOverviewHtmlResponse['partials'] = {};
 
   // Extract partials using markers
   const summaryMatch = html.match(/<!-- PARTIAL:summary -->\n([\s\S]*?)(?=<!-- PARTIAL:|$)/);
+  const copyActionMatch = html.match(/<!-- PARTIAL:copy-action -->\n([\s\S]*?)(?=<!-- PARTIAL:|$)/);
   const cardsMatch = html.match(/<!-- PARTIAL:cards -->\n([\s\S]*?)(?=<!-- PARTIAL:|$)/);
   const tableMatch = html.match(/<!-- PARTIAL:table -->\n([\s\S]*?)(?=<!-- PARTIAL:|$)/);
   const adviceMatch = html.match(/<!-- PARTIAL:advice -->\n([\s\S]*?)(?=<!-- PARTIAL:|$)/);
   const metaMatch = html.match(/<!-- PARTIAL:meta -->\n([\s\S]*?)(?=<!-- PARTIAL:|$)/);
 
   if (summaryMatch) partials.summary = summaryMatch[1].trim();
+  if (copyActionMatch) partials.copyAction = copyActionMatch[1].trim();
   if (cardsMatch) partials.cards = cardsMatch[1].trim();
   if (tableMatch) partials.table = tableMatch[1].trim();
   if (adviceMatch) partials.advice = adviceMatch[1].trim();
@@ -161,7 +166,7 @@ export async function fetchBudgetOverviewHtml(
 
     return {
       html,
-      partials: parseHtmlPartials(html),
+      partials: parseBudgetOverviewHtmlPartials(html),
     };
   } catch (error) {
     // Don't throw on abort - it's expected behavior

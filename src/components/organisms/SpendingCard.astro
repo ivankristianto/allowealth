@@ -10,7 +10,6 @@
  * @param {number} income - Monthly income amount
  * @param {string} currency - Currency code (IDR or USD)
  * @param {string} remainingLabel - Label for remaining amount (e.g., "Remaining for Jan")
- * @param {string} alertMessage - Optional alert message to display
  * @param {boolean} loading - Show loading skeleton state
  * @param {string} error - Error message to display
  * @param {string} className - Additional CSS classes
@@ -18,15 +17,10 @@
 
 import { Scale } from '@lucide/astro';
 import { formatCurrency, formatCurrencyCompact } from '@/lib/formatting';
-import {
-  getBudgetStatusClass,
-  getStatusBadgeClasses,
-  type BudgetStatusClassName,
-} from '@/lib/tokens';
+import { getBudgetStatusClass, type BudgetStatusClassName } from '@/lib/tokens';
 import ProgressBar from '@/components/atoms/ProgressBar.astro';
 import IconBadge from '@/components/atoms/IconBadge.astro';
 import StatLabel from '@/components/atoms/StatLabel.astro';
-import BudgetAlertBanner from '@/components/molecules/BudgetAlertBanner.astro';
 import Card from '@/components/atoms/Card.astro';
 import Skeleton from '@/components/atoms/Skeleton.astro';
 
@@ -36,7 +30,6 @@ export interface Props {
   income?: number;
   currency?: 'IDR' | 'USD';
   remainingLabel?: string;
-  alertMessage?: string;
   loading?: boolean;
   error?: string;
   className?: string;
@@ -48,7 +41,6 @@ const {
   income: rawIncome = 0,
   currency = 'IDR',
   remainingLabel = 'Budget Remaining',
-  alertMessage,
   loading = false,
   error,
   className = '',
@@ -168,7 +160,7 @@ const uniqueId = `spending-card-${Math.random().toString(36).slice(2, 11)}`;
                 </IconBadge>
                 <div class="min-w-0">
                   <StatLabel size="md" color="neutral">
-                    MONTHLY EXPENSES
+                    Expenses
                   </StatLabel>
                   <h3
                     id={uniqueId}
@@ -182,10 +174,6 @@ const uniqueId = `spending-card-${Math.random().toString(36).slice(2, 11)}`;
                   </h3>
                 </div>
               </div>
-
-              <span class={`shrink-0 ${getStatusBadgeClasses(status)}`}>
-                {percentageRounded}% used
-              </span>
             </div>
 
             {/* Progress Bar with Monthly Allocation label */}
@@ -201,19 +189,11 @@ const uniqueId = `spending-card-${Math.random().toString(36).slice(2, 11)}`;
               {remainingLabel}:{' '}
               <span class="font-bold text-base-content">{remainingFormatted}</span>
             </p>
-
-            {alertMessage && (
-              <BudgetAlertBanner
-                title="Budget alert"
-                message={alertMessage}
-                variant={status === 'status-danger' ? 'error' : 'warning'}
-              />
-            )}
           </div>
 
           {/* Income and Net Savings Section - Pushed to bottom */}
-          <div class="border-t border-base-300 pt-4 mt-auto">
-            <div class="grid grid-cols-2 gap-4">
+          <div class="border-t border-base-300 pt-4 mt-4">
+            <div class="grid grid-cols-1 @xs:grid-cols-2 gap-4">
               <div>
                 <StatLabel size="sm" color="neutral">
                   INCOME

@@ -7,7 +7,7 @@ import { logError } from '@/lib/utils';
 import { createRenderHelper } from '@/lib/api/renderResponse';
 import { safeParseDecimal } from '@/lib/utils/decimal';
 import { validatePeriod } from '@/lib/utils/period-validation';
-import { MONTH_NAMES_SHORT } from '@/lib/utils/date';
+import { formatMonthYear } from '@/lib/utils/date';
 
 // Import partial components for HTML rendering
 import ReportSummaryCardsPartial from '@/components/partials/ReportSummaryCardsPartial.astro';
@@ -193,13 +193,13 @@ export const GET: APIRoute = async (context) => {
 
         // Generate monthly periods (last 12 months)
         const monthlyPeriods = Array.from({ length: 12 }, (_, i) => {
-          const monthsBack = 11 - i;
+          const monthsBack = i;
           const date = new Date(currentYear, currentMonth - 1 - monthsBack, 1);
           const year = date.getFullYear();
           const month = date.getMonth() + 1;
           const monthStr = month.toString().padStart(2, '0');
 
-          const label = `${MONTH_NAMES_SHORT[month - 1]} ${year}`;
+          const label = formatMonthYear(date);
 
           return {
             key: `${year}-${monthStr}`,
