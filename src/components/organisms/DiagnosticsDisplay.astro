@@ -1,0 +1,434 @@
+---
+/**
+ * DiagnosticsDisplay Component
+ *
+ * Displays system diagnostics information including:
+ * - Configuration validation alerts (warnings, missing required vars)
+ * - Runtime Info card (environment, runtime, region, versions)
+ * - Database Info card (dialect, connection status, URL, Supabase flags, pool config)
+ * - Cache Info card (driver, status, enabled, error, upstash URL)
+ * - Environment Variables table (name, value, status badges)
+ * - Timestamp footer
+ *
+ * Uses DaisyUI classes directly: alert, card, table, badge
+ */
+
+import type { DiagnosticsData } from '@/types/diagnostics';
+import {
+  Activity,
+  Database,
+  Server,
+  Settings,
+  AlertTriangle,
+  CheckCircle,
+  XCircle,
+} from '@lucide/astro';
+
+interface Props {
+  data: DiagnosticsData;
+}
+
+const { data } = Astro.props;
+
+// Format timestamp for display
+function formatTimestamp(isoString: string): string {
+  const date = new Date(isoString);
+  return date.toLocaleString();
+}
+
+// Get status badge class for environment variable
+function getEnvVarBadgeClass(isSet: boolean, isSensitive: boolean): string {
+  if (!isSet) return 'badge-error';
+  if (isSensitive) return 'badge-warning';
+  return 'badge-success';
+}
+
+// Get status badge text for environment variable
+function getEnvVarBadgeText(isSet: boolean, isSensitive: boolean): string {
+  if (!isSet) return 'Missing';
+  if (isSensitive) return 'Sensitive';
+  return 'Set';
+}
+
+// Get database connection badge class
+function getConnectionBadgeClass(isConnected: boolean): string {
+  return isConnected ? 'badge-success' : 'badge-error';
+}
+
+// Get cache status badge class
+function getCacheStatusBadgeClass(status: string): string {
+  switch (status) {
+    case 'healthy':
+      return 'badge-success';
+    case 'error':
+      return 'badge-error';
+    case 'disabled':
+      return 'badge-neutral';
+    default:
+      return 'badge-ghost';
+  }
+}
+---
+
+<!-- Configuration Validation Alerts -->
+<section id="configuration-alerts" class="mb-6 space-y-3" aria-label="Configuration alerts">
+  {
+    data.configuration.missingRequired.length > 0 && (
+      <div class="alert alert-error" role="alert">
+        <AlertTriangle class="h-5 w-5 shrink-0" />
+        <div>
+          <h3 class="font-bold">Missing Required Configuration</h3>
+          <div class="text-sm">
+            The following environment variables are required but not set:
+            <ul class="list-disc list-inside mt-1">
+              {data.configuration.missingRequired.map((varName) => (
+                <li>
+                  <code class="bg-error text-error-content px-1 py-0.5 rounded text-xs">
+                    {varName}
+                  </code>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  {
+    data.configuration.warnings.length > 0 && (
+      <div class="alert alert-warning" role="alert">
+        <AlertTriangle class="h-5 w-5 shrink-0" />
+        <div>
+          <h3 class="font-bold">Configuration Warnings</h3>
+          <ul class="list-disc list-inside text-sm mt-1">
+            {data.configuration.warnings.map((warning) => (
+              <li>{warning}</li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    )
+  }
+
+  {
+    data.configuration.isValid &&
+      data.configuration.missingRequired.length === 0 &&
+      data.configuration.warnings.length === 0 && (
+        <div class="alert alert-success" role="status">
+          <CheckCircle class="h-5 w-5 shrink-0" />
+          <div>
+            <h3 class="font-bold">Configuration Valid</h3>
+            <p class="text-sm">All required configuration is present and no warnings detected.</p>
+          </div>
+        </div>
+      )
+  }
+</section>
+
+<!-- Runtime Info Card -->
+<section class="card bg-base-200 shadow-lg mb-6" aria-labelledby="runtime-info-title">
+  <div class="card-body">
+    <h2 id="runtime-info-title" class="card-title flex items-center gap-2">
+      <Server class="h-5 w-5" />
+      Runtime Information
+    </h2>
+    <div class="overflow-x-auto">
+      <table class="table table-zebra">
+        <thead>
+          <tr>
+            <th>Property</th>
+            <th>Value</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Environment</strong></td>
+            <td>
+              <span class="badge badge-outline">{data.runtime.environment}</span>
+            </td>
+          </tr>
+          <tr>
+            <td><strong>Runtime</strong></td>
+            <td>
+              <span class="badge badge-primary">{data.runtime.runtime}</span>
+            </td>
+          </tr>
+          {
+            data.runtime.region && (
+              <tr>
+                <td>
+                  <strong>Region</strong>
+                </td>
+                <td>{data.runtime.region}</td>
+              </tr>
+            )
+          }
+          {
+            data.runtime.nodeVersion && (
+              <tr>
+                <td>
+                  <strong>Node Version</strong>
+                </td>
+                <td>{data.runtime.nodeVersion}</td>
+              </tr>
+            )
+          }
+          {
+            data.runtime.bunVersion && (
+              <tr>
+                <td>
+                  <strong>Bun Version</strong>
+                </td>
+                <td>{data.runtime.bunVersion}</td>
+              </tr>
+            )
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- Database Info Card -->
+<section class="card bg-base-200 shadow-lg mb-6" aria-labelledby="database-info-title">
+  <div class="card-body">
+    <h2 id="database-info-title" class="card-title flex items-center gap-2">
+      <Database class="h-5 w-5" />
+      Database Information
+    </h2>
+    <div class="overflow-x-auto">
+      <table class="table table-zebra">
+        <thead>
+          <tr>
+            <th>Property</th>
+            <th>Value</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Dialect</strong></td>
+            <td>
+              <span
+                class={`badge ${data.database.dialect === 'postgresql' ? 'badge-info' : 'badge-neutral'}`}
+              >
+                {data.database.dialect}
+              </span>
+            </td>
+          </tr>
+          <tr>
+            <td><strong>Connection Status</strong></td>
+            <td>
+              <span class={getConnectionBadgeClass(data.database.isConnected)}>
+                {data.database.isConnected ? 'Connected' : 'Disconnected'}
+              </span>
+            </td>
+          </tr>
+          <tr>
+            <td><strong>Database URL</strong></td>
+            <td>
+              <code class="text-xs bg-base-300 px-2 py-1 rounded block max-w-md overflow-x-auto">
+                {data.database.url}
+              </code>
+            </td>
+          </tr>
+          <tr>
+            <td><strong>Supabase</strong></td>
+            <td>
+              <span class={`badge ${data.database.isSupabase ? 'badge-success' : 'badge-ghost'}`}>
+                {data.database.isSupabase ? 'Yes' : 'No'}
+              </span>
+            </td>
+          </tr>
+          {
+            data.database.isSupabase && (
+              <>
+                <tr>
+                  <td>
+                    <strong>Transaction Pooler</strong>
+                  </td>
+                  <td>
+                    <span
+                      class={`badge ${data.database.isTransactionPooler ? 'badge-warning' : 'badge-ghost'}`}
+                    >
+                      {data.database.isTransactionPooler ? 'Yes' : 'No'}
+                    </span>
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <strong>Hyperdrive</strong>
+                  </td>
+                  <td>
+                    <span
+                      class={`badge ${data.database.isHyperdrive ? 'badge-info' : 'badge-ghost'}`}
+                    >
+                      {data.database.isHyperdrive ? 'Yes' : 'No'}
+                    </span>
+                  </td>
+                </tr>
+              </>
+            )
+          }
+          {
+            data.database.connectionPoolConfig && (
+              <tr>
+                <td>
+                  <strong>Pool Config</strong>
+                </td>
+                <td>
+                  Max: {data.database.connectionPoolConfig.max}, Idle:{' '}
+                  {data.database.connectionPoolConfig.idleTimeout}ms
+                </td>
+              </tr>
+            )
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- Cache Info Card -->
+<section class="card bg-base-200 shadow-lg mb-6" aria-labelledby="cache-info-title">
+  <div class="card-body">
+    <h2 id="cache-info-title" class="card-title flex items-center gap-2">
+      <Activity class="h-5 w-5" />
+      Cache Information
+    </h2>
+    <div class="overflow-x-auto">
+      <table class="table table-zebra">
+        <thead>
+          <tr>
+            <th>Property</th>
+            <th>Value</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Driver</strong></td>
+            <td>
+              <span class={`badge ${data.cache.isEnabled ? 'badge-primary' : 'badge-ghost'}`}>
+                {data.cache.driver}
+              </span>
+            </td>
+          </tr>
+          <tr>
+            <td><strong>Status</strong></td>
+            <td>
+              <span class={getCacheStatusBadgeClass(data.cache.status)}>
+                {data.cache.status}
+              </span>
+            </td>
+          </tr>
+          <tr>
+            <td><strong>Enabled</strong></td>
+            <td>
+              <span class={`badge ${data.cache.isEnabled ? 'badge-success' : 'badge-error'}`}>
+                {data.cache.isEnabled ? 'Yes' : 'No'}
+              </span>
+            </td>
+          </tr>
+          {
+            data.cache.config.maxSize && (
+              <tr>
+                <td>
+                  <strong>Max Size</strong>
+                </td>
+                <td>{data.cache.config.maxSize} items</td>
+              </tr>
+            )
+          }
+          {
+            data.cache.config.ttl && (
+              <tr>
+                <td>
+                  <strong>Default TTL</strong>
+                </td>
+                <td>{data.cache.config.ttl}s</td>
+              </tr>
+            )
+          }
+          {
+            data.cache.upstashConfig && (
+              <tr>
+                <td>
+                  <strong>Upstash URL</strong>
+                </td>
+                <td>
+                  <code class="text-xs bg-base-300 px-2 py-1 rounded block max-w-md overflow-x-auto">
+                    {data.cache.upstashConfig.url}
+                  </code>
+                </td>
+              </tr>
+            )
+          }
+          {
+            data.cache.lastError && (
+              <tr>
+                <td>
+                  <strong>Last Error</strong>
+                </td>
+                <td>
+                  <div class="alert alert-error py-2">
+                    <XCircle class="h-4 w-4 shrink-0" />
+                    <span class="text-xs">{data.cache.lastError}</span>
+                  </div>
+                </td>
+              </tr>
+            )
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- Environment Variables Table -->
+<section class="card bg-base-200 shadow-lg mb-6" aria-labelledby="env-vars-title">
+  <div class="card-body">
+    <h2 id="env-vars-title" class="card-title flex items-center gap-2">
+      <Settings class="h-5 w-5" />
+      Environment Variables
+    </h2>
+    <div class="overflow-x-auto">
+      <table class="table table-zebra table-sm">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Value</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {
+            data.environment.map((envVar) => (
+              <tr>
+                <td>
+                  <code class="text-xs">{envVar.name}</code>
+                </td>
+                <td>
+                  <code
+                    class={`text-xs bg-base-300 px-2 py-1 rounded block max-w-md overflow-x-auto ${envVar.isSensitive ? 'text-warning' : ''}`}
+                  >
+                    {envVar.value}
+                  </code>
+                </td>
+                <td>
+                  <span class={getEnvVarBadgeClass(envVar.isSet, envVar.isSensitive)}>
+                    {getEnvVarBadgeText(envVar.isSet, envVar.isSensitive)}
+                  </span>
+                </td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- Timestamp Footer -->
+<footer class="text-center text-sm text-base-content/60 py-4">
+  Last updated: <time datetime={data.timestamp}>{formatTimestamp(data.timestamp)}</time>
+</footer>
