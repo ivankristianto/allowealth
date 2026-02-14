@@ -11,6 +11,11 @@ Patterns learned from experience during development. These capture common mistak
 - ❌ **Default empty amounts to `'0'`** - silently zeros out budgets, corrupts user data
 - ❌ **Use `parseCurrency` without locale-aware decimal detection** - IDR format `Rp480.000,00` parsed as 48M instead of 480K
 
+### Pagination Inputs
+
+- ✅ **Clamp `parseInt()` results for pagination params** - `parseInt('abc')` returns `NaN`, propagates through offset calculations; use `Number.isFinite(n) && n > 0 ? n : 1`
+- ❌ **Pass raw `parseInt()` to DB `.offset()`/`.limit()`** - NaN/negative values cause undefined DB behavior
+
 ### CSV Parsing
 
 - ✅ **Parse CSV with proper parser, not `split(',')`** - handles quoted fields containing commas
@@ -59,6 +64,8 @@ const token = document.cookie.split('csrf_token=')[1]; // Breaks on base64
 ### Audit Queries
 
 - ❌ **Include `create` action in history/audit queries** - only `update`/`delete` count
+- ❌ **Use fake workspace IDs like `'system'` for audit log fallback** - `audit_logs.workspace_id` has FK constraint on `workspaces.id`; silently fails via `logAuditEvent` catch
+- ✅ **Guard audit logging with `if (workspaceId)` check** - skip audit for workspace-less users until schema migration makes `workspace_id` nullable
 
 ## Frontend Patterns
 
@@ -67,6 +74,7 @@ const token = document.cookie.split('csrf_token=')[1]; // Breaks on base64
 - ❌ **Use TypeScript types in client-side `<script>` tags** - Astro's inline scripts don't support TS annotations
 - ❌ **Access `user.attributes.property`** - User type has properties directly (`user.name`, `user.email`)
 - ❌ **Declare `Astro.locals` types in multiple files** - centralize in `src/env.d.ts` only
+- ❌ **Use inline `onclick` handlers in Astro templates** - blocked by production CSP nonce policy; use `data-*` attributes and attach handlers in `<script>` block instead
 - ❌ **Mix `define:vars`, `is:inline`, or `type="module"` with npm imports** - pass server values via `data-*` attributes instead
 - ✅ **Extract `data-action` from DOM, don't use `define:vars`** - NPM imports break with `define:vars/is:inline`
 
@@ -162,6 +170,11 @@ const token = document.cookie.split('csrf_token=')[1]; // Breaks on base64
 - ❌ **Forget cross-session context** - if user asked to remove something prior, don't leave it
 - ❌ **Delete tests without replacing coverage**
 - ❌ **Assume endpoints are "dead" because grep finds no client references**
+
+### Subagent Delegation
+
+- ✅ **Verify subagent commits with `git log` after dispatch** - subagents may report success but fail to commit
+- ✅ **Commit files manually if subagent skipped the commit step** - check `git status` after every subagent returns
 
 ## Error Messages
 
