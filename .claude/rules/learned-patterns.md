@@ -41,8 +41,8 @@ const token = document.cookie.split('csrf_token=')[1]; // Breaks on base64
 
 ### Transactions
 
-- ✅ **Use sync callbacks with better-sqlite3 transactions** - `db.transaction((tx) => { /* sync code */ })`
-- ❌ **Use `async/await` in better-sqlite3 transactions** - driver is synchronous, throws "cannot return a promise"
+- ✅ **Use `runTransaction()` for cross-dialect transactions** - handles SQLite/PostgreSQL differences
+- ❌ **Use raw `db.transaction()` with async callbacks on SQLite** - driver is synchronous, use `runTransaction()` instead
 - ✅ **Wrap multi-step DB operations in transactions** - ensures atomicity
 
 ### Query Optimization
@@ -99,6 +99,15 @@ const token = document.cookie.split('csrf_token=')[1]; // Breaks on base64
 
 - ✅ **Remove precomputed hashes when changing algorithms** - prevents seed mismatches
 - ✅ **Use dynamic dates for current month in seed data** - not hardcoded
+
+## Runtime Compatibility
+
+### Astro Dev Server Runtime
+
+- ✅ **Use `bun --bun` flag for dev/preview scripts** - Astro CLI has `#!/usr/bin/env node` shebang, runs under Node.js by default
+- ❌ **Assume `bun run dev` runs Astro under Bun** - the shebang overrides, causing Node.js execution
+- ❌ **Assume `createRequire` resolves `.ts` files in Vite SSR** - Node.js `createRequire` only resolves `.js`, `.json`, `.node`
+- ✅ **Verify actual runtime with `ps aux`** before assuming Bun APIs are available in dev server context
 
 ## Deployment Patterns
 
@@ -162,6 +171,19 @@ const token = document.cookie.split('csrf_token=')[1]; // Breaks on base64
 - ❌ **Forget cross-session context** - if user asked to remove something prior, don't leave it
 - ❌ **Delete tests without replacing coverage**
 - ❌ **Assume endpoints are "dead" because grep finds no client references**
+
+## Subprocess Patterns
+
+- ✅ **Use `execFileSync` with argv array for subprocess calls** - avoids shell injection and special character issues in parameters
+- ❌ **Use `execSync` with string interpolation** - `execSync(\`bun run \${script} \${param}\`)` breaks on shell metacharacters and is a command injection vector
+- ✅ **Use Bun subprocess for E2E helpers needing bun:sqlite** - Playwright runs in Node.js, shell out to Bun for SQLite access
+- ❌ **Over-engineer E2E test helpers with production-grade error handling** - YAGNI for test code; keep subprocess helpers simple
+
+## Dependency Removal
+
+- ✅ **Grep ALL file types when removing a dependency** - comments, docs, rules, and config files reference dependencies too
+- ✅ **Verify E2E failures are pre-existing before investigating** - `git stash` and test on prior code to isolate regressions
+- ❌ **Trust `reuseExistingServer: true` E2E results as proof of correctness** - a running dev server masks startup failures
 
 ## Error Messages
 

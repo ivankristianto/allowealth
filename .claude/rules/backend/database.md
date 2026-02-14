@@ -68,27 +68,24 @@ class BudgetService {
 
 ## Transaction Patterns
 
-### better-sqlite3 (Local Dev)
+### SQLite (Local Dev)
+
+SQLite with Drizzle uses `bun:sqlite`. Async transaction callbacks are not supported by the SQLite driver — use `runTransaction()` from `@/db` which handles dialect differences automatically.
 
 ```typescript
-// ✅ Correct: Sync callbacks
-db.transaction((tx) => {
-  tx.run('INSERT INTO budgets ...');
-  tx.run('UPDATE categories ...');
-  // Sync code only
-});
+// ✅ Correct: Use runTransaction() for cross-dialect compatibility
+import { runTransaction } from '@/db';
 
-// ❌ Wrong: async/await
-db.transaction(async (tx) => {
-  await tx.run('INSERT ...'); // Error: driver is synchronous
+await runTransaction(db, async (tx) => {
+  await tx.insert(budgets).values({ ... });
+  await tx.update(categories).set({ ... });
 });
 ```
 
 **Rules:**
 
-- ✅ **Use sync callbacks with better-sqlite3 transactions** - `db.transaction((tx) => { /* sync code */ })`
+- ✅ **Use `runTransaction()` for transactions** - handles SQLite/PostgreSQL differences
 - ✅ **Wrap multi-step DB operations in transactions** - ensures atomicity
-- ❌ **Use `async/await` in better-sqlite3 transactions** - driver is synchronous, throws "cannot return a promise"
 
 ### PostgreSQL (Production)
 

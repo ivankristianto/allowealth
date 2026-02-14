@@ -1,22 +1,13 @@
 /**
  * Database Driver Interface
  *
- * Abstract interface for SQLite database drivers that can work across
- * different JavaScript runtimes (Bun, Node.js).
- *
- * This abstraction layer allows the application to use Bun's native
- * bun:sqlite in API routes (which run in Bun) while falling back to
- * better-sqlite3 in middleware context (which runs in Node.js).
+ * Interface for the SQLite database driver using Bun's native bun:sqlite.
  *
  * @see https://bun.sh/docs/api/sqlite
- * @see https://github.com/WiseLibs/better-sqlite3
  */
 
 /**
- * Abstract database driver interface
- *
- * Both bun:sqlite and better-sqlite3 implement compatible APIs,
- * so this interface captures the shared functionality we need.
+ * Database driver interface for bun:sqlite
  */
 export interface DatabaseDriver {
   /**
@@ -99,30 +90,4 @@ export interface RunResult {
 
   /** Row ID of the last inserted row */
   lastInsertRowid: number | bigint;
-}
-
-/**
- * Runtime type detection
- */
-export type Runtime = 'bun' | 'node';
-
-/**
- * Detect the current JavaScript runtime
- * @returns The detected runtime type
- */
-export function detectRuntime(): Runtime {
-  // Check for Bun runtime
-  // @ts-ignore - Bun is not a standard global
-  if (typeof Bun !== 'undefined') {
-    return 'bun';
-  }
-
-  // Check for Node.js runtime
-  if (typeof process !== 'undefined' && process.versions?.node) {
-    return 'node';
-  }
-
-  // Default to Node.js for unknown runtimes
-  // (this is the safer default as Astro middleware runs in Node)
-  return 'node';
 }

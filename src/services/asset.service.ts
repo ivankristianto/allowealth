@@ -84,7 +84,7 @@ export class AssetService {
    * Create a new asset
    *
    * Note: Using sequential inserts instead of transaction because
-   * better-sqlite3 with Drizzle doesn't support async transaction callbacks.
+   * SQLite with Drizzle doesn't support async transaction callbacks.
    * Includes compensating transaction on failure to maintain data integrity.
    */
   async create(input: CreateAssetInput) {
@@ -293,7 +293,7 @@ export class AssetService {
    * Update asset balance and create history entry
    *
    * Note: Using sequential operations instead of transaction because
-   * better-sqlite3 with Drizzle doesn't support async transaction callbacks.
+   * SQLite with Drizzle doesn't support async transaction callbacks.
    * Includes compensating transaction on failure to maintain data integrity.
    */
   async updateBalance(id: string, workspaceId: string, input: UpdateAssetBalanceInput) {
