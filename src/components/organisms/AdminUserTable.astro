@@ -66,7 +66,7 @@ const { users } = Astro.props;
                     <a
                       href={`/admin/workspaces/${user.workspaceId}`}
                       class="link link-hover text-sm"
-                      onclick="event.stopPropagation()"
+                      data-workspace-link
                     >
                       {user.workspaceName}
                     </a>
@@ -102,7 +102,9 @@ const { users } = Astro.props;
         row.setAttribute('aria-label', 'View user details');
       }
 
-      row.addEventListener('click', () => {
+      row.addEventListener('click', (e: MouseEvent) => {
+        // Don't navigate if clicking a workspace link inside the row
+        if (e.target instanceof HTMLElement && e.target.closest('[data-workspace-link]')) return;
         if (href) window.location.href = href;
       });
 

@@ -20,7 +20,8 @@ const workspaceId = url.searchParams.get('workspaceId') || undefined;
 const sortBy =
   (url.searchParams.get('sortBy') as 'name' | 'email' | 'created_at' | 'role') || 'created_at';
 const sortOrder = (url.searchParams.get('sortOrder') as 'asc' | 'desc') || 'desc';
-const page = parseInt(url.searchParams.get('page') || '1', 10);
+const rawPage = parseInt(url.searchParams.get('page') || '1', 10);
+const page = Number.isFinite(rawPage) && rawPage > 0 ? rawPage : 1;
 const limit = 20;
 const offset = (page - 1) * limit;
 

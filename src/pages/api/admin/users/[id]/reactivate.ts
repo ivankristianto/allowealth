@@ -27,14 +27,19 @@ export const POST: APIRoute = async (context) => {
 
     await superAdminService.reactivateUser(userId);
 
-    await logAuditEvent({
-      workspaceId: user.workspaceId || 'system',
-      userId: auth.userId,
-      action: 'admin_reactivate',
-      entityType: 'user',
-      entityId: userId,
-      newValue: { name: user.name, email: user.email },
-    });
+    // Note: audit_logs.workspace_id has a FK constraint. For users without
+    // a workspace, the audit insert will silently fail (logAuditEvent catches).
+    // TODO: Make workspace_id nullable in audit_logs for system-level actions.
+    if (user.workspaceId) {
+      await logAuditEvent({
+        workspaceId: user.workspaceId,
+        userId: auth.userId,
+        action: 'admin_reactivate',
+        entityType: 'user',
+        entityId: userId,
+        newValue: { name: user.name, email: user.email },
+      });
+    }
 
     return successResponse({ message: 'User reactivated successfully' });
   } catch (error) {
