@@ -1,0 +1,124 @@
+---
+/**
+ * Admin User Table
+ *
+ * Displays user list in a table with name, email, role, workspace, status, and creation date.
+ * Each row links to the user details page.
+ * Uses the Card atom component for design system consistency.
+ */
+import Card from '@/components/atoms/Card.astro';
+import type { UserWithWorkspace } from '@/services/super-admin.service';
+import { Users } from '@lucide/astro';
+
+interface Props {
+  users: UserWithWorkspace[];
+}
+
+const { users } = Astro.props;
+---
+
+<Card padding="sm">
+  <div class="overflow-x-auto">
+    <table class="table table-sm">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Role</th>
+          <th>Workspace</th>
+          <th>Status</th>
+          <th>Created</th>
+        </tr>
+      </thead>
+      <tbody>
+        {
+          users.length === 0 ? (
+            <tr>
+              <td colspan="6" class="text-center py-8 text-base-content/60">
+                <Users
+                  size={32}
+                  class="stroke-current mx-auto mb-2 opacity-50"
+                  aria-hidden="true"
+                />
+                No users found
+              </td>
+            </tr>
+          ) : (
+            users.map((user) => (
+              <tr class="hover cursor-pointer" data-href={`/admin/users/${user.id}`}>
+                <td class="font-semibold">{user.name}</td>
+                <td class="text-base-content/70">{user.email}</td>
+                <td>
+                  <span
+                    class={`badge badge-sm ${
+                      user.role === 'super_admin'
+                        ? 'badge-error'
+                        : user.role === 'admin'
+                          ? 'badge-accent'
+                          : 'badge-ghost'
+                    }`}
+                  >
+                    {user.role}
+                  </span>
+                </td>
+                <td>
+                  {user.workspaceName ? (
+                    <a
+                      href={`/admin/workspaces/${user.workspaceId}`}
+                      class="link link-hover text-sm"
+                      onclick="event.stopPropagation()"
+                    >
+                      {user.workspaceName}
+                    </a>
+                  ) : (
+                    <span class="text-base-content/40">&mdash;</span>
+                  )}
+                </td>
+                <td>
+                  {user.deletedAt ? (
+                    <span class="badge badge-sm badge-warning">deactivated</span>
+                  ) : (
+                    <span class="badge badge-sm badge-success">active</span>
+                  )}
+                </td>
+                <td class="text-sm">{new Date(user.createdAt).toLocaleDateString()}</td>
+              </tr>
+            ))
+          )
+        }
+      </tbody>
+    </table>
+  </div>
+</Card>
+
+<script>
+  function initUserTable() {
+    const rows = Array.from(document.querySelectorAll<HTMLTableRowElement>('tr[data-href]'));
+    for (const row of rows) {
+      row.setAttribute('tabindex', '0');
+      row.setAttribute('role', 'link');
+      const href = row.dataset.href;
+      if (href) {
+        row.setAttribute('aria-label', 'View user details');
+      }
+
+      row.addEventListener('click', () => {
+        if (href) window.location.href = href;
+      });
+
+      row.addEventListener('keydown', (e: KeyboardEvent) => {
+        if ((e.key === 'Enter' || e.key === ' ') && href) {
+          e.preventDefault();
+          window.location.href = href;
+        }
+      });
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initUserTable);
+  } else {
+    initUserTable();
+  }
+  document.addEventListener('astro:page-load', initUserTable);
+</script>
