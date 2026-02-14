@@ -1,0 +1,31 @@
+RuntimeInfo:
+  type: object
+  description: Runtime environment information
+  properties:
+    environment:
+      type: string
+      enum: [development, production, test]
+      description: Current environment mode
+      example: production
+    runtime:
+      type: string
+      enum: [bun, node, workers]
+      description: JavaScript runtime platform
+      example: bun
+    region:
+      type: string
+      description: Cloudflare region (workers runtime only)
+      example: us-east-1
+    nodeVersion:
+      type: string
+      description: Node.js version (node runtime only)
+      example: v20.10.0
+    bunVersion:
+      type: string
+      description: Bun version (bun runtime only)
+      example: 1.0.29
+    workersCf:
+      type: string
+      description: Cloudflare metadata (workers runtime only)
+      example: ORD
+  required: [environment, runtime]

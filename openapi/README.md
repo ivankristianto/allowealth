@@ -19,7 +19,8 @@ openapi/
 │   ├── budget.yml                   # Budget overview and alerts endpoints
 │   ├── budgets.yml                  # Budget CRUD endpoints
 │   ├── forecast.yml                 # Forecast endpoints
-│   └── reports.yml                  # Reports endpoints
+│   ├── reports.yml                  # Reports endpoints
+│   └── admin-diagnostics.yml        # Admin diagnostics endpoint
 ├── schemas/                         # Reusable data model definitions
 │   ├── ApiErrorResponse.yml         # Base API response schema
 │   ├── ErrorResponse.yml            # Error response schema
@@ -77,6 +78,14 @@ openapi/
 │   ├── CategoryRemainingResponse.yml # Category remaining budget response
 │   ├── BudgetHistoryResponse.yml    # Budget history response
 │   └── ... (other budget schemas)
+│   │
+│   │ # Admin schemas
+│   ├── RuntimeInfo.yml             # Runtime environment information
+│   ├── DatabaseInfo.yml            # Database connection information
+│   ├── CacheInfo.yml               # Cache driver information
+│   ├── EnvironmentVariable.yml     # Environment variable (sanitized)
+│   ├── ConfigurationValidation.yml  # Configuration validation results
+│   └── DiagnosticsResponse.yml    # Admin diagnostics response
 ├── responses/                       # Reusable response definitions
 │   └── common.yml                   # Common HTTP responses (400, 401, 404, 500)
 └── parameters/                      # Reusable parameter definitions

@@ -1,0 +1,31 @@
+DiagnosticsResponse:
+  type: object
+  description: Diagnostics data response
+  properties:
+    success:
+      type: boolean
+      description: Request success status
+      example: true
+    data:
+      type: object
+      description: Diagnostics data
+      properties:
+        runtime:
+          $ref: './RuntimeInfo.yml#/RuntimeInfo'
+        database:
+          $ref: './DatabaseInfo.yml#/DatabaseInfo'
+        cache:
+          $ref: './CacheInfo.yml#/CacheInfo'
+        environment:
+          type: array
+          description: Environment variables
+          items:
+            $ref: './EnvironmentVariable.yml#/EnvironmentVariable'
+        configuration:
+          $ref: './ConfigurationValidation.yml#/ConfigurationValidation'
+        timestamp:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp of diagnostics collection
+          example: '2025-02-14T12:34:56.789Z'
+  required: [success, data]

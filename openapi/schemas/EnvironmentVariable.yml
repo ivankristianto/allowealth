@@ -1,0 +1,21 @@
+EnvironmentVariable:
+  type: object
+  description: Environment variable information (sanitized)
+  properties:
+    name:
+      type: string
+      description: Variable name
+      example: DATABASE_URL
+    value:
+      type: string
+      description: Variable value (masked if sensitive)
+      example: postgresql://db.xxx.supabase.co:5432/postgres?password=***
+    isSet:
+      type: boolean
+      description: Whether the variable is set
+      example: true
+    isSensitive:
+      type: boolean
+      description: Whether the variable contains sensitive data
+      example: true
+  required: [name, value, isSet, isSensitive]
