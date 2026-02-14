@@ -10,7 +10,7 @@
 
 ---
 
-### Task 1: Create Bun-based E2E database query script
+## Task 1: Create Bun-based E2E database query script
 
 The E2E email verification helper currently uses `better-sqlite3` directly because Playwright runs in Node.js. We replace it with a Bun subprocess that executes queries via `bun:sqlite`.
 
@@ -136,7 +136,7 @@ git commit -m "feat(e2e): add Bun-based DB query helper for Playwright tests"
 
 ---
 
-### Task 2: Refactor E2E email verification helper to use Bun subprocess
+## Task 2: Refactor E2E email verification helper to use Bun subprocess
 
 Replace direct `better-sqlite3` import with calls to the Bun subprocess script.
 
@@ -229,7 +229,7 @@ git commit -m "refactor(e2e): replace better-sqlite3 with Bun subprocess in emai
 
 ---
 
-### Task 3: Simplify DB driver layer — remove Node.js fallback
+## Task 3: Simplify DB driver layer — remove Node.js fallback
 
 Remove the `better-sqlite3` Node.js driver, runtime detection, and simplify `src/db/index.ts` to always use `bun:sqlite`.
 
@@ -448,7 +448,7 @@ git commit -m "refactor(db): remove better-sqlite3 Node.js fallback, use bun:sql
 
 ---
 
-### Task 4: Update integration tests
+## Task 4: Update integration tests
 
 Remove test scenarios that were testing the now-deleted Node.js fallback path.
 
@@ -485,7 +485,7 @@ git commit -m "test(db): remove Node.js fallback test scenarios from integration
 
 ---
 
-### Task 5: Remove better-sqlite3 packages and astro.config reference
+## Task 5: Remove better-sqlite3 packages and astro.config reference
 
 **Files:**
 
@@ -497,13 +497,13 @@ git commit -m "test(db): remove Node.js fallback test scenarios from integration
 
 Remove these two lines from `devDependencies` in `package.json`:
 
-```
+```json
     "@types/better-sqlite3": "^7.6.13",
 ```
 
 and:
 
-```
+```json
     "better-sqlite3": "^12.6.2",
 ```
 
@@ -540,7 +540,7 @@ git commit -m "chore: remove better-sqlite3 and @types/better-sqlite3 dependenci
 
 ---
 
-### Task 6: Update service comments referencing better-sqlite3
+## Task 6: Update service comments referencing better-sqlite3
 
 **Files:**
 
@@ -582,7 +582,7 @@ git commit -m "docs: update asset service comments to remove better-sqlite3 refe
 
 ---
 
-### Task 7: Update documentation and rules
+## Task 7: Update documentation and rules
 
 Update all docs/rules that reference `better-sqlite3`.
 
@@ -601,13 +601,13 @@ Update all docs/rules that reference `better-sqlite3`.
 
 At line 33, change the Database row in the ADR table from:
 
-```
+```text
 | **Database**            | `better-sqlite3` (shared code)           | `bun:sqlite` (middleware)                      | `rules/workflow.md`               |
 ```
 
 to:
 
-```
+```text
 | **Database**            | `bun:sqlite` (local dev)                 | Direct SQLite in middleware                    | `rules/workflow.md`               |
 ```
 
@@ -615,13 +615,13 @@ to:
 
 At line 46, change:
 
-```
+```text
 - `bun:sqlite` → Use `better-sqlite3` or database abstraction layer
 ```
 
 to:
 
-```
+```text
 - `bun:sqlite` → Only use in non-middleware code paths (API routes, CLI, services)
 ```
 
@@ -650,32 +650,32 @@ await runTransaction(db, async (tx) => {
 - ✅ **Use `runTransaction()` for transactions** - handles SQLite/PostgreSQL differences
 - ✅ **Wrap multi-step DB operations in transactions** - ensures atomicity
 
-```
+````text
 
 **Step 4: Update `.claude/rules/backend/deployment.md`**
 
 At line 18, change:
 
-```
+```text
 
 - ❌ `bun:sqlite` → Use `better-sqlite3` or database abstraction layer
 
-```
+````
 
 to:
 
-```
+```text
 
 - ❌ `bun:sqlite` → Only use in API routes, CLI, or non-middleware contexts
 
-````
+```
 
 At lines 35-36, change the code example:
 
 ```typescript
 // ✅ Middleware: Workers-compatible imports only
 import Database from 'better-sqlite3'; // Works in both runtimes
-````
+```
 
 to:
 
@@ -688,14 +688,14 @@ to:
 
 At lines 44-45, change:
 
-```
+```text
 - ✅ **Use sync callbacks with better-sqlite3 transactions** - `db.transaction((tx) => { /* sync code */ })`
 - ❌ **Use `async/await` in better-sqlite3 transactions** - driver is synchronous, throws "cannot return a promise"
 ```
 
 to:
 
-```
+```text
 - ✅ **Use `runTransaction()` for cross-dialect transactions** - handles SQLite/PostgreSQL differences
 - ❌ **Use raw `db.transaction()` with async callbacks on SQLite** - driver is synchronous, use `runTransaction()` instead
 ```
@@ -704,13 +704,13 @@ to:
 
 At line 23, change:
 
-```
+```text
 - Local: SQLite via `better-sqlite3`
 ```
 
 to:
 
-```
+```text
 - Local: SQLite via `bun:sqlite`
 ```
 
@@ -718,31 +718,31 @@ to:
 
 At line 13, change:
 
-```
+```text
 - **Local development (Bun):** SQLite via `bun:sqlite` or `better-sqlite3`
 ```
 
 to:
 
-```
+```text
 - **Local development (Bun):** SQLite via `bun:sqlite`
 ```
 
 At line 28, change:
 
-```
+```text
 anything else (file path)     →  SQLite (bun:sqlite or better-sqlite3 + Drizzle)
 ```
 
 to:
 
-```
+```text
 anything else (file path)     →  SQLite (bun:sqlite + Drizzle)
 ```
 
 At line 37, remove:
 
-```
+```text
 - `src/db/drivers/node.ts` — better-sqlite3 driver (Node.js fallback)
 ```
 
@@ -750,13 +750,13 @@ At line 37, remove:
 
 At line 46, change:
 
-```
+```text
 - `bun:sqlite` → Use `better-sqlite3` or database abstraction layer
 ```
 
 to:
 
-```
+```text
 - `bun:sqlite` → Only use in API routes, CLI, or non-middleware contexts
 ```
 
@@ -769,7 +769,7 @@ git commit -m "docs: update all references from better-sqlite3 to bun:sqlite"
 
 ---
 
-### Task 8: Final verification
+## Task 8: Final verification
 
 Run all quality gates and verify no better-sqlite3 references remain.
 

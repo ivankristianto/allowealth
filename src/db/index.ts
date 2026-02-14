@@ -224,6 +224,7 @@ function getRequire() {
  */
 function createDatabase(): Database {
   const config = getDatabaseConfig();
+  let driver: (DatabaseDriver & { _raw: unknown }) | null = null;
 
   try {
     // PostgreSQL path - used in production (Cloudflare Workers)
@@ -235,13 +236,20 @@ function createDatabase(): Database {
     // createBunDriver is statically imported so Vite bundles it correctly.
     // bun:sqlite is externalized in astro.config.ts so it remains a runtime require.
     // For edge environments (Cloudflare Workers), configure DATABASE_URL to use PostgreSQL
-    const driver: DatabaseDriver & { _raw: unknown } = createBunDriver(config.url);
+    driver = createBunDriver(config.url);
     const dynamicRequire = getRequire();
     const { drizzle } = dynamicRequire('drizzle-orm/bun-sqlite');
 
     applyPragmas(driver);
     return drizzle(driver._raw, { schema: sqliteSchema });
   } catch (error) {
+    if (driver) {
+      try {
+        driver.close();
+      } catch {
+        // ignore cleanup errors
+      }
+    }
     const message = error instanceof Error ? error.message : String(error);
     throw new Error(
       `Failed to create database connection (dialect: ${config.dialect}): ${message}`
