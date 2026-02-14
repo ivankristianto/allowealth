@@ -402,17 +402,19 @@ export async function login(
       throw err;
     }
 
-    // Check if workspace is active
-    const workspace = await db.query.workspaces.findFirst({
-      where: eq(schema.workspaces.id, user.workspace_id),
-    });
-
-    if (!workspace || workspace.status !== 'active') {
-      log.warn('Login attempt with inactive workspace', {
-        userId: user.id,
-        workspaceId: user.workspace_id,
+    // Check if workspace is active (skip for super_admin who have no workspace)
+    if (user.role !== 'super_admin') {
+      const workspace = await db.query.workspaces.findFirst({
+        where: eq(schema.workspaces.id, user.workspace_id),
       });
-      throw new AuthError(AUTH_ERRORS.WORKSPACE_INACTIVE, 'Workspace inactive');
+
+      if (!workspace || workspace.status !== 'active') {
+        log.warn('Login attempt with inactive workspace', {
+          userId: user.id,
+          workspaceId: user.workspace_id,
+        });
+        throw new AuthError(AUTH_ERRORS.WORKSPACE_INACTIVE, 'Workspace inactive');
+      }
     }
 
     // Check if user has been soft-deleted
@@ -429,7 +431,7 @@ export async function login(
       email: user.email,
       name: user.name,
       workspaceId: user.workspace_id,
-      role: user.role as 'admin' | 'member',
+      role: user.role as 'admin' | 'member' | 'super_admin',
       avatarUrl: user.avatar_url ?? null,
       deletedAt: user.deleted_at,
     };
@@ -550,12 +552,14 @@ export async function loginOrRegisterWithOAuth(profile: OAuthProfile): Promise<O
         throw new AuthError(AUTH_ERRORS.INVALID_CREDENTIALS, 'Account not found or deleted');
       }
 
-      // Check workspace is active
-      const workspace = await db.query.workspaces.findFirst({
-        where: eq(schema.workspaces.id, user.workspace_id),
-      });
-      if (!workspace || workspace.status !== 'active') {
-        throw new AuthError(AUTH_ERRORS.WORKSPACE_INACTIVE, 'Workspace inactive');
+      // Check workspace is active (skip for super_admin who have no workspace)
+      if (user.role !== 'super_admin') {
+        const workspace = await db.query.workspaces.findFirst({
+          where: eq(schema.workspaces.id, user.workspace_id),
+        });
+        if (!workspace || workspace.status !== 'active') {
+          throw new AuthError(AUTH_ERRORS.WORKSPACE_INACTIVE, 'Workspace inactive');
+        }
       }
 
       const session = await auth.createSession(user.id, {});
@@ -564,7 +568,7 @@ export async function loginOrRegisterWithOAuth(profile: OAuthProfile): Promise<O
         email: user.email,
         name: user.name,
         workspaceId: user.workspace_id,
-        role: user.role as 'admin' | 'member',
+        role: user.role as 'admin' | 'member' | 'super_admin',
         avatarUrl: user.avatar_url ?? null,
         deletedAt: user.deleted_at,
       };
@@ -651,7 +655,7 @@ export async function loginOrRegisterWithOAuth(profile: OAuthProfile): Promise<O
       email: newUser.email,
       name: newUser.name,
       workspaceId: newUser.workspace_id,
-      role: newUser.role as 'admin' | 'member',
+      role: newUser.role as 'admin' | 'member' | 'super_admin',
       avatarUrl: newUser.avatar_url ?? null,
       deletedAt: newUser.deleted_at,
     };
@@ -685,16 +689,18 @@ export async function confirmAccountLink(
       throw new AuthError(AUTH_ERRORS.INVALID_CREDENTIALS, 'Account not found or deleted');
     }
 
-    // Check workspace is active before creating session
-    const workspace = await db.query.workspaces.findFirst({
-      where: eq(schema.workspaces.id, existingUser.workspace_id),
-    });
-    if (!workspace || workspace.status !== 'active') {
-      log.warn('Account link attempt with inactive workspace', {
-        userId,
-        workspaceId: existingUser.workspace_id,
+    // Check workspace is active before creating session (skip for super_admin)
+    if (existingUser.role !== 'super_admin') {
+      const workspace = await db.query.workspaces.findFirst({
+        where: eq(schema.workspaces.id, existingUser.workspace_id),
       });
-      throw new AuthError(AUTH_ERRORS.WORKSPACE_INACTIVE, 'Workspace inactive');
+      if (!workspace || workspace.status !== 'active') {
+        log.warn('Account link attempt with inactive workspace', {
+          userId,
+          workspaceId: existingUser.workspace_id,
+        });
+        throw new AuthError(AUTH_ERRORS.WORKSPACE_INACTIVE, 'Workspace inactive');
+      }
     }
 
     const oauthAccountId = nanoid();
@@ -735,7 +741,7 @@ export async function confirmAccountLink(
       email: updatedUser.email,
       name: updatedUser.name,
       workspaceId: updatedUser.workspace_id,
-      role: updatedUser.role as 'admin' | 'member',
+      role: updatedUser.role as 'admin' | 'member' | 'super_admin',
       avatarUrl: updatedUser.avatar_url ?? null,
       deletedAt: updatedUser.deleted_at,
     };
