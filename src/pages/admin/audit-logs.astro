@@ -7,6 +7,7 @@
  */
 
 import AdminLayout from '@/layouts/AdminLayout.astro';
+import Card from '@/components/atoms/Card.astro';
 import { db, auditLogs, users } from '@/db';
 import { desc, eq, sql } from 'drizzle-orm';
 import { ClipboardList } from '@lucide/astro';
@@ -46,78 +47,89 @@ const totalPages = Math.ceil(total / limit);
   <div class="max-w-7xl mx-auto space-y-6" data-testid="admin-audit-logs">
     <p class="text-sm text-base-content/60">{total} log entries</p>
 
-    <div class="overflow-x-auto">
-      <table class="table table-sm">
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>User</th>
-            <th>Action</th>
-            <th>Entity</th>
-            <th>Workspace</th>
-          </tr>
-        </thead>
-        <tbody>
-          {
-            logs.length === 0 ? (
+    <section aria-label="Audit log entries">
+      <Card padding="sm">
+        <div class="overflow-x-auto">
+          <table class="table table-sm">
+            <thead>
               <tr>
-                <td colspan="5" class="text-center py-8 text-base-content/60">
-                  <ClipboardList size={32} class="stroke-current mx-auto mb-2 opacity-50" />
-                  No audit logs found
-                </td>
+                <th>Date</th>
+                <th>User</th>
+                <th>Action</th>
+                <th>Entity</th>
+                <th>Workspace</th>
               </tr>
-            ) : (
-              logs.map(
-                (log: {
-                  id: string;
-                  action: string;
-                  entityType: string;
-                  entityId: string | null;
-                  workspaceId: string;
-                  createdAt: Date | number;
-                  userId: string;
-                  userName: string | null;
-                  userEmail: string | null;
-                }) => (
+            </thead>
+            <tbody>
+              {
+                logs.length === 0 ? (
                   <tr>
-                    <td class="text-sm">{new Date(log.createdAt).toLocaleString()}</td>
-                    <td class="text-sm">{log.userName || log.userId}</td>
-                    <td>
-                      <span class="badge badge-ghost badge-sm">{log.action}</span>
-                    </td>
-                    <td class="text-sm">
-                      {log.entityType}
-                      {log.entityId && (
-                        <span class="text-base-content/50 ml-1">
-                          ({log.entityId.slice(0, 8)}...)
-                        </span>
-                      )}
-                    </td>
-                    <td class="text-sm font-mono text-base-content/50">
-                      {log.workspaceId ? `${log.workspaceId.slice(0, 8)}...` : '-'}
+                    <td colspan="5" class="text-center py-8 text-base-content/60">
+                      <ClipboardList
+                        size={32}
+                        class="stroke-current mx-auto mb-2 opacity-50"
+                        aria-hidden="true"
+                      />
+                      No audit logs found
                     </td>
                   </tr>
+                ) : (
+                  logs.map(
+                    (log: {
+                      id: string;
+                      action: string;
+                      entityType: string;
+                      entityId: string | null;
+                      workspaceId: string;
+                      createdAt: Date | number;
+                      userId: string;
+                      userName: string | null;
+                      userEmail: string | null;
+                    }) => (
+                      <tr>
+                        <td class="text-sm">{new Date(log.createdAt).toLocaleString()}</td>
+                        <td class="text-sm">{log.userName || log.userId}</td>
+                        <td>
+                          <span class="badge badge-ghost badge-sm">{log.action}</span>
+                        </td>
+                        <td class="text-sm">
+                          {log.entityType}
+                          {log.entityId && (
+                            <span class="text-base-content/50 ml-1">
+                              ({log.entityId.slice(0, 8)}...)
+                            </span>
+                          )}
+                        </td>
+                        <td class="text-sm font-mono text-base-content/50">
+                          {log.workspaceId ? `${log.workspaceId.slice(0, 8)}...` : '-'}
+                        </td>
+                      </tr>
+                    )
+                  )
                 )
-              )
-            )
-          }
-        </tbody>
-      </table>
-    </div>
+              }
+            </tbody>
+          </table>
+        </div>
+      </Card>
+    </section>
 
     {/* Pagination */}
     {
       totalPages > 1 && (
-        <div class="join flex justify-center">
-          {Array.from({ length: Math.min(totalPages, 10) }, (_, i) => i + 1).map((p) => (
-            <a
-              href={`/admin/audit-logs?page=${p}`}
-              class:list={['join-item btn btn-sm', { 'btn-active': p === page }]}
-            >
-              {p}
-            </a>
-          ))}
-        </div>
+        <nav aria-label="Pagination">
+          <div class="join flex justify-center">
+            {Array.from({ length: Math.min(totalPages, 10) }, (_, i) => i + 1).map((p) => (
+              <a
+                href={`/admin/audit-logs?page=${p}`}
+                class:list={['join-item btn btn-sm', { 'btn-active': p === page }]}
+                aria-current={p === page ? 'page' : undefined}
+              >
+                {p}
+              </a>
+            ))}
+          </div>
+        </nav>
       )
     }
   </div>

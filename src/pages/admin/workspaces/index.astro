@@ -6,6 +6,7 @@
  * Super admin only.
  */
 import AdminLayout from '@/layouts/AdminLayout.astro';
+import Card from '@/components/atoms/Card.astro';
 import AdminWorkspaceTable from '@/components/organisms/AdminWorkspaceTable.astro';
 import { superAdminService } from '@/services';
 import { Search } from '@lucide/astro';
@@ -36,46 +37,53 @@ const totalPages = Math.ceil(result.total / limit);
 <AdminLayout title="Workspaces" currentPath="/admin/workspaces" subtitle="All Workspaces">
   <div class="max-w-7xl mx-auto space-y-6" data-testid="admin-workspaces">
     <!-- Search and filters -->
-    <div class="flex flex-col sm:flex-row gap-4">
-      <form method="GET" class="flex-1 flex gap-2">
-        <label class="input input-bordered flex items-center gap-2 flex-1">
-          <Search size={16} class="stroke-current opacity-50" />
-          <input
-            type="text"
-            name="search"
-            value={search}
-            placeholder="Search workspaces..."
-            class="grow"
-          />
-        </label>
-        <select name="status" class="select select-bordered">
-          <option value="">All Status</option>
-          <option value="active" selected={status === 'active'}>Active</option>
-          <option value="inactive" selected={status === 'inactive'}>Inactive</option>
-        </select>
-        <button type="submit" class="btn btn-accent">Search</button>
-      </form>
-    </div>
+    <section aria-label="Search and filters">
+      <Card compact padding="sm">
+        <form method="GET" class="flex flex-col sm:flex-row gap-3">
+          <label class="input input-bordered flex items-center gap-2 flex-1">
+            <Search size={16} class="stroke-current opacity-50" aria-hidden="true" />
+            <input
+              type="text"
+              name="search"
+              value={search}
+              placeholder="Search workspaces..."
+              class="grow"
+            />
+          </label>
+          <select name="status" class="select select-bordered">
+            <option value="">All Status</option>
+            <option value="active" selected={status === 'active'}>Active</option>
+            <option value="inactive" selected={status === 'inactive'}>Inactive</option>
+          </select>
+          <button type="submit" class="btn btn-accent">Search</button>
+        </form>
+      </Card>
+    </section>
 
     <!-- Results count -->
     <p class="text-sm text-base-content/60">{result.total} workspace(s) found</p>
 
     <!-- Table -->
-    <AdminWorkspaceTable workspaces={result.workspaces} />
+    <section aria-label="Workspace list">
+      <AdminWorkspaceTable workspaces={result.workspaces} />
+    </section>
 
     <!-- Pagination -->
     {
       totalPages > 1 && (
-        <div class="join flex justify-center">
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-            <a
-              href={`/admin/workspaces?page=${p}${search ? `&search=${search}` : ''}${status ? `&status=${status}` : ''}&sortBy=${sortBy}&sortOrder=${sortOrder}`}
-              class={`join-item btn btn-sm ${p === page ? 'btn-active' : ''}`}
-            >
-              {p}
-            </a>
-          ))}
-        </div>
+        <nav aria-label="Pagination">
+          <div class="join flex justify-center">
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+              <a
+                href={`/admin/workspaces?page=${p}${search ? `&search=${search}` : ''}${status ? `&status=${status}` : ''}&sortBy=${sortBy}&sortOrder=${sortOrder}`}
+                class:list={['join-item btn btn-sm', { 'btn-active': p === page }]}
+                aria-current={p === page ? 'page' : undefined}
+              >
+                {p}
+              </a>
+            ))}
+          </div>
+        </nav>
       )
     }
   </div>

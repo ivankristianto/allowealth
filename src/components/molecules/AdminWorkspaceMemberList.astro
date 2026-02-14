@@ -3,7 +3,9 @@
  * Admin Workspace Member List
  *
  * Read-only member list showing name, email, role, and join date.
+ * Uses the Card atom component for design system consistency.
  */
+import Card from '@/components/atoms/Card.astro';
 import { User, Crown } from '@lucide/astro';
 
 interface Member {
@@ -21,9 +23,9 @@ interface Props {
 const { members } = Astro.props;
 ---
 
-<div class="card bg-base-100 shadow-sm">
-  <div class="card-body">
-    <h3 class="card-title text-lg">Members ({members.length})</h3>
+<section aria-label="Workspace members">
+  <Card padding="md">
+    <h3 class="text-lg font-bold mb-4">Members ({members.length})</h3>
     {
       members.length === 0 ? (
         <p class="text-base-content/60">No members</p>
@@ -46,11 +48,11 @@ const { members } = Astro.props;
                   <td>
                     {member.role === 'admin' ? (
                       <span class="badge badge-accent badge-sm gap-1">
-                        <Crown size={12} /> Admin
+                        <Crown size={12} aria-hidden="true" /> Admin
                       </span>
                     ) : (
                       <span class="badge badge-ghost badge-sm gap-1">
-                        <User size={12} /> Member
+                        <User size={12} aria-hidden="true" /> Member
                       </span>
                     )}
                   </td>
@@ -64,5 +66,5 @@ const { members } = Astro.props;
         </div>
       )
     }
-  </div>
-</div>
+  </Card>
+</section>

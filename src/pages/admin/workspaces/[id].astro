@@ -6,11 +6,13 @@
  * Provides archive and delete actions for super admins.
  */
 import AdminLayout from '@/layouts/AdminLayout.astro';
+import Card from '@/components/atoms/Card.astro';
 import AdminWorkspaceStats from '@/components/molecules/AdminWorkspaceStats.astro';
 import AdminWorkspaceMemberList from '@/components/molecules/AdminWorkspaceMemberList.astro';
 import { superAdminService } from '@/services';
 import type { WorkspaceStatsDetailed } from '@/services/super-admin.service';
 import { SuperAdminServiceError } from '@/services/service-errors';
+import { TriangleAlert } from '@lucide/astro';
 
 const workspaceId = Astro.params.id;
 if (!workspaceId) return Astro.redirect('/admin/workspaces');
@@ -29,13 +31,15 @@ try {
 <AdminLayout title={workspace.name} currentPath="/admin/workspaces" subtitle="Workspace Details">
   <div class="max-w-7xl mx-auto space-y-6" data-testid="admin-workspace-details">
     <!-- Breadcrumb -->
-    <div class="breadcrumbs text-sm">
-      <ul>
-        <li><a href="/admin">Admin</a></li>
-        <li><a href="/admin/workspaces">Workspaces</a></li>
-        <li>{workspace.name}</li>
-      </ul>
-    </div>
+    <nav aria-label="Breadcrumb">
+      <div class="breadcrumbs text-sm">
+        <ul>
+          <li><a href="/admin">Admin</a></li>
+          <li><a href="/admin/workspaces">Workspaces</a></li>
+          <li>{workspace.name}</li>
+        </ul>
+      </div>
+    </nav>
 
     <!-- Header with actions -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -84,9 +88,9 @@ try {
     <!-- Settings -->
     {
       Object.keys(workspace.settings).length > 0 && (
-        <div class="card bg-base-100 shadow-sm">
-          <div class="card-body">
-            <h3 class="card-title text-lg">Settings</h3>
+        <section aria-label="Workspace settings">
+          <Card padding="md">
+            <h3 class="text-lg font-bold mb-4">Settings</h3>
             <div class="overflow-x-auto">
               <table class="table table-sm">
                 <thead>
@@ -105,8 +109,8 @@ try {
                 </tbody>
               </table>
             </div>
-          </div>
-        </div>
+          </Card>
+        </section>
       )
     }
   </div>
@@ -114,20 +118,31 @@ try {
   <!-- Delete Confirmation Modal -->
   <dialog id="delete-workspace-modal" class="modal" data-delete-modal>
     <div class="modal-box max-w-md">
-      <h3 class="font-bold text-lg text-error">Delete Workspace</h3>
-      <p class="py-2 text-base-content/70">
-        This action will permanently delete the workspace and all its data including members,
-        transactions, assets, budgets, and categories. This cannot be undone.
-      </p>
-      <p class="py-2 font-semibold">
-        Type <span class="text-error" data-workspace-name-display>{workspace.name}</span> to confirm:
-      </p>
-      <input
-        type="text"
-        class="input input-bordered w-full"
-        data-confirm-name-input
-        placeholder="Type workspace name..."
-      />
+      <div class="flex items-start gap-4">
+        <div
+          class="flex-shrink-0 w-10 h-10 rounded-full bg-error/10 flex items-center justify-center"
+        >
+          <TriangleAlert size={20} class="text-error" aria-hidden="true" />
+        </div>
+        <div class="flex-1">
+          <h3 class="font-bold text-lg">Delete Workspace</h3>
+          <p class="py-2 text-base-content/70">
+            This action will permanently delete the workspace and all its data including members,
+            transactions, assets, budgets, and categories. This cannot be undone.
+          </p>
+        </div>
+      </div>
+      <div class="mt-4">
+        <p class="font-semibold mb-2">
+          Type <span class="text-error" data-workspace-name-display>{workspace.name}</span> to confirm:
+        </p>
+        <input
+          type="text"
+          class="input input-bordered w-full"
+          data-confirm-name-input
+          placeholder="Type workspace name..."
+        />
+      </div>
       <div class="modal-action">
         <form method="dialog">
           <button class="btn btn-ghost">Cancel</button>
