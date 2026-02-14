@@ -225,7 +225,7 @@ const sortedGroups = Object.entries(assetsByType)
 <ProtectedLayout title="Assets" currentPath={currentPath} subtitle={currentMonthDisplay}>
   <div
     slot="header"
-    class="flex w-full items-center gap-1 py-1 sm:gap-2 lg:w-auto"
+    class="relative flex w-full items-center justify-center py-1 sm:gap-2 lg:w-auto lg:justify-start"
     data-asset-header-controls
   >
     <PeriodicSelector
@@ -240,7 +240,7 @@ const sortedGroups = Object.entries(assetsByType)
       !isViewingCurrentMonth && (
         <a
           href={currentMonthHref}
-          class="btn btn-sm bg-base-100 border border-base-300 hover:border-accent/30 hover:text-accent rounded-xl transition-all gap-1 ml-1"
+          class="btn btn-sm bg-base-100 border border-base-300 hover:border-accent/30 hover:text-accent rounded-xl transition-all gap-1 absolute right-0 lg:static lg:ml-1"
           aria-label="Go to current month"
           data-testid="asset-current-month-btn"
         >

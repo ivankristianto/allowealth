@@ -239,6 +239,33 @@ body {
   background: var(--glass-bg-dark);
 }
 
+/* Mobile bottom navigation utilities */
+.mobile-nav-surface {
+  background: var(--mobile-nav-surface-bg);
+  box-shadow: var(--mobile-nav-surface-shadow);
+}
+
+.mobile-nav-top-accent {
+  background-color: var(--mobile-nav-accent-line);
+}
+
+.mobile-nav-fab-halo {
+  background: var(--mobile-nav-fab-halo);
+}
+
+.mobile-nav-fab-surface {
+  box-shadow: var(--mobile-nav-fab-shadow);
+}
+
+.mobile-nav-fab-offset {
+  position: relative;
+  top: var(--mobile-nav-fab-offset-y);
+}
+
+.pb-safe-bottom-nav {
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}
+
 /* Badge text size - accessibility-adjusted (12px minimum) */
 .text-badge {
   font-size: var(--badge-font-size);
