@@ -398,9 +398,20 @@ const sortedGroups = Object.entries(assetsByType)
         if (!period || !/^\d{4}-\d{2}$/.test(period)) return;
 
         const [year, month] = period.split('-');
+        const periodYear = parseInt(year, 10);
+        const periodMonth = parseInt(month, 10);
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        const currentMonth = now.getMonth() + 1;
         const nextUrl = new URL(window.location.href);
-        nextUrl.searchParams.set('year', year);
-        nextUrl.searchParams.set('month', String(parseInt(month, 10)));
+
+        if (periodYear === currentYear && periodMonth === currentMonth) {
+          nextUrl.searchParams.delete('year');
+          nextUrl.searchParams.delete('month');
+        } else {
+          nextUrl.searchParams.set('year', String(periodYear));
+          nextUrl.searchParams.set('month', String(periodMonth));
+        }
 
         if (nextUrl.toString() !== window.location.href) {
           window.location.assign(nextUrl.toString());

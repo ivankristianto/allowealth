@@ -113,6 +113,11 @@ const availableMonthsWithLabels = trackPhaseSync('extractAvailableMonths', perf,
   extractAvailableMonths(allUserTransactions)
 );
 const availableMonths = availableMonthsWithLabels.map((m) => m.key);
+const compareMonthKeys = (monthA: string, monthB: string) => {
+  const [aMonth, aYear] = monthA.split('-').map(Number);
+  const [bMonth, bYear] = monthB.split('-').map(Number);
+  return aYear !== bYear ? aYear - bYear : aMonth - bMonth;
+};
 
 // Current month key - always use today's month as the default
 const currentMonthKey = todayMonthKey;
@@ -123,6 +128,18 @@ if (!availableMonthsWithLabels.some((m) => m.key === todayMonthKey)) {
   availableMonthsWithLabels.push({ key: todayMonthKey, label: todayLabel });
   availableMonths.push(todayMonthKey);
 }
+
+// Ensure the active month is always represented in selector/state options.
+if (!availableMonthsWithLabels.some((m) => m.key === effectiveMonth)) {
+  availableMonthsWithLabels.push({
+    key: effectiveMonth,
+    label: formatMonthKey(effectiveMonth),
+  });
+  availableMonths.push(effectiveMonth);
+}
+
+availableMonthsWithLabels.sort((a, b) => compareMonthKeys(a.key, b.key));
+availableMonths.sort(compareMonthKeys);
 
 // Calculate summary from ALL transactions in the selected month (not filtered)
 // Summary only changes when month changes, not when filters change
@@ -211,7 +228,7 @@ perf?.recordMilestone('preRender.elapsed');
   <PeriodNavigator
     slot="header"
     options={periodOptions}
-    selected={selectedMonth || currentMonthKey}
+    selected={effectiveMonth}
     ariaLabel="Select month"
     inputName="month"
     className="mx-auto lg:mx-0"
@@ -261,7 +278,7 @@ perf?.recordMilestone('preRender.elapsed');
         categoryIds={categoryIds}
         categories={categories}
         showCategoryFilter={true}
-        selectedMonth={selectedMonth || currentMonthKey}
+        selectedMonth={effectiveMonth}
         currentMonth={currentMonthKey}
         baseUrl={baseUrl}
       />
