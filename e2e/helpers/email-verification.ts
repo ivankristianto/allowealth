@@ -1,11 +1,11 @@
 /**
  * Email Verification E2E Test Helpers
  *
- * Provides direct database access to the E2E test database
- * to retrieve verification tokens for testing the full flow.
+ * Provides database access to the E2E test database via a Bun subprocess.
+ * Playwright runs in Node.js, so we shell out to Bun for SQLite access.
  */
 
-import Database from 'better-sqlite3';
+import { execSync } from 'child_process';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -13,6 +13,17 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const PROJECT_ROOT = path.resolve(__dirname, '../..');
 const E2E_DB_PATH = path.join(PROJECT_ROOT, 'db', '.e2e.db');
+const DB_QUERY_SCRIPT = path.join(__dirname, 'db-query.ts');
+
+/**
+ * Run a database query via Bun subprocess
+ */
+function runDbQuery(queryType: string, email: string): string {
+  return execSync(`bun run "${DB_QUERY_SCRIPT}" "${E2E_DB_PATH}" ${queryType} "${email}"`, {
+    encoding: 'utf-8',
+    cwd: PROJECT_ROOT,
+  }).trim();
+}
 
 /**
  * Get the latest verification token for a user by email
@@ -20,23 +31,8 @@ const E2E_DB_PATH = path.join(PROJECT_ROOT, 'db', '.e2e.db');
  * @returns Verification token string or null
  */
 export function getVerificationToken(email: string): string | null {
-  const db = new Database(E2E_DB_PATH, { readonly: true });
-  try {
-    const row = db
-      .prepare(
-        `SELECT evt.token
-         FROM email_verification_tokens evt
-         JOIN users u ON evt.user_id = u.id
-         WHERE u.email = ?
-         ORDER BY evt.created_at DESC
-         LIMIT 1`
-      )
-      .get(email.toLowerCase()) as { token: string } | undefined;
-
-    return row?.token ?? null;
-  } finally {
-    db.close();
-  }
+  const result = JSON.parse(runDbQuery('get-token', email));
+  return result.token ?? null;
 }
 
 /**
@@ -44,17 +40,7 @@ export function getVerificationToken(email: string): string | null {
  * @param email - User email address
  */
 export function expireVerificationToken(email: string): void {
-  const db = new Database(E2E_DB_PATH);
-  try {
-    const pastTime = Math.floor((Date.now() - 25 * 60 * 60 * 1000) / 1000); // 25 hours ago as unix timestamp
-    db.prepare(
-      `UPDATE email_verification_tokens
-       SET expires_at = ?
-       WHERE user_id IN (SELECT id FROM users WHERE email = ?)`
-    ).run(pastTime, email.toLowerCase());
-  } finally {
-    db.close();
-  }
+  runDbQuery('expire-token', email);
 }
 
 /**
@@ -63,16 +49,8 @@ export function expireVerificationToken(email: string): void {
  * @returns True if email is verified
  */
 export function isUserVerified(email: string): boolean {
-  const db = new Database(E2E_DB_PATH, { readonly: true });
-  try {
-    const row = db
-      .prepare('SELECT email_verified_at FROM users WHERE email = ?')
-      .get(email.toLowerCase()) as { email_verified_at: number | null } | undefined;
-
-    return row?.email_verified_at != null;
-  } finally {
-    db.close();
-  }
+  const result = JSON.parse(runDbQuery('is-verified', email));
+  return result.verified;
 }
 
 /**
@@ -81,19 +59,6 @@ export function isUserVerified(email: string): boolean {
  * @returns Workspace status or null
  */
 export function getWorkspaceStatus(email: string): string | null {
-  const db = new Database(E2E_DB_PATH, { readonly: true });
-  try {
-    const row = db
-      .prepare(
-        `SELECT w.status
-         FROM workspaces w
-         JOIN users u ON u.workspace_id = w.id
-         WHERE u.email = ?`
-      )
-      .get(email.toLowerCase()) as { status: string } | undefined;
-
-    return row?.status ?? null;
-  } finally {
-    db.close();
-  }
+  const result = JSON.parse(runDbQuery('workspace-status', email));
+  return result.status ?? null;
 }
