@@ -1,0 +1,127 @@
+---
+/**
+ * User List Page
+ *
+ * Lists all users across workspaces with search, role/status/workspace filtering, and pagination.
+ * Super admin only.
+ */
+import AdminLayout from '@/layouts/AdminLayout.astro';
+import Card from '@/components/atoms/Card.astro';
+import AdminUserTable from '@/components/organisms/AdminUserTable.astro';
+import { superAdminService } from '@/services';
+import { Search } from '@lucide/astro';
+
+// Parse query params for server-side filtering
+const url = Astro.url;
+const search = url.searchParams.get('search') || '';
+const role = (url.searchParams.get('role') as 'admin' | 'member' | 'super_admin') || undefined;
+const status = (url.searchParams.get('status') as 'active' | 'deactivated') || undefined;
+const workspaceId = url.searchParams.get('workspaceId') || undefined;
+const sortBy =
+  (url.searchParams.get('sortBy') as 'name' | 'email' | 'created_at' | 'role') || 'created_at';
+const sortOrder = (url.searchParams.get('sortOrder') as 'asc' | 'desc') || 'desc';
+const page = parseInt(url.searchParams.get('page') || '1', 10);
+const limit = 20;
+const offset = (page - 1) * limit;
+
+// Fetch users and workspaces for filter dropdown in parallel
+const [result, workspaceResult] = await Promise.all([
+  superAdminService.listAllUsers({
+    search: search || undefined,
+    role,
+    status,
+    workspaceId,
+    sortBy,
+    sortOrder,
+    limit,
+    offset,
+  }),
+  superAdminService.listAllWorkspaces({ limit: 200 }),
+]);
+
+const totalPages = Math.ceil(result.total / limit);
+
+// Build query string for pagination links
+function buildQueryString(pageNum: number): string {
+  const params = new URLSearchParams();
+  params.set('page', String(pageNum));
+  if (search) params.set('search', search);
+  if (role) params.set('role', role);
+  if (status) params.set('status', status);
+  if (workspaceId) params.set('workspaceId', workspaceId);
+  params.set('sortBy', sortBy);
+  params.set('sortOrder', sortOrder);
+  return `/admin/users?${params.toString()}`;
+}
+---
+
+<AdminLayout title="Users" currentPath="/admin/users" subtitle="All Users">
+  <div class="max-w-7xl mx-auto space-y-6" data-testid="admin-users">
+    <!-- Search and filters -->
+    <section aria-label="Search and filters">
+      <Card compact padding="sm">
+        <form method="GET" class="flex flex-col sm:flex-row gap-3">
+          <label class="input input-bordered flex items-center gap-2 flex-1">
+            <Search size={16} class="stroke-current opacity-50" aria-hidden="true" />
+            <input
+              type="text"
+              name="search"
+              value={search}
+              placeholder="Search by name or email..."
+              class="grow"
+            />
+          </label>
+          <select name="role" class="select select-bordered">
+            <option value="">All Roles</option>
+            <option value="admin" selected={role === 'admin'}>Admin</option>
+            <option value="member" selected={role === 'member'}>Member</option>
+            <option value="super_admin" selected={role === 'super_admin'}>Super Admin</option>
+          </select>
+          <select name="status" class="select select-bordered">
+            <option value="">All Status</option>
+            <option value="active" selected={status === 'active'}>Active</option>
+            <option value="deactivated" selected={status === 'deactivated'}>Deactivated</option>
+          </select>
+          <select name="workspaceId" class="select select-bordered">
+            <option value="">All Workspaces</option>
+            {
+              workspaceResult.workspaces.map((ws) => (
+                <option value={ws.id} selected={workspaceId === ws.id}>
+                  {ws.name}
+                </option>
+              ))
+            }
+          </select>
+          <button type="submit" class="btn btn-accent">Search</button>
+        </form>
+      </Card>
+    </section>
+
+    <!-- Results count -->
+    <p class="text-sm text-base-content/60">{result.total} user(s) found</p>
+
+    <!-- Table -->
+    <section aria-label="User list">
+      <AdminUserTable users={result.users} />
+    </section>
+
+    <!-- Pagination -->
+    {
+      totalPages > 1 && (
+        <nav aria-label="Pagination">
+          <div class="join flex justify-center">
+            {Array.from({ length: Math.min(totalPages, 10) }, (_, i) => i + 1).map((p) => (
+              <a
+                href={buildQueryString(p)}
+                class:list={['join-item btn btn-sm', { 'btn-active': p === page }]}
+                aria-current={p === page ? 'page' : undefined}
+              >
+                {p}
+              </a>
+            ))}
+          </div>
+        </nav>
+      )
+    }
+  </div>
+</AdminLayout>
