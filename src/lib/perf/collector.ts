@@ -108,6 +108,10 @@ export class PerfCollector {
     this.phases.push({ name, durationMs });
   }
 
+  private isCounterPhase(name: string): boolean {
+    return /(?:assetCount|chunkCount|historyRowsFetched)$/.test(name);
+  }
+
   /**
    * Get all recorded processing phases
    */
@@ -119,7 +123,9 @@ export class PerfCollector {
    * Get total duration of all recorded phases
    */
   getTotalPhaseTime(): number {
-    return this.phases.reduce((sum, p) => sum + p.durationMs, 0);
+    return this.phases.reduce((sum, phase) => {
+      return this.isCounterPhase(phase.name) ? sum : sum + phase.durationMs;
+    }, 0);
   }
 
   /**
@@ -429,9 +435,10 @@ export class PerfCollector {
         `Phases: ${this.phases.length} ${phaseLabel} in ${this.formatDuration(totalPhaseTime)}`
       );
       for (const phase of this.phases) {
-        lines.push(
-          `  - ${this.sanitizeCommentField(phase.name)}: ${this.formatDuration(phase.durationMs)}`
-        );
+        const formattedValue = this.isCounterPhase(phase.name)
+          ? `${Math.round(phase.durationMs)}`
+          : this.formatDuration(phase.durationMs);
+        lines.push(`  - ${this.sanitizeCommentField(phase.name)}: ${formattedValue}`);
       }
     }
 

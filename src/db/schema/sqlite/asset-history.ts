@@ -15,5 +15,8 @@ export const assetHistory = sqliteTable(
       .default(sqliteTimestampNow)
       .notNull(),
   },
-  (table) => [index('asset_history_asset_id_idx').on(table.asset_id)]
+  (table) => [
+    index('asset_history_asset_id_idx').on(table.asset_id),
+    index('asset_history_asset_recorded_idx').on(table.asset_id, table.recorded_at),
+  ]
 );

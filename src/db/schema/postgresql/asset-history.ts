@@ -17,6 +17,7 @@ export const assetHistory = pgTable(
   (table) => [
     index('asset_history_recorded_at_idx').on(table.recorded_at),
     index('asset_history_asset_id_idx').on(table.asset_id),
+    index('asset_history_asset_recorded_idx').on(table.asset_id, table.recorded_at),
     pgPolicy('asset_history_allow_all', {
       as: 'permissive',
       for: 'all',
