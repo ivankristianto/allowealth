@@ -33,8 +33,32 @@ export function initPeriodNavigator() {
     const periodLabel = navigator.querySelector('[data-period-label]');
     const prevBtn = navigator.querySelector('[data-period-nav="prev"]') as HTMLButtonElement;
     const nextBtn = navigator.querySelector('[data-period-nav="next"]') as HTMLButtonElement;
+    const dropdown = navigator.querySelector('[data-period-dropdown]') as HTMLElement | null;
+    const trigger = navigator.querySelector('[data-period-trigger]') as HTMLButtonElement | null;
 
     if (!periodInput || !periodLabel) return;
+
+    // Toggle dropdown closed when trigger is activated while already open.
+    // Uses pointerdown (mouse+touch) and keydown (Enter/Space) for full input coverage.
+    // Checks :focus-within directly instead of tracking state via boolean.
+    if (trigger && dropdown) {
+      function closeIfOpen(e: Event): void {
+        if (!dropdown!.matches(':focus-within')) return;
+        e.preventDefault();
+        // Blur whatever has focus inside the dropdown (trigger, ul, or option button)
+        const focused = dropdown!.querySelector(':focus') as HTMLElement | null;
+        if (focused) focused.blur();
+        trigger!.blur();
+      }
+
+      trigger.addEventListener('pointerdown', closeIfOpen);
+
+      trigger.addEventListener('keydown', (e: KeyboardEvent) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          closeIfOpen(e);
+        }
+      });
+    }
 
     // Get available periods from data attribute
     const optionsData = navigator.getAttribute('data-period-options');
