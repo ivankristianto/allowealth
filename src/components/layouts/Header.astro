@@ -17,6 +17,7 @@ import CurrencySelector from '../molecules/CurrencySelector.astro';
 // import NotificationDropdown from '../molecules/NotificationDropdown.astro';
 import ThemeToggle from '../atoms/ThemeToggle.astro';
 import Button from '../atoms/Button.astro';
+import AdminDiagnosticsIcon from '../atoms/AdminDiagnosticsIcon.astro';
 import type { User } from '@/lib/auth/lucia';
 
 interface Props {
@@ -28,9 +29,11 @@ interface Props {
   showMenuToggle?: boolean;
   /** Authenticated user object */
   user?: User | null;
+  /** Current URL path for active state styling */
+  currentPath?: string;
 }
 
-const { title, subtitle, showMenuToggle = true, user } = Astro.props;
+const { title, subtitle, showMenuToggle = true, user, currentPath = '' } = Astro.props;
 const hasHeaderSlot = Astro.slots.has('header');
 ---
 
@@ -92,6 +95,9 @@ const hasHeaderSlot = Astro.slots.has('header');
 
       <!-- Theme Toggle (mobile/tablet only - desktop has floating toggle) -->
       <ThemeToggle size="sm" className="lg:hidden" />
+
+      {/* Admin-only diagnostics icon */}
+      {user?.role === 'admin' && <AdminDiagnosticsIcon currentPath={currentPath} />}
 
       {/* TODO: Re-enable when notification system is implemented */}
       {/* <NotificationDropdown /> */}
