@@ -50,10 +50,21 @@ export const routeGuard: MiddlewareHandler = async (context, next) => {
     return context.redirect('/dashboard', 302);
   }
 
+  // Redirect super_admin users away from workspace-scoped routes to admin panel
+  if (
+    isProtected &&
+    !isAdminRoute &&
+    context.locals.user &&
+    context.locals.user.role === 'super_admin'
+  ) {
+    return context.redirect('/admin', 302);
+  }
+
   // Redirect authenticated users away from auth pages to dashboard
   const isAuthPage = AUTH_PAGES.some((page) => pathname === page);
   if (isAuthPage && context.locals.user) {
-    return context.redirect('/dashboard', 302);
+    const target = context.locals.user.role === 'super_admin' ? '/admin' : '/dashboard';
+    return context.redirect(target, 302);
   }
 
   return next();
