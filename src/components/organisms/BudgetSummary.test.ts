@@ -366,6 +366,14 @@ describe('BudgetSummary - Remaining/Overbudget metric', () => {
     });
   });
 
+  it('returns remaining metric when spending matches budget', () => {
+    expect(getRemainingBudgetMetric(1000, 1000)).toEqual({
+      label: 'Remaining',
+      value: 0,
+      tone: 'success',
+    });
+  });
+
   it('returns overbudget metric when spending exceeds budget', () => {
     expect(getRemainingBudgetMetric(1000, 1350)).toEqual({
       label: 'Overbudget',

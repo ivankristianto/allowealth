@@ -70,7 +70,7 @@ function groupTransactionsByDate(transactions: TransactionOutput[]): DateGroup[]
 
 Simple text divider, not sticky:
 
-```
+```text
 text-xs font-semibold text-base-content/50 uppercase tracking-wide py-2 px-4
 ```
 

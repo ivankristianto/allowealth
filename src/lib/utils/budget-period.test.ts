@@ -80,5 +80,10 @@ describe('budget-period utils', () => {
       const url = buildBudgetUrlForPeriod('2026-02', 'USD');
       expect(url).toBe('/budget?year=2026&month=2&currency=USD');
     });
+
+    it('falls back to base budget URL with currency for invalid periods', () => {
+      const url = buildBudgetUrlForPeriod('invalid-period', 'USD');
+      expect(url).toBe('/budget?currency=USD');
+    });
   });
 });

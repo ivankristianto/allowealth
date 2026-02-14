@@ -198,6 +198,8 @@ const accentGhostBtn =
     initModalTriggerButton('set-new-budget-btn');
     initModalTriggerButton('copy-budget-btn');
     initModalTriggerButton('initialize-budgets-btn');
+    document.removeEventListener('budget-content-updated', handleBudgetContentUpdated);
+    document.addEventListener('budget-content-updated', handleBudgetContentUpdated);
   }
 
   function handleBudgetContentUpdated() {
@@ -217,7 +219,6 @@ const accentGhostBtn =
 
   initBudgetActionButtons();
   registerCleanup();
-  document.addEventListener('budget-content-updated', handleBudgetContentUpdated);
 
   document.addEventListener('astro:page-load', () => {
     initBudgetActionButtons();

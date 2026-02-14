@@ -531,8 +531,16 @@ const copyDisabledTooltip =
       const currency = container?.dataset.currency === 'USD' ? 'USD' : 'IDR';
       const targetUrl = buildBudgetUrlForPeriod(period, currency);
 
-      const currentUrl = `${window.location.pathname}${window.location.search}`;
-      if (targetUrl === currentUrl) return;
+      const current = new URL(window.location.href);
+      const target = new URL(targetUrl, window.location.origin);
+      const keys = new Set([...current.searchParams.keys(), ...target.searchParams.keys()]);
+      const samePath = current.pathname === target.pathname;
+      const sameParams = [...keys].every((key) => {
+        const currentValues = current.searchParams.getAll(key).sort().join(',');
+        const targetValues = target.searchParams.getAll(key).sort().join(',');
+        return currentValues === targetValues;
+      });
+      if (samePath && sameParams) return;
 
       window.location.href = targetUrl;
     };

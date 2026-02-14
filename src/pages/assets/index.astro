@@ -89,6 +89,10 @@ const currentMonthDisplay = new Date(selectedYear, selectedMonth - 1).toLocaleDa
   year: 'numeric',
 });
 const selectedPeriod = `${selectedYear}-${selectedMonth.toString().padStart(2, '0')}`;
+const currentMonthUrl = new URL(url);
+currentMonthUrl.searchParams.delete('year');
+currentMonthUrl.searchParams.delete('month');
+const currentMonthHref = `${currentMonthUrl.pathname}${currentMonthUrl.search}`;
 
 // Generate monthly period options (oldest -> latest, capped by shared selector window)
 const monthlyPeriodOptions: PeriodOption[] = Array.from(
@@ -235,7 +239,7 @@ const sortedGroups = Object.entries(assetsByType)
     {
       !isViewingCurrentMonth && (
         <a
-          href="/assets"
+          href={currentMonthHref}
           class="btn btn-sm bg-base-100 border border-base-300 hover:border-accent/30 hover:text-accent rounded-xl transition-all gap-1 ml-1"
           aria-label="Go to current month"
           data-testid="asset-current-month-btn"

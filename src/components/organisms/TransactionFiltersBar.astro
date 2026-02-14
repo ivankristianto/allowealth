@@ -247,30 +247,29 @@ const mainSearchInputClass = [
                 {categoryIds.length} selected
               </span>
             </div>
-            {/* Category Options - filtered by current type */}
+            {/* Category Options - visibility filtered client-side by current type */}
             <div class="space-y-1 max-h-52 overflow-y-auto" data-category-list>
-              {categories
-                .filter((cat) => cat.type === typeFilter)
-                .map((cat) => {
-                  const isSelected = categoryIds.includes(cat.id);
-                  return (
-                    <label
-                      class={`flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-colors hover:bg-base-200 ${isSelected ? 'bg-accent/10' : ''}`}
-                      data-category-option={cat.id}
-                      data-category-name={cat.name.toLowerCase()}
+              {categories.map((cat) => {
+                const isSelected = categoryIds.includes(cat.id);
+                return (
+                  <label
+                    class={`flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-colors hover:bg-base-200 ${isSelected ? 'bg-accent/10' : ''}`}
+                    data-category-option={cat.id}
+                    data-category-type={cat.type}
+                    data-category-name={cat.name.toLowerCase()}
+                  >
+                    <div
+                      class={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-colors ${isSelected ? 'bg-accent border-accent' : 'border-base-300'}`}
+                      data-checkbox-visual={cat.id}
                     >
-                      <div
-                        class={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-colors ${isSelected ? 'bg-accent border-accent' : 'border-base-300'}`}
-                        data-checkbox-visual={cat.id}
-                      >
-                        {isSelected && (
-                          <Check size={12} class="stroke-white stroke-3" aria-hidden="true" />
-                        )}
-                      </div>
-                      <span class="text-sm font-medium text-base-content truncate">{cat.name}</span>
-                    </label>
-                  );
-                })}
+                      {isSelected && (
+                        <Check size={12} class="stroke-white stroke-3" aria-hidden="true" />
+                      )}
+                    </div>
+                    <span class="text-sm font-medium text-base-content truncate">{cat.name}</span>
+                  </label>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -296,22 +295,40 @@ const mainSearchInputClass = [
     return form?.dataset.selectedMonth || '';
   }
 
+  function getCurrentTypeFilter(): string {
+    let currentType = 'expense';
+    document.querySelectorAll('[data-filter-type]').forEach((btn) => {
+      if (btn.getAttribute('aria-pressed') === 'true') {
+        currentType = btn.getAttribute('data-filter-type') || 'expense';
+      }
+    });
+    return currentType;
+  }
+
+  function updateCategoryVisibility(filterType: string = getCurrentTypeFilter()) {
+    const categorySearchInput = document.querySelector(
+      '[data-category-search]'
+    ) as HTMLInputElement | null;
+    const query = categorySearchInput?.value.toLowerCase().trim() || '';
+
+    document.querySelectorAll('[data-category-option]').forEach((option) => {
+      const optionEl = option as HTMLElement;
+      const optionType = optionEl.dataset.categoryType || '';
+      const name = optionEl.dataset.categoryName || '';
+      const matchesType = optionType === filterType;
+      const matchesSearch = name.includes(query);
+      optionEl.style.display = matchesType && matchesSearch ? '' : 'none';
+    });
+  }
+
   // Check if filters are active and update reset button visibility
   function updateResetButtonVisibility() {
     const resetBtn = document.querySelector('[data-reset-filters]');
     if (!resetBtn) return;
 
     const searchInput = document.getElementById('search-input') as HTMLInputElement;
-    const typeButtons = document.querySelectorAll('[data-filter-type]');
     const currentMonth = getCurrentMonth();
-
-    // Check current type
-    let currentType = 'expense';
-    typeButtons.forEach((btn) => {
-      if (btn.getAttribute('aria-pressed') === 'true') {
-        currentType = btn.getAttribute('data-filter-type') || 'expense';
-      }
-    });
+    const currentType = getCurrentTypeFilter();
 
     const hasFilters =
       currentType !== 'expense' ||
@@ -328,6 +345,13 @@ const mainSearchInputClass = [
     if (hiddenInput && hiddenInput.value) {
       selectedCategoryIds = hiddenInput.value.split(',').filter(Boolean);
     }
+
+    const currentType = getCurrentTypeFilter();
+    selectedCategoryIds = selectedCategoryIds.filter((id) => {
+      const option = document.querySelector(`[data-category-option="${id}"]`) as HTMLElement | null;
+      return option?.dataset.categoryType === currentType;
+    });
+    updateCategoryVisibility(currentType);
     updateCategoryUI();
     updateResetButtonVisibility();
   }
@@ -399,13 +423,7 @@ const mainSearchInputClass = [
   const categorySearch = document.querySelector('[data-category-search]') as HTMLInputElement;
   if (categorySearch) {
     categorySearch.addEventListener('input', () => {
-      const query = categorySearch.value.toLowerCase().trim();
-      document.querySelectorAll('[data-category-option]').forEach((option) => {
-        const optionEl = option as HTMLElement;
-        const name = optionEl.dataset.categoryName || '';
-        const matches = name.includes(query);
-        optionEl.style.display = matches ? '' : 'none';
-      });
+      updateCategoryVisibility();
     });
 
     // Prevent dropdown from closing when typing
@@ -448,6 +466,17 @@ const mainSearchInputClass = [
           detail: { type: 'type', value: filterType },
         })
       );
+
+      if (filterType) {
+        updateCategoryVisibility(filterType);
+        selectedCategoryIds = selectedCategoryIds.filter((id) => {
+          const option = document.querySelector(
+            `[data-category-option="${id}"]`
+          ) as HTMLElement | null;
+          return option?.dataset.categoryType === filterType;
+        });
+        updateCategoryUI();
+      }
     });
   });
 
@@ -523,6 +552,7 @@ const mainSearchInputClass = [
   window.addEventListener(FILTERS_RESET_EVENT, () => {
     selectedCategoryIds = [];
     updateCategoryUI();
+    updateCategoryVisibility();
 
     // Clear search input
     const searchEl = document.getElementById('search-input') as HTMLInputElement;

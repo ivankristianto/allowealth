@@ -17,7 +17,9 @@ const initializedNavigators = new WeakSet<Element>();
 const resetSyncControllers = new Set<AbortController>();
 
 function cleanupPeriodNavigatorListeners(): void {
-  resetSyncControllers.forEach((controller) => controller.abort());
+  resetSyncControllers.forEach((controller) => {
+    controller.abort();
+  });
   resetSyncControllers.clear();
 }
 

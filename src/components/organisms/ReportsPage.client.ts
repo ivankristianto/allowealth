@@ -233,6 +233,7 @@ function handlePeriodChange(event: CustomEvent<{ period: string; label: string }
 
   // Update URL with new state
   updateUrl(currentState.range, currentState.period);
+  syncHeaderSubtitle();
 
   // Fetch and render new data
   fetchAndRenderReports();

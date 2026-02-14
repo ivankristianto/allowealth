@@ -157,7 +157,7 @@ const chartId = `spending-chart-${Math.random().toString(36).slice(2, 11)}`;
                 data-category-index={index}
                 class="spending-chart-legend-item flex items-center justify-between p-2.5 @xs:p-3.5 rounded-xl @xs:rounded-2xl transition-all border border-transparent hover:bg-base-200/50 hover:shadow-sm cursor-pointer opacity-80 hover:opacity-100 w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
                 aria-pressed="false"
-                aria-label={`${item.category}: ${item.percentage}%. Click to view details.`}
+                aria-label={`${item.category}: ${item.percentage}%. Click to view details.${item.category === 'Other' && item.otherCategoryNames?.length ? ` Includes: ${item.otherCategoryNames.join(', ')}.` : ''}`}
               >
                 <div class="flex items-center gap-2 @xs:gap-3">
                   <div

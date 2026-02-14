@@ -18,7 +18,7 @@
 
 **Header mobile layout:**
 
-```
+```text
 [Menu] Transactions         [ThemeToggle]
        January 2025
 ```
@@ -65,7 +65,7 @@
 
 **Mobile card layout:**
 
-```
+```text
 ┌─ 📈 Monthly Income      Rp 9.750.000 ─┐  (text-success)
 ├─ 📉 Monthly Expenses    Rp 5.200.000 ─┤  (text-error)
 └─ 💰 Net Savings         Rp 4.550.000 ─┘  (text-success/text-error)
@@ -90,7 +90,7 @@ Each compact card: ~48px height, rounded-xl, border, small icon (20px), text-xs 
 
 **Mobile layout (scrollable):**
 
-```
+```text
 [Expense] [Income] [Scan] [Import] [Export]  →
 ```
 
@@ -107,7 +107,7 @@ Each compact card: ~48px height, rounded-xl, border, small icon (20px), text-xs 
   - Row 1: Search input (full width)
   - Row 2: Expense|Income toggle + All Categories dropdown (side by side)
 
-```
+```text
 ┌─────────────────────────────────┐
 │ 🔍 Search...                    │
 ├──────────────┬──────────────────┤

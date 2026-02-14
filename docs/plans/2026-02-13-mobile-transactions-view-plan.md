@@ -12,7 +12,7 @@
 
 ---
 
-### Task 1: Header Slot System + Disable Notifications + Show Subtitle
+## Task 1: Header Slot System + Disable Notifications + Show Subtitle
 
 **Files:**
 
@@ -207,7 +207,7 @@ git commit -m "feat(header): add slot system for page-specific extras, disable n
 
 ---
 
-### Task 2: TransactionSummaryCards Compact Mobile
+## Task 2: TransactionSummaryCards Compact Mobile
 
 **Files:**
 
@@ -405,7 +405,7 @@ git commit -m "feat(mobile): add compact vertical summary cards for mobile view"
 
 ---
 
-### Task 3: TransactionActionsBar Edge Bleed + Horizontal Scroll + Reorder
+## Task 3: TransactionActionsBar Edge Bleed + Horizontal Scroll + Reorder
 
 **Files:**
 
@@ -557,7 +557,7 @@ git commit -m "feat(mobile): edge-bleed action bar with horizontal scroll and re
 
 ---
 
-### Task 4: TransactionFiltersBar — New Layout + Remove PeriodNavigator
+## Task 4: TransactionFiltersBar — New Layout + Remove PeriodNavigator
 
 **Files:**
 
@@ -844,7 +844,7 @@ git commit -m "feat(mobile): reorganize filter bar layout — search first, remo
 
 ---
 
-### Task 5: Transaction Page Integration
+## Task 5: Transaction Page Integration
 
 **Files:**
 
@@ -955,7 +955,7 @@ git commit -m "feat(mobile): relocate PeriodNavigator to header, pass month subt
 
 ---
 
-### Task 6: Quality Gates + Build Verification
+## Task 6: Quality Gates + Build Verification
 
 **Depends on:** All previous tasks.
 
