@@ -1,0 +1,56 @@
+---
+/**
+ * Admin Dashboard
+ *
+ * Super admin platform overview showing total workspaces, users, and active workspaces.
+ */
+import AdminLayout from '@/layouts/AdminLayout.astro';
+import { superAdminService } from '@/services';
+import { Building2, Users, Activity } from '@lucide/astro';
+
+const overview = await superAdminService.getPlatformOverview();
+---
+
+<AdminLayout title="Admin Dashboard" currentPath="/admin" subtitle="Platform Overview">
+  <div class="max-w-7xl mx-auto space-y-8" data-testid="admin-dashboard">
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+      <div class="stat bg-base-100 rounded-box shadow-sm">
+        <div class="stat-figure text-accent">
+          <Building2 size={32} class="stroke-current" />
+        </div>
+        <div class="stat-title">Total Workspaces</div>
+        <div class="stat-value text-accent">{overview.totalWorkspaces}</div>
+      </div>
+
+      <div class="stat bg-base-100 rounded-box shadow-sm">
+        <div class="stat-figure text-info">
+          <Users size={32} class="stroke-current" />
+        </div>
+        <div class="stat-title">Total Users</div>
+        <div class="stat-value text-info">{overview.totalUsers}</div>
+      </div>
+
+      <div class="stat bg-base-100 rounded-box shadow-sm">
+        <div class="stat-figure text-success">
+          <Activity size={32} class="stroke-current" />
+        </div>
+        <div class="stat-title">Active Workspaces</div>
+        <div class="stat-value text-success">{overview.activeWorkspaces}</div>
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="card bg-base-100 shadow-sm">
+      <div class="card-body">
+        <h2 class="card-title">Quick Actions</h2>
+        <div class="flex flex-wrap gap-3 mt-2">
+          <a href="/admin/workspaces" class="btn btn-outline btn-sm">
+            <Building2 size={16} /> View Workspaces
+          </a>
+          <a href="/admin/audit-logs" class="btn btn-outline btn-sm"> View Audit Logs </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</AdminLayout>

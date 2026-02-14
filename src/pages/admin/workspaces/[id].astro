@@ -1,0 +1,239 @@
+---
+/**
+ * Workspace Details Page
+ *
+ * Shows detailed workspace information including stats, members, and settings.
+ * Provides archive and delete actions for super admins.
+ */
+import AdminLayout from '@/layouts/AdminLayout.astro';
+import AdminWorkspaceStats from '@/components/molecules/AdminWorkspaceStats.astro';
+import AdminWorkspaceMemberList from '@/components/molecules/AdminWorkspaceMemberList.astro';
+import { superAdminService } from '@/services';
+import type { WorkspaceStatsDetailed } from '@/services/super-admin.service';
+import { SuperAdminServiceError } from '@/services/service-errors';
+
+const workspaceId = Astro.params.id;
+if (!workspaceId) return Astro.redirect('/admin/workspaces');
+
+let workspace: WorkspaceStatsDetailed;
+try {
+  workspace = await superAdminService.getWorkspaceDetails(workspaceId);
+} catch (error) {
+  if (error instanceof SuperAdminServiceError && error.statusCode === 404) {
+    return Astro.redirect('/admin/workspaces');
+  }
+  throw error;
+}
+---
+
+<AdminLayout title={workspace.name} currentPath="/admin/workspaces" subtitle="Workspace Details">
+  <div class="max-w-7xl mx-auto space-y-6" data-testid="admin-workspace-details">
+    <!-- Breadcrumb -->
+    <div class="breadcrumbs text-sm">
+      <ul>
+        <li><a href="/admin">Admin</a></li>
+        <li><a href="/admin/workspaces">Workspaces</a></li>
+        <li>{workspace.name}</li>
+      </ul>
+    </div>
+
+    <!-- Header with actions -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div>
+        <h2 class="text-2xl font-bold">{workspace.name}</h2>
+        <div class="flex items-center gap-2 mt-1">
+          <span
+            class={`badge ${workspace.status === 'active' ? 'badge-success' : 'badge-warning'}`}
+          >
+            {workspace.status}
+          </span>
+          <span class="text-sm text-base-content/60">
+            Created {new Date(workspace.createdAt).toLocaleDateString()}
+          </span>
+        </div>
+      </div>
+      <div class="flex gap-2">
+        {
+          workspace.status === 'active' && (
+            <button
+              class="btn btn-warning btn-sm"
+              data-archive-btn
+              data-workspace-id={workspace.id}
+            >
+              Archive
+            </button>
+          )
+        }
+        <button
+          class="btn btn-error btn-sm"
+          data-delete-btn
+          data-workspace-id={workspace.id}
+          data-workspace-name={workspace.name}
+        >
+          Delete
+        </button>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <AdminWorkspaceStats workspace={workspace} />
+
+    <!-- Members -->
+    <AdminWorkspaceMemberList members={workspace.members} />
+
+    <!-- Settings -->
+    {
+      Object.keys(workspace.settings).length > 0 && (
+        <div class="card bg-base-100 shadow-sm">
+          <div class="card-body">
+            <h3 class="card-title text-lg">Settings</h3>
+            <div class="overflow-x-auto">
+              <table class="table table-sm">
+                <thead>
+                  <tr>
+                    <th>Key</th>
+                    <th>Value</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {Object.entries(workspace.settings).map(([key, value]) => (
+                    <tr>
+                      <td class="font-mono text-sm">{key}</td>
+                      <td>{value}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )
+    }
+  </div>
+
+  <!-- Delete Confirmation Modal -->
+  <dialog id="delete-workspace-modal" class="modal" data-delete-modal>
+    <div class="modal-box max-w-md">
+      <h3 class="font-bold text-lg text-error">Delete Workspace</h3>
+      <p class="py-2 text-base-content/70">
+        This action will permanently delete the workspace and all its data including members,
+        transactions, assets, budgets, and categories. This cannot be undone.
+      </p>
+      <p class="py-2 font-semibold">
+        Type <span class="text-error" data-workspace-name-display>{workspace.name}</span> to confirm:
+      </p>
+      <input
+        type="text"
+        class="input input-bordered w-full"
+        data-confirm-name-input
+        placeholder="Type workspace name..."
+      />
+      <div class="modal-action">
+        <form method="dialog">
+          <button class="btn btn-ghost">Cancel</button>
+        </form>
+        <button class="btn btn-error" data-confirm-delete disabled> Delete Workspace </button>
+      </div>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+      <button>close</button>
+    </form>
+  </dialog>
+</AdminLayout>
+
+<script>
+  import { addToast } from '@/lib/stores/toastStore';
+  import { getCsrfHeaders } from '@/lib/csrf-client';
+
+  function initWorkspaceDetails() {
+    // Archive button handler
+    const archiveBtn = document.querySelector('[data-archive-btn]') as HTMLButtonElement | null;
+    if (archiveBtn) {
+      archiveBtn.addEventListener('click', async () => {
+        const workspaceId = archiveBtn.dataset.workspaceId;
+        if (!workspaceId) return;
+
+        archiveBtn.classList.add('loading');
+        try {
+          const response = await fetch(`/api/admin/workspaces/${workspaceId}/archive`, {
+            method: 'POST',
+            credentials: 'include',
+            headers: getCsrfHeaders(),
+          });
+          const result = await response.json();
+          if (!response.ok || !result.success) {
+            throw new Error(result.error?.message || 'Failed to archive workspace');
+          }
+          addToast('Workspace archived successfully', 'success');
+          window.location.reload();
+        } catch (err) {
+          const message = err instanceof Error ? err.message : 'Failed to archive workspace';
+          addToast(message, 'error');
+        } finally {
+          archiveBtn.classList.remove('loading');
+        }
+      });
+    }
+
+    // Delete button and modal handlers
+    const deleteBtn = document.querySelector('[data-delete-btn]') as HTMLButtonElement | null;
+    const deleteModal = document.getElementById(
+      'delete-workspace-modal'
+    ) as HTMLDialogElement | null;
+    const confirmInput = deleteModal?.querySelector(
+      '[data-confirm-name-input]'
+    ) as HTMLInputElement | null;
+    const confirmDeleteBtn = deleteModal?.querySelector(
+      '[data-confirm-delete]'
+    ) as HTMLButtonElement | null;
+
+    if (deleteBtn && deleteModal && confirmInput && confirmDeleteBtn) {
+      const workspaceName = deleteBtn.dataset.workspaceName || '';
+      const workspaceId = deleteBtn.dataset.workspaceId || '';
+
+      deleteBtn.addEventListener('click', () => {
+        confirmInput.value = '';
+        confirmDeleteBtn.disabled = true;
+        deleteModal.showModal();
+      });
+
+      confirmInput.addEventListener('input', () => {
+        confirmDeleteBtn.disabled = confirmInput.value !== workspaceName;
+      });
+
+      confirmDeleteBtn.addEventListener('click', async () => {
+        confirmDeleteBtn.classList.add('loading');
+        try {
+          const response = await fetch(`/api/admin/workspaces/${workspaceId}/delete`, {
+            method: 'DELETE',
+            credentials: 'include',
+            headers: {
+              'Content-Type': 'application/json',
+              ...getCsrfHeaders(),
+            },
+            body: JSON.stringify({ confirmName: workspaceName }),
+          });
+          const result = await response.json();
+          if (!response.ok || !result.success) {
+            throw new Error(result.error?.message || 'Failed to delete workspace');
+          }
+          addToast('Workspace deleted successfully', 'success');
+          window.location.href = '/admin/workspaces';
+        } catch (err) {
+          const message = err instanceof Error ? err.message : 'Failed to delete workspace';
+          addToast(message, 'error');
+          deleteModal.close();
+        } finally {
+          confirmDeleteBtn.classList.remove('loading');
+        }
+      });
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initWorkspaceDetails);
+  } else {
+    initWorkspaceDetails();
+  }
+  document.addEventListener('astro:page-load', initWorkspaceDetails);
+</script>

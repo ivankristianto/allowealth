@@ -1,0 +1,37 @@
+---
+/**
+ * Admin Workspace Stats
+ *
+ * Displays workspace metric cards for members, transactions, assets, budgets, and categories.
+ */
+import type { WorkspaceStatsDetailed } from '@/services/super-admin.service';
+import { Users, Receipt, Wallet, ChartPie, Tag } from '@lucide/astro';
+
+interface Props {
+  workspace: WorkspaceStatsDetailed;
+}
+
+const { workspace } = Astro.props;
+
+const stats = [
+  { label: 'Members', value: workspace.memberCount, icon: Users, color: 'text-info' },
+  { label: 'Transactions', value: workspace.transactionCount, icon: Receipt, color: 'text-accent' },
+  { label: 'Assets', value: workspace.assetCount, icon: Wallet, color: 'text-success' },
+  { label: 'Budgets', value: workspace.budgetCount, icon: ChartPie, color: 'text-warning' },
+  { label: 'Categories', value: workspace.categoryCount, icon: Tag, color: 'text-error' },
+];
+---
+
+<div class="grid grid-cols-2 sm:grid-cols-5 gap-4">
+  {
+    stats.map(({ label, value, icon: Icon, color }) => (
+      <div class="stat bg-base-100 rounded-box shadow-sm p-4">
+        <div class={`stat-figure ${color}`}>
+          <Icon size={24} class="stroke-current" />
+        </div>
+        <div class="stat-title text-xs">{label}</div>
+        <div class={`stat-value text-lg ${color}`}>{value}</div>
+      </div>
+    ))
+  }
+</div>
