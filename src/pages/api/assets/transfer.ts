@@ -46,7 +46,6 @@ export const POST: APIRoute = async (context) => {
       fromAssetId,
       toAssetId,
       amount,
-      notes,
       auth.workspaceId
     );
 

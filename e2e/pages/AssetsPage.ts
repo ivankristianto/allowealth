@@ -333,7 +333,7 @@ export class AssetsPage extends BasePage {
     // Try multiple selectors for robustness
     const idrValueLocators = [
       // Direct data-testid
-      this.page.locator('[data-testid="portfolio-total-idr"] p'),
+      this.page.locator('[data-testid="portfolio-total-assets"] p'),
       // Text containing "Total Value (IDR)" followed by a paragraph
       this.page.locator('text=Total Value (IDR) >> xpath=following-sibling::p'),
       // Paragraph containing "Rp" currency format in portfolio section

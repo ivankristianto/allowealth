@@ -29,7 +29,7 @@ test.describe('Assets Redesign Journey', () => {
     await expect(portfolioSection).toBeVisible();
 
     // Verify "Total Assets" section is present
-    const totalAssets = page.locator('[data-testid="portfolio-total-idr"]');
+    const totalAssets = page.locator('[data-testid="portfolio-total-assets"]');
     await expect(totalAssets).toBeVisible();
     await expect(totalAssets).toContainText('Total Assets');
 
@@ -153,7 +153,7 @@ test.describe('Assets Redesign Journey', () => {
     await assetsPage.goto();
 
     // Record Total Assets value before creating debt
-    const totalAssetsBefore = page.locator('[data-testid="portfolio-total-idr"]');
+    const totalAssetsBefore = page.locator('[data-testid="portfolio-total-assets"]');
     await expect(totalAssetsBefore).toBeVisible();
     const totalAssetsTextBefore = await totalAssetsBefore.textContent();
     // Extract numeric value from the text (e.g., "Total AssetsRp1.234.567" -> 1234567)
@@ -195,7 +195,7 @@ test.describe('Assets Redesign Journey', () => {
 
     // Verify Total Assets did NOT increase by the debt balance.
     // Total Assets should remain the same (debt is excluded from assets total).
-    const totalAssetsAfter = page.locator('[data-testid="portfolio-total-idr"]');
+    const totalAssetsAfter = page.locator('[data-testid="portfolio-total-assets"]');
     const totalAssetsTextAfter = await totalAssetsAfter.textContent();
     const totalAssetsNumAfter = parseInt((totalAssetsTextAfter || '0').replace(/[^\d]/g, ''), 10);
 
@@ -260,7 +260,7 @@ test.describe('Assets Redesign Journey', () => {
     await expect(page.locator('text=' + formattedBalance).first()).toBeVisible();
 
     // Click "Back to Portfolio" link
-    const backLink = page.locator('a').filter({ hasText: 'Back to Portfolio' });
+    const backLink = page.locator('a').filter({ hasText: 'Back to All Assets' });
     await expect(backLink).toBeVisible();
     await backLink.click();
 

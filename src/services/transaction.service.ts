@@ -1,4 +1,5 @@
 import { type IDatabase, getActiveSchema, runTransaction } from '@/db';
+import { decimalAdd } from '@/lib/utils/decimal';
 import { createLogger } from '@/lib/logger';
 
 const log = createLogger('transaction');
@@ -16,7 +17,7 @@ import { TransactionServiceError, ServiceErrorCode } from './service-errors';
 import { getCacheManager, CacheKeys, CacheTags, hashFilters } from '@/lib/cache';
 import { type PerfCollector, trackQuery } from '@/lib/perf';
 import { logAuditEvent } from '@/lib/audit-log';
-import type { TransactionHistoryResponse } from '@/lib/types/transaction';
+import type { Transaction, TransactionHistoryResponse } from '@/lib/types/transaction';
 
 export { type CreateTransactionInput, type UpdateTransactionInput };
 
@@ -1066,7 +1067,7 @@ export class TransactionService {
     year: number,
     month: number
   ): Promise<{
-    transactions: any[];
+    transactions: Transaction[];
     summary: {
       totalIncome: string;
       totalExpenses: string;
@@ -1094,24 +1095,24 @@ export class TransactionService {
       )
       .orderBy(desc(txTable.transaction_date));
 
-    // Calculate monthly summaries
-    let totalIncome = 0;
-    let totalExpenses = 0;
-    let totalTransfersIn = 0;
-    let totalTransfersOut = 0;
+    // Calculate monthly summaries using decimal arithmetic
+    let totalIncome = '0';
+    let totalExpenses = '0';
+    let totalTransfersIn = '0';
+    let totalTransfersOut = '0';
 
     for (const tx of transactions) {
-      const amount = parseFloat(tx.amount || '0');
+      const amount = tx.amount || '0';
       if (tx.type === 'income' && tx.asset_id === assetId) {
-        totalIncome += amount;
+        totalIncome = decimalAdd(totalIncome, amount);
       } else if (tx.type === 'expense' && tx.asset_id === assetId) {
-        totalExpenses += amount;
+        totalExpenses = decimalAdd(totalExpenses, amount);
       } else if (tx.type === 'transfer') {
         if (tx.asset_id === assetId) {
-          totalTransfersOut += amount;
+          totalTransfersOut = decimalAdd(totalTransfersOut, amount);
         }
         if (tx.to_asset_id === assetId) {
-          totalTransfersIn += amount;
+          totalTransfersIn = decimalAdd(totalTransfersIn, amount);
         }
       }
     }
@@ -1119,10 +1120,10 @@ export class TransactionService {
     return {
       transactions,
       summary: {
-        totalIncome: String(totalIncome),
-        totalExpenses: String(totalExpenses),
-        totalTransfersIn: String(totalTransfersIn),
-        totalTransfersOut: String(totalTransfersOut),
+        totalIncome,
+        totalExpenses,
+        totalTransfersIn,
+        totalTransfersOut,
       },
     };
   }

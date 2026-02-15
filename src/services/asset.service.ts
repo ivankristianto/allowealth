@@ -1,4 +1,4 @@
-import { type IDatabase, getActiveSchema, assets as assetsTable } from '@/db';
+import { type IDatabase, getActiveSchema, runTransaction, assets as assetsTable } from '@/db';
 import { eq, and, sql, inArray } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { AssetServiceError, ServiceErrorCode } from './service-errors';
@@ -359,7 +359,6 @@ export class AssetService {
     fromId: string,
     toId: string,
     amount: string,
-    _notes: string | undefined,
     workspaceId: string
   ): Promise<{ fromAsset: AssetRow | undefined; toAsset: AssetRow | undefined }> {
     if (fromId === toId) {
@@ -395,21 +394,22 @@ export class AssetService {
     const newFromBalance = decimalSubtract(fromAsset.balance, amount);
     const newToBalance = decimalAdd(toAsset.balance, amount);
 
-    // Update source asset balance
-    await this.db
-      .update(this.schema.assets)
-      .set({ balance: newFromBalance, last_updated: now, updated_at: now })
-      .where(
-        and(eq(this.schema.assets.id, fromId), eq(this.schema.assets.workspace_id, workspaceId))
-      );
+    // Wrap both balance updates in a transaction to ensure atomicity
+    await runTransaction(this.db, async (tx) => {
+      await tx
+        .update(this.schema.assets)
+        .set({ balance: newFromBalance, last_updated: now, updated_at: now })
+        .where(
+          and(eq(this.schema.assets.id, fromId), eq(this.schema.assets.workspace_id, workspaceId))
+        );
 
-    // Update destination asset balance
-    await this.db
-      .update(this.schema.assets)
-      .set({ balance: newToBalance, last_updated: now, updated_at: now })
-      .where(
-        and(eq(this.schema.assets.id, toId), eq(this.schema.assets.workspace_id, workspaceId))
-      );
+      await tx
+        .update(this.schema.assets)
+        .set({ balance: newToBalance, last_updated: now, updated_at: now })
+        .where(
+          and(eq(this.schema.assets.id, toId), eq(this.schema.assets.workspace_id, workspaceId))
+        );
+    });
 
     // Invalidate asset cache
     try {
@@ -585,9 +585,9 @@ export class AssetService {
       const idChunks = this.chunkIds(assetIds, 500);
       perf?.recordPhase('AssetService.getSnapshotForMonth.chunkCount', idChunks.length);
       const historyTable = this.schema.assetHistory;
-      // SQLite stores timestamps as integers (epoch seconds) — raw sql templates
-      // need a primitive, not a Date object.
-      const endOfMonthEpoch = Math.floor(endOfMonth.getTime() / 1000);
+      // SQLite stores timestamps as integers (epoch milliseconds via sqliteTimestampNow)
+      // — raw sql templates need a primitive, not a Date object.
+      const endOfMonthEpoch = endOfMonth.getTime();
       const allHistory: Array<{ asset_id: string; balance: string; recorded_at: Date }> = [];
 
       for (const chunk of idChunks) {
@@ -712,7 +712,10 @@ export class AssetService {
    * Get total balances by account class and currency.
    * Used for portfolio summary: Assets (liquid+non_liquid) vs Debt.
    */
-  async getTotalByClass(workspaceId: string, perf?: PerfCollector) {
+  async getTotalByClass(
+    workspaceId: string,
+    perf?: PerfCollector
+  ): Promise<Array<{ account_class: string; currency: string; total: string; count: number }>> {
     return trackQuery('AssetService.getTotalByClass', perf, async () => {
       const result = await (this.db as any)
         .select({
@@ -825,7 +828,7 @@ export class AssetService {
       throw new AssetServiceError(ServiceErrorCode.ASSET_NOT_FOUND, 'Asset not found', 404);
     }
 
-    const initialBalance = asset.initial_balance || '0';
+    const initialBalance = asset.initial_balance ?? asset.balance ?? '0';
     const txTable = this.schema.transactions;
 
     // Single query: sum income, expense, transfers in, transfers out
@@ -850,15 +853,13 @@ export class AssetService {
     const transfersIn = result[0]?.transfers_in || '0';
     const transfersOut = result[0]?.transfers_out || '0';
 
-    // Use string-based calculation to avoid floating-point precision issues
     // calculated = initial + income - expense + transfers_in - transfers_out
-    const total =
-      parseFloat(initialBalance) +
-      parseFloat(income) -
-      parseFloat(expense) +
-      parseFloat(transfersIn) -
-      parseFloat(transfersOut);
-    return String(total);
+    let total = initialBalance;
+    total = decimalAdd(total, income);
+    total = decimalSubtract(total, expense);
+    total = decimalAdd(total, transfersIn);
+    total = decimalSubtract(total, transfersOut);
+    return total;
   }
 
   /**

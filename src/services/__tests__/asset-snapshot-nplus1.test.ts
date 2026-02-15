@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, mock } from 'bun:test';
+import { describe, it, expect, beforeEach, mock } from 'bun:test';
 import { AssetService } from '../asset.service';
 import { createMockDatabase, createMockAsset, resetMockDatabase } from '../test-helpers/mocks';
 import { resetCacheManager, getCacheManager } from '@/lib/cache';
@@ -47,6 +47,7 @@ describe('AssetService.getSnapshotForMonth N+1 fix', () => {
 
   beforeEach(() => {
     resetCacheManager();
+    selectCallCount = 0;
     mockDb = createMockDatabase();
     resetMockDatabase(mockDb);
     assetService = new AssetService(mockDb);
@@ -55,10 +56,6 @@ describe('AssetService.getSnapshotForMonth N+1 fix', () => {
     const cache = getCacheManager();
     cache.get = mock(() => Promise.resolve(null));
     cache.set = mock(() => Promise.resolve());
-  });
-
-  afterEach(() => {
-    selectCallCount = 0;
   });
 
   it('should use bulk query instead of per-asset queries', async () => {

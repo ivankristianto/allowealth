@@ -58,7 +58,7 @@ describe('AssetService - closed account protection', () => {
 
     await Promise.resolve(
       expect(
-        assetService.transfer('asset-1', 'asset-2', '100', undefined, 'workspace-1')
+        assetService.transfer('asset-1', 'asset-2', '100', 'workspace-1')
       ).rejects.toMatchObject({ code: ServiceErrorCode.ACCOUNT_CLOSED })
     );
   });
@@ -88,7 +88,7 @@ describe('AssetService - closed account protection', () => {
 
     await Promise.resolve(
       expect(
-        assetService.transfer('asset-1', 'asset-2', '100', undefined, 'workspace-1')
+        assetService.transfer('asset-1', 'asset-2', '100', 'workspace-1')
       ).rejects.toMatchObject({ code: ServiceErrorCode.ACCOUNT_CLOSED })
     );
   });

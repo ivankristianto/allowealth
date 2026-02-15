@@ -633,7 +633,7 @@ async function clearAllTables() {
     // Disable FK checks during cleanup to avoid ordering issues
     const { dialect } = getDatabaseConfig();
     if (dialect === 'sqlite') {
-      db.run(sql`PRAGMA foreign_keys = OFF`);
+      await db.run(sql`PRAGMA foreign_keys = OFF`);
     }
 
     // Delete in reverse dependency order
@@ -657,7 +657,7 @@ async function clearAllTables() {
 
     // Re-enable FK checks
     if (dialect === 'sqlite') {
-      db.run(sql`PRAGMA foreign_keys = ON`);
+      await db.run(sql`PRAGMA foreign_keys = ON`);
     }
 
     // Run VACUUM to clean up the database and reclaim space (SQLite only)

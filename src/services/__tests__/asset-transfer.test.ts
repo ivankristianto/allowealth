@@ -15,7 +15,7 @@ describe('AssetService.transfer()', () => {
     assetService = new AssetService(mockDb);
   });
 
-  it('should validate and return both assets without mutating balances', async () => {
+  it('should transfer balance between two same-currency assets', async () => {
     const fromAsset = createMockAsset({
       id: 'asset-1',
       name: 'Savings',
@@ -36,27 +36,17 @@ describe('AssetService.transfer()', () => {
       .mockResolvedValueOnce(fromAsset)
       .mockResolvedValueOnce(toAsset);
 
-    const result = await assetService.transfer(
-      'asset-1',
-      'asset-2',
-      '300',
-      'Monthly transfer',
-      'workspace-1'
-    );
+    const result = await assetService.transfer('asset-1', 'asset-2', '300', 'workspace-1');
 
-    // Transfer returns assets as-is (no balance mutation)
-    expect(result.fromAsset).toEqual(fromAsset);
-    expect(result.toAsset).toEqual(toAsset);
-
-    // No DB writes should occur — transfer is validation-only
-    expect(mockDb.update).not.toHaveBeenCalled();
-    expect(mockDb.insert).not.toHaveBeenCalled();
+    // Transfer mutates balances: source deducted, destination credited
+    expect(result.fromAsset?.balance).toBe('700');
+    expect(result.toAsset?.balance).toBe('800');
   });
 
   it('should reject transfer to the same asset', async () => {
-    await expect(
-      assetService.transfer('asset-1', 'asset-1', '100', undefined, 'workspace-1')
-    ).rejects.toThrow('Cannot transfer an asset to itself');
+    await expect(assetService.transfer('asset-1', 'asset-1', '100', 'workspace-1')).rejects.toThrow(
+      'Cannot transfer an asset to itself'
+    );
 
     expect(mockDb.query.assets.findFirst).not.toHaveBeenCalled();
   });
@@ -66,9 +56,9 @@ describe('AssetService.transfer()', () => {
       .mockResolvedValueOnce(undefined)
       .mockResolvedValueOnce(createMockAsset({ id: 'asset-2' }));
 
-    await expect(
-      assetService.transfer('asset-1', 'asset-2', '100', undefined, 'workspace-1')
-    ).rejects.toThrow('Asset not found');
+    await expect(assetService.transfer('asset-1', 'asset-2', '100', 'workspace-1')).rejects.toThrow(
+      'Asset not found'
+    );
 
     expect(mockDb.query.assets.findFirst).toHaveBeenCalledTimes(2);
   });
@@ -86,9 +76,9 @@ describe('AssetService.transfer()', () => {
       .mockResolvedValueOnce(fromAsset)
       .mockResolvedValueOnce(undefined);
 
-    await expect(
-      assetService.transfer('asset-1', 'asset-2', '100', undefined, 'workspace-1')
-    ).rejects.toThrow('Asset not found');
+    await expect(assetService.transfer('asset-1', 'asset-2', '100', 'workspace-1')).rejects.toThrow(
+      'Asset not found'
+    );
 
     expect(mockDb.query.assets.findFirst).toHaveBeenCalledTimes(2);
   });
@@ -114,9 +104,9 @@ describe('AssetService.transfer()', () => {
       .mockResolvedValueOnce(fromAsset)
       .mockResolvedValueOnce(toAsset);
 
-    await expect(
-      assetService.transfer('asset-1', 'asset-2', '100', undefined, 'workspace-1')
-    ).rejects.toThrow('Cannot transfer between different currencies');
+    await expect(assetService.transfer('asset-1', 'asset-2', '100', 'workspace-1')).rejects.toThrow(
+      'Cannot transfer between different currencies'
+    );
 
     expect(mockDb.query.assets.findFirst).toHaveBeenCalledTimes(2);
   });
@@ -142,9 +132,9 @@ describe('AssetService.transfer()', () => {
       .mockResolvedValueOnce(fromAsset)
       .mockResolvedValueOnce(toAsset);
 
-    await expect(
-      assetService.transfer('asset-1', 'asset-2', '0', undefined, 'workspace-1')
-    ).rejects.toThrow('Transfer amount must be positive');
+    await expect(assetService.transfer('asset-1', 'asset-2', '0', 'workspace-1')).rejects.toThrow(
+      'Transfer amount must be positive'
+    );
 
     expect(mockDb.query.assets.findFirst).toHaveBeenCalledTimes(2);
   });
@@ -174,7 +164,7 @@ describe('AssetService.transfer()', () => {
 
     await Promise.resolve(
       expect(
-        assetService.transfer('asset-1', 'asset-2', '100', undefined, 'workspace-1')
+        assetService.transfer('asset-1', 'asset-2', '100', 'workspace-1')
       ).rejects.toMatchObject({ code: ServiceErrorCode.ACCOUNT_CLOSED })
     );
   });
@@ -204,7 +194,7 @@ describe('AssetService.transfer()', () => {
 
     await Promise.resolve(
       expect(
-        assetService.transfer('asset-1', 'asset-2', '100', undefined, 'workspace-1')
+        assetService.transfer('asset-1', 'asset-2', '100', 'workspace-1')
       ).rejects.toMatchObject({ code: ServiceErrorCode.ACCOUNT_CLOSED })
     );
   });
