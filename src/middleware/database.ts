@@ -29,7 +29,8 @@ export const database: MiddlewareHandler = async (_context, next) => {
     `dialect=${config.dialect}` +
       ` url=${config.url ? config.url.replace(/\/\/.*@/, '//***@') : 'MISSING'}` +
       ` supabase=${config.isSupabase}` +
-      ` hyperdrive=${config.isHyperdrive}`
+      ` hyperdrive=${config.isHyperdrive}` +
+      ` d1=${config.isD1}`
   );
 
   // Diagnostic: count fetch() calls to identify subrequest sources

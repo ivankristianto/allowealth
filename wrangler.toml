@@ -1,5 +1,16 @@
-# Cloudflare Workers Configuration
+# Cloudflare Workers Configuration (PostgreSQL + Hyperdrive)
 # https://developers.cloudflare.com/workers/wrangler/configuration/
+#
+# DEPLOYMENT OPTIONS:
+# 1. PostgreSQL + Hyperdrive (this file): bun run deploy:cloudflare
+#    - Uses Supabase PostgreSQL with Hyperdrive connection pooling
+#    - Set DATABASE_URL secret to Supabase connection string
+#
+# 2. Cloudflare D1 (wrangler.d1.toml): bun run deploy:cloudflare:d1
+#    - Uses D1 SQLite-compatible database at the edge
+#    - Create D1 database first: wrangler d1 create allowealth-db
+#    - Update database_id in wrangler.d1.toml
+#    - Run migrations: wrangler d1 execute allowealth-db --remote --file=./drizzle/sqlite/xxx.sql
 
 name = "allowealth"
 main = "dist/_worker.js/index.js"
