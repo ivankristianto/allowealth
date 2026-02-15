@@ -86,8 +86,8 @@ test.describe('Admin Diagnostics Page', () => {
     // Wait for page to load
     await page.waitForLoadState('domcontentloaded');
 
-    // Verify Runtime Information section is visible
-    const runtimeSection = page.locator('h2:has-text("Runtime Information")').locator('..');
+    // Verify Runtime Environment section is visible
+    const runtimeSection = page.locator('[data-testid="runtime-card"]');
     await expect(runtimeSection).toBeVisible();
 
     // Verify runtime badge contains one of: bun, workers, node
@@ -114,8 +114,8 @@ test.describe('Admin Diagnostics Page', () => {
     // Wait for page to load
     await page.waitForLoadState('domcontentloaded');
 
-    // Verify Database Information section is visible
-    const databaseSection = page.locator('h2:has-text("Database Information")').locator('..');
+    // Verify Database section is visible
+    const databaseSection = page.locator('[data-testid="database-card"]');
     await expect(databaseSection).toBeVisible();
 
     // Verify dialect badge is present (sqlite or postgresql)
@@ -134,8 +134,9 @@ test.describe('Admin Diagnostics Page', () => {
     await expect(connectionStatus).toBeVisible();
 
     // Verify database URL is shown (masked/partial)
-    const dbUrlRow = databaseSection.locator('td:has-text("Database URL")').locator('..');
-    await expect(dbUrlRow.locator('code')).toBeVisible();
+    const dbUrlLabel = databaseSection.locator('dt:has-text("Database URL")');
+    await expect(dbUrlLabel).toBeVisible();
+    await expect(databaseSection.locator('code')).toBeVisible();
   });
 
   /**
@@ -148,13 +149,13 @@ test.describe('Admin Diagnostics Page', () => {
     // Wait for page to load
     await page.waitForLoadState('domcontentloaded');
 
-    // Verify Cache Information section is visible
-    const cacheSection = page.locator('h2:has-text("Cache Information")').locator('..');
+    // Verify Cache section is visible
+    const cacheSection = page.locator('[data-testid="cache-card"]');
     await expect(cacheSection).toBeVisible();
 
     // Verify driver badge is present
-    const driverBadge = cacheSection.locator('.badge-primary');
-    await expect(driverBadge).toBeVisible();
+    const driverBadge = cacheSection.locator('.badge-accent, .badge-neutral');
+    await expect(driverBadge.first()).toBeVisible();
 
     // Verify status badge is present (healthy, error, or disabled)
     const statusBadge = cacheSection.locator('.badge-success, .badge-error, .badge-neutral');
@@ -265,15 +266,13 @@ test.describe('Admin Diagnostics Page', () => {
     await page.waitForLoadState('domcontentloaded');
 
     // Verify configuration alerts section exists
-    const alertsSection = page.locator('#configuration-alerts');
+    const alertsSection = page.locator('[aria-label="Configuration status"]');
     await expect(alertsSection).toBeVisible();
 
-    // Check for any alerts (error, warning, or success)
-    const hasAlerts = await alertsSection
-      .locator('.alert-error, .alert-warning, .alert-success')
-      .count();
+    // Check for any alerts (error or warning)
+    const hasAlerts = await alertsSection.locator('.alert-error, .alert-warning').count();
 
-    // At least one alert should be present (success if config is valid)
+    // At least one alert should be present (missing required or warnings)
     expect(hasAlerts).toBeGreaterThan(0);
   });
 
