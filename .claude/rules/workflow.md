@@ -101,6 +101,9 @@ The project deploys to **Cloudflare Workers** (primary) and **Bun** (local dev).
 - ❌ **Forget cross-session context** - if user asked to remove something prior, don't leave it
 - ❌ **Delete tests without replacing coverage**
 - ❌ **Assume endpoints are "dead" because grep finds no client references**
+- ✅ **Clean up dead error handling after simplifying methods** - when removing functionality (e.g., balance mutation), also remove corresponding error handlers in API routes
+- ✅ **Update OpenAPI schemas when adding new DB columns** - if a column is returned in API responses, the schema must include it
+- ✅ **Exclude debt from asset allocation charts** - when adding account classification, ensure allocation/distribution calculations exclude debt consistently (same as portfolio totals)
 
 ## Subprocess Patterns
 
@@ -116,6 +119,9 @@ The project deploys to **Cloudflare Workers** (primary) and **Bun** (local dev).
 - ✅ **Verify subagent commits with `git log` after dispatch** - subagents may report success but fail to commit
 - ✅ **Commit files manually if subagent skipped the commit step** - check `git status` after every subagent returns
 - ❌ **Trust subagent "all checks passed" reports without independent verification** - subagents may report success while leaving partial changes
+- ✅ **Group parallel subagents by file dependency** - Wave 1 (services + utils + seeders), then Wave 2 (components + pages that consume them); prevents merge conflicts
+- ✅ **Run full quality gates after ALL parallel agents complete** - individual agents pass in isolation but combined state may conflict (e.g., both agents editing same file)
+- ✅ **Use parallel code review agents for thorough coverage** - two independent reviewers catch different issues; triage findings together before fixing
 
 ## Dependency Changes
 
