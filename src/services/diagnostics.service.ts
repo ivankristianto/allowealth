@@ -152,7 +152,7 @@ export class DiagnosticsService {
 
       vars.push({
         name,
-        value: isSensitive && value ? this.maskValue(value) : (value ?? '(not set)'),
+        value: isSensitive && value ? this.maskValue(value) : value || '(not set)',
         isSet: value !== undefined,
         isSensitive,
       });

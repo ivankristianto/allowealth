@@ -20,7 +20,7 @@ import DiagnosticsDisplay from '@/components/organisms/DiagnosticsDisplay.astro'
 import { requireAdmin } from '@/lib/auth/requireAuth';
 import { DiagnosticsService } from '@/services/diagnostics.service';
 import { db } from '@/db';
-import { RefreshCw, CircleAlert } from '@lucide/astro';
+import { CircleAlert } from '@lucide/astro';
 
 // Authorization check - must be admin
 const authResponse = requireAdmin(Astro);
@@ -43,20 +43,12 @@ try {
 }
 
 // Page metadata
-const title = 'System Diagnostics';
-const subtitle = 'Runtime, database, cache, and configuration information';
+const title = 'Diagnostics';
+const subtitle = 'System health overview';
 const currentPath = '/admin/diagnostics';
 ---
 
 <ProtectedLayout title={title} currentPath={currentPath} subtitle={subtitle}>
-  <!-- Refresh button in header slot -->
-  <div slot="header">
-    <button id="refresh-diagnostics" class="btn btn-accent btn-sm" type="button">
-      <RefreshCw size={16} class="stroke-current" aria-hidden="true" />
-      Refresh
-    </button>
-  </div>
-
   <!-- Page content with standard container -->
   <div
     class="@container max-w-7xl mx-auto @sm:px-2 @3xl:px-6 space-y-6 @sm:space-y-8"
@@ -79,6 +71,3 @@ const currentPath = '/admin/diagnostics';
     {diagnosticsData && <DiagnosticsDisplay data={diagnosticsData} />}
   </div>
 </ProtectedLayout>
-
-<!-- Client Script for Refresh Functionality -->
-<script src="./diagnostics.client.ts"></script>
