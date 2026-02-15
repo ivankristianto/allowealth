@@ -1,6 +1,29 @@
 # Learned Patterns
 
-Patterns learned from experience during development. These capture common mistakes and their fixes.
+Patterns learned from experience during development. When a pattern clearly belongs to a domain, it is moved to the appropriate rule file.
+
+## Where Patterns Live
+
+| Domain                                        | File                        |
+| --------------------------------------------- | --------------------------- |
+| Astro components, Vite SSR, client scripts    | `frontend/astro.md`         |
+| Bundle size, imports, tree-shaking            | `frontend/bundle.md`        |
+| Design system, DaisyUI, accessibility         | `frontend/design-system.md` |
+| Database, ORM, queries, input validation      | `backend/database.md`       |
+| Cloudflare Workers, Wrangler, env vars        | `backend/deployment.md`     |
+| API patterns, OpenAPI                         | `backend/api.md`            |
+| Testing, Playwright, E2E, test data           | `testing.md`                |
+| Debugging, feature completeness, subprocesses | `workflow.md`               |
+
+## Adding New Patterns
+
+When you learn a new pattern from a debugging session or code review:
+
+1. Identify which domain file it belongs to
+2. Add it directly to that file with ✅/❌ format
+3. Only add here if it doesn't fit any domain file
+
+Patterns added here should be periodically redistributed to domain files.
 
 ## Input Validation
 
@@ -52,7 +75,7 @@ const token = document.cookie.split('csrf_token=')[1]; // Breaks on base64
 
 ### Query Optimization
 
-- ❌ **Add extra DB queries as the lazy first solution** - use subqueries or JOINs
+- ❌ **Add extra DB queries as** lazy first solution\*\* - use subqueries or JOINs
 - ✅ **Query budgets directly instead of cached overview** - guarantees schema fields like `id` are present
 - ❌ **Rely on cached data when schema fields are critical** - cache may be stale
 
@@ -148,7 +171,7 @@ const token = document.cookie.split('csrf_token=')[1]; // Breaks on base64
 - ❌ **Assume fetch counter captures all subrequests** - TCP sockets via nodejs_compat bypass fetch wrappers
 - ❌ **Use Supabase transaction pooler with Hyperdrive** - use direct connection (port 5432)
 - ❌ **Name Astro API endpoints with `_` prefix** - Astro treats `_`-prefixed files as private, silently 404s
-- ❌ **Mutate `import.meta.env` directly in tests** - use `setTestEnv()` to match the production code path
+- ❌ **Mutate `import.meta.env` directly in tests** - use `setTestEnv()` to match production code path
 
 ## Debugging Workflow
 

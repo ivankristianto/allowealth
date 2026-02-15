@@ -225,6 +225,25 @@ const dbUrl = getEnv('DATABASE_URL'); // Throws if missing
 
 - ❌ **Change DATABASE_URL to sqlite fallback in prod config** - fail fast instead
 
+## Wrangler Configuration
+
+```toml
+# ✅ Correct: Bare domain for custom domains
+[[routes]]
+pattern = "example.io"
+custom_domain = true
+
+# ❌ Wrong: Wildcards or paths in custom domain routes
+[[routes]]
+pattern = "example.io/*"
+custom_domain = true
+```
+
+**Rules:**
+
+- ❌ **Use wildcards (`/*`) or paths in Custom Domain routes** - Custom Domains only accept bare domain names
+- ✅ **Use bare domain in `custom_domain` routes**
+
 ## Deployment Checklist
 
 Before deploying to Workers:
