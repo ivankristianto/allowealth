@@ -225,6 +225,36 @@ const dbUrl = getEnv('DATABASE_URL'); // Throws if missing
 
 - ❌ **Change DATABASE_URL to sqlite fallback in prod config** - fail fast instead
 
+## Cloudflare D1
+
+```typescript
+// ✅ Correct: Static import for D1 driver
+import { drizzle } from 'drizzle-orm/d1';
+
+// ✅ Correct: Dedicated binding storage
+let d1Binding: D1Database | null = null;
+export function setD1Binding(binding: D1Database) {
+  d1Binding = binding;
+}
+export function getD1Binding() {
+  return d1Binding;
+}
+
+// ❌ Wrong: Smuggle through env bag
+setRuntimeEnv({ D1: binding }); // D1 is an object, env expects strings
+```
+
+**Rules:**
+
+- ✅ **Use static import for `drizzle-orm/d1`** - `drizzle()` is synchronous, dynamic `import()` adds unnecessary async complexity
+- ❌ **Use async proxy patterns to bridge sync/async DB interfaces** - Proxy that wraps every property as an async function breaks `db.query.table.findFirst()` chains
+- ✅ **Store D1 binding in dedicated module-level variable** - not in the string-typed env API (`Record<string, string>`)
+- ❌ **Smuggle objects through `setRuntimeEnv()` env bag** - D1 binding is an object, env API expects strings; use dedicated `setD1Binding()`/`getD1Binding()`
+- ✅ **Enable transactions for D1 in `runTransaction()`** - D1 runs in multi-isolate Workers, not single-writer local SQLite
+- ❌ **Assume D1 has same concurrency model as local SQLite** - local SQLite has single-writer WAL; D1 is multi-isolate, needs transactions
+- ✅ **Call `prepareForRequest()` for D1 in database middleware** - reset `dbInstance` per-request even though D1 has no TCP connections
+- ✅ **Suppress `DATABASE_URL` warning when D1 is enabled** - D1 doesn't use DATABASE_URL; check `isD1` before calling `getDatabaseUrl()`
+
 ## Wrangler Configuration
 
 ```toml

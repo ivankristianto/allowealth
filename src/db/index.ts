@@ -1,7 +1,7 @@
 /**
  * Database connection configuration
  *
- * Provides a database abstraction layer supporting SQLite and PostgreSQL dialects.
+ * Provides a database abstraction layer supporting SQLite, PostgreSQL, and D1 dialects.
  *
  * SQLite:
  * - Uses bun:sqlite with drizzle-orm/bun-sqlite (local development)
@@ -10,17 +10,24 @@
  * - Uses postgres.js with drizzle-orm/postgres-js
  * - Supports Supabase with automatic SSL configuration
  *
- * The driver is selected automatically based on the DATABASE_URL format:
+ * Cloudflare D1:
+ * - Uses D1 binding with drizzle-orm/d1 (Cloudflare Workers)
+ * - SQLite-compatible, no connection management needed
+ *
+ * The driver is selected automatically based on configuration:
+ * - D1_ENABLED=true → D1 binding (Cloudflare Workers)
  * - postgres:// or postgresql:// → PostgreSQL
  * - Otherwise → SQLite
  *
  * @see https://bun.sh/docs/api/sqlite
  * @see https://github.com/porsager/postgres
+ * @see https://developers.cloudflare.com/d1/
  */
 import { createRequire } from 'node:module';
 import { getDatabaseConfig } from './config';
 import type { DatabaseDriver } from './driver';
 import { createBunDriver } from './drivers/bun';
+import { createD1Database, getD1Binding } from './drivers/d1';
 import { createPostgresDatabase, closePostgres, resetPostgresClient } from './drivers/postgres';
 import type { BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
@@ -173,10 +180,11 @@ export async function runTransaction<T>(
   callback: (tx: IDatabase) => Promise<T>
 ): Promise<T> {
   const config = getDatabaseConfig();
-  if (config.dialect === 'postgresql') {
+  // PostgreSQL and D1 support async transactions
+  if (config.dialect === 'postgresql' || config.isD1) {
     return db.transaction(callback);
   }
-  // SQLite: run directly — single-writer WAL mode ensures sequential consistency
+  // Local SQLite: run directly — single-writer WAL mode ensures sequential consistency
   return callback(db);
 }
 
@@ -214,11 +222,10 @@ function getRequire() {
 /**
  * Create the Drizzle database instance
  *
- * Automatically selects the correct driver based on DATABASE_URL:
+ * Automatically selects the correct driver based on configuration:
+ * - D1_ENABLED=true → D1 binding via drizzle-orm/d1 (Cloudflare Workers)
  * - PostgreSQL URLs → postgres.js driver
  * - SQLite paths → bun:sqlite driver (via static import, bun:sqlite externalized)
- *
- * For edge environments (Cloudflare Workers), only PostgreSQL is supported.
  *
  * @throws Error if database connection fails
  */
@@ -227,7 +234,19 @@ function createDatabase(): Database {
   let driver: (DatabaseDriver & { _raw: unknown }) | null = null;
 
   try {
-    // PostgreSQL path - used in production (Cloudflare Workers)
+    // D1 path - Cloudflare Workers with D1 binding
+    if (config.isD1) {
+      const d1Binding = getD1Binding();
+      if (!d1Binding) {
+        throw new Error(
+          'D1_ENABLED is set but D1 binding is not available. ' +
+            'Ensure D1 binding is configured in wrangler.toml'
+        );
+      }
+      return createD1Database(d1Binding, sqliteSchema) as unknown as Database;
+    }
+
+    // PostgreSQL path - used in production (Cloudflare Workers with PostgreSQL)
     if (config.dialect === 'postgresql') {
       return createPostgresDatabase(config.url, pgSchema) as unknown as Database;
     }
@@ -235,7 +254,6 @@ function createDatabase(): Database {
     // SQLite path - uses bun:sqlite via Bun runtime
     // createBunDriver is statically imported so Vite bundles it correctly.
     // bun:sqlite is externalized in astro.config.ts so it remains a runtime require.
-    // For edge environments (Cloudflare Workers), configure DATABASE_URL to use PostgreSQL
     driver = createBunDriver(config.url);
     const dynamicRequire = getRequire();
     const { drizzle } = dynamicRequire('drizzle-orm/bun-sqlite');

@@ -109,6 +109,14 @@ The project deploys to **Cloudflare Workers** (primary) and **Bun** (local dev).
 - ✅ **Use Bun subprocess for E2E helpers needing bun:sqlite** - Playwright runs in Node.js, shell out to Bun for SQLite access
 - ❌ **Over-engineer E2E test helpers with production-grade error handling** - YAGNI for test code; keep subprocess helpers simple
 
+## Subagent Patterns
+
+- ✅ **Verify file state after subagent completes** - subagents may make partial changes; always read files and run typecheck before trusting their report
+- ✅ **Run typecheck immediately after subagent work** - stale diagnostics from mid-edit can appear; fresh typecheck reveals actual state
+- ✅ **Verify subagent commits with `git log` after dispatch** - subagents may report success but fail to commit
+- ✅ **Commit files manually if subagent skipped the commit step** - check `git status` after every subagent returns
+- ❌ **Trust subagent "all checks passed" reports without independent verification** - subagents may report success while leaving partial changes
+
 ## Dependency Changes
 
 - ✅ **Grep ALL file types when removing a dependency** - comments, docs, rules, and config files reference dependencies too

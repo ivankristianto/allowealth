@@ -11,6 +11,7 @@ export type DatabaseDialect = 'sqlite' | 'postgresql';
 export interface DatabaseConfig {
   dialect: DatabaseDialect;
   url: string;
+  isD1: boolean;
   isSupabase: boolean;
   isTransactionPooler: boolean;
   isHyperdrive: boolean;
@@ -87,7 +88,22 @@ function isTransactionPoolerUrl(url: string): boolean {
 }
 
 export function getDatabaseConfig(): DatabaseConfig {
+  const isD1 = getEnv('D1_ENABLED') === 'true';
+
+  // D1 is SQLite-compatible — no DATABASE_URL needed
+  if (isD1) {
+    return {
+      dialect: 'sqlite',
+      url: '', // D1 doesn't use a URL
+      isD1,
+      isSupabase: false,
+      isTransactionPooler: false,
+      isHyperdrive: false,
+    };
+  }
+
   const url = getDatabaseUrl();
+
   const dialect = detectDialect(url);
   const isHyperdrive = getEnv('HYPERDRIVE_ENABLED') === 'true';
   // Hyperdrive handles Supabase/pooler specifics — skip detection when active
@@ -98,6 +114,7 @@ export function getDatabaseConfig(): DatabaseConfig {
   return {
     dialect,
     url,
+    isD1,
     isSupabase,
     isTransactionPooler,
     isHyperdrive,
