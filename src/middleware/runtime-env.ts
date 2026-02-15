@@ -43,5 +43,9 @@ export const runtimeEnv: MiddlewareHandler = async (context, next) => {
 
     setRuntimeEnv(env);
   }
-  return next();
+  try {
+    return await next();
+  } finally {
+    setD1Binding(null);
+  }
 };
