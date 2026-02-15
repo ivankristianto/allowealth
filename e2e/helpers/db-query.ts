@@ -12,6 +12,7 @@
  *   is-verified <email>      - Check if user email is verified
  *   workspace-status <email> - Get workspace status for user
  */
+/* eslint-disable no-console */
 import { Database } from 'bun:sqlite';
 
 const [dbPath, queryType, param] = process.argv.slice(2);
