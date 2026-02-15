@@ -2,31 +2,18 @@
 /**
  * Admin Diagnostics Page
  *
- * System diagnostics page for administrators.
+ * System diagnostics page for super admins.
  * Displays runtime, database, cache, environment, and configuration information.
  *
- * Protected by requireAdmin() - only accessible to admin users.
- * Fetches diagnostics server-side via diagnosticsService.getDiagnostics().
- *
- * Features:
- * - Server-side data fetching
- * - Refresh button with client-side script
- * - Toast notifications on error
- * - ProtectedLayout wrapper
+ * Protected by AdminLayout (requireSuperAdmin).
+ * Fetches diagnostics server-side via DiagnosticsService.
  */
 
-import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
+import AdminLayout from '@/layouts/AdminLayout.astro';
 import DiagnosticsDisplay from '@/components/organisms/DiagnosticsDisplay.astro';
-import { requireAdmin } from '@/lib/auth/requireAuth';
 import { DiagnosticsService } from '@/services/diagnostics.service';
 import { db } from '@/db';
 import { CircleAlert } from '@lucide/astro';
-
-// Authorization check - must be admin
-const authResponse = requireAdmin(Astro);
-if (authResponse) {
-  return authResponse;
-}
 
 // Initialize diagnostics service
 const service = new DiagnosticsService(db);
@@ -41,20 +28,13 @@ try {
   console.error('Error fetching diagnostics:', err);
   error = err instanceof Error ? err.message : 'Unknown error occurred';
 }
-
-// Page metadata
-const title = 'Diagnostics';
-const subtitle = 'System health overview';
-const currentPath = '/admin/diagnostics';
 ---
 
-<ProtectedLayout title={title} currentPath={currentPath} subtitle={subtitle}>
-  <!-- Page content with standard container -->
+<AdminLayout title="Diagnostics" currentPath="/admin/diagnostics" subtitle="System health overview">
   <div
     class="@container max-w-7xl mx-auto @sm:px-2 @3xl:px-6 space-y-6 @sm:space-y-8"
     data-testid="diagnostics-page"
   >
-    <!-- Error State -->
     {
       error && (
         <div class="alert alert-error" role="alert">
@@ -67,7 +47,6 @@ const currentPath = '/admin/diagnostics';
       )
     }
 
-    <!-- Diagnostics Display -->
     {diagnosticsData && <DiagnosticsDisplay data={diagnosticsData} />}
   </div>
-</ProtectedLayout>
+</AdminLayout>

@@ -9,7 +9,7 @@ paths:
         Includes runtime, database, cache, environment, and configuration data.
         All sensitive data (passwords, tokens, secrets) is sanitized or masked.
 
-        Requires admin role authentication.
+        Requires super_admin role authentication.
       security:
         - sessionAuth: []
       responses:
@@ -64,15 +64,15 @@ paths:
         '401':
           $ref: '../responses/common.yml#/Unauthorized'
         '403':
-          description: Forbidden - Admin access required
+          description: Forbidden - Super admin access required
           content:
             application/json:
               schema:
                 $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
               example:
                 success: false
-                error: Admin access required
-                code: ADMIN_REQUIRED
+                error: Super admin access required
+                code: SUPER_ADMIN_REQUIRED
         '500':
           description: Internal server error
           content:
