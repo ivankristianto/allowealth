@@ -35,6 +35,7 @@ import {
 import { DEFAULT_ASSET_CATEGORIES } from '@/lib/constants';
 import { USER_META_KEYS } from '@/lib/constants/user-meta-keys';
 import { WORKSPACE_META_KEYS, WORKSPACE_META_DEFAULTS } from '@/lib/constants/workspace-meta-keys';
+import { deriveAccountClass } from '@/lib/types/asset';
 
 // ============================================================================
 // PRODUCTION GUARD
@@ -1176,6 +1177,7 @@ async function seedAssets(
       created_by_user_id: userId,
       name: asset.name,
       type: asset.type,
+      account_class: deriveAccountClass(asset.type),
       category_id: categoryId,
       balance: amt(asset.balance),
       initial_balance: amt(asset.balance),
@@ -1199,6 +1201,7 @@ async function seedAssets(
       created_by_user_id: userId,
       name: asset.name,
       type: asset.type,
+      account_class: deriveAccountClass(asset.type),
       category_id: categoryId,
       balance: amt(asset.balance),
       initial_balance: amt(asset.balance),
@@ -1221,6 +1224,7 @@ async function seedAssets(
     created_by_user_id: userId,
     name: 'Old Savings (Closed)',
     type: 'bank_account',
+    account_class: deriveAccountClass('bank_account'),
     category_id: closedCategoryId,
     balance: '0',
     initial_balance: '0',

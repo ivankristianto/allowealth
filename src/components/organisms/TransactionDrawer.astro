@@ -12,7 +12,7 @@ import { CircleMinus, CirclePlus, Inbox } from '@lucide/astro';
 
 export interface Props {
   categories: Array<{ id: string; name: string; type: string; currency?: string }>;
-  assets: Array<{ id: string; name: string; type: string }>;
+  assets: Array<{ id: string; name: string; type: string; account_class: string }>;
   categoryUsageCounts?: Array<{ category_id: string; count: number }>;
 }
 

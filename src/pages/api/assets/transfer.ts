@@ -8,6 +8,7 @@ import {
   isValidationError,
 } from '@/lib/api-utils';
 import { logError } from '@/lib/utils';
+import { AssetServiceError } from '@/services/service-errors';
 import { z } from 'zod';
 
 const transferSchema = z
@@ -51,12 +52,14 @@ export const POST: APIRoute = async (context) => {
 
     return successResponse(result);
   } catch (error) {
-    if (error instanceof Error) {
-      if (error.message === 'Unauthorized') return errorResponse('Unauthorized', 401);
-      if (error.message === 'Asset not found') return errorResponse('Asset not found', 404);
-      if (error.message === 'Insufficient balance')
-        return errorResponse('Insufficient balance', 400);
-      if (error.message.includes('currency')) return errorResponse(error.message, 400);
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return errorResponse('Unauthorized', 401);
+    }
+    if (error instanceof AssetServiceError) {
+      return errorResponse(error.message, error.statusCode, error.code);
+    }
+    if (error instanceof Error && error.message.includes('currency')) {
+      return errorResponse(error.message, 400);
     }
     logError('Error transferring between assets', error);
     return errorResponse('Failed to transfer', 500);

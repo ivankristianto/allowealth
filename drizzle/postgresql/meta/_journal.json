@@ -71,6 +71,13 @@
       "when": 1771064158117,
       "tag": "0009_hesitant_sage",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1771159235733,
+      "tag": "0010_stiff_reavers",
+      "breakpoints": true
     }
   ]
 }

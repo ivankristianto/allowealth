@@ -20,6 +20,44 @@ export type AssetType =
   | 'loan';
 
 /**
+ * Account classification for transaction rules and portfolio grouping.
+ * Auto-derived from AssetType at creation time.
+ */
+export type AccountClass = 'liquid' | 'non_liquid' | 'debt';
+
+/**
+ * Mapping from granular asset type to account class
+ */
+export const ASSET_TYPE_TO_CLASS: Record<AssetType, AccountClass> = {
+  cash: 'liquid',
+  bank_account: 'liquid',
+  e_wallet: 'liquid',
+  mutual_fund: 'non_liquid',
+  bond: 'non_liquid',
+  crypto: 'non_liquid',
+  stock: 'non_liquid',
+  other: 'non_liquid',
+  credit_card: 'debt',
+  loan: 'debt',
+};
+
+/**
+ * Derive account class from asset type
+ */
+export function deriveAccountClass(type: AssetType): AccountClass {
+  return ASSET_TYPE_TO_CLASS[type];
+}
+
+/**
+ * Display labels for account classes
+ */
+export const ACCOUNT_CLASS_LABELS: Record<AccountClass, string> = {
+  liquid: 'Liquid',
+  non_liquid: 'Non-Liquid',
+  debt: 'Debt',
+};
+
+/**
  * Currency type (same as in other modules)
  */
 export type Currency = 'IDR' | 'USD';
@@ -37,6 +75,7 @@ export interface Asset {
   created_by_user_id: string;
   name: string;
   type: AssetType;
+  account_class: AccountClass;
   category_id?: string | null;
   balance: string;
   initial_balance: string | null;
@@ -59,6 +98,7 @@ export interface AssetOutput {
   id: string;
   name: string;
   type: AssetType;
+  account_class: AccountClass;
   category_id?: string | null;
   category_name?: string | null;
   balance: string;

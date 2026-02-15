@@ -2,20 +2,22 @@
 /**
  * AssetPortfolioSummary Component
  *
- * Overview section showing total portfolio value in both currencies
- * and asset allocation distribution bar.
+ * Overview section showing total portfolio value (assets, debt, net worth)
+ * in both currencies and asset allocation distribution bar.
  *
  * Part of the Global Portfolio page redesign.
  *
- * @param {number} totalIdr - Total value in IDR
- * @param {number} totalUsd - Total value in USD
+ * @param {number} totalIdr - Total asset value in IDR
+ * @param {number} totalUsd - Total asset value in USD
+ * @param {number} debtIdr - Total debt value in IDR
+ * @param {number} debtUsd - Total debt value in USD
  * @param {Array} distribution - Asset type distribution for allocation bar
  * @param {boolean} loading - Show loading skeleton state
  * @param {string} className - Additional CSS classes
  */
 
 // External packages
-import { Wallet, Globe, Clock } from '@lucide/astro';
+import { Wallet, CreditCard, TrendingUp, Clock } from '@lucide/astro';
 
 // Internal aliases - lib
 import { formatCurrency } from '@/lib/formatting';
@@ -40,6 +42,8 @@ const OTHERS_COLOR = '#9ca3af'; // gray-400 for "Others" category
 export interface Props {
   totalIdr: number;
   totalUsd: number;
+  debtIdr?: number;
+  debtUsd?: number;
   distribution: AllocationItem[];
   loading?: boolean;
   className?: string;
@@ -50,12 +54,19 @@ export interface Props {
 const {
   totalIdr,
   totalUsd,
+  debtIdr = 0,
+  debtUsd = 0,
   distribution,
   loading = false,
   className = '',
   latestUpdate,
   isHistoricalView = false,
 } = Astro.props;
+
+// Calculate net worth (assets - debt)
+const netWorthIdr = totalIdr - debtIdr;
+const netWorthUsd = totalUsd - debtUsd;
+const hasDebt = debtIdr > 0 || debtUsd > 0;
 
 // Format the latest update date if provided
 const formattedLatestUpdate = latestUpdate
@@ -108,11 +119,12 @@ const cardClasses = [
     <section class={cardClasses} aria-busy="true" aria-label="Loading portfolio summary">
       <div class="space-y-8">
         {/* Total Values Skeleton */}
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-12">
           <div class="flex items-center justify-between">
             <div>
               <Skeleton variant="text" width="100px" height="12px" />
               <Skeleton variant="text" width="200px" height="36px" className="mt-3" />
+              <Skeleton variant="text" width="120px" height="14px" className="mt-2" />
             </div>
             <Skeleton variant="rectangular" width="56px" height="56px" className="rounded-2xl" />
           </div>
@@ -120,6 +132,15 @@ const cardClasses = [
             <div>
               <Skeleton variant="text" width="100px" height="12px" />
               <Skeleton variant="text" width="160px" height="36px" className="mt-3" />
+              <Skeleton variant="text" width="100px" height="14px" className="mt-2" />
+            </div>
+            <Skeleton variant="rectangular" width="56px" height="56px" className="rounded-2xl" />
+          </div>
+          <div class="flex items-center justify-between">
+            <div>
+              <Skeleton variant="text" width="100px" height="12px" />
+              <Skeleton variant="text" width="180px" height="36px" className="mt-3" />
+              <Skeleton variant="text" width="110px" height="14px" className="mt-2" />
             </div>
             <Skeleton variant="rectangular" width="56px" height="56px" className="rounded-2xl" />
           </div>
@@ -152,34 +173,70 @@ const cardClasses = [
     >
       <div class="space-y-8">
         {/* Total Values */}
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
-          {/* Total Assets (IDR) */}
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-12">
+          {/* Total Assets */}
           <div class="flex items-center justify-between" data-testid="portfolio-total-idr">
             <div>
               <StatLabel size="sm" className="uppercase tracking-widest">
-                Total Assets (IDR)
+                Total Assets
               </StatLabel>
               <p class="text-2xl lg:text-3xl font-bold mt-2 lg:mt-3 text-success tracking-tight leading-none">
                 {formatCurrency(totalIdr, 'IDR')}
               </p>
+              {totalUsd > 0 && (
+                <p class="text-sm font-semibold mt-1.5 text-info">
+                  {formatCurrency(totalUsd, 'USD')}
+                </p>
+              )}
             </div>
             <div class="w-12 h-12 lg:w-14 lg:h-14 bg-success/10 text-success rounded-2xl flex items-center justify-center shrink-0">
               <Wallet size={28} class="stroke-current" aria-hidden="true" />
             </div>
           </div>
 
-          {/* Total Assets (USD) */}
-          <div class="flex items-center justify-between" data-testid="portfolio-total-usd">
+          {/* Total Debt */}
+          {hasDebt && (
+            <div class="flex items-center justify-between" data-testid="portfolio-total-debt">
+              <div>
+                <StatLabel size="sm" className="uppercase tracking-widest">
+                  Total Debt
+                </StatLabel>
+                <p class="text-2xl lg:text-3xl font-bold mt-2 lg:mt-3 text-error tracking-tight leading-none">
+                  {formatCurrency(debtIdr, 'IDR')}
+                </p>
+                {debtUsd > 0 && (
+                  <p class="text-sm font-semibold mt-1.5 text-error/70">
+                    {formatCurrency(debtUsd, 'USD')}
+                  </p>
+                )}
+              </div>
+              <div class="w-12 h-12 lg:w-14 lg:h-14 bg-error/10 text-error rounded-2xl flex items-center justify-center shrink-0">
+                <CreditCard size={28} class="stroke-current" aria-hidden="true" />
+              </div>
+            </div>
+          )}
+
+          {/* Net Worth */}
+          <div class="flex items-center justify-between" data-testid="portfolio-net-worth">
             <div>
               <StatLabel size="sm" className="uppercase tracking-widest">
-                Total Assets (USD)
+                Net Worth
               </StatLabel>
-              <p class="text-2xl lg:text-3xl font-bold mt-2 lg:mt-3 text-info tracking-tight leading-none">
-                {formatCurrency(totalUsd, 'USD')}
+              <p
+                class={`text-2xl lg:text-3xl font-bold mt-2 lg:mt-3 tracking-tight leading-none ${netWorthIdr >= 0 ? 'text-accent' : 'text-error'}`}
+              >
+                {formatCurrency(netWorthIdr, 'IDR')}
               </p>
+              {netWorthUsd !== 0 && (
+                <p
+                  class={`text-sm font-semibold mt-1.5 ${netWorthUsd >= 0 ? 'text-accent/70' : 'text-error/70'}`}
+                >
+                  {formatCurrency(netWorthUsd, 'USD')}
+                </p>
+              )}
             </div>
-            <div class="w-12 h-12 lg:w-14 lg:h-14 bg-info/10 text-info rounded-2xl flex items-center justify-center shrink-0">
-              <Globe size={28} class="stroke-current" aria-hidden="true" />
+            <div class="w-12 h-12 lg:w-14 lg:h-14 bg-accent/10 text-accent rounded-2xl flex items-center justify-center shrink-0">
+              <TrendingUp size={28} class="stroke-current" aria-hidden="true" />
             </div>
           </div>
         </div>

@@ -1058,6 +1058,76 @@ export class TransactionService {
   }
 
   /**
+   * Get transactions for a specific asset, with monthly totals.
+   */
+  async getTransactionsByAsset(
+    assetId: string,
+    workspaceId: string,
+    year: number,
+    month: number
+  ): Promise<{
+    transactions: any[];
+    summary: {
+      totalIncome: string;
+      totalExpenses: string;
+      totalTransfersIn: string;
+      totalTransfersOut: string;
+    };
+  }> {
+    const startOfMonth = new Date(year, month - 1, 1);
+    const endOfMonth = new Date(year, month, 0, 23, 59, 59, 999);
+
+    const txTable = this.schema.transactions;
+
+    // Get all transactions where this asset is source or destination
+    const transactions = await (this.db as any)
+      .select()
+      .from(txTable)
+      .where(
+        and(
+          eq(txTable.workspace_id, workspaceId),
+          sql`${txTable.deleted_at} IS NULL`,
+          gte(txTable.transaction_date, startOfMonth),
+          lte(txTable.transaction_date, endOfMonth),
+          sql`(${txTable.asset_id} = ${assetId} OR ${txTable.to_asset_id} = ${assetId})`
+        )
+      )
+      .orderBy(desc(txTable.transaction_date));
+
+    // Calculate monthly summaries
+    let totalIncome = 0;
+    let totalExpenses = 0;
+    let totalTransfersIn = 0;
+    let totalTransfersOut = 0;
+
+    for (const tx of transactions) {
+      const amount = parseFloat(tx.amount || '0');
+      if (tx.type === 'income' && tx.asset_id === assetId) {
+        totalIncome += amount;
+      } else if (tx.type === 'expense' && tx.asset_id === assetId) {
+        totalExpenses += amount;
+      } else if (tx.type === 'transfer') {
+        if (tx.asset_id === assetId) {
+          totalTransfersOut += amount;
+        }
+        if (tx.to_asset_id === assetId) {
+          totalTransfersIn += amount;
+        }
+      }
+    }
+
+    return {
+      transactions,
+      summary: {
+        totalIncome: String(totalIncome),
+        totalExpenses: String(totalExpenses),
+        totalTransfersIn: String(totalTransfersIn),
+        totalTransfersOut: String(totalTransfersOut),
+      },
+    };
+  }
+
+  /**
    * Get audit history for a transaction
    * Returns create + last N edits + delete event (if exists)
    */

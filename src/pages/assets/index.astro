@@ -23,12 +23,13 @@ import EmptyState from '@components/atoms/EmptyState.astro';
 import { CalendarDays, Search } from '@lucide/astro';
 import { assetService, assetCategoryService } from '@/services';
 import type { AssetOutput, AssetType } from '@/lib/types/asset';
-import { formatAssetType } from '@/lib/types/asset';
+import { formatAssetType, deriveAccountClass } from '@/lib/types/asset';
 import { formatMonthYear } from '@/lib/utils/date';
 import { PERIOD_SELECTOR_MONTH_LIMIT } from '@/lib/constants/period';
 import {
   calculateAssetAllocation,
   calculatePortfolioTotals,
+  calculateDebtTotals,
   groupAssetsByType,
   calculateGroupTotals,
 } from '@/lib/utils/asset';
@@ -150,6 +151,7 @@ if (!isViewingCurrentMonth) {
       id: snapshot.id,
       name: snapshot.name,
       type: snapshot.type,
+      account_class: snapshot.account_class ?? deriveAccountClass(snapshot.type),
       category_id: snapshot.category_id,
       category_name: categoryName,
       balance: snapshot.snapshot_balance,
@@ -175,6 +177,7 @@ if (!isViewingCurrentMonth) {
       id: asset.id,
       name: asset.name,
       type: asset.type,
+      account_class: asset.account_class,
       category_id: asset.category_id,
       category_name: categoryName,
       balance: asset.balance,
@@ -193,6 +196,7 @@ if (!isViewingCurrentMonth) {
 // Calculate portfolio totals and allocation
 // @TODO: Wire with backend - Consider moving calculations to service layer
 const portfolioTotals = calculatePortfolioTotals(assets);
+const debtTotals = calculateDebtTotals(assets);
 const assetAllocation = calculateAssetAllocation(assets);
 
 // Find latest update date across all assets
@@ -270,6 +274,8 @@ const sortedGroups = Object.entries(assetsByType)
           <AssetPortfolioSummary
             totalIdr={portfolioTotals.totalIdr}
             totalUsd={portfolioTotals.totalUsd}
+            debtIdr={debtTotals.debtIdr}
+            debtUsd={debtTotals.debtUsd}
             distribution={assetAllocation}
             loading={false}
             latestUpdate={latestUpdate}

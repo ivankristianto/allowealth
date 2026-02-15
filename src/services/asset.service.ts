@@ -1,14 +1,9 @@
-import {
-  type IDatabase,
-  getActiveSchema,
-  runTransaction,
-  assets as assetsTable,
-  getDatabaseConfig,
-} from '@/db';
+import { type IDatabase, getActiveSchema, assets as assetsTable, getDatabaseConfig } from '@/db';
 import { eq, and, sql, inArray } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { AssetServiceError, ServiceErrorCode } from './service-errors';
 import type { AssetType, Currency } from '@/lib/types/asset';
+import { deriveAccountClass } from '@/lib/types/asset';
 import { type PerfCollector, trackQuery } from '@/lib/perf';
 import { decimalCompare } from '@/lib/utils/decimal';
 import { getCacheManager, CacheKeys, CacheTags, hashFilters } from '@/lib/cache';
@@ -100,6 +95,7 @@ export class AssetService {
         created_by_user_id: input.created_by_user_id,
         name: input.name,
         type: input.type,
+        account_class: deriveAccountClass(input.type),
         category_id: input.category_id ?? null,
         balance: input.balance,
         initial_balance: input.balance,
@@ -263,7 +259,10 @@ export class AssetService {
     };
 
     if (input.name !== undefined) updateData.name = input.name;
-    if (input.type !== undefined) updateData.type = input.type;
+    if (input.type !== undefined) {
+      updateData.type = input.type;
+      updateData.account_class = deriveAccountClass(input.type);
+    }
     if (input.category_id !== undefined) updateData.category_id = input.category_id;
     if (input.currency !== undefined) updateData.currency = input.currency;
 
@@ -367,14 +366,14 @@ export class AssetService {
   }
 
   /**
-   * Transfer balance between two assets of the same currency.
-   * Uses a database transaction for atomicity.
+   * Validate a transfer between two assets of the same currency.
+   * No balance mutation — transfer is recorded as a transaction only.
    */
   async transfer(
     fromId: string,
     toId: string,
     amount: string,
-    notes: string | undefined,
+    _notes: string | undefined,
     workspaceId: string
   ): Promise<{ fromAsset: AssetRow | undefined; toAsset: AssetRow | undefined }> {
     if (fromId === toId) {
@@ -406,84 +405,8 @@ export class AssetService {
       throw new Error('Transfer amount must be positive');
     }
 
-    if (decimalCompare(fromAsset.balance, amount) < 0) {
-      throw new Error('Insufficient balance');
-    }
-
-    const now = new Date();
-    const fromNote = notes ? `Transfer out: ${notes}` : `Transfer to ${toAsset.name}`;
-    const toNote = notes ? `Transfer in: ${notes}` : `Transfer from ${fromAsset.name}`;
-
-    await runTransaction(this.db, async (tx) => {
-      // Deduct from source using relative update to prevent lost-update race condition.
-      // The WHERE guard ensures balance cannot go negative even under concurrent access.
-      const deductResult: { balance: string }[] = await (tx as any)
-        .update(this.schema.assets)
-        .set({
-          balance: sql`CAST(CAST(${this.schema.assets.balance} AS NUMERIC) - CAST(${amount} AS NUMERIC) AS TEXT)`,
-          last_updated: now,
-          updated_at: now,
-        })
-        .where(
-          and(
-            eq(this.schema.assets.id, fromId),
-            eq(this.schema.assets.workspace_id, workspaceId),
-            sql`CAST(${this.schema.assets.balance} AS NUMERIC) >= CAST(${amount} AS NUMERIC)`
-          )
-        )
-        .returning({ balance: this.schema.assets.balance });
-
-      if (!deductResult.length) {
-        throw new Error('Insufficient balance');
-      }
-
-      await (tx as any).insert(this.schema.assetHistory).values({
-        id: nanoid(),
-        asset_id: fromId,
-        balance: deductResult[0].balance,
-        notes: fromNote,
-        recorded_at: now,
-      });
-
-      // Add to target using relative update
-      const addResult: { balance: string }[] = await (tx as any)
-        .update(this.schema.assets)
-        .set({
-          balance: sql`CAST(CAST(${this.schema.assets.balance} AS NUMERIC) + CAST(${amount} AS NUMERIC) AS TEXT)`,
-          last_updated: now,
-          updated_at: now,
-        })
-        .where(
-          and(eq(this.schema.assets.id, toId), eq(this.schema.assets.workspace_id, workspaceId))
-        )
-        .returning({ balance: this.schema.assets.balance });
-
-      if (!addResult.length) {
-        throw new AssetServiceError(ServiceErrorCode.ASSET_NOT_FOUND, 'Asset not found', 404);
-      }
-
-      await (tx as any).insert(this.schema.assetHistory).values({
-        id: nanoid(),
-        asset_id: toId,
-        balance: addResult[0].balance,
-        notes: toNote,
-        recorded_at: now,
-      });
-    });
-
-    // Invalidate asset cache - best-effort
-    try {
-      const cache = getCacheManager();
-      await cache.invalidateByTags([CacheTags.workspace(workspaceId), CacheTags.ASSETS]);
-    } catch {
-      // Cache invalidation failed, stale cache is acceptable
-    }
-
-    // Return updated assets after the transaction
-    const updatedFrom = await this.findById(fromId, workspaceId);
-    const updatedTo = await this.findById(toId, workspaceId);
-
-    return { fromAsset: updatedFrom, toAsset: updatedTo };
+    // No balance mutation — transfer is recorded as a transaction only
+    return { fromAsset, toAsset };
   }
 
   /**
@@ -757,6 +680,33 @@ export class AssetService {
   }
 
   /**
+   * Get total balances by account class and currency.
+   * Used for portfolio summary: Assets (liquid+non_liquid) vs Debt.
+   */
+  async getTotalByClass(workspaceId: string, perf?: PerfCollector) {
+    return trackQuery('AssetService.getTotalByClass', perf, async () => {
+      const result = await (this.db as any)
+        .select({
+          account_class: this.schema.assets.account_class,
+          currency: this.schema.assets.currency,
+          total: sql<string>`sum(CAST(${this.schema.assets.balance} AS NUMERIC))`,
+          count: sql<number>`count(*)`,
+        })
+        .from(this.schema.assets)
+        .where(
+          and(
+            eq(this.schema.assets.workspace_id, workspaceId),
+            sql`${this.schema.assets.deleted_at} IS NULL`,
+            eq(this.schema.assets.status, 'active')
+          )
+        )
+        .groupBy(this.schema.assets.account_class, this.schema.assets.currency);
+
+      return result;
+    });
+  }
+
+  /**
    * Find all closed assets for a workspace
    */
   async findAllClosed(
@@ -834,6 +784,52 @@ export class AssetService {
     }));
 
     return assetsWithHistory;
+  }
+
+  /**
+   * Calculate balance from transactions (reference only, not stored).
+   * calculated = initial_balance + SUM(income) - SUM(expenses) + SUM(transfers_in) - SUM(transfers_out)
+   */
+  async getCalculatedBalance(assetId: string, workspaceId: string): Promise<string> {
+    const asset = await this.findByIdIncludingClosed(assetId, workspaceId);
+    if (!asset) {
+      throw new AssetServiceError(ServiceErrorCode.ASSET_NOT_FOUND, 'Asset not found', 404);
+    }
+
+    const initialBalance = asset.initial_balance || '0';
+    const txTable = this.schema.transactions;
+
+    // Single query: sum income, expense, transfers in, transfers out
+    const result = await (this.db as any)
+      .select({
+        income: sql<string>`COALESCE(SUM(CASE WHEN ${txTable.type} = 'income' AND ${txTable.asset_id} = ${assetId} THEN CAST(${txTable.amount} AS NUMERIC) ELSE 0 END), 0)`,
+        expense: sql<string>`COALESCE(SUM(CASE WHEN ${txTable.type} = 'expense' AND ${txTable.asset_id} = ${assetId} THEN CAST(${txTable.amount} AS NUMERIC) ELSE 0 END), 0)`,
+        transfers_in: sql<string>`COALESCE(SUM(CASE WHEN ${txTable.type} = 'transfer' AND ${txTable.to_asset_id} = ${assetId} THEN CAST(${txTable.amount} AS NUMERIC) ELSE 0 END), 0)`,
+        transfers_out: sql<string>`COALESCE(SUM(CASE WHEN ${txTable.type} = 'transfer' AND ${txTable.asset_id} = ${assetId} THEN CAST(${txTable.amount} AS NUMERIC) ELSE 0 END), 0)`,
+      })
+      .from(txTable)
+      .where(
+        and(
+          eq(txTable.workspace_id, workspaceId),
+          sql`${txTable.deleted_at} IS NULL`,
+          sql`(${txTable.asset_id} = ${assetId} OR ${txTable.to_asset_id} = ${assetId})`
+        )
+      );
+
+    const income = result[0]?.income || '0';
+    const expense = result[0]?.expense || '0';
+    const transfersIn = result[0]?.transfers_in || '0';
+    const transfersOut = result[0]?.transfers_out || '0';
+
+    // Use string-based calculation to avoid floating-point precision issues
+    // calculated = initial + income - expense + transfers_in - transfers_out
+    const total =
+      parseFloat(initialBalance) +
+      parseFloat(income) -
+      parseFloat(expense) +
+      parseFloat(transfersIn) -
+      parseFloat(transfersOut);
+    return String(total);
   }
 
   /**

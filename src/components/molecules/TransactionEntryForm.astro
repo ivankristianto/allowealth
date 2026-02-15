@@ -35,7 +35,7 @@ export interface Props {
     transaction_date?: string;
   };
   categories: Array<{ id: string; name: string; type: string; currency?: string }>;
-  assets: Array<{ id: string; name: string; type: string }>;
+  assets: Array<{ id: string; name: string; type: string; account_class: string }>;
   categoryUsageCounts?: Array<{ category_id: string; count: number }>;
   errors?: Record<string, string>;
   modalId?: string;
@@ -59,6 +59,11 @@ const {
 } = Astro.props;
 
 const isEditMode = mode === 'edit';
+
+// For expense/income: show liquid and debt accounts only
+const filteredAssets = assets.filter(
+  (a) => a.account_class === 'liquid' || a.account_class === 'debt'
+);
 
 const today = new Date().toISOString().split('T')[0];
 const yesterdayDate = new Date();
@@ -95,7 +100,9 @@ const categoriesJson = JSON.stringify(
     currency: c.currency || DEFAULT_CURRENCY,
   }))
 );
-const assetsJson = JSON.stringify(assets.map((a) => ({ id: a.id, name: a.name, type: a.type })));
+const assetsJson = JSON.stringify(
+  filteredAssets.map((a) => ({ id: a.id, name: a.name, type: a.type }))
+);
 
 // Default currency
 const defaultCurrency = values.currency || DEFAULT_CURRENCY;
@@ -384,7 +391,7 @@ const defaultDatePick =
 
   <!-- Account Select -->
   {
-    assets.length > 1 ? (
+    filteredAssets.length > 1 ? (
       <div class="form-control">
         <span class="text-xs font-semibold text-neutral/50 uppercase tracking-wider mb-1.5">
           Account
@@ -406,7 +413,7 @@ const defaultDatePick =
           data-testid="transaction-asset-select"
         >
           <option value="">Select account...</option>
-          {assets.map((asset) => (
+          {filteredAssets.map((asset) => (
             <option value={asset.id} selected={asset.id === (values.asset_id || '')}>
               {asset.name}
             </option>
@@ -419,7 +426,7 @@ const defaultDatePick =
         )}
       </div>
     ) : (
-      <input type="hidden" name="asset_id" value={assets[0]?.id || ''} />
+      <input type="hidden" name="asset_id" value={filteredAssets[0]?.id || ''} />
     )
   }
 

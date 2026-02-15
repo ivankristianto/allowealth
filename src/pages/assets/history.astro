@@ -21,6 +21,7 @@ const assets: AssetOutput[] = rawAssets.map((asset) => ({
   id: asset.id,
   name: asset.name,
   type: asset.type,
+  account_class: asset.account_class,
   balance: asset.balance,
   currency: asset.currency,
   status: asset.status ?? 'active',
