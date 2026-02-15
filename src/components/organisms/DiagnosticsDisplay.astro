@@ -1,0 +1,443 @@
+---
+/**
+ * DiagnosticsDisplay Component
+ *
+ * Displays system diagnostics information using the project's design system.
+ * Uses Card atom component, DaisyUI semantic classes, and Lucide icons.
+ */
+
+import type { DiagnosticsData } from '@/types/diagnostics';
+import Card from '@/components/atoms/Card.astro';
+import {
+  Activity,
+  Database,
+  Server,
+  Settings,
+  Code,
+  TriangleAlert,
+  CircleCheck,
+  CircleX,
+} from '@lucide/astro';
+
+interface Props {
+  data: DiagnosticsData;
+}
+
+const { data } = Astro.props;
+
+// Format timestamp for display
+function formatTimestamp(isoString: string): string {
+  const date = new Date(isoString);
+  return date.toLocaleString();
+}
+
+// Get status info for environment variable
+function getEnvVarStatus(isSet: boolean, isSensitive: boolean) {
+  if (!isSet) return { variant: 'error' as const, text: 'Missing' };
+  if (isSensitive) return { variant: 'warning' as const, text: 'Sensitive' };
+  return { variant: 'success' as const, text: 'Set' };
+}
+
+// Badge class helper
+function badgeClass(variant: 'success' | 'error' | 'warning' | 'neutral'): string {
+  const map = {
+    success: 'badge-success',
+    error: 'badge-error',
+    warning: 'badge-warning',
+    neutral: 'badge-neutral',
+  };
+  return `badge badge-sm ${map[variant]}`;
+}
+
+// Icon background class helper
+function iconBgClass(variant: 'success' | 'error' | 'warning' | 'neutral'): string {
+  const map = {
+    success: 'bg-success/10',
+    error: 'bg-error/10',
+    warning: 'bg-warning/10',
+    neutral: 'bg-base-200',
+  };
+  return `w-6 h-6 rounded-lg flex items-center justify-center shrink-0 ${map[variant]}`;
+}
+
+// Icon text class helper
+function iconTextClass(variant: 'success' | 'error' | 'warning' | 'neutral'): string {
+  const map = {
+    success: 'text-success',
+    error: 'text-error',
+    warning: 'text-warning',
+    neutral: 'text-base-content/50',
+  };
+  return `h-3.5 w-3.5 stroke-current ${map[variant]}`;
+}
+
+// Cache status
+const cacheStatusMap: Record<string, { variant: 'success' | 'error' | 'neutral'; text: string }> = {
+  healthy: { variant: 'success', text: 'Healthy' },
+  error: { variant: 'error', text: 'Error' },
+  disabled: { variant: 'neutral', text: 'Disabled' },
+};
+const cacheStatus = cacheStatusMap[data.cache.status] ?? { variant: 'neutral', text: 'Unknown' };
+
+// Connection status
+const connStatus = data.database.isConnected
+  ? { variant: 'success' as const, text: 'Connected' }
+  : { variant: 'error' as const, text: 'Disconnected' };
+---
+
+<!-- Configuration Status Alert -->{
+  (data.configuration.missingRequired.length > 0 || data.configuration.warnings.length > 0) && (
+    <section class="space-y-4" aria-label="Configuration status">
+      {data.configuration.missingRequired.length > 0 && (
+        <div class="alert alert-error" role="alert">
+          <TriangleAlert size={20} class="shrink-0" aria-hidden="true" />
+          <div>
+            <h3 class="font-semibold">Missing Required Configuration</h3>
+            <div class="flex flex-wrap gap-2 mt-2">
+              {data.configuration.missingRequired.map((varName) => (
+                <code class="px-2 py-1 text-xs font-medium bg-black/10 rounded-md">{varName}</code>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+      {data.configuration.warnings.length > 0 && (
+        <div class="alert alert-warning" role="alert">
+          <TriangleAlert size={20} class="shrink-0" aria-hidden="true" />
+          <div>
+            <h3 class="font-semibold">Configuration Warnings</h3>
+            <ul class="text-sm text-base-content/80 mt-1 space-y-1">
+              {data.configuration.warnings.map((warning) => (
+                <li>{warning}</li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
+    </section>
+  )
+}
+
+<!-- Diagnostics Grid -->
+<div class="grid grid-cols-1 @3xl:grid-cols-2 gap-6 @sm:gap-8">
+  <!-- Runtime Information Card -->
+  <Card padding="lg" data-testid="runtime-card">
+    <div class="flex items-start justify-between mb-6">
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 rounded-2xl flex items-center justify-center bg-primary/10 shrink-0">
+          <Server class="h-6 w-6 stroke-current text-primary" aria-hidden="true" />
+        </div>
+        <div>
+          <h2 class="text-xl font-semibold">Runtime Environment</h2>
+          <p class="text-sm text-base-content/60">System information</p>
+        </div>
+      </div>
+    </div>
+
+    <dl class="space-y-4">
+      <div class="flex items-center justify-between py-2 border-b border-base-300">
+        <dt class="text-sm font-medium text-base-content/70">Environment</dt>
+        <dd>
+          <span class="badge badge-outline">{data.runtime.environment}</span>
+        </dd>
+      </div>
+
+      <div class="flex items-center justify-between py-2 border-b border-base-300">
+        <dt class="text-sm font-medium text-base-content/70">Runtime</dt>
+        <dd>
+          <span class="badge badge-primary">{data.runtime.runtime}</span>
+        </dd>
+      </div>
+
+      {
+        data.runtime.region && (
+          <div class="flex items-center justify-between py-2 border-b border-base-300">
+            <dt class="text-sm font-medium text-base-content/70">Region</dt>
+            <dd class="text-sm text-base-content font-mono">{data.runtime.region}</dd>
+          </div>
+        )
+      }
+
+      {
+        data.runtime.nodeVersion && (
+          <div class="flex items-center justify-between py-2">
+            <dt class="text-sm font-medium text-base-content/70">Node Version</dt>
+            <dd class="text-sm text-base-content font-mono">{data.runtime.nodeVersion}</dd>
+          </div>
+        )
+      }
+
+      {
+        data.runtime.bunVersion && (
+          <div class="flex items-center justify-between py-2">
+            <dt class="text-sm font-medium text-base-content/70">Bun Version</dt>
+            <dd class="text-sm text-base-content font-mono">{data.runtime.bunVersion}</dd>
+          </div>
+        )
+      }
+    </dl>
+  </Card>
+
+  <!-- Database Information Card -->
+  <Card padding="lg" data-testid="database-card">
+    <div class="flex items-start justify-between mb-6">
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 rounded-2xl flex items-center justify-center bg-info/10 shrink-0">
+          <Database class="h-6 w-6 stroke-current text-info" aria-hidden="true" />
+        </div>
+        <div>
+          <h2 class="text-xl font-semibold">Database</h2>
+          <p class="text-sm text-base-content/60">Connection & configuration</p>
+        </div>
+      </div>
+      {
+        connStatus.variant === 'success' ? (
+          <CircleCheck class="h-5 w-5 text-success" aria-hidden="true" />
+        ) : (
+          <CircleX class="h-5 w-5 text-error" aria-hidden="true" />
+        )
+      }
+    </div>
+
+    <dl class="space-y-4">
+      <div class="flex items-center justify-between py-2 border-b border-base-300">
+        <dt class="text-sm font-medium text-base-content/70">Dialect</dt>
+        <dd>
+          <span
+            class={`badge ${data.database.dialect === 'postgresql' ? 'badge-info' : 'badge-neutral'}`}
+          >
+            {data.database.dialect}
+          </span>
+        </dd>
+      </div>
+
+      <div class="flex items-center justify-between py-2 border-b border-base-300">
+        <dt class="text-sm font-medium text-base-content/70">Connection</dt>
+        <dd class="flex items-center gap-2">
+          {
+            connStatus.variant === 'success' ? (
+              <span class="badge badge-success gap-1">
+                <CircleCheck class="h-3 w-3" aria-hidden="true" />
+                {connStatus.text}
+              </span>
+            ) : (
+              <span class="badge badge-error gap-1">
+                <CircleX class="h-3 w-3" aria-hidden="true" />
+                {connStatus.text}
+              </span>
+            )
+          }
+        </dd>
+      </div>
+
+      <div class="py-2 border-b border-base-300">
+        <dt class="text-sm font-medium text-base-content/70 mb-1">Database URL</dt>
+        <dd>
+          <code class="text-xs bg-base-200 px-2 py-1.5 rounded-md block overflow-x-auto max-w-xs">
+            {data.database.url}
+          </code>
+        </dd>
+      </div>
+
+      {
+        data.database.isSupabase && (
+          <div class="py-2 border-b border-base-300">
+            <dt class="text-sm font-medium text-base-content/70 mb-2">Supabase Features</dt>
+            <dd class="flex flex-wrap gap-2">
+              {data.database.isTransactionPooler && (
+                <span class="badge badge-warning">Transaction Pooler</span>
+              )}
+              {data.database.isHyperdrive && <span class="badge badge-info">Hyperdrive</span>}
+            </dd>
+          </div>
+        )
+      }
+
+      {
+        data.database.connectionPoolConfig && (
+          <div class="py-2">
+            <dt class="text-sm font-medium text-base-content/70 mb-1">Connection Pool</dt>
+            <dd class="text-sm text-base-content/80">
+              Max: <span class="font-mono">{data.database.connectionPoolConfig.max}</span>, Idle:{' '}
+              <span class="font-mono">{data.database.connectionPoolConfig.idleTimeout}s</span>
+            </dd>
+          </div>
+        )
+      }
+    </dl>
+  </Card>
+
+  <!-- Cache Information Card -->
+  <Card padding="lg" className="@3xl:col-span-2" data-testid="cache-card">
+    <div class="flex items-start justify-between mb-6">
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 rounded-2xl flex items-center justify-center bg-accent/10 shrink-0">
+          <Activity class="h-6 w-6 stroke-current text-accent" aria-hidden="true" />
+        </div>
+        <div>
+          <h2 class="text-xl font-semibold">Cache</h2>
+          <p class="text-sm text-base-content/60">Driver & status</p>
+        </div>
+      </div>
+      <div
+        class={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+          cacheStatus.variant === 'success'
+            ? 'bg-success/10'
+            : cacheStatus.variant === 'error'
+              ? 'bg-error/10'
+              : 'bg-base-200'
+        }`}
+      >
+        {
+          cacheStatus.variant === 'success' ? (
+            <CircleCheck class="h-4 w-4 stroke-current text-success" aria-hidden="true" />
+          ) : cacheStatus.variant === 'error' ? (
+            <CircleX class="h-4 w-4 stroke-current text-error" aria-hidden="true" />
+          ) : (
+            <Settings class="h-4 w-4 stroke-current text-base-content/50" aria-hidden="true" />
+          )
+        }
+      </div>
+    </div>
+
+    <dl class="grid grid-cols-1 xl:grid-cols-2 gap-x-8">
+      <div class="flex items-center justify-between py-2 border-b border-base-300">
+        <dt class="text-sm font-medium text-base-content/70">Driver</dt>
+        <dd>
+          <span class={`badge ${data.cache.isEnabled ? 'badge-accent' : 'badge-neutral'}`}>
+            {data.cache.driver}
+          </span>
+        </dd>
+      </div>
+
+      <div class="flex items-center justify-between py-2 border-b border-base-300">
+        <dt class="text-sm font-medium text-base-content/70">Status</dt>
+        <dd class="flex items-center gap-2">
+          <span
+            class={`badge ${cacheStatus.variant === 'success' ? 'badge-success' : cacheStatus.variant === 'error' ? 'badge-error' : 'badge-neutral'}`}
+          >
+            {cacheStatus.text}
+          </span>
+        </dd>
+      </div>
+
+      <div class="flex items-center justify-between py-2 border-b border-base-300">
+        <dt class="text-sm font-medium text-base-content/70">Enabled</dt>
+        <dd>
+          <span class={`badge ${data.cache.isEnabled ? 'badge-success' : 'badge-neutral'}`}>
+            {data.cache.isEnabled ? 'Yes' : 'No'}
+          </span>
+        </dd>
+      </div>
+
+      {
+        data.cache.config.maxSize && (
+          <div class="flex items-center justify-between py-2 border-b border-base-300">
+            <dt class="text-sm font-medium text-base-content/70">Max Size</dt>
+            <dd class="text-sm text-base-content/80">{data.cache.config.maxSize} items</dd>
+          </div>
+        )
+      }
+
+      {
+        data.cache.config.ttl && (
+          <div class="flex items-center justify-between py-2 border-b border-base-300">
+            <dt class="text-sm font-medium text-base-content/70">Default TTL</dt>
+            <dd class="text-sm text-base-content/80">{data.cache.config.ttl}s</dd>
+          </div>
+        )
+      }
+
+      {
+        data.cache.upstashConfig && (
+          <div class="py-2 xl:col-span-2">
+            <dt class="text-sm font-medium text-base-content/70 mb-1">Upstash URL</dt>
+            <dd>
+              <code class="text-xs bg-base-200 px-2 py-1.5 rounded-md block overflow-x-auto max-w-xs">
+                {data.cache.upstashConfig.url}
+              </code>
+            </dd>
+          </div>
+        )
+      }
+
+      {
+        data.cache.lastError && (
+          <div class="py-2 xl:col-span-2">
+            <dt class="text-sm font-medium text-error mb-1">Last Error</dt>
+            <dd class="text-xs text-error bg-error/5 px-2 py-1 rounded-md">
+              {data.cache.lastError}
+            </dd>
+          </div>
+        )
+      }
+    </dl>
+  </Card>
+</div>
+
+<!-- Environment Variables Table -->
+<Card padding="lg" data-testid="env-vars-card">
+  <div class="flex items-center gap-3 mb-6">
+    <div class="w-12 h-12 rounded-2xl flex items-center justify-center bg-secondary/10 shrink-0">
+      <Settings class="h-6 w-6 stroke-current text-secondary" aria-hidden="true" />
+    </div>
+    <div>
+      <h2 class="text-xl font-semibold">Environment Variables</h2>
+      <p class="text-sm text-base-content/60">Configuration & secrets</p>
+    </div>
+  </div>
+
+  <div class="overflow-x-auto">
+    <table class="table table-zebra table-sm">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Value</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {
+          data.environment.map((envVar) => {
+            const status = getEnvVarStatus(envVar.isSet, envVar.isSensitive);
+            return (
+              <tr>
+                <td>
+                  <code class="text-sm">{envVar.name}</code>
+                </td>
+                <td>
+                  <code
+                    class={`text-sm bg-base-300 px-3 py-1.5 rounded-md block max-w-xs overflow-x-auto ${envVar.isSensitive ? 'text-warning' : ''}`}
+                  >
+                    {envVar.value}
+                  </code>
+                </td>
+                <td>
+                  <div class="flex items-center gap-2">
+                    <div class={iconBgClass(status.variant)}>
+                      {status.variant === 'success' ? (
+                        <CircleCheck class={iconTextClass(status.variant)} aria-hidden="true" />
+                      ) : status.variant === 'error' ? (
+                        <CircleX class={iconTextClass(status.variant)} aria-hidden="true" />
+                      ) : (
+                        <Code class={iconTextClass(status.variant)} aria-hidden="true" />
+                      )}
+                    </div>
+                    <span class={badgeClass(status.variant)}>{status.text}</span>
+                  </div>
+                </td>
+              </tr>
+            );
+          })
+        }
+      </tbody>
+    </table>
+  </div>
+</Card>
+
+<!-- Timestamp Footer -->
+<footer class="text-sm text-base-content/50 text-center py-4">
+  Last updated: <time datetime={data.timestamp} class="font-mono"
+    >{formatTimestamp(data.timestamp)}</time
+  >
+</footer>

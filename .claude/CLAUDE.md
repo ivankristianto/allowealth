@@ -105,7 +105,7 @@ All project rules are in `.claude/rules/`:
 - **`backend/deployment.md`** - Workers deployment patterns
 - **`backend/api.md`** - API patterns, OpenAPI
 - **`testing.md`** - Testing patterns (E2E, Playwright, unit)
-- **`learned-patterns.md`** - Learned patterns from experience
+- **`learned-patterns.md`** - Pattern index (patterns distributed to domain files)
 
 Architecture decisions in `docs/architecture/`:
 

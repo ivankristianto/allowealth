@@ -30,6 +30,7 @@ import { WorkspaceInvitationService } from './workspace-invitation.service';
 import { ApiKeyService } from './api-key.service';
 import { EmailService } from './email';
 import { EmailVerificationService } from './email-verification.service';
+import { DiagnosticsService } from './diagnostics.service';
 
 // Re-export types and utilities
 export * from './transaction.service';
@@ -49,6 +50,7 @@ export * from './service-errors';
 export * from './api-key.service';
 export * from './email';
 export * from './email-verification.service';
+export * from './diagnostics.service';
 
 // Export singleton instances with real database
 export const categoryService = new CategoryService(db);
@@ -66,3 +68,4 @@ export const workspaceInvitationService = new WorkspaceInvitationService(db);
 export const apiKeyService = new ApiKeyService(db);
 export const emailService = new EmailService();
 export const emailVerificationService = new EmailVerificationService(db, emailService);
+export const diagnosticsService = new DiagnosticsService(db);

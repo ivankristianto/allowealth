@@ -61,31 +61,35 @@ const filteredCategories = categories.filter(
             <span class="text-sm font-semibold text-base-content">{category.assetCount}</span>
           </td>
           <td class="px-8 py-5 text-right">
-            <div class="flex items-center justify-end gap-2">
-              <button
-                class="p-2 text-base-content/30 hover:text-primary hover:bg-primary/10 rounded-xl transition-all disabled:opacity-40 disabled:hover:bg-transparent"
-                data-action="edit-asset-category"
-                data-category-id={category.id}
-                data-category-name={category.name}
-                data-category-description={category.description || ''}
-                data-category-type={category.isLiability ? 'liability' : 'asset'}
-                disabled={category.isSystem}
-                aria-label={`Edit ${category.name} category`}
-              >
-                <Pencil size={18} class="stroke-current" aria-hidden="true" />
-              </button>
-              <button
-                class="p-2 text-base-content/30 hover:text-error hover:bg-error/10 rounded-xl transition-all disabled:opacity-40 disabled:hover:bg-transparent"
-                data-action="delete-asset-category"
-                data-category-id={category.id}
-                data-category-name={category.name}
-                data-category-meta={`${category.assetCount} asset${category.assetCount !== 1 ? 's' : ''}`}
-                disabled={category.isSystem}
-                aria-label={`Delete ${category.name} category`}
-              >
-                <Trash2 size={18} class="stroke-current" aria-hidden="true" />
-              </button>
-            </div>
+            {category.isSystem ? (
+              <span class="text-xs text-base-content/30 font-medium">System</span>
+            ) : (
+              <div class="flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  class="p-2 text-base-content/30 hover:text-primary hover:bg-primary/10 rounded-xl transition-all"
+                  data-action="edit-asset-category"
+                  data-category-id={category.id}
+                  data-category-name={category.name}
+                  data-category-description={category.description || ''}
+                  data-category-type={category.isLiability ? 'liability' : 'asset'}
+                  aria-label={`Edit ${category.name} category`}
+                >
+                  <Pencil size={18} class="stroke-current" aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  class="p-2 text-base-content/30 hover:text-error hover:bg-error/10 rounded-xl transition-all"
+                  data-action="delete-asset-category"
+                  data-category-id={category.id}
+                  data-category-name={category.name}
+                  data-category-meta={`${category.assetCount} asset${category.assetCount !== 1 ? 's' : ''}`}
+                  aria-label={`Delete ${category.name} category`}
+                >
+                  <Trash2 size={18} class="stroke-current" aria-hidden="true" />
+                </button>
+              </div>
+            )}
           </td>
         </tr>
       ))}

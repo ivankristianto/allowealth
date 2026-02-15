@@ -226,6 +226,11 @@ sm: 640px   md: 768px   lg: 1024px   xl: 1280px   2xl: 1536px
 ❌ **Hardcode sizes like `text-[10px]`** - breaks design system consistency
 ✅ **Use semantic classes**: `text-xs`, `text-sm`, `text-base`
 
+❌ **Use `@xl:` container queries inside Card components** - Card.astro has no `@container`, queries resolve against page-level container. Use regular breakpoints (`xl:`) instead
+❌ **Use `hoverable` on read-only Card components** - hover effect implies interactivity (clickable). Only use `hoverable` when the card triggers an action
+❌ **Put title/description in ProtectedLayout header slot** - Header component renders title/subtitle from props. Slot is only for action buttons (refresh, export)
+✅ **Add `data-testid` to major page sections and cards** - text-based locators break when heading text changes
+
 ## Component Pattern
 
 ```astro
