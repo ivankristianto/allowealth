@@ -77,4 +77,4 @@ export const SENSITIVE_PATTERNS = [
   /private/i,
 ];
 
-export const REQUIRED_ENV_VARS = ['DATABASE_URL', 'AUTH_SECRET', 'PUBLIC_URL'];
+export const REQUIRED_ENV_VARS = ['DATABASE_URL'];

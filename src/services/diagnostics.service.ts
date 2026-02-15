@@ -139,8 +139,8 @@ export class DiagnosticsService {
       'DATABASE_URL',
       'CACHE_DRIVER',
       'UPSTASH_REDIS_REST_URL',
-      'AUTH_SECRET',
       'PUBLIC_URL',
+      'DEV_HOST',
       'EMAIL_MODE',
       'LOG_LEVEL',
       'PERF_DEBUG',
@@ -173,6 +173,11 @@ export class DiagnosticsService {
       if (!getEnv(varName)) {
         missingRequired.push(varName);
       }
+    }
+
+    // PUBLIC_URL is required only when DEV_HOST is not set
+    if (!getEnv('DEV_HOST') && !getEnv('PUBLIC_URL')) {
+      missingRequired.push('PUBLIC_URL');
     }
 
     // Add warnings for potential issues

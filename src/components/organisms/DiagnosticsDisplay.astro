@@ -95,9 +95,7 @@ const connStatus = data.database.isConnected
             <h3 class="font-semibold">Missing Required Configuration</h3>
             <div class="flex flex-wrap gap-2 mt-2">
               {data.configuration.missingRequired.map((varName) => (
-                <code class="px-2 py-1 text-xs font-medium bg-error/10 text-error rounded-md">
-                  {varName}
-                </code>
+                <code class="px-2 py-1 text-xs font-medium bg-black/10 rounded-md">{varName}</code>
               ))}
             </div>
           </div>
