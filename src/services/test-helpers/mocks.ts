@@ -88,8 +88,17 @@ export function createMockDatabase(): IDatabase {
 
     select: mock(() => ({
       from: mock(() => ({
-        where: mock(() => Promise.resolve([])),
-        groupBy: mock(() => Promise.resolve([])),
+        where: mock(() => {
+          const promise = Promise.resolve([]);
+          (promise as any).groupBy = mock(() => Promise.resolve([]));
+          (promise as any).orderBy = mock(() => Promise.resolve([]));
+          return promise;
+        }),
+        groupBy: mock(() => {
+          const promise = Promise.resolve([]);
+          (promise as any).where = mock(() => Promise.resolve([]));
+          return promise;
+        }),
         orderBy: mock(() => Promise.resolve([])),
       })),
     })),

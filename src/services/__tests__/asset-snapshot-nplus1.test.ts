@@ -3,19 +3,53 @@ import { AssetService } from '../asset.service';
 import { createMockDatabase, createMockAsset, resetMockDatabase } from '../test-helpers/mocks';
 import { resetCacheManager, getCacheManager } from '@/lib/cache';
 import { PerfCollector } from '@/lib/perf';
-import { setTestEnv } from '@/lib/env';
-import { PgDialect } from 'drizzle-orm/pg-core';
 
 describe('AssetService.getSnapshotForMonth N+1 fix', () => {
   let mockDb: ReturnType<typeof createMockDatabase>;
   let assetService: AssetService;
+  let selectCallCount: number;
+
+  /**
+   * Sets up the select mock to handle the two-step snapshot query:
+   *   Step 1 (groupBy): returns max recorded_at per asset_id
+   *   Step 2 (where only): returns full history rows
+   */
+  function mockSelectForSnapshot(
+    maxDates: Array<{ asset_id: string; max_recorded_at: Date | number }>,
+    historyRows: Array<{ asset_id: string; balance: string; recorded_at: Date | number }>
+  ) {
+    selectCallCount = 0;
+    let isStep2 = false;
+    (mockDb as any).select = mock(() => {
+      return {
+        from: mock(() => ({
+          where: mock(() => {
+            selectCallCount++;
+            if (isStep2) {
+              // Step 2: fetch full rows by (asset_id, recorded_at) pairs
+              isStep2 = false;
+              return Promise.resolve(historyRows);
+            }
+            // Step 1: the where() call that chains to groupBy
+            // If maxDates is non-empty, next select call will be step 2
+            isStep2 = maxDates.length > 0;
+            const promise = Promise.resolve(maxDates);
+            (promise as any).groupBy = mock(() => Promise.resolve(maxDates));
+            (promise as any).orderBy = mock(() => Promise.resolve([]));
+            return promise;
+          }),
+          groupBy: mock(() => Promise.resolve(maxDates)),
+          orderBy: mock(() => Promise.resolve([])),
+        })),
+      };
+    });
+  }
 
   beforeEach(() => {
     resetCacheManager();
     mockDb = createMockDatabase();
     resetMockDatabase(mockDb);
     assetService = new AssetService(mockDb);
-    (mockDb as any).execute = mock(() => Promise.resolve([]));
 
     // Mock cache to always miss (we're testing query behavior)
     const cache = getCacheManager();
@@ -24,7 +58,7 @@ describe('AssetService.getSnapshotForMonth N+1 fix', () => {
   });
 
   afterEach(() => {
-    setTestEnv(null);
+    selectCallCount = 0;
   });
 
   it('should use bulk query instead of per-asset queries', async () => {
@@ -43,22 +77,24 @@ describe('AssetService.getSnapshotForMonth N+1 fix', () => {
 
     (mockDb.query.assets.findMany as any).mockResolvedValue(assets);
 
-    // Mock latest-row query result
+    const maxDates = assets.map((asset) => ({
+      asset_id: asset.id,
+      max_recorded_at: new Date(year, month - 1, 15),
+    }));
     const histories = assets.map((asset) => ({
       asset_id: asset.id,
       balance: '1000',
       recorded_at: new Date(year, month - 1, 15),
     }));
-    (mockDb as any).execute.mockResolvedValue(histories);
+    mockSelectForSnapshot(maxDates, histories);
 
     await assetService.getSnapshotForMonth(workspaceId, year, month);
 
-    // Should call raw execute exactly once (single chunk)
-    // NOT N times (one per asset)
-    expect((mockDb as any).execute).toHaveBeenCalledTimes(1);
-
     // Should NOT use per-asset findFirst at all (old N+1 pattern)
     expect((mockDb.query.assetHistory as any).findFirst).not.toHaveBeenCalled();
+
+    // Should have called select twice per chunk (step 1: maxDates, step 2: rows)
+    expect(selectCallCount).toBe(2);
   });
 
   it('should return snapshot balances correctly from bulk query', async () => {
@@ -84,11 +120,16 @@ describe('AssetService.getSnapshotForMonth N+1 fix', () => {
 
     (mockDb.query.assets.findMany as any).mockResolvedValue([asset1, asset2]);
 
-    // Mock one latest row per asset
-    (mockDb as any).execute.mockResolvedValue([
-      { asset_id: 'asset-1', balance: '4500', recorded_at: new Date(year, month - 1, 15) },
-      { asset_id: 'asset-2', balance: '3200', recorded_at: new Date(year, month - 1, 20) },
-    ]);
+    mockSelectForSnapshot(
+      [
+        { asset_id: 'asset-1', max_recorded_at: new Date(year, month - 1, 15) },
+        { asset_id: 'asset-2', max_recorded_at: new Date(year, month - 1, 20) },
+      ],
+      [
+        { asset_id: 'asset-1', balance: '4500', recorded_at: new Date(year, month - 1, 15) },
+        { asset_id: 'asset-2', balance: '3200', recorded_at: new Date(year, month - 1, 20) },
+      ]
+    );
 
     const snapshots = await assetService.getSnapshotForMonth(workspaceId, year, month);
 
@@ -108,11 +149,14 @@ describe('AssetService.getSnapshotForMonth N+1 fix', () => {
     );
 
     (mockDb.query.assets.findMany as any).mockResolvedValue(assets);
-    (mockDb as any).execute.mockResolvedValue([]);
+    // Return empty for all chunks - the select mock handles both steps
+    mockSelectForSnapshot([], []);
 
     await assetService.getSnapshotForMonth(workspaceId, 2026, 2);
 
-    expect((mockDb as any).execute.mock.calls.length).toBeGreaterThan(1);
+    // With 1200 assets and chunk size 500, should have 3 chunks
+    // Step 1 returns empty, so Step 2 is skipped → only 3 select calls total
+    expect(selectCallCount).toBe(3);
   });
 
   it('records perf metrics during chunked snapshot execution', async () => {
@@ -127,7 +171,7 @@ describe('AssetService.getSnapshotForMonth N+1 fix', () => {
     const perf = new PerfCollector();
 
     (mockDb.query.assets.findMany as any).mockResolvedValue(assets);
-    (mockDb as any).execute.mockResolvedValue([]);
+    mockSelectForSnapshot([], []);
 
     await assetService.getSnapshotForMonth(workspaceId, 2026, 2, undefined, perf);
 
@@ -154,43 +198,19 @@ describe('AssetService.getSnapshotForMonth N+1 fix', () => {
     });
 
     (mockDb.query.assets.findMany as any).mockResolvedValue([asset]);
-    (mockDb as any).execute.mockResolvedValue([
-      { asset_id: 'asset-1', balance: '1500', recorded_at: new Date('2026-01-15') },
-      { asset_id: 'asset-1', balance: '3000', recorded_at: new Date('2026-01-31') },
-    ]);
+
+    // The max_recorded_at query returns the latest date; then the full row fetch
+    // returns two rows — the historyMap in the service keeps the latest
+    mockSelectForSnapshot(
+      [{ asset_id: 'asset-1', max_recorded_at: new Date('2026-01-31') }],
+      [{ asset_id: 'asset-1', balance: '3000', recorded_at: new Date('2026-01-31') }]
+    );
 
     const snapshots = await assetService.getSnapshotForMonth(workspaceId, 2026, 1);
 
     expect(snapshots).toHaveLength(1);
     expect(snapshots[0].snapshot_balance).toBe('3000');
     expect(snapshots[0].snapshot_date).toEqual(new Date('2026-01-31'));
-  });
-
-  it('builds PostgreSQL snapshot SQL with array-based ANY syntax', async () => {
-    const workspaceId = 'workspace-1';
-    const assets = [
-      createMockAsset({
-        id: 'asset-1',
-        workspace_id: workspaceId,
-        created_at: new Date('2026-01-01'),
-      }),
-      createMockAsset({
-        id: 'asset-2',
-        workspace_id: workspaceId,
-        created_at: new Date('2026-01-01'),
-      }),
-    ];
-    setTestEnv({ DATABASE_URL: 'postgresql://localhost:5432/testdb' });
-    (mockDb.query.assets.findMany as any).mockResolvedValue(assets);
-    (mockDb as any).execute.mockResolvedValue([]);
-
-    await assetService.getSnapshotForMonth(workspaceId, 2026, 2);
-
-    const query = (mockDb as any).execute.mock.calls[0][0];
-    const sqlText = new PgDialect().sqlToQuery(query).sql;
-
-    expect(sqlText).toContain('asset_id = ANY(ARRAY[');
-    expect(sqlText).not.toContain('asset_id = ANY((');
   });
 
   it('should fall back to initial_balance when no history exists', async () => {
@@ -207,7 +227,8 @@ describe('AssetService.getSnapshotForMonth N+1 fix', () => {
     });
 
     (mockDb.query.assets.findMany as any).mockResolvedValue([asset]);
-    (mockDb as any).execute.mockResolvedValue([]);
+    // No history — step 1 returns empty, step 2 is never called
+    mockSelectForSnapshot([], []);
 
     const snapshots = await assetService.getSnapshotForMonth(workspaceId, year, month);
 
@@ -223,7 +244,7 @@ describe('AssetService.getSnapshotForMonth N+1 fix', () => {
     const snapshots = await assetService.getSnapshotForMonth(workspaceId, 2026, 2);
 
     expect(snapshots).toHaveLength(0);
-    // Should not even call history query
-    expect((mockDb as any).execute).not.toHaveBeenCalled();
+    // Should not even call select for history query
+    expect(selectCallCount).toBe(0);
   });
 });

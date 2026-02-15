@@ -1,4 +1,4 @@
-import { type IDatabase, getActiveSchema, assets as assetsTable, getDatabaseConfig } from '@/db';
+import { type IDatabase, getActiveSchema, assets as assetsTable } from '@/db';
 import { eq, and, sql, inArray } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { AssetServiceError, ServiceErrorCode } from './service-errors';
@@ -53,20 +53,6 @@ export class AssetService {
     }
 
     return chunks;
-  }
-
-  private normalizeExecuteRows(result: any): Array<{
-    asset_id: string;
-    balance: string;
-    recorded_at: Date;
-  }> {
-    const rawRows = Array.isArray(result) ? result : (result?.rows ?? []);
-
-    return rawRows.map((row: any) => ({
-      asset_id: row.asset_id,
-      balance: row.balance,
-      recorded_at: row.recorded_at instanceof Date ? row.recorded_at : new Date(row.recorded_at),
-    }));
   }
 
   /**
@@ -562,46 +548,59 @@ export class AssetService {
       }
 
       // Fetch one latest history row per asset, chunked to avoid parameter limits.
+      // Two-step approach: 1) get max recorded_at per asset, 2) fetch full rows.
+      // This avoids dialect-specific raw SQL (DISTINCT ON for PG, self-join for SQLite)
+      // and works through Drizzle's query builder on all drivers.
       const assetIds = assetsExistingAtTime.map((a) => a.id);
       const idChunks = this.chunkIds(assetIds, 500);
       perf?.recordPhase('AssetService.getSnapshotForMonth.chunkCount', idChunks.length);
-      const dialect = getDatabaseConfig().dialect;
+      const historyTable = this.schema.assetHistory;
+      // SQLite stores timestamps as integers (epoch seconds) — raw sql templates
+      // need a primitive, not a Date object.
+      const endOfMonthEpoch = Math.floor(endOfMonth.getTime() / 1000);
       const allHistory: Array<{ asset_id: string; balance: string; recorded_at: Date }> = [];
 
       for (const chunk of idChunks) {
-        if (dialect === 'postgresql') {
-          const pgArray = sql`ARRAY[${sql.join(
-            chunk.map((id) => sql`${id}`),
-            sql`, `
-          )}]::text[]`;
-          const queryResult = await (this.db as any).execute(sql`
-            SELECT DISTINCT ON (asset_id) asset_id, balance, recorded_at
-            FROM asset_history
-            WHERE asset_id = ANY(${pgArray})
-              AND recorded_at <= ${endOfMonth}
-            ORDER BY asset_id, recorded_at DESC
-          `);
-          allHistory.push(...this.normalizeExecuteRows(queryResult));
-          continue;
-        }
+        // Step 1: Get the max recorded_at per asset_id
+        const maxDates = await (this.db as any)
+          .select({
+            asset_id: historyTable.asset_id,
+            max_recorded_at: sql<string>`MAX(${historyTable.recorded_at})`.as('max_recorded_at'),
+          })
+          .from(historyTable)
+          .where(
+            and(
+              inArray(historyTable.asset_id, chunk),
+              sql`${historyTable.recorded_at} <= ${endOfMonthEpoch}`
+            )
+          )
+          .groupBy(historyTable.asset_id);
 
-        const queryResult = await (this.db as any).execute(sql`
-          SELECT h.asset_id, h.balance, h.recorded_at
-          FROM asset_history h
-          INNER JOIN (
-            SELECT asset_id, MAX(recorded_at) AS max_recorded_at
-            FROM asset_history
-            WHERE asset_id IN (${sql.join(
-              chunk.map((id) => sql`${id}`),
-              sql`, `
-            )})
-              AND recorded_at <= ${endOfMonth}
-            GROUP BY asset_id
-          ) latest
-            ON latest.asset_id = h.asset_id
-           AND latest.max_recorded_at = h.recorded_at
-        `);
-        allHistory.push(...this.normalizeExecuteRows(queryResult));
+        if (maxDates.length === 0) continue;
+
+        // Step 2: Fetch full rows matching (asset_id, max_recorded_at) pairs
+        const conditions = maxDates.map(
+          (row: any) =>
+            sql`(${historyTable.asset_id} = ${row.asset_id} AND ${historyTable.recorded_at} = ${row.max_recorded_at})`
+        );
+
+        const rows = await (this.db as any)
+          .select({
+            asset_id: historyTable.asset_id,
+            balance: historyTable.balance,
+            recorded_at: historyTable.recorded_at,
+          })
+          .from(historyTable)
+          .where(sql.join(conditions, sql` OR `));
+
+        for (const row of rows) {
+          allHistory.push({
+            asset_id: row.asset_id,
+            balance: row.balance,
+            recorded_at:
+              row.recorded_at instanceof Date ? row.recorded_at : new Date(row.recorded_at),
+          });
+        }
       }
       perf?.recordPhase('AssetService.getSnapshotForMonth.historyRowsFetched', allHistory.length);
 

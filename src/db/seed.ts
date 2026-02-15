@@ -284,6 +284,14 @@ const PAYMENT_ASSETS = [
     credit_limit: 50000000,
   },
   {
+    name: 'Mandiri Credit Card',
+    type: 'credit_card' as const,
+    balance: 3200000, // Outstanding debt
+    currency: 'IDR' as const,
+    is_cash_account: false,
+    credit_limit: 30000000,
+  },
+  {
     name: 'GoPay',
     type: 'e_wallet' as const,
     balance: 500000,
@@ -303,6 +311,22 @@ const PAYMENT_ASSETS = [
     balance: 10000000,
     currency: 'IDR' as const,
     is_cash_account: true,
+  },
+];
+
+// Debt assets (loans - long-term liabilities)
+const LOAN_ASSETS = [
+  {
+    name: 'Home Mortgage - BSD',
+    type: 'loan' as const,
+    balance: 450000000, // Outstanding principal
+    currency: 'IDR' as const,
+  },
+  {
+    name: 'Car Loan - Innova',
+    type: 'loan' as const,
+    balance: 85000000,
+    currency: 'IDR' as const,
   },
 ];
 
@@ -606,7 +630,14 @@ async function clearAllTables() {
   console.log('⚠️  Clearing existing data...');
 
   try {
+    // Disable FK checks during cleanup to avoid ordering issues
+    const { dialect } = getDatabaseConfig();
+    if (dialect === 'sqlite') {
+      db.run(sql`PRAGMA foreign_keys = OFF`);
+    }
+
     // Delete in reverse dependency order
+    await db.delete(auditLogs);
     await db.delete(passwordResetTokens);
     await db.delete(sessions);
     await db.delete(assetSnapshotItems);
@@ -624,8 +655,12 @@ async function clearAllTables() {
     await db.delete(workspaces);
     await db.delete(exchangeRates);
 
+    // Re-enable FK checks
+    if (dialect === 'sqlite') {
+      db.run(sql`PRAGMA foreign_keys = ON`);
+    }
+
     // Run VACUUM to clean up the database and reclaim space (SQLite only)
-    const { dialect } = getDatabaseConfig();
     if (dialect === 'sqlite') {
       console.log('🧹 Vacuuming database...');
       db.run(sql`VACUUM`);
@@ -1153,6 +1188,102 @@ async function seedExpenseTransactions(
   return count;
 }
 
+// Transfer templates: from -> to with amount ranges
+const TRANSFER_TEMPLATES = [
+  {
+    from: 'Transfer',
+    to: 'Cash',
+    amount: [1000000, 3000000] as [number, number],
+    description: 'ATM Withdrawal',
+  },
+  {
+    from: 'Transfer',
+    to: 'GoPay',
+    amount: [200000, 500000] as [number, number],
+    description: 'Top-up GoPay',
+  },
+  {
+    from: 'Transfer',
+    to: 'OVO',
+    amount: [200000, 500000] as [number, number],
+    description: 'Top-up OVO',
+  },
+  {
+    from: 'Cash',
+    to: 'Transfer',
+    amount: [500000, 2000000] as [number, number],
+    description: 'Cash Deposit',
+  },
+  {
+    from: 'Transfer',
+    to: 'BCA Credit Card',
+    amount: [2000000, 5000000] as [number, number],
+    description: 'Credit Card Payment',
+  },
+  {
+    from: 'Transfer',
+    to: 'Mandiri Credit Card',
+    amount: [1000000, 3000000] as [number, number],
+    description: 'Credit Card Payment',
+  },
+];
+
+/**
+ * Seed transfer transactions between payment assets (3 months)
+ */
+async function seedTransferTransactions(
+  workspaceId: string,
+  userId: string,
+  assetMap: Map<string, string>
+): Promise<number> {
+  console.log('🔄 Seeding transfer transactions...');
+
+  let count = 0;
+  const seedMonths = getSeedMonths();
+
+  for (const { year, month } of seedMonths) {
+    const daysInMonth = new Date(year, month, 0).getDate();
+
+    for (const tmpl of TRANSFER_TEMPLATES) {
+      const fromAssetId = assetMap.get(tmpl.from);
+      const toAssetId = assetMap.get(tmpl.to);
+      if (!fromAssetId || !toAssetId) continue;
+
+      // 1-2 transfers per template per month
+      const numTransfers = 1 + Math.floor(Math.random() * 2);
+      for (let i = 0; i < numTransfers; i++) {
+        const day = 1 + Math.floor(Math.random() * daysInMonth);
+        const transactionDate = specificDate(year, month, day);
+        if (!transactionDate) continue;
+
+        const createdAt = new Date(transactionDate);
+        createdAt.setHours(SEED_TIME_HOUR + Math.floor(Math.random() * 8), 0, 0, 0);
+
+        const amount = tmpl.amount[0] + Math.random() * (tmpl.amount[1] - tmpl.amount[0]);
+
+        await db.insert(transactions).values({
+          id: nanoid(),
+          workspace_id: workspaceId,
+          created_by_user_id: userId,
+          asset_id: fromAssetId,
+          to_asset_id: toAssetId,
+          type: 'transfer',
+          amount: amt(Math.round(amount)),
+          currency: 'IDR',
+          description: tmpl.description,
+          transaction_date: transactionDate,
+          created_at: createdAt,
+          updated_at: createdAt,
+        });
+        count++;
+      }
+    }
+  }
+
+  console.log(`✓ Created ${count} transfer transactions`);
+  return count;
+}
+
 /**
  * Seed assets (both payment assets and investment assets)
  */
@@ -1214,6 +1345,29 @@ async function seedAssets(
     assetMap.set(asset.name, id);
   }
 
+  // Seed loan assets (debt class)
+  for (const loan of LOAN_ASSETS) {
+    const id = nanoid();
+    const categoryId = assetCategoryMap.get(loan.type) || null;
+    await db.insert(assets).values({
+      id,
+      workspace_id: workspaceId,
+      created_by_user_id: userId,
+      name: loan.name,
+      type: loan.type,
+      account_class: deriveAccountClass(loan.type),
+      category_id: categoryId,
+      balance: amt(loan.balance),
+      initial_balance: amt(loan.balance),
+      currency: loan.currency,
+      is_cash_account: false,
+      last_updated: now,
+      created_at: createdAt,
+      updated_at: now,
+    });
+    assetMap.set(loan.name, id);
+  }
+
   // Add a closed test account for testing the closed accounts page
   const closedId = nanoid();
   const closedCategoryId = assetCategoryMap.get('bank_account') || null;
@@ -1244,7 +1398,7 @@ async function seedAssets(
 }
 
 // Combined list of all assets for lookup
-const ALL_ASSETS = [...PAYMENT_ASSETS, ...ASSET_TYPES];
+const ALL_ASSETS = [...PAYMENT_ASSETS, ...LOAN_ASSETS, ...ASSET_TYPES];
 
 /**
  * Seed asset history (monthly entries for 6 months, plus biweekly for recent 2 months)
@@ -1689,6 +1843,7 @@ async function seed() {
     // Seed transactions for the 3 months
     await seedIncomeTransactions(workspaceId, userId, categoryMap, assetMap);
     await seedExpenseTransactions(workspaceId, userId, categoryMap, assetMap);
+    await seedTransferTransactions(workspaceId, userId, assetMap);
 
     // Seed audit trail for some transactions
     await seedTransactionAuditLogs(workspaceId, userId, memberUserId);
