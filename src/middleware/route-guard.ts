@@ -37,8 +37,8 @@ export const routeGuard: MiddlewareHandler = async (context, next) => {
     return context.redirect(`/login?redirect=${encodeURIComponent(returnUrl)}`, 302);
   }
 
-  // Require super_admin role for /admin routes
-  const isAdminRoute = pathname.startsWith('/admin');
+  // Require super_admin role for /admin routes (pages and API)
+  const isAdminRoute = pathname.startsWith('/admin') || pathname.startsWith('/api/admin');
   if (isAdminRoute && context.locals.user && context.locals.user.role !== 'super_admin') {
     // API routes get JSON 403, page routes get redirected to dashboard
     if (pathname.startsWith('/api/')) {

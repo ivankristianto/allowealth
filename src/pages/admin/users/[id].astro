@@ -171,6 +171,7 @@ const isSuperAdmin = user.role === 'super_admin';
                 class="select select-bordered select-sm"
                 data-role-select
                 data-user-id={user.id}
+                aria-label="User role"
               >
                 <option value="admin" selected={user.role === 'admin'}>
                   Admin
@@ -223,7 +224,10 @@ const isSuperAdmin = user.role === 'super_admin';
   import { addToast } from '@/lib/stores/toastStore';
   import { getCsrfHeaders } from '@/lib/csrf-client';
 
+  let initialized = false;
   function initUserDetails() {
+    if (initialized) return;
+    initialized = true;
     // Deactivate button handler
     const deactivateBtn = document.querySelector(
       '[data-deactivate-btn]'

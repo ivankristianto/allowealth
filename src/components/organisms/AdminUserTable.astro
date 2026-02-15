@@ -95,6 +95,8 @@ const { users } = Astro.props;
   function initUserTable() {
     const rows = Array.from(document.querySelectorAll<HTMLTableRowElement>('tr[data-href]'));
     for (const row of rows) {
+      if (row.dataset.bound === 'true') continue;
+      row.dataset.bound = 'true';
       row.setAttribute('tabindex', '0');
       row.setAttribute('role', 'link');
       const href = row.dataset.href;

@@ -22,6 +22,7 @@ import {
   ChevronLeft,
   ShieldCheck,
   Building2,
+  Users,
   ClipboardList,
   Activity,
 } from '@lucide/astro';
@@ -256,6 +257,34 @@ const isActive = (href: string) => {
               />
               <span class="group-data-[sidebar-collapsed=true]:hidden">Workspaces</span>
               {currentPath?.startsWith('/admin/workspaces') && (
+                <span
+                  class="ml-auto w-2 h-2 bg-accent rounded-full animate-pulse group-data-[sidebar-collapsed=true]:hidden"
+                  aria-hidden="true"
+                />
+              )}
+            </a>
+          </li>
+          <li class="shrink-0">
+            <a
+              href="/admin/users"
+              title="Users"
+              aria-label="Users"
+              class={`relative flex items-center gap-4 py-4 px-5 text-base rounded-xl transition-all duration-200 group border group-data-[sidebar-collapsed=true]:justify-center group-data-[sidebar-collapsed=true]:px-0 group-data-[sidebar-collapsed=true]:gap-0 ${
+                currentPath?.startsWith('/admin/users')
+                  ? 'bg-accent/10 text-accent font-bold border-accent/20'
+                  : 'text-base-content/60 hover:text-base-content font-medium border-transparent'
+              } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2`}
+              aria-current={currentPath?.startsWith('/admin/users') ? 'page' : undefined}
+            >
+              <Users
+                size={22}
+                class={`shrink-0 transition-transform duration-200 group-hover:scale-110 ${
+                  currentPath?.startsWith('/admin/users') ? 'text-accent' : ''
+                }`}
+                aria-hidden="true"
+              />
+              <span class="group-data-[sidebar-collapsed=true]:hidden">Users</span>
+              {currentPath?.startsWith('/admin/users') && (
                 <span
                   class="ml-auto w-2 h-2 bg-accent rounded-full animate-pulse group-data-[sidebar-collapsed=true]:hidden"
                   aria-hidden="true"

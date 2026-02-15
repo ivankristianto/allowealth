@@ -27,14 +27,33 @@ export const GET: APIRoute = async (context) => {
     }
 
     const { url } = context;
+    const rawStatus = url.searchParams.get('status');
+    const rawSortBy = url.searchParams.get('sortBy');
+    const rawSortOrder = url.searchParams.get('sortOrder');
+    const rawLimit = Number(url.searchParams.get('limit') ?? '50');
+    const rawOffset = Number(url.searchParams.get('offset') ?? '0');
+
+    const validStatuses = new Set(['active', 'inactive'] as const);
+    const validSortBys = new Set(['name', 'created_at', 'member_count'] as const);
+    const validSortOrders = new Set(['asc', 'desc'] as const);
+
+    const status = validStatuses.has(rawStatus as 'active' | 'inactive')
+      ? (rawStatus as 'active' | 'inactive')
+      : undefined;
+    const sortBy = validSortBys.has(rawSortBy as 'name' | 'created_at' | 'member_count')
+      ? (rawSortBy as 'name' | 'created_at' | 'member_count')
+      : ('created_at' as const);
+    const sortOrder = validSortOrders.has(rawSortOrder as 'asc' | 'desc')
+      ? (rawSortOrder as 'asc' | 'desc')
+      : ('desc' as const);
+
     const params = {
       search: url.searchParams.get('search') || undefined,
-      status: (url.searchParams.get('status') as 'active' | 'inactive') || undefined,
-      sortBy:
-        (url.searchParams.get('sortBy') as 'name' | 'created_at' | 'member_count') || 'created_at',
-      sortOrder: (url.searchParams.get('sortOrder') as 'asc' | 'desc') || 'desc',
-      limit: Math.min(Math.max(parseInt(url.searchParams.get('limit') || '50', 10), 1), 100),
-      offset: Math.max(parseInt(url.searchParams.get('offset') || '0', 10), 0),
+      status,
+      sortBy,
+      sortOrder,
+      limit: Number.isFinite(rawLimit) ? Math.min(Math.max(rawLimit, 1), 100) : 50,
+      offset: Number.isFinite(rawOffset) ? Math.max(rawOffset, 0) : 0,
     };
 
     const result = await superAdminService.listAllWorkspaces(params);

@@ -14,7 +14,8 @@ import { ClipboardList } from '@lucide/astro';
 
 // Parse query params
 const url = Astro.url;
-const page = parseInt(url.searchParams.get('page') || '1', 10);
+const rawPage = parseInt(url.searchParams.get('page') || '1', 10);
+const page = Number.isFinite(rawPage) && rawPage > 0 ? rawPage : 1;
 const limit = 50;
 const offset = (page - 1) * limit;
 

@@ -31,7 +31,7 @@ export interface WorkspaceStatsDetailed extends WorkspaceStats {
     id: string;
     name: string;
     email: string;
-    role: string;
+    role: 'admin' | 'member' | 'super_admin';
     createdAt: Date;
   }>;
   settings: Record<string, string>;
@@ -375,7 +375,7 @@ export class SuperAdminService {
         id: m.id,
         name: m.name,
         email: m.email,
-        role: m.role,
+        role: m.role as 'admin' | 'member' | 'super_admin',
         createdAt: m.created_at,
       })),
       settings,

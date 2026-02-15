@@ -88,6 +88,10 @@ async function main(): Promise<void> {
   console.log('');
   console.log('The user can now access /admin routes.');
   console.log('Their workspace association has been removed.');
+  process.exit(0);
 }
 
-main();
+main().catch((error) => {
+  console.error('Error:', error.message);
+  process.exit(1);
+});

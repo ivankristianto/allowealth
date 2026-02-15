@@ -65,6 +65,8 @@ const { workspaces } = Astro.props;
   function initWorkspaceTable() {
     const rows = Array.from(document.querySelectorAll<HTMLTableRowElement>('tr[data-href]'));
     for (const row of rows) {
+      if (row.dataset.bound === 'true') continue;
+      row.dataset.bound = 'true';
       // Keyboard accessibility: allow Enter/Space to navigate
       row.setAttribute('tabindex', '0');
       row.setAttribute('role', 'link');

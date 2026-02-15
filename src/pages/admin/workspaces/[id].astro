@@ -103,7 +103,7 @@ try {
                   {Object.entries(workspace.settings).map(([key, value]) => (
                     <tr>
                       <td class="font-mono text-sm">{key}</td>
-                      <td>{value}</td>
+                      <td>{typeof value === 'object' ? JSON.stringify(value) : String(value)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -160,7 +160,10 @@ try {
   import { addToast } from '@/lib/stores/toastStore';
   import { getCsrfHeaders } from '@/lib/csrf-client';
 
+  let initialized = false;
   function initWorkspaceDetails() {
+    if (initialized) return;
+    initialized = true;
     // Archive button handler
     const archiveBtn = document.querySelector('[data-archive-btn]') as HTMLButtonElement | null;
     if (archiveBtn) {
@@ -226,7 +229,7 @@ try {
               'Content-Type': 'application/json',
               ...getCsrfHeaders(),
             },
-            body: JSON.stringify({ confirmName: workspaceName }),
+            body: JSON.stringify({ confirmName: confirmInput.value }),
           });
           const result = await response.json();
           if (!response.ok || !result.success) {

@@ -14,11 +14,17 @@ import { Search } from '@lucide/astro';
 // Parse query params for server-side filtering
 const url = Astro.url;
 const search = url.searchParams.get('search') || '';
-const status = (url.searchParams.get('status') as 'active' | 'inactive') || undefined;
+const rawStatus = url.searchParams.get('status');
+const status = rawStatus === 'active' || rawStatus === 'inactive' ? rawStatus : undefined;
+const rawSortBy = url.searchParams.get('sortBy');
 const sortBy =
-  (url.searchParams.get('sortBy') as 'name' | 'created_at' | 'member_count') || 'created_at';
-const sortOrder = (url.searchParams.get('sortOrder') as 'asc' | 'desc') || 'desc';
-const page = parseInt(url.searchParams.get('page') || '1', 10);
+  rawSortBy === 'name' || rawSortBy === 'created_at' || rawSortBy === 'member_count'
+    ? rawSortBy
+    : 'created_at';
+const rawSortOrder = url.searchParams.get('sortOrder');
+const sortOrder = rawSortOrder === 'asc' || rawSortOrder === 'desc' ? rawSortOrder : 'desc';
+const rawPage = parseInt(url.searchParams.get('page') || '1', 10);
+const page = Number.isFinite(rawPage) && rawPage > 0 ? rawPage : 1;
 const limit = 20;
 const offset = (page - 1) * limit;
 
@@ -48,6 +54,7 @@ const totalPages = Math.ceil(result.total / limit);
               value={search}
               placeholder="Search workspaces..."
               class="grow"
+              aria-label="Search workspaces"
             />
           </label>
           <select name="status" class="select select-bordered">
