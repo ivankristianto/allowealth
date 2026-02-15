@@ -1,0 +1,73 @@
+---
+/**
+ * Admin Diagnostics Page
+ *
+ * System diagnostics page for administrators.
+ * Displays runtime, database, cache, environment, and configuration information.
+ *
+ * Protected by requireAdmin() - only accessible to admin users.
+ * Fetches diagnostics server-side via diagnosticsService.getDiagnostics().
+ *
+ * Features:
+ * - Server-side data fetching
+ * - Refresh button with client-side script
+ * - Toast notifications on error
+ * - ProtectedLayout wrapper
+ */
+
+import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
+import DiagnosticsDisplay from '@/components/organisms/DiagnosticsDisplay.astro';
+import { requireAdmin } from '@/lib/auth/requireAuth';
+import { DiagnosticsService } from '@/services/diagnostics.service';
+import { db } from '@/db';
+import { CircleAlert } from '@lucide/astro';
+
+// Authorization check - must be admin
+const authResponse = requireAdmin(Astro);
+if (authResponse) {
+  return authResponse;
+}
+
+// Initialize diagnostics service
+const service = new DiagnosticsService(db);
+
+// Fetch diagnostics server-side
+let diagnosticsData = null;
+let error = null;
+
+try {
+  diagnosticsData = await service.getDiagnostics();
+} catch (err) {
+  console.error('Error fetching diagnostics:', err);
+  error = err instanceof Error ? err.message : 'Unknown error occurred';
+}
+
+// Page metadata
+const title = 'Diagnostics';
+const subtitle = 'System health overview';
+const currentPath = '/admin/diagnostics';
+---
+
+<ProtectedLayout title={title} currentPath={currentPath} subtitle={subtitle}>
+  <!-- Page content with standard container -->
+  <div
+    class="@container max-w-7xl mx-auto @sm:px-2 @3xl:px-6 space-y-6 @sm:space-y-8"
+    data-testid="diagnostics-page"
+  >
+    <!-- Error State -->
+    {
+      error && (
+        <div class="alert alert-error" role="alert">
+          <CircleAlert size={20} class="shrink-0" aria-hidden="true" />
+          <div>
+            <h3 class="font-bold">Error Loading Diagnostics</h3>
+            <p class="text-sm">{error}</p>
+          </div>
+        </div>
+      )
+    }
+
+    <!-- Diagnostics Display -->
+    {diagnosticsData && <DiagnosticsDisplay data={diagnosticsData} />}
+  </div>
+</ProtectedLayout>

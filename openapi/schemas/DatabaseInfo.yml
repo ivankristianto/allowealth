@@ -1,0 +1,58 @@
+DatabaseInfo:
+  type: object
+  description: Database connection and configuration information
+  properties:
+    dialect:
+      type: string
+      enum: [sqlite, postgresql]
+      description: Database dialect
+      example: postgresql
+    url:
+      type: string
+      description: Database connection URL (sanitized, password masked)
+      example: postgresql://db.xxx.supabase.co:5432/postgres?password=***
+    isConnected:
+      type: boolean
+      description: Whether database connection is healthy
+      example: true
+    isSupabase:
+      type: boolean
+      description: Whether database is Supabase-hosted
+      example: true
+    isTransactionPooler:
+      type: boolean
+      description: Whether using Supabase transaction pooler
+      example: false
+    isHyperdrive:
+      type: boolean
+      description: Whether using Cloudflare Hyperdrive
+      example: true
+    connectionPoolConfig:
+      type: object
+      description: Connection pool configuration
+      properties:
+        max:
+          type: integer
+          description: Maximum pool size
+          example: 10
+        idleTimeout:
+          type: integer
+          description: Idle timeout in seconds
+          example: 30
+    queryMetrics:
+      type: object
+      description: Query performance metrics
+      properties:
+        totalQueries:
+          type: integer
+          description: Total query count
+          example: 1523
+        avgLatency:
+          type: number
+          description: Average query latency in milliseconds
+          example: 12.5
+        slowQueries:
+          type: integer
+          description: Number of slow queries (>100ms)
+          example: 3
+  required: [dialect, url, isConnected, isSupabase, isTransactionPooler, isHyperdrive]

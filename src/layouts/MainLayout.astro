@@ -42,7 +42,7 @@ const hasHeaderSlot = Astro.slots.has('header');
     <!-- Page content -->
     <div class="drawer-content flex flex-col lg:h-screen lg:overflow-y-auto">
       <!-- Header -->
-      <Header title={title} user={user} subtitle={subtitle}>
+      <Header title={title} user={user} subtitle={subtitle} currentPath={currentPath}>
         {hasHeaderSlot && <slot name="header" slot="header" />}
       </Header>
 

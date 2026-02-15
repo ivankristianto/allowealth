@@ -82,6 +82,10 @@ const token = document.cookie.split('csrf_token=')[1]; // Breaks on base64
 - ✅ **Use semantic size classes** - `text-sm`, `text-base`, not `text-[10px]`
 - ❌ **Hardcode sizes like `text-[10px]`** - breaks design system consistency
 - ❌ **Use inline styles for interactive states** - use CSS classes instead
+- ❌ **Use `@xl:` container queries inside Card components** - Card.astro has no `@container`, queries resolve against page-level container. Use regular breakpoints (`xl:`) instead
+- ❌ **Use `hoverable` on read-only Card components** - hover effect implies interactivity (clickable). Only use `hoverable` when the card triggers an action
+- ❌ **Put title/description in ProtectedLayout header slot** - Header component renders title/subtitle from props. Slot is only for action buttons (refresh, export)
+- ✅ **Add `data-testid` to major page sections and cards** - text-based locators (`h2:has-text(...)`) break when heading text changes
 
 ## Testing Patterns
 
@@ -93,6 +97,8 @@ const token = document.cookie.split('csrf_token=')[1]; // Breaks on base64
 - ✅ **Use `waitForResponse()` for AJAX-driven updates** - `waitForPageLoad(domcontentloaded)` fires before client-side fetch/re-render completes
 - ✅ **Increase `beforeAll` hook timeouts for `drizzle-kit push`** - schema push can exceed default 5000ms; use 30000ms
 - ✅ **Update page objects when UI components change** - select-to-chips, dual-layout, new selectors break existing locators
+- ✅ **Use `data-testid` locators over text/CSS class selectors in E2E tests** - `[data-testid="runtime-card"]` survives heading text changes, CSS class renames, and HTML element swaps (`td` → `dt`)
+- ✅ **Check E2E tests when refactoring UI** - heading text changes, element type changes (`td` → `dt`), and CSS class renames (`badge-primary` → `badge-accent`) silently break locators
 - ❌ **Rely on Playwright's `webServer.env`** when `reuseExistingServer: true` - env block is not applied to already-running server
 
 ### Test Data
