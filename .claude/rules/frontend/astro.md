@@ -47,6 +47,7 @@ Use `.client.ts` files with `data-*` attributes to pass server values to client.
 
 **Rules:**
 
+- ❌ **Never use inline `onclick` handlers in Astro templates** - blocked by production CSP nonce policy; use `data-*` attributes and attach handlers in `<script>` block instead
 - ❌ **Never mix `define:vars`, `is:inline`, or `type="module"` with npm imports**
 - ✅ **Use `data-*` attributes** to pass server values to client scripts
 - ✅ **Extract `data-action` from DOM, don't use `define:vars`**

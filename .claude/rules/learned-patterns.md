@@ -1,233 +1,26 @@
 # Learned Patterns
 
-Patterns learned from experience during development. These capture common mistakes and their fixes.
+Patterns learned from experience during development. When a pattern clearly belongs to a domain, it is moved to the appropriate rule file.
 
-## Input Validation
+## Where Patterns Live
 
-### Currency Parsing
+| Domain                                        | File                        |
+| --------------------------------------------- | --------------------------- |
+| Astro components, Vite SSR, client scripts    | `frontend/astro.md`         |
+| Bundle size, imports, tree-shaking            | `frontend/bundle.md`        |
+| Design system, DaisyUI, accessibility         | `frontend/design-system.md` |
+| Database, ORM, queries, input validation      | `backend/database.md`       |
+| Cloudflare Workers, Wrangler, D1, env vars    | `backend/deployment.md`     |
+| API patterns, OpenAPI                         | `backend/api.md`            |
+| Testing, Playwright, E2E, test data           | `testing.md`                |
+| Debugging, feature completeness, subprocesses | `workflow.md`               |
 
-- ❌ **Use `parseFloat()` for currency validation** - accepts malformed input like `"100abc"`
-- ✅ **Use `Number()` instead** - `parseFloat("1,000")` returns `1`, silently corrupts data
-- ❌ **Default empty amounts to `'0'`** - silently zeros out budgets, corrupts user data
-- ❌ **Use `parseCurrency` without locale-aware decimal detection** - IDR format `Rp480.000,00` parsed as 48M instead of 480K
+## Adding New Patterns
 
-### Pagination Inputs
+When you learn a new pattern from a debugging session or code review:
 
-- ✅ **Clamp `parseInt()` results for pagination params** - `parseInt('abc')` returns `NaN`, propagates through offset calculations; use `Number.isFinite(n) && n > 0 ? n : 1`
-- ❌ **Pass raw `parseInt()` to DB `.offset()`/`.limit()`** - NaN/negative values cause undefined DB behavior
+1. Identify which domain file it belongs to
+2. Add it directly to that file with ✅/❌ format
+3. Only add here if it doesn't fit any domain file
 
-### CSV Parsing
-
-- ✅ **Parse CSV with proper parser, not `split(',')`** - handles quoted fields containing commas
-- ✅ **Strip BOM from CSV files before parsing** - Excel UTF-8 exports include BOM (`\uFEFF`)
-
-### Token Parsing
-
-- ✅ **Read CSRF token with proper decoding loop** - don't use `split('=')[1]` (breaks on base64)
-
-```typescript
-// ✅ Correct
-function getCsrfToken(): string | null {
-  const cookies = document.cookie.split('; ');
-  for (const cookie of cookies) {
-    const [key, value] = cookie.split('=');
-    if (key === 'csrf_token') {
-      return decodeURIComponent(value);
-    }
-  }
-  return null;
-}
-
-// ❌ Wrong
-const token = document.cookie.split('csrf_token=')[1]; // Breaks on base64
-```
-
-## Database Patterns
-
-### Transactions
-
-- ✅ **Use `runTransaction()` for cross-dialect transactions** - handles SQLite/PostgreSQL differences
-- ❌ **Use raw `db.transaction()` with async callbacks on SQLite** - driver is synchronous, use `runTransaction()` instead
-- ✅ **Wrap multi-step DB operations in transactions** - ensures atomicity
-
-### Query Optimization
-
-- ❌ **Add extra DB queries as the lazy first solution** - use subqueries or JOINs
-- ✅ **Query budgets directly instead of cached overview** - guarantees schema fields like `id` are present
-- ❌ **Rely on cached data when schema fields are critical** - cache may be stale
-
-### ORM Issues
-
-- ✅ **Verify ORM-generated SQL with diagnostic queries** - Drizzle `extras` can silently produce wrong SQL
-- ❌ **Use `(obj as any).field` when proper typing is available** - use interface references
-
-### Audit Queries
-
-- ❌ **Include `create` action in history/audit queries** - only `update`/`delete` count
-- ❌ **Use fake workspace IDs like `'system'` for audit log fallback** - `audit_logs.workspace_id` has FK constraint on `workspaces.id`; silently fails via `logAuditEvent` catch
-- ✅ **Guard audit logging with `if (workspaceId)` check** - skip audit for workspace-less users until schema migration makes `workspace_id` nullable
-
-## Frontend Patterns
-
-### Astro Components
-
-- ❌ **Use TypeScript types in client-side `<script>` tags** - Astro's inline scripts don't support TS annotations
-- ❌ **Access `user.attributes.property`** - User type has properties directly (`user.name`, `user.email`)
-- ❌ **Declare `Astro.locals` types in multiple files** - centralize in `src/env.d.ts` only
-- ❌ **Use inline `onclick` handlers in Astro templates** - blocked by production CSP nonce policy; use `data-*` attributes and attach handlers in `<script>` block instead
-- ❌ **Mix `define:vars`, `is:inline`, or `type="module"` with npm imports** - pass server values via `data-*` attributes instead
-- ✅ **Extract `data-action` from DOM, don't use `define:vars`** - NPM imports break with `define:vars/is:inline`
-
-### Bundle Size
-
-- ✅ **Check bundle budget after every dependency change** - 250 kB gzipped budget
-- ❌ **Assume `manualChunks` captures transitive dependencies** - `motion: ['motion']` only captures the wrapper, not `motion-dom`/`framer-motion`
-
-### Design System
-
-- ✅ **Use DaisyUI classes directly on elements** - `<button class="btn btn-accent">`
-- ❌ **Use `@apply btn` in custom classes** - creates CSS cascade issues
-- ✅ **Use semantic size classes** - `text-sm`, `text-base`, not `text-[10px]`
-- ❌ **Hardcode sizes like `text-[10px]`** - breaks design system consistency
-- ❌ **Use inline styles for interactive states** - use CSS classes instead
-- ❌ **Use `@xl:` container queries inside Card components** - Card.astro has no `@container`, queries resolve against page-level container. Use regular breakpoints (`xl:`) instead
-- ❌ **Use `hoverable` on read-only Card components** - hover effect implies interactivity (clickable). Only use `hoverable` when the card triggers an action
-- ❌ **Put title/description in ProtectedLayout header slot** - Header component renders title/subtitle from props. Slot is only for action buttons (refresh, export)
-- ✅ **Add `data-testid` to major page sections and cards** - text-based locators (`h2:has-text(...)`) break when heading text changes
-
-## Testing Patterns
-
-### Playwright
-
-- ✅ **Use `expect.poll()` for condition-based waiting** - not manual loops or waitForTimeout
-- ✅ **Set Playwright workers=1 for shared database tests** - prevents race conditions
-- ✅ **Use `domcontentloaded` instead of `networkidle`** - faster, still reliable
-- ✅ **Use `waitForResponse()` for AJAX-driven updates** - `waitForPageLoad(domcontentloaded)` fires before client-side fetch/re-render completes
-- ✅ **Increase `beforeAll` hook timeouts for `drizzle-kit push`** - schema push can exceed default 5000ms; use 30000ms
-- ✅ **Update page objects when UI components change** - select-to-chips, dual-layout, new selectors break existing locators
-- ✅ **Use `data-testid` locators over text/CSS class selectors in E2E tests** - `[data-testid="runtime-card"]` survives heading text changes, CSS class renames, and HTML element swaps (`td` → `dt`)
-- ✅ **Check E2E tests when refactoring UI** - heading text changes, element type changes (`td` → `dt`), and CSS class renames (`badge-primary` → `badge-accent`) silently break locators
-- ❌ **Rely on Playwright's `webServer.env`** when `reuseExistingServer: true` - env block is not applied to already-running server
-
-### Test Data
-
-- ✅ **Remove precomputed hashes when changing algorithms** - prevents seed mismatches
-- ✅ **Use dynamic dates for current month in seed data** - not hardcoded
-
-## Runtime Compatibility
-
-### Astro Dev Server Runtime
-
-- ✅ **Use `bun --bun` flag for dev/preview scripts** - Astro CLI has `#!/usr/bin/env node` shebang, runs under Node.js by default
-- ❌ **Assume `bun run dev` runs Astro under Bun** - the shebang overrides, causing Node.js execution
-- ❌ **Assume `createRequire` resolves `.ts` files in Vite SSR** - Node.js `createRequire` only resolves `.js`, `.json`, `.node`
-- ✅ **Verify actual runtime with `ps aux`** before assuming Bun APIs are available in dev server context
-
-## Deployment Patterns
-
-### Wrangler Configuration
-
-- ❌ **Use wildcards (`/*`) or paths in Custom Domain routes** - Custom Domains only accept bare domain names
-- ✅ **Use bare domain in `custom_domain` routes** - `{ pattern = "example.io", custom_domain = true }`, not `"example.io/*"`
-
-### Cloudflare D1
-
-- ✅ **Use static import for `drizzle-orm/d1`** - `drizzle()` is synchronous, dynamic `import()` adds unnecessary async complexity
-- ❌ **Use async proxy patterns to bridge sync/async DB interfaces** - Proxy that wraps every property as an async function breaks `db.query.table.findFirst()` chains
-- ✅ **Store D1 binding in dedicated module-level variable** - not in the string-typed env API (`Record<string, string>`)
-- ❌ **Smuggle objects through `setRuntimeEnv()` env bag** - D1 binding is an object, env API expects strings; use dedicated `setD1Binding()`/`getD1Binding()`
-- ✅ **Enable transactions for D1 in `runTransaction()`** - D1 runs in multi-isolate Workers, not single-writer local SQLite
-- ❌ **Assume D1 has same concurrency model as local SQLite** - local SQLite has single-writer WAL; D1 is multi-isolate, needs transactions
-- ✅ **Call `prepareForRequest()` for D1 in database middleware** - reset `dbInstance` per-request even though D1 has no TCP connections
-- ✅ **Suppress `DATABASE_URL` warning when D1 is enabled** - D1 doesn't use DATABASE_URL; check `isD1` before calling `getDatabaseUrl()`
-
-### Cloudflare Workers
-
-- ✅ **Use Web Crypto API (PBKDF2-SHA256) for password hashing** - works in all runtimes
-- ✅ **Replace native Node modules with platform-agnostic alternatives** - no native addons
-- ✅ **Serialize Date objects explicitly when returning from services** - PostgreSQL Date objects can't JSON-serialize in Workers
-- ✅ **Set `runtimeEnv` from middleware on first request** - Workers secrets aren't available at module load
-- ✅ **Create fresh DB connections per request in Workers** - no singletons in edge runtime
-- ✅ **Use tag-based cache invalidation** (`user:123`, `budget:123`) with configurable TTLs
-- ✅ **Handle cache errors gracefully** - fall back to database queries
-- ✅ **Use Hyperdrive for Workers database connections** - provides local proxy with 0 overhead
-- ✅ **Trace dependency chains when builds fail** - e.g., oslo → @node-rs/argon2 → native addon
-- ✅ **Use `getEnv()` for ALL runtime env vars on Workers** - `import.meta.env` only has build-time inlined values
-- ✅ **Audit ALL `import.meta.env` usages when deploying to Workers** - categorize as: Vite built-in (safe), CLI-only (safe), runtime secret (needs `getEnv()`)
-- ❌ **Use `script-src 'unsafe-inline'` for CSP** - inject nonces into Astro-generated scripts
-- ❌ **Change DATABASE_URL to sqlite fallback in prod config** - fail fast instead
-- ❌ **Assume fetch counter captures all subrequests** - TCP sockets via nodejs_compat bypass fetch wrappers
-- ❌ **Use Supabase transaction pooler with Hyperdrive** - use direct connection (port 5432)
-- ❌ **Name Astro API endpoints with `_` prefix** - Astro treats `_`-prefixed files as private, silently 404s
-- ❌ **Mutate `import.meta.env` directly in tests** - use `setTestEnv()` to match the production code path
-
-## Debugging Workflow
-
-### Root Cause Analysis
-
-- ✅ **Fix root cause of typecheck errors** - update API usage, fix imports
-- ✅ **Trace bugs through full flow** - DB → Service → API → Session → UI
-- ✅ **Test after every code change**
-- ✅ **Check all usages after changing types or imports** - `grep` the codebase
-- ✅ **Verify root cause is fixed, not just symptoms**
-- ✅ **Stop and ask when blocked or unclear** - don't guess, don't force through
-- ✅ **Report actual state, not agent claims** - check VCS diff to verify changes
-- ❌ **Suppress warnings with `@ts-expect-error` or `eslint-disable`**
-- ❌ **Remove `await` just because TypeScript says "no effect"** - runtime differs
-- ❌ **Attempt fix #4 without questioning architecture** - 3+ failures = wrong approach
-- ❌ **Fix multiple things at once** - changes must be isolated
-
-### Feature Completeness
-
-- ✅ **Trace ALL consumers of a shared component before declaring done** - check every render path (SSR, API, Dashboard, etc.)
-- ✅ **Fix tests before committing, never push with known failures**
-- ✅ **Verify return types don't silently strip new fields** - explicit inline return types discard unlisted properties
-- ✅ **Use systematic debugging from the start** - diagnose root cause with evidence before changing code
-- ✅ **Confirm user intent before implementing UI changes** - ask clarifying questions first
-- ✅ **Think through mobile vs desktop UX separately** - mobile uses dropdowns, desktop uses inline icons
-- ✅ **Add tooltips/labels to icon-only buttons proactively**
-- ✅ **Update tests to match user intent, not broken implementation**
-- ✅ **Verify feature requests against existing codebase before creating issues**
-- ✅ **Confirm with user before deleting "dead" code** - endpoints may be used externally
-- ✅ **Check bundle budget after every dependency change**
-- ❌ **Claim "done" without verifying all render paths**
-- ❌ **Guess at fixes** - use systematic debugging immediately
-- ❌ **Thrash method signatures** - if you edit 3x and end at the original, you didn't think first
-- ❌ **Forget cross-session context** - if user asked to remove something prior, don't leave it
-- ❌ **Delete tests without replacing coverage**
-- ❌ **Assume endpoints are "dead" because grep finds no client references**
-
-### Subagent Delegation
-
-- ✅ **Verify subagent commits with `git log` after dispatch** - subagents may report success but fail to commit
-- ✅ **Commit files manually if subagent skipped the commit step** - check `git status` after every subagent returns
-
-## Subprocess Patterns
-
-- ✅ **Use `execFileSync` with argv array for subprocess calls** - avoids shell injection and special character issues in parameters
-- ❌ **Use `execSync` with string interpolation** - `execSync(\`bun run \${script} \${param}\`)` breaks on shell metacharacters and is a command injection vector
-- ✅ **Use Bun subprocess for E2E helpers needing bun:sqlite** - Playwright runs in Node.js, shell out to Bun for SQLite access
-- ❌ **Over-engineer E2E test helpers with production-grade error handling** - YAGNI for test code; keep subprocess helpers simple
-
-## Subagent Patterns
-
-- ✅ **Verify file state after subagent completes** - subagents may make partial changes; always read files and run typecheck before trusting their report
-- ✅ **Run typecheck immediately after subagent work** - stale diagnostics from mid-edit can appear; fresh typecheck reveals actual state
-- ❌ **Trust subagent "all checks passed" reports without independent verification** - subagents may report success while leaving partial changes
-
-## Dependency Removal
-
-- ✅ **Grep ALL file types when removing a dependency** - comments, docs, rules, and config files reference dependencies too
-- ✅ **Verify E2E failures are pre-existing before investigating** - `git stash` and test on prior code to isolate regressions
-- ❌ **Trust `reuseExistingServer: true` E2E results as proof of correctness** - a running dev server masks startup failures
-
-## Error Messages
-
-- ✅ **Surface actual error messages in API responses** - not generic "Failed to X"
-
-## TypeScript Patterns
-
-- ✅ **Use `declare global { namespace App { ... } }`** when `env.d.ts` has imports
-- ✅ **Add `export {}` at the end** of module-scoped type files
-- ✅ **Use TypeScript in separate `.ts` files** for client-side code (not inline `<script>`)
-- ✅ **Define component props with interfaces**
+Patterns added here should be periodically redistributed to domain files.
