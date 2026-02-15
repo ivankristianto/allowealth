@@ -46,8 +46,8 @@ const token = document.cookie.split('csrf_token=')[1]; // Breaks on base64
 
 ### Transactions
 
-- ✅ **Use sync callbacks with better-sqlite3 transactions** - `db.transaction((tx) => { /* sync code */ })`
-- ❌ **Use `async/await` in better-sqlite3 transactions** - driver is synchronous, throws "cannot return a promise"
+- ✅ **Use `runTransaction()` for cross-dialect transactions** - handles SQLite/PostgreSQL differences
+- ❌ **Use raw `db.transaction()` with async callbacks on SQLite** - driver is synchronous, use `runTransaction()` instead
 - ✅ **Wrap multi-step DB operations in transactions** - ensures atomicity
 
 ### Query Optimization
@@ -90,6 +90,10 @@ const token = document.cookie.split('csrf_token=')[1]; // Breaks on base64
 - ✅ **Use semantic size classes** - `text-sm`, `text-base`, not `text-[10px]`
 - ❌ **Hardcode sizes like `text-[10px]`** - breaks design system consistency
 - ❌ **Use inline styles for interactive states** - use CSS classes instead
+- ❌ **Use `@xl:` container queries inside Card components** - Card.astro has no `@container`, queries resolve against page-level container. Use regular breakpoints (`xl:`) instead
+- ❌ **Use `hoverable` on read-only Card components** - hover effect implies interactivity (clickable). Only use `hoverable` when the card triggers an action
+- ❌ **Put title/description in ProtectedLayout header slot** - Header component renders title/subtitle from props. Slot is only for action buttons (refresh, export)
+- ✅ **Add `data-testid` to major page sections and cards** - text-based locators (`h2:has-text(...)`) break when heading text changes
 
 ## Testing Patterns
 
@@ -101,12 +105,23 @@ const token = document.cookie.split('csrf_token=')[1]; // Breaks on base64
 - ✅ **Use `waitForResponse()` for AJAX-driven updates** - `waitForPageLoad(domcontentloaded)` fires before client-side fetch/re-render completes
 - ✅ **Increase `beforeAll` hook timeouts for `drizzle-kit push`** - schema push can exceed default 5000ms; use 30000ms
 - ✅ **Update page objects when UI components change** - select-to-chips, dual-layout, new selectors break existing locators
+- ✅ **Use `data-testid` locators over text/CSS class selectors in E2E tests** - `[data-testid="runtime-card"]` survives heading text changes, CSS class renames, and HTML element swaps (`td` → `dt`)
+- ✅ **Check E2E tests when refactoring UI** - heading text changes, element type changes (`td` → `dt`), and CSS class renames (`badge-primary` → `badge-accent`) silently break locators
 - ❌ **Rely on Playwright's `webServer.env`** when `reuseExistingServer: true` - env block is not applied to already-running server
 
 ### Test Data
 
 - ✅ **Remove precomputed hashes when changing algorithms** - prevents seed mismatches
 - ✅ **Use dynamic dates for current month in seed data** - not hardcoded
+
+## Runtime Compatibility
+
+### Astro Dev Server Runtime
+
+- ✅ **Use `bun --bun` flag for dev/preview scripts** - Astro CLI has `#!/usr/bin/env node` shebang, runs under Node.js by default
+- ❌ **Assume `bun run dev` runs Astro under Bun** - the shebang overrides, causing Node.js execution
+- ❌ **Assume `createRequire` resolves `.ts` files in Vite SSR** - Node.js `createRequire` only resolves `.js`, `.json`, `.node`
+- ✅ **Verify actual runtime with `ps aux`** before assuming Bun APIs are available in dev server context
 
 ## Deployment Patterns
 
@@ -175,6 +190,19 @@ const token = document.cookie.split('csrf_token=')[1]; // Breaks on base64
 
 - ✅ **Verify subagent commits with `git log` after dispatch** - subagents may report success but fail to commit
 - ✅ **Commit files manually if subagent skipped the commit step** - check `git status` after every subagent returns
+
+## Subprocess Patterns
+
+- ✅ **Use `execFileSync` with argv array for subprocess calls** - avoids shell injection and special character issues in parameters
+- ❌ **Use `execSync` with string interpolation** - `execSync(\`bun run \${script} \${param}\`)` breaks on shell metacharacters and is a command injection vector
+- ✅ **Use Bun subprocess for E2E helpers needing bun:sqlite** - Playwright runs in Node.js, shell out to Bun for SQLite access
+- ❌ **Over-engineer E2E test helpers with production-grade error handling** - YAGNI for test code; keep subprocess helpers simple
+
+## Dependency Removal
+
+- ✅ **Grep ALL file types when removing a dependency** - comments, docs, rules, and config files reference dependencies too
+- ✅ **Verify E2E failures are pre-existing before investigating** - `git stash` and test on prior code to isolate regressions
+- ❌ **Trust `reuseExistingServer: true` E2E results as proof of correctness** - a running dev server masks startup failures
 
 ## Error Messages
 

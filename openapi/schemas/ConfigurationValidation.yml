@@ -1,0 +1,22 @@
+ConfigurationValidation:
+  type: object
+  description: Configuration validation results
+  properties:
+    isValid:
+      type: boolean
+      description: Whether configuration is valid
+      example: true
+    missingRequired:
+      type: array
+      description: List of missing required environment variables
+      items:
+        type: string
+      example: []
+    warnings:
+      type: array
+      description: List of configuration warnings
+      items:
+        type: string
+      example:
+        - Using memory cache in production is not recommended
+  required: [isValid, missingRequired, warnings]

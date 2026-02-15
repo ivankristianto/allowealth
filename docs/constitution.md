@@ -43,7 +43,7 @@ The project deploys to **Cloudflare Workers** (primary) and **Bun** (local dev).
 
 **Forbidden in middleware-imported code:**
 
-- `bun:sqlite` → Use `better-sqlite3` or database abstraction layer
+- `bun:sqlite` → Only use in API routes, CLI, or non-middleware contexts
 - `bun:` protocol imports → Only use in API routes, CLI, or non-middleware contexts
 
 **Detection:**

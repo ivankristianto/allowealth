@@ -30,7 +30,7 @@ Personal and family financial application for expense tracking, budgeting, asset
 | **State**               | Nano Stores                              | Local state scattered                          | N/A                               |
 | **Feedback**            | Toast notifications                      | `alert()`, `confirm()`                         | N/A                               |
 | **TypeScript**          | Separate `.ts` files                     | Types in `<script>` tags                       | N/A                               |
-| **Database**            | `better-sqlite3` (shared code)           | `bun:sqlite` (middleware)                      | `rules/workflow.md`               |
+| **Database**            | `bun:sqlite` (local dev)                 | Direct SQLite in middleware                    | `rules/workflow.md`               |
 | **Schema Selection**    | `getActiveSchema()` in services          | Direct table imports                           | Dual SQLite/PostgreSQL support    |
 | **Environment Vars**    | `getEnv()` for runtime secrets           | `import.meta.env` (build-time only on Workers) | Cross-runtime compat              |
 | **Testing**             | `bun:test`                               | `vitest`                                       | `rules/testing.md`                |

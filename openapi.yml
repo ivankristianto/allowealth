@@ -63,6 +63,8 @@ tags:
     description: Wealth trajectory forecasting and projections
   - name: Reports
     description: Financial intelligence reports (monthly and yearly aggregations)
+  - name: Admin
+    description: Admin-only endpoints for system monitoring and diagnostics
 
 paths:
   /api/auth/signup:
@@ -166,6 +168,10 @@ paths:
 
   /api/reports:
     $ref: './openapi/paths/reports.yml#/paths/~1api~1reports'
+
+  # Admin endpoints
+  /api/admin/diagnostics:
+    $ref: './openapi/paths/admin-diagnostics.yml#/paths/~1api~1admin~1diagnostics'
 components:
   securitySchemes:
     sessionAuth:
@@ -348,3 +354,17 @@ components:
       $ref: './openapi/schemas/TrendDataPoint.yml#/TrendDataPoint'
     CategoryIntelligence:
       $ref: './openapi/schemas/CategoryIntelligence.yml#/CategoryIntelligence'
+
+    # Admin Schemas
+    RuntimeInfo:
+      $ref: './openapi/schemas/RuntimeInfo.yml#/RuntimeInfo'
+    DatabaseInfo:
+      $ref: './openapi/schemas/DatabaseInfo.yml#/DatabaseInfo'
+    CacheInfo:
+      $ref: './openapi/schemas/CacheInfo.yml#/CacheInfo'
+    EnvironmentVariable:
+      $ref: './openapi/schemas/EnvironmentVariable.yml#/EnvironmentVariable'
+    ConfigurationValidation:
+      $ref: './openapi/schemas/ConfigurationValidation.yml#/ConfigurationValidation'
+    DiagnosticsResponse:
+      $ref: './openapi/schemas/DiagnosticsResponse.yml#/DiagnosticsResponse'

@@ -187,7 +187,9 @@ describe('mobile view improvements', () => {
 
     expect(periodNavigator).toContain('whitespace-nowrap');
     expect(periodNavigator).toContain('w-full text-left');
-    expect(periodNavigator).toContain('flex-nowrap');
+    // DaisyUI menu class provides column layout; flex was removed to prevent
+    // it from overriding DaisyUI's display:none on dropdown-content (CSS layer precedence)
+    expect(periodNavigator).toContain('menu');
     expect(periodNavigator).toContain('overflow-x-hidden');
   });
 });

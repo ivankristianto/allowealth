@@ -23,6 +23,7 @@ import {
   ShieldCheck,
   Building2,
   ClipboardList,
+  Activity,
 } from '@lucide/astro';
 import type { User } from '@/lib/auth/lucia';
 import UserProfile from './UserProfile.astro';
@@ -54,6 +55,9 @@ const navItems: NavItem[] = [
   { href: '/calculators', label: 'Calculators', icon: Calculator },
   { href: '/settings', label: 'Settings', icon: Settings },
 ];
+
+// Check if user is super admin
+const isSuperAdmin = user?.role === 'super_admin';
 
 const isActive = (href: string) => {
   // Settings alias: treat /profile and /security as settings area
@@ -198,7 +202,7 @@ const isActive = (href: string) => {
 
     {/* Admin Navigation - super_admin only */}
     {
-      user?.role === 'super_admin' && (
+      isSuperAdmin && (
         <>
           <li class="menu-title mt-4 group-data-[sidebar-collapsed=true]:hidden">
             <span>Admin</span>
@@ -280,6 +284,34 @@ const isActive = (href: string) => {
               />
               <span class="group-data-[sidebar-collapsed=true]:hidden">Audit Logs</span>
               {currentPath?.startsWith('/admin/audit-logs') && (
+                <span
+                  class="ml-auto w-2 h-2 bg-accent rounded-full animate-pulse group-data-[sidebar-collapsed=true]:hidden"
+                  aria-hidden="true"
+                />
+              )}
+            </a>
+          </li>
+          <li class="shrink-0">
+            <a
+              href="/admin/diagnostics"
+              title="Diagnostics"
+              aria-label="Diagnostics"
+              class={`relative flex items-center gap-4 py-4 px-5 text-base rounded-xl transition-all duration-200 group border group-data-[sidebar-collapsed=true]:justify-center group-data-[sidebar-collapsed=true]:px-0 group-data-[sidebar-collapsed=true]:gap-0 ${
+                currentPath?.startsWith('/admin/diagnostics')
+                  ? 'bg-accent/10 text-accent font-bold border-accent/20'
+                  : 'text-base-content/60 hover:text-base-content font-medium border-transparent'
+              } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2`}
+              aria-current={currentPath?.startsWith('/admin/diagnostics') ? 'page' : undefined}
+            >
+              <Activity
+                size={22}
+                class={`shrink-0 transition-transform duration-200 group-hover:scale-110 ${
+                  currentPath?.startsWith('/admin/diagnostics') ? 'text-accent' : ''
+                }`}
+                aria-hidden="true"
+              />
+              <span class="group-data-[sidebar-collapsed=true]:hidden">Diagnostics</span>
+              {currentPath?.startsWith('/admin/diagnostics') && (
                 <span
                   class="ml-auto w-2 h-2 bg-accent rounded-full animate-pulse group-data-[sidebar-collapsed=true]:hidden"
                   aria-hidden="true"
