@@ -2,16 +2,17 @@
 /**
  * AssetPortfolioSummary Component
  *
- * Overview section showing total portfolio value (assets, debt, net worth)
- * in both currencies and asset allocation distribution bar.
+ * Portfolio overview showing net worth (hero), total assets & debt (side-by-side),
+ * and asset allocation with donut chart + stacked bar.
  *
- * Part of the Global Portfolio page redesign.
+ * Redesigned for currency clarity (IDR/USD badges per row) and visual impact
+ * (donut chart replaces cramped 3-column grid).
  *
  * @param {number} totalIdr - Total asset value in IDR
  * @param {number} totalUsd - Total asset value in USD
  * @param {number} debtIdr - Total debt value in IDR
  * @param {number} debtUsd - Total debt value in USD
- * @param {Array} distribution - Asset type distribution for allocation bar
+ * @param {Array} distribution - Asset type distribution for allocation chart
  * @param {boolean} loading - Show loading skeleton state
  * @param {string} className - Additional CSS classes
  */
@@ -24,20 +25,17 @@ import { formatCurrency } from '@/lib/formatting';
 import { sanitizeColor } from '@/lib/utils/budget';
 
 // Internal aliases - components
-import StatLabel from '@components/atoms/StatLabel.astro';
 import Skeleton from '@components/atoms/Skeleton.astro';
 import AllocationBar from '@components/molecules/AllocationBar.astro';
 
-// P2: TODO - Consider importing AssetAllocationDistribution type from asset utils
 export interface AllocationItem {
   type: string;
   percentage: number;
   color: string;
 }
 
-// Maximum number of individual asset types to show before grouping the rest as "Others"
 const MAX_LEGEND_ITEMS = 7;
-const OTHERS_COLOR = '#9ca3af'; // gray-400 for "Others" category
+const OTHERS_COLOR = '#9ca3af';
 
 export interface Props {
   totalIdr: number;
@@ -67,6 +65,8 @@ const {
 const netWorthIdr = totalIdr - debtIdr;
 const netWorthUsd = totalUsd - debtUsd;
 const hasDebt = debtIdr > 0 || debtUsd > 0;
+const hasIdr = totalIdr > 0 || debtIdr > 0;
+const hasUsd = totalUsd > 0 || debtUsd > 0;
 
 // Format the latest update date if provided
 const formattedLatestUpdate = latestUpdate
@@ -87,27 +87,39 @@ const topTypes = sortedDistribution.slice(0, MAX_LEGEND_ITEMS);
 const remainingTypes = sortedDistribution.slice(MAX_LEGEND_ITEMS);
 const othersPercentage = remainingTypes.reduce((sum, item) => sum + item.percentage, 0);
 
-// Build display distribution with "Others" if there are remaining types
 const displayDistribution: AllocationItem[] =
   othersPercentage > 0
     ? [...topTypes, { type: 'Others', percentage: othersPercentage, color: OTHERS_COLOR }]
     : topTypes;
 
-// Generate accessible description for screen readers (P1: Accessibility)
+// Generate accessible description for screen readers
 const allocationDescription = sortedDistribution
   .map((item) => `${item.type} ${item.percentage}%`)
   .join(', ');
 
+// Serialize chart data for client-side donut chart
+const chartData = displayDistribution.map((item) => ({
+  label: item.type,
+  value: item.percentage,
+  color: sanitizeColor(item.color),
+}));
+const serializedChartData = JSON.stringify(chartData)
+  .replace(/</g, '\\u003c')
+  .replace(/>/g, '\\u003e')
+  .replace(/&/g, '\\u0026');
+
+const chartId = `portfolio-allocation-${Math.random().toString(36).slice(2, 11)}`;
+
+// Badge class strings (hero = larger, card = compact)
+const badgeHero =
+  'inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold uppercase tracking-wider w-10 justify-center shrink-0';
+const badgeCard =
+  'inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold uppercase tracking-wider shrink-0';
+
 const cardClasses = [
-  // Base card styling
   'bg-base-100 rounded-card border border-base-300',
-  // Premium shadow
   'shadow-sm',
-  // Padding - responsive
-  'p-6 lg:p-10',
-  // Relative for overflow
   'relative overflow-hidden',
-  // Additional classes
   className,
 ]
   .filter(Boolean)
@@ -117,46 +129,42 @@ const cardClasses = [
 {
   loading ? (
     <section class={cardClasses} aria-busy="true" aria-label="Loading portfolio summary">
-      <div class="space-y-8">
-        {/* Total Values Skeleton */}
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-12">
-          <div class="flex items-center justify-between">
-            <div>
-              <Skeleton variant="text" width="100px" height="12px" />
-              <Skeleton variant="text" width="200px" height="36px" className="mt-3" />
-              <Skeleton variant="text" width="120px" height="14px" className="mt-2" />
-            </div>
-            <Skeleton variant="rectangular" width="56px" height="56px" className="rounded-2xl" />
+      <div class="p-6 lg:p-10 space-y-8">
+        {/* Net Worth Skeleton */}
+        <div class="space-y-3">
+          <Skeleton variant="text" width="120px" height="14px" />
+          <Skeleton variant="text" width="280px" height="32px" />
+          <Skeleton variant="text" width="200px" height="32px" />
+        </div>
+
+        {/* Assets & Debt Skeleton */}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="border border-base-200 rounded-xl p-5 space-y-3">
+            <Skeleton variant="text" width="100px" height="12px" />
+            <Skeleton variant="text" width="200px" height="24px" />
+            <Skeleton variant="text" width="140px" height="24px" />
           </div>
-          <div class="flex items-center justify-between">
-            <div>
-              <Skeleton variant="text" width="100px" height="12px" />
-              <Skeleton variant="text" width="160px" height="36px" className="mt-3" />
-              <Skeleton variant="text" width="100px" height="14px" className="mt-2" />
-            </div>
-            <Skeleton variant="rectangular" width="56px" height="56px" className="rounded-2xl" />
-          </div>
-          <div class="flex items-center justify-between">
-            <div>
-              <Skeleton variant="text" width="100px" height="12px" />
-              <Skeleton variant="text" width="180px" height="36px" className="mt-3" />
-              <Skeleton variant="text" width="110px" height="14px" className="mt-2" />
-            </div>
-            <Skeleton variant="rectangular" width="56px" height="56px" className="rounded-2xl" />
+          <div class="border border-base-200 rounded-xl p-5 space-y-3">
+            <Skeleton variant="text" width="100px" height="12px" />
+            <Skeleton variant="text" width="180px" height="24px" />
           </div>
         </div>
 
-        {/* Asset Allocation Skeleton */}
+        {/* Allocation Skeleton */}
         <div class="space-y-4 pt-6 border-t border-base-200">
-          <div class="flex justify-between items-center">
-            <Skeleton variant="text" width="140px" height="16px" />
-            <div class="flex gap-4">
-              {Array(3)
+          <Skeleton variant="text" width="140px" height="16px" />
+          <div class="flex flex-col sm:flex-row items-center gap-6">
+            <Skeleton variant="circular" width="160px" height="160px" />
+            <div class="flex-1 space-y-3 w-full">
+              {Array(4)
                 .fill(0)
                 .map(() => (
-                  <div class="flex items-center gap-1.5">
-                    <Skeleton variant="circular" width="8px" height="8px" />
-                    <Skeleton variant="text" width="80px" height="10px" />
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                      <Skeleton variant="circular" width="10px" height="10px" />
+                      <Skeleton variant="text" width="80px" height="12px" />
+                    </div>
+                    <Skeleton variant="text" width="40px" height="12px" />
                   </div>
                 ))}
             </div>
@@ -171,91 +179,110 @@ const cardClasses = [
       aria-label="Portfolio overview summary"
       data-testid="portfolio-total"
     >
-      <div class="space-y-8">
-        {/* Total Values */}
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-12">
+      {/* Section A — Net Worth Hero */}
+      <div class="bg-base-200/40 p-6 lg:px-10 lg:py-8" data-testid="portfolio-net-worth">
+        <div class="flex items-center gap-2 mb-4">
+          <TrendingUp size={18} class="stroke-current text-base-content/50" aria-hidden="true" />
+          <span class="text-xs font-semibold uppercase tracking-widest text-base-content/50">
+            Net Worth
+          </span>
+        </div>
+
+        <div class="space-y-2.5">
+          {hasIdr && (
+            <div class="flex items-center gap-3">
+              <span class={`${badgeHero} bg-success/10 text-success`}>IDR</span>
+              <p
+                class={`text-2xl lg:text-3xl font-bold font-mono tracking-tight leading-none ${netWorthIdr >= 0 ? 'text-accent' : 'text-error'}`}
+              >
+                {formatCurrency(netWorthIdr, 'IDR')}
+              </p>
+            </div>
+          )}
+          {hasUsd && (
+            <div class="flex items-center gap-3">
+              <span class={`${badgeHero} bg-info/10 text-info`}>USD</span>
+              <p
+                class={`text-2xl lg:text-3xl font-bold font-mono tracking-tight leading-none ${netWorthUsd >= 0 ? 'text-accent' : 'text-error'}`}
+              >
+                {formatCurrency(netWorthUsd, 'USD')}
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div class="p-6 lg:px-10 lg:pb-8 space-y-8">
+        {/* Section B — Assets & Debt */}
+        <div class={`grid grid-cols-1 ${hasDebt ? 'md:grid-cols-2' : ''} gap-4`}>
           {/* Total Assets */}
-          <div class="flex items-center justify-between" data-testid="portfolio-total-idr">
-            <div>
-              <StatLabel size="sm" className="uppercase tracking-widest">
+          <div
+            class="border-l-2 border-success rounded-xl bg-base-200/30 px-5 py-4"
+            data-testid="portfolio-total-assets"
+          >
+            <div class="flex items-center gap-2 mb-3">
+              <Wallet size={16} class="stroke-current text-success" aria-hidden="true" />
+              <span class="text-xs font-semibold uppercase tracking-widest text-base-content/50">
                 Total Assets
-              </StatLabel>
-              <div class="mt-2 lg:mt-3 space-y-1">
-                {totalIdr > 0 && (
-                  <p class="text-lg lg:text-xl font-bold text-success tracking-tight leading-none">
+              </span>
+            </div>
+            <div class="space-y-2">
+              {totalIdr > 0 && (
+                <div class="flex items-center gap-2.5">
+                  <span class={`${badgeCard} bg-success/10 text-success`}>IDR</span>
+                  <p class="text-lg lg:text-xl font-bold font-mono text-success tracking-tight leading-none">
                     {formatCurrency(totalIdr, 'IDR')}
                   </p>
-                )}
-                {totalUsd > 0 && (
-                  <p class="text-lg lg:text-xl font-bold text-info tracking-tight leading-none">
+                </div>
+              )}
+              {totalUsd > 0 && (
+                <div class="flex items-center gap-2.5">
+                  <span class={`${badgeCard} bg-info/10 text-info`}>USD</span>
+                  <p class="text-lg lg:text-xl font-bold font-mono text-info tracking-tight leading-none">
                     {formatCurrency(totalUsd, 'USD')}
                   </p>
-                )}
-              </div>
-            </div>
-            <div class="w-12 h-12 lg:w-14 lg:h-14 bg-success/10 text-success rounded-2xl flex items-center justify-center shrink-0">
-              <Wallet size={28} class="stroke-current" aria-hidden="true" />
+                </div>
+              )}
             </div>
           </div>
 
           {/* Total Debt */}
           {hasDebt && (
-            <div class="flex items-center justify-between" data-testid="portfolio-total-debt">
-              <div>
-                <StatLabel size="sm" className="uppercase tracking-widest">
+            <div
+              class="border-l-2 border-error rounded-xl bg-base-200/30 px-5 py-4"
+              data-testid="portfolio-total-debt"
+            >
+              <div class="flex items-center gap-2 mb-3">
+                <CreditCard size={16} class="stroke-current text-error" aria-hidden="true" />
+                <span class="text-xs font-semibold uppercase tracking-widest text-base-content/50">
                   Total Debt
-                </StatLabel>
-                <div class="mt-2 lg:mt-3 space-y-1">
-                  {debtIdr > 0 && (
-                    <p class="text-lg lg:text-xl font-bold text-error tracking-tight leading-none">
+                </span>
+              </div>
+              <div class="space-y-2">
+                {debtIdr > 0 && (
+                  <div class="flex items-center gap-2.5">
+                    <span class={`${badgeCard} bg-success/10 text-success`}>IDR</span>
+                    <p class="text-lg lg:text-xl font-bold font-mono text-error tracking-tight leading-none">
                       {formatCurrency(debtIdr, 'IDR')}
                     </p>
-                  )}
-                  {debtUsd > 0 && (
-                    <p class="text-lg lg:text-xl font-bold text-error tracking-tight leading-none">
+                  </div>
+                )}
+                {debtUsd > 0 && (
+                  <div class="flex items-center gap-2.5">
+                    <span class={`${badgeCard} bg-info/10 text-info`}>USD</span>
+                    <p class="text-lg lg:text-xl font-bold font-mono text-error tracking-tight leading-none">
                       {formatCurrency(debtUsd, 'USD')}
                     </p>
-                  )}
-                </div>
-              </div>
-              <div class="w-12 h-12 lg:w-14 lg:h-14 bg-error/10 text-error rounded-2xl flex items-center justify-center shrink-0">
-                <CreditCard size={28} class="stroke-current" aria-hidden="true" />
+                  </div>
+                )}
               </div>
             </div>
           )}
-
-          {/* Net Worth */}
-          <div class="flex items-center justify-between" data-testid="portfolio-net-worth">
-            <div>
-              <StatLabel size="sm" className="uppercase tracking-widest">
-                Net Worth
-              </StatLabel>
-              <div class="mt-2 lg:mt-3 space-y-1">
-                {(netWorthIdr !== 0 || totalIdr > 0) && (
-                  <p
-                    class={`text-lg lg:text-xl font-bold tracking-tight leading-none ${netWorthIdr >= 0 ? 'text-accent' : 'text-error'}`}
-                  >
-                    {formatCurrency(netWorthIdr, 'IDR')}
-                  </p>
-                )}
-                {(netWorthUsd !== 0 || totalUsd > 0) && (
-                  <p
-                    class={`text-lg lg:text-xl font-bold tracking-tight leading-none ${netWorthUsd >= 0 ? 'text-accent' : 'text-error'}`}
-                  >
-                    {formatCurrency(netWorthUsd, 'USD')}
-                  </p>
-                )}
-              </div>
-            </div>
-            <div class="w-12 h-12 lg:w-14 lg:h-14 bg-accent/10 text-accent rounded-2xl flex items-center justify-center shrink-0">
-              <TrendingUp size={28} class="stroke-current" aria-hidden="true" />
-            </div>
-          </div>
         </div>
 
         {/* Latest Update Info */}
         {formattedLatestUpdate && (
-          <div class="flex items-center gap-2 text-xs text-base-content/50 font-medium pt-2">
+          <div class="flex items-center gap-2 text-xs text-base-content/50 font-medium">
             <Clock size={12} class="stroke-current shrink-0" aria-hidden="true" />
             <span>
               {isHistoricalView ? 'Latest update in this period' : 'Latest update'}:{' '}
@@ -264,33 +291,56 @@ const cardClasses = [
           </div>
         )}
 
-        {/* Asset Allocation */}
+        {/* Section C — Asset Allocation */}
         {displayDistribution.length > 0 && (
-          <div class="space-y-4 pt-6 border-t border-base-200">
+          <div class="space-y-5 pt-6 border-t border-base-200">
             <h3 class="font-bold text-sm uppercase tracking-wider text-base-content">
               Asset Allocation
             </h3>
 
-            {/* Legend */}
-            <div class="flex flex-wrap gap-3 lg:gap-4">
-              {displayDistribution.map((item) => {
-                const safeColor = sanitizeColor(item.color);
-                return (
-                  <div class="flex items-center gap-1.5">
-                    <div
-                      class="w-2 h-2 rounded-full"
-                      style={`background-color: ${safeColor};`}
-                      aria-hidden="true"
-                    />
-                    <span class="text-xs font-bold text-base-content/60 uppercase tracking-widest whitespace-nowrap">
-                      {item.type} ({item.percentage}%)
-                    </span>
-                  </div>
-                );
-              })}
+            {/* Donut Chart + Legend */}
+            <div
+              class="flex flex-col sm:flex-row items-center gap-6 lg:gap-10"
+              data-chart-data={serializedChartData}
+            >
+              {/* Donut Chart */}
+              <div
+                class="w-[160px] h-[160px] lg:w-[180px] lg:h-[180px] shrink-0 relative"
+                id={`${chartId}-container`}
+              >
+                <canvas
+                  id={chartId}
+                  aria-label={`Asset allocation chart: ${allocationDescription}`}
+                  role="img"
+                />
+              </div>
+
+              {/* Legend */}
+              <div class="flex-1 w-full">
+                <div class="grid grid-cols-1 gap-2">
+                  {displayDistribution.map((item) => {
+                    const safeColor = sanitizeColor(item.color);
+                    return (
+                      <div class="flex items-center justify-between py-1">
+                        <div class="flex items-center gap-2.5">
+                          <div
+                            class="w-2.5 h-2.5 rounded-full shrink-0"
+                            style={`background-color: ${safeColor};`}
+                            aria-hidden="true"
+                          />
+                          <span class="text-sm text-base-content/70 font-medium">{item.type}</span>
+                        </div>
+                        <span class="text-sm font-bold text-base-content tabular-nums">
+                          {item.percentage}%
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
 
-            {/* Stacked Bar - P0: Colors sanitized, P1: Accessible description */}
+            {/* Stacked Bar (compact secondary viz) */}
             <AllocationBar
               segments={displayDistribution.map((item) => ({
                 label: item.type,
@@ -303,6 +353,157 @@ const cardClasses = [
           </div>
         )}
       </div>
+
+      {/* Screen Reader Data Table */}
+      {displayDistribution.length > 0 && (
+        <table class="sr-only" aria-label="Asset allocation data">
+          <thead>
+            <tr>
+              <th>Type</th>
+              <th>Percentage</th>
+            </tr>
+          </thead>
+          <tbody>
+            {displayDistribution.map((item) => (
+              <tr>
+                <td>{item.type}</td>
+                <td>{item.percentage}%</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
     </section>
   )
 }
+
+<script>
+  import { Chart } from '@/lib/chart-setup';
+  import { createChartLifecycle, isDarkTheme } from '@/lib/utils/chart-lifecycle';
+
+  interface ChartItem {
+    label: string;
+    value: number;
+    color: string;
+  }
+
+  const charts: Record<string, Chart<'doughnut', number[], string>> = {};
+
+  function updateChartThemeColors(): void {
+    const dark = isDarkTheme();
+    Object.values(charts).forEach((chart) => {
+      if (chart.options.plugins?.tooltip) {
+        chart.options.plugins.tooltip.backgroundColor = dark
+          ? 'rgba(248, 250, 252, 0.95)'
+          : 'rgba(15, 23, 42, 0.9)';
+        chart.options.plugins.tooltip.titleColor = dark ? '#0f172a' : '#fff';
+        chart.options.plugins.tooltip.bodyColor = dark ? '#0f172a' : '#fff';
+        chart.update('none');
+      }
+    });
+  }
+
+  function initAllocationChart(chartId: string, data: ChartItem[]): void {
+    const canvas = document.getElementById(chartId) as HTMLCanvasElement;
+    if (!canvas) return;
+
+    if (charts[chartId]) {
+      charts[chartId].destroy();
+    }
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const dark = isDarkTheme();
+
+    const chart = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: data.map((d) => d.label),
+        datasets: [
+          {
+            data: data.map((d) => d.value),
+            backgroundColor: data.map((d) => d.color),
+            borderWidth: 0,
+            spacing: 3,
+            hoverOffset: 4,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        cutout: '65%',
+        animation: {
+          animateScale: true,
+          animateRotate: true,
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: dark ? 'rgba(248, 250, 252, 0.95)' : 'rgba(15, 23, 42, 0.9)',
+            titleColor: dark ? '#0f172a' : '#fff',
+            bodyColor: dark ? '#0f172a' : '#fff',
+            padding: 10,
+            cornerRadius: 10,
+            displayColors: true,
+            callbacks: {
+              label: (context) => {
+                const item = data[context.dataIndex];
+                return item ? `${item.label}: ${item.value}%` : '';
+              },
+            },
+          },
+        },
+      },
+    });
+
+    charts[chartId] = chart;
+  }
+
+  function parseChartData(raw: unknown): ChartItem[] | null {
+    if (!Array.isArray(raw)) return null;
+    const valid = raw.filter(
+      (item) =>
+        typeof item?.value === 'number' &&
+        isFinite(item.value) &&
+        item.value >= 0 &&
+        typeof item?.label === 'string' &&
+        item.label.length > 0
+    ) as ChartItem[];
+    return valid.length > 0 ? valid : null;
+  }
+
+  const lifecycle = createChartLifecycle<ChartItem[]>({
+    containerSelector: '[id^="portfolio-allocation-"][id$="-container"]',
+    parseData: parseChartData,
+    onInit: (container, data) => {
+      const chartId = container.querySelector('canvas')?.id;
+      if (!chartId || charts[chartId]) return;
+      initAllocationChart(chartId, data);
+    },
+    onThemeChange: updateChartThemeColors,
+    onCleanup: () => {
+      Object.keys(charts).forEach((id) => {
+        try {
+          charts[id]?.destroy();
+        } catch (e) {
+          console.warn('Failed to destroy allocation chart:', id, e);
+        }
+        delete charts[id];
+      });
+    },
+  });
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', lifecycle.init);
+  } else {
+    lifecycle.init();
+  }
+
+  window.addEventListener('beforeunload', lifecycle.cleanup);
+  document.addEventListener('astro:before-swap', lifecycle.cleanup);
+  document.addEventListener('astro:after-swap', lifecycle.init);
+  document.addEventListener('astro:page-load', lifecycle.init);
+  document.addEventListener('charts:reinit', lifecycle.init);
+</script>
