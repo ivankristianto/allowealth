@@ -60,10 +60,13 @@ const {
 
 const isEditMode = mode === 'edit';
 
-// For expense/income: show liquid and debt accounts only
-const filteredAssets = assets.filter(
-  (a) => a.account_class === 'liquid' || a.account_class === 'debt'
-);
+// Filter assets based on transaction type:
+// - Expense: liquid + credit_card (you can spend from these)
+// - Income: liquid only (income goes to liquid accounts)
+const filteredAssets =
+  type === 'income'
+    ? assets.filter((a) => a.account_class === 'liquid')
+    : assets.filter((a) => a.account_class === 'liquid' || a.type === 'credit_card');
 
 const today = new Date().toISOString().split('T')[0];
 const yesterdayDate = new Date();

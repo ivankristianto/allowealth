@@ -26,6 +26,7 @@ export interface Props {
   totalUsd?: number;
   defaultExpanded?: boolean;
   groupId: string;
+  isDebt?: boolean;
   className?: string;
 }
 
@@ -36,8 +37,15 @@ const {
   totalUsd = 0,
   defaultExpanded = true,
   groupId,
+  isDebt = false,
   className = '',
 } = Astro.props;
+
+// Debt groups show negative values in error color
+const displayIdr = isDebt ? -totalIdr : totalIdr;
+const displayUsd = isDebt ? -totalUsd : totalUsd;
+const idrColorClass = isDebt ? 'text-error' : 'text-success';
+const usdColorClass = isDebt ? 'text-error' : 'text-info';
 
 // Generate subtitle based on type
 const subtitle = `Managing your ${type.toLowerCase()} holdings`;
@@ -83,15 +91,21 @@ const cardClasses = [
       <div class="text-right hidden sm:block">
         {
           totalIdr > 0 && (
-            <p class="text-sm font-bold text-success leading-none">
-              {formatCurrency(totalIdr, 'IDR')}
+            <p class:list={['text-sm font-bold leading-none', idrColorClass]}>
+              {formatCurrency(displayIdr, 'IDR')}
             </p>
           )
         }
         {
           totalUsd > 0 && (
-            <p class:list={['text-sm font-bold text-info leading-none', totalIdr > 0 && 'mt-1.5']}>
-              {formatCurrency(totalUsd, 'USD')}
+            <p
+              class:list={[
+                'text-sm font-bold leading-none',
+                usdColorClass,
+                totalIdr > 0 && 'mt-1.5',
+              ]}
+            >
+              {formatCurrency(displayUsd, 'USD')}
             </p>
           )
         }

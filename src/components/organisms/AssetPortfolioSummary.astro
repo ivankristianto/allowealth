@@ -180,14 +180,18 @@ const cardClasses = [
               <StatLabel size="sm" className="uppercase tracking-widest">
                 Total Assets
               </StatLabel>
-              <p class="text-2xl lg:text-3xl font-bold mt-2 lg:mt-3 text-success tracking-tight leading-none">
-                {formatCurrency(totalIdr, 'IDR')}
-              </p>
-              {totalUsd > 0 && (
-                <p class="text-sm font-semibold mt-1.5 text-info">
-                  {formatCurrency(totalUsd, 'USD')}
-                </p>
-              )}
+              <div class="mt-2 lg:mt-3 space-y-1">
+                {totalIdr > 0 && (
+                  <p class="text-lg lg:text-xl font-bold text-success tracking-tight leading-none">
+                    {formatCurrency(totalIdr, 'IDR')}
+                  </p>
+                )}
+                {totalUsd > 0 && (
+                  <p class="text-lg lg:text-xl font-bold text-info tracking-tight leading-none">
+                    {formatCurrency(totalUsd, 'USD')}
+                  </p>
+                )}
+              </div>
             </div>
             <div class="w-12 h-12 lg:w-14 lg:h-14 bg-success/10 text-success rounded-2xl flex items-center justify-center shrink-0">
               <Wallet size={28} class="stroke-current" aria-hidden="true" />
@@ -201,14 +205,18 @@ const cardClasses = [
                 <StatLabel size="sm" className="uppercase tracking-widest">
                   Total Debt
                 </StatLabel>
-                <p class="text-2xl lg:text-3xl font-bold mt-2 lg:mt-3 text-error tracking-tight leading-none">
-                  {formatCurrency(debtIdr, 'IDR')}
-                </p>
-                {debtUsd > 0 && (
-                  <p class="text-sm font-semibold mt-1.5 text-error/70">
-                    {formatCurrency(debtUsd, 'USD')}
-                  </p>
-                )}
+                <div class="mt-2 lg:mt-3 space-y-1">
+                  {debtIdr > 0 && (
+                    <p class="text-lg lg:text-xl font-bold text-error tracking-tight leading-none">
+                      {formatCurrency(debtIdr, 'IDR')}
+                    </p>
+                  )}
+                  {debtUsd > 0 && (
+                    <p class="text-lg lg:text-xl font-bold text-error tracking-tight leading-none">
+                      {formatCurrency(debtUsd, 'USD')}
+                    </p>
+                  )}
+                </div>
               </div>
               <div class="w-12 h-12 lg:w-14 lg:h-14 bg-error/10 text-error rounded-2xl flex items-center justify-center shrink-0">
                 <CreditCard size={28} class="stroke-current" aria-hidden="true" />
@@ -222,18 +230,22 @@ const cardClasses = [
               <StatLabel size="sm" className="uppercase tracking-widest">
                 Net Worth
               </StatLabel>
-              <p
-                class={`text-2xl lg:text-3xl font-bold mt-2 lg:mt-3 tracking-tight leading-none ${netWorthIdr >= 0 ? 'text-accent' : 'text-error'}`}
-              >
-                {formatCurrency(netWorthIdr, 'IDR')}
-              </p>
-              {netWorthUsd !== 0 && (
-                <p
-                  class={`text-sm font-semibold mt-1.5 ${netWorthUsd >= 0 ? 'text-accent/70' : 'text-error/70'}`}
-                >
-                  {formatCurrency(netWorthUsd, 'USD')}
-                </p>
-              )}
+              <div class="mt-2 lg:mt-3 space-y-1">
+                {(netWorthIdr !== 0 || totalIdr > 0) && (
+                  <p
+                    class={`text-lg lg:text-xl font-bold tracking-tight leading-none ${netWorthIdr >= 0 ? 'text-accent' : 'text-error'}`}
+                  >
+                    {formatCurrency(netWorthIdr, 'IDR')}
+                  </p>
+                )}
+                {(netWorthUsd !== 0 || totalUsd > 0) && (
+                  <p
+                    class={`text-lg lg:text-xl font-bold tracking-tight leading-none ${netWorthUsd >= 0 ? 'text-accent' : 'text-error'}`}
+                  >
+                    {formatCurrency(netWorthUsd, 'USD')}
+                  </p>
+                )}
+              </div>
             </div>
             <div class="w-12 h-12 lg:w-14 lg:h-14 bg-accent/10 text-accent rounded-2xl flex items-center justify-center shrink-0">
               <TrendingUp size={28} class="stroke-current" aria-hidden="true" />

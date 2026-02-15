@@ -18,7 +18,8 @@ import {
 } from '@/lib/types/asset';
 import { formatMonthYear } from '@/lib/utils/date';
 import { PERIOD_SELECTOR_MONTH_LIMIT } from '@/lib/constants/period';
-import { ArrowLeft, Wallet, Calculator, ArrowDownLeft, ArrowUpRight } from '@lucide/astro';
+import { ArrowLeft, Wallet, Calculator, Pencil, ArrowDownLeft, ArrowUpRight } from '@lucide/astro';
+import AssetUpdateValueModal from '@components/organisms/AssetUpdateValueModal.astro';
 
 const user = Astro.locals.user!;
 const { id } = Astro.params;
@@ -113,7 +114,7 @@ const currentBalance = parseFloat(asset.balance || '0');
       class="inline-flex items-center gap-2 text-sm font-medium text-base-content/60 transition-colors hover:text-accent"
     >
       <ArrowLeft size={16} class="stroke-current" />
-      Back to Portfolio
+      Back to All Assets
     </a>
 
     {/* Asset Header */}
@@ -154,14 +155,28 @@ const currentBalance = parseFloat(asset.balance || '0');
         <div class="flex items-center justify-between">
           <div>
             <StatLabel size="sm" className="uppercase tracking-widest">Current Balance</StatLabel>
-            <p
-              class:list={[
-                'mt-2 text-2xl font-bold leading-none tracking-tight lg:text-3xl',
-                asset.currency === 'IDR' ? 'text-success' : 'text-info',
-              ]}
-            >
-              {formatCurrency(currentBalance, asset.currency)}
-            </p>
+            <div class="flex items-center gap-1 mt-2">
+              <p
+                class:list={[
+                  'text-2xl font-bold leading-none tracking-tight lg:text-3xl',
+                  asset.currency === 'IDR' ? 'text-success' : 'text-info',
+                ]}
+              >
+                {formatCurrency(currentBalance, asset.currency)}
+              </p>
+              <button
+                type="button"
+                class="inline-flex items-center justify-center min-h-[44px] min-w-[44px] rounded-md text-base-content/40 hover:text-accent hover:bg-accent/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+                aria-label={`Update ${asset.name} balance`}
+                data-update-value-asset={asset.id}
+                data-asset-name={asset.name}
+                data-asset-currency={asset.currency}
+                data-asset-balance={currentBalance}
+                data-testid="asset-update-value-btn"
+              >
+                <Pencil size={14} class="stroke-current" aria-hidden="true" />
+              </button>
+            </div>
           </div>
           <div
             class:list={[
@@ -302,6 +317,9 @@ const currentBalance = parseFloat(asset.balance || '0');
       }
     </div>
   </div>
+
+  {/* Update Balance Modal */}
+  <AssetUpdateValueModal id="asset-update-value-modal" />
 </ProtectedLayout>
 
 <script>
@@ -343,12 +361,50 @@ const currentBalance = parseFloat(asset.balance || '0');
     );
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initDetailPeriodSelector);
-  } else {
-    initDetailPeriodSelector();
+  const initializedUpdateValueButtons = new WeakSet<Element>();
+
+  function initDetailUpdateValueButtons() {
+    document.querySelectorAll('[data-update-value-asset]').forEach((button) => {
+      if (initializedUpdateValueButtons.has(button)) return;
+      initializedUpdateValueButtons.add(button);
+
+      button.addEventListener('click', (e: MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const btn = button as HTMLElement;
+        const assetId = btn.getAttribute('data-update-value-asset');
+        const assetName = btn.getAttribute('data-asset-name') || 'Asset';
+        const assetCurrency = (btn.getAttribute('data-asset-currency') || 'IDR') as 'IDR' | 'USD';
+        const assetBalance = Number(btn.getAttribute('data-asset-balance') || '0');
+
+        if (!assetId) return;
+
+        document.dispatchEvent(
+          new CustomEvent('open-asset-update-value', {
+            detail: {
+              id: assetId,
+              name: assetName,
+              currency: assetCurrency,
+              balance: assetBalance,
+            },
+          })
+        );
+      });
+    });
   }
 
-  document.addEventListener('astro:page-load', initDetailPeriodSelector);
+  function initDetail() {
+    initDetailPeriodSelector();
+    initDetailUpdateValueButtons();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initDetail);
+  } else {
+    initDetail();
+  }
+
+  document.addEventListener('astro:page-load', initDetail);
   document.addEventListener('astro:before-swap', () => periodChangeController?.abort());
 </script>

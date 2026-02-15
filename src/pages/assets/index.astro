@@ -306,6 +306,7 @@ const sortedGroups = CLASS_ORDER.filter((cls) => assetsByClass[cls].length > 0).
                   totalIdr={groupTotals.idr}
                   totalUsd={groupTotals.usd}
                   groupId={group.groupKey}
+                  isDebt={group.groupKey === 'debt'}
                   defaultExpanded={true}
                 >
                   {group.assets.map((asset) => (
@@ -313,6 +314,7 @@ const sortedGroups = CLASS_ORDER.filter((cls) => assetsByClass[cls].length > 0).
                       id={asset.id}
                       name={asset.name}
                       type={asset.type}
+                      accountClass={asset.account_class}
                       categoryId={asset.category_id}
                       categoryName={asset.category_name}
                       currency={asset.currency}
