@@ -24,11 +24,10 @@
  * @see https://developers.cloudflare.com/d1/
  */
 import { createRequire } from 'node:module';
-import { getEnv } from '@/lib/env';
 import { getDatabaseConfig } from './config';
 import type { DatabaseDriver } from './driver';
 import { createBunDriver } from './drivers/bun';
-import { createD1Database, type D1Binding } from './drivers/d1';
+import { createD1Database, getD1Binding } from './drivers/d1';
 import { createPostgresDatabase, closePostgres, resetPostgresClient } from './drivers/postgres';
 import type { BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
@@ -181,10 +180,11 @@ export async function runTransaction<T>(
   callback: (tx: IDatabase) => Promise<T>
 ): Promise<T> {
   const config = getDatabaseConfig();
-  if (config.dialect === 'postgresql') {
+  // PostgreSQL and D1 support async transactions
+  if (config.dialect === 'postgresql' || config.isD1) {
     return db.transaction(callback);
   }
-  // SQLite: run directly — single-writer WAL mode ensures sequential consistency
+  // Local SQLite: run directly — single-writer WAL mode ensures sequential consistency
   return callback(db);
 }
 
@@ -220,47 +220,6 @@ function getRequire() {
 }
 
 /**
- * Cached D1 database promise
- *
- * D1 database creation is async (dynamic import of drizzle-orm/d1),
- * but getDb() is synchronous. We cache the promise and return a proxy
- * that awaits it on each method call.
- */
-let d1DbPromise: Promise<Database> | null = null;
-
-/**
- * Create a synchronous wrapper around the async D1 database
- *
- * Since Drizzle's D1 adapter requires an async import, but getDb() is
- * synchronous, this returns a proxy that defers all method calls until
- * the async D1 database is ready. Each method call awaits the cached
- * promise, so the first call triggers the import and subsequent calls
- * reuse the resolved instance.
- *
- * @param d1Binding - The D1 database binding from Workers context
- * @param schema - Drizzle schema object (SQLite schema)
- * @returns A proxy that behaves like a Database instance
- */
-function createD1DatabaseSync(d1Binding: D1Binding, schema: typeof sqliteSchema): Database {
-  // DrizzleD1Database is async mode while Database (BunSQLiteDatabase) is sync mode.
-  // The proxy wrapper handles this mismatch by awaiting all calls, so the cast is safe.
-  d1DbPromise = createD1Database(d1Binding, schema) as unknown as Promise<Database>;
-
-  return new Proxy({} as Database, {
-    get(_target, prop) {
-      return async function (...args: unknown[]) {
-        const db = await d1DbPromise;
-        const method = (db as any)[prop];
-        if (typeof method === 'function') {
-          return method.apply(db, args);
-        }
-        return method;
-      };
-    },
-  }) as Database;
-}
-
-/**
  * Create the Drizzle database instance
  *
  * Automatically selects the correct driver based on configuration:
@@ -277,14 +236,14 @@ function createDatabase(): Database {
   try {
     // D1 path - Cloudflare Workers with D1 binding
     if (config.isD1) {
-      const d1Binding = getEnv('D1_BINDING') as unknown as D1Binding;
+      const d1Binding = getD1Binding();
       if (!d1Binding) {
         throw new Error(
-          'D1_ENABLED is set but D1_BINDING is not available. ' +
+          'D1_ENABLED is set but D1 binding is not available. ' +
             'Ensure D1 binding is configured in wrangler.toml'
         );
       }
-      return createD1DatabaseSync(d1Binding, sqliteSchema);
+      return createD1Database(d1Binding, sqliteSchema) as unknown as Database;
     }
 
     // PostgreSQL path - used in production (Cloudflare Workers with PostgreSQL)
@@ -379,7 +338,6 @@ export function resetDb(): void {
  */
 export function prepareForRequest(): void {
   resetPostgresClient();
-  d1DbPromise = null;
   dbInstance = null;
   isClosing = false;
 }
@@ -404,8 +362,6 @@ export async function closeDatabase(): Promise<void> {
     if (config.dialect === 'postgresql') {
       await closePostgres();
     }
-    // D1 has no connection to close, just clear the cached promise
-    d1DbPromise = null;
     dbInstance = null;
   } finally {
     isClosing = false;

@@ -15,6 +15,7 @@
 
 import type { MiddlewareHandler } from 'astro';
 import { setRuntimeEnv } from '@/db/config';
+import { setD1Binding } from '@/db/drivers/d1';
 
 export const runtimeEnv: MiddlewareHandler = async (context, next) => {
   const runtime = (context.locals as any).runtime;
@@ -26,8 +27,10 @@ export const runtimeEnv: MiddlewareHandler = async (context, next) => {
     const d1Binding = runtime.env.DB;
     if (d1Binding) {
       env.D1_ENABLED = 'true';
-      env.D1_BINDING = d1Binding;
+      setD1Binding(d1Binding); // Store binding in dedicated channel
+      // Don't put d1Binding in env (it's an object, not a string)
     } else {
+      setD1Binding(null); // Clear any stale binding
       // Hyperdrive provides a local connection that doesn't count as subrequests.
       // Its connectionString points to a local proxy — Hyperdrive handles
       // TCP/TLS to the origin database at the Cloudflare edge.

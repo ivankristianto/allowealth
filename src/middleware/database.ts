@@ -27,11 +27,17 @@ export const database: MiddlewareHandler = async (_context, next) => {
 
   log.info(
     `dialect=${config.dialect}` +
-      ` url=${config.url ? config.url.replace(/\/\/.*@/, '//***@') : 'MISSING'}` +
+      ` url=${config.isD1 ? '<D1>' : config.url ? config.url.replace(/\/\/.*@/, '//***@') : 'MISSING'}` +
       ` supabase=${config.isSupabase}` +
       ` hyperdrive=${config.isHyperdrive}` +
       ` d1=${config.isD1}`
   );
+
+  // D1: reset per-request but no connection lifecycle management
+  if (config.isD1) {
+    prepareForRequest();
+    return next();
+  }
 
   // Diagnostic: count fetch() calls to identify subrequest sources
   let fetchCount = 0;
@@ -48,15 +54,13 @@ export const database: MiddlewareHandler = async (_context, next) => {
     return originalFetch(...args);
   }) as typeof fetch;
 
-  // Only manage connection lifecycle for PostgreSQL (Workers/production).
-  // SQLite connections are file-based and safe to reuse.
+  // SQLite: no connection lifecycle needed
   if (config.dialect !== 'postgresql') {
     globalThis.fetch = originalFetch;
     return next();
   }
 
   prepareForRequest();
-
   try {
     return await next();
   } finally {

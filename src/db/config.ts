@@ -88,20 +88,21 @@ function isTransactionPoolerUrl(url: string): boolean {
 }
 
 export function getDatabaseConfig(): DatabaseConfig {
-  const url = getDatabaseUrl();
   const isD1 = getEnv('D1_ENABLED') === 'true';
 
-  // D1 is SQLite-compatible — force sqlite dialect and skip PostgreSQL detection
+  // D1 is SQLite-compatible — no DATABASE_URL needed
   if (isD1) {
     return {
       dialect: 'sqlite',
-      url,
+      url: '', // D1 doesn't use a URL
       isD1,
       isSupabase: false,
       isTransactionPooler: false,
       isHyperdrive: false,
     };
   }
+
+  const url = getDatabaseUrl();
 
   const dialect = detectDialect(url);
   const isHyperdrive = getEnv('HYPERDRIVE_ENABLED') === 'true';

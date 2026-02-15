@@ -10,6 +10,7 @@
  * @see https://developers.cloudflare.com/d1/
  */
 
+import { drizzle } from 'drizzle-orm/d1';
 import type { DatabaseDriver, PreparedStatement, RunResult } from '../driver';
 
 /**
@@ -37,6 +38,25 @@ export interface D1Result {
 }
 
 /**
+ * Module-level D1 binding storage
+ *
+ * Stores the D1 binding for the current request. Set by middleware,
+ * read by createDatabase() in db/index.ts. Avoids smuggling an object
+ * through the string-based env API.
+ */
+let d1BindingRef: D1Binding | null = null;
+
+/** Set the D1 binding for the current request */
+export function setD1Binding(binding: D1Binding | null): void {
+  d1BindingRef = binding;
+}
+
+/** Get the current D1 binding */
+export function getD1Binding(): D1Binding | null {
+  return d1BindingRef;
+}
+
+/**
  * Create a D1 driver from Cloudflare D1 binding
  *
  * @param d1Binding - The D1 database binding from Cloudflare Workers context
@@ -49,10 +69,11 @@ export function createD1Driver(d1Binding: D1Binding): DatabaseDriver & { _raw: D
 
   const driver: DatabaseDriver & { _raw: D1Binding } = {
     exec(sql: string): void {
-      // D1 exec is async but we need sync for interface compatibility
-      // This is handled by the wrapper below
-      d1Binding.exec(sql).catch(() => {
-        // Silent fail for PRAGMA statements in D1 (some are not supported)
+      d1Binding.exec(sql).catch((err) => {
+        if (sql.trim().toUpperCase().startsWith('PRAGMA')) {
+          return; // Some PRAGMAs not supported in D1
+        }
+        throw err;
       });
     },
 
@@ -98,10 +119,9 @@ export function createD1Driver(d1Binding: D1Binding): DatabaseDriver & { _raw: D
  * @param schema - Drizzle schema object (use SQLite schema)
  * @returns Drizzle database instance
  */
-export async function createD1Database<T extends Record<string, unknown>>(
+export function createD1Database<T extends Record<string, unknown>>(
   d1Binding: D1Binding,
   schema: T
-): Promise<import('drizzle-orm/d1').DrizzleD1Database<T>> {
-  const { drizzle } = await import('drizzle-orm/d1');
+) {
   return drizzle(d1Binding, { schema });
 }
