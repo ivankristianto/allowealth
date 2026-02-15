@@ -5,7 +5,7 @@ import { AssetServiceError, ServiceErrorCode } from './service-errors';
 import type { AssetType, Currency } from '@/lib/types/asset';
 import { deriveAccountClass } from '@/lib/types/asset';
 import { type PerfCollector, trackQuery } from '@/lib/perf';
-import { decimalCompare } from '@/lib/utils/decimal';
+import { decimalAdd, decimalCompare, decimalSubtract } from '@/lib/utils/decimal';
 import { getCacheManager, CacheKeys, CacheTags, hashFilters } from '@/lib/cache';
 
 /** Inferred row type for an asset record */
@@ -352,8 +352,8 @@ export class AssetService {
   }
 
   /**
-   * Validate a transfer between two assets of the same currency.
-   * No balance mutation — transfer is recorded as a transaction only.
+   * Transfer balance between two assets of the same currency.
+   * Validates, mutates both balances, and returns the assets for transaction creation.
    */
   async transfer(
     fromId: string,
@@ -391,8 +391,38 @@ export class AssetService {
       throw new Error('Transfer amount must be positive');
     }
 
-    // No balance mutation — transfer is recorded as a transaction only
-    return { fromAsset, toAsset };
+    const now = new Date();
+    const newFromBalance = decimalSubtract(fromAsset.balance, amount);
+    const newToBalance = decimalAdd(toAsset.balance, amount);
+
+    // Update source asset balance
+    await this.db
+      .update(this.schema.assets)
+      .set({ balance: newFromBalance, last_updated: now, updated_at: now })
+      .where(
+        and(eq(this.schema.assets.id, fromId), eq(this.schema.assets.workspace_id, workspaceId))
+      );
+
+    // Update destination asset balance
+    await this.db
+      .update(this.schema.assets)
+      .set({ balance: newToBalance, last_updated: now, updated_at: now })
+      .where(
+        and(eq(this.schema.assets.id, toId), eq(this.schema.assets.workspace_id, workspaceId))
+      );
+
+    // Invalidate asset cache
+    try {
+      const cache = getCacheManager();
+      await cache.invalidateByTags([CacheTags.workspace(workspaceId), CacheTags.ASSETS]);
+    } catch {
+      // Cache invalidation failed, stale cache is acceptable
+    }
+
+    return {
+      fromAsset: { ...fromAsset, balance: newFromBalance },
+      toAsset: { ...toAsset, balance: newToBalance },
+    };
   }
 
   /**
