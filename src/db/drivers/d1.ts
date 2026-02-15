@@ -56,7 +56,7 @@ export function createD1Driver(d1Binding: D1Binding): DatabaseDriver & { _raw: D
       });
     },
 
-    prepare(sql: string): PreparedStatement {
+    prepare(_sql: string): PreparedStatement {
       return {
         all(): unknown[] {
           // D1 API is async, but DatabaseDriver interface is synchronous.

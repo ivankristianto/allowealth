@@ -165,6 +165,42 @@ If Hyperdrive causes issues in production:
 
 The code is backward-compatible — without the HYPERDRIVE binding, the middleware skips injection and falls back to direct postgres.js TCP connection.
 
+### Cloudflare D1 Integration
+
+D1 is Cloudflare's SQLite-compatible serverless database. Unlike PostgreSQL with Hyperdrive, D1:
+
+- Runs SQLite natively at the edge
+- Uses the existing SQLite schema without modification
+- Has no TCP connections (eliminates subrequest overhead entirely)
+- Is selected via D1 binding in wrangler.toml
+
+**Configuration:**
+
+```toml
+# wrangler.d1.toml
+[[d1_databases]]
+binding = "DB"
+database_name = "allowealth-db"
+database_id = "<database-id>"
+```
+
+**How D1 is detected at runtime:**
+
+1. `runtimeEnv` middleware reads `runtime.env.DB` binding
+2. If present, sets `D1_ENABLED=true` and `D1_BINDING=<binding>`
+3. `getDatabaseConfig()` reads the flag and sets `isD1: true`
+4. `createDatabase()` uses D1 driver with SQLite schema
+
+**Comparison:**
+
+| Feature               | Hyperdrive (PostgreSQL)  | D1 (SQLite)            |
+| --------------------- | ------------------------ | ---------------------- |
+| Schema                | PostgreSQL               | SQLite (same as local) |
+| SSL                   | Hyperdrive handles       | N/A (no TCP)           |
+| Subrequests per query | 0 (local proxy)          | 0 (no connections)     |
+| Connection pooling    | Hyperdrive edge pool     | N/A (serverless)       |
+| Migrations            | drizzle-kit + PostgreSQL | wrangler d1 execute    |
+
 ## Related
 
 - **ADR-004** (`004-database-schema.md`) — Schema design and table definitions

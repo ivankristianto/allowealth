@@ -202,3 +202,27 @@ The seed script passes Unix integer timestamps, but PostgreSQL `timestamp` colum
 ```bash
 bun run cli:create-workspace:prod
 ```
+
+### Production Migration (Cloudflare D1)
+
+D1 uses the SQLite schema and migrations. Apply migrations via wrangler CLI:
+
+```bash
+# Apply single migration file
+wrangler d1 execute allowealth-db --remote --file=./drizzle/sqlite/0000_xxx.sql
+
+# Apply all SQLite migrations in order
+for file in drizzle/sqlite/*.sql; do
+  wrangler d1 execute allowealth-db --remote --file="$file"
+done
+
+# Local testing with D1
+wrangler d1 execute allowealth-db --local --file=./drizzle/sqlite/0000_xxx.sql
+```
+
+**D1 Migration Notes:**
+
+- D1 is SQLite-compatible, so existing SQLite migrations work without modification
+- Use `--local` flag for local development with D1
+- Use `--remote` flag for production D1 database
+- Drizzle's migration tracking table is created automatically
