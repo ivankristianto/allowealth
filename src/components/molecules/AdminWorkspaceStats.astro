@@ -1,0 +1,55 @@
+---
+/**
+ * Admin Workspace Stats
+ *
+ * Displays workspace metric cards for members, transactions, assets, budgets, and categories.
+ * Uses the StatCard atom component for design system consistency.
+ */
+import StatCard from '@/components/atoms/StatCard.astro';
+import type { WorkspaceStatsDetailed } from '@/services/super-admin.service';
+import { Users, Receipt, Wallet, ChartPie, Tag } from '@lucide/astro';
+
+interface Props {
+  workspace: WorkspaceStatsDetailed;
+}
+
+const { workspace } = Astro.props;
+
+const stats = [
+  { label: 'Members', value: workspace.memberCount, Icon: Users, variant: 'info' as const },
+  {
+    label: 'Transactions',
+    value: workspace.transactionCount,
+    Icon: Receipt,
+    variant: 'accent' as const,
+  },
+  { label: 'Assets', value: workspace.assetCount, Icon: Wallet, variant: 'success' as const },
+  { label: 'Budgets', value: workspace.budgetCount, Icon: ChartPie, variant: 'warning' as const },
+  { label: 'Categories', value: workspace.categoryCount, Icon: Tag, variant: 'error' as const },
+];
+
+const variantToValueColor: Record<string, string> = {
+  info: 'text-info',
+  accent: 'text-accent',
+  success: 'text-success',
+  warning: 'text-warning',
+  error: 'text-error',
+};
+---
+
+<section aria-label="Workspace statistics">
+  <div class="grid grid-cols-2 sm:grid-cols-5 gap-4">
+    {
+      stats.map(({ label, value, Icon, variant }) => (
+        <StatCard
+          title={label}
+          value={String(value)}
+          valueColor={variantToValueColor[variant]}
+          iconVariant={variant}
+        >
+          <Icon slot="icon" size={48} class="stroke-current" aria-hidden="true" />
+        </StatCard>
+      ))
+    }
+  </div>
+</section>

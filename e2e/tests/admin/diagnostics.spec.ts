@@ -4,15 +4,14 @@ import { test, expect } from '../test.fixture';
  * E2E Tests for Admin Diagnostics Page.
  *
  * These tests verify:
- * - Admin-only access controls
- * - Diagnostics icon visibility for admin users
+ * - Super admin access controls
  * - Navigation to diagnostics page
  * - Runtime information display
  * - Database information display
  * - Cache information display
  * - Environment variables display
  * - Refresh functionality
- * - Access denial for non-admin users
+ * - Access denial for non-super-admin users
  * - API authentication for unauthenticated requests
  *
  * @see /src/pages/admin/diagnostics.astro
@@ -31,13 +30,13 @@ test.describe('Admin Diagnostics Page', () => {
   });
 
   /**
-   * Setup: Login as admin user before each test.
-   * Uses demo user from seed.ts which has admin role.
+   * Setup: Login as super admin user before each test.
+   * Uses superadmin user from seed.ts which has super_admin role.
    */
   test.beforeEach(async ({ loginPage, page }) => {
     await loginPage.gotoLogin();
-    // Demo user from seed.ts has admin role
-    await loginPage.login('demo@example.com', 'demo123456789');
+    // Super admin user from seed.ts has super_admin role
+    await loginPage.login('superadmin@example.com', 'demo123456789');
   });
 
   /**
@@ -171,10 +170,10 @@ test.describe('Admin Diagnostics Page', () => {
   });
 
   /**
-   * Test: Non-admin users cannot access diagnostics page
+   * Test: Non-super-admin users cannot access diagnostics page
    * Note: This test requires logging out and logging in as a member user
    */
-  test('should deny access to non-admin users', async ({ loginPage, page }) => {
+  test('should deny access to non-super-admin users', async ({ loginPage, page }) => {
     // Logout and login as member user
     await page.goto('/settings');
     await page.waitForLoadState('domcontentloaded');

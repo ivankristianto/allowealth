@@ -64,6 +64,13 @@
       "when": 1770956803245,
       "tag": "0008_easy_warlock",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1771064158117,
+      "tag": "0009_hesitant_sage",
+      "breakpoints": true
     }
   ]
 }

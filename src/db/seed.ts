@@ -67,6 +67,13 @@ const DEMO_MEMBER = {
   role: 'member' as const,
 };
 
+const DEMO_SUPER_ADMIN = {
+  email: 'superadmin@example.com',
+  password: 'demo123456789', // Must be at least 12 chars
+  name: 'Super Admin',
+  role: 'super_admin' as const,
+};
+
 // Seeding configuration constants
 const SEED_TIME_HOUR = 10; // 10 AM to avoid timezone boundary issues
 const SNAPSHOT_GROWTH_RATE = 0.05; // 5% growth per month for snapshots
@@ -766,8 +773,25 @@ async function seedUsers(
     },
   ]);
 
+  // Create super admin user (no workspace)
+  const superAdminUserId = nanoid();
+  const superAdminPasswordHash = await hashPassword(DEMO_SUPER_ADMIN.password);
+
+  await db.insert(users).values({
+    id: superAdminUserId,
+    workspace_id: null,
+    email: DEMO_SUPER_ADMIN.email,
+    password_hash: superAdminPasswordHash,
+    name: DEMO_SUPER_ADMIN.name,
+    role: DEMO_SUPER_ADMIN.role,
+    email_verified_at: now,
+    created_at: now,
+    updated_at: now,
+  });
+
   console.log(`✓ Created admin user: ${DEMO_ADMIN.email}`);
   console.log(`✓ Created member user: ${DEMO_MEMBER.email}`);
+  console.log(`✓ Created super admin user: ${DEMO_SUPER_ADMIN.email}`);
   return { adminUserId, memberUserId };
 }
 
@@ -1685,6 +1709,9 @@ async function seed() {
     console.log('\n   Member User:');
     console.log(`   Email:    ${DEMO_MEMBER.email}`);
     console.log(`   Password: ${DEMO_MEMBER.password}`);
+    console.log('\n   Super Admin User:');
+    console.log(`   Email:    ${DEMO_SUPER_ADMIN.email}`);
+    console.log(`   Password: ${DEMO_SUPER_ADMIN.password}`);
   } catch (error) {
     console.error('\n❌ Seeding failed:', error);
     process.exit(1);

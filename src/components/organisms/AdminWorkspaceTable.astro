@@ -1,0 +1,97 @@
+---
+/**
+ * Admin Workspace Table
+ *
+ * Displays workspace list in a table with name, status, member/transaction/asset counts,
+ * and creation date. Each row links to the workspace details page.
+ * Uses the Card atom component for design system consistency.
+ */
+import Card from '@/components/atoms/Card.astro';
+import type { WorkspaceStats } from '@/services/super-admin.service';
+
+interface Props {
+  workspaces: WorkspaceStats[];
+}
+
+const { workspaces } = Astro.props;
+---
+
+<Card padding="sm">
+  <div class="overflow-x-auto">
+    <table class="table table-sm">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Status</th>
+          <th>Members</th>
+          <th>Transactions</th>
+          <th>Assets</th>
+          <th>Created</th>
+        </tr>
+      </thead>
+      <tbody>
+        {
+          workspaces.length === 0 ? (
+            <tr>
+              <td colspan="6" class="text-center py-8 text-base-content/60">
+                No workspaces found
+              </td>
+            </tr>
+          ) : (
+            workspaces.map((ws) => (
+              <tr class="hover cursor-pointer" data-href={`/admin/workspaces/${ws.id}`}>
+                <td class="font-semibold">{ws.name}</td>
+                <td>
+                  <span
+                    class={`badge badge-sm ${ws.status === 'active' ? 'badge-success' : 'badge-warning'}`}
+                  >
+                    {ws.status}
+                  </span>
+                </td>
+                <td>{ws.memberCount}</td>
+                <td>{ws.transactionCount}</td>
+                <td>{ws.assetCount}</td>
+                <td>{new Date(ws.createdAt).toLocaleDateString()}</td>
+              </tr>
+            ))
+          )
+        }
+      </tbody>
+    </table>
+  </div>
+</Card>
+
+<script>
+  function initWorkspaceTable() {
+    const rows = Array.from(document.querySelectorAll<HTMLTableRowElement>('tr[data-href]'));
+    for (const row of rows) {
+      if (row.dataset.bound === 'true') continue;
+      row.dataset.bound = 'true';
+      // Keyboard accessibility: allow Enter/Space to navigate
+      row.setAttribute('tabindex', '0');
+      row.setAttribute('role', 'link');
+      const href = row.dataset.href;
+      if (href) {
+        row.setAttribute('aria-label', `View workspace details`);
+      }
+
+      row.addEventListener('click', () => {
+        if (href) window.location.href = href;
+      });
+
+      row.addEventListener('keydown', (e: KeyboardEvent) => {
+        if ((e.key === 'Enter' || e.key === ' ') && href) {
+          e.preventDefault();
+          window.location.href = href;
+        }
+      });
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initWorkspaceTable);
+  } else {
+    initWorkspaceTable();
+  }
+  document.addEventListener('astro:page-load', initWorkspaceTable);
+</script>

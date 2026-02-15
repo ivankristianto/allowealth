@@ -104,6 +104,13 @@ See `docs/architecture/007-database-migrations.md` for full migration workflow.
 
 All CLI tools have `:prod` variants that use `.env.production` for the database connection.
 
+### Super Admin
+
+| Command                               | Description                   |
+| ------------------------------------- | ----------------------------- |
+| `bun run cli:create-super-admin`      | Promote a user to super admin |
+| `bun run cli:create-super-admin:prod` | Same, against production DB   |
+
 ### Workspace Management
 
 | Command                             | Description                                      |
