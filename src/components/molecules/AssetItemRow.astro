@@ -122,7 +122,10 @@ const rowClasses = ['p-4 lg:px-8 lg:py-5', 'hover:bg-base-100/50 transition-all 
         class="flex-1 min-w-0 text-base font-bold text-base-content leading-none tracking-tight truncate"
         data-testid="asset-name"
       >
-        <a href={`/assets/${id}`} class="hover:text-accent transition-colors">
+        <a
+          href={`/assets/${id}`}
+          class="hover:text-accent transition-colors underline decoration-base-content/20 underline-offset-2 hover:decoration-accent"
+        >
           {name}
         </a>
       </h4>
@@ -230,7 +233,7 @@ const rowClasses = ['p-4 lg:px-8 lg:py-5', 'hover:bg-base-100/50 transition-all 
       }
     </div>
 
-    {/* Row 2: relative time + initial balance */}
+    {/* Row 2: relative time + initial balance + view details */}
     <div class="mt-2 flex items-center gap-2">
       <span
         class="inline-flex items-center gap-1 text-[11px] font-medium text-base-content/40"
@@ -241,13 +244,21 @@ const rowClasses = ['p-4 lg:px-8 lg:py-5', 'hover:bg-base-100/50 transition-all 
       {
         initialBalance !== undefined && initialBalance !== balance && (
           <span
-            class="text-xs font-medium text-base-content/40 ml-auto"
+            class="text-xs font-medium text-base-content/40"
             data-testid="asset-initial-balance"
           >
             Initial: {formatCurrency(initialBalance, currency)}
           </span>
         )
       }
+      <a
+        href={`/assets/${id}`}
+        class="ml-auto flex items-center gap-0.5 text-xs font-semibold text-base-content/40 hover:text-accent transition-colors"
+        aria-label={`View ${name} details`}
+      >
+        Details
+        <ChevronRight size={14} class="stroke-current" aria-hidden="true" />
+      </a>
     </div>
   </div>
 
@@ -269,7 +280,10 @@ const rowClasses = ['p-4 lg:px-8 lg:py-5', 'hover:bg-base-100/50 transition-all 
         class="text-base lg:text-lg font-bold text-base-content leading-none tracking-tight truncate"
         data-testid="asset-name"
       >
-        <a href={`/assets/${id}`} class="hover:text-accent transition-colors">
+        <a
+          href={`/assets/${id}`}
+          class="hover:text-accent transition-colors underline decoration-base-content/20 underline-offset-2 hover:decoration-accent"
+        >
           {name}
         </a>
       </h4>
@@ -405,13 +419,14 @@ const rowClasses = ['p-4 lg:px-8 lg:py-5', 'hover:bg-base-100/50 transition-all 
         )
       }
 
-      {/* Navigation chevron */}
+      {/* View details link */}
       <a
         href={`/assets/${id}`}
-        class="flex items-center justify-center text-base-content/30 hover:text-accent transition-colors"
+        class="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-base-content/40 hover:text-accent hover:bg-accent/10 transition-all"
         aria-label={`View ${name} details`}
       >
-        <ChevronRight size={18} class="stroke-current" aria-hidden="true" />
+        <span class="hidden lg:inline">View</span>
+        <ChevronRight size={16} class="stroke-current" aria-hidden="true" />
       </a>
     </div>
   </div>

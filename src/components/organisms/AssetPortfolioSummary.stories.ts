@@ -37,17 +37,11 @@ interface PortfolioSummaryArgs {
   debtUsd?: number;
   distribution?: AllocationItem[];
   loading?: boolean;
+  latestUpdate?: string | null;
 }
 
-function currencyBadge(currency: 'IDR' | 'USD', size: 'sm' | 'lg' = 'sm'): string {
-  const isIdr = currency === 'IDR';
-  const bgClass = isIdr ? 'bg-success/10 text-success' : 'bg-info/10 text-info';
-  const sizeClass =
-    size === 'lg'
-      ? 'px-2 py-0.5 rounded-md text-[11px] w-10 justify-center'
-      : 'px-1.5 py-0.5 rounded text-[10px]';
-  return `<span class="inline-flex items-center ${sizeClass} font-bold uppercase tracking-wider ${bgClass} shrink-0">${currency}</span>`;
-}
+const badge =
+  'inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold uppercase tracking-wider shrink-0';
 
 const createPortfolioSummary = (args: PortfolioSummaryArgs): HTMLElement => {
   const {
@@ -57,6 +51,7 @@ const createPortfolioSummary = (args: PortfolioSummaryArgs): HTMLElement => {
     debtUsd = 0,
     distribution = [],
     loading = false,
+    latestUpdate = null,
   } = args;
 
   const container = document.createElement('div');
@@ -67,6 +62,7 @@ const createPortfolioSummary = (args: PortfolioSummaryArgs): HTMLElement => {
   const hasDebt = debtIdr > 0 || debtUsd > 0;
   const hasIdr = totalIdr > 0 || debtIdr > 0;
   const hasUsd = totalUsd > 0 || debtUsd > 0;
+  const gridCols = hasDebt ? 'md:grid-cols-3' : 'md:grid-cols-2';
 
   const MAX_LEGEND_ITEMS = 7;
   const OTHERS_COLOR = '#9ca3af';
@@ -83,44 +79,36 @@ const createPortfolioSummary = (args: PortfolioSummaryArgs): HTMLElement => {
     container.innerHTML = `
       <section class="bg-base-100 rounded-card border border-base-300 shadow-sm relative overflow-hidden" aria-busy="true" aria-label="Loading portfolio summary">
         <div class="p-6 lg:p-10 space-y-8">
-          <div class="space-y-3">
-            <div class="h-3.5 bg-base-300 rounded w-[120px] animate-pulse"></div>
-            <div class="h-8 bg-base-300 rounded w-[280px] animate-pulse"></div>
-            <div class="h-8 bg-base-300 rounded w-[200px] animate-pulse"></div>
-          </div>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div class="border border-base-200 rounded-xl p-5 space-y-3">
-              <div class="h-3 bg-base-300 rounded w-[100px] animate-pulse"></div>
-              <div class="h-6 bg-base-300 rounded w-[200px] animate-pulse"></div>
-              <div class="h-6 bg-base-300 rounded w-[140px] animate-pulse"></div>
-            </div>
-            <div class="border border-base-200 rounded-xl p-5 space-y-3">
-              <div class="h-3 bg-base-300 rounded w-[100px] animate-pulse"></div>
-              <div class="h-6 bg-base-300 rounded w-[180px] animate-pulse"></div>
-            </div>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            ${Array(3)
+              .fill(0)
+              .map(
+                () => `
+              <div class="border border-base-200 rounded-xl p-4 space-y-3">
+                <div class="h-3 bg-base-300 rounded w-[100px] animate-pulse"></div>
+                <div class="h-6 bg-base-300 rounded w-full animate-pulse"></div>
+                <div class="h-6 bg-base-300 rounded w-4/5 animate-pulse"></div>
+              </div>
+            `
+              )
+              .join('')}
           </div>
           <div class="space-y-4 pt-6 border-t border-base-200">
             <div class="h-4 bg-base-300 rounded w-[140px] animate-pulse"></div>
-            <div class="flex flex-col sm:flex-row items-center gap-6">
-              <div class="w-[160px] h-[160px] rounded-full bg-base-300 animate-pulse shrink-0"></div>
-              <div class="flex-1 space-y-3 w-full">
-                ${Array(4)
-                  .fill(0)
-                  .map(
-                    () => `
-                  <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-2">
-                      <div class="w-2.5 h-2.5 rounded-full bg-base-300 animate-pulse"></div>
-                      <div class="h-3 bg-base-300 rounded w-20 animate-pulse"></div>
-                    </div>
-                    <div class="h-3 bg-base-300 rounded w-10 animate-pulse"></div>
-                  </div>
-                `
-                  )
-                  .join('')}
-              </div>
+            <div class="h-5 bg-base-300 rounded-full w-full animate-pulse"></div>
+            <div class="grid grid-cols-2 gap-2">
+              ${Array(4)
+                .fill(0)
+                .map(
+                  () => `
+                <div class="flex items-center gap-2">
+                  <div class="w-2.5 h-2.5 rounded-full bg-base-300 animate-pulse"></div>
+                  <div class="h-3 bg-base-300 rounded w-20 animate-pulse"></div>
+                </div>
+              `
+                )
+                .join('')}
             </div>
-            <div class="h-4 bg-base-300 rounded-full animate-pulse"></div>
           </div>
         </div>
       </section>
@@ -133,63 +121,31 @@ const createPortfolioSummary = (args: PortfolioSummaryArgs): HTMLElement => {
 
   container.innerHTML = `
     <section class="bg-base-100 rounded-card border border-base-300 shadow-sm relative overflow-hidden" aria-label="Portfolio overview summary">
-      <!-- Net Worth Hero -->
-      <div class="bg-base-200/40 p-6 lg:px-10 lg:py-8">
-        <div class="flex items-center gap-2 mb-4">
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-base-content/50"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
-          <span class="text-xs font-semibold uppercase tracking-widest text-base-content/50">Net Worth</span>
-        </div>
-        <div class="space-y-2.5">
-          ${
-            hasIdr
-              ? `
-            <div class="flex items-center gap-3">
-              ${currencyBadge('IDR', 'lg')}
-              <p class="text-2xl lg:text-3xl font-bold font-mono tracking-tight leading-none ${netWorthIdrClass}">
-                ${formatCurrency(netWorthIdr, 'IDR')}
-              </p>
-            </div>`
-              : ''
-          }
-          ${
-            hasUsd
-              ? `
-            <div class="flex items-center gap-3">
-              ${currencyBadge('USD', 'lg')}
-              <p class="text-2xl lg:text-3xl font-bold font-mono tracking-tight leading-none ${netWorthUsdClass}">
-                ${formatCurrency(netWorthUsd, 'USD')}
-              </p>
-            </div>`
-              : ''
-          }
-        </div>
-      </div>
-
-      <div class="p-6 lg:px-10 lg:pb-8 space-y-8">
-        <!-- Assets & Debt -->
-        <div class="grid grid-cols-1 ${hasDebt ? 'md:grid-cols-2' : ''} gap-4">
+      <!-- 3-Column Metrics: Assets | Debt | Net Worth -->
+      <div class="p-6 lg:px-10 lg:py-8">
+        <div class="grid grid-cols-1 ${gridCols} gap-4">
           <!-- Total Assets -->
-          <div class="border-l-2 border-success rounded-xl bg-base-200/30 px-5 py-4">
+          <div class="border-l-2 border-success rounded-xl bg-base-200/30 px-4 py-4">
             <div class="flex items-center gap-2 mb-3">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-success"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></svg>
               <span class="text-xs font-semibold uppercase tracking-widest text-base-content/50">Total Assets</span>
             </div>
-            <div class="space-y-2">
+            <div class="space-y-1.5">
               ${
                 totalIdr > 0
                   ? `
-                <div class="flex items-center gap-2.5">
-                  ${currencyBadge('IDR')}
-                  <p class="text-lg lg:text-xl font-bold font-mono text-success tracking-tight leading-none">${formatCurrency(totalIdr, 'IDR')}</p>
+                <div class="flex items-center gap-2">
+                  <span class="${badge} bg-success/10 text-success">IDR</span>
+                  <p class="text-lg font-bold font-mono text-success tracking-tight leading-none truncate">${formatCurrency(totalIdr, 'IDR')}</p>
                 </div>`
                   : ''
               }
               ${
                 totalUsd > 0
                   ? `
-                <div class="flex items-center gap-2.5">
-                  ${currencyBadge('USD')}
-                  <p class="text-lg lg:text-xl font-bold font-mono text-info tracking-tight leading-none">${formatCurrency(totalUsd, 'USD')}</p>
+                <div class="flex items-center gap-2">
+                  <span class="${badge} bg-info/10 text-info">USD</span>
+                  <p class="text-lg font-bold font-mono text-info tracking-tight leading-none truncate">${formatCurrency(totalUsd, 'USD')}</p>
                 </div>`
                   : ''
               }
@@ -200,27 +156,27 @@ const createPortfolioSummary = (args: PortfolioSummaryArgs): HTMLElement => {
             hasDebt
               ? `
             <!-- Total Debt -->
-            <div class="border-l-2 border-error rounded-xl bg-base-200/30 px-5 py-4">
+            <div class="border-l-2 border-error rounded-xl bg-base-200/30 px-4 py-4">
               <div class="flex items-center gap-2 mb-3">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-error"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
                 <span class="text-xs font-semibold uppercase tracking-widest text-base-content/50">Total Debt</span>
               </div>
-              <div class="space-y-2">
+              <div class="space-y-1.5">
                 ${
                   debtIdr > 0
                     ? `
-                  <div class="flex items-center gap-2.5">
-                    ${currencyBadge('IDR')}
-                    <p class="text-lg lg:text-xl font-bold font-mono text-error tracking-tight leading-none">${formatCurrency(debtIdr, 'IDR')}</p>
+                  <div class="flex items-center gap-2">
+                    <span class="${badge} bg-success/10 text-success">IDR</span>
+                    <p class="text-lg font-bold font-mono text-error tracking-tight leading-none truncate">${formatCurrency(debtIdr, 'IDR')}</p>
                   </div>`
                     : ''
                 }
                 ${
                   debtUsd > 0
                     ? `
-                  <div class="flex items-center gap-2.5">
-                    ${currencyBadge('USD')}
-                    <p class="text-lg lg:text-xl font-bold font-mono text-error tracking-tight leading-none">${formatCurrency(debtUsd, 'USD')}</p>
+                  <div class="flex items-center gap-2">
+                    <span class="${badge} bg-info/10 text-info">USD</span>
+                    <p class="text-lg font-bold font-mono text-error tracking-tight leading-none truncate">${formatCurrency(debtUsd, 'USD')}</p>
                   </div>`
                     : ''
                 }
@@ -228,44 +184,65 @@ const createPortfolioSummary = (args: PortfolioSummaryArgs): HTMLElement => {
             </div>`
               : ''
           }
+
+          <!-- Net Worth -->
+          <div class="border-l-2 border-accent rounded-xl bg-base-200/30 px-4 py-4">
+            <div class="flex items-center gap-2 mb-3">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-accent"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+              <span class="text-xs font-semibold uppercase tracking-widest text-base-content/50">Net Worth</span>
+              <div class="tooltip tooltip-bottom" data-tip="Total assets minus total debt. Positive means assets exceed liabilities.">
+                <button type="button" class="inline-flex items-center justify-center rounded-full text-base-content/30 hover:text-base-content/60 transition-colors" aria-label="What is net worth? Total assets minus total debt.">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                </button>
+              </div>
+            </div>
+            <div class="space-y-1.5">
+              ${
+                hasIdr
+                  ? `
+                <div class="flex items-center gap-2">
+                  <span class="${badge} bg-success/10 text-success">IDR</span>
+                  <p class="text-lg font-bold font-mono tracking-tight leading-none truncate ${netWorthIdrClass}">${formatCurrency(netWorthIdr, 'IDR')}</p>
+                </div>`
+                  : ''
+              }
+              ${
+                hasUsd
+                  ? `
+                <div class="flex items-center gap-2">
+                  <span class="${badge} bg-info/10 text-info">USD</span>
+                  <p class="text-lg font-bold font-mono tracking-tight leading-none truncate ${netWorthUsdClass}">${formatCurrency(netWorthUsd, 'USD')}</p>
+                </div>`
+                  : ''
+              }
+            </div>
+          </div>
         </div>
+      </div>
+
+      <div class="px-6 lg:px-10 pb-6 lg:pb-8 space-y-8">
+        ${
+          latestUpdate
+            ? `
+          <!-- Latest Update Info -->
+          <div class="flex items-center gap-2 text-xs text-base-content/50 font-medium">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <span>Latest update: ${latestUpdate}</span>
+          </div>
+        `
+            : ''
+        }
 
         ${
           displayDistribution.length > 0
             ? `
           <!-- Asset Allocation -->
-          <div class="space-y-5 pt-6 border-t border-base-200">
+          <div class="space-y-4 pt-6 border-t border-base-200">
             <h3 class="font-bold text-sm uppercase tracking-wider text-base-content">Asset Allocation</h3>
 
-            <div class="flex flex-col sm:flex-row items-center gap-6 lg:gap-10">
-              <!-- Chart placeholder (no Chart.js in Storybook) -->
-              <div class="w-[160px] h-[160px] lg:w-[180px] lg:h-[180px] shrink-0 relative flex items-center justify-center rounded-full border-[16px] border-base-300">
-                <span class="text-xs text-base-content/40 font-medium">Chart</span>
-              </div>
-
-              <!-- Legend -->
-              <div class="flex-1 w-full">
-                <div class="grid grid-cols-1 gap-2">
-                  ${displayDistribution
-                    .map(
-                      (item) => `
-                    <div class="flex items-center justify-between py-1">
-                      <div class="flex items-center gap-2.5">
-                        <div class="w-2.5 h-2.5 rounded-full shrink-0" style="background-color: ${item.color};" aria-hidden="true"></div>
-                        <span class="text-sm text-base-content/70 font-medium">${item.type}</span>
-                      </div>
-                      <span class="text-sm font-bold text-base-content tabular-nums">${item.percentage}%</span>
-                    </div>
-                  `
-                    )
-                    .join('')}
-                </div>
-              </div>
-            </div>
-
-            <!-- Stacked Bar -->
-            <div class="relative" data-allocation-bar>
-              <div class="h-4 w-full bg-base-300 rounded-full overflow-hidden flex shadow-inner" role="img" aria-label="Asset allocation distribution">
+            <!-- Allocation Bar -->
+            <div class="relative">
+              <div class="h-5 w-full bg-base-300 rounded-full overflow-hidden flex shadow-inner" role="img" aria-label="Asset allocation distribution">
                 ${displayDistribution
                   .map(
                     (item) => `
@@ -274,6 +251,21 @@ const createPortfolioSummary = (args: PortfolioSummaryArgs): HTMLElement => {
                   )
                   .join('')}
               </div>
+            </div>
+
+            <!-- Legend -->
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-2">
+              ${displayDistribution
+                .map(
+                  (item) => `
+                <div class="flex items-center gap-2 py-0.5">
+                  <div class="w-2.5 h-2.5 rounded-full shrink-0" style="background-color: ${item.color};" aria-hidden="true"></div>
+                  <span class="text-xs text-base-content/60 font-medium truncate">${item.type}</span>
+                  <span class="text-xs font-bold text-base-content tabular-nums ml-auto shrink-0">${item.percentage}%</span>
+                </div>
+              `
+                )
+                .join('')}
             </div>
           </div>
         `
@@ -304,6 +296,7 @@ export const Default: StoryObj = {
     debtUsd: 0,
     distribution: defaultDistribution,
     loading: false,
+    latestUpdate: 'Feb 15, 2026, 10:30 AM',
   },
   render: (args) => createPortfolioSummary(args),
 };
@@ -383,6 +376,7 @@ export const ManyAssetTypes: StoryObj = {
       { type: 'Other', percentage: 1, color: '#9ca3af' },
     ],
     loading: false,
+    latestUpdate: 'Feb 14, 2026, 03:15 PM',
   },
   render: (args) => createPortfolioSummary(args),
 };

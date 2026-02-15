@@ -302,6 +302,7 @@ const sortedGroups = CLASS_ORDER.filter((cls) => assetsByClass[cls].length > 0).
               return (
                 <AssetGroupCard
                   type={group.label}
+                  accountClass={group.groupKey}
                   count={group.assets.length}
                   totalIdr={groupTotals.idr}
                   totalUsd={groupTotals.usd}
