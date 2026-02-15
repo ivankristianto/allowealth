@@ -94,8 +94,12 @@ export class DiagnosticsService {
       driver: driverName as 'memory' | 'upstash' | 'noop',
       isEnabled: driverName !== 'noop',
       config: {},
-      status: 'healthy',
+      status: driverName === 'noop' ? 'disabled' : 'healthy',
     };
+
+    if (driverName === 'noop') {
+      return info;
+    }
 
     // Add driver-specific configuration
     if (driverName === 'memory') {
@@ -149,12 +153,18 @@ export class DiagnosticsService {
     for (const name of varsToShow) {
       const value = getEnv(name);
       const isSensitive = SENSITIVE_PATTERNS.some((pattern) => pattern.test(name));
+      const isDatabaseUrl = name === 'DATABASE_URL';
 
       vars.push({
         name,
-        value: isSensitive && value ? this.maskValue(value) : value || '(not set)',
+        value:
+          isDatabaseUrl && value
+            ? this.sanitizeDbUrl(value)
+            : isSensitive && value
+              ? this.maskValue(value)
+              : value || '(not set)',
         isSet: value !== undefined,
-        isSensitive,
+        isSensitive: isSensitive || isDatabaseUrl,
       });
     }
 
