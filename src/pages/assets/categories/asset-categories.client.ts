@@ -2,9 +2,13 @@
  * Asset Categories Page Client Script
  *
  * Handles page-level interactions including:
- * - Search form submission with HTML injection
+ * - Search form submission (full page reload, SSR handles filtering)
  * - Tab toggle filtering with HTML injection
  * - Create/Edit/Delete category actions
+ *
+ * Pattern: matches budget/categories/categories-client.ts
+ * - Event delegation for edit/delete (supports AJAX-injected rows)
+ * - Fresh DOM queries at call-time (no stale closure refs)
  */
 
 import { fetchAssetCategories } from '@/lib/api/assetCategoryApiClient';
@@ -17,25 +21,17 @@ import {
 
 // Store current filter state
 let currentTypeFilter: 'asset' | 'liability' = 'asset';
-let currentSearchQuery = '';
 
-// Flag to prevent duplicate initialization
-let isInitialized = false;
+// Prevent duplicate listener attachment
+let listenersAttached = false;
 
 /**
  * Get current type filter from URL or default
  */
 function getTypeFilter(): 'asset' | 'liability' {
   const url = new URL(window.location.href);
-  return (url.searchParams.get('type') as 'asset' | 'liability') || 'asset';
-}
-
-/**
- * Get current search query from URL
- */
-function getSearchQuery(): string {
-  const url = new URL(window.location.href);
-  return url.searchParams.get('search') || '';
+  const type = url.searchParams.get('type');
+  return type === 'asset' || type === 'liability' ? type : 'asset';
 }
 
 /**
@@ -64,135 +60,120 @@ async function fetchAndRenderCategories(): Promise<void> {
 }
 
 /**
- * Initialize the categories page
+ * Open the category modal for create or edit.
+ * Queries DOM elements fresh each time to avoid stale references.
  */
-function initAssetCategoriesPage(): void {
-  // Prevent duplicate initialization
-  if (isInitialized) {
-    // Just update state from URL if re-initializing
-    currentTypeFilter = getTypeFilter();
-    currentSearchQuery = getSearchQuery();
-    return;
-  }
-  isInitialized = true;
-
-  // Initialize filter state from URL
-  currentTypeFilter = getTypeFilter();
-  currentSearchQuery = getSearchQuery();
-
-  // Get modal and dialog elements
+function openCategoryModal(
+  mode: 'create' | 'edit',
+  values?: { id?: string; name?: string; description?: string; type?: 'asset' | 'liability' }
+): void {
   const categoryModal = document.getElementById('asset-category-modal') as HTMLDialogElement | null;
-  const categoryForm = document.querySelector(
+  const modalContainer = document.querySelector('[data-asset-category-modal-container]');
+
+  if (!categoryModal || !modalContainer) return;
+
+  const categoryForm = modalContainer.querySelector(
     '[data-asset-category-form]'
   ) as HTMLFormElement | null;
-  const deleteDialog = document.getElementById(
-    'asset-category-delete-dialog'
-  ) as HTMLDialogElement | null;
+  if (!categoryForm) return;
 
-  // Modal elements
-  const modalContainer = document.querySelector('[data-asset-category-modal-container]');
-  const modalTitle = modalContainer?.querySelector('[data-modal-title]');
-  const modalSubtitle = modalContainer?.querySelector('[data-modal-subtitle]');
-  const modalSubmitText = modalContainer?.querySelector('[data-submit-text]');
-  const modalErrorDiv = modalContainer?.querySelector('[data-form-error]') as HTMLElement | null;
+  const modalTitle = modalContainer.querySelector('[data-modal-title]');
+  const modalSubtitle = modalContainer.querySelector('[data-modal-subtitle]');
+  const modalSubmitText = modalContainer.querySelector('[data-submit-text]');
+  const modalErrorDiv = modalContainer.querySelector('[data-form-error]') as HTMLElement | null;
 
-  // Delete dialog elements
-  const deleteContainer = document.querySelector('[data-asset-category-delete-dialog-container]');
-  const deleteCategoryName = deleteContainer?.querySelector('[data-category-name]');
-  const deleteCategoryMeta = deleteContainer?.querySelector('[data-category-meta]');
-  const deleteErrorDiv = deleteContainer?.querySelector(
-    '[data-confirm-error]'
-  ) as HTMLElement | null;
+  if (modalTitle) {
+    modalTitle.textContent = mode === 'edit' ? 'Edit Category' : 'Add Category';
+  }
+  if (modalSubtitle) {
+    modalSubtitle.textContent =
+      mode === 'edit'
+        ? 'Update the category details.'
+        : 'Create a new category for your assets or liabilities.';
+  }
+  if (modalSubmitText) {
+    modalSubmitText.textContent = mode === 'edit' ? 'Update Category' : 'Save Category';
+  }
 
-  /**
-   * Open the category modal for create or edit
-   */
-  function openCategoryModal(
-    mode: 'create' | 'edit',
-    values?: { id?: string; name?: string; description?: string; type?: 'asset' | 'liability' }
-  ) {
-    if (!categoryModal || !categoryForm) {
-      console.error('[AssetCategoriesPage] Modal or form not found');
-      return;
-    }
+  const idInput = categoryForm.querySelector('[name="id"]') as HTMLInputElement | null;
+  const nameInput = categoryForm.querySelector('[name="name"]') as HTMLInputElement | null;
+  const descriptionInput = categoryForm.querySelector(
+    '[name="description"]'
+  ) as HTMLTextAreaElement | null;
+  const typeSelect = categoryForm.querySelector('[name="type"]') as HTMLSelectElement | null;
 
-    // Update modal title and subtitle
-    if (modalTitle) {
-      modalTitle.textContent = mode === 'edit' ? 'Edit Category' : 'Add Category';
-    }
-    if (modalSubtitle) {
-      modalSubtitle.textContent =
-        mode === 'edit'
-          ? 'Update the category details.'
-          : 'Create a new category for your assets or liabilities.';
-    }
-    if (modalSubmitText) {
-      modalSubmitText.textContent = mode === 'edit' ? 'Update Category' : 'Save Category';
-    }
-
-    // Populate form fields
-    const idInput = categoryForm.querySelector('[name="id"]') as HTMLInputElement | null;
-    const nameInput = categoryForm.querySelector('[name="name"]') as HTMLInputElement | null;
-    const descriptionInput = categoryForm.querySelector(
-      '[name="description"]'
-    ) as HTMLTextAreaElement | null;
-    const typeSelect = categoryForm.querySelector('[name="type"]') as HTMLSelectElement | null;
-
+  if (mode === 'create') {
+    categoryForm.reset();
+    if (idInput) idInput.value = '';
+    if (typeSelect) typeSelect.value = currentTypeFilter;
+  } else {
     if (idInput) idInput.value = values?.id || '';
     if (nameInput) nameInput.value = values?.name || '';
     if (descriptionInput) descriptionInput.value = values?.description || '';
     if (typeSelect) typeSelect.value = values?.type || 'asset';
-
-    // Update mode
-    modalContainer?.setAttribute('data-mode', mode);
-    modalErrorDiv?.classList.add('hidden');
-    if (modalErrorDiv) modalErrorDiv.textContent = '';
-
-    categoryModal.showModal();
   }
 
-  /**
-   * Open the delete confirmation dialog
-   */
-  function openDeleteDialog(categoryId: string, categoryName: string, categoryMeta: string) {
-    if (!deleteDialog || !deleteContainer) {
-      console.error('[AssetCategoriesPage] Delete dialog not found');
-      return;
-    }
+  modalContainer.setAttribute('data-mode', mode);
+  modalErrorDiv?.classList.add('hidden');
+  if (modalErrorDiv) modalErrorDiv.textContent = '';
 
-    // Store category ID on container for the delete script to read
-    deleteContainer.setAttribute('data-category-id', categoryId);
+  categoryModal.showModal();
+}
 
-    if (deleteCategoryName) deleteCategoryName.textContent = categoryName;
-    if (deleteCategoryMeta) deleteCategoryMeta.textContent = categoryMeta;
-    deleteErrorDiv?.classList.add('hidden');
-    if (deleteErrorDiv) deleteErrorDiv.textContent = '';
+/**
+ * Open the delete confirmation dialog.
+ * Queries DOM elements fresh each time to avoid stale references.
+ */
+function openDeleteDialog(categoryId: string, categoryName: string, categoryMeta: string): void {
+  const deleteDialog = document.getElementById(
+    'asset-category-delete-dialog'
+  ) as HTMLDialogElement | null;
+  const deleteContainer = document.querySelector('[data-asset-category-delete-dialog-container]');
 
-    deleteDialog.showModal();
-  }
+  if (!deleteDialog || !deleteContainer) return;
 
-  // Handle search form submission
+  deleteContainer.setAttribute('data-category-id', categoryId);
+
+  const deleteCategoryName = deleteContainer.querySelector('[data-category-name]');
+  const deleteCategoryMeta = deleteContainer.querySelector('[data-category-meta]');
+  const deleteErrorDiv = deleteContainer.querySelector(
+    '[data-confirm-error]'
+  ) as HTMLElement | null;
+
+  if (deleteCategoryName) deleteCategoryName.textContent = categoryName;
+  if (deleteCategoryMeta) deleteCategoryMeta.textContent = categoryMeta;
+  deleteErrorDiv?.classList.add('hidden');
+  if (deleteErrorDiv) deleteErrorDiv.textContent = '';
+
+  deleteDialog.showModal();
+}
+
+/**
+ * Initialize the categories page
+ */
+function initAssetCategoriesPage(): void {
+  // Always update filter state from URL
+  currentTypeFilter = getTypeFilter();
+
+  // All listeners guarded — prevents duplication on astro:page-load re-init
+  if (listenersAttached) return;
+  listenersAttached = true;
+
+  // Search form — full page reload (API has no search param; SSR handles filtering)
   const searchForm = document.getElementById(
     'asset-category-search-form'
   ) as HTMLFormElement | null;
 
-  searchForm?.addEventListener('submit', async (event: SubmitEvent) => {
+  searchForm?.addEventListener('submit', (event: SubmitEvent) => {
     event.preventDefault();
     const formData = new FormData(searchForm);
-
-    currentSearchQuery = (formData.get('search') as string) || '';
-
-    // Update URL without page reload
     const url = new URL(window.location.href);
-    url.searchParams.set('search', currentSearchQuery);
+    url.searchParams.set('search', (formData.get('search') as string) || '');
     url.searchParams.set('type', currentTypeFilter);
-    window.history.replaceState({}, '', url.toString());
-
-    // Fetch and render with HTML injection
-    await fetchAndRenderCategories();
+    window.location.href = url.toString();
   });
 
-  // Handle TabToggle clicks for type filtering
+  // Tab toggle — AJAX fetch (type filter is supported by API)
   document.querySelectorAll('[name="type"][data-tab-toggle]').forEach((toggle) => {
     toggle.addEventListener('change', async (event: Event) => {
       const target = event.currentTarget as HTMLInputElement;
@@ -201,33 +182,33 @@ function initAssetCategoriesPage(): void {
       if (newType !== currentTypeFilter) {
         currentTypeFilter = newType;
 
-        // Update URL without page reload
         const url = new URL(window.location.href);
         url.searchParams.set('type', currentTypeFilter);
-        url.searchParams.set('search', currentSearchQuery);
         window.history.replaceState({}, '', url.toString());
 
-        // Fetch and render with HTML injection
         await fetchAndRenderCategories();
       }
     });
   });
 
   // Create category button
-  document.querySelectorAll('[data-action="create-asset-category"]').forEach((button) => {
-    button.addEventListener('click', () => {
+  document.querySelectorAll('[data-action="create-asset-category"]').forEach((btn) => {
+    btn.addEventListener('click', (e: Event) => {
+      e.preventDefault();
       openCategoryModal('create');
     });
   });
 
-  // Edit category buttons - event delegation
+  // Edit & delete — event delegation on document
+  // (needed because AJAX injection replaces table rows)
+
+  // Edit category
   document.addEventListener('click', (event: Event) => {
-    const target = (event.target as HTMLElement).closest(
+    if (!(event.target instanceof Element)) return;
+    const target = event.target.closest(
       '[data-action="edit-asset-category"]'
     ) as HTMLElement | null;
     if (!target) return;
-
-    // Check if button is disabled
     if ((target as HTMLButtonElement).disabled) return;
 
     const categoryId = target.dataset.categoryId || '';
@@ -241,14 +222,13 @@ function initAssetCategoriesPage(): void {
     });
   });
 
-  // Delete category buttons - event delegation
+  // Delete category
   document.addEventListener('click', (event: Event) => {
-    const target = (event.target as HTMLElement).closest(
+    if (!(event.target instanceof Element)) return;
+    const target = event.target.closest(
       '[data-action="delete-asset-category"]'
     ) as HTMLElement | null;
     if (!target) return;
-
-    // Check if button is disabled
     if ((target as HTMLButtonElement).disabled) return;
 
     const categoryId = target.dataset.categoryId || '';
@@ -268,12 +248,5 @@ if (document.readyState === 'loading') {
   initAssetCategoriesPage();
 }
 
-// Re-initialize on Astro page navigation (will skip if already initialized)
+// Re-initialize on Astro page navigation (updates filter state from URL)
 document.addEventListener('astro:page-load', initAssetCategoriesPage);
-
-// Export current filter state for modal access
-(window as any).assetCategoriesPageState = {
-  get typeFilter(): 'asset' | 'liability' {
-    return currentTypeFilter;
-  },
-};
