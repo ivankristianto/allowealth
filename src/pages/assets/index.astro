@@ -22,15 +22,15 @@ import PeriodicSelector, { type PeriodOption } from '@/components/molecules/Peri
 import EmptyState from '@components/atoms/EmptyState.astro';
 import { CalendarDays, Search } from '@lucide/astro';
 import { assetService, assetCategoryService } from '@/services';
-import type { AssetOutput, AssetType } from '@/lib/types/asset';
-import { formatAssetType, deriveAccountClass } from '@/lib/types/asset';
+import type { AssetOutput, AssetType, AccountClass } from '@/lib/types/asset';
+import { formatAssetType, deriveAccountClass, ACCOUNT_CLASS_LABELS } from '@/lib/types/asset';
 import { formatMonthYear } from '@/lib/utils/date';
 import { PERIOD_SELECTOR_MONTH_LIMIT } from '@/lib/constants/period';
 import {
   calculateAssetAllocation,
   calculatePortfolioTotals,
   calculateDebtTotals,
-  groupAssetsByType,
+  groupAssetsByClass,
   calculateGroupTotals,
 } from '@/lib/utils/asset';
 
@@ -205,25 +205,14 @@ const latestUpdate = assets.reduce<Date | null>((latest, asset) => {
   return !latest || updated > latest ? updated : latest;
 }, null);
 
-// Group assets by type for display
-const assetsByType = groupAssetsByType(assets);
-const sortedGroups = Object.entries(assetsByType)
-  .map(([groupKey, groupAssets]) => {
-    const category = categoriesById.get(groupKey);
-    const label = category?.name || formatAssetType(groupAssets[0]?.type as AssetType);
-    return {
-      groupKey,
-      label,
-      sortOrder: category?.sort_order ?? 999,
-      isSystem: category?.is_system ?? false,
-      assets: groupAssets,
-    };
-  })
-  .sort((a, b) => {
-    if (a.isSystem !== b.isSystem) return a.isSystem ? -1 : 1;
-    if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
-    return a.label.localeCompare(b.label);
-  });
+// Group assets by account class for display (Liquid → Non-Liquid → Debt)
+const assetsByClass = groupAssetsByClass(assets);
+const CLASS_ORDER: AccountClass[] = ['liquid', 'non_liquid', 'debt'];
+const sortedGroups = CLASS_ORDER.filter((cls) => assetsByClass[cls].length > 0).map((cls) => ({
+  groupKey: cls,
+  label: ACCOUNT_CLASS_LABELS[cls],
+  assets: assetsByClass[cls],
+}));
 ---
 
 <ProtectedLayout title="Assets" currentPath={currentPath} subtitle={currentMonthDisplay}>
