@@ -16,7 +16,7 @@ export interface Member {
   id: string;
   name: string;
   email: string;
-  role: 'admin' | 'member';
+  role: 'admin' | 'member' | 'super_admin';
   createdAt: string | Date;
 }
 
@@ -76,7 +76,12 @@ function getInitials(name: string): string {
 
             <div class="flex items-center gap-3">
               {/* Role badge */}
-              {member.role === 'admin' ? (
+              {member.role === 'super_admin' ? (
+                <span class="badge badge-error gap-1">
+                  <Crown size={12} aria-hidden="true" />
+                  Super Admin
+                </span>
+              ) : member.role === 'admin' ? (
                 <span class="badge badge-accent gap-1">
                   <Crown size={12} aria-hidden="true" />
                   Admin
@@ -89,7 +94,7 @@ function getInitials(name: string): string {
               )}
 
               {/* Remove button (admin only, not for self) */}
-              {isAdmin && member.id !== currentUserId && (
+              {isAdmin && member.id !== currentUserId && member.role !== 'super_admin' && (
                 <button
                   type="button"
                   class="btn btn-ghost btn-sm btn-square text-error hover:bg-error/10"

@@ -1,0 +1,268 @@
+# Admin endpoint paths (super_admin only)
+paths:
+  /api/admin/overview:
+    get:
+      tags: [Admin]
+      summary: Get platform overview
+      description: |
+        Returns aggregate stats for the platform including total workspaces,
+        total users, and active workspaces. Super admin access required.
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          description: Platform overview stats
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      totalWorkspaces:
+                        type: integer
+                      totalUsers:
+                        type: integer
+                      activeWorkspaces:
+                        type: integer
+        '401':
+          description: Unauthorized - not authenticated
+        '403':
+          description: Forbidden - super admin access required
+
+  /api/admin/workspaces:
+    get:
+      tags: [Admin]
+      summary: List all workspaces
+      description: |
+        Returns a paginated list of all workspaces with member counts and stats.
+        Supports search, status filtering, and sorting. Super admin access required.
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: search
+          in: query
+          description: Search by workspace name
+          schema:
+            type: string
+        - name: status
+          in: query
+          description: Filter by workspace status
+          schema:
+            type: string
+            enum: [active, inactive]
+        - name: sortBy
+          in: query
+          description: Sort field
+          schema:
+            type: string
+            enum: [name, created_at, member_count]
+        - name: sortOrder
+          in: query
+          description: Sort direction
+          schema:
+            type: string
+            enum: [asc, desc]
+        - name: limit
+          in: query
+          description: Page size (default 20, max 100)
+          schema:
+            type: integer
+        - name: offset
+          in: query
+          description: Pagination offset (default 0)
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: List of workspaces with stats
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      workspaces:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                            name:
+                              type: string
+                            memberCount:
+                              type: integer
+                            createdAt:
+                              type: string
+                              format: date-time
+                            isActive:
+                              type: boolean
+                      total:
+                        type: integer
+        '401':
+          description: Unauthorized - not authenticated
+        '403':
+          description: Forbidden - super admin access required
+
+  /api/admin/workspaces/{id}:
+    get:
+      tags: [Admin]
+      summary: Get workspace details
+      description: |
+        Returns detailed information about a specific workspace including
+        members list and settings. Super admin access required.
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Workspace ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Workspace details with members and settings
+        '401':
+          description: Unauthorized - not authenticated
+        '403':
+          description: Forbidden - super admin access required
+        '404':
+          description: Workspace not found
+
+  /api/admin/workspaces/{id}/archive:
+    post:
+      tags: [Admin]
+      summary: Archive a workspace
+      description: |
+        Soft-deletes a workspace by setting deleted_at timestamp.
+        The workspace can be restored later. Super admin access required.
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Workspace ID to archive
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Workspace archived successfully
+        '401':
+          description: Unauthorized - not authenticated
+        '403':
+          description: Forbidden - super admin access required
+        '404':
+          description: Workspace not found
+
+  /api/admin/workspaces/{id}/delete:
+    delete:
+      tags: [Admin]
+      summary: Permanently delete a workspace
+      description: |
+        Permanently removes a workspace and all associated data.
+        This action is irreversible. Super admin access required.
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Workspace ID to delete
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Workspace deleted permanently
+        '401':
+          description: Unauthorized - not authenticated
+        '403':
+          description: Forbidden - super admin access required
+        '404':
+          description: Workspace not found
+
+  /api/admin/audit-logs:
+    get:
+      tags: [Admin]
+      summary: List audit logs
+      description: |
+        Returns paginated audit log entries with actor information.
+        Supports filtering by action, entity type, and workspace.
+        Super admin access required.
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: action
+          in: query
+          description: Filter by audit action type
+          schema:
+            type: string
+        - name: entityType
+          in: query
+          description: Filter by entity type
+          schema:
+            type: string
+        - name: workspaceId
+          in: query
+          description: Filter by workspace ID
+          schema:
+            type: string
+        - name: limit
+          in: query
+          description: Page size (default 50, max 100)
+          schema:
+            type: integer
+        - name: offset
+          in: query
+          description: Pagination offset (default 0)
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Paginated list of audit log entries
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      logs:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                            action:
+                              type: string
+                            entityType:
+                              type: string
+                            entityId:
+                              type: string
+                              nullable: true
+                            createdAt:
+                              type: string
+                              format: date-time
+                            userId:
+                              type: string
+                            workspaceId:
+                              type: string
+                            actorName:
+                              type: string
+                              nullable: true
+                            actorEmail:
+                              type: string
+                              nullable: true
+                      total:
+                        type: integer
+        '401':
+          description: Unauthorized - not authenticated
+        '403':
+          description: Forbidden - super admin access required

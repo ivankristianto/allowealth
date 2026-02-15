@@ -1,0 +1,71 @@
+---
+/**
+ * Admin Dashboard
+ *
+ * Super admin platform overview showing total workspaces, users, and active workspaces.
+ */
+import AdminLayout from '@/layouts/AdminLayout.astro';
+import StatCard from '@/components/atoms/StatCard.astro';
+import Card from '@/components/atoms/Card.astro';
+import { superAdminService } from '@/services';
+import { Building2, Users, Activity, ClipboardList } from '@lucide/astro';
+
+const overview = await superAdminService.getPlatformOverview();
+---
+
+<AdminLayout title="Admin Dashboard" currentPath="/admin" subtitle="Platform Overview">
+  <div class="max-w-7xl mx-auto space-y-8" data-testid="admin-dashboard">
+    <!-- Stats Cards -->
+    <section aria-label="Platform statistics">
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+        <StatCard
+          title="Total Workspaces"
+          value={String(overview.totalWorkspaces)}
+          valueColor="text-accent"
+          iconVariant="accent"
+        >
+          <Building2 slot="icon" size={48} class="stroke-current" aria-hidden="true" />
+        </StatCard>
+
+        <StatCard
+          title="Total Users"
+          value={String(overview.totalUsers)}
+          valueColor="text-info"
+          iconVariant="info"
+        >
+          <Users slot="icon" size={48} class="stroke-current" aria-hidden="true" />
+        </StatCard>
+
+        <StatCard
+          title="Active Workspaces"
+          value={String(overview.activeWorkspaces)}
+          valueColor="text-success"
+          iconVariant="success"
+        >
+          <Activity slot="icon" size={48} class="stroke-current" aria-hidden="true" />
+        </StatCard>
+      </div>
+    </section>
+
+    <!-- Quick Actions -->
+    <section aria-label="Quick actions">
+      <Card padding="md">
+        <h2 class="text-lg font-bold mb-3">Quick Actions</h2>
+        <div class="flex flex-wrap gap-3">
+          <a href="/admin/workspaces" class="btn btn-outline btn-sm">
+            <Building2 size={16} aria-hidden="true" /> View Workspaces
+          </a>
+          <a href="/admin/users" class="btn btn-outline btn-sm">
+            <Users size={16} aria-hidden="true" /> View Users
+          </a>
+          <a href="/admin/audit-logs" class="btn btn-outline btn-sm">
+            <ClipboardList size={16} aria-hidden="true" /> View Audit Logs
+          </a>
+          <a href="/admin/diagnostics" class="btn btn-outline btn-sm">
+            <Activity size={16} aria-hidden="true" /> View Diagnostics
+          </a>
+        </div>
+      </Card>
+    </section>
+  </div>
+</AdminLayout>

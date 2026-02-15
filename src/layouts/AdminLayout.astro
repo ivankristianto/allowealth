@@ -1,0 +1,30 @@
+---
+/**
+ * Admin Layout
+ *
+ * Layout for super admin pages. Does NOT load workspace-scoped data
+ * (no categories, assets, transaction drawer) since super admins
+ * don't belong to a workspace.
+ */
+
+import MainLayout from './MainLayout.astro';
+import { requireSuperAdmin } from '@/lib/auth/requireAuth';
+
+interface Props {
+  title?: string;
+  currentPath?: string;
+  subtitle?: string;
+}
+
+const { title = 'Admin', currentPath = '/admin', subtitle } = Astro.props;
+
+// Require super admin access
+const authResult = requireSuperAdmin(Astro);
+if (authResult) return authResult;
+
+const user = Astro.locals.user!;
+---
+
+<MainLayout title={title} currentPath={currentPath} user={user} subtitle={subtitle}>
+  <slot />
+</MainLayout>

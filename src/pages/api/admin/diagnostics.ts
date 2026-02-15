@@ -5,20 +5,20 @@ import { diagnosticsService } from '@/services';
 
 /**
  * GET /api/admin/diagnostics
- * Get system diagnostics information (admin-only)
+ * Get system diagnostics information (super_admin only)
  *
  * Returns runtime, database, cache, environment, and configuration data.
  * All sensitive data is sanitized/masked.
  *
- * Requires admin role.
+ * Requires super_admin role.
  */
 export const GET: APIRoute = async (context) => {
   try {
     const auth = getAuthenticatedUser(context);
 
-    // Require admin role
-    if (auth.role !== 'admin') {
-      return errorResponse('Admin access required', 403, 'ADMIN_REQUIRED');
+    // Require super_admin role
+    if (auth.role !== 'super_admin') {
+      return errorResponse('Super admin access required', 403, 'SUPER_ADMIN_REQUIRED');
     }
 
     // Fetch diagnostics data
