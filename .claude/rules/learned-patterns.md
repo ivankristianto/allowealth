@@ -116,6 +116,17 @@ const token = document.cookie.split('csrf_token=')[1]; // Breaks on base64
 - ❌ **Use wildcards (`/*`) or paths in Custom Domain routes** - Custom Domains only accept bare domain names
 - ✅ **Use bare domain in `custom_domain` routes** - `{ pattern = "example.io", custom_domain = true }`, not `"example.io/*"`
 
+### Cloudflare D1
+
+- ✅ **Use static import for `drizzle-orm/d1`** - `drizzle()` is synchronous, dynamic `import()` adds unnecessary async complexity
+- ❌ **Use async proxy patterns to bridge sync/async DB interfaces** - Proxy that wraps every property as an async function breaks `db.query.table.findFirst()` chains
+- ✅ **Store D1 binding in dedicated module-level variable** - not in the string-typed env API (`Record<string, string>`)
+- ❌ **Smuggle objects through `setRuntimeEnv()` env bag** - D1 binding is an object, env API expects strings; use dedicated `setD1Binding()`/`getD1Binding()`
+- ✅ **Enable transactions for D1 in `runTransaction()`** - D1 runs in multi-isolate Workers, not single-writer local SQLite
+- ❌ **Assume D1 has same concurrency model as local SQLite** - local SQLite has single-writer WAL; D1 is multi-isolate, needs transactions
+- ✅ **Call `prepareForRequest()` for D1 in database middleware** - reset `dbInstance` per-request even though D1 has no TCP connections
+- ✅ **Suppress `DATABASE_URL` warning when D1 is enabled** - D1 doesn't use DATABASE_URL; check `isD1` before calling `getDatabaseUrl()`
+
 ### Cloudflare Workers
 
 - ✅ **Use Web Crypto API (PBKDF2-SHA256) for password hashing** - works in all runtimes
@@ -178,6 +189,12 @@ const token = document.cookie.split('csrf_token=')[1]; // Breaks on base64
 - ❌ **Use `execSync` with string interpolation** - `execSync(\`bun run \${script} \${param}\`)` breaks on shell metacharacters and is a command injection vector
 - ✅ **Use Bun subprocess for E2E helpers needing bun:sqlite** - Playwright runs in Node.js, shell out to Bun for SQLite access
 - ❌ **Over-engineer E2E test helpers with production-grade error handling** - YAGNI for test code; keep subprocess helpers simple
+
+## Subagent Patterns
+
+- ✅ **Verify file state after subagent completes** - subagents may make partial changes; always read files and run typecheck before trusting their report
+- ✅ **Run typecheck immediately after subagent work** - stale diagnostics from mid-edit can appear; fresh typecheck reveals actual state
+- ❌ **Trust subagent "all checks passed" reports without independent verification** - subagents may report success while leaving partial changes
 
 ## Dependency Removal
 
