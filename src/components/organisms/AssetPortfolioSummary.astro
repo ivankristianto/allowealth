@@ -2,11 +2,11 @@
 /**
  * AssetPortfolioSummary Component
  *
- * Portfolio overview showing total assets & debt (hero), net worth (secondary),
- * and asset allocation with stacked bar + legend.
+ * Portfolio overview split into independent visual sections:
+ * 1. Metric cards grid (Assets, Debt, Net Worth) — each its own card
+ * 2. Asset allocation card (stacked bar + legend) — separate card
  *
- * Layout: Assets & Debt first (what users care about), then Net Worth with
- * explanatory tooltip, then allocation breakdown.
+ * This avoids the visual tension of line dividers inside rounded cards.
  *
  * @param {number} totalIdr - Total asset value in IDR
  * @param {number} totalUsd - Total asset value in USD
@@ -104,35 +104,37 @@ const badge =
 // Determine grid columns: 2 if no debt, 3 if debt exists
 const gridCols = hasDebt ? 'md:grid-cols-3' : 'md:grid-cols-2';
 
-const cardClasses = [
-  'bg-base-100 rounded-card border border-base-300',
-  'shadow-sm',
-  'relative overflow-hidden',
-  className,
-]
-  .filter(Boolean)
-  .join(' ');
+// Individual metric card classes
+const metricCard =
+  'bg-base-100 border border-base-300 rounded-card shadow-sm px-5 py-4 relative overflow-hidden';
+
+// Allocation card classes
+const allocationCard = 'bg-base-100 border border-base-300 rounded-card shadow-sm p-5 lg:p-6';
+
+const wrapperClasses = ['space-y-4', className].filter(Boolean).join(' ');
 ---
 
 {
   loading ? (
-    <section class={cardClasses} aria-busy="true" aria-label="Loading portfolio summary">
-      <div class="p-6 lg:p-10 space-y-8">
-        {/* 3-Column Metrics Skeleton */}
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {Array(3)
-            .fill(0)
-            .map(() => (
-              <div class="border border-base-200 rounded-xl p-4 space-y-3">
+    <div class={wrapperClasses} aria-busy="true" aria-label="Loading portfolio summary">
+      {/* Metric Cards Skeleton */}
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {Array(3)
+          .fill(0)
+          .map(() => (
+            <div class={metricCard}>
+              <div class="space-y-3">
                 <Skeleton variant="text" width="100px" height="12px" />
                 <Skeleton variant="text" width="100%" height="24px" />
                 <Skeleton variant="text" width="80%" height="24px" />
               </div>
-            ))}
-        </div>
+            </div>
+          ))}
+      </div>
 
-        {/* Allocation Skeleton */}
-        <div class="space-y-4 pt-6 border-t border-base-200">
+      {/* Allocation Card Skeleton */}
+      <div class={allocationCard}>
+        <div class="space-y-4">
           <Skeleton variant="text" width="140px" height="16px" />
           <Skeleton variant="rectangular" width="100%" height="20px" className="rounded-full" />
           <div class="grid grid-cols-2 gap-2">
@@ -147,203 +149,189 @@ const cardClasses = [
           </div>
         </div>
       </div>
-    </section>
+    </div>
   ) : (
-    <section
-      class={cardClasses}
+    <div
+      class={wrapperClasses}
       aria-label="Portfolio overview summary"
       data-testid="portfolio-total"
     >
-      {/* 3-Column Metrics: Assets | Debt | Net Worth */}
-      <div class="p-6 lg:px-10 lg:py-8">
-        <div class={`grid grid-cols-1 ${gridCols} gap-4`}>
-          {/* Total Assets */}
-          <div
-            class="border-l-2 border-success rounded-xl bg-base-200/30 px-4 py-4"
-            data-testid="portfolio-total-assets"
-          >
+      {/* Metric Cards Grid */}
+      <div class={`grid grid-cols-1 ${gridCols} gap-4`}>
+        {/* Total Assets */}
+        <div
+          class={`${metricCard} border-l-3 border-l-success`}
+          data-testid="portfolio-total-assets"
+        >
+          <div class="flex items-center gap-2 mb-3">
+            <Wallet size={16} class="stroke-current text-success" aria-hidden="true" />
+            <span class="text-xs font-semibold uppercase tracking-widest text-base-content/50">
+              Total Assets
+            </span>
+          </div>
+          <div class="space-y-1.5">
+            {totalIdr > 0 && (
+              <div class="flex items-center gap-2">
+                <span class={`${badge} bg-success/10 text-success`}>IDR</span>
+                <p class="text-lg font-bold text-success tracking-tight leading-none truncate">
+                  {formatCurrency(totalIdr, 'IDR')}
+                </p>
+              </div>
+            )}
+            {totalUsd > 0 && (
+              <div class="flex items-center gap-2">
+                <span class={`${badge} bg-info/10 text-info`}>USD</span>
+                <p class="text-lg font-bold text-info tracking-tight leading-none truncate">
+                  {formatCurrency(totalUsd, 'USD')}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Total Debt */}
+        {hasDebt && (
+          <div class={`${metricCard} border-l-3 border-l-error`} data-testid="portfolio-total-debt">
             <div class="flex items-center gap-2 mb-3">
-              <Wallet size={16} class="stroke-current text-success" aria-hidden="true" />
+              <CreditCard size={16} class="stroke-current text-error" aria-hidden="true" />
               <span class="text-xs font-semibold uppercase tracking-widest text-base-content/50">
-                Total Assets
+                Total Debt
               </span>
             </div>
             <div class="space-y-1.5">
-              {totalIdr > 0 && (
+              {debtIdr > 0 && (
                 <div class="flex items-center gap-2">
                   <span class={`${badge} bg-success/10 text-success`}>IDR</span>
-                  <p class="text-lg font-bold font-mono text-success tracking-tight leading-none truncate">
-                    {formatCurrency(totalIdr, 'IDR')}
+                  <p class="text-lg font-bold text-error tracking-tight leading-none truncate">
+                    {formatCurrency(debtIdr, 'IDR')}
                   </p>
                 </div>
               )}
-              {totalUsd > 0 && (
+              {debtUsd > 0 && (
                 <div class="flex items-center gap-2">
                   <span class={`${badge} bg-info/10 text-info`}>USD</span>
-                  <p class="text-lg font-bold font-mono text-info tracking-tight leading-none truncate">
-                    {formatCurrency(totalUsd, 'USD')}
+                  <p class="text-lg font-bold text-error tracking-tight leading-none truncate">
+                    {formatCurrency(debtUsd, 'USD')}
                   </p>
                 </div>
               )}
             </div>
           </div>
+        )}
 
-          {/* Total Debt */}
-          {hasDebt && (
+        {/* Net Worth */}
+        <div class={`${metricCard} border-l-3 border-l-accent`} data-testid="portfolio-net-worth">
+          <div class="flex items-center gap-2 mb-3">
+            <TrendingUp size={16} class="stroke-current text-accent" aria-hidden="true" />
+            <span class="text-xs font-semibold uppercase tracking-widest text-base-content/50">
+              Net Worth
+            </span>
             <div
-              class="border-l-2 border-error rounded-xl bg-base-200/30 px-4 py-4"
-              data-testid="portfolio-total-debt"
+              class="tooltip tooltip-bottom"
+              data-tip="Total assets minus total debt. Positive means assets exceed liabilities."
             >
-              <div class="flex items-center gap-2 mb-3">
-                <CreditCard size={16} class="stroke-current text-error" aria-hidden="true" />
-                <span class="text-xs font-semibold uppercase tracking-widest text-base-content/50">
-                  Total Debt
-                </span>
-              </div>
-              <div class="space-y-1.5">
-                {debtIdr > 0 && (
-                  <div class="flex items-center gap-2">
-                    <span class={`${badge} bg-success/10 text-success`}>IDR</span>
-                    <p class="text-lg font-bold font-mono text-error tracking-tight leading-none truncate">
-                      {formatCurrency(debtIdr, 'IDR')}
-                    </p>
-                  </div>
-                )}
-                {debtUsd > 0 && (
-                  <div class="flex items-center gap-2">
-                    <span class={`${badge} bg-info/10 text-info`}>USD</span>
-                    <p class="text-lg font-bold font-mono text-error tracking-tight leading-none truncate">
-                      {formatCurrency(debtUsd, 'USD')}
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Net Worth */}
-          <div
-            class="border-l-2 border-accent rounded-xl bg-base-200/30 px-4 py-4"
-            data-testid="portfolio-net-worth"
-          >
-            <div class="flex items-center gap-2 mb-3">
-              <TrendingUp size={16} class="stroke-current text-accent" aria-hidden="true" />
-              <span class="text-xs font-semibold uppercase tracking-widest text-base-content/50">
-                Net Worth
-              </span>
-              <div
-                class="tooltip tooltip-bottom"
-                data-tip="Total assets minus total debt. Positive means assets exceed liabilities."
+              <button
+                type="button"
+                class="inline-flex items-center justify-center rounded-full text-base-content/30 hover:text-base-content/60 transition-colors"
+                aria-label="What is net worth? Total assets minus total debt."
               >
-                <button
-                  type="button"
-                  class="inline-flex items-center justify-center rounded-full text-base-content/30 hover:text-base-content/60 transition-colors"
-                  aria-label="What is net worth? Total assets minus total debt."
+                <Info size={14} class="stroke-current" aria-hidden="true" />
+              </button>
+            </div>
+          </div>
+          <div class="space-y-1.5">
+            {hasIdr && (
+              <div class="flex items-center gap-2">
+                <span class={`${badge} bg-success/10 text-success`}>IDR</span>
+                <p
+                  class={`text-lg font-bold tracking-tight leading-none truncate ${netWorthIdr >= 0 ? 'text-accent' : 'text-error'}`}
                 >
-                  <Info size={14} class="stroke-current" aria-hidden="true" />
-                </button>
+                  {formatCurrency(netWorthIdr, 'IDR')}
+                </p>
               </div>
-            </div>
-            <div class="space-y-1.5">
-              {hasIdr && (
-                <div class="flex items-center gap-2">
-                  <span class={`${badge} bg-success/10 text-success`}>IDR</span>
-                  <p
-                    class={`text-lg font-bold font-mono tracking-tight leading-none truncate ${netWorthIdr >= 0 ? 'text-accent' : 'text-error'}`}
-                  >
-                    {formatCurrency(netWorthIdr, 'IDR')}
-                  </p>
-                </div>
-              )}
-              {hasUsd && (
-                <div class="flex items-center gap-2">
-                  <span class={`${badge} bg-info/10 text-info`}>USD</span>
-                  <p
-                    class={`text-lg font-bold font-mono tracking-tight leading-none truncate ${netWorthUsd >= 0 ? 'text-accent' : 'text-error'}`}
-                  >
-                    {formatCurrency(netWorthUsd, 'USD')}
-                  </p>
-                </div>
-              )}
-            </div>
+            )}
+            {hasUsd && (
+              <div class="flex items-center gap-2">
+                <span class={`${badge} bg-info/10 text-info`}>USD</span>
+                <p
+                  class={`text-lg font-bold tracking-tight leading-none truncate ${netWorthUsd >= 0 ? 'text-accent' : 'text-error'}`}
+                >
+                  {formatCurrency(netWorthUsd, 'USD')}
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
-      <div class="px-6 lg:px-10 pb-6 lg:pb-8 space-y-8">
-        {/* Latest Update Info */}
-        {formattedLatestUpdate && (
-          <div class="flex items-center gap-2 text-xs text-base-content/50 font-medium">
-            <Clock size={12} class="stroke-current shrink-0" aria-hidden="true" />
-            <span>
-              {isHistoricalView ? 'Latest update in this period' : 'Latest update'}:{' '}
-              {formattedLatestUpdate}
-            </span>
-          </div>
-        )}
-
-        {/* Section C — Asset Allocation (bar + legend) */}
-        {displayDistribution.length > 0 && (
-          <div class="space-y-4 pt-6 border-t border-base-200">
-            <h3 class="font-bold text-sm uppercase tracking-wider text-base-content">
-              Asset Allocation
-            </h3>
-
-            {/* Allocation Bar */}
-            <AllocationBar
-              segments={displayDistribution.map((item) => ({
-                label: item.type,
-                percentage: item.percentage,
-                color: item.color,
-              }))}
-              height="md"
-              ariaLabel={`Asset allocation: ${allocationDescription}`}
-            />
-
-            {/* Legend */}
-            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-2">
-              {displayDistribution.map((item) => {
-                const safeColor = sanitizeColor(item.color);
-                return (
-                  <div class="flex items-center gap-2 py-0.5">
-                    <div
-                      class="w-2.5 h-2.5 rounded-full shrink-0"
-                      style={`background-color: ${safeColor};`}
-                      aria-hidden="true"
-                    />
-                    <span class="text-xs text-base-content/60 font-medium truncate">
-                      {item.type}
-                    </span>
-                    <span class="text-xs font-bold text-base-content tabular-nums ml-auto shrink-0">
-                      {item.percentage}%
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Screen Reader Data Table */}
-      {displayDistribution.length > 0 && (
-        <table class="sr-only" aria-label="Asset allocation data">
-          <thead>
-            <tr>
-              <th>Type</th>
-              <th>Percentage</th>
-            </tr>
-          </thead>
-          <tbody>
-            {displayDistribution.map((item) => (
-              <tr>
-                <td>{item.type}</td>
-                <td>{item.percentage}%</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      {/* Latest Update — floating metadata between sections */}
+      {formattedLatestUpdate && (
+        <div class="flex items-center gap-2 text-xs text-base-content/40 font-medium px-1">
+          <Clock size={12} class="stroke-current shrink-0" aria-hidden="true" />
+          <span>
+            {isHistoricalView ? 'Latest update in this period' : 'Latest update'}:{' '}
+            {formattedLatestUpdate}
+          </span>
+        </div>
       )}
-    </section>
+
+      {/* Asset Allocation Card */}
+      {displayDistribution.length > 0 && (
+        <div class={allocationCard}>
+          <h3 class="font-bold text-sm uppercase tracking-wider text-base-content mb-4">
+            Asset Allocation
+          </h3>
+
+          {/* Allocation Bar */}
+          <AllocationBar
+            segments={displayDistribution.map((item) => ({
+              label: item.type,
+              percentage: item.percentage,
+              color: item.color,
+            }))}
+            height="md"
+            ariaLabel={`Asset allocation: ${allocationDescription}`}
+          />
+
+          {/* Legend */}
+          <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-2 mt-4">
+            {displayDistribution.map((item) => {
+              const safeColor = sanitizeColor(item.color);
+              return (
+                <div class="flex items-center gap-2 py-0.5">
+                  <div
+                    class="w-2.5 h-2.5 rounded-full shrink-0"
+                    style={`background-color: ${safeColor};`}
+                    aria-hidden="true"
+                  />
+                  <span class="text-xs text-base-content/60 font-medium truncate">{item.type}</span>
+                  <span class="text-xs font-bold text-base-content tabular-nums ml-auto shrink-0">
+                    {item.percentage}%
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Screen Reader Data Table */}
+          <table class="sr-only" aria-label="Asset allocation data">
+            <thead>
+              <tr>
+                <th>Type</th>
+                <th>Percentage</th>
+              </tr>
+            </thead>
+            <tbody>
+              {displayDistribution.map((item) => (
+                <tr>
+                  <td>{item.type}</td>
+                  <td>{item.percentage}%</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
   )
 }
