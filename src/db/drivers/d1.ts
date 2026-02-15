@@ -69,11 +69,12 @@ export function createD1Driver(d1Binding: D1Binding): DatabaseDriver & { _raw: D
 
   const driver: DatabaseDriver & { _raw: D1Binding } = {
     exec(sql: string): void {
-      d1Binding.exec(sql).catch((err) => {
-        if (sql.trim().toUpperCase().startsWith('PRAGMA')) {
-          return; // Some PRAGMAs not supported in D1
+      d1Binding.exec(sql).catch((err: unknown) => {
+        // D1 exec is async but interface is sync - log errors instead of throwing
+        // PRAGMA statements may not be supported in D1
+        if (!sql.trim().toUpperCase().startsWith('PRAGMA')) {
+          console.error('D1 exec error:', sql, err);
         }
-        throw err;
       });
     },
 

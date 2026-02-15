@@ -8,7 +8,7 @@ describe('createD1Driver', () => {
 
   it('should return driver with exec method', () => {
     const mockD1 = {
-      exec: () => {},
+      exec: () => Promise.resolve({ count: 0, duration: 0 }),
       prepare: () => ({
         bind: () => ({
           all: () => ({ results: [] }),

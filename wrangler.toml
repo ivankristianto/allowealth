@@ -43,7 +43,8 @@ EMAIL_SENDER_NAME = "Allowealth"
 EMAIL_SENDER_ADDRESS = "noreply@allowealth.io"
 
 # Note: The _worker.js bundling is handled by @astrojs/cloudflare adapter
-# Workers only support PostgreSQL - SQLite (bun:sqlite) is for local development only
+# Workers support PostgreSQL (via Hyperdrive) or D1 (SQLite-compatible)
+# bun:sqlite is for local development only - see wrangler.d1.toml for D1 deployment
 
 # Secrets (set via CLI, not committed):
 # wrangler secret put DATABASE_URL

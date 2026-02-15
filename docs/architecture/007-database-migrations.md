@@ -225,4 +225,6 @@ wrangler d1 execute allowealth-db --local --file=./drizzle/sqlite/0000_xxx.sql
 - D1 is SQLite-compatible, so existing SQLite migrations work without modification
 - Use `--local` flag for local development with D1
 - Use `--remote` flag for production D1 database
-- Drizzle's migration tracking table is created automatically
+- When using `wrangler d1 execute`, Wrangler may use its own `d1_migrations` table for tracking, or no automatic tracking at all
+- For Drizzle's `__drizzle_migrations` tracking table, use Drizzle's `migrate()` API or `drizzle-kit migrate` instead of raw `wrangler d1 execute`
+- The batch migration loop shown above does not have built-in idempotency safeguards - track applied migrations manually or use Drizzle's migrator

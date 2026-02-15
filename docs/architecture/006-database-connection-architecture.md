@@ -187,7 +187,7 @@ database_id = "<database-id>"
 **How D1 is detected at runtime:**
 
 1. `runtimeEnv` middleware reads `runtime.env.DB` binding
-2. If present, sets `D1_ENABLED=true` and `D1_BINDING=<binding>`
+2. If present, sets `D1_ENABLED=true`
 3. `getDatabaseConfig()` reads the flag and sets `isD1: true`
 4. `createDatabase()` uses D1 driver with SQLite schema
 
