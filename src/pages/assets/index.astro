@@ -95,11 +95,11 @@ currentMonthUrl.searchParams.delete('year');
 currentMonthUrl.searchParams.delete('month');
 const currentMonthHref = `${currentMonthUrl.pathname}${currentMonthUrl.search}`;
 
-// Generate monthly period options (oldest -> latest, capped by shared selector window)
+// Generate monthly period options (latest -> oldest, capped by shared selector window)
 const monthlyPeriodOptions: PeriodOption[] = Array.from(
   { length: PERIOD_SELECTOR_MONTH_LIMIT },
   (_, i) => {
-    const monthsBack = PERIOD_SELECTOR_MONTH_LIMIT - 1 - i;
+    const monthsBack = i;
     const date = new Date(now.getFullYear(), now.getMonth() - monthsBack, 1);
     const year = date.getFullYear();
     const month = date.getMonth() + 1;
@@ -117,7 +117,7 @@ if (!monthlyPeriodOptions.some((period) => period.value === selectedPeriod)) {
     value: selectedPeriod,
     label: currentMonthDisplay,
   });
-  monthlyPeriodOptions.sort((a, b) => a.value.localeCompare(b.value));
+  monthlyPeriodOptions.sort((a, b) => b.value.localeCompare(a.value));
 }
 
 // Get closed account count for navigation link
@@ -227,6 +227,7 @@ const sortedGroups = CLASS_ORDER.filter((cls) => assetsByClass[cls].length > 0).
       ariaLabel="Select asset month"
       inputName="asset-period"
       className="shrink-0"
+      newestFirst
     />
 
     {

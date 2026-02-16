@@ -75,7 +75,7 @@ const monthlyPeriods = Array.from({ length: 12 }, (_, i) => {
 
 // Generate yearly periods (last 3 years + current year)
 const yearlyPeriods = Array.from({ length: 4 }, (_, i) => {
-  const year = currentYear - (3 - i);
+  const year = currentYear - i;
   return {
     key: year.toString(),
     label: year.toString(),
@@ -96,17 +96,11 @@ if (urlPeriod) {
     defaultPeriod = urlPeriod;
   } else {
     // Format mismatch - fall back to default for current range
-    defaultPeriod =
-      defaultRange === 'monthly'
-        ? monthlyPeriods[0].key
-        : yearlyPeriods[yearlyPeriods.length - 1].key;
+    defaultPeriod = defaultRange === 'monthly' ? monthlyPeriods[0].key : yearlyPeriods[0].key;
   }
 } else {
   // No URL period - use default for current range
-  defaultPeriod =
-    defaultRange === 'monthly'
-      ? monthlyPeriods[0].key
-      : yearlyPeriods[yearlyPeriods.length - 1].key;
+  defaultPeriod = defaultRange === 'monthly' ? monthlyPeriods[0].key : yearlyPeriods[0].key;
 }
 
 // Fetch report data from backend service

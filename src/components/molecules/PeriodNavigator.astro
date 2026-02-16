@@ -109,6 +109,7 @@ const dropdownWidthClass = compactMobile ? 'w-56 sm:w-60' : 'w-56';
           tabindex={0}
           class={triggerClass}
           aria-label={ariaLabel}
+          aria-expanded="false"
           data-period-trigger
         >
           <Calendar
@@ -127,7 +128,8 @@ const dropdownWidthClass = compactMobile ? 'w-56 sm:w-60' : 'w-56';
         </button>
         <ul
           tabindex={0}
-          class={`dropdown-content z-50 menu p-2 shadow-lg bg-base-100 rounded-2xl border border-base-300 mt-2 max-h-64 overflow-x-hidden overflow-y-auto ${dropdownWidthClass}`}
+          data-period-options-list
+          class={`dropdown-content z-50 menu flex-nowrap p-2 shadow-lg bg-base-100 rounded-2xl border border-base-300 mt-2 max-h-64 overflow-x-hidden overflow-y-auto overscroll-contain [touch-action:pan-y] [-webkit-overflow-scrolling:touch] ${dropdownWidthClass}`}
         >
           {options.map((option) => (
             <li class="w-full">

@@ -17,8 +17,8 @@ describe('budget-period utils', () => {
       });
 
       expect(options).toHaveLength(12);
-      expect(options.at(0)?.value).toBe('2025-03');
-      expect(options.at(-1)?.value).toBe('2026-02');
+      expect(options.at(0)?.value).toBe('2026-02');
+      expect(options.at(-1)?.value).toBe('2025-03');
     });
 
     it('keeps current month as latest when selected month is in the past', () => {
@@ -31,7 +31,7 @@ describe('budget-period utils', () => {
         lookbackMonths: 6,
       });
 
-      expect(options.at(-1)?.value).toBe('2026-02');
+      expect(options.at(0)?.value).toBe('2026-02');
       expect(options.some((option) => option.value === '2025-10')).toBe(true);
     });
 
@@ -45,7 +45,7 @@ describe('budget-period utils', () => {
         lookbackMonths: 3,
       });
 
-      expect(options.at(-1)?.value).toBe('2026-03');
+      expect(options.at(0)?.value).toBe('2026-03');
     });
 
     it('keeps selected month as latest when selected month is after current month', () => {
@@ -58,7 +58,7 @@ describe('budget-period utils', () => {
         lookbackMonths: 3,
       });
 
-      expect(options.at(-1)?.value).toBe('2026-05');
+      expect(options.at(0)?.value).toBe('2026-05');
       expect(options.some((option) => option.value === '2026-05')).toBe(true);
     });
   });

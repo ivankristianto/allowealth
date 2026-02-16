@@ -53,6 +53,9 @@ describe('review feedback regressions', () => {
     const content = read('src/components/molecules/PeriodNavigator.client.ts');
     expect(content).toContain('if (prevBtn.disabled)');
     expect(content).toContain('if (nextBtn.disabled)');
+    expect(content).toContain('data-period-options-list');
+    expect(content).toContain('suppressTouchClick');
+    expect(content).toContain('touchmove');
   });
 
   it('transactions page comment should reference PeriodNavigator', () => {

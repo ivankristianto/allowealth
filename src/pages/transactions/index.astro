@@ -116,7 +116,7 @@ const availableMonths = availableMonthsWithLabels.map((m) => m.key);
 const compareMonthKeys = (monthA: string, monthB: string) => {
   const [aMonth, aYear] = monthA.split('-').map(Number);
   const [bMonth, bYear] = monthB.split('-').map(Number);
-  return aYear !== bYear ? aYear - bYear : aMonth - bMonth;
+  return aYear !== bYear ? bYear - aYear : bMonth - aMonth;
 };
 
 // Current month key - always use today's month as the default
@@ -232,6 +232,7 @@ perf?.recordMilestone('preRender.elapsed');
     ariaLabel="Select month"
     inputName="month"
     className="mx-auto lg:mx-0"
+    newestFirst
   />
   <div
     id="transactions-page"
