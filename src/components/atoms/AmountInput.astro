@@ -1,0 +1,59 @@
+---
+import type { Currency } from '@/lib/constants/currency';
+
+export interface Props {
+  id: string;
+  name: string;
+  value?: string | number;
+  currency?: Currency;
+  required?: boolean;
+  disabled?: boolean;
+  placeholder?: string;
+  className?: string;
+  inputMode?: 'decimal' | 'numeric';
+  ariaLabel?: string;
+  ariaInvalid?: boolean;
+  ariaRequired?: boolean;
+  ariaDescribedBy?: string;
+  autocomplete?: string;
+  'data-testid'?: string;
+}
+
+const {
+  id,
+  name,
+  value = '',
+  currency = 'IDR',
+  required = false,
+  disabled = false,
+  placeholder = '0',
+  className = '',
+  inputMode = 'decimal',
+  ariaLabel = '',
+  ariaInvalid = false,
+  ariaRequired = required,
+  ariaDescribedBy = '',
+  autocomplete = 'off',
+  'data-testid': dataTestId = '',
+} = Astro.props;
+---
+
+<input
+  id={id}
+  name={name}
+  type="text"
+  inputmode={inputMode}
+  value={value}
+  required={required}
+  disabled={disabled}
+  placeholder={placeholder}
+  autocomplete={autocomplete}
+  class:list={['input w-full', className]}
+  aria-label={ariaLabel || undefined}
+  aria-invalid={ariaInvalid ? 'true' : 'false'}
+  aria-required={ariaRequired ? 'true' : undefined}
+  aria-describedby={ariaDescribedBy || undefined}
+  data-testid={dataTestId || undefined}
+  data-amount-input
+  data-amount-currency={currency}
+/>

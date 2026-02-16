@@ -11,6 +11,7 @@
  */
 
 import Modal from '../molecules/Modal.astro';
+import AmountInput from '../atoms/AmountInput.astro';
 import { RefreshCw } from '@lucide/astro';
 
 export interface Props {
@@ -79,15 +80,13 @@ const { id } = Astro.props;
           >
             New Balance
           </label>
-          <input
+          <AmountInput
             id={`${id}-balance`}
             name="balance"
-            type="number"
+            currency="IDR"
             required
-            min="0"
-            step="0.01"
             placeholder="0"
-            class="input input-lg w-full bg-base-200 border border-base-300 rounded-2xl font-bold text-base-content focus:ring-2 focus:ring-accent focus:outline-none focus:border-accent placeholder:text-base-content/30 placeholder:font-normal"
+            className="input-lg bg-base-200 border border-base-300 rounded-2xl font-bold text-base-content focus:ring-2 focus:ring-accent focus:outline-none focus:border-accent placeholder:text-base-content/30 placeholder:font-normal"
             data-testid="update-value-balance-input"
           />
         </div>
@@ -144,6 +143,8 @@ const { id } = Astro.props;
 <script>
   import { addToast } from '@lib/stores/toastStore';
   import { csrfFetch } from '@/lib/csrf-client';
+  import { attachAmountFormatter, stripAmountFormatting } from '@/lib/formatting/amount-input';
+  import type { Currency } from '@/lib/constants/currency';
 
   const initializedModals = new WeakSet<Element>();
 
@@ -170,6 +171,11 @@ const { id } = Astro.props;
 
       if (!modal || !form) return;
 
+      let selectedCurrency: Currency = 'IDR';
+      const balanceFormatter = balanceInput
+        ? attachAmountFormatter(balanceInput, selectedCurrency)
+        : null;
+
       // Compute today in local timezone (not UTC) to avoid date mismatch
       const now = new Date();
       const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
@@ -192,18 +198,21 @@ const { id } = Astro.props;
       const handleOpen = ((
         e: CustomEvent<{ id: string; name: string; currency: string; balance: number }>
       ) => {
+        selectedCurrency = e.detail.currency === 'USD' ? 'USD' : 'IDR';
+        balanceFormatter?.updateCurrency(selectedCurrency);
+
         if (assetIdInput) assetIdInput.value = e.detail.id;
         if (subtitleEl) subtitleEl.textContent = `Record a new balance for ${e.detail.name}.`;
         if (currencyBadge) {
-          currencyBadge.textContent = e.detail.currency;
+          currencyBadge.textContent = selectedCurrency;
           currencyBadge.classList.remove('hidden');
           // Currency colors: IDR=success, USD=info (only two currencies per schema enum)
           currencyBadge.className =
             'px-2 py-0.5 rounded-md text-xs font-bold tracking-wider uppercase ' +
-            (e.detail.currency === 'IDR' ? 'bg-success/10 text-success' : 'bg-info/10 text-info');
+            (selectedCurrency === 'IDR' ? 'bg-success/10 text-success' : 'bg-info/10 text-info');
         }
         if (balanceLabel) {
-          balanceLabel.textContent = `New Balance (${e.detail.currency})`;
+          balanceLabel.textContent = `New Balance (${selectedCurrency})`;
         }
         if (dateInput) dateInput.value = today;
         if (balanceInput) balanceInput.value = '';
@@ -236,7 +245,8 @@ const { id } = Astro.props;
         const formData = new FormData(form);
         const assetId = formData.get('asset_id') as string;
         const date = formData.get('date') as string;
-        const balance = formData.get('balance') as string;
+        const balanceRaw = formData.get('balance') as string;
+        const balance = stripAmountFormatting(balanceRaw, selectedCurrency);
         const notes = formData.get('notes') as string;
 
         if (errorDiv) {
@@ -253,7 +263,7 @@ const { id } = Astro.props;
         }
 
         const balanceNum = parseFloat(balance);
-        if (isNaN(balanceNum) || balanceNum < 0 || !isFinite(balanceNum) || balance.includes(',')) {
+        if (isNaN(balanceNum) || balanceNum < 0 || !isFinite(balanceNum)) {
           if (errorDiv) {
             errorDiv.textContent = 'Please enter a valid positive number for balance.';
             errorDiv.classList.remove('hidden');

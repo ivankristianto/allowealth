@@ -1,6 +1,6 @@
 ---
 /**
- * NetWorthWidget Component
+ * AssetsWidget Component
  *
  * Displays total assets and total debt per currency (IDR, USD).
  * Shows only currencies with balance > 0. Debt section only shown if debt exists.
@@ -13,11 +13,12 @@
  * @param {string} className - Additional CSS classes
  */
 
-import { Wallet, CreditCard } from '@lucide/astro';
+import { Landmark, Wallet, CreditCard } from '@lucide/astro';
 import { formatCurrency } from '@/lib/formatting';
 import EmptyState from '@/components/atoms/EmptyState.astro';
 import Card from '@/components/atoms/Card.astro';
 import Skeleton from '@/components/atoms/Skeleton.astro';
+import StatLabel from '@/components/atoms/StatLabel.astro';
 
 export interface Props {
   assetIdr: number;
@@ -59,8 +60,14 @@ const cardClasses = [
   role="region"
   aria-label={loading ? 'Loading asset summary...' : 'Asset summary'}
   aria-busy={loading ? 'true' : undefined}
-  data-testid="dashboard-net-worth"
+  data-testid="dashboard-assets-widget"
 >
+  {/* Widget Title */}
+  <div class="flex items-center gap-2 mb-5">
+    <Landmark size={16} class="stroke-current text-accent" aria-hidden="true" />
+    <StatLabel size="md" color="neutral">Assets Overview</StatLabel>
+  </div>
+
   {
     loading ? (
       <div class="space-y-4" aria-hidden="true">

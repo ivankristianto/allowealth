@@ -105,6 +105,85 @@ export function formatAmountForDisplay(value: string, currency: Currency = 'IDR'
   return formatter.format(num);
 }
 
+/**
+ * Format a value while user is typing.
+ *
+ * Preserves an in-progress decimal separator (e.g. "1.234," or "1,234.")
+ * and applies grouping separators to the integer part.
+ */
+export function formatAmountForTyping(value: string, currency: Currency = 'IDR'): string {
+  if (!value || value.trim() === '') return '';
+
+  const meta = CURRENCY_META[currency];
+
+  // Keep only number-relevant characters.
+  let cleaned = value.replace(/[^\d.,\-]/g, '');
+  if (!cleaned) return '';
+
+  const isNegative = cleaned.startsWith('-');
+  cleaned = cleaned.replace(/-/g, '');
+
+  if (!cleaned) return '';
+
+  let decimalIndex = -1;
+
+  if (meta.decimalSeparator === '.') {
+    decimalIndex = cleaned.lastIndexOf('.');
+  } else {
+    const commaIndex = cleaned.lastIndexOf(',');
+    const hasComma = commaIndex !== -1;
+    const hasDots = cleaned.includes('.');
+    const commaCount = (cleaned.match(/,/g) || []).length;
+
+    if (hasComma) {
+      const digitsAfterComma = cleaned.length - commaIndex - 1;
+      const treatCommaAsThousands =
+        !hasDots && (commaCount > 1 || digitsAfterComma > meta.decimals);
+
+      if (!treatCommaAsThousands) {
+        decimalIndex = commaIndex;
+      }
+    } else {
+      // Accept dot-decimal input on non-ID keyboard and normalize to locale separator.
+      const dotCount = (cleaned.match(/\./g) || []).length;
+      const dotIndex = cleaned.lastIndexOf('.');
+      const digitsAfterDot = dotIndex !== -1 ? cleaned.length - dotIndex - 1 : 0;
+      if (dotCount === 1 && digitsAfterDot <= meta.decimals) {
+        decimalIndex = dotIndex;
+      }
+    }
+  }
+
+  const integerRaw =
+    decimalIndex >= 0
+      ? cleaned.slice(0, decimalIndex).replace(/[^\d]/g, '')
+      : cleaned.replace(/[^\d]/g, '');
+  const fractionRaw =
+    decimalIndex >= 0
+      ? cleaned
+          .slice(decimalIndex + 1)
+          .replace(/[^\d]/g, '')
+          .slice(0, meta.decimals)
+      : '';
+
+  const groupedInteger = integerRaw
+    .replace(/^0+(?=\d)/, '')
+    .replace(/\B(?=(\d{3})+(?!\d))/g, meta.thousandsSeparator);
+
+  const safeInteger = groupedInteger || (decimalIndex >= 0 ? '0' : '');
+  let result = safeInteger;
+
+  if (decimalIndex >= 0) {
+    result += `${meta.decimalSeparator}${fractionRaw}`;
+  }
+
+  if (isNegative && result) {
+    result = `-${result}`;
+  }
+
+  return result;
+}
+
 /** Handle returned by attachAmountFormatter for cleanup and currency updates. */
 export interface AmountFormatterHandle {
   /** Remove focus/blur event listeners from the input. */
@@ -126,10 +205,15 @@ export function attachAmountFormatter(
 ): AmountFormatterHandle {
   let currentCurrency = currency;
 
-  function handleFocus() {
-    const raw = stripAmountFormatting(input.value, currentCurrency);
-    if (raw) {
-      input.value = raw;
+  function handleInput() {
+    const before = input.value;
+    const caret = input.selectionStart ?? before.length;
+    const formatted = formatAmountForTyping(before, currentCurrency);
+
+    if (formatted !== before) {
+      input.value = formatted;
+      const nextCaret = Math.max(0, caret + (formatted.length - before.length));
+      input.setSelectionRange(nextCaret, nextCaret);
     }
   }
 
@@ -140,24 +224,26 @@ export function attachAmountFormatter(
     }
   }
 
-  input.addEventListener('focus', handleFocus);
+  input.addEventListener('input', handleInput);
   input.addEventListener('blur', handleBlur);
 
   // Format the initial value if present
   if (input.value) {
-    input.value = formatAmountForDisplay(input.value, currentCurrency);
+    input.value = formatAmountForTyping(input.value, currentCurrency);
   }
 
   return {
     cleanup: () => {
-      input.removeEventListener('focus', handleFocus);
+      input.removeEventListener('input', handleInput);
       input.removeEventListener('blur', handleBlur);
     },
     updateCurrency: (newCurrency: Currency) => {
       currentCurrency = newCurrency;
-      // Re-format with new currency if not focused
-      if (document.activeElement !== input && input.value) {
-        input.value = formatAmountForDisplay(input.value, currentCurrency);
+      if (input.value) {
+        input.value =
+          document.activeElement === input
+            ? formatAmountForTyping(input.value, currentCurrency)
+            : formatAmountForDisplay(input.value, currentCurrency);
       }
     },
   };

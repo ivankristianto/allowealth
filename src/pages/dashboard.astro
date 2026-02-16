@@ -21,7 +21,7 @@ import { dashboardService } from '@/services';
 import type { DashboardData } from '@/services/dashboard.service';
 import SpendingCard from '@/components/organisms/SpendingCard.astro';
 import SpendingChart from '@/components/organisms/SpendingChart.astro';
-import NetWorthWidget from '@/components/organisms/NetWorthWidget.astro';
+import AssetsWidget from '@/components/organisms/AssetsWidget.astro';
 import CashFlowWidget from '@/components/organisms/CashFlowWidget.astro';
 import RecentTransactionsList from '@/components/molecules/RecentTransactionsList.astro';
 import DashboardError from '@/components/molecules/DashboardError.astro';
@@ -193,7 +193,7 @@ const spendingCategories =
             </div>
 
             <div class="space-y-6 @sm:space-y-8">
-              <NetWorthWidget
+              <AssetsWidget
                 assetIdr={safeParseFloat(dashboardData?.totalAssets.idr)}
                 assetUsd={safeParseFloat(dashboardData?.totalAssets.usd)}
                 debtIdr={safeParseFloat(dashboardData?.totalDebt?.idr)}

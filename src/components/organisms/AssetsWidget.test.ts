@@ -1,13 +1,13 @@
 /**
- * NetWorthWidget Component Tests
+ * AssetsWidget Component Tests
  * ===============================
- * Unit tests for NetWorthWidget utility logic
+ * Unit tests for AssetsWidget utility logic
  */
 
 import { describe, it, expect } from 'bun:test';
 import { formatCurrency } from '@/lib/formatting';
 
-describe('NetWorthWidget - empty state detection', () => {
+describe('AssetsWidget - empty state detection', () => {
   const isEmpty = (props: {
     assetIdr: number;
     assetUsd: number;
@@ -38,7 +38,7 @@ describe('NetWorthWidget - empty state detection', () => {
   });
 });
 
-describe('NetWorthWidget - hasDebt detection', () => {
+describe('AssetsWidget - hasDebt detection', () => {
   const hasDebt = (debtIdr: number, debtUsd: number): boolean => {
     return debtIdr > 0 || debtUsd > 0;
   };
@@ -60,7 +60,7 @@ describe('NetWorthWidget - hasDebt detection', () => {
   });
 });
 
-describe('NetWorthWidget - currency formatting', () => {
+describe('AssetsWidget - currency formatting', () => {
   it('should format IDR amounts correctly', () => {
     expect(formatCurrency(1956063000, 'IDR')).toBe('Rp1.956.063.000,00');
     expect(formatCurrency(50000, 'IDR')).toBe('Rp50.000,00');

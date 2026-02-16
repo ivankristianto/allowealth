@@ -18,6 +18,7 @@
  */
 
 import Button from '../atoms/Button.astro';
+import AmountInput from '../atoms/AmountInput.astro';
 import { CalendarDays } from '@lucide/astro';
 import { CURRENCY_META, DEFAULT_CURRENCY } from '@/lib/constants/currency';
 
@@ -147,25 +148,26 @@ const defaultDatePick =
   <!-- Amount Input (hero) -->
   <div class="form-control">
     <div class="relative">
-      <input
-        type="text"
+      <AmountInput
         id={`${formId}-amount`}
         name="amount"
         value={values.amount || ''}
+        currency={defaultCurrency}
         required
         placeholder="0"
-        class:list={[
+        className={[
           'input input-bordered w-full',
           'h-16 rounded-lg border border-base-300 bg-base-100',
           'text-3xl font-bold text-center tracking-tight',
           'placeholder:text-base-content/20',
           'focus:outline-none focus:border-accent focus-visible:ring-2 focus-visible:ring-accent/30',
           errors.amount && 'input-error',
-        ]}
-        inputmode="decimal"
-        aria-label="Amount"
-        aria-invalid={!!errors.amount}
-        aria-required="true"
+        ]
+          .filter(Boolean)
+          .join(' ')}
+        ariaLabel="Amount"
+        ariaInvalid={!!errors.amount}
+        ariaRequired={true}
         data-testid="transaction-amount-input"
       />
       <!-- Currency badge -->

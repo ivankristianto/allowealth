@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/html';
 import { formatCurrency } from '@/lib/formatting/currency-client';
 
 const meta: Meta = {
-  title: 'Organisms/NetWorthWidget',
+  title: 'Organisms/AssetsWidget',
   tags: ['autodocs'],
   argTypes: {
     assetIdr: { control: 'number', description: 'Total assets in IDR' },
@@ -18,7 +18,7 @@ export default meta;
 const badge =
   'inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold uppercase tracking-wider shrink-0';
 
-const createNetWorthWidget = (args: {
+const createAssetsWidget = (args: {
   assetIdr?: number;
   assetUsd?: number;
   debtIdr?: number;
@@ -133,7 +133,7 @@ export const Default: StoryObj = {
     debtUsd: 2500,
     loading: false,
   },
-  render: (args) => createNetWorthWidget(args),
+  render: (args) => createAssetsWidget(args),
 };
 
 export const AssetsOnly: StoryObj = {
@@ -144,7 +144,7 @@ export const AssetsOnly: StoryObj = {
     debtUsd: 0,
     loading: false,
   },
-  render: (args) => createNetWorthWidget(args),
+  render: (args) => createAssetsWidget(args),
 };
 
 export const WithDebt: StoryObj = {
@@ -155,7 +155,7 @@ export const WithDebt: StoryObj = {
     debtUsd: 5000,
     loading: false,
   },
-  render: (args) => createNetWorthWidget(args),
+  render: (args) => createAssetsWidget(args),
 };
 
 export const IDROnly: StoryObj = {
@@ -166,12 +166,12 @@ export const IDROnly: StoryObj = {
     debtUsd: 0,
     loading: false,
   },
-  render: (args) => createNetWorthWidget(args),
+  render: (args) => createAssetsWidget(args),
 };
 
 export const Loading: StoryObj = {
   args: { loading: true },
-  render: (args) => createNetWorthWidget(args),
+  render: (args) => createAssetsWidget(args),
 };
 
 export const Empty: StoryObj = {
@@ -182,5 +182,5 @@ export const Empty: StoryObj = {
     debtUsd: 0,
     loading: false,
   },
-  render: (args) => createNetWorthWidget(args),
+  render: (args) => createAssetsWidget(args),
 };
