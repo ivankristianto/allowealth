@@ -2,7 +2,7 @@
  * Asset utilities for portfolio calculation and visualization
  */
 
-import type { AssetOutput } from '@/lib/types/asset';
+import type { AssetOutput, AccountClass } from '@/lib/types/asset';
 
 /**
  * Predefined color palette for asset allocation visualization.
@@ -114,6 +114,9 @@ export function calculateAssetAllocation(assets: AssetOutput[]): AssetAllocation
     const balance = parseFloat(asset.balance || '0');
     if (isNaN(balance) || balance <= 0) continue;
 
+    // Exclude debt accounts from allocation chart
+    if (asset.account_class === 'debt') continue;
+
     const balanceInIdr = convertToIdr(balance, asset.currency);
 
     const groupKey = getAssetGroupKey(asset);
@@ -191,6 +194,24 @@ export function groupAssetsByType(assets: AssetOutput[]): Record<string, AssetOu
 }
 
 /**
+ * Group assets by account class (liquid, non_liquid, debt)
+ */
+export function groupAssetsByClass(assets: AssetOutput[]): Record<AccountClass, AssetOutput[]> {
+  const groups: Record<AccountClass, AssetOutput[]> = {
+    liquid: [],
+    non_liquid: [],
+    debt: [],
+  };
+
+  for (const asset of assets) {
+    const cls = asset.account_class || 'liquid';
+    groups[cls].push(asset);
+  }
+
+  return groups;
+}
+
+/**
  * Calculate total by currency for a group of assets
  */
 export interface AssetGroupTotals {
@@ -228,6 +249,9 @@ export function calculatePortfolioTotals(assets: AssetOutput[]): PortfolioTotals
   let totalUsd = 0;
 
   for (const asset of assets) {
+    // Exclude debt accounts from total assets
+    if (asset.account_class === 'debt') continue;
+
     const balance = parseFloat(asset.balance || '0');
     if (isNaN(balance) || balance <= 0) continue;
 
@@ -238,10 +262,35 @@ export function calculatePortfolioTotals(assets: AssetOutput[]): PortfolioTotals
     }
   }
 
-  return {
-    totalIdr,
-    totalUsd,
-  };
+  return { totalIdr, totalUsd };
+}
+
+/**
+ * Calculate total debt by currency (absolute values)
+ */
+export interface DebtTotals {
+  debtIdr: number;
+  debtUsd: number;
+}
+
+export function calculateDebtTotals(assets: AssetOutput[]): DebtTotals {
+  let debtIdr = 0;
+  let debtUsd = 0;
+
+  for (const asset of assets) {
+    if (asset.account_class !== 'debt') continue;
+
+    const balance = Math.abs(parseFloat(asset.balance || '0'));
+    if (isNaN(balance)) continue;
+
+    if (asset.currency === 'USD') {
+      debtUsd += balance;
+    } else {
+      debtIdr += balance;
+    }
+  }
+
+  return { debtIdr, debtUsd };
 }
 
 /**

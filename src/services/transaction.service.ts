@@ -1,4 +1,5 @@
 import { type IDatabase, getActiveSchema, runTransaction } from '@/db';
+import { decimalAdd } from '@/lib/utils/decimal';
 import { createLogger } from '@/lib/logger';
 
 const log = createLogger('transaction');
@@ -16,7 +17,7 @@ import { TransactionServiceError, ServiceErrorCode } from './service-errors';
 import { getCacheManager, CacheKeys, CacheTags, hashFilters } from '@/lib/cache';
 import { type PerfCollector, trackQuery } from '@/lib/perf';
 import { logAuditEvent } from '@/lib/audit-log';
-import type { TransactionHistoryResponse } from '@/lib/types/transaction';
+import type { Transaction, TransactionHistoryResponse } from '@/lib/types/transaction';
 
 export { type CreateTransactionInput, type UpdateTransactionInput };
 
@@ -1055,6 +1056,76 @@ export class TransactionService {
           .join(',')
       )
       .join('\n');
+  }
+
+  /**
+   * Get transactions for a specific asset, with monthly totals.
+   */
+  async getTransactionsByAsset(
+    assetId: string,
+    workspaceId: string,
+    year: number,
+    month: number
+  ): Promise<{
+    transactions: Transaction[];
+    summary: {
+      totalIncome: string;
+      totalExpenses: string;
+      totalTransfersIn: string;
+      totalTransfersOut: string;
+    };
+  }> {
+    const startOfMonth = new Date(year, month - 1, 1);
+    const endOfMonth = new Date(year, month, 0, 23, 59, 59, 999);
+
+    const txTable = this.schema.transactions;
+
+    // Get all transactions where this asset is source or destination
+    const transactions = await (this.db as any)
+      .select()
+      .from(txTable)
+      .where(
+        and(
+          eq(txTable.workspace_id, workspaceId),
+          sql`${txTable.deleted_at} IS NULL`,
+          gte(txTable.transaction_date, startOfMonth),
+          lte(txTable.transaction_date, endOfMonth),
+          sql`(${txTable.asset_id} = ${assetId} OR ${txTable.to_asset_id} = ${assetId})`
+        )
+      )
+      .orderBy(desc(txTable.transaction_date));
+
+    // Calculate monthly summaries using decimal arithmetic
+    let totalIncome = '0';
+    let totalExpenses = '0';
+    let totalTransfersIn = '0';
+    let totalTransfersOut = '0';
+
+    for (const tx of transactions) {
+      const amount = tx.amount || '0';
+      if (tx.type === 'income' && tx.asset_id === assetId) {
+        totalIncome = decimalAdd(totalIncome, amount);
+      } else if (tx.type === 'expense' && tx.asset_id === assetId) {
+        totalExpenses = decimalAdd(totalExpenses, amount);
+      } else if (tx.type === 'transfer') {
+        if (tx.asset_id === assetId) {
+          totalTransfersOut = decimalAdd(totalTransfersOut, amount);
+        }
+        if (tx.to_asset_id === assetId) {
+          totalTransfersIn = decimalAdd(totalTransfersIn, amount);
+        }
+      }
+    }
+
+    return {
+      transactions,
+      summary: {
+        totalIncome,
+        totalExpenses,
+        totalTransfersIn,
+        totalTransfersOut,
+      },
+    };
   }
 
   /**

@@ -17,6 +17,7 @@
  */
 
 import { AVAILABLE_CURRENCIES } from '@/lib/constants/currency';
+import AmountInput from './AmountInput.astro';
 
 export interface Props {
   name?: string;
@@ -72,26 +73,26 @@ const errorId = `${name}-error`;
   </select>
 
   <!-- Amount Input -->
-  <input
-    type="number"
+  <AmountInput
     id={inputId}
     name={amountName}
     value={value}
-    step="0.01"
-    min="0.01"
+    currency={currency}
     required={required}
     disabled={disabled}
     placeholder="0.00"
-    class:list={[
+    className={[
       'input input-bordered join-item w-full h-14 rounded-r-lg border border-base-300 bg-base-200 text-base font-bold',
       'focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2',
       error && 'input-error',
       disabled && 'opacity-50 cursor-not-allowed',
       className,
-    ]}
-    aria-invalid={error}
-    aria-describedby={error ? errorId : undefined}
-    aria-required={required}
+    ]
+      .filter(Boolean)
+      .join(' ')}
+    ariaInvalid={error}
+    ariaDescribedBy={error ? errorId : ''}
+    ariaRequired={required}
     data-testid={dataTestId}
   />
 </div>

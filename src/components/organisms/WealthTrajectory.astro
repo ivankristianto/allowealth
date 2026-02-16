@@ -17,6 +17,7 @@
 import Card from '@/components/atoms/Card.astro';
 import StatLabel from '@/components/atoms/StatLabel.astro';
 import Skeleton from '@/components/atoms/Skeleton.astro';
+import AmountInput from '@/components/atoms/AmountInput.astro';
 import { formatCurrencyCompact } from '@/lib/formatting';
 import type { ForecastDataPoint } from '@/lib/forecast';
 
@@ -85,16 +86,13 @@ const serializedInput = JSON.stringify(input);
           <label for={`${chartId}-topup`} class="block">
             <StatLabel size="sm" color="neutral"> MONTHLY TOP-UP (IDR) </StatLabel>
           </label>
-          <input
-            type="number"
+          <AmountInput
             id={`${chartId}-topup`}
             name="monthlyTopup"
-            class="input input-bordered w-full bg-base-200 focus:ring-2 focus:ring-accent font-bold text-base-content"
+            currency="IDR"
+            className="input-bordered bg-base-200 focus:ring-2 focus:ring-accent font-bold text-base-content"
             value={input.monthlyTopup}
-            step="100000"
-            min="0"
-            max="1000000000000"
-            aria-label="Monthly top-up amount in IDR"
+            ariaLabel="Monthly top-up amount in IDR"
           />
         </div>
 

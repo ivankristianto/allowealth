@@ -31,6 +31,11 @@ export const assets = pgTable(
         'loan',
       ],
     }).notNull(),
+    account_class: text('account_class', {
+      enum: ['liquid', 'non_liquid', 'debt'],
+    })
+      .notNull()
+      .default('liquid'),
     category_id: text('category_id').references(() => assetCategories.id),
     balance: text('balance').notNull(), // Stored as string for decimal precision
     initial_balance: text('initial_balance'), // Original balance at creation, stored as string

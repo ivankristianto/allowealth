@@ -14,13 +14,13 @@ interface PeriodOption {
 
 // Track initialized navigators to avoid duplicate handlers
 const initializedNavigators = new WeakSet<Element>();
-const resetSyncControllers = new Set<AbortController>();
+const navigatorControllers = new Set<AbortController>();
 
 function cleanupPeriodNavigatorListeners(): void {
-  resetSyncControllers.forEach((controller) => {
+  navigatorControllers.forEach((controller) => {
     controller.abort();
   });
-  resetSyncControllers.clear();
+  navigatorControllers.clear();
 }
 
 export function initPeriodNavigator() {
@@ -35,8 +35,29 @@ export function initPeriodNavigator() {
     const nextBtn = navigator.querySelector('[data-period-nav="next"]') as HTMLButtonElement;
     const dropdown = navigator.querySelector('[data-period-dropdown]') as HTMLElement | null;
     const trigger = navigator.querySelector('[data-period-trigger]') as HTMLButtonElement | null;
+    const optionsList = navigator.querySelector('[data-period-options-list]') as HTMLElement | null;
 
     if (!periodInput || !periodLabel) return;
+
+    const navigatorController = new AbortController();
+    navigatorControllers.add(navigatorController);
+    const { signal } = navigatorController;
+
+    let touchStartY = 0;
+    let suppressTouchClick = false;
+
+    const syncTriggerExpanded = (): void => {
+      if (!trigger || !dropdown) return;
+      trigger.setAttribute('aria-expanded', dropdown.matches(':focus-within') ? 'true' : 'false');
+    };
+
+    const ensureDropdownFocusWithin = (): void => {
+      if (!dropdown || !optionsList) return;
+      if (!dropdown.matches(':focus-within')) {
+        optionsList.focus({ preventScroll: true });
+      }
+      syncTriggerExpanded();
+    };
 
     // Toggle dropdown closed when trigger is activated while already open.
     // Uses pointerdown (mouse+touch) and keydown (Enter/Space) for full input coverage.
@@ -49,15 +70,65 @@ export function initPeriodNavigator() {
         const focused = dropdown!.querySelector(':focus') as HTMLElement | null;
         if (focused) focused.blur();
         trigger!.blur();
+        syncTriggerExpanded();
       }
 
-      trigger.addEventListener('pointerdown', closeIfOpen);
+      trigger.addEventListener('pointerdown', closeIfOpen, { signal });
 
-      trigger.addEventListener('keydown', (e: KeyboardEvent) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          closeIfOpen(e);
-        }
-      });
+      trigger.addEventListener(
+        'keydown',
+        (e: KeyboardEvent) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            closeIfOpen(e);
+          }
+        },
+        { signal }
+      );
+
+      dropdown.addEventListener('focusin', syncTriggerExpanded, { signal });
+      dropdown.addEventListener(
+        'focusout',
+        () => {
+          requestAnimationFrame(syncTriggerExpanded);
+        },
+        { signal }
+      );
+    }
+
+    if (optionsList && dropdown) {
+      optionsList.addEventListener('pointerdown', ensureDropdownFocusWithin, { signal });
+
+      optionsList.addEventListener(
+        'touchstart',
+        (e: TouchEvent) => {
+          touchStartY = e.touches[0]?.clientY ?? 0;
+          suppressTouchClick = false;
+          ensureDropdownFocusWithin();
+        },
+        { passive: true, signal }
+      );
+
+      optionsList.addEventListener(
+        'touchmove',
+        (e: TouchEvent) => {
+          const currentY = e.touches[0]?.clientY ?? touchStartY;
+          if (Math.abs(currentY - touchStartY) > 8) {
+            suppressTouchClick = true;
+          }
+          ensureDropdownFocusWithin();
+        },
+        { passive: true, signal }
+      );
+
+      const clearTouchScrollGuard = () => {
+        if (!suppressTouchClick) return;
+        window.setTimeout(() => {
+          suppressTouchClick = false;
+        }, 80);
+      };
+
+      optionsList.addEventListener('touchend', clearTouchScrollGuard, { passive: true, signal });
+      optionsList.addEventListener('touchcancel', clearTouchScrollGuard, { passive: true, signal });
     }
 
     // Get available periods from data attribute
@@ -130,101 +201,123 @@ export function initPeriodNavigator() {
 
     // Handle period dropdown selection
     navigator.querySelectorAll('[data-period-option]').forEach((btn) => {
-      btn.addEventListener('click', (e: Event) => {
-        e.preventDefault();
-        e.stopPropagation();
+      btn.addEventListener(
+        'click',
+        (e: Event) => {
+          if (suppressTouchClick) {
+            e.preventDefault();
+            e.stopPropagation();
+            return;
+          }
 
-        const el = btn as HTMLElement;
-        const value = el.dataset.periodOption || '';
-        const displayLabel = el.dataset.periodLabel || value;
+          e.preventDefault();
+          e.stopPropagation();
 
-        periodInput.value = value;
-        periodLabel.textContent = displayLabel;
+          const el = btn as HTMLElement;
+          const value = el.dataset.periodOption || '';
+          const displayLabel = el.dataset.periodLabel || value;
 
-        // Close dropdown
-        (document.activeElement as HTMLElement)?.blur();
+          periodInput.value = value;
+          periodLabel.textContent = displayLabel;
 
-        // Update nav button states
-        updateNavButtons();
+          // Close dropdown
+          (document.activeElement as HTMLElement)?.blur();
+          syncTriggerExpanded();
 
-        // Dispatch custom event
-        window.dispatchEvent(
-          new CustomEvent(PERIOD_CHANGE_EVENT, {
-            detail: { period: value, label: displayLabel },
-          })
-        );
-      });
+          // Update nav button states
+          updateNavButtons();
+
+          // Dispatch custom event
+          window.dispatchEvent(
+            new CustomEvent(PERIOD_CHANGE_EVENT, {
+              detail: { period: value, label: displayLabel },
+            })
+          );
+        },
+        { signal }
+      );
     });
 
     // Handle navigation buttons
     if (prevBtn) {
-      prevBtn.addEventListener('click', (e: Event) => {
-        e.preventDefault();
-        if (prevBtn.disabled) return;
+      prevBtn.addEventListener(
+        'click',
+        (e: Event) => {
+          e.preventDefault();
+          if (prevBtn.disabled) return;
 
-        const currentPeriod = periodInput.value;
-        const currentIndex = availableOptions.findIndex((option) => option.value === currentPeriod);
-        const prevIndex = prevIndexAt(currentIndex);
-
-        if (prevIndex >= 0 && prevIndex < availableOptions.length) {
-          const prevOption = availableOptions[prevIndex];
-          periodInput.value = prevOption.value;
-          periodLabel.textContent = prevOption.label;
-
-          // Update nav button states
-          updateNavButtons();
-
-          // Dispatch custom event
-          window.dispatchEvent(
-            new CustomEvent(PERIOD_CHANGE_EVENT, {
-              detail: { period: prevOption.value, label: prevOption.label },
-            })
+          const currentPeriod = periodInput.value;
+          const currentIndex = availableOptions.findIndex(
+            (option) => option.value === currentPeriod
           );
-        }
-      });
+          const prevIndex = prevIndexAt(currentIndex);
+
+          if (prevIndex >= 0 && prevIndex < availableOptions.length) {
+            const prevOption = availableOptions[prevIndex];
+            periodInput.value = prevOption.value;
+            periodLabel.textContent = prevOption.label;
+
+            // Update nav button states
+            updateNavButtons();
+
+            // Dispatch custom event
+            window.dispatchEvent(
+              new CustomEvent(PERIOD_CHANGE_EVENT, {
+                detail: { period: prevOption.value, label: prevOption.label },
+              })
+            );
+          }
+        },
+        { signal }
+      );
     }
 
     if (nextBtn) {
-      nextBtn.addEventListener('click', (e: Event) => {
-        e.preventDefault();
-        if (nextBtn.disabled) return;
+      nextBtn.addEventListener(
+        'click',
+        (e: Event) => {
+          e.preventDefault();
+          if (nextBtn.disabled) return;
 
-        const currentPeriod = periodInput.value;
-        const currentIndex = availableOptions.findIndex((option) => option.value === currentPeriod);
-        const nextIndex = nextIndexAt(currentIndex);
-
-        if (nextIndex >= 0 && nextIndex < availableOptions.length) {
-          const nextOption = availableOptions[nextIndex];
-          periodInput.value = nextOption.value;
-          periodLabel.textContent = nextOption.label;
-
-          // Update nav button states
-          updateNavButtons();
-
-          // Dispatch custom event
-          window.dispatchEvent(
-            new CustomEvent(PERIOD_CHANGE_EVENT, {
-              detail: { period: nextOption.value, label: nextOption.label },
-            })
+          const currentPeriod = periodInput.value;
+          const currentIndex = availableOptions.findIndex(
+            (option) => option.value === currentPeriod
           );
-        }
-      });
+          const nextIndex = nextIndexAt(currentIndex);
+
+          if (nextIndex >= 0 && nextIndex < availableOptions.length) {
+            const nextOption = availableOptions[nextIndex];
+            periodInput.value = nextOption.value;
+            periodLabel.textContent = nextOption.label;
+
+            // Update nav button states
+            updateNavButtons();
+
+            // Dispatch custom event
+            window.dispatchEvent(
+              new CustomEvent(PERIOD_CHANGE_EVENT, {
+                detail: { period: nextOption.value, label: nextOption.label },
+              })
+            );
+          }
+        },
+        { signal }
+      );
     }
 
     // Listen for filters reset to restore current month
-    const resetSyncController = new AbortController();
-    resetSyncControllers.add(resetSyncController);
     window.addEventListener(
       FILTERS_RESET_EVENT,
       (e: Event) => {
         const { month } = (e as CustomEvent).detail || {};
         if (month) setPeriod(month);
       },
-      { signal: resetSyncController.signal }
+      { signal }
     );
 
     // Initialize button states
     updateNavButtons();
+    syncTriggerExpanded();
   });
 }
 

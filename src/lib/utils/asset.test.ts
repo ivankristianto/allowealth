@@ -15,6 +15,8 @@ import {
   sortAssetTypes,
   convertToIdr,
   convertIdrToUsd,
+  calculateDebtTotals,
+  groupAssetsByClass,
 } from './asset';
 import type { AssetOutput } from '@/lib/types/asset';
 
@@ -23,6 +25,7 @@ const createMockAsset = (overrides: Partial<AssetOutput> = {}): AssetOutput => (
   id: 'test-id',
   name: 'Test Asset',
   type: 'bank_account',
+  account_class: 'liquid',
   balance: '1000000',
   currency: 'IDR',
   status: 'active',
@@ -268,6 +271,15 @@ describe('Asset Utils - calculatePortfolioTotals', () => {
 
     expect(totals.totalIdr).toBe(1000000);
   });
+
+  it('should exclude debt accounts from totals', () => {
+    const assets = [
+      createMockAsset({ balance: '1000000', currency: 'IDR', account_class: 'liquid' }),
+      createMockAsset({ balance: '500000', currency: 'IDR', account_class: 'debt' }),
+    ];
+    const result = calculatePortfolioTotals(assets);
+    expect(result.totalIdr).toBe(1000000);
+  });
 });
 
 describe('Asset Utils - sortAssetTypes', () => {
@@ -327,5 +339,57 @@ describe('Asset Utils - Edge Cases', () => {
 
     expect(totals.totalIdr).toBe(0); // No IDR assets
     expect(totals.totalUsd).toBe(1500); // Sum of USD assets
+  });
+});
+
+describe('Asset Utils - calculateDebtTotals', () => {
+  it('should calculate debt totals by currency', () => {
+    const assets = [
+      createMockAsset({ account_class: 'debt', balance: '500000', currency: 'IDR' }),
+      createMockAsset({ account_class: 'debt', balance: '1000', currency: 'USD' }),
+      createMockAsset({ account_class: 'liquid', balance: '2000000', currency: 'IDR' }),
+    ];
+    const result = calculateDebtTotals(assets);
+    expect(result.debtIdr).toBe(500000);
+    expect(result.debtUsd).toBe(1000);
+  });
+
+  it('should return zeros when no debt accounts exist', () => {
+    const assets = [
+      createMockAsset({ account_class: 'liquid', balance: '1000000', currency: 'IDR' }),
+    ];
+    const result = calculateDebtTotals(assets);
+    expect(result.debtIdr).toBe(0);
+    expect(result.debtUsd).toBe(0);
+  });
+
+  it('should use absolute values for debt', () => {
+    const assets = [
+      createMockAsset({ account_class: 'debt', balance: '-500000', currency: 'IDR' }),
+    ];
+    const result = calculateDebtTotals(assets);
+    expect(result.debtIdr).toBe(500000);
+  });
+});
+
+describe('Asset Utils - groupAssetsByClass', () => {
+  it('should group assets by account class', () => {
+    const assets = [
+      createMockAsset({ id: '1', account_class: 'liquid', type: 'bank_account' }),
+      createMockAsset({ id: '2', account_class: 'liquid', type: 'e_wallet' }),
+      createMockAsset({ id: '3', account_class: 'non_liquid', type: 'stock' }),
+      createMockAsset({ id: '4', account_class: 'debt', type: 'credit_card' }),
+    ];
+    const result = groupAssetsByClass(assets);
+    expect(result.liquid).toHaveLength(2);
+    expect(result.non_liquid).toHaveLength(1);
+    expect(result.debt).toHaveLength(1);
+  });
+
+  it('should return empty arrays for missing classes', () => {
+    const assets = [createMockAsset({ account_class: 'liquid' })];
+    const result = groupAssetsByClass(assets);
+    expect(result.non_liquid).toHaveLength(0);
+    expect(result.debt).toHaveLength(0);
   });
 });

@@ -16,28 +16,49 @@
  * @param {string} className - Additional CSS classes
  */
 
-import { ChevronUp } from '@lucide/astro';
+import { ChevronUp, Info } from '@lucide/astro';
 import { formatCurrency } from '@/lib/formatting';
+import type { AccountClass } from '@/lib/types/asset';
+
+// Tooltip descriptions for each account class
+const ACCOUNT_CLASS_DESCRIPTIONS: Record<AccountClass, string> = {
+  liquid: 'Cash and easily accessible funds like bank accounts, e-wallets, and physical cash',
+  non_liquid: 'Investments and long-term holdings like stocks, mutual funds, bonds, and crypto',
+  debt: 'Outstanding liabilities like credit cards and loans',
+};
 
 export interface Props {
   type: string;
+  accountClass?: AccountClass;
   count: number;
   totalIdr?: number;
   totalUsd?: number;
   defaultExpanded?: boolean;
   groupId: string;
+  isDebt?: boolean;
   className?: string;
 }
 
 const {
   type,
+  accountClass,
   count,
   totalIdr = 0,
   totalUsd = 0,
   defaultExpanded = true,
   groupId,
+  isDebt = false,
   className = '',
 } = Astro.props;
+
+// Get tooltip description for this account class
+const classDescription = accountClass ? ACCOUNT_CLASS_DESCRIPTIONS[accountClass] : null;
+
+// Debt groups show negative values in error color
+const displayIdr = isDebt ? -totalIdr : totalIdr;
+const displayUsd = isDebt ? -totalUsd : totalUsd;
+const idrColorClass = isDebt ? 'text-error' : 'text-success';
+const usdColorClass = isDebt ? 'text-error' : 'text-info';
 
 // Generate subtitle based on type
 const subtitle = `Managing your ${type.toLowerCase()} holdings`;
@@ -69,6 +90,18 @@ const cardClasses = [
         <h3 class="text-lg lg:text-xl font-bold text-base-content tracking-tight leading-none">
           {type}
         </h3>
+        {
+          classDescription && (
+            <div class="tooltip tooltip-right" data-tip={classDescription}>
+              <span
+                class="inline-flex items-center justify-center rounded-full text-base-content/30 hover:text-base-content/60 transition-colors cursor-help"
+                aria-label={`${type}: ${classDescription}`}
+              >
+                <Info size={14} class="stroke-current" aria-hidden="true" />
+              </span>
+            </div>
+          )
+        }
         <span
           class="px-2 py-0.5 bg-base-200 text-base-content/70 rounded-lg text-xs font-bold leading-none"
         >
@@ -83,15 +116,21 @@ const cardClasses = [
       <div class="text-right hidden sm:block">
         {
           totalIdr > 0 && (
-            <p class="text-sm font-bold text-success leading-none">
-              {formatCurrency(totalIdr, 'IDR')}
+            <p class:list={['text-sm font-bold leading-none', idrColorClass]}>
+              {formatCurrency(displayIdr, 'IDR')}
             </p>
           )
         }
         {
           totalUsd > 0 && (
-            <p class:list={['text-sm font-bold text-info leading-none', totalIdr > 0 && 'mt-1.5']}>
-              {formatCurrency(totalUsd, 'USD')}
+            <p
+              class:list={[
+                'text-sm font-bold leading-none',
+                usdColorClass,
+                totalIdr > 0 && 'mt-1.5',
+              ]}
+            >
+              {formatCurrency(displayUsd, 'USD')}
             </p>
           )
         }

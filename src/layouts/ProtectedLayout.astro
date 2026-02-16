@@ -38,7 +38,7 @@ import { getCacheManager, CacheKeys, CacheTags } from '@/lib/cache';
 
 interface LayoutData {
   categories: Array<{ id: string; name: string; type: string; currency?: string }>;
-  assets: Array<{ id: string; name: string; type: string }>;
+  assets: Array<{ id: string; name: string; type: string; account_class: string }>;
   userSettings: UserSettings;
   categoryUsageCounts: Array<{ category_id: string; count: number }>;
 }
@@ -57,7 +57,7 @@ const user = Astro.locals.user!;
 // Fetch categories, assets, and user settings for global transaction drawer
 // Use cache to reduce database round-trips (saves ~400ms per page load)
 let categories: Array<{ id: string; name: string; type: string; currency?: string }> = [];
-let assets: Array<{ id: string; name: string; type: string }> = [];
+let assets: Array<{ id: string; name: string; type: string; account_class: string }> = [];
 let userSettings: UserSettings = { ...DEFAULT_USER_SETTINGS };
 let categoryUsageCounts: Array<{ category_id: string; count: number }> = [];
 

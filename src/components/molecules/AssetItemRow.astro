@@ -19,7 +19,7 @@
  * @param {string} className - Additional CSS classes
  */
 
-import { TrendingUp, Pencil, Clock, Ellipsis, PowerOff, ChevronDown } from '@lucide/astro';
+import { TrendingUp, Pencil, Ellipsis, PowerOff, ChevronDown, ChevronRight } from '@lucide/astro';
 import { formatCurrency } from '@/lib/formatting';
 import { ASSET_TYPE_LABELS, type AssetType } from '@/lib/types/asset';
 
@@ -27,6 +27,7 @@ export interface Props {
   id: string;
   name: string;
   type: AssetType;
+  accountClass?: string;
   categoryId?: string | null;
   categoryName?: string | null;
   currency: 'IDR' | 'USD';
@@ -41,6 +42,7 @@ const {
   id,
   name,
   type,
+  accountClass,
   categoryId = null,
   categoryName = null,
   currency,
@@ -50,6 +52,8 @@ const {
   className = '',
   isHistoricalView = false,
 } = Astro.props;
+
+const isDebt = accountClass === 'debt';
 
 // Get display label for type
 const typeLabel = ASSET_TYPE_LABELS[type] || type;
@@ -78,11 +82,15 @@ const relativeTime =
           ? `${Math.floor(diffDays / 7)}w ago`
           : formattedDate;
 
-// Currency-specific classes
-const currencyBadgeClasses =
-  currency === 'IDR' ? 'bg-success/10 text-success' : 'bg-info/10 text-info';
+// Display value: debt accounts show negative
+const displayBalance = isDebt ? -balance : balance;
 
-const currencyValueClasses = currency === 'IDR' ? 'text-success' : 'text-info';
+// Currency-specific classes (debt always shows red)
+const currencyValueClasses = isDebt
+  ? 'text-error'
+  : currency === 'IDR'
+    ? 'text-success'
+    : 'text-info';
 
 const rowClasses = ['p-4 lg:px-8 lg:py-5', 'hover:bg-base-100/50 transition-all group', className]
   .filter(Boolean)
@@ -114,7 +122,12 @@ const rowClasses = ['p-4 lg:px-8 lg:py-5', 'hover:bg-base-100/50 transition-all 
         class="flex-1 min-w-0 text-base font-bold text-base-content leading-none tracking-tight truncate"
         data-testid="asset-name"
       >
-        {name}
+        <a
+          href={`/assets/${id}`}
+          class="hover:text-accent transition-colors underline decoration-base-content/20 underline-offset-2 hover:decoration-accent"
+        >
+          {name}
+        </a>
       </h4>
 
       <div class="flex items-center gap-0.5 shrink-0">
@@ -122,7 +135,7 @@ const rowClasses = ['p-4 lg:px-8 lg:py-5', 'hover:bg-base-100/50 transition-all 
           class:list={['text-base font-bold tracking-tight leading-none', currencyValueClasses]}
           data-testid="asset-balance"
         >
-          {formatCurrency(balance, currency)}
+          {formatCurrency(displayBalance, currency)}
         </p>
         {/* Update Balance pencil (primary action) */}
         {
@@ -220,33 +233,32 @@ const rowClasses = ['p-4 lg:px-8 lg:py-5', 'hover:bg-base-100/50 transition-all 
       }
     </div>
 
-    {/* Row 2: Currency badge + relative time + initial balance */}
+    {/* Row 2: relative time + initial balance + view details */}
     <div class="mt-2 flex items-center gap-2">
       <span
-        class:list={[
-          'px-2 py-0.5 rounded-md text-xs font-bold tracking-wider uppercase',
-          currencyBadgeClasses,
-        ]}
-      >
-        {currency}
-      </span>
-      <span
-        class="inline-flex items-center gap-1 text-xs font-medium tracking-wide uppercase text-base-content/40"
+        class="inline-flex items-center gap-1 text-[11px] font-medium text-base-content/40"
         title={`Last balance input: ${formattedDate}`}
       >
-        <Clock size={10} class="stroke-current" aria-hidden="true" />
-        {relativeTime}
+        Updated {relativeTime.toLowerCase()}
       </span>
       {
         initialBalance !== undefined && initialBalance !== balance && (
           <span
-            class="text-xs font-medium text-base-content/40 ml-auto"
+            class="text-xs font-medium text-base-content/40"
             data-testid="asset-initial-balance"
           >
             Initial: {formatCurrency(initialBalance, currency)}
           </span>
         )
       }
+      <a
+        href={`/assets/${id}`}
+        class="ml-auto flex items-center gap-0.5 text-xs font-semibold text-base-content/40 hover:text-accent transition-colors"
+        aria-label={`View ${name} details`}
+      >
+        Details
+        <ChevronRight size={14} class="stroke-current" aria-hidden="true" />
+      </a>
     </div>
   </div>
 
@@ -268,25 +280,19 @@ const rowClasses = ['p-4 lg:px-8 lg:py-5', 'hover:bg-base-100/50 transition-all 
         class="text-base lg:text-lg font-bold text-base-content leading-none tracking-tight truncate"
         data-testid="asset-name"
       >
-        {name}
+        <a
+          href={`/assets/${id}`}
+          class="hover:text-accent transition-colors underline decoration-base-content/20 underline-offset-2 hover:decoration-accent"
+        >
+          {name}
+        </a>
       </h4>
-      <div class="flex items-center gap-3 mt-2 lg:mt-3">
-        <span
-          class:list={[
-            'px-2 py-0.5 rounded-md text-xs font-bold tracking-wider uppercase',
-            currencyBadgeClasses,
-          ]}
-        >
-          {currency}
-        </span>
-        <span
-          class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-bold tracking-wider uppercase bg-base-200 text-base-content/50"
-          title={`Last balance input: ${formattedDate}`}
-        >
-          <Clock size={10} class="stroke-current" aria-hidden="true" />
-          {relativeTime}
-        </span>
-      </div>
+      <span
+        class="inline-flex items-center gap-1 text-[11px] font-medium text-base-content/40 mt-2 lg:mt-3"
+        title={`Last balance input: ${formattedDate}`}
+      >
+        Updated {relativeTime.toLowerCase()}
+      </span>
     </div>
 
     {/* Balance and Actions */}
@@ -301,7 +307,7 @@ const rowClasses = ['p-4 lg:px-8 lg:py-5', 'hover:bg-base-100/50 transition-all 
             ]}
             data-testid="asset-balance"
           >
-            {formatCurrency(balance, currency)}
+            {formatCurrency(displayBalance, currency)}
           </p>
           {
             !isHistoricalView && (
@@ -412,6 +418,16 @@ const rowClasses = ['p-4 lg:px-8 lg:py-5', 'hover:bg-base-100/50 transition-all 
           </div>
         )
       }
+
+      {/* View details link */}
+      <a
+        href={`/assets/${id}`}
+        class="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-base-content/40 hover:text-accent hover:bg-accent/10 transition-all"
+        aria-label={`View ${name} details`}
+      >
+        <span class="hidden lg:inline">View</span>
+        <ChevronRight size={16} class="stroke-current" aria-hidden="true" />
+      </a>
     </div>
   </div>
 </div>

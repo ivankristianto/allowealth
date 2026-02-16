@@ -12,6 +12,7 @@ import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import TabSwitcher from '@/components/molecules/TabSwitcher.astro';
 import Label from '@/components/atoms/Label.astro';
 import Input from '@/components/atoms/Input.astro';
+import AmountInput from '@/components/atoms/AmountInput.astro';
 import type { Tab } from '@/components/molecules/TabSwitcher.astro';
 
 const currentPath = '/calculators';
@@ -62,15 +63,13 @@ const tabs: Tab[] = [
                 >
                   Principal Amount
                 </Label>
-                <Input
+                <AmountInput
                   id="principal"
                   name="principal"
-                  type="number"
+                  currency="IDR"
                   placeholder="Enter amount"
-                  min="0"
-                  step="0.01"
                   required
-                  className="bg-base-200"
+                  className="input-bordered h-10 rounded-lg border border-base-300 bg-base-200 pt-2 pb-2 pl-3 pr-10 text-xs focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
                 />
               </div>
 

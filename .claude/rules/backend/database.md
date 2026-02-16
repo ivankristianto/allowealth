@@ -42,6 +42,9 @@ bun run db:migrate:prod
 - ❌ **Generate migrations for only one dialect** - always do both
 - ❌ **Manually edit migration SQL files** - regenerate instead
 - ❌ **Check for double-prefix bugs** during mass replace (`this.schema.this.schema`)
+- ✅ **Always add `.default()` when adding NOT NULL columns** - `ALTER TABLE ADD COLUMN ... NOT NULL` without `DEFAULT` fails on non-empty tables in SQLite
+- ✅ **Squash broken migrations before committing** - if iterating on schema locally, delete intermediate migrations and regenerate a clean one
+- ❌ **Use `parseFloat` chains for financial calculations** - use SQL conditional aggregation (`CASE WHEN ... THEN CAST(amount AS NUMERIC)`) for precision; JS floats lose precision with large IDR values
 
 ## Service Pattern
 

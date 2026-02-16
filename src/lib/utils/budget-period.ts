@@ -96,5 +96,6 @@ export function buildBudgetPeriodOptions({
     cursor.setMonth(cursor.getMonth() + 1);
   }
 
-  return options;
+  // Latest first to match selector navigation semantics across the app.
+  return options.reverse();
 }

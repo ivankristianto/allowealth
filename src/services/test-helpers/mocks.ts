@@ -88,8 +88,17 @@ export function createMockDatabase(): IDatabase {
 
     select: mock(() => ({
       from: mock(() => ({
-        where: mock(() => Promise.resolve([])),
-        groupBy: mock(() => Promise.resolve([])),
+        where: mock(() => {
+          const promise = Promise.resolve([]);
+          (promise as any).groupBy = mock(() => Promise.resolve([]));
+          (promise as any).orderBy = mock(() => Promise.resolve([]));
+          return promise;
+        }),
+        groupBy: mock(() => {
+          const promise = Promise.resolve([]);
+          (promise as any).where = mock(() => Promise.resolve([]));
+          return promise;
+        }),
         orderBy: mock(() => Promise.resolve([])),
       })),
     })),
@@ -184,6 +193,7 @@ export function createMockAsset(overrides: Partial<Asset> = {}): Asset {
     created_by_user_id: 'user-1',
     name: 'BCA Savings',
     type: 'bank_account',
+    account_class: 'liquid',
     currency: 'IDR',
     balance: '1000000',
     initial_balance: null,

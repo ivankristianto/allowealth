@@ -17,6 +17,7 @@
 
 import Modal from '../molecules/Modal.astro';
 import FormField from '../molecules/FormField.astro';
+import AmountInput from '../atoms/AmountInput.astro';
 import { ChartNoAxesCombined } from '@lucide/astro';
 import { getMonthName } from '@/lib/utils/date';
 
@@ -97,14 +98,13 @@ const monthName = getMonthName(month);
 
         {/* Budget Amount */}
         <FormField label={`Monthly Limit (${currency})`} htmlFor={`${id}-amount`} required>
-          <input
+          <AmountInput
             id={`${id}-amount`}
             name="budget_amount"
-            type="text"
-            inputmode="decimal"
+            currency={currency}
             required
             placeholder={currency === 'IDR' ? 'e.g. 5.000.000' : 'e.g. 500'}
-            class="input input-lg w-full bg-base-200 border border-base-300 rounded-2xl font-bold text-base-content focus:ring-2 focus:ring-accent focus:outline-none focus:border-accent placeholder:text-base-content/30 placeholder:font-normal"
+            className="input-lg bg-base-200 border border-base-300 rounded-2xl font-bold text-base-content focus:ring-2 focus:ring-accent focus:outline-none focus:border-accent placeholder:text-base-content/30 placeholder:font-normal"
           />
         </FormField>
 

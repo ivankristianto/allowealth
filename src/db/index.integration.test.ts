@@ -104,6 +104,7 @@ async function createTestDatabase() {
     created_by_user_id: testUser.id,
     name: 'Test Asset',
     type: 'bank_account' as const,
+    account_class: 'liquid' as const,
     balance: '1000000',
     currency: 'IDR' as const,
     last_updated: new Date(),

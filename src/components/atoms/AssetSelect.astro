@@ -21,7 +21,7 @@ import Label from './Label.astro';
  */
 
 export interface Props {
-  assets: Array<{ id: string; name: string; type: string }>;
+  assets: Array<{ id: string; name: string; type: string; account_class?: string }>;
   /** Label text for the select (renders a <label> element) */
   label?: string;
   /** Optional help text displayed below the label */
