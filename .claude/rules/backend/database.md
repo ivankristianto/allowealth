@@ -291,3 +291,31 @@ throw new Error('Failed to save budget');
 **Rules:**
 
 - ✅ **Surface actual error messages in API responses** - not generic "Failed to X"
+
+## Drizzle Relational Query Null Safety
+
+When using Drizzle's `with` relations, null foreign keys return `null` for the related object (not excluded from results). Accessing properties on null throws.
+
+```typescript
+// ✅ Correct: Null-safe access
+const transactions = await db.query.transactions.findMany({
+  with: { category: true },
+});
+
+return transactions.map((tx) => ({
+  id: tx.id,
+  categoryName: tx.category?.name ?? 'Uncategorized', // Safe
+}));
+
+// ❌ Wrong: Direct access throws on null
+return transactions.map((tx) => ({
+  id: tx.id,
+  categoryName: tx.category.name, // Throws if tx.category is null
+}));
+```
+
+**Rules:**
+
+- ✅ **Use null-safe access (`?.` and `??`) for all relational query properties** - Drizzle returns `null` when FK is null, not undefined
+- ❌ **Access relational properties directly without null check** - transfer transactions have null `category_id`
+- ❌ **Wrap service calls in silent catch blocks that return `[]`** - masks real errors, makes debugging impossible

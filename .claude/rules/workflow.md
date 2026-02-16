@@ -81,6 +81,7 @@ The project deploys to **Cloudflare Workers** (primary) and **Bun** (local dev).
 - ❌ Remove `await` just because TypeScript says "no effect" (runtime differs)
 - ❌ Attempt fix #4 without questioning architecture - 3+ failures = wrong approach
 - ❌ Fix multiple things at once - changes must be isolated
+- ❌ **Wrap service code in silent catch blocks returning `[]`** - masks real errors, makes debugging impossible; surface or log actual errors
 
 ## Feature Completeness Checklist
 
@@ -128,3 +129,23 @@ The project deploys to **Cloudflare Workers** (primary) and **Bun** (local dev).
 - ✅ **Grep ALL file types when removing a dependency** - comments, docs, rules, and config files reference dependencies too
 - ✅ **Verify E2E failures are pre-existing before investigating** - `git stash` and test on prior code to isolate regressions
 - ❌ **Trust `reuseExistingServer: true` E2E results as proof of correctness** - a running dev server masks startup failures
+
+## Component Refactoring Pattern
+
+When redesigning or refactoring components, follow systematic exploration before implementation.
+
+**Pattern:**
+
+1. Visit page in Chrome to see actual issue
+2. Check reference implementations for similar patterns
+3. Plan redesign with visual diagrams (ASCII art works)
+4. Implement structural changes
+5. Verify on both desktop and mobile
+
+**Rules:**
+
+- ✅ **See component in Chrome before refactoring** - visual issues aren't obvious from code
+- ✅ **Check reference pages (transactions, assets) for patterns** - consistent UI patterns
+- ✅ **Plan with diagrams before implementing** - `BEFORE` / `AFTER` ASCII art clarifies changes
+- ✅ **Verify mobile view after changes** - responsive stacking differs from desktop
+- ❌ **Refactor components without seeing the current state** - may reintroduce bugs already fixed
