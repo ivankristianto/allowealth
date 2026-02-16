@@ -822,44 +822,33 @@ export class AssetService {
    * Calculate balance from transactions (reference only, not stored).
    * calculated = initial_balance + SUM(income) - SUM(expenses) + SUM(transfers_in) - SUM(transfers_out)
    */
-  async getCalculatedBalance(assetId: string, workspaceId: string): Promise<string> {
+  /**
+   * Get the last recorded balance before the start of a given month.
+   * Returns the balance from the most recent history entry before the month,
+   * or falls back to initial_balance if no history exists.
+   */
+  async getLastBalanceBefore(
+    assetId: string,
+    workspaceId: string,
+    year: number,
+    month: number
+  ): Promise<string | null> {
     const asset = await this.findByIdIncludingClosed(assetId, workspaceId);
     if (!asset) {
       throw new AssetServiceError(ServiceErrorCode.ASSET_NOT_FOUND, 'Asset not found', 404);
     }
 
-    const initialBalance = asset.initial_balance ?? asset.balance ?? '0';
-    const txTable = this.schema.transactions;
+    const startOfMonthMs = new Date(year, month - 1, 1).getTime();
 
-    // Single query: sum income, expense, transfers in, transfers out
-    const result = await (this.db as any)
-      .select({
-        income: sql<string>`COALESCE(SUM(CASE WHEN ${txTable.type} = 'income' AND ${txTable.asset_id} = ${assetId} THEN CAST(${txTable.amount} AS NUMERIC) ELSE 0 END), 0)`,
-        expense: sql<string>`COALESCE(SUM(CASE WHEN ${txTable.type} = 'expense' AND ${txTable.asset_id} = ${assetId} THEN CAST(${txTable.amount} AS NUMERIC) ELSE 0 END), 0)`,
-        transfers_in: sql<string>`COALESCE(SUM(CASE WHEN ${txTable.type} = 'transfer' AND ${txTable.to_asset_id} = ${assetId} THEN CAST(${txTable.amount} AS NUMERIC) ELSE 0 END), 0)`,
-        transfers_out: sql<string>`COALESCE(SUM(CASE WHEN ${txTable.type} = 'transfer' AND ${txTable.asset_id} = ${assetId} THEN CAST(${txTable.amount} AS NUMERIC) ELSE 0 END), 0)`,
-      })
-      .from(txTable)
-      .where(
-        and(
-          eq(txTable.workspace_id, workspaceId),
-          sql`${txTable.deleted_at} IS NULL`,
-          sql`(${txTable.asset_id} = ${assetId} OR ${txTable.to_asset_id} = ${assetId})`
-        )
-      );
+    const lastEntry = await this.db.query.assetHistory.findFirst({
+      where: and(
+        eq(this.schema.assetHistory.asset_id, assetId),
+        sql`${this.schema.assetHistory.recorded_at} < ${startOfMonthMs}`
+      ),
+      orderBy: (h: any, { desc }: any) => [desc(h.recorded_at)],
+    });
 
-    const income = result[0]?.income || '0';
-    const expense = result[0]?.expense || '0';
-    const transfersIn = result[0]?.transfers_in || '0';
-    const transfersOut = result[0]?.transfers_out || '0';
-
-    // calculated = initial + income - expense + transfers_in - transfers_out
-    let total = initialBalance;
-    total = decimalAdd(total, income);
-    total = decimalSubtract(total, expense);
-    total = decimalAdd(total, transfersIn);
-    total = decimalSubtract(total, transfersOut);
-    return total;
+    return lastEntry?.balance ?? asset.initial_balance ?? null;
   }
 
   /**
