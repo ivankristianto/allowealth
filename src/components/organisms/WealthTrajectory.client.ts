@@ -8,6 +8,7 @@
 import { debounce } from '@/lib/utils/client';
 import { addToast } from '@/lib/stores/toastStore';
 import { formatCurrencyCompact } from '@/lib/formatting/currency-client';
+import { attachAmountFormatter, stripAmountFormatting } from '@/lib/formatting/amount-input';
 import type { ForecastResult } from '@/lib/forecast';
 
 // Track in-flight requests per chart ID to prevent race conditions
@@ -20,10 +21,15 @@ export function initWealthTrajectoryInputs(): void {
   const controlContainers = document.querySelectorAll('[data-wealth-trajectory-controls]');
 
   controlContainers.forEach((container) => {
+    if ((container as HTMLElement).dataset.initialized === 'true') return;
+    (container as HTMLElement).dataset.initialized = 'true';
+
     const topupInput = container.querySelector('input[name="monthlyTopup"]') as HTMLInputElement;
     const apyInput = container.querySelector('input[name="annualRate"]') as HTMLInputElement;
 
     if (!topupInput || !apyInput) return;
+
+    attachAmountFormatter(topupInput, 'IDR');
 
     // Get the chart container to find the chart ID
     const chartContainer = container
@@ -36,7 +42,7 @@ export function initWealthTrajectoryInputs(): void {
 
     // Debounced fetch function (500ms delay)
     const debouncedFetch = debounce(async () => {
-      const monthlyTopup = parseFloat(topupInput.value) || 0;
+      const monthlyTopup = parseFloat(stripAmountFormatting(topupInput.value, 'IDR')) || 0;
       const annualRate = parseFloat(apyInput.value) || 0;
 
       // Validate inputs

@@ -193,6 +193,59 @@ export interface AmountFormatterHandle {
 }
 
 /**
+ * Shared configuration for runtime-created amount inputs.
+ * Keeps DOM-created inputs aligned with AmountInput.astro defaults.
+ */
+export interface AmountInputElementConfig {
+  id?: string;
+  name?: string;
+  value?: string;
+  currency?: Currency;
+  inputMode?: 'decimal' | 'numeric';
+  required?: boolean;
+  disabled?: boolean;
+  placeholder?: string;
+  className?: string;
+  ariaLabel?: string;
+  dataTestId?: string;
+}
+
+export function configureAmountInputElement(
+  input: HTMLInputElement,
+  config: AmountInputElementConfig = {}
+): void {
+  const {
+    id,
+    name,
+    value = '',
+    currency = 'IDR',
+    inputMode = 'decimal',
+    required = false,
+    disabled = false,
+    placeholder = '0',
+    className = 'input w-full',
+    ariaLabel = 'Amount',
+    dataTestId,
+  } = config;
+
+  input.type = 'text';
+  input.inputMode = inputMode;
+  if (id) input.id = id;
+  if (name) input.name = name;
+  input.value = value;
+  input.required = required;
+  input.disabled = disabled;
+  input.placeholder = placeholder;
+  input.className = className;
+  input.setAttribute('aria-label', ariaLabel);
+  input.dataset.amountInput = '';
+  input.dataset.amountCurrency = currency;
+  if (dataTestId) {
+    input.dataset.testid = dataTestId;
+  }
+}
+
+/**
  * Attach format-on-blur behavior to an amount input element.
  *
  * - On focus: strips formatting to show raw number

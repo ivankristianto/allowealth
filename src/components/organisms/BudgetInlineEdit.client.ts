@@ -10,7 +10,11 @@
 
 import { csrfFetch } from '@/lib/csrf-client';
 import { addToast } from '@/lib/stores/toastStore';
-import { attachAmountFormatter, stripAmountFormatting } from '@/lib/formatting/amount-input';
+import {
+  attachAmountFormatter,
+  configureAmountInputElement,
+  stripAmountFormatting,
+} from '@/lib/formatting/amount-input';
 import type { AmountFormatterHandle } from '@/lib/formatting/amount-input';
 import type { Currency } from '@/lib/constants/currency';
 
@@ -191,13 +195,14 @@ function openEditPopover(trigger: HTMLElement, categoryId: string): void {
   label.htmlFor = inputId;
 
   const input = document.createElement('input');
-  input.type = 'text';
-  input.inputMode = 'decimal';
-  input.id = inputId;
-  input.value = rawAmount;
-  input.className = 'input input-sm input-bordered w-full text-right font-bold rounded-lg';
+  configureAmountInputElement(input, {
+    id: inputId,
+    value: rawAmount,
+    currency: getBudgetCurrency(),
+    className: 'input input-sm input-bordered w-full text-right font-bold rounded-lg',
+    ariaLabel: 'Budget amount',
+  });
   input.dataset.inlineEditInput = 'true';
-  input.setAttribute('aria-label', 'Budget amount');
 
   // Attach amount formatter for thousand separators
   activeFormatter = attachAmountFormatter(input, getBudgetCurrency());
