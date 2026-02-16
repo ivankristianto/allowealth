@@ -434,7 +434,7 @@ Lucia Auth session storage.
 - **Primary Key**: `id` (text)
 - **Foreign Keys**: `user_id` → `users.id` (cascade delete)
 - **Indexes**: `expires_at` for efficient cleanup
-- **Notes**: Column names use camelCase for Lucia adapter compatibility
+- **Notes**: DB columns remain snake_case (`user_id`, `expires_at`); Drizzle exposes camelCase field names for Lucia adapter compatibility.
 
 #### `password_reset_tokens`
 
@@ -521,7 +521,7 @@ Period-specific budget allocations for categories. Shared across the workspace.
 - **Foreign Keys**:
   - `workspace_id` → `workspaces.id` (cascade delete)
   - `created_by_user_id` → `users.id` (audit trail)
-  - `category_id` → `categories.id` (cascade delete)
+  - `category_id` → `budget_categories.id` (cascade delete)
 - **Key Fields**:
   - `workspace_id`: Workspace this budget belongs to
   - `created_by_user_id`: User who created this budget
@@ -542,7 +542,7 @@ Financial transactions (income/expenses/transfers). Shared across the workspace.
 - **Foreign Keys**:
   - `workspace_id` → `workspaces.id` (cascade delete)
   - `created_by_user_id` → `users.id` (audit trail)
-  - `category_id` → `categories.id` (nullable for transfers)
+  - `category_id` → `budget_categories.id` (nullable for transfers)
   - `asset_id` → `assets.id` (source asset)
   - `to_asset_id` → `assets.id` (destination asset for transfers)
 - **Key Fields**:
