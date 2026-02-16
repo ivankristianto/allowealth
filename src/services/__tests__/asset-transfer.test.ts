@@ -198,4 +198,103 @@ describe('AssetService.transfer()', () => {
       ).rejects.toMatchObject({ code: ServiceErrorCode.ACCOUNT_CLOSED })
     );
   });
+
+  it('should reduce debt balance when transferring to a debt account (paying off credit card)', async () => {
+    const liquidAsset = createMockAsset({
+      id: 'asset-1',
+      name: 'BCA Savings',
+      type: 'bank_account',
+      account_class: 'liquid',
+      balance: '10000000',
+      currency: 'IDR',
+      workspace_id: 'workspace-1',
+    });
+
+    const debtAsset = createMockAsset({
+      id: 'asset-2',
+      name: 'BCA Credit Card',
+      type: 'credit_card',
+      account_class: 'debt',
+      balance: '5000000',
+      currency: 'IDR',
+      workspace_id: 'workspace-1',
+    });
+
+    (mockDb.query.assets.findFirst as any)
+      .mockResolvedValueOnce(liquidAsset)
+      .mockResolvedValueOnce(debtAsset);
+
+    const result = await assetService.transfer('asset-1', 'asset-2', '2000000', 'workspace-1');
+
+    // Liquid source: 10M - 2M = 8M (subtracted)
+    expect(result.fromAsset?.balance).toBe('8000000');
+    // Debt destination: 5M - 2M = 3M (subtracted, reducing debt)
+    expect(result.toAsset?.balance).toBe('3000000');
+  });
+
+  it('should increase debt balance when transferring from a debt account (cash advance)', async () => {
+    const debtAsset = createMockAsset({
+      id: 'asset-1',
+      name: 'Credit Card',
+      type: 'credit_card',
+      account_class: 'debt',
+      balance: '3000000',
+      currency: 'IDR',
+      workspace_id: 'workspace-1',
+    });
+
+    const liquidAsset = createMockAsset({
+      id: 'asset-2',
+      name: 'Cash',
+      type: 'cash',
+      account_class: 'liquid',
+      balance: '1000000',
+      currency: 'IDR',
+      workspace_id: 'workspace-1',
+    });
+
+    (mockDb.query.assets.findFirst as any)
+      .mockResolvedValueOnce(debtAsset)
+      .mockResolvedValueOnce(liquidAsset);
+
+    const result = await assetService.transfer('asset-1', 'asset-2', '500000', 'workspace-1');
+
+    // Debt source: 3M + 500K = 3.5M (added, debt increases from cash advance)
+    expect(result.fromAsset?.balance).toBe('3500000');
+    // Liquid destination: 1M + 500K = 1.5M (added normally)
+    expect(result.toAsset?.balance).toBe('1500000');
+  });
+
+  it('should handle debt-to-debt transfers correctly', async () => {
+    const debtAsset1 = createMockAsset({
+      id: 'asset-1',
+      name: 'Credit Card A',
+      type: 'credit_card',
+      account_class: 'debt',
+      balance: '5000000',
+      currency: 'IDR',
+      workspace_id: 'workspace-1',
+    });
+
+    const debtAsset2 = createMockAsset({
+      id: 'asset-2',
+      name: 'Loan B',
+      type: 'loan',
+      account_class: 'debt',
+      balance: '10000000',
+      currency: 'IDR',
+      workspace_id: 'workspace-1',
+    });
+
+    (mockDb.query.assets.findFirst as any)
+      .mockResolvedValueOnce(debtAsset1)
+      .mockResolvedValueOnce(debtAsset2);
+
+    const result = await assetService.transfer('asset-1', 'asset-2', '2000000', 'workspace-1');
+
+    // Source debt: 5M + 2M = 7M (increases — transferring from debt means more owed on this card)
+    expect(result.fromAsset?.balance).toBe('7000000');
+    // Dest debt: 10M - 2M = 8M (decreases — paying off this loan with the other card)
+    expect(result.toAsset?.balance).toBe('8000000');
+  });
 });

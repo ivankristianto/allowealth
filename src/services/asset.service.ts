@@ -391,8 +391,18 @@ export class AssetService {
     }
 
     const now = new Date();
-    const newFromBalance = decimalSubtract(fromAsset.balance, amount);
-    const newToBalance = decimalAdd(toAsset.balance, amount);
+    const fromIsDebt = fromAsset.account_class === 'debt';
+    const toIsDebt = toAsset.account_class === 'debt';
+
+    // Debt balances are stored as positive numbers representing amount owed.
+    // Transferring FROM a debt account (e.g. cash advance) increases debt → add amount.
+    // Transferring TO a debt account (e.g. paying off credit card) reduces debt → subtract amount.
+    const newFromBalance = fromIsDebt
+      ? decimalAdd(fromAsset.balance, amount)
+      : decimalSubtract(fromAsset.balance, amount);
+    const newToBalance = toIsDebt
+      ? decimalSubtract(toAsset.balance, amount)
+      : decimalAdd(toAsset.balance, amount);
 
     // Wrap both balance updates in a transaction to ensure atomicity
     await runTransaction(this.db, async (tx) => {
