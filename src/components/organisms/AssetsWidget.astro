@@ -19,6 +19,7 @@ import EmptyState from '@/components/atoms/EmptyState.astro';
 import Card from '@/components/atoms/Card.astro';
 import Skeleton from '@/components/atoms/Skeleton.astro';
 import StatLabel from '@/components/atoms/StatLabel.astro';
+import IconBadge from '@/components/atoms/IconBadge.astro';
 
 export interface Props {
   assetIdr: number;
@@ -62,89 +63,107 @@ const cardClasses = [
   aria-busy={loading ? 'true' : undefined}
   data-testid="dashboard-assets-widget"
 >
-  {/* Widget Title */}
-  <div class="flex items-center gap-2 mb-5">
-    <Landmark size={16} class="stroke-current text-accent" aria-hidden="true" />
-    <StatLabel size="md" color="neutral">Assets Overview</StatLabel>
-  </div>
-
-  {
-    loading ? (
-      <div class="space-y-4" aria-hidden="true">
-        <div class="flex items-center gap-2 mb-3">
-          <Skeleton variant="circular" width="16px" height="16px" />
-          <Skeleton variant="text" width="100px" />
-        </div>
-        <div class="space-y-2">
-          <Skeleton variant="text" width="80%" height="20px" />
-          <Skeleton variant="text" width="70%" height="20px" />
-        </div>
-        <div class="h-px bg-base-200" />
-        <div class="flex items-center gap-2 mb-3">
-          <Skeleton variant="circular" width="16px" height="16px" />
-          <Skeleton variant="text" width="80px" />
-        </div>
-        <div class="space-y-2">
-          <Skeleton variant="text" width="60%" height="20px" />
-        </div>
-      </div>
-    ) : isEmpty ? (
-      <EmptyState
-        title="No assets yet"
-        message="Add your first asset to start tracking your finances."
-        iconName="wallet"
-        actionLabel="Add Asset"
-        actionHref="/assets"
-        variant="centered"
-        className="py-4"
-      />
-    ) : (
-      <div class="space-y-5">
-        {/* Total Assets Section */}
-        <div>
-          <div class="flex items-center gap-2 mb-3">
-            <Wallet size={16} class="stroke-current text-success" aria-hidden="true" />
-            <span class="text-xs font-semibold uppercase tracking-widest text-base-content/50">
-              Total Assets
-            </span>
+  <div class="@container">
+    {
+      loading ? (
+        <div aria-hidden="true">
+          {/* Header skeleton matching IconBadge + StatLabel */}
+          <div class="flex items-center gap-3">
+            <Skeleton
+              variant="rectangular"
+              width="2.75rem"
+              height="2.75rem"
+              className="rounded-2xl"
+            />
+            <Skeleton variant="text" width="8rem" />
           </div>
-          <div class="space-y-1.5">
-            {assetIdr > 0 && (
-              <div class="flex items-center gap-2">
-                <span class={`${badge} bg-success/10 text-success`}>IDR</span>
-                <p class="text-lg font-bold text-success tracking-tight leading-none truncate">
-                  {formatCurrency(assetIdr, 'IDR')}
-                </p>
-              </div>
-            )}
-            {assetUsd > 0 && (
-              <div class="flex items-center gap-2">
-                <span class={`${badge} bg-info/10 text-info`}>USD</span>
-                <p class="text-lg font-bold text-info tracking-tight leading-none truncate">
-                  {formatCurrency(assetUsd, 'USD')}
-                </p>
-              </div>
-            )}
-            {assetIdr <= 0 && assetUsd <= 0 && (
-              <p class="text-sm text-base-content/40">No assets</p>
-            )}
+
+          {/* Assets section skeleton */}
+          <div class="mt-6">
+            <div class="flex items-center gap-2 mb-3">
+              <Skeleton variant="circular" width="16px" height="16px" />
+              <Skeleton variant="text" width="6rem" />
+            </div>
+            <div class="space-y-2">
+              <Skeleton variant="text" width="85%" height="20px" />
+              <Skeleton variant="text" width="70%" height="20px" />
+            </div>
+          </div>
+
+          {/* Debt section skeleton */}
+          <div class="border-t border-base-300 pt-5 mt-5">
+            <div class="flex items-center gap-2 mb-3">
+              <Skeleton variant="circular" width="16px" height="16px" />
+              <Skeleton variant="text" width="5rem" />
+            </div>
+            <Skeleton variant="text" width="60%" height="20px" />
           </div>
         </div>
+      ) : isEmpty ? (
+        <EmptyState
+          title="No assets yet"
+          message="Add your first asset to start tracking your finances."
+          iconName="wallet"
+          actionLabel="Add Asset"
+          actionHref="/assets"
+          variant="centered"
+          className="py-4"
+        />
+      ) : (
+        <>
+          {/* Header with IconBadge — matches SpendingCard pattern */}
+          <div class="flex items-center gap-3">
+            <IconBadge variant="accent" size="sm">
+              <Landmark size={20} class="stroke-current" aria-hidden="true" />
+            </IconBadge>
+            <StatLabel size="md" color="neutral">
+              Assets Overview
+            </StatLabel>
+          </div>
 
-        {/* Divider + Total Debt Section (only if debt exists) */}
-        {hasDebt && (
-          <>
-            <div class="border-t border-base-200" aria-hidden="true" />
-            <div>
+          {/* Total Assets Section */}
+          <div class="mt-6">
+            <div class="flex items-center gap-2 mb-3">
+              <Wallet size={16} class="stroke-current text-success" aria-hidden="true" />
+              <StatLabel size="sm" color="neutral">
+                Total Assets
+              </StatLabel>
+            </div>
+            <div class="space-y-2">
+              {assetIdr > 0 && (
+                <div class="flex items-center gap-2.5">
+                  <span class={`${badge} bg-success/10 text-success`}>IDR</span>
+                  <p class="text-lg font-bold text-success tracking-tight leading-none truncate">
+                    {formatCurrency(assetIdr, 'IDR')}
+                  </p>
+                </div>
+              )}
+              {assetUsd > 0 && (
+                <div class="flex items-center gap-2.5">
+                  <span class={`${badge} bg-info/10 text-info`}>USD</span>
+                  <p class="text-lg font-bold text-info tracking-tight leading-none truncate">
+                    {formatCurrency(assetUsd, 'USD')}
+                  </p>
+                </div>
+              )}
+              {assetIdr <= 0 && assetUsd <= 0 && (
+                <p class="text-sm text-base-content/40">No assets</p>
+              )}
+            </div>
+          </div>
+
+          {/* Divider + Total Debt Section (only if debt exists) */}
+          {hasDebt && (
+            <div class="border-t border-base-300 pt-5 mt-5">
               <div class="flex items-center gap-2 mb-3">
                 <CreditCard size={16} class="stroke-current text-error" aria-hidden="true" />
-                <span class="text-xs font-semibold uppercase tracking-widest text-base-content/50">
+                <StatLabel size="sm" color="neutral">
                   Total Debt
-                </span>
+                </StatLabel>
               </div>
-              <div class="space-y-1.5">
+              <div class="space-y-2">
                 {debtIdr > 0 && (
-                  <div class="flex items-center gap-2">
+                  <div class="flex items-center gap-2.5">
                     <span class={`${badge} bg-success/10 text-success`}>IDR</span>
                     <p class="text-lg font-bold text-error tracking-tight leading-none truncate">
                       {formatCurrency(debtIdr, 'IDR')}
@@ -152,7 +171,7 @@ const cardClasses = [
                   </div>
                 )}
                 {debtUsd > 0 && (
-                  <div class="flex items-center gap-2">
+                  <div class="flex items-center gap-2.5">
                     <span class={`${badge} bg-info/10 text-info`}>USD</span>
                     <p class="text-lg font-bold text-error tracking-tight leading-none truncate">
                       {formatCurrency(debtUsd, 'USD')}
@@ -161,9 +180,9 @@ const cardClasses = [
                 )}
               </div>
             </div>
-          </>
-        )}
-      </div>
-    )
-  }
+          )}
+        </>
+      )
+    }
+  </div>
 </Card>
