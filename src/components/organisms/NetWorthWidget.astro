@@ -2,135 +2,89 @@
 /**
  * NetWorthWidget Component
  *
- * Displays total net worth with IDR and USD amounts, growth badge,
- * and local/global assets breakdown.
- * Follows Oasis Finance v1.0.0 design system specifications.
+ * Displays total assets and total debt per currency (IDR, USD).
+ * Shows only currencies with balance > 0. Debt section only shown if debt exists.
  *
- * @param {number} totalIDR - Total net worth in IDR
- * @param {number} totalUSD - Total net worth in USD
- * @param {number} localAssets - Local assets value in IDR
- * @param {number} globalAssets - Global assets value in USD
- * @param {number} growthPercentage - Growth percentage for badge
+ * @param {number} assetIdr - Total assets in IDR (excluding debt)
+ * @param {number} assetUsd - Total assets in USD (excluding debt)
+ * @param {number} debtIdr - Total debt in IDR
+ * @param {number} debtUsd - Total debt in USD
  * @param {boolean} loading - Show loading skeleton state
- * @param {string} error - Error message to display
  * @param {string} className - Additional CSS classes
  */
 
-import { Landmark, TrendingUp } from '@lucide/astro';
+import { Wallet, CreditCard } from '@lucide/astro';
 import { formatCurrency } from '@/lib/formatting';
-import Badge from '@/components/atoms/Badge.astro';
 import EmptyState from '@/components/atoms/EmptyState.astro';
-import IconBadge from '@/components/atoms/IconBadge.astro';
 import Card from '@/components/atoms/Card.astro';
-import StatCard from '@/components/atoms/StatCard.astro';
 import Skeleton from '@/components/atoms/Skeleton.astro';
 
 export interface Props {
-  totalIDR: number;
-  totalUSD: number;
-  localAssets: number;
-  globalAssets: number;
-  growthPercentage: number;
+  assetIdr: number;
+  assetUsd: number;
+  debtIdr?: number;
+  debtUsd?: number;
   loading?: boolean;
-  error?: string;
   className?: string;
 }
 
 const {
-  totalIDR,
-  totalUSD,
-  localAssets,
-  globalAssets,
-  growthPercentage,
+  assetIdr,
+  assetUsd,
+  debtIdr = 0,
+  debtUsd = 0,
   loading = false,
-  error,
   className = '',
 } = Astro.props;
 
-// Determine if this is an empty state
-// Falsy check handles null, undefined, NaN, and exactly 0
-// Small positive/negative floats (e.g., 0.01) will correctly show normal state
-const isEmpty = !totalIDR && !totalUSD && !localAssets && !globalAssets;
+const isEmpty = !assetIdr && !assetUsd && !debtIdr && !debtUsd;
+const hasDebt = debtIdr > 0 || debtUsd > 0;
 
-// Growth badge styling based on percentage (positive = success, negative = error)
-const isPositiveGrowth = growthPercentage >= 0;
-const growthLabel = `${isPositiveGrowth ? '+' : ''}${growthPercentage.toFixed(1)}% growth`;
+const badge =
+  'inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold uppercase tracking-wider shrink-0';
 
-const growthBadgeVariant: 'success' | 'error' = isPositiveGrowth ? 'success' : 'error';
-
-// Card content classes
 const cardClasses = [
-  'relative overflow-hidden group',
+  'relative overflow-hidden',
   loading && 'pointer-events-none opacity-70',
   className,
 ]
   .filter(Boolean)
   .join(' ');
-
-// Determine the role and aria attributes based on state
-const cardRole = error ? 'alert' : 'region';
-const ariaLive = error ? 'polite' : undefined;
-const ariaLabelledBy = !error && !loading ? 'net-worth-label' : undefined;
-const ariaBusy = loading ? 'true' : undefined;
-const ariaLabel = loading ? 'Loading net worth data...' : undefined;
-
-// Note: Spacing classes (mb-6, mt-3, gap-3, etc.) use Tailwind's built-in spacing scale
-// which directly maps to design system tokens (--spacing-6 = 1.5rem = 24px, etc.)
-// See: tokens.css for spacing token definitions
 ---
 
 <Card
   padding="lg"
   rounded="card-lg"
   className={cardClasses}
-  role={cardRole as any}
-  aria-live={ariaLive}
-  aria-labelledby={ariaLabelledBy}
-  aria-busy={ariaBusy}
-  aria-label={ariaLabel}
+  role="region"
+  aria-label={loading ? 'Loading asset summary...' : 'Asset summary'}
+  aria-busy={loading ? 'true' : undefined}
   data-testid="dashboard-net-worth"
 >
   {
-    error ? (
-      // Error State
-      <div class="flex items-center gap-3 text-error">
-        <div class="p-2 bg-error/10 rounded-xl">
-          <TrendingUp size={20} class="stroke-current" aria-hidden="true" />
-        </div>
-        <div>
-          <p class="font-semibold text-sm">Unable to load net worth</p>
-          <p class="text-xs opacity-80">{error}</p>
-        </div>
-      </div>
-    ) : loading ? (
-      // Loading Skeleton State
+    loading ? (
       <div class="space-y-4" aria-hidden="true">
-        <div class="flex justify-between items-start">
-          <Skeleton variant="rectangular" width="4rem" height="4rem" className="rounded-2xl" />
-          <Skeleton variant="rectangular" width="6rem" height="1.75rem" className="rounded-full" />
+        <div class="flex items-center gap-2 mb-3">
+          <Skeleton variant="circular" width="16px" height="16px" />
+          <Skeleton variant="text" width="100px" />
         </div>
         <div class="space-y-2">
-          <Skeleton variant="text" width="8rem" />
-          <Skeleton variant="heading" width="12rem" />
-          <Skeleton variant="rectangular" width="9rem" height="1.75rem" className="rounded" />
+          <Skeleton variant="text" width="80%" height="20px" />
+          <Skeleton variant="text" width="70%" height="20px" />
         </div>
-        <div class="h-px bg-base-200" aria-hidden="true" />
-        <div class="space-y-3">
-          <div class="flex justify-between">
-            <Skeleton variant="text" width="6rem" />
-            <Skeleton variant="text" width="7rem" />
-          </div>
-          <div class="flex justify-between">
-            <Skeleton variant="text" width="6rem" />
-            <Skeleton variant="text" width="7rem" />
-          </div>
+        <div class="h-px bg-base-200" />
+        <div class="flex items-center gap-2 mb-3">
+          <Skeleton variant="circular" width="16px" height="16px" />
+          <Skeleton variant="text" width="80px" />
+        </div>
+        <div class="space-y-2">
+          <Skeleton variant="text" width="60%" height="20px" />
         </div>
       </div>
     ) : isEmpty ? (
-      // Empty State
       <EmptyState
         title="No assets yet"
-        message="Add your first asset to start tracking your net worth."
+        message="Add your first asset to start tracking your finances."
         iconName="wallet"
         actionLabel="Add Asset"
         actionHref="/assets"
@@ -138,63 +92,71 @@ const ariaLabel = loading ? 'Loading net worth data...' : undefined;
         className="py-4"
       />
     ) : (
-      // Normal State
-      <>
-        {/* Header: Icon Badge + Growth Badge */}
-        <div class="flex justify-between items-start mb-6">
-          <IconBadge variant="success" size="md">
-            <Landmark size={24} class="stroke-current" aria-hidden="true" />
-          </IconBadge>
-          <span aria-label={`Net worth growth: ${growthLabel}`}>
-            <Badge
-              variant={growthBadgeVariant}
-              size="sm"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs"
-            >
-              <TrendingUp size={12} class="stroke-current" aria-hidden="true" />
-              {growthLabel}
-            </Badge>
-          </span>
-        </div>
-
-        <span id="net-worth-label" class="sr-only">
-          Total net worth
-        </span>
-
-        <StatCard
-          title="Total net worth"
-          value={formatCurrency(totalIDR, 'IDR')}
-          subtitle={formatCurrency(totalUSD, 'USD')}
-          subtitleColor="text-base-content/60"
-          className="bg-transparent border-transparent shadow-none p-0 rounded-none"
-        />
-
-        {/* Divider */}
-        <div class="mt-6 pt-6 border-t border-base-200 space-y-3">
-          {/* Local Assets Breakdown */}
-          <div class="flex justify-between gap-2 text-sm font-medium leading-none">
-            <span class="text-base-content/60 shrink-0">Local assets</span>
-            <span
-              class="text-base-content font-bold truncate"
-              title={formatCurrency(localAssets, 'IDR')}
-              aria-label={`Local assets: ${formatCurrency(localAssets, 'IDR')}`}
-            >
-              {formatCurrency(localAssets, 'IDR')}
+      <div class="space-y-5">
+        {/* Total Assets Section */}
+        <div>
+          <div class="flex items-center gap-2 mb-3">
+            <Wallet size={16} class="stroke-current text-success" aria-hidden="true" />
+            <span class="text-xs font-semibold uppercase tracking-widest text-base-content/50">
+              Total Assets
             </span>
           </div>
-          {/* Global Assets Breakdown */}
-          <div class="flex justify-between gap-2 text-sm font-medium leading-none">
-            <span class="text-base-content/60 shrink-0">Global assets</span>
-            <span
-              class="text-base-content font-bold truncate"
-              title={formatCurrency(globalAssets, 'USD')}
-              aria-label={`Global assets: ${formatCurrency(globalAssets, 'USD')}`}
-            >
-              {formatCurrency(globalAssets, 'USD')}
-            </span>
+          <div class="space-y-1.5">
+            {assetIdr > 0 && (
+              <div class="flex items-center gap-2">
+                <span class={`${badge} bg-success/10 text-success`}>IDR</span>
+                <p class="text-lg font-bold text-success tracking-tight leading-none truncate">
+                  {formatCurrency(assetIdr, 'IDR')}
+                </p>
+              </div>
+            )}
+            {assetUsd > 0 && (
+              <div class="flex items-center gap-2">
+                <span class={`${badge} bg-info/10 text-info`}>USD</span>
+                <p class="text-lg font-bold text-info tracking-tight leading-none truncate">
+                  {formatCurrency(assetUsd, 'USD')}
+                </p>
+              </div>
+            )}
+            {assetIdr <= 0 && assetUsd <= 0 && (
+              <p class="text-sm text-base-content/40">No assets</p>
+            )}
           </div>
         </div>
-      </>
+
+        {/* Divider + Total Debt Section (only if debt exists) */}
+        {hasDebt && (
+          <>
+            <div class="border-t border-base-200" aria-hidden="true" />
+            <div>
+              <div class="flex items-center gap-2 mb-3">
+                <CreditCard size={16} class="stroke-current text-error" aria-hidden="true" />
+                <span class="text-xs font-semibold uppercase tracking-widest text-base-content/50">
+                  Total Debt
+                </span>
+              </div>
+              <div class="space-y-1.5">
+                {debtIdr > 0 && (
+                  <div class="flex items-center gap-2">
+                    <span class={`${badge} bg-success/10 text-success`}>IDR</span>
+                    <p class="text-lg font-bold text-error tracking-tight leading-none truncate">
+                      {formatCurrency(debtIdr, 'IDR')}
+                    </p>
+                  </div>
+                )}
+                {debtUsd > 0 && (
+                  <div class="flex items-center gap-2">
+                    <span class={`${badge} bg-info/10 text-info`}>USD</span>
+                    <p class="text-lg font-bold text-error tracking-tight leading-none truncate">
+                      {formatCurrency(debtUsd, 'USD')}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </>
+        )}
+      </div>
     )
   }
 </Card>
