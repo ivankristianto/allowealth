@@ -116,7 +116,7 @@ erDiagram
     WORKSPACES {
         text id PK
         text name
-        text slug UK
+        text status
         timestamp created_at
         timestamp updated_at
     }
