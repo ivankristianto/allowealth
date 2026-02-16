@@ -150,6 +150,16 @@ function randomAmount(min: number, max: number): string {
   return amt(min + Math.random() * (max - min));
 }
 
+/**
+ * Execute raw SQL across sync/async DB driver variants.
+ *
+ * Some drivers type `db.run(...)` as sync while others are async; normalizing
+ * to Promise keeps call sites consistent without changing runtime ordering.
+ */
+async function runRawSql(statement: ReturnType<typeof sql>): Promise<void> {
+  await Promise.resolve(db.run(statement));
+}
+
 // ============================================================================
 // DATA TEMPLATES
 // ============================================================================
@@ -633,7 +643,7 @@ async function clearAllTables() {
     // Disable FK checks during cleanup to avoid ordering issues
     const { dialect } = getDatabaseConfig();
     if (dialect === 'sqlite') {
-      await db.run(sql`PRAGMA foreign_keys = OFF`);
+      await runRawSql(sql`PRAGMA foreign_keys = OFF`);
     }
 
     // Delete in reverse dependency order
@@ -657,13 +667,13 @@ async function clearAllTables() {
 
     // Re-enable FK checks
     if (dialect === 'sqlite') {
-      await db.run(sql`PRAGMA foreign_keys = ON`);
+      await runRawSql(sql`PRAGMA foreign_keys = ON`);
     }
 
     // Run VACUUM to clean up the database and reclaim space (SQLite only)
     if (dialect === 'sqlite') {
       console.log('🧹 Vacuuming database...');
-      db.run(sql`VACUUM`);
+      await runRawSql(sql`VACUUM`);
     }
 
     console.log('✓ All tables cleared');
