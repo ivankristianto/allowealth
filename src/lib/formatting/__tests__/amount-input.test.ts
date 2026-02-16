@@ -1,5 +1,9 @@
 import { describe, expect, test } from 'bun:test';
-import { stripAmountFormatting, formatAmountForDisplay } from '../amount-input';
+import {
+  stripAmountFormatting,
+  formatAmountForDisplay,
+  formatAmountForTyping,
+} from '../amount-input';
 
 describe('stripAmountFormatting', () => {
   describe('IDR (thousands=".", decimal=",")', () => {
@@ -148,5 +152,27 @@ describe('formatAmountForDisplay', () => {
 
   test('defaults to IDR when no currency specified', () => {
     expect(formatAmountForDisplay('2400000')).toBe('2.400.000');
+  });
+});
+
+describe('formatAmountForTyping', () => {
+  test('formats integer input with grouping while typing (IDR)', () => {
+    expect(formatAmountForTyping('1234', 'IDR')).toBe('1.234');
+  });
+
+  test('preserves trailing decimal separator while typing (IDR)', () => {
+    expect(formatAmountForTyping('1234,', 'IDR')).toBe('1.234,');
+  });
+
+  test('accepts dot decimal typing for IDR and normalizes to comma', () => {
+    expect(formatAmountForTyping('1234.5', 'IDR')).toBe('1.234,5');
+  });
+
+  test('formats USD typing with comma grouping and dot decimal', () => {
+    expect(formatAmountForTyping('1234.5', 'USD')).toBe('1,234.5');
+  });
+
+  test('preserves trailing decimal separator while typing (USD)', () => {
+    expect(formatAmountForTyping('1234.', 'USD')).toBe('1,234.');
   });
 });

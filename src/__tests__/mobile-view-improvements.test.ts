@@ -26,6 +26,7 @@ describe('mobile view improvements', () => {
 
   it('uses configurable month window and full month-year labels for assets periods', () => {
     const assetsPage = read('src/pages/assets/index.astro');
+    const assetDetailPage = read('src/pages/assets/[id].astro');
 
     expect(assetsPage).toContain(
       "import { PERIOD_SELECTOR_MONTH_LIMIT } from '@/lib/constants/period'"
@@ -33,6 +34,16 @@ describe('mobile view improvements', () => {
     expect(assetsPage).toContain("import { formatMonthYear } from '@/lib/utils/date'");
     expect(assetsPage).toContain('length: PERIOD_SELECTOR_MONTH_LIMIT');
     expect(assetsPage).toContain('label: formatMonthYear(date)');
+    expect(assetsPage).toContain('const monthsBack = i;');
+    expect(assetsPage).toContain(
+      'monthlyPeriodOptions.sort((a, b) => b.value.localeCompare(a.value));'
+    );
+    expect(assetsPage).toContain('newestFirst');
+    expect(assetDetailPage).toContain('const monthsBack = i;');
+    expect(assetDetailPage).toContain(
+      'monthlyPeriodOptions.sort((a, b) => b.value.localeCompare(a.value));'
+    );
+    expect(assetDetailPage).toContain('newestFirst');
     expect(assetsPage).not.toContain("month: 'short'");
   });
 
@@ -175,11 +186,21 @@ describe('mobile view improvements', () => {
 
   it('uses configurable month window for budget period options', () => {
     const budgetPeriodUtil = read('src/lib/utils/budget-period.ts');
+    const budgetHeaderControls = read('src/components/molecules/BudgetHeaderControls.astro');
 
     expect(budgetPeriodUtil).toContain(
       "import { PERIOD_SELECTOR_MONTH_LIMIT } from '@/lib/constants/period'"
     );
     expect(budgetPeriodUtil).toContain('lookbackMonths = PERIOD_SELECTOR_MONTH_LIMIT');
+    expect(budgetPeriodUtil).toContain('return options.reverse()');
+    expect(budgetHeaderControls).toContain('newestFirst');
+  });
+
+  it('uses newest-first month ordering for transactions period navigation', () => {
+    const transactionsPage = read('src/pages/transactions/index.astro');
+
+    expect(transactionsPage).toContain('return aYear !== bYear ? bYear - aYear : bMonth - aMonth;');
+    expect(transactionsPage).toContain('newestFirst');
   });
 
   it('keeps period dropdown options in a single column with no wrapped labels', () => {
@@ -187,7 +208,15 @@ describe('mobile view improvements', () => {
 
     expect(periodNavigator).toContain('whitespace-nowrap');
     expect(periodNavigator).toContain('w-full text-left');
+    // DaisyUI menu class provides column layout; flex was removed to prevent
+    // it from overriding DaisyUI's display:none on dropdown-content (CSS layer precedence)
+    expect(periodNavigator).toContain('menu');
     expect(periodNavigator).toContain('flex-nowrap');
     expect(periodNavigator).toContain('overflow-x-hidden');
+    expect(periodNavigator).toContain('overflow-y-auto');
+    expect(periodNavigator).toContain('overscroll-contain');
+    expect(periodNavigator).toContain('[touch-action:pan-y]');
+    expect(periodNavigator).toContain('data-period-options-list');
+    expect(periodNavigator).toContain('aria-expanded="false"');
   });
 });

@@ -1,0 +1,350 @@
+---
+/**
+ * User Details Page
+ *
+ * Shows detailed user information with workspace association.
+ * Provides deactivate/reactivate and role change actions for super admins.
+ */
+import AdminLayout from '@/layouts/AdminLayout.astro';
+import Card from '@/components/atoms/Card.astro';
+import { superAdminService } from '@/services';
+import type { UserDetailed } from '@/services/super-admin.service';
+import { SuperAdminServiceError } from '@/services/service-errors';
+import {
+  TriangleAlert,
+  Mail,
+  Calendar,
+  Shield,
+  Building2,
+  CircleCheck,
+  CircleX,
+} from '@lucide/astro';
+
+const userId = Astro.params.id;
+if (!userId) return Astro.redirect('/admin/users');
+
+let user: UserDetailed;
+try {
+  user = await superAdminService.getUserDetails(userId);
+} catch (error) {
+  if (error instanceof SuperAdminServiceError && error.statusCode === 404) {
+    return Astro.redirect('/admin/users');
+  }
+  throw error;
+}
+
+const isDeactivated = !!user.deletedAt;
+const isSuperAdmin = user.role === 'super_admin';
+---
+
+<AdminLayout title={user.name} currentPath="/admin/users" subtitle="User Details">
+  <div class="max-w-7xl mx-auto space-y-6" data-testid="admin-user-details">
+    <!-- Breadcrumb -->
+    <nav aria-label="Breadcrumb">
+      <div class="breadcrumbs text-sm">
+        <ul>
+          <li><a href="/admin">Admin</a></li>
+          <li><a href="/admin/users">Users</a></li>
+          <li>{user.name}</li>
+        </ul>
+      </div>
+    </nav>
+
+    <!-- Header with actions -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div class="flex items-center gap-4">
+        {
+          user.avatarUrl ? (
+            <div class="avatar">
+              <div class="w-12 rounded-full">
+                <img src={user.avatarUrl} alt={`${user.name} avatar`} />
+              </div>
+            </div>
+          ) : (
+            <div class="avatar placeholder">
+              <div class="bg-base-300 text-base-content w-12 rounded-full">
+                <span class="text-lg">{user.name.charAt(0).toUpperCase()}</span>
+              </div>
+            </div>
+          )
+        }
+        <div>
+          <h2 class="text-2xl font-bold">{user.name}</h2>
+          <div class="flex items-center gap-2 mt-1">
+            <span
+              class={`badge ${
+                user.role === 'super_admin'
+                  ? 'badge-error'
+                  : user.role === 'admin'
+                    ? 'badge-accent'
+                    : 'badge-ghost'
+              }`}
+            >
+              {user.role}
+            </span>
+            {isDeactivated && <span class="badge badge-warning">deactivated</span>}
+          </div>
+        </div>
+      </div>
+      {
+        !isSuperAdmin && (
+          <div class="flex gap-2">
+            {isDeactivated ? (
+              <button class="btn btn-success btn-sm" data-reactivate-btn data-user-id={user.id}>
+                Reactivate
+              </button>
+            ) : (
+              <button
+                class="btn btn-warning btn-sm"
+                data-deactivate-btn
+                data-user-id={user.id}
+                data-user-name={user.name}
+              >
+                Deactivate
+              </button>
+            )}
+          </div>
+        )
+      }
+    </div>
+
+    <!-- User Info -->
+    <section aria-label="User information">
+      <Card padding="md">
+        <h3 class="text-lg font-bold mb-4">User Information</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="flex items-center gap-3">
+            <Mail size={16} class="text-base-content/40" aria-hidden="true" />
+            <div>
+              <p class="text-xs text-base-content/40 uppercase font-bold">Email</p>
+              <p>{user.email}</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <Building2 size={16} class="text-base-content/40" aria-hidden="true" />
+            <div>
+              <p class="text-xs text-base-content/40 uppercase font-bold">Workspace</p>
+              {
+                user.workspaceName ? (
+                  <a href={`/admin/workspaces/${user.workspaceId}`} class="link link-hover">
+                    {user.workspaceName}
+                  </a>
+                ) : (
+                  <p class="text-base-content/40">No workspace</p>
+                )
+              }
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <Calendar size={16} class="text-base-content/40" aria-hidden="true" />
+            <div>
+              <p class="text-xs text-base-content/40 uppercase font-bold">Joined</p>
+              <p>{new Date(user.createdAt).toLocaleDateString()}</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            {
+              user.emailVerifiedAt ? (
+                <CircleCheck size={16} class="text-success" aria-hidden="true" />
+              ) : (
+                <CircleX size={16} class="text-warning" aria-hidden="true" />
+              )
+            }
+            <div>
+              <p class="text-xs text-base-content/40 uppercase font-bold">Email Verified</p>
+              <p>{user.emailVerifiedAt ? 'Yes' : 'No'}</p>
+            </div>
+          </div>
+        </div>
+      </Card>
+    </section>
+
+    <!-- Role Management (only for non-super_admin users) -->
+    {
+      !isSuperAdmin && (
+        <section aria-label="Role management">
+          <Card padding="md">
+            <h3 class="text-lg font-bold mb-4">Role Management</h3>
+            <div class="flex items-center gap-4">
+              <Shield size={16} class="text-base-content/40" aria-hidden="true" />
+              <select
+                class="select select-bordered select-sm"
+                data-role-select
+                data-user-id={user.id}
+                aria-label="User role"
+              >
+                <option value="admin" selected={user.role === 'admin'}>
+                  Admin
+                </option>
+                <option value="member" selected={user.role === 'member'}>
+                  Member
+                </option>
+              </select>
+              <button class="btn btn-accent btn-sm" data-save-role-btn disabled>
+                Save Role
+              </button>
+            </div>
+          </Card>
+        </section>
+      )
+    }
+  </div>
+
+  <!-- Deactivate Confirmation Modal -->
+  <dialog id="deactivate-user-modal" class="modal" data-deactivate-modal>
+    <div class="modal-box max-w-md">
+      <div class="flex items-start gap-4">
+        <div
+          class="flex-shrink-0 w-10 h-10 rounded-full bg-warning/10 flex items-center justify-center"
+        >
+          <TriangleAlert size={20} class="text-warning" aria-hidden="true" />
+        </div>
+        <div class="flex-1">
+          <h3 class="font-bold text-lg">Deactivate User</h3>
+          <p class="py-2 text-base-content/70">
+            This will soft-delete the user. They will no longer be able to log in. You can
+            reactivate them later.
+          </p>
+        </div>
+      </div>
+      <div class="modal-action">
+        <form method="dialog">
+          <button class="btn btn-ghost">Cancel</button>
+        </form>
+        <button class="btn btn-warning" data-confirm-deactivate>Deactivate</button>
+      </div>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+      <button>close</button>
+    </form>
+  </dialog>
+</AdminLayout>
+
+<script>
+  import { addToast } from '@/lib/stores/toastStore';
+  import { getCsrfHeaders } from '@/lib/csrf-client';
+
+  let initialized = false;
+  function initUserDetails() {
+    if (initialized) return;
+    initialized = true;
+    // Deactivate button handler
+    const deactivateBtn = document.querySelector(
+      '[data-deactivate-btn]'
+    ) as HTMLButtonElement | null;
+    const deactivateModal = document.getElementById(
+      'deactivate-user-modal'
+    ) as HTMLDialogElement | null;
+    const confirmDeactivateBtn = deactivateModal?.querySelector(
+      '[data-confirm-deactivate]'
+    ) as HTMLButtonElement | null;
+
+    if (deactivateBtn && deactivateModal && confirmDeactivateBtn) {
+      const userId = deactivateBtn.dataset.userId || '';
+
+      deactivateBtn.addEventListener('click', () => {
+        deactivateModal.showModal();
+      });
+
+      confirmDeactivateBtn.addEventListener('click', async () => {
+        confirmDeactivateBtn.classList.add('loading');
+        try {
+          const response = await fetch(`/api/admin/users/${userId}/deactivate`, {
+            method: 'POST',
+            credentials: 'include',
+            headers: getCsrfHeaders(),
+          });
+          const result = await response.json();
+          if (!response.ok || !result.success) {
+            throw new Error(result.error?.message || 'Failed to deactivate user');
+          }
+          addToast('User deactivated successfully', 'success');
+          window.location.reload();
+        } catch (err) {
+          const message = err instanceof Error ? err.message : 'Failed to deactivate user';
+          addToast(message, 'error');
+          deactivateModal.close();
+        } finally {
+          confirmDeactivateBtn.classList.remove('loading');
+        }
+      });
+    }
+
+    // Reactivate button handler
+    const reactivateBtn = document.querySelector(
+      '[data-reactivate-btn]'
+    ) as HTMLButtonElement | null;
+    if (reactivateBtn) {
+      reactivateBtn.addEventListener('click', async () => {
+        const userId = reactivateBtn.dataset.userId;
+        if (!userId) return;
+
+        reactivateBtn.classList.add('loading');
+        try {
+          const response = await fetch(`/api/admin/users/${userId}/reactivate`, {
+            method: 'POST',
+            credentials: 'include',
+            headers: getCsrfHeaders(),
+          });
+          const result = await response.json();
+          if (!response.ok || !result.success) {
+            throw new Error(result.error?.message || 'Failed to reactivate user');
+          }
+          addToast('User reactivated successfully', 'success');
+          window.location.reload();
+        } catch (err) {
+          const message = err instanceof Error ? err.message : 'Failed to reactivate user';
+          addToast(message, 'error');
+        } finally {
+          reactivateBtn.classList.remove('loading');
+        }
+      });
+    }
+
+    // Role change handler
+    const roleSelect = document.querySelector('[data-role-select]') as HTMLSelectElement | null;
+    const saveRoleBtn = document.querySelector('[data-save-role-btn]') as HTMLButtonElement | null;
+
+    if (roleSelect && saveRoleBtn) {
+      const userId = roleSelect.dataset.userId || '';
+      const originalRole = roleSelect.value;
+
+      roleSelect.addEventListener('change', () => {
+        saveRoleBtn.disabled = roleSelect.value === originalRole;
+      });
+
+      saveRoleBtn.addEventListener('click', async () => {
+        saveRoleBtn.classList.add('loading');
+        try {
+          const response = await fetch(`/api/admin/users/${userId}/role`, {
+            method: 'PATCH',
+            credentials: 'include',
+            headers: {
+              'Content-Type': 'application/json',
+              ...getCsrfHeaders(),
+            },
+            body: JSON.stringify({ role: roleSelect.value }),
+          });
+          const result = await response.json();
+          if (!response.ok || !result.success) {
+            throw new Error(result.error?.message || 'Failed to change role');
+          }
+          addToast('User role updated successfully', 'success');
+          window.location.reload();
+        } catch (err) {
+          const message = err instanceof Error ? err.message : 'Failed to change role';
+          addToast(message, 'error');
+        } finally {
+          saveRoleBtn.classList.remove('loading');
+        }
+      });
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initUserDetails);
+  } else {
+    initUserDetails();
+  }
+  document.addEventListener('astro:page-load', initUserDetails);
+</script>

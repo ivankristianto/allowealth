@@ -42,6 +42,9 @@ bun run db:migrate:prod
 - ❌ **Generate migrations for only one dialect** - always do both
 - ❌ **Manually edit migration SQL files** - regenerate instead
 - ❌ **Check for double-prefix bugs** during mass replace (`this.schema.this.schema`)
+- ✅ **Always add `.default()` when adding NOT NULL columns** - `ALTER TABLE ADD COLUMN ... NOT NULL` without `DEFAULT` fails on non-empty tables in SQLite
+- ✅ **Squash broken migrations before committing** - if iterating on schema locally, delete intermediate migrations and regenerate a clean one
+- ❌ **Use `parseFloat` chains for financial calculations** - use SQL conditional aggregation (`CASE WHEN ... THEN CAST(amount AS NUMERIC)`) for precision; JS floats lose precision with large IDR values
 
 ## Service Pattern
 
@@ -68,27 +71,24 @@ class BudgetService {
 
 ## Transaction Patterns
 
-### better-sqlite3 (Local Dev)
+### SQLite (Local Dev)
+
+SQLite with Drizzle uses `bun:sqlite`. Async transaction callbacks are not supported by the SQLite driver — use `runTransaction()` from `@/db` which handles dialect differences automatically.
 
 ```typescript
-// ✅ Correct: Sync callbacks
-db.transaction((tx) => {
-  tx.run('INSERT INTO budgets ...');
-  tx.run('UPDATE categories ...');
-  // Sync code only
-});
+// ✅ Correct: Use runTransaction() for cross-dialect compatibility
+import { runTransaction } from '@/db';
 
-// ❌ Wrong: async/await
-db.transaction(async (tx) => {
-  await tx.run('INSERT ...'); // Error: driver is synchronous
+await runTransaction(db, async (tx) => {
+  await tx.insert(budgets).values({ ... });
+  await tx.update(categories).set({ ... });
 });
 ```
 
 **Rules:**
 
-- ✅ **Use sync callbacks with better-sqlite3 transactions** - `db.transaction((tx) => { /* sync code */ })`
+- ✅ **Use `runTransaction()` for transactions** - handles SQLite/PostgreSQL differences
 - ✅ **Wrap multi-step DB operations in transactions** - ensures atomicity
-- ❌ **Use `async/await` in better-sqlite3 transactions** - driver is synchronous, throws "cannot return a promise"
 
 ### PostgreSQL (Production)
 
@@ -184,6 +184,22 @@ const values = line.split(','); // Breaks on "Name, LLC" in quoted fields
 - ✅ **Parse CSV with proper parser, not `split(',')`** - handles quoted fields containing commas
 - ✅ **Strip BOM from CSV files before parsing** - Excel UTF-8 exports include BOM (`\uFEFF`)
 
+### Pagination Inputs
+
+```typescript
+// ✅ Correct: Clamp parsed values
+const page = Number(input);
+const safePage = Number.isFinite(page) && page > 0 ? page : 1;
+
+// ❌ Wrong: Raw parseInt to DB
+const offset = parseInt(req.query.page) * limit; // NaN propagates
+```
+
+**Rules:**
+
+- ✅ **Clamp `parseInt()` results for pagination params** - `parseInt('abc')` returns `NaN`, propagates through offset calculations; use `Number.isFinite(n) && n > 0 ? n : 1`
+- ❌ **Pass raw `parseInt()` to DB `.offset()`/`.limit()`** - NaN/negative values cause undefined DB behavior
+
 ### Locale-Aware Currency
 
 ```typescript
@@ -236,6 +252,8 @@ const history = await db.select().from(budgetHistory); // Shows initial creation
 **Rules:**
 
 - ❌ **Include `create` action in history/audit queries** - only `update`/`delete` count
+- ❌ **Use fake workspace IDs like `'system'` for audit log fallback** - `audit_logs.workspace_id` has FK constraint on `workspaces.id`; silently fails via `logAuditEvent` catch
+- ✅ **Guard audit logging with `if (workspaceId)` check** - skip audit for workspace-less users until schema migration makes `workspace_id` nullable
 
 ## Common Patterns
 

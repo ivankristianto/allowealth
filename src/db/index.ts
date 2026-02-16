@@ -1,32 +1,35 @@
 /**
  * Database connection configuration
  *
- * Provides a database abstraction layer that works across different
- * JavaScript runtimes (Bun and Node.js) and database dialects (SQLite, PostgreSQL).
+ * Provides a database abstraction layer supporting SQLite, PostgreSQL, and D1 dialects.
  *
  * SQLite:
- * - In Bun runtime: Uses bun:sqlite with drizzle-orm/bun-sqlite
- * - In Node.js runtime: Uses better-sqlite3 with drizzle-orm/better-sqlite3
+ * - Uses bun:sqlite with drizzle-orm/bun-sqlite (local development)
  *
  * PostgreSQL:
  * - Uses postgres.js with drizzle-orm/postgres-js
  * - Supports Supabase with automatic SSL configuration
  *
- * The driver is selected automatically based on the DATABASE_URL format:
+ * Cloudflare D1:
+ * - Uses D1 binding with drizzle-orm/d1 (Cloudflare Workers)
+ * - SQLite-compatible, no connection management needed
+ *
+ * The driver is selected automatically based on configuration:
+ * - D1_ENABLED=true → D1 binding (Cloudflare Workers)
  * - postgres:// or postgresql:// → PostgreSQL
  * - Otherwise → SQLite
  *
  * @see https://bun.sh/docs/api/sqlite
- * @see https://github.com/WiseLibs/better-sqlite3
  * @see https://github.com/porsager/postgres
+ * @see https://developers.cloudflare.com/d1/
  */
 import { createRequire } from 'node:module';
 import { getDatabaseConfig } from './config';
-import { detectRuntime, type DatabaseDriver } from './driver';
+import type { DatabaseDriver } from './driver';
+import { createBunDriver } from './drivers/bun';
+import { createD1Database, getD1Binding } from './drivers/d1';
 import { createPostgresDatabase, closePostgres, resetPostgresClient } from './drivers/postgres';
-import { createNodeDriver } from './drivers/node';
 import type { BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
-import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 
 // Import schemas for type inference (SQLite schema is structurally compatible)
@@ -68,9 +71,7 @@ export type { DatabaseConfig, DatabaseDialect } from './config';
  * This approach provides correct IntelliSense and type checking while
  * allowing runtime flexibility between database dialects.
  */
-export type Database =
-  | BunSQLiteDatabase<typeof sqliteSchema>
-  | BetterSQLite3Database<typeof sqliteSchema>;
+export type Database = BunSQLiteDatabase<typeof sqliteSchema>;
 
 /**
  * PostgreSQL database type (for internal use when dialect is known)
@@ -166,11 +167,9 @@ export interface IDatabase {
  * Run an async callback transactionally across dialects.
  *
  * - **PostgreSQL**: Uses a real database transaction (BEGIN/COMMIT/ROLLBACK).
- * - **SQLite (better-sqlite3)**: Runs the callback directly against `db` without
- *   a transaction wrapper because better-sqlite3 is synchronous and rejects async
- *   callbacks with "Transaction function cannot return a promise". SQLite's WAL mode
- *   with single-writer guarantees sequential writes within a single connection are
- *   effectively atomic for server request scope.
+ * - **SQLite**: Runs the callback directly against `db` without a transaction
+ *   wrapper. SQLite's WAL mode with single-writer guarantees sequential writes
+ *   within a single connection are effectively atomic for server request scope.
  *
  * @param db - Database instance
  * @param callback - Async function receiving a transaction-capable db handle
@@ -181,10 +180,11 @@ export async function runTransaction<T>(
   callback: (tx: IDatabase) => Promise<T>
 ): Promise<T> {
   const config = getDatabaseConfig();
-  if (config.dialect === 'postgresql') {
+  // PostgreSQL and D1 support async transactions
+  if (config.dialect === 'postgresql' || config.isD1) {
     return db.transaction(callback);
   }
-  // SQLite: run directly — single-writer WAL mode ensures sequential consistency
+  // Local SQLite: run directly — single-writer WAL mode ensures sequential consistency
   return callback(db);
 }
 
@@ -206,12 +206,14 @@ function applyPragmas(driver: DatabaseDriver): void {
 }
 
 /**
- * Get a require function that works in both CommonJS and ESM
+ * Get a require function for loading npm packages at runtime
  *
- * Note: We always use createRequire(import.meta.url) because:
- * 1. When Astro/Vite bundles the code, the global `require` is not available
- *    even in Bun runtime context
- * 2. createRequire works in both Node.js and Bun environments
+ * Used for drizzle-orm dialect packages which must be loaded dynamically
+ * to avoid bundling both SQLite and PostgreSQL drivers together.
+ * npm packages resolve correctly from built output via node_modules/ walking.
+ *
+ * Note: Local driver files (./drivers/bun) use static imports instead,
+ * as createRequire cannot resolve them from Vite's built output directory.
  */
 function getRequire() {
   return createRequire(import.meta.url);
@@ -220,48 +222,52 @@ function getRequire() {
 /**
  * Create the Drizzle database instance
  *
- * Automatically selects the correct driver based on DATABASE_URL:
+ * Automatically selects the correct driver based on configuration:
+ * - D1_ENABLED=true → D1 binding via drizzle-orm/d1 (Cloudflare Workers)
  * - PostgreSQL URLs → postgres.js driver
- * - SQLite paths → bun:sqlite or better-sqlite3 based on runtime
- *
- * Note: SQLite drivers are loaded via createRequire to work with Vite/Astro bundling.
- * For edge environments (Cloudflare Workers), only PostgreSQL is supported.
+ * - SQLite paths → bun:sqlite driver (via static import, bun:sqlite externalized)
  *
  * @throws Error if database connection fails
  */
 function createDatabase(): Database {
   const config = getDatabaseConfig();
+  let driver: (DatabaseDriver & { _raw: unknown }) | null = null;
 
   try {
-    // PostgreSQL path - used in production (Cloudflare Workers)
+    // D1 path - Cloudflare Workers with D1 binding
+    if (config.isD1) {
+      const d1Binding = getD1Binding();
+      if (!d1Binding) {
+        throw new Error(
+          'D1_ENABLED is set but D1 binding is not available. ' +
+            'Ensure D1 binding is configured in wrangler.toml'
+        );
+      }
+      return createD1Database(d1Binding, sqliteSchema) as unknown as Database;
+    }
+
+    // PostgreSQL path - used in production (Cloudflare Workers with PostgreSQL)
     if (config.dialect === 'postgresql') {
       return createPostgresDatabase(config.url, pgSchema) as unknown as Database;
     }
 
-    // SQLite path - requires sync loading which may not work in all environments
-    // This path should only be taken in Bun or Node.js environments
-    // For edge environments (Cloudflare Workers), configure DATABASE_URL to use PostgreSQL
-    const dynamicRequire = getRequire(); // Only call getRequire for SQLite path
-    const runtime = detectRuntime();
-
-    // Use static imports for local drivers, dynamic require only for npm packages
-    let driver: DatabaseDriver & { _raw: unknown };
-    let drizzle: (db: unknown, config: { schema: typeof sqliteSchema }) => Database;
-
-    if (runtime === 'bun') {
-      // Bun runtime: use bun:sqlite driver
-      const { createBunDriver } = dynamicRequire('./drivers/bun');
-      driver = createBunDriver(config.url);
-      drizzle = dynamicRequire('drizzle-orm/bun-sqlite').drizzle;
-    } else {
-      // Node.js runtime: use better-sqlite3 driver (static import)
-      driver = createNodeDriver(config.url);
-      drizzle = dynamicRequire('drizzle-orm/better-sqlite3').drizzle;
-    }
+    // SQLite path - uses bun:sqlite via Bun runtime
+    // createBunDriver is statically imported so Vite bundles it correctly.
+    // bun:sqlite is externalized in astro.config.ts so it remains a runtime require.
+    driver = createBunDriver(config.url);
+    const dynamicRequire = getRequire();
+    const { drizzle } = dynamicRequire('drizzle-orm/bun-sqlite');
 
     applyPragmas(driver);
     return drizzle(driver._raw, { schema: sqliteSchema });
   } catch (error) {
+    if (driver) {
+      try {
+        driver.close();
+      } catch {
+        // ignore cleanup errors
+      }
+    }
     const message = error instanceof Error ? error.message : String(error);
     throw new Error(
       `Failed to create database connection (dialect: ${config.dialect}): ${message}`

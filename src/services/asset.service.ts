@@ -1,16 +1,11 @@
-import {
-  type IDatabase,
-  getActiveSchema,
-  runTransaction,
-  assets as assetsTable,
-  getDatabaseConfig,
-} from '@/db';
+import { type IDatabase, getActiveSchema, runTransaction, assets as assetsTable } from '@/db';
 import { eq, and, sql, inArray } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { AssetServiceError, ServiceErrorCode } from './service-errors';
 import type { AssetType, Currency } from '@/lib/types/asset';
+import { deriveAccountClass } from '@/lib/types/asset';
 import { type PerfCollector, trackQuery } from '@/lib/perf';
-import { decimalCompare } from '@/lib/utils/decimal';
+import { decimalAdd, decimalCompare, decimalSubtract } from '@/lib/utils/decimal';
 import { getCacheManager, CacheKeys, CacheTags, hashFilters } from '@/lib/cache';
 
 /** Inferred row type for an asset record */
@@ -60,20 +55,6 @@ export class AssetService {
     return chunks;
   }
 
-  private normalizeExecuteRows(result: any): Array<{
-    asset_id: string;
-    balance: string;
-    recorded_at: Date;
-  }> {
-    const rawRows = Array.isArray(result) ? result : (result?.rows ?? []);
-
-    return rawRows.map((row: any) => ({
-      asset_id: row.asset_id,
-      balance: row.balance,
-      recorded_at: row.recorded_at instanceof Date ? row.recorded_at : new Date(row.recorded_at),
-    }));
-  }
-
   /**
    * Create a new AssetService with database injection
    * @param db - Database instance (injected for testability)
@@ -84,7 +65,7 @@ export class AssetService {
    * Create a new asset
    *
    * Note: Using sequential inserts instead of transaction because
-   * better-sqlite3 with Drizzle doesn't support async transaction callbacks.
+   * SQLite with Drizzle doesn't support async transaction callbacks.
    * Includes compensating transaction on failure to maintain data integrity.
    */
   async create(input: CreateAssetInput) {
@@ -100,6 +81,7 @@ export class AssetService {
         created_by_user_id: input.created_by_user_id,
         name: input.name,
         type: input.type,
+        account_class: deriveAccountClass(input.type),
         category_id: input.category_id ?? null,
         balance: input.balance,
         initial_balance: input.balance,
@@ -263,7 +245,10 @@ export class AssetService {
     };
 
     if (input.name !== undefined) updateData.name = input.name;
-    if (input.type !== undefined) updateData.type = input.type;
+    if (input.type !== undefined) {
+      updateData.type = input.type;
+      updateData.account_class = deriveAccountClass(input.type);
+    }
     if (input.category_id !== undefined) updateData.category_id = input.category_id;
     if (input.currency !== undefined) updateData.currency = input.currency;
 
@@ -293,7 +278,7 @@ export class AssetService {
    * Update asset balance and create history entry
    *
    * Note: Using sequential operations instead of transaction because
-   * better-sqlite3 with Drizzle doesn't support async transaction callbacks.
+   * SQLite with Drizzle doesn't support async transaction callbacks.
    * Includes compensating transaction on failure to maintain data integrity.
    */
   async updateBalance(id: string, workspaceId: string, input: UpdateAssetBalanceInput) {
@@ -368,13 +353,12 @@ export class AssetService {
 
   /**
    * Transfer balance between two assets of the same currency.
-   * Uses a database transaction for atomicity.
+   * Validates, mutates both balances, and returns the assets for transaction creation.
    */
   async transfer(
     fromId: string,
     toId: string,
     amount: string,
-    notes: string | undefined,
     workspaceId: string
   ): Promise<{ fromAsset: AssetRow | undefined; toAsset: AssetRow | undefined }> {
     if (fromId === toId) {
@@ -406,72 +390,28 @@ export class AssetService {
       throw new Error('Transfer amount must be positive');
     }
 
-    if (decimalCompare(fromAsset.balance, amount) < 0) {
-      throw new Error('Insufficient balance');
-    }
-
     const now = new Date();
-    const fromNote = notes ? `Transfer out: ${notes}` : `Transfer to ${toAsset.name}`;
-    const toNote = notes ? `Transfer in: ${notes}` : `Transfer from ${fromAsset.name}`;
+    const newFromBalance = decimalSubtract(fromAsset.balance, amount);
+    const newToBalance = decimalAdd(toAsset.balance, amount);
 
+    // Wrap both balance updates in a transaction to ensure atomicity
     await runTransaction(this.db, async (tx) => {
-      // Deduct from source using relative update to prevent lost-update race condition.
-      // The WHERE guard ensures balance cannot go negative even under concurrent access.
-      const deductResult: { balance: string }[] = await (tx as any)
+      await tx
         .update(this.schema.assets)
-        .set({
-          balance: sql`CAST(CAST(${this.schema.assets.balance} AS NUMERIC) - CAST(${amount} AS NUMERIC) AS TEXT)`,
-          last_updated: now,
-          updated_at: now,
-        })
+        .set({ balance: newFromBalance, last_updated: now, updated_at: now })
         .where(
-          and(
-            eq(this.schema.assets.id, fromId),
-            eq(this.schema.assets.workspace_id, workspaceId),
-            sql`CAST(${this.schema.assets.balance} AS NUMERIC) >= CAST(${amount} AS NUMERIC)`
-          )
-        )
-        .returning({ balance: this.schema.assets.balance });
+          and(eq(this.schema.assets.id, fromId), eq(this.schema.assets.workspace_id, workspaceId))
+        );
 
-      if (!deductResult.length) {
-        throw new Error('Insufficient balance');
-      }
-
-      await (tx as any).insert(this.schema.assetHistory).values({
-        id: nanoid(),
-        asset_id: fromId,
-        balance: deductResult[0].balance,
-        notes: fromNote,
-        recorded_at: now,
-      });
-
-      // Add to target using relative update
-      const addResult: { balance: string }[] = await (tx as any)
+      await tx
         .update(this.schema.assets)
-        .set({
-          balance: sql`CAST(CAST(${this.schema.assets.balance} AS NUMERIC) + CAST(${amount} AS NUMERIC) AS TEXT)`,
-          last_updated: now,
-          updated_at: now,
-        })
+        .set({ balance: newToBalance, last_updated: now, updated_at: now })
         .where(
           and(eq(this.schema.assets.id, toId), eq(this.schema.assets.workspace_id, workspaceId))
-        )
-        .returning({ balance: this.schema.assets.balance });
-
-      if (!addResult.length) {
-        throw new AssetServiceError(ServiceErrorCode.ASSET_NOT_FOUND, 'Asset not found', 404);
-      }
-
-      await (tx as any).insert(this.schema.assetHistory).values({
-        id: nanoid(),
-        asset_id: toId,
-        balance: addResult[0].balance,
-        notes: toNote,
-        recorded_at: now,
-      });
+        );
     });
 
-    // Invalidate asset cache - best-effort
+    // Invalidate asset cache
     try {
       const cache = getCacheManager();
       await cache.invalidateByTags([CacheTags.workspace(workspaceId), CacheTags.ASSETS]);
@@ -479,11 +419,10 @@ export class AssetService {
       // Cache invalidation failed, stale cache is acceptable
     }
 
-    // Return updated assets after the transaction
-    const updatedFrom = await this.findById(fromId, workspaceId);
-    const updatedTo = await this.findById(toId, workspaceId);
-
-    return { fromAsset: updatedFrom, toAsset: updatedTo };
+    return {
+      fromAsset: { ...fromAsset, balance: newFromBalance },
+      toAsset: { ...toAsset, balance: newToBalance },
+    };
   }
 
   /**
@@ -639,46 +578,59 @@ export class AssetService {
       }
 
       // Fetch one latest history row per asset, chunked to avoid parameter limits.
+      // Two-step approach: 1) get max recorded_at per asset, 2) fetch full rows.
+      // This avoids dialect-specific raw SQL (DISTINCT ON for PG, self-join for SQLite)
+      // and works through Drizzle's query builder on all drivers.
       const assetIds = assetsExistingAtTime.map((a) => a.id);
       const idChunks = this.chunkIds(assetIds, 500);
       perf?.recordPhase('AssetService.getSnapshotForMonth.chunkCount', idChunks.length);
-      const dialect = getDatabaseConfig().dialect;
+      const historyTable = this.schema.assetHistory;
+      // SQLite stores timestamps as integers (epoch milliseconds via sqliteTimestampNow)
+      // — raw sql templates need a primitive, not a Date object.
+      const endOfMonthEpoch = endOfMonth.getTime();
       const allHistory: Array<{ asset_id: string; balance: string; recorded_at: Date }> = [];
 
       for (const chunk of idChunks) {
-        if (dialect === 'postgresql') {
-          const pgArray = sql`ARRAY[${sql.join(
-            chunk.map((id) => sql`${id}`),
-            sql`, `
-          )}]::text[]`;
-          const queryResult = await (this.db as any).execute(sql`
-            SELECT DISTINCT ON (asset_id) asset_id, balance, recorded_at
-            FROM asset_history
-            WHERE asset_id = ANY(${pgArray})
-              AND recorded_at <= ${endOfMonth}
-            ORDER BY asset_id, recorded_at DESC
-          `);
-          allHistory.push(...this.normalizeExecuteRows(queryResult));
-          continue;
-        }
+        // Step 1: Get the max recorded_at per asset_id
+        const maxDates = await (this.db as any)
+          .select({
+            asset_id: historyTable.asset_id,
+            max_recorded_at: sql<string>`MAX(${historyTable.recorded_at})`.as('max_recorded_at'),
+          })
+          .from(historyTable)
+          .where(
+            and(
+              inArray(historyTable.asset_id, chunk),
+              sql`${historyTable.recorded_at} <= ${endOfMonthEpoch}`
+            )
+          )
+          .groupBy(historyTable.asset_id);
 
-        const queryResult = await (this.db as any).execute(sql`
-          SELECT h.asset_id, h.balance, h.recorded_at
-          FROM asset_history h
-          INNER JOIN (
-            SELECT asset_id, MAX(recorded_at) AS max_recorded_at
-            FROM asset_history
-            WHERE asset_id IN (${sql.join(
-              chunk.map((id) => sql`${id}`),
-              sql`, `
-            )})
-              AND recorded_at <= ${endOfMonth}
-            GROUP BY asset_id
-          ) latest
-            ON latest.asset_id = h.asset_id
-           AND latest.max_recorded_at = h.recorded_at
-        `);
-        allHistory.push(...this.normalizeExecuteRows(queryResult));
+        if (maxDates.length === 0) continue;
+
+        // Step 2: Fetch full rows matching (asset_id, max_recorded_at) pairs
+        const conditions = maxDates.map(
+          (row: any) =>
+            sql`(${historyTable.asset_id} = ${row.asset_id} AND ${historyTable.recorded_at} = ${row.max_recorded_at})`
+        );
+
+        const rows = await (this.db as any)
+          .select({
+            asset_id: historyTable.asset_id,
+            balance: historyTable.balance,
+            recorded_at: historyTable.recorded_at,
+          })
+          .from(historyTable)
+          .where(sql.join(conditions, sql` OR `));
+
+        for (const row of rows) {
+          allHistory.push({
+            asset_id: row.asset_id,
+            balance: row.balance,
+            recorded_at:
+              row.recorded_at instanceof Date ? row.recorded_at : new Date(row.recorded_at),
+          });
+        }
       }
       perf?.recordPhase('AssetService.getSnapshotForMonth.historyRowsFetched', allHistory.length);
 
@@ -751,6 +703,36 @@ export class AssetService {
           )
         )
         .groupBy(this.schema.assets.type, this.schema.assets.currency);
+
+      return result;
+    });
+  }
+
+  /**
+   * Get total balances by account class and currency.
+   * Used for portfolio summary: Assets (liquid+non_liquid) vs Debt.
+   */
+  async getTotalByClass(
+    workspaceId: string,
+    perf?: PerfCollector
+  ): Promise<Array<{ account_class: string; currency: string; total: string; count: number }>> {
+    return trackQuery('AssetService.getTotalByClass', perf, async () => {
+      const result = await (this.db as any)
+        .select({
+          account_class: this.schema.assets.account_class,
+          currency: this.schema.assets.currency,
+          total: sql<string>`sum(CAST(${this.schema.assets.balance} AS NUMERIC))`,
+          count: sql<number>`count(*)`,
+        })
+        .from(this.schema.assets)
+        .where(
+          and(
+            eq(this.schema.assets.workspace_id, workspaceId),
+            sql`${this.schema.assets.deleted_at} IS NULL`,
+            eq(this.schema.assets.status, 'active')
+          )
+        )
+        .groupBy(this.schema.assets.account_class, this.schema.assets.currency);
 
       return result;
     });
@@ -834,6 +816,39 @@ export class AssetService {
     }));
 
     return assetsWithHistory;
+  }
+
+  /**
+   * Calculate balance from transactions (reference only, not stored).
+   * calculated = initial_balance + SUM(income) - SUM(expenses) + SUM(transfers_in) - SUM(transfers_out)
+   */
+  /**
+   * Get the last recorded balance before the start of a given month.
+   * Returns the balance from the most recent history entry before the month,
+   * or falls back to initial_balance if no history exists.
+   */
+  async getLastBalanceBefore(
+    assetId: string,
+    workspaceId: string,
+    year: number,
+    month: number
+  ): Promise<string | null> {
+    const asset = await this.findByIdIncludingClosed(assetId, workspaceId);
+    if (!asset) {
+      throw new AssetServiceError(ServiceErrorCode.ASSET_NOT_FOUND, 'Asset not found', 404);
+    }
+
+    const startOfMonthMs = new Date(year, month - 1, 1).getTime();
+
+    const lastEntry = await this.db.query.assetHistory.findFirst({
+      where: and(
+        eq(this.schema.assetHistory.asset_id, assetId),
+        sql`${this.schema.assetHistory.recorded_at} < ${startOfMonthMs}`
+      ),
+      orderBy: (h: any, { desc }: any) => [desc(h.recorded_at)],
+    });
+
+    return lastEntry?.balance ?? asset.initial_balance ?? null;
   }
 
   /**

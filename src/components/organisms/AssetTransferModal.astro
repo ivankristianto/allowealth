@@ -11,6 +11,7 @@
 
 import Modal from '../molecules/Modal.astro';
 import FormField from '../molecules/FormField.astro';
+import AmountInput from '../atoms/AmountInput.astro';
 import { ArrowRightLeft } from '@lucide/astro';
 
 interface TransferAsset {
@@ -100,16 +101,13 @@ const { id, assets = [] } = Astro.props;
 
         {/* Amount */}
         <FormField label="Amount" htmlFor={`${id}-amount`} required>
-          <input
+          <AmountInput
             id={`${id}-amount`}
             name="amount"
-            type="number"
+            currency="IDR"
             required
-            min="0.01"
-            step="0.01"
             placeholder="Enter transfer amount"
-            class="input input-lg w-full bg-base-200 border border-base-300 rounded-2xl font-bold text-base-content focus:ring-2 focus:ring-accent focus:outline-none focus:border-accent placeholder:text-base-content/30 placeholder:font-normal"
-            data-amount-input
+            className="input-lg bg-base-200 border border-base-300 rounded-2xl font-bold text-base-content focus:ring-2 focus:ring-accent focus:outline-none focus:border-accent placeholder:text-base-content/30 placeholder:font-normal"
           />
           <p class="text-xs text-base-content/40 ml-1 mt-1" data-balance-hint></p>
         </FormField>
@@ -160,6 +158,8 @@ const { id, assets = [] } = Astro.props;
 <script>
   import { addToast } from '@/lib/stores/toastStore';
   import { getCsrfHeaders } from '@/lib/csrf-client';
+  import { attachAmountFormatter, stripAmountFormatting } from '@/lib/formatting/amount-input';
+  import type { Currency } from '@/lib/constants/currency';
 
   const initializedContainers = new WeakSet<Element>();
 
@@ -184,12 +184,18 @@ const { id, assets = [] } = Astro.props;
 
         if (!modal || !form || !fromSelect || !toSelect || !amountInput || !submitBtn) return;
 
+        let selectedCurrency: Currency = 'IDR';
+        const amountFormatter = attachAmountFormatter(amountInput, selectedCurrency);
+
         // Filter "To" options based on "From" selection (same currency, different asset)
         function updateToOptions() {
           if (!fromSelect || !toSelect) return;
           const selectedFrom = fromSelect.options[fromSelect.selectedIndex];
           const fromCurrency = selectedFrom?.dataset.currency || '';
           const fromId = fromSelect.value;
+
+          selectedCurrency = fromCurrency === 'USD' ? 'USD' : 'IDR';
+          amountFormatter.updateCurrency(selectedCurrency);
 
           Array.from(toSelect.options).forEach((opt) => {
             if (!opt.value) return; // skip placeholder
@@ -208,6 +214,7 @@ const { id, assets = [] } = Astro.props;
         }
 
         fromSelect.addEventListener('change', updateToOptions);
+        updateToOptions();
 
         // Cancel button
         const cancelBtn = container.querySelector('[data-cancel-transfer]');
@@ -226,7 +233,8 @@ const { id, assets = [] } = Astro.props;
           const formData = new FormData(form);
           const fromAssetId = formData.get('fromAssetId') as string;
           const toAssetId = formData.get('toAssetId') as string;
-          const amount = formData.get('amount') as string;
+          const rawAmount = formData.get('amount') as string;
+          const amount = stripAmountFormatting(rawAmount, selectedCurrency);
           const notes = (formData.get('notes') as string) || undefined;
 
           if (!fromAssetId || !toAssetId) {

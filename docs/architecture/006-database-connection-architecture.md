@@ -10,7 +10,7 @@ This document describes how the application connects to databases across differe
 
 The application runs on multiple runtimes with different database requirements:
 
-- **Local development (Bun):** SQLite via `bun:sqlite` or `better-sqlite3`
+- **Local development (Bun):** SQLite via `bun:sqlite`
 - **Production (Cloudflare Workers):** PostgreSQL via `postgres.js` to Supabase
 
 In Cloudflare Workers, connecting to PostgreSQL directly caused **"Too many subrequests"** errors because each TCP socket operation (connect, TLS handshake, protocol messages) counts as a subrequest. A single database query could consume 10-50+ subrequests, exceeding Workers' limit.
@@ -25,7 +25,7 @@ The database dialect is detected from `DATABASE_URL` format:
 
 ```
 postgres:// or postgresql://  →  PostgreSQL (postgres.js + Drizzle)
-anything else (file path)     →  SQLite (bun:sqlite or better-sqlite3 + Drizzle)
+anything else (file path)     →  SQLite (bun:sqlite + Drizzle)
 ```
 
 **Key files:**
@@ -34,7 +34,6 @@ anything else (file path)     →  SQLite (bun:sqlite or better-sqlite3 + Drizzl
 - `src/db/index.ts` — Singleton management, lazy initialization via Proxy
 - `src/db/drivers/postgres.ts` — postgres.js client with SSL/prepare settings
 - `src/db/drivers/bun.ts` — bun:sqlite driver (local dev)
-- `src/db/drivers/node.ts` — better-sqlite3 driver (Node.js fallback)
 
 ### Cloudflare Hyperdrive Integration
 
@@ -165,6 +164,42 @@ If Hyperdrive causes issues in production:
 3. Deploy: `bun run deploy:cloudflare`
 
 The code is backward-compatible — without the HYPERDRIVE binding, the middleware skips injection and falls back to direct postgres.js TCP connection.
+
+### Cloudflare D1 Integration
+
+D1 is Cloudflare's SQLite-compatible serverless database. Unlike PostgreSQL with Hyperdrive, D1:
+
+- Runs SQLite natively at the edge
+- Uses the existing SQLite schema without modification
+- Has no TCP connections (eliminates subrequest overhead entirely)
+- Is selected via D1 binding in wrangler.toml
+
+**Configuration:**
+
+```toml
+# wrangler.d1.toml
+[[d1_databases]]
+binding = "DB"
+database_name = "allowealth-db"
+database_id = "<database-id>"
+```
+
+**How D1 is detected at runtime:**
+
+1. `runtimeEnv` middleware reads `runtime.env.DB` binding
+2. If present, sets `D1_ENABLED=true`
+3. `getDatabaseConfig()` reads the flag and sets `isD1: true`
+4. `createDatabase()` uses D1 driver with SQLite schema
+
+**Comparison:**
+
+| Feature               | Hyperdrive (PostgreSQL)  | D1 (SQLite)            |
+| --------------------- | ------------------------ | ---------------------- |
+| Schema                | PostgreSQL               | SQLite (same as local) |
+| SSL                   | Hyperdrive handles       | N/A (no TCP)           |
+| Subrequests per query | 0 (local proxy)          | 0 (no connections)     |
+| Connection pooling    | Hyperdrive edge pool     | N/A (serverless)       |
+| Migrations            | drizzle-kit + PostgreSQL | wrangler d1 execute    |
 
 ## Related
 

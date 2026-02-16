@@ -47,6 +47,7 @@ Use `.client.ts` files with `data-*` attributes to pass server values to client.
 
 **Rules:**
 
+- ❌ **Never use inline `onclick` handlers in Astro templates** - blocked by production CSP nonce policy; use `data-*` attributes and attach handlers in `<script>` block instead
 - ❌ **Never mix `define:vars`, `is:inline`, or `type="module"` with npm imports**
 - ✅ **Use `data-*` attributes** to pass server values to client scripts
 - ✅ **Extract `data-action` from DOM, don't use `define:vars`**
@@ -189,6 +190,51 @@ src/pages/api/_budgets.ts      → 404 (Astro ignores)
 **Rules:**
 
 - ❌ **Name Astro API endpoints with `_` prefix** - Astro treats `_`-prefixed files as private, silently 404s
+
+## Vite SSR Runtime
+
+Astro uses Vite for SSR. These patterns apply to any server-side code processed by Vite.
+
+### Bun Runtime
+
+```bash
+# ✅ Correct: Force Bun runtime
+"dev": "bun --bun astro dev"
+
+# ❌ Wrong: Astro CLI has #!/usr/bin/env node shebang, runs under Node.js
+"dev": "astro dev"
+```
+
+**Rules:**
+
+- ✅ **Use `bun --bun` flag for dev/preview scripts** - Astro CLI shebang defaults to Node.js
+- ❌ **Assume `bun run dev` runs Astro under Bun** - the shebang overrides, causing Node.js execution
+- ✅ **Verify actual runtime with `ps aux`** before assuming Bun APIs are available
+
+### Module Loading in Vite SSR
+
+```typescript
+// ✅ Correct: Use createRequire for runtime-only module loading
+import { createRequire } from 'node:module';
+
+function loadDriver() {
+  const dynamicRequire = createRequire(import.meta.url);
+  return dynamicRequire('bun:sqlite');
+}
+
+// ✅ Correct: Static import for externalized Node.js builtins
+import fs from 'node:fs';
+
+// ❌ Wrong: Bare require() — Vite transforms modules into ESM scope
+const fs = require('node:fs'); // "require is not defined"
+```
+
+**Rules:**
+
+- ❌ **Use bare `require()` in files processed by Vite SSR** - Vite transforms modules into ESM scope where `require` is not defined, even with `bun --bun`
+- ✅ **Use `createRequire(import.meta.url)` for runtime-only module loading** - works in both Bun and Node.js ESM contexts
+- ✅ **Use static `import` for externalized Node.js builtins** (`node:fs`, `node:path`) - safe since they're in `ssr.external`
+- ❌ **Assume `createRequire` resolves `.ts` files in Vite SSR** - `createRequire` only resolves `.js`, `.json`, `.node`
 
 ## Common Patterns
 

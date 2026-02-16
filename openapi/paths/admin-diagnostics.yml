@@ -1,0 +1,85 @@
+# Admin diagnostics endpoint paths
+paths:
+  /api/admin/diagnostics:
+    get:
+      tags: [Admin]
+      summary: Get system diagnostics
+      description: |
+        Retrieves comprehensive system diagnostics information for admin monitoring.
+        Includes runtime, database, cache, environment, and configuration data.
+        All sensitive data (passwords, tokens, secrets) is sanitized or masked.
+
+        Requires super_admin role authentication.
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          description: Diagnostics data retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/DiagnosticsResponse.yml#/DiagnosticsResponse'
+              example:
+                success: true
+                data:
+                  runtime:
+                    environment: production
+                    runtime: workers
+                    region: us-east-1
+                    workersCf: ORD
+                  database:
+                    dialect: postgresql
+                    url: 'postgresql://db.xxx.supabase.co:5432/postgres?password=***'
+                    isConnected: true
+                    isSupabase: true
+                    isTransactionPooler: false
+                    isHyperdrive: true
+                  cache:
+                    driver: upstash
+                    isEnabled: true
+                    config:
+                      ttl: 3600
+                    upstashConfig:
+                      url: 'https://true-hamster-1234.upstash.io'
+                      restUrl: 'https://true-hamster-1234.upstash.io'
+                    status: healthy
+                  environment:
+                    - name: NODE_ENV
+                      value: production
+                      isSet: true
+                      isSensitive: false
+                    - name: DATABASE_URL
+                      value: 'postgresql://db.xxx.supabase.co:5432/postgres?password=***'
+                      isSet: true
+                      isSensitive: true
+                    - name: AUTH_SECRET
+                      value: abcd...xyz
+                      isSet: true
+                      isSensitive: true
+                  configuration:
+                    isValid: true
+                    missingRequired: []
+                    warnings: []
+                  timestamp: '2025-02-14T12:34:56.789Z'
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '403':
+          description: Forbidden - Super admin access required
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+              example:
+                success: false
+                error: Super admin access required
+                code: SUPER_ADMIN_REQUIRED
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+              example:
+                success: false
+                error: Failed to fetch diagnostics
+                code: DIAGNOSTICS_ERROR

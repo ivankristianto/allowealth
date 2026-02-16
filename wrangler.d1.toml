@@ -1,0 +1,59 @@
+# Cloudflare Workers Configuration with D1 Database
+# Use this config when deploying with D1 instead of Hyperdrive+PostgreSQL
+#
+# To deploy:
+#   bun run deploy:cloudflare:d1
+#
+# To create D1 database:
+#   wrangler d1 create allowealth-db
+#   Then update database_id below with the returned ID
+#
+# To run migrations:
+#   wrangler d1 execute allowealth-db --remote --file=./drizzle/sqlite/0000_xxx.sql
+
+name = "allowealth"
+main = "dist/_worker.js/index.js"
+compatibility_date = "2026-02-01"
+compatibility_flags = ["nodejs_compat", "disable_nodejs_process_v2"]
+
+# Custom domain routes
+routes = [
+  { pattern = "allowealth.io", custom_domain = true },
+]
+
+# Static assets configuration
+[assets]
+directory = "./dist"
+binding = "ASSETS"
+
+# Environment variables (non-secret)
+[vars]
+NODE_ENV = "production"
+PUBLIC_URL = "https://allowealth.io"
+SIGNUP_MODE = "invite_only"
+CACHE_DRIVER = "upstash"
+PERF_DEBUG = "true"
+LOG_LEVEL = "warn"
+EMAIL_MODE = "real"
+EMAIL_PROVIDER = "resend"
+EMAIL_SENDER_NAME = "Allowealth"
+EMAIL_SENDER_ADDRESS = "noreply@allowealth.io"
+
+# D1 Database Binding
+# Create database: wrangler d1 create allowealth-db
+# List databases: wrangler d1 list
+# Execute migrations: wrangler d1 execute allowealth-db --remote --file=./drizzle/sqlite/0000_xxx.sql
+[[d1_databases]]
+binding = "DB"
+database_name = "allowealth-db"
+database_id = "YOUR_D1_DATABASE_ID"  # Replace with actual ID from: wrangler d1 create allowealth-db
+
+# Secrets (set via CLI):
+# wrangler secret put EMAIL_API_KEY --config wrangler.d1.toml
+# wrangler secret put GOOGLE_CLIENT_ID --config wrangler.d1.toml
+# wrangler secret put GOOGLE_CLIENT_SECRET --config wrangler.d1.toml
+
+# Workers Logs
+[observability]
+enabled = true
+head_sampling_rate = 1

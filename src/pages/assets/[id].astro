@@ -1,0 +1,589 @@
+---
+/**
+ * Asset Detail Page
+ *
+ * Shows individual asset details, balance comparison, and monthly transaction summary.
+ */
+
+import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
+import PeriodicSelector, { type PeriodOption } from '@/components/molecules/PeriodicSelector.astro';
+import StatLabel from '@/components/atoms/StatLabel.astro';
+import { assetService, transactionService } from '@/services';
+import { formatCurrency } from '@/lib/formatting';
+import {
+  ACCOUNT_CLASS_LABELS,
+  ASSET_TYPE_LABELS,
+  type AccountClass,
+  type AssetType,
+} from '@/lib/types/asset';
+import { formatMonthYear } from '@/lib/utils/date';
+import { PERIOD_SELECTOR_MONTH_LIMIT } from '@/lib/constants/period';
+import {
+  ArrowLeft,
+  Pencil,
+  ArrowDownLeft,
+  ArrowUpRight,
+  History,
+  Info,
+  CalendarClock,
+} from '@lucide/astro';
+import AssetUpdateValueModal from '@components/organisms/AssetUpdateValueModal.astro';
+
+const user = Astro.locals.user!;
+const { id } = Astro.params;
+
+if (!id) {
+  return Astro.redirect('/assets');
+}
+
+// Fetch asset
+const asset = await assetService.findById(id, user.workspaceId);
+if (!asset) {
+  return Astro.redirect('/assets');
+}
+
+// Month navigation
+const url = new URL(Astro.url);
+const now = new Date();
+const yearParam = url.searchParams.get('year');
+const monthParam = url.searchParams.get('month');
+const parsedYear = yearParam ? parseInt(yearParam, 10) : NaN;
+const parsedMonth = monthParam ? parseInt(monthParam, 10) : NaN;
+const selectedYear = Number.isFinite(parsedYear) ? parsedYear : now.getFullYear();
+const selectedMonth =
+  Number.isFinite(parsedMonth) && parsedMonth >= 1 && parsedMonth <= 12
+    ? parsedMonth
+    : now.getMonth() + 1;
+const selectedPeriod = `${selectedYear}-${selectedMonth.toString().padStart(2, '0')}`;
+
+// Generate period options (latest -> oldest)
+const monthlyPeriodOptions: PeriodOption[] = Array.from(
+  { length: PERIOD_SELECTOR_MONTH_LIMIT },
+  (_, i) => {
+    const monthsBack = i;
+    const date = new Date(now.getFullYear(), now.getMonth() - monthsBack, 1);
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1;
+    const monthStr = month.toString().padStart(2, '0');
+    return {
+      value: `${year}-${monthStr}`,
+      label: formatMonthYear(date),
+    };
+  }
+);
+
+if (!monthlyPeriodOptions.some((p) => p.value === selectedPeriod)) {
+  monthlyPeriodOptions.push({
+    value: selectedPeriod,
+    label: new Date(selectedYear, selectedMonth - 1).toLocaleDateString('en-US', {
+      month: 'long',
+      year: 'numeric',
+    }),
+  });
+  monthlyPeriodOptions.sort((a, b) => b.value.localeCompare(a.value));
+}
+
+// Fetch data
+const { transactions, summary } = await transactionService.getTransactionsByAsset(
+  id,
+  user.workspaceId,
+  selectedYear,
+  selectedMonth
+);
+
+// Determine if viewing current month or historical
+const isCurrentMonth = selectedYear === now.getFullYear() && selectedMonth === now.getMonth() + 1;
+const selectedMonthLabel = formatMonthYear(new Date(selectedYear, selectedMonth - 1));
+
+// Fetch balance history (latest 12 entries)
+const balanceHistory = await assetService.getHistory(id, user.workspaceId, Astro.locals.perf, 12);
+
+// For historical view: get the last balance snapshot at end of selected month
+// (= last entry before start of next month)
+const nextMonth = selectedMonth === 12 ? 1 : selectedMonth + 1;
+const nextMonthYear = selectedMonth === 12 ? selectedYear + 1 : selectedYear;
+const endOfMonthBalance = isCurrentMonth
+  ? null
+  : await assetService.getLastBalanceBefore(id, user.workspaceId, nextMonthYear, nextMonth);
+
+// Calculate expected balance: last balance of previous month + this month's transactions
+const previousMonthBalance = await assetService.getLastBalanceBefore(
+  id,
+  user.workspaceId,
+  selectedYear,
+  selectedMonth
+);
+const calcBalanceNum =
+  previousMonthBalance !== null
+    ? parseFloat(previousMonthBalance) +
+      parseFloat(summary.totalIncome) +
+      parseFloat(summary.totalTransfersIn) -
+      parseFloat(summary.totalExpenses) -
+      parseFloat(summary.totalTransfersOut)
+    : null;
+
+// Asset display info
+const typeLabel = ASSET_TYPE_LABELS[asset.type as AssetType] || asset.type;
+const classLabel = ACCOUNT_CLASS_LABELS[asset.account_class as AccountClass] || asset.account_class;
+const displayBalance = isCurrentMonth
+  ? parseFloat(asset.balance || '0')
+  : endOfMonthBalance !== null
+    ? parseFloat(endOfMonthBalance)
+    : parseFloat(asset.balance || '0');
+const showCalculatedHint = calcBalanceNum !== null && displayBalance !== calcBalanceNum;
+---
+
+<ProtectedLayout title={asset.name} currentPath="/assets" subtitle={selectedMonthLabel}>
+  <div
+    slot="header"
+    class="relative flex w-full items-center justify-center py-1 sm:gap-2 lg:w-auto lg:justify-start"
+  >
+    <PeriodicSelector
+      options={monthlyPeriodOptions}
+      selected={selectedPeriod}
+      ariaLabel="Select month"
+      inputName="asset-detail-period"
+      className="shrink-0"
+      newestFirst
+    />
+  </div>
+
+  <div class="mx-auto max-w-4xl space-y-6 sm:space-y-8 sm:px-2 lg:px-6">
+    {/* Back Link */}
+    <a
+      href="/assets"
+      class="inline-flex items-center gap-2 text-sm font-medium text-base-content/60 transition-colors hover:text-accent"
+    >
+      <ArrowLeft size={16} class="stroke-current" />
+      Back to All Assets
+    </a>
+
+    {/* Historical View Banner */}
+    {
+      !isCurrentMonth && (
+        <div class="flex items-center gap-3 rounded-card border border-info/30 bg-info/5 px-4 py-3">
+          <CalendarClock size={16} class="stroke-current text-info shrink-0" aria-hidden="true" />
+          <p class="text-sm text-base-content/70">
+            Showing balance and transactions for <strong>{selectedMonthLabel}</strong>.
+          </p>
+        </div>
+      )
+    }
+
+    {/* Asset Header + Balance (combined) */}
+    <div class="rounded-card border border-base-300 bg-base-100 p-6 shadow-sm">
+      <div class="flex items-start justify-between gap-4">
+        <div class="min-w-0">
+          <h2 class="text-xl font-bold tracking-tight text-base-content lg:text-2xl">
+            {asset.name}
+          </h2>
+          <div class="mt-2 flex flex-wrap items-center gap-2">
+            <span
+              class="rounded-md bg-base-200 px-2 py-0.5 text-xs font-bold uppercase tracking-wider text-base-content/60"
+            >
+              {typeLabel}
+            </span>
+            <span
+              class="rounded-md bg-accent/10 px-2 py-0.5 text-xs font-bold uppercase tracking-wider text-accent"
+            >
+              {classLabel}
+            </span>
+            <span
+              class:list={[
+                'rounded-md px-2 py-0.5 text-xs font-bold uppercase tracking-wider',
+                asset.currency === 'IDR' ? 'bg-success/10 text-success' : 'bg-info/10 text-info',
+              ]}
+            >
+              {asset.currency}
+            </span>
+          </div>
+        </div>
+        <div class="shrink-0 text-right">
+          <div class="flex items-center gap-1 justify-end">
+            <p
+              class:list={[
+                'text-2xl font-bold leading-none tracking-tight lg:text-3xl',
+                asset.currency === 'IDR' ? 'text-success' : 'text-info',
+              ]}
+            >
+              {formatCurrency(displayBalance, asset.currency)}
+            </p>
+            {
+              isCurrentMonth && (
+                <button
+                  type="button"
+                  class="inline-flex items-center justify-center min-h-[44px] min-w-[44px] rounded-md text-base-content/40 hover:text-accent hover:bg-accent/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+                  aria-label={`Update ${asset.name} balance`}
+                  data-update-value-asset={asset.id}
+                  data-asset-name={asset.name}
+                  data-asset-currency={asset.currency}
+                  data-asset-balance={displayBalance}
+                  data-testid="asset-update-value-btn"
+                >
+                  <Pencil size={14} class="stroke-current" aria-hidden="true" />
+                </button>
+              )
+            }
+          </div>
+          {
+            showCalculatedHint && (
+              <div class="mt-1 flex items-center gap-1.5 justify-end">
+                <span class="text-xs text-base-content/60">
+                  Calculated: {formatCurrency(calcBalanceNum, asset.currency as 'IDR' | 'USD')}
+                </span>
+                <div
+                  class="tooltip tooltip-left"
+                  data-tip="Based on last recorded balance + transactions since then. A mismatch may indicate unrecorded transactions."
+                >
+                  <Info
+                    size={12}
+                    class="stroke-current text-base-content/50 shrink-0 cursor-help"
+                    aria-hidden="true"
+                  />
+                </div>
+              </div>
+            )
+          }
+        </div>
+      </div>
+    </div>
+
+    {/* Monthly Summary */}
+    <div class="grid grid-cols-2 gap-4 md:grid-cols-4">
+      <div class="rounded-card border border-base-300 bg-base-100 p-4 shadow-sm">
+        <StatLabel size="sm" className="uppercase tracking-widest">Income</StatLabel>
+        <p class="mt-1 text-lg font-bold tracking-tight text-success">
+          {formatCurrency(parseFloat(summary.totalIncome), asset.currency)}
+        </p>
+      </div>
+      <div class="rounded-card border border-base-300 bg-base-100 p-4 shadow-sm">
+        <StatLabel size="sm" className="uppercase tracking-widest">Expenses</StatLabel>
+        <p class="mt-1 text-lg font-bold tracking-tight text-error">
+          {formatCurrency(parseFloat(summary.totalExpenses), asset.currency)}
+        </p>
+      </div>
+      <div class="rounded-card border border-base-300 bg-base-100 p-4 shadow-sm">
+        <StatLabel size="sm" className="uppercase tracking-widest">Transfers In</StatLabel>
+        <p class="mt-1 text-lg font-bold tracking-tight text-info">
+          {formatCurrency(parseFloat(summary.totalTransfersIn), asset.currency)}
+        </p>
+      </div>
+      <div class="rounded-card border border-base-300 bg-base-100 p-4 shadow-sm">
+        <StatLabel size="sm" className="uppercase tracking-widest">Transfers Out</StatLabel>
+        <p class="mt-1 text-lg font-bold tracking-tight text-warning">
+          {formatCurrency(parseFloat(summary.totalTransfersOut), asset.currency)}
+        </p>
+      </div>
+    </div>
+
+    {/* Tabbed History: Transactions | Balance History */}
+    <div class="rounded-card border border-base-300 bg-base-100 shadow-sm" data-asset-tabs>
+      {/* Tab bar */}
+      <div class="flex border-b border-base-200" role="tablist" aria-label="Asset history tabs">
+        <button
+          type="button"
+          role="tab"
+          aria-selected="true"
+          aria-controls="panel-transactions"
+          id="tab-transactions"
+          class="flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-bold transition-colors border-b-2 border-accent text-accent"
+          data-tab-btn="transactions"
+        >
+          <ArrowUpRight size={16} class="stroke-current" aria-hidden="true" />
+          Transactions ({transactions.length})
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected="false"
+          aria-controls="panel-balance-history"
+          id="tab-balance-history"
+          class="flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-bold transition-colors border-b-2 border-transparent text-base-content/50 hover:text-base-content/70"
+          data-tab-btn="balance-history"
+        >
+          <History size={16} class="stroke-current" aria-hidden="true" />
+          Balance History ({balanceHistory.length})
+        </button>
+      </div>
+
+      {/* Panel: Transactions */}
+      <div
+        id="panel-transactions"
+        role="tabpanel"
+        aria-labelledby="tab-transactions"
+        data-tab-panel="transactions"
+      >
+        {
+          transactions.length > 0 ? (
+            <div class="divide-y divide-base-200">
+              {transactions.map((tx: any) => {
+                const amount = parseFloat(tx.amount || '0');
+                const isIncome =
+                  tx.type === 'income' || (tx.type === 'transfer' && tx.to_asset_id === id);
+                const isTransfer = tx.type === 'transfer';
+                const txDate = new Date(tx.transaction_date);
+                const formattedDate = txDate.toLocaleDateString('en-US', {
+                  month: 'short',
+                  day: 'numeric',
+                });
+
+                return (
+                  <div class="flex items-center justify-between p-4 lg:px-6">
+                    <div class="flex min-w-0 items-center gap-3">
+                      <div
+                        class:list={[
+                          'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg',
+                          isIncome ? 'bg-success/10 text-success' : 'bg-error/10 text-error',
+                        ]}
+                      >
+                        {isIncome ? (
+                          <ArrowDownLeft size={16} class="stroke-current" />
+                        ) : (
+                          <ArrowUpRight size={16} class="stroke-current" />
+                        )}
+                      </div>
+                      <div class="min-w-0">
+                        <p class="truncate text-sm font-bold text-base-content">
+                          {tx.description || (isTransfer ? 'Transfer' : tx.type)}
+                        </p>
+                        <p class="mt-0.5 text-xs text-base-content/50">
+                          {formattedDate}
+                          {isTransfer && <span class="ml-1 text-info">(Transfer)</span>}
+                        </p>
+                      </div>
+                    </div>
+                    <p
+                      class:list={[
+                        'whitespace-nowrap text-sm font-bold tracking-tight',
+                        isIncome ? 'text-success' : 'text-error',
+                      ]}
+                    >
+                      {isIncome ? '+' : '-'}
+                      {formatCurrency(amount, asset.currency)}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div class="p-8 text-center text-sm text-base-content/50">
+              No transactions for this period.
+            </div>
+          )
+        }
+      </div>
+
+      {/* Panel: Balance History */}
+      <div
+        id="panel-balance-history"
+        role="tabpanel"
+        aria-labelledby="tab-balance-history"
+        data-tab-panel="balance-history"
+        class="hidden"
+      >
+        {
+          balanceHistory.length > 0 ? (
+            <div class="overflow-x-auto">
+              <table class="w-full">
+                <thead>
+                  <tr class="border-b border-base-200">
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-base-content/50 lg:px-6">
+                      Date
+                    </th>
+                    <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-base-content/50 lg:px-6">
+                      Balance
+                    </th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-base-content/50 lg:px-6">
+                      Notes
+                    </th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-base-200">
+                  {balanceHistory.map((entry: any) => {
+                    const entryBalance = parseFloat(entry.balance || '0');
+                    const entryDate = new Date(entry.recorded_at);
+                    const formattedDate = entryDate.toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric',
+                    });
+                    const formattedTime = entryDate.toLocaleTimeString('en-US', {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    });
+
+                    return (
+                      <tr>
+                        <td class="whitespace-nowrap px-4 py-3 lg:px-6">
+                          <p class="text-sm font-medium text-base-content">{formattedDate}</p>
+                          <p class="text-xs text-base-content/40">{formattedTime}</p>
+                        </td>
+                        <td class="px-4 py-3 text-right lg:px-6">
+                          <span
+                            class:list={[
+                              'text-sm font-bold tracking-tight tabular-nums',
+                              asset.currency === 'IDR' ? 'text-success' : 'text-info',
+                            ]}
+                          >
+                            {formatCurrency(entryBalance, asset.currency)}
+                          </span>
+                        </td>
+                        <td class="px-4 py-3 lg:px-6">
+                          {entry.notes ? (
+                            <span class="text-xs text-base-content/60">{entry.notes}</span>
+                          ) : (
+                            <span class="text-xs text-base-content/20">&mdash;</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div class="p-8 text-center text-sm text-base-content/50">
+              No balance history recorded yet.
+            </div>
+          )
+        }
+      </div>
+    </div>
+  </div>
+
+  {/* Update Balance Modal */}
+  <AssetUpdateValueModal id="asset-update-value-modal" />
+</ProtectedLayout>
+
+<script>
+  import { PERIOD_CHANGE_EVENT } from '@/lib/constants/events';
+
+  let periodChangeController: AbortController | null = null;
+
+  function initDetailPeriodSelector() {
+    periodChangeController?.abort();
+    periodChangeController = new AbortController();
+
+    window.addEventListener(
+      PERIOD_CHANGE_EVENT,
+      (event: Event) => {
+        const period = (event as CustomEvent<{ period?: string }>).detail?.period;
+        if (!period || !/^\d{4}-\d{2}$/.test(period)) return;
+
+        const [year, month] = period.split('-');
+        const periodYear = parseInt(year, 10);
+        const periodMonth = parseInt(month, 10);
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        const currentMonth = now.getMonth() + 1;
+        const nextUrl = new URL(window.location.href);
+
+        if (periodYear === currentYear && periodMonth === currentMonth) {
+          nextUrl.searchParams.delete('year');
+          nextUrl.searchParams.delete('month');
+        } else {
+          nextUrl.searchParams.set('year', String(periodYear));
+          nextUrl.searchParams.set('month', String(periodMonth));
+        }
+
+        if (nextUrl.toString() !== window.location.href) {
+          window.location.assign(nextUrl.toString());
+        }
+      },
+      { signal: periodChangeController.signal }
+    );
+  }
+
+  const initializedUpdateValueButtons = new WeakSet<Element>();
+
+  function initDetailUpdateValueButtons() {
+    document.querySelectorAll('[data-update-value-asset]').forEach((button) => {
+      if (initializedUpdateValueButtons.has(button)) return;
+      initializedUpdateValueButtons.add(button);
+
+      button.addEventListener('click', (e: MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const btn = button as HTMLElement;
+        const assetId = btn.getAttribute('data-update-value-asset');
+        const assetName = btn.getAttribute('data-asset-name') || 'Asset';
+        const assetCurrency = (btn.getAttribute('data-asset-currency') || 'IDR') as 'IDR' | 'USD';
+        const assetBalance = Number(btn.getAttribute('data-asset-balance') || '0');
+
+        if (!assetId) return;
+
+        document.dispatchEvent(
+          new CustomEvent('open-asset-update-value', {
+            detail: {
+              id: assetId,
+              name: assetName,
+              currency: assetCurrency,
+              balance: assetBalance,
+            },
+          })
+        );
+      });
+    });
+  }
+
+  const initializedTabContainers = new WeakSet<Element>();
+
+  function initAssetTabs() {
+    document.querySelectorAll('[data-asset-tabs]').forEach((container) => {
+      if (initializedTabContainers.has(container)) return;
+      initializedTabContainers.add(container);
+
+      const buttons = container.querySelectorAll<HTMLButtonElement>('[data-tab-btn]');
+      const panels = container.querySelectorAll<HTMLElement>('[data-tab-panel]');
+
+      buttons.forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const tabId = btn.dataset.tabBtn;
+          if (!tabId) return;
+
+          // Update buttons
+          buttons.forEach((b) => {
+            const isActive = b.dataset.tabBtn === tabId;
+            b.setAttribute('aria-selected', isActive ? 'true' : 'false');
+            if (isActive) {
+              b.classList.add('border-accent', 'text-accent');
+              b.classList.remove(
+                'border-transparent',
+                'text-base-content/50',
+                'hover:text-base-content/70'
+              );
+            } else {
+              b.classList.remove('border-accent', 'text-accent');
+              b.classList.add(
+                'border-transparent',
+                'text-base-content/50',
+                'hover:text-base-content/70'
+              );
+            }
+          });
+
+          // Update panels
+          panels.forEach((p) => {
+            p.classList.toggle('hidden', p.dataset.tabPanel !== tabId);
+          });
+        });
+      });
+    });
+  }
+
+  function initDetail() {
+    initDetailPeriodSelector();
+    initDetailUpdateValueButtons();
+    initAssetTabs();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initDetail);
+  } else {
+    initDetail();
+  }
+
+  document.addEventListener('astro:page-load', initDetail);
+  document.addEventListener('astro:before-swap', () => periodChangeController?.abort());
+</script>

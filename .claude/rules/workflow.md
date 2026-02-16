@@ -43,7 +43,7 @@ The project deploys to **Cloudflare Workers** (primary) and **Bun** (local dev).
 
 **Forbidden in middleware-imported code:**
 
-- `bun:sqlite` → Use `better-sqlite3` or database abstraction layer
+- `bun:sqlite` → Only use in non-middleware code paths (API routes, CLI, services)
 - `bun:` protocol imports → Only use in API routes, CLI, or non-middleware contexts
 
 **Correct pattern:**
@@ -53,6 +53,7 @@ The project deploys to **Cloudflare Workers** (primary) and **Bun** (local dev).
 - CLI scripts: Can use Bun-specific APIs
 - Database: Use abstraction layer with environment-specific drivers
 - Environment variables: Use `getEnv()` helper, not `import.meta.env` (build-time only on Workers)
+- Dev/preview scripts: Must use `bun --bun` flag to ensure Bun runtime (Astro CLI defaults to Node.js)
 
 ## Code Quality Standards
 
@@ -100,3 +101,30 @@ The project deploys to **Cloudflare Workers** (primary) and **Bun** (local dev).
 - ❌ **Forget cross-session context** - if user asked to remove something prior, don't leave it
 - ❌ **Delete tests without replacing coverage**
 - ❌ **Assume endpoints are "dead" because grep finds no client references**
+- ✅ **Clean up dead error handling after simplifying methods** - when removing functionality (e.g., balance mutation), also remove corresponding error handlers in API routes
+- ✅ **Update OpenAPI schemas when adding new DB columns** - if a column is returned in API responses, the schema must include it
+- ✅ **Exclude debt from asset allocation charts** - when adding account classification, ensure allocation/distribution calculations exclude debt consistently (same as portfolio totals)
+
+## Subprocess Patterns
+
+- ✅ **Use `execFileSync` with argv array for subprocess calls** - avoids shell injection and special character issues in parameters
+- ❌ **Use `execSync` with string interpolation** - `execSync(\`bun run ${script} ${param}\`)` breaks on shell metacharacters and is a command injection vector
+- ✅ **Use Bun subprocess for E2E helpers needing bun:sqlite** - Playwright runs in Node.js, shell out to Bun for SQLite access
+- ❌ **Over-engineer E2E test helpers with production-grade error handling** - YAGNI for test code; keep subprocess helpers simple
+
+## Subagent Patterns
+
+- ✅ **Verify file state after subagent completes** - subagents may make partial changes; always read files and run typecheck before trusting their report
+- ✅ **Run typecheck immediately after subagent work** - stale diagnostics from mid-edit can appear; fresh typecheck reveals actual state
+- ✅ **Verify subagent commits with `git log` after dispatch** - subagents may report success but fail to commit
+- ✅ **Commit files manually if subagent skipped the commit step** - check `git status` after every subagent returns
+- ❌ **Trust subagent "all checks passed" reports without independent verification** - subagents may report success while leaving partial changes
+- ✅ **Group parallel subagents by file dependency** - Wave 1 (services + utils + seeders), then Wave 2 (components + pages that consume them); prevents merge conflicts
+- ✅ **Run full quality gates after ALL parallel agents complete** - individual agents pass in isolation but combined state may conflict (e.g., both agents editing same file)
+- ✅ **Use parallel code review agents for thorough coverage** - two independent reviewers catch different issues; triage findings together before fixing
+
+## Dependency Changes
+
+- ✅ **Grep ALL file types when removing a dependency** - comments, docs, rules, and config files reference dependencies too
+- ✅ **Verify E2E failures are pre-existing before investigating** - `git stash` and test on prior code to isolate regressions
+- ❌ **Trust `reuseExistingServer: true` E2E results as proof of correctness** - a running dev server masks startup failures

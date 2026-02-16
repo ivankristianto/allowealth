@@ -11,37 +11,38 @@ Personal and family financial application for expense tracking, budgeting, asset
 - **State Management:** Nano Stores (client-side reactive state)
 - **Animations:** Motion/mini (client-side animations)
 - **Storybook:** 8.x with HTML framework
-- **Database:** Drizzle ORM + SQLite (dev) / PostgreSQL/Supabase (prod)
+- **Database:** Drizzle ORM + SQLite (dev) / PostgreSQL+Hyperdrive or Cloudflare D1 (prod)
 - **Auth:** Lucia Auth
 - **Cache:** CacheManager + Upstash Redis (prod) / Memory (dev)
 - **Logging:** Structured consola loggers
 
 ## ADR Quick Reference
 
-| Category                | Use This ✅                              | Not This ❌                                    | Reference                         |
-| ----------------------- | ---------------------------------------- | ---------------------------------------------- | --------------------------------- |
-| **HTML Rendering**      | Server-rendered Astro components         | Client-side DOM construction                   | `002-interactive-pages.md`        |
-| **Interactive Updates** | Fetch `?_render=html` from API           | Build HTML strings in JS                       | `002-interactive-pages.md`        |
-| **Client Scripts**      | `.client.ts` files + `data-*` attributes | `define:vars` with npm imports                 | `002-interactive-pages.md`        |
-| **Styling**             | DaisyUI classes (`bg-base-200`)          | Tailwind colors (`bg-slate-100`)               | `design-system/START.md`          |
-| **Design Tokens**       | Import from `@/lib/tokens`               | Hardcoded values (`#10b981`)                   | `design-system/01-foundations.md` |
-| **Icons**               | `@lucide/astro`                          | Custom SVG or emojis                           | `design-system/START.md`          |
-| **Animations**          | `motion/mini`                            | `motion` (full) or CSS-only                    | `design-system/08-animations.md`  |
-| **State**               | Nano Stores                              | Local state scattered                          | N/A                               |
-| **Feedback**            | Toast notifications                      | `alert()`, `confirm()`                         | N/A                               |
-| **TypeScript**          | Separate `.ts` files                     | Types in `<script>` tags                       | N/A                               |
-| **Database**            | `better-sqlite3` (shared code)           | `bun:sqlite` (middleware)                      | `rules/workflow.md`               |
-| **Schema Selection**    | `getActiveSchema()` in services          | Direct table imports                           | Dual SQLite/PostgreSQL support    |
-| **Environment Vars**    | `getEnv()` for runtime secrets           | `import.meta.env` (build-time only on Workers) | Cross-runtime compat              |
-| **Testing**             | `bun:test`                               | `vitest`                                       | `rules/testing.md`                |
-| **API Docs**            | Update OpenAPI files                     | Comments only                                  | `openapi/README.md`               |
-| **Bundle Size**         | Specific imports (`@/lib/utils/client`)  | Barrel exports (`@/lib/utils`)                 | `005-bundle-performance.md`       |
-| **Chart.js**            | `@/lib/chart-setup` (tree-shaken)        | `chart.js/auto`                                | `005-bundle-performance.md`       |
-| **Server Libraries**    | Type-only imports (`import type`)        | Runtime imports in client                      | `005-bundle-performance.md`       |
-| **Password Hashing**    | PBKDF2-SHA256 (Web Crypto API)           | oslo/argon2 (native addon)                     | Cross-runtime compatibility       |
-| **Caching**             | CacheManager + Tag-based drivers         | Direct Redis or local-only cache               | `008-cache-abstraction.md`        |
-| **Logging**             | Structured consola loggers               | `console.log`                                  | `009-logger-abstraction.md`       |
-| **MCP Server**          | Hybrid (stdio + HTTP) with shared tools  | Logic scattered in routes                      | `010-mcp-server-architecture.md`  |
+| Category                | Use This ✅                              | Not This ❌                                    | Reference                                 |
+| ----------------------- | ---------------------------------------- | ---------------------------------------------- | ----------------------------------------- |
+| **HTML Rendering**      | Server-rendered Astro components         | Client-side DOM construction                   | `002-interactive-pages.md`                |
+| **Interactive Updates** | Fetch `?_render=html` from API           | Build HTML strings in JS                       | `002-interactive-pages.md`                |
+| **Client Scripts**      | `.client.ts` files + `data-*` attributes | `define:vars` with npm imports                 | `002-interactive-pages.md`                |
+| **Styling**             | DaisyUI classes (`bg-base-200`)          | Tailwind colors (`bg-slate-100`)               | `design-system/START.md`                  |
+| **Design Tokens**       | Import from `@/lib/tokens`               | Hardcoded values (`#10b981`)                   | `design-system/01-foundations.md`         |
+| **Icons**               | `@lucide/astro`                          | Custom SVG or emojis                           | `design-system/START.md`                  |
+| **Animations**          | `motion/mini`                            | `motion` (full) or CSS-only                    | `design-system/08-animations.md`          |
+| **State**               | Nano Stores                              | Local state scattered                          | N/A                                       |
+| **Feedback**            | Toast notifications                      | `alert()`, `confirm()`                         | N/A                                       |
+| **TypeScript**          | Separate `.ts` files                     | Types in `<script>` tags                       | N/A                                       |
+| **Database**            | `bun:sqlite` (local dev)                 | Direct SQLite in middleware                    | `rules/workflow.md`                       |
+| **Database (Workers)**  | D1 or Hyperdrive (deploy-time choice)    | Both via wrangler.toml                         | `006-database-connection-architecture.md` |
+| **Schema Selection**    | `getActiveSchema()` in services          | Direct table imports                           | Dual SQLite/PostgreSQL support            |
+| **Environment Vars**    | `getEnv()` for runtime secrets           | `import.meta.env` (build-time only on Workers) | Cross-runtime compat                      |
+| **Testing**             | `bun:test`                               | `vitest`                                       | `rules/testing.md`                        |
+| **API Docs**            | Update OpenAPI files                     | Comments only                                  | `openapi/README.md`                       |
+| **Bundle Size**         | Specific imports (`@/lib/utils/client`)  | Barrel exports (`@/lib/utils`)                 | `005-bundle-performance.md`               |
+| **Chart.js**            | `@/lib/chart-setup` (tree-shaken)        | `chart.js/auto`                                | `005-bundle-performance.md`               |
+| **Server Libraries**    | Type-only imports (`import type`)        | Runtime imports in client                      | `005-bundle-performance.md`               |
+| **Password Hashing**    | PBKDF2-SHA256 (Web Crypto API)           | oslo/argon2 (native addon)                     | Cross-runtime compatibility               |
+| **Caching**             | CacheManager + Tag-based drivers         | Direct Redis or local-only cache               | `008-cache-abstraction.md`                |
+| **Logging**             | Structured consola loggers               | `console.log`                                  | `009-logger-abstraction.md`               |
+| **MCP Server**          | Hybrid (stdio + HTTP) with shared tools  | Logic scattered in routes                      | `010-mcp-server-architecture.md`          |
 
 ## Key Commands
 
@@ -104,7 +105,7 @@ All project rules are in `.claude/rules/`:
 - **`backend/deployment.md`** - Workers deployment patterns
 - **`backend/api.md`** - API patterns, OpenAPI
 - **`testing.md`** - Testing patterns (E2E, Playwright, unit)
-- **`learned-patterns.md`** - Learned patterns from experience
+- **`learned-patterns.md`** - Pattern index (patterns distributed to domain files)
 
 Architecture decisions in `docs/architecture/`:
 

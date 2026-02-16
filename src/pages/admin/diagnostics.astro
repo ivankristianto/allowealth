@@ -1,0 +1,52 @@
+---
+/**
+ * Admin Diagnostics Page
+ *
+ * System diagnostics page for super admins.
+ * Displays runtime, database, cache, environment, and configuration information.
+ *
+ * Protected by AdminLayout (requireSuperAdmin).
+ * Fetches diagnostics server-side via DiagnosticsService.
+ */
+
+import AdminLayout from '@/layouts/AdminLayout.astro';
+import DiagnosticsDisplay from '@/components/organisms/DiagnosticsDisplay.astro';
+import { DiagnosticsService } from '@/services/diagnostics.service';
+import { db } from '@/db';
+import { CircleAlert } from '@lucide/astro';
+
+// Initialize diagnostics service
+const service = new DiagnosticsService(db);
+
+// Fetch diagnostics server-side
+let diagnosticsData = null;
+let error = null;
+
+try {
+  diagnosticsData = await service.getDiagnostics();
+} catch (err) {
+  console.error('Error fetching diagnostics:', err);
+  error = err instanceof Error ? err.message : 'Unknown error occurred';
+}
+---
+
+<AdminLayout title="Diagnostics" currentPath="/admin/diagnostics" subtitle="System health overview">
+  <div
+    class="@container max-w-7xl mx-auto @sm:px-2 @3xl:px-6 space-y-6 @sm:space-y-8"
+    data-testid="diagnostics-page"
+  >
+    {
+      error && (
+        <div class="alert alert-error" role="alert">
+          <CircleAlert size={20} class="shrink-0" aria-hidden="true" />
+          <div>
+            <h3 class="font-bold">Error Loading Diagnostics</h3>
+            <p class="text-sm">{error}</p>
+          </div>
+        </div>
+      )
+    }
+
+    {diagnosticsData && <DiagnosticsDisplay data={diagnosticsData} />}
+  </div>
+</AdminLayout>

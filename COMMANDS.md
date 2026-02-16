@@ -100,9 +100,24 @@ bun run db:migrate:prod      # Apply to production
 
 See `docs/architecture/007-database-migrations.md` for full migration workflow.
 
+## D1 Database (Cloudflare)
+
+| Command                                 | Description                                    |
+| --------------------------------------- | ---------------------------------------------- |
+| `bun run deploy:cloudflare:d1`          | Build and deploy to Cloudflare Workers with D1 |
+| `bun run db:d1:migrate -- <file>`       | Apply migration to remote D1 database          |
+| `bun run db:d1:migrate:local -- <file>` | Apply migration to local D1 database           |
+
 ## CLI Tools
 
 All CLI tools have `:prod` variants that use `.env.production` for the database connection.
+
+### Super Admin
+
+| Command                               | Description                   |
+| ------------------------------------- | ----------------------------- |
+| `bun run cli:create-super-admin`      | Promote a user to super admin |
+| `bun run cli:create-super-admin:prod` | Same, against production DB   |
 
 ### Workspace Management
 

@@ -15,7 +15,7 @@ Any code imported by middleware MUST be Workers-compatible.
 
 ### Forbidden in Middleware-Imported Code
 
-- ❌ `bun:sqlite` → Use `better-sqlite3` or database abstraction layer
+- ❌ `bun:sqlite` → Only use in API routes, CLI, or non-middleware contexts
 - ❌ `bun:` protocol imports → Only use in API routes, CLI, or non-middleware contexts
 - ❌ Native addons (e.g., `@node-rs/argon2`) → Use Web APIs or Workers-compatible alternatives
 - ❌ Node-specific APIs → Use cross-runtime alternatives
@@ -32,8 +32,8 @@ grep -r "bun:" src/ --exclude-dir=node_modules
 ### Correct Patterns
 
 ```typescript
-// ✅ Middleware: Workers-compatible imports only
-import Database from 'better-sqlite3'; // Works in both runtimes
+// ✅ Middleware: Workers-compatible imports only (no SQLite drivers)
+// Database middleware skips SQLite lifecycle management
 
 // ✅ API routes: Can use Bun-specific APIs (local dev context)
 import { Database } from 'bun:sqlite'; // OK in API routes
@@ -224,6 +224,55 @@ const dbUrl = getEnv('DATABASE_URL'); // Throws if missing
 **Rules:**
 
 - ❌ **Change DATABASE_URL to sqlite fallback in prod config** - fail fast instead
+
+## Cloudflare D1
+
+```typescript
+// ✅ Correct: Static import for D1 driver
+import { drizzle } from 'drizzle-orm/d1';
+
+// ✅ Correct: Dedicated binding storage
+let d1Binding: D1Database | null = null;
+export function setD1Binding(binding: D1Database) {
+  d1Binding = binding;
+}
+export function getD1Binding() {
+  return d1Binding;
+}
+
+// ❌ Wrong: Smuggle through env bag
+setRuntimeEnv({ D1: binding }); // D1 is an object, env expects strings
+```
+
+**Rules:**
+
+- ✅ **Use static import for `drizzle-orm/d1`** - `drizzle()` is synchronous, dynamic `import()` adds unnecessary async complexity
+- ❌ **Use async proxy patterns to bridge sync/async DB interfaces** - Proxy that wraps every property as an async function breaks `db.query.table.findFirst()` chains
+- ✅ **Store D1 binding in dedicated module-level variable** - not in the string-typed env API (`Record<string, string>`)
+- ❌ **Smuggle objects through `setRuntimeEnv()` env bag** - D1 binding is an object, env API expects strings; use dedicated `setD1Binding()`/`getD1Binding()`
+- ✅ **Enable transactions for D1 in `runTransaction()`** - D1 runs in multi-isolate Workers, not single-writer local SQLite
+- ❌ **Assume D1 has same concurrency model as local SQLite** - local SQLite has single-writer WAL; D1 is multi-isolate, needs transactions
+- ✅ **Call `prepareForRequest()` for D1 in database middleware** - reset `dbInstance` per-request even though D1 has no TCP connections
+- ✅ **Suppress `DATABASE_URL` warning when D1 is enabled** - D1 doesn't use DATABASE_URL; check `isD1` before calling `getDatabaseUrl()`
+
+## Wrangler Configuration
+
+```toml
+# ✅ Correct: Bare domain for custom domains
+[[routes]]
+pattern = "example.io"
+custom_domain = true
+
+# ❌ Wrong: Wildcards or paths in custom domain routes
+[[routes]]
+pattern = "example.io/*"
+custom_domain = true
+```
+
+**Rules:**
+
+- ❌ **Use wildcards (`/*`) or paths in Custom Domain routes** - Custom Domains only accept bare domain names
+- ✅ **Use bare domain in `custom_domain` routes**
 
 ## Deployment Checklist
 

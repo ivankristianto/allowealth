@@ -51,7 +51,7 @@ Dashboard page assembly with premium redesign layout featuring widgets and summa
 | Area | Component | Span |
 |------|-----------|------|
 | Main content | RecentTransactionsList | xl:col-span-2 |
-| Sidebar | NetWorthWidget + CashFlowWidget | space-y-8 stack |
+| Sidebar | AssetsWidget + CashFlowWidget | space-y-8 stack |
 
 ### Component Dependencies
 
@@ -61,7 +61,7 @@ Dashboard page assembly with premium redesign layout featuring widgets and summa
 | SpendingCard | Spending summary card |
 | SpendingChart | Spending visualization chart |
 | RecentTransactionsList | Recent activity list |
-| NetWorthWidget | Net worth display |
+| AssetsWidget | Net worth display |
 | CashFlowWidget | Cash flow summary |
 
 ### Responsive Behavior
@@ -196,7 +196,7 @@ const createDashboardPage = (): HTMLElement => {
   const sidebar = document.createElement('div');
   sidebar.className = 'space-y-8';
 
-  // NetWorthWidget
+  // AssetsWidget
   const netWorth = document.createElement('div');
   netWorth.className = 'card bg-base-100 border border-base-300 p-6';
   netWorth.innerHTML = `

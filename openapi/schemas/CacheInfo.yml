@@ -1,0 +1,47 @@
+CacheInfo:
+  type: object
+  description: Cache driver and configuration information
+  properties:
+    driver:
+      type: string
+      enum: [memory, upstash, noop]
+      description: Cache driver type
+      example: upstash
+    isEnabled:
+      type: boolean
+      description: Whether caching is enabled
+      example: true
+    config:
+      type: object
+      description: Cache configuration
+      properties:
+        ttl:
+          type: integer
+          description: Default TTL in seconds
+          example: 3600
+        maxSize:
+          type: integer
+          description: Maximum cache size (memory driver only)
+          example: 1000
+    upstashConfig:
+      type: object
+      description: Upstash Redis configuration
+      properties:
+        url:
+          type: string
+          description: Upstash Redis URL (sanitized)
+          example: https://true-hamster-1234.upstash.io
+        restUrl:
+          type: string
+          description: Upstash REST API URL
+          example: https://true-hamster-1234.upstash.io
+    status:
+      type: string
+      enum: [healthy, error, disabled]
+      description: Cache health status
+      example: healthy
+    lastError:
+      type: string
+      description: Last error message (if status is error)
+      example: Connection timeout
+  required: [driver, isEnabled, config, status]

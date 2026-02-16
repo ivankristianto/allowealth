@@ -13,6 +13,7 @@ import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
 import BudgetActions from '@components/molecules/BudgetActions.astro';
 import BudgetFilterControls from '@components/molecules/BudgetFilterControls.astro';
 import BudgetHeaderControls from '@components/molecules/BudgetHeaderControls.astro';
+import CategoryDrillDownModal from '@components/organisms/CategoryDrillDownModal.astro';
 import SetNewBudgetModal from '@components/organisms/SetNewBudgetModal.astro';
 import CopyBudgetModal from '@components/organisms/CopyBudgetModal.astro';
 import BudgetImportModal from '@components/organisms/BudgetImportModal.astro';
@@ -395,6 +396,9 @@ const copyDisabledTooltip =
     currency={selectedCurrency}
   />
 
+  {/* Category Drilldown Modal (reused from reports page) */}
+  <CategoryDrillDownModal id="budget-category-drilldown-modal" />
+
   {/* Initialize Budgets Modal */}
   {
     uninitializedCategories.length > 0 && (
@@ -435,9 +439,11 @@ const copyDisabledTooltip =
   const PAGE_LOAD_KEY = '__budgetPageLoadListenerRegistered';
   const PENDING_BUDGET_INIT_TOAST_KEY = 'budget-initialize-pending-toast';
   const PERIOD_NAV_HANDLER_KEY = '__budgetPeriodNavigationHandler';
+  const DRILLDOWN_HANDLER_KEY = '__budgetDrillDownHandler';
 
   interface BudgetWindow extends Window {
     [PERIOD_NAV_HANDLER_KEY]?: (event: Event) => void;
+    [DRILLDOWN_HANDLER_KEY]?: (event: Event) => void;
   }
 
   function showPendingInitializeToast() {
@@ -540,6 +546,48 @@ const copyDisabledTooltip =
     }
   }
 
+  function initBudgetDrillDown() {
+    const scopedWindow = window as BudgetWindow;
+    if (scopedWindow[DRILLDOWN_HANDLER_KEY]) return;
+
+    const handler = (event: Event) => {
+      const target = (event as MouseEvent).target as HTMLElement;
+      const btn = target.closest('[data-view-details]') as HTMLElement | null;
+      if (!btn) return;
+
+      const categoryId = btn.dataset.categoryId;
+      const categoryName = btn.dataset.categoryName;
+      const period = btn.dataset.period;
+      if (!categoryId || !categoryName || !period) return;
+
+      document.dispatchEvent(
+        new CustomEvent('open-category-drilldown', {
+          detail: {
+            categoryId,
+            categoryName,
+            categoryIcon: btn.dataset.categoryIcon || 'tag',
+            categoryColor: '', // Budget data uses hex; drilldown API defaults to bg-base-300
+            spent: parseFloat(btn.dataset.spent || '0'),
+            budgetLimit: btn.dataset.budgetLimit ? parseFloat(btn.dataset.budgetLimit) : null,
+            period,
+          },
+        })
+      );
+    };
+
+    scopedWindow[DRILLDOWN_HANDLER_KEY] = handler;
+    document.addEventListener('click', handler);
+  }
+
+  function cleanupBudgetDrillDown() {
+    const scopedWindow = window as BudgetWindow;
+    const handler = scopedWindow[DRILLDOWN_HANDLER_KEY];
+    if (!handler) return;
+
+    document.removeEventListener('click', handler);
+    delete scopedWindow[DRILLDOWN_HANDLER_KEY];
+  }
+
   function initBudgetPeriodNavigation() {
     const scopedWindow = window as BudgetWindow;
     if (scopedWindow[PERIOD_NAV_HANDLER_KEY]) return;
@@ -583,6 +631,7 @@ const copyDisabledTooltip =
   initBudgetPage();
   initBudgetExtras();
   initBudgetPeriodNavigation();
+  initBudgetDrillDown();
 
   // Register cleanup handler (must re-register after each page load since it's once)
   function registerCleanup() {
@@ -591,6 +640,7 @@ const copyDisabledTooltip =
       () => {
         cleanup();
         cleanupBudgetPeriodNavigation();
+        cleanupBudgetDrillDown();
       },
       { once: true }
     );
@@ -604,6 +654,7 @@ const copyDisabledTooltip =
       initBudgetPage();
       initBudgetExtras();
       initBudgetPeriodNavigation();
+      initBudgetDrillDown();
       registerCleanup();
     });
   }

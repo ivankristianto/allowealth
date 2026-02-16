@@ -209,7 +209,7 @@ export const GET: APIRoute = async (context) => {
 
         // Generate yearly periods (last 3 years + current year)
         const yearlyPeriods = Array.from({ length: 4 }, (_, i) => {
-          const year = currentYear - (3 - i);
+          const year = currentYear - i;
           return {
             key: year.toString(),
             label: year.toString(),

@@ -191,7 +191,7 @@ export const auth = new Lucia(adapter, {
       email: databaseUser.email,
       name: databaseUser.name,
       workspaceId: databaseUser.workspace_id,
-      role: databaseUser.role as 'admin' | 'member',
+      role: databaseUser.role as 'admin' | 'member' | 'super_admin',
       avatarUrl: databaseUser.avatar_url,
       deletedAt: databaseUser.deleted_at,
     };
@@ -216,7 +216,7 @@ export type Session = {
 /**
  * User role in a workspace
  */
-export type UserRole = 'admin' | 'member';
+export type UserRole = 'admin' | 'member' | 'super_admin';
 
 /**
  * User data structure (as returned by Lucia)
@@ -225,7 +225,7 @@ export type User = {
   id: string;
   email: string;
   name: string;
-  workspaceId: string;
+  workspaceId: string | null;
   role: UserRole;
   avatarUrl: string | null;
   deletedAt: Date | null;

@@ -1,0 +1,74 @@
+---
+/**
+ * Admin Workspace Member List
+ *
+ * Read-only member list showing name, email, role, and join date.
+ * Uses the Card atom component for design system consistency.
+ */
+import Card from '@/components/atoms/Card.astro';
+import { User, Crown } from '@lucide/astro';
+
+interface Member {
+  id: string;
+  name: string;
+  email: string;
+  role: 'admin' | 'member' | 'super_admin';
+  createdAt: Date;
+}
+
+interface Props {
+  members: Member[];
+}
+
+const { members } = Astro.props;
+---
+
+<section aria-label="Workspace members">
+  <Card padding="md">
+    <h3 class="text-lg font-bold mb-4">Members ({members.length})</h3>
+    {
+      members.length === 0 ? (
+        <p class="text-base-content/60">No members</p>
+      ) : (
+        <div class="overflow-x-auto">
+          <table class="table table-sm">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Joined</th>
+              </tr>
+            </thead>
+            <tbody>
+              {members.map((member) => (
+                <tr>
+                  <td class="font-semibold">{member.name}</td>
+                  <td class="text-base-content/70">{member.email}</td>
+                  <td>
+                    {member.role === 'super_admin' ? (
+                      <span class="badge badge-error badge-sm gap-1">
+                        <Crown size={12} aria-hidden="true" /> Super Admin
+                      </span>
+                    ) : member.role === 'admin' ? (
+                      <span class="badge badge-accent badge-sm gap-1">
+                        <Crown size={12} aria-hidden="true" /> Admin
+                      </span>
+                    ) : (
+                      <span class="badge badge-ghost badge-sm gap-1">
+                        <User size={12} aria-hidden="true" /> Member
+                      </span>
+                    )}
+                  </td>
+                  <td class="text-base-content/70 text-sm">
+                    {new Date(member.createdAt).toLocaleDateString()}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )
+    }
+  </Card>
+</section>

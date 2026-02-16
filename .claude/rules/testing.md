@@ -116,6 +116,8 @@ export class BudgetPage {
 **Rules:**
 
 - ✅ **Update page objects when UI components change** - select-to-chips, dual-layout, new selectors break existing locators
+- ✅ **Use `data-testid` locators over text/CSS class selectors in E2E tests** - `[data-testid="runtime-card"]` survives heading text changes, CSS class renames, and HTML element swaps (`td` → `dt`)
+- ✅ **Check E2E tests when refactoring UI** - heading text changes, element type changes (`td` → `dt`), and CSS class renames (`badge-primary` → `badge-accent`) silently break locators
 
 ### Hooks and Timeouts
 

@@ -28,6 +28,8 @@ interface Props {
   showMenuToggle?: boolean;
   /** Authenticated user object */
   user?: User | null;
+  /** Current URL path (passed through from layout) */
+  currentPath?: string;
 }
 
 const { title, subtitle, showMenuToggle = true, user } = Astro.props;

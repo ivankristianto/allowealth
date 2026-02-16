@@ -1,26 +1,16 @@
 /**
- * Database Runtime-Agnostic Integration Tests
- * ============================================
+ * Database Integration Tests
+ * ==========================
  *
  * Integration tests for verifying that the database module works correctly
- * across different JavaScript runtimes (Bun and Node.js).
- *
- * Context: After refactoring src/db/index.ts to use lazy initialization,
- * we need to verify it works in both runtimes:
- *
- * - **Node.js context**: Astro middleware runs in Node.js and imports
- *   services that use the database. The database must be importable
- *   without triggering bun:sqlite at module load time.
- *
- * - **Bun context**: API routes run in Bun and use the database normally.
- *   The database should initialize correctly with bun:sqlite.
+ * with bun:sqlite in the Bun runtime.
  *
  * Test Scenarios:
- * 1. Import @/db in Node.js-like environment → should not throw
- * 2. Import @/db in Bun environment → should not throw
- * 3. Call getDb() multiple times → should return same instance (cached)
- * 4. Access database tables through the db instance → should work
- * 5. Full e2e: Load dashboard page → should render without errors
+ * 1. Import @/db → should not throw
+ * 2. Call getDb() multiple times → should return same instance (cached)
+ * 3. Access database tables through the db instance → should work
+ * 4. CRUD operations, transactions, service integration
+ * 5. Schema exports, error handling, type safety
  *
  * Usage: bun test src/db/index.integration.test.ts
  */
@@ -59,61 +49,6 @@ function setupTestDatabase() {
     console.error('[Integration Test] Failed to set up test database:', error);
     throw error;
   }
-}
-
-/**
- * Test helper: Detect current runtime
- */
-function detectRuntime(): 'bun' | 'node' {
-  // @ts-ignore - Bun is not a standard global
-  if (typeof Bun !== 'undefined') {
-    return 'bun';
-  }
-  if (typeof process !== 'undefined' && process.versions?.node) {
-    return 'node';
-  }
-  return 'node'; // Default to Node.js
-}
-
-/**
- * Test helper: Create a Node.js-like import context
- * This simulates what happens when middleware imports services
- */
-async function importInNodeContext() {
-  // Save current runtime detection
-  const runtimeBefore = detectRuntime();
-
-  // We're actually in Bun, but we want to test that the import doesn't
-  // fail even if we're importing in a context that will eventually run in Node
-
-  // The key test is that the import doesn't throw at module load time
-  // The lazy initialization ensures bun:sqlite is only loaded on first access
-
-  // Dynamic import to simulate Node.js ESM import behavior
-  const dbModule = await import('@/db');
-
-  return {
-    db: dbModule.db,
-    getDb: dbModule.getDb,
-    runtime: runtimeBefore,
-  };
-}
-
-/**
- * Test helper: Simulate middleware import pattern
- * Middleware imports services which import @/db
- * This should not throw even in Node.js runtime
- */
-async function simulateMiddlewareImport() {
-  // This simulates the middleware import chain:
-  // middleware.ts → auth/lucia.ts → services/index.ts → @/db
-
-  // The key is that importing services should not trigger
-  // database initialization at module load time
-
-  const servicesModule = await import('@/services');
-
-  return servicesModule;
 }
 
 /**
@@ -169,6 +104,7 @@ async function createTestDatabase() {
     created_by_user_id: testUser.id,
     name: 'Test Asset',
     type: 'bank_account' as const,
+    account_class: 'liquid' as const,
     balance: '1000000',
     currency: 'IDR' as const,
     last_updated: new Date(),
@@ -230,13 +166,8 @@ async function cleanupTestData() {
   }
 }
 
-describe('Database Runtime-Agnostic Integration Tests', () => {
-  let runtime: 'bun' | 'node';
-
+describe('Database Integration Tests', () => {
   beforeAll(() => {
-    runtime = detectRuntime();
-    console.log(`[Integration Test] Running in ${runtime.toUpperCase()} runtime`);
-
     // Set up test database schema
     setupTestDatabase();
   }, 30_000); // drizzle-kit push can be slow on first run or schema changes
@@ -257,82 +188,7 @@ describe('Database Runtime-Agnostic Integration Tests', () => {
     process.env.DATABASE_URL = originalEnv.DATABASE_URL;
   });
 
-  describe('Runtime Detection', () => {
-    it('should detect the current runtime correctly', () => {
-      const detected = detectRuntime();
-      expect(['bun', 'node']).toContain(detected);
-      expect(detected).toBe(runtime);
-    });
-
-    it('should be running in Bun runtime for these tests', () => {
-      // Bun test runner runs in Bun runtime
-      expect(runtime).toBe('bun');
-    });
-  });
-
-  describe('Module Import in Node.js Context', () => {
-    it('should import @/db without throwing in Node.js context', async () => {
-      // This test verifies that the database module can be imported
-      // without triggering bun:sqlite at module load time
-      // The lazy initialization ensures this works even in Node.js
-
-      let importError: Error | null = null;
-
-      try {
-        const { db: importedDb, getDb: importedGetDb } = await importInNodeContext();
-
-        // Verify exports exist
-        expect(importedDb).toBeDefined();
-        expect(importedGetDb).toBeDefined();
-        expect(typeof importedGetDb).toBe('function');
-      } catch (error) {
-        importError = error instanceof Error ? error : new Error(String(error));
-      }
-
-      expect(importError).toBeNull();
-    });
-
-    it('should import services without throwing in Node.js context', async () => {
-      // This simulates middleware importing services
-      // Services import @/db, so this tests the full import chain
-
-      let importError: Error | null = null;
-
-      try {
-        const services = await simulateMiddlewareImport();
-
-        // Verify service singletons exist
-        expect(services.categoryService).toBeDefined();
-        expect(services.dashboardService).toBeDefined();
-        expect(services.transactionService).toBeDefined();
-      } catch (error) {
-        importError = error instanceof Error ? error : new Error(String(error));
-      }
-
-      expect(importError).toBeNull();
-    });
-
-    it('should have lazy initialization - db export should not initialize on import', async () => {
-      // The db export uses a Proxy with lazy initialization
-      // It should not create the database until first access
-
-      // Import fresh module
-      const dbModule = await import('@/db');
-
-      // The db export should be a Proxy object
-      expect(dbModule.db).toBeDefined();
-
-      // Accessing a property triggers initialization
-      // This should not throw
-      const hasQuery = 'query' in dbModule.db;
-      expect(hasQuery).toBe(true);
-
-      // After first access, the database is initialized
-      expect(dbModule.db.query).toBeDefined();
-    });
-  });
-
-  describe('Module Import in Bun Context', () => {
+  describe('Module Import', () => {
     it('should import @/db without throwing in Bun context', async () => {
       // In Bun context, the import should work and initialize with bun:sqlite
 

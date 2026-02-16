@@ -8,16 +8,18 @@
  * @see https://bun.sh/docs/api/sqlite
  */
 
+import fs from 'node:fs';
+import { createRequire } from 'node:module';
 import path from 'node:path';
 import type { DatabaseDriver, PreparedStatement, RunResult } from '../driver';
 
 /**
  * Bun-specific Database import
  *
- * We use dynamic import at the bottom of this file to avoid
- * loading bun:sqlite in Node.js contexts (like Astro middleware).
- *
- * The actual import is done in createBunDriver() function.
+ * bun:sqlite is loaded via createRequire() inside createBunDriver() to avoid
+ * loading it at module evaluation time. This file is statically imported by
+ * db/index.ts, but bun:sqlite must only load when actually creating a SQLite
+ * driver (not in Workers/PostgreSQL contexts).
  */
 type BunDatabase = any;
 
@@ -31,8 +33,6 @@ type BunStatement = any;
  */
 function ensureDatabaseDir(dbPath: string): void {
   const dir = path.dirname(dbPath);
-  // @ts-ignore - Bun provides require in runtime
-  const fs = require('node:fs');
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
@@ -48,10 +48,10 @@ export function createBunDriver(dbPath: string): DatabaseDriver & { _raw: BunDat
   // Ensure the database directory exists
   ensureDatabaseDir(dbPath);
 
-  // Import bun:sqlite only when creating the driver
-  // This ensures the import only happens in Bun runtime
-  // @ts-ignore - bun:sqlite is not available in TypeScript types
-  const Database = require('bun:sqlite').Database;
+  // Load bun:sqlite via createRequire to work in Vite SSR context
+  // (bare require() is not defined in Vite's ESM module scope)
+  const dynamicRequire = createRequire(import.meta.url);
+  const Database = dynamicRequire('bun:sqlite').Database;
   const sqlite: BunDatabase = new Database(dbPath);
 
   const driver: DatabaseDriver & { _raw: BunDatabase } = {

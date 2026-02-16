@@ -8,10 +8,17 @@
 import { csrfFetch } from '@/lib/csrf-client';
 // @TODO: P2 - Use import alias syntax instead of re-export
 import { formatCurrency } from '@/lib/formatting/currency-client';
+import { attachAmountFormatter, stripAmountFormatting } from '@/lib/formatting/amount-input';
 
 // DOM Elements
 const form = document.getElementById('compound-calculator-form') as HTMLFormElement;
 const resultsContainer = document.getElementById('results-container');
+const principalInput = form?.querySelector('input[name="principal"]') as HTMLInputElement | null;
+
+if (principalInput && principalInput.dataset.amountFormatterInitialized !== 'true') {
+  attachAmountFormatter(principalInput, 'IDR');
+  principalInput.dataset.amountFormatterInitialized = 'true';
+}
 
 /**
  * Render results HTML
@@ -191,7 +198,8 @@ async function handleFormSubmit(e: Event): Promise<void> {
   e.preventDefault();
 
   const formData = new FormData(form);
-  const principal = parseFloat(formData.get('principal') as string);
+  const principalRaw = String(formData.get('principal') || '');
+  const principal = parseFloat(stripAmountFormatting(principalRaw, 'IDR'));
   const rate = parseFloat(formData.get('rate') as string);
   const years = parseInt(formData.get('years') as string);
 

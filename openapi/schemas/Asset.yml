@@ -9,6 +9,10 @@ Asset:
     type:
       type: string
       enum: [cash, bank_account, e_wallet, mutual_fund, bond, crypto, stock, other, credit_card, loan]
+    account_class:
+      type: string
+      enum: [liquid, non_liquid, debt]
+      description: Account classification for portfolio grouping. Auto-derived from asset type.
     category_id:
       type: string
       nullable: true

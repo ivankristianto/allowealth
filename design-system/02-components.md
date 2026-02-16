@@ -107,7 +107,7 @@ Component patterns for atoms, molecules, and organisms.
 | LedgerProjections         | `src/components/organisms/LedgerProjections.astro`         | Projections panel         |
 | ManageAccountForms        | `src/components/organisms/ManageAccountForms.astro`        | Account forms             |
 | MemberList                | `src/components/organisms/MemberList.astro`                | Member list               |
-| NetWorthWidget            | `src/components/organisms/NetWorthWidget.astro`            | Net worth widget          |
+| AssetsWidget              | `src/components/organisms/AssetsWidget.astro`              | Assets overview widget    |
 | PaymentMethodFormModal    | `src/components/organisms/PaymentMethodFormModal.astro`    | Payment form modal        |
 | ResourceAllocationChart   | `src/components/organisms/ResourceAllocationChart.astro`   | Allocation chart          |
 | SetNewBudgetModal         | `src/components/organisms/SetNewBudgetModal.astro`         | New budget modal          |
