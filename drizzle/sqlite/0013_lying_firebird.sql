@@ -1,1 +1,0 @@
-ALTER TABLE `assets` ADD `account_class` text DEFAULT 'liquid' NOT NULL;

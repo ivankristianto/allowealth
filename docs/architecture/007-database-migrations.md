@@ -18,16 +18,20 @@ src/db/schema/
 
 drizzle/
 ├── sqlite/          # SQLite migration files
-│   ├── 0000_*.sql
+│   ├── 0000_*.sql   # Single consolidated initial migration
 │   ├── meta/
 │   │   ├── _journal.json
 │   │   └── 0000_snapshot.json
 └── postgresql/      # PostgreSQL migration files
-    ├── 0000_*.sql
+    ├── 0000_*.sql   # Single consolidated initial migration
     ├── meta/
     │   ├── _journal.json
     │   └── 0000_snapshot.json
 ```
+
+> **Note**: Migrations were consolidated on 2026-02-16 into a single initial migration
+> per dialect covering all 21 tables. Since the app is in development, no backward
+> compatibility is needed.
 
 ## Configuration
 

@@ -1,9 +1,125 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "d9bd06ea-8066-431b-9fee-d372a4ec3f48",
+  "id": "ede794b6-3f04-4a21-ae9a-f792138524de",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
+    "api_keys": {
+      "name": "api_keys",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "workspace_id": {
+          "name": "workspace_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "key_hash": {
+          "name": "key_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "key_prefix": {
+          "name": "key_prefix",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "last_used_at": {
+          "name": "last_used_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(cast((julianday('now') - 2440587.5)*86400000 as integer))"
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "api_keys_workspace_id_idx": {
+          "name": "api_keys_workspace_id_idx",
+          "columns": ["workspace_id"],
+          "isUnique": false
+        },
+        "api_keys_user_id_idx": {
+          "name": "api_keys_user_id_idx",
+          "columns": ["user_id"],
+          "isUnique": false
+        },
+        "api_keys_key_prefix_idx": {
+          "name": "api_keys_key_prefix_idx",
+          "columns": ["key_prefix"],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "api_keys_workspace_id_workspaces_id_fk": {
+          "name": "api_keys_workspace_id_workspaces_id_fk",
+          "tableFrom": "api_keys",
+          "tableTo": "workspaces",
+          "columnsFrom": ["workspace_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "api_keys_user_id_users_id_fk": {
+          "name": "api_keys_user_id_users_id_fk",
+          "tableFrom": "api_keys",
+          "tableTo": "users",
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
     "asset_categories": {
       "name": "asset_categories",
       "columns": {
@@ -83,7 +199,23 @@
           "default": "(cast((julianday('now') - 2440587.5)*86400000 as integer))"
         }
       },
-      "indexes": {},
+      "indexes": {
+        "asset_categories_workspace_id_idx": {
+          "name": "asset_categories_workspace_id_idx",
+          "columns": ["workspace_id"],
+          "isUnique": false
+        },
+        "asset_categories_created_by_user_id_idx": {
+          "name": "asset_categories_created_by_user_id_idx",
+          "columns": ["created_by_user_id"],
+          "isUnique": false
+        },
+        "asset_categories_workspace_name_unique": {
+          "name": "asset_categories_workspace_name_unique",
+          "columns": ["workspace_id", "name"],
+          "isUnique": true
+        }
+      },
       "foreignKeys": {
         "asset_categories_workspace_id_workspaces_id_fk": {
           "name": "asset_categories_workspace_id_workspaces_id_fk",
@@ -148,7 +280,18 @@
           "default": "(cast((julianday('now') - 2440587.5)*86400000 as integer))"
         }
       },
-      "indexes": {},
+      "indexes": {
+        "asset_history_asset_id_idx": {
+          "name": "asset_history_asset_id_idx",
+          "columns": ["asset_id"],
+          "isUnique": false
+        },
+        "asset_history_asset_recorded_idx": {
+          "name": "asset_history_asset_recorded_idx",
+          "columns": ["asset_id", "recorded_at"],
+          "isUnique": false
+        }
+      },
       "foreignKeys": {
         "asset_history_asset_id_assets_id_fk": {
           "name": "asset_history_asset_id_assets_id_fk",
@@ -203,7 +346,18 @@
           "autoincrement": false
         }
       },
-      "indexes": {},
+      "indexes": {
+        "asset_snapshot_items_snapshot_id_idx": {
+          "name": "asset_snapshot_items_snapshot_id_idx",
+          "columns": ["snapshot_id"],
+          "isUnique": false
+        },
+        "asset_snapshot_items_asset_id_idx": {
+          "name": "asset_snapshot_items_asset_id_idx",
+          "columns": ["asset_id"],
+          "isUnique": false
+        }
+      },
       "foreignKeys": {
         "asset_snapshot_items_snapshot_id_asset_snapshots_id_fk": {
           "name": "asset_snapshot_items_snapshot_id_asset_snapshots_id_fk",
@@ -289,7 +443,18 @@
           "default": "(cast((julianday('now') - 2440587.5)*86400000 as integer))"
         }
       },
-      "indexes": {},
+      "indexes": {
+        "asset_snapshots_workspace_id_idx": {
+          "name": "asset_snapshots_workspace_id_idx",
+          "columns": ["workspace_id"],
+          "isUnique": false
+        },
+        "asset_snapshots_created_by_user_id_idx": {
+          "name": "asset_snapshots_created_by_user_id_idx",
+          "columns": ["created_by_user_id"],
+          "isUnique": false
+        }
+      },
       "foreignKeys": {
         "asset_snapshots_workspace_id_workspaces_id_fk": {
           "name": "asset_snapshots_workspace_id_workspaces_id_fk",
@@ -384,7 +549,23 @@
           "default": "(cast((julianday('now') - 2440587.5)*86400000 as integer))"
         }
       },
-      "indexes": {},
+      "indexes": {
+        "asset_update_reminders_workspace_id_idx": {
+          "name": "asset_update_reminders_workspace_id_idx",
+          "columns": ["workspace_id"],
+          "isUnique": false
+        },
+        "asset_update_reminders_created_by_user_id_idx": {
+          "name": "asset_update_reminders_created_by_user_id_idx",
+          "columns": ["created_by_user_id"],
+          "isUnique": false
+        },
+        "asset_update_reminders_asset_id_idx": {
+          "name": "asset_update_reminders_asset_id_idx",
+          "columns": ["asset_id"],
+          "isUnique": false
+        }
+      },
       "foreignKeys": {
         "asset_update_reminders_workspace_id_workspaces_id_fk": {
           "name": "asset_update_reminders_workspace_id_workspaces_id_fk",
@@ -456,6 +637,14 @@
           "notNull": true,
           "autoincrement": false
         },
+        "account_class": {
+          "name": "account_class",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'liquid'"
+        },
         "category_id": {
           "name": "category_id",
           "type": "text",
@@ -468,6 +657,13 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true,
+          "autoincrement": false
+        },
+        "initial_balance": {
+          "name": "initial_balance",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
           "autoincrement": false
         },
         "currency": {
@@ -491,6 +687,28 @@
           "notNull": true,
           "autoincrement": false,
           "default": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'active'"
+        },
+        "closed_at": {
+          "name": "closed_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "closed_by_user_id": {
+          "name": "closed_by_user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
         },
         "last_updated": {
           "name": "last_updated",
@@ -524,7 +742,33 @@
           "default": "(cast((julianday('now') - 2440587.5)*86400000 as integer))"
         }
       },
-      "indexes": {},
+      "indexes": {
+        "assets_workspace_id_idx": {
+          "name": "assets_workspace_id_idx",
+          "columns": ["workspace_id"],
+          "isUnique": false
+        },
+        "assets_ws_status_deleted_idx": {
+          "name": "assets_ws_status_deleted_idx",
+          "columns": ["workspace_id", "status", "deleted_at"],
+          "isUnique": false
+        },
+        "assets_created_by_user_id_idx": {
+          "name": "assets_created_by_user_id_idx",
+          "columns": ["created_by_user_id"],
+          "isUnique": false
+        },
+        "assets_category_id_idx": {
+          "name": "assets_category_id_idx",
+          "columns": ["category_id"],
+          "isUnique": false
+        },
+        "assets_closed_by_user_id_idx": {
+          "name": "assets_closed_by_user_id_idx",
+          "columns": ["closed_by_user_id"],
+          "isUnique": false
+        }
+      },
       "foreignKeys": {
         "assets_workspace_id_workspaces_id_fk": {
           "name": "assets_workspace_id_workspaces_id_fk",
@@ -551,6 +795,15 @@
           "columnsFrom": ["category_id"],
           "columnsTo": ["id"],
           "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "assets_closed_by_user_id_users_id_fk": {
+          "name": "assets_closed_by_user_id_users_id_fk",
+          "tableFrom": "assets",
+          "tableTo": "users",
+          "columnsFrom": ["closed_by_user_id"],
+          "columnsTo": ["id"],
+          "onDelete": "set null",
           "onUpdate": "no action"
         }
       },
@@ -626,7 +879,28 @@
           "default": "(cast((julianday('now') - 2440587.5)*86400000 as integer))"
         }
       },
-      "indexes": {},
+      "indexes": {
+        "audit_logs_workspace_id_idx": {
+          "name": "audit_logs_workspace_id_idx",
+          "columns": ["workspace_id"],
+          "isUnique": false
+        },
+        "audit_logs_user_id_idx": {
+          "name": "audit_logs_user_id_idx",
+          "columns": ["user_id"],
+          "isUnique": false
+        },
+        "audit_logs_created_at_idx": {
+          "name": "audit_logs_created_at_idx",
+          "columns": ["created_at"],
+          "isUnique": false
+        },
+        "audit_logs_ws_entity_action_idx": {
+          "name": "audit_logs_ws_entity_action_idx",
+          "columns": ["workspace_id", "entity_type", "entity_id", "action"],
+          "isUnique": false
+        }
+      },
       "foreignKeys": {
         "audit_logs_workspace_id_workspaces_id_fk": {
           "name": "audit_logs_workspace_id_workspaces_id_fk",
@@ -743,9 +1017,19 @@
         }
       },
       "indexes": {
+        "budgets_created_by_user_id_idx": {
+          "name": "budgets_created_by_user_id_idx",
+          "columns": ["created_by_user_id"],
+          "isUnique": false
+        },
+        "budgets_ws_month_year_currency_idx": {
+          "name": "budgets_ws_month_year_currency_idx",
+          "columns": ["workspace_id", "month", "year", "currency"],
+          "isUnique": false
+        },
         "budgets_unique": {
           "name": "budgets_unique",
-          "columns": ["workspace_id", "category_id", "month", "year"],
+          "columns": ["workspace_id", "category_id", "month", "year", "currency"],
           "isUnique": true
         }
       },
@@ -868,7 +1152,18 @@
           "default": "(cast((julianday('now') - 2440587.5)*86400000 as integer))"
         }
       },
-      "indexes": {},
+      "indexes": {
+        "budget_categories_workspace_id_idx": {
+          "name": "budget_categories_workspace_id_idx",
+          "columns": ["workspace_id"],
+          "isUnique": false
+        },
+        "budget_categories_created_by_user_id_idx": {
+          "name": "budget_categories_created_by_user_id_idx",
+          "columns": ["created_by_user_id"],
+          "isUnique": false
+        }
+      },
       "foreignKeys": {
         "budget_categories_workspace_id_workspaces_id_fk": {
           "name": "budget_categories_workspace_id_workspaces_id_fk",
@@ -886,6 +1181,78 @@
           "columnsFrom": ["created_by_user_id"],
           "columnsTo": ["id"],
           "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "email_verification_tokens": {
+      "name": "email_verification_tokens",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "token": {
+          "name": "token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(cast((julianday('now') - 2440587.5)*86400000 as integer))"
+        }
+      },
+      "indexes": {
+        "email_verification_tokens_token_unique": {
+          "name": "email_verification_tokens_token_unique",
+          "columns": ["token"],
+          "isUnique": true
+        },
+        "email_verification_tokens_user_id_idx": {
+          "name": "email_verification_tokens_user_id_idx",
+          "columns": ["user_id"],
+          "isUnique": false
+        },
+        "email_verification_tokens_expires_at_idx": {
+          "name": "email_verification_tokens_expires_at_idx",
+          "columns": ["expires_at"],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "email_verification_tokens_user_id_users_id_fk": {
+          "name": "email_verification_tokens_user_id_users_id_fk",
+          "tableFrom": "email_verification_tokens",
+          "tableTo": "users",
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
@@ -962,6 +1329,14 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'active'"
         },
         "created_at": {
           "name": "created_at",
@@ -1129,6 +1504,11 @@
           "name": "workspace_invitations_token_unique",
           "columns": ["token"],
           "isUnique": true
+        },
+        "workspace_invitations_workspace_id_idx": {
+          "name": "workspace_invitations_workspace_id_idx",
+          "columns": ["workspace_id"],
+          "isUnique": false
         }
       },
       "foreignKeys": {
@@ -1160,7 +1540,7 @@
           "name": "workspace_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
+          "notNull": false,
           "autoincrement": false
         },
         "email": {
@@ -1174,7 +1554,14 @@
           "name": "password_hash",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "avatar_url": {
+          "name": "avatar_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
           "autoincrement": false
         },
         "name": {
@@ -1189,6 +1576,13 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true,
+          "autoincrement": false
+        },
+        "email_verified_at": {
+          "name": "email_verified_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
           "autoincrement": false
         },
         "deleted_at": {
@@ -1220,6 +1614,11 @@
           "name": "users_email_unique",
           "columns": ["email"],
           "isUnique": true
+        },
+        "users_workspace_id_idx": {
+          "name": "users_workspace_id_idx",
+          "columns": ["workspace_id"],
+          "isUnique": false
         }
       },
       "foreignKeys": {
@@ -1341,6 +1740,11 @@
         "sessions_expires_at_idx": {
           "name": "sessions_expires_at_idx",
           "columns": ["expires_at"],
+          "isUnique": false
+        },
+        "sessions_user_id_idx": {
+          "name": "sessions_user_id_idx",
+          "columns": ["user_id"],
           "isUnique": false
         }
       },
@@ -1516,6 +1920,20 @@
           "notNull": true,
           "autoincrement": false
         },
+        "updated_by_user_id": {
+          "name": "updated_by_user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "deleted_by_user_id": {
+          "name": "deleted_by_user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
         "deleted_at": {
           "name": "deleted_at",
           "type": "integer",
@@ -1540,7 +1958,63 @@
           "default": "(cast((julianday('now') - 2440587.5)*86400000 as integer))"
         }
       },
-      "indexes": {},
+      "indexes": {
+        "transactions_workspace_id_idx": {
+          "name": "transactions_workspace_id_idx",
+          "columns": ["workspace_id"],
+          "isUnique": false
+        },
+        "transactions_asset_id_idx": {
+          "name": "transactions_asset_id_idx",
+          "columns": ["asset_id"],
+          "isUnique": false
+        },
+        "transactions_transaction_date_idx": {
+          "name": "transactions_transaction_date_idx",
+          "columns": ["transaction_date"],
+          "isUnique": false
+        },
+        "transactions_category_id_idx": {
+          "name": "transactions_category_id_idx",
+          "columns": ["category_id"],
+          "isUnique": false
+        },
+        "transactions_ws_type_currency_date_idx": {
+          "name": "transactions_ws_type_currency_date_idx",
+          "columns": ["workspace_id", "type", "currency", "transaction_date"],
+          "isUnique": false
+        },
+        "transactions_ws_cat_type_currency_date_idx": {
+          "name": "transactions_ws_cat_type_currency_date_idx",
+          "columns": ["workspace_id", "category_id", "type", "currency", "transaction_date"],
+          "isUnique": false
+        },
+        "transactions_ws_user_date_idx": {
+          "name": "transactions_ws_user_date_idx",
+          "columns": ["workspace_id", "created_by_user_id", "transaction_date"],
+          "isUnique": false
+        },
+        "transactions_to_asset_id_idx": {
+          "name": "transactions_to_asset_id_idx",
+          "columns": ["to_asset_id"],
+          "isUnique": false
+        },
+        "transactions_created_by_user_id_idx": {
+          "name": "transactions_created_by_user_id_idx",
+          "columns": ["created_by_user_id"],
+          "isUnique": false
+        },
+        "transactions_updated_by_user_id_idx": {
+          "name": "transactions_updated_by_user_id_idx",
+          "columns": ["updated_by_user_id"],
+          "isUnique": false
+        },
+        "transactions_deleted_by_user_id_idx": {
+          "name": "transactions_deleted_by_user_id_idx",
+          "columns": ["deleted_by_user_id"],
+          "isUnique": false
+        }
+      },
       "foreignKeys": {
         "transactions_workspace_id_workspaces_id_fk": {
           "name": "transactions_workspace_id_workspaces_id_fk",
@@ -1585,6 +2059,98 @@
           "columnsFrom": ["to_asset_id"],
           "columnsTo": ["id"],
           "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "transactions_updated_by_user_id_users_id_fk": {
+          "name": "transactions_updated_by_user_id_users_id_fk",
+          "tableFrom": "transactions",
+          "tableTo": "users",
+          "columnsFrom": ["updated_by_user_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "transactions_deleted_by_user_id_users_id_fk": {
+          "name": "transactions_deleted_by_user_id_users_id_fk",
+          "tableFrom": "transactions",
+          "tableTo": "users",
+          "columnsFrom": ["deleted_by_user_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "oauth_accounts": {
+      "name": "oauth_accounts",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "provider": {
+          "name": "provider",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "provider_account_id": {
+          "name": "provider_account_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(cast((julianday('now') - 2440587.5)*86400000 as integer))"
+        }
+      },
+      "indexes": {
+        "oauth_accounts_user_id_idx": {
+          "name": "oauth_accounts_user_id_idx",
+          "columns": ["user_id"],
+          "isUnique": false
+        },
+        "oauth_accounts_provider_account_unique": {
+          "name": "oauth_accounts_provider_account_unique",
+          "columns": ["provider", "provider_account_id"],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "oauth_accounts_user_id_users_id_fk": {
+          "name": "oauth_accounts_user_id_users_id_fk",
+          "tableFrom": "oauth_accounts",
+          "tableTo": "users",
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
