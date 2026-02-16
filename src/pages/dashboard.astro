@@ -84,13 +84,15 @@ const recentTransactions: TransactionOutput[] =
     deleted_at: null,
     created_at: new Date(),
     updated_at: new Date(),
-    category: {
-      id: tx.category.id,
-      name: tx.category.name,
-      type: tx.category.type,
-      icon: tx.category.icon,
-      color: tx.category.color,
-    },
+    category: tx.category
+      ? {
+          id: tx.category.id,
+          name: tx.category.name,
+          type: tx.category.type,
+          icon: tx.category.icon,
+          color: tx.category.color,
+        }
+      : null,
     asset: {
       id: tx.asset.id,
       name: tx.asset.name,
@@ -192,11 +194,10 @@ const spendingCategories =
 
             <div class="space-y-6 @sm:space-y-8">
               <NetWorthWidget
-                totalIDR={safeParseFloat(dashboardData?.totalAssets.idr)}
-                totalUSD={safeParseFloat(dashboardData?.totalAssets.usd)}
-                localAssets={safeParseFloat(dashboardData?.totalAssets.idr)}
-                globalAssets={safeParseFloat(dashboardData?.totalAssets.usd)}
-                growthPercentage={0}
+                assetIdr={safeParseFloat(dashboardData?.totalAssets.idr)}
+                assetUsd={safeParseFloat(dashboardData?.totalAssets.usd)}
+                debtIdr={safeParseFloat(dashboardData?.totalDebt?.idr)}
+                debtUsd={safeParseFloat(dashboardData?.totalDebt?.usd)}
                 loading={!dashboardData}
               />
               <CashFlowWidget items={cashFlowItems} loading={!dashboardData} />
