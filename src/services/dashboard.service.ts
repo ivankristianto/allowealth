@@ -46,6 +46,14 @@ export interface TotalAssets {
 }
 
 /**
+ * Total debt by currency
+ */
+export interface TotalDebt {
+  idr: string;
+  usd: string;
+}
+
+/**
  * Monthly spending summary
  */
 export interface MonthlySpent {
@@ -114,6 +122,7 @@ export interface AssetReminder {
  */
 export interface DashboardData {
   totalAssets: TotalAssets;
+  totalDebt: TotalDebt;
   monthlySpent: MonthlySpent;
   monthlyIncome: MonthlyIncome;
   topCategoryExpenses: TopCategoryExpense[];
@@ -132,7 +141,7 @@ export interface DashboardData {
       type: 'expense' | 'income';
       icon: string;
       color: string;
-    };
+    } | null;
     asset: {
       id: string;
       name: string;
@@ -225,6 +234,7 @@ export class DashboardService {
 
       const result: DashboardData = {
         totalAssets: assetsData.totalAssets,
+        totalDebt: assetsData.totalDebt,
         monthlySpent: transactionAggregates.monthlySpent,
         monthlyIncome: transactionAggregates.monthlyIncome,
         topCategoryExpenses: transactionAggregates.topCategoryExpenses,
@@ -256,7 +266,7 @@ export class DashboardService {
     workspaceId: string,
     primaryCurrency: 'IDR' | 'USD',
     perf?: PerfCollector
-  ): Promise<{ totalAssets: TotalAssets; assetReminders: AssetReminder[] }> {
+  ): Promise<{ totalAssets: TotalAssets; totalDebt: TotalDebt; assetReminders: AssetReminder[] }> {
     try {
       if (!this.db?.query?.assets) {
         throw new Error('Database query not available');
@@ -272,11 +282,29 @@ export class DashboardService {
         })
       );
 
-      // Calculate totals by currency
-      const idrBalances = workspaceAssets.filter((a) => a.currency === 'IDR').map((a) => a.balance);
-      const usdBalances = workspaceAssets.filter((a) => a.currency === 'USD').map((a) => a.balance);
-      const idrTotal = decimalSum(idrBalances);
-      const usdTotal = decimalSum(usdBalances);
+      // Separate assets from debt by account_class
+      const assetAccounts = workspaceAssets.filter((a) => a.account_class !== 'debt');
+      const debtAccounts = workspaceAssets.filter((a) => a.account_class === 'debt');
+
+      // Calculate asset totals (excluding debt)
+      const idrAssetBalances = assetAccounts
+        .filter((a) => a.currency === 'IDR')
+        .map((a) => a.balance);
+      const usdAssetBalances = assetAccounts
+        .filter((a) => a.currency === 'USD')
+        .map((a) => a.balance);
+      const idrTotal = decimalSum(idrAssetBalances);
+      const usdTotal = decimalSum(usdAssetBalances);
+
+      // Calculate debt totals (absolute values)
+      const idrDebtBalances = debtAccounts
+        .filter((a) => a.currency === 'IDR')
+        .map((a) => a.balance);
+      const usdDebtBalances = debtAccounts
+        .filter((a) => a.currency === 'USD')
+        .map((a) => a.balance);
+      const idrDebt = decimalSum(idrDebtBalances.map((b) => b.replace(/^-/, '')));
+      const usdDebt = decimalSum(usdDebtBalances.map((b) => b.replace(/^-/, '')));
 
       // Get exchange rate for conversion
       const rate = await getLatestExchangeRate();
@@ -325,12 +353,17 @@ export class DashboardService {
           converted: convertedTotal,
           convertedCurrency: primaryCurrency,
         },
+        totalDebt: {
+          idr: idrDebt,
+          usd: usdDebt,
+        },
         assetReminders: reminders,
       };
     } catch (error) {
       log.error('error getting optimized assets:', error);
       return {
         totalAssets: { idr: '0', usd: '0', converted: '0', convertedCurrency: primaryCurrency },
+        totalDebt: { idr: '0', usd: '0' },
         assetReminders: [],
       };
     }
@@ -647,13 +680,15 @@ export class DashboardService {
         currency: tx.currency,
         description: tx.description,
         transactionDate: tx.transaction_date,
-        category: {
-          id: tx.category.id,
-          name: tx.category.name,
-          type: tx.category.type,
-          icon: tx.category.icon,
-          color: tx.category.color,
-        },
+        category: tx.category
+          ? {
+              id: tx.category.id,
+              name: tx.category.name,
+              type: tx.category.type,
+              icon: tx.category.icon,
+              color: tx.category.color,
+            }
+          : null,
         asset: {
           id: tx.asset.id,
           name: tx.asset.name,
