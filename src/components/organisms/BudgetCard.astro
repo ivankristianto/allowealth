@@ -57,6 +57,7 @@ import { getIconForCategory } from '@/lib/utils/categoryIcons';
 
 // Internal aliases - components
 import Badge from '@components/atoms/Badge.astro';
+import Button from '@components/atoms/Button.astro';
 import IconBadge from '@components/atoms/IconBadge.astro';
 import ProgressBar from '@components/atoms/ProgressBar.astro';
 import StatLabel from '@components/atoms/StatLabel.astro';
@@ -96,14 +97,8 @@ const {
   className = '',
 } = Astro.props;
 
-// Build transaction link with optional period context
-const transactionParams = new URLSearchParams({
-  category_id: categoryId || '',
-  type: 'expense',
-});
-if (month) transactionParams.set('month', String(month));
-if (year) transactionParams.set('year', String(year));
-const transactionUrl = `/transactions?${transactionParams.toString()}`;
+// Build period string for drilldown modal (YYYY-MM)
+const period = month && year ? `${year}-${String(month).padStart(2, '0')}` : undefined;
 
 // Calculate remaining amount
 const remaining = Math.round((budget - spent) * 100) / 100 || 0;
@@ -265,14 +260,22 @@ const cardClasses = [
           </div>
         </div>
         <div class="flex items-center gap-1">
-          <a
-            href={transactionUrl}
-            class="inline-flex items-center gap-1 text-base-content/30 hover:text-base-content/60 transition-colors min-h-[44px] min-w-[44px] justify-center rounded-lg hover:bg-base-200 text-xs font-medium"
+          <Button
+            variant="ghost"
+            size="sm"
             aria-label={`View ${categoryName} transactions`}
+            data-view-details
+            data-category-id={categoryId}
+            data-category-name={categoryName}
+            data-category-icon={icon}
+            data-category-color={color}
+            data-spent={spent}
+            data-budget-limit={budget}
+            data-period={period}
           >
             <Eye size={16} class="stroke-current" aria-hidden="true" />
             <span class="text-xs md:text-sm">View</span>
-          </a>
+          </Button>
         </div>
       </div>
 
