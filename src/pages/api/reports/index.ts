@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import { experimental_AstroContainer as AstroContainer } from 'astro/container';
-import { reportService } from '@/services';
+import { reportService, assetService } from '@/services';
 import type { ReportData } from '@/services/report.service';
 import { successResponse, errorResponse, getAuthenticatedUser } from '@/lib/api-utils';
 import { logError } from '@/lib/utils';
@@ -109,6 +109,29 @@ export const GET: APIRoute = async (context) => {
       reportData = await reportService.getYearlyReport(auth.workspaceId, year, currency);
     }
 
+    // Fetch asset totals by class for summary cards
+    let totalAssetsIdr = 0;
+    let totalAssetsUsd = 0;
+    let totalDebtIdr = 0;
+    let totalDebtUsd = 0;
+
+    try {
+      const classTotals = await assetService.getTotalByClass(auth.workspaceId);
+      for (const row of classTotals) {
+        const total = parseFloat(row.total || '0');
+        if (isNaN(total)) continue;
+        if (row.account_class === 'debt') {
+          if (row.currency === 'USD') totalDebtUsd += Math.abs(total);
+          else totalDebtIdr += Math.abs(total);
+        } else {
+          if (row.currency === 'USD') totalAssetsUsd += total;
+          else totalAssetsIdr += total;
+        }
+      }
+    } catch (error) {
+      // Non-critical: continue with zeros
+    }
+
     // 4. Return response based on requested format
     if (render.wantsHtml()) {
       const container = await AstroContainer.create();
@@ -154,6 +177,10 @@ export const GET: APIRoute = async (context) => {
             budgetHealth,
             expenseCategories,
             currency,
+            totalAssetsIdr,
+            totalAssetsUsd,
+            totalDebtIdr,
+            totalDebtUsd,
           },
         });
         htmlParts.push(`<!-- PARTIAL:summary -->\n${summaryHtml}`);

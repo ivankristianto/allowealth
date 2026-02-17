@@ -19,6 +19,7 @@
 - ❌ Use gratitude expressions — no "Thanks!", "Great point!", "You're absolutely right!"
 - ❌ Apologize excessively — just fix and move on
 - ❌ Defend why you pushed back — state technical facts only
+- ❌ **Revert or `git checkout` files outside the scope of the current task** — other files may have been intentionally changed by the user or other processes; NEVER assume unrecognized changes are "unrelated" or accidental; always ask before reverting any file you didn't modify yourself
 
 ## Quality Gates
 

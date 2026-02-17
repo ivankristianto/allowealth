@@ -22,9 +22,11 @@ import type { AccountClass } from '@/lib/types/asset';
 
 // Tooltip descriptions for each account class
 const ACCOUNT_CLASS_DESCRIPTIONS: Record<AccountClass, string> = {
-  liquid: 'Cash and easily accessible funds like bank accounts, e-wallets, and physical cash',
-  non_liquid: 'Investments and long-term holdings like stocks, mutual funds, bonds, and crypto',
-  debt: 'Outstanding liabilities like credit cards and loans',
+  liquid:
+    'Readily accessible cash — bank accounts, e-wallets, petty cash. Available for immediate spending or emergencies.',
+  non_liquid:
+    'Long-term investments and holdings — stocks, mutual funds, bonds, crypto, property. Value may fluctuate; not instantly cashable.',
+  debt: 'Outstanding liabilities — credit card balances, loans, mortgages. Shown as negative in your net worth.',
 };
 
 export interface Props {
@@ -54,6 +56,9 @@ const {
 // Get tooltip description for this account class
 const classDescription = accountClass ? ACCOUNT_CLASS_DESCRIPTIONS[accountClass] : null;
 
+// Display title: append "Accounts" when we have an account class
+const displayTitle = accountClass ? `${type} Accounts` : type;
+
 // Debt groups show negative values in error color
 const displayIdr = isDebt ? -totalIdr : totalIdr;
 const displayUsd = isDebt ? -totalUsd : totalUsd;
@@ -61,7 +66,7 @@ const idrColorClass = isDebt ? 'text-error' : 'text-success';
 const usdColorClass = isDebt ? 'text-error' : 'text-info';
 
 // Generate subtitle based on type
-const subtitle = `Managing your ${type.toLowerCase()} holdings`;
+const subtitle = classDescription || `Managing your ${type.toLowerCase()} holdings`;
 
 const cardClasses = [
   'bg-base-100 rounded-card border border-base-300 shadow-sm overflow-hidden transition-all duration-300',
@@ -88,14 +93,14 @@ const cardClasses = [
     <div>
       <div class="flex items-center gap-3">
         <h3 class="text-lg lg:text-xl font-bold text-base-content tracking-tight leading-none">
-          {type}
+          {displayTitle}
         </h3>
         {
           classDescription && (
             <div class="tooltip tooltip-right" data-tip={classDescription}>
               <span
                 class="inline-flex items-center justify-center rounded-full text-base-content/30 hover:text-base-content/60 transition-colors cursor-help"
-                aria-label={`${type}: ${classDescription}`}
+                aria-label={`${displayTitle}: ${classDescription}`}
               >
                 <Info size={14} class="stroke-current" aria-hidden="true" />
               </span>
