@@ -421,6 +421,55 @@ export class AssetService {
         );
     });
 
+    // Record balance history for both accounts with compensating rollback on failure
+    try {
+      await (this.db as any).insert(this.schema.assetHistory).values({
+        id: nanoid(),
+        asset_id: fromId,
+        balance: newFromBalance,
+        notes: `Transfer to ${toAsset.name}`,
+        recorded_at: now,
+      });
+
+      await (this.db as any).insert(this.schema.assetHistory).values({
+        id: nanoid(),
+        asset_id: toId,
+        balance: newToBalance,
+        notes: `Transfer from ${fromAsset.name}`,
+        recorded_at: now,
+      });
+    } catch {
+      // Compensating transaction: rollback both balance updates
+      await runTransaction(this.db, async (tx) => {
+        await tx
+          .update(this.schema.assets)
+          .set({
+            balance: fromAsset.balance,
+            last_updated: fromAsset.last_updated,
+            updated_at: fromAsset.updated_at,
+          })
+          .where(
+            and(eq(this.schema.assets.id, fromId), eq(this.schema.assets.workspace_id, workspaceId))
+          );
+
+        await tx
+          .update(this.schema.assets)
+          .set({
+            balance: toAsset.balance,
+            last_updated: toAsset.last_updated,
+            updated_at: toAsset.updated_at,
+          })
+          .where(
+            and(eq(this.schema.assets.id, toId), eq(this.schema.assets.workspace_id, workspaceId))
+          );
+      });
+      throw new AssetServiceError(
+        ServiceErrorCode.ASSET_NOT_FOUND,
+        'Failed to transfer: could not create history entries',
+        500
+      );
+    }
+
     // Invalidate asset cache
     try {
       const cache = getCacheManager();
