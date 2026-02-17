@@ -5,78 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1770282921696,
-      "tag": "0000_panoramic_lady_ursula",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1770283505526,
-      "tag": "0001_perfect_corsair",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1770543859175,
-      "tag": "0002_brief_apocalypse",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1770575497800,
-      "tag": "0003_overrated_venus",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1770800000000,
-      "tag": "0004_backfill_email_verified",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1770809703806,
-      "tag": "0005_furry_crusher_hogan",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "7",
-      "when": 1770889856464,
-      "tag": "0006_woozy_rattler",
-      "breakpoints": true
-    },
-    {
-      "idx": 7,
-      "version": "7",
-      "when": 1770899090446,
-      "tag": "0007_nappy_prodigy",
-      "breakpoints": true
-    },
-    {
-      "idx": 8,
-      "version": "7",
-      "when": 1770956803245,
-      "tag": "0008_easy_warlock",
-      "breakpoints": true
-    },
-    {
-      "idx": 9,
-      "version": "7",
-      "when": 1771064158117,
-      "tag": "0009_hesitant_sage",
-      "breakpoints": true
-    },
-    {
-      "idx": 10,
-      "version": "7",
-      "when": 1771159235733,
-      "tag": "0010_stiff_reavers",
+      "when": 1771249678290,
+      "tag": "0000_violet_daimon_hellstrom",
       "breakpoints": true
     }
   ]

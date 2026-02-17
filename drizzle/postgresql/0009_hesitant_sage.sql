@@ -1,1 +1,0 @@
-ALTER TABLE "users" ALTER COLUMN "workspace_id" DROP NOT NULL;

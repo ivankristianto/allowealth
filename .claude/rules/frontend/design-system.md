@@ -9,6 +9,24 @@ paths:
 
 **Version:** 1.1.0 | **Framework:** Astro 5.x + Tailwind v4 + DaisyUI v5
 
+## Visual Debugging with Chrome
+
+Always verify component rendering in actual browser before declaring work complete.
+
+**Pattern:**
+
+1. Open page in Chrome at `http://<worktree>.expenses.local:4322`
+2. Zoom in to inspect visual details (spacing, borders, alignment)
+3. Check both desktop and mobile views (responsive testing)
+4. Verify against reference implementations
+
+**Rules:**
+
+- ✅ **Visit page in Chrome to see actual rendered state** - HTML source doesn't reveal visual issues like awkward borders
+- ✅ **Zoom in to inspect visual details** - `Cmd + Plus` to see spacing, borders, shadows
+- ✅ **Test mobile view via DevTools device toggle** - mobile stacks differently than desktop
+- ❌ **Trust template code review for visual correctness** - `border-t` in rounded card looks fine in code but wrong visually
+
 ## Core Rules
 
 1. **Use design tokens** - Import from `@/lib/tokens` (never hardcode)
