@@ -18,18 +18,8 @@ import Skeleton from '@/components/atoms/Skeleton.astro';
 import CategoryIcon from '@/components/atoms/CategoryIcon.astro';
 import { formatCurrency } from '@/lib/formatting';
 import { getCategoryColor } from '@/lib/tokens';
+import { getIconForCategory } from '@/lib/utils/categoryIcons';
 import { Eye } from '@lucide/astro';
-
-// Category icon name fallback mapping
-const CATEGORY_NAME_ICON_MAP: Record<string, string> = {
-  Utilities: 'zap',
-  Dining: 'utensils',
-  Health: 'heart-pulse',
-  Transport: 'car',
-  Entertainment: 'music',
-  Groceries: 'shopping-basket',
-  Housing: 'home',
-};
 
 export interface CategoryIntelligence {
   id: string;
@@ -65,8 +55,7 @@ const categoriesWithPercentage = categories.map((cat) => {
   const percentage =
     cat.budgetLimit && cat.budgetLimit > 0 ? (cat.spent / cat.budgetLimit) * 100 : null;
 
-  // Get icon name from category data or fallback mapping
-  const iconName = cat.icon || CATEGORY_NAME_ICON_MAP[cat.name] || 'tag';
+  const iconName = getIconForCategory(cat.name, cat.icon);
 
   return {
     ...cat,
