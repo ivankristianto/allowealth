@@ -1,6 +1,6 @@
 import { eq, and, gt } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
-import type { IDatabase } from '@/db';
+import { type IDatabase, runTransaction } from '@/db';
 
 export interface TokenConfig {
   getTable: () => any;
@@ -13,18 +13,18 @@ export interface TokenConfig {
 export function createTokenService(db: IDatabase, config: TokenConfig) {
   return {
     async createToken(userId: string, expiryMinutes: number): Promise<string> {
-      // Delete any existing tokens for this user
-      await db.delete(config.getTable()).where(eq(config.getUserIdCol(), userId));
-
       const token = nanoid(64);
       const expiresAt = new Date(Date.now() + expiryMinutes * 60 * 1000);
 
-      await db.insert(config.getTable()).values({
-        id: nanoid(),
-        [config.getUserIdCol().name]: userId,
-        [config.getTokenCol().name]: token,
-        [config.getExpiresAtCol().name]: expiresAt,
-      } as any);
+      await runTransaction(db, async (tx) => {
+        await tx.delete(config.getTable()).where(eq(config.getUserIdCol(), userId));
+        await tx.insert(config.getTable()).values({
+          id: nanoid(),
+          [config.getUserIdCol().name]: userId,
+          [config.getTokenCol().name]: token,
+          [config.getExpiresAtCol().name]: expiresAt,
+        } as any);
+      });
 
       return token;
     },

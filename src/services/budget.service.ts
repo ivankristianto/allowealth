@@ -754,7 +754,7 @@ export class BudgetService {
    * Get a single budget by ID
    */
   async getBudgetById(id: string, workspaceId: string): Promise<Budget | null> {
-    return (await this.crud.findById(id, workspaceId)) as Budget | null;
+    return this.crud.findById(id, workspaceId);
   }
 
   /**
