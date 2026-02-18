@@ -102,11 +102,11 @@ See `docs/architecture/007-database-migrations.md` for full migration workflow.
 
 ## D1 Database (Cloudflare)
 
-| Command                                 | Description                                    |
-| --------------------------------------- | ---------------------------------------------- |
-| `bun run deploy:cloudflare:d1`          | Build and deploy to Cloudflare Workers with D1 |
-| `bun run db:d1:migrate -- <file>`       | Apply migration to remote D1 database          |
-| `bun run db:d1:migrate:local -- <file>` | Apply migration to local D1 database           |
+| Command                                 | Description                                                                                                   |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `bun run deploy:cloudflare`             | Build and deploy to Cloudflare Workers with D1 (enable by uncommenting `[[d1_databases]]` in `wrangler.toml`) |
+| `bun run db:d1:migrate -- <file>`       | Apply migration to remote D1 database                                                                         |
+| `bun run db:d1:migrate:local -- <file>` | Apply migration to local D1 database                                                                          |
 
 ## CLI Tools
 

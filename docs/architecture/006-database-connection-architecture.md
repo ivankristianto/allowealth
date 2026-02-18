@@ -177,11 +177,11 @@ D1 is Cloudflare's SQLite-compatible serverless database. Unlike PostgreSQL with
 **Configuration:**
 
 ```toml
-# wrangler.d1.toml
-[[d1_databases]]
-binding = "DB"
-database_name = "allowealth-db"
-database_id = "<database-id>"
+# wrangler.toml (uncomment to activate D1)
+# [[d1_databases]]
+# binding = "DB"
+# database_name = "allowealth-db"
+# database_id = "<database-id>"
 ```
 
 **How D1 is detected at runtime:**

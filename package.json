@@ -14,7 +14,6 @@
     "deploy:cloudflare": "bun run build:cloudflare && wrangler deploy",
     "deploy:vercel": "bun run build:vercel && vercel deploy --prod",
     "deploy:netlify": "bun run build:netlify && netlify deploy --prod",
-    "deploy:cloudflare:d1": "bun run build:cloudflare && wrangler deploy --config wrangler.d1.toml",
     "db:d1:migrate": "wrangler d1 execute allowealth-db --remote --file",
     "db:d1:migrate:local": "wrangler d1 execute allowealth-db --local --file",
     "bundle:report": "bun run build && bun run scripts/analyze-bundle.ts",
