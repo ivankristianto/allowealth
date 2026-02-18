@@ -402,9 +402,20 @@ const mainSearchInputClass = [
         if (checkIcon) {
           checkIcon.style.display = isSelected ? 'block' : 'none';
         } else if (isSelected) {
-          // Create check icon if not present
-          checkboxVisual.innerHTML =
-            '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
+          // Create check icon if not present (using createElementNS to avoid innerHTML)
+          const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+          svg.setAttribute('width', '12');
+          svg.setAttribute('height', '12');
+          svg.setAttribute('viewBox', '0 0 24 24');
+          svg.setAttribute('fill', 'none');
+          svg.setAttribute('stroke', 'white');
+          svg.setAttribute('stroke-width', '3');
+          svg.setAttribute('stroke-linecap', 'round');
+          svg.setAttribute('stroke-linejoin', 'round');
+          const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+          path.setAttribute('d', 'M20 6 9 17l-5-5');
+          svg.appendChild(path);
+          checkboxVisual.appendChild(svg);
         }
       }
     });
