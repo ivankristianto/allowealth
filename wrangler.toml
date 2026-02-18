@@ -85,7 +85,7 @@ EMAIL_SENDER_ADDRESS = "noreply@allowealth.io"
 # database_name = "allowealth-db"
 # database_id = "YOUR_D1_DATABASE_ID"  # wrangler d1 create allowealth-db
 [[d1_databases]]
-binding = "allowealth_db"
+binding = "DB"
 database_name = "allowealth-db"
 database_id = "bb0afde5-2f05-408a-ad89-3f6617598c41"
 
