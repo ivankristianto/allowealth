@@ -130,7 +130,9 @@ export interface IDatabase {
    */
   update: (table: any) => {
     set: (values: any) => {
-      where: (condition: any) => Promise<any>;
+      where: (condition: any) => Promise<any> & {
+        returning: (columns?: any) => Promise<any[]>;
+      };
       returning: (columns?: any) => Promise<any[]>;
     };
   };
