@@ -257,6 +257,13 @@ const sortedGroups = CLASS_ORDER.filter((cls) => assetsByClass[cls].length > 0).
       )
     }
 
+    {/* Action Buttons - always visible so users can add assets/categories even when empty */}
+    <AssetActions
+      isHistoricalView={!isViewingCurrentMonth}
+      defaultCategoryId={defaultCategoryId}
+      closedCount={closedCount}
+    />
+
     {
       assets.length > 0 ? (
         <>
@@ -270,13 +277,6 @@ const sortedGroups = CLASS_ORDER.filter((cls) => assetsByClass[cls].length > 0).
             loading={false}
             latestUpdate={latestUpdate}
             isHistoricalView={!isViewingCurrentMonth}
-          />
-
-          {/* Action Buttons */}
-          <AssetActions
-            isHistoricalView={!isViewingCurrentMonth}
-            defaultCategoryId={defaultCategoryId}
-            closedCount={closedCount}
           />
 
           {/* Search Filter */}
@@ -349,7 +349,12 @@ const sortedGroups = CLASS_ORDER.filter((cls) => assetsByClass[cls].length > 0).
               message="Add your first asset to start tracking your net worth across different types and currencies."
             />
             <div class="flex justify-center mt-4">
-              <button type="button" class="btn btn-accent gap-2 rounded-2xl" data-add-asset-btn>
+              <button
+                type="button"
+                class="btn btn-accent gap-2 rounded-2xl"
+                data-add-asset-btn
+                data-default-category-id={defaultCategoryId}
+              >
                 Add Your First Asset
               </button>
             </div>

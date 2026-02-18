@@ -182,11 +182,13 @@ export async function runTransaction<T>(
   callback: (tx: IDatabase) => Promise<T>
 ): Promise<T> {
   const config = getDatabaseConfig();
-  // PostgreSQL and D1 support async transactions
-  if (config.dialect === 'postgresql' || config.isD1) {
+  // PostgreSQL: uses real database transactions (BEGIN/COMMIT/ROLLBACK)
+  if (config.dialect === 'postgresql') {
     return db.transaction(callback);
   }
-  // Local SQLite: run directly — single-writer WAL mode ensures sequential consistency
+  // SQLite & D1: run directly — single-writer WAL mode ensures sequential consistency.
+  // D1 does not support BEGIN/COMMIT/ROLLBACK SQL statements (Drizzle's D1 adapter
+  // attempts raw `BEGIN` which D1 rejects with "Failed query: begin").
   return callback(db);
 }
 

@@ -44,6 +44,7 @@
     "cli:create-super-admin:prod": "bun --env-file=.env.production run src/cli/create-super-admin.ts",
     "cli:create-workspace": "bun run src/cli/create-workspace.ts",
     "cli:create-workspace:prod": "bun --env-file=.env.production run src/cli/create-workspace.ts",
+    "cli:create-workspace:d1": "bun run src/cli/create-workspace-d1.ts",
     "cli:list-workspaces": "bun run src/cli/list-workspaces.ts",
     "cli:list-workspaces:prod": "bun --env-file=.env.production run src/cli/list-workspaces.ts",
     "cli:delete-workspace": "bun run src/cli/delete-workspace.ts",

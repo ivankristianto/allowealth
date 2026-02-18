@@ -125,6 +125,7 @@ All CLI tools have `:prod` variants that use `.env.production` for the database 
 | ----------------------------------- | ------------------------------------------------ |
 | `bun run cli:create-workspace`      | Create workspace and send admin invitation email |
 | `bun run cli:create-workspace:prod` | Same, against production DB                      |
+| `bun run cli:create-workspace:d1`   | Create workspace on Cloudflare D1 via wrangler   |
 | `bun run cli:list-workspaces`       | List all workspaces with user counts             |
 | `bun run cli:list-workspaces:prod`  | Same, against production DB                      |
 | `bun run cli:delete-workspace`      | Delete a workspace and all its data              |
@@ -148,6 +149,10 @@ bun run cli:list-workspaces:prod
 - `--currency, -c <currency>` workspace default currency (default: `IDR`)
 - `--week-start, -w <day>` workspace week start day (`monday` or `sunday`, default: `monday`)
 - `--compact-numbers <true|false>` compact number formatting (default: `true`)
+
+`cli:create-workspace:d1` accepts the same options plus:
+
+- `--local` execute against local D1 instead of remote (default: remote)
 
 ### API Keys
 

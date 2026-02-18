@@ -87,8 +87,18 @@ await runTransaction(db, async (tx) => {
 
 **Rules:**
 
-- ✅ **Use `runTransaction()` for transactions** - handles SQLite/PostgreSQL differences
+- ✅ **Use `runTransaction()` for transactions** - handles SQLite/PostgreSQL/D1 differences
 - ✅ **Wrap multi-step DB operations in transactions** - ensures atomicity
+
+### Cloudflare D1
+
+D1 does **not** support `BEGIN`/`COMMIT`/`ROLLBACK` SQL statements. Drizzle ORM's D1 adapter (`drizzle-orm/d1/session.js`) implements `.transaction()` by executing raw `sql.raw('begin')`, which D1 rejects with `Failed query: begin params:`.
+
+`runTransaction()` handles this by treating D1 the same as local SQLite — running the callback directly without a transaction wrapper. D1's single-writer model provides sequential consistency.
+
+- ✅ **Use `runTransaction()` — never call `db.transaction()` directly** — D1 will crash on raw `BEGIN`
+- ❌ **Add `config.isD1` to PostgreSQL transaction branches** — D1 is SQLite-compatible, not PostgreSQL-compatible
+- ❌ **Assume D1 supports the same Drizzle APIs as PostgreSQL** — D1 uses a batch API, not SQL transactions
 
 ### PostgreSQL (Production)
 
