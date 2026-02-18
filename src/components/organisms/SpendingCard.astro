@@ -3,25 +3,14 @@
  * SpendingCard Component
  *
  * Monthly spending overview card with progress bar, income, and net savings.
- * Follows Oasis Finance v1.0.0 design system specifications.
- *
- * @param {number} spent - Amount spent (expenses)
- * @param {number} budget - Total budget amount
- * @param {number} income - Monthly income amount
- * @param {string} currency - Currency code (IDR or USD)
- * @param {string} remainingLabel - Label for remaining amount (e.g., "Remaining for Jan")
- * @param {boolean} loading - Show loading skeleton state
- * @param {string} error - Error message to display
- * @param {string} className - Additional CSS classes
  */
-
 import { Scale } from '@lucide/astro';
 import { formatCurrency, formatCurrencyCompact } from '@/lib/formatting';
 import { getBudgetStatusClass, type BudgetStatusClassName } from '@/lib/tokens';
 import ProgressBar from '@/components/atoms/ProgressBar.astro';
 import IconBadge from '@/components/atoms/IconBadge.astro';
 import StatLabel from '@/components/atoms/StatLabel.astro';
-import Card from '@/components/atoms/Card.astro';
+import DashboardWidget from '@/components/organisms/DashboardWidget.astro';
 import Skeleton from '@/components/atoms/Skeleton.astro';
 
 export interface Props {
@@ -46,29 +35,24 @@ const {
   className = '',
 } = Astro.props;
 
-// Validate numeric inputs to prevent NaN propagation
 const spent = Number.isFinite(rawSpent) ? rawSpent : 0;
 const budget = Number.isFinite(rawBudget) ? rawBudget : 0;
 const income = Number.isFinite(rawIncome) ? rawIncome : 0;
 
-// Calculate percentage and remaining
 const percentage = budget > 0 ? (spent / budget) * 100 : 0;
 const percentageRounded = Math.round(percentage);
 const remaining = budget - spent;
 const status = getBudgetStatusClass(percentage);
 
-// Calculate net savings
 const netSavings = income - spent;
 const savingsPercentage = income > 0 ? (netSavings / income) * 100 : 0;
 
-// Map status class to progress bar status
 const getProgressBarStatus = (statusClass: BudgetStatusClassName): 'ok' | 'warning' | 'danger' => {
   if (statusClass === 'status-ok') return 'ok';
   if (statusClass === 'status-warning') return 'warning';
   return 'danger';
 };
 
-// Map status class to IconBadge variant
 const getIconBadgeVariant = (
   statusClass: BudgetStatusClassName
 ): 'success' | 'warning' | 'error' => {
@@ -86,145 +70,122 @@ const remainingFormatted = formatCurrency(remaining, currency);
 const incomeFormatted = formatCurrency(income, currency);
 const netSavingsFormatted = formatCurrency(Math.abs(netSavings), currency);
 
-// Generate unique ID to prevent conflicts when multiple SpendingCards on same page
 const uniqueId = `spending-card-${Math.random().toString(36).slice(2, 11)}`;
 ---
 
-<Card
-  padding="lg"
-  rounded="card-lg"
-  className={`h-full ${className}`}
+<DashboardWidget
+  loading={loading}
+  error={error}
   role="status"
-  aria-live="polite"
-  aria-busy={loading}
-  aria-label={loading ? 'Loading spending data...' : undefined}
-  aria-labelledby={!loading && !error ? uniqueId : undefined}
-  data-testid="dashboard-spending-card"
+  ariaLive="polite"
+  ariaLabel={loading ? 'Loading spending data...' : undefined}
+  ariaLabelledBy={!loading && !error ? uniqueId : undefined}
+  class={`h-full ${className}`}
+  testId="dashboard-spending-card"
 >
-  <div class="@container flex flex-col h-full">
-    {/* Loading State */}
-    {
-      loading ? (
-        <div aria-hidden="true">
-          <div class="flex justify-between items-start">
-            <div class="flex items-center gap-4">
-              <Skeleton variant="rectangular" width="3rem" height="3rem" className="rounded-2xl" />
-              <div class="space-y-3">
-                <Skeleton variant="text" width="6rem" />
-                <Skeleton variant="heading" width="12rem" />
-              </div>
-            </div>
-            <Skeleton variant="text" width="4rem" />
-          </div>
-
-          {/* Progress bar skeleton */}
-          <div class="space-y-2 mt-6">
-            <Skeleton variant="rectangular" width="100%" height="12px" className="rounded-full" />
-            <div class="flex justify-between">
-              <Skeleton variant="text" width="7rem" />
-              <Skeleton variant="text" width="2.5rem" />
-            </div>
-          </div>
-
-          <Skeleton variant="text" width="10rem" className="mt-6" />
-
-          {/* Income/Savings skeleton */}
-          <div class="border-t border-base-300 pt-4 mt-6">
-            <div class="grid grid-cols-2 gap-4">
-              <div class="space-y-2">
-                <Skeleton variant="text" width="3.5rem" />
-                <Skeleton variant="heading" width="6rem" />
-              </div>
-              <div class="space-y-2">
-                <Skeleton variant="text" width="5rem" />
-                <Skeleton variant="heading" width="7rem" />
-              </div>
-            </div>
-          </div>
+  <!-- Loading skeleton -->
+  <div slot="loading" aria-hidden="true">
+    <div class="flex justify-between items-start">
+      <div class="flex items-center gap-4">
+        <Skeleton variant="rectangular" width="3rem" height="3rem" className="rounded-2xl" />
+        <div class="space-y-3">
+          <Skeleton variant="text" width="6rem" />
+          <Skeleton variant="heading" width="12rem" />
         </div>
-      ) : error ? (
-        /* Error State */
-        <div class="p-6 text-center">
-          <p class="text-error font-medium">{error}</p>
+      </div>
+      <Skeleton variant="text" width="4rem" />
+    </div>
+    <div class="space-y-2 mt-6">
+      <Skeleton variant="rectangular" width="100%" height="12px" className="rounded-full" />
+      <div class="flex justify-between">
+        <Skeleton variant="text" width="7rem" />
+        <Skeleton variant="text" width="2.5rem" />
+      </div>
+    </div>
+    <Skeleton variant="text" width="10rem" className="mt-6" />
+    <div class="border-t border-base-300 pt-4 mt-6">
+      <div class="grid grid-cols-2 gap-4">
+        <div class="space-y-2">
+          <Skeleton variant="text" width="3.5rem" />
+          <Skeleton variant="heading" width="6rem" />
         </div>
-      ) : (
-        /* Normal State */
-        <>
-          {/* Main content group */}
-          <div class="flex flex-col gap-6">
-            {/* Header: Responsive layout using container queries */}
-            <div class="flex flex-col @xs:flex-row @xs:justify-between @xs:items-start gap-3 @xs:gap-4">
-              <div class="flex items-center gap-3 @xs:gap-4">
-                <IconBadge variant={iconBadgeVariant} size="md">
-                  <Scale size={24} class="stroke-current" aria-hidden="true" />
-                </IconBadge>
-                <div class="min-w-0">
-                  <StatLabel size="md" color="neutral">
-                    Expenses
-                  </StatLabel>
-                  <h3
-                    id={uniqueId}
-                    class="text-2xl @sm:text-3xl font-bold mt-1.5 tracking-tight leading-none"
-                    data-testid="dashboard-total-expenses"
-                  >
-                    {spentFormatted}
-                    <span class="text-sm @sm:text-base text-base-content/60 font-medium tracking-normal">
-                      / {budgetFormatted}
-                    </span>
-                  </h3>
-                </div>
-              </div>
-            </div>
-
-            {/* Progress Bar with Monthly Allocation label */}
-            <div class="space-y-2">
-              <ProgressBar value={percentage} status={progressBarStatus} size="md" />
-              <div class="flex justify-between items-center text-sm">
-                <span class="text-base-content/60">Monthly Allocation</span>
-                <span class="font-semibold text-base-content">{percentageRounded}%</span>
-              </div>
-            </div>
-
-            <p class="text-base font-medium text-base-content/60">
-              {remainingLabel}:{' '}
-              <span class="font-bold text-base-content">{remainingFormatted}</span>
-            </p>
-          </div>
-
-          {/* Income and Net Savings Section - Pushed to bottom */}
-          <div class="border-t border-base-300 pt-4 mt-4">
-            <div class="grid grid-cols-1 @xs:grid-cols-2 gap-4">
-              <div>
-                <StatLabel size="sm" color="neutral">
-                  INCOME
-                </StatLabel>
-                <p class="text-lg font-bold text-success mt-1" data-testid="dashboard-total-income">
-                  {incomeFormatted}
-                </p>
-              </div>
-              <div class="min-w-0">
-                <StatLabel size="sm" color="neutral">
-                  NET SAVINGS
-                </StatLabel>
-                <p
-                  class:list={[
-                    'text-lg font-bold mt-1 truncate',
-                    netSavings >= 0 ? 'text-success' : 'text-error',
-                  ]}
-                  title={`${netSavings < 0 ? '-' : ''}${netSavingsFormatted} (${netSavings >= 0 ? '+' : ''}${Math.round(savingsPercentage)}%)`}
-                >
-                  {netSavings < 0 ? '-' : ''}
-                  {netSavingsFormatted}
-                </p>
-                <p class="text-xs font-medium text-base-content/60 mt-0.5">
-                  {netSavings >= 0 ? '+' : ''}
-                  {Math.round(savingsPercentage)}% of income
-                </p>
-              </div>
-            </div>
-          </div>
-        </>
-      )
-    }
+        <div class="space-y-2">
+          <Skeleton variant="text" width="5rem" />
+          <Skeleton variant="heading" width="7rem" />
+        </div>
+      </div>
+    </div>
   </div>
-</Card>
+
+  <!-- Error state -->
+  <div slot="error" class="p-6 text-center">
+    <p class="text-error font-medium">{error}</p>
+  </div>
+
+  <!-- Normal content -->
+  <div class="@container flex flex-col h-full">
+    <div class="flex flex-col gap-6">
+      <div class="flex flex-col @xs:flex-row @xs:justify-between @xs:items-start gap-3 @xs:gap-4">
+        <div class="flex items-center gap-3 @xs:gap-4">
+          <IconBadge variant={iconBadgeVariant} size="md">
+            <Scale size={24} class="stroke-current" aria-hidden="true" />
+          </IconBadge>
+          <div class="min-w-0">
+            <StatLabel size="md" color="neutral">Expenses</StatLabel>
+            <h3
+              id={uniqueId}
+              class="text-2xl @sm:text-3xl font-bold mt-1.5 tracking-tight leading-none"
+              data-testid="dashboard-total-expenses"
+            >
+              {spentFormatted}
+              <span class="text-sm @sm:text-base text-base-content/60 font-medium tracking-normal">
+                / {budgetFormatted}
+              </span>
+            </h3>
+          </div>
+        </div>
+      </div>
+
+      <div class="space-y-2">
+        <ProgressBar value={percentage} status={progressBarStatus} size="md" />
+        <div class="flex justify-between items-center text-sm">
+          <span class="text-base-content/60">Monthly Allocation</span>
+          <span class="font-semibold text-base-content">{percentageRounded}%</span>
+        </div>
+      </div>
+
+      <p class="text-base font-medium text-base-content/60">
+        {remainingLabel}:{' '}
+        <span class="font-bold text-base-content">{remainingFormatted}</span>
+      </p>
+    </div>
+
+    <div class="border-t border-base-300 pt-4 mt-4">
+      <div class="grid grid-cols-1 @xs:grid-cols-2 gap-4">
+        <div>
+          <StatLabel size="sm" color="neutral">INCOME</StatLabel>
+          <p class="text-lg font-bold text-success mt-1" data-testid="dashboard-total-income">
+            {incomeFormatted}
+          </p>
+        </div>
+        <div class="min-w-0">
+          <StatLabel size="sm" color="neutral">NET SAVINGS</StatLabel>
+          <p
+            class:list={[
+              'text-lg font-bold mt-1 truncate',
+              netSavings >= 0 ? 'text-success' : 'text-error',
+            ]}
+            title={`${netSavings < 0 ? '-' : ''}${netSavingsFormatted} (${netSavings >= 0 ? '+' : ''}${Math.round(savingsPercentage)}%)`}
+          >
+            {netSavings < 0 ? '-' : ''}
+            {netSavingsFormatted}
+          </p>
+          <p class="text-xs font-medium text-base-content/60 mt-0.5">
+            {netSavings >= 0 ? '+' : ''}
+            {Math.round(savingsPercentage)}% of income
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</DashboardWidget>

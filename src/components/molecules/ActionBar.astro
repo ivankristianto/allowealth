@@ -24,14 +24,14 @@ export interface Props {
   edgeBleed?: boolean;
 }
 
-const { className = '', ariaLabel = 'Page actions', edgeBleed = false } = Astro.props;
+const { className = '', ariaLabel = 'Page actions', edgeBleed = true } = Astro.props;
 
 const hasPrimary = Astro.slots.has('primary');
 
 const containerClasses = [
   'bg-base-100',
   edgeBleed
-    ? '-mx-4 px-4 py-2 border-y border-base-300 md:mx-0 md:rounded-card md:border md:shadow-sm md:p-4 lg:p-6'
+    ? '-mx-4 px-4 py-2 border-y border-base-300 md:mx-0 md:rounded-xl md:border md:shadow-sm md:p-4 lg:p-6'
     : 'rounded-card border border-base-300 shadow-sm p-2 md:p-4 lg:p-6',
   className,
 ]

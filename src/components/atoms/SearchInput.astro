@@ -1,0 +1,62 @@
+---
+/**
+ * SearchInput atom
+ *
+ * Search input with absolute-positioned magnifying glass icon overlay.
+ * Normalizes the icon+input pattern used across filter bars.
+ *
+ * @param label   — required. Used for sr-only <label> and aria-label on input.
+ * @param class   — applied to the outer wrapper div (e.g. "flex-1", "md:flex-1").
+ * @param inputClass — CSS classes for the <input> element (required — callers provide).
+ * Additional props (data-*, id, name, etc.) are spread onto the <input>.
+ */
+import { Search } from '@lucide/astro';
+
+export interface Props {
+  label: string;
+  name?: string;
+  id?: string;
+  value?: string;
+  placeholder?: string;
+  inputClass?: string;
+  class?: string;
+  [key: `data-${string}`]: string | boolean | undefined;
+}
+
+const {
+  label,
+  name,
+  id,
+  value,
+  placeholder,
+  inputClass = '',
+  class: className = '',
+  ...rest
+} = Astro.props;
+---
+
+<div class:list={['relative', className]}>
+  <span
+    class="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-base-content/40"
+    aria-hidden="true"
+  >
+    <Search size={18} class="stroke-current" />
+  </span>
+  {
+    id && (
+      <label for={id} class="sr-only">
+        {label}
+      </label>
+    )
+  }
+  <input
+    type="search"
+    id={id}
+    name={name}
+    value={value}
+    placeholder={placeholder}
+    class={inputClass}
+    aria-label={label}
+    {...rest}
+  />
+</div>

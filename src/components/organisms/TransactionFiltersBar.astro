@@ -14,6 +14,7 @@
 
 import { Search, ChevronDown, Tag, Check, RotateCcw } from '@lucide/astro';
 import { tokenClasses } from '@/lib/tokens';
+import SearchInput from '@/components/atoms/SearchInput.astro';
 
 export interface Props {
   typeFilter?: 'income' | 'expense';
@@ -110,23 +111,16 @@ const mainSearchInputClass = [
 >
   {/* Row 1: Search + Reset */}
   <div class="flex items-center gap-2 sm:gap-3 w-full">
-    <div class="relative flex-1">
-      <Search
-        size={18}
-        class="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-base-content/40 stroke-current pointer-events-none z-10"
-        aria-hidden="true"
-      />
-      <label for="search-input" class="sr-only">Search activity</label>
-      <input
-        id="search-input"
-        type="search"
-        name="search"
-        value={searchValue}
-        placeholder="Search..."
-        class={mainSearchInputClass}
-        data-filter-search
-      />
-    </div>
+    <SearchInput
+      id="search-input"
+      name="search"
+      label="Search activity"
+      value={searchValue}
+      placeholder="Search..."
+      inputClass={mainSearchInputClass}
+      class="flex-1"
+      data-filter-search
+    />
 
     <button
       type="button"
@@ -408,9 +402,20 @@ const mainSearchInputClass = [
         if (checkIcon) {
           checkIcon.style.display = isSelected ? 'block' : 'none';
         } else if (isSelected) {
-          // Create check icon if not present
-          checkboxVisual.innerHTML =
-            '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
+          // Create check icon if not present (using createElementNS to avoid innerHTML)
+          const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+          svg.setAttribute('width', '12');
+          svg.setAttribute('height', '12');
+          svg.setAttribute('viewBox', '0 0 24 24');
+          svg.setAttribute('fill', 'none');
+          svg.setAttribute('stroke', 'white');
+          svg.setAttribute('stroke-width', '3');
+          svg.setAttribute('stroke-linecap', 'round');
+          svg.setAttribute('stroke-linejoin', 'round');
+          const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+          path.setAttribute('d', 'M20 6 9 17l-5-5');
+          svg.appendChild(path);
+          checkboxVisual.appendChild(svg);
         }
       }
     });

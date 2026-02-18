@@ -10,6 +10,8 @@ import {
 import { AssetCategoryServiceError, ServiceErrorCode } from './service-errors';
 import { DEFAULT_ASSET_CATEGORIES } from '@/lib/constants';
 import { getCacheManager, CacheKeys, CacheTags, hashFilters } from '@/lib/cache';
+import { cacheOrFetch } from '@/lib/cache/cache-or-fetch';
+import { createCrudService } from './base/crud.factory';
 
 export { type CreateAssetCategoryInput, type UpdateAssetCategoryInput };
 
@@ -20,7 +22,16 @@ export class AssetCategoryService {
     return getActiveSchema();
   }
 
-  constructor(private db: IDatabase) {}
+  private crud: ReturnType<typeof createCrudService<any, any, any>>;
+
+  constructor(private db: IDatabase) {
+    this.crud = createCrudService<any, any, any>(db, {
+      getTable: () => getActiveSchema().assetCategories,
+      getQuery: () => db.query.assetCategories,
+      getId: () => getActiveSchema().assetCategories.id,
+      getWorkspaceId: () => getActiveSchema().assetCategories.workspace_id,
+    });
+  }
 
   async create(input: CreateAssetCategoryInput) {
     const validated = createAssetCategorySchema.parse(input);
@@ -93,14 +104,7 @@ export class AssetCategoryService {
   }
 
   async findById(id: string, workspaceId: string) {
-    const result = await this.db.query.assetCategories.findFirst({
-      where: and(
-        eq(this.schema.assetCategories.id, id),
-        eq(this.schema.assetCategories.workspace_id, workspaceId)
-      ),
-    });
-
-    return result;
+    return this.crud.findById(id, workspaceId);
   }
 
   async findAll(
@@ -110,22 +114,8 @@ export class AssetCategoryService {
       is_system?: boolean;
     }
   ) {
-    type AssetCategoryRow = Awaited<ReturnType<typeof this.db.query.assetCategories.findMany>>;
-
     const filtersHashValue = hashFilters(filters || {});
-    const cache = getCacheManager();
     const cacheKey = CacheKeys.assetCategories(workspaceId, filtersHashValue);
-
-    // Cache read - fail-silent
-    let cached: AssetCategoryRow | null = null;
-    try {
-      cached = await cache.get<AssetCategoryRow>(cacheKey);
-    } catch {
-      // Cache read failed, continue to DB fetch
-    }
-    if (cached) {
-      return cached;
-    }
 
     const conditions = [eq(this.schema.assetCategories.workspace_id, workspaceId)];
 
@@ -137,26 +127,19 @@ export class AssetCategoryService {
       conditions.push(eq(this.schema.assetCategories.is_system, filters.is_system));
     }
 
-    const result = await this.db.query.assetCategories.findMany({
-      where: and(...conditions),
-      orderBy: (assetCategories: any, { asc, desc }: any) => [
-        desc(assetCategories.is_system),
-        asc(assetCategories.sort_order),
-        asc(assetCategories.name),
-      ],
-    });
-
-    // Cache write - fail-silent
-    try {
-      await cache.set(cacheKey, result, {
-        ttl: 3600,
-        tags: [CacheTags.workspace(workspaceId), CacheTags.ASSET_CATEGORIES],
-      });
-    } catch {
-      // Cache write failed, continue without caching
-    }
-
-    return result;
+    return cacheOrFetch(
+      cacheKey,
+      { ttl: 3600, tags: [CacheTags.workspace(workspaceId), CacheTags.ASSET_CATEGORIES] },
+      () =>
+        this.db.query.assetCategories.findMany({
+          where: and(...conditions),
+          orderBy: (assetCategories: any, { asc, desc }: any) => [
+            desc(assetCategories.is_system),
+            asc(assetCategories.sort_order),
+            asc(assetCategories.name),
+          ],
+        })
+    );
   }
 
   async findByName(name: string, workspaceId: string) {

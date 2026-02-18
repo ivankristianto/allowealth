@@ -246,7 +246,7 @@ function handlePeriodChange(event: CustomEvent<{ period: string; label: string }
  */
 function handleDrillDownClick(event: MouseEvent): void {
   const target = event.target as HTMLElement;
-  const btn = target.closest('.category-drill-down-btn') as HTMLElement;
+  const btn = target.closest('[data-view-details]') as HTMLElement;
 
   if (!btn) return;
 

@@ -130,7 +130,7 @@ const serializedInput = JSON.stringify(input);
           {/* Summary cards skeletons */}
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
             {Array.from({ length: 3 }).map(() => (
-              <div class="p-5 md:p-6 bg-base-200/40 rounded-2xl md:rounded-card border border-base-300/50 space-y-2">
+              <div class="p-5 md:p-6 bg-base-200/40 rounded-2xl md:rounded-xl border border-base-300/50 space-y-2">
                 <Skeleton variant="text" width="40%" height="12px" />
                 <Skeleton variant="heading" width="75%" height="28px" />
               </div>
@@ -172,7 +172,7 @@ const serializedInput = JSON.stringify(input);
           {/* Summary Statistics Cards */}
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
             {/* Year 10 Target */}
-            <div class="p-5 md:p-6 bg-base-200/40 rounded-2xl md:rounded-card border border-base-300/50">
+            <div class="p-5 md:p-6 bg-base-200/40 rounded-2xl md:rounded-xl border border-base-300/50">
               <StatLabel size="sm" color="neutral" className="mb-2">
                 YEAR {input.years} TARGET
               </StatLabel>
@@ -182,7 +182,7 @@ const serializedInput = JSON.stringify(input);
             </div>
 
             {/* Total Interest Earned */}
-            <div class="p-5 md:p-6 bg-base-200/40 rounded-2xl md:rounded-card border border-base-300/50">
+            <div class="p-5 md:p-6 bg-base-200/40 rounded-2xl md:rounded-xl border border-base-300/50">
               <StatLabel size="sm" color="neutral" className="mb-2">
                 {' '}
                 TOTAL INTEREST EARNED{' '}
@@ -193,7 +193,7 @@ const serializedInput = JSON.stringify(input);
             </div>
 
             {/* Growth Multiple */}
-            <div class="p-5 md:p-6 bg-base-200/40 rounded-2xl md:rounded-card border border-base-300/50">
+            <div class="p-5 md:p-6 bg-base-200/40 rounded-2xl md:rounded-xl border border-base-300/50">
               <StatLabel size="sm" color="neutral" className="mb-2">
                 {' '}
                 GROWTH MULTIPLE{' '}

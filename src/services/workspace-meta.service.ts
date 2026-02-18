@@ -18,8 +18,9 @@
  */
 
 import { type IDatabase, getActiveSchema } from '@/db';
-import { eq, and } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
+import { createMetaService } from './base/meta.factory';
 import {
   WORKSPACE_META_KEYS,
   type WorkspaceMetaKey,
@@ -102,11 +103,22 @@ export class WorkspaceMetaService {
     return getActiveSchema();
   }
 
+  private meta: ReturnType<typeof createMetaService<WorkspaceMetaKey>>;
+
   /**
    * Create a new WorkspaceMetaService with database injection
    * @param db - Database instance (injected for testability)
    */
-  constructor(private db: IDatabase) {}
+  constructor(private db: IDatabase) {
+    this.meta = createMetaService<WorkspaceMetaKey>(db, {
+      getTable: () => getActiveSchema().workspaceMeta,
+      getQuery: () => db.query.workspaceMeta,
+      getEntityIdCol: () => getActiveSchema().workspaceMeta.workspace_id,
+      getKeyCol: () => getActiveSchema().workspaceMeta.meta_key,
+      getValueCol: () => getActiveSchema().workspaceMeta.meta_value,
+      validateKey: isValidWorkspaceMetaKey,
+    });
+  }
 
   /**
    * Get a single meta value for a workspace
@@ -129,15 +141,7 @@ export class WorkspaceMetaService {
     // Check if workspace exists
     await this.ensureWorkspaceExists(workspaceId);
 
-    // Get meta value
-    const meta = await this.db.query.workspaceMeta.findFirst({
-      where: and(
-        eq(this.schema.workspaceMeta.workspace_id, workspaceId),
-        eq(this.schema.workspaceMeta.meta_key, key)
-      ),
-    });
-
-    return meta?.meta_value ?? null;
+    return this.meta.get(workspaceId, key);
   }
 
   /**
@@ -212,21 +216,7 @@ export class WorkspaceMetaService {
     // Check if workspace exists
     await this.ensureWorkspaceExists(workspaceId);
 
-    // Get all meta for workspace
-    const metas = await this.db.query.workspaceMeta.findMany({
-      where: eq(this.schema.workspaceMeta.workspace_id, workspaceId),
-    });
-
-    // Build result with only set values
-    const result: Partial<Record<WorkspaceMetaKey, string>> = {};
-
-    for (const meta of metas) {
-      if (isValidWorkspaceMetaKey(meta.meta_key)) {
-        result[meta.meta_key] = meta.meta_value;
-      }
-    }
-
-    return result;
+    return this.meta.getAll(workspaceId);
   }
 
   /**
@@ -240,22 +230,8 @@ export class WorkspaceMetaService {
     // Check if workspace exists
     await this.ensureWorkspaceExists(workspaceId);
 
-    // Get all meta for workspace
-    const metas = await this.db.query.workspaceMeta.findMany({
-      where: eq(this.schema.workspaceMeta.workspace_id, workspaceId),
-    });
-
-    // Start with defaults
-    const result = { ...WORKSPACE_META_DEFAULTS };
-
-    // Override with actual values
-    for (const meta of metas) {
-      if (isValidWorkspaceMetaKey(meta.meta_key)) {
-        result[meta.meta_key] = meta.meta_value;
-      }
-    }
-
-    return result;
+    const stored = await this.meta.getAll(workspaceId);
+    return { ...WORKSPACE_META_DEFAULTS, ...stored };
   }
 
   /**
@@ -278,15 +254,10 @@ export class WorkspaceMetaService {
     // Check if workspace exists
     await this.ensureWorkspaceExists(workspaceId);
 
-    // Check if meta exists
-    const existing = await this.db.query.workspaceMeta.findFirst({
-      where: and(
-        eq(this.schema.workspaceMeta.workspace_id, workspaceId),
-        eq(this.schema.workspaceMeta.meta_key, key)
-      ),
-    });
+    // Check if meta exists (use !== null to allow empty-string values)
+    const existing = await this.meta.get(workspaceId, key);
 
-    if (!existing) {
+    if (existing === null) {
       throw new WorkspaceMetaServiceError(
         ServiceErrorCode.META_NOT_FOUND,
         `Meta key not found: ${key}`,
@@ -295,14 +266,7 @@ export class WorkspaceMetaService {
     }
 
     // Delete
-    await this.db
-      .delete(this.schema.workspaceMeta)
-      .where(
-        and(
-          eq(this.schema.workspaceMeta.workspace_id, workspaceId),
-          eq(this.schema.workspaceMeta.meta_key, key)
-        )
-      );
+    await this.meta.delete(workspaceId, key);
   }
 
   // ============================================================================

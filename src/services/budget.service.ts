@@ -29,7 +29,9 @@ import type {
 import { BudgetServiceError, ServiceErrorCode } from './service-errors';
 import { toHexColor } from '@/lib/utils/colorUtils';
 import { getCacheManager, CacheKeys, CacheTags } from '@/lib/cache';
+import { cacheOrFetch } from '@/lib/cache/cache-or-fetch';
 import { type PerfCollector, trackQuery } from '@/lib/perf';
+import { createCrudService } from './base/crud.factory';
 
 export interface BudgetOverview {
   budget_id: string;
@@ -73,11 +75,20 @@ export class BudgetService {
     return getActiveSchema();
   }
 
+  private crud: ReturnType<typeof createCrudService<any, any, any>>;
+
   /**
    * Create a new BudgetService with database injection
    * @param db - Database instance (injected for testability)
    */
-  constructor(private db: IDatabase) {}
+  constructor(private db: IDatabase) {
+    this.crud = createCrudService<any, any, any>(db, {
+      getTable: () => getActiveSchema().budgets,
+      getQuery: () => db.query.budgets,
+      getId: () => getActiveSchema().budgets.id,
+      getWorkspaceId: () => getActiveSchema().budgets.workspace_id,
+    });
+  }
 
   /**
    * Get budget overview for a specific month
@@ -99,37 +110,20 @@ export class BudgetService {
       throw new Error('Invalid month parameter');
     }
 
-    // Try cache first
-    const cache = getCacheManager();
     const cacheKey = CacheKeys.budget(workspaceId, year, month, currency);
 
-    // Cache read - fail-silent, treat errors as cache miss
-    let cached: BudgetSummary | null = null;
-    try {
-      cached = await cache.get<BudgetSummary>(cacheKey);
-    } catch {
-      // Cache read failed, continue to DB fetch
-    }
-    if (cached) {
-      return cached;
-    }
-
-    // Cache miss - fetch from DB
-    const result = await trackQuery('BudgetService.getMonthlyOverview', perf, () =>
-      this.fetchMonthlyOverviewFromDb(workspaceId, year, month, currency)
-    );
-
-    // Cache write - fail-silent, log at debug level but don't rethrow
-    try {
-      await cache.set(cacheKey, result, {
+    return cacheOrFetch(
+      cacheKey,
+      {
         ttl: 3600,
         tags: [CacheTags.workspace(workspaceId), CacheTags.BUDGET, CacheTags.TRANSACTIONS],
-      });
-    } catch {
-      // Cache write failed, continue without caching
-    }
-
-    return result;
+      },
+      () =>
+        trackQuery('BudgetService.getMonthlyOverview', perf, () =>
+          this.fetchMonthlyOverviewFromDb(workspaceId, year, month, currency)
+        ),
+      perf
+    );
   }
 
   /**
@@ -760,11 +754,7 @@ export class BudgetService {
    * Get a single budget by ID
    */
   async getBudgetById(id: string, workspaceId: string): Promise<Budget | null> {
-    const budget = await this.db.query.budgets.findFirst({
-      where: and(eq(this.schema.budgets.id, id), eq(this.schema.budgets.workspace_id, workspaceId)),
-    });
-
-    return budget as Budget | null;
+    return this.crud.findById(id, workspaceId);
   }
 
   /**
