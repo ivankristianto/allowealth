@@ -3,14 +3,8 @@
  * CashFlowWidget Component
  *
  * Cash flow analysis widget showing upcoming income/expense items.
- * Follows Oasis Finance v1.0.0 design system specifications.
- *
- * @param {Array} items - List of cash flow entries
- * @param {boolean} loading - Show loading skeleton state
- * @param {string} className - Additional CSS classes
  */
-
-import Card from '@/components/atoms/Card.astro';
+import DashboardWidget from '@/components/organisms/DashboardWidget.astro';
 import Skeleton from '@/components/atoms/Skeleton.astro';
 import StatLabel from '@/components/atoms/StatLabel.astro';
 import CashFlowItem from '@/components/molecules/CashFlowItem.astro';
@@ -23,63 +17,48 @@ export interface Props {
 }
 
 const { items = [], loading = false, className = '' } = Astro.props;
-
-const ariaBusy = loading ? 'true' : undefined;
-const ariaLabel = loading ? 'Loading cash flow analysis' : undefined;
-const ariaLabelledBy = loading ? undefined : 'cash-flow-title';
 ---
 
-<Card
-  padding="lg"
-  rounded="card-lg"
-  className={className}
-  role="region"
-  aria-labelledby={ariaLabelledBy}
-  aria-busy={ariaBusy}
-  aria-label={ariaLabel}
+<DashboardWidget
+  loading={loading}
+  isEmpty={items.length === 0}
+  ariaLabel={loading ? 'Loading cash flow analysis' : undefined}
+  ariaLabelledBy={!loading ? 'cash-flow-title' : undefined}
+  class={className}
 >
+  <!-- Loading skeleton — title repeated so it's visible during load -->
+  <div slot="loading" class="space-y-6">
+    <StatLabel size="md" color="neutral">Cash flow analysis</StatLabel>
+    <div class="space-y-5" role="status" aria-live="polite" aria-label="Loading cash flow analysis">
+      {
+        [1, 2].map(() => (
+          <div class="flex items-center justify-between gap-4 p-6 rounded-card border border-base-200 bg-base-200/40">
+            <div class="flex items-center gap-4">
+              <Skeleton variant="rectangular" width="48px" height="48px" className="rounded-2xl" />
+              <div class="space-y-2">
+                <Skeleton variant="rectangular" width="128px" height="16px" />
+                <Skeleton variant="rectangular" width="80px" height="12px" />
+              </div>
+            </div>
+            <Skeleton variant="rectangular" width="96px" height="16px" />
+          </div>
+        ))
+      }
+    </div>
+  </div>
+
+  <!-- Empty state -->
+  <p slot="empty" class="text-sm text-base-content/60">
+    No cash flow entries yet. Add income or expenses to see upcoming activity.
+  </p>
+
+  <!-- Normal content -->
   <div class="space-y-6">
     <div id="cash-flow-title">
-      <StatLabel size="md" color="neutral"> Cash flow analysis </StatLabel>
+      <StatLabel size="md" color="neutral">Cash flow analysis</StatLabel>
     </div>
-
-    {
-      loading ? (
-        <div
-          class="space-y-5"
-          role="status"
-          aria-live="polite"
-          aria-label="Loading cash flow analysis"
-        >
-          {[1, 2].map(() => (
-            <div class="flex items-center justify-between gap-4 p-6 rounded-card border border-base-200 bg-base-200/40">
-              <div class="flex items-center gap-4">
-                <Skeleton
-                  variant="rectangular"
-                  width="48px"
-                  height="48px"
-                  className="rounded-2xl"
-                />
-                <div class="space-y-2">
-                  <Skeleton variant="rectangular" width="128px" height="16px" />
-                  <Skeleton variant="rectangular" width="80px" height="12px" />
-                </div>
-              </div>
-              <Skeleton variant="rectangular" width="96px" height="16px" />
-            </div>
-          ))}
-        </div>
-      ) : items.length === 0 ? (
-        <p class="text-sm text-base-content/60">
-          No cash flow entries yet. Add income or expenses to see upcoming activity.
-        </p>
-      ) : (
-        <ul class="space-y-5" role="list">
-          {items.map((item) => (
-            <CashFlowItem {...item} />
-          ))}
-        </ul>
-      )
-    }
+    <ul class="space-y-5" role="list">
+      {items.map((item) => <CashFlowItem {...item} />)}
+    </ul>
   </div>
-</Card>
+</DashboardWidget>
