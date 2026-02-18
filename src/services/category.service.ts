@@ -10,6 +10,8 @@ import {
 import { CategoryServiceError, ServiceErrorCode } from './service-errors';
 import { type PerfCollector, trackQuery } from '@/lib/perf';
 import { getCacheManager, CacheKeys, CacheTags, hashFilters } from '@/lib/cache';
+import { cacheOrFetch } from '@/lib/cache/cache-or-fetch';
+import { createCrudService } from './base/crud.factory';
 
 export { type CreateCategoryInput, type UpdateCategoryInput };
 
@@ -18,11 +20,20 @@ export class CategoryService {
     return getActiveSchema();
   }
 
+  private crud: ReturnType<typeof createCrudService<any, any, any>>;
+
   /**
    * Create a new CategoryService with database injection
    * @param db - Database instance (injected for testability)
    */
-  constructor(private db: IDatabase) {}
+  constructor(private db: IDatabase) {
+    this.crud = createCrudService<any, any, any>(db, {
+      getTable: () => getActiveSchema().categories,
+      getQuery: () => db.query.categories,
+      getId: () => getActiveSchema().categories.id,
+      getWorkspaceId: () => getActiveSchema().categories.workspace_id,
+    });
+  }
 
   /**
    * Create a new category
@@ -78,16 +89,7 @@ export class CategoryService {
    * @param perf - Optional performance collector for timing metrics
    */
   async findById(id: string, workspaceId: string, perf?: PerfCollector) {
-    const result = await trackQuery('CategoryService.findById', perf, async () => {
-      return this.db.query.categories.findFirst({
-        where: and(
-          eq(this.schema.categories.id, id),
-          eq(this.schema.categories.workspace_id, workspaceId)
-        ),
-      });
-    });
-
-    return result;
+    return trackQuery('CategoryService.findById', perf, () => this.crud.findById(id, workspaceId));
   }
 
   /**
@@ -102,22 +104,8 @@ export class CategoryService {
     filters?: { type?: 'expense' | 'income'; is_active?: boolean },
     perf?: PerfCollector
   ) {
-    type CategoryRow = Awaited<ReturnType<typeof this.db.query.categories.findMany>>;
-
     const filtersHashValue = hashFilters(filters || {});
-    const cache = getCacheManager();
     const cacheKey = CacheKeys.categories(workspaceId, filtersHashValue);
-
-    // Cache read - fail-silent
-    let cached: CategoryRow | null = null;
-    try {
-      cached = await cache.get<CategoryRow>(cacheKey, perf);
-    } catch {
-      // Cache read failed, continue to DB fetch
-    }
-    if (cached) {
-      return cached;
-    }
 
     const conditions = [eq(this.schema.categories.workspace_id, workspaceId)];
 
@@ -129,24 +117,18 @@ export class CategoryService {
       conditions.push(eq(this.schema.categories.is_active, filters.is_active));
     }
 
-    const result = await trackQuery('CategoryService.findAll', perf, async () => {
-      return this.db.query.categories.findMany({
-        where: and(...conditions),
-        orderBy: (categories: any, { asc }: any) => [asc(categories.name)],
-      });
-    });
-
-    // Cache write - fail-silent
-    try {
-      await cache.set(cacheKey, result, {
-        ttl: 3600,
-        tags: [CacheTags.workspace(workspaceId), CacheTags.CATEGORIES],
-      });
-    } catch {
-      // Cache write failed, continue without caching
-    }
-
-    return result;
+    return cacheOrFetch(
+      cacheKey,
+      { ttl: 3600, tags: [CacheTags.workspace(workspaceId), CacheTags.CATEGORIES] },
+      () =>
+        trackQuery('CategoryService.findAll', perf, () =>
+          this.db.query.categories.findMany({
+            where: and(...conditions),
+            orderBy: (categories: any, { asc }: any) => [asc(categories.name)],
+          })
+        ),
+      perf
+    );
   }
 
   /**

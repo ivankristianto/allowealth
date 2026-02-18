@@ -16,12 +16,10 @@ export function createCrudService<T, TCreate, TUpdate = Partial<TCreate>>(
   config: CrudConfig
 ) {
   return {
-    async findById(id: string, workspaceId: string): Promise<T | null> {
-      return (
-        (await config.getQuery().findFirst({
-          where: and(eq(config.getId(), id), eq(config.getWorkspaceId(), workspaceId)),
-        })) ?? null
-      );
+    async findById(id: string, workspaceId: string): Promise<T | undefined> {
+      return config.getQuery().findFirst({
+        where: and(eq(config.getId(), id), eq(config.getWorkspaceId(), workspaceId)),
+      });
     },
 
     async findAll(workspaceId: string): Promise<T[]> {
