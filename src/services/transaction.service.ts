@@ -708,8 +708,8 @@ export class TransactionService {
     return resolved;
   }
 
-  /** Max rows per INSERT statement to stay within bind-variable limits (50 × 14 cols = 700 params) */
-  private static readonly BULK_INSERT_CHUNK_SIZE = 50;
+  /** Max rows per INSERT statement to stay within D1's 100 bound-parameter limit (7 × 13 cols = 91 params) */
+  private static readonly BULK_INSERT_CHUNK_SIZE = 7;
 
   /**
    * Bulk insert pre-validated transaction rows in chunked INSERT statements

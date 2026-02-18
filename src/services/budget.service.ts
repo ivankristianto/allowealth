@@ -71,6 +71,9 @@ export interface MonthlyBudgetHistory {
 }
 
 export class BudgetService {
+  /** Max rows per INSERT to stay within D1's 100 bound-parameter limit (9 × 10 cols = 90 params for copyBudgets which has 10 bound fields) */
+  private static readonly BULK_INSERT_CHUNK_SIZE = 9;
+
   private get schema() {
     return getActiveSchema();
   }
@@ -906,7 +909,15 @@ export class BudgetService {
       }));
 
       // Conflict-safe write for idempotency under concurrent requests.
-      await tx.insert(this.schema.budgets).values(newBudgets).onConflictDoNothing();
+      // Chunked to stay within D1's 100 bound-parameter limit.
+      for (
+        let offset = 0;
+        offset < newBudgets.length;
+        offset += BudgetService.BULK_INSERT_CHUNK_SIZE
+      ) {
+        const chunk = newBudgets.slice(offset, offset + BudgetService.BULK_INSERT_CHUNK_SIZE);
+        await tx.insert(this.schema.budgets).values(chunk).onConflictDoNothing();
+      }
 
       // Re-query to return actual initialized categories after conflict resolution.
       const candidateCategoryIds = uninitializedCategories.map((cat: { id: string }) => cat.id);
@@ -995,7 +1006,7 @@ export class BudgetService {
 
     const skippedCount = sourceBudgets.length - budgetsToCopy.length;
 
-    // Copy budgets to target month using bulk insert for atomicity
+    // Copy budgets to target month using chunked bulk insert inside a transaction for atomicity
     if (budgetsToCopy.length > 0) {
       const newBudgets = budgetsToCopy.map((b: Budget) => ({
         id: nanoid(),
@@ -1010,9 +1021,17 @@ export class BudgetService {
         is_closed: false,
       }));
 
-      // Bulk insert for better performance and atomicity
-      // Drizzle ORM handles the array insert appropriately for each database driver
-      await Promise.resolve(this.db.insert(this.schema.budgets).values(newBudgets));
+      // Chunked insert to stay within D1's 100 bound-parameter limit.
+      await runTransaction(this.db, async (tx) => {
+        for (
+          let offset = 0;
+          offset < newBudgets.length;
+          offset += BudgetService.BULK_INSERT_CHUNK_SIZE
+        ) {
+          const chunk = newBudgets.slice(offset, offset + BudgetService.BULK_INSERT_CHUNK_SIZE);
+          await tx.insert(this.schema.budgets).values(chunk);
+        }
+      });
     }
 
     // Invalidate budget cache for the workspace
