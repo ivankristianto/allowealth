@@ -1,5 +1,6 @@
 ---
-import { LayoutGrid, Search, Table as TableIcon } from '@lucide/astro';
+import { LayoutGrid, Table as TableIcon } from '@lucide/astro';
+import SearchInput from '@/components/atoms/SearchInput.astro';
 import {
   BUDGET_FILTER_CONTROL_HEIGHT_CLASS,
   BUDGET_FILTER_DESKTOP_LAYOUT_CLASS,
@@ -32,23 +33,14 @@ const viewToggleClass = [
   class:list={['space-y-2.5', BUDGET_FILTER_DESKTOP_LAYOUT_CLASS, className]}
   data-budget-filter-controls
 >
-  <div class="relative md:flex-1">
-    <span
-      class="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-base-content/40"
-      aria-hidden="true"
-    >
-      <Search size={18} class="stroke-current" />
-    </span>
-
-    <input
-      type="search"
-      id="budget-filter-input"
-      data-testid="budget-filter-input"
-      placeholder="Filter budgets..."
-      class={searchInputClass}
-      aria-label="Filter budgets by category name"
-    />
-  </div>
+  <SearchInput
+    id="budget-filter-input"
+    label="Filter budgets by category name"
+    placeholder="Filter budgets..."
+    inputClass={searchInputClass}
+    class="md:flex-1"
+    data-testid="budget-filter-input"
+  />
 
   <div
     class:list={[
