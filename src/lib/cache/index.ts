@@ -31,6 +31,7 @@
 
 // Core exports
 export { CacheManager, getCacheManager, resetCacheManager } from './cache-manager';
+export { cacheOrFetch } from './cache-or-fetch';
 export { CacheKeys, hashFilters, simpleHash } from './keys';
 export { CacheTags } from './tags';
 
