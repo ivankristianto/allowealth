@@ -4,8 +4,7 @@
  *
  * Presents multi-factor authentication options.
  */
-
-import IconBadge from '@/components/atoms/IconBadge.astro';
+import SecurityCard from '@/components/molecules/SecurityCard.astro';
 import { ShieldCheck, LayoutGrid } from '@lucide/astro';
 
 interface MfaMethod {
@@ -25,47 +24,37 @@ const { methods } = Astro.props;
 // @TODO: Implement MFA preference updates.
 ---
 
-<section class="card bg-base-100 shadow border border-base-300">
-  <div class="card-body p-6 space-y-6">
-    <div class="flex items-center gap-4">
-      <IconBadge variant="success" size="sm">
-        <ShieldCheck size={20} class="stroke-current" aria-hidden="true" />
-      </IconBadge>
-      <div>
-        <div class="flex flex-wrap items-center gap-2">
-          <h3 class="text-lg font-bold">Multi-Factor Authentication</h3>
-          <span class="badge badge-outline badge-sm text-base-content/50 whitespace-nowrap"
-            >Under Development</span
-          >
-        </div>
-        <p class="text-xs uppercase tracking-widest text-base-content/50">2FA Protection</p>
-      </div>
-    </div>
+<SecurityCard
+  title="Multi-Factor Authentication"
+  subtitle="2FA Protection"
+  iconVariant="success"
+  badge="Under Development"
+>
+  <ShieldCheck slot="icon" size={20} class="stroke-current" aria-hidden="true" />
 
-    <div class="space-y-4">
-      {
-        methods.map((method) => (
-          <div class="flex items-center justify-between gap-4 rounded-2xl border border-base-300 bg-base-200/60 p-4">
-            <div class="flex items-center gap-4">
-              <div class="rounded-xl bg-success text-success-content p-2">
-                <LayoutGrid size={18} class="stroke-current" aria-hidden="true" />
-              </div>
-              <div>
-                <p class="text-sm font-semibold">{method.label}</p>
-                <p class="text-xs text-base-content/60">{method.description}</p>
-              </div>
+  <div class="space-y-4">
+    {
+      methods.map((method) => (
+        <div class="flex items-center justify-between gap-4 rounded-2xl border border-base-300 bg-base-200/60 p-4">
+          <div class="flex items-center gap-4">
+            <div class="rounded-xl bg-success text-success-content p-2">
+              <LayoutGrid size={18} class="stroke-current" aria-hidden="true" />
             </div>
-            <input
-              id={`mfa-${method.id}`}
-              type="checkbox"
-              class="toggle toggle-accent"
-              checked={method.enabled}
-              disabled
-              aria-label={`Toggle ${method.label}`}
-            />
+            <div>
+              <p class="text-sm font-semibold">{method.label}</p>
+              <p class="text-xs text-base-content/60">{method.description}</p>
+            </div>
           </div>
-        ))
-      }
-    </div>
+          <input
+            id={`mfa-${method.id}`}
+            type="checkbox"
+            class="toggle toggle-accent"
+            checked={method.enabled}
+            disabled
+            aria-label={`Toggle ${method.label}`}
+          />
+        </div>
+      ))
+    }
   </div>
-</section>
+</SecurityCard>

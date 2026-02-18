@@ -1,0 +1,80 @@
+---
+/**
+ * SecurityCard base component
+ *
+ * Shared shell for all security section cards.
+ * Handles the outer card structure, header layout, and icon badge.
+ *
+ * Named slots:
+ *   icon         — required. Lucide icon element.
+ *   title-extra  — optional. Extra content in the title row (e.g. help button).
+ *   header-action — optional. Button/link pinned to header right.
+ *                   When present, header switches to sm:justify-between layout.
+ *   after        — optional. Rendered after card-body (use for inline dialogs).
+ *   default      — required. Card body content.
+ */
+import IconBadge from '@/components/atoms/IconBadge.astro';
+
+export interface Props {
+  title: string;
+  subtitle: string;
+  iconVariant?: 'info' | 'success' | 'warning' | 'accent' | 'error' | 'neutral';
+  /** Renders as badge-outline next to the title (e.g. "Under Development") */
+  badge?: string;
+  class?: string;
+  /** Allow data-* attributes to be forwarded to the <section> element */
+  [key: `data-${string}`]: string | boolean | undefined;
+}
+
+const {
+  title,
+  subtitle,
+  iconVariant = 'neutral',
+  badge,
+  class: className = '',
+  ...rest
+} = Astro.props;
+
+const hasHeaderAction = Astro.slots.has('header-action');
+---
+
+<section class:list={['card bg-base-100 shadow border border-base-300', className]} {...rest}>
+  <div class="card-body p-6 space-y-6">
+    <div
+      class:list={[
+        hasHeaderAction
+          ? 'flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between'
+          : 'flex items-center gap-4',
+      ]}
+    >
+      <div class="flex items-center gap-4">
+        <IconBadge variant={iconVariant} size="sm">
+          <slot name="icon" />
+        </IconBadge>
+        <div>
+          <div class="flex flex-wrap items-center gap-2">
+            <h3 class="text-lg font-bold">{title}</h3>
+            {
+              badge && (
+                <span class="badge badge-outline badge-sm text-base-content/50 whitespace-nowrap">
+                  {badge}
+                </span>
+              )
+            }
+            <slot name="title-extra" />
+          </div>
+          <p class="text-xs uppercase tracking-widest text-base-content/50">{subtitle}</p>
+        </div>
+      </div>
+      {
+        hasHeaderAction && (
+          <div>
+            <slot name="header-action" />
+          </div>
+        )
+      }
+    </div>
+    <slot />
+  </div>
+  <slot name="after" />
+</section>
