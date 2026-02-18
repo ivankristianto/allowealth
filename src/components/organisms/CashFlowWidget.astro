@@ -22,8 +22,12 @@ const { items = [], loading = false, className = '' } = Astro.props;
 <DashboardWidget
   loading={loading}
   isEmpty={items.length === 0}
-  ariaLabel={loading ? 'Loading cash flow analysis' : undefined}
-  ariaLabelledBy={!loading ? 'cash-flow-title' : undefined}
+  ariaLabel={loading
+    ? 'Loading cash flow analysis'
+    : items.length === 0
+      ? 'Cash flow analysis'
+      : undefined}
+  ariaLabelledBy={!loading && items.length > 0 ? 'cash-flow-title' : undefined}
   class={className}
 >
   <!-- Loading skeleton — title repeated so it's visible during load -->
