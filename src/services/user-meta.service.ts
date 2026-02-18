@@ -186,10 +186,10 @@ export class UserMetaService {
     // Check if user exists
     await this.ensureUserExists(userId);
 
-    // Check if meta exists
+    // Check if meta exists (use !== null to allow empty-string values)
     const existing = await this.meta.get(userId, key);
 
-    if (!existing) {
+    if (existing === null) {
       throw new UserMetaServiceError(
         ServiceErrorCode.META_NOT_FOUND,
         `Meta key not found: ${key}`,
