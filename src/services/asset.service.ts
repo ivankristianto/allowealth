@@ -7,6 +7,7 @@ import { deriveAccountClass } from '@/lib/types/asset';
 import { type PerfCollector, trackQuery } from '@/lib/perf';
 import { decimalAdd, decimalCompare, decimalSubtract } from '@/lib/utils/decimal';
 import { getCacheManager, CacheKeys, CacheTags, hashFilters } from '@/lib/cache';
+import { cacheOrFetch } from '@/lib/cache/cache-or-fetch';
 
 /** Inferred row type for an asset record */
 export type AssetRow = typeof assetsTable.$inferSelect;
@@ -151,19 +152,7 @@ export class AssetService {
     perf?: PerfCollector
   ) {
     const filtersHashValue = hashFilters(filters || {});
-    const cache = getCacheManager();
     const cacheKey = CacheKeys.assets(workspaceId, filtersHashValue);
-
-    // Cache read - fail-silent
-    let cached: AssetRow[] | null = null;
-    try {
-      cached = await cache.get<AssetRow[]>(cacheKey, perf);
-    } catch {
-      // Cache read failed, continue to DB fetch
-    }
-    if (cached) {
-      return cached;
-    }
 
     const conditions = [
       eq(this.schema.assets.workspace_id, workspaceId),
@@ -187,24 +176,18 @@ export class AssetService {
       conditions.push(eq(this.schema.assets.currency, filters.currency));
     }
 
-    const result = await trackQuery('AssetService.findAll', perf, async () => {
-      return this.db.query.assets.findMany({
-        where: and(...conditions),
-        orderBy: (_assets: any, { asc }: any) => [asc(this.schema.assets.name)],
-      });
-    });
-
-    // Cache write - fail-silent
-    try {
-      await cache.set(cacheKey, result, {
-        ttl: 3600,
-        tags: [CacheTags.workspace(workspaceId), CacheTags.ASSETS],
-      });
-    } catch {
-      // Cache write failed, continue without caching
-    }
-
-    return result;
+    return cacheOrFetch(
+      cacheKey,
+      { ttl: 3600, tags: [CacheTags.workspace(workspaceId), CacheTags.ASSETS] },
+      () =>
+        trackQuery('AssetService.findAll', perf, () =>
+          this.db.query.assets.findMany({
+            where: and(...conditions),
+            orderBy: (_assets: any, { asc }: any) => [asc(this.schema.assets.name)],
+          })
+        ),
+      perf
+    );
   }
 
   /**
