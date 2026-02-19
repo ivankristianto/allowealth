@@ -1,0 +1,343 @@
+---
+import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
+import ReportSelector from '@/components/molecules/ReportSelector.astro';
+import ReportSummaryCardsPartial from '@/components/partials/ReportSummaryCardsPartial.astro';
+import ReportChartsPartial from '@/components/partials/ReportChartsPartial.astro';
+import CategoryTablePartial from '@/components/partials/CategoryTablePartial.astro';
+import CategoryDrillDownModal from '@/components/organisms/CategoryDrillDownModal.astro';
+import { reportService, workspaceService } from '@/services';
+import type { ReportData } from '@/services/report.service';
+import { formatMonthYear } from '@/lib/utils/date';
+import { formatCurrency } from '@/lib/formatting';
+import { safeParseDecimal } from '@/lib/utils/decimal';
+import type { Currency } from '@/lib/enums';
+import { ChevronRight, Users, ArrowLeft } from '@lucide/astro';
+
+const currentPath = '/reports/members';
+
+const user = Astro.locals.user;
+if (!user?.id) {
+  return Astro.redirect('/login');
+}
+
+const url = Astro.url;
+const urlRange = url.searchParams.get('range');
+const urlPeriod = url.searchParams.get('period');
+const urlCurrency = url.searchParams.get('currency');
+const urlUserId = url.searchParams.get('user_id') || '';
+
+const range: 'monthly' | 'yearly' = urlRange === 'yearly' ? 'yearly' : 'monthly';
+
+const now = new Date();
+const currentYear = now.getFullYear();
+const currentMonth = now.getMonth() + 1;
+
+const monthlyPeriods = Array.from({ length: 12 }, (_, i) => {
+  const date = new Date(currentYear, currentMonth - 1 - i, 1);
+  const year = date.getFullYear();
+  const month = date.getMonth() + 1;
+  return {
+    key: `${year}-${month.toString().padStart(2, '0')}`,
+    label: formatMonthYear(date),
+  };
+});
+
+const yearlyPeriods = Array.from({ length: 4 }, (_, i) => ({
+  key: (currentYear - i).toString(),
+  label: (currentYear - i).toString(),
+}));
+
+let defaultPeriod: string;
+if (urlPeriod) {
+  const isMonthly = /^\d{4}-\d{2}$/.test(urlPeriod);
+  const isYearly = /^\d{4}$/.test(urlPeriod);
+  if (range === 'monthly' && isMonthly) defaultPeriod = urlPeriod;
+  else if (range === 'yearly' && isYearly) defaultPeriod = urlPeriod;
+  else defaultPeriod = range === 'monthly' ? monthlyPeriods[0].key : yearlyPeriods[0].key;
+} else {
+  defaultPeriod = range === 'monthly' ? monthlyPeriods[0].key : yearlyPeriods[0].key;
+}
+
+const currency: Currency = urlCurrency === 'USD' ? 'USD' : 'IDR';
+
+const workspaceMembers = await workspaceService.getMembers(user.workspaceId);
+const memberNameMap = new Map(
+  workspaceMembers.map((member) => [member.id, member.name || member.email || 'Unknown'])
+);
+const selectedMemberName = urlUserId ? memberNameMap.get(urlUserId) || 'Unknown' : '';
+
+const memberSummary = await reportService.getMemberSummary(
+  user.workspaceId,
+  defaultPeriod,
+  range,
+  currency
+);
+
+const totals = memberSummary.reduce(
+  (acc, row) => ({
+    income: acc.income + (safeParseDecimal(row.totalIncome) || 0),
+    expenses: acc.expenses + (safeParseDecimal(row.totalExpenses) || 0),
+    count: acc.count + row.transactionCount,
+  }),
+  { income: 0, expenses: 0, count: 0 }
+);
+
+let userReportData: ReportData | null = null;
+if (urlUserId) {
+  if (range === 'monthly') {
+    userReportData = await reportService.getMonthlyReport(
+      user.workspaceId,
+      defaultPeriod,
+      currency,
+      urlUserId
+    );
+  } else {
+    const year = parseInt(defaultPeriod, 10);
+    userReportData = await reportService.getYearlyReport(
+      user.workspaceId,
+      year,
+      currency,
+      urlUserId
+    );
+  }
+}
+
+const userReportForPartials = userReportData
+  ? {
+      totalIncome: userReportData.totalIncome,
+      totalExpenses: userReportData.totalExpenses,
+      netSavings: userReportData.netSavings,
+      budgetHealth: userReportData.budgetHealth,
+      expenseCategories: userReportData.expenseCategories,
+      expenseByCategory: userReportData.expenseByCategory.map((category) => ({
+        name: category.name,
+        value: safeParseDecimal(category.value),
+      })),
+      trendData: userReportData.trendData.map((trend) => ({
+        name: trend.name,
+        income: safeParseDecimal(trend.income),
+        expenses: safeParseDecimal(trend.expenses),
+      })),
+      categoryIntelligence: userReportData.categoryIntelligence.map((category) => ({
+        id: category.id,
+        name: category.name,
+        spent: safeParseDecimal(category.spent),
+        budgetLimit: category.budgetLimit ? safeParseDecimal(category.budgetLimit) : null,
+        icon: category.icon,
+        color: category.color,
+      })),
+    }
+  : null;
+
+const overviewUrl = `/reports/members?range=${range}&period=${defaultPeriod}&currency=${currency}`;
+---
+
+<ProtectedLayout title="Member Spending" currentPath={currentPath}>
+  <div
+    class="max-w-5xl mx-auto px-4 py-6 space-y-6"
+    data-reports-members-page
+    data-range={range}
+    data-period={defaultPeriod}
+    data-currency={currency}
+    data-user-id={urlUserId}
+  >
+    {
+      urlUserId && userReportForPartials ? (
+        <>
+          <div class="flex items-center gap-3">
+            <a href={overviewUrl} class="btn btn-ghost btn-sm" aria-label="Back to member overview">
+              <ArrowLeft class="w-4 h-4" />
+            </a>
+            <div>
+              <h1 class="text-2xl font-bold">{selectedMemberName}'s Spending</h1>
+              <p class="text-base-content/60 text-sm">Detailed spending report</p>
+            </div>
+          </div>
+
+          <ReportSelector
+            selectedRange={range}
+            selectedPeriod={defaultPeriod}
+            monthlyPeriods={monthlyPeriods}
+            yearlyPeriods={yearlyPeriods}
+          />
+
+          <ReportSummaryCardsPartial
+            totalIncome={userReportForPartials.totalIncome}
+            totalExpenses={userReportForPartials.totalExpenses}
+            netSavings={userReportForPartials.netSavings}
+            budgetHealth={userReportForPartials.budgetHealth}
+            expenseCategories={userReportForPartials.expenseCategories}
+            currency={currency}
+          />
+
+          <ReportChartsPartial
+            expenseByCategory={userReportForPartials.expenseByCategory}
+            trendData={userReportForPartials.trendData}
+            resourceAllocationSubtitle={range === 'monthly' ? 'EXPENSE MIX' : 'YEARLY EXPENSE MIX'}
+            financialVelocitySubtitle={range === 'monthly' ? 'TRAILING 3 MONTHS' : 'YEARLY FLOW'}
+          />
+
+          <CategoryTablePartial
+            categories={userReportForPartials.categoryIntelligence}
+            subtitle="SORTED BY FUNCTIONAL VOLUME"
+            range={range}
+          />
+
+          <CategoryDrillDownModal id="member-category-drilldown-modal" />
+        </>
+      ) : (
+        <>
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <a href="/reports" class="btn btn-ghost btn-sm" aria-label="Back to reports">
+                <ArrowLeft class="w-4 h-4" />
+              </a>
+              <div>
+                <h1 class="text-2xl font-bold">Member Spending</h1>
+                <p class="text-base-content/60 text-sm">Per-member spending overview</p>
+              </div>
+            </div>
+          </div>
+
+          <ReportSelector
+            selectedRange={range}
+            selectedPeriod={defaultPeriod}
+            monthlyPeriods={monthlyPeriods}
+            yearlyPeriods={yearlyPeriods}
+          />
+
+          <div class="card bg-base-100 shadow-sm">
+            <div class="card-body p-0">
+              <div class="overflow-x-auto">
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th>Member</th>
+                      <th class="text-right">Income</th>
+                      <th class="text-right">Expenses</th>
+                      <th class="text-right">Net</th>
+                      <th class="text-right">Transactions</th>
+                      <th />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {memberSummary.length === 0 ? (
+                      <tr>
+                        <td colspan="6" class="text-center py-8 text-base-content/50">
+                          <Users class="w-8 h-8 mx-auto mb-2 opacity-50" />
+                          <p>No transactions found for this period</p>
+                        </td>
+                      </tr>
+                    ) : (
+                      memberSummary.map((row) => {
+                        const net = safeParseDecimal(row.netSavings) || 0;
+                        const drillUrl = `/reports/members?user_id=${row.userId}&range=${range}&period=${defaultPeriod}&currency=${currency}`;
+
+                        return (
+                          <tr class="hover">
+                            <td class="font-medium">
+                              <a
+                                href={drillUrl}
+                                class="link link-hover no-underline hover:underline"
+                              >
+                                {row.userName}
+                              </a>
+                            </td>
+                            <td class="text-right text-success">
+                              {formatCurrency(safeParseDecimal(row.totalIncome) || 0, currency)}
+                            </td>
+                            <td class="text-right text-error">
+                              {formatCurrency(safeParseDecimal(row.totalExpenses) || 0, currency)}
+                            </td>
+                            <td
+                              class={`text-right font-medium ${net >= 0 ? 'text-success' : 'text-error'}`}
+                            >
+                              {formatCurrency(net, currency)}
+                            </td>
+                            <td class="text-right">{row.transactionCount}</td>
+                            <td class="text-right">
+                              <a
+                                href={drillUrl}
+                                class="btn btn-ghost btn-xs"
+                                aria-label={`View ${row.userName} report`}
+                              >
+                                <ChevronRight class="w-4 h-4 text-base-content/40" />
+                              </a>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                  {memberSummary.length > 0 && (
+                    <tfoot>
+                      <tr class="font-bold">
+                        <td>Total</td>
+                        <td class="text-right text-success">
+                          {formatCurrency(totals.income, currency)}
+                        </td>
+                        <td class="text-right text-error">
+                          {formatCurrency(totals.expenses, currency)}
+                        </td>
+                        <td
+                          class={`text-right ${totals.income - totals.expenses >= 0 ? 'text-success' : 'text-error'}`}
+                        >
+                          {formatCurrency(totals.income - totals.expenses, currency)}
+                        </td>
+                        <td class="text-right">{totals.count}</td>
+                        <td />
+                      </tr>
+                    </tfoot>
+                  )}
+                </table>
+              </div>
+            </div>
+          </div>
+        </>
+      )
+    }
+  </div>
+</ProtectedLayout>
+
+<script>
+  const container = document.querySelector('[data-reports-members-page]') as HTMLElement | null;
+
+  if (container) {
+    let currentRange = (container.dataset.range as 'monthly' | 'yearly') || 'monthly';
+    let currentPeriod = container.dataset.period || '';
+    const currency = container.dataset.currency || 'IDR';
+    const userId = container.dataset.userId || '';
+
+    const navigate = () => {
+      const nextUrl = new URL(window.location.href);
+      nextUrl.searchParams.set('range', currentRange);
+      nextUrl.searchParams.set('period', currentPeriod);
+      nextUrl.searchParams.set('currency', currency);
+      if (userId) {
+        nextUrl.searchParams.set('user_id', userId);
+      } else {
+        nextUrl.searchParams.delete('user_id');
+      }
+      window.location.href = nextUrl.toString();
+    };
+
+    window.addEventListener('reportRangeChange', (event: Event) => {
+      const customEvent = event as CustomEvent<{ range: 'monthly' | 'yearly' }>;
+      currentRange = customEvent.detail.range;
+
+      if (currentRange === 'yearly') {
+        currentPeriod = currentPeriod.split('-')[0];
+      } else if (/^\d{4}$/.test(currentPeriod)) {
+        currentPeriod = `${currentPeriod}-01`;
+      }
+
+      navigate();
+    });
+
+    window.addEventListener('reportPeriodChange', (event: Event) => {
+      const customEvent = event as CustomEvent<{ period: string }>;
+      currentPeriod = customEvent.detail.period;
+      navigate();
+    });
+  }
+</script>
