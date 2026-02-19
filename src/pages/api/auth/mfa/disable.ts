@@ -1,0 +1,47 @@
+/**
+ * POST /api/auth/mfa/disable
+ *
+ * Disable MFA for the authenticated user.
+ * Requires valid TOTP or backup code.
+ */
+
+import type { APIRoute } from 'astro';
+import { mfaService } from '@/services';
+import {
+  createErrorResponseResponse,
+  createSuccessResponse,
+  STANDARD_RESPONSE_HEADERS,
+} from '@/types/api';
+import { logError } from '@/lib/utils';
+
+export const prerender = false;
+
+export const POST: APIRoute = async ({ locals, request }) => {
+  const user = locals.user;
+  if (!user) {
+    return createErrorResponseResponse('NOT_AUTHENTICATED', 'Authentication required', 401);
+  }
+
+  try {
+    const body = await request.json();
+    const code = typeof body.code === 'string' ? body.code.trim() : '';
+
+    if (!code) {
+      return createErrorResponseResponse('INVALID_INPUT', 'Verification code is required', 400);
+    }
+
+    await mfaService.disable(user.id, code);
+
+    return new Response(
+      JSON.stringify(createSuccessResponse({ message: 'MFA disabled successfully' })),
+      {
+        status: 200,
+        headers: STANDARD_RESPONSE_HEADERS,
+      }
+    );
+  } catch (error) {
+    logError('MFA disable error', error);
+    const message = error instanceof Error ? error.message : 'Failed to disable MFA';
+    return createErrorResponseResponse('MFA_DISABLE_ERROR', message, 400);
+  }
+};
