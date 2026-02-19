@@ -61,12 +61,14 @@ const oauthMessage = oauthError ? oauthErrorMessages[oauthError] || 'An error oc
           {bannerType === 'success' && <CircleCheck size={20} class="stroke-current shrink-0" />}
           {bannerType === 'info' && <Info size={20} class="stroke-current shrink-0" />}
           {bannerType === 'error' && <CircleX size={20} class="stroke-current shrink-0" />}
-          <span>{bannerMessage}</span>
-          {resendEmail && (
-            <button type="button" class="btn btn-ghost" data-resend-email={resendEmail}>
-              Resend
-            </button>
-          )}
+          <div class="flex flex-wrap items-center gap-2">
+            <span>{bannerMessage}</span>
+            {resendEmail && (
+              <button type="button" class="underline font-bold" data-resend-email={resendEmail}>
+                Resend verification email
+              </button>
+            )}
+          </div>
         </div>
       )
     }
@@ -225,16 +227,21 @@ const oauthMessage = oauthError ? oauthErrorMessages[oauthError] || 'An error oc
     const icon = getErrorIcon();
     if (icon) alertDiv.appendChild(icon);
 
+    const contentDiv = document.createElement('div');
+    contentDiv.className = 'flex flex-wrap items-center gap-2';
+
     const textSpan = document.createElement('span');
-    textSpan.textContent = 'Please verify your email before signing in. ';
-    alertDiv.appendChild(textSpan);
+    textSpan.textContent = 'Please verify your email before signing in.';
+    contentDiv.appendChild(textSpan);
 
     const resendBtn = document.createElement('button');
     resendBtn.type = 'button';
-    resendBtn.className = 'btn btn-ghost';
+    resendBtn.className = 'underline font-bold';
     resendBtn.textContent = 'Resend verification email';
     resendBtn.dataset.resendEmail = emailAddr;
-    alertDiv.appendChild(resendBtn);
+    contentDiv.appendChild(resendBtn);
+
+    alertDiv.appendChild(contentDiv);
 
     messagesContainer.appendChild(alertDiv);
   };
@@ -259,7 +266,7 @@ const oauthMessage = oauthError ? oauthErrorMessages[oauthError] || 'An error oc
 
       if (res.ok) {
         target.textContent = 'Sent! Check your inbox';
-        target.className = 'btn btn-ghost btn-disabled';
+        target.className = 'font-bold opacity-70 cursor-default';
       } else {
         const data = await res.json();
         target.textContent = data.error?.message || 'Failed to send';

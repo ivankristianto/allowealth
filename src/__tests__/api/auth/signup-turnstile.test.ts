@@ -22,6 +22,7 @@ const validateAndGetMock = mock(async () => ({
 
 const acceptInvitationMock = mock(async () => {});
 const sendVerificationEmailMock = mock(async () => {});
+const seedDefaultCategoriesMock = mock(async () => {});
 const verifyTurnstileTokenMock = mock(async () => ({ success: true }));
 const checkRateLimitMock = mock(() => ({
   allowed: true,
@@ -46,6 +47,9 @@ const checkRateLimitMock = mock(() => ({
   },
   emailVerificationService: {
     sendVerificationEmail: sendVerificationEmailMock,
+  },
+  assetCategoryService: {
+    seedDefaultCategories: seedDefaultCategoriesMock,
   },
 }));
 
@@ -80,6 +84,7 @@ function resetDefaultImplementations(): void {
   }));
   acceptInvitationMock.mockImplementation(async () => {});
   sendVerificationEmailMock.mockImplementation(async () => {});
+  seedDefaultCategoriesMock.mockImplementation(async () => {});
   verifyTurnstileTokenMock.mockImplementation(async () => ({ success: true }));
   checkRateLimitMock.mockImplementation(() => ({
     allowed: true,
@@ -134,6 +139,7 @@ describe('POST /api/auth/signup - Turnstile and invitation mode behavior', () =>
     validateAndGetMock.mockClear();
     acceptInvitationMock.mockClear();
     sendVerificationEmailMock.mockClear();
+    seedDefaultCategoriesMock.mockClear();
     verifyTurnstileTokenMock.mockClear();
     checkRateLimitMock.mockClear();
   });
@@ -183,6 +189,52 @@ describe('POST /api/auth/signup - Turnstile and invitation mode behavior', () =>
     expect(registerWithInvitationMock).toHaveBeenCalledTimes(1);
     expect(acceptInvitationMock).toHaveBeenCalledWith('valid-token');
     expect(registerMock).not.toHaveBeenCalled();
+  });
+
+  test('skips verification email for invitation-based signup', async () => {
+    setTestEnv({ SIGNUP_MODE: 'invite_only' });
+
+    await POST(createApiContext({ token: 'valid-token' }));
+
+    expect(sendVerificationEmailMock).not.toHaveBeenCalled();
+  });
+
+  test('sends verification email for public signup', async () => {
+    setTestEnv({ SIGNUP_MODE: 'public' });
+
+    await POST(
+      createApiContext({
+        body: {
+          email: 'public@example.com',
+          password: 'StrongPassword123!',
+          name: 'Public User',
+          turnstileToken: 'turnstile-token',
+        },
+      })
+    );
+
+    expect(sendVerificationEmailMock).toHaveBeenCalledWith('user-public');
+  });
+
+  test('seeds default categories for invited admin users', async () => {
+    setTestEnv({ SIGNUP_MODE: 'invite_only' });
+    validateAndGetMock.mockImplementation(async () => ({
+      workspace_id: 'workspace-1',
+      email: 'invitee@example.com',
+      role: 'admin',
+    }));
+
+    await POST(createApiContext({ token: 'valid-token' }));
+
+    expect(seedDefaultCategoriesMock).toHaveBeenCalledWith('workspace-1', 'user-invited');
+  });
+
+  test('does not seed categories for invited member users', async () => {
+    setTestEnv({ SIGNUP_MODE: 'invite_only' });
+
+    await POST(createApiContext({ token: 'valid-token' }));
+
+    expect(seedDefaultCategoriesMock).not.toHaveBeenCalled();
   });
 
   test('allows public signup without invitation token in public mode', async () => {

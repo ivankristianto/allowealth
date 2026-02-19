@@ -28,7 +28,9 @@ const errorMessages: Record<string, string> = {
 };
 
 // Only use whitelisted error codes to prevent XSS
-const errorMessage = error && errorMessages[error] ? errorMessages[error] : '';
+// expired_token uses banner (with resend button), not inline error
+const errorMessage =
+  error && error !== 'expired_token' && errorMessages[error] ? errorMessages[error] : '';
 
 // Determine banner for verification status
 let bannerMessage = '';
@@ -40,6 +42,9 @@ if (registered === 'true') {
 } else if (verified === 'true') {
   bannerMessage = 'Email verified! You can now sign in.';
   bannerType = 'success';
+} else if (error === 'expired_token') {
+  bannerMessage = 'Verification link has expired.';
+  bannerType = 'error';
 }
 ---
 

@@ -238,6 +238,9 @@ sm: 640px   md: 768px   lg: 1024px   xl: 1280px   2xl: 1536px
 ❌ Custom icons: `<svg>...</svg>` or emoji
 ✅ Lucide icons: `<Plus size={20} />`
 
+❌ **Use `btn btn-ghost` inside colored alerts** (`alert-error`, `alert-success`, `alert-info`) - ghost button has no visual boundary on colored backgrounds, failing WCAG SC 1.4.11 (Non-text Contrast ≥3:1 for interactive elements)
+✅ **Use `underline font-bold` for secondary actions inside alerts** - underline is a universal interactive affordance that works on any alert color variant; keep underline on hover for discoverability
+
 ❌ **Use `@apply btn` in custom classes** - creates CSS cascade issues
 ✅ **Use DaisyUI classes directly**: `<button class="btn btn-accent">`
 

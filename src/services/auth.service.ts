@@ -307,6 +307,7 @@ export async function registerWithInvitation(
     const userId = nanoid();
 
     // Create user in the invited workspace (no new workspace creation)
+    // Email is auto-verified: invitation token proves email ownership
     const [newUser] = await db
       .insert(schema.users)
       .values({
@@ -316,6 +317,7 @@ export async function registerWithInvitation(
         password_hash: passwordHash,
         name: name.trim(),
         role: role,
+        email_verified_at: new Date(),
       })
       .returning();
 
@@ -323,9 +325,10 @@ export async function registerWithInvitation(
       throw new AuthError(AUTH_ERRORS.DATABASE_ERROR, 'Failed to create user');
     }
 
-    // NOTE: Verification email is sent by the caller (signup endpoint)
+    // NOTE: Email is auto-verified (invitation proves ownership), no verification email sent
+    // NOTE: Default categories are seeded by the caller (signup endpoint) for admin users
 
-    log.info('User registered via invitation (unverified)', {
+    log.info('User registered via invitation (auto-verified)', {
       userId: newUser.id,
       workspaceId,
     });
