@@ -139,6 +139,8 @@ paths:
     $ref: './openapi/paths/accounts.yml#/paths/~1api~1accounts~1{id}~1close'
   /api/accounts/{id}/reopen:
     $ref: './openapi/paths/accounts.yml#/paths/~1api~1accounts~1{id}~1reopen'
+  /api/accounts/{id}/transfer-owner:
+    $ref: './openapi/paths/accounts.yml#/paths/~1api~1accounts~1{id}~1transfer-owner'
   /api/accounts/transfer:
     $ref: './openapi/paths/accounts.yml#/paths/~1api~1accounts~1transfer'
   # Budget CRUD endpoints (new)

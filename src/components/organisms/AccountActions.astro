@@ -17,6 +17,9 @@ export interface Props {
   isHistoricalView?: boolean;
   defaultCategoryId?: string;
   closedCount?: number;
+  isPersonalView?: boolean;
+  allAccountsHref?: string;
+  myAccountsHref?: string;
   className?: string;
 }
 
@@ -24,6 +27,9 @@ const {
   isHistoricalView = false,
   defaultCategoryId = '',
   closedCount = 0,
+  isPersonalView = false,
+  allAccountsHref = '/accounts',
+  myAccountsHref = '/accounts?view=mine',
   className = '',
 } = Astro.props;
 
@@ -35,6 +41,36 @@ const accentGhostBtn =
 ---
 
 <ActionBar className={className} ariaLabel="Account actions" edgeBleed>
+  {/* View Toggle */}
+  <div class="join" role="group" aria-label="Account view toggle">
+    <a
+      href={allAccountsHref}
+      class:list={[
+        'join-item btn btn-sm md:btn-md min-h-[44px] rounded-lg md:rounded-xl text-xs md:text-sm px-3 md:px-4',
+        !isPersonalView
+          ? 'btn-active bg-base-content/10 font-semibold'
+          : 'btn-ghost text-base-content/70 hover:text-base-content hover:bg-base-200',
+      ]}
+      aria-current={!isPersonalView ? 'true' : undefined}
+      data-testid="view-all-accounts-btn"
+    >
+      All
+    </a>
+    <a
+      href={myAccountsHref}
+      class:list={[
+        'join-item btn btn-sm md:btn-md min-h-[44px] rounded-lg md:rounded-xl text-xs md:text-sm px-3 md:px-4',
+        isPersonalView
+          ? 'btn-active bg-base-content/10 font-semibold'
+          : 'btn-ghost text-base-content/70 hover:text-base-content hover:bg-base-200',
+      ]}
+      aria-current={isPersonalView ? 'true' : undefined}
+      data-testid="view-my-accounts-btn"
+    >
+      Mine
+    </a>
+  </div>
+
   {/* Categories */}
   <div class="tooltip tooltip-bottom" data-tip="Manage account categories">
     <a

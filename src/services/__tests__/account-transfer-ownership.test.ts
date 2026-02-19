@@ -42,11 +42,14 @@ describe('AccountService.transferOwnership()', () => {
   it('should throw ACCOUNT_NOT_FOUND when account does not exist', async () => {
     (mockDb.query.accounts.findFirst as any).mockResolvedValue(null);
 
-    await expect(
-      accountService.transferOwnership('nonexistent', 'user-2', 'ws-1')
-    ).rejects.toMatchObject({
-      code: ServiceErrorCode.ACCOUNT_NOT_FOUND,
-    });
+    let caughtError: any;
+    try {
+      await accountService.transferOwnership('nonexistent', 'user-2', 'ws-1');
+    } catch (error) {
+      caughtError = error;
+    }
+
+    expect(caughtError?.code).toBe(ServiceErrorCode.ACCOUNT_NOT_FOUND);
   });
 
   it('should invalidate cache after transfer', async () => {
