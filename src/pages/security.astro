@@ -13,6 +13,7 @@ import SecurityApiKeysCard from '@/components/molecules/SecurityApiKeysCard.astr
 import GenerateApiKeyModal from '@/components/organisms/GenerateApiKeyModal.astro';
 import MCPSetupInstructionsModal from '@/components/organisms/MCPSetupInstructionsModal.astro';
 import MfaSetupModal from '@/components/organisms/MfaSetupModal.astro';
+import MfaConfirmModal from '@/components/organisms/MfaConfirmModal.astro';
 import MfaBackupCodesModal from '@/components/organisms/MfaBackupCodesModal.astro';
 import Button from '@/components/atoms/Button.astro';
 import { History } from '@lucide/astro';
@@ -157,6 +158,7 @@ const toneDotClasses: Record<string, string> = {
   <GenerateApiKeyModal />
   <MCPSetupInstructionsModal />
   <MfaSetupModal />
+  <MfaConfirmModal />
   <MfaBackupCodesModal />
   <script src="./security-mfa-client.ts"></script>
 </ProtectedLayout>

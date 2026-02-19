@@ -1,12 +1,24 @@
 import { csrfFetch } from '@/lib/csrf-client';
 import { addToast } from '@/lib/stores/toastStore';
 
-function promptForCode(message: string): string | null {
-  const code = window.prompt(message)?.trim();
-  if (!code) {
-    return null;
-  }
-  return code;
+function requestCode(
+  title: string,
+  description: string,
+  confirmLabel?: string
+): Promise<string | null> {
+  return new Promise((resolve) => {
+    const handler = (event: Event) => {
+      document.removeEventListener('mfa:confirm-result', handler);
+      const detail = (event as CustomEvent).detail;
+      resolve(detail?.code || null);
+    };
+    document.addEventListener('mfa:confirm-result', handler);
+    document.dispatchEvent(
+      new CustomEvent('mfa:open-confirm', {
+        detail: { title, description, confirmLabel },
+      })
+    );
+  });
 }
 
 async function callMfaEndpoint(path: string, body: Record<string, unknown>) {
@@ -48,8 +60,10 @@ function initSecurityMfaClient() {
       }
 
       if (action === 'disable-mfa') {
-        const code = promptForCode(
-          'Enter your current authenticator code or backup code to disable MFA:'
+        const code = await requestCode(
+          'Disable MFA',
+          'Enter your authenticator code or a backup code to disable multi-factor authentication.',
+          'Disable MFA'
         );
         if (!code) return;
 
@@ -60,8 +74,10 @@ function initSecurityMfaClient() {
       }
 
       if (action === 'regenerate-backup-codes') {
-        const code = promptForCode(
-          'Enter a current 6-digit authenticator code to regenerate backup codes:'
+        const code = await requestCode(
+          'Regenerate Backup Codes',
+          'Enter a 6-digit authenticator code to regenerate your backup codes.',
+          'Regenerate'
         );
         if (!code) return;
 

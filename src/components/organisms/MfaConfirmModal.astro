@@ -1,0 +1,157 @@
+---
+/**
+ * MfaConfirmModal
+ *
+ * Reusable modal for confirming MFA actions that require a TOTP or backup code.
+ * Used by disable-MFA and regenerate-backup-codes flows.
+ *
+ * Opens via: document.dispatchEvent(new CustomEvent('mfa:open-confirm', { detail }))
+ * Resolves via: document.dispatchEvent(new CustomEvent('mfa:confirm-result', { detail }))
+ */
+
+import Modal from '@/components/molecules/Modal.astro';
+import { ShieldCheck } from '@lucide/astro';
+
+export interface Props {
+  id?: string;
+}
+
+const { id = 'mfa-confirm-modal' } = Astro.props;
+---
+
+<div data-mfa-confirm-modal-container data-id={id}>
+  <Modal id={id} title="" size="md" closable={false} className="[&_.modal-box]:rounded-3xl">
+    <div class="space-y-6">
+      <div class="flex items-center gap-4">
+        <div
+          class="w-12 h-12 rounded-2xl flex items-center justify-center bg-accent/10 text-accent"
+        >
+          <ShieldCheck size={24} class="stroke-current" aria-hidden="true" />
+        </div>
+        <div>
+          <h2
+            class="text-xl font-bold tracking-tight text-base-content leading-none"
+            data-confirm-title
+          >
+          </h2>
+          <p class="text-base-content/60 text-sm mt-2 font-medium" data-confirm-description></p>
+        </div>
+      </div>
+
+      <form data-confirm-form class="space-y-4">
+        <div class="form-control">
+          <label for={`${id}-code`} class="label">
+            <span class="label-text font-semibold">Verification code</span>
+          </label>
+          <input
+            id={`${id}-code`}
+            name="code"
+            type="text"
+            inputmode="numeric"
+            autocomplete="one-time-code"
+            placeholder="000000"
+            class="input input-bordered w-full text-center text-2xl tracking-[0.5em] font-bold"
+          />
+        </div>
+
+        <div class="hidden alert alert-error text-sm" data-confirm-error role="alert"></div>
+
+        <div class="flex items-center gap-4 pt-2">
+          <button
+            type="button"
+            class="btn btn-ghost flex-1 rounded-2xl font-semibold"
+            data-confirm-cancel
+          >
+            Cancel
+          </button>
+          <button type="submit" class="flex-[2] btn btn-accent rounded-2xl" data-confirm-submit>
+            Confirm
+          </button>
+        </div>
+      </form>
+    </div>
+  </Modal>
+</div>
+
+<script>
+  const initializedContainers = new WeakSet<Element>();
+
+  function initMfaConfirmModal() {
+    document
+      .querySelectorAll<HTMLElement>('[data-mfa-confirm-modal-container]')
+      .forEach((container) => {
+        if (initializedContainers.has(container)) return;
+        initializedContainers.add(container);
+
+        const id = container.dataset.id;
+        if (!id) return;
+
+        const modal = document.getElementById(id) as HTMLDialogElement | null;
+        const titleEl = container.querySelector<HTMLElement>('[data-confirm-title]');
+        const descEl = container.querySelector<HTMLElement>('[data-confirm-description]');
+        const form = container.querySelector<HTMLFormElement>('[data-confirm-form]');
+        const codeInput = container.querySelector<HTMLInputElement>('input[name="code"]');
+        const errorEl = container.querySelector<HTMLElement>('[data-confirm-error]');
+        const cancelBtn = container.querySelector<HTMLButtonElement>('[data-confirm-cancel]');
+        const submitBtn = container.querySelector<HTMLButtonElement>('[data-confirm-submit]');
+
+        if (!modal || !titleEl || !descEl || !form || !codeInput || !errorEl) return;
+
+        const clearError = () => {
+          errorEl.textContent = '';
+          errorEl.classList.add('hidden');
+        };
+
+        const showError = (message: string) => {
+          errorEl.textContent = message;
+          errorEl.classList.remove('hidden');
+        };
+
+        const reset = () => {
+          clearError();
+          codeInput.value = '';
+          if (submitBtn) submitBtn.disabled = false;
+        };
+
+        const close = (code: string | null) => {
+          modal.close();
+          document.dispatchEvent(new CustomEvent('mfa:confirm-result', { detail: { code } }));
+        };
+
+        document.addEventListener('mfa:open-confirm', (event: Event) => {
+          const detail = (event as CustomEvent).detail || {};
+          reset();
+          titleEl.textContent = detail.title || 'Confirm Action';
+          descEl.textContent = detail.description || 'Enter your verification code to continue.';
+          if (submitBtn && detail.confirmLabel) {
+            submitBtn.textContent = detail.confirmLabel;
+          }
+          modal.showModal();
+          requestAnimationFrame(() => codeInput.focus());
+        });
+
+        cancelBtn?.addEventListener('click', () => close(null));
+
+        form.addEventListener('submit', (event) => {
+          event.preventDefault();
+          clearError();
+
+          const code = codeInput.value.trim();
+          if (!code) {
+            showError('Please enter a verification code.');
+            return;
+          }
+
+          close(code);
+        });
+      });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initMfaConfirmModal);
+  } else {
+    initMfaConfirmModal();
+  }
+
+  document.addEventListener('astro:page-load', initMfaConfirmModal);
+</script>
