@@ -389,7 +389,25 @@ function initTransactionDrawer(): void {
       const categorySelect = f.querySelector(
         'select[name="category_id"]'
       ) as HTMLSelectElement | null;
-      if (categorySelect) categorySelect.value = '';
+      // Auto-reselect for single-category forms (e.g. income with only "Salary");
+      // clear for multi-category forms so the user must pick explicitly.
+      const formCategories: Array<{ id: string }> = JSON.parse(f.dataset.categoriesJson || '[]');
+      if (formCategories.length === 1) {
+        const singleCatId = formCategories[0].id;
+        if (categorySelect) categorySelect.value = singleCatId;
+        chips.forEach((chip) => {
+          const isActive = chip.dataset.categoryChip === singleCatId;
+          chip.classList.toggle('bg-accent', isActive);
+          chip.classList.toggle('text-white', isActive);
+          chip.classList.toggle('bg-base-200', !isActive);
+          chip.classList.toggle('text-base-content/70', !isActive);
+          chip.classList.toggle('hover:bg-accent/10', !isActive);
+          chip.classList.toggle('hover:text-accent', !isActive);
+          chip.setAttribute('aria-checked', isActive ? 'true' : 'false');
+        });
+      } else {
+        if (categorySelect) categorySelect.value = '';
+      }
 
       // Reset date to today
       const todayStr = f.dataset.today || '';
@@ -422,7 +440,16 @@ function initTransactionDrawer(): void {
       }
 
       const submitBtn = f.querySelector('button[type="submit"]') as HTMLButtonElement | null;
-      if (submitBtn) submitBtn.textContent = 'Save Entry';
+      if (submitBtn) {
+        submitBtn.textContent = 'Save Entry';
+        // Force-disable until the form re-validates via user interaction or form:reset-state-changed
+        submitBtn.disabled = true;
+      }
+
+      // Notify the form's client script to re-evaluate the submit button state.
+      // For single-category forms the category is already restored above (valid),
+      // but title/amount are empty so the button remains disabled until filled.
+      f.dispatchEvent(new CustomEvent('form:reset-state-changed'));
     });
 
     // Restore drawer title

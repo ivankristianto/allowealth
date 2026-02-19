@@ -836,6 +836,10 @@ const defaultDatePick =
         validateField('amount', (e.target as HTMLInputElement).value);
       });
 
+      categorySelect?.addEventListener('change', (e: Event) => {
+        validateField('category_id', (e.target as HTMLSelectElement).value);
+      });
+
       const assetSelect = form.querySelector('select[name="asset_id"]');
       assetSelect?.addEventListener('change', (e: Event) => {
         validateField('asset_id', (e.target as HTMLSelectElement).value);
@@ -1025,6 +1029,17 @@ const defaultDatePick =
     // Initialize
     attachValidationListeners();
     updateSubmitButton();
+
+    // Auto-select single category on first load (no choice needed, improves UX for fresh installs)
+    if (categories.length === 1 && categorySelect && !categorySelect.value) {
+      setActiveChip(categories[0].id);
+    }
+
+    // When the drawer resets this form, re-evaluate the submit button state.
+    // resetEditMode() in TransactionDrawer.client.ts dispatches this event after resetting fields.
+    form.addEventListener('form:reset-state-changed', () => {
+      updateSubmitButton();
+    });
 
     // Attach amount formatter for thousand separators
     const amountInputEl = form.querySelector('input[name="amount"]') as HTMLInputElement;
