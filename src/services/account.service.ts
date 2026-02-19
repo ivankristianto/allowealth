@@ -148,6 +148,7 @@ export class AccountService {
       category_id?: string;
       currency?: Currency;
       includeInactive?: boolean;
+      owner_user_id?: string;
     },
     perf?: PerfCollector
   ) {
@@ -174,6 +175,10 @@ export class AccountService {
 
     if (filters?.currency) {
       conditions.push(eq(this.schema.accounts.currency, filters.currency));
+    }
+
+    if (filters?.owner_user_id) {
+      conditions.push(eq(this.schema.accounts.created_by_user_id, filters.owner_user_id));
     }
 
     return cacheOrFetch(
