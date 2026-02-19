@@ -1,0 +1,19 @@
+MfaVerifySetupResponse:
+  type: object
+  required: [success, data]
+  properties:
+    success:
+      type: boolean
+      example: true
+    data:
+      type: object
+      required: [backupCodes]
+      properties:
+        backupCodes:
+          type: array
+          description: One-time backup codes (shown once)
+          items:
+            type: string
+            example: ABCD-1234
+          minItems: 10
+          maxItems: 10
