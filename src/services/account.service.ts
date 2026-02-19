@@ -623,6 +623,7 @@ export class AccountService {
       type?: AccountType;
       category_id?: string;
       currency?: Currency;
+      owner_user_id?: string;
     },
     perf?: PerfCollector
   ) {
@@ -921,19 +922,23 @@ export class AccountService {
   /**
    * Get account counts grouped by category ID
    */
-  async countClosed(workspaceId: string): Promise<number> {
+  async countClosed(workspaceId: string, ownerUserId?: string): Promise<number> {
+    const conditions = [
+      eq(this.schema.accounts.workspace_id, workspaceId),
+      eq(this.schema.accounts.status, 'closed'),
+      sql`${this.schema.accounts.deleted_at} IS NULL`,
+    ];
+
+    if (ownerUserId) {
+      conditions.push(eq(this.schema.accounts.created_by_user_id, ownerUserId));
+    }
+
     const result = await (this.db as any)
       .select({
         count: sql<number>`count(*)`,
       })
       .from(this.schema.accounts)
-      .where(
-        and(
-          eq(this.schema.accounts.workspace_id, workspaceId),
-          eq(this.schema.accounts.status, 'closed'),
-          sql`${this.schema.accounts.deleted_at} IS NULL`
-        )
-      );
+      .where(and(...conditions));
 
     return result[0]?.count ?? 0;
   }
