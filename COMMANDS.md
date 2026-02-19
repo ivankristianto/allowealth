@@ -82,7 +82,7 @@ See `docs/architecture/007-database-migrations.md` for full migration workflow.
 
 ## Allowealth CLI (`aw`)
 
-The `aw` CLI provides a unified interface for admin and operational commands. Use `--target` to select the database backend.
+The `aw` CLI provides a unified interface for admin and operational commands. Use `--target` (`-t`) on subcommands to select the database backend.
 
 ### Target Values
 
@@ -95,21 +95,20 @@ The `aw` CLI provides a unified interface for admin and operational commands. Us
 
 ### Quick Reference
 
-| Command                                  | Description            |
-| ---------------------------------------- | ---------------------- |
-| `bun run aw --help`                      | Show all commands      |
-| `bun run aw <command> --help`            | Show subcommand help   |
-| `bun run aw --target postgres <command>` | Run against PostgreSQL |
-| `bun run aw --target d1 <command>`       | Run against remote D1  |
+| Command                             | Description               |
+| ----------------------------------- | ------------------------- |
+| `bun run aw --help`                 | Show all commands         |
+| `bun run aw <command> --help`       | Show subcommand help      |
+| `bun run aw db migrate --target d1` | Example: target remote D1 |
 
 ### Workspace Management
 
 | Command                                                                                 | Description                                |
 | --------------------------------------------------------------------------------------- | ------------------------------------------ |
 | `bun run aw workspace create --name "Name" --email admin@example.com`                   | Create workspace (SQLite)                  |
-| `bun run aw --target postgres workspace create --name "Name" --email admin@example.com` | Create workspace (PostgreSQL)              |
-| `bun run aw --target d1 workspace create --name "Name" --email admin@example.com`       | Create workspace on D1 (remote)            |
-| `bun run aw --target d1-local workspace create --name "Name" --email admin@example.com` | Create workspace on D1 (local)             |
+| `bun run aw workspace create --target postgres --name "Name" --email admin@example.com` | Create workspace (PostgreSQL)              |
+| `bun run aw workspace create --target d1 --name "Name" --email admin@example.com`       | Create workspace on D1 (remote)            |
+| `bun run aw workspace create --target d1-local --name "Name" --email admin@example.com` | Create workspace on D1 (local)             |
 | `bun run aw workspace list`                                                             | List all workspaces (sqlite/postgres only) |
 | `bun run aw workspace delete --id <id>`                                                 | Delete workspace (sqlite/postgres only)    |
 | `bun run aw workspace delete --id <id> --force`                                         | Delete workspace (skip confirmation)       |
@@ -119,9 +118,9 @@ The `aw` CLI provides a unified interface for admin and operational commands. Us
 | Command                                   | Description                                |
 | ----------------------------------------- | ------------------------------------------ |
 | `bun run aw db migrate`                   | Apply pending migrations (SQLite)          |
-| `bun run aw --target postgres db migrate` | Apply pending migrations (PostgreSQL)      |
-| `bun run aw --target d1 db migrate`       | Apply pending migrations to remote D1      |
-| `bun run aw --target d1-local db migrate` | Apply pending migrations to local D1       |
+| `bun run aw db migrate --target postgres` | Apply pending migrations (PostgreSQL)      |
+| `bun run aw db migrate --target d1`       | Apply pending migrations to remote D1      |
+| `bun run aw db migrate --target d1-local` | Apply pending migrations to local D1       |
 | `bun run aw db generate`                  | Generate migration from schema changes     |
 | `bun run aw db push`                      | Push schema directly (dev only)            |
 | `bun run aw db studio`                    | Open Drizzle Studio                        |

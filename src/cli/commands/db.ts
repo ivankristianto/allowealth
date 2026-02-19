@@ -1,14 +1,19 @@
 /* eslint-disable no-console -- CLI output is intentional */
 import { defineCommand } from 'citty';
 import { exec } from '../lib/exec';
+import { targetArg } from '../lib/target';
 
 export default defineCommand({
   meta: { name: 'db', description: 'Database management commands' },
   subCommands: {
     migrate: defineCommand({
       meta: { name: 'migrate', description: 'Apply pending database migrations' },
-      async run() {
-        const { isD1, isD1Local } = await import('../lib/target');
+      args: {
+        target: targetArg,
+      },
+      async run({ args }) {
+        const { resolveTarget, isD1, isD1Local } = await import('../lib/target');
+        await resolveTarget(args);
 
         if (isD1()) {
           const { migrateD1 } = await import('../lib/d1-migrate');
@@ -38,8 +43,13 @@ export default defineCommand({
     }),
     seed: defineCommand({
       meta: { name: 'seed', description: 'Seed database with demo data' },
-      async run() {
-        const { isD1 } = await import('../lib/target');
+      args: {
+        target: targetArg,
+      },
+      async run({ args }) {
+        const { resolveTarget, isD1 } = await import('../lib/target');
+        await resolveTarget(args);
+
         if (isD1()) {
           console.error('Error: "db seed" is not supported for D1 targets.');
           process.exit(1);
@@ -49,8 +59,13 @@ export default defineCommand({
     }),
     reset: defineCommand({
       meta: { name: 'reset', description: 'Delete SQLite DB, push schema, and seed (dev only)' },
-      async run() {
-        const { getTarget } = await import('../lib/target');
+      args: {
+        target: targetArg,
+      },
+      async run({ args }) {
+        const { resolveTarget, getTarget } = await import('../lib/target');
+        await resolveTarget(args);
+
         if (getTarget() !== 'sqlite') {
           console.error('Error: "db reset" is only supported for the sqlite target.');
           process.exit(1);
@@ -64,8 +79,13 @@ export default defineCommand({
     }),
     empty: defineCommand({
       meta: { name: 'empty', description: 'Truncate all data (preserve schema)' },
-      async run() {
-        const { isD1 } = await import('../lib/target');
+      args: {
+        target: targetArg,
+      },
+      async run({ args }) {
+        const { resolveTarget, isD1 } = await import('../lib/target');
+        await resolveTarget(args);
+
         if (isD1()) {
           console.error('Error: "db empty" is not supported for D1 targets.');
           process.exit(1);

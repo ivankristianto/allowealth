@@ -1,6 +1,7 @@
 /* eslint-disable no-console -- CLI output is intentional */
 import { defineCommand } from 'citty';
 import * as readline from 'readline';
+import { targetArg } from '../lib/target';
 
 function prompt(question: string): Promise<string> {
   const rl = readline.createInterface({
@@ -25,6 +26,7 @@ export default defineCommand({
     create: defineCommand({
       meta: { name: 'create', description: 'Create workspace and send admin invitation email' },
       args: {
+        target: targetArg,
         name: { type: 'string', alias: 'n', description: 'Workspace name', required: true },
         email: { type: 'string', alias: 'e', description: 'Admin invitation email' },
         currency: { type: 'string', alias: 'c', description: 'Default currency', default: 'IDR' },
@@ -41,8 +43,8 @@ export default defineCommand({
         },
       },
       async run({ args }) {
-        const { getTarget, isD1, isD1Local } = await import('../lib/target');
-        const target = getTarget();
+        const { resolveTarget, isD1, isD1Local } = await import('../lib/target');
+        const target = await resolveTarget(args);
 
         let email = (args.email as string | undefined)?.trim();
         if (!email) {
@@ -176,8 +178,13 @@ export default defineCommand({
 
     list: defineCommand({
       meta: { name: 'list', description: 'List all workspaces with user counts' },
-      async run() {
-        const { isD1 } = await import('../lib/target');
+      args: {
+        target: targetArg,
+      },
+      async run({ args }) {
+        const { resolveTarget, isD1 } = await import('../lib/target');
+        await resolveTarget(args);
+
         if (isD1()) {
           console.error(
             'Error: "workspace list" is not supported for D1 targets. Use the Cloudflare dashboard instead.'
@@ -232,6 +239,7 @@ export default defineCommand({
     delete: defineCommand({
       meta: { name: 'delete', description: 'Delete a workspace and all its data' },
       args: {
+        target: targetArg,
         id: { type: 'string', alias: 'i', description: 'Workspace ID to delete', required: true },
         force: {
           type: 'boolean',
@@ -240,7 +248,9 @@ export default defineCommand({
         },
       },
       async run({ args }) {
-        const { isD1 } = await import('../lib/target');
+        const { resolveTarget, isD1 } = await import('../lib/target');
+        await resolveTarget(args);
+
         if (isD1()) {
           console.error(
             'Error: "workspace delete" is not supported for D1 targets. Use the Cloudflare dashboard instead.'

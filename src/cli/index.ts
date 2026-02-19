@@ -5,23 +5,6 @@ const main = defineCommand({
     name: 'aw',
     description: 'Allowealth CLI — manage workspaces, database, deployments, and admin tasks',
   },
-  args: {
-    target: {
-      type: 'string',
-      description: 'Database target: sqlite (default), d1, d1-local, postgres',
-      default: 'sqlite',
-    },
-  },
-  async setup({ args }) {
-    const { validateTarget } = await import('./lib/target');
-    const target = validateTarget(args.target as string);
-    process.env.AW_TARGET = target;
-
-    if (target === 'postgres') {
-      const { loadEnvFile } = await import('./lib/env-loader');
-      loadEnvFile('.env.production');
-    }
-  },
   subCommands: {
     workspace: () => import('./commands/workspace').then((m) => m.default),
     db: () => import('./commands/db').then((m) => m.default),

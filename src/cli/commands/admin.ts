@@ -1,6 +1,7 @@
 /* eslint-disable no-console -- CLI output is intentional */
 import { defineCommand } from 'citty';
 import { exec } from '../lib/exec';
+import { targetArg } from '../lib/target';
 
 export default defineCommand({
   meta: { name: 'admin', description: 'Admin and security commands' },
@@ -8,6 +9,7 @@ export default defineCommand({
     'create-super-admin': defineCommand({
       meta: { name: 'create-super-admin', description: 'Promote a user to super admin' },
       args: {
+        target: targetArg,
         email: {
           type: 'string',
           alias: 'e',
@@ -16,7 +18,9 @@ export default defineCommand({
         },
       },
       async run({ args }) {
-        const { isD1 } = await import('../lib/target');
+        const { resolveTarget, isD1 } = await import('../lib/target');
+        await resolveTarget(args);
+
         if (isD1()) {
           console.error(
             'Error: "admin create-super-admin" is not supported for D1 targets. Use wrangler d1 execute instead.'
@@ -64,6 +68,7 @@ export default defineCommand({
     'create-api-key': defineCommand({
       meta: { name: 'create-api-key', description: 'Generate API key for a workspace' },
       args: {
+        target: targetArg,
         'workspace-id': {
           type: 'string',
           alias: 'w',
@@ -74,7 +79,9 @@ export default defineCommand({
         name: { type: 'string', alias: 'n', description: 'Key name', required: true },
       },
       async run({ args }) {
-        const { isD1 } = await import('../lib/target');
+        const { resolveTarget, isD1 } = await import('../lib/target');
+        await resolveTarget(args);
+
         if (isD1()) {
           console.error(
             'Error: "admin create-api-key" is not supported for D1 targets. Use wrangler d1 execute instead.'
