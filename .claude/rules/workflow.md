@@ -124,6 +124,10 @@ The project deploys to **Cloudflare Workers** (primary) and **Bun** (local dev).
 - ✅ **Group parallel subagents by file dependency** - Wave 1 (services + utils + seeders), then Wave 2 (components + pages that consume them); prevents merge conflicts
 - ✅ **Run full quality gates after ALL parallel agents complete** - individual agents pass in isolation but combined state may conflict (e.g., both agents editing same file)
 - ✅ **Use parallel code review agents for thorough coverage** - two independent reviewers catch different issues; triage findings together before fixing
+- ✅ **Parallel subagents on independent files are safe** - if each agent modifies different files (e.g., separate command modules), they can run in parallel without git conflicts
+- ✅ **Subagents may create stubs beyond spec to pass typecheck** - this is correct behavior when the plan acknowledges a module won't exist yet; later tasks replace the stub
+- ❌ **Trust IDE diagnostics over actual `astro check`** - citty's lazy-loaded subcommands (`() => import(...)`) trigger false "Cannot find module" diagnostics in the editor; run `bun run typecheck` to verify
+- ✅ **Always strip quotes in custom .env parsers** - `.env` files use `KEY="value"` syntax; a naive parser that doesn't strip quotes produces values with literal quote characters, breaking connection strings and tokens
 
 ## Dependency Changes
 
