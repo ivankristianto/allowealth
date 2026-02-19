@@ -5,12 +5,18 @@
  * Server-rendered partial for report summary stat cards.
  * Used for both SSR and HTML fragment responses (?_render=html).
  *
+ * Currency amounts use badge + value pattern matching AssetPortfolioSummary.
+ *
  * @param {string} totalIncome - Total income for period (decimal string)
  * @param {string} totalExpenses - Total expenses for period (decimal string)
  * @param {string} netSavings - Net savings for period (decimal string)
  * @param {number} budgetHealth - Budget health percentage
  * @param {number} expenseCategories - Number of expense categories
  * @param {Currency} currency - Currency to display (IDR or USD)
+ * @param {number} totalAssetsIdr - Total asset value in IDR
+ * @param {number} totalAssetsUsd - Total asset value in USD
+ * @param {number} totalDebtIdr - Total debt value in IDR
+ * @param {number} totalDebtUsd - Total debt value in USD
  */
 
 import StatCard from '@/components/atoms/StatCard.astro';
@@ -24,39 +30,78 @@ export interface Props {
   budgetHealth: number;
   expenseCategories: number;
   currency: Currency;
+  totalAssetsIdr?: number;
+  totalAssetsUsd?: number;
+  totalDebtIdr?: number;
+  totalDebtUsd?: number;
 }
 
-const { totalIncome, totalExpenses, netSavings, budgetHealth, expenseCategories, currency } =
-  Astro.props;
+const {
+  totalIncome,
+  totalExpenses,
+  netSavings,
+  budgetHealth,
+  expenseCategories,
+  currency,
+  totalAssetsIdr = 0,
+  totalAssetsUsd = 0,
+  totalDebtIdr = 0,
+  totalDebtUsd = 0,
+} = Astro.props;
+
+// Currency badge classes — matches AssetPortfolioSummary pattern
+const badge =
+  'inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold uppercase tracking-wider shrink-0';
+
+// Badge color follows currency, not metric (IDR=success/green, USD=info/blue)
+const currencyBadge = (c: string) =>
+  c === 'USD' ? `${badge} bg-info/10 text-info` : `${badge} bg-success/10 text-success`;
 ---
 
 <!-- Summary Metric Cards -->
 <div class="@container" data-summary-cards>
-  <div class="grid grid-cols-1 @2xl:grid-cols-2 @5xl:grid-cols-4 gap-4 @2xl:gap-6">
-    <StatCard
-      title="TOTAL INCOME"
-      value={formatCurrency(totalIncome, currency)}
-      subtitle="PERIOD TOTAL"
-      subtitleIcon="trending-up"
-      valueColor="text-success"
-      subtitleColor="text-success/60"
-    />
+  <div class="grid grid-cols-1 @2xl:grid-cols-2 @5xl:grid-cols-3 gap-4 @2xl:gap-6">
+    <StatCard title="TOTAL INCOME">
+      <Fragment slot="details">
+        <div class="space-y-1.5">
+          <div class="flex items-center gap-2">
+            <span class={currencyBadge(currency)}>{currency}</span>
+            <p class="text-lg font-bold text-success tracking-tight leading-none truncate">
+              {formatCurrency(totalIncome, currency)}
+            </p>
+          </div>
+        </div>
+      </Fragment>
+    </StatCard>
 
-    <StatCard
-      title="TOTAL EXPENSES"
-      value={formatCurrency(totalExpenses, currency)}
-      subtitle={`${expenseCategories} CATEGORIES`}
-      valueColor="text-error"
-      subtitleColor="text-error/60"
-    />
+    <StatCard title="TOTAL EXPENSES">
+      <Fragment slot="details">
+        <div class="space-y-1.5">
+          <div class="flex items-center gap-2">
+            <span class={currencyBadge(currency)}>{currency}</span>
+            <p class="text-lg font-bold text-error tracking-tight leading-none truncate">
+              {formatCurrency(totalExpenses, currency)}
+            </p>
+          </div>
+          <p class="text-xs font-bold uppercase text-error/60 mt-1">
+            {expenseCategories} CATEGORIES
+          </p>
+        </div>
+      </Fragment>
+    </StatCard>
 
-    <StatCard
-      title="NET SAVINGS"
-      value={formatCurrency(netSavings, currency)}
-      subtitle="RETAINED CAPITAL"
-      valueColor="text-accent"
-      subtitleColor="text-base-content/60"
-    />
+    <StatCard title="NET SAVINGS">
+      <Fragment slot="details">
+        <div class="space-y-1.5">
+          <div class="flex items-center gap-2">
+            <span class={currencyBadge(currency)}>{currency}</span>
+            <p class="text-lg font-bold text-accent tracking-tight leading-none truncate">
+              {formatCurrency(netSavings, currency)}
+            </p>
+          </div>
+        </div>
+      </Fragment>
+    </StatCard>
 
     <StatCard
       title="BUDGET HEALTH"
@@ -65,5 +110,73 @@ const { totalIncome, totalExpenses, netSavings, budgetHealth, expenseCategories,
       progress={budgetHealth}
       progressColor={budgetHealth > 100 ? 'bg-error' : 'bg-success'}
     />
+
+    <StatCard title="TOTAL ASSETS">
+      <Fragment slot="details">
+        <div class="space-y-1.5">
+          {
+            totalAssetsIdr !== 0 && (
+              <div class="flex items-center gap-2">
+                <span class={currencyBadge('IDR')}>IDR</span>
+                <p class="text-lg font-bold text-success tracking-tight leading-none truncate">
+                  {formatCurrency(totalAssetsIdr, 'IDR')}
+                </p>
+              </div>
+            )
+          }
+          {
+            totalAssetsUsd !== 0 && (
+              <div class="flex items-center gap-2">
+                <span class={currencyBadge('USD')}>USD</span>
+                <p class="text-lg font-bold text-info tracking-tight leading-none truncate">
+                  {formatCurrency(totalAssetsUsd, 'USD')}
+                </p>
+              </div>
+            )
+          }
+          {
+            totalAssetsIdr === 0 && totalAssetsUsd === 0 && (
+              <p class="text-lg font-bold text-base-content/40 tracking-tight leading-none">
+                {formatCurrency(0, currency)}
+              </p>
+            )
+          }
+        </div>
+      </Fragment>
+    </StatCard>
+
+    <StatCard title="TOTAL DEBT">
+      <Fragment slot="details">
+        <div class="space-y-1.5">
+          {
+            totalDebtIdr !== 0 && (
+              <div class="flex items-center gap-2">
+                <span class={currencyBadge('IDR')}>IDR</span>
+                <p class="text-lg font-bold text-error tracking-tight leading-none truncate">
+                  {formatCurrency(totalDebtIdr, 'IDR')}
+                </p>
+              </div>
+            )
+          }
+          {
+            totalDebtUsd !== 0 && (
+              <div class="flex items-center gap-2">
+                <span class={currencyBadge('USD')}>USD</span>
+                <p class="text-lg font-bold text-error tracking-tight leading-none truncate">
+                  {formatCurrency(totalDebtUsd, 'USD')}
+                </p>
+              </div>
+            )
+          }
+          {
+            totalDebtIdr === 0 && totalDebtUsd === 0 && (
+              <p class="text-lg font-bold text-base-content/40 tracking-tight leading-none">
+                {formatCurrency(0, currency)}
+              </p>
+            )
+          }
+        </div>
+      </Fragment>
+    </StatCard>
   </div>
 </div>

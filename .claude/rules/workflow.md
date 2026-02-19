@@ -19,6 +19,7 @@
 - ❌ Use gratitude expressions — no "Thanks!", "Great point!", "You're absolutely right!"
 - ❌ Apologize excessively — just fix and move on
 - ❌ Defend why you pushed back — state technical facts only
+- ❌ **Revert or `git checkout` files outside the scope of the current task** — other files may have been intentionally changed by the user or other processes; NEVER assume unrecognized changes are "unrelated" or accidental; always ask before reverting any file you didn't modify yourself
 
 ## Quality Gates
 
@@ -106,6 +107,13 @@ The project deploys to **Cloudflare Workers** (primary) and **Bun** (local dev).
 - ✅ **Update OpenAPI schemas when adding new DB columns** - if a column is returned in API responses, the schema must include it
 - ✅ **Exclude debt from asset allocation charts** - when adding account classification, ensure allocation/distribution calculations exclude debt consistently (same as portfolio totals)
 
+## CLI Conventions
+
+- ✅ **Add new CLI scripts as `aw` subcommands** — register in `src/cli/index.ts` subCommands, create command file in `src/cli/commands/`
+- ✅ **Use `src/cli/lib/exec.ts` for shell-out commands** — wraps `execFileSync` with clean error handling
+- ✅ **Use lazy `await import()` inside `run()` for logic commands** — avoids loading DB/services at CLI startup
+- ❌ **Create standalone scripts in `src/cli/` or `scripts/`** — use `aw` subcommands instead; the `aw` CLI (`bun run aw`) is the single entry point
+
 ## Subprocess Patterns
 
 - ✅ **Use `execFileSync` with argv array for subprocess calls** - avoids shell injection and special character issues in parameters
@@ -123,6 +131,10 @@ The project deploys to **Cloudflare Workers** (primary) and **Bun** (local dev).
 - ✅ **Group parallel subagents by file dependency** - Wave 1 (services + utils + seeders), then Wave 2 (components + pages that consume them); prevents merge conflicts
 - ✅ **Run full quality gates after ALL parallel agents complete** - individual agents pass in isolation but combined state may conflict (e.g., both agents editing same file)
 - ✅ **Use parallel code review agents for thorough coverage** - two independent reviewers catch different issues; triage findings together before fixing
+- ✅ **Parallel subagents on independent files are safe** - if each agent modifies different files (e.g., separate command modules), they can run in parallel without git conflicts
+- ✅ **Subagents may create stubs beyond spec to pass typecheck** - this is correct behavior when the plan acknowledges a module won't exist yet; later tasks replace the stub
+- ❌ **Trust IDE diagnostics over actual `astro check`** - citty's lazy-loaded subcommands (`() => import(...)`) trigger false "Cannot find module" diagnostics in the editor; run `bun run typecheck` to verify
+- ✅ **Always strip quotes in custom .env parsers** - `.env` files use `KEY="value"` syntax; a naive parser that doesn't strip quotes produces values with literal quote characters, breaking connection strings and tokens
 
 ## Dependency Changes
 

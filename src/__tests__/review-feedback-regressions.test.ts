@@ -167,9 +167,8 @@ describe('review feedback regressions', () => {
     const categorySearchSegment = inputSegments.find((segment) =>
       segment.includes('data-category-search')
     );
-    const mainSearchSegment = inputSegments.find((segment) =>
-      segment.includes('data-filter-search')
-    );
+    // Main search now uses SearchInput component (not a raw <input>)
+    const mainSearchSegment = content.match(/<SearchInput[\s\S]*?\/>/)?.[0];
 
     expect(content).toContain('<label for="category-search"');
     expect(content).toContain('Search categories');
@@ -182,14 +181,12 @@ describe('review feedback regressions', () => {
 
     expect(categorySearchSegment).toBeDefined();
     expect(mainSearchSegment).toBeDefined();
+    expect(mainSearchSegment).toContain('data-filter-search');
+    expect(mainSearchSegment).toContain('inputClass={mainSearchInputClass}');
     expect(categorySearchSegment).not.toContain('input-sm');
     expect(categorySearchSegment).not.toContain('pl-8');
     expect(categorySearchSegment).not.toContain('pr-3');
     expect(categorySearchSegment).not.toContain('py-2');
-    expect(mainSearchSegment).not.toContain('pl-10');
-    expect(mainSearchSegment).not.toContain('pr-3');
-    expect(mainSearchSegment).not.toContain('sm:pl-11');
-    expect(mainSearchSegment).not.toContain('sm:pr-4');
   });
 
   it('header should delegate drawer trigger in Header.client.ts and keep astro markup SSR-only', () => {

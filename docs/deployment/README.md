@@ -12,11 +12,11 @@ Allowealth supports deployment to multiple platforms. Each guide covers prerequi
 ## Quick Reference
 
 ```bash
-# Cloudflare (Hyperdrive + PostgreSQL)
+# Cloudflare (Hyperdrive + PostgreSQL — default)
 bun run deploy:cloudflare
 
-# Cloudflare (D1)
-bun run deploy:cloudflare:d1
+# Cloudflare (D1 — uncomment [[d1_databases]] in wrangler.toml first)
+bun run deploy:cloudflare
 
 # Vercel
 bun run deploy:vercel

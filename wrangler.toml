@@ -1,16 +1,17 @@
-# Cloudflare Workers Configuration (PostgreSQL + Hyperdrive)
+# Cloudflare Workers Configuration
 # https://developers.cloudflare.com/workers/wrangler/configuration/
 #
-# DEPLOYMENT OPTIONS:
-# 1. PostgreSQL + Hyperdrive (this file): bun run deploy:cloudflare
+# DEPLOYMENT OPTIONS — choose one database backend:
+#
+# A. PostgreSQL + Hyperdrive (default, active below)
 #    - Uses Supabase PostgreSQL with Hyperdrive connection pooling
 #    - Set DATABASE_URL secret to Supabase connection string
+#    - Deploy: bun run deploy:cloudflare
 #
-# 2. Cloudflare D1 (wrangler.d1.toml): bun run deploy:cloudflare:d1
-#    - Uses D1 SQLite-compatible database at the edge
-#    - Create D1 database first: wrangler d1 create allowealth-db
-#    - Update database_id in wrangler.d1.toml
-#    - Run migrations: wrangler d1 execute allowealth-db --remote --file=./drizzle/sqlite/xxx.sql
+# B. Cloudflare D1 (disabled — see commented section at the bottom)
+#    - Uses D1 SQLite-compatible database at the edge, no external DB needed
+#    - To activate: uncomment [[d1_databases]], comment out [[hyperdrive]]
+#    - Deploy: bun run deploy:cloudflare
 
 name = "allowealth"
 main = "dist/_worker.js/index.js"
@@ -43,11 +44,10 @@ EMAIL_SENDER_NAME = "Allowealth"
 EMAIL_SENDER_ADDRESS = "noreply@allowealth.io"
 
 # Note: The _worker.js bundling is handled by @astrojs/cloudflare adapter
-# Workers support PostgreSQL (via Hyperdrive) or D1 (SQLite-compatible)
-# bun:sqlite is for local development only - see wrangler.d1.toml for D1 deployment
+# bun:sqlite is for local development only — Workers use Hyperdrive or D1
 
 # Secrets (set via CLI, not committed):
-# wrangler secret put DATABASE_URL
+# wrangler secret put DATABASE_URL        # Required for Hyperdrive + PostgreSQL
 # wrangler secret put EMAIL_API_KEY
 # wrangler secret put GOOGLE_CLIENT_ID
 # wrangler secret put GOOGLE_CLIENT_SECRET
@@ -58,18 +58,36 @@ EMAIL_SENDER_ADDRESS = "noreply@allowealth.io"
 # 3. wrangler secret put DATABASE_URL
 # 4. bun run deploy:cloudflare
 #
-# IMPORTANT: Workers only support PostgreSQL. Set DATABASE_URL to a PostgreSQL connection string.
-# SQLite (bun:sqlite) is for local development only.
+# IMPORTANT: Workers only support PostgreSQL via Hyperdrive. Set DATABASE_URL to a PostgreSQL connection string.
 
-# Hyperdrive connection pooling for PostgreSQL
+# ── Option A: Hyperdrive (PostgreSQL) ─────────────────────────────────────────
 # Eliminates per-request TCP/TLS overhead (fixes "Too many subrequests")
-# Create config: wrangler hyperdrive create expenses-db --connection-string="<direct-supabase-url>"
-[[hyperdrive]]
-binding = "HYPERDRIVE"
-id = "119e775bed8d476cb4d24c42278131e2"
+# Create config: wrangler hyperdrive create allowealth-db --connection-string="<direct-supabase-url>"
+# [[hyperdrive]]
+# binding = "HYPERDRIVE"
+# id = "119e775bed8d476cb4d24c42278131e2"
 # For local dev: point to a local PostgreSQL instance
 # Or set env var CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE
 # localConnectionString = "postgresql://user:pass@localhost:5432/expenses"
+
+# ── Option B: Cloudflare D1 (SQLite at the edge) ──────────────────────────────
+# To activate D1:
+#   1. Comment out [[hyperdrive]] above
+#   2. Uncomment [[d1_databases]] below
+#   3. Create DB:   wrangler d1 create allowealth-db
+#   4. Set ID:      replace YOUR_D1_DATABASE_ID with the returned ID
+#   5. Migrations:  for f in drizzle/sqlite/*.sql; do wrangler d1 execute allowealth-db --remote --file="$f"; done
+#   6. Secrets:     wrangler secret put EMAIL_API_KEY  (DATABASE_URL is not needed for D1)
+#   7. Deploy:      bun run deploy:cloudflare
+#
+# [[d1_databases]]
+# binding = "DB"
+# database_name = "allowealth-db"
+# database_id = "YOUR_D1_DATABASE_ID"  # wrangler d1 create allowealth-db
+[[d1_databases]]
+binding = "DB"
+database_name = "allowealth-db"
+database_id = "bb0afde5-2f05-408a-ad89-3f6617598c41"
 
 # Workers Logs — captures all console.* output, auto-indexes JSON fields
 # https://developers.cloudflare.com/workers/observability/logs/workers-logs/

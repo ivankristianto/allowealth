@@ -29,7 +29,9 @@ import type {
 import { BudgetServiceError, ServiceErrorCode } from './service-errors';
 import { toHexColor } from '@/lib/utils/colorUtils';
 import { getCacheManager, CacheKeys, CacheTags } from '@/lib/cache';
+import { cacheOrFetch } from '@/lib/cache/cache-or-fetch';
 import { type PerfCollector, trackQuery } from '@/lib/perf';
+import { createCrudService } from './base/crud.factory';
 
 export interface BudgetOverview {
   budget_id: string;
@@ -69,15 +71,27 @@ export interface MonthlyBudgetHistory {
 }
 
 export class BudgetService {
+  /** Max rows per INSERT to stay within D1's 100 bound-parameter limit (9 × 10 cols = 90 params for copyBudgets which has 10 bound fields) */
+  private static readonly BULK_INSERT_CHUNK_SIZE = 9;
+
   private get schema() {
     return getActiveSchema();
   }
+
+  private crud: ReturnType<typeof createCrudService<any, any, any>>;
 
   /**
    * Create a new BudgetService with database injection
    * @param db - Database instance (injected for testability)
    */
-  constructor(private db: IDatabase) {}
+  constructor(private db: IDatabase) {
+    this.crud = createCrudService<any, any, any>(db, {
+      getTable: () => getActiveSchema().budgets,
+      getQuery: () => db.query.budgets,
+      getId: () => getActiveSchema().budgets.id,
+      getWorkspaceId: () => getActiveSchema().budgets.workspace_id,
+    });
+  }
 
   /**
    * Get budget overview for a specific month
@@ -99,37 +113,20 @@ export class BudgetService {
       throw new Error('Invalid month parameter');
     }
 
-    // Try cache first
-    const cache = getCacheManager();
     const cacheKey = CacheKeys.budget(workspaceId, year, month, currency);
 
-    // Cache read - fail-silent, treat errors as cache miss
-    let cached: BudgetSummary | null = null;
-    try {
-      cached = await cache.get<BudgetSummary>(cacheKey);
-    } catch {
-      // Cache read failed, continue to DB fetch
-    }
-    if (cached) {
-      return cached;
-    }
-
-    // Cache miss - fetch from DB
-    const result = await trackQuery('BudgetService.getMonthlyOverview', perf, () =>
-      this.fetchMonthlyOverviewFromDb(workspaceId, year, month, currency)
-    );
-
-    // Cache write - fail-silent, log at debug level but don't rethrow
-    try {
-      await cache.set(cacheKey, result, {
+    return cacheOrFetch(
+      cacheKey,
+      {
         ttl: 3600,
         tags: [CacheTags.workspace(workspaceId), CacheTags.BUDGET, CacheTags.TRANSACTIONS],
-      });
-    } catch {
-      // Cache write failed, continue without caching
-    }
-
-    return result;
+      },
+      () =>
+        trackQuery('BudgetService.getMonthlyOverview', perf, () =>
+          this.fetchMonthlyOverviewFromDb(workspaceId, year, month, currency)
+        ),
+      perf
+    );
   }
 
   /**
@@ -760,11 +757,7 @@ export class BudgetService {
    * Get a single budget by ID
    */
   async getBudgetById(id: string, workspaceId: string): Promise<Budget | null> {
-    const budget = await this.db.query.budgets.findFirst({
-      where: and(eq(this.schema.budgets.id, id), eq(this.schema.budgets.workspace_id, workspaceId)),
-    });
-
-    return budget as Budget | null;
+    return this.crud.findById(id, workspaceId);
   }
 
   /**
@@ -916,7 +909,15 @@ export class BudgetService {
       }));
 
       // Conflict-safe write for idempotency under concurrent requests.
-      await tx.insert(this.schema.budgets).values(newBudgets).onConflictDoNothing();
+      // Chunked to stay within D1's 100 bound-parameter limit.
+      for (
+        let offset = 0;
+        offset < newBudgets.length;
+        offset += BudgetService.BULK_INSERT_CHUNK_SIZE
+      ) {
+        const chunk = newBudgets.slice(offset, offset + BudgetService.BULK_INSERT_CHUNK_SIZE);
+        await tx.insert(this.schema.budgets).values(chunk).onConflictDoNothing();
+      }
 
       // Re-query to return actual initialized categories after conflict resolution.
       const candidateCategoryIds = uninitializedCategories.map((cat: { id: string }) => cat.id);
@@ -1005,7 +1006,7 @@ export class BudgetService {
 
     const skippedCount = sourceBudgets.length - budgetsToCopy.length;
 
-    // Copy budgets to target month using bulk insert for atomicity
+    // Copy budgets to target month using chunked bulk insert inside a transaction for atomicity
     if (budgetsToCopy.length > 0) {
       const newBudgets = budgetsToCopy.map((b: Budget) => ({
         id: nanoid(),
@@ -1020,9 +1021,17 @@ export class BudgetService {
         is_closed: false,
       }));
 
-      // Bulk insert for better performance and atomicity
-      // Drizzle ORM handles the array insert appropriately for each database driver
-      await Promise.resolve(this.db.insert(this.schema.budgets).values(newBudgets));
+      // Chunked insert to stay within D1's 100 bound-parameter limit.
+      await runTransaction(this.db, async (tx) => {
+        for (
+          let offset = 0;
+          offset < newBudgets.length;
+          offset += BudgetService.BULK_INSERT_CHUNK_SIZE
+        ) {
+          const chunk = newBudgets.slice(offset, offset + BudgetService.BULK_INSERT_CHUNK_SIZE);
+          await tx.insert(this.schema.budgets).values(chunk);
+        }
+      });
     }
 
     // Invalidate budget cache for the workspace

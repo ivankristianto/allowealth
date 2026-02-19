@@ -249,6 +249,9 @@ sm: 640px   md: 768px   lg: 1024px   xl: 1280px   2xl: 1536px
 ❌ **Put title/description in ProtectedLayout header slot** - Header component renders title/subtitle from props. Slot is only for action buttons (refresh, export)
 ✅ **Add `data-testid` to major page sections and cards** - text-based locators break when heading text changes
 
+❌ **Use responsive prefixes on custom CSS classes** (`md:rounded-card`, `lg:rounded-card-lg`) - Tailwind v4 only generates responsive variants for its own utilities, not custom classes defined in CSS
+✅ **Use Tailwind utility equivalents**: `md:rounded-xl` (0.75rem = same as `--radius-card`), `rounded-card` is fine without responsive prefix
+
 ## Component Pattern
 
 ```astro

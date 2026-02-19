@@ -2,10 +2,10 @@
 
 Allowealth runs on Cloudflare Workers at the edge. Two database options are available — choose one based on your needs.
 
-| Option                      | Database               | Config File        | Deploy Command                 | Best For                           |
-| --------------------------- | ---------------------- | ------------------ | ------------------------------ | ---------------------------------- |
-| **Hyperdrive + PostgreSQL** | Supabase PostgreSQL    | `wrangler.toml`    | `bun run deploy:cloudflare`    | Full SQL, existing PostgreSQL data |
-| **D1**                      | Cloudflare D1 (SQLite) | `wrangler.d1.toml` | `bun run deploy:cloudflare:d1` | Zero-config, edge-native SQLite    |
+| Option                      | Database               | Config File     | Deploy Command              | Best For                           |
+| --------------------------- | ---------------------- | --------------- | --------------------------- | ---------------------------------- |
+| **Hyperdrive + PostgreSQL** | Supabase PostgreSQL    | `wrangler.toml` | `bun run deploy:cloudflare` | Full SQL, existing PostgreSQL data |
+| **D1**                      | Cloudflare D1 (SQLite) | `wrangler.toml` | `bun run deploy:cloudflare` | Zero-config, edge-native SQLite    |
 
 Both options use the same application code — the database driver is selected at runtime based on environment bindings.
 
@@ -115,7 +115,7 @@ Worker  →  D1 binding (in-process)  →  SQLite at the edge
 wrangler d1 create allowealth-db
 ```
 
-Copy the returned `database_id` and update `wrangler.d1.toml`:
+Copy the returned `database_id` and update `wrangler.toml` (uncomment the `[[d1_databases]]` section at the bottom):
 
 ```toml
 [[d1_databases]]
@@ -124,14 +124,16 @@ database_name = "allowealth-db"
 database_id = "<your-database-id>"
 ```
 
+Also comment out `[[hyperdrive]]` in `wrangler.toml` when using D1.
+
 ### 2. Set Secrets
 
 D1 does not need `DATABASE_URL`. Set only the application secrets:
 
 ```bash
-wrangler secret put EMAIL_API_KEY --config wrangler.d1.toml
-wrangler secret put GOOGLE_CLIENT_ID --config wrangler.d1.toml
-wrangler secret put GOOGLE_CLIENT_SECRET --config wrangler.d1.toml
+wrangler secret put EMAIL_API_KEY
+wrangler secret put GOOGLE_CLIENT_ID
+wrangler secret put GOOGLE_CLIENT_SECRET
 ```
 
 ### 3. Run Database Migrations
@@ -160,7 +162,7 @@ bun run db:d1:migrate:local -- ./drizzle/sqlite/0000_xxx.sql
 ### 4. Deploy
 
 ```bash
-bun run deploy:cloudflare:d1
+bun run deploy:cloudflare
 ```
 
 ### 5. Create First Workspace
@@ -180,7 +182,7 @@ wrangler d1 execute allowealth-db --remote --command="SELECT 1"
 
 ### Non-Secret Variables
 
-Defined in `wrangler.toml` / `wrangler.d1.toml` under `[vars]`:
+Defined in `wrangler.toml` under `[vars]`:
 
 | Variable               | Default                 | Description                                 |
 | ---------------------- | ----------------------- | ------------------------------------------- |
@@ -259,7 +261,7 @@ routes = [
 To use your own domain:
 
 1. Add the domain to your Cloudflare account
-2. Update the `pattern` in `wrangler.toml` (or `wrangler.d1.toml`)
+2. Update the `pattern` in `wrangler.toml`
 3. Deploy — Cloudflare automatically provisions DNS and SSL
 
 > Custom Domain routes must use bare domain names only. Wildcards (`/*`) and paths are not supported.
@@ -270,7 +272,7 @@ To use your own domain:
 
 ### Workers Logs
 
-Both config files enable Workers Logs:
+Workers Logs are enabled in `wrangler.toml`:
 
 ```toml
 [observability]
@@ -351,7 +353,7 @@ Otherwise                            →  SQLite driver (bun:sqlite, dev only)
 ### "D1_ENABLED is set but D1 binding is not available"
 
 **Cause**: D1 binding `DB` not configured in wrangler config.
-**Fix**: Ensure `[[d1_databases]]` section exists in `wrangler.d1.toml` with correct `database_id`.
+**Fix**: Uncomment the `[[d1_databases]]` section in `wrangler.toml` and set the correct `database_id`.
 
 ### Build fails with native addon errors
 
@@ -381,7 +383,7 @@ The application falls back to direct postgres.js TCP connections automatically.
 
 To switch from D1 to Hyperdrive + PostgreSQL:
 
-1. Use `wrangler.toml` instead of `wrangler.d1.toml`
+1. In `wrangler.toml`: comment out `[[d1_databases]]`, uncomment `[[hyperdrive]]`
 2. Set up Supabase and Hyperdrive (follow Option A above)
 3. Export data from D1 and import into PostgreSQL
 4. Deploy: `bun run deploy:cloudflare`

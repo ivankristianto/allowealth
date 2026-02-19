@@ -19,7 +19,7 @@
  * @param {string} className - Additional CSS classes
  */
 
-import { TrendingUp, Pencil, Ellipsis, PowerOff, ChevronDown, ChevronRight } from '@lucide/astro';
+import { TrendingUp, Pencil, Ellipsis, PowerOff, ChevronDown, Eye } from '@lucide/astro';
 import { formatCurrency } from '@/lib/formatting';
 import { ASSET_TYPE_LABELS, type AssetType } from '@/lib/types/asset';
 
@@ -253,11 +253,11 @@ const rowClasses = ['p-4 lg:px-8 lg:py-5', 'hover:bg-base-100/50 transition-all 
       }
       <a
         href={`/assets/${id}`}
-        class="ml-auto flex items-center gap-0.5 text-xs font-semibold text-base-content/40 hover:text-accent transition-colors"
+        class="ml-auto flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-base-content/40 hover:text-accent transition-all"
         aria-label={`View ${name} details`}
       >
+        <Eye size={12} class="stroke-current" aria-hidden="true" />
         Details
-        <ChevronRight size={14} class="stroke-current" aria-hidden="true" />
       </a>
     </div>
   </div>
@@ -422,11 +422,11 @@ const rowClasses = ['p-4 lg:px-8 lg:py-5', 'hover:bg-base-100/50 transition-all 
       {/* View details link */}
       <a
         href={`/assets/${id}`}
-        class="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-base-content/40 hover:text-accent hover:bg-accent/10 transition-all"
+        class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold uppercase tracking-widest text-base-content/40 hover:text-accent hover:bg-accent/10 transition-all"
         aria-label={`View ${name} details`}
       >
-        <span class="hidden lg:inline">View</span>
-        <ChevronRight size={16} class="stroke-current" aria-hidden="true" />
+        <Eye size={14} class="stroke-current" aria-hidden="true" />
+        <span>Details</span>
       </a>
     </div>
   </div>

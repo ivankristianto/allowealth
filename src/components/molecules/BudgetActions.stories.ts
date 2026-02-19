@@ -34,7 +34,7 @@ type Story = StoryObj;
 const createBudgetActions = (): HTMLElement => {
   const container = document.createElement('div');
   container.className =
-    '-mx-4 border-y border-base-300 bg-base-100 px-4 py-2 md:mx-0 md:rounded-card md:border md:shadow-sm md:p-4 lg:p-6 overflow-x-auto overflow-y-hidden';
+    '-mx-4 border-y border-base-300 bg-base-100 px-4 py-2 md:mx-0 md:rounded-xl md:border md:shadow-sm md:p-4 lg:p-6 overflow-x-auto overflow-y-hidden';
   container.setAttribute('role', 'toolbar');
   container.setAttribute('aria-label', 'Budget actions');
 

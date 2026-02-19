@@ -160,7 +160,7 @@ describe('CategoryService', () => {
       expect(mockDb.query.categories.findFirst).toHaveBeenCalled();
     });
 
-    it('should return undefined for non-existent category', async () => {
+    it('should return null for non-existent category', async () => {
       const mockDb: any = {
         insert: mock(() => ({
           values: mock(() => ({
@@ -184,7 +184,7 @@ describe('CategoryService', () => {
 
       const result = await categoryService.findById('non-existent', 'user-1');
 
-      expect(result).toBeUndefined();
+      expect(result).toBeNull();
     });
   });
 

@@ -8,10 +8,10 @@
 import { type IDatabase, getActiveSchema } from '@/db';
 import { createLogger } from '@/lib/logger';
 import { getEnv } from '@/lib/env';
-import { nanoid } from 'nanoid';
 import { eq } from 'drizzle-orm';
 import type { EmailService } from '@/services/email';
 import type { users } from '@/db/schema/sqlite/users';
+import { createTokenService } from './base/token.factory';
 
 const log = createLogger('email-verification');
 
@@ -26,10 +26,20 @@ export class EmailVerificationService {
     return getActiveSchema();
   }
 
+  private tokens: ReturnType<typeof createTokenService>;
+
   constructor(
     private db: IDatabase,
     private emailSvc?: EmailService
-  ) {}
+  ) {
+    this.tokens = createTokenService(db, {
+      getTable: () => getActiveSchema().emailVerificationTokens,
+      getQuery: () => db.query.emailVerificationTokens,
+      getUserIdCol: () => getActiveSchema().emailVerificationTokens.user_id,
+      getTokenCol: () => getActiveSchema().emailVerificationTokens.token,
+      getExpiresAtCol: () => getActiveSchema().emailVerificationTokens.expires_at,
+    });
+  }
 
   /**
    * Create verification token for user
@@ -37,23 +47,7 @@ export class EmailVerificationService {
    * @returns Generated token string
    */
   async createVerificationToken(userId: string): Promise<string> {
-    // Delete any existing tokens for this user before creating a new one
-    await this.db
-      .delete(this.schema.emailVerificationTokens)
-      .where(eq(this.schema.emailVerificationTokens.user_id, userId));
-
-    const token = nanoid(64);
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
-
-    await Promise.resolve(
-      this.db.insert(this.schema.emailVerificationTokens).values({
-        id: nanoid(),
-        user_id: userId,
-        token,
-        expires_at: expiresAt,
-      })
-    );
-
+    const token = await this.tokens.createToken(userId, 24 * 60); // 24 hours
     log.info('Created verification token for user', { userId });
     return token;
   }

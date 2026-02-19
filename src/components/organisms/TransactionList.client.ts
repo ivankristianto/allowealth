@@ -137,6 +137,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Close modal using CSS class for consistency with Modal.astro pattern
         closeConfirmationModal(modal);
+
+        // Clear references only on success so user can retry on failure
+        transactionToDelete = null;
+        rowToDelete = null;
       } else {
         // Show inline error
         showConfirmError(errorDiv, data.error?.message || 'Failed to delete transaction');
@@ -147,8 +151,6 @@ document.addEventListener('DOMContentLoaded', () => {
     } finally {
       // Re-enable button
       setConfirmLoading(confirmDeleteBtn, false);
-      transactionToDelete = null;
-      rowToDelete = null;
     }
   });
 });

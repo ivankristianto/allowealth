@@ -7,6 +7,7 @@ import { deriveAccountClass } from '@/lib/types/asset';
 import { type PerfCollector, trackQuery } from '@/lib/perf';
 import { decimalAdd, decimalCompare, decimalSubtract } from '@/lib/utils/decimal';
 import { getCacheManager, CacheKeys, CacheTags, hashFilters } from '@/lib/cache';
+import { cacheOrFetch } from '@/lib/cache/cache-or-fetch';
 
 /** Inferred row type for an asset record */
 export type AssetRow = typeof assetsTable.$inferSelect;
@@ -151,19 +152,7 @@ export class AssetService {
     perf?: PerfCollector
   ) {
     const filtersHashValue = hashFilters(filters || {});
-    const cache = getCacheManager();
     const cacheKey = CacheKeys.assets(workspaceId, filtersHashValue);
-
-    // Cache read - fail-silent
-    let cached: AssetRow[] | null = null;
-    try {
-      cached = await cache.get<AssetRow[]>(cacheKey, perf);
-    } catch {
-      // Cache read failed, continue to DB fetch
-    }
-    if (cached) {
-      return cached;
-    }
 
     const conditions = [
       eq(this.schema.assets.workspace_id, workspaceId),
@@ -187,24 +176,18 @@ export class AssetService {
       conditions.push(eq(this.schema.assets.currency, filters.currency));
     }
 
-    const result = await trackQuery('AssetService.findAll', perf, async () => {
-      return this.db.query.assets.findMany({
-        where: and(...conditions),
-        orderBy: (_assets: any, { asc }: any) => [asc(this.schema.assets.name)],
-      });
-    });
-
-    // Cache write - fail-silent
-    try {
-      await cache.set(cacheKey, result, {
-        ttl: 3600,
-        tags: [CacheTags.workspace(workspaceId), CacheTags.ASSETS],
-      });
-    } catch {
-      // Cache write failed, continue without caching
-    }
-
-    return result;
+    return cacheOrFetch(
+      cacheKey,
+      { ttl: 3600, tags: [CacheTags.workspace(workspaceId), CacheTags.ASSETS] },
+      () =>
+        trackQuery('AssetService.findAll', perf, () =>
+          this.db.query.assets.findMany({
+            where: and(...conditions),
+            orderBy: (_assets: any, { asc }: any) => [asc(this.schema.assets.name)],
+          })
+        ),
+      perf
+    );
   }
 
   /**
@@ -391,8 +374,18 @@ export class AssetService {
     }
 
     const now = new Date();
-    const newFromBalance = decimalSubtract(fromAsset.balance, amount);
-    const newToBalance = decimalAdd(toAsset.balance, amount);
+    const fromIsDebt = fromAsset.account_class === 'debt';
+    const toIsDebt = toAsset.account_class === 'debt';
+
+    // Debt balances are stored as positive numbers representing amount owed.
+    // Transferring FROM a debt account (e.g. cash advance) increases debt → add amount.
+    // Transferring TO a debt account (e.g. paying off credit card) reduces debt → subtract amount.
+    const newFromBalance = fromIsDebt
+      ? decimalAdd(fromAsset.balance, amount)
+      : decimalSubtract(fromAsset.balance, amount);
+    const newToBalance = toIsDebt
+      ? decimalSubtract(toAsset.balance, amount)
+      : decimalAdd(toAsset.balance, amount);
 
     // Wrap both balance updates in a transaction to ensure atomicity
     await runTransaction(this.db, async (tx) => {
@@ -410,6 +403,55 @@ export class AssetService {
           and(eq(this.schema.assets.id, toId), eq(this.schema.assets.workspace_id, workspaceId))
         );
     });
+
+    // Record balance history for both accounts with compensating rollback on failure
+    try {
+      await (this.db as any).insert(this.schema.assetHistory).values({
+        id: nanoid(),
+        asset_id: fromId,
+        balance: newFromBalance,
+        notes: `Transfer to ${toAsset.name}`,
+        recorded_at: now,
+      });
+
+      await (this.db as any).insert(this.schema.assetHistory).values({
+        id: nanoid(),
+        asset_id: toId,
+        balance: newToBalance,
+        notes: `Transfer from ${fromAsset.name}`,
+        recorded_at: now,
+      });
+    } catch {
+      // Compensating transaction: rollback both balance updates
+      await runTransaction(this.db, async (tx) => {
+        await tx
+          .update(this.schema.assets)
+          .set({
+            balance: fromAsset.balance,
+            last_updated: fromAsset.last_updated,
+            updated_at: fromAsset.updated_at,
+          })
+          .where(
+            and(eq(this.schema.assets.id, fromId), eq(this.schema.assets.workspace_id, workspaceId))
+          );
+
+        await tx
+          .update(this.schema.assets)
+          .set({
+            balance: toAsset.balance,
+            last_updated: toAsset.last_updated,
+            updated_at: toAsset.updated_at,
+          })
+          .where(
+            and(eq(this.schema.assets.id, toId), eq(this.schema.assets.workspace_id, workspaceId))
+          );
+      });
+      throw new AssetServiceError(
+        ServiceErrorCode.ASSET_NOT_FOUND,
+        'Failed to transfer: could not create history entries',
+        500
+      );
+    }
 
     // Invalidate asset cache
     try {

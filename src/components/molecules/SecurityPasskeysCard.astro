@@ -4,9 +4,8 @@
  *
  * Displays registered passkeys and add/remove actions.
  */
-
+import SecurityCard from '@/components/molecules/SecurityCard.astro';
 import Button from '@/components/atoms/Button.astro';
-import IconBadge from '@/components/atoms/IconBadge.astro';
 import { Key, KeyRound, Plus, Trash2 } from '@lucide/astro';
 
 interface Passkey {
@@ -24,61 +23,48 @@ const { passkeys } = Astro.props;
 // @TODO: Implement passkey management actions.
 ---
 
-<section class="card bg-base-100 shadow border border-base-300">
-  <div class="card-body p-6 space-y-6">
-    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-      <div class="flex items-center gap-4">
-        <IconBadge variant="warning" size="sm">
-          <Key size={20} class="stroke-current" aria-hidden="true" />
-        </IconBadge>
-        <div>
-          <div class="flex flex-wrap items-center gap-2">
-            <h3 class="text-lg font-bold">Passkeys</h3>
-            <span class="badge badge-outline badge-sm text-base-content/50 whitespace-nowrap"
-              >Under Development</span
-            >
-          </div>
-          <p class="text-xs uppercase tracking-widest text-base-content/50">
-            Biometric &amp; Hardware Keys
-          </p>
-        </div>
-      </div>
-      <Button type="button" variant="primary" size="sm" disabled>
-        <Plus size={16} class="stroke-current" aria-hidden="true" />
-        Add Passkey
-      </Button>
-    </div>
+<SecurityCard
+  title="Passkeys"
+  subtitle="Biometric & Hardware Keys"
+  iconVariant="warning"
+  badge="Under Development"
+>
+  <Key slot="icon" size={20} class="stroke-current" aria-hidden="true" />
 
-    <p class="text-sm text-base-content/70">
-      Sign in faster and more securely with your biometric data or hardware security keys.
-    </p>
+  <Button slot="header-action" type="button" variant="primary" size="sm" disabled>
+    <Plus size={16} class="stroke-current" aria-hidden="true" />
+    Add Passkey
+  </Button>
 
-    <div
-      class="border border-base-300 rounded-2xl overflow-hidden divide-y divide-base-300 bg-base-100"
-    >
-      {
-        passkeys.map((passkey) => (
-          <div class="flex items-center justify-between gap-4 p-4">
-            <div class="flex items-center gap-4">
-              <div class="rounded-xl bg-base-200 p-2 text-base-content/60">
-                <KeyRound size={18} class="stroke-current" aria-hidden="true" />
-              </div>
-              <div>
-                <p class="text-sm font-semibold">{passkey.name}</p>
-                <p class="text-xs text-base-content/60">Added on {passkey.addedOn}</p>
-              </div>
+  <p class="text-sm text-base-content/70">
+    Sign in faster and more securely with your biometric data or hardware security keys.
+  </p>
+
+  <div
+    class="border border-base-300 rounded-2xl overflow-hidden divide-y divide-base-300 bg-base-100"
+  >
+    {
+      passkeys.map((passkey) => (
+        <div class="flex items-center justify-between gap-4 p-4">
+          <div class="flex items-center gap-4">
+            <div class="rounded-xl bg-base-200 p-2 text-base-content/60">
+              <KeyRound size={18} class="stroke-current" aria-hidden="true" />
             </div>
-            <button
-              type="button"
-              class="btn btn-ghost btn-sm text-error"
-              aria-label="Remove passkey"
-              disabled
-            >
-              <Trash2 size={16} class="stroke-current" aria-hidden="true" />
-            </button>
+            <div>
+              <p class="text-sm font-semibold">{passkey.name}</p>
+              <p class="text-xs text-base-content/60">Added on {passkey.addedOn}</p>
+            </div>
           </div>
-        ))
-      }
-    </div>
+          <button
+            type="button"
+            class="btn btn-ghost btn-sm text-error"
+            aria-label="Remove passkey"
+            disabled
+          >
+            <Trash2 size={16} class="stroke-current" aria-hidden="true" />
+          </button>
+        </div>
+      ))
+    }
   </div>
-</section>
+</SecurityCard>

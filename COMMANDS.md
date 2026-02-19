@@ -78,129 +78,80 @@ bun run db:migrate           # Apply migration
 bun run db:push
 ```
 
-## Database (PostgreSQL/Supabase - Production)
-
-| Command                    | Description                                       |
-| -------------------------- | ------------------------------------------------- |
-| `bun run db:generate:prod` | Generate PostgreSQL migration from schema changes |
-| `bun run db:migrate:prod`  | Apply pending PostgreSQL migrations               |
-| `bun run db:empty:prod`    | Truncate all production data (5s safety delay)    |
-
-```bash
-# Initial setup (fresh Supabase)
-bun run db:generate:prod     # Generate initial migration
-bun run db:migrate:prod      # Apply to Supabase
-
-# After schema changes (always do both dialects)
-bun run db:generate          # SQLite migration
-bun run db:generate:prod     # PostgreSQL migration
-bun run db:migrate           # Apply locally
-bun run db:migrate:prod      # Apply to production
-```
-
 See `docs/architecture/007-database-migrations.md` for full migration workflow.
 
-## D1 Database (Cloudflare)
+## Allowealth CLI (`aw`)
 
-| Command                                 | Description                                    |
-| --------------------------------------- | ---------------------------------------------- |
-| `bun run deploy:cloudflare:d1`          | Build and deploy to Cloudflare Workers with D1 |
-| `bun run db:d1:migrate -- <file>`       | Apply migration to remote D1 database          |
-| `bun run db:d1:migrate:local -- <file>` | Apply migration to local D1 database           |
+The `aw` CLI provides a unified interface for admin and operational commands. Use `--target` (`-t`) on subcommands to select the database backend.
 
-## CLI Tools
+### Target Values
 
-All CLI tools have `:prod` variants that use `.env.production` for the database connection.
+| Target     | Database               | Env loading                  | Auth                                     |
+| ---------- | ---------------------- | ---------------------------- | ---------------------------------------- |
+| `sqlite`   | Local SQLite (default) | None                         | N/A                                      |
+| `d1`       | Remote Cloudflare D1   | Auto-loads `.env.production` | `CLOUDFLARE_TOKEN` (D1 Edit permissions) |
+| `d1-local` | Local D1 emulation     | None                         | Opens wrangler local SQLite directly     |
+| `postgres` | PostgreSQL             | Auto-loads `.env.production` | Connection string from env               |
 
-### Super Admin
+### Quick Reference
 
-| Command                               | Description                   |
-| ------------------------------------- | ----------------------------- |
-| `bun run cli:create-super-admin`      | Promote a user to super admin |
-| `bun run cli:create-super-admin:prod` | Same, against production DB   |
+| Command                             | Description              |
+| ----------------------------------- | ------------------------ |
+| `bun run aw --help`                 | Show all commands        |
+| `bun run aw <command> --help`       | Show subcommand help     |
+| `bun run aw --target d1 db migrate` | Target before subcommand |
+| `bun run aw db migrate --target d1` | Target after subcommand  |
 
 ### Workspace Management
 
-| Command                             | Description                                      |
-| ----------------------------------- | ------------------------------------------------ |
-| `bun run cli:create-workspace`      | Create workspace and send admin invitation email |
-| `bun run cli:create-workspace:prod` | Same, against production DB                      |
-| `bun run cli:list-workspaces`       | List all workspaces with user counts             |
-| `bun run cli:list-workspaces:prod`  | Same, against production DB                      |
-| `bun run cli:delete-workspace`      | Delete a workspace and all its data              |
-| `bun run cli:delete-workspace:prod` | Same, against production DB                      |
+| Command                                                                                 | Description                          |
+| --------------------------------------------------------------------------------------- | ------------------------------------ |
+| `bun run aw workspace create --name "Name" --email admin@example.com`                   | Create workspace (SQLite)            |
+| `bun run aw workspace create --target postgres --name "Name" --email admin@example.com` | Create workspace (PostgreSQL)        |
+| `bun run aw workspace create --target d1 --name "Name" --email admin@example.com`       | Create workspace on D1 (remote)      |
+| `bun run aw workspace create --target d1-local --name "Name" --email admin@example.com` | Create workspace on D1 (local)       |
+| `bun run aw workspace list`                                                             | List all workspaces                  |
+| `bun run aw workspace delete --id <id>`                                                 | Delete workspace                     |
+| `bun run aw workspace delete --id <id> --force`                                         | Delete workspace (skip confirmation) |
 
-```bash
-# Create a new workspace interactively (prompts for admin email)
-bun run cli:create-workspace:prod
+### Database
 
-# With arguments (recommended for automation)
-bun run cli:create-workspace:prod -- --name "My Family" --email admin@example.com
+| Command                                   | Description                            |
+| ----------------------------------------- | -------------------------------------- |
+| `bun run aw db migrate`                   | Apply pending migrations (SQLite)      |
+| `bun run aw db migrate --target postgres` | Apply pending migrations (PostgreSQL)  |
+| `bun run aw db migrate --target d1`       | Apply pending migrations to remote D1  |
+| `bun run aw db migrate --target d1-local` | Apply pending migrations to local D1   |
+| `bun run aw db generate`                  | Generate migration from schema changes |
+| `bun run aw db push`                      | Push schema directly (dev only)        |
+| `bun run aw db studio`                    | Open Drizzle Studio                    |
+| `bun run aw db seed`                      | Seed with demo data                    |
+| `bun run aw db reset`                     | Delete + push + seed (sqlite only)     |
+| `bun run aw db empty`                     | Truncate all data (preserve schema)    |
 
-# List workspaces
-bun run cli:list-workspaces:prod
-```
+### Admin & Security
 
-`cli:create-workspace` options:
+| Command                                                                            | Description                   |
+| ---------------------------------------------------------------------------------- | ----------------------------- |
+| `bun run aw admin create-super-admin --email admin@example.com`                    | Promote user to super admin   |
+| `bun run aw admin create-api-key --workspace-id <id> --user-id <id> --name "Name"` | Generate API key              |
+| `bun run aw admin rotate-db-password [--ask] [--hyperdrive]`                       | Rotate DB password            |
+| `bun run aw admin generate-email-key`                                              | Generate email encryption key |
 
-- `--name, -n <name>` workspace name (required)
-- `--email, -e <email>` admin invitation email (prompts if omitted)
-- `--currency, -c <currency>` workspace default currency (default: `IDR`)
-- `--week-start, -w <day>` workspace week start day (`monday` or `sunday`, default: `monday`)
-- `--compact-numbers <true|false>` compact number formatting (default: `true`)
+### Deploy
 
-### API Keys
+| Command                        | Description                            |
+| ------------------------------ | -------------------------------------- |
+| `bun run aw deploy cloudflare` | Build and deploy to Cloudflare Workers |
+| `bun run aw deploy vercel`     | Build and deploy to Vercel             |
+| `bun run aw deploy netlify`    | Build and deploy to Netlify            |
 
-| Command                           | Description                      |
-| --------------------------------- | -------------------------------- |
-| `bun run cli:create-api-key`      | Generate API key for a workspace |
-| `bun run cli:create-api-key:prod` | Same, against production DB      |
+### Other
 
-```bash
-bun run cli:create-api-key:prod
-```
-
-### Security & Configuration
-
-| Command                          | Description                                                          |
-| -------------------------------- | -------------------------------------------------------------------- |
-| `bun run cli:rotate-db-password` | Update Supabase DB password in `.env.production` and test connection |
-| `bun run cli:generate-email-key` | Generate encryption key for email functionality                      |
-
-```bash
-# After rotating password in Supabase dashboard:
-# 1. Update password in .env.production
-# 2. Run to update all URLs and verify connection
-bun run cli:rotate-db-password
-
-# Or enter password interactively
-bun run cli:rotate-db-password -- --ask
-
-# Also update Cloudflare Hyperdrive
-bun run cli:rotate-db-password -- --ask --hyperdrive
-```
-
-### Email Verification
-
-```bash
-# Backfill existing users as verified (run once after deployment)
-bun run backfill:email-verification           # Local/dev
-bun run backfill:email-verification:prod      # Production
-```
-
-Marks all existing users' emails as verified and activates all workspaces.
-Run this once after deploying the email verification feature.
-
-## MCP Server
-
-| Command                  | Description                                   |
-| ------------------------ | --------------------------------------------- |
-| `bun run mcp:start`      | Start MCP server for AI assistant integration |
-| `bun run mcp:start:prod` | Same, with production env                     |
-
-```bash
-bun run mcp:start:prod
-```
+| Command                | Description         |
+| ---------------------- | ------------------- |
+| `bun run aw mcp start` | Start MCP server    |
+| `bun run aw release`   | Interactive release |
 
 ## Testing
 

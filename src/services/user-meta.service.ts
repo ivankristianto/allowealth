@@ -19,8 +19,9 @@
  */
 
 import { type IDatabase, getActiveSchema } from '@/db';
-import { eq, and } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
+import { createMetaService } from './base/meta.factory';
 import {
   USER_META_KEYS,
   type UserMetaKey,
@@ -44,11 +45,22 @@ export class UserMetaService {
     return getActiveSchema();
   }
 
+  private meta: ReturnType<typeof createMetaService<UserMetaKey>>;
+
   /**
    * Create a new UserMetaService with database injection
    * @param db - Database instance (injected for testability)
    */
-  constructor(private db: IDatabase) {}
+  constructor(private db: IDatabase) {
+    this.meta = createMetaService<UserMetaKey>(db, {
+      getTable: () => getActiveSchema().userMeta,
+      getQuery: () => db.query.userMeta,
+      getEntityIdCol: () => getActiveSchema().userMeta.user_id,
+      getKeyCol: () => getActiveSchema().userMeta.meta_key,
+      getValueCol: () => getActiveSchema().userMeta.meta_value,
+      validateKey: isValidMetaKey,
+    });
+  }
 
   /**
    * Get a single meta value for a user
@@ -71,12 +83,7 @@ export class UserMetaService {
     // Check if user exists
     await this.ensureUserExists(userId);
 
-    // Get meta value
-    const meta = await this.db.query.userMeta.findFirst({
-      where: and(eq(this.schema.userMeta.user_id, userId), eq(this.schema.userMeta.meta_key, key)),
-    });
-
-    return meta?.meta_value ?? null;
+    return this.meta.get(userId, key);
   }
 
   /**
@@ -90,22 +97,9 @@ export class UserMetaService {
     // Check if user exists
     await this.ensureUserExists(userId);
 
-    // Get all meta for user
-    const metas = await this.db.query.userMeta.findMany({
-      where: eq(this.schema.userMeta.user_id, userId),
-    });
-
-    // Start with defaults
-    const result = { ...META_DEFAULTS };
-
-    // Override with actual values
-    for (const meta of metas) {
-      if (isValidMetaKey(meta.meta_key)) {
-        result[meta.meta_key] = meta.meta_value;
-      }
-    }
-
-    return result;
+    // Get all meta for user, merge with defaults
+    const stored = await this.meta.getAll(userId);
+    return { ...META_DEFAULTS, ...stored };
   }
 
   /**
@@ -192,12 +186,10 @@ export class UserMetaService {
     // Check if user exists
     await this.ensureUserExists(userId);
 
-    // Check if meta exists
-    const existing = await this.db.query.userMeta.findFirst({
-      where: and(eq(this.schema.userMeta.user_id, userId), eq(this.schema.userMeta.meta_key, key)),
-    });
+    // Check if meta exists (use !== null to allow empty-string values)
+    const existing = await this.meta.get(userId, key);
 
-    if (!existing) {
+    if (existing === null) {
       throw new UserMetaServiceError(
         ServiceErrorCode.META_NOT_FOUND,
         `Meta key not found: ${key}`,
@@ -206,9 +198,7 @@ export class UserMetaService {
     }
 
     // Delete
-    await this.db
-      .delete(this.schema.userMeta)
-      .where(and(eq(this.schema.userMeta.user_id, userId), eq(this.schema.userMeta.meta_key, key)));
+    await this.meta.delete(userId, key);
 
     // Invalidate settings cache
     const cache = getCacheManager();

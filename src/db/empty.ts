@@ -6,8 +6,8 @@
  * Works for both SQLite and PostgreSQL.
  *
  * Usage:
- *   bun run db:empty           # Uses default .env
- *   bun run db:empty:prod      # Uses .env.production
+ *   bun run db:empty                          # Uses default .env (SQLite)
+ *   bun run aw --target postgres db empty     # Uses .env.production (PostgreSQL)
  */
 
 import { db, getActiveSchema } from './index';
@@ -82,11 +82,13 @@ async function emptyDatabase() {
         }
       }
     } else {
-      // SQLite: Delete from each table individually
+      // SQLite / D1: Delete from each table individually
       console.log('Using DELETE for SQLite...\n');
 
-      // Disable foreign key checks temporarily for SQLite
-      await (db as any).run(sql.raw('PRAGMA foreign_keys = OFF'));
+      // Disable foreign key checks temporarily (not supported on D1)
+      if (!config.isD1) {
+        await (db as any).run(sql.raw('PRAGMA foreign_keys = OFF'));
+      }
 
       for (const table of tablesToEmpty) {
         try {
@@ -100,7 +102,9 @@ async function emptyDatabase() {
       }
 
       // Re-enable foreign key checks
-      await (db as any).run(sql.raw('PRAGMA foreign_keys = ON'));
+      if (!config.isD1) {
+        await (db as any).run(sql.raw('PRAGMA foreign_keys = ON'));
+      }
     }
 
     console.log('\n✅ Database emptied successfully!\n');

@@ -1,0 +1,70 @@
+---
+/**
+ * DashboardWidget base component
+ *
+ * Shared shell for dashboard widgets. Owns the Card wrapper, aria attributes,
+ * and the loading/error/empty/default state machine.
+ *
+ * Named slots:
+ *   loading  — required if loading prop may be true. Skeleton content.
+ *   error    — optional. Error state. Defaults to plain error text.
+ *   empty    — optional. Empty state. Shown when isEmpty=true and not loading/error.
+ *   default  — required. Normal content.
+ *
+ * Consumers compute isEmpty and ariaLabel/ariaLabelledBy before passing.
+ */
+import Card from '@/components/atoms/Card.astro';
+
+export interface Props {
+  loading?: boolean;
+  /** Computed by consumer: e.g. items.length === 0 */
+  isEmpty?: boolean;
+  /** Optional error message. When set, error slot (or default error text) is shown. */
+  error?: string;
+  ariaLabel?: string;
+  ariaLabelledBy?: string;
+  ariaLive?: 'polite' | 'assertive' | 'off';
+  /** Defaults to "region". SpendingCard uses "status". */
+  role?: string;
+  testId?: string;
+  class?: string;
+}
+
+const {
+  loading = false,
+  isEmpty = false,
+  error,
+  ariaLabel,
+  ariaLabelledBy,
+  ariaLive,
+  role = 'region',
+  testId,
+  class: className = '',
+} = Astro.props;
+---
+
+<Card
+  padding="lg"
+  rounded="card-lg"
+  className={className}
+  role={role}
+  aria-label={ariaLabel}
+  aria-labelledby={ariaLabelledBy}
+  aria-live={ariaLive}
+  aria-busy={loading ? 'true' : undefined}
+  data-testid={testId}
+>
+  {
+    loading ? (
+      <slot name="loading" />
+    ) : error ? (
+      <slot name="error">
+        <p class="text-sm text-error">{error}</p>
+      </slot>
+    ) : isEmpty ? (
+      <slot name="empty" />
+    ) : (
+      <slot />
+    )
+  }
+</Card>

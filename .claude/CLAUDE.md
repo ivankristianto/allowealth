@@ -43,6 +43,7 @@ Personal and family financial application for expense tracking, budgeting, asset
 | **Caching**             | CacheManager + Tag-based drivers         | Direct Redis or local-only cache               | `008-cache-abstraction.md`                |
 | **Logging**             | Structured consola loggers               | `console.log`                                  | `009-logger-abstraction.md`               |
 | **MCP Server**          | Hybrid (stdio + HTTP) with shared tools  | Logic scattered in routes                      | `010-mcp-server-architecture.md`          |
+| **CLI Commands**        | `bun run aw <command>` (citty)           | Standalone scripts in `src/cli/`               | `COMMANDS.md`                             |
 
 ## Key Commands
 

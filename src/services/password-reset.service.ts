@@ -12,16 +12,14 @@
  * - EMAIL_ERROR: Failed to send email
  */
 
-import { nanoid } from 'nanoid';
-import { db, getActiveSchema } from '@/db/index';
-import { eq, and, gt } from 'drizzle-orm';
+import { type IDatabase, db, getActiveSchema } from '@/db/index';
+import { eq } from 'drizzle-orm';
 import { createLogger } from '@/lib/logger';
 import { getEnv } from '@/lib/env';
+import { createTokenService } from './base/token.factory';
 
 const log = createLogger('password-reset');
 
-// Get the correct schema for the current database dialect
-const schema = getActiveSchema();
 import { emailService } from '@/services';
 
 /**
@@ -49,14 +47,6 @@ export class PasswordResetError extends Error {
 }
 
 /**
- * Input validation result
- */
-interface ValidationResult {
-  valid: boolean;
-  errors?: string[];
-}
-
-/**
  * Validate email format
  */
 function validateEmail(email: string): boolean {
@@ -67,7 +57,7 @@ function validateEmail(email: string): boolean {
 /**
  * Validate forgot password input
  */
-function validateForgotPasswordInput(email: string): ValidationResult {
+function validateForgotPasswordInput(email: string): { valid: boolean; errors?: string[] } {
   const errors: string[] = [];
 
   if (!email || !validateEmail(email)) {
@@ -81,142 +71,126 @@ function validateForgotPasswordInput(email: string): ValidationResult {
 }
 
 /**
- * Token expiration time in milliseconds (1 hour)
- */
-const TOKEN_EXPIRATION_MS = 60 * 60 * 1000;
-
-/**
  * Get base URL from environment or use default
- *
- * Note: Uses import.meta.env because Astro/Vite only populates
- * import.meta.env from .env files, not process.env.
  */
 function getBaseUrl(): string {
   return getEnv('PUBLIC_URL') || 'http://localhost:4321';
 }
 
 /**
- * Request a password reset
- *
- * This function always returns success to prevent email enumeration attacks.
- * If the email doesn't exist, it will still return success but won't send an email.
- *
- * @param email - User email address
- * @returns Promise resolving when reset request is processed
- * @throws {PasswordResetError} If input is invalid
+ * Password Reset Service
  */
-export async function requestPasswordReset(email: string): Promise<void> {
-  // Validate input
-  const validation = validateForgotPasswordInput(email);
-  if (!validation.valid) {
-    throw new PasswordResetError(
-      PASSWORD_RESET_ERRORS.INVALID_INPUT,
-      validation.errors!.join(', ')
-    );
+export class PasswordResetService {
+  private tokens: ReturnType<typeof createTokenService>;
+
+  constructor(private db: IDatabase) {
+    this.tokens = createTokenService(db, {
+      getTable: () => getActiveSchema().passwordResetTokens,
+      getQuery: () => db.query.passwordResetTokens,
+      getUserIdCol: () => getActiveSchema().passwordResetTokens.user_id,
+      getTokenCol: () => getActiveSchema().passwordResetTokens.token,
+      getExpiresAtCol: () => getActiveSchema().passwordResetTokens.expires_at,
+    });
   }
 
-  try {
-    // Find user by email
-    const user = await db.query.users.findFirst({
-      where: eq(schema.users.email, email.toLowerCase()),
-    });
-
-    // If user not found, return success anyway to prevent email enumeration
-    if (!user) {
-      // Log the attempt but don't throw error
-      log.warn('password reset requested for non-existent email');
-      return;
+  /**
+   * Request a password reset
+   *
+   * This function always returns success to prevent email enumeration attacks.
+   * If the email doesn't exist, it will still return success but won't send an email.
+   *
+   * @param email - User email address
+   * @returns Promise resolving when reset request is processed
+   * @throws {PasswordResetError} If input is invalid
+   */
+  async requestPasswordReset(email: string): Promise<void> {
+    // Validate input
+    const validation = validateForgotPasswordInput(email);
+    if (!validation.valid) {
+      throw new PasswordResetError(
+        PASSWORD_RESET_ERRORS.INVALID_INPUT,
+        validation.errors!.join(', ')
+      );
     }
-
-    // Generate secure token
-    const token = nanoid(64); // 64-character secure token
-    const tokenId = nanoid();
-    const expiresAt = new Date(Date.now() + TOKEN_EXPIRATION_MS);
-
-    // Delete any existing tokens for this user
-    await db
-      .delete(schema.passwordResetTokens)
-      .where(eq(schema.passwordResetTokens.user_id, user.id));
-
-    // Create new reset token
-    await db.insert(schema.passwordResetTokens).values({
-      id: tokenId,
-      token,
-      user_id: user.id,
-      expires_at: expiresAt,
-    });
-
-    // Send password reset email
-    const baseUrl = getBaseUrl();
-    const resetUrl = `${baseUrl}/reset-password?token=${token}`;
 
     try {
-      await emailService.sendPasswordReset({
-        to: email,
-        resetUrl,
-        expiresIn: '1 hour',
+      const schema = getActiveSchema();
+
+      // Find user by email
+      const user = await this.db.query.users.findFirst({
+        where: eq(schema.users.email, email.toLowerCase()),
       });
-    } catch (emailError) {
-      // Log email error but don't fail the request
-      // (console fallback will have already logged it)
-      log.error('email sending failed:', emailError);
+
+      // If user not found, return success anyway to prevent email enumeration
+      if (!user) {
+        log.warn('password reset requested for non-existent email');
+        return;
+      }
+
+      const token = await this.tokens.createToken(user.id, 60); // 1 hour
+
+      // Send password reset email
+      const baseUrl = getBaseUrl();
+      const resetUrl = `${baseUrl}/reset-password?token=${token}`;
+
+      try {
+        await emailService.sendPasswordReset({
+          to: email,
+          resetUrl,
+          expiresIn: '1 hour',
+        });
+      } catch (emailError) {
+        log.error('email sending failed:', emailError);
+      }
+    } catch (error) {
+      // Log error but return success to prevent email enumeration
+      log.error('password reset request failed:', error);
     }
-  } catch (error) {
-    // Log error but return success to prevent email enumeration
-    log.error('password reset request failed:', error);
-
-    // Don't throw error to prevent email enumeration
-    // In production, you might want to monitor these errors
-  }
-}
-
-/**
- * Validate a password reset token
- *
- * @param token - Reset token to validate
- * @returns Promise resolving to user ID if valid, null otherwise
- */
-export async function validateResetToken(token: string): Promise<string | null> {
-  if (!token || token.length === 0) {
-    return null;
   }
 
-  try {
-    // Find token that hasn't expired
-    const resetToken = await db.query.passwordResetTokens.findFirst({
-      where: and(
-        eq(schema.passwordResetTokens.token, token),
-        gt(schema.passwordResetTokens.expires_at, new Date())
-      ),
-    });
-
-    if (!resetToken) {
+  /**
+   * Validate a password reset token
+   *
+   * @param token - Reset token to validate
+   * @returns Promise resolving to user ID if valid, null otherwise
+   */
+  async validateResetToken(token: string): Promise<string | null> {
+    if (!token || token.length === 0) {
       return null;
     }
 
-    return resetToken.user_id;
-  } catch (error) {
-    log.error('token validation failed:', error);
-    return null;
+    try {
+      const result = await this.tokens.validateToken(token);
+      return result?.userId ?? null;
+    } catch (error) {
+      log.error('token validation failed:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Consume a password reset token
+   *
+   * Deletes the token after it has been used for password reset.
+   *
+   * @param token - Reset token to consume
+   * @returns Promise resolving when token is deleted
+   */
+  async consumeResetToken(token: string): Promise<void> {
+    if (!token || token.length === 0) {
+      return;
+    }
+
+    try {
+      await this.tokens.consumeToken(token);
+    } catch (error) {
+      log.error('token consumption failed:', error);
+    }
   }
 }
 
-/**
- * Consume a password reset token
- *
- * Deletes the token after it has been used for password reset.
- *
- * @param token - Reset token to consume
- * @returns Promise resolving when token is deleted
- */
-export async function consumeResetToken(token: string): Promise<void> {
-  if (!token || token.length === 0) {
-    return;
-  }
-
-  try {
-    await db.delete(schema.passwordResetTokens).where(eq(schema.passwordResetTokens.token, token));
-  } catch (error) {
-    log.error('token consumption failed:', error);
-  }
-}
+// Backwards-compatible module-level exports (existing callers unchanged)
+const _service = new PasswordResetService(db);
+export const requestPasswordReset = _service.requestPasswordReset.bind(_service);
+export const validateResetToken = _service.validateResetToken.bind(_service);
+export const consumeResetToken = _service.consumeResetToken.bind(_service);
