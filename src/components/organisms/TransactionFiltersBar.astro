@@ -12,7 +12,7 @@
  * @param {boolean} showCategoryFilter - Show category dropdown
  */
 
-import { Search, ChevronDown, Tag, Check, RotateCcw } from '@lucide/astro';
+import { Search, ChevronDown, Tag, Check, RotateCcw, Users } from '@lucide/astro';
 import { tokenClasses } from '@/lib/tokens';
 import SearchInput from '@/components/atoms/SearchInput.astro';
 
@@ -22,6 +22,9 @@ export interface Props {
   categoryIds?: string[];
   categories?: Array<{ id: string; name: string; type: string }>;
   showCategoryFilter?: boolean;
+  userId?: string;
+  members?: Array<{ id: string; name: string }>;
+  showMemberFilter?: boolean;
   baseUrl?: string;
   currentMonth?: string;
   selectedMonth?: string;
@@ -33,6 +36,9 @@ const {
   categoryIds = [],
   categories = [],
   showCategoryFilter = true,
+  userId = '',
+  members = [],
+  showMemberFilter = false,
   baseUrl = '/transactions',
   currentMonth = '',
   selectedMonth = '',
@@ -43,6 +49,7 @@ const hasActiveFilters =
   typeFilter !== 'expense' ||
   searchValue !== '' ||
   categoryIds.length > 0 ||
+  userId !== '' ||
   (selectedMonth !== '' && selectedMonth !== currentMonth);
 
 // Get selected category names for display
@@ -63,6 +70,8 @@ const buildFilterUrl = (updates: Record<string, string>) => {
   params.set('type', typeFilter);
   if (searchValue) params.set('search', searchValue);
   if (categoryIds.length > 0) params.set('category_ids', categoryIds.join(','));
+  if (userId) params.set('user_id', userId);
+  if (selectedMonth) params.set('month', selectedMonth);
 
   // Add updates
   Object.entries(updates).forEach(([key, value]) => {
@@ -74,8 +83,7 @@ const buildFilterUrl = (updates: Record<string, string>) => {
   });
 
   const queryString = params.toString();
-  // Use base path without existing query params (baseUrl might already have them)
-  const basePath = '/transactions';
+  const basePath = baseUrl.split('?')[0] || '/transactions';
   return queryString ? `${basePath}?${queryString}` : basePath;
 };
 
@@ -269,6 +277,62 @@ const mainSearchInputClass = [
         </div>
       )
     }
+
+    {
+      showMemberFilter && members.length > 0 && (
+        <div class="dropdown dropdown-end" id="member-dropdown">
+          <input type="hidden" name="user_id" id="member-filter" value={userId} />
+          <button
+            type="button"
+            tabindex={0}
+            class="flex items-center gap-2 px-4 py-3 text-xs font-bold border border-base-300 bg-base-100 text-base-content rounded-2xl shadow-sm hover:border-base-content/30 transition-colors min-w-[160px]"
+            aria-label="Filter by member"
+            aria-haspopup="listbox"
+            data-member-trigger
+          >
+            <Users size={16} class="stroke-current text-base-content/40" aria-hidden="true" />
+            <span class="flex-1 text-left truncate" data-member-label>
+              {userId
+                ? members.find((member) => member.id === userId)?.name || 'All Members'
+                : 'All Members'}
+            </span>
+            <ChevronDown
+              size={14}
+              class="stroke-current text-base-content/40 shrink-0"
+              aria-hidden="true"
+            />
+          </button>
+          <ul
+            tabindex={0}
+            class="dropdown-content z-50 menu p-2 shadow-lg bg-base-100 rounded-2xl w-56 border border-base-300 mt-2"
+            data-member-dropdown
+          >
+            <li>
+              <a
+                href={buildFilterUrl({ user_id: '' })}
+                class={`${!userId ? 'active' : ''}`}
+                data-member-option
+                data-member-id=""
+              >
+                All Members
+              </a>
+            </li>
+            {members.map((member) => (
+              <li>
+                <a
+                  href={buildFilterUrl({ user_id: member.id })}
+                  class={`${userId === member.id ? 'active' : ''}`}
+                  data-member-option
+                  data-member-id={member.id}
+                >
+                  {member.name}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )
+    }
   </div>
 </form>
 
@@ -287,6 +351,11 @@ const mainSearchInputClass = [
   function getInitialSelectedMonth(): string {
     const form = document.getElementById('transaction-filters-form') as HTMLElement | null;
     return form?.dataset.selectedMonth || '';
+  }
+
+  function getCurrentUserFilter(): string {
+    const memberFilter = document.getElementById('member-filter') as HTMLInputElement | null;
+    return memberFilter?.value || '';
   }
 
   function getCurrentTypeFilter(): string {
@@ -328,6 +397,7 @@ const mainSearchInputClass = [
       currentType !== 'expense' ||
       (searchInput && searchInput.value.trim() !== '') ||
       selectedCategoryIds.length > 0 ||
+      getCurrentUserFilter() !== '' ||
       (selectedPeriod !== '' && selectedPeriod !== currentMonth);
 
     resetBtn.classList.toggle('hidden', !hasFilters);
@@ -575,6 +645,9 @@ const mainSearchInputClass = [
     // Clear search input
     const searchEl = document.getElementById('search-input') as HTMLInputElement;
     if (searchEl) searchEl.value = '';
+
+    const memberFilter = document.getElementById('member-filter') as HTMLInputElement | null;
+    if (memberFilter) memberFilter.value = '';
 
     selectedPeriod = getCurrentMonth();
 
