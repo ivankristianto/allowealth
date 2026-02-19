@@ -10,6 +10,7 @@ info:
     The following endpoints are public (no authentication required):
     - `POST /api/auth/signup`
     - `POST /api/auth/login`
+    - `POST /api/auth/login/verify-mfa`
     - `POST /api/auth/forgot-password`
     - `GET /api/auth/verify-email`
     - `POST /api/auth/resend-verification`
@@ -71,8 +72,20 @@ paths:
     $ref: './openapi/paths/auth.yml#/paths/~1api~1auth~1signup'
   /api/auth/login:
     $ref: './openapi/paths/auth.yml#/paths/~1api~1auth~1login'
+  /api/auth/login/verify-mfa:
+    $ref: './openapi/paths/mfa.yml#/paths/~1api~1auth~1login~1verify-mfa'
   /api/auth/logout:
     $ref: './openapi/paths/auth.yml#/paths/~1api~1auth~1logout'
+  /api/auth/mfa/setup:
+    $ref: './openapi/paths/mfa.yml#/paths/~1api~1auth~1mfa~1setup'
+  /api/auth/mfa/verify-setup:
+    $ref: './openapi/paths/mfa.yml#/paths/~1api~1auth~1mfa~1verify-setup'
+  /api/auth/mfa/status:
+    $ref: './openapi/paths/mfa.yml#/paths/~1api~1auth~1mfa~1status'
+  /api/auth/mfa/disable:
+    $ref: './openapi/paths/mfa.yml#/paths/~1api~1auth~1mfa~1disable'
+  /api/auth/mfa/regenerate-backup-codes:
+    $ref: './openapi/paths/mfa.yml#/paths/~1api~1auth~1mfa~1regenerate-backup-codes'
   /api/auth/forgot-password:
     $ref: './openapi/paths/auth.yml#/paths/~1api~1auth~1forgot-password'
   /api/auth/verify-email:
@@ -217,6 +230,18 @@ components:
       $ref: './openapi/schemas/ResendVerificationRequest.yml#/ResendVerificationRequest'
     OAuthAccount:
       $ref: './openapi/schemas/OAuthAccount.yml#/OAuthAccount'
+    MfaSetupResponse:
+      $ref: './openapi/schemas/MfaSetupResponse.yml#/MfaSetupResponse'
+    MfaVerifySetupRequest:
+      $ref: './openapi/schemas/MfaVerifySetupRequest.yml#/MfaVerifySetupRequest'
+    MfaVerifySetupResponse:
+      $ref: './openapi/schemas/MfaVerifySetupResponse.yml#/MfaVerifySetupResponse'
+    MfaStatusResponse:
+      $ref: './openapi/schemas/MfaStatusResponse.yml#/MfaStatusResponse'
+    MfaDisableRequest:
+      $ref: './openapi/schemas/MfaDisableRequest.yml#/MfaDisableRequest'
+    MfaVerifyLoginRequest:
+      $ref: './openapi/schemas/MfaVerifyLoginRequest.yml#/MfaVerifyLoginRequest'
 
     # User Schemas
     UpdateUserProfileRequest:

@@ -59,7 +59,12 @@ function hexToBuffer(hex: string): Uint8Array {
 }
 
 /**
- * Get the HMAC signing key from GOOGLE_CLIENT_SECRET
+ * Get the HMAC signing key.
+ *
+ * Priority:
+ * 1) COOKIE_SIGNING_SECRET (dedicated secret)
+ * 2) GOOGLE_CLIENT_SECRET (legacy fallback)
+ * 3) EMAIL_ENCRYPTION_KEY (runtime fallback for deployments without Google SSO)
  */
 let signingKeyPromise: Promise<CryptoKey> | null = null;
 
@@ -68,9 +73,14 @@ async function getSigningKey(): Promise<CryptoKey> {
     return signingKeyPromise;
   }
 
-  const secret = getEnv('GOOGLE_CLIENT_SECRET');
+  const secret =
+    getEnv('COOKIE_SIGNING_SECRET') ||
+    getEnv('GOOGLE_CLIENT_SECRET') ||
+    getEnv('EMAIL_ENCRYPTION_KEY');
   if (!secret) {
-    throw new Error('GOOGLE_CLIENT_SECRET not available for cookie signing');
+    throw new Error(
+      'COOKIE_SIGNING_SECRET, GOOGLE_CLIENT_SECRET, or EMAIL_ENCRYPTION_KEY is required for cookie signing'
+    );
   }
 
   const encoder = new TextEncoder();

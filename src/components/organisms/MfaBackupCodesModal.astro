@@ -1,0 +1,184 @@
+---
+/**
+ * MfaBackupCodesModal
+ *
+ * Displays generated MFA backup codes and requires acknowledgement
+ * before closing.
+ */
+
+import Modal from '@/components/molecules/Modal.astro';
+import { Copy, Download, ShieldAlert } from '@lucide/astro';
+
+export interface Props {
+  id?: string;
+}
+
+const { id = 'mfa-backup-codes-modal' } = Astro.props;
+---
+
+<div data-mfa-backup-modal-container data-id={id}>
+  <Modal
+    id={id}
+    title=""
+    size="md"
+    closable={false}
+    backdropClose={false}
+    className="[&_.modal-box]:rounded-3xl"
+  >
+    <div class="space-y-6">
+      <div class="flex items-center gap-4">
+        <div
+          class="w-12 h-12 rounded-2xl flex items-center justify-center bg-warning/10 text-warning"
+        >
+          <ShieldAlert size={24} class="stroke-current" aria-hidden="true" />
+        </div>
+        <div>
+          <h2 class="text-xl font-bold tracking-tight text-base-content leading-none">
+            Save your backup codes
+          </h2>
+          <p class="text-base-content/60 text-sm mt-2 font-medium">
+            Store these codes securely. Each code can only be used once.
+          </p>
+        </div>
+      </div>
+
+      <div class="rounded-2xl border border-base-300 bg-base-200 p-4">
+        <div class="grid grid-cols-2 gap-2" data-backup-codes-list></div>
+      </div>
+
+      <div class="flex flex-col sm:flex-row gap-2">
+        <button type="button" class="btn btn-outline gap-2" data-copy-backup-codes>
+          <Copy size={16} class="stroke-current" aria-hidden="true" />
+          Copy to Clipboard
+        </button>
+        <button type="button" class="btn btn-outline gap-2" data-download-backup-codes>
+          <Download size={16} class="stroke-current" aria-hidden="true" />
+          Download as Text
+        </button>
+      </div>
+
+      <label class="label cursor-pointer justify-start gap-3">
+        <input type="checkbox" class="checkbox checkbox-accent" data-backup-codes-saved />
+        <span class="label-text">I have saved my backup codes</span>
+      </label>
+
+      <div class="flex items-center gap-4 pt-2">
+        <button
+          type="button"
+          class="flex-[2] btn btn-accent rounded-2xl w-full"
+          disabled
+          data-close-backup-codes
+        >
+          Done
+        </button>
+      </div>
+    </div>
+  </Modal>
+</div>
+
+<script>
+  import { addToast } from '@/lib/stores/toastStore';
+
+  const initializedContainers = new WeakSet<Element>();
+
+  function initMfaBackupCodesModal() {
+    document
+      .querySelectorAll<HTMLElement>('[data-mfa-backup-modal-container]')
+      .forEach((container) => {
+        if (initializedContainers.has(container)) return;
+        initializedContainers.add(container);
+
+        const id = container.dataset.id;
+        if (!id) return;
+
+        const modal = document.getElementById(id) as HTMLDialogElement | null;
+        const codesList = container.querySelector<HTMLElement>('[data-backup-codes-list]');
+        const copyBtn = container.querySelector<HTMLButtonElement>('[data-copy-backup-codes]');
+        const downloadBtn = container.querySelector<HTMLButtonElement>(
+          '[data-download-backup-codes]'
+        );
+        const savedCheckbox = container.querySelector<HTMLInputElement>(
+          '[data-backup-codes-saved]'
+        );
+        const closeBtn = container.querySelector<HTMLButtonElement>('[data-close-backup-codes]');
+
+        if (!modal || !codesList || !savedCheckbox || !closeBtn) return;
+
+        let currentCodes: string[] = [];
+
+        const renderCodes = (codes: string[]) => {
+          codesList.innerHTML = '';
+
+          for (const code of codes) {
+            const codeItem = document.createElement('div');
+            codeItem.className =
+              'rounded-xl border border-base-300 bg-base-100 px-3 py-2 text-center font-mono text-sm font-semibold';
+            codeItem.textContent = code;
+            codesList.appendChild(codeItem);
+          }
+        };
+
+        const openWithCodes = (codes: string[]) => {
+          currentCodes = Array.isArray(codes) ? codes : [];
+          renderCodes(currentCodes);
+          savedCheckbox.checked = false;
+          closeBtn.disabled = true;
+          modal.showModal();
+        };
+
+        document.addEventListener('mfa-setup-complete', (event: Event) => {
+          const customEvent = event as CustomEvent<{ backupCodes?: string[] }>;
+          openWithCodes(customEvent.detail?.backupCodes || []);
+        });
+
+        document.addEventListener('mfa:show-backup-codes', (event: Event) => {
+          const customEvent = event as CustomEvent<{ backupCodes?: string[] }>;
+          openWithCodes(customEvent.detail?.backupCodes || []);
+        });
+
+        savedCheckbox.addEventListener('change', () => {
+          closeBtn.disabled = !savedCheckbox.checked;
+        });
+
+        copyBtn?.addEventListener('click', async () => {
+          if (currentCodes.length === 0) return;
+
+          try {
+            await navigator.clipboard.writeText(currentCodes.join('\n'));
+            addToast('Backup codes copied to clipboard.', 'success');
+          } catch {
+            addToast('Unable to copy backup codes.', 'error');
+          }
+        });
+
+        downloadBtn?.addEventListener('click', () => {
+          if (currentCodes.length === 0) return;
+
+          const text = `allowealth MFA Backup Codes\n\n${currentCodes.join('\n')}\n`;
+          const blob = new Blob([text], { type: 'text/plain' });
+          const url = URL.createObjectURL(blob);
+
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = 'allowealth-mfa-backup-codes.txt';
+          link.click();
+
+          URL.revokeObjectURL(url);
+        });
+
+        closeBtn.addEventListener('click', () => {
+          if (!savedCheckbox.checked) return;
+          modal.close();
+          document.dispatchEvent(new CustomEvent('mfa:backup-codes-modal-closed'));
+        });
+      });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initMfaBackupCodesModal);
+  } else {
+    initMfaBackupCodesModal();
+  }
+
+  document.addEventListener('astro:page-load', initMfaBackupCodesModal);
+</script>

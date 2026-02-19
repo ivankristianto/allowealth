@@ -12,9 +12,12 @@ import SecurityPasskeysCard from '@/components/molecules/SecurityPasskeysCard.as
 import SecurityApiKeysCard from '@/components/molecules/SecurityApiKeysCard.astro';
 import GenerateApiKeyModal from '@/components/organisms/GenerateApiKeyModal.astro';
 import MCPSetupInstructionsModal from '@/components/organisms/MCPSetupInstructionsModal.astro';
+import MfaSetupModal from '@/components/organisms/MfaSetupModal.astro';
+import MfaConfirmModal from '@/components/organisms/MfaConfirmModal.astro';
+import MfaBackupCodesModal from '@/components/organisms/MfaBackupCodesModal.astro';
 import Button from '@/components/atoms/Button.astro';
 import { History } from '@lucide/astro';
-import { apiKeyService } from '@/services';
+import { apiKeyService, mfaService } from '@/services';
 import { getLinkedOAuthAccounts } from '@/services/auth.service';
 
 const currentPath = '/security';
@@ -53,15 +56,11 @@ if (user?.id) {
   ];
 }
 
-// @TODO: Wire with backend for MFA preferences.
-const mfaMethods = [
-  {
-    id: 'authenticator',
-    label: 'Authenticator App',
-    description: 'Use apps like Google Authenticator or Authy',
-    enabled: false,
-  },
-];
+// Fetch MFA status
+let mfaStatus = { enabled: false, hasBackupCodes: false, backupCodesRemaining: 0 };
+if (user?.id) {
+  mfaStatus = await mfaService.getStatus(user.id);
+}
 
 // @TODO: Wire with backend for passkeys.
 const passkeys = [
@@ -109,7 +108,10 @@ const toneDotClasses: Record<string, string> = {
   <div class="max-w-4xl mx-auto sm:px-2 lg:px-6 space-y-6 sm:space-y-8">
     <div class="space-y-6">
       <SecurityConnectedAccountsCard accounts={connectedAccounts} />
-      <SecurityMfaCard methods={mfaMethods} />
+      <SecurityMfaCard
+        enabled={mfaStatus.enabled}
+        backupCodesRemaining={mfaStatus.backupCodesRemaining}
+      />
       <SecurityPasskeysCard passkeys={passkeys} />
       <SecurityApiKeysCard keys={apiKeys} />
 
@@ -155,4 +157,8 @@ const toneDotClasses: Record<string, string> = {
 
   <GenerateApiKeyModal />
   <MCPSetupInstructionsModal />
+  <MfaSetupModal />
+  <MfaConfirmModal />
+  <MfaBackupCodesModal />
+  <script src="./security-mfa-client.ts"></script>
 </ProtectedLayout>

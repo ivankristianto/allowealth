@@ -366,9 +366,14 @@ const oauthMessage = oauthError ? oauthErrorMessages[oauthError] || 'An error oc
         const result = await response.json();
 
         if (response.ok && result.success) {
-          // Login successful - redirect to dashboard or return URL
-          const returnUrl = redirectTo || '/dashboard';
-          window.location.href = returnUrl;
+          if (result.data?.requiresMfa) {
+            const mfaUrl = `/login/verify-mfa${redirectTo ? `?redirect=${encodeURIComponent(redirectTo)}` : ''}`;
+            window.location.href = mfaUrl;
+          } else {
+            // Login successful - redirect to dashboard or return URL
+            const returnUrl = redirectTo || '/dashboard';
+            window.location.href = returnUrl;
+          }
         } else if (result.code === 'EMAIL_NOT_VERIFIED') {
           // Show verification error with resend option
           showVerificationError(result.email || emailInput.value);

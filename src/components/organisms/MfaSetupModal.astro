@@ -1,0 +1,265 @@
+---
+/**
+ * MfaSetupModal
+ *
+ * Two-step wizard for enabling MFA:
+ * 1) Fetch and display QR code / manual key
+ * 2) Verify TOTP code to finalize setup
+ */
+
+import Modal from '@/components/molecules/Modal.astro';
+import { ShieldCheck } from '@lucide/astro';
+
+export interface Props {
+  id?: string;
+}
+
+const { id = 'mfa-setup-modal' } = Astro.props;
+---
+
+<div data-mfa-setup-modal-container data-id={id}>
+  <Modal id={id} title="" size="md" closable={false} className="[&_.modal-box]:rounded-3xl">
+    <div class="space-y-6">
+      <div class="flex items-center gap-4">
+        <div
+          class="w-12 h-12 rounded-2xl flex items-center justify-center bg-accent/10 text-accent"
+        >
+          <ShieldCheck size={24} class="stroke-current" aria-hidden="true" />
+        </div>
+        <div>
+          <h2 class="text-xl font-bold tracking-tight text-base-content leading-none">
+            Enable Multi-Factor Authentication
+          </h2>
+          <p class="text-base-content/60 text-sm mt-2 font-medium">
+            Scan your authenticator app, then verify with a 6-digit code.
+          </p>
+        </div>
+      </div>
+
+      <div data-step="loading" class="space-y-3">
+        <div class="alert alert-info">
+          <span class="loading loading-spinner loading-sm"></span>
+          <span>Preparing your MFA setup...</span>
+        </div>
+      </div>
+
+      <div data-step="setup" class="hidden space-y-4">
+        <div class="rounded-2xl border border-base-300 bg-base-200 p-4">
+          <img
+            alt="MFA QR code"
+            class="mx-auto h-56 w-56 max-w-full rounded-lg border border-base-300 bg-white p-3"
+            data-mfa-qr
+          />
+        </div>
+        <div class="rounded-2xl border border-base-300 bg-base-200 p-4 space-y-2">
+          <p class="text-xs font-semibold uppercase tracking-wider text-base-content/60">
+            Manual setup code
+          </p>
+          <code class="font-mono text-sm break-all" data-manual-code></code>
+        </div>
+        <button type="button" class="btn btn-outline w-full rounded-2xl" data-mfa-continue>
+          I have scanned this code
+        </button>
+      </div>
+
+      <form data-step="verify" class="hidden space-y-4">
+        <div class="form-control">
+          <label for={`${id}-code`} class="label">
+            <span class="label-text font-semibold">Verification code</span>
+          </label>
+          <input
+            id={`${id}-code`}
+            name="code"
+            type="text"
+            inputmode="numeric"
+            autocomplete="one-time-code"
+            placeholder="000000"
+            maxlength="6"
+            class="input input-bordered w-full text-center text-2xl tracking-[0.5em] font-bold"
+          />
+        </div>
+
+        <div class="hidden alert alert-error text-sm" data-mfa-error role="alert"></div>
+
+        <div class="flex items-center gap-4 pt-2">
+          <button
+            type="button"
+            class="btn btn-ghost flex-1 rounded-2xl font-semibold"
+            data-mfa-cancel
+          >
+            Cancel
+          </button>
+          <button type="submit" class="flex-[2] btn btn-accent rounded-2xl" data-mfa-verify-btn>
+            Verify & Enable
+          </button>
+        </div>
+      </form>
+    </div>
+  </Modal>
+</div>
+
+<script>
+  import { csrfFetch } from '@/lib/csrf-client';
+  import { addToast } from '@/lib/stores/toastStore';
+
+  const initializedContainers = new WeakSet<Element>();
+
+  function initMfaSetupModal() {
+    document
+      .querySelectorAll<HTMLElement>('[data-mfa-setup-modal-container]')
+      .forEach((container) => {
+        if (initializedContainers.has(container)) return;
+        initializedContainers.add(container);
+
+        const id = container.dataset.id;
+        if (!id) return;
+
+        const modal = document.getElementById(id) as HTMLDialogElement | null;
+        const stepLoading = container.querySelector<HTMLElement>('[data-step="loading"]');
+        const stepSetup = container.querySelector<HTMLElement>('[data-step="setup"]');
+        const stepVerify = container.querySelector<HTMLFormElement>('[data-step="verify"]');
+        const qrImage = container.querySelector<HTMLImageElement>('[data-mfa-qr]');
+        const manualCode = container.querySelector<HTMLElement>('[data-manual-code]');
+        const codeInput = container.querySelector<HTMLInputElement>('input[name="code"]');
+        const errorEl = container.querySelector<HTMLElement>('[data-mfa-error]');
+        const cancelBtn = container.querySelector<HTMLButtonElement>('[data-mfa-cancel]');
+        const continueBtn = container.querySelector<HTMLButtonElement>('[data-mfa-continue]');
+        const verifyBtn = container.querySelector<HTMLButtonElement>('[data-mfa-verify-btn]');
+
+        if (
+          !modal ||
+          !stepLoading ||
+          !stepSetup ||
+          !stepVerify ||
+          !qrImage ||
+          !manualCode ||
+          !codeInput
+        ) {
+          return;
+        }
+
+        const setStep = (step: 'loading' | 'setup' | 'verify') => {
+          stepLoading.classList.toggle('hidden', step !== 'loading');
+          stepSetup.classList.toggle('hidden', step !== 'setup');
+          stepVerify.classList.toggle('hidden', step !== 'verify');
+        };
+
+        const clearError = () => {
+          if (!errorEl) return;
+          errorEl.textContent = '';
+          errorEl.classList.add('hidden');
+        };
+
+        const showError = (message: string) => {
+          if (!errorEl) return;
+          errorEl.textContent = message;
+          errorEl.classList.remove('hidden');
+        };
+
+        const resetModal = () => {
+          clearError();
+          codeInput.value = '';
+          qrImage.removeAttribute('src');
+          manualCode.textContent = '';
+          verifyBtn?.removeAttribute('disabled');
+        };
+
+        const openSetup = async () => {
+          resetModal();
+          setStep('loading');
+          modal.showModal();
+
+          try {
+            const response = await csrfFetch('/api/auth/mfa/setup', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              credentials: 'include',
+            });
+
+            const result = await response.json();
+            if (!response.ok || !result.success) {
+              throw new Error(result.error?.message || 'Failed to initialize MFA setup');
+            }
+
+            qrImage.src = result.data.qrCodeDataUrl;
+            manualCode.textContent = result.data.manualEntryCode;
+            setStep('setup');
+          } catch (error) {
+            modal.close();
+            const message =
+              error instanceof Error ? error.message : 'Failed to initialize MFA setup';
+            addToast(message, 'error');
+          }
+        };
+
+        document.addEventListener('mfa:open-setup', () => {
+          void openSetup();
+        });
+
+        cancelBtn?.addEventListener('click', () => {
+          modal.close();
+        });
+
+        continueBtn?.addEventListener('click', () => {
+          clearError();
+          setStep('verify');
+          codeInput.focus();
+        });
+
+        stepVerify.addEventListener('submit', async (event) => {
+          event.preventDefault();
+          clearError();
+
+          const code = codeInput.value.trim();
+          if (!/^\d{6}$/.test(code)) {
+            showError('Please enter a valid 6-digit code.');
+            return;
+          }
+
+          if (verifyBtn) verifyBtn.disabled = true;
+
+          try {
+            const response = await csrfFetch('/api/auth/mfa/verify-setup', {
+              method: 'POST',
+              credentials: 'include',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ code }),
+            });
+
+            const result = await response.json();
+            if (!response.ok || !result.success) {
+              throw new Error(result.error?.message || 'Failed to verify MFA code');
+            }
+
+            modal.close();
+            addToast('MFA enabled successfully.', 'success');
+
+            document.dispatchEvent(
+              new CustomEvent('mfa-setup-complete', {
+                detail: {
+                  backupCodes: result.data.backupCodes,
+                },
+              })
+            );
+          } catch (error) {
+            const message = error instanceof Error ? error.message : 'Failed to verify setup code';
+            showError(message);
+          } finally {
+            if (verifyBtn) verifyBtn.disabled = false;
+          }
+        });
+      });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initMfaSetupModal);
+  } else {
+    initMfaSetupModal();
+  }
+
+  document.addEventListener('astro:page-load', initMfaSetupModal);
+</script>

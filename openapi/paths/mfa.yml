@@ -1,0 +1,203 @@
+# MFA endpoint paths
+paths:
+  /api/auth/mfa/setup:
+    post:
+      operationId: initializeMfaSetup
+      tags: [Authentication]
+      summary: Initialize MFA setup
+      description: Generate a TOTP secret and return QR code + manual entry key.
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          description: MFA setup initialized successfully
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/MfaSetupResponse.yml#/MfaSetupResponse'
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '400':
+          description: Setup failed
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+
+  /api/auth/mfa/verify-setup:
+    post:
+      operationId: verifyMfaSetup
+      tags: [Authentication]
+      summary: Verify MFA setup
+      description: Verify initial authenticator code and enable MFA.
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/MfaVerifySetupRequest.yml#/MfaVerifySetupRequest'
+      responses:
+        '200':
+          description: MFA setup verified and enabled
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/MfaVerifySetupResponse.yml#/MfaVerifySetupResponse'
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '400':
+          description: Invalid verification code or setup state
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+
+  /api/auth/mfa/status:
+    get:
+      operationId: getMfaStatus
+      tags: [Authentication]
+      summary: Get MFA status
+      description: Returns MFA enabled state and backup code availability for current user.
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          description: MFA status returned
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/MfaStatusResponse.yml#/MfaStatusResponse'
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+
+  /api/auth/mfa/disable:
+    post:
+      operationId: disableMfa
+      tags: [Authentication]
+      summary: Disable MFA
+      description: Disable MFA after verifying current TOTP or backup code.
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/MfaDisableRequest.yml#/MfaDisableRequest'
+      responses:
+        '200':
+          description: MFA disabled
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [success, data]
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    required: [message]
+                    properties:
+                      message:
+                        type: string
+                        example: MFA disabled successfully
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '400':
+          description: Invalid verification code
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+
+  /api/auth/mfa/regenerate-backup-codes:
+    post:
+      operationId: regenerateMfaBackupCodes
+      tags: [Authentication]
+      summary: Regenerate backup codes
+      description: Generates a new set of backup codes after TOTP verification.
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/MfaDisableRequest.yml#/MfaDisableRequest'
+      responses:
+        '200':
+          description: New backup codes generated
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/MfaVerifySetupResponse.yml#/MfaVerifySetupResponse'
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '400':
+          description: Verification failed
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+
+  /api/auth/login/verify-mfa:
+    post:
+      operationId: verifyLoginMfa
+      tags: [Authentication]
+      summary: Verify MFA during login
+      description: Completes login by verifying a pending MFA challenge.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/MfaVerifyLoginRequest.yml#/MfaVerifyLoginRequest'
+      responses:
+        '200':
+          description: MFA verified and session established
+          headers:
+            Set-Cookie:
+              description: Session cookie
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [success, data]
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    required: [verified]
+                    properties:
+                      verified:
+                        type: boolean
+                        example: true
+        '400':
+          description: Missing pending MFA state or invalid request body
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+        '401':
+          description: Invalid MFA code
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+        '429':
+          description: Too many MFA verification attempts
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'

@@ -1,0 +1,21 @@
+MfaStatusResponse:
+  type: object
+  required: [success, data]
+  properties:
+    success:
+      type: boolean
+      example: true
+    data:
+      type: object
+      required: [enabled, hasBackupCodes, backupCodesRemaining]
+      properties:
+        enabled:
+          type: boolean
+          example: true
+        hasBackupCodes:
+          type: boolean
+          example: true
+        backupCodesRemaining:
+          type: integer
+          minimum: 0
+          example: 10

@@ -1,0 +1,240 @@
+---
+/**
+ * MfaVerifyForm Component
+ *
+ * Form for entering TOTP code or backup code during login.
+ */
+
+import Button from '../atoms/Button.astro';
+import FormField from './FormField.astro';
+import { ShieldCheck, KeyRound, CircleX } from '@lucide/astro';
+
+export interface Props {
+  redirectTo?: string;
+}
+
+const { redirectTo = '' } = Astro.props;
+---
+
+<div class="card bg-base-100 shadow-2xl border border-base-300" data-mfa-verify-card>
+  <div class="card-body p-8">
+    <div class="text-center mb-6">
+      <div class="flex justify-center mb-4">
+        <div class="rounded-full bg-accent/10 p-4">
+          <ShieldCheck size={32} class="stroke-accent" aria-hidden="true" />
+        </div>
+      </div>
+      <h2 class="text-2xl font-bold">Two-Factor Authentication</h2>
+      <p class="text-sm text-base-content/60 mt-2">
+        Enter the 6-digit code from your authenticator app
+      </p>
+    </div>
+
+    <div id="mfa-messages" aria-live="polite" aria-atomic="true"></div>
+
+    <form
+      id="mfa-form"
+      data-redirect={redirectTo}
+      data-api-verify="/api/auth/login/verify-mfa"
+      class="space-y-5"
+      novalidate
+    >
+      <div id="totp-section">
+        <FormField label="Verification Code" htmlFor="mfa-code" required>
+          <input
+            type="text"
+            id="mfa-code"
+            name="code"
+            placeholder="000000"
+            class="input input-bordered w-full rounded-lg py-4 px-6 h-14 text-center text-2xl font-bold tracking-[0.5em] border border-base-300"
+            inputmode="numeric"
+            autocomplete="one-time-code"
+            maxlength="6"
+            data-testid="mfa-code-input"
+          />
+        </FormField>
+      </div>
+
+      <div id="backup-section" class="hidden">
+        <FormField label="Backup Code" htmlFor="backup-code" required>
+          <input
+            type="text"
+            id="backup-code"
+            name="backup-code"
+            placeholder="XXXX-XXXX"
+            class="input input-bordered w-full rounded-lg py-4 px-6 h-14 text-center text-lg font-bold tracking-widest border border-base-300"
+            autocomplete="off"
+            maxlength="9"
+            data-testid="backup-code-input"
+          />
+        </FormField>
+      </div>
+
+      <div class="pt-2">
+        <Button
+          id="mfa-submit-button"
+          type="submit"
+          variant="accent"
+          className="w-full h-14 rounded-2xl"
+          data-testid="mfa-verify-btn"
+        >
+          <span data-button-text>Verify</span>
+          <span data-loading-spinner class="hidden">
+            <span class="loading loading-spinner"></span>
+            Verifying...
+          </span>
+        </Button>
+      </div>
+    </form>
+
+    <div class="divider text-xs text-base-content/40 uppercase">or</div>
+
+    <button
+      id="toggle-backup-code"
+      type="button"
+      class="btn btn-ghost btn-sm w-full gap-2"
+      data-testid="toggle-backup-btn"
+    >
+      <KeyRound size={16} class="stroke-current" aria-hidden="true" />
+      <span data-toggle-text>Use a backup code instead</span>
+    </button>
+
+    <div class="text-center text-sm pt-4 border-t border-base-300">
+      <a href="/login" class="link link-primary font-semibold" data-testid="back-to-login"
+        >Back to login</a
+      >
+    </div>
+  </div>
+</div>
+
+<div class="hidden" aria-hidden="true">
+  <div id="icon-error-template-mfa">
+    <CircleX size={24} class="stroke-current shrink-0" />
+  </div>
+</div>
+
+<script>
+  const form = document.getElementById('mfa-form') as HTMLFormElement | null;
+  const messagesContainer = document.getElementById('mfa-messages');
+  const totpSection = document.getElementById('totp-section');
+  const backupSection = document.getElementById('backup-section');
+  const toggleButton = document.getElementById('toggle-backup-code');
+  const toggleText = toggleButton?.querySelector('[data-toggle-text]');
+  const mfaCodeInput = document.getElementById('mfa-code') as HTMLInputElement | null;
+  const backupCodeInput = document.getElementById('backup-code') as HTMLInputElement | null;
+  const submitButton = document.getElementById('mfa-submit-button') as HTMLButtonElement | null;
+  const buttonText = submitButton?.querySelector('[data-button-text]');
+  const loadingSpinner = submitButton?.querySelector('[data-loading-spinner]');
+
+  if (!form || !submitButton) {
+    console.error('MFA form elements not found');
+  } else {
+    const redirectTo = form.dataset.redirect || '';
+    const apiVerifyUrl = form.dataset.apiVerify || '/api/auth/login/verify-mfa';
+    let isBackupMode = false;
+
+    const getErrorIcon = () => {
+      const template = document.getElementById('icon-error-template-mfa');
+      if (!template?.firstElementChild) return null;
+      const clone = template.firstElementChild.cloneNode(true) as Element;
+      clone.removeAttribute('id');
+      return clone;
+    };
+
+    const showError = (message: string) => {
+      if (!messagesContainer) return;
+
+      messagesContainer.innerHTML = '';
+      const alertDiv = document.createElement('div');
+      alertDiv.setAttribute('role', 'alert');
+      alertDiv.className = 'alert alert-error';
+
+      const icon = getErrorIcon();
+      if (icon) {
+        alertDiv.appendChild(icon);
+      }
+
+      const textSpan = document.createElement('span');
+      textSpan.textContent = message;
+      alertDiv.appendChild(textSpan);
+      messagesContainer.appendChild(alertDiv);
+    };
+
+    toggleButton?.addEventListener('click', () => {
+      isBackupMode = !isBackupMode;
+
+      if (isBackupMode) {
+        totpSection?.classList.add('hidden');
+        backupSection?.classList.remove('hidden');
+        if (toggleText) toggleText.textContent = 'Use authenticator code instead';
+        backupCodeInput?.focus();
+      } else {
+        totpSection?.classList.remove('hidden');
+        backupSection?.classList.add('hidden');
+        if (toggleText) toggleText.textContent = 'Use a backup code instead';
+        mfaCodeInput?.focus();
+      }
+
+      if (messagesContainer) {
+        messagesContainer.innerHTML = '';
+      }
+    });
+
+    mfaCodeInput?.addEventListener('input', (event) => {
+      const target = event.target as HTMLInputElement;
+      target.value = target.value.replace(/\D/g, '');
+      if (target.value.length === 6) {
+        form.dispatchEvent(new Event('submit', { cancelable: true }));
+      }
+    });
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+
+      if (messagesContainer) {
+        messagesContainer.innerHTML = '';
+      }
+
+      const code = isBackupMode ? backupCodeInput?.value.trim() : mfaCodeInput?.value.trim();
+      if (!code) {
+        showError(isBackupMode ? 'Please enter a backup code' : 'Please enter a verification code');
+        return;
+      }
+
+      if (!isBackupMode && !/^\d{6}$/.test(code)) {
+        showError('Please enter a valid 6-digit code');
+        return;
+      }
+
+      if (buttonText) buttonText.classList.add('hidden');
+      if (loadingSpinner) loadingSpinner.classList.remove('hidden');
+      submitButton.disabled = true;
+
+      try {
+        const response = await fetch(apiVerifyUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({ code, isBackupCode: isBackupMode }),
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+          window.location.href = redirectTo || '/dashboard';
+          return;
+        }
+
+        showError(result.error?.message || 'Invalid verification code');
+      } catch {
+        showError('An error occurred. Please try again.');
+      } finally {
+        if (buttonText) buttonText.classList.remove('hidden');
+        if (loadingSpinner) loadingSpinner.classList.add('hidden');
+        submitButton.disabled = false;
+      }
+    });
+  }
+</script>

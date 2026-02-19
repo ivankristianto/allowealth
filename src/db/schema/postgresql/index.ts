@@ -20,6 +20,8 @@ export * from './audit-logs';
 export * from './budgets';
 export * from './api-keys';
 export * from './oauth-accounts';
+export * from './user-mfa';
+export * from './user-mfa-backup-codes';
 
 // Export all relations (centralized to avoid circular imports)
 export * from './relations';

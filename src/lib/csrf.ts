@@ -134,6 +134,7 @@ export function requiresCsrfProtection(method: string): boolean {
  */
 export const CSRF_EXEMPT_ENDPOINTS = [
   '/api/auth/login',
+  '/api/auth/login/verify-mfa',
   '/api/auth/signup',
   '/api/auth/forgot-password',
   '/api/auth/logout',

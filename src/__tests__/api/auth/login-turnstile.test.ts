@@ -3,7 +3,7 @@ import { describe, test, expect } from 'bun:test';
 describe('POST /api/auth/login - Turnstile verification', () => {
   test('includes turnstile verification', () => {
     const fs = require('fs');
-    const content = fs.readFileSync('src/pages/api/auth/login.ts', 'utf-8');
+    const content = fs.readFileSync('src/pages/api/auth/login/index.ts', 'utf-8');
 
     expect(content).toContain('verifyTurnstileToken');
     expect(content).toContain('turnstileToken');
@@ -12,7 +12,7 @@ describe('POST /api/auth/login - Turnstile verification', () => {
 
   test('turnstile verification happens before rate limiting', () => {
     const fs = require('fs');
-    const content = fs.readFileSync('src/pages/api/auth/login.ts', 'utf-8');
+    const content = fs.readFileSync('src/pages/api/auth/login/index.ts', 'utf-8');
 
     const turnstileIndex = content.indexOf('verifyTurnstileToken');
     const rateLimitIndex = content.indexOf('checkRateLimit');
