@@ -20,6 +20,7 @@ import type { APIRoute } from 'astro';
 import { login } from '@/services/auth.service';
 import { auth } from '@/lib/auth/lucia';
 import { AUTH_ERRORS, type AuthError } from '@/services/auth.service';
+import { mfaService } from '@/services';
 import {
   createErrorResponseResponse,
   createSuccessResponse,
@@ -36,6 +37,7 @@ import {
 } from '@/lib/rate-limit';
 
 export const prerender = false;
+const MFA_PENDING_COOKIE = 'mfa_pending';
 
 export const POST: APIRoute = async (context) => {
   const { request, clientAddress } = context;
@@ -75,6 +77,33 @@ export const POST: APIRoute = async (context) => {
         'This account has been deleted',
         401
       );
+    }
+
+    // Require second-step verification for MFA-enabled users
+    const mfaEnabled = await mfaService.isMfaEnabled(user.id);
+    if (mfaEnabled) {
+      // login() already created a full session; invalidate it until MFA is verified
+      await auth.invalidateSession(session.id);
+
+      const pendingPayload = encodeURIComponent(JSON.stringify({ userId: user.id }));
+      const pendingCookie = `${MFA_PENDING_COOKIE}=${pendingPayload}; Path=/; HttpOnly; SameSite=Strict; Max-Age=300${import.meta.env.PROD ? '; Secure' : ''}`;
+
+      const response = new Response(
+        JSON.stringify(
+          createSuccessResponse({
+            requiresMfa: true,
+          })
+        ),
+        {
+          status: 200,
+          headers: {
+            ...STANDARD_RESPONSE_HEADERS,
+            'Set-Cookie': pendingCookie,
+          },
+        }
+      );
+
+      return applyRateLimitHeaders(response, rateLimitResult);
     }
 
     // Create session cookie
