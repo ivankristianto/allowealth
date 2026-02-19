@@ -56,7 +56,7 @@ properties:
             example: 2.86
           currentTotal:
             type: number
-            description: Current total asset value in IDR
+            description: Current total account value in IDR
             example: 1067579889
       input:
         type: object

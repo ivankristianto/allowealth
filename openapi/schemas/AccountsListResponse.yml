@@ -1,0 +1,11 @@
+# Accounts List Response Schema
+AccountsListResponse:
+  allOf:
+    - $ref: './ApiErrorResponse.yml#/ApiResponse'
+    - type: object
+      required: [success, data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: './Account.yml#/Account'

@@ -84,7 +84,7 @@ const meta: Meta = {
 - Category badge: uppercase tracking-widest
 - Timestamp: formatted relative date
 - Amount: text-error (expense) or text-success (income)
-- Payment method: CreditCard icon + asset name
+- Payment method: CreditCard icon + account name
 
 ### States
 | State | Display |
@@ -317,7 +317,7 @@ const createRecentTransactionsList = (args: {
       paymentRow.appendChild(
         CreditCard.render({ size: 12, class: 'stroke-current' }, { 'aria-hidden': 'true' })
       );
-      paymentRow.appendChild(document.createTextNode(transaction.asset.name));
+      paymentRow.appendChild(document.createTextNode(transaction.account.name));
       rightBlock.appendChild(paymentRow);
       topRow.appendChild(rightBlock);
 

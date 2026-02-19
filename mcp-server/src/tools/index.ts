@@ -1,6 +1,6 @@
 import type { Tool } from '@modelcontextprotocol/sdk/types.js';
 import type { ToolContext } from './types.js';
-import { tools as assetTools, handleListCategories, handleListAssets } from './assets.js';
+import { tools as accountTools, handleListCategories, handleListAccounts } from './accounts.js';
 import {
   listTransactionsTool,
   addExpenseTool,
@@ -11,20 +11,20 @@ import {
 import { tool as budgetTool, handleGetBudgetSummary } from './budget.js';
 import {
   dashboardTool,
-  assetSummaryTool,
+  accountSummaryTool,
   handleGetDashboard,
-  handleGetAssetSummary,
+  handleGetAccountSummary,
 } from './dashboard.js';
 
 export function registerTools(): Tool[] {
   return [
-    ...assetTools,
+    ...accountTools,
     listTransactionsTool,
     addExpenseTool,
     addIncomeTool,
     budgetTool,
     dashboardTool,
-    assetSummaryTool,
+    accountSummaryTool,
   ];
 }
 
@@ -37,8 +37,8 @@ export async function handleToolCall(
     switch (name) {
       case 'list_categories':
         return await handleListCategories(args, ctx);
-      case 'list_assets':
-        return await handleListAssets(args, ctx);
+      case 'list_accounts':
+        return await handleListAccounts(args, ctx);
       case 'list_transactions':
         return await handleListTransactions(args, ctx);
       case 'add_expense':
@@ -49,8 +49,8 @@ export async function handleToolCall(
         return await handleGetBudgetSummary(args, ctx);
       case 'get_dashboard':
         return await handleGetDashboard(args, ctx);
-      case 'get_asset_summary':
-        return await handleGetAssetSummary(args, ctx);
+      case 'get_account_summary':
+        return await handleGetAccountSummary(args, ctx);
       default:
         return {
           isError: true,

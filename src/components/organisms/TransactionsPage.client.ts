@@ -127,7 +127,7 @@ function isTransactionFormData(value: unknown): value is TransactionFormData {
     typeof parsedValue.amount === 'string' &&
     typeof parsedValue.currency === 'string' &&
     typeof parsedValue.category_id === 'string' &&
-    typeof parsedValue.asset_id === 'string' &&
+    typeof parsedValue.account_id === 'string' &&
     typeof parsedValue.transaction_date === 'string'
   );
 }
@@ -715,7 +715,7 @@ function setupEventListeners(): void {
         search: '',
         category_id: '',
         category_ids: [],
-        asset_id: '',
+        account_id: '',
         currency: '',
         start_date: '',
         end_date: '',

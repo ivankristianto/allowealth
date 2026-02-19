@@ -151,7 +151,7 @@ export const Alert: StoryObj = {
 export const Info: StoryObj = {
   args: {
     type: 'info',
-    title: 'Asset update reminder',
+    title: 'Account update reminder',
     description: 'Update your stock portfolio.',
     time: '1d ago',
   },
@@ -191,7 +191,7 @@ export const AllTypes: StoryObj = {
       },
       {
         type: 'info' as const,
-        title: 'Asset update reminder',
+        title: 'Account update reminder',
         description: 'Update your stock portfolio.',
         time: '1d ago',
       },

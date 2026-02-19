@@ -11,7 +11,7 @@ To enable AI assistants (Claude, Gemini, etc.) to securely interact with Allowea
 Key use cases include:
 
 - Logging transactions from natural language or receipt images.
-- Querying financial stats, budget status, and asset balances.
+- Querying financial stats, budget status, and account balances.
 - Providing a "headless" way to interact with the application.
 
 The solution must work both locally (for desktop extensions like Claude Desktop) and remotely (for cloud-based AI assistants), while maintaining strict security and performance.
@@ -35,7 +35,7 @@ Implement a hybrid MCP Server that supports both **stdio** (local) and **HTTP** 
 
 ### 3. Tool Design Principles
 
-- **Fuzzy Matching**: AI clients provide natural names for categories and assets. The server performs fuzzy matching (Exact → Substring → Levenshtein) to resolve these to database IDs, keeping the client interface natural and resilient to typos.
+- **Fuzzy Matching**: AI clients provide natural names for categories and accounts. The server performs fuzzy matching (Exact → Substring → Levenshtein) to resolve these to database IDs, keeping the client interface natural and resilient to typos.
 - **Stateless HTTP**: The HTTP transport operates in a stateless mode (request/response), which is a perfect fit for Cloudflare Workers' execution model.
 - **Write Safety**: Tools support adding data (`add_expense`, `add_income`) but do not support deletion, preventing accidental data loss via AI interactions.
 
@@ -44,9 +44,9 @@ Implement a hybrid MCP Server that supports both **stdio** (local) and **HTTP** 
 **Included Tools:**
 
 - `add_expense` / `add_income`: Create transactions with fuzzy-matched metadata.
-- `list_categories` / `list_assets`: Explore available classification options.
+- `list_categories` / `list_accounts`: Explore available classification options.
 - `get_budget_summary`: Current month's financial health.
-- `get_asset_summary` / `get_dashboard`: Snapshot of total financial position.
+- `get_account_summary` / `get_dashboard`: Snapshot of total financial position.
 
 **HTTP Authentication Header:**
 `Authorization: Bearer aw_...`

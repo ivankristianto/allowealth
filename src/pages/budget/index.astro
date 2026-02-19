@@ -260,7 +260,7 @@ const uninitializedCategories = expenseCategories.filter((cat) => !budgetIdsByCa
 const budgetCount = budgetData?.categories.filter((c) => Number(c.budget_amount) > 0).length || 0;
 
 const onboardingStep = url.searchParams.get('onboarding');
-const shouldShowAssetNextStep = onboardingStep === 'budgets';
+const shouldShowAccountNextStep = onboardingStep === 'budgets';
 
 const copyBudgetAvailability = getCopyBudgetAvailability({
   sourceBudgetCount: budgetCount,
@@ -291,7 +291,7 @@ const copyDisabledTooltip =
     data-expense-categories={JSON.stringify(expenseCategoriesWithBudgets)}
   >
     {
-      shouldShowAssetNextStep && (
+      shouldShowAccountNextStep && (
         <div class="alert bg-success/10 border border-success/30 rounded-card">
           <div class="w-full flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
@@ -300,8 +300,11 @@ const copyDisabledTooltip =
                 After you finish this step, continue by adding your first account or wallet.
               </p>
             </div>
-            <a href="/assets?onboarding=add-asset" class="btn btn-accent btn-sm w-full sm:w-auto">
-              Add Asset
+            <a
+              href="/accounts?onboarding=add-account"
+              class="btn btn-accent btn-sm w-full sm:w-auto"
+            >
+              Add Account
             </a>
           </div>
         </div>

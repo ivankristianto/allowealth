@@ -12,7 +12,7 @@ import type { TransactionOutput } from '@/lib/types/transaction';
 // ============================================================================
 
 export interface SummaryCardsData {
-  totalAssets: {
+  totalAccounts: {
     idr: number;
     usd: number;
     converted: number;
@@ -31,7 +31,7 @@ export interface SummaryCardsData {
 }
 
 export const mockSummaryCardsData: SummaryCardsData = {
-  totalAssets: {
+  totalAccounts: {
     idr: 150_000_000,
     usd: 10_000,
     converted: 165_100_000,
@@ -51,7 +51,7 @@ export const mockSummaryCardsData: SummaryCardsData = {
 
 // Alternative states
 export const mockSummaryCardsHealthy: SummaryCardsData = {
-  totalAssets: {
+  totalAccounts: {
     idr: 150_000_000,
     usd: 10_000,
     converted: 165_100_000,
@@ -70,7 +70,7 @@ export const mockSummaryCardsHealthy: SummaryCardsData = {
 };
 
 export const mockSummaryCardsExceeded: SummaryCardsData = {
-  totalAssets: {
+  totalAccounts: {
     idr: 150_000_000,
     usd: 10_000,
     converted: 165_100_000,
@@ -89,7 +89,7 @@ export const mockSummaryCardsExceeded: SummaryCardsData = {
 };
 
 export const mockSummaryCardsEmpty: SummaryCardsData = {
-  totalAssets: {
+  totalAccounts: {
     idr: 0,
     usd: 0,
     converted: 0,
@@ -108,10 +108,10 @@ export const mockSummaryCardsEmpty: SummaryCardsData = {
 };
 
 // ============================================================================
-// ASSET UPDATE TODO LIST MOCK DATA
+// ACCOUNT UPDATE TODO LIST MOCK DATA
 // ============================================================================
 
-export interface AssetUpdateTodoItem {
+export interface AccountUpdateTodoItem {
   id: string;
   name: string;
   type: 'bank_account' | 'mutual_fund' | 'bond' | 'crypto' | 'stock' | 'other';
@@ -122,7 +122,7 @@ export interface AssetUpdateTodoItem {
   priority: 'high' | 'medium' | 'low' | 'none';
 }
 
-export const mockAssetUpdateTodos: AssetUpdateTodoItem[] = [
+export const mockAccountUpdateTodos: AccountUpdateTodoItem[] = [
   {
     id: '1',
     name: 'BCA Mutual Fund',
@@ -155,9 +155,9 @@ export const mockAssetUpdateTodos: AssetUpdateTodoItem[] = [
   },
 ];
 
-export const mockAssetUpdateTodosEmpty: AssetUpdateTodoItem[] = [];
+export const mockAccountUpdateTodosEmpty: AccountUpdateTodoItem[] = [];
 
-export const mockAssetUpdateTodosAllUpdated: AssetUpdateTodoItem[] = [
+export const mockAccountUpdateTodosAllUpdated: AccountUpdateTodoItem[] = [
   {
     id: '4',
     name: 'BCA Savings',
@@ -194,7 +194,7 @@ export const mockRecentTransactions: TransactionOutput[] = [
       icon: 'shopping-basket',
       color: 'bg-info',
     },
-    asset: {
+    account: {
       id: 'pm1',
       name: 'Cash',
       type: 'cash',
@@ -219,7 +219,7 @@ export const mockRecentTransactions: TransactionOutput[] = [
       icon: 'user',
       color: 'bg-secondary',
     },
-    asset: {
+    account: {
       id: 'pm2',
       name: 'BCA',
       type: 'bank_transfer',
@@ -244,7 +244,7 @@ export const mockRecentTransactions: TransactionOutput[] = [
       icon: 'banknote',
       color: 'bg-success',
     },
-    asset: {
+    account: {
       id: 'pm3',
       name: 'Bank Transfer',
       type: 'bank_transfer',
@@ -269,7 +269,7 @@ export const mockRecentTransactions: TransactionOutput[] = [
       icon: 'car',
       color: 'bg-secondary',
     },
-    asset: {
+    account: {
       id: 'pm4',
       name: 'E-Wallet',
       type: 'e_wallet',
@@ -294,7 +294,7 @@ export const mockRecentTransactions: TransactionOutput[] = [
       icon: 'utensils',
       color: 'bg-warning',
     },
-    asset: {
+    account: {
       id: 'pm5',
       name: 'Credit Card',
       type: 'credit_card',
@@ -443,9 +443,9 @@ export const mockErrorState = {
 // ============================================================================
 
 /**
- * Get asset priority based on days since update
+ * Get account priority based on days since update
  */
-export function getAssetPriority(daysSinceUpdate: number): 'high' | 'medium' | 'low' | 'none' {
+export function getAccountPriority(daysSinceUpdate: number): 'high' | 'medium' | 'low' | 'none' {
   if (daysSinceUpdate > 30) return 'high';
   if (daysSinceUpdate > 14) return 'medium';
   if (daysSinceUpdate > 7) return 'low';

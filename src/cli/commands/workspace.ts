@@ -203,7 +203,7 @@ export default defineCommand({
           console.log(`\nThis will permanently delete:`);
           console.log(`  - Workspace: ${workspace.name}`);
           console.log(`  - ${memberCount} member(s)`);
-          console.log(`  - All related data (categories, transactions, assets, etc.)`);
+          console.log(`  - All related data (categories, transactions, accounts, etc.)`);
           console.log(`\nThis action cannot be undone.`);
 
           const answer = await prompt('\nType "DELETE" to confirm: ');

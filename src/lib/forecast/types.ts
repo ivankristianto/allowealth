@@ -49,7 +49,7 @@ export interface ForecastResult {
     totalInterest: number;
     /** Growth multiple (final / initial) */
     growthMultiple: number;
-    /** Current total asset value */
+    /** Current total account value */
     currentTotal: number;
   };
   /** Input parameters used for calculation */
@@ -57,22 +57,22 @@ export interface ForecastResult {
 }
 
 /**
- * Historical asset data point
+ * Historical account data point
  */
 export interface HistoricalDataPoint {
   /** Date in YYYY-MM-DD format or timestamp */
   date: string | Date;
-  /** Asset balance at this date */
+  /** Account balance at this date */
   amount: number;
 }
 
 /**
- * Asset with history for aggregation
+ * Account with history for aggregation
  */
-export interface AssetWithHistory {
-  /** Asset balance */
+export interface AccountWithHistory {
+  /** Account balance */
   balance: number;
-  /** Asset currency */
+  /** Account currency */
   currency: 'IDR' | 'USD';
   /** Historical balance records */
   history?: HistoricalDataPoint[];
@@ -84,7 +84,7 @@ export interface AssetWithHistory {
 export interface MonthlyHistoricalData {
   /** Month key in YYYY-MM format */
   key: string;
-  /** Total balance across all assets */
+  /** Total balance across all accounts */
   balance: number;
   /** Interest earned (0 for historical data without interest tracking) */
   interest: number;

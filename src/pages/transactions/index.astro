@@ -71,7 +71,7 @@ const filters = {
   type: typeFilter as 'expense' | 'income',
   category_id: categoryId || undefined,
   category_ids: categoryIds.length > 0 ? categoryIds : undefined,
-  asset_id: searchParams.asset_id,
+  account_id: searchParams.account_id,
   currency: searchParams.currency as 'IDR' | 'USD' | undefined,
   start_date: monthDateRange?.start,
   end_date: monthDateRange?.end,

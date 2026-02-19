@@ -17,17 +17,17 @@ export type { Currency } from '@/lib/enums';
 export type { Transaction, TransactionOutput, TransactionSummary } from './transaction';
 export type { TransactionType } from './transaction';
 
-// Assets
+// Accounts
 export type {
-  Asset,
-  AssetOutput,
-  AssetHistory,
-  AssetHistoryOutput,
-  AssetSummaryByCurrency,
-  AssetSummaryByType,
-} from './asset';
-export type { AssetType } from './asset';
-export { formatAssetType, getAssetTypeLabel, ASSET_TYPE_LABELS } from './asset';
+  Account,
+  AccountOutput,
+  AccountHistory,
+  AccountHistoryOutput,
+  AccountSummaryByCurrency,
+  AccountSummaryByType,
+} from './account';
+export type { AccountType } from './account';
+export { formatAccountType, getAccountTypeLabel, ACCOUNT_TYPE_LABELS } from './account';
 
 // Re-export Input/Update/Filter types from validation (single source of truth)
 export type { CreateCategoryInput, UpdateCategoryInput, CategoryFilter } from '@/lib/validation';

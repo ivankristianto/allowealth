@@ -1,0 +1,200 @@
+---
+/**
+ * AccountReopenModal Component
+ *
+ * Modal for confirming accounts reopening (admin only).
+ * Based on the ConfirmationModal pattern.
+ *
+ * @param {string} id - Modal ID
+ */
+
+import ConfirmationModal from '../molecules/ConfirmationModal.astro';
+import { RotateCcw } from '@lucide/astro';
+
+export interface Props {
+  id: string;
+}
+
+const { id } = Astro.props;
+---
+
+<div data-account-reopen-modal-container data-id={id} data-testid="account-reopen-modal">
+  <ConfirmationModal
+    id={id}
+    title="Reopen Account?"
+    description="This will restore the account to your active accounts list."
+    icon={RotateCcw}
+    iconVariant="info"
+    confirmLabel="Reopen Account"
+    confirmVariant="success"
+    confirmLoadingLabel="Reopening..."
+    confirmTestId="confirm-reopen-btn"
+  >
+    <div slot="details" class="bg-base-200 rounded-2xl p-4" data-account-details>
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="font-bold text-base-content" data-account-name>Account Name</p>
+          <p class="text-xs text-base-content/50 mt-1" data-account-type>Type</p>
+        </div>
+        <div class="text-right">
+          <span
+            class="inline-block px-2 py-0.5 rounded-md text-xs font-bold tracking-wider uppercase bg-base-300 text-base-content/60"
+            data-account-currency
+          >
+            Currency
+          </span>
+        </div>
+      </div>
+      <div class="mt-3 pt-3 border-t border-base-300">
+        <p class="text-xs text-base-content/50" data-closed-at-label>Closed on: —</p>
+      </div>
+    </div>
+  </ConfirmationModal>
+</div>
+
+<script>
+  import { addToast } from '@lib/stores/toastStore';
+  import { getCsrfHeaders } from '@/lib/csrf-client';
+  import {
+    clearConfirmError,
+    closeConfirmationModal,
+    getConfirmationModalElements,
+    resetConfirmationModal,
+    setConfirmLoading,
+    showConfirmError,
+  } from '@/components/molecules/ConfirmationModal.client';
+
+  const initializedModals = new WeakSet<Element>();
+
+  interface AccountReopenData {
+    id: string;
+    name: string;
+    type: string;
+    currency: string;
+    closedAt: string;
+  }
+
+  function initAccountReopenModal() {
+    document.querySelectorAll('[data-account-reopen-modal-container]').forEach((container) => {
+      if (initializedModals.has(container)) return;
+      initializedModals.add(container);
+
+      const id = container.getAttribute('data-id');
+      if (!id) return;
+
+      const { modal, confirmButton, cancelButton, errorElement } = getConfirmationModalElements(
+        container,
+        id
+      );
+
+      const nameEl = container.querySelector('[data-account-name]');
+      const typeEl = container.querySelector('[data-account-type]');
+      const currencyEl = container.querySelector('[data-account-currency]');
+      const closedAtEl = container.querySelector('[data-closed-at-label]');
+
+      if (!modal || !confirmButton) return;
+
+      let currentAccountId: string | null = null;
+
+      const populateModal = (data: AccountReopenData) => {
+        currentAccountId = data.id;
+        if (nameEl) nameEl.textContent = data.name;
+        if (typeEl) typeEl.textContent = data.type;
+        if (currencyEl) {
+          currencyEl.textContent = data.currency;
+          currencyEl.classList.remove('bg-success/10', 'text-success', 'bg-info/10', 'text-info');
+          currencyEl.classList.add(
+            data.currency === 'IDR' ? 'bg-success/10' : 'bg-info/10',
+            data.currency === 'IDR' ? 'text-success' : 'text-info'
+          );
+        }
+        if (closedAtEl && data.closedAt) {
+          const closedDate = new Date(data.closedAt);
+          const formatted = closedDate.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+          });
+          closedAtEl.textContent = `Closed on: ${formatted}`;
+        }
+      };
+
+      const resetModal = () => {
+        currentAccountId = null;
+        resetConfirmationModal(confirmButton, errorElement);
+      };
+
+      const handleOpenReopen = ((e: CustomEvent<AccountReopenData>) => {
+        populateModal(e.detail);
+        modal.showModal();
+      }) as EventListener;
+
+      document.addEventListener('open-account-reopen', handleOpenReopen);
+
+      document.addEventListener(
+        'astro:before-swap',
+        () => {
+          document.removeEventListener('open-account-reopen', handleOpenReopen);
+        },
+        { once: true }
+      );
+
+      modal.addEventListener('close', resetModal);
+
+      cancelButton?.addEventListener('click', () => {
+        resetModal();
+        closeConfirmationModal(modal);
+      });
+
+      confirmButton.addEventListener('click', async () => {
+        if (!currentAccountId) return;
+
+        const nanoidPattern = /^[A-Za-z0-9_-]{21}$/;
+        if (!nanoidPattern.test(currentAccountId)) {
+          showConfirmError(errorElement, 'Invalid account ID format.');
+          return;
+        }
+
+        clearConfirmError(errorElement);
+        setConfirmLoading(confirmButton, true);
+
+        try {
+          const response = await fetch(`/api/accounts/${currentAccountId}/reopen`, {
+            method: 'POST',
+            headers: getCsrfHeaders(),
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to reopen account');
+          }
+
+          addToast('Account reopened successfully', 'success');
+          closeConfirmationModal(modal);
+
+          document.dispatchEvent(
+            new CustomEvent('account-reopened', {
+              detail: { accountId: currentAccountId },
+            })
+          );
+
+          setTimeout(() => window.location.reload(), 500);
+        } catch (err) {
+          const message = err instanceof Error ? err.message : 'Failed to reopen account';
+          showConfirmError(errorElement, message);
+          addToast(message, 'error');
+        } finally {
+          setConfirmLoading(confirmButton, false);
+        }
+      });
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initAccountReopenModal);
+  } else {
+    initAccountReopenModal();
+  }
+
+  document.addEventListener('astro:page-load', initAccountReopenModal);
+</script>

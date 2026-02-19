@@ -40,21 +40,21 @@ export const createTransactionSchema = z
     amount: amountValidation,
     currency: currencyEnum,
     category_id: z.string().min(1, 'Category ID is required').optional(), // Optional for transfers
-    asset_id: z.string().min(1, 'Asset ID is required'),
-    to_asset_id: z.string().min(1, 'Destination asset ID is required').optional(), // For transfers
+    account_id: z.string().min(1, 'Account ID is required'),
+    to_account_id: z.string().min(1, 'Destination account ID is required').optional(), // For transfers
     transaction_date: transactionDateValidation.default(() => new Date()),
     description: z.string().max(500, 'Description must not exceed 500 characters').optional(),
   })
   .strict()
   .refine(
     (data) => {
-      // For transfers, to_asset_id is required
+      // For transfers, to_account_id is required
       if (data.type === 'transfer') {
-        return !!data.to_asset_id;
+        return !!data.to_account_id;
       }
       return true;
     },
-    { message: 'Destination asset is required for transfers', path: ['to_asset_id'] }
+    { message: 'Destination account is required for transfers', path: ['to_account_id'] }
   )
   .refine(
     (data) => {
@@ -76,8 +76,8 @@ export const updateTransactionSchema = z
     amount: amountValidation.optional(),
     currency: currencyEnum.optional(),
     category_id: z.string().min(1, 'Category ID is required').optional(),
-    asset_id: z.string().min(1, 'Asset ID is required').optional(),
-    to_asset_id: z.string().min(1, 'Destination asset ID is required').optional().nullable(),
+    account_id: z.string().min(1, 'Account ID is required').optional(),
+    to_account_id: z.string().min(1, 'Destination account ID is required').optional().nullable(),
     transaction_date: transactionDateValidation.optional(),
     description: z.string().max(500, 'Description must not exceed 500 characters').optional(),
   })
@@ -105,8 +105,8 @@ export const createTransactionAPISchema = z
     amount: amountValidation,
     currency: currencyEnum,
     category_id: z.string().min(1, 'Category ID is required').optional(),
-    asset_id: z.string().min(1, 'Asset ID is required'),
-    to_asset_id: z.string().min(1, 'Destination asset ID is required').optional(),
+    account_id: z.string().min(1, 'Account ID is required'),
+    to_account_id: z.string().min(1, 'Destination account ID is required').optional(),
     transaction_date: dateStringValidation,
     description: z.string().max(500, 'Description must not exceed 500 characters').optional(),
   })
@@ -114,11 +114,11 @@ export const createTransactionAPISchema = z
   .refine(
     (data) => {
       if (data.type === 'transfer') {
-        return !!data.to_asset_id;
+        return !!data.to_account_id;
       }
       return true;
     },
-    { message: 'Destination asset is required for transfers', path: ['to_asset_id'] }
+    { message: 'Destination account is required for transfers', path: ['to_account_id'] }
   )
   .refine(
     (data) => {
@@ -136,8 +136,8 @@ export const updateTransactionAPISchema = z
     amount: amountValidation.optional(),
     currency: currencyEnum.optional(),
     category_id: z.string().min(1, 'Category ID is required').optional(),
-    asset_id: z.string().min(1, 'Asset ID is required').optional(),
-    to_asset_id: z.string().min(1, 'Destination asset ID is required').optional().nullable(),
+    account_id: z.string().min(1, 'Account ID is required').optional(),
+    to_account_id: z.string().min(1, 'Destination account ID is required').optional().nullable(),
     transaction_date: dateStringValidation.optional(),
     description: z.string().max(500, 'Description must not exceed 500 characters').optional(),
   })
@@ -148,7 +148,7 @@ export const transactionFilterSchema = z
   .object({
     type: transactionTypeEnum.optional(),
     category_id: z.string().optional(),
-    asset_id: z.string().optional(),
+    account_id: z.string().optional(),
     currency: currencyEnum.optional(),
     start_date: z.coerce.date().optional(),
     end_date: z.coerce.date().optional(),

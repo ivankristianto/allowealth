@@ -14,7 +14,7 @@
 import { auth, type User, type Session } from '@/lib/auth/lucia';
 import { hashPassword, verifyPassword } from '@/lib/auth/password';
 import { db, getActiveSchema, runTransaction, type IDatabase } from '@/db';
-import { AssetCategoryService } from '@/services/asset-category.service';
+import { AccountCategoryService } from '@/services/account-category.service';
 import { createLogger } from '@/lib/logger';
 
 const log = createLogger('auth');
@@ -235,7 +235,7 @@ export async function register(email: string, password: string, name: string): P
       throw new AuthError(AUTH_ERRORS.DATABASE_ERROR, 'Failed to create user');
     }
 
-    // NOTE: Asset category seeding deferred until email verification
+    // NOTE: Account category seeding deferred until email verification
     // (handled in verify-email endpoint)
     // NOTE: Verification email is sent by the caller (signup endpoint)
 
@@ -267,7 +267,7 @@ export async function register(email: string, password: string, name: string): P
  * Register a new user with an invitation
  *
  * Adds the user to an existing workspace with the specified role.
- * Does NOT create a new workspace or default asset categories (those belong to workspace creator).
+ * Does NOT create a new workspace or default account categories (those belong to workspace creator).
  *
  * @param email - User email address
  * @param password - User password (will be hashed)
@@ -639,10 +639,10 @@ export async function loginOrRegisterWithOAuth(profile: OAuthProfile): Promise<O
       throw new AuthError(AUTH_ERRORS.DATABASE_ERROR, 'Failed to create user');
     }
 
-    // Seed default asset categories — OAuth users are immediately active
+    // Seed default account categories — OAuth users are immediately active
     try {
-      const assetCategoryService = new AssetCategoryService(db);
-      await assetCategoryService.seedDefaultCategories(workspaceId, userId);
+      const accountCategoryService = new AccountCategoryService(db);
+      await accountCategoryService.seedDefaultCategories(workspaceId, userId);
     } catch (seedError) {
       // Non-fatal: user can still use the app, categories can be seeded later
       log.error('Failed to seed default categories for OAuth user', {

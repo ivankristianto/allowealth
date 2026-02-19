@@ -29,7 +29,7 @@ import ReportChartsPartial from '@/components/partials/ReportChartsPartial.astro
 import CategoryTablePartial from '@/components/partials/CategoryTablePartial.astro';
 
 // Import report service and types
-import { reportService, assetService } from '@/services';
+import { reportService, accountService } from '@/services';
 import type { ReportData } from '@/services/report.service';
 import { safeParseDecimal } from '@/lib/utils/decimal';
 import { formatMonthYear } from '@/lib/utils/date';
@@ -120,14 +120,14 @@ try {
   return Astro.redirect('/reports?error=failed-to-load');
 }
 
-// Fetch asset totals by class for summary cards
-let totalAssetsIdr = 0;
-let totalAssetsUsd = 0;
+// Fetch account totals by class for summary cards
+let totalAccountsIdr = 0;
+let totalAccountsUsd = 0;
 let totalDebtIdr = 0;
 let totalDebtUsd = 0;
 
 try {
-  const classTotals = await assetService.getTotalByClass(user.workspaceId);
+  const classTotals = await accountService.getTotalByClass(user.workspaceId);
   for (const row of classTotals) {
     const total = parseFloat(row.total || '0');
     if (isNaN(total)) continue;
@@ -135,12 +135,12 @@ try {
       if (row.currency === 'USD') totalDebtUsd += Math.abs(total);
       else totalDebtIdr += Math.abs(total);
     } else {
-      if (row.currency === 'USD') totalAssetsUsd += total;
-      else totalAssetsIdr += total;
+      if (row.currency === 'USD') totalAccountsUsd += total;
+      else totalAccountsIdr += total;
     }
   }
 } catch (error) {
-  console.error('Error fetching asset totals:', error);
+  console.error('Error fetching account totals:', error);
   // Non-critical: continue with zeros
 }
 
@@ -212,8 +212,8 @@ const selectedPeriodLabel =
         budgetHealth={reportDataForPartials.budgetHealth}
         expenseCategories={reportDataForPartials.expenseCategories}
         currency={reportDataForPartials.currency}
-        totalAssetsIdr={totalAssetsIdr}
-        totalAssetsUsd={totalAssetsUsd}
+        totalAccountsIdr={totalAccountsIdr}
+        totalAccountsUsd={totalAccountsUsd}
         totalDebtIdr={totalDebtIdr}
         totalDebtUsd={totalDebtUsd}
       />

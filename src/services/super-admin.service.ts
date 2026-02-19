@@ -21,7 +21,7 @@ export interface WorkspaceStats {
   createdAt: Date;
   memberCount: number;
   transactionCount: number;
-  assetCount: number;
+  accountCount: number;
   budgetCount: number;
   categoryCount: number;
 }
@@ -122,7 +122,7 @@ export class SuperAdminService {
   /**
    * List all workspaces with aggregated counts, paginated
    *
-   * Uses grouped subqueries to avoid N+1 queries for member/transaction/asset/budget/category counts.
+   * Uses grouped subqueries to avoid N+1 queries for member/transaction/account/budget/category counts.
    *
    * @param params - Filter, sort, and pagination parameters
    * @returns Paginated workspaces with aggregate counts
@@ -190,7 +190,7 @@ export class SuperAdminService {
     }
 
     // Batch-fetch counts for all visible workspaces using grouped queries
-    const [memberCounts, transactionCounts, assetCounts, budgetCounts, categoryCounts] =
+    const [memberCounts, transactionCounts, accountCounts, budgetCounts, categoryCounts] =
       await Promise.all([
         // Member counts per workspace (exclude deleted, exclude super_admin)
         (this.db as any)
@@ -212,15 +212,15 @@ export class SuperAdminService {
           .where(isNull(schema.transactions.deleted_at))
           .groupBy(schema.transactions.workspace_id),
 
-        // Asset counts per workspace (exclude soft-deleted)
+        // Account counts per workspace (exclude soft-deleted)
         (this.db as any)
           .select({
-            workspace_id: schema.assets.workspace_id,
+            workspace_id: schema.accounts.workspace_id,
             count: sql<number>`count(*)`,
           })
-          .from(schema.assets)
-          .where(isNull(schema.assets.deleted_at))
-          .groupBy(schema.assets.workspace_id),
+          .from(schema.accounts)
+          .where(isNull(schema.accounts.deleted_at))
+          .groupBy(schema.accounts.workspace_id),
 
         // Budget counts per workspace
         (this.db as any)
@@ -244,7 +244,7 @@ export class SuperAdminService {
     // Build lookup maps for O(1) access
     const memberMap = toCountMap(memberCounts);
     const transactionMap = toCountMap(transactionCounts);
-    const assetMap = toCountMap(assetCounts);
+    const accountMap = toCountMap(accountCounts);
     const budgetMap = toCountMap(budgetCounts);
     const categoryMap = toCountMap(categoryCounts);
 
@@ -256,7 +256,7 @@ export class SuperAdminService {
       createdAt: w.created_at,
       memberCount: memberMap.get(w.id) ?? 0,
       transactionCount: transactionMap.get(w.id) ?? 0,
-      assetCount: assetMap.get(w.id) ?? 0,
+      accountCount: accountMap.get(w.id) ?? 0,
       budgetCount: budgetMap.get(w.id) ?? 0,
       categoryCount: categoryMap.get(w.id) ?? 0,
     }));
@@ -297,7 +297,7 @@ export class SuperAdminService {
     const [
       members,
       transactionCountResult,
-      assetCountResult,
+      accountCountResult,
       budgetCountResult,
       categoryCountResult,
       metaRecords,
@@ -331,11 +331,13 @@ export class SuperAdminService {
           )
         ),
 
-      // Asset count
+      // Account count
       (this.db as any)
         .select({ count: sql<number>`count(*)` })
-        .from(schema.assets)
-        .where(and(eq(schema.assets.workspace_id, workspaceId), isNull(schema.assets.deleted_at))),
+        .from(schema.accounts)
+        .where(
+          and(eq(schema.accounts.workspace_id, workspaceId), isNull(schema.accounts.deleted_at))
+        ),
 
       // Budget count
       (this.db as any)
@@ -368,7 +370,7 @@ export class SuperAdminService {
       createdAt: workspace.created_at,
       memberCount: members.length,
       transactionCount: transactionCountResult[0]?.count ?? 0,
-      assetCount: assetCountResult[0]?.count ?? 0,
+      accountCount: accountCountResult[0]?.count ?? 0,
       budgetCount: budgetCountResult[0]?.count ?? 0,
       categoryCount: categoryCountResult[0]?.count ?? 0,
       members: members.map((m: any) => ({
@@ -413,7 +415,7 @@ export class SuperAdminService {
    * Hard delete a workspace and all associated data
    *
    * Due to ON DELETE CASCADE constraints, deleting a workspace will
-   * automatically delete all related data (users, transactions, assets, etc.)
+   * automatically delete all related data (users, transactions, accounts, etc.)
    *
    * @param workspaceId - Workspace ID to delete
    * @throws {SuperAdminServiceError} If workspace not found

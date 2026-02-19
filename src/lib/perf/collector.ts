@@ -109,7 +109,7 @@ export class PerfCollector {
   }
 
   private isCounterPhase(name: string): boolean {
-    return /(?:assetCount|chunkCount|historyRowsFetched)$/.test(name);
+    return /(?:accountCount|chunkCount|historyRowsFetched)$/.test(name);
   }
 
   /**

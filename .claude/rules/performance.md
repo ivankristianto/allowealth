@@ -68,7 +68,7 @@ for (const row of csvRows) {
 
 // ✅ Correct: Bulk insert (5 queries total)
 // 1. Pre-load: categories map (1 query)
-// 2. Pre-load: assets map (1 query)
+// 2. Pre-load: accounts map (1 query)
 // 3. Duplicate detection: date-scoped query (1 query)
 // 4. Batch insert: single transaction (1 query)
 // 5. Single cache invalidation (1 query)

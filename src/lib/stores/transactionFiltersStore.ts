@@ -19,7 +19,7 @@ export interface TransactionFilters {
   search: string;
   category_id: string;
   category_ids: string[]; // Support multiple categories
-  asset_id: string;
+  account_id: string;
   currency: 'IDR' | 'USD' | '';
   start_date: string;
   end_date: string;
@@ -33,7 +33,7 @@ const initialFilters: TransactionFilters = {
   search: '',
   category_id: '',
   category_ids: [],
-  asset_id: '',
+  account_id: '',
   currency: '',
   start_date: '',
   end_date: '',
@@ -79,7 +79,7 @@ export function hasActiveFilters(): boolean {
     filters.search !== '' ||
     filters.category_id !== '' ||
     filters.category_ids.length > 0 ||
-    filters.asset_id !== '' ||
+    filters.account_id !== '' ||
     filters.currency !== '' ||
     filters.start_date !== '' ||
     filters.end_date !== ''

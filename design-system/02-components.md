@@ -8,7 +8,7 @@ Component patterns for atoms, molecules, and organisms.
 
 | Component      | Path                                        | Purpose                     |
 | -------------- | ------------------------------------------- | --------------------------- |
-| AssetSelect    | `src/components/atoms/AssetSelect.astro`    | Asset dropdown select       |
+| AccountSelect  | `src/components/atoms/AccountSelect.astro`  | Account dropdown select     |
 | Badge          | `src/components/atoms/Badge.astro`          | Status and label badges     |
 | Button         | `src/components/atoms/Button.astro`         | Primary buttons             |
 | Card           | `src/components/atoms/Card.astro`           | Surface container           |
@@ -38,9 +38,9 @@ Component patterns for atoms, molecules, and organisms.
 | Component                     | Path                                                           | Purpose                  |
 | ----------------------------- | -------------------------------------------------------------- | ------------------------ |
 | AllocationBar                 | `src/components/molecules/AllocationBar.astro`                 | Allocation bar chart     |
-| AssetForm                     | `src/components/molecules/AssetForm.astro`                     | Asset form fields        |
-| AssetItemRow                  | `src/components/molecules/AssetItemRow.astro`                  | Asset row display        |
-| AssetPageHeader               | `src/components/molecules/AssetPageHeader.astro`               | Asset page header        |
+| AccountForm                   | `src/components/molecules/AccountForm.astro`                   | Account form fields      |
+| AccountItemRow                | `src/components/molecules/AccountItemRow.astro`                | Account row display      |
+| AccountPageHeader             | `src/components/molecules/AccountPageHeader.astro`             | Account page header      |
 | AuthValidationMessages        | `src/components/molecules/AuthValidationMessages.astro`        | Auth error summary       |
 | BudgetActions                 | `src/components/molecules/BudgetActions.astro`                 | Budget action buttons    |
 | BudgetAlertBanner             | `src/components/molecules/BudgetAlertBanner.astro`             | Budget alert banner      |
@@ -79,46 +79,46 @@ Component patterns for atoms, molecules, and organisms.
 
 ### Organisms
 
-| Component                 | Path                                                       | Purpose                   |
-| ------------------------- | ---------------------------------------------------------- | ------------------------- |
-| AssetActions              | `src/components/organisms/AssetActions.astro`              | Asset page actions        |
-| AssetCategoryDeleteDialog | `src/components/organisms/AssetCategoryDeleteDialog.astro` | Delete dialog             |
-| AssetCategoryModal        | `src/components/organisms/AssetCategoryModal.astro`        | Asset category modal      |
-| AssetDeleteConfirmModal   | `src/components/organisms/AssetDeleteConfirmModal.astro`   | Asset delete modal        |
-| AssetFormModal            | `src/components/organisms/AssetFormModal.astro`            | Asset form modal          |
-| AssetGroupCard            | `src/components/organisms/AssetGroupCard.astro`            | Asset group card          |
-| AssetHistoryModal         | `src/components/organisms/AssetHistoryModal.astro`         | Asset history modal       |
-| AssetPortfolioSummary     | `src/components/organisms/AssetPortfolioSummary.astro`     | Portfolio summary         |
-| AssetUpdateValueModal     | `src/components/organisms/AssetUpdateValueModal.astro`     | Update value modal        |
-| BudgetAdviceBanner        | `src/components/organisms/BudgetAdviceBanner.astro`        | Budget advice             |
-| BudgetCard                | `src/components/organisms/BudgetCard.astro`                | Budget summary card       |
-| BudgetCardGrid            | `src/components/organisms/BudgetCardGrid.astro`            | Budget grid               |
-| BudgetHistoryComparison   | `src/components/organisms/BudgetHistoryComparison.astro`   | Budget comparison         |
-| BudgetPageHeader          | `src/components/organisms/BudgetPageHeader.astro`          | Budget page header        |
-| BudgetSummary             | `src/components/organisms/BudgetSummary.astro`             | Budget summary panel      |
-| CashFlowWidget            | `src/components/organisms/CashFlowWidget.astro`            | Cash flow widget          |
-| CategoryDeleteDialog      | `src/components/organisms/CategoryDeleteDialog.astro`      | Category delete modal     |
-| CategoryDrillDownModal    | `src/components/organisms/CategoryDrillDownModal.astro`    | Category drilldown modal  |
-| CategoryIntelligenceTable | `src/components/organisms/CategoryIntelligenceTable.astro` | Category table            |
-| CategoryModal             | `src/components/organisms/CategoryModal.astro`             | Category modal            |
-| CopyBudgetModal           | `src/components/organisms/CopyBudgetModal.astro`           | Copy budget modal         |
-| FinancialVelocityChart    | `src/components/organisms/FinancialVelocityChart.astro`    | Velocity chart            |
-| InviteMemberModal         | `src/components/organisms/InviteMemberModal.astro`         | Invite modal              |
-| LedgerProjections         | `src/components/organisms/LedgerProjections.astro`         | Projections panel         |
-| ManageAccountForms        | `src/components/organisms/ManageAccountForms.astro`        | Account forms             |
-| MemberList                | `src/components/organisms/MemberList.astro`                | Member list               |
-| AssetsWidget              | `src/components/organisms/AssetsWidget.astro`              | Assets overview widget    |
-| PaymentMethodFormModal    | `src/components/organisms/PaymentMethodFormModal.astro`    | Payment form modal        |
-| ResourceAllocationChart   | `src/components/organisms/ResourceAllocationChart.astro`   | Allocation chart          |
-| SetNewBudgetModal         | `src/components/organisms/SetNewBudgetModal.astro`         | New budget modal          |
-| SpendingCard              | `src/components/organisms/SpendingCard.astro`              | Spending card             |
-| SpendingChart             | `src/components/organisms/SpendingChart.astro`             | Spending chart            |
-| SummaryCards              | `src/components/organisms/SummaryCards.astro`              | Dashboard summary cards   |
-| TransactionFiltersBar     | `src/components/organisms/TransactionFiltersBar.astro`     | Filters bar               |
-| TransactionList           | `src/components/organisms/TransactionList.astro`           | Transactions list         |
-| TransactionDrawer         | `src/components/organisms/TransactionDrawer.astro`         | Transaction drawer        |
-| TransactionSummaryCards   | `src/components/organisms/TransactionSummaryCards.astro`   | Transaction summary cards |
-| WealthTrajectory          | `src/components/organisms/WealthTrajectory.astro`          | Wealth trajectory chart   |
+| Component                   | Path                                                         | Purpose                   |
+| --------------------------- | ------------------------------------------------------------ | ------------------------- |
+| AccountActions              | `src/components/organisms/AccountActions.astro`              | Account page actions      |
+| AccountCategoryDeleteDialog | `src/components/organisms/AccountCategoryDeleteDialog.astro` | Delete dialog             |
+| AccountCategoryModal        | `src/components/organisms/AccountCategoryModal.astro`        | Account category modal    |
+| AccountDeleteConfirmModal   | `src/components/organisms/AccountDeleteConfirmModal.astro`   | Account delete modal      |
+| AccountFormModal            | `src/components/organisms/AccountFormModal.astro`            | Account form modal        |
+| AccountGroupCard            | `src/components/organisms/AccountGroupCard.astro`            | Account group card        |
+| AccountHistoryModal         | `src/components/organisms/AccountHistoryModal.astro`         | Account history modal     |
+| AccountPortfolioSummary     | `src/components/organisms/AccountPortfolioSummary.astro`     | Portfolio summary         |
+| AccountUpdateValueModal     | `src/components/organisms/AccountUpdateValueModal.astro`     | Update value modal        |
+| BudgetAdviceBanner          | `src/components/organisms/BudgetAdviceBanner.astro`          | Budget advice             |
+| BudgetCard                  | `src/components/organisms/BudgetCard.astro`                  | Budget summary card       |
+| BudgetCardGrid              | `src/components/organisms/BudgetCardGrid.astro`              | Budget grid               |
+| BudgetHistoryComparison     | `src/components/organisms/BudgetHistoryComparison.astro`     | Budget comparison         |
+| BudgetPageHeader            | `src/components/organisms/BudgetPageHeader.astro`            | Budget page header        |
+| BudgetSummary               | `src/components/organisms/BudgetSummary.astro`               | Budget summary panel      |
+| CashFlowWidget              | `src/components/organisms/CashFlowWidget.astro`              | Cash flow widget          |
+| CategoryDeleteDialog        | `src/components/organisms/CategoryDeleteDialog.astro`        | Category delete modal     |
+| CategoryDrillDownModal      | `src/components/organisms/CategoryDrillDownModal.astro`      | Category drilldown modal  |
+| CategoryIntelligenceTable   | `src/components/organisms/CategoryIntelligenceTable.astro`   | Category table            |
+| CategoryModal               | `src/components/organisms/CategoryModal.astro`               | Category modal            |
+| CopyBudgetModal             | `src/components/organisms/CopyBudgetModal.astro`             | Copy budget modal         |
+| FinancialVelocityChart      | `src/components/organisms/FinancialVelocityChart.astro`      | Velocity chart            |
+| InviteMemberModal           | `src/components/organisms/InviteMemberModal.astro`           | Invite modal              |
+| LedgerProjections           | `src/components/organisms/LedgerProjections.astro`           | Projections panel         |
+| ManageAccountForms          | `src/components/organisms/ManageAccountForms.astro`          | Account forms             |
+| MemberList                  | `src/components/organisms/MemberList.astro`                  | Member list               |
+| AccountsWidget              | `src/components/organisms/AccountsWidget.astro`              | Accounts overview widget  |
+| PaymentMethodFormModal      | `src/components/organisms/PaymentMethodFormModal.astro`      | Payment form modal        |
+| ResourceAllocationChart     | `src/components/organisms/ResourceAllocationChart.astro`     | Allocation chart          |
+| SetNewBudgetModal           | `src/components/organisms/SetNewBudgetModal.astro`           | New budget modal          |
+| SpendingCard                | `src/components/organisms/SpendingCard.astro`                | Spending card             |
+| SpendingChart               | `src/components/organisms/SpendingChart.astro`               | Spending chart            |
+| SummaryCards                | `src/components/organisms/SummaryCards.astro`                | Dashboard summary cards   |
+| TransactionFiltersBar       | `src/components/organisms/TransactionFiltersBar.astro`       | Filters bar               |
+| TransactionList             | `src/components/organisms/TransactionList.astro`             | Transactions list         |
+| TransactionDrawer           | `src/components/organisms/TransactionDrawer.astro`           | Transaction drawer        |
+| TransactionSummaryCards     | `src/components/organisms/TransactionSummaryCards.astro`     | Transaction summary cards |
+| WealthTrajectory            | `src/components/organisms/WealthTrajectory.astro`            | Wealth trajectory chart   |
 
 ## Structure Template
 

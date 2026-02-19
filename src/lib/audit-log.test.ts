@@ -82,9 +82,9 @@ describe('audit-log', () => {
       expect(entityType).toBe('category');
     });
 
-    test('asset entity type is valid', () => {
-      const entityType: AuditEntityType = 'asset';
-      expect(entityType).toBe('asset');
+    test('account entity type is valid', () => {
+      const entityType: AuditEntityType = 'account';
+      expect(entityType).toBe('account');
     });
 
     test('budget entity type is valid', () => {

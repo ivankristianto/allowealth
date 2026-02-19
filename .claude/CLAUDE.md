@@ -1,6 +1,6 @@
 # Allowealth
 
-Personal and family financial application for expense tracking, budgeting, asset management, and financial forecasting.
+Personal and family financial application for expense tracking, budgeting, account management, and financial forecasting.
 
 ## Tech Stack
 

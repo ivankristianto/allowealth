@@ -3,10 +3,10 @@
  * =================
  * Provides aggregated dashboard data via getDashboardData(), which fetches
  * all metrics in parallel using optimized private methods:
- * - Total assets by currency (getAssetsOptimized)
+ * - Total accounts by currency (getAccountsOptimized)
  * - Monthly spending/income/top categories (getTransactionAggregatesOptimized)
  * - Budget health alerts (getBudgetHealthOptimized)
- * - Asset update reminders (getAssetsOptimized)
+ * - Account update reminders (getAccountsOptimized)
  * - Recent transactions (getRecentTransactionsOptimized)
  *
  * Error Handling:
@@ -22,7 +22,7 @@ import { createLogger } from '@/lib/logger';
 const log = createLogger('dashboard');
 import { getLatestExchangeRate } from '@/lib/currency/conversion';
 import { calculateBudgetAlert } from '@/lib/budget/alerts';
-import { calculateAssetPriority } from '@/lib/assets/priority';
+import { calculateAccountPriority } from '@/lib/accounts/priority';
 import {
   decimalAdd,
   decimalSubtract,
@@ -36,9 +36,9 @@ import { getCacheManager, CacheKeys, CacheTags } from '@/lib/cache';
 import { type PerfCollector, trackQuery, trackService } from '@/lib/perf';
 
 /**
- * Total assets by currency
+ * Total accounts by currency
  */
-export interface TotalAssets {
+export interface TotalAccounts {
   idr: string;
   usd: string;
   converted: string; // Total in primary currency (IDR)
@@ -104,12 +104,12 @@ export interface BudgetHealth {
 }
 
 /**
- * Asset update reminder
+ * Account update reminder
  */
-export interface AssetReminder {
-  assetId: string;
-  assetName: string;
-  assetType: string;
+export interface AccountReminder {
+  accountId: string;
+  accountName: string;
+  accountType: string;
   lastUpdated: Date;
   daysSinceUpdate: number;
   priority: 'high' | 'medium' | 'low';
@@ -121,13 +121,13 @@ export interface AssetReminder {
  * Complete dashboard data
  */
 export interface DashboardData {
-  totalAssets: TotalAssets;
+  totalAccounts: TotalAccounts;
   totalDebt: TotalDebt;
   monthlySpent: MonthlySpent;
   monthlyIncome: MonthlyIncome;
   topCategoryExpenses: TopCategoryExpense[];
   budgetHealth: BudgetHealth;
-  assetReminders: AssetReminder[];
+  accountReminders: AccountReminder[];
   recentTransactions: Array<{
     id: string;
     type: 'expense' | 'income' | 'transfer';
@@ -142,7 +142,7 @@ export interface DashboardData {
       icon: string;
       color: string;
     } | null;
-    asset: {
+    account: {
       id: string;
       name: string;
       type: string;
@@ -170,7 +170,7 @@ export class DashboardService {
    * Get complete dashboard data for a workspace (optimized version)
    *
    * This method is optimized to reduce database round-trips by:
-   * 1. Combining asset queries (totalAssets + assetReminders use same data)
+   * 1. Combining account queries (totalAccounts + accountReminders use same data)
    * 2. Running all independent queries in parallel
    * 3. Using single aggregate queries where possible
    * 4. Caching results with 1 hour TTL
@@ -208,14 +208,14 @@ export class DashboardService {
       const endDate = new Date(currentYear, currentMonth, 0, 23, 59, 59);
 
       // Run all independent queries in parallel (maximum parallelism)
-      // Group 1: Asset-related (single query handles both totalAssets and assetReminders)
+      // Group 1: Account-related (single query handles both totalAccounts and accountReminders)
       // Group 2: Transaction aggregates (budget, spent, income, categories)
       // Group 3: Budget health (budgets + category spending)
       // Group 4: Recent transactions
-      const [assetsData, transactionAggregates, budgetHealthData, recentTransactions] =
+      const [accountsData, transactionAggregates, budgetHealthData, recentTransactions] =
         await Promise.all([
-          // Combined assets query
-          this.getAssetsOptimized(workspaceId, currency, perf),
+          // Combined accounts query
+          this.getAccountsOptimized(workspaceId, currency, perf),
           // Combined transaction aggregates (budget, spent, income, top categories)
           this.getTransactionAggregatesOptimized(
             workspaceId,
@@ -233,13 +233,13 @@ export class DashboardService {
         ]);
 
       const result: DashboardData = {
-        totalAssets: assetsData.totalAssets,
-        totalDebt: assetsData.totalDebt,
+        totalAccounts: accountsData.totalAccounts,
+        totalDebt: accountsData.totalDebt,
         monthlySpent: transactionAggregates.monthlySpent,
         monthlyIncome: transactionAggregates.monthlyIncome,
         topCategoryExpenses: transactionAggregates.topCategoryExpenses,
         budgetHealth: budgetHealthData,
-        assetReminders: assetsData.assetReminders,
+        accountReminders: accountsData.accountReminders,
         recentTransactions,
       };
 
@@ -259,42 +259,46 @@ export class DashboardService {
   }
 
   /**
-   * Optimized assets query - combines totalAssets and assetReminders
+   * Optimized accounts query - combines totalAccounts and accountReminders
    * into a single database query
    */
-  private async getAssetsOptimized(
+  private async getAccountsOptimized(
     workspaceId: string,
     primaryCurrency: 'IDR' | 'USD',
     perf?: PerfCollector
-  ): Promise<{ totalAssets: TotalAssets; totalDebt: TotalDebt; assetReminders: AssetReminder[] }> {
+  ): Promise<{
+    totalAccounts: TotalAccounts;
+    totalDebt: TotalDebt;
+    accountReminders: AccountReminder[];
+  }> {
     try {
-      if (!this.db?.query?.assets) {
+      if (!this.db?.query?.accounts) {
         throw new Error('Database query not available');
       }
 
-      // Single query to get all assets
-      const workspaceAssets = await trackQuery('DashboardService.getAssets', perf, async () =>
-        this.db.query.assets.findMany({
+      // Single query to get all accounts
+      const workspaceAccounts = await trackQuery('DashboardService.getAccounts', perf, async () =>
+        this.db.query.accounts.findMany({
           where: and(
-            eq(this.schema.assets.workspace_id, workspaceId),
-            sql`${this.schema.assets.deleted_at} IS NULL`
+            eq(this.schema.accounts.workspace_id, workspaceId),
+            sql`${this.schema.accounts.deleted_at} IS NULL`
           ),
         })
       );
 
-      // Separate assets from debt by account_class
-      const assetAccounts = workspaceAssets.filter((a) => a.account_class !== 'debt');
-      const debtAccounts = workspaceAssets.filter((a) => a.account_class === 'debt');
+      // Separate accounts from debt by account_class
+      const accountAccounts = workspaceAccounts.filter((a) => a.account_class !== 'debt');
+      const debtAccounts = workspaceAccounts.filter((a) => a.account_class === 'debt');
 
-      // Calculate asset totals (excluding debt)
-      const idrAssetBalances = assetAccounts
+      // Calculate account totals (excluding debt)
+      const idrAccountBalances = accountAccounts
         .filter((a) => a.currency === 'IDR')
         .map((a) => a.balance);
-      const usdAssetBalances = assetAccounts
+      const usdAccountBalances = accountAccounts
         .filter((a) => a.currency === 'USD')
         .map((a) => a.balance);
-      const idrTotal = decimalSum(idrAssetBalances);
-      const usdTotal = decimalSum(usdAssetBalances);
+      const idrTotal = decimalSum(idrAccountBalances);
+      const usdTotal = decimalSum(usdAccountBalances);
 
       // Calculate debt totals (absolute values)
       const idrDebtBalances = debtAccounts
@@ -320,20 +324,20 @@ export class DashboardService {
         convertedTotal = decimalAdd(usdTotal, idrConverted);
       }
 
-      // Calculate asset reminders from the same data
-      const reminders: AssetReminder[] = [];
-      for (const asset of workspaceAssets) {
-        const priorityResult = calculateAssetPriority(asset.last_updated);
+      // Calculate account reminders from the same data
+      const reminders: AccountReminder[] = [];
+      for (const account of workspaceAccounts) {
+        const priorityResult = calculateAccountPriority(account.last_updated);
         if (priorityResult.needsUpdate) {
           reminders.push({
-            assetId: asset.id,
-            assetName: asset.name,
-            assetType: asset.type,
-            lastUpdated: asset.last_updated,
+            accountId: account.id,
+            accountName: account.name,
+            accountType: account.type,
+            lastUpdated: account.last_updated,
             daysSinceUpdate: priorityResult.daysSinceUpdate,
             priority: priorityResult.priority as 'high' | 'medium' | 'low',
-            currentBalance: asset.balance,
-            currency: asset.currency,
+            currentBalance: account.balance,
+            currency: account.currency,
           });
         }
       }
@@ -347,7 +351,7 @@ export class DashboardService {
       });
 
       return {
-        totalAssets: {
+        totalAccounts: {
           idr: idrTotal,
           usd: usdTotal,
           converted: convertedTotal,
@@ -357,14 +361,14 @@ export class DashboardService {
           idr: idrDebt,
           usd: usdDebt,
         },
-        assetReminders: reminders,
+        accountReminders: reminders,
       };
     } catch (error) {
-      log.error('error getting optimized assets:', error);
+      log.error('error getting optimized accounts:', error);
       return {
-        totalAssets: { idr: '0', usd: '0', converted: '0', convertedCurrency: primaryCurrency },
+        totalAccounts: { idr: '0', usd: '0', converted: '0', convertedCurrency: primaryCurrency },
         totalDebt: { idr: '0', usd: '0' },
-        assetReminders: [],
+        accountReminders: [],
       };
     }
   }
@@ -650,7 +654,7 @@ export class DashboardService {
             ),
             with: {
               category: true,
-              asset: true,
+              account: true,
               createdBy: { columns: { id: true, name: true } },
             },
             // NOTE: Raw SQL names required — Drizzle schema refs resolve incorrectly in relational query extras
@@ -689,10 +693,10 @@ export class DashboardService {
               color: tx.category.color,
             }
           : null,
-        asset: {
-          id: tx.asset.id,
-          name: tx.asset.name,
-          type: tx.asset.type,
+        account: {
+          id: tx.account.id,
+          name: tx.account.name,
+          type: tx.account.type,
         },
         createdByName: tx.createdBy?.name,
         hasHistory: !!(tx as any).has_history,

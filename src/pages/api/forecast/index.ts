@@ -2,23 +2,23 @@
  * Forecast API Endpoint
  *
  * GET /api/forecast
- * Calculate wealth trajectory forecast based on user's current assets
+ * Calculate wealth trajectory forecast based on user's current accounts
  * and projected monthly contributions with interest rates.
  */
 
 import type { APIRoute } from 'astro';
 import { z } from 'zod';
-import { assetService } from '@/services';
+import { accountService } from '@/services';
 import { successResponse, errorResponse, getAuthenticatedUser } from '@/lib/api-utils';
 import { logError } from '@/lib/utils';
 import {
   calculateForecast,
-  aggregateAssetHistory,
+  aggregateAccountHistory,
   mergeRealAndForecast,
   calculateGrowthMultiple,
   calculateCurrentTotal,
   type ForecastResult,
-  type AssetWithHistory,
+  type AccountWithHistory,
 } from '@/lib/forecast';
 import Decimal from 'decimal.js';
 
@@ -103,28 +103,28 @@ export const GET: APIRoute = async (context) => {
 
     const { monthlyTopup, annualRate, years } = validation.data;
 
-    // @TODO: Mock data - Add development mode check to return mock forecast data when no real assets exist
-    // This would allow testing the forecast UI without seeding asset history data
-    // Example: if (isDev && assetsWithHistory.length === 0) return mockForecastResponse()
+    // @TODO: Mock data - Add development mode check to return mock forecast data when no real accounts exist
+    // This would allow testing the forecast UI without seeding account history data
+    // Example: if (isDev && accountsWithHistory.length === 0) return mockForecastResponse()
 
-    // Fetch workspace's assets with history
-    const assetsWithHistory = await assetService.findAllWithHistory(auth.workspaceId);
+    // Fetch workspace's accounts with history
+    const accountsWithHistory = await accountService.findAllWithHistory(auth.workspaceId);
 
     // Convert to forecast-compatible format
-    const forecastAssets: AssetWithHistory[] = assetsWithHistory.map((asset) => ({
-      balance: parseFloat(asset.balance),
-      currency: asset.currency as 'IDR' | 'USD',
-      history: asset.history,
+    const forecastAccounts: AccountWithHistory[] = accountsWithHistory.map((account) => ({
+      balance: parseFloat(account.balance),
+      currency: account.currency as 'IDR' | 'USD',
+      history: account.history,
     }));
 
     // Calculate current total
-    const currentTotal = calculateCurrentTotal(forecastAssets);
+    const currentTotal = calculateCurrentTotal(forecastAccounts);
 
     // Generate forecast data
     const forecastData = calculateForecast(currentTotal, monthlyTopup, annualRate, years);
 
     // Aggregate real historical data
-    const realHistoricalData = aggregateAssetHistory(forecastAssets);
+    const realHistoricalData = aggregateAccountHistory(forecastAccounts);
 
     // Merge real and forecast data
     const mergedData = mergeRealAndForecast(realHistoricalData, forecastData);

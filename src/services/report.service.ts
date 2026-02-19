@@ -91,7 +91,7 @@ export interface CategoryTransaction {
   currency: 'IDR' | 'USD';
   description: string | null;
   transactionDate: Date;
-  assetName: string;
+  accountName: string;
   createdByName?: string;
   hasHistory?: boolean;
 }
@@ -345,7 +345,7 @@ export class ReportService {
           sql`${this.schema.transactions.deleted_at} IS NULL`
         ),
         with: {
-          asset: true,
+          account: true,
           createdBy: { columns: { id: true, name: true } },
         },
         // NOTE: Raw SQL names required — Drizzle schema refs resolve incorrectly in relational query extras
@@ -373,7 +373,7 @@ export class ReportService {
         currency: tx.currency,
         description: tx.description,
         transactionDate: tx.transaction_date,
-        assetName: tx.asset?.name || 'Unknown',
+        accountName: tx.account?.name || 'Unknown',
         createdByName: tx.createdBy?.name,
         hasHistory: !!tx.has_history,
       }));

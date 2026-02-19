@@ -6,9 +6,9 @@ const actionButtonFiles = [
   'src/components/molecules/ConfirmationModal.astro',
   'src/components/organisms/PaymentMethodFormModal.astro',
   'src/components/organisms/CategoryModal.astro',
-  'src/components/organisms/AssetCategoryModal.astro',
-  'src/components/organisms/AssetFormModal.astro',
-  'src/components/organisms/AssetUpdateValueModal.astro',
+  'src/components/organisms/AccountCategoryModal.astro',
+  'src/components/organisms/AccountFormModal.astro',
+  'src/components/organisms/AccountUpdateValueModal.astro',
   'src/components/organisms/InviteMemberModal.astro',
   'src/components/partials/PaginationPartial.astro',
   'src/pages/settings/index.astro',
@@ -18,7 +18,7 @@ const actionButtonFiles = [
 
 const formControlFiles = [
   'src/components/atoms/Input.astro',
-  'src/components/atoms/AssetSelect.astro',
+  'src/components/atoms/AccountSelect.astro',
   'src/components/atoms/CategorySelect.astro',
   'src/components/atoms/CurrencyInput.astro',
   'src/components/atoms/DatePicker.astro',

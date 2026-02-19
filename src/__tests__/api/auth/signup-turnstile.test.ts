@@ -48,7 +48,7 @@ const checkRateLimitMock = mock(() => ({
   emailVerificationService: {
     sendVerificationEmail: sendVerificationEmailMock,
   },
-  assetCategoryService: {
+  accountCategoryService: {
     seedDefaultCategories: seedDefaultCategoriesMock,
   },
 }));

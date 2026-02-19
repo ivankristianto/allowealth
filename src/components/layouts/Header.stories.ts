@@ -56,7 +56,7 @@ const meta: Meta = {
         '/dashboard',
         '/transactions',
         '/budget',
-        '/assets',
+        '/accounts',
         '/reports',
         '/settings',
         '/profile',
@@ -94,7 +94,7 @@ function getDynamicSubtitle(path: string, customSubtitle?: string): string {
     '/dashboard': `Welcome back! ${getCurrentMonthYear()}`,
     '/transactions': getCurrentMonthYear(),
     '/budget': 'Monthly budget overview',
-    '/assets': getCurrentMonthYear(),
+    '/accounts': getCurrentMonthYear(),
     '/reports': getCurrentMonthYear(),
     '/forecast': 'Based on your spending patterns',
     '/calculators': 'Financial planning tools',
@@ -120,7 +120,7 @@ const createHeader = (args: {
       '/dashboard': 'Dashboard',
       '/transactions': 'Transactions',
       '/budget': 'Budget',
-      '/assets': 'Assets',
+      '/accounts': 'Accounts',
       '/reports': 'Reports',
       '/settings': 'Settings',
       '/profile': 'Manage Account',
@@ -306,13 +306,13 @@ export const Budget: StoryObj = {
   },
 };
 
-export const Assets: StoryObj = {
-  args: { currentPath: '/assets' },
+export const Accounts: StoryObj = {
+  args: { currentPath: '/accounts' },
   render: (args) => createHeader(args),
   parameters: {
     docs: {
       description: {
-        story: 'Header for Assets page with current period subtitle.',
+        story: 'Header for Accounts page with current period subtitle.',
       },
     },
   },

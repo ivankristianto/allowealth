@@ -36,7 +36,7 @@ export type AuditAction =
 export type AuditEntityType =
   | 'transaction'
   | 'category'
-  | 'asset'
+  | 'account'
   | 'budget'
   | 'user'
   | 'workspace'

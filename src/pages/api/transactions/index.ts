@@ -61,9 +61,9 @@ export const GET: APIRoute = async (context) => {
       filters.category_ids = categoryIds.split(',').filter(Boolean);
     }
 
-    const assetId = url.searchParams.get('asset_id');
-    if (assetId) {
-      filters.asset_id = assetId;
+    const accountId = url.searchParams.get('account_id');
+    if (accountId) {
+      filters.account_id = accountId;
     }
 
     const currency = url.searchParams.get('currency');
@@ -260,8 +260,8 @@ export const POST: APIRoute = async (context) => {
       amount: validation.data.amount,
       currency: validation.data.currency,
       category_id: validation.data.category_id,
-      asset_id: validation.data.asset_id,
-      to_asset_id: validation.data.to_asset_id,
+      account_id: validation.data.account_id,
+      to_account_id: validation.data.to_account_id,
       transaction_date: transactionDate,
       description: validation.data.description,
     });

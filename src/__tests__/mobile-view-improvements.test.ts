@@ -6,45 +6,45 @@ const projectRoot = process.cwd();
 const read = (path: string) => readFileSync(join(projectRoot, path), 'utf8');
 
 describe('mobile view improvements', () => {
-  it('moves asset month controls to header slot and uses selected month as subtitle', () => {
-    const content = read('src/pages/assets/index.astro');
+  it('moves account month controls to header slot and uses selected month as subtitle', () => {
+    const content = read('src/pages/accounts/index.astro');
 
     expect(content).toContain('subtitle={currentMonthDisplay}');
     expect(content).toContain('slot="header"');
-    expect(content).not.toContain('AssetPageHeader');
+    expect(content).not.toContain('AccountPageHeader');
   });
 
-  it('uses PeriodicSelector for asset header month controls', () => {
-    const assetsPage = read('src/pages/assets/index.astro');
+  it('uses PeriodicSelector for account header month controls', () => {
+    const accountsPage = read('src/pages/accounts/index.astro');
 
-    expect(assetsPage).toContain(
+    expect(accountsPage).toContain(
       "import PeriodicSelector, { type PeriodOption } from '@/components/molecules/PeriodicSelector.astro'"
     );
-    expect(assetsPage).toContain('<PeriodicSelector');
-    expect(assetsPage).toContain('data-asset-header-controls');
+    expect(accountsPage).toContain('<PeriodicSelector');
+    expect(accountsPage).toContain('data-account-header-controls');
   });
 
-  it('uses configurable month window and full month-year labels for assets periods', () => {
-    const assetsPage = read('src/pages/assets/index.astro');
-    const assetDetailPage = read('src/pages/assets/[id].astro');
+  it('uses configurable month window and full month-year labels for accounts periods', () => {
+    const accountsPage = read('src/pages/accounts/index.astro');
+    const accountDetailPage = read('src/pages/accounts/[id].astro');
 
-    expect(assetsPage).toContain(
+    expect(accountsPage).toContain(
       "import { PERIOD_SELECTOR_MONTH_LIMIT } from '@/lib/constants/period'"
     );
-    expect(assetsPage).toContain("import { formatMonthYear } from '@/lib/utils/date'");
-    expect(assetsPage).toContain('length: PERIOD_SELECTOR_MONTH_LIMIT');
-    expect(assetsPage).toContain('label: formatMonthYear(date)');
-    expect(assetsPage).toContain('const monthsBack = i;');
-    expect(assetsPage).toContain(
+    expect(accountsPage).toContain("import { formatMonthYear } from '@/lib/utils/date'");
+    expect(accountsPage).toContain('length: PERIOD_SELECTOR_MONTH_LIMIT');
+    expect(accountsPage).toContain('label: formatMonthYear(date)');
+    expect(accountsPage).toContain('const monthsBack = i;');
+    expect(accountsPage).toContain(
       'monthlyPeriodOptions.sort((a, b) => b.value.localeCompare(a.value));'
     );
-    expect(assetsPage).toContain('newestFirst');
-    expect(assetDetailPage).toContain('const monthsBack = i;');
-    expect(assetDetailPage).toContain(
+    expect(accountsPage).toContain('newestFirst');
+    expect(accountDetailPage).toContain('const monthsBack = i;');
+    expect(accountDetailPage).toContain(
       'monthlyPeriodOptions.sort((a, b) => b.value.localeCompare(a.value));'
     );
-    expect(assetDetailPage).toContain('newestFirst');
-    expect(assetsPage).not.toContain("month: 'short'");
+    expect(accountDetailPage).toContain('newestFirst');
+    expect(accountsPage).not.toContain("month: 'short'");
   });
 
   it('moves report selector to header slot and uses selected period as subtitle', () => {
@@ -67,8 +67,8 @@ describe('mobile view improvements', () => {
     expect(reportsApi).toContain('const monthsBack = i;');
   });
 
-  it('deprecates AssetPageHeader component file', () => {
-    const componentPath = join(projectRoot, 'src/components/molecules/AssetPageHeader.astro');
+  it('deprecates AccountPageHeader component file', () => {
+    const componentPath = join(projectRoot, 'src/components/molecules/AccountPageHeader.astro');
     expect(existsSync(componentPath)).toBe(false);
   });
 
@@ -82,7 +82,7 @@ describe('mobile view improvements', () => {
     const consumers = [
       read('src/components/molecules/TransactionActionsBar.astro'),
       read('src/components/molecules/BudgetActions.astro'),
-      read('src/components/organisms/AssetActions.astro'),
+      read('src/components/organisms/AccountActions.astro'),
     ];
 
     consumers.forEach((content) => {
@@ -90,15 +90,15 @@ describe('mobile view improvements', () => {
     });
   });
 
-  it('uses ActionBar edge-bleed action rows in asset and budget category pages', () => {
-    const assetCategoriesPage = read('src/pages/assets/categories/index.astro');
+  it('uses ActionBar edge-bleed action rows in account and budget category pages', () => {
+    const accountCategoriesPage = read('src/pages/accounts/categories/index.astro');
     const budgetCategoriesPage = read('src/pages/budget/categories/index.astro');
 
-    expect(assetCategoriesPage).toContain(
+    expect(accountCategoriesPage).toContain(
       "import ActionBar from '@components/molecules/ActionBar.astro'"
     );
-    expect(assetCategoriesPage).toContain('ariaLabel="Asset category actions"');
-    expect(assetCategoriesPage).toContain('edgeBleed');
+    expect(accountCategoriesPage).toContain('ariaLabel="Account category actions"');
+    expect(accountCategoriesPage).toContain('edgeBleed');
 
     expect(budgetCategoriesPage).toContain(
       "import ActionBar from '@components/molecules/ActionBar.astro'"

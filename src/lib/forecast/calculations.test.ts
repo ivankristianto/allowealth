@@ -8,13 +8,13 @@
 import { describe, test, expect } from 'bun:test';
 import {
   calculateForecast,
-  aggregateAssetHistory,
+  aggregateAccountHistory,
   mergeRealAndForecast,
   calculateGrowthMultiple,
   convertCurrency,
   calculateCurrentTotal,
 } from './calculations';
-import type { AssetWithHistory, MonthlyHistoricalData } from './types';
+import type { AccountWithHistory, MonthlyHistoricalData } from './types';
 
 describe('calculateForecast', () => {
   test('should calculate basic forecast with no topup', () => {
@@ -58,9 +58,9 @@ describe('calculateForecast', () => {
   });
 });
 
-describe('aggregateAssetHistory', () => {
-  test('should aggregate single asset history', () => {
-    const assets: AssetWithHistory[] = [
+describe('aggregateAccountHistory', () => {
+  test('should aggregate single account history', () => {
+    const accounts: AccountWithHistory[] = [
       {
         balance: 1000000,
         currency: 'IDR',
@@ -71,7 +71,7 @@ describe('aggregateAssetHistory', () => {
       },
     ];
 
-    const result = aggregateAssetHistory(assets);
+    const result = aggregateAccountHistory(accounts);
 
     expect(result).toHaveLength(2);
     expect(result[0].key).toBe('2026-01');
@@ -80,8 +80,8 @@ describe('aggregateAssetHistory', () => {
     expect(result[1].balance).toBe(900000);
   });
 
-  test('should aggregate multiple assets', () => {
-    const assets: AssetWithHistory[] = [
+  test('should aggregate multiple accounts', () => {
+    const accounts: AccountWithHistory[] = [
       {
         balance: 1000000,
         currency: 'IDR',
@@ -94,16 +94,16 @@ describe('aggregateAssetHistory', () => {
       },
     ];
 
-    const result = aggregateAssetHistory(assets);
+    const result = aggregateAccountHistory(accounts);
 
     expect(result).toHaveLength(1);
     expect(result[0].key).toBe('2026-01');
-    // Should accumulate balances from all assets for this month
+    // Should accumulate balances from all accounts for this month
     expect(result[0].balance).toBe(1200000); // 800000 + 400000
   });
 
   test('should convert USD to IDR', () => {
-    const assets: AssetWithHistory[] = [
+    const accounts: AccountWithHistory[] = [
       {
         balance: 100,
         currency: 'USD',
@@ -111,14 +111,14 @@ describe('aggregateAssetHistory', () => {
       },
     ];
 
-    const result = aggregateAssetHistory(assets);
+    const result = aggregateAccountHistory(accounts);
 
     expect(result).toHaveLength(1);
     expect(result[0].balance).toBe(80 * 15000); // 1,200,000 IDR
   });
 
-  test('should handle assets with no history', () => {
-    const assets: AssetWithHistory[] = [
+  test('should handle accounts with no history', () => {
+    const accounts: AccountWithHistory[] = [
       {
         balance: 1000000,
         currency: 'IDR',
@@ -126,13 +126,13 @@ describe('aggregateAssetHistory', () => {
       },
     ];
 
-    const result = aggregateAssetHistory(assets);
+    const result = aggregateAccountHistory(accounts);
 
     expect(result).toHaveLength(0);
   });
 
   test('should sort results by month key', () => {
-    const assets: AssetWithHistory[] = [
+    const accounts: AccountWithHistory[] = [
       {
         balance: 1000000,
         currency: 'IDR',
@@ -144,7 +144,7 @@ describe('aggregateAssetHistory', () => {
       },
     ];
 
-    const result = aggregateAssetHistory(assets);
+    const result = aggregateAccountHistory(accounts);
 
     expect(result).toHaveLength(3);
     expect(result[0].key).toBe('2026-01');
@@ -251,34 +251,34 @@ describe('convertCurrency', () => {
 });
 
 describe('calculateCurrentTotal', () => {
-  test('should calculate total for IDR assets', () => {
-    const assets: AssetWithHistory[] = [
+  test('should calculate total for IDR accounts', () => {
+    const accounts: AccountWithHistory[] = [
       { balance: 1000000, currency: 'IDR' },
       { balance: 500000, currency: 'IDR' },
     ];
 
-    expect(calculateCurrentTotal(assets)).toBe(1500000);
+    expect(calculateCurrentTotal(accounts)).toBe(1500000);
   });
 
   test('should calculate total for mixed currencies', () => {
-    const assets: AssetWithHistory[] = [
+    const accounts: AccountWithHistory[] = [
       { balance: 1000000, currency: 'IDR' },
       { balance: 100, currency: 'USD' },
     ];
 
-    expect(calculateCurrentTotal(assets)).toBe(1000000 + 100 * 15000); // 2,500,000
+    expect(calculateCurrentTotal(accounts)).toBe(1000000 + 100 * 15000); // 2,500,000
   });
 
-  test('should handle empty assets array', () => {
+  test('should handle empty accounts array', () => {
     expect(calculateCurrentTotal([])).toBe(0);
   });
 
-  test('should handle all USD assets', () => {
-    const assets: AssetWithHistory[] = [
+  test('should handle all USD accounts', () => {
+    const accounts: AccountWithHistory[] = [
       { balance: 100, currency: 'USD' },
       { balance: 50, currency: 'USD' },
     ];
 
-    expect(calculateCurrentTotal(assets)).toBe((100 + 50) * 15000); // 2,250,000
+    expect(calculateCurrentTotal(accounts)).toBe((100 + 50) * 15000); // 2,250,000
   });
 });

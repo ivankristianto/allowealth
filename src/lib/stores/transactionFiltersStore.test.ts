@@ -21,7 +21,7 @@ describe('transactionFiltersStore', () => {
       expect(filters.search).toBe('');
       expect(filters.category_id).toBe('');
       expect(filters.category_ids).toEqual([]);
-      expect(filters.asset_id).toBe('');
+      expect(filters.account_id).toBe('');
       expect(filters.currency).toBe('');
       expect(filters.start_date).toBe('');
       expect(filters.end_date).toBe('');
@@ -110,8 +110,8 @@ describe('transactionFiltersStore', () => {
       expect(hasActiveFilters()).toBe(true);
     });
 
-    it('should return true when asset_id has a value', () => {
-      transactionFiltersStore.setKey('asset_id', 'asset-1');
+    it('should return true when account_id has a value', () => {
+      transactionFiltersStore.setKey('account_id', 'account-1');
       expect(hasActiveFilters()).toBe(true);
     });
 
@@ -154,7 +154,7 @@ describe('transactionFiltersStore', () => {
         search: 'test',
         category_id: 'cat-1',
         category_ids: ['cat-2'],
-        asset_id: 'asset-1',
+        account_id: 'account-1',
         currency: 'USD',
         start_date: '2024-01-01',
         end_date: '2024-12-31',

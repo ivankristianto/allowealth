@@ -31,7 +31,7 @@ describe('transaction tool schemas', () => {
         amount: 50000,
         currency: 'IDR',
         category_name: 'Food',
-        asset_name: 'Cash',
+        account_name: 'Cash',
       })
     ).not.toThrow();
   });
@@ -42,7 +42,7 @@ describe('transaction tool schemas', () => {
         amount: 50000,
         currency: 'IDR',
         category_name: 'Food',
-        asset_name: 'Cash',
+        account_name: 'Cash',
         date: '2024-06-15',
       })
     ).not.toThrow();
@@ -54,7 +54,7 @@ describe('transaction tool schemas', () => {
         amount: 50000,
         currency: 'IDR',
         category_name: 'Food',
-        asset_name: 'Cash',
+        account_name: 'Cash',
         date: 'garbage',
       })
     ).toThrow();
@@ -66,7 +66,7 @@ describe('transaction tool schemas', () => {
         amount: -100,
         currency: 'IDR',
         category_name: 'Food',
-        asset_name: 'Cash',
+        account_name: 'Cash',
       })
     ).toThrow();
 
@@ -75,7 +75,7 @@ describe('transaction tool schemas', () => {
         amount: 100,
         currency: 'EUR',
         category_name: 'Food',
-        asset_name: 'Cash',
+        account_name: 'Cash',
       })
     ).toThrow();
   });

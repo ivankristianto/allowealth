@@ -20,9 +20,9 @@ const reclassifiedComponents = [
     newPath: [moleculeRoot, 'DashboardError.astro'].join('/'),
   },
   {
-    name: 'AssetItemRow',
-    oldPath: [legacyRoot, 'AssetItemRow.astro'].join('/'),
-    newPath: [moleculeRoot, 'AssetItemRow.astro'].join('/'),
+    name: 'AccountItemRow',
+    oldPath: [legacyRoot, 'AccountItemRow.astro'].join('/'),
+    newPath: [moleculeRoot, 'AccountItemRow.astro'].join('/'),
   },
   {
     name: 'TransactionActionsBar',

@@ -67,14 +67,14 @@ describe('CategoryDrillDownModal', () => {
         title: 'Electric bill',
         amount: 500000,
         date: '2024-02-15',
-        asset: 'BCA',
+        account: 'BCA',
       };
 
       expect(transaction.id).toBe('txn-1');
       expect(transaction.title).toBe('Electric bill');
       expect(transaction.amount).toBe(500000);
       expect(transaction.date).toBe('2024-02-15');
-      expect(transaction.asset).toBe('BCA');
+      expect(transaction.account).toBe('BCA');
     });
 
     it('should handle array of transactions', () => {
@@ -84,14 +84,14 @@ describe('CategoryDrillDownModal', () => {
           title: 'Electric bill',
           amount: 500000,
           date: '2024-02-15',
-          asset: 'BCA',
+          account: 'BCA',
         },
         {
           id: 'txn-2',
           title: 'Water bill',
           amount: 150000,
           date: '2024-02-10',
-          asset: 'Mandiri',
+          account: 'Mandiri',
         },
       ];
 
@@ -254,9 +254,9 @@ describe('CategoryDrillDownModal', () => {
   describe('Transaction Sorting', () => {
     it('should sort transactions by date descending', () => {
       const transactions = [
-        { id: '1', title: 'Txn 1', amount: 100, date: '2024-02-05', asset: 'BCA' },
-        { id: '2', title: 'Txn 2', amount: 200, date: '2024-02-15', asset: 'BCA' },
-        { id: '3', title: 'Txn 3', amount: 300, date: '2024-02-10', asset: 'BCA' },
+        { id: '1', title: 'Txn 1', amount: 100, date: '2024-02-05', account: 'BCA' },
+        { id: '2', title: 'Txn 2', amount: 200, date: '2024-02-15', account: 'BCA' },
+        { id: '3', title: 'Txn 3', amount: 300, date: '2024-02-10', account: 'BCA' },
       ];
 
       const sorted = [...transactions].sort(
@@ -270,8 +270,8 @@ describe('CategoryDrillDownModal', () => {
 
     it('should handle equal dates', () => {
       const transactions = [
-        { id: '1', title: 'Txn 1', amount: 100, date: '2024-02-15', asset: 'BCA' },
-        { id: '2', title: 'Txn 2', amount: 200, date: '2024-02-15', asset: 'BCA' },
+        { id: '1', title: 'Txn 1', amount: 100, date: '2024-02-15', account: 'BCA' },
+        { id: '2', title: 'Txn 2', amount: 200, date: '2024-02-15', account: 'BCA' },
       ];
 
       const sorted = [...transactions].sort(
@@ -287,9 +287,9 @@ describe('CategoryDrillDownModal', () => {
     it('should sum transaction amounts to match spent', () => {
       const spent = 1850000;
       const transactions = [
-        { id: '1', title: 'Txn 1', amount: 500000, date: '2024-02-15', asset: 'BCA' },
-        { id: '2', title: 'Txn 2', amount: 750000, date: '2024-02-10', asset: 'BCA' },
-        { id: '3', title: 'Txn 3', amount: 600000, date: '2024-02-05', asset: 'BCA' },
+        { id: '1', title: 'Txn 1', amount: 500000, date: '2024-02-15', account: 'BCA' },
+        { id: '2', title: 'Txn 2', amount: 750000, date: '2024-02-10', account: 'BCA' },
+        { id: '3', title: 'Txn 3', amount: 600000, date: '2024-02-05', account: 'BCA' },
       ];
 
       const total = transactions.reduce((sum, txn) => sum + txn.amount, 0);

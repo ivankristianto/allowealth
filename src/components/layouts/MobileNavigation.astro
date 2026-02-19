@@ -3,7 +3,7 @@
  * Mobile Bottom Navigation Component
  *
  * Fixed bottom navigation bar for mobile viewports with:
- * - 5-slot layout: Transactions, Assets, FAB center, Budgets, Reports
+ * - 5-slot layout: Transactions, Accounts, FAB center, Budgets, Reports
  * - Glass effect background with backdrop blur
  * - Elevated center FAB button for Quick-Add Transaction
  * - Active state styling with accent color
@@ -28,7 +28,7 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { href: '/transactions', label: 'Transactions', icon: ArrowLeftRight },
-  { href: '/assets', label: 'Assets', icon: Wallet },
+  { href: '/accounts', label: 'Accounts', icon: Wallet },
   // Center FAB is handled separately
   { href: '/budget', label: 'Budgets', icon: Donut },
   { href: '/reports', label: 'Reports', icon: ChartBar },

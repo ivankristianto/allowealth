@@ -1,0 +1,9 @@
+# Account Category Response Schema
+AccountCategoryResponse:
+  allOf:
+    - $ref: './ApiErrorResponse.yml#/ApiResponse'
+    - type: object
+      required: [success, data]
+      properties:
+        data:
+          $ref: './AccountCategory.yml#/AccountCategory'

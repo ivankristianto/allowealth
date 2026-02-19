@@ -39,7 +39,7 @@ CSV Export page for downloading transactions with filter options.
 |------|-------|
 | action | "/transactions/export" |
 | categories | Active categories from service |
-| assets | Active assets from service |
+| accounts | Active accounts from service |
 | values | Current filters from URL |
 | count | 0 |
 
@@ -51,13 +51,13 @@ CSV Export page for downloading transactions with filter options.
 | type | 'expense' \\| 'income' | Transaction type |
 | currency | 'IDR' \\| 'USD' | Currency filter |
 | category_id | string | Category ID |
-| asset_id | string | Asset ID |
+| account_id | string | Account ID |
 | start_date | string | Start date |
 | end_date | string | End date |
 
 ### Export Details
 - Filename format: \`transactions_YYYY-MM-DD.csv\` (uses \`<code>\` element)
-- Includes: date, type, amount, currency, category, asset, description
+- Includes: date, type, amount, currency, category, account, description
 
 ### Export Button
 - Style: \`btn btn-primary gap-2\`
@@ -79,7 +79,7 @@ CSV Export page for downloading transactions with filter options.
 
 ### Service Dependencies
 - \`categoryService.findAll()\` - Active categories
-- \`assetService.findAll()\` - Active assets
+- \`accountService.findAll()\` - Active accounts
         `,
       },
     },
@@ -157,7 +157,7 @@ const createExportPage = (args: { hasFilters?: boolean }): HTMLElement => {
     <h3 class="font-semibold mb-2">Export Details</h3>
     <ul class="text-sm text-neutral-500 space-y-1">
       <li>Filename format: <code class="bg-base-200 px-1 rounded">transactions_YYYY-MM-DD.csv</code></li>
-      <li>Includes: date, type, amount, currency, category, asset, description</li>
+      <li>Includes: date, type, amount, currency, category, account, description</li>
       <li>Uses current filter settings</li>
     </ul>
   `;

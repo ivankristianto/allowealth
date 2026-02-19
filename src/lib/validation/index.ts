@@ -74,17 +74,17 @@ export {
   type CategoryFilter,
 } from './categories';
 
-// Asset Categories
+// Account Categories
 export {
-  createAssetCategorySchema,
-  updateAssetCategorySchema,
-  createAssetCategoryAPISchema,
-  updateAssetCategoryAPISchema,
-  assetCategoryFilterSchema,
-  type CreateAssetCategoryInput,
-  type UpdateAssetCategoryInput,
-  type AssetCategoryFilter,
-} from './asset-categories';
+  createAccountCategorySchema,
+  updateAccountCategorySchema,
+  createAccountCategoryAPISchema,
+  updateAccountCategoryAPISchema,
+  accountCategoryFilterSchema,
+  type CreateAccountCategoryInput,
+  type UpdateAccountCategoryInput,
+  type AccountCategoryFilter,
+} from './account-categories';
 
 // Transactions
 export {

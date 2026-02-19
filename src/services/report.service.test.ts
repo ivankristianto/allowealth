@@ -27,7 +27,7 @@ function createMockDatabase(): IDatabase {
       id: 'tx-1',
       user_id: userId,
       category_id: 'cat-utilities',
-      asset_id: 'asset-1',
+      account_id: 'account-1',
       type: 'expense',
       amount: '1850000',
       currency: 'IDR',
@@ -41,7 +41,7 @@ function createMockDatabase(): IDatabase {
       id: 'tx-2',
       user_id: userId,
       category_id: 'cat-dining',
-      asset_id: 'asset-1',
+      account_id: 'account-1',
       type: 'expense',
       amount: '905000',
       currency: 'IDR',
@@ -55,7 +55,7 @@ function createMockDatabase(): IDatabase {
       id: 'tx-3',
       user_id: userId,
       category_id: 'cat-salary',
-      asset_id: 'asset-1',
+      account_id: 'account-1',
       type: 'income',
       amount: '9750000',
       currency: 'IDR',
@@ -70,7 +70,7 @@ function createMockDatabase(): IDatabase {
       id: 'tx-4',
       user_id: userId,
       category_id: 'cat-utilities',
-      asset_id: 'asset-1',
+      account_id: 'account-1',
       type: 'expense',
       amount: '1500000',
       currency: 'IDR',
@@ -84,7 +84,7 @@ function createMockDatabase(): IDatabase {
       id: 'tx-5',
       user_id: userId,
       category_id: 'cat-salary',
-      asset_id: 'asset-1',
+      account_id: 'account-1',
       type: 'income',
       amount: '9000000',
       currency: 'IDR',
@@ -99,7 +99,7 @@ function createMockDatabase(): IDatabase {
       id: 'tx-other',
       user_id: otherUserId,
       category_id: 'cat-utilities',
-      asset_id: 'asset-2',
+      account_id: 'account-2',
       type: 'expense',
       amount: '5000000',
       currency: 'IDR',
@@ -193,10 +193,10 @@ function createMockDatabase(): IDatabase {
     },
   ];
 
-  // Mock assets data
-  const mockAssets = [
+  // Mock accounts data
+  const mockAccounts = [
     {
-      id: 'asset-1',
+      id: 'account-1',
       user_id: userId,
       name: 'Bank Account',
       type: 'bank',
@@ -285,10 +285,10 @@ function createMockDatabase(): IDatabase {
           }
 
           // Add relations if requested
-          if (config?.with?.asset) {
+          if (config?.with?.account) {
             return filtered.map((tx) => ({
               ...tx,
-              asset: mockAssets.find((a) => a.id === tx.asset_id),
+              account: mockAccounts.find((a) => a.id === tx.account_id),
             }));
           }
 
