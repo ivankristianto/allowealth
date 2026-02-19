@@ -534,6 +534,15 @@ describe('ReportService', () => {
     });
   });
 
+  describe('getMonthlyReport with userId filter', () => {
+    test('should accept optional userId parameter', async () => {
+      const report = await service.getMonthlyReport('workspace-1', '2024-02', 'IDR', 'user-123');
+      expect(report).toBeDefined();
+      expect(report.totalIncome).toBeDefined();
+      expect(report.totalExpenses).toBeDefined();
+    });
+  });
+
   describe('getYearlyReport', () => {
     test('should return yearly report with correct structure', async () => {
       const userId = 'test-user-123';
