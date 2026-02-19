@@ -17,7 +17,7 @@
  */
 
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
-import { dashboardService, workspaceMetaService, workspaceService } from '@/services';
+import { dashboardService, mfaService, workspaceMetaService, workspaceService } from '@/services';
 import type { DashboardData } from '@/services/dashboard.service';
 import type { OnboardingStatus } from '@/services/workspace.service';
 import SpendingCard from '@/components/organisms/SpendingCard.astro';
@@ -27,6 +27,7 @@ import CashFlowWidget from '@/components/organisms/CashFlowWidget.astro';
 import RecentTransactionsList from '@/components/molecules/RecentTransactionsList.astro';
 import DashboardError from '@/components/molecules/DashboardError.astro';
 import OnboardingChecklist from '@/components/organisms/OnboardingChecklist.astro';
+import MfaEnableBanner from '@/components/molecules/MfaEnableBanner.astro';
 import type { TransactionOutput } from '@/lib/types/transaction';
 import type { CashFlowEntry, CashFlowIconName } from '@/lib/cash-flow';
 import { MONTH_NAMES_SHORT } from '@/lib/utils/date';
@@ -46,6 +47,7 @@ let isOnboardingComplete = false;
 let primaryCurrency: 'IDR' | 'USD' | null = null;
 let dashboardData: DashboardData | null = null;
 let error: Error | null = null;
+let mfaEnabled = false;
 
 const isSupportedCurrency = (value: string | null): value is 'IDR' | 'USD' =>
   value === 'IDR' || value === 'USD';
@@ -81,6 +83,14 @@ try {
       primaryCurrency,
       perf
     );
+  }
+
+  // Check MFA status for encouragement banner
+  try {
+    const mfaStatus = await mfaService.getStatus(user.id);
+    mfaEnabled = mfaStatus.enabled;
+  } catch {
+    // Non-critical for dashboard rendering
   }
 } catch (err) {
   console.error('Error loading dashboard data:', err);
@@ -185,6 +195,9 @@ const spendingCategories =
 
     <!-- Onboarding Checklist (shown when setup is incomplete) -->
     {onboardingStatus && !isOnboardingComplete && <OnboardingChecklist status={onboardingStatus} />}
+
+    {/* MFA Encouragement Banner (shown when MFA not enabled and onboarding is complete) */}
+    {isOnboardingComplete && !mfaEnabled && <MfaEnableBanner />}
 
     <!-- Dashboard Content (only shown when currency is set) -->
     {
