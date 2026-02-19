@@ -2,59 +2,109 @@
 /**
  * SecurityMfaCard Component
  *
- * Presents multi-factor authentication options.
+ * Displays MFA status and provides enable/disable/manage actions.
  */
-import SecurityCard from '@/components/molecules/SecurityCard.astro';
-import { ShieldCheck, LayoutGrid } from '@lucide/astro';
 
-interface MfaMethod {
-  id: string;
-  label: string;
-  description: string;
-  enabled: boolean;
-  recommended?: boolean;
-}
+import IconBadge from '@/components/atoms/IconBadge.astro';
+import Button from '@/components/atoms/Button.astro';
+import { ShieldCheck, ShieldOff } from '@lucide/astro';
 
 export interface Props {
-  methods: MfaMethod[];
+  enabled: boolean;
+  backupCodesRemaining: number;
 }
 
-const { methods } = Astro.props;
-
-// @TODO: Implement MFA preference updates.
+const { enabled, backupCodesRemaining } = Astro.props;
+const hasLowBackupCodes = backupCodesRemaining <= 2 && backupCodesRemaining > 0;
+const hasNoBackupCodes = backupCodesRemaining === 0;
 ---
 
-<SecurityCard
-  title="Multi-Factor Authentication"
-  subtitle="2FA Protection"
-  iconVariant="success"
-  badge="Under Development"
->
-  <ShieldCheck slot="icon" size={20} class="stroke-current" aria-hidden="true" />
+<section class="card bg-base-100 shadow border border-base-300" data-mfa-card>
+  <div class="card-body p-6 space-y-6">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-4">
+        <IconBadge variant={enabled ? 'success' : 'warning'} size="sm">
+          {
+            enabled ? (
+              <ShieldCheck size={20} class="stroke-current" aria-hidden="true" />
+            ) : (
+              <ShieldOff size={20} class="stroke-current" aria-hidden="true" />
+            )
+          }
+        </IconBadge>
+        <div>
+          <h3 class="text-lg font-bold">Multi-Factor Authentication</h3>
+          <p class="text-xs uppercase tracking-widest text-base-content/50">
+            {enabled ? 'Enabled' : 'Not configured'}
+          </p>
+        </div>
+      </div>
+      {enabled && <span class="badge badge-success badge-sm gap-1">Active</span>}
+    </div>
 
-  <div class="space-y-4">
     {
-      methods.map((method) => (
-        <div class="flex items-center justify-between gap-4 rounded-2xl border border-base-300 bg-base-200/60 p-4">
-          <div class="flex items-center gap-4">
-            <div class="rounded-xl bg-success text-success-content p-2">
-              <LayoutGrid size={18} class="stroke-current" aria-hidden="true" />
-            </div>
-            <div>
-              <p class="text-sm font-semibold">{method.label}</p>
-              <p class="text-xs text-base-content/60">{method.description}</p>
+      enabled ? (
+        <div class="space-y-4">
+          <div class="rounded-2xl border border-base-300 bg-base-200/60 p-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm font-semibold">Authenticator App</p>
+                <p class="text-xs text-base-content/60">
+                  {backupCodesRemaining} backup {backupCodesRemaining === 1 ? 'code' : 'codes'}{' '}
+                  remaining
+                </p>
+              </div>
+              <div class="flex gap-2">
+                <button
+                  type="button"
+                  class="btn btn-outline btn-sm"
+                  data-action="regenerate-backup-codes"
+                  data-testid="regenerate-backup-btn"
+                >
+                  Regenerate Codes
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-outline btn-error btn-sm"
+                  data-action="disable-mfa"
+                  data-testid="disable-mfa-btn"
+                >
+                  Disable
+                </button>
+              </div>
             </div>
           </div>
-          <input
-            id={`mfa-${method.id}`}
-            type="checkbox"
-            class="toggle toggle-accent"
-            checked={method.enabled}
-            disabled
-            aria-label={`Toggle ${method.label}`}
-          />
+
+          {hasLowBackupCodes && (
+            <div class="alert alert-warning text-sm">
+              <span>You have few backup codes remaining. Consider regenerating them.</span>
+            </div>
+          )}
+
+          {hasNoBackupCodes && (
+            <div class="alert alert-error text-sm">
+              <span>
+                No backup codes remaining. Regenerate codes to maintain account recovery access.
+              </span>
+            </div>
+          )}
         </div>
-      ))
+      ) : (
+        <div class="space-y-4">
+          <p class="text-sm text-base-content/60">
+            Add an extra layer of security by requiring a verification code from your authenticator
+            app when signing in.
+          </p>
+          <Button
+            variant="accent"
+            className="w-full"
+            data-action="enable-mfa"
+            data-testid="enable-mfa-btn"
+          >
+            Enable MFA
+          </Button>
+        </div>
+      )
     }
   </div>
-</SecurityCard>
+</section>
