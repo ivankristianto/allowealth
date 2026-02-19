@@ -1,0 +1,24 @@
+---
+/**
+ * MFA Verification Page
+ *
+ * Displayed after successful password login when MFA is enabled.
+ * User enters their TOTP code or backup code to complete login.
+ */
+
+import AuthLayout from '@/layouts/AuthLayout.astro';
+import MfaVerifyForm from '@/components/molecules/MfaVerifyForm.astro';
+
+const url = new URL(Astro.request.url);
+const redirect = url.searchParams.get('redirect') || '';
+
+// Ensure this page is only usable with a pending MFA cookie.
+const mfaPending = Astro.cookies.get('mfa_pending')?.value;
+if (!mfaPending) {
+  return Astro.redirect('/login');
+}
+---
+
+<AuthLayout title="allowealth - Verify Identity">
+  <MfaVerifyForm redirectTo={redirect} />
+</AuthLayout>
