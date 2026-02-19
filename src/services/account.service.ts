@@ -920,6 +920,38 @@ export class AccountService {
   }
 
   /**
+   * Transfer account ownership to a different user.
+   * Admin-only check is enforced at API layer.
+   */
+  async transferOwnership(accountId: string, newOwnerId: string, workspaceId: string) {
+    const account = await this.findByIdIncludingClosed(accountId, workspaceId);
+    if (!account) {
+      throw new AccountServiceError(ServiceErrorCode.ACCOUNT_NOT_FOUND, 'Account not found', 404);
+    }
+
+    await this.db
+      .update(this.schema.accounts)
+      .set({
+        created_by_user_id: newOwnerId,
+        updated_at: new Date(),
+      })
+      .where(
+        and(
+          eq(this.schema.accounts.id, accountId),
+          eq(this.schema.accounts.workspace_id, workspaceId)
+        )
+      );
+
+    // Invalidate account cache - best-effort
+    try {
+      const cache = getCacheManager();
+      await cache.invalidateByTags([CacheTags.workspace(workspaceId), CacheTags.ACCOUNTS]);
+    } catch {
+      // Cache invalidation failed, stale cache is acceptable
+    }
+  }
+
+  /**
    * Get account counts grouped by category ID
    */
   async countClosed(workspaceId: string, ownerUserId?: string): Promise<number> {
