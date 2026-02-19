@@ -249,17 +249,19 @@ function createDatabase(): Database {
       // CLI: remote D1 via REST API
       const awTarget = process.env.AW_TARGET;
       if (awTarget === 'd1') {
-        const { createD1HttpDatabase } = require('./drivers/d1-http');
+        // Dynamic require — d1-http.ts is only needed in CLI context, avoid bundling
+        const dynamicRequire = getRequire();
+        const { createD1HttpDatabase } = dynamicRequire('./drivers/d1-http');
         return createD1HttpDatabase(sqliteSchema) as unknown as Database;
       }
 
       // CLI: local D1 via bun:sqlite on wrangler's state file
       if (awTarget === 'd1-local') {
-        const { findLocalD1Path } = require('./drivers/d1-local');
+        const localRequire = getRequire();
+        const { findLocalD1Path } = localRequire('./drivers/d1-local');
         const localPath = findLocalD1Path(process.cwd());
         driver = createBunDriver(localPath);
-        const dynamicRequire = getRequire();
-        const { drizzle } = dynamicRequire('drizzle-orm/bun-sqlite');
+        const { drizzle } = localRequire('drizzle-orm/bun-sqlite');
         return drizzle(driver._raw, { schema: sqliteSchema });
       }
 

@@ -140,4 +140,35 @@ describe('resolveTarget D1 env setup', () => {
     expect(result).toBe('postgres');
     expect(process.env.D1_ENABLED).toBeUndefined();
   });
+
+  it('sets D1_ENABLED when AW_TARGET already set to d1 by parent', async () => {
+    // Simulates subprocess inheriting AW_TARGET but not D1_ENABLED
+    process.env.AW_TARGET = 'd1';
+    // D1_ENABLED is NOT set (not inherited from parent)
+
+    const { resolveTarget } = await import('./target');
+    const result = await resolveTarget({ target: 'sqlite' });
+
+    expect(result).toBe('d1'); // defers to inherited AW_TARGET
+    expect(process.env.D1_ENABLED).toBe('true'); // ensures D1_ENABLED is set
+  });
+
+  it('sets D1_ENABLED when AW_TARGET already set to d1-local by parent', async () => {
+    process.env.AW_TARGET = 'd1-local';
+
+    const { resolveTarget } = await import('./target');
+    const result = await resolveTarget({ target: 'sqlite' });
+
+    expect(result).toBe('d1-local');
+    expect(process.env.D1_ENABLED).toBe('true');
+  });
+
+  it('does not set D1_ENABLED when AW_TARGET is sqlite', async () => {
+    process.env.AW_TARGET = 'sqlite';
+
+    const { resolveTarget } = await import('./target');
+    await resolveTarget({ target: 'sqlite' });
+
+    expect(process.env.D1_ENABLED).toBeUndefined();
+  });
 });

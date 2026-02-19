@@ -113,28 +113,45 @@ export function createD1HttpDatabase<T extends Record<string, unknown>>(schema: 
         return { rows: [] };
       }
 
-      if (method === 'run') {
-        return { rows: [] };
+      // Check statement-level success (envelope can succeed while statement fails)
+      if (!result.success) {
+        throw new Error(`D1 statement failed: ${sql}`);
       }
 
-      // D1 returns objects — sqlite-proxy expects positional arrays
-      const rows = result.results || [];
-
-      if (rows.length === 0) {
-        return { rows: [] };
-      }
-
-      const columns = Object.keys(rows[0]);
-
-      if (method === 'get') {
-        return { rows: columns.map((col) => rows[0][col]) };
-      }
-
-      // 'all' and 'values'
-      return {
-        rows: rows.map((row) => columns.map((col) => row[col])),
-      };
+      return mapD1Result(result.results || [], method);
     },
     { schema }
   );
+}
+
+/**
+ * Convert D1 API object-format results to sqlite-proxy's expected format.
+ *
+ * sqlite-proxy expects:
+ * - 'run': `{ rows: [] }`
+ * - 'get': `{ rows: [val1, val2, ...] }` (single row as positional values, or `[]` for not found)
+ * - 'all'/'values': `{ rows: [[val1, val2], [val1, val2], ...] }`
+ */
+export function mapD1Result(
+  rows: Array<Record<string, unknown>>,
+  method: string
+): { rows: unknown[] } {
+  if (method === 'run') {
+    return { rows: [] };
+  }
+
+  if (rows.length === 0) {
+    return { rows: [] };
+  }
+
+  const columns = Object.keys(rows[0]);
+
+  if (method === 'get') {
+    return { rows: columns.map((col) => rows[0][col]) };
+  }
+
+  // 'all' and 'values'
+  return {
+    rows: rows.map((row) => columns.map((col) => row[col])),
+  };
 }
