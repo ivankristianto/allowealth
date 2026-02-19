@@ -139,11 +139,10 @@ Production: `bun run aw --prod workspace list`
 
 ### Other
 
-| Command                                  | Description                 |
-| ---------------------------------------- | --------------------------- |
-| `bun run aw mcp start`                   | Start MCP server            |
-| `bun run aw release`                     | Interactive release         |
-| `bun run aw backfill email-verification` | Backfill email verification |
+| Command                | Description         |
+| ---------------------- | ------------------- |
+| `bun run aw mcp start` | Start MCP server    |
+| `bun run aw release`   | Interactive release |
 
 ## Testing
 

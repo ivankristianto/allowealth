@@ -24,7 +24,6 @@ const main = defineCommand({
     deploy: () => import('./commands/deploy').then((m) => m.default),
     mcp: () => import('./commands/mcp').then((m) => m.default),
     release: () => import('./commands/release').then((m) => m.default),
-    backfill: () => import('./commands/backfill').then((m) => m.default),
   },
 });
 
