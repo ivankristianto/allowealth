@@ -43,24 +43,24 @@ export const CacheKeys = {
   /** Session: cache:session:{sessionId} */
   session: (sessionId: string): string => `${PREFIX}:session:${sessionId}`,
 
-  /** Layout data (categories, assets, settings): cache:layout:{workspaceId}:{userId} */
+  /** Layout data (categories, accounts, settings): cache:layout:{workspaceId}:{userId} */
   layout: (workspaceId: string, userId: string): string =>
     `${PREFIX}:layout:${workspaceId}:${userId}`,
 
   /** API key auth context: cache:apikey:{keyHash} */
   apiKey: (keyHash: string): string => `${PREFIX}:apikey:${keyHash}`,
 
-  /** All assets: cache:assets:{workspaceId}:{filtersHash} */
-  assets: (workspaceId: string, filtersHash: string): string =>
-    `${PREFIX}:assets:${workspaceId}:${filtersHash}`,
+  /** All accounts: cache:accounts:{workspaceId}:{filtersHash} */
+  accounts: (workspaceId: string, filtersHash: string): string =>
+    `${PREFIX}:accounts:${workspaceId}:${filtersHash}`,
 
   /** All categories: cache:categories:{workspaceId}:{filtersHash} */
   categories: (workspaceId: string, filtersHash: string): string =>
     `${PREFIX}:categories:${workspaceId}:${filtersHash}`,
 
-  /** All asset categories: cache:asset-categories:{workspaceId}:{filtersHash} */
-  assetCategories: (workspaceId: string, filtersHash: string): string =>
-    `${PREFIX}:asset-categories:${workspaceId}:${filtersHash}`,
+  /** All account categories: cache:account-categories:{workspaceId}:{filtersHash} */
+  accountCategories: (workspaceId: string, filtersHash: string): string =>
+    `${PREFIX}:account-categories:${workspaceId}:${filtersHash}`,
 } as const;
 
 /**

@@ -8,14 +8,14 @@ export const dashboardSchema = z.object({
   currency: z.enum(['IDR', 'USD']).default('IDR'),
 });
 
-export const assetSummarySchema = z.object({
+export const accountSummarySchema = z.object({
   currency: z.enum(['IDR', 'USD']).optional(),
 });
 
 export const dashboardTool: Tool = {
   name: 'get_dashboard',
   description:
-    'Get a combined financial snapshot: total assets, monthly income/expenses, budget health, top spending categories, and recent transactions.',
+    'Get a combined financial snapshot: total accounts, monthly income/expenses, budget health, top spending categories, and recent transactions.',
   inputSchema: {
     type: 'object',
     properties: {
@@ -26,9 +26,9 @@ export const dashboardTool: Tool = {
   },
 };
 
-export const assetSummaryTool: Tool = {
-  name: 'get_asset_summary',
-  description: 'Get asset totals grouped by currency and by asset type.',
+export const accountSummaryTool: Tool = {
+  name: 'get_account_summary',
+  description: 'Get account totals grouped by currency and by account type.',
   inputSchema: {
     type: 'object',
     properties: {
@@ -56,11 +56,11 @@ export async function handleGetDashboard(args: Record<string, unknown>, ctx: Too
     month,
     year,
     currency: input.currency,
-    total_assets: {
-      idr: data.totalAssets.idr,
-      usd: data.totalAssets.usd,
-      converted_total: data.totalAssets.converted,
-      converted_currency: data.totalAssets.convertedCurrency,
+    total_accounts: {
+      idr: data.totalAccounts.idr,
+      usd: data.totalAccounts.usd,
+      converted_total: data.totalAccounts.converted,
+      converted_currency: data.totalAccounts.convertedCurrency,
     },
     monthly_income: data.monthlyIncome.total,
     monthly_expenses: {
@@ -100,13 +100,13 @@ export async function handleGetDashboard(args: Record<string, unknown>, ctx: Too
   };
 }
 
-export async function handleGetAssetSummary(args: Record<string, unknown>, ctx: ToolContext) {
+export async function handleGetAccountSummary(args: Record<string, unknown>, ctx: ToolContext) {
   const { workspaceId } = ctx.auth;
-  const input = assetSummarySchema.parse(args);
+  const input = accountSummarySchema.parse(args);
 
   const [byCurrency, byType] = await Promise.all([
-    ctx.services.asset.getTotalByCurrency(workspaceId),
-    ctx.services.asset.getTotalByType(workspaceId),
+    ctx.services.account.getTotalByCurrency(workspaceId),
+    ctx.services.account.getTotalByType(workspaceId),
   ]);
 
   const result = {

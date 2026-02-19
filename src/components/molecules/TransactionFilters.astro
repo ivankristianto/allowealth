@@ -6,14 +6,14 @@
  *
  * @param {string} action - Form action URL
  * @param {Array} categories - Available categories
- * @param {Array} assets - Available assets
+ * @param {Array} accounts - Available accounts
  * @param {Object} values - Current filter values
  * @param {number} count - Number of results
  */
 
 import Input from '../atoms/Input.astro';
 import CategorySelect from '../atoms/CategorySelect.astro';
-import AssetSelect from '../atoms/AssetSelect.astro';
+import AccountSelect from '../atoms/AccountSelect.astro';
 import DatePicker from '../atoms/DatePicker.astro';
 import Button from '../atoms/Button.astro';
 import FormField from '../molecules/FormField.astro';
@@ -22,12 +22,12 @@ import { Search } from '@lucide/astro';
 export interface Props {
   action: string;
   categories?: Array<{ id: string; name: string; type: string }>;
-  assets?: Array<{ id: string; name: string; type: string }>;
+  accounts?: Array<{ id: string; name: string; type: string }>;
   values?: {
     search?: string;
     type?: 'expense' | 'income' | '';
     category_id?: string;
-    asset_id?: string;
+    account_id?: string;
     currency?: 'IDR' | 'USD' | '';
     start_date?: string;
     end_date?: string;
@@ -35,7 +35,7 @@ export interface Props {
   count?: number;
 }
 
-const { action, categories = [], assets = [], values = {}, count = 0 } = Astro.props;
+const { action, categories = [], accounts = [], values = {}, count = 0 } = Astro.props;
 ---
 
 <form action={action} method="GET" class="space-y-4">
@@ -84,11 +84,11 @@ const { action, categories = [], assets = [], values = {}, count = 0 } = Astro.p
       label="Category"
     />
 
-    <!-- Asset -->
-    <AssetSelect
-      id="asset_id"
-      assets={assets}
-      value={values.asset_id || ''}
+    <!-- Account -->
+    <AccountSelect
+      id="account_id"
+      accounts={accounts}
+      value={values.account_id || ''}
       required={false}
       label="Account"
     />

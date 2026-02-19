@@ -8,7 +8,7 @@
 import { mock } from 'bun:test';
 import type { IDatabase } from '@/db';
 import type { Category, Transaction } from '@/lib/types';
-import type { Asset } from '@/lib/types/asset';
+import type { Account } from '@/lib/types/account';
 import type { Budget, BudgetWithCategory } from '@/lib/types/budget';
 
 /**
@@ -61,15 +61,15 @@ export function createMockDatabase(): IDatabase {
         findFirst: mock(() => Promise.resolve(undefined)),
         findMany: mock(() => Promise.resolve([])),
       },
-      assets: {
+      accounts: {
         findFirst: mock(() => Promise.resolve(undefined)),
         findMany: mock(() => Promise.resolve([])),
       },
-      assetHistory: {
+      accountHistory: {
         findFirst: mock(() => Promise.resolve(undefined)),
         findMany: mock(() => Promise.resolve([])),
       },
-      assetCategories: {
+      accountCategories: {
         findFirst: mock(() => Promise.resolve(undefined)),
         findMany: mock(() => Promise.resolve([])),
       },
@@ -192,11 +192,11 @@ export function createMockBudgetWithCategory(
 }
 
 /**
- * Creates a mock asset for testing
+ * Creates a mock account for testing
  */
-export function createMockAsset(overrides: Partial<Asset> = {}): Asset {
+export function createMockAccount(overrides: Partial<Account> = {}): Account {
   return {
-    id: 'asset-1',
+    id: 'account-1',
     workspace_id: 'workspace-1',
     created_by_user_id: 'user-1',
     name: 'BCA Savings',
@@ -227,8 +227,8 @@ export function createMockTransaction(overrides: Partial<Transaction> = {}): Tra
     workspace_id: 'workspace-1',
     created_by_user_id: 'user-1',
     category_id: 'cat-1',
-    asset_id: 'asset-1',
-    to_asset_id: null,
+    account_id: 'account-1',
+    to_account_id: null,
     type: 'expense',
     amount: '50000',
     currency: 'IDR',
@@ -249,16 +249,16 @@ export function createMockTransaction(overrides: Partial<Transaction> = {}): Tra
 export function createMockTransactionWithRelations(
   overrides: Partial<Transaction> = {},
   category?: Category,
-  asset?: Asset
-): Transaction & { category?: Category; asset?: Asset } {
+  account?: Account
+): Transaction & { category?: Category; account?: Account } {
   const mockCategory = category || createMockCategory();
-  const mockAsset = asset || createMockAsset();
+  const mockAccount = account || createMockAccount();
 
   return {
     ...createMockTransaction(overrides),
     category: mockCategory,
-    asset: mockAsset,
-  } as Transaction & { category?: Category; asset?: Asset };
+    account: mockAccount,
+  } as Transaction & { category?: Category; account?: Account };
 }
 
 /**
@@ -276,12 +276,12 @@ export function resetMockDatabase(mockDb: IDatabase): void {
   (mockDb.query.categories.findMany as any).mockClear();
   (mockDb.query.budgets.findFirst as any).mockClear();
   (mockDb.query.budgets.findMany as any).mockClear();
-  (mockDb.query.assets.findFirst as any).mockClear();
-  (mockDb.query.assets.findMany as any).mockClear();
-  (mockDb.query.assetHistory as any).findFirst.mockClear();
-  (mockDb.query.assetHistory as any).findMany.mockClear();
-  (mockDb.query.assetCategories as any).findFirst.mockClear();
-  (mockDb.query.assetCategories as any).findMany.mockClear();
+  (mockDb.query.accounts.findFirst as any).mockClear();
+  (mockDb.query.accounts.findMany as any).mockClear();
+  (mockDb.query.accountHistory as any).findFirst.mockClear();
+  (mockDb.query.accountHistory as any).findMany.mockClear();
+  (mockDb.query.accountCategories as any).findFirst.mockClear();
+  (mockDb.query.accountCategories as any).findMany.mockClear();
   (mockDb.query.apiKeys.findFirst as any).mockClear();
   (mockDb.query.apiKeys.findMany as any).mockClear();
   (mockDb.query.workspaceMeta.findFirst as any).mockClear();

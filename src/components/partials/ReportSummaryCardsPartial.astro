@@ -5,7 +5,7 @@
  * Server-rendered partial for report summary stat cards.
  * Used for both SSR and HTML fragment responses (?_render=html).
  *
- * Currency amounts use badge + value pattern matching AssetPortfolioSummary.
+ * Currency amounts use badge + value pattern matching AccountAccountsSummary.
  *
  * @param {string} totalIncome - Total income for period (decimal string)
  * @param {string} totalExpenses - Total expenses for period (decimal string)
@@ -13,8 +13,8 @@
  * @param {number} budgetHealth - Budget health percentage
  * @param {number} expenseCategories - Number of expense categories
  * @param {Currency} currency - Currency to display (IDR or USD)
- * @param {number} totalAssetsIdr - Total asset value in IDR
- * @param {number} totalAssetsUsd - Total asset value in USD
+ * @param {number} totalAccountsIdr - Total account value in IDR
+ * @param {number} totalAccountsUsd - Total account value in USD
  * @param {number} totalDebtIdr - Total debt value in IDR
  * @param {number} totalDebtUsd - Total debt value in USD
  */
@@ -30,8 +30,8 @@ export interface Props {
   budgetHealth: number;
   expenseCategories: number;
   currency: Currency;
-  totalAssetsIdr?: number;
-  totalAssetsUsd?: number;
+  totalAccountsIdr?: number;
+  totalAccountsUsd?: number;
   totalDebtIdr?: number;
   totalDebtUsd?: number;
 }
@@ -43,13 +43,13 @@ const {
   budgetHealth,
   expenseCategories,
   currency,
-  totalAssetsIdr = 0,
-  totalAssetsUsd = 0,
+  totalAccountsIdr = 0,
+  totalAccountsUsd = 0,
   totalDebtIdr = 0,
   totalDebtUsd = 0,
 } = Astro.props;
 
-// Currency badge classes — matches AssetPortfolioSummary pattern
+// Currency badge classes — matches AccountAccountsSummary pattern
 const badge =
   'inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold uppercase tracking-wider shrink-0';
 
@@ -111,31 +111,31 @@ const currencyBadge = (c: string) =>
       progressColor={budgetHealth > 100 ? 'bg-error' : 'bg-success'}
     />
 
-    <StatCard title="TOTAL ASSETS">
+    <StatCard title="TOTAL ACCOUNTS">
       <Fragment slot="details">
         <div class="space-y-1.5">
           {
-            totalAssetsIdr !== 0 && (
+            totalAccountsIdr !== 0 && (
               <div class="flex items-center gap-2">
                 <span class={currencyBadge('IDR')}>IDR</span>
                 <p class="text-lg font-bold text-success tracking-tight leading-none truncate">
-                  {formatCurrency(totalAssetsIdr, 'IDR')}
+                  {formatCurrency(totalAccountsIdr, 'IDR')}
                 </p>
               </div>
             )
           }
           {
-            totalAssetsUsd !== 0 && (
+            totalAccountsUsd !== 0 && (
               <div class="flex items-center gap-2">
                 <span class={currencyBadge('USD')}>USD</span>
                 <p class="text-lg font-bold text-info tracking-tight leading-none truncate">
-                  {formatCurrency(totalAssetsUsd, 'USD')}
+                  {formatCurrency(totalAccountsUsd, 'USD')}
                 </p>
               </div>
             )
           }
           {
-            totalAssetsIdr === 0 && totalAssetsUsd === 0 && (
+            totalAccountsIdr === 0 && totalAccountsUsd === 0 && (
               <p class="text-lg font-bold text-base-content/40 tracking-tight leading-none">
                 {formatCurrency(0, currency)}
               </p>

@@ -118,9 +118,9 @@ export const GET: APIRoute = async (context) => {
         name: categoryName,
         type: 'expense' as const,
       },
-      asset: {
-        id: '', // Asset ID not available in CategoryTransaction
-        name: txn.assetName,
+      account: {
+        id: '', // Account ID not available in CategoryTransaction
+        name: txn.accountName,
         type: 'bank',
         currency: txn.currency,
       },

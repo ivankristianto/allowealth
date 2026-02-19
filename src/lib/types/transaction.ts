@@ -19,8 +19,8 @@ export interface Transaction {
   workspace_id: string;
   created_by_user_id: string;
   category_id: string | null; // Nullable for transfers
-  asset_id: string;
-  to_asset_id: string | null; // For transfers only
+  account_id: string;
+  to_account_id: string | null; // For transfers only
   type: TransactionType | 'transfer';
   amount: string; // Stored as string for decimal precision
   currency: Currency;
@@ -36,7 +36,7 @@ export interface Transaction {
 // Output types (with relations for API responses)
 export interface TransactionOutput extends Omit<
   Transaction,
-  'workspace_id' | 'created_by_user_id' | 'category_id' | 'asset_id' | 'to_asset_id'
+  'workspace_id' | 'created_by_user_id' | 'category_id' | 'account_id' | 'to_account_id'
 > {
   category: {
     id: string;
@@ -45,12 +45,12 @@ export interface TransactionOutput extends Omit<
     icon: string;
     color: string;
   } | null;
-  asset: {
+  account: {
     id: string;
     name: string;
     type: string;
   };
-  toAsset?: {
+  toAccount?: {
     id: string;
     name: string;
     type: string;
@@ -70,7 +70,7 @@ export interface TransactionFormData {
   amount: string;
   currency: string;
   category_id: string;
-  asset_id: string;
+  account_id: string;
   transaction_date: string;
 }
 
@@ -103,9 +103,9 @@ export interface TransactionSummary {
     amount: string;
     percentage: number;
   }>;
-  by_asset: Array<{
-    asset_id: string;
-    asset_name: string;
+  by_account: Array<{
+    account_id: string;
+    account_name: string;
     amount: string;
     percentage: number;
   }>;

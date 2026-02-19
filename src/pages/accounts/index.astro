@@ -1,0 +1,509 @@
+---
+/**
+ * Accounts List Page (Global Accounts)
+ *
+ * Main page for viewing and managing accounts with portfolio summary.
+ * Redesigned as part of the Global Accounts page update.
+ * Includes modals for add, edit, delete, and history actions.
+ */
+
+import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
+import AccountPortfolioSummary from '@components/organisms/AccountPortfolioSummary.astro';
+import AccountActions from '@components/organisms/AccountActions.astro';
+import AccountGroupCard from '@components/organisms/AccountGroupCard.astro';
+import AccountItemRow from '@components/molecules/AccountItemRow.astro';
+import AccountFormModal from '@components/organisms/AccountFormModal.astro';
+import AccountTransferModal from '@components/organisms/AccountTransferModal.astro';
+import AccountDeleteConfirmModal from '@components/organisms/AccountDeleteConfirmModal.astro';
+import AccountHistoryModal from '@components/organisms/AccountHistoryModal.astro';
+import AccountUpdateValueModal from '@components/organisms/AccountUpdateValueModal.astro';
+import AccountCategoryModal from '@components/organisms/AccountCategoryModal.astro';
+import PeriodicSelector, { type PeriodOption } from '@/components/molecules/PeriodicSelector.astro';
+import EmptyState from '@components/atoms/EmptyState.astro';
+import { CalendarDays, Search } from '@lucide/astro';
+import { accountService, accountCategoryService } from '@/services';
+import type { AccountOutput, AccountType, AccountClass } from '@/lib/types/account';
+import { formatAccountType, deriveAccountClass, ACCOUNT_CLASS_LABELS } from '@/lib/types/account';
+import { formatMonthYear } from '@/lib/utils/date';
+import { PERIOD_SELECTOR_MONTH_LIMIT } from '@/lib/constants/period';
+import {
+  calculateAccountAllocation,
+  calculatePortfolioTotals,
+  calculateDebtTotals,
+  groupAccountsByClass,
+  calculateGroupTotals,
+} from '@/lib/utils/account';
+
+const user = Astro.locals.user!;
+const currentPath = '/accounts';
+
+// Valid account types for filtering
+const VALID_ACCOUNT_TYPES = [
+  'cash',
+  'bank_account',
+  'e_wallet',
+  'mutual_fund',
+  'bond',
+  'crypto',
+  'stock',
+  'other',
+  'credit_card',
+  'loan',
+] as const;
+
+// Get query parameters for filtering
+const url = new URL(Astro.url);
+const searchParams = Object.fromEntries(url.searchParams.entries());
+
+// Build filters for service with validation
+const filters: {
+  user_id: string;
+  type?: AccountType;
+  category_id?: string;
+  currency?: 'IDR' | 'USD';
+} = {
+  user_id: user.workspaceId,
+};
+
+// Validate account type parameter before assignment
+if (searchParams.type && VALID_ACCOUNT_TYPES.includes(searchParams.type as AccountType)) {
+  filters.type = searchParams.type as AccountType;
+}
+if (searchParams.categoryId) {
+  filters.category_id = searchParams.categoryId;
+}
+if (searchParams.currency === 'IDR' || searchParams.currency === 'USD') {
+  filters.currency = searchParams.currency;
+}
+
+// Month navigation parameters
+const yearParam = url.searchParams.get('year');
+const monthParam = url.searchParams.get('month');
+const now = new Date();
+const selectedYear = yearParam ? parseInt(yearParam, 10) : now.getFullYear();
+const selectedMonth = monthParam ? parseInt(monthParam, 10) : now.getMonth() + 1;
+const isViewingCurrentMonth = !yearParam && !monthParam;
+
+// Format current month for display
+const currentMonthDisplay = new Date(selectedYear, selectedMonth - 1).toLocaleDateString('en-US', {
+  month: 'long',
+  year: 'numeric',
+});
+const selectedPeriod = `${selectedYear}-${selectedMonth.toString().padStart(2, '0')}`;
+const currentMonthUrl = new URL(url);
+currentMonthUrl.searchParams.delete('year');
+currentMonthUrl.searchParams.delete('month');
+const currentMonthHref = `${currentMonthUrl.pathname}${currentMonthUrl.search}`;
+
+// Generate monthly period options (latest -> oldest, capped by shared selector window)
+const monthlyPeriodOptions: PeriodOption[] = Array.from(
+  { length: PERIOD_SELECTOR_MONTH_LIMIT },
+  (_, i) => {
+    const monthsBack = i;
+    const date = new Date(now.getFullYear(), now.getMonth() - monthsBack, 1);
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1;
+    const monthStr = month.toString().padStart(2, '0');
+
+    return {
+      value: `${year}-${monthStr}`,
+      label: formatMonthYear(date),
+    };
+  }
+);
+
+if (!monthlyPeriodOptions.some((period) => period.value === selectedPeriod)) {
+  monthlyPeriodOptions.push({
+    value: selectedPeriod,
+    label: currentMonthDisplay,
+  });
+  monthlyPeriodOptions.sort((a, b) => b.value.localeCompare(a.value));
+}
+
+// Get closed account count for navigation link
+const closedCount = await accountService.countClosed(user.workspaceId);
+
+// Fetch accounts and categories from database
+const categories = await accountCategoryService.findAll(user.workspaceId);
+const categoriesById = new Map(categories.map((category) => [category.id, category]));
+const defaultCategoryId =
+  categories.find((category) => category.is_system && !category.is_liability)?.id ||
+  categories[0]?.id ||
+  '';
+// Fetch accounts - use snapshot for historical views, current data for present
+let accounts: AccountOutput[];
+
+if (!isViewingCurrentMonth) {
+  // Historical view: get snapshot for the selected month
+  const snapshots = await accountService.getSnapshotForMonth(
+    user.workspaceId,
+    selectedYear,
+    selectedMonth,
+    filters,
+    Astro.locals.perf
+  );
+  accounts = snapshots.map((snapshot) => {
+    const categoryName = snapshot.category_id
+      ? categoriesById.get(snapshot.category_id)?.name || null
+      : formatAccountType(snapshot.type);
+
+    return {
+      id: snapshot.id,
+      name: snapshot.name,
+      type: snapshot.type,
+      account_class: snapshot.account_class ?? deriveAccountClass(snapshot.type),
+      category_id: snapshot.category_id,
+      category_name: categoryName,
+      balance: snapshot.snapshot_balance,
+      initial_balance: snapshot.initial_balance || null,
+      currency: snapshot.currency,
+      status: snapshot.status ?? 'active',
+      closed_at: snapshot.closed_at ?? null,
+      closed_by_user_id: snapshot.closed_by_user_id ?? null,
+      last_updated: snapshot.snapshot_date || snapshot.last_updated,
+      created_at: snapshot.created_at,
+      updated_at: snapshot.updated_at,
+    };
+  });
+} else {
+  // Current view: use latest balance
+  const rawAccounts = await accountService.findAll(user.workspaceId, filters, Astro.locals.perf);
+  accounts = rawAccounts.map((account) => {
+    const categoryName = account.category_id
+      ? categoriesById.get(account.category_id)?.name || null
+      : formatAccountType(account.type);
+
+    return {
+      id: account.id,
+      name: account.name,
+      type: account.type,
+      account_class: account.account_class,
+      category_id: account.category_id,
+      category_name: categoryName,
+      balance: account.balance,
+      initial_balance: account.initial_balance || null,
+      currency: account.currency,
+      status: account.status ?? 'active',
+      closed_at: account.closed_at ?? null,
+      closed_by_user_id: account.closed_by_user_id ?? null,
+      last_updated: account.last_updated,
+      created_at: account.created_at,
+      updated_at: account.updated_at,
+    };
+  });
+}
+
+// Calculate portfolio totals and allocation
+// @TODO: Wire with backend - Consider moving calculations to service layer
+const portfolioTotals = calculatePortfolioTotals(accounts);
+const debtTotals = calculateDebtTotals(accounts);
+const accountAllocation = calculateAccountAllocation(accounts);
+
+// Find latest update date across all accounts
+const latestUpdate = accounts.reduce<Date | null>((latest, account) => {
+  const updated = new Date(account.last_updated);
+  return !latest || updated > latest ? updated : latest;
+}, null);
+
+// Group accounts by account class for display (Liquid → Non-Liquid → Debt)
+const accountsByClass = groupAccountsByClass(accounts);
+const CLASS_ORDER: AccountClass[] = ['liquid', 'non_liquid', 'debt'];
+const sortedGroups = CLASS_ORDER.filter((cls) => accountsByClass[cls].length > 0).map((cls) => ({
+  groupKey: cls,
+  label: ACCOUNT_CLASS_LABELS[cls],
+  accounts: accountsByClass[cls],
+}));
+---
+
+<ProtectedLayout title="Accounts" currentPath={currentPath} subtitle={currentMonthDisplay}>
+  <div
+    slot="header"
+    class="relative flex w-full items-center justify-center py-1 sm:gap-2 lg:w-auto lg:justify-start"
+    data-account-header-controls
+  >
+    <PeriodicSelector
+      options={monthlyPeriodOptions}
+      selected={selectedPeriod}
+      ariaLabel="Select account month"
+      inputName="account-period"
+      className="shrink-0"
+      newestFirst
+    />
+
+    {
+      !isViewingCurrentMonth && (
+        <a
+          href={currentMonthHref}
+          class="btn btn-sm bg-base-100 border border-base-300 hover:border-accent/30 hover:text-accent rounded-xl transition-all gap-1 absolute right-0 lg:static lg:ml-1"
+          aria-label="Go to current month"
+          data-testid="account-current-month-btn"
+        >
+          <CalendarDays size={16} class="stroke-current" aria-hidden="true" />
+          <span class="text-xs">Today</span>
+        </a>
+      )
+    }
+  </div>
+
+  <div class="max-w-7xl mx-auto sm:px-2 lg:px-6 space-y-6 sm:space-y-8" data-testid="accounts-page">
+    {/* Historical view indicator */}
+    {
+      !isViewingCurrentMonth && (
+        <div class="bg-warning/10 border border-warning/20 rounded-card px-4 py-3 text-sm text-warning font-medium flex items-center gap-2">
+          <CalendarDays size={16} class="stroke-current shrink-0" />
+          Showing portfolio values as of {currentMonthDisplay}. Update actions are disabled for
+          historical views.
+        </div>
+      )
+    }
+
+    {/* Action Buttons - always visible so users can add accounts/categories even when empty */}
+    <AccountActions
+      isHistoricalView={!isViewingCurrentMonth}
+      defaultCategoryId={defaultCategoryId}
+      closedCount={closedCount}
+    />
+
+    {
+      accounts.length > 0 ? (
+        <>
+          {/* Accounts Summary */}
+          <AccountPortfolioSummary
+            totalIdr={portfolioTotals.totalIdr}
+            totalUsd={portfolioTotals.totalUsd}
+            debtIdr={debtTotals.debtIdr}
+            debtUsd={debtTotals.debtUsd}
+            distribution={accountAllocation}
+            loading={false}
+            latestUpdate={latestUpdate}
+            isHistoricalView={!isViewingCurrentMonth}
+          />
+
+          {/* Search Filter */}
+          <div class="relative">
+            <Search
+              size={18}
+              class="absolute left-3 top-1/2 -translate-y-1/2 stroke-current text-base-content/40 pointer-events-none"
+              aria-hidden="true"
+            />
+            <input
+              type="search"
+              data-account-search
+              placeholder="Search accounts by name…"
+              class="input input-bordered w-full pl-10 rounded-xl bg-base-100 text-sm"
+              aria-label="Search accounts by name"
+            />
+          </div>
+
+          {/* Account Groups */}
+          <div class="space-y-6">
+            {sortedGroups.map((group) => {
+              const groupTotals = calculateGroupTotals(group.accounts);
+
+              return (
+                <AccountGroupCard
+                  type={group.label}
+                  accountClass={group.groupKey}
+                  count={group.accounts.length}
+                  totalIdr={groupTotals.idr}
+                  totalUsd={groupTotals.usd}
+                  groupId={group.groupKey}
+                  isDebt={group.groupKey === 'debt'}
+                  defaultExpanded={true}
+                >
+                  {group.accounts.map((account) => (
+                    <AccountItemRow
+                      id={account.id}
+                      name={account.name}
+                      type={account.type}
+                      accountClass={account.account_class}
+                      categoryId={account.category_id}
+                      categoryName={account.category_name}
+                      currency={account.currency}
+                      balance={parseFloat(account.balance)}
+                      initialBalance={
+                        account.initial_balance ? parseFloat(account.initial_balance) : undefined
+                      }
+                      lastUpdated={account.last_updated}
+                      isHistoricalView={!isViewingCurrentMonth}
+                    />
+                  ))}
+                </AccountGroupCard>
+              );
+            })}
+          </div>
+
+          {/* No results message (hidden by default, shown by client script) */}
+          <div
+            data-account-search-no-results
+            class="text-center py-8 text-base-content/50 text-sm font-medium hidden"
+          >
+            No accounts match your search.
+          </div>
+        </>
+      ) : (
+        <div class="card bg-base-100 shadow border border-base-300 rounded-card">
+          <div class="card-body">
+            <EmptyState
+              title="No accounts tracked yet"
+              message="Add your first account to start tracking your net worth across different types and currencies."
+            />
+            <div class="flex justify-center mt-4">
+              <button
+                type="button"
+                class="btn btn-accent gap-2 rounded-2xl"
+                data-add-account-btn
+                data-add-first-account-btn
+                data-default-category-id={defaultCategoryId}
+              >
+                Add Your First Account
+              </button>
+            </div>
+          </div>
+        </div>
+      )
+    }
+  </div>
+
+  {/* Account Modals */}
+  <AccountTransferModal
+    id="account-transfer-modal"
+    accounts={accounts.map((a) => ({
+      id: a.id,
+      name: a.name,
+      currency: a.currency,
+      balance: a.balance,
+    }))}
+  />
+  <AccountFormModal id="account-form-modal" mode="add" categories={categories} />
+  <AccountCategoryModal id="account-category-modal" />
+  <AccountDeleteConfirmModal id="account-delete-modal" />
+  <AccountHistoryModal id="account-history-modal" />
+  <AccountUpdateValueModal id="account-update-value-modal" />
+</ProtectedLayout>
+
+<script>
+  import { PERIOD_CHANGE_EVENT } from '@/lib/constants/events';
+  import { initInlineHistory } from '@/components/molecules/AccountInlineHistory.client';
+  import { initAccountSearch } from '@/components/organisms/AccountSearch.client';
+
+  const firstAccountButtonHandlers = new WeakMap<HTMLElement, (event: Event) => void>();
+
+  function openAccountForm(defaultCategoryId = '') {
+    document.dispatchEvent(
+      new CustomEvent('open-account-form', {
+        detail: {
+          name: '',
+          categoryId: defaultCategoryId,
+          balance: '',
+        },
+      })
+    );
+  }
+
+  function initFirstAccountButton() {
+    document.querySelectorAll<HTMLElement>('[data-add-first-account-btn]').forEach((button) => {
+      if (firstAccountButtonHandlers.has(button)) return;
+
+      const handler = () => {
+        const defaultCategoryId = button.getAttribute('data-default-category-id') || '';
+        openAccountForm(defaultCategoryId);
+      };
+
+      firstAccountButtonHandlers.set(button, handler);
+      button.addEventListener('click', handler);
+    });
+  }
+
+  function openOnboardingAccountModal() {
+    const url = new URL(window.location.href);
+    if (url.searchParams.get('onboarding') !== 'add-account') return;
+
+    const modal = document.getElementById('account-form-modal') as HTMLDialogElement | null;
+    if (modal?.open) return;
+
+    const defaultCategoryId =
+      document
+        .querySelector<HTMLElement>('[data-add-first-account-btn],[data-add-account-btn]')
+        ?.getAttribute('data-default-category-id') || '';
+
+    // Delay to ensure modal listeners are attached before dispatching.
+    requestAnimationFrame(() => openAccountForm(defaultCategoryId));
+
+    url.searchParams.delete('onboarding');
+    const query = url.searchParams.toString();
+    window.history.replaceState({}, '', `${url.pathname}${query ? `?${query}` : ''}`);
+  }
+
+  function cleanupFirstAccountButton() {
+    document.querySelectorAll<HTMLElement>('[data-add-first-account-btn]').forEach((button) => {
+      const handler = firstAccountButtonHandlers.get(button);
+      if (!handler) return;
+      button.removeEventListener('click', handler);
+      firstAccountButtonHandlers.delete(button);
+    });
+  }
+
+  let periodChangeController: AbortController | null = null;
+
+  function initAccountPeriodSelector() {
+    periodChangeController?.abort();
+    periodChangeController = new AbortController();
+
+    const controls = document.querySelector('[data-account-header-controls]');
+    if (!controls) return;
+
+    window.addEventListener(
+      PERIOD_CHANGE_EVENT,
+      (event: Event) => {
+        const period = (event as CustomEvent<{ period?: string }>).detail?.period;
+        if (!period || !/^\d{4}-\d{2}$/.test(period)) return;
+
+        const [year, month] = period.split('-');
+        const periodYear = parseInt(year, 10);
+        const periodMonth = parseInt(month, 10);
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        const currentMonth = now.getMonth() + 1;
+        const nextUrl = new URL(window.location.href);
+
+        if (periodYear === currentYear && periodMonth === currentMonth) {
+          nextUrl.searchParams.delete('year');
+          nextUrl.searchParams.delete('month');
+        } else {
+          nextUrl.searchParams.set('year', String(periodYear));
+          nextUrl.searchParams.set('month', String(periodMonth));
+        }
+
+        if (nextUrl.toString() !== window.location.href) {
+          window.location.assign(nextUrl.toString());
+        }
+      },
+      { signal: periodChangeController.signal }
+    );
+  }
+
+  function init() {
+    initInlineHistory();
+    initAccountSearch();
+    initFirstAccountButton();
+    openOnboardingAccountModal();
+    initAccountPeriodSelector();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+
+  document.addEventListener('astro:page-load', init);
+  document.addEventListener(
+    'astro:before-swap',
+    () => {
+      cleanupFirstAccountButton();
+      periodChangeController?.abort();
+    },
+    { once: true }
+  );
+</script>

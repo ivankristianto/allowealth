@@ -14,8 +14,8 @@ openapi/
 │   ├── workspace.yml                # Workspace management endpoints (settings, members, invitations)
 │   ├── transactions.yml             # Transaction endpoints (CRUD, import, export)
 │   ├── categories.yml               # Category management endpoints
-│   ├── asset-categories.yml         # Asset category endpoints
-│   ├── assets.yml                   # Asset tracking endpoints
+│   ├── account-categories.yml         # Account category endpoints
+│   ├── accounts.yml                   # Account tracking endpoints
 │   ├── budget.yml                   # Budget overview and alerts endpoints
 │   ├── budgets.yml                  # Budget CRUD endpoints
 │   ├── forecast.yml                 # Forecast endpoints
@@ -61,16 +61,16 @@ openapi/
 │   ├── CategoryResponse.yml         # Category response
 │   ├── CategoriesListResponse.yml   # Category list response
 │   │
-│   │ # Asset schemas
-│   ├── Asset.yml                    # Asset object
-│   ├── CreateAssetRequest.yml       # Asset creation request
-│   ├── UpdateAssetRequest.yml       # Asset update request
-│   ├── UpdateAssetBalanceRequest.yml # Balance update request
-│   ├── AssetResponse.yml            # Asset response
-│   ├── AssetsListResponse.yml       # Asset list response
-│   ├── AssetHistoryItem.yml         # Asset history item
-│   ├── AssetHistoryListResponse.yml # Asset history list response
-│   ├── AssetSummaryResponse.yml     # Asset summary response
+│   │ # Account schemas
+│   ├── Account.yml                    # Account object
+│   ├── CreateAccountRequest.yml       # Account creation request
+│   ├── UpdateAccountRequest.yml       # Account update request
+│   ├── UpdateAccountBalanceRequest.yml # Balance update request
+│   ├── AccountResponse.yml            # Account response
+│   ├── AccountsListResponse.yml       # Account list response
+│   ├── AccountHistoryItem.yml         # Account history item
+│   ├── AccountHistoryListResponse.yml # Account history list response
+│   ├── AccountSummaryResponse.yml     # Account summary response
 │   │
 │   │ # Budget schemas
 │   ├── BudgetOverviewResponse.yml   # Budget overview response

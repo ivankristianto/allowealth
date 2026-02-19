@@ -5,7 +5,7 @@ import {
   BudgetPage,
   CategoriesPage,
   AddTransactionPage,
-  AssetsPage,
+  AccountsPage,
   TransactionsPage,
   ReportsPage,
 } from '../pages';
@@ -20,7 +20,7 @@ export interface TestFixtures {
   budgetPage: BudgetPage;
   categoriesPage: CategoriesPage;
   addTransactionPage: AddTransactionPage;
-  assetsPage: AssetsPage;
+  accountsPage: AccountsPage;
   transactionsPage: TransactionsPage;
   reportsPage: ReportsPage;
 }
@@ -50,8 +50,8 @@ export const test = base.extend<TestFixtures>({
     await use(new AddTransactionPage(page));
   },
 
-  assetsPage: async ({ page }, use) => {
-    await use(new AssetsPage(page));
+  accountsPage: async ({ page }, use) => {
+    await use(new AccountsPage(page));
   },
 
   transactionsPage: async ({ page }, use) => {

@@ -60,7 +60,7 @@ const { action } = Astro.props;
   <input type="hidden" name="map_amount" id="map-amount-hidden" />
   <input type="hidden" name="map_currency" id="map-currency-hidden" />
   <input type="hidden" name="map_category" id="map-category-hidden" />
-  <input type="hidden" name="map_asset" id="map-asset-hidden" />
+  <input type="hidden" name="map_account" id="map-account-hidden" />
   <input type="hidden" name="map_description" id="map-description-hidden" />
 </form>
 
@@ -96,7 +96,7 @@ const { action } = Astro.props;
           Drop CSV file here or <span class="text-accent underline">browse</span>
         </p>
         <p class="text-xs text-base-content/40 mt-2">
-          Expected columns: date, type, amount, currency, category, asset, description
+          Expected columns: date, type, amount, currency, category, account, description
         </p>
         <input id="csv-file-input" name="csv_file" type="file" accept=".csv" class="hidden" />
       </div>

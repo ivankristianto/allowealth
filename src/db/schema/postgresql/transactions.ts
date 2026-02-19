@@ -3,7 +3,7 @@ import { sql } from 'drizzle-orm';
 import { workspaces } from './workspaces';
 import { users } from './users';
 import { categories } from './categories';
-import { assets } from './assets';
+import { accounts } from './accounts';
 
 export const transactions = pgTable(
   'transactions',
@@ -16,10 +16,10 @@ export const transactions = pgTable(
       .notNull()
       .references(() => users.id),
     category_id: text('category_id').references(() => categories.id), // Nullable for transfers
-    asset_id: text('asset_id')
+    account_id: text('account_id')
       .notNull()
-      .references(() => assets.id), // Source asset (where money comes from)
-    to_asset_id: text('to_asset_id').references(() => assets.id), // Destination asset (for transfers only)
+      .references(() => accounts.id), // Source account (where money comes from)
+    to_account_id: text('to_account_id').references(() => accounts.id), // Destination account (for transfers only)
     type: text('type', { enum: ['expense', 'income', 'transfer'] }).notNull(),
     amount: text('amount').notNull(), // Stored as string for decimal precision
     // P2: TODO - Consider using numeric type for PostgreSQL native decimal support
@@ -34,7 +34,7 @@ export const transactions = pgTable(
   },
   (table) => [
     index('transactions_workspace_id_idx').on(table.workspace_id),
-    index('transactions_asset_id_idx').on(table.asset_id),
+    index('transactions_account_id_idx').on(table.account_id),
     index('transactions_transaction_date_idx').on(table.transaction_date),
     index('transactions_category_id_idx').on(table.category_id),
     index('transactions_ws_type_currency_date_idx').on(
@@ -58,7 +58,7 @@ export const transactions = pgTable(
     index('transactions_created_by_user_id_idx').on(table.created_by_user_id),
     index('transactions_updated_by_user_id_idx').on(table.updated_by_user_id),
     index('transactions_deleted_by_user_id_idx').on(table.deleted_by_user_id),
-    index('transactions_to_asset_id_idx').on(table.to_asset_id),
+    index('transactions_to_account_id_idx').on(table.to_account_id),
     pgPolicy('transactions_allow_all', {
       as: 'permissive',
       for: 'all',

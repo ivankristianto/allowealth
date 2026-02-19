@@ -19,7 +19,7 @@ const meta: Meta = {
   argTypes: {
     currentPath: {
       control: 'select',
-      options: ['/dashboard', '/transactions', '/assets', '/budget', '/reports'],
+      options: ['/dashboard', '/transactions', '/accounts', '/budget', '/reports'],
       description: 'Current active route path',
     },
   },
@@ -44,7 +44,7 @@ interface NavItemConfig {
 
 const navItems: NavItemConfig[] = [
   { href: '/transactions', label: 'Activity', icon: icons.receipt },
-  { href: '/assets', label: 'Assets', icon: icons.wallet },
+  { href: '/accounts', label: 'Accounts', icon: icons.wallet },
   { href: '/budget', label: 'Budgets', icon: icons.donut },
   { href: '/reports', label: 'Reports', icon: icons.chartBar },
 ];
@@ -79,7 +79,7 @@ const createMobileNavigation = (args: { currentPath?: string }): HTMLElement => 
   accentHalo.setAttribute('aria-hidden', 'true');
   container.appendChild(accentHalo);
 
-  // Left nav items (Activity, Assets)
+  // Left nav items (Activity, Accounts)
   navItems.slice(0, 2).forEach((item) => {
     const active = isActive(item.href, currentPath);
     const link = createNavItem(item, active);
@@ -173,9 +173,9 @@ export const Activity: StoryObj = {
   render: (args) => createMobileNavigation(args),
 };
 
-export const Assets: StoryObj = {
+export const Accounts: StoryObj = {
   args: {
-    currentPath: '/assets',
+    currentPath: '/accounts',
   },
   render: (args) => createMobileNavigation(args),
 };

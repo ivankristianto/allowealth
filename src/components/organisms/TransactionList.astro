@@ -10,7 +10,7 @@
  * @param {number} pageSize - Number of transactions per page
  * @param {string} baseUrl - Base URL for pagination
  * @param {Array} categories - Available categories for filters
- * @param {Array} assets - Available assets for filters
+ * @param {Array} accounts - Available accounts for filters
  * @param {Object} filters - Current filter values
  * @param {boolean} showFilters - Show filter panel
  */
@@ -31,7 +31,7 @@ export interface Props {
   pageSize: number;
   baseUrl: string;
   categories?: Array<{ id: string; name: string; type: string }>;
-  assets?: Array<{ id: string; name: string; type: string }>;
+  accounts?: Array<{ id: string; name: string; type: string }>;
   filters?: Record<string, string>;
   showFilters?: boolean;
 }
@@ -43,7 +43,7 @@ const {
   pageSize = 50,
   baseUrl,
   categories = [],
-  assets = [],
+  accounts = [],
   filters = {},
   showFilters = true,
 } = Astro.props;
@@ -144,7 +144,7 @@ const dateGroups = groupTransactionsByDate(transactions);
           <TransactionFilters
             action={baseUrl}
             categories={categories}
-            assets={assets}
+            accounts={accounts}
             values={filters}
             count={total}
           />

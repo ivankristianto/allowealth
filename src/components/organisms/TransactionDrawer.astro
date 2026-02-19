@@ -12,11 +12,11 @@ import { CircleMinus, CirclePlus, Inbox } from '@lucide/astro';
 
 export interface Props {
   categories: Array<{ id: string; name: string; type: string; currency?: string }>;
-  assets: Array<{ id: string; name: string; type: string; account_class: string }>;
+  accounts: Array<{ id: string; name: string; type: string; account_class: string }>;
   categoryUsageCounts?: Array<{ category_id: string; count: number }>;
 }
 
-const { categories, assets, categoryUsageCounts = [] } = Astro.props;
+const { categories, accounts, categoryUsageCounts = [] } = Astro.props;
 ---
 
 <Drawer id="transaction-drawer" title="Add Transaction" width="w-full sm:max-w-md">
@@ -68,7 +68,7 @@ const { categories, assets, categoryUsageCounts = [] } = Astro.props;
       mode="create"
       action="/api/transactions"
       categories={categories}
-      assets={assets}
+      accounts={accounts}
       categoryUsageCounts={categoryUsageCounts}
       bulk={true}
       formId="drawer-form-expense"
@@ -88,7 +88,7 @@ const { categories, assets, categoryUsageCounts = [] } = Astro.props;
       mode="create"
       action="/api/transactions"
       categories={categories}
-      assets={assets}
+      accounts={accounts}
       categoryUsageCounts={categoryUsageCounts}
       bulk={true}
       formId="drawer-form-income"

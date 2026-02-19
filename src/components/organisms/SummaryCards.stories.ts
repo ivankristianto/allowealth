@@ -20,7 +20,7 @@ const meta: Meta = {
 |----------|-------|-------|
 | Error Icon | CircleAlert | size={24}, shrink-0, text-error |
 | Empty State Icon | TrendingUp | size={48}, mx-auto mb-4 text-neutral-400 |
-| Total Assets Icon | DollarSign | size={20}, stroke-current shrink-0 text-success |
+| Total Accounts Icon | DollarSign | size={20}, stroke-current shrink-0 text-success |
 | Monthly Spent Icon | Calendar | size={20}, stroke-current shrink-0 text-info |
 | Budget Health Icon | ShieldCheck | size={20}, stroke-current shrink-0 text-warning |
 | View Budget Chevron | ChevronRight | size={16}, group-hover:translate-x-1 |
@@ -37,9 +37,9 @@ const meta: Meta = {
 | Loading | 5 animated pulse skeleton cards |
 | Error | Single card with border-error, CircleAlert icon |
 | Empty | Centered TrendingUp icon with "No data yet" message |
-| Normal | 3 data cards (Assets, Spent, Health) |
+| Normal | 3 data cards (Accounts, Spent, Health) |
 
-### Total Assets Card
+### Total Accounts Card
 - IDR amount in text-success (green)
 - USD amount in text-info (blue)
 - Converted total in bold text-success
@@ -133,7 +133,7 @@ const createSummaryCards = (args: {
       `;
       grid.appendChild(card);
     }
-  } else if (!data || (data as any).totalAssets.idr === 0) {
+  } else if (!data || (data as any).totalAccounts.idr === 0) {
     // Empty state
     const emptyCard = document.createElement('div');
     emptyCard.className = 'col-span-full';
@@ -143,20 +143,20 @@ const createSummaryCards = (args: {
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
         </svg>
         <h3 class="text-lg font-semibold mb-2">No data yet</h3>
-        <p class="text-base-content/60">Start by adding your assets and transactions</p>
+        <p class="text-base-content/60">Start by adding your accounts and transactions</p>
       </div>
     `;
     grid.appendChild(emptyCard);
   } else {
-    // Normal state - Total Assets Card
+    // Normal state - Total Accounts Card
     const summaryData = data as typeof mockSummaryCardsData;
 
-    const assetsCard = document.createElement('div');
-    assetsCard.className =
+    const accountsCard = document.createElement('div');
+    accountsCard.className =
       'border rounded-lg p-6 bg-base-100 hover:shadow-lg transition-shadow group';
-    assetsCard.innerHTML = `
+    accountsCard.innerHTML = `
       <div class="flex items-start justify-between mb-4">
-        <h3 class="text-sm font-medium text-base-content/60 uppercase tracking-wide">Total Assets</h3>
+        <h3 class="text-sm font-medium text-base-content/60 uppercase tracking-wide">Total Accounts</h3>
         <div class="p-2 bg-success/10 rounded-lg group-hover:bg-success/20 transition-colors">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -166,21 +166,21 @@ const createSummaryCards = (args: {
       <div class="space-y-2 mb-4">
         <div class="flex justify-between items-baseline">
           <span class="text-sm text-base-content/60">IDR:</span>
-          <span class="font-semibold text-lg text-success">${formatCurrency(summaryData.totalAssets.idr, 'IDR')}</span>
+          <span class="font-semibold text-lg text-success">${formatCurrency(summaryData.totalAccounts.idr, 'IDR')}</span>
         </div>
         <div class="flex justify-between items-baseline">
           <span class="text-sm text-base-content/60">USD:</span>
-          <span class="font-semibold text-lg text-info">${formatCurrency(summaryData.totalAssets.usd, 'USD')}</span>
+          <span class="font-semibold text-lg text-info">${formatCurrency(summaryData.totalAccounts.usd, 'USD')}</span>
         </div>
       </div>
       <div class="pt-3 border-t border-base-300">
         <div class="flex justify-between items-baseline">
           <span class="text-sm text-base-content/60">Total:</span>
-          <span class="font-bold text-xl text-success">${formatCurrency(summaryData.totalAssets.converted, summaryData.totalAssets.convertedCurrency)}</span>
+          <span class="font-bold text-xl text-success">${formatCurrency(summaryData.totalAccounts.converted, summaryData.totalAccounts.convertedCurrency)}</span>
         </div>
       </div>
     `;
-    grid.appendChild(assetsCard);
+    grid.appendChild(accountsCard);
 
     // Monthly Spent Card
     const spentCard = document.createElement('div');

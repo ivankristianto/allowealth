@@ -1,0 +1,204 @@
+---
+/**
+ * Closed Accounts Page
+ *
+ * Shows all closed account accounts with metadata (closed date, closed by).
+ * Admins can reopen accounts from this page.
+ */
+
+import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
+import AccountReopenModal from '@components/organisms/AccountReopenModal.astro';
+import EmptyState from '@components/atoms/EmptyState.astro';
+import { ArrowLeft, RotateCcw, Clock } from '@lucide/astro';
+import { accountService, accountCategoryService } from '@/services';
+import { formatAccountType } from '@/lib/types/account';
+import { formatCurrency } from '@/lib/formatting';
+
+const user = Astro.locals.user!;
+const currentPath = '/accounts';
+const isAdmin = user.role === 'admin';
+
+// Fetch closed accounts
+const closedAccounts = await accountService.findAllClosed(user.workspaceId);
+const categories = await accountCategoryService.findAll(user.workspaceId);
+const categoriesById = new Map(categories.map((c) => [c.id, c]));
+
+// Format closed date for display
+const formatClosedDate = (date: Date | null): string => {
+  if (!date) return 'Unknown';
+  return new Date(date).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+};
+---
+
+<ProtectedLayout
+  title="Closed Accounts"
+  currentPath={currentPath}
+  subtitle="Previously closed accounts"
+>
+  <div
+    class="max-w-7xl mx-auto sm:px-2 lg:px-6 space-y-6 sm:space-y-8"
+    data-testid="closed-accounts-page"
+  >
+    {/* Back link */}
+    <div class="px-4 sm:px-0">
+      <a
+        href="/accounts"
+        class="inline-flex items-center gap-1.5 text-sm font-medium text-base-content/60 hover:text-base-content transition-colors"
+      >
+        <ArrowLeft size={16} class="stroke-current" aria-hidden="true" />
+        Back to Active Accounts
+      </a>
+    </div>
+
+    {/* Page title */}
+    <div class="px-4 sm:px-0">
+      <h1 class="text-2xl lg:text-3xl font-bold text-base-content tracking-tight">
+        Closed Accounts
+      </h1>
+      <p class="text-sm text-base-content/50 mt-1">
+        {closedAccounts.length}
+        {closedAccounts.length === 1 ? 'account' : 'accounts'} closed
+      </p>
+    </div>
+
+    {
+      closedAccounts.length > 0 ? (
+        <div class="space-y-3">
+          {closedAccounts.map((account) => {
+            const categoryName = account.category_id
+              ? categoriesById.get(account.category_id)?.name || formatAccountType(account.type)
+              : formatAccountType(account.type);
+            const currencyBadgeClasses =
+              account.currency === 'IDR' ? 'bg-success/10 text-success' : 'bg-info/10 text-info';
+
+            return (
+              <div
+                class="card bg-base-100 shadow border border-base-300 rounded-card opacity-60 hover:opacity-80 transition-opacity"
+                data-testid="closed-account-item"
+                data-account-id={account.id}
+              >
+                <div class="card-body p-4 lg:px-8 lg:py-5">
+                  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    {/* Account Info */}
+                    <div class="flex-1 min-w-0">
+                      <h3 class="text-base lg:text-lg font-bold text-base-content leading-none tracking-tight truncate">
+                        {account.name}
+                      </h3>
+                      <div class="flex items-center gap-3 mt-2 lg:mt-3">
+                        <span
+                          class:list={[
+                            'px-2 py-0.5 rounded-md text-xs font-bold tracking-wider uppercase',
+                            currencyBadgeClasses,
+                          ]}
+                        >
+                          {account.currency}
+                        </span>
+                        <span class="text-xs text-base-content/40 font-medium">{categoryName}</span>
+                        <span class="inline-flex items-center gap-1 text-xs text-base-content/40 font-medium">
+                          <Clock size={10} class="stroke-current" aria-hidden="true" />
+                          Closed {formatClosedDate(account.closed_at)}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Balance and Actions */}
+                    <div class="flex items-center gap-6">
+                      <div class="text-right">
+                        <p class="text-lg font-bold text-base-content/40 tracking-tight leading-none">
+                          {formatCurrency(parseFloat(account.balance), account.currency)}
+                        </p>
+                      </div>
+
+                      {/* Reopen button (admin only) */}
+                      {isAdmin && (
+                        <div class="tooltip tooltip-bottom" data-tip="Reopen account">
+                          <button
+                            type="button"
+                            class="btn btn-ghost btn-sm gap-1.5 text-accent hover:bg-accent/10 rounded-xl"
+                            aria-label={`Reopen ${account.name}`}
+                            data-reopen-account={account.id}
+                            data-account-name={account.name}
+                            data-account-type={categoryName}
+                            data-account-currency={account.currency}
+                            data-account-closed-at={account.closed_at?.toISOString() || ''}
+                            data-testid="account-reopen-btn"
+                          >
+                            <RotateCcw size={16} class="stroke-current" aria-hidden="true" />
+                            <span class="hidden sm:inline">Reopen</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div class="card bg-base-100 shadow border border-base-300 rounded-card">
+          <div class="card-body">
+            <EmptyState
+              title="No closed accounts"
+              message="When you close account accounts, they'll appear here. Closed accounts preserve their transaction history."
+              actionLabel="Back to Active Accounts"
+              actionHref="/accounts"
+            />
+          </div>
+        </div>
+      )
+    }
+  </div>
+
+  {/* Reopen Modal (admin only) */}
+  {isAdmin && <AccountReopenModal id="account-reopen-modal" />}
+</ProtectedLayout>
+
+<script>
+  const initializedReopenButtons = new WeakSet<Element>();
+
+  function initReopenButtons() {
+    document.querySelectorAll('[data-reopen-account]').forEach((button) => {
+      if (initializedReopenButtons.has(button)) return;
+      initializedReopenButtons.add(button);
+
+      button.addEventListener('click', (e: MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const btn = button as HTMLElement;
+        const accountId = btn.getAttribute('data-reopen-account');
+        const accountName = btn.getAttribute('data-account-name') || 'Account';
+        const accountType = btn.getAttribute('data-account-type') || 'Unknown';
+        const accountCurrency = btn.getAttribute('data-account-currency') || 'IDR';
+        const accountClosedAt = btn.getAttribute('data-account-closed-at') || '';
+
+        if (!accountId) return;
+
+        document.dispatchEvent(
+          new CustomEvent('open-account-reopen', {
+            detail: {
+              id: accountId,
+              name: accountName,
+              type: accountType,
+              currency: accountCurrency,
+              closedAt: accountClosedAt,
+            },
+          })
+        );
+      });
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initReopenButtons);
+  } else {
+    initReopenButtons();
+  }
+
+  document.addEventListener('astro:page-load', initReopenButtons);
+</script>

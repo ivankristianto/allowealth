@@ -14,7 +14,7 @@ export abstract class BasePage {
   /**
    * Navigate to a URL path.
    * Protected method for use by subclasses in their specific goto methods.
-   * @param path - The URL path to navigate to (e.g., '/assets')
+   * @param path - The URL path to navigate to (e.g., '/accounts')
    */
   protected async navigateTo(path: string): Promise<void> {
     await this.page.goto(path);

@@ -11,7 +11,7 @@ import type { APIRoute } from 'astro';
 import { db } from '@/db';
 import { EmailVerificationService } from '@/services/email-verification.service';
 import { WorkspaceService } from '@/services/workspace.service';
-import { AssetCategoryService } from '@/services/asset-category.service';
+import { AccountCategoryService } from '@/services/account-category.service';
 import { createLogger } from '@/lib/logger';
 
 const log = createLogger('api:verify-email');
@@ -57,8 +57,8 @@ export const GET: APIRoute = async ({ request, redirect }) => {
         const workspaceService = new WorkspaceService(db);
         await workspaceService.activateWorkspace(user.workspace_id);
 
-        const assetCategoryService = new AssetCategoryService(db);
-        await assetCategoryService.seedDefaultCategories(user.workspace_id, user.id);
+        const accountCategoryService = new AccountCategoryService(db);
+        await accountCategoryService.seedDefaultCategories(user.workspace_id, user.id);
 
         log.info('Workspace activated and categories seeded', {
           userId: user.id,

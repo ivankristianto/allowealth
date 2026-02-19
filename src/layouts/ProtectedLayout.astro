@@ -23,7 +23,7 @@
  * - Makes userSettings available via Astro.locals.userSettings (frozen to prevent mutation)
  *
  * Note: This layout should only be used for pages under protected route prefixes:
- * /dashboard, /transactions, /budget, /assets, /reports, /forecast, /calculators, /settings, /profile, /security
+ * /dashboard, /transactions, /budget, /accounts, /reports, /forecast, /calculators, /settings, /profile, /security
  *
  * @param title - Page title displayed in header (defaults to "Finance Manager")
  * @param currentPath - Current route path for navigation highlighting
@@ -32,13 +32,13 @@
 
 import MainLayout from './MainLayout.astro';
 import TransactionDrawer from '@/components/organisms/TransactionDrawer.astro';
-import { categoryService, assetService, userMetaService, transactionService } from '@/services';
+import { categoryService, accountService, userMetaService, transactionService } from '@/services';
 import { DEFAULT_USER_SETTINGS, type UserSettings } from '@/lib/constants/user-meta-keys';
 import { getCacheManager, CacheKeys, CacheTags } from '@/lib/cache';
 
 interface LayoutData {
   categories: Array<{ id: string; name: string; type: string; currency?: string }>;
-  assets: Array<{ id: string; name: string; type: string; account_class: string }>;
+  accounts: Array<{ id: string; name: string; type: string; account_class: string }>;
   userSettings: UserSettings;
   categoryUsageCounts: Array<{ category_id: string; count: number }>;
 }
@@ -54,10 +54,10 @@ const { title = 'Finance Manager', currentPath = '/', subtitle } = Astro.props;
 // User is authenticated (enforced by middleware)
 const user = Astro.locals.user!;
 
-// Fetch categories, assets, and user settings for global transaction drawer
+// Fetch categories, accounts, and user settings for global transaction drawer
 // Use cache to reduce database round-trips (saves ~400ms per page load)
 let categories: Array<{ id: string; name: string; type: string; currency?: string }> = [];
-let assets: Array<{ id: string; name: string; type: string; account_class: string }> = [];
+let accounts: Array<{ id: string; name: string; type: string; account_class: string }> = [];
 let userSettings: UserSettings = { ...DEFAULT_USER_SETTINGS };
 let categoryUsageCounts: Array<{ category_id: string; count: number }> = [];
 
@@ -77,14 +77,14 @@ try {
 
 if (cached) {
   categories = cached.categories;
-  assets = cached.assets;
+  accounts = cached.accounts;
   userSettings = cached.userSettings;
   categoryUsageCounts = cached.categoryUsageCounts;
 } else {
   try {
-    [categories, assets, userSettings, categoryUsageCounts] = await Promise.all([
+    [categories, accounts, userSettings, categoryUsageCounts] = await Promise.all([
       categoryService.findAll(user.workspaceId, { is_active: true }),
-      assetService.findAll(user.workspaceId),
+      accountService.findAll(user.workspaceId),
       userMetaService.getUserSettings(user.id),
       transactionService.getCategoryUsageCounts(user.workspaceId, user.id),
     ]);
@@ -93,7 +93,7 @@ if (cached) {
       if (cache && cacheKey) {
         await cache.set<LayoutData>(
           cacheKey,
-          { categories, assets, userSettings, categoryUsageCounts },
+          { categories, accounts, userSettings, categoryUsageCounts },
           {
             ttl: 60,
             tags: [
@@ -101,7 +101,7 @@ if (cached) {
               CacheTags.user(user.id),
               CacheTags.LAYOUT,
               CacheTags.CATEGORIES,
-              CacheTags.ASSETS,
+              CacheTags.ACCOUNTS,
               CacheTags.SETTINGS,
             ],
           }
@@ -134,6 +134,6 @@ Astro.locals.userSettings = Object.freeze({ ...userSettings });
 <!-- Bulk Transaction Drawer -->
 <TransactionDrawer
   categories={categories}
-  assets={assets}
+  accounts={accounts}
   categoryUsageCounts={categoryUsageCounts}
 />

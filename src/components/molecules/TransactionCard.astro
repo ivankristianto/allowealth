@@ -94,7 +94,7 @@ const transactionDataJson = transaction
       amount: transaction.amount,
       currency: transaction.currency,
       category_id: transaction.category?.id,
-      asset_id: transaction.asset.id,
+      account_id: transaction.account.id,
       transaction_date: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`,
     })
   : '';
@@ -232,7 +232,7 @@ const cardClasses = [
           )}
         </div>
 
-        {/* Row 2: Date · Category · Asset · User */}
+        {/* Row 2: Date · Category · Account · User */}
         <div class="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-base-content/40">
           <time
             datetime={date.toISOString()}
@@ -252,7 +252,7 @@ const cardClasses = [
           {isDeleted && <span class="badge badge-ghost badge-sm text-xs">Deleted</span>}
           <span class="inline-flex items-center gap-1 min-w-0">
             <CreditCard size={10} class="stroke-current shrink-0" aria-hidden="true" />
-            <span class="truncate">{transaction?.asset?.name}</span>
+            <span class="truncate">{transaction?.account?.name}</span>
           </span>
           {createdByName && (
             <span class="inline-flex items-center gap-1 whitespace-nowrap min-w-0">
@@ -306,11 +306,11 @@ const cardClasses = [
           </div>
         </div>
 
-        {/* Asset */}
+        {/* Account */}
         <div class="flex-shrink-0">
           <div class="flex items-center gap-1.5 text-[11px] uppercase tracking-widest text-base-content/40">
             <CreditCard size={11} class="stroke-current" aria-hidden="true" />
-            <span>{transaction?.asset?.name}</span>
+            <span>{transaction?.account?.name}</span>
           </div>
         </div>
 

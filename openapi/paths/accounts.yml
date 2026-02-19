@@ -1,0 +1,398 @@
+# Accounts endpoint paths
+paths:
+  /api/accounts:
+    get:
+      tags: [Accounts]
+      summary: List all accounts
+      description: Retrieve all accounts for the authenticated user
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: type
+          in: query
+          description: Filter by account type
+          schema:
+            type: string
+            enum: [cash, bank_account, e_wallet, mutual_fund, bond, crypto, stock, other, credit_card, loan]
+        - name: categoryId
+          in: query
+          description: Filter by account category ID
+          schema:
+            type: string
+        - name: currency
+          in: query
+          description: Filter by currency
+          schema:
+            type: string
+            enum: [IDR, USD]
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/AccountsListResponse.yml#/AccountsListResponse'
+        '400':
+          $ref: '../responses/common.yml#/BadRequest'
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'
+    post:
+      tags: [Accounts]
+      summary: Create a new account
+      description: Create a new account
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/CreateAccountRequest.yml#/CreateAccountRequest'
+      responses:
+        '201':
+          description: Account created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/AccountResponse.yml#/AccountResponse'
+        '400':
+          $ref: '../responses/common.yml#/BadRequest'
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'
+
+  /api/accounts/{id}:
+    get:
+      tags: [Accounts]
+      summary: Get an account by ID
+      description: Retrieve a single account by its ID
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: '../parameters/common.yml#/IdParameter'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/AccountResponse.yml#/AccountResponse'
+        '400':
+          $ref: '../responses/common.yml#/BadRequest'
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '404':
+          $ref: '../responses/common.yml#/NotFound'
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'
+    put:
+      tags: [Accounts]
+      summary: Update an account
+      description: Update an existing account (name, category, type, or currency)
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: '../parameters/common.yml#/IdParameter'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/UpdateAccountRequest.yml#/UpdateAccountRequest'
+      responses:
+        '200':
+          description: Account updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/AccountResponse.yml#/AccountResponse'
+        '400':
+          $ref: '../responses/common.yml#/BadRequest'
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '404':
+          $ref: '../responses/common.yml#/NotFound'
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'
+    delete:
+      tags: [Accounts]
+      summary: Deactivate an account (deprecated, use /close)
+      description: |
+        Deactivates an accounts (backwards-compatible alias for POST /api/accounts/{id}/close).
+        Requires zero balance. Prefer using the dedicated close endpoint.
+      deprecated: true
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: '../parameters/common.yml#/IdParameter'
+      responses:
+        '200':
+          description: Account deactivated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        example: Account deactivated successfully
+        '400':
+          $ref: '../responses/common.yml#/BadRequest'
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '404':
+          $ref: '../responses/common.yml#/NotFound'
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'
+
+  /api/accounts/{id}/balance:
+    post:
+      tags: [Accounts]
+      summary: Update account balance
+      description: Update an account's balance (creates history entry)
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: '../parameters/common.yml#/IdParameter'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/UpdateAccountBalanceRequest.yml#/UpdateAccountBalanceRequest'
+      responses:
+        '200':
+          description: Account balance updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/AccountResponse.yml#/AccountResponse'
+        '400':
+          $ref: '../responses/common.yml#/BadRequest'
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '404':
+          $ref: '../responses/common.yml#/NotFound'
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'
+
+  /api/accounts/transfer:
+    post:
+      tags: [Accounts]
+      summary: Transfer balance between accounts
+      description: Transfer balance from one account to another of the same currency
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [fromAccountId, toAccountId, amount]
+              properties:
+                fromAccountId:
+                  type: string
+                  description: Source account ID
+                toAccountId:
+                  type: string
+                  description: Destination account ID (must differ from source)
+                amount:
+                  type: string
+                  description: Transfer amount (must be positive)
+                notes:
+                  type: string
+                  maxLength: 500
+                  description: Optional transfer notes
+      responses:
+        '200':
+          description: Transfer completed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      fromAccount:
+                        $ref: '../schemas/AccountResponse.yml#/AccountResponse'
+                      toAccount:
+                        $ref: '../schemas/AccountResponse.yml#/AccountResponse'
+        '400':
+          $ref: '../responses/common.yml#/BadRequest'
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '404':
+          $ref: '../responses/common.yml#/NotFound'
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'
+
+  /api/accounts/{id}/history:
+    get:
+      tags: [Accounts]
+      summary: Get account balance history
+      description: Retrieve balance history for an account
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: '../parameters/common.yml#/IdParameter'
+        - name: limit
+          in: query
+          description: Maximum number of history entries to return (1-100)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/AccountHistoryListResponse.yml#/AccountHistoryListResponse'
+        '400':
+          $ref: '../responses/common.yml#/BadRequest'
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '404':
+          description: Account not found
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'
+
+  /api/accounts/closed:
+    get:
+      tags: [Accounts]
+      summary: List closed accounts
+      description: Retrieve all closed accountss for the authenticated workspace
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: type
+          in: query
+          description: Filter by account type
+          schema:
+            type: string
+            enum: [cash, bank_account, e_wallet, mutual_fund, bond, crypto, stock, other, credit_card, loan]
+        - name: currency
+          in: query
+          description: Filter by currency
+          schema:
+            type: string
+            enum: [IDR, USD]
+      responses:
+        '200':
+          description: List of closed accounts
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/AccountsListResponse.yml#/AccountsListResponse'
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'
+
+  /api/accounts/{id}/close:
+    post:
+      tags: [Accounts]
+      summary: Deactivate an accounts
+      description: |
+        Deactivates an accounts. Requires zero balance.
+        Once deactivated, the account is hidden from active views but transaction history is preserved.
+        Can be reopened later by an admin.
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: '../parameters/common.yml#/IdParameter'
+      responses:
+        '200':
+          description: Account deactivated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      account:
+                        $ref: '../schemas/Account.yml#/Account'
+                      message:
+                        type: string
+                        example: Account deactivated successfully
+        '400':
+          description: Balance not zero or account already deactivated
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '404':
+          $ref: '../responses/common.yml#/NotFound'
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'
+
+  /api/accounts/{id}/reopen:
+    post:
+      tags: [Accounts]
+      summary: Reopen a closed accounts
+      description: |
+        Reopens a previously closed account. Admin only.
+        The account will be restored to the active accounts list.
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: '../parameters/common.yml#/IdParameter'
+      responses:
+        '200':
+          description: Account reopened successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      account:
+                        $ref: '../schemas/Account.yml#/Account'
+                      message:
+                        type: string
+                        example: Account reopened successfully
+        '400':
+          description: Account is not closed
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+        '401':
+          $ref: '../responses/common.yml#/Unauthorized'
+        '403':
+          description: Insufficient permissions (admin only)
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ErrorResponse.yml#/ErrorResponse'
+        '404':
+          $ref: '../responses/common.yml#/NotFound'
+        '500':
+          $ref: '../responses/common.yml#/InternalServerError'

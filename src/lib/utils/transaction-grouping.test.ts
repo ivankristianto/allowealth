@@ -19,7 +19,7 @@ function makeTx(
     created_at: new Date(),
     updated_at: new Date(),
     category: { id: 'cat-1', name: 'Food', type: 'expense', icon: 'utensils', color: 'bg-info' },
-    asset: { id: 'asset-1', name: 'Cash', type: 'cash' },
+    account: { id: 'account-1', name: 'Cash', type: 'cash' },
     ...overrides,
   };
 }

@@ -373,7 +373,7 @@
       "dashboard": "LayoutDashboard",
       "transactions": "Receipt",
       "budgets": "PieChart",
-      "assets": "GitBranch",
+      "accounts": "GitBranch",
       "analytics": "BarChart3",
       "settings": "Settings",
       "notifications": "Bell",

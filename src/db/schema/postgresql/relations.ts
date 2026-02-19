@@ -14,13 +14,13 @@ import { users } from './users';
 import { userMeta } from './user-meta';
 import { sessions } from './sessions';
 import { categories } from './categories';
-import { assetCategories } from './asset-categories';
+import { accountCategories } from './account-categories';
 import { transactions } from './transactions';
-import { assets } from './assets';
-import { assetHistory } from './asset-history';
-import { assetUpdateReminders } from './asset-update-reminders';
-import { assetSnapshots } from './asset-snapshots';
-import { assetSnapshotItems } from './asset-snapshot-items';
+import { accounts } from './accounts';
+import { accountHistory } from './account-history';
+import { accountUpdateReminders } from './account-update-reminders';
+import { accountSnapshots } from './account-snapshots';
+import { accountSnapshotItems } from './account-snapshot-items';
 import { budgets } from './budgets';
 import { auditLogs } from './audit-logs';
 import { apiKeys } from './api-keys';
@@ -32,11 +32,11 @@ export const workspacesRelations = relations(workspaces, ({ many }) => ({
   invitations: many(workspaceInvitations),
   users: many(users),
   categories: many(categories),
-  assetCategories: many(assetCategories),
+  accountCategories: many(accountCategories),
   transactions: many(transactions),
-  assets: many(assets),
-  assetSnapshots: many(assetSnapshots),
-  assetUpdateReminders: many(assetUpdateReminders),
+  accounts: many(accounts),
+  accountSnapshots: many(accountSnapshots),
+  accountUpdateReminders: many(accountUpdateReminders),
   budgets: many(budgets),
   auditLogs: many(auditLogs),
   apiKeys: many(apiKeys),
@@ -71,11 +71,11 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   meta: many(userMeta),
   sessions: many(sessions),
   createdCategories: many(categories),
-  createdAssetCategories: many(assetCategories),
+  createdAccountCategories: many(accountCategories),
   createdTransactions: many(transactions),
-  createdAssets: many(assets),
-  createdAssetSnapshots: many(assetSnapshots),
-  createdAssetUpdateReminders: many(assetUpdateReminders),
+  createdAccounts: many(accounts),
+  createdAccountSnapshots: many(accountSnapshots),
+  createdAccountUpdateReminders: many(accountUpdateReminders),
   createdBudgets: many(budgets),
   apiKeys: many(apiKeys),
   oauthAccounts: many(oauthAccounts),
@@ -111,17 +111,17 @@ export const categoriesRelations = relations(categories, ({ one, many }) => ({
   budgets: many(budgets),
 }));
 
-// Asset categories relations
-export const assetCategoriesRelations = relations(assetCategories, ({ one, many }) => ({
+// Account categories relations
+export const accountCategoriesRelations = relations(accountCategories, ({ one, many }) => ({
   workspace: one(workspaces, {
-    fields: [assetCategories.workspace_id],
+    fields: [accountCategories.workspace_id],
     references: [workspaces.id],
   }),
   createdBy: one(users, {
-    fields: [assetCategories.created_by_user_id],
+    fields: [accountCategories.created_by_user_id],
     references: [users.id],
   }),
-  assets: many(assets),
+  accounts: many(accounts),
 }));
 
 // Transactions relations
@@ -138,85 +138,85 @@ export const transactionsRelations = relations(transactions, ({ one }) => ({
     fields: [transactions.category_id],
     references: [categories.id],
   }),
-  asset: one(assets, {
-    fields: [transactions.asset_id],
-    references: [assets.id],
-    relationName: 'transactionAsset',
+  account: one(accounts, {
+    fields: [transactions.account_id],
+    references: [accounts.id],
+    relationName: 'transactionAccount',
   }),
-  toAsset: one(assets, {
-    fields: [transactions.to_asset_id],
-    references: [assets.id],
-    relationName: 'transactionToAsset',
+  toAccount: one(accounts, {
+    fields: [transactions.to_account_id],
+    references: [accounts.id],
+    relationName: 'transactionToAccount',
   }),
 }));
 
-// Assets relations
-export const assetsRelations = relations(assets, ({ one, many }) => ({
+// Accounts relations
+export const accountsRelations = relations(accounts, ({ one, many }) => ({
   workspace: one(workspaces, {
-    fields: [assets.workspace_id],
+    fields: [accounts.workspace_id],
     references: [workspaces.id],
   }),
   createdBy: one(users, {
-    fields: [assets.created_by_user_id],
+    fields: [accounts.created_by_user_id],
     references: [users.id],
   }),
-  category: one(assetCategories, {
-    fields: [assets.category_id],
-    references: [assetCategories.id],
+  category: one(accountCategories, {
+    fields: [accounts.category_id],
+    references: [accountCategories.id],
   }),
-  history: many(assetHistory),
-  reminders: many(assetUpdateReminders),
-  snapshotItems: many(assetSnapshotItems),
-  transactions: many(transactions, { relationName: 'transactionAsset' }),
-  incomingTransfers: many(transactions, { relationName: 'transactionToAsset' }),
+  history: many(accountHistory),
+  reminders: many(accountUpdateReminders),
+  snapshotItems: many(accountSnapshotItems),
+  transactions: many(transactions, { relationName: 'transactionAccount' }),
+  incomingTransfers: many(transactions, { relationName: 'transactionToAccount' }),
 }));
 
-// Asset history relations
-export const assetHistoryRelations = relations(assetHistory, ({ one }) => ({
-  asset: one(assets, {
-    fields: [assetHistory.asset_id],
-    references: [assets.id],
+// Account history relations
+export const accountHistoryRelations = relations(accountHistory, ({ one }) => ({
+  account: one(accounts, {
+    fields: [accountHistory.account_id],
+    references: [accounts.id],
   }),
 }));
 
-// Asset update reminders relations
-export const assetUpdateRemindersRelations = relations(assetUpdateReminders, ({ one }) => ({
+// Account update reminders relations
+export const accountUpdateRemindersRelations = relations(accountUpdateReminders, ({ one }) => ({
   workspace: one(workspaces, {
-    fields: [assetUpdateReminders.workspace_id],
+    fields: [accountUpdateReminders.workspace_id],
     references: [workspaces.id],
   }),
   createdBy: one(users, {
-    fields: [assetUpdateReminders.created_by_user_id],
+    fields: [accountUpdateReminders.created_by_user_id],
     references: [users.id],
   }),
-  asset: one(assets, {
-    fields: [assetUpdateReminders.asset_id],
-    references: [assets.id],
+  account: one(accounts, {
+    fields: [accountUpdateReminders.account_id],
+    references: [accounts.id],
   }),
 }));
 
-// Asset snapshots relations
-export const assetSnapshotsRelations = relations(assetSnapshots, ({ one, many }) => ({
+// Account snapshots relations
+export const accountSnapshotsRelations = relations(accountSnapshots, ({ one, many }) => ({
   workspace: one(workspaces, {
-    fields: [assetSnapshots.workspace_id],
+    fields: [accountSnapshots.workspace_id],
     references: [workspaces.id],
   }),
   createdBy: one(users, {
-    fields: [assetSnapshots.created_by_user_id],
+    fields: [accountSnapshots.created_by_user_id],
     references: [users.id],
   }),
-  items: many(assetSnapshotItems),
+  items: many(accountSnapshotItems),
 }));
 
-// Asset snapshot items relations
-export const assetSnapshotItemsRelations = relations(assetSnapshotItems, ({ one }) => ({
-  snapshot: one(assetSnapshots, {
-    fields: [assetSnapshotItems.snapshot_id],
-    references: [assetSnapshots.id],
+// Account snapshot items relations
+export const accountSnapshotItemsRelations = relations(accountSnapshotItems, ({ one }) => ({
+  snapshot: one(accountSnapshots, {
+    fields: [accountSnapshotItems.snapshot_id],
+    references: [accountSnapshots.id],
   }),
-  asset: one(assets, {
-    fields: [assetSnapshotItems.asset_id],
-    references: [assets.id],
+  account: one(accounts, {
+    fields: [accountSnapshotItems.account_id],
+    references: [accounts.id],
   }),
 }));
 

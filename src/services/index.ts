@@ -17,8 +17,8 @@ import { db } from '@/db';
 // Import service classes
 import { CategoryService } from './category.service';
 import { TransactionService } from './transaction.service';
-import { AssetService } from './asset.service';
-import { AssetCategoryService } from './asset-category.service';
+import { AccountService } from './account.service';
+import { AccountCategoryService } from './account-category.service';
 import { BudgetService } from './budget.service';
 import { DashboardService } from './dashboard.service';
 import { UserService } from './user.service';
@@ -36,8 +36,8 @@ import { DiagnosticsService } from './diagnostics.service';
 // Re-export types and utilities
 export * from './transaction.service';
 export * from './category.service';
-export * from './asset.service';
-export * from './asset-category.service';
+export * from './account.service';
+export * from './account-category.service';
 export * from './budget.service';
 export * from './auth.service';
 export * from './dashboard.service';
@@ -57,8 +57,8 @@ export * from './diagnostics.service';
 // Export singleton instances with real database
 export const categoryService = new CategoryService(db);
 export const transactionService = new TransactionService(db);
-export const assetService = new AssetService(db);
-export const assetCategoryService = new AssetCategoryService(db);
+export const accountService = new AccountService(db);
+export const accountCategoryService = new AccountCategoryService(db);
 export const budgetService = new BudgetService(db);
 export const dashboardService = new DashboardService(db);
 export const userService = new UserService(db);

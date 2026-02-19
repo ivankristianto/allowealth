@@ -33,7 +33,7 @@ Category management page for expense and income categories with CRUD operations.
 |-----|-------|
 | Profile | /profile |
 | Categories | /budget/categories (active) |
-| Assets | /assets |
+| Accounts | /accounts |
 
 ### Status Filter Tabs
 - Active: Shows count of active categories
@@ -179,7 +179,7 @@ const createCategoriesPage = (args: {
   navTabs.innerHTML = `
     <a href="/profile" class="tab">Profile</a>
     <a href="/budget/categories" class="tab tab-active">Categories</a>
-    <a href="/assets" class="tab">Assets</a>
+    <a href="/accounts" class="tab">Accounts</a>
   `;
   container.appendChild(navTabs);
 

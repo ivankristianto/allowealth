@@ -2,11 +2,11 @@
  * Forecast Calculation Utilities
  *
  * Functions for calculating wealth trajectory projections, aggregating
- * historical asset data, and merging forecast with real data.
+ * historical account data, and merging forecast with real data.
  */
 
 import Decimal from 'decimal.js';
-import type { ForecastDataPoint, AssetWithHistory, MonthlyHistoricalData } from './types';
+import type { ForecastDataPoint, AccountWithHistory, MonthlyHistoricalData } from './types';
 
 // Exchange rate constant (IDR per USD)
 // @TODO: Wire with backend - fetch real exchange rates from database
@@ -16,7 +16,7 @@ const IDR_PER_USD = 15000;
 /**
  * Calculate forecast data points for wealth trajectory
  *
- * @param currentTotal - Current total asset value in IDR
+ * @param currentTotal - Current total account value in IDR
  * @param monthlyTopup - Monthly contribution amount in IDR
  * @param annualRate - Annual percentage yield (e.g., 7 for 7%)
  * @param years - Number of years to forecast
@@ -68,30 +68,30 @@ export function calculateForecast(
 }
 
 /**
- * Aggregate asset history by month
+ * Aggregate account history by month
  *
- * Consolidates multiple assets' historical data into monthly totals.
+ * Consolidates multiple accounts' historical data into monthly totals.
  * Converts all amounts to IDR for aggregation.
  *
- * @param assets - Array of assets with their history
+ * @param accounts - Array of accounts with their history
  * @returns Monthly aggregated historical data
  */
-export function aggregateAssetHistory(assets: AssetWithHistory[]): MonthlyHistoricalData[] {
+export function aggregateAccountHistory(accounts: AccountWithHistory[]): MonthlyHistoricalData[] {
   const monthlyTotals: Record<string, { balance: number; interest: number }> = {};
 
-  assets.forEach((asset) => {
-    asset.history?.forEach((point) => {
+  accounts.forEach((account) => {
+    account.history?.forEach((point) => {
       const date = typeof point.date === 'string' ? new Date(point.date) : point.date;
       const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 
       // Convert to IDR if needed
-      const amountInIdr = convertCurrency(point.amount, asset.currency, 'IDR');
+      const amountInIdr = convertCurrency(point.amount, account.currency, 'IDR');
 
       if (!monthlyTotals[key]) {
         monthlyTotals[key] = { balance: 0, interest: 0 };
       }
 
-      // Accumulate balance from all assets for this month
+      // Accumulate balance from all accounts for this month
       // Interest calculation from historical data is complex, so we set it to 0
       monthlyTotals[key].balance += amountInIdr;
       monthlyTotals[key].interest = 0;
@@ -110,10 +110,10 @@ export function aggregateAssetHistory(assets: AssetWithHistory[]): MonthlyHistor
 /**
  * Merge real historical data with forecast projections
  *
- * Combines historical asset data with forecast calculations.
+ * Combines historical account data with forecast calculations.
  * Real data takes precedence over forecast for overlapping months.
  *
- * @param realData - Monthly historical data from assets
+ * @param realData - Monthly historical data from accounts
  * @param forecastData - Calculated forecast data points
  * @returns Merged forecast data points with real data filled in
  */
@@ -179,14 +179,14 @@ export function convertCurrency(
 }
 
 /**
- * Calculate current total from assets
+ * Calculate current total from accounts
  *
- * @param assets - Array of assets with balance and currency
+ * @param accounts - Array of accounts with balance and currency
  * @returns Total value in IDR
  */
-export function calculateCurrentTotal(assets: AssetWithHistory[]): number {
-  return assets.reduce((sum, asset) => {
-    const amountInIdr = convertCurrency(asset.balance, asset.currency, 'IDR');
+export function calculateCurrentTotal(accounts: AccountWithHistory[]): number {
+  return accounts.reduce((sum, account) => {
+    const amountInIdr = convertCurrency(account.balance, account.currency, 'IDR');
     return new Decimal(sum).plus(amountInIdr).toNumber();
   }, 0);
 }

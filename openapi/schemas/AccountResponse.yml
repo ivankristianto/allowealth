@@ -1,0 +1,9 @@
+# Account Response Schema
+AccountResponse:
+  allOf:
+    - $ref: './ApiErrorResponse.yml#/ApiResponse'
+    - type: object
+      required: [success, data]
+      properties:
+        data:
+          $ref: './Account.yml#/Account'

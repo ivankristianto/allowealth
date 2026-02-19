@@ -21,15 +21,15 @@ const config = getDatabaseConfig();
 // This ensures foreign key constraints are satisfied during deletion
 const tablesToEmpty = [
   // Dependent tables first
-  schema.assetSnapshotItems,
-  schema.assetSnapshots,
-  schema.assetUpdateReminders,
-  schema.assetHistory,
+  schema.accountSnapshotItems,
+  schema.accountSnapshots,
+  schema.accountUpdateReminders,
+  schema.accountHistory,
   schema.transactions,
   schema.budgets,
-  schema.assets,
+  schema.accounts,
   schema.categories,
-  schema.assetCategories,
+  schema.accountCategories,
   schema.auditLogs,
   schema.exchangeRates,
   schema.apiKeys,

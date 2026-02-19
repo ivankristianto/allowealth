@@ -1,0 +1,14 @@
+# Create Account Category Request Schema
+CreateAccountCategoryRequest:
+  type: object
+  required: [name, isLiability]
+  properties:
+    name:
+      type: string
+      maxLength: 100
+    description:
+      type: string
+      nullable: true
+      maxLength: 500
+    isLiability:
+      type: boolean

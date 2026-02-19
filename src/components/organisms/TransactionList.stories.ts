@@ -98,8 +98,8 @@ const createMockTransaction = (
     name: 'Food & Dining',
     type: 'expense',
   },
-  asset: {
-    id: `asset_${id}`,
+  account: {
+    id: `account_${id}`,
     name: 'Cash',
     type: 'cash',
   },
@@ -152,14 +152,14 @@ const createTransactionRow = (transaction: TransactionOutput): HTMLElement => {
   }
   wrapper.appendChild(infoCol);
 
-  // Asset badge column
-  const assetCol = document.createElement('div');
-  assetCol.className = 'flex-shrink-0 hidden sm:block';
-  const assetBadge = document.createElement('span');
-  assetBadge.className = 'badge badge-neutral badge-sm';
-  assetBadge.textContent = transaction.asset.name;
-  assetCol.appendChild(assetBadge);
-  wrapper.appendChild(assetCol);
+  // Account badge column
+  const accountCol = document.createElement('div');
+  accountCol.className = 'flex-shrink-0 hidden sm:block';
+  const accountBadge = document.createElement('span');
+  accountBadge.className = 'badge badge-neutral badge-sm';
+  accountBadge.textContent = transaction.account.name;
+  accountCol.appendChild(accountBadge);
+  wrapper.appendChild(accountCol);
 
   // Amount column
   const amountCol = document.createElement('div');

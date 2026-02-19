@@ -96,10 +96,10 @@ export function generateIncomeCategoryData(
 }
 
 /**
- * Valid asset types matching the database schema.
- * These are the actual values used in the asset form.
+ * Valid account types matching the database schema.
+ * These are the actual values used in the account form.
  */
-export type ValidAssetType =
+export type ValidAccountType =
   | 'cash'
   | 'bank_account'
   | 'e_wallet'
@@ -112,22 +112,22 @@ export type ValidAssetType =
   | 'loan';
 
 /**
- * Asset test data factory.
+ * Account test data factory.
  */
-export interface AssetTestData {
+export interface AccountTestData {
   name: string;
-  type: ValidAssetType;
+  type: ValidAccountType;
   balance: number;
   currency: string;
 }
 
 /**
- * Generate asset test data.
+ * Generate account test data.
  * @param overrides - Optional overrides for default values
  */
-export function generateAssetData(overrides: Partial<AssetTestData> = {}): AssetTestData {
+export function generateAccountData(overrides: Partial<AccountTestData> = {}): AccountTestData {
   return {
-    name: `E2E Asset ${generateTestId()}`,
+    name: `E2E Account ${generateTestId()}`,
     type: 'bank_account',
     balance: Math.floor(Math.random() * 10000000) + 1000000, // 1M-11M IDR
     currency: 'IDR',

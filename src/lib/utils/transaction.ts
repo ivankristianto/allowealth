@@ -8,7 +8,7 @@ import type { TransactionOutput } from '@/lib/types/transaction';
 
 /**
  * Raw transaction data from Drizzle ORM
- * Uses the new asset-based schema
+ * Uses the new account-based schema
  */
 export interface DrizzleTransactionResult {
   id: string;
@@ -29,12 +29,12 @@ export interface DrizzleTransactionResult {
     icon: string;
     color: string;
   } | null;
-  asset: {
+  account: {
     id: string;
     name: string;
     type: string;
   };
-  toAsset?: {
+  toAccount?: {
     id: string;
     name: string;
     type: string;
@@ -74,16 +74,16 @@ export function transformTransaction(t: DrizzleTransactionResult): TransactionOu
           color: t.category.color,
         }
       : null,
-    asset: {
-      id: t.asset.id,
-      name: t.asset.name,
-      type: t.asset.type,
+    account: {
+      id: t.account.id,
+      name: t.account.name,
+      type: t.account.type,
     },
-    toAsset: t.toAsset
+    toAccount: t.toAccount
       ? {
-          id: t.toAsset.id,
-          name: t.toAsset.name,
-          type: t.toAsset.type,
+          id: t.toAccount.id,
+          name: t.toAccount.name,
+          type: t.toAccount.type,
         }
       : null,
     has_history: !!t.has_history,

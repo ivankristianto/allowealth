@@ -16,7 +16,7 @@ export enum ServiceErrorCode {
   INVALID_TRANSACTION_ID = 'INVALID_TRANSACTION_ID',
   CATEGORY_NOT_FOUND = 'CATEGORY_NOT_FOUND',
   CATEGORY_INACTIVE = 'CATEGORY_INACTIVE',
-  ASSET_INACTIVE = 'ASSET_INACTIVE',
+  ACCOUNT_INACTIVE = 'ACCOUNT_INACTIVE',
   DUPLICATE_TRANSACTION = 'DUPLICATE_TRANSACTION',
 
   // Category-specific errors
@@ -30,12 +30,12 @@ export enum ServiceErrorCode {
   BUDGET_CLOSED = 'BUDGET_CLOSED',
   NO_BUDGETS_TO_COPY = 'NO_BUDGETS_TO_COPY',
 
-  // Asset-specific errors
-  ASSET_NOT_FOUND = 'ASSET_NOT_FOUND',
-  ASSET_CATEGORY_NOT_FOUND = 'ASSET_CATEGORY_NOT_FOUND',
-  ASSET_CATEGORY_SYSTEM_PROTECTED = 'ASSET_CATEGORY_SYSTEM_PROTECTED',
-  ASSET_CATEGORY_HAS_ASSETS = 'ASSET_CATEGORY_HAS_ASSETS',
-  ASSET_CATEGORY_LIMIT_REACHED = 'ASSET_CATEGORY_LIMIT_REACHED',
+  // Account-specific errors
+  ACCOUNT_NOT_FOUND = 'ACCOUNT_NOT_FOUND',
+  ACCOUNT_CATEGORY_NOT_FOUND = 'ACCOUNT_CATEGORY_NOT_FOUND',
+  ACCOUNT_CATEGORY_SYSTEM_PROTECTED = 'ACCOUNT_CATEGORY_SYSTEM_PROTECTED',
+  ACCOUNT_CATEGORY_HAS_ACCOUNTS = 'ACCOUNT_CATEGORY_HAS_ACCOUNTS',
+  ACCOUNT_CATEGORY_LIMIT_REACHED = 'ACCOUNT_CATEGORY_LIMIT_REACHED',
   BALANCE_NOT_ZERO = 'BALANCE_NOT_ZERO',
   ACCOUNT_CLOSED = 'ACCOUNT_CLOSED',
   ALREADY_CLOSED = 'ALREADY_CLOSED',
@@ -106,17 +106,17 @@ export class AuthServiceError extends ServiceError {
   }
 }
 
-export class AssetServiceError extends ServiceError {
+export class AccountServiceError extends ServiceError {
   constructor(code: ServiceErrorCode, message: string, statusCode: number = 400) {
     super(code, message, statusCode);
-    this.name = 'AssetServiceError';
+    this.name = 'AccountServiceError';
   }
 }
 
-export class AssetCategoryServiceError extends ServiceError {
+export class AccountCategoryServiceError extends ServiceError {
   constructor(code: ServiceErrorCode, message: string, statusCode: number = 400) {
     super(code, message, statusCode);
-    this.name = 'AssetCategoryServiceError';
+    this.name = 'AccountCategoryServiceError';
   }
 }
 

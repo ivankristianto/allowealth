@@ -1,4 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
+import { existsSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { validateTarget, getTarget, isD1, isD1Local } from './target';
 
 describe('validateTarget', () => {
@@ -88,12 +90,21 @@ describe('isD1Local', () => {
 
 describe('resolveTarget D1 env setup', () => {
   const savedEnv: Record<string, string | undefined> = {};
+  const envProductionPath = resolve(import.meta.dir, '../../../', '.env.production');
+  let originalEnvProductionContent: string | null = null;
 
   beforeEach(() => {
     savedEnv.AW_TARGET = process.env.AW_TARGET;
     savedEnv.D1_ENABLED = process.env.D1_ENABLED;
     delete process.env.AW_TARGET;
     delete process.env.D1_ENABLED;
+
+    if (existsSync(envProductionPath)) {
+      originalEnvProductionContent = readFileSync(envProductionPath, 'utf-8');
+    } else {
+      originalEnvProductionContent = null;
+    }
+    writeFileSync(envProductionPath, 'TEST_ONLY=1\n', 'utf-8');
   });
 
   afterEach(() => {
@@ -103,6 +114,12 @@ describe('resolveTarget D1 env setup', () => {
       } else {
         delete process.env[key];
       }
+    }
+
+    if (originalEnvProductionContent === null) {
+      unlinkSync(envProductionPath);
+    } else {
+      writeFileSync(envProductionPath, originalEnvProductionContent, 'utf-8');
     }
   });
 

@@ -93,10 +93,10 @@ import { getCsrfToken } from '@/lib/csrf-client';
     { key: 'currency', label: 'Currency', required: true, helpText: 'Currency code (IDR/USD)' },
     { key: 'category', label: 'Category', required: true, helpText: 'Category name' },
     {
-      key: 'asset',
+      key: 'account',
       label: 'Account',
       required: true,
-      helpText: 'Asset/account name',
+      helpText: 'Account/account name',
     },
     { key: 'description', label: 'Description', required: false, helpText: 'Optional notes' },
   ];

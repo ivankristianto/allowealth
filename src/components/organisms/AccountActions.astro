@@ -1,0 +1,192 @@
+---
+/**
+ * AccountActions Component
+ *
+ * Action buttons row for the Accounts page containing Categories link
+ * and Add Account button. Uses ActionBar for consistent layout.
+ *
+ * @param {boolean} isHistoricalView - Disable mutation actions for historical views
+ * @param {string} defaultCategoryId - Default category ID for new accounts
+ * @param {string} className - Additional CSS classes
+ */
+
+import { Plus, Settings, ArrowRightLeft, Archive } from '@lucide/astro';
+import ActionBar from '@components/molecules/ActionBar.astro';
+
+export interface Props {
+  isHistoricalView?: boolean;
+  defaultCategoryId?: string;
+  closedCount?: number;
+  className?: string;
+}
+
+const {
+  isHistoricalView = false,
+  defaultCategoryId = '',
+  closedCount = 0,
+  className = '',
+} = Astro.props;
+
+const ghostBtn =
+  'btn btn-ghost btn-sm md:btn-md min-h-[44px] min-w-[44px] gap-1 md:gap-2 rounded-lg md:rounded-xl text-base-content/70 hover:text-base-content hover:bg-base-200 px-2 md:px-4';
+
+const accentGhostBtn =
+  'btn btn-ghost btn-sm md:btn-md min-h-[44px] min-w-[44px] gap-1 md:gap-2 rounded-lg md:rounded-xl text-accent hover:text-accent hover:bg-accent/10 px-2 md:px-4 font-semibold';
+---
+
+<ActionBar className={className} ariaLabel="Account actions" edgeBleed>
+  {/* Categories */}
+  <div class="tooltip tooltip-bottom" data-tip="Manage account categories">
+    <a
+      href="/accounts/categories"
+      class={ghostBtn}
+      aria-label="Manage account categories"
+      data-testid="manage-account-categories-btn"
+    >
+      <Settings size={16} class="stroke-current md:hidden" aria-hidden="true" />
+      <Settings size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+      <span class="text-xs md:text-sm">Categories</span>
+    </a>
+  </div>
+
+  {/* Transfer */}
+  {
+    !isHistoricalView && (
+      <div class="tooltip tooltip-bottom" data-tip="Transfer between accounts">
+        <button
+          type="button"
+          class={ghostBtn}
+          aria-label="Transfer between accounts"
+          data-transfer-btn
+          data-testid="account-transfer-btn"
+        >
+          <ArrowRightLeft size={16} class="stroke-current md:hidden" aria-hidden="true" />
+          <ArrowRightLeft size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+          <span class="text-xs md:text-sm">Transfer</span>
+        </button>
+      </div>
+    )
+  }
+
+  {/* View Closed Accounts */}
+  {
+    closedCount > 0 && (
+      <div
+        class="tooltip tooltip-bottom"
+        data-tip={`View ${closedCount} closed account${closedCount !== 1 ? 's' : ''}`}
+      >
+        <a
+          href="/accounts/closed"
+          class={ghostBtn}
+          aria-label={`View ${closedCount} closed account${closedCount !== 1 ? 's' : ''}`}
+          data-testid="view-closed-accounts-btn"
+        >
+          <Archive size={16} class="stroke-current md:hidden" aria-hidden="true" />
+          <Archive size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+          <span class="text-xs md:text-sm">Closed</span>
+          <span class="badge badge-xs badge-ghost">{closedCount}</span>
+        </a>
+      </div>
+    )
+  }
+
+  {/* Primary Action - Add Account */}
+  {
+    isHistoricalView ? (
+      <div slot="primary" class="tooltip tooltip-bottom" data-tip="Add new account (disabled)">
+        <button
+          type="button"
+          class={`${accentGhostBtn} opacity-40 cursor-not-allowed`}
+          disabled
+          aria-label="Add new account (disabled for historical view)"
+          data-testid="add-account-btn"
+        >
+          <Plus size={16} class="stroke-current md:hidden" aria-hidden="true" />
+          <Plus size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+          <span class="hidden sm:inline">New Account</span>
+          <span class="sm:hidden">New</span>
+        </button>
+      </div>
+    ) : (
+      <div slot="primary" class="tooltip tooltip-bottom" data-tip="Add new account">
+        <button
+          type="button"
+          class={accentGhostBtn}
+          aria-label="Add new account"
+          data-add-account-btn
+          data-default-category-id={defaultCategoryId}
+          data-testid="add-account-btn"
+        >
+          <Plus size={16} class="stroke-current md:hidden" aria-hidden="true" />
+          <Plus size={18} class="stroke-current hidden md:block" aria-hidden="true" />
+          <span class="hidden sm:inline">New Account</span>
+          <span class="sm:hidden">New</span>
+        </button>
+      </div>
+    )
+  }
+</ActionBar>
+
+<script>
+  const handlerMap = new WeakMap<HTMLElement, (e: Event) => void>();
+
+  function initTransferButton() {
+    document.querySelectorAll<HTMLElement>('[data-transfer-btn]').forEach((button) => {
+      if (handlerMap.has(button)) return;
+
+      const handler = () => {
+        const modal = document.getElementById('account-transfer-modal') as HTMLDialogElement;
+        if (modal) modal.showModal();
+      };
+
+      handlerMap.set(button, handler);
+      button.addEventListener('click', handler);
+    });
+  }
+
+  function initAddAccountButton() {
+    document.querySelectorAll<HTMLElement>('[data-add-account-btn]').forEach((button) => {
+      if (handlerMap.has(button)) return;
+
+      const handler = () => {
+        const defaultCategoryId = button.getAttribute('data-default-category-id') || '';
+        document.dispatchEvent(
+          new CustomEvent('open-account-form', {
+            detail: {
+              name: '',
+              categoryId: defaultCategoryId,
+              balance: '',
+            },
+          })
+        );
+      };
+
+      handlerMap.set(button, handler);
+      button.addEventListener('click', handler);
+    });
+  }
+
+  function cleanupAccountActionButtons() {
+    document.querySelectorAll<HTMLElement>('[data-add-account-btn]').forEach((button) => {
+      const handler = handlerMap.get(button);
+      if (handler) {
+        button.removeEventListener('click', handler);
+        handlerMap.delete(button);
+      }
+    });
+  }
+
+  function registerCleanup() {
+    document.addEventListener('astro:before-swap', cleanupAccountActionButtons, { once: true });
+  }
+
+  initAddAccountButton();
+  initTransferButton();
+  registerCleanup();
+
+  document.addEventListener('astro:page-load', () => {
+    initAddAccountButton();
+    initTransferButton();
+    registerCleanup();
+  });
+</script>

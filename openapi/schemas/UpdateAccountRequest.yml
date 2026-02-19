@@ -1,0 +1,17 @@
+# Update Account Request Schema
+UpdateAccountRequest:
+  type: object
+  properties:
+    name:
+      type: string
+      minLength: 1
+      maxLength: 255
+    type:
+      type: string
+      enum:
+        [cash, bank_account, e_wallet, mutual_fund, bond, crypto, stock, other, credit_card, loan]
+    categoryId:
+      type: string
+    currency:
+      type: string
+      enum: [IDR, USD]

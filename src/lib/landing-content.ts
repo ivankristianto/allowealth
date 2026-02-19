@@ -72,7 +72,7 @@ export const pricingTiers: PricingTier[] = [
     description: 'The base ledger for individuals.',
     features: [
       'Manual Transaction Logging',
-      '3 Asset Accounts',
+      '3 Account Accounts',
       'Single User Access',
       'Basic Reports',
     ],
@@ -83,7 +83,7 @@ export const pricingTiers: PricingTier[] = [
     description: 'The complete family headquarters.',
     featured: true,
     features: [
-      'Unlimited Assets',
+      'Unlimited Accounts',
       'AI Receipt Scanning',
       'Global Currency Sync',
       'Advanced 30-Year Forecasts',
@@ -99,7 +99,7 @@ export const pricingTiers: PricingTier[] = [
       'Custom Audit Logs',
       'Priority Support',
       'API Data Connectors',
-      'Investment Portfolio Hub',
+      'Investment Accounts Hub',
     ],
   },
 ];
@@ -165,7 +165,7 @@ export const showcaseItems: ShowcaseItem[] = [
     titleHighlight: 'Unified View.',
     highlightColor: 'text-primary',
     description:
-      "Connect your BCA, Mandiri, Chase, and stock portfolios in one encrypted space. Our dashboard provides a real-time health score of your family's liquidity and asset distribution.",
+      "Connect your BCA, Mandiri, Chase, and stock portfolios in one encrypted space. Our dashboard provides a real-time health score of your family's liquidity and account distribution.",
     features: [
       'Multi-currency support (IDR/USD/EUR)',
       'Real-time portfolio rebalancing',
@@ -284,7 +284,7 @@ export const heroContent = {
   titleHighlightPrefix: 'Family ',
   titleHighlight: 'Ledger.',
   description:
-    'Enterprise-grade wealth management, refined for the modern household. Track global assets, forecast futures, and automate spend review with advanced AI.',
+    'Enterprise-grade wealth management, refined for the modern household. Track global accounts, forecast futures, and automate spend review with advanced AI.',
   ctaGuest: 'Start Your Free Ledger',
   ctaLoggedIn: 'Go to Dashboard',
   ctaSecondary: 'Interactive Demo',
