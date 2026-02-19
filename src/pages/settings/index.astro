@@ -61,6 +61,7 @@ let members: Array<{
   email: string;
   role: 'admin' | 'member' | 'super_admin';
   createdAt: string;
+  mfaEnabled: boolean;
 }> = [];
 
 let invitations: Array<{
@@ -102,6 +103,7 @@ try {
       member.created_at instanceof Date
         ? member.created_at.toISOString()
         : String(member.created_at),
+    mfaEnabled: member.mfaEnabled,
   }));
 
   // Fetch pending invitations (admin only)

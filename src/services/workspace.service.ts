@@ -180,7 +180,7 @@ export class WorkspaceService {
    * @returns Promise resolving to array of workspace members
    * @throws {WorkspaceServiceError} If workspace not found
    */
-  async getMembers(workspaceId: string): Promise<WorkspaceMember[]> {
+  async getMembers(workspaceId: string): Promise<(WorkspaceMember & { mfaEnabled: boolean })[]> {
     // Check if workspace exists
     const workspace = await this.findById(workspaceId);
     if (!workspace) {
@@ -191,16 +191,24 @@ export class WorkspaceService {
       );
     }
 
-    // Get all non-deleted users in the workspace
+    // Get all non-deleted users in the workspace, including MFA status
     const members = await this.db.query.users.findMany({
       where: and(
         eq(this.schema.users.workspace_id, workspaceId),
         isNull(this.schema.users.deleted_at)
       ),
+      with: {
+        mfa: {
+          columns: { mfa_enabled: true },
+        },
+      },
     });
 
-    // Map to exclude password_hash for security
-    return members.map(({ password_hash: _, ...member }) => member);
+    // Map to exclude password_hash for security and normalize MFA flag
+    return members.map(({ password_hash: _, mfa, ...member }) => ({
+      ...member,
+      mfaEnabled: mfa?.mfa_enabled === true,
+    }));
   }
 
   /**
