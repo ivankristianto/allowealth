@@ -1030,14 +1030,16 @@ const defaultDatePick =
     attachValidationListeners();
     updateSubmitButton();
 
-    // Auto-select single category on first load (no choice needed, improves UX for fresh installs)
-    if (categories.length === 1 && categorySelect && !categorySelect.value) {
-      setActiveChip(categories[0].id);
-    }
-
     // When the drawer resets this form, re-evaluate the submit button state.
     // resetEditMode() in TransactionDrawer.client.ts dispatches this event after resetting fields.
+    // Clear stale fieldErrors first so a prior failed-submit error doesn't keep the button disabled.
     form.addEventListener('form:reset-state-changed', () => {
+      Object.keys(fieldErrors).forEach((k) => {
+        fieldErrors[k] = null;
+      });
+      clearFieldErrors();
+      // Sync currency in case the auto-restored single category has a non-default currency.
+      updateCurrencyForCategory();
       updateSubmitButton();
     });
 
@@ -1057,6 +1059,13 @@ const defaultDatePick =
         const newCurrency = (currencyInput?.value || DEFAULT_CURRENCY) as Currency;
         amountFormatter!.updateCurrency(newCurrency);
       });
+    }
+
+    // Auto-select single category on first load (no choice needed, improves UX for fresh installs).
+    // Must run AFTER amountFormatter is initialized: setActiveChip → updateCurrencyForCategory
+    // → amountFormatter?.updateCurrency(), so amountFormatter must exist to avoid TDZ crash.
+    if (categories.length === 1 && categorySelect && !categorySelect.value) {
+      setActiveChip(categories[0].id);
     }
 
     // Auto-focus amount field on initial load (only for create mode)
