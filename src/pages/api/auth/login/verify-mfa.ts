@@ -28,10 +28,22 @@ export const prerender = false;
 
 const MFA_PENDING_COOKIE = 'mfa_pending';
 
+function formatRetryAfter(seconds: number): string {
+  if (seconds <= 60) {
+    return `${seconds} second${seconds === 1 ? '' : 's'}`;
+  }
+
+  const minutes = Math.ceil(seconds / 60);
+  return `${minutes} minute${minutes === 1 ? '' : 's'}`;
+}
+
 export const POST: APIRoute = async ({ request, cookies, clientAddress }) => {
   const rateLimitResult = checkRateLimit(request, RATE_LIMIT_PRESETS.auth, clientAddress);
   if (!rateLimitResult.allowed) {
-    return createRateLimitResponse(rateLimitResult, 'Too many MFA attempts. Please wait.');
+    return createRateLimitResponse(
+      rateLimitResult,
+      `Too many MFA attempts. Please wait ${formatRetryAfter(rateLimitResult.retryAfter)}.`
+    );
   }
 
   try {
