@@ -50,6 +50,7 @@ export const GET: APIRoute = async (context) => {
     const type = url.searchParams.get('type');
     const categoryId = url.searchParams.get('categoryId');
     const currency = url.searchParams.get('currency');
+    const owner = url.searchParams.get('owner');
 
     const filters: any = {};
     if (type && VALID_ACCOUNT_TYPES.includes(type as AccountType)) {
@@ -60,6 +61,9 @@ export const GET: APIRoute = async (context) => {
     }
     if (currency && (currency === 'IDR' || currency === 'USD')) {
       filters.currency = currency;
+    }
+    if (owner) {
+      filters.owner_user_id = owner;
     }
 
     const accounts = await accountService.findAll(auth.workspaceId, filters, perf);
