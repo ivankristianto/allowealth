@@ -1,9 +1,9 @@
-/* eslint-disable no-console -- CLI output is intentional */
 import { defineCommand } from 'citty';
+import { exec } from '../lib/exec';
 
 export default defineCommand({
-  meta: { name: 'release', description: 'Create a new release' },
+  meta: { name: 'release', description: 'Interactive release (bump version, tag, changelog)' },
   run() {
-    console.log('Not implemented yet');
+    exec('bun', ['run', 'scripts/release.ts']);
   },
 });
