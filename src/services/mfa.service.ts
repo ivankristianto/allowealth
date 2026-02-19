@@ -9,7 +9,7 @@ import { and, eq, isNull } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { createTOTPKeyURI, verifyTOTPWithGracePeriod } from '@oslojs/otp';
 import { createLogger } from '@/lib/logger';
-import { getActiveSchema, type IDatabase } from '@/db';
+import { getActiveSchema, runTransaction, type IDatabase } from '@/db';
 import { getEnv } from '@/lib/env';
 import { logAuditEvent } from '@/lib/audit-log';
 import {
@@ -136,15 +136,19 @@ export class MfaService {
       throw new Error('Invalid verification code. Please try again.');
     }
 
-    await this.db
-      .update(this.schema.userMfa)
-      .set({
-        mfa_enabled: true,
-        updated_at: new Date(),
-      })
-      .where(eq(this.schema.userMfa.id, mfaRecord.id));
+    const backupCodes = await runTransaction(this.db, async (tx) => {
+      const codes = await this.generateAndStoreBackupCodes(mfaRecord.id, tx);
 
-    const backupCodes = await this.generateAndStoreBackupCodes(mfaRecord.id);
+      await tx
+        .update(this.schema.userMfa)
+        .set({
+          mfa_enabled: true,
+          updated_at: new Date(),
+        })
+        .where(eq(this.schema.userMfa.id, mfaRecord.id));
+
+      return codes;
+    });
 
     log.info(`MFA enabled for user ${userId}`);
     void logAuditEvent({
@@ -230,10 +234,21 @@ export class MfaService {
         continue;
       }
 
-      await this.db
+      const updatedRows = await this.db
         .update(this.schema.userMfaBackupCodes)
         .set({ used_at: new Date() })
-        .where(eq(this.schema.userMfaBackupCodes.id, backupCode.id));
+        .where(
+          and(
+            eq(this.schema.userMfaBackupCodes.id, backupCode.id),
+            isNull(this.schema.userMfaBackupCodes.used_at)
+          )
+        )
+        .returning({ id: this.schema.userMfaBackupCodes.id });
+
+      if (updatedRows.length === 0) {
+        // Concurrent request consumed this code first.
+        continue;
+      }
 
       log.info(`Backup code consumed for user ${userId}`);
       return true;
@@ -332,17 +347,19 @@ export class MfaService {
     );
   }
 
-  private async generateAndStoreBackupCodes(mfaId: string): Promise<string[]> {
+  private async generateAndStoreBackupCodes(
+    mfaId: string,
+    db: IDatabase = this.db
+  ): Promise<string[]> {
     const backupCodes = generateBackupCodes();
-
-    for (const backupCode of backupCodes) {
-      const codeHash = await hashBackupCode(backupCode);
-      await this.db.insert(this.schema.userMfaBackupCodes).values({
+    const rows = await Promise.all(
+      backupCodes.map(async (backupCode) => ({
         id: nanoid(),
         user_mfa_id: mfaId,
-        code_hash: codeHash,
-      });
-    }
+        code_hash: await hashBackupCode(backupCode),
+      }))
+    );
+    await db.insert(this.schema.userMfaBackupCodes).values(rows);
 
     return backupCodes;
   }

@@ -21,6 +21,8 @@ import { login } from '@/services/auth.service';
 import { auth } from '@/lib/auth/lucia';
 import { AUTH_ERRORS, type AuthError } from '@/services/auth.service';
 import { mfaService } from '@/services';
+import { signCookieValue } from '@/lib/crypto/cookie-signature';
+import { getEnv } from '@/lib/env';
 import {
   createErrorResponseResponse,
   createSuccessResponse,
@@ -41,6 +43,7 @@ const MFA_PENDING_COOKIE = 'mfa_pending';
 
 export const POST: APIRoute = async (context) => {
   const { request, clientAddress } = context;
+  const isProduction = getEnv('NODE_ENV') === 'production';
   let email: string | undefined;
 
   try {
@@ -85,8 +88,12 @@ export const POST: APIRoute = async (context) => {
       // login() already created a full session; invalidate it until MFA is verified
       await auth.invalidateSession(session.id);
 
-      const pendingPayload = encodeURIComponent(JSON.stringify({ userId: user.id }));
-      const pendingCookie = `${MFA_PENDING_COOKIE}=${pendingPayload}; Path=/; HttpOnly; SameSite=Strict; Max-Age=300${import.meta.env.PROD ? '; Secure' : ''}`;
+      const pendingPayload = JSON.stringify({
+        userId: user.id,
+        expiresAt: Date.now() + 5 * 60 * 1000,
+      });
+      const signedPendingPayload = await signCookieValue(pendingPayload);
+      const pendingCookie = `${MFA_PENDING_COOKIE}=${signedPendingPayload}; Path=/; HttpOnly; SameSite=Strict; Max-Age=300${isProduction ? '; Secure' : ''}`;
 
       const response = new Response(
         JSON.stringify(
@@ -131,7 +138,7 @@ export const POST: APIRoute = async (context) => {
     response.headers.append('Set-Cookie', sessionCookie.serialize());
     response.headers.append(
       'Set-Cookie',
-      `auth_hint=1; Path=/; Max-Age=${30 * 24 * 60 * 60}; SameSite=Lax${import.meta.env.PROD ? '; Secure' : ''}`
+      `auth_hint=1; Path=/; Max-Age=${30 * 24 * 60 * 60}; SameSite=Lax${isProduction ? '; Secure' : ''}`
     );
 
     // Add rate limit headers to successful response

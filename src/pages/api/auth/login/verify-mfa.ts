@@ -9,6 +9,7 @@ import type { APIRoute } from 'astro';
 import { auth } from '@/lib/auth/lucia';
 import { mfaService } from '@/services';
 import { logAuditEvent } from '@/lib/audit-log';
+import { verifyCookieSignature } from '@/lib/crypto/cookie-signature';
 import {
   createErrorResponseResponse,
   createSuccessResponse,
@@ -39,15 +40,32 @@ export const POST: APIRoute = async ({ request, cookies, clientAddress }) => {
       return createErrorResponseResponse('NO_PENDING_MFA', 'No pending MFA verification', 400);
     }
 
-    let userId = '';
+    let verifiedPendingJson: string | null = null;
     try {
-      const parsed = JSON.parse(decodeURIComponent(pendingCookieValue));
-      userId = typeof parsed.userId === 'string' ? parsed.userId : '';
+      verifiedPendingJson = await verifyCookieSignature(pendingCookieValue);
     } catch {
+      cookies.delete(MFA_PENDING_COOKIE, { path: '/' });
       return createErrorResponseResponse('INVALID_STATE', 'Invalid MFA session', 400);
     }
 
-    if (!userId) {
+    if (!verifiedPendingJson) {
+      cookies.delete(MFA_PENDING_COOKIE, { path: '/' });
+      return createErrorResponseResponse('INVALID_STATE', 'Invalid MFA session', 400);
+    }
+
+    let userId = '';
+    let expiresAt = 0;
+    try {
+      const parsed = JSON.parse(verifiedPendingJson);
+      userId = typeof parsed.userId === 'string' ? parsed.userId : '';
+      expiresAt = typeof parsed.expiresAt === 'number' ? parsed.expiresAt : 0;
+    } catch {
+      cookies.delete(MFA_PENDING_COOKIE, { path: '/' });
+      return createErrorResponseResponse('INVALID_STATE', 'Invalid MFA session', 400);
+    }
+
+    if (!userId || !expiresAt || Date.now() > expiresAt) {
+      cookies.delete(MFA_PENDING_COOKIE, { path: '/' });
       return createErrorResponseResponse('INVALID_STATE', 'Invalid MFA session', 400);
     }
 

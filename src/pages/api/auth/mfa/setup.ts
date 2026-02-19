@@ -42,7 +42,10 @@ export const POST: APIRoute = async ({ locals }) => {
     );
   } catch (error) {
     logError('MFA setup error', error);
-    const message = error instanceof Error ? error.message : 'MFA setup failed';
+    const message =
+      error instanceof Error && /already enabled/i.test(error.message)
+        ? 'MFA is already enabled'
+        : 'Unable to initialize MFA setup';
     return createErrorResponseResponse('MFA_SETUP_ERROR', message, 400);
   }
 };

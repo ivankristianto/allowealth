@@ -57,6 +57,9 @@ const { id = 'mfa-setup-modal' } = Astro.props;
           </p>
           <code class="font-mono text-sm break-all" data-manual-code></code>
         </div>
+        <button type="button" class="btn btn-outline w-full rounded-2xl" data-mfa-continue>
+          I have scanned this code
+        </button>
       </div>
 
       <form data-step="verify" class="hidden space-y-4">
@@ -79,7 +82,11 @@ const { id = 'mfa-setup-modal' } = Astro.props;
         <div class="hidden alert alert-error text-sm" data-mfa-error role="alert"></div>
 
         <div class="flex items-center gap-4 pt-2">
-          <button type="button" class="flex-1 py-3 rounded-2xl font-semibold" data-mfa-cancel>
+          <button
+            type="button"
+            class="btn btn-ghost flex-1 rounded-2xl font-semibold"
+            data-mfa-cancel
+          >
             Cancel
           </button>
           <button type="submit" class="flex-[2] btn btn-accent rounded-2xl" data-mfa-verify-btn>
@@ -116,6 +123,7 @@ const { id = 'mfa-setup-modal' } = Astro.props;
         const codeInput = container.querySelector<HTMLInputElement>('input[name="code"]');
         const errorEl = container.querySelector<HTMLElement>('[data-mfa-error]');
         const cancelBtn = container.querySelector<HTMLButtonElement>('[data-mfa-cancel]');
+        const continueBtn = container.querySelector<HTMLButtonElement>('[data-mfa-continue]');
         const verifyBtn = container.querySelector<HTMLButtonElement>('[data-mfa-verify-btn]');
 
         if (
@@ -178,11 +186,6 @@ const { id = 'mfa-setup-modal' } = Astro.props;
             qrImage.src = result.data.qrCodeDataUrl;
             manualCode.textContent = result.data.manualEntryCode;
             setStep('setup');
-
-            setTimeout(() => {
-              setStep('verify');
-              codeInput.focus();
-            }, 150);
           } catch (error) {
             modal.close();
             const message =
@@ -197,6 +200,12 @@ const { id = 'mfa-setup-modal' } = Astro.props;
 
         cancelBtn?.addEventListener('click', () => {
           modal.close();
+        });
+
+        continueBtn?.addEventListener('click', () => {
+          clearError();
+          setStep('verify');
+          codeInput.focus();
         });
 
         stepVerify.addEventListener('submit', async (event) => {

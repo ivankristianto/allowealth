@@ -23,10 +23,13 @@ import {
 } from '@/types/api';
 import { logError } from '@/lib/utils';
 import { invalidateSession } from '@/lib/auth/session-cache';
+import { getEnv } from '@/lib/env';
 
 export const prerender = false;
 
 export const POST: APIRoute = async (context) => {
+  const isProduction = getEnv('NODE_ENV') === 'production';
+
   try {
     // Get session ID from cookie using Astro's cookie API
     const sessionId = context.cookies.get('sid')?.value;
@@ -54,7 +57,7 @@ export const POST: APIRoute = async (context) => {
     response.headers.append('Set-Cookie', blankSessionCookie.serialize());
     response.headers.append(
       'Set-Cookie',
-      `auth_hint=; Path=/; Max-Age=0; SameSite=Lax${import.meta.env.PROD ? '; Secure' : ''}`
+      `auth_hint=; Path=/; Max-Age=0; SameSite=Lax${isProduction ? '; Secure' : ''}`
     );
     return response;
   } catch (error) {
