@@ -353,6 +353,7 @@ const sortedGroups = CLASS_ORDER.filter((cls) => assetsByClass[cls].length > 0).
                 type="button"
                 class="btn btn-accent gap-2 rounded-2xl"
                 data-add-asset-btn
+                data-add-first-asset-btn
                 data-default-category-id={defaultCategoryId}
               >
                 Add Your First Asset
@@ -385,6 +386,63 @@ const sortedGroups = CLASS_ORDER.filter((cls) => assetsByClass[cls].length > 0).
   import { PERIOD_CHANGE_EVENT } from '@/lib/constants/events';
   import { initInlineHistory } from '@/components/molecules/AssetInlineHistory.client';
   import { initAssetSearch } from '@/components/organisms/AssetSearch.client';
+
+  const firstAssetButtonHandlers = new WeakMap<HTMLElement, (event: Event) => void>();
+
+  function openAssetForm(defaultCategoryId = '') {
+    document.dispatchEvent(
+      new CustomEvent('open-asset-form', {
+        detail: {
+          name: '',
+          categoryId: defaultCategoryId,
+          balance: '',
+        },
+      })
+    );
+  }
+
+  function initFirstAssetButton() {
+    document.querySelectorAll<HTMLElement>('[data-add-first-asset-btn]').forEach((button) => {
+      if (firstAssetButtonHandlers.has(button)) return;
+
+      const handler = () => {
+        const defaultCategoryId = button.getAttribute('data-default-category-id') || '';
+        openAssetForm(defaultCategoryId);
+      };
+
+      firstAssetButtonHandlers.set(button, handler);
+      button.addEventListener('click', handler);
+    });
+  }
+
+  function openOnboardingAssetModal() {
+    const url = new URL(window.location.href);
+    if (url.searchParams.get('onboarding') !== 'add-asset') return;
+
+    const modal = document.getElementById('asset-form-modal') as HTMLDialogElement | null;
+    if (modal?.open) return;
+
+    const defaultCategoryId =
+      document
+        .querySelector<HTMLElement>('[data-add-first-asset-btn],[data-add-asset-btn]')
+        ?.getAttribute('data-default-category-id') || '';
+
+    // Delay to ensure modal listeners are attached before dispatching.
+    requestAnimationFrame(() => openAssetForm(defaultCategoryId));
+
+    url.searchParams.delete('onboarding');
+    const query = url.searchParams.toString();
+    window.history.replaceState({}, '', `${url.pathname}${query ? `?${query}` : ''}`);
+  }
+
+  function cleanupFirstAssetButton() {
+    document.querySelectorAll<HTMLElement>('[data-add-first-asset-btn]').forEach((button) => {
+      const handler = firstAssetButtonHandlers.get(button);
+      if (!handler) return;
+      button.removeEventListener('click', handler);
+      firstAssetButtonHandlers.delete(button);
+    });
+  }
 
   let periodChangeController: AbortController | null = null;
 
@@ -428,6 +486,8 @@ const sortedGroups = CLASS_ORDER.filter((cls) => assetsByClass[cls].length > 0).
   function init() {
     initInlineHistory();
     initAssetSearch();
+    initFirstAssetButton();
+    openOnboardingAssetModal();
     initAssetPeriodSelector();
   }
 
@@ -438,5 +498,12 @@ const sortedGroups = CLASS_ORDER.filter((cls) => assetsByClass[cls].length > 0).
   }
 
   document.addEventListener('astro:page-load', init);
-  document.addEventListener('astro:before-swap', () => periodChangeController?.abort());
+  document.addEventListener(
+    'astro:before-swap',
+    () => {
+      cleanupFirstAssetButton();
+      periodChangeController?.abort();
+    },
+    { once: true }
+  );
 </script>

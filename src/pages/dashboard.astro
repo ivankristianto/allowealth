@@ -17,14 +17,16 @@
  */
 
 import ProtectedLayout from '@/layouts/ProtectedLayout.astro';
-import { dashboardService } from '@/services';
+import { dashboardService, workspaceMetaService, workspaceService } from '@/services';
 import type { DashboardData } from '@/services/dashboard.service';
+import type { OnboardingStatus } from '@/services/workspace.service';
 import SpendingCard from '@/components/organisms/SpendingCard.astro';
 import SpendingChart from '@/components/organisms/SpendingChart.astro';
 import AssetsWidget from '@/components/organisms/AssetsWidget.astro';
 import CashFlowWidget from '@/components/organisms/CashFlowWidget.astro';
 import RecentTransactionsList from '@/components/molecules/RecentTransactionsList.astro';
 import DashboardError from '@/components/molecules/DashboardError.astro';
+import OnboardingChecklist from '@/components/organisms/OnboardingChecklist.astro';
 import type { TransactionOutput } from '@/lib/types/transaction';
 import type { CashFlowEntry, CashFlowIconName } from '@/lib/cash-flow';
 import { MONTH_NAMES_SHORT } from '@/lib/utils/date';
@@ -33,32 +35,53 @@ const currentPath = '/dashboard';
 const user = Astro.locals.user;
 const perf = Astro.locals.perf;
 
-// TODO: Get workspace currency from workspace settings
-// For now, use IDR as default since currency is now workspace-scoped
-const primaryCurrency = 'IDR';
-
 // Get current month and year
 const now = new Date();
 const currentMonth = now.getMonth() + 1;
 const currentYear = now.getFullYear();
 
-// Fetch dashboard data using parallel promises
+// Check onboarding status and get currency
+let onboardingStatus: OnboardingStatus | null = null;
+let isOnboardingComplete = false;
+let primaryCurrency: 'IDR' | 'USD' | null = null;
 let dashboardData: DashboardData | null = null;
 let error: Error | null = null;
 
+const isSupportedCurrency = (value: string | null): value is 'IDR' | 'USD' =>
+  value === 'IDR' || value === 'USD';
+
 try {
-  // Defensive check: user should be authenticated due to middleware protection
   if (!user) {
     throw new Error('User not authenticated. Please log in again.');
   }
 
-  dashboardData = await dashboardService.getDashboardData(
-    user.workspaceId,
-    currentMonth,
-    currentYear,
-    primaryCurrency,
-    perf
-  );
+  // Get onboarding status (parallel queries)
+  onboardingStatus = await workspaceService.getOnboardingStatus(user.workspaceId);
+
+  // Validate currency from workspace meta before computing completion
+  if (onboardingStatus.currency) {
+    const currencyValue = await workspaceMetaService.get(user.workspaceId, 'currency');
+    primaryCurrency = isSupportedCurrency(currencyValue) ? currencyValue : null;
+  }
+
+  // Tie completion to validated currency so checklist stays visible if currency is unsupported
+  isOnboardingComplete =
+    Boolean(primaryCurrency) &&
+    onboardingStatus.categories &&
+    onboardingStatus.budgets &&
+    onboardingStatus.assets &&
+    onboardingStatus.transactions;
+
+  // Only fetch dashboard data if currency is set
+  if (primaryCurrency) {
+    dashboardData = await dashboardService.getDashboardData(
+      user.workspaceId,
+      currentMonth,
+      currentYear,
+      primaryCurrency,
+      perf
+    );
+  }
 } catch (err) {
   console.error('Error loading dashboard data:', err);
   error = err instanceof Error ? err : new Error('Unknown error occurred');
@@ -160,9 +183,12 @@ const spendingCategories =
       )
     }
 
-    <!-- Dashboard Content -->
+    <!-- Onboarding Checklist (shown when setup is incomplete) -->
+    {onboardingStatus && !isOnboardingComplete && <OnboardingChecklist status={onboardingStatus} />}
+
+    <!-- Dashboard Content (only shown when currency is set) -->
     {
-      !error && (
+      !error && primaryCurrency && (
         <>
           {/* Spending Summary Card & Spending Analysis Chart (side by side) */}
           <div class="grid grid-cols-1 @3xl:grid-cols-2 gap-6 @sm:gap-8">
